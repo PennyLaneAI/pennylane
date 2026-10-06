@@ -292,31 +292,6 @@ class TestSelectPauliRot:
 
         assert qp.math.allclose(output, output_torch)
 
-    @pytest.mark.tf
-    def test_interface_tf(self):
-        """Test that SelectPauliRot works with tensorflow"""
-
-        import tensorflow as tf
-
-        angles = [1, 2, 3, 4]
-
-        wires = qp.registers({"control": 2, "target": 1})
-        dev = qp.device("default.qubit", wires=3)
-
-        qs = get_tape(tf.Variable(angles), wires)
-
-        program, _ = dev.preprocess()
-        tape = program([qs])
-        output_tf = dev.execute(tape[0])[0]
-
-        qs = get_tape(angles, wires)
-
-        program, _ = dev.preprocess()
-        tape = program([qs])
-        output = dev.execute(tape[0])[0]
-
-        assert qp.math.allclose(output, output_tf)
-
     @pytest.mark.jax
     def test_jax_jit(self):
         """Test that SelectPauliRot works with jax"""

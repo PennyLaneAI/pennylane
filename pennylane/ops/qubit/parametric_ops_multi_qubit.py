@@ -26,7 +26,7 @@ from warnings import warn
 import numpy as np
 
 import pennylane as qp
-from pennylane import compiler, math
+from pennylane import math
 from pennylane.capture.autograph import disable_autograph
 
 # pylint: disable=arguments-differ
@@ -39,6 +39,7 @@ from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
+from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -120,12 +121,6 @@ class MultiRZ(Operator2):
         num_wires = len(wires)
         eigs = math.convert_like(qp.pauli.pauli_eigs(num_wires), theta)
 
-        if (
-            math.get_interface(theta) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            theta = math.cast_like(theta, 1j)
-            eigs = math.cast_like(eigs, 1j)
-
         if math.ndim(theta) == 0:
             return math.diag(math.exp(-0.5j * theta * eigs))
 
@@ -172,12 +167,6 @@ class MultiRZ(Operator2):
         num_wires = len(wires)
         eigs = math.convert_like(qp.pauli.pauli_eigs(num_wires), theta)
 
-        if (
-            math.get_interface(theta) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            theta = math.cast_like(theta, 1j)
-            eigs = math.cast_like(eigs, 1j)
-
         if math.ndim(theta) == 0:
             return math.exp(-0.5j * theta * eigs)
 
@@ -201,26 +190,35 @@ class MultiRZ(Operator2):
 # pylint: disable=unused-argument
 def _multi_rz_decomposition_resources(theta: TensorLike, wires: WiresLike):
     num_wires = len(wires)
-    return {qp.RZ: 1, qp.CNOT: 2 * (num_wires - 1)}
+    if num_wires == 1:
+        return {qp.RZ: 1}
+    cnots = tuple(qp.CNOT(wires=Wire[2]) for _ in range(num_wires - 1))
+    # a two-wire ladder is a lone CNOT, which ``change_op_basis`` does not wrap in a product
+    ladder = cnots[0] if num_wires == 2 else Prod2(cnots)
+    # Reversing identical abstract CNOT reps would produce the same resource key.
+    unladder = ladder
+    return {_change_op_basis_abstract(ladder, RZ(Float, wires=Wire[1]), unladder): 1}
 
 
 @register_resources(_multi_rz_decomposition_resources)
 def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike):
+    """CNOT ladder around an ``RZ``, so a control applies only to the rotation."""
+    if len(wires) == 1:
+        qp.RZ(theta, wires=wires[0])
+        return
 
-    if compiler.active() or qp.capture.enabled():
+    if qp.compiler.active() or qp.capture.enabled():
         wires = math.array(wires, like="jax")
 
-    @qp.for_loop(len(wires) - 1, 0, -1)
-    def _pre_cnot(i):
+    def _cnots(i):
         qp.CNOT(wires=(wires[i], wires[i - 1]))
 
-    @qp.for_loop(1, len(wires), 1)
-    def _post_cnot(i):
-        qp.CNOT(wires=(wires[i], wires[i - 1]))
-
-    _pre_cnot()  # pylint: disable=no-value-for-parameter
-    qp.RZ(theta, wires=wires[0])
-    _post_cnot()  # pylint: disable=no-value-for-parameter
+    num_wires = len(wires)
+    qp.change_op_basis(
+        qp.for_loop(num_wires - 1, 0, -1)(_cnots),
+        qp.RZ(theta, wires=wires[0]),
+        qp.for_loop(1, num_wires)(_cnots),
+    )
 
 
 add_decomps(MultiRZ, _multi_rz_decomposition)
@@ -409,13 +407,6 @@ class PauliRot(Operator2):
                 "Allowed characters are I, X, Y and Z"
             )
 
-        interface = math.get_interface(theta)
-
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            theta = math.cast_like(theta, 1j)
-
         # Simplest case is if the Pauli is the identity matrix
         if set(pauli_word) == {"I"}:
             return qp.GlobalPhase.compute_matrix(0.5 * theta, wires=range(len(pauli_word)))
@@ -434,10 +425,6 @@ class PauliRot(Operator2):
             math.kron,
             [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            conjugation_matrix = math.cast_like(conjugation_matrix, 1j)
         # Note: we use einsum with reverse arguments here because it is not multi-dispatched
         # and the tensordot containing multi_Z_rot_matrix should decide about the interface
         return math.expand_matrix(
@@ -483,69 +470,11 @@ class PauliRot(Operator2):
         >>> qp.PauliRot.compute_eigvals(torch.tensor(0.5), "X")
         tensor([0.9689-0.2474j, 0.9689+0.2474j], dtype=torch.complex128)
         """
-        if (
-            math.get_interface(theta) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            theta = math.cast_like(theta, 1j)
-
         # Identity must be treated specially because its eigenvalues are all the same
         if set(pauli_word) == {"I"}:
             return qp.GlobalPhase.compute_eigvals(0.5 * theta, wires=range(len(pauli_word)))
 
         return MultiRZ.compute_eigvals(theta, list(range(len(pauli_word))))
-
-    @staticmethod
-    def compute_decomposition(
-        theta: TensorLike, wires: WiresLike, pauli_word: str
-    ) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.PauliRot.decomposition`.
-
-        Args:
-            theta (TensorLike): rotation angle :math:`\theta`
-            wires (Iterable, Wires): the wires the operation acts on
-            pauli_word (string): the Pauli word defining the rotation
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.PauliRot.compute_decomposition(1.2, wires=(0,1), pauli_word="XY")
-        [H(0), RX(1.5707963267948966, wires=[1]), MultiRZ(1.2, wires=[0, 1]), H(0), RX(-1.5707963267948966, wires=[1])]
-
-        """
-        if isinstance(wires, int):  # Catch cases when the wire is passed as a single int.
-            wires = [wires]
-
-        # Check for identity and do nothing
-        if set(pauli_word) == {"I"}:
-            return [qp.GlobalPhase(phi=theta / 2)]
-
-        active_wires, active_gates = zip(
-            *[(wire, gate) for wire, gate in zip(wires, pauli_word, strict=True) if gate != "I"],
-            strict=True,
-        )
-
-        ops = []
-        for wire, gate in zip(active_wires, active_gates, strict=True):
-            if gate == "X":
-                ops.append(Hadamard(wires=[wire]))
-            elif gate == "Y":
-                ops.append(RX(np.pi / 2, wires=[wire]))
-
-        ops.append(MultiRZ(theta, wires=list(active_wires)))
-
-        for wire, gate in zip(active_wires, active_gates, strict=True):
-            if gate == "X":
-                ops.append(Hadamard(wires=[wire]))
-            elif gate == "Y":
-                ops.append(RX(-np.pi / 2, wires=[wire]))
-        return ops
 
     def adjoint(self):
         return PauliRot(-self.arguments["theta"], self.arguments["pauli_word"], wires=self.wires)
@@ -560,10 +489,28 @@ def _pauli_rot_resources(theta, pauli_word, wires):  # pylint: disable=unused-ar
     if set(pauli_word) == {"I"}:
         return {qp.GlobalPhase: 1}
     num_active_wires = len(pauli_word.replace("I", ""))
+    # non-Z gates in matrix order, i.e. reversed relative to the order they are applied in
+    basis_word = [gate for gate in reversed(pauli_word) if gate in "XY"]
+    if not basis_word:
+        # a pure-Z word needs no basis change, so there is nothing to conjugate
+        return {qp.MultiRZ(Float, Wire[num_active_wires]): 1}
+
+    # A Y is an X rotation by ``±π/2``, i.e. ``PPR(±4, "X")``; an X uses a Hadamard.
+    # Hadamard is required here: a ``PPR`` on Y decomposes back into ``PauliRot``, which
+    # would cycle with the Y basis change. The compute and uncompute bases differ only
+    # in the sign of the Y rotation.
+    def _basis(denominator):
+        gates = tuple(
+            qp.Hadamard(wires=Wire[1]) if gate == "X" else qp.PPR(denominator, "X", wires=Wire[1])
+            for gate in basis_word
+        )
+        # a single-gate basis change is not wrapped in a product
+        return gates[0] if len(gates) == 1 else Prod2(gates)
+
     return {
-        qp.Hadamard: 2 * pauli_word.count("X"),
-        qp.RX: 2 * pauli_word.count("Y"),
-        qp.MultiRZ(Float, Wire[num_active_wires]): 1,
+        _change_op_basis_abstract(
+            _basis(4), qp.MultiRZ(Float, Wire[num_active_wires]), _basis(-4)
+        ): 1
     }
 
 
@@ -577,17 +524,24 @@ def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLik
         *[(wire, gate) for wire, gate in zip(wires, pauli_word, strict=True) if gate != "I"],
         strict=True,
     )
-    for wire, gate in zip(active_wires, active_gates, strict=True):
-        if gate == "X":
-            qp.Hadamard(wires=[wire])
-        elif gate == "Y":
-            qp.RX(np.pi / 2, wires=[wire])
-    qp.MultiRZ(theta, wires=list(active_wires))
-    for wire, gate in zip(active_wires, active_gates, strict=True):
-        if gate == "X":
-            qp.Hadamard(wires=[wire])
-        elif gate == "Y":
-            qp.RX(-np.pi / 2, wires=[wire])
+
+    if set(active_gates) == {"Z"}:
+        # a pure-Z word needs no basis change, so there is nothing to conjugate
+        qp.MultiRZ(theta, wires=list(active_wires))
+        return
+
+    def _apply_basis_change(denominator):
+        for wire, gate in zip(active_wires, active_gates, strict=True):
+            if gate == "X":
+                qp.Hadamard(wires=[wire])
+            elif gate == "Y":
+                qp.PPR(denominator, "X", wires=[wire])
+
+    qp.change_op_basis(
+        functools.partial(_apply_basis_change, 4),
+        qp.MultiRZ(theta, wires=list(active_wires)),
+        functools.partial(_apply_basis_change, -4),
+    )
 
 
 add_decomps(PauliRot, _pauli_rot_decomposition)
@@ -813,23 +767,6 @@ class PCPhase(Operator2):
         """Get the matrix representation of Pi-controlled phase unitary."""
         d, t = (dim, 2 ** len(wires))
 
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = math.exp(1j * math.cast_like(phi, 1j))
-            minus_p = math.exp(-1j * math.cast_like(phi, 1j))
-            zeros = math.zeros_like(p)
-
-            columns = []
-            for i in range(t):
-                columns.append(
-                    [p if j == i else zeros for j in range(t)]
-                    if i < d
-                    else [minus_p if j == i else zeros for j in range(t)]
-                )
-            r = math.stack(columns, like="tensorflow", axis=-2)
-            return r
-
         arg = 1j * phi
         prefactors = math.array([1] * d + [-1] * (t - d), like=phi)
 
@@ -843,13 +780,6 @@ class PCPhase(Operator2):
     def compute_eigvals(phi: TensorLike, dim: int, wires: WiresLike) -> TensorLike:
         """Get the eigvals for the Pi-controlled phase unitary."""
         d, t = (dim, 2 ** len(wires))
-
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = math.exp(1j * math.cast_like(phi, 1j))
-            minus_phase = math.exp(-1j * math.cast_like(phi, 1j))
-            return stack_last([phase if index < d else minus_phase for index in range(t)])
 
         arg = 1j * phi
         prefactors = math.array([1] * d + [-1] * (t - d), like=phi)
@@ -1148,14 +1078,6 @@ class IsingXX(Operator2):
 
         eye = math.eye(4, like=phi)
         rev_eye = math.convert_like(np.eye(4)[::-1].copy(), phi)
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = math.cast_like(c, 1j)
-            s = math.cast_like(s, 1j)
-            eye = math.cast_like(eye, 1j)
-            rev_eye = math.cast_like(rev_eye, 1j)
-
         # The following avoids casting an imaginary quantity to reals when backpropagating
         js = -1j * s
         if math.ndim(phi) == 0:
@@ -1180,14 +1102,18 @@ class IsingXX(Operator2):
 
 # pylint: disable-next=unused-argument
 def _isingxx_to_cnot_rx_cnot_resources(phi: TensorLike, wires: WiresLike | None = None):
-    return {qp.CNOT: 2, qp.RX: 1}
+    return {
+        _change_op_basis_abstract(
+            qp.CNOT(wires=Wire[2]),
+            RX(Float, wires=Wire[1]),
+            qp.CNOT(wires=Wire[2]),
+        ): 1
+    }
 
 
 @register_resources(_isingxx_to_cnot_rx_cnot_resources)
 def _isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
-    qp.CNOT(wires=wires)
-    qp.RX(phi, wires=[wires[0]])
-    qp.CNOT(wires=wires)
+    qp.change_op_basis(qp.CNOT(wires=wires), RX(phi, wires=[wires[0]]), qp.CNOT(wires=wires))
 
 
 # pylint: disable-next=unused-argument
@@ -1282,12 +1208,6 @@ class IsingYY(Operator2):
         c = math.cos(phi / 2)
         s = math.sin(phi / 2)
 
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = math.cast_like(c, 1j)
-            s = math.cast_like(s, 1j)
-
         js = 1j * s
         r_term = math.cast_like(
             math.array(
@@ -1323,14 +1243,18 @@ class IsingYY(Operator2):
 
 # pylint: disable-next=unused-argument
 def _isingyy_to_cy_ry_cy_resources(phi: TensorLike, wires: WiresLike | None = None):
-    return {qp.CY: 2, RY: 1}
+    return {
+        _change_op_basis_abstract(
+            qp.CY(wires=Wire[2]),
+            RY(Float, wires=Wire[1]),
+            qp.CY(wires=Wire[2]),
+        ): 1
+    }
 
 
 @register_resources(_isingyy_to_cy_ry_cy_resources)
 def _isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
-    qp.CY(wires=wires)
-    RY(phi, wires=[wires[0]])
-    qp.CY(wires=wires)
+    qp.change_op_basis(qp.CY(wires=wires), RY(phi, wires=[wires[0]]), qp.CY(wires=wires))
 
 
 # pylint: disable-next=unused-argument
@@ -1422,16 +1346,6 @@ class IsingZZ(Operator2):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689-0.2474j]])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = math.exp(-0.5j * math.cast_like(phi, 1j))
-            if math.ndim(p) == 0:
-                return math.diag([p, math.conj(p), math.conj(p), p])
-
-            diags = stack_last([p, math.conj(p), math.conj(p), p])
-            return diags[:, :, np.newaxis] * math.cast_like(math.eye(4, like=diags), diags)
-
         signs = math.array([1, -1, -1, 1], like=phi)
         arg = -0.5j * phi
 
@@ -1469,12 +1383,6 @@ class IsingZZ(Operator2):
         >>> qp.IsingZZ.compute_eigvals(torch.tensor(0.5))
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = math.exp(-0.5j * math.cast_like(phi, 1j))
-            return stack_last([phase, math.conj(phase), math.conj(phase), phase])
-
         prefactors = math.array([-0.5j, 0.5j, 0.5j, -0.5j], like=phi)
         if math.ndim(phi) == 0:
             product = phi * prefactors
@@ -1623,12 +1531,6 @@ class IsingXY(Operator2):
         c = math.cos(phi / 2)
         s = math.sin(phi / 2)
 
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = math.cast_like(c, 1j)
-            s = math.cast_like(s, 1j)
-
         js = 1j * s
         off_diag = math.cast_like(
             math.array(
@@ -1677,11 +1579,6 @@ class IsingXY(Operator2):
         >>> qp.IsingXY.compute_eigvals(0.5)
         array([0.96891242+0.24740396j, 0.96891242-0.24740396j,       1.        +0.j        , 1.        +0.j        ])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         signs = np.array([1, -1, 0, 0])
         if math.ndim(phi) == 0:
             return math.exp(0.5j * phi * signs)
@@ -1705,17 +1602,34 @@ class IsingXY(Operator2):
 
 # pylint: disable-next=unused-argument
 def _isingxy_to_h_cy_resources(phi: TensorLike, wires: WiresLike | None = None):
-    return {Hadamard: 2, qp.CY: 2, RY: 1, RX: 1}
+    # ``Prod2`` takes its operands in matrix order, i.e. reversed relative to the order in which
+    # the decomposition below applies them.
+    basis = Prod2((qp.CY(wires=Wire[2]), Hadamard(wires=Wire[1])))
+    unbasis = Prod2((Hadamard(wires=Wire[1]), qp.CY(wires=Wire[2])))
+    return {
+        _change_op_basis_abstract(
+            basis,
+            Prod2((RX(Float, wires=Wire[1]), RY(Float, wires=Wire[1]))),
+            unbasis,
+        ): 1
+    }
 
 
 @register_resources(_isingxy_to_h_cy_resources)
 def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
-    Hadamard(wires=[wires[0]])
-    qp.CY(wires=wires)
-    RY(phi / 2, wires=[wires[0]])
-    RX(-phi / 2, wires=[wires[1]])
-    qp.CY(wires=wires)
-    Hadamard(wires=[wires[0]])
+    def _to_basis():
+        Hadamard(wires=[wires[0]])
+        qp.CY(wires=wires)
+
+    def _rotations():
+        RY(phi / 2, wires=[wires[0]])
+        RX(-phi / 2, wires=[wires[1]])
+
+    def _from_basis():
+        qp.CY(wires=wires)
+        Hadamard(wires=[wires[0]])
+
+    qp.change_op_basis(_to_basis, _rotations, _from_basis)
 
 
 add_decomps(IsingXY, _isingxy_to_h_cy)
@@ -1823,11 +1737,6 @@ class PSWAP(Operation):
                [0.        +0.j        , 0.        +0.j        ,
                 0.        +0.j        , 1.        +0.j        ]])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         e = math.exp(1j * phi)
         zero = math.zeros_like(phi)
         one = math.ones_like(phi)
@@ -1870,11 +1779,6 @@ class PSWAP(Operation):
         array([ 1.        +0.j        ,  1.        +0.j        ,
                -0.87758256-0.47942554j,  0.87758256+0.47942554j])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         e = math.exp(1j * phi)
         one = math.ones_like(phi)
         return math.transpose(math.stack([one, one, -e, e]))
@@ -2009,11 +1913,6 @@ class CPhaseShift00(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j]])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         exp_part = math.exp(1j * phi)
 
         if math.ndim(phi) > 0:
@@ -2057,11 +1956,6 @@ class CPhaseShift00(Operation):
         >>> qp.CPhaseShift00.compute_eigvals(torch.tensor(0.5))
         tensor([0.8776+0.4794j, 1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         exp_part = math.exp(1j * phi)
         ones = math.ones_like(exp_part)
         return stack_last([exp_part, ones, ones, ones])
@@ -2232,11 +2126,6 @@ class CPhaseShift01(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j]])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         exp_part = math.exp(1j * phi)
 
         if math.ndim(phi) > 0:
@@ -2280,11 +2169,6 @@ class CPhaseShift01(Operation):
         >>> qp.CPhaseShift01.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 0.8776+0.4794j, 1.0000+0.0000j, 1.0000+0.0000j])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         exp_part = math.exp(1j * phi)
         ones = math.ones_like(exp_part)
         return stack_last([ones, exp_part, ones, ones])
@@ -2445,11 +2329,6 @@ class CPhaseShift10(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.8776+0.4794j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j]])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         exp_part = math.exp(1j * phi)
 
         if math.ndim(phi) > 0:
@@ -2493,11 +2372,6 @@ class CPhaseShift10(Operation):
         >>> qp.CPhaseShift10.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j, 1.0000+0.0000j])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         exp_part = math.exp(1j * phi)
         ones = math.ones_like(exp_part)
         return stack_last([ones, ones, exp_part, ones])
