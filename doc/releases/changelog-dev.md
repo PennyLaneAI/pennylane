@@ -43,6 +43,7 @@
   - expval(PauliZ): 1
   Total wires: 10
   Circuit Depth: Not computed
+
   ```
   
   The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.

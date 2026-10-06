@@ -48,7 +48,8 @@ def process_hints(hints: dict[str, Any], supported: Set[str]) -> dict[str, Any]:
         match = _canonical_match(key, supported)
         if match in processed:
             raise ValueError(f"Multiple hint keys map to {match!r}. Got {tuple(hints)}.")
-        processed[match] = value
+        if match is not None:
+            processed[match] = value
     return processed
 
 
