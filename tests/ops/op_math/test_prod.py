@@ -576,12 +576,22 @@ class TestMatrix:
         with pytest.raises(MatrixUndefinedError):
             prod_op.matrix()
 
-    def test_merged_overlapping_groups(self):
+    @pytest.mark.parametrize(
+        "factors",
+        (
+            (qp.H(1), qp.H(0), qp.CNOT([2, 1]), qp.CNOT([1, 0])),
+            (qp.CNOT([1, 3]), qp.X(0), qp.CNOT([3, 2]), qp.Toffoli([2, 0, 1])),
+        ),
+    )
+    @pytest.mark.parametrize("wire_order", [None, [0, 1, 2, 3]])
+    def test_merged_overlapping_groups(self, wire_order, factors):
         """Test the matrix when merging overlapping groups reorders the wires relative to
         the wires of the ``Prod`` op, and we need to reorder them back."""
-        factors = [qp.Hadamard(1), qp.Hadamard(0), qp.CNOT([2, 1]), qp.CNOT([1, 0])]
-        mat = Prod(*factors).matrix(wire_order=[0, 1, 2])
-        expected = reduce(np.matmul, [factor.matrix(wire_order=[0, 1, 2]) for factor in factors])
+        prod_op = Prod(*factors)
+        mat = prod_op.matrix(wire_order=wire_order)
+        if wire_order is None:
+            wire_order = prod_op.wires
+        expected = reduce(np.matmul, [factor.matrix(wire_order=wire_order) for factor in factors])
         assert np.allclose(mat, expected)
 
     def test_prod_ops_multi_terms(self):
