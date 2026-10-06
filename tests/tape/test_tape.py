@@ -529,13 +529,11 @@ class TestResourceEstimation:
             measurement_processes={"probs(all wires)": 1},
             circuit_depth=0,
         )
-        assert tape.specs["resources"] == expected_resources
+        assert qp.resource.resources_from_tape(tape) == expected_resources
 
     def test_specs_tape(self, make_tape):
         """Tests that regular tapes return correct specifications"""
         tape = make_tape
-
-        specs = tape.specs
 
         expected_resources = qp.resource.SpecsResources(
             num_wires=3,
@@ -543,13 +541,12 @@ class TestResourceEstimation:
             measurement_processes={"expval(PauliX)": 1, "probs(2 wires)": 1},
             circuit_depth=3,
         )
-        assert specs["resources"] == expected_resources
+        assert qp.resource.resources_from_tape(tape) == expected_resources
 
     def test_specs_add_to_tape(self, make_extendible_tape):
         """Test that tapes return correct specs after adding to them."""
 
         tape = make_extendible_tape
-        specs1 = tape.specs
 
         expected_resources = qp.resource.SpecsResources(
             num_wires=3,
@@ -557,7 +554,7 @@ class TestResourceEstimation:
             measurement_processes={},
             circuit_depth=3,
         )
-        assert specs1["resources"] == expected_resources
+        assert qp.resource.resources_from_tape(tape) == expected_resources
 
         with tape as tape:
             qp.CNOT(wires=[0, 1])
@@ -565,15 +562,13 @@ class TestResourceEstimation:
             qp.expval(qp.PauliX(wires="a"))
             qp.probs(wires=[0, "a"])
 
-        specs2 = tape.specs
-
         expected_resources = qp.resource.SpecsResources(
             num_wires=5,
             counts={"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1},
             measurement_processes={"expval(PauliX)": 1, "probs(2 wires)": 1},
             circuit_depth=4,
         )
-        assert specs2["resources"] == expected_resources
+        assert qp.resource.resources_from_tape(tape) == expected_resources
 
 
 class TestParameters:
