@@ -143,11 +143,14 @@ def preprocess_level_input(
         level = [level]
     else:
         try:
-            level = list(level)
+            level_list = list(level)
         except TypeError as exc:
             raise ValueError(
                 f"Invalid level '{level}', expected int, str, or an iterable of those."
             ) from exc
+        if not level_list:
+            raise ValueError(f"Invalid level '{level}', expected a non-empty iterable.")
+        level = level_list
 
     # Convert marker names to the associated level number
     for i, lvl in enumerate(level):

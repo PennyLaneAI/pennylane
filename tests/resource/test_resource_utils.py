@@ -92,6 +92,9 @@ def test_preprocess_levels_invalid(example_pipeline):
     with pytest.raises(ValueError, match="Invalid level"):
         preprocess_level_input([1, 2, 3.14, True], example_pipeline)
 
+    with pytest.raises(ValueError, match=r"Invalid level '\(\)', expected a non-empty iterable"):
+        preprocess_level_input((), example_pipeline)
+
     with pytest.raises(ValueError, match="Marker name 'potato' not found"):
         preprocess_level_input("potato", example_pipeline)
 

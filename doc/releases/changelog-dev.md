@@ -359,6 +359,7 @@
   program, without executing it. This is the same pass-by-pass analysis that :func:`~.specs`
   performs for ``qjit``-compiled QNodes.
   [(#10237)](https://github.com/PennyLaneAI/pennylane/pull/10237)
+  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
 
   ```python
   dev = qp.device("null.qubit", wires=2)
