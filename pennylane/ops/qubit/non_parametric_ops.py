@@ -2273,6 +2273,7 @@ def _ppr_to_clifford_t_resources(angle_denominator, pauli_word, **_):
     if not active_word:
         return {qp.GlobalPhase: 1}
 
+    # PPR is a Pauli operator for angle_denominator=±2
     if abs(angle_denominator) == 2:
         paulis = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
         return {qp.GlobalPhase: 1, **Counter(paulis[gate] for gate in active_word)}
@@ -2286,21 +2287,17 @@ def _ppr_to_clifford_t_resources(angle_denominator, pauli_word, **_):
         elif gate == "Y":
             compute.extend([qp.adjoint(S(Wire[1])), Hadamard(Wire[1])])
             uncompute.extend([Hadamard(Wire[1]), S(Wire[1])])
-    ladder = [qp.CNOT(Wire[2]) for _ in range(len(active_word) - 1)]
+    ladder = [qp.CNOT(Wire[2])] * (len(active_word) - 1)
     compute, uncompute = compute + ladder, ladder + uncompute
 
     z_gate = _ppr_z_gate(angle_denominator, Wire[1])
     if not compute:
         return {qp.GlobalPhase: 1, z_gate: 1}
 
-    def _prod(gates):
-        # a single-gate basis change is not wrapped in a product, and products use matrix order
-        return gates[0] if len(gates) == 1 else qp.ops.op_math.Prod2(tuple(reversed(gates)))
+    compute = compute[0] if len(compute) == 1 else qp.prod(*reversed(compute))
+    uncompute = uncompute[0] if len(uncompute) == 1 else qp.prod(*reversed(uncompute))
 
-    return {
-        qp.GlobalPhase: 1,
-        _change_op_basis_abstract(_prod(compute), z_gate, _prod(uncompute)): 1,
-    }
+    return {qp.GlobalPhase: 1, _change_op_basis_abstract(compute, z_gate, uncompute): 1}
 
 
 @register_resources(_ppr_to_clifford_t_resources)
@@ -2320,8 +2317,9 @@ def _ppr_to_clifford_t(angle_denominator, pauli_word, wires):
             paulis[gate](wires=wire)
         return
 
+    central_op = _ppr_z_gate(angle_denominator, active_wires[0])
+
     if pauli_word.replace("I", "") == "Z":
-        _ppr_z_gate(angle_denominator, active_wires[0])
         return
 
     def _compute():
@@ -2344,7 +2342,7 @@ def _ppr_to_clifford_t(angle_denominator, pauli_word, wires):
                 Hadamard(wires=wire)
                 S(wires=wire)
 
-    qp.change_op_basis(_compute, _ppr_z_gate(angle_denominator, active_wires[0]), _uncompute)
+    qp.change_op_basis(_compute, central_op, _uncompute)
 
 
 add_decomps(PPR, _ppr_to_paulirot, _ppr_to_clifford_t)
