@@ -911,7 +911,7 @@ class TestModifiedTemplates:
         wires = [0, 1, 2]
 
         def qfunc(mps):
-            qp.MPSPrep(mps=mps, wires=wires)
+            return qp.MPSPrep(mps=mps, wires=wires).tracer
 
         # Validate inputs
         qfunc(mps)
@@ -923,11 +923,10 @@ class TestModifiedTemplates:
 
         eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(eqn, qp.MPSPrep)
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *mps)
         qp.assert_equal(op, qp.MPSPrep(mps, wires=wires))
+
     def test_all_singles_doubles(self):
         arguments = (
             jnp.array([-2.8, 0.5]),
