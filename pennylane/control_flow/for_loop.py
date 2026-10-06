@@ -165,7 +165,7 @@ def for_loop(
 
         **Compiler hints and Resource Profiling:**
 
-        When running resource analysis on a qjit workflow, loops may appear symbolicly,
+        When running resource analysis on a qjit workflow, loops may appear symbolically. Calling :func:`~.specs` on the ``circuit`` above, we get
 
         >>> s = qp.specs(qp.qjit(circuit, capture=True), level=0)(3, 0.5)
         >>> print(s.resources)
@@ -178,7 +178,7 @@ def for_loop(
         Total wires: 1
         Circuit Depth: Not computed
 
-        In this case, :func:`~.hint` can be used indicate the likely number of iterations
+        To resolve symbolic expressions directly, :func:`~.hint` can be used indicate the likely number of iterations
         on the loop:
 
         .. code-block:: python
