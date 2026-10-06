@@ -27,7 +27,7 @@ from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
-from pennylane.typing import Float, TensorLike, Wire
+from pennylane.typing import AbstractArray, Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 
@@ -420,7 +420,7 @@ def _ctrl_g_phase(base: GlobalPhase, control, control_values, *_):
     r"""
     Custom controlled global phase dispatch.
 
-    Since the phase shift is applied to the target qubit irregardless of the target qubit's state,
+    Since the phase shift is applied to the target qubit regardless of the target qubit's state,
     the phase shift can factor out of the target state entirely.
 
     Then, since the phase shift matrix is:
@@ -440,11 +440,20 @@ def _ctrl_g_phase(base: GlobalPhase, control, control_values, *_):
 
     if not _is_empty_or_all_true(control_values):
         return NotImplemented
+
+    # The induced phase on the control's |1> state is PhaseShift(-phi). Negating an abstract
+    # parameter does not change its type or shape (and abstract values do not support
+    # arithmetic), so we skip the negation entirely in that case (e.g. during graph-based
+    # resource estimation or program capture).
+    phi = base.phi
+    if not qp.math.is_abstract(phi) and not isinstance(phi, AbstractArray):
+        phi = -phi
+
     if len(control) == 1:
         # The global phase becomes a phase shift on the single control wire.
-        return qp.PhaseShift(-base.phi, control[-1])
+        return qp.PhaseShift(phi, control[-1])
     # For multiple controls, a phase shift on the last control wire, controlled by the rest.
-    return qp.ctrl(qp.PhaseShift(-base.phi, control[-1]), control=control[:-1])
+    return qp.ctrl(qp.PhaseShift(phi, control[-1]), control=control[:-1])
 
 
 @register_resources(_controlled_g_phase_resource, exact=False)
