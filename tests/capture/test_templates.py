@@ -926,6 +926,8 @@ class TestModifiedTemplates:
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
+    [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *mps)
+    qp.assert_equal(op, qp.MPSPrep(mps, wires=wires)
     def test_all_singles_doubles(self):
         arguments = (
             jnp.array([-2.8, 0.5]),
