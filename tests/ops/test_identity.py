@@ -19,7 +19,7 @@ import pytest
 import pennylane as qp
 from pennylane.core.operator.utils import abstractify
 from pennylane.ops.functions import assert_valid
-from pennylane.ops.identity import GlobalPhase, Identity
+from pennylane.ops.identity import GlobalPhase, Identity, _ctrl_g_phase
 from pennylane.typing import Float, Wire
 
 op_wires = [[], [0], ["a"], [0, 1], ["a", "b", "c"], [100, "xasd", 12]]
@@ -55,6 +55,43 @@ def test_abstractify_identity():
 
     assert abstractify(Identity(wires=[0])) == Identity(Wire[1])
     assert abstractify(Identity(wires=[0, 1])) == Identity(Wire[2])
+
+
+class TestControlledGlobalPhase:
+    """Tests for the custom controlled dispatch of GlobalPhase (``_ctrl_g_phase``)."""
+
+    @staticmethod
+    def _expected_matrix(phi, n_control):
+        """A controlled GlobalPhase applies ``e^{-i phi}`` to the all-ones control state."""
+        mat = np.eye(2**n_control, dtype=complex)
+        mat[-1, -1] = np.exp(-1j * phi)
+        return mat
+
+    def test_single_control_returns_phase_shift(self):
+        """A single control turns GlobalPhase into a PhaseShift on the control wire."""
+        op = qp.ctrl(GlobalPhase(0.123), control=[0])
+        qp.assert_equal(op, qp.PhaseShift(-0.123, wires=0))
+
+    def test_two_controls_returns_controlled_phase_shift(self):
+        """Two controls turn GlobalPhase into a ControlledPhaseShift."""
+        op = qp.ctrl(GlobalPhase(0.123), control=[0, 1])
+        qp.assert_equal(op, qp.ControlledPhaseShift(-0.123, wires=[0, 1]))
+
+    @pytest.mark.parametrize("control", ([0], [0, 1], [0, 1, 2]))
+    def test_matrix_matches_controlled_global_phase(self, control):
+        """The dispatched op reproduces the controlled-GlobalPhase matrix."""
+        phi = 0.123
+        op = qp.ctrl(GlobalPhase(phi), control=control)
+        mat = qp.matrix(op, wire_order=control)
+        assert np.allclose(mat, self._expected_matrix(phi, len(control)))
+
+    def test_not_all_true_control_values_not_implemented(self):
+        """With a zero control value the dispatch declines, falling back to a generic Controlled."""
+        res = _ctrl_g_phase(GlobalPhase(0.123), qp.wires.Wires([0]), [False])
+        assert res is NotImplemented
+
+        op = qp.ctrl(GlobalPhase(0.123), control=[0], control_values=[False])
+        assert not isinstance(op, qp.PhaseShift)
 
 
 def test_is_verified_hermitian():

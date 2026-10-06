@@ -25,6 +25,7 @@ from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
@@ -412,6 +413,38 @@ def _controlled_g_phase_resource(
     ] = 1
 
     return resources
+
+
+@custom_ctrl_dispatch.register
+def _ctrl_g_phase(base: GlobalPhase, control, control_values, *_):
+    r"""
+    Custom controlled global phase dispatch.
+
+    Since the phase shift is applied to the target qubit irregardless of the target qubit's state,
+    the phase shift can factor out of the target state entirely.
+
+    Then, since the phase shift matrix is:
+
+    .. math::
+
+        \begin{bmatrix}
+            1 & 0 \\
+            0 & e^{-i \phi}
+        \end{bmatrix}
+
+    we can apply a phase shift to the control qubit to get the phase on the
+    :math:`|1\rangle` state of the control qubit.
+
+    This generalizes to multiple control qubits.
+    """
+
+    if not _is_empty_or_all_true(control_values):
+        return NotImplemented
+    if len(control) == 1:
+        # The global phase becomes a phase shift on the single control wire.
+        return qp.PhaseShift(-base.phi, control[-1])
+    # For multiple controls, a phase shift on the last control wire, controlled by the rest.
+    return qp.ctrl(qp.PhaseShift(-base.phi, control[-1]), control=control[:-1])
 
 
 @register_resources(_controlled_g_phase_resource, exact=False)
