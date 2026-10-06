@@ -198,7 +198,6 @@ def hint(hints: dict[str, Any]) -> Callable:
 
         The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
 
-
         Note that hints can be overwritten. The following will use ``20`` as the number of iterations:
 
         .. code-block:: python
