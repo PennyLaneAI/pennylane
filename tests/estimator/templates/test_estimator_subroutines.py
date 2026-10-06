@@ -304,7 +304,7 @@ class TestHybridQRAM:
         )
         assert decomp == expected_res
 
-        dev = qp.device("default.qubit")
+        dev = qp.device("lightning.qubit", wires=8)
 
         @qp.transforms.decompose(max_expansion=1)
         @qp.qnode(dev)
@@ -323,7 +323,8 @@ class TestHybridQRAM:
                 k=num_select_wires,
             )
 
-        specs = qp.specs(circuit)()
+        tape = qp.workflow.construct_tape(circuit)()
+        resources = qp.resource.resources_from_tape(tape)
 
         def _match_controlled(name, op):
             if (
@@ -340,14 +341,13 @@ class TestHybridQRAM:
                 return True
             return name == op.name
 
-        for ty, count in specs.resources.quantum_operations.items():
+        for ty, count in resources.quantum_operations.items():
             found = False
             i = 0
             total = 0
+            ty = ty.replace("Pauli", "")
             while i < len(expected_res):
-                if expected_res[i].gate.op_type.__name__ == ty.replace(
-                    "Pauli", ""
-                ) or _match_controlled(ty, expected_res[i].gate):
+                if _match_controlled(ty, expected_res[i].gate):
                     total += expected_res[i].count
                     found = True
                 i += 1
@@ -541,7 +541,7 @@ class TestSelectOnlyQRAM:
             == expected
         )
 
-        dev = qp.device("default.qubit")
+        dev = qp.device("lightning.qubit")
 
         @qp.transforms.decompose
         @qp.qnode(dev)
@@ -557,9 +557,10 @@ class TestSelectOnlyQRAM:
                 select_value=select_value,
             )
 
-        specs = qp.specs(circuit)()
+        tape = qp.workflow.construct_tape(circuit)()
+        resources = qp.resource.resources_from_tape(tape)
 
-        for ty, count in specs.resources.quantum_operations.items():
+        for ty, count in resources.quantum_operations.items():
             found = False
             i = 0
             while not found and i < len(expected):
