@@ -136,9 +136,11 @@ class TrotterVibronic(Operator2):
         })
         all_wires = qp.wires.Wires.all_wires(list(wires.values()))
 
-        @qp.decompose(max_expansion=1)  # to see the top-level sub-templates
+        # decompose by one step to see the top-level sub-templates
+        @qp.decompose(max_expansion=1, gate_set=qp.gate_sets.ALL_OPS | {qp.PhaseGradientStatePrep})
         @qp.qnode(qp.device("default.qubit", wires=all_wires))
         def circuit():
+            qp.PhaseGradientStatePrep(wires["phase_gradient"])
             qp.TrotterVibronic(
                 evolution_time=1.0, num_trotter_steps=1, hamiltonian=hamiltonian,
                 electronic_wires=wires["electronic"], vib_wires=wires["vib_wires"],
@@ -148,8 +150,8 @@ class TrotterVibronic(Operator2):
             )
             return qp.probs(wires=wires["electronic"])
 
-    >>> qp.specs(circuit)().resources.quantum_operations
-    {'QROM': 6, 'SemiAdder': 2, 'CNOT': 24, 'C(Incrementer)': 4, 'OutMultiplier': 3, 'MultiX': 2, 'AQFT': 1, 'SignedOutSquare': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(AQFT)': 1}
+    >>> qp.specs(circuit)().resources.quantum_operations  # doctest: +SKIP
+    {'PhaseGradientStatePrep': 1, 'QROM': 6, 'SemiAdder': 2, 'CNOT': 24, 'C(Incrementer)': 4, 'OutMultiplier': 3, 'MultiX': 2, 'AQFT': 1, 'SignedOutSquare': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(AQFT)': 1}
 
     .. details::
         :title: Register Sizes

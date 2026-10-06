@@ -172,6 +172,8 @@ unmodified_templates_cases = [
     ),
     (qp.CosineWindow, ([2, 3],), {}),
     (qp.CosineWindow, (), {"wires": [2, 0, 1]}),
+    (qp.PhaseGradientStatePrep, ([2, 3],), {}),
+    (qp.PhaseGradientStatePrep, (), {"wires": [2, 0, 1]}),
     (qp.MottonenStatePreparation, (jnp.ones(4) / 2, [2, 3]), {}),
     (
         qp.MottonenStatePreparation,
@@ -865,31 +867,25 @@ class TestModifiedTemplates:
             qp.QSVT(block_encode, projectors=shifts)
 
         A = np.array([[0.1]])
+
         # Validate inputs
         qfunc(A)
 
         # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)(A)
 
-        assert len(jaxpr.eqns) == 5
-
-        assert jaxpr.eqns[0].primitive == qp.BlockEncode._primitive
-
         eqn = jaxpr.eqns[-1]
-        assert eqn.primitive == qp.QSVT._primitive
-        for i in range(4):
-            assert eqn.invars[i] == jaxpr.eqns[i].outvars[0]
-        assert eqn.params == {}
+        assert_eqn_matches_op(eqn, qp.QSVT)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, A)
+        A = jax.numpy.array(A)
+        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, A)
 
-        assert len(q) == 1
+        assert len(tape) == 1
         block_encode = qp.BlockEncode(A, wires=[0, 1])
         shifts = [qp.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
-        assert q.queue[0] == qp.QSVT(block_encode, shifts)
+        qp.assert_equal(tape.operations[0], qp.QSVT(block_encode, shifts))
 
     def test_mps_prep(self):
         """Test the primitive bind call of MPSPrep."""
@@ -915,7 +911,7 @@ class TestModifiedTemplates:
         wires = [0, 1, 2]
 
         def qfunc(mps):
-            qp.MPSPrep(mps=mps, wires=wires)
+            return qp.MPSPrep(mps=mps, wires=wires).tracer
 
         # Validate inputs
         qfunc(mps)
@@ -926,24 +922,10 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.MPSPrep._primitive
-        assert eqn.invars[:4] == jaxpr.jaxpr.invars
-        assert [invar.val for invar in eqn.invars[4:]] == [0, 1, 2]
-        expected_params = {
-            "n_wires": 3,
-            "work_wires": None,
-            "right_canonicalize": False,
-        }
-        actual_params = {k: v for k, v in eqn.params.items() if k in expected_params}
-        assert actual_params == expected_params
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert_eqn_matches_op(eqn, qp.MPSPrep)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *mps)
-
-        assert len(q) == 1
-        assert q.queue[0] == qp.MPSPrep(mps=mps, wires=wires)
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *mps)
+        qp.assert_equal(op, qp.MPSPrep(mps, wires=wires))
 
     def test_all_singles_doubles(self):
         arguments = (

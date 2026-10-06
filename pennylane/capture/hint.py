@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Adds a tool for annotating things with compiler hints.
+Adds ``qp.hint``, a tool for annotating things with compiler hints.
 """
 
 import functools
@@ -43,23 +43,25 @@ def process_hints(hints: dict[str, Any], supported: Set[str]) -> dict[str, Any]:
 
     """
     processed: dict[str, Any] = {}
+    supported = sorted(supported)
     for key, value in hints.items():
-        if key in supported:
-            canonical = key
-        else:
-            canonical = None
-            for target in sorted(supported):
-                ratio = SequenceMatcher(a=key.casefold(), b=target.casefold()).ratio()
-                if ratio >= 0.8:
-                    canonical = target
-                    break
-
-        if canonical is None:
-            continue
-        if canonical in processed:
-            raise ValueError(f"Multiple hint keys map to {canonical!r}. Got {tuple(hints)}.")
-        processed[canonical] = value
+        match = _canonical_match(key, supported)
+        if match in processed:
+            raise ValueError(f"Multiple hint keys map to {match!r}. Got {tuple(hints)}.")
+        if match is not None:
+            processed[match] = value
     return processed
+
+
+def _canonical_match(key: str, supported: Set[str]) -> str | None:
+    """Return match if key has a close match in supported, else None."""
+    if key in supported:
+        return key
+    for target in supported:
+        ratio = SequenceMatcher(a=key.casefold(), b=target.casefold()).ratio()
+        if ratio >= 0.5:
+            return target
+    return None
 
 
 class HintedCallable:
@@ -133,29 +135,30 @@ def _stack_to_HintedCallable(f: HintedCallable, hints: dict) -> HintedCallable:
 def hint(hints: dict[str, Any]) -> Callable:
     """Attaches a compiler hint to applicable functionality.
 
-    .. warning::
-        By definition, the :func:`~.qjit` compiler may decide to completely ignore any instances of 
-        `hint` in a program; a compiler hint is something that does not affect program correctness, 
-        meaning that the compiler _can_ safely ignore them and still provide correct results.
-
     Args:
         `hints` (dict[str, Any]):
-            A dictionary containing compiler hint information. 
+            A dictionary containing compiler hint information.
 
     Returns:
         Callable: a decorator that can be applied.
 
     **Available Hints:**
 
-    * :func:`~.for_loop` and :func:`~.while_loop` support `"num-iters"` to indicate a heuristic number of loop iterations for the purposes of resource estimation with :func:`~.specs`. See Usage Details for more information.
+    * :func:`~.for_loop` and :func:`~.while_loop` support `"num-iters"` to indicate a heuristic
+      number of loop iterations for the purposes of resource estimation with
+      :func:`~.specs`. See Usage Details for more information.
 
     .. warning::
 
-        While close mispellings may be accepted (e.g., `"num-iter"`), spellings sufficiently far away 
+        By definition, the :func:`~.qjit` compiler may decide to completely ignore any instances of
+        `hint` in a program; a compiler hint is something that does not affect program correctness,
+        meaning that the compiler _can_ safely ignore them and still provide correct results.
+
+        While close mispellings may be accepted (e.g., `"num-iter"`), spellings sufficiently far away
         from the target will be ignored.
 
     .. details::
-        :title: Usage Details 
+        :title: Usage Details
 
         By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
         with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
@@ -164,18 +167,21 @@ def hint(hints: dict[str, Any]) -> Callable:
         .. code-block:: python
 
             @qp.qjit(capture=True)
-            @qp.qnode(qp.device('lightning.qubit', wires=1))
+            @qp.qnode(qp.device('lightning.qubit', wires=10))
             def c(n):
 
+                @qp.hint({"num-iters": 10})
                 @qp.for_loop(n)
-                def loop(i):
-                    qp.X(0)
+                def hinted_loop(i):
+                    qp.X(i)
 
-                #  hinted loop
-                qp.hint({"num-iters": 10})(loop)()
+                hinted_loop()
 
-                # normal loop
-                loop()
+                @qp.for_loop(n)
+                def unhinted_loop(i):
+                    qp.Y(i)
+
+                unhinted_loop()
 
                 return qp.expval(qp.Z(0))
 
@@ -183,23 +189,24 @@ def hint(hints: dict[str, Any]) -> Callable:
         Symbolic Variables: a
         Quantum operations:
         - Total: a + 10
-          - PauliX: a + 10
+          - PauliX: 10
+          - PauliY: a
         Measurement processes:
         - expval(PauliZ): 1
-        Total wires: 1
+        Total wires: 10
         Circuit Depth: Not computed
 
-        The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from to i
-        the unhinted loop.
+        The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
 
-        This function can also  be used as a decorator:
+        Note that hints can be overwritten. The following will use ``20`` as the number of iterations:
 
         .. code-block:: python
 
             @qp.qjit(capture=True)
-            @qp.qnode(qp.device('lightning.qubit' wires=10))
+            @qp.qnode(qp.device('lightning.qubit', wires=10))
             def c(n):
 
+                @qp.hint({"num-iters": 20})
                 @qp.hint({"num-iters": 10})
                 @qp.while_loop(lambda i: i < 10)
                 def loop(i):
@@ -209,14 +216,23 @@ def hint(hints: dict[str, Any]) -> Callable:
                 loop(0)
                 return qp.expval(qp.Z(0))
 
-        >>> print(qp.specs(c, level=0)(5).resources)
-        Quantum operations:
-        - Total: 10
-          - PauliX: 10
-        Measurement processes:
-        - expval(PauliZ): 1
-        Total wires: 1
-        Circuit Depth: Not computed
+        Compiler hints will also be discarded without warning if they do not match the expected type of hint.
+        The next example would run without warning:
+
+        .. code-block:: python
+
+            @qp.qjit(capture=True)
+            @qp.qnode(qp.device('null.qubit', wires=10))
+            def c(n):
+
+                @qp.hint({"unknown_hint": "a"})
+                @qp.for_loop(3)
+                def loop(i):
+                    qp.X(i)
+
+                loop()
+
+                return qp.expval(qp.Z(0))
 
     """
 

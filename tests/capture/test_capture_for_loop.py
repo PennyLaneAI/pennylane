@@ -890,3 +890,7 @@ class TestForLoopHintsCapture:
         hinted = qp.hint({"num-iters": 4})(loop)
         jaxpr = jax.make_jaxpr(hinted)(0)
         assert jaxpr.eqns[0].params["estimated_iterations"] == 4
+
+        double_hinted = qp.hint({"num-iters": 10})(hinted)
+        jaxpr = jax.make_jaxpr(double_hinted)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 10
