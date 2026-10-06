@@ -216,7 +216,6 @@ from pennylane import spin
 
 from pennylane import liealg
 from pennylane.liealg import lie_closure, structure_constants, center
-from pennylane import qnn
 
 from pennylane import estimator
 

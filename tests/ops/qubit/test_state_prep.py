@@ -497,30 +497,18 @@ class TestStateVector:
         """Test that StatePrep works with torch."""
         import torch
 
-        def QuantumLayer():
-            @qp.qnode(qp.device("default.qubit"), interface="torch")
-            def qlayer(inputs, weights):
-                qp.StatePrep(inputs, wires=[1, 2, 3])
-                qp.RY(phi=weights, wires=[0])
-                return qp.expval(qp.PauliZ(wires=0))
+        @qp.qnode(qp.device("default.qubit"), interface="torch")
+        def circuit(inputs, weights):
+            qp.StatePrep(inputs, wires=[1, 2, 3])
+            qp.RY(phi=weights, wires=[0])
+            return qp.expval(qp.PauliZ(wires=0))
 
-            weight_shapes = {"weights": (1)}
-            return qp.qnn.TorchLayer(qlayer, weight_shapes)
-
-        class SimpleQuantumModel(torch.nn.Module):  # pylint:disable=too-few-public-methods
-            def __init__(self):
-                super().__init__()
-                self.quantum_layer = QuantumLayer()
-
-            def forward(self, x):
-                return self.quantum_layer(x)
-
-        model = SimpleQuantumModel()
         features = torch.tensor(
             [[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]],
             requires_grad=True,
         )
-        result = model(features)
+        weights = torch.tensor(0.1, requires_grad=True)
+        result = torch.stack([circuit(row, weights) for row in features])
         assert qp.math.get_interface(result) == "torch"
         assert qp.math.shape(result) == (2,)
 

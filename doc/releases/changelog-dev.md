@@ -1061,6 +1061,9 @@
   pulse-level gradient transforms.
   [(#10238)](https://github.com/PennyLaneAI/pennylane/pull/10238)
 
+* The ``pennylane.qnn`` module has been removed, including ``TorchLayer`` and ``iqp_expval``.
+  [(#10247)](https://github.com/PennyLaneAI/pennylane/pull/10247)
+
 * :class:`~.QuantumPhaseEstimation` now only accepts an :class:`~.Operator` as the ``unitary``, and the
   ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
   To use a unitary matrix, wrap it in a :class:`~.QubitUnitary`:
