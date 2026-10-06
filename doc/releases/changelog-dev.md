@@ -614,8 +614,9 @@
 <h3>Improvements 🛠</h3>
 
 * A :class:`~.Controller` now takes the size of its messages in each direction, with the
-  ``in_bytes`` and ``out_bytes`` keyword arguments. Both default to 8, and the ``"memcpy"``
-  transport carries any size.
+  ``in_bytes`` and ``out_bytes`` keyword arguments. Both default to 8. The ``"memcpy"`` transport
+  carries messages of any size to a CPU coprocessor, and up to 8 bytes to a GPU coprocessor running
+  a persistent kernel. The ``"rdma"`` transport carries up to 8 bytes.
 
   .. code-block:: python
 
