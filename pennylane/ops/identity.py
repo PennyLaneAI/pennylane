@@ -420,7 +420,7 @@ def _ctrl_g_phase(base: GlobalPhase, control, control_values, *_):
     r"""
     Custom controlled global phase dispatch.
 
-    Since the phase shift is applied to the target qubit regardless of the target qubit's state,
+    Since the phase shift is applied to the target qubit irregardless of the target qubit's state,
     the phase shift can factor out of the target state entirely.
 
     Then, since the phase shift matrix is:
@@ -441,10 +441,6 @@ def _ctrl_g_phase(base: GlobalPhase, control, control_values, *_):
     if not _is_empty_or_all_true(control_values):
         return NotImplemented
 
-    # The induced phase on the control's |1> state is PhaseShift(-phi). Negating an abstract
-    # parameter does not change its type or shape (and abstract values do not support
-    # arithmetic), so we skip the negation entirely in that case (e.g. during graph-based
-    # resource estimation or program capture).
     phi = base.phi
     if not qp.math.is_abstract(phi) and not isinstance(phi, AbstractArray):
         phi = -phi
