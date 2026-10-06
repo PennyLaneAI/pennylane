@@ -353,7 +353,7 @@ def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> np.ndarray:
     The vector ``[0, 0, 1]`` is not in the span of this basis:
 
     >>> qp.math.binary_is_independent(np.array([0, 0, 1]), basis)
-    True
+    np.True_
 
     We may check multiple vectors at once by stacking them as columns. Here we check
     ``[0, 0, 1]``, ``[1, 1, 1]`` and ``[1, 0, 1]``, of which only the first is independent
