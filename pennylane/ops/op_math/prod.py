@@ -31,6 +31,7 @@ from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply, remove_from_program
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.typing import TensorLike, Wire
+from pennylane.wires import Wires
 
 from .adjoint2 import _adjoint_abstract
 from .composite import CompositeOp, handle_recursion_error
@@ -316,11 +317,14 @@ class Prod(CompositeOp):
             return self.pauli_rep.to_mat(wire_order=wire_order or self.wires)
 
         mats: list[TensorLike] = []
+        mats_wires: list[Wires] = []  # mats_wires[i] stores the wires mats[i] acts on
         batched: list[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
             gen = ((op.matrix(), op.wires) for op in ops)
 
-            reduced_mat, _ = math.reduce_matrices(gen, reduce_func=math.matmul)
+            reduced_mat, reduced_wires = math.reduce_matrices(gen, reduce_func=math.matmul)
+            # Record the wires the reduced matrix of this batch of overlapping ops acts on
+            mats_wires.append(reduced_wires)
 
             if self.batch_size is not None:
                 batched.append(any(op.batch_size is not None for op in ops))
@@ -340,7 +344,11 @@ class Prod(CompositeOp):
                     for i in range(self.batch_size)
                 ]
             )
-        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
+        # Combine the wires of all matrices to the wires that full_mat acts on (order is preserved)
+        full_wires = Wires.all_wires(mats_wires)
+        # Even if no wire_order is given, we need to map from full_wires to self.wires
+        wire_order = wire_order or self.wires
+        return math.expand_matrix(full_mat, full_wires, wire_order=wire_order)
 
     @handle_recursion_error
     def sparse_matrix(self, wire_order=None, format="csr"):
