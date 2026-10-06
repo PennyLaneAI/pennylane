@@ -72,7 +72,7 @@ from .parametric_ops_multi_qubit import (
     CPhaseShift01,
     CPhaseShift10,
 )
-from .parametric_ops_single_qubit import RX, RY, RZ, RQang, PhaseShift, Rot, U1, U2, U3
+from .parametric_ops_single_qubit import RX, RY, RZ, RYQang, PhaseShift, Rot, U1, U2, U3
 from .qchem_ops import (
     SingleExcitation,
     SingleExcitationPlus,
@@ -109,7 +109,7 @@ __ops__ = {
     "SQISW",
     "PSWAP",
     "ECR",
-    "RQang",
+    "RYQang",
     "RX",
     "RY",
     "RZ",

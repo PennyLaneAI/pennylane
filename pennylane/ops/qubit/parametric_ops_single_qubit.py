@@ -486,7 +486,7 @@ def _controlled_ry_decomp(base, control_wires, control_values, work_wires, work_
 add_decomps("C(RY)", flip_zero_control2(_controlled_ry_decomp))
 
 
-class RQang(Operator2):
+class RYQang(Operator2):
     r"""Quantum angular rotation parameterized by a :math:`\langle Z \rangle`-like expectation value.
 
     This operation is mathematically equivalent to a :class:`~.RY` rotation by
@@ -494,7 +494,7 @@ class RQang(Operator2):
 
     .. math::
 
-        \operatorname{RQang}(qg_z) = R_y(\arccos(qg_z))
+        \operatorname{RYQang}(qg_z) = R_y(\arccos(qg_z))
         = \begin{bmatrix}
             \sqrt{\tfrac{1+qg_z}{2}} & -\sqrt{\tfrac{1-qg_z}{2}} \\[4pt]
             \sqrt{\tfrac{1-qg_z}{2}} & \sqrt{\tfrac{1+qg_z}{2}}
@@ -522,7 +522,7 @@ class RQang(Operator2):
     **Example**
 
     >>> import pennylane as qp
-    >>> op = qp.qang.RQang(0.5, wires=0)
+    >>> op = qp.qang.RYQang(0.5, wires=0)
     >>> op.matrix()
     array([[ 0.8660254+0.j, -0.5      -0.j],
            [ 0.5      +0.j,  0.8660254+0.j]])
@@ -547,7 +547,7 @@ class RQang(Operator2):
     def __init__(self, qg_z: "TensorLike", wires: "WiresLike"):
         if not isinstance(qg_z, AbstractArray) and not qp.math.is_abstract(qg_z):
             if qp.math.any(qp.math.asarray(qg_z) < -1) or qp.math.any(qp.math.asarray(qg_z) > 1):
-                raise ValueError(f"RQang: parameter qg_z must lie in [-1, 1], got {qg_z}.")
+                raise ValueError(f"RYQang: parameter qg_z must lie in [-1, 1], got {qg_z}.")
         super().__init__(qg_z, wires=wires)
 
     @staticmethod
@@ -558,7 +558,7 @@ class RQang(Operator2):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.RQang.matrix`
+        .. seealso:: :meth:`~.RYQang.matrix`
 
         Args:
             qg_z (tensor_like or float): expectation-like scalar in :math:`[-1, 1]`
@@ -568,7 +568,7 @@ class RQang(Operator2):
 
         **Example**
 
-        >>> qp.qang.RQang.compute_matrix(0.5)
+        >>> qp.qang.RYQang.compute_matrix(0.5)
         array([[ 0.8660254+0.j, -0.5      -0.j],
                [ 0.5      +0.j,  0.8660254+0.j]])
         """
@@ -585,16 +585,16 @@ class RQang(Operator2):
 
 
 # pylint: disable=unused-argument
-def _rqang_to_ry_resources(qg_z, wires):
+def _RYQang_to_ry_resources(qg_z, wires):
     return {RY: 1}
 
 
-@register_resources(_rqang_to_ry_resources)
-def _rqang_to_ry(qg_z, wires: "WiresLike"):
+@register_resources(_RYQang_to_ry_resources)
+def _RYQang_to_ry(qg_z, wires: "WiresLike"):
     RY(qp.math.arccos(qg_z), wires=wires)
 
 
-add_decomps(RQang, _rqang_to_ry)
+add_decomps(RYQang, _RYQang_to_ry)
 
 
 class RZ(Operator2):

@@ -3910,54 +3910,54 @@ def test_op_aliases_are_valid():
 
 
 # ============================================================
-# Tests for RQang
+# Tests for RYQang
 # ============================================================
 
 
-class TestRQang:
-    """Tests for the RQang operation."""
+class TestRYQang:
+    """Tests for the RYQang operation."""
 
     # ------------------------------------------------------------------
     # Matrix equivalence
     # ------------------------------------------------------------------
 
     @pytest.mark.parametrize("qg_z", [-1.0, -0.5, 0.0, 0.5, 1.0])
-    def test_rqang_matrix_matches_ry(self, qg_z, tol):
-        """RQang matrix must equal RY(arccos(qg_z)) for all valid inputs."""
-        op = qp.qang.RQang(qg_z, wires=0)
+    def test_RYQang_matrix_matches_ry(self, qg_z, tol):
+        """RYQang matrix must equal RY(arccos(qg_z)) for all valid inputs."""
+        op = qp.qang.RYQang(qg_z, wires=0)
         theta = np.arccos(qg_z)
         expected = qp.RY.compute_matrix(theta)
         assert np.allclose(op.matrix(), expected, atol=tol)
 
     @pytest.mark.parametrize("qg_z", [-1.0, -0.5, 0.0, 0.5, 1.0])
-    def test_rqang_compute_matrix_matches_ry(self, qg_z, tol):
-        """RQang.compute_matrix must equal RY(arccos(qg_z))."""
+    def test_RYQang_compute_matrix_matches_ry(self, qg_z, tol):
+        """RYQang.compute_matrix must equal RY(arccos(qg_z))."""
         theta = np.arccos(qg_z)
         expected = qp.RY.compute_matrix(theta)
-        result = qp.qang.RQang.compute_matrix(qg_z)
+        result = qp.qang.RYQang.compute_matrix(qg_z)
         assert np.allclose(result, expected, atol=tol)
 
     # ------------------------------------------------------------------
     # Decomposition
     # ------------------------------------------------------------------
 
-    def test_rqang_decomposition_single_ry(self):
+    def test_RYQang_decomposition_single_ry(self):
         """Decomposition should contain exactly one RY gate."""
-        op = qp.qang.RQang(0.5, wires=0)
+        op = qp.qang.RYQang(0.5, wires=0)
         decomp = op.decomposition()
         assert len(decomp) == 1
         assert isinstance(decomp[0], qp.RY)
 
-    def test_rqang_decomposition_correct_angle(self, tol):
+    def test_RYQang_decomposition_correct_angle(self, tol):
         """Decomposed RY angle should equal arccos(qg_z)."""
         qg_z = 0.5
-        op = qp.qang.RQang(qg_z, wires=0)
+        op = qp.qang.RYQang(qg_z, wires=0)
         decomp = op.decomposition()
         assert np.isclose(float(decomp[0].parameters[0]), np.arccos(qg_z), atol=tol)
 
-    def test_rqang_decomposition_correct_wire(self):
-        """Decomposed RY should act on the same wire as RQang."""
-        op = qp.qang.RQang(0.3, wires=2)
+    def test_RYQang_decomposition_correct_wire(self):
+        """Decomposed RY should act on the same wire as RYQang."""
+        op = qp.qang.RYQang(0.3, wires=2)
         decomp = op.decomposition()
         assert decomp[0].wires == qp.wires.Wires([2])
 
@@ -3966,15 +3966,15 @@ class TestRQang:
     # ------------------------------------------------------------------
 
     @pytest.mark.parametrize("qg_z", [-1.1, -2.0, 1.5, 100.0])
-    def test_rqang_rejects_out_of_range(self, qg_z):
-        """RQang must raise ValueError for |qg_z| > 1."""
+    def test_RYQang_rejects_out_of_range(self, qg_z):
+        """RYQang must raise ValueError for |qg_z| > 1."""
         with pytest.raises(ValueError, match="qg_z must lie in \\[-1, 1\\]"):
-            qp.qang.RQang(qg_z, wires=0)
+            qp.qang.RYQang(qg_z, wires=0)
 
     @pytest.mark.parametrize("qg_z", [-1.0, 1.0])
-    def test_rqang_accepts_boundary_values(self, qg_z, tol):
-        """RQang must accept the boundary values -1 and 1 without error."""
-        op = qp.qang.RQang(qg_z, wires=0)
+    def test_RYQang_accepts_boundary_values(self, qg_z, tol):
+        """RYQang must accept the boundary values -1 and 1 without error."""
+        op = qp.qang.RYQang(qg_z, wires=0)
         # Sanity-check the matrix is well-formed (real, unitary)
         mat = op.matrix()
         assert mat.shape == (2, 2)
@@ -3984,21 +3984,21 @@ class TestRQang:
     # Operator metadata
     # ------------------------------------------------------------------
 
-    def test_rqang_num_params(self):
-        """RQang must have exactly one parameter."""
-        assert qp.qang.RQang.num_params == 1
+    def test_RYQang_num_params(self):
+        """RYQang must have exactly one parameter."""
+        assert qp.qang.RYQang.num_params == 1
 
-    def test_rqang_num_wires(self):
-        """RQang must act on exactly one wire."""
-        assert qp.qang.RQang.num_wires == 1
+    def test_RYQang_num_wires(self):
+        """RYQang must act on exactly one wire."""
+        assert qp.qang.RYQang.num_wires == 1
 
-    def test_rqang_ndim_params(self):
-        """RQang parameters must be scalar (ndim=0)."""
-        assert qp.qang.RQang.ndim_params == (0,)
+    def test_RYQang_ndim_params(self):
+        """RYQang parameters must be scalar (ndim=0)."""
+        assert qp.qang.RYQang.ndim_params == (0,)
 
-    def test_rqang_parameter_shape(self):
+    def test_RYQang_parameter_shape(self):
         """The stored parameter value should match the supplied scalar."""
-        op = qp.qang.RQang(0.3, wires=0)
+        op = qp.qang.RYQang(0.3, wires=0)
         assert len(op.parameters) == 1
         assert np.isclose(float(op.parameters[0]), 0.3)
 
@@ -4006,35 +4006,35 @@ class TestRQang:
     # Public API accessibility
     # ------------------------------------------------------------------
 
-    def test_rqang_accessible_via_qang_namespace(self):
-        """qp.qang.RQang must be the same class as the one in ops.qubit."""
+    def test_RYQang_accessible_via_qang_namespace(self):
+        """qp.qang.RYQang must be the same class as the one in ops.qubit."""
         from pennylane import qang  # noqa: PLC0415 # pylint: disable=redefined-outer-name
 
-        assert qang.RQang is qp.ops.qubit.RQang
-        assert qp.qang.RQang is qp.ops.qubit.RQang
+        assert qang.RYQang is qp.ops.qubit.RYQang
+        assert qp.qang.RYQang is qp.ops.qubit.RYQang
 
-    def test_rqang_accessible_via_ops_qubit(self):
-        """RQang must be importable from pennylane.ops.qubit."""
-        from pennylane.ops.qubit import RQang  # noqa: PLC0415
+    def test_RYQang_accessible_via_ops_qubit(self):
+        """RYQang must be importable from pennylane.ops.qubit."""
+        from pennylane.ops.qubit import RYQang  # noqa: PLC0415
 
-        assert RQang is qp.qang.RQang
+        assert RYQang is qp.qang.RYQang
 
     # ------------------------------------------------------------------
     # Operator validation & execution
     # ------------------------------------------------------------------
 
-    def test_rqang_assert_valid(self):
-        """RQang passes the standard assert_valid operator checks."""
-        op = qp.qang.RQang(0.4, wires=0)
+    def test_RYQang_assert_valid(self):
+        """RYQang passes the standard assert_valid operator checks."""
+        op = qp.qang.RYQang(0.4, wires=0)
         qp.ops.functions.assert_valid(op)
 
-    def test_rqang_circuit_execution(self, tol):
-        """RQang executes correctly in a quantum circuit on default.qubit."""
+    def test_RYQang_circuit_execution(self, tol):
+        """RYQang executes correctly in a quantum circuit on default.qubit."""
         dev = qp.device("default.qubit", wires=1)
 
         @qp.qnode(dev)
-        def circuit_rqang(qg_z):
-            qp.qang.RQang(qg_z, wires=0)
+        def circuit_RYQang(qg_z):
+            qp.qang.RYQang(qg_z, wires=0)
             return qp.expval(qp.PauliZ(0))
 
         @qp.qnode(dev)
@@ -4043,17 +4043,17 @@ class TestRQang:
             return qp.expval(qp.PauliZ(0))
 
         qg_z = 0.6
-        res_rqang = circuit_rqang(qg_z)
+        res_RYQang = circuit_RYQang(qg_z)
         res_ry = circuit_ry(np.arccos(qg_z))
-        assert np.isclose(res_rqang, res_ry, atol=tol)
+        assert np.isclose(res_RYQang, res_ry, atol=tol)
 
-    def test_rqang_gradient(self, tol):
-        """RQang can be differentiated via standard gradients."""
+    def test_RYQang_gradient(self, tol):
+        """RYQang can be differentiated via standard gradients."""
         dev = qp.device("default.qubit", wires=1)
 
         @qp.qnode(dev)
         def circuit(qg_z):
-            qp.qang.RQang(qg_z, wires=0)
+            qp.qang.RYQang(qg_z, wires=0)
             return qp.expval(qp.PauliZ(0))
 
         # Expected derivative:

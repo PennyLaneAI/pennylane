@@ -2,9 +2,9 @@
 
 <h3>New features since last release</h3>
 
-* A new operation :class:`pennylane.qang.RQang` has been added, exposing a single-qubit Y-rotation
+* A new operation :class:`pennylane.qang.RYQang` has been added, exposing a single-qubit Y-rotation
   parameterized by a Pauli-Z expectation-value-like scalar :math:`qg_z \in [-1, 1]`. Mathematically
-  it is equivalent to :math:`R_y(\arccos(qg_z))` and is accessible as ``qml.qang.RQang``.
+  it is equivalent to :math:`R_y(\arccos(qg_z))` and is accessible as ``qml.qang.RYQang``.
   [(#10171)](https://github.com/PennyLaneAI/pennylane/pull/10171)
 
 * Added a `qp.math.floor_log2` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
