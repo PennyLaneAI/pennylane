@@ -123,11 +123,7 @@ def resources_from_analysis_pass(
         level = [level]
     max_level = max(level)
 
-    # Only "device" level still needs user pipeline to run
-    if max_level == -1:
-        max_level = len(iter_pipeline)
-
-    max_legal_level = len(iter_pipeline)
+    max_legal_level = len(iter_pipeline) + 1
     fname_to_level = {}
 
     if max_level > max_legal_level:
@@ -167,10 +163,11 @@ def resources_from_analysis_pass(
                     output_json=True, output_fname=fname
                 )
 
-        if -1 in level:
+        # The Max Legal Level is the device level
+        if max_legal_level in level:
             fname = f"{fname_prefix}device.json"
-            fname_to_level[fname] = -1
-            level_to_name[-1] = "Device"
+            fname_to_level[fname] = max_legal_level
+            level_to_name[max_legal_level] = "Device Preprocessing"
             new_post_device_pipeline += transform(pass_name="resource-analysis")(
                 output_json=True, output_fname=fname
             )

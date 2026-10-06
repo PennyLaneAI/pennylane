@@ -124,7 +124,7 @@ def preprocess_level_input(
     marker_to_level = get_marker_level_map(compile_pipeline)
 
     # Account for "Before MLIR passes" level
-    total_levels = len(compile_pipeline) + 1
+    total_user_levels = len(compile_pipeline) + 1
 
     # Explicitly deny old level shorthands
     if level in ("gradient", "all-mlir"):
@@ -133,8 +133,9 @@ def preprocess_level_input(
     default_level_map = {
         "top": [0],
         "user": [len(compile_pipeline)],
-        "all": list(range(0, total_levels)),
-        "device": [-1],
+        "device": [len(compile_pipeline) + 1],
+        "all": list(range(0, total_user_levels + 1)),
+        "all-user": list(range(0, total_user_levels)),
     }
     if isinstance(level, str) and level in default_level_map:
         return default_level_map[level]
@@ -159,8 +160,8 @@ def preprocess_level_input(
             if lvl not in marker_to_level:
                 raise ValueError(f"Marker name '{lvl}' not found in the compile pipeline.")
             level[i] = marker_to_level[lvl]
-        elif isinstance(lvl, int) and not isinstance(lvl, bool):
-            if lvl < 0 or lvl >= total_levels:
+        elif isinstance(lvl, int):
+            if lvl < 0 or lvl >= total_user_levels:
                 raise ValueError(
                     f"The 'level' argument for QJIT'd QNodes is out of bounds, got {lvl}."
                 )
