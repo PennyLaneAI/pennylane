@@ -19,6 +19,7 @@ Generates parametrizations of operators to test in test_assert_valid.py.
 
 from inspect import getmembers, isclass
 
+import jax
 import numpy as np
 import pytest
 
@@ -88,7 +89,10 @@ _INSTANCES_TO_TEST = [
     (qp.PPR(2, "XYZ", wires=[0, 1, 2]), {}),
     (qp.StatePrep([0, 1], 0), {"skip_differentiation": True}),
     (qp.PCPhase(0.27, dim=2, wires=[0, 1]), {}),
-    (qp.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]), {"skip_differentiation": True}),
+    (
+        qp.BlockEncode(jax.numpy.array([[0.1, 0.2], [0.3, 0.4]]), wires=[0, 1]),
+        {"skip_differentiation": True},
+    ),
     (qp.adjoint(qp.PauliX(0)), {}),
     (qp.adjoint(qp.RX(1.1, 0)), {}),
     (

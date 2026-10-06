@@ -695,9 +695,10 @@ def _assert_valid_operator2(
     # arguments rather than dynamic arguments, so their ``data`` does not correspond to
     # ``dynamic_argnames`` and this check does not apply.
     # pylint: disable=import-outside-toplevel
+    from pennylane.templates.subroutines.qsvt import QSVT
     from pennylane.templates.subroutines.select import Select
 
-    if not isinstance(op, (Adjoint2, CompositeOp2, ControlledOp2, Pow2, Select)):
+    if not isinstance(op, (Adjoint2, CompositeOp2, ControlledOp2, Pow2, Select, QSVT)):
 
         error_msg = "ndim_params must have the same length as dynamic_argnames"
         assert len(op.ndim_params) == len(op.dynamic_argnames), error_msg
