@@ -1720,6 +1720,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the 
+  output matrix was with respect to a wrong wire ordering. The bug occurred in products where
+  groups of factors with overlapping wires caused a partial matrix with permuted wires, 
+  e.g. ``H(1) @ H(0) @ CNOT([2, 1]) @ CNOT([1, 0])``.
+  [(#10274)](https://github.com/PennyLaneAI/pennylane/pull/10274)
+
 * :class:`~.SpecialUnitary` no longer raises an error when acting on more than five wires with
   broadcasted parameters.
   [(#10253)](https://github.com/PennyLaneAI/pennylane/pull/10253)
