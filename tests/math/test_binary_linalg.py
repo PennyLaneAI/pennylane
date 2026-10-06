@@ -453,7 +453,8 @@ class TestBinaryIsIndependent:
         assert math.binary_matrix_rank(basis) == min(basis.shape)
 
         is_indep = math.binary_is_independent(vector, basis)
-        assert is_indep is expected
+        assert is_indep in (np.True_, np.False_)
+        assert bool(is_indep) is expected
 
     def test_rank_deficient_basis(self):
         """Test that a rank-deficient basis yields False for any vector, since adding

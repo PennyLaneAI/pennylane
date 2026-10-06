@@ -323,7 +323,7 @@ def binary_solve_linear_system(A: np.ndarray, b: np.ndarray) -> np.ndarray:
     return rref[:, -1]
 
 
-def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> bool | np.ndarray:
+def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> np.ndarray:
     r"""Check whether a binary vector, i.e., a bitstring, is
     linearly independent (over :math:`\mathbb{Z}_2`) of a basis of binary vectors, given as column
     vectors of a matrix.
@@ -336,9 +336,9 @@ def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> bool | np.nd
             all need to be linearly independent.
 
     Returns:
-        bool or np.ndarray: Whether ``vector`` is linearly independent of ``basis`` over
-        :math:`\mathbb{Z}_2`. For a single vector, a ``bool`` is returned, for ``k`` vectors,
-        a boolean array of shape ``(k,)`` is returned.
+        np.ndarray: Whether ``vector`` is linearly independent of ``basis`` over
+        :math:`\mathbb{Z}_2`. This is always a boolean array; for a single vector, it is of shape
+        ``()``, for ``k`` vectors it is of shape ``(k,)``.
 
     .. warning::
 
@@ -394,7 +394,7 @@ def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> bool | np.nd
     residual = vectors ^ ((vectors[:, pivot_cols] @ pivot_rows) % 2)
 
     independent = np.any(residual, axis=1)
-    return independent if batched else bool(independent[0])
+    return independent if batched else independent[0]
 
 
 def binary_select_basis(bitstrings: np.ndarray):
