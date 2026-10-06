@@ -640,7 +640,7 @@
   [(#10055)](https://github.com/PennyLaneAI/pennylane/pull/10055)
 
 * :func:`~.iterative_qpe` is now captured as a single :func:`~.capture.subroutine` instead of
-  falling back to an unrolled ``qp.for_loop``. 
+  falling back to an unrolled ``qp.for_loop``.
   [(#10220)](https://github.com/PennyLaneAI/pennylane/pull/10220)
 
 * Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
@@ -1063,7 +1063,7 @@
   [(#10246)](https://github.com/PennyLaneAI/pennylane/pull/10246)
 
 <h3>Breaking changes 💔</h3>
-  
+
 * Tensorflow and tensorflow-autograph interfaces are removed.
   [(#10229)](https://github.com/PennyLaneAI/pennylane/pull/10229)
 
@@ -1176,6 +1176,12 @@
 
 * The :class:`pennylane.resource.Resources`, :class:`~.ResourceOperator`, and :class:`~.ErrorOperator` classes as well as the entire :mod:`pennylane.resource.error` module have been removed.
   [(#9786)](https://github.com/PennyLaneAI/pennylane/pull/9786)
+
+* Support for tapes and tape transforms has been removed from :func:`~.specs`.
+  This means that the options ``level="gradient"`` and ``level="all-mlir"`` are no longer supported.
+  To continue collecting resources from non-``qjit``'d qnodes, please see the :func:`~.resource.resources_from_tape` function.
+  The :meth:`QuantumScript.specs` function has also been removed.
+  [(#9988)](https://github.com/PennyLaneAI/pennylane/pull/9988)
 
 * Plxpr transforms and associated infrastructure have been removed.
   [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
@@ -1401,7 +1407,7 @@
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
       :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.QuantumPhaseEstimation`, :class:`~.IQP`,
-      :class:`~.QSVT`, :class:`~.BlockEncode`
+      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#10164)](https://github.com/PennyLaneAI/pennylane/pull/10164)
   [(#10178)](https://github.com/PennyLaneAI/pennylane/pull/10178)
@@ -1436,6 +1442,7 @@
   [(#10223)](https://github.com/PennyLaneAI/pennylane/pull/10223)
   [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
   [(#10226)](https://github.com/PennyLaneAI/pennylane/pull/10226)
+  [(#10267)](https://github.com/PennyLaneAI/pennylane/pull/10267)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1678,6 +1685,9 @@
   [(#10019)](https://github.com/PennyLaneAI/pennylane/pull/10019)
 
 <h3>Documentation 📝</h3>
+
+* The dependency versions in the developer installation guide now match `pyproject.toml`, and a rendering issue in the list of optional dependencies was fixed.
+  [(#10232)](https://github.com/PennyLaneAI/pennylane/pull/10232)
 
 * Fixed four incorrect links that referred to hardcoded `blob/master/` URLs by replacing them with relative paths.
   [(#10211)](https://github.com/PennyLaneAI/pennylane/pull/10211)
@@ -1963,6 +1973,7 @@ Jay Soni,
 Paul Haochen Wang,
 Dennis Wayo,
 David Wierichs,
+Ziqi Xu,
 Jake Zaia,
 Hongsheng Zheng,
 Zinan Zhou.

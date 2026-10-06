@@ -24,7 +24,7 @@ import warnings
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Any, ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar
 
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operation, Operator, Operator2, StatePrepBase
@@ -180,7 +180,6 @@ class QuantumScript:
 
         self._trainable_params = trainable_params
         self._graph = None
-        self._specs = None
         self._batch_size = _UNSET_BATCH_SIZE
 
         self._obs_sharing_wires = None
@@ -410,7 +409,6 @@ class QuantumScript:
     def _update(self):
         """Update all internal metadata regarding processed operations and observables"""
         self._graph = None
-        self._specs = None
         self._trainable_params = None
 
         try:
@@ -936,40 +934,6 @@ class QuantumScript:
             )
 
         return self._graph
-
-    @property
-    def specs(self) -> dict[str, Any]:
-        """Resource information about a quantum circuit.
-
-        Returns:
-            dict[str, Any]: A dictionary containing the specifications of the quantum script.
-
-        **Example**
-         >>> ops = [qp.Hadamard(0), qp.RX(0.26, 1), qp.CNOT((1,0)),
-         ...         qp.Rot(1.8, -2.7, 0.2, 0), qp.Hadamard(1), qp.CNOT((0, 1))]
-         >>> qscript = QuantumScript(ops, [qp.expval(qp.Z(0) @ qp.Z(1))])
-
-        Asking for the specs produces a dictionary of useful information about the circuit.
-        Note that this may return slightly different information than running :func:`~.pennylane.specs` on
-        a qnode directly.
-
-        >>> from pprint import pprint
-        >>> pprint(qscript.specs['resources'])
-        SpecsResources(counts={'CNOT': 2, 'Hadamard': 2, 'RX': 1, 'Rot': 1},
-                       measurement_processes={'expval(Prod(num_wires=2, num_terms=2))': 1},
-                       num_wires=2,
-                       circuit_depth=4,
-                       total_quantum_operations=6)
-        """
-        if self._specs is None:
-            # pylint: disable=import-outside-toplevel # tach-ignore
-            from pennylane.resource.resource import (
-                resources_from_tape,
-            )
-
-            resources = resources_from_tape(self)
-            self._specs = {"resources": resources, "shots": self.shots}
-        return self._specs
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     def draw(
