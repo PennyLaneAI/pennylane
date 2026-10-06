@@ -931,17 +931,18 @@ def _controlled_phase_shift_resource(base, control_wires, *_, **__):
     return resources
 
 
-# The phase-polynomial expansion below has ``2 ** (num_control_wires + 1) - 1`` terms. It is only
-# worth offering for a moderate number of control wires: from ten control wires on, the
-# decomposition graph prefers the decomposition that distributes the control over ``PhaseShift``'s
-# own rule (polynomial in the number of control wires), even when ``PauliRot`` is in the gate set
-# (10 controls: 1336 gates vs 2048). Not offering the expansion past that point therefore does not
-# change what the graph picks, but it stops consumers that materialize every candidate rule of an
-# operator, e.g. ``qjit`` with program capture, from building rules with ~2**n terms.
+# The phase-polynomial decomposition creates 2^(n+1) - 1 gates, which explodes for large n.
+# Past ~10 control wires, PennyLane's decomposition graph already prefers the polynomial PhaseShift
+# rule over PauliRot (e.g., 1,336 gates vs 2,048 at 10 controls).
+#
+# Capping this rule at 10 controls doesn't affect graph selection, but it prevents compilers
+# like `qjit` (with program capture) from generating millions of useless terms.
 _MAX_PHASE_POLYNOMIAL_CONTROL_WIRES = 9
 
 
-def _controlled_phase_shift_condition(base, control_wires, *_, **__):  # pylint: disable=unused-argument
+def _controlled_phase_shift_condition(
+    base, control_wires, *_, **__
+):  # pylint: disable=unused-argument
     return len(control_wires) <= _MAX_PHASE_POLYNOMIAL_CONTROL_WIRES
 
 
