@@ -15,22 +15,19 @@
 Tests for the SemiAdder template.
 """
 
+from collections import Counter
 from functools import partial
 
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops import CNOT, adjoint
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.semi_adder import (
-    _controlled_semi_adder,
     _effective_skip_input_pos,
     _semi_adder,
     _semi_adder_resources,
 )
-from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
-from pennylane.typing import Wire
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -159,9 +156,11 @@ class TestSemiAdder:
         names = [op.name for op in adder_decomposition]
 
         # Example in Fig 1.  https://arxiv.org/pdf/1709.06648
-        assert names.count("TemporaryAND") == 4
-        assert names.count("Adjoint(TemporaryAND)") == 4
-        assert names.count("CNOT") == 21
+        assert names.count("TemporaryAND") == 1
+        assert names.count("LeftFullAdder") == 3
+        assert names.count("RightFullAdder") == 3
+        assert names.count("RightHalfAdder") == 1
+        assert names.count("CNOT") == 2
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("work_wires", [[9, 10, 11], None])
@@ -295,6 +294,7 @@ class TestSemiAdder:
             work_wires_ctrl = None
 
         op = qp.SemiAdder(x_wires, y_wires, work_wires_adder)
+        rule = qp.list_decomps("C(SemiAdder)")[0]
 
         @qp.set_shots(1)
         @qp.qnode(dev)
@@ -305,9 +305,7 @@ class TestSemiAdder:
             qp.BasisState(x_value_bin, x_wires)
             qp.BasisState(y_value_bin, y_wires)
             qp.BasisState(c_value_bin, control_wires)
-            _controlled_semi_adder(
-                op, control_wires, control_values, work_wires_ctrl, work_wire_type="zeroed"
-            )
+            rule(op, control_wires, control_values, work_wires_ctrl, work_wire_type="zeroed")
             return (
                 qp.counts(wires=x_wires),
                 qp.counts(wires=y_wires),
@@ -425,11 +423,9 @@ class TestSemiAdderSkipInputPos:
         with qp.queuing.AnnotatedQueue() as q:
             _semi_adder(x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos)
 
-        names = [op.name for op in qp.tape.QuantumScript.from_queue(q).operations]
+        names = Counter(op.name for op in qp.tape.QuantumScript.from_queue(q).operations)
         resources = _semi_adder_resources(
             x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos
         )
 
-        assert names.count("TemporaryAND") == resources[TemporaryAND]
-        assert names.count("Adjoint(TemporaryAND)") == resources[adjoint(TemporaryAND(Wire[3]))]
-        assert names.count("CNOT") == resources[CNOT]
+        assert names == {op_type.__name__: num for op_type, num in resources.items() if num}

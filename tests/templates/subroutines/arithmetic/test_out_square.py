@@ -21,7 +21,7 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.ops.op_math import Adjoint
+from pennylane.templates.subroutines.arithmetic.adder_blocks import RightHalfAdder
 from pennylane.templates.subroutines.arithmetic.out_square import (
     OutSquare,
     _out_square_with_adder_zeroed,
@@ -379,17 +379,14 @@ class TestOutSquare:
             qp.MultiControlledX(wires=[1, 5], control_values=[False]),
             qp.CNOT(wires=[5, 2]),
             qp.MultiControlledX(wires=[1, 5], control_values=[False]),
-            Adjoint(qp.TemporaryAND(wires=[0, 3, 5])),
-            qp.CNOT(wires=[0, 3]),
+            RightHalfAdder([0, 3, 5]),
             qp.MultiControlledX(wires=[1, 3], control_values=[False]),
             # Sparse adder
             qp.TemporaryAND(wires=[1, 4, 6]),
             qp.TemporaryAND(wires=[6, 3, 5]),
             qp.CNOT(wires=[5, 2]),
-            Adjoint(qp.TemporaryAND(wires=[6, 3, 5])),
-            qp.CNOT(wires=[6, 3]),
-            Adjoint(qp.TemporaryAND(wires=[1, 4, 6])),
-            qp.CNOT(wires=[1, 4]),
+            RightHalfAdder([6, 3, 5]),
+            RightHalfAdder([1, 4, 6]),
             # Subtractor
             qp.MultiX([True, True], [2, 3]),
             qp.SemiAdder([0], [2, 3], [5, 6, 7, 8]),
@@ -418,18 +415,15 @@ class TestOutSquare:
             qp.CNOT(wires=[6, 3]),
             qp.CNOT(wires=[0, 3]),
             qp.MultiControlledX(wires=[2, 6], control_values=[False]),
-            Adjoint(qp.TemporaryAND(wires=[1, 4, 6])),
-            qp.CNOT(wires=[1, 4]),
+            RightHalfAdder([1, 4, 6]),
             qp.MultiControlledX(wires=[2, 4], control_values=[False]),
             qp.ctrl(qp.MultiX([1], [0]), control=[2], control_values=[False]),
             # Sparse adder
             qp.TemporaryAND(wires=[2, 5, 7]),
             qp.TemporaryAND(wires=[7, 4, 6]),
             qp.CNOT(wires=[6, 3]),
-            Adjoint(qp.TemporaryAND(wires=[7, 4, 6])),
-            qp.CNOT(wires=[7, 4]),
-            Adjoint(qp.TemporaryAND(wires=[2, 5, 7])),
-            qp.CNOT(wires=[2, 5]),
+            RightHalfAdder([7, 4, 6]),
+            RightHalfAdder([2, 5, 7]),
             # Subtractor
             qp.MultiX([True, True], [3, 4]),
             qp.SemiAdder([0, 1], [3, 4], [6, 7]),

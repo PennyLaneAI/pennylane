@@ -23,6 +23,7 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.templates.subroutines.arithmetic.adder_blocks import CtrlRightHalfAdder
 from pennylane.templates.subroutines.arithmetic.signed_out_square import (
     OutSquare,
     SignedOutSquare,
@@ -299,8 +300,7 @@ class TestSignedOutSquare:
             qp.ctrl(qp.CNOT([8, 3]), [0], work_wires=[9, 10, 11, 12], work_wire_type="zeroed"),
             qp.ctrl(qp.CNOT([1, 3]), [0], work_wires=[9, 10, 11, 12], work_wire_type="zeroed"),
             qp.X(8),
-            qp.adjoint(qp.TemporaryAND([2, 4, 8])),
-            qp.ctrl(qp.CNOT([2, 4]), [0], work_wires=[9, 10, 11, 12], work_wire_type="zeroed"),
+            CtrlRightHalfAdder([0], [2, 4, 8], [9, 10, 11, 12], "zeroed"),
             qp.X(4),
             qp.MultiX([1], [1]),
             qp.X(3),

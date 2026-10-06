@@ -193,42 +193,42 @@ class SignedOutSquare(_SquareArithmeticOp):
         >>> op = qp.SignedOutSquare(range(3), range(3, 10), range(10, 16), True)
         >>> qp.inspect_decomps(op, "signed_square_from_unsigned_square")
         Decomposition 0 (name: signed_square_from_unsigned_square)
-         0: ──────────────────────────────────────────╭●────────╭●──────────────╭●──────────── ···
-         1: ─╭OutSquare──MultiX(M0)───────╭X────╭●────│──────●╮─├●────╭X────────│───MultiX(M0) ···
-         2: ─├OutSquare─────────────╭●────│─────│─────│───────│─│─────│──────●╮─├●──────────── ···
-         3: ─├OutSquare─────────────│─────│─────│─────│───────│─│─────│───────│─│───────────── ···
-         4: ─├OutSquare─────────────│─────│─────│─────├X──────│─│─────│───────│─│───X───────── ···
-         5: ─├OutSquare─────────────│─────│──╭X─├●────│──────●┤─╰X─╭X─│───────│─│───X───────── ···
-         6: ─├OutSquare──X──────────├●────│──│──│─────│───────│────│──│──────●┤─╰X──X───────── ···
-         7: ─├OutSquare─────────────│─────│──│──│─────│───────│────│──│───────│─────────────── ···
-         8: ─├OutSquare─────────────│─────│──│──│─────│───────│────│──│───────│─────────────── ···
-         9: ─├OutSquare─────────────│─────│──│──│─────│───────│────│──│───────│─────────────── ···
-        10: ─├OutSquare─────────────│─────│──│──╰⊕─╭X─╰●─╭X──⊕╯────│──│───────│─────────────── ···
-        11: ─├OutSquare─────────────╰⊕──X─╰●─╰●────╰●────╰●────────╰●─╰●──X──⊕╯─────────────── ···
-        12: ─├OutSquare─────────────────────────────────────────────────────────────────────── ···
-        13: ─├OutSquare─────────────────────────────────────────────────────────────────────── ···
-        14: ─├OutSquare─────────────────────────────────────────────────────────────────────── ···
-        15: ─╰OutSquare─────────────────────────────────────────────────────────────────────── ···
+         0: ─────────────────────────────────────────────╭●─╭CtrlRightFullAdder────╭CtrlRightHalfAdder ···
+         1: ─╭OutSquare──MultiX(M0)───────╭LeftFullAdder─│──├CtrlRightFullAdder────│────────────────── ···
+         2: ─├OutSquare─────────────╭●────│──────────────│──│──────────────────────├CtrlRightHalfAdder ···
+         3: ─├OutSquare─────────────│─────│──────────────│──│──────────────────────│────────────────── ···
+         4: ─├OutSquare─────────────│─────│──────────────├X─│──────────────────────│────────────────── ···
+         5: ─├OutSquare─────────────│─────├LeftFullAdder─│──├CtrlRightFullAdder────│────────────────── ···
+         6: ─├OutSquare──X──────────├●────│──────────────│──│──────────────────────├CtrlRightHalfAdder ···
+         7: ─├OutSquare─────────────│─────│──────────────│──│──────────────────────│────────────────── ···
+         8: ─├OutSquare─────────────│─────│──────────────│──│──────────────────────│────────────────── ···
+         9: ─├OutSquare─────────────│─────│──────────────│──│──────────────────────│────────────────── ···
+        10: ─├OutSquare─────────────│─────├LeftFullAdder─╰●─├CtrlRightFullAdder────│────────────────── ···
+        11: ─├OutSquare─────────────╰⊕──X─╰LeftFullAdder────╰CtrlRightFullAdder──X─╰CtrlRightHalfAdder ···
+        12: ─├OutSquare─────────────────────────────────────────────────────────────────────────────── ···
+        13: ─├OutSquare─────────────────────────────────────────────────────────────────────────────── ···
+        14: ─├OutSquare─────────────────────────────────────────────────────────────────────────────── ···
+        15: ─╰OutSquare─────────────────────────────────────────────────────────────────────────────── ···
         <BLANKLINE>
-         0: ··· ─╭SemiAdder────┤
-         1: ··· ─│─────────────┤
-         2: ··· ─│─────────────┤
-         3: ··· ─│─────────────┤
-         4: ··· ─├SemiAdder──X─┤
-         5: ··· ─├SemiAdder──X─┤
-         6: ··· ─│─────────────┤
-         7: ··· ─│─────────────┤
-         8: ··· ─│─────────────┤
-         9: ··· ─│─────────────┤
-        10: ··· ─├SemiAdder────┤
-        11: ··· ─├SemiAdder────┤
-        12: ··· ─├SemiAdder────┤
-        13: ··· ─├SemiAdder────┤
-        14: ··· ─├SemiAdder────┤
-        15: ··· ─╰SemiAdder────┤
+         0: ··· ─────────────╭SemiAdder────┤
+         1: ··· ──MultiX(M0)─│─────────────┤
+         2: ··· ─────────────│─────────────┤
+         3: ··· ─────────────│─────────────┤
+         4: ··· ──X──────────├SemiAdder──X─┤
+         5: ··· ──X──────────├SemiAdder──X─┤
+         6: ··· ──X──────────│─────────────┤
+         7: ··· ─────────────│─────────────┤
+         8: ··· ─────────────│─────────────┤
+         9: ··· ─────────────│─────────────┤
+        10: ··· ─────────────├SemiAdder────┤
+        11: ··· ─────────────├SemiAdder────┤
+        12: ··· ─────────────├SemiAdder────┤
+        13: ··· ─────────────├SemiAdder────┤
+        14: ··· ─────────────├SemiAdder────┤
+        15: ··· ─────────────╰SemiAdder────┤
         M0 =
         [ True]
-        Gate Count: {Adjoint(TemporaryAND): 2, CNOT: 6, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 3, MultiX(AbstractArray((1,), bool, weak_type=True), wires=AbstractWires(1)): 2, OutSquare(x_wires=AbstractWires(2), output_wires=AbstractWires(7), work_wires=AbstractWires(6), output_wires_zeroed=True): 1, PauliX: 8, SemiAdder(x_wires=AbstractWires(1), y_wires=AbstractWires(2), work_wires=AbstractWires(6)): 1, TemporaryAND: 2}
+        Gate Count: {CtrlRightFullAdder(control_wires=AbstractWires(1), wires=AbstractWires(4), work_wires=AbstractWires(4), work_wire_type=zeroed): 1, CtrlRightHalfAdder(control_wires=AbstractWires(1), wires=AbstractWires(3), work_wires=AbstractWires(4), work_wire_type=zeroed): 1, LeftFullAdder: 1, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 1, MultiX(AbstractArray((1,), bool, weak_type=True), wires=AbstractWires(1)): 2, OutSquare(x_wires=AbstractWires(2), output_wires=AbstractWires(7), work_wires=AbstractWires(6), output_wires_zeroed=True): 1, PauliX: 8, SemiAdder(x_wires=AbstractWires(1), y_wires=AbstractWires(2), work_wires=AbstractWires(6)): 1, TemporaryAND: 1}
 
     """
 
