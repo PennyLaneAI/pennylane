@@ -16,6 +16,8 @@ Unit tests for the Prod arithmetic class of qubit operations
 """
 
 # pylint:disable=protected-access, unused-argument
+from functools import reduce
+
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -576,10 +578,10 @@ class TestMatrix:
 
     def test_merged_overlapping_groups(self):
         """Test the matrix when merging overlapping groups reorders the wires relative to
-        ``Prod.wires``."""
+        the wires of the ``Prod`` op, and we need to reorder them back."""
         factors = [qp.Hadamard(1), qp.Hadamard(0), qp.CNOT([2, 1]), qp.CNOT([1, 0])]
         mat = Prod(*factors).matrix(wire_order=[0, 1, 2])
-        expected = qp.matrix(qp.tape.QuantumScript(factors[::-1]), wire_order=[0, 1, 2])
+        expected = reduce(np.matmul, [factor.matrix(wire_order=[0, 1, 2]) for factor in factors])
         assert np.allclose(mat, expected)
 
     def test_prod_ops_multi_terms(self):
