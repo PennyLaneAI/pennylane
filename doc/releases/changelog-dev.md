@@ -1070,7 +1070,8 @@
   [(#10238)](https://github.com/PennyLaneAI/pennylane/pull/10238)
 
 * :class:`~.IQPEmbedding`'s ``pattern`` argument now lists pairs of *indices into* ``wires``,
-  matching :class:`~.IQP`, rather than wire labels. It is a dynamic ``(K, 2)`` integer
+  rather than wire labels. This matches the ``pattern`` argument of :class:`~.IQP`. 
+  It is a dynamic ``(K, 2)`` integer
   tensor. The default all-pairs pattern is unchanged.
   To entangle the first and third of ``wires=["z", "a", "k"]``, pass ``pattern=[[0, 2]]``
   (previously ``pattern=[["z", "k"]]``).
