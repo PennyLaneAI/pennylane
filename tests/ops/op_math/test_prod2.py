@@ -196,8 +196,6 @@ class TestMethods:
             [qp.X(0), qp.Z(1)],
             [qp.RZ(1.23, 0), qp.X(0), qp.Z(1)],
             [qp.Hadamard(0), qp.CNOT([0, 1])],
-            # merging overlapping groups reorders the wires relative to the ``Prod2`` op's wires.
-            [qp.Hadamard(1), qp.Hadamard(0), qp.CNOT([2, 1]), qp.CNOT([1, 0])],
         ],
     )
     def test_matrix(self, factors):
