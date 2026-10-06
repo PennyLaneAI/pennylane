@@ -640,6 +640,17 @@ class QNode:
         """The compile pipeline used by the QNode."""
         return self._compile_pipeline
 
+    @property
+    def post_device_pipeline(self) -> CompilePipeline:
+        """The post-device compile pipeline used by the QNode.
+        
+        .. note::
+            When `qjit` is used to compile the QNode, device-specific transformations are applied after the compile pipeline.
+            The transformations belonging to the `QNode` that need to be **applied after** the device-specific transformations
+            should be added to the post-device compile pipeline.
+        """
+        return self._post_device_pipeline
+
     def update(self, **kwargs) -> QNode:
         """Returns a new QNode instance but with updated settings (e.g., a different `diff_method`). Any settings not specified will retain their original value.
 
@@ -753,11 +764,6 @@ class QNode:
         Args:
             compile_pipeline (CompilePipeline): The new compile pipeline to use.
             post_device_pipeline (CompilePipeline): The new post-device compile pipeline to use.
-
-        .. note::
-            When `qjit` is used to compile the QNode, device-specific transformations are applied after the compile pipeline.
-            The transformations belonging to the `QNode` that need to be **applied after** the device-specific transformations
-            should be added to the post-device compile pipeline.
 
         Returns:
             qnode (QNode): new QNode with updated compile and post-device compile pipelines

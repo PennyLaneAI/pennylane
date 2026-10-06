@@ -117,10 +117,16 @@ def resources_from_analysis_pass(
 
     iter_pipeline = copy.deepcopy(original_qnode._compile_pipeline)
     new_compile_pipeline = CompilePipeline()
+    new_post_device_pipeline = CompilePipeline()
 
     if isinstance(level, int):
         level = [level]
     max_level = max(level)
+
+    # Only "device" level still needs user pipeline to run
+    if max_level == -1:
+        max_level = len(iter_pipeline)
+
     max_legal_level = len(iter_pipeline)
     fname_to_level = {}
 
@@ -161,8 +167,15 @@ def resources_from_analysis_pass(
                     output_json=True, output_fname=fname
                 )
 
-        new_qnode = copy.copy(original_qnode)
-        new_qnode._compile_pipeline = new_compile_pipeline
+        if -1 in level:
+            fname = f"{fname_prefix}device.json"
+            fname_to_level[fname] = -1
+            level_to_name[-1] = "Device"
+            new_post_device_pipeline += transform(pass_name="resource-analysis")(
+                output_json=True, output_fname=fname
+            )
+
+        new_qnode = original_qnode.update_pipelines(new_compile_pipeline, post_device_pipeline=new_post_device_pipeline)
         compile_options = copy.deepcopy(qjit.compile_options)
         compile_options.target = "mlir"
         compile_options.lower_to_llvm = False
