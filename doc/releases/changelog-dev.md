@@ -2,6 +2,51 @@
 
 <h3>New features since last release</h3>
 
+
+* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
+  can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
+  [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
+
+  By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
+  with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
+  resource counts (no symbolic expressions).
+
+  ```python
+  @qp.qjit(capture=True)
+  @qp.qnode(qp.device('lightning.qubit', wires=10))
+  def c(n):
+
+      @qp.hint({"num-iters": 10})
+      @qp.for_loop(n)
+      def hinted_loop(i):
+          qp.X(i)
+
+      hinted_loop()
+
+      @qp.for_loop(n)
+      def unhinted_loop(i):
+          qp.Y(i)
+
+      unhinted_loop()
+
+      return qp.expval(qp.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qp.specs(c, level=0)(5).resources)
+  Symbolic Variables: a
+  Quantum operations:
+  - Total: a + 10
+    - PauliX: 10
+    - PauliY: a
+  Measurement processes:
+  - expval(PauliZ): 1
+  Total wires: 10
+  Circuit Depth: Not computed
+  ```
+  
+  The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
+
 * A new state preparation routine called :class:`~.PhaseGradientStatePrep` has been added, which
   prepares the phase gradient state 
   :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`.
@@ -634,47 +679,6 @@
 * :func:`~.iterative_qpe` is now captured as a single :func:`~.capture.subroutine` instead of
   falling back to an unrolled ``qp.for_loop``. 
   [(#10220)](https://github.com/PennyLaneAI/pennylane/pull/10220)
-
-* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
-  can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
-  [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
-
-  By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
-  with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
-  resource counts (no symbolic expressions).
-
-  ```python
-
-  @qp.qjit(capture=True)
-  @qp.qnode(qp.device('lightning.qubit', wires=1))
-  def c(n):
-
-      @qp.for_loop(n)
-      def loop(i):
-          qp.X(0)
-
-      #  hinted loop
-      qp.hint({"num-iters": 10})(loop)()
-
-      # unhinted loop
-      loop()
-
-      return qp.expval(qp.Z(0))
-  ```
-
-  ```pycon
-  >>> print(qp.specs(c, level=0)(5).resources)
-  Symbolic Variables: a
-  Quantum operations:
-  - Total: a + 10
-    - PauliX: a + 10
-  Measurement processes:
-  - expval(PauliZ): 1
-  Total wires: 1
-  Circuit Depth: Not computed
-  ```
-  
-  The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
 
 * Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
   zeroed work wires are available, reducing their decomposition gate counts.

@@ -163,6 +163,56 @@ def for_loop(
     .. details::
         :title: Usage Details
 
+        **Compiler hints and Resource Profiling:**
+
+        When running resource analysis on a qjit workflow, loops may appear symbolicly,
+
+        >>> s = qp.specs(qp.qjit(circuit, capture=True), level=0)(3, 0.5)
+        >>> print(s.resources)
+        Symbolic Variables: a
+        Quantum operations:
+        - Total: a
+        - RX: a
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
+
+        In this case, :func:`~.hint` can be used indicate the likely number of iterations
+        on the loop:
+
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=1)
+
+            @qp.qnode(dev)
+            def circuit(n: int, x: float):
+
+                @qp.hint({"num-iters": 10})
+                @qp.for_loop(0, n, 1)
+                def loop_rx(i, x):
+                    # perform some work and update (some of) the arguments
+                    qp.RX(x, wires=0)
+
+                    # update the value of x for the next iteration
+                    return jnp.sin(x)
+
+                # apply the for loop
+                final_x = loop_rx(x)
+
+                return qp.expval(qp.Z(0))
+
+        >>> s = qp.specs(qp.qjit(circuit, capture=True), level=0)(3, 0.5)
+        Quantum operations:
+        - Total: 10
+          - RX: 10
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
+
+        **Dynamic Shapes Support:**
+
         .. note::
 
             The following examples may yield different outputs depending on how the

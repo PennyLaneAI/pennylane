@@ -134,11 +134,6 @@ def _stack_to_HintedCallable(f: HintedCallable, hints: dict) -> HintedCallable:
 def hint(hints: dict[str, Any]) -> Callable:
     """Attaches a compiler hint to applicable functionality.
 
-    .. warning::
-        By definition, the :func:`~.qjit` compiler may decide to completely ignore any instances of
-        `hint` in a program; a compiler hint is something that does not affect program correctness,
-        meaning that the compiler _can_ safely ignore them and still provide correct results.
-
     Args:
         `hints` (dict[str, Any]):
             A dictionary containing compiler hint information.
@@ -153,6 +148,10 @@ def hint(hints: dict[str, Any]) -> Callable:
       :func:`~.specs`. See Usage Details for more information.
 
     .. warning::
+
+        By definition, the :func:`~.qjit` compiler may decide to completely ignore any instances of
+        `hint` in a program; a compiler hint is something that does not affect program correctness,
+        meaning that the compiler _can_ safely ignore them and still provide correct results.
 
         While close mispellings may be accepted (e.g., `"num-iter"`), spellings sufficiently far away
         from the target will be ignored.
