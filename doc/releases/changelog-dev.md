@@ -2,6 +2,24 @@
 
 <h3>New features since last release</h3>
 
+* A new state preparation routine called :class:`~.PhaseGradientStatePrep` has been added, which
+  prepares the phase gradient state 
+  :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`.
+  It is a catalytic state for (generalized) rotation gates.
+  See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
+  [(#10227)](https://github.com/PennyLaneAI/pennylane/pull/10227)
+
+  ```pycon
+  import pennylane as qp
+  >>> print(qp.draw(qp.PhaseGradientStatePrep(wires=range(5)).decomposition)())
+  0: ──H──Z─────────┤
+  1: ──H──S†────────┤
+  2: ──H──T†────────┤
+  3: ──H──Rϕ(-0.39)─┤
+  4: ──H──Rϕ(-0.20)─┤
+
+  ```
+
 * Added a `qp.math.floor_log2` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
   in analogy to the existing `qp.math.ceil_log2`.
   [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
@@ -613,6 +631,14 @@
 
 <h3>Improvements 🛠</h3>
 
+* Computing and differentiating the matrix of a :class:`~.SpecialUnitary` acting on more than
+  five wires is now significantly faster.
+  [(#10253)](https://github.com/PennyLaneAI/pennylane/pull/10253)
+
+* :func:`~.math.binary_is_independent` now also accepts multiple vectors, stacked as the columns
+  of a two-dimensional array, and returns a boolean array with one entry per vector.
+  [(#10055)](https://github.com/PennyLaneAI/pennylane/pull/10055)
+
 * :func:`~.iterative_qpe` is now captured as a single :func:`~.capture.subroutine` instead of
   falling back to an unrolled ``qp.for_loop``. 
   [(#10220)](https://github.com/PennyLaneAI/pennylane/pull/10220)
@@ -683,6 +709,12 @@
   using fewer gates than the previous default of naively controlling every gate.
   [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10059)
   [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10015)
+
+* Updated :class:`~.IsingXX`, :class:`~.IsingYY`,
+  :class:`~.IsingXY`, :class:`~.MultiRZ`, :class:`~.PauliRot` and
+  :class:`~.SingleExcitation` to use :func:`~.change_op_basis`, which enables more
+  efficient controlled decompositions.
+  [(#10118)](https://github.com/PennyLaneAI/pennylane/pull/10118)
 
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.
   [(#10017)](https://github.com/PennyLaneAI/pennylane/pull/10017)
@@ -1050,13 +1082,13 @@
   ```
 
   [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
-
-* The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
-  ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
-  ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
-  ``exponential_extrapolate``), and ``from_qiskit_noise``. Noise channels such as
-  :class:`~.AmplitudeDamping` are unaffected.
-  [(#10214)](https://github.com/PennyLaneAI/pennylane/pull/10214)
+  
+* The ``pennylane.qaoa`` module has been removed. This includes the mixer Hamiltonians
+  (``x_mixer``, ``xy_mixer``, ``bit_flip_mixer``), the cost Hamiltonians (``maxcut``,
+  ``max_independent_set``, ``min_vertex_cover``, ``max_clique``, ``max_weight_cycle``,
+  ``bit_driver``, ``edge_driver``), the ansatz layers (``cost_layer``, ``mixer_layer``) and the
+  ``pennylane.qaoa.cycle`` helpers. :class:`~.QAOAEmbedding` is unaffected.
+  [(#10249)](https://github.com/PennyLaneAI/pennylane/pull/10249)
 
 * Removed the ``qp.fourier`` module. This includes ``circuit_spectrum``, ``coefficients``,
   ``qnode_spectrum``, ``mark``, ``get_spectrum``, ``join_spectra`` and the
@@ -1262,6 +1294,13 @@
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
 
 <h3>Internal changes ⚙️</h3>
+
+* Set `qp.decompose`'s `pass_name` to `"graph-decomposition"` to match the new decomposition system in Catalyst.
+  [(#10242)](https://github.com/PennyLaneAI/pennylane/pull/10242)
+
+* Updated the decomposition of :class:`~.SumOfSlatersPrep` to replace a recursive by an iterative
+  helper function to enable tracing it.
+  [(#10055)](https://github.com/PennyLaneAI/pennylane/pull/10055)
 
 * Removes indirection and deferred imports now that jax is always available.
   [(#10198)](https://github.com/PennyLaneAI/pennylane/pull/10198)
@@ -1539,7 +1578,7 @@
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.
     [(#9738)](https://github.com/PennyLaneAI/pennylane/pull/9738)
-  - Integration with ``pennylane.insert``.
+  - Integration with :func:`pennylane.insert`.
     [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
   - Integration with the graph-based decomposition system.
     [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
@@ -1670,6 +1709,10 @@
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
+
+* :class:`~.SpecialUnitary` no longer raises an error when acting on more than five wires with
+  broadcasted parameters.
+  [(#10253)](https://github.com/PennyLaneAI/pennylane/pull/10253)
 
 * Fixed `qp.math.ceil_log2` returning results that were off by one
   for inputs with more significant bits than a float can hold, like `2 ** 53 + 1`.
