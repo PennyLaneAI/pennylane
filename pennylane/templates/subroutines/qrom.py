@@ -52,11 +52,14 @@ def _select_ops(
 
     num_targets_select = depth * num_targets
     new_bitstrings = bitstrings.reshape((num_columns, num_targets_select))
+    # Make sure we do not create a QROM with Select-SWAP option, because that would yield invalid
+    # decompositions.
+    num_work_wires_select = max(0, len(select_control_wires) - 1)
     QROM(
         new_bitstrings,
         control_wires=select_control_wires,
         target_wires=swap_wires[:num_targets_select],
-        work_wires=select_work_wires,
+        work_wires=select_work_wires[:num_work_wires_select],
         clean=False,
     )
 
@@ -332,10 +335,10 @@ def _select_swap_resources(
     num_targets = len(target_wires)
     num_work_wires = len(work_wires)
 
-    num_control_wires_select, num_work_wires_select, _, num_work_wires_cswap, depth = (
-        _calculate_select_swap_sizes(num_bitstrings, num_control_wires, num_targets, num_work_wires)
+    num_control_wires_select, _, _, num_work_wires_cswap, depth = _calculate_select_swap_sizes(
+        num_bitstrings, num_control_wires, num_targets, num_work_wires
     )
-
+    num_work_wires_select = max(0, num_control_wires_select - 1)
     num_columns = int(np.ceil(num_bitstrings / depth))
     # Select block (implemented as a nested QROM over concatenated columns)
     num_targets_select = depth * num_targets
@@ -343,7 +346,7 @@ def _select_swap_resources(
         Int[num_columns, num_targets_select],
         Wire[num_control_wires_select],
         Wire[num_targets_select],
-        Wire[num_work_wires_select - num_work_wires_cswap],
+        Wire[num_work_wires_select],
         False,
     )
 

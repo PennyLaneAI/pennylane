@@ -282,6 +282,26 @@ class TestQROM:
 
         assert np.isclose(circuit()[0], 1.0)
 
+    @pytest.mark.parametrize("work_wires", [[3, 4, 5, 6], [3, 4, 5, 6, 7]])
+    def test_clean_with_excess_select_work_wires(self, work_wires):
+        """Test that the ``clean=True`` Select-SWAP decomposition is correct when the nested Select
+        QROM would have enough work wires to use a Select-SWAP decomposition itself."""
+        bitstrings = [[1], [1], [0]]
+        control_wires = [0, 1]
+        target_wires = [2]
+        dev = qp.device("default.qubit")
+
+        @qp.qnode(dev)
+        def circuit(j):
+            qp.BasisEmbedding(qp.math.int_to_binary(j, len(control_wires)), wires=control_wires)
+            qp.QROM(bitstrings, control_wires, target_wires, work_wires, clean=True)
+            return qp.probs(wires=target_wires), qp.probs(wires=work_wires)
+
+        for j, bitstring in enumerate(bitstrings):
+            target_probs, work_probs = circuit(j)
+            assert np.isclose(target_probs[bitstring[0]], 1.0)
+            assert np.isclose(work_probs[0], 1.0)
+
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
         qrom_decomposition = qp.QROM(
