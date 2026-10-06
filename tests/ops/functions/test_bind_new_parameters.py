@@ -174,24 +174,15 @@ def test_operator_2_ops(op, new_params, expected_op):
     assert new_op is not op
 
 
-class DynThenWiresThenDyn(Operator2):
-    """Dynamic args split by a wire argument in the constructor signature."""
-
-    dynamic_argnames = ("x", "y")
-
-    def __init__(self, x, wires, y):
-        super().__init__(x, wires, y)
-
-
 def test_operator2_dynamic_args_need_not_be_signature_prefix():
     """Dynamic arguments are rebound by name, even if wires sit between them."""
 
-    op = DynThenWiresThenDyn(0.1, 0, 0.2)
-    new_op = bind_new_parameters(op, (0.3, 0.4))
+    op = qp.IQPEmbedding([1.0, 2.0], wires=[0, 1], pattern=[[0, 1]])
+    new_op = bind_new_parameters(op, ([0.0, 0.0], np.array([[0, 1]])))
 
-    assert new_op.arguments["x"] == 0.3
-    assert new_op.arguments["y"] == 0.4
-    assert new_op.wires.labels == (0,)
+    assert qp.math.allclose(new_op.arguments["features"], [0.0, 0.0])
+    assert qp.math.allclose(new_op.arguments["pattern"], [[0, 1]])
+    assert new_op.wires.labels == (0, 1)
     assert new_op is not op
 
 
