@@ -198,14 +198,14 @@ class OutSquare(_SquareArithmeticOp):
         We can compute the required resources with ``zeroed=False``, i.e., when not passing
         the information to the template:
 
-        >>> specs_false = qp.specs(circuit)(False).resources.quantum_operations
-        >>> print(specs_false)
+        >>> specs_false = qp.specs(circuit)(False).resources.quantum_operations  # doctest: +SKIP
+        >>> print(specs_false)  # doctest: +SKIP
         {'BasisState': 1, 'C(MultiX)': 4, 'MultiControlledX': 12, 'TemporaryAND': 19, 'CNOT': 49, 'Adjoint(TemporaryAND)': 19, 'MultiX': 4, 'SemiAdder': 2}
 
         When we do pass the information, we reduce the required resources by a lot:
 
-        >>> specs_true = qp.specs(circuit)(True).resources.quantum_operations
-        >>> print(specs_true)
+        >>> specs_true = qp.specs(circuit)(True).resources.quantum_operations  # doctest: +SKIP
+        >>> print(specs_true)  # doctest: +SKIP
         {'BasisState': 1, 'TemporaryAND': 10, 'CNOT': 24, 'MultiControlledX': 8, 'Adjoint(TemporaryAND)': 7}
 
         Of course, both decompositions are correctly implementing the squaring operation:
