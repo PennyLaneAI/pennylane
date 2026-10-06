@@ -67,7 +67,7 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
         phase_fn (Callable | None): Optional custom phase function
             ``phase_fn(params, bitstring)`` applied as an extra diagonal layer.
             Defaults to ``None``.
-        block_size (int): Controls the memory usage of the generator matrix during the phase 
+        block_size (int): Controls the memory usage of the generator matrix during the phase
             difference computation. Higher block size increases memory usage.
 
     **Example**
