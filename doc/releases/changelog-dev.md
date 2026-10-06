@@ -1727,7 +1727,7 @@
 
 * Fixed :meth:`~.PPR.matrix` raising a ``KeyError`` when the Pauli word contains the identity
   character ``"I"``.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10272)](https://github.com/PennyLaneAI/pennylane/pull/10272)
 
 * Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the
   output matrix was with respect to a wrong wire ordering. The bug occurred in products where
