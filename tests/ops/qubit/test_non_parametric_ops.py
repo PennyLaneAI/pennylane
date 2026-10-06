@@ -1495,7 +1495,18 @@ class TestPPR:
 
     @pytest.mark.parametrize(
         "denominator, pauli_word",
-        [(2, "XYZ"), (-2, "Z"), (4, "XX"), (-4, "YZ"), (8, "Y"), (-8, "ZYZX")],
+        [
+            (2, "XYZ"),
+            (-2, "Z"),
+            (4, "XX"),
+            (-4, "YZ"),
+            (8, "Y"),
+            (-8, "ZYZX"),
+            (4, "XI"),
+            (-8, "YIZ"),
+            (2, "I"),
+            (8, "II"),
+        ],
     )
     def test_compute_matrix_against_pauli_rot(self, denominator, pauli_word):
         """Test PPR.compute_matrix against PauliRot.compute_matrix."""
@@ -1505,7 +1516,7 @@ class TestPPR:
         assert np.allclose(mat_ppr, mat_paulirot)
 
         pw = qp.pauli.PauliWord(dict(enumerate(pauli_word)))
-        wires = list(pw)
+        wires = list(range(len(pauli_word)))
         expected_manual = sp.linalg.expm(
             -1j * np.pi / denominator * qp.matrix(pw, wire_order=wires)
         )
@@ -1518,17 +1529,10 @@ class TestPPRCliffordTDecomposition:
     @pytest.mark.parametrize("denominator", [-8, -4, -2, 2, 4, 8])
     @pytest.mark.parametrize("pauli_word", ["I", "IIX", "XIYZ", "ZIZZ"])
     def test_clifford_t_decomp_with_identities(self, denominator, pauli_word):
-        """Test the Clifford+T rule of PPR on Pauli words with identities, which are not
-        supported by ``PPR.compute_matrix``."""
+        """Test the Clifford+T rule of PPR on Pauli words with identities."""
         rule = qp.list_decomps(qp.PPR)["_ppr_to_clifford_t"]
         op = qp.PPR(denominator, pauli_word, wires=range(len(pauli_word)))
-        _test_decomposition_rule(op, rule, skip_decomp_matrix_check=True)
-
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(**op.arguments)
-        mat = qp.matrix(qp.tape.QuantumScript.from_queue(q), wire_order=op.wires)
-        expected = qp.PauliRot.compute_matrix(2 * np.pi / denominator, pauli_word)
-        assert np.allclose(mat, expected)
+        _test_decomposition_rule(op, rule)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_decompose_to_clifford_t(self):

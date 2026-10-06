@@ -21,7 +21,7 @@ not depend on any parameters.
 import cmath
 from collections import Counter
 from copy import copy
-from functools import lru_cache, reduce
+from functools import lru_cache
 from typing import Literal, override
 from warnings import warn
 
@@ -2242,14 +2242,8 @@ class PPR(Operator2):
         True
 
         """
-        theta = np.pi / angle_denominator * 2
-        multi_Z_rot_matrix = qp.MultiRZ.compute_matrix(theta, list(range(len(pauli_word))))
-
-        # conjugate with Hadamard and RX to create the Pauli string
-        # pylint: disable-next=protected-access
-        conjugation_factors = (qp.PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in pauli_word)
-        conjugation_matrix = reduce(math.kron, conjugation_factors)
-        return math.conj(conjugation_matrix) @ multi_Z_rot_matrix @ conjugation_matrix
+        # PPR(k, P) = exp(-i π/k P) = PauliRot(2π/k, P)
+        return qp.PauliRot.compute_matrix(2 * np.pi / angle_denominator, pauli_word)
 
 
 def _ppr_to_paulirot_resources(pauli_word, **_):
