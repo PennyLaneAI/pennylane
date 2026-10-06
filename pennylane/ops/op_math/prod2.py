@@ -162,6 +162,7 @@ class Prod2(CompositeOp2):
         for ops in self.overlapping_ops:
             gen = ((op.matrix(), op.wires) for op in ops)
             reduced_mat, reduced_wires = math.reduce_matrices(gen, reduce_func=math.matmul)
+            # Record the wires the reduced matrix of this batch of overlapping ops acts on
             mats_wires.append(reduced_wires)
 
             if self.batch_size is not None:
@@ -182,9 +183,12 @@ class Prod2(CompositeOp2):
                     for i in range(self.batch_size)
                 ]
             )
-        return math.expand_matrix(
-            full_mat, Wires.all_wires(mats_wires), wire_order=wire_order or self.wires
-        )
+
+        # Combine the wires of all matrices to the wires that full_mat acts on (order is preserved)
+        full_wires = Wires.all_wires(mats_wires)
+        # Even if no wire_order is given, we need to map from full_wires to self.wires
+        wire_order = wire_order or self.wires
+        return math.expand_matrix(full_mat, full_wires, wire_order=wire_order)
 
     @property
     @handle_recursion_error
