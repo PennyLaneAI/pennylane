@@ -23,6 +23,7 @@ from pennylane import capture, math
 from pennylane.capture import FlatFn, HintedCallable, apply_hint, enabled
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
+from pennylane.capture.hint import process_hints
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 from pennylane.exceptions import CaptureWarning
 
@@ -162,6 +163,56 @@ def for_loop(
     .. details::
         :title: Usage Details
 
+        **Compiler hints and Resource Profiling:**
+
+        When running resource analysis on a qjit workflow, loops may appear symbolically. Calling :func:`~.specs` on the ``circuit`` above, we get
+
+        >>> s = qp.specs(qp.qjit(circuit, capture=True), level=0)(3, 0.5)
+        >>> print(s.resources)
+        Symbolic Variables: a
+        Quantum operations:
+        - Total: a
+        - RX: a
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
+
+        To resolve symbolic expressions directly, :func:`~.hint` can be used indicate the likely number of iterations
+        on the loop:
+
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=1)
+
+            @qp.qnode(dev)
+            def circuit(n: int, x: float):
+
+                @qp.hint({"num-iters": 10})
+                @qp.for_loop(0, n, 1)
+                def loop_rx(i, x):
+                    # perform some work and update (some of) the arguments
+                    qp.RX(x, wires=0)
+
+                    # update the value of x for the next iteration
+                    return jnp.sin(x)
+
+                # apply the for loop
+                final_x = loop_rx(x)
+
+                return qp.expval(qp.Z(0))
+
+        >>> s = qp.specs(qp.qjit(circuit, capture=True), level=0)(3, 0.5)
+        Quantum operations:
+        - Total: 10
+          - RX: 10
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
+
+        **Dynamic Shapes Support:**
+
         .. note::
 
             The following examples may yield different outputs depending on how the
@@ -285,7 +336,8 @@ def for_loop(
             Callable: a callable with the same signature as ``body_fn``
         """
         if isinstance(body_fn, HintedCallable):
-            num_iters_hint = body_fn.hints.get("num-iters", None)
+            hints = process_hints(body_fn.hints, {"num-iters"})
+            num_iters_hint = hints.get("num-iters", None)
             body_fn = body_fn.f
         else:
             num_iters_hint = None
@@ -553,24 +605,16 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         return self._call_capture_disabled(*init_state)
 
 
-def _validate_hints(hints):
-    # this pattern will generalize to more hints better
-    if not all(key == "num-iters" for key in hints):
-        raise ValueError(
-            f"Only num-iters is currently supported as a compiler hint. Got {tuple(hints)}"
-        )
-
-
 @apply_hint.register
 def _apply_hint_to_for_loop(
     f: ForLoopCallable, hints: dict[Literal["num-iters"], Any]
 ) -> ForLoopCallable:
-    _validate_hints(hints)
+    hints = process_hints(hints, {"num-iters"})
     return ForLoopCallable(
         f.start,
         f.stop,
         f.step,
         f.body_fn,
         allow_array_resizing=f.allow_array_resizing,
-        num_iters_hint=hints["num-iters"],
+        num_iters_hint=hints.get("num-iters", None),
     )
