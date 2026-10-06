@@ -174,6 +174,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
         Total wires: 1
         Circuit Depth: Not computed
 
+        **Dynamic Shape Support:**
 
         .. note::
 
