@@ -824,15 +824,32 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
         eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(eqn, qp.IQPEmbedding)
-        assert eqn.invars[:1] == jaxpr.jaxpr.invars
-        assert [invar.val for invar in eqn.invars[1:]] == list(wires)
+        assert eqn.invars[0] == jaxpr.jaxpr.invars[0]
+        assert [invar.val for invar in eqn.invars[2:]] == list(wires)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
         n_repeats_values, _ = eqn.params["n_repeats"]
         assert tuple(n_repeats_values) == (expected_repeats,)
-        pattern_values, _ = eqn.params["pattern"]
-        assert tuple(pattern_values) == tuple(label for pair in expected_pattern for label in pair)
+        assert "pattern" not in eqn.params
+
+        tape = plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, features)
+        assert qp.math.allclose(tape.operations[0].arguments["pattern"], expected_pattern)
+
+    def test_iqp_embedding_traced_pattern(self):
+        """A traced integer pattern is a dynamic invar, not a compilable param."""
+
+        features = jnp.array([0.4, 0.2, 0.1])
+        pattern = jnp.array([[0, 2], [1, 2]])
+
+        def qfunc(features, pattern):
+            qp.IQPEmbedding(features, [0, 1, 2], pattern=pattern)
+
+        jaxpr = jax.make_jaxpr(qfunc)(features, pattern)
+        eqn = jaxpr.eqns[-1]
+        assert_eqn_matches_op(eqn, qp.IQPEmbedding)
+        assert eqn.invars[:2] == jaxpr.jaxpr.invars
+        assert "pattern" not in eqn.params
 
     @pytest.mark.parametrize("template", [qp.MERA, qp.MPS, qp.TTN])
     def test_tensor_networks(self, template):

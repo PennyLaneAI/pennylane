@@ -1509,7 +1509,7 @@ class TestControlledSupportsBroadcasting:
             features,
             list(range(num_wires)),
             n_repeats=2,
-            pattern=op.base.hyperparameters["pattern"],
+            pattern=op.base.arguments["pattern"],
         )
         op.decomposition()
 

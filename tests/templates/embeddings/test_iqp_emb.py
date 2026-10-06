@@ -24,13 +24,12 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.typing import Wire
 
 
-@pytest.mark.capture
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     features = (0.0, 1.0, 2.0)
 
     op = qp.IQPEmbedding(features, wires=(0, 1, 2))
-    qp.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestDecomposition:
@@ -129,7 +128,7 @@ class TestDecomposition:
         mapped = op.map_wires({0: "a", 1: "b", 2: "c"})
 
         assert mapped.wires.labels == ("a", "b", "c")
-        assert mapped.hyperparameters["pattern"] == ((0, 2), (1, 2))
+        assert qp.math.allclose(mapped.arguments["pattern"], ((0, 2), (1, 2)))
 
         tape = qp.tape.QuantumScript(mapped.decomposition())
         multi_rz_wires = [gate.wires.labels for gate in tape.operations if gate.name == "MultiRZ"]
@@ -227,7 +226,18 @@ class TestInputs:
         """Default pattern is all pairs of indices into wires."""
 
         op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=wires)
-        assert op.arguments["pattern"] == ((0, 1), (0, 2), (1, 2))
+        assert qp.math.allclose(op.arguments["pattern"], ((0, 1), (0, 2), (1, 2)))
+
+    def test_bind_new_parameters_updates_features_and_pattern(self):
+        """Dynamic features and pattern can be rebound even though wires sits between them."""
+
+        op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=[0, 1, 2], pattern=[[0, 2]])
+        new = qp.ops.functions.bind_new_parameters(
+            op, ([0.0, 0.0, 0.0], np.array([[0, 1], [1, 2]]))
+        )
+        assert qp.math.allclose(new.arguments["features"], [0.0, 0.0, 0.0])
+        assert qp.math.allclose(new.arguments["pattern"], [[0, 1], [1, 2]])
+        assert new.wires.labels == (0, 1, 2)
 
 
 def circuit_template(features):

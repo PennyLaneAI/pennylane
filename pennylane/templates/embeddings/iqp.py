@@ -22,7 +22,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RZ, H, MultiRZ
-from pennylane.typing import Float, Wire
+from pennylane.typing import AbstractArray, Float, Int, Wire
 from pennylane.wires import WiresLike
 
 
@@ -79,8 +79,9 @@ class IQPEmbedding(Operator2):
         features (tensor_like): tensor of features to encode
         wires (Any or Iterable[Any]): wires that the template acts on
         n_repeats (int): number of times the basic embedding is repeated
-        pattern (list[list[int]]): pairs of indices into ``wires`` that specify the entanglers.
-            ``None`` (default) applies an entangler to every pair of wires.
+        pattern (tensor_like): pairs of indices into ``wires`` that specify the entanglers,
+            as a nested sequence or a ``(K, 2)`` integer array. ``None`` (default) applies
+            an entangler to every pair of wires.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -171,11 +172,11 @@ class IQPEmbedding(Operator2):
 
     """
 
-    dynamic_argnames = ("features",)
-    compilable_argnames = ("n_repeats", "pattern")
-    arg_specs = {"features": Float[-1], "wires": Wire[-1]}
+    dynamic_argnames = ("features", "pattern")
+    compilable_argnames = ("n_repeats",)
+    arg_specs = {"features": Float[-1], "pattern": Int[-1, 2], "wires": Wire[-1]}
 
-    ndim_params = (1,)
+    ndim_params = (1, 2)
 
     def __init__(self, features, wires, n_repeats=1, pattern=None):
         if isinstance(features, (list, tuple)):
@@ -193,11 +194,15 @@ class IQPEmbedding(Operator2):
         if n_features != len(wires):
             raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
-        # ``pattern`` is compilable, so store hashable nested tuples of indices into ``wires``.
-        if pattern is None:
-            pattern = tuple(combinations(range(len(wires)), 2))
-        else:
-            pattern = tuple(tuple(pair) for pair in pattern)
+        if not isinstance(pattern, AbstractArray):
+            if pattern is None:
+                pattern = list(combinations(range(len(wires)), 2))
+            if isinstance(pattern, (list, tuple)):
+                pattern = (
+                    math.zeros((0, 2), dtype=int)
+                    if len(pattern) == 0
+                    else math.asarray(pattern, dtype=int)
+                )
 
         super().__init__(features, wires, n_repeats, pattern)
 

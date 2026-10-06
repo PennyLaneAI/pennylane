@@ -1070,7 +1070,8 @@
   [(#10238)](https://github.com/PennyLaneAI/pennylane/pull/10238)
 
 * :class:`~.IQPEmbedding`'s ``pattern`` argument now lists pairs of *indices into* ``wires``,
-  matching :class:`~.IQP`, rather than wire labels. The default all-pairs pattern is unchanged.
+  matching :class:`~.IQP`, rather than wire labels. It is a dynamic ``(K, 2)`` integer
+  tensor. The default all-pairs pattern is unchanged.
   To entangle the first and third of ``wires=["z", "a", "k"]``, pass ``pattern=[[0, 2]]``
   (previously ``pattern=[["z", "k"]]``).
   [(#10221)](https://github.com/PennyLaneAI/pennylane/pull/10221)
@@ -1713,6 +1714,10 @@
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
+
+* :func:`~.ops.functions.bind_new_parameters` now rebinds :class:`~.Operator2` dynamic
+  arguments by name, so they no longer need to be a prefix of the constructor signature.
+  [(#10221)](https://github.com/PennyLaneAI/pennylane/pull/10221)
 
 * :class:`~.SpecialUnitary` no longer raises an error when acting on more than five wires with
   broadcasted parameters.
