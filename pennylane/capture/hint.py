@@ -198,31 +198,6 @@ def hint(hints: dict[str, Any]) -> Callable:
 
         The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
 
-        This function can also be used as a decorator:
-
-        .. code-block:: python
-
-            @qp.qjit(capture=True)
-            @qp.qnode(qp.device('lightning.qubit', wires=10))
-            def c(n):
-
-                @qp.hint({"num-iters": 10})
-                @qp.while_loop(lambda i: i < 10)
-                def loop(i):
-                    qp.X(i)
-                    return i + 1
-
-                loop(0)
-                return qp.expval(qp.Z(0))
-
-        >>> print(qp.specs(c, level=0)(5).resources)
-        Quantum operations:
-        - Total: 10
-          - PauliX: 10
-        Measurement processes:
-        - expval(PauliZ): 1
-        Total wires: 10
-        Circuit Depth: Not computed
 
         Note that hints can be overwritten. The following will use ``20`` as the number of iterations:
 
