@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Generator, Iterable, Sequence
+from functools import partial
 
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.core import queuing
@@ -39,7 +40,7 @@ def null_postprocessing(results):
     return results[0]
 
 
-@transform
+@partial(transform, pass_name="graph-decomposition")
 def decompose(
     tape,
     *,
