@@ -44,6 +44,11 @@ def _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs) -> tupl
 
     return_single_level: bool = isinstance(level, (int, str)) and level != "all" and level != "all-user"
 
+    has_device_level: bool = level == "device" or level == "all"
+    if has_device_level:
+        if qjit.compile_options.capture != True:
+            raise ValueError("Device level is only supported when capture is enabled.")
+
     # Easier to assume level is always a sorted list of int levels
     level = preprocess_level_input(level, compile_pipeline)
 
