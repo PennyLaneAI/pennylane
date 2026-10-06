@@ -77,7 +77,7 @@ def _multi_swap(wires1, wires2):
 
 
 def _swap_ops(control_wires, depth, swap_wires, target_wires):
-    n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
+    n_control_select_wires = ceil_log2(2 ** len(control_wires) // depth)
     control_swap_wires = control_wires[n_control_select_wires:]
     num_targets = len(target_wires)
     for i in range(len(control_swap_wires) - 1, -1, -1):
@@ -273,19 +273,19 @@ def _calculate_select_swap_sizes(terms, num_control_wires, num_target_wires, num
 
     # Calculate depth: how many bitstrings we can load in parallel (power of 2)
     depth = n_swap_wires // num_target_wires
-    depth = int(2 ** math.floor(math.log2(min(depth, terms))))
+    depth = 1 << math.floor_log2(min(depth, terms))
 
     # Recalculate actual wires used by SWAP and the remaining for Select
     n_swap_work_wires = num_target_wires * depth - num_target_wires
     n_select_work_wires = num_work_wires - n_swap_work_wires
 
     # Adjust depth if Select doesn't have enough work wires for the required control logic
-    n_select_control_wires = num_control_wires - math.floor(math.log2(depth))
+    n_select_control_wires = num_control_wires - math.floor_log2(depth)
     while n_select_work_wires < n_select_control_wires - 1:
         depth = depth // 2
         n_swap_work_wires = num_target_wires * depth - num_target_wires
         n_select_work_wires = num_work_wires - n_swap_work_wires
-        n_select_control_wires = num_control_wires - math.floor(math.log2(depth))
+        n_select_control_wires = num_control_wires - math.floor_log2(depth)
 
     return n_select_work_wires, n_swap_work_wires, depth
 
@@ -326,14 +326,14 @@ def _select_swap_resources(
         num_bitstrings // depth if num_bitstrings % depth == 0 else num_bitstrings // depth + 1
     )
     # Select block
-    num_control_select_wires = ceil_log2(2**num_control_wires / depth)
+    num_control_select_wires = ceil_log2(2**num_control_wires // depth)  # depth is a power of 2
 
     # Each column applies ``depth`` bitstrings on disjoint wire slices, i.e. a single MultiX.
     column_rep = MultiX(Bool[depth * num_target_wires], Wire[depth * num_target_wires])
     new_ops = Counter({column_rep: n_columns})
 
     # Select block
-    num_control_select_wires = ceil_log2(2**num_control_wires / depth)
+    num_control_select_wires = ceil_log2(2**num_control_wires // depth)
 
     if num_control_select_wires > 0:
         select_ops = {

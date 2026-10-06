@@ -55,6 +55,7 @@ from pennylane.measurements import (
 )
 from pennylane.operation import operation_derivative
 from pennylane.ops import MeasurementValue, MidMeasure, Rot, X, Y, Z, adjoint
+from pennylane.resource import resources_from_tape
 from pennylane.wires import Wires
 
 from ._legacy_device import Device
@@ -319,7 +320,7 @@ class QubitDevice(Device):
                 executions=1,
                 shots=self._shots,
                 results=results,
-                resources=circuit.specs["resources"],
+                resources=resources_from_tape(circuit),
             )
             self.tracker.record()
 

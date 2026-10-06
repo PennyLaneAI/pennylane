@@ -25,6 +25,7 @@ from .momentum import MomentumOptimizer
 from .momentum_qng import MomentumQNGOptimizer
 from .nesterov_momentum import NesterovMomentumOptimizer
 from .qng import QNGOptimizer
+from .reconstruct import reconstruct
 from .qnspsa import QNSPSAOptimizer
 from .riemannian_gradient import RiemannianGradientOptimizer
 from .rms_prop import RMSPropOptimizer
@@ -54,4 +55,5 @@ __all__ = [
     "SPSAOptimizer",
     "QNGOptimizerQJIT",
     "MomentumQNGOptimizerQJIT",
+    "reconstruct",
 ]

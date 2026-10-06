@@ -254,7 +254,7 @@ def add_noise(tape, noise_model, level="user"):
 
         def stop_at(obj):
             if not isinstance(obj, Operator):
-                return True
+                return True  # pragma: no cover
             if not obj.has_decomposition:
                 return True
             return not (hasattr(templates, obj.name) or isinstance(obj, Adjoint))
