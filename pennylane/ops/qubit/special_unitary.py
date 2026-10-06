@@ -132,6 +132,47 @@ def pauli_basis_strings(num_wires: int) -> list[str]:
     return ["".join(letters) for letters in product(_pauli_letters, repeat=num_wires)][1:]
 
 
+def _pauli_compose(theta: TensorLike, num_wires: int) -> TensorLike:
+    r"""Compute :math:`A=\sum_{m=1}^{4^n-1}\theta_m P_m` from the Pauli basis coefficients
+    ``theta`` without ever materializing the dense Pauli basis tensor.
+
+    Args:
+        theta (tensor_like): Coefficients in the Pauli basis, with shape ``(4**n-1,)`` or
+            ``(batch_size, 4**n-1)``.
+        num_wires (int): Number of wires :math:`n` the resulting matrix acts on.
+
+    Returns:
+        tensor_like: Matrix with shape ``(2**n, 2**n)``, or batch of matrices with shape
+        ``(batch_size, 2**n, 2**n)``.
+
+    This is the inverse of :func:`~._pauli_decompose`. Padding ``theta`` with the (vanishing)
+    identity coefficient turns the sum into a contraction of the coefficient tensor
+    :math:`\theta_{i_1\dots i_n}` with one copy of ``_pauli_matrices`` per wire. Performing
+    those contractions one wire at a time takes :math:`\mathcal{O}(n 4^n)` operations and
+    :math:`\mathcal{O}(4^n)` memory, instead of the :math:`\mathcal{O}(16^n)` operations and
+    memory required to contract with the dense basis returned by
+    :func:`~.pauli_basis_matrices`.
+    """
+    # The identity coefficient is zero by definition of su(N); pad it back in so that the
+    # coefficients form a full rank-n tensor with one axis of length 4 per wire.
+    coefficients = qp.math.concatenate([qp.math.zeros_like(theta[..., :1]), theta], axis=-1)
+    batch_shape = qp.math.shape(coefficients)[:-1]
+    num_batch = len(batch_shape)
+    tensor = qp.math.reshape(coefficients, batch_shape + (4,) * num_wires)
+
+    # Contract the wires back to front. Each contraction replaces one axis of length 4 by the
+    # row and column axis of the corresponding single-qubit Pauli matrix, appending them at the
+    # end, so that the wire axes end up in reverse order.
+    for wire in reversed(range(num_wires)):
+        tensor = qp.math.tensordot(tensor, _pauli_matrices, axes=[[num_batch + wire], [0]])
+
+    row_axes = [num_batch + 2 * (num_wires - 1 - wire) for wire in range(num_wires)]
+    permutation = list(range(num_batch)) + row_axes + [axis + 1 for axis in row_axes]
+    tensor = qp.math.transpose(tensor, permutation)
+    dim = 2**num_wires
+    return qp.math.reshape(tensor, batch_shape + (dim, dim))
+
+
 def _pauli_decompose(matrix: TensorLike, num_wires: int) -> TensorLike:
     r"""Compute the coefficients of a matrix or a batch of matrices (batch dimension(s) in the
     leading axes) in the Pauli basis.
@@ -482,13 +523,9 @@ class SpecialUnitary(Operation):
         theta = qp.math.cast_like(theta, 1j)
 
         if num_wires > 5:
-            matrices = product(_pauli_matrices, repeat=num_wires)
-            # Drop the identity from the generator of matrices
-            _ = next(matrices)
-            A = sum(
-                t * qp.math.asarray(reduce(qp.math.kron, pauli_ops), like=qp.math.get_interface(t))
-                for t, pauli_ops in zip(theta, matrices, strict=True)
-            )
+            # The dense Pauli basis tensor has 16**num_wires entries, which becomes expensive
+            # beyond five wires. Contracting one wire at a time avoids building it at all.
+            A = _pauli_compose(theta, num_wires)
         else:
             A = qp.math.tensordot(theta, pauli_basis_matrices(num_wires), axes=[[-1], [0]])
         if interface == "jax" and qp.math.ndim(theta) > 1:

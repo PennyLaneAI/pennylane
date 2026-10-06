@@ -612,6 +612,11 @@ def _(op: qtemps.QROMStatePreparation):
 
 
 @_map_to_resource_op.register
+def _(op: qtemps.PhaseGradientStatePrep):
+    return re_temps.PhaseGradient(num_wires=len(op.wires), wires=op.wires)
+
+
+@_map_to_resource_op.register
 def _(op: qops.IntegerComparator):
     return re_temps.IntegerComparator(
         value=op.hyperparameters["value"],
