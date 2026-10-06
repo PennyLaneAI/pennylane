@@ -633,8 +633,9 @@
 
 * A :class:`~.Controller` now takes the size of its messages in each direction, with the
   ``in_bytes`` and ``out_bytes`` keyword arguments. Both default to 8. The ``"memcpy"`` transport
-  carries messages of any size to a CPU coprocessor, and up to 8 bytes to a GPU coprocessor running
-  a persistent kernel. The ``"rdma"`` transport carries up to 8 bytes.
+  carries messages of any size to a CPU coprocessor, and to a GPU coprocessor running a
+  per-message function. A GPU coprocessor running a persistent kernel, and every coprocessor over
+  the ``"rdma"`` transport, carry up to 8 bytes.
 
   .. code-block:: python
 

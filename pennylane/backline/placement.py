@@ -247,9 +247,10 @@ class Controller(Node):
         device (pennylane.devices.Device, None): The PennyLane device the controller executes.
             Defaults to ``None``, which builds a ``null.qubit``.
         in_bytes (int): The size in bytes of each message the controller sends. Defaults to
-            :data:`DEFAULT_MESSAGE_BYTES`. ``"memcpy"`` supports any size to a CPU coprocessor. A
-            GPU coprocessor running a persistent kernel over ``"memcpy"``, and every coprocessor
-            over ``"rdma"``, currently supports up to :data:`DEFAULT_MESSAGE_BYTES`.
+            :data:`DEFAULT_MESSAGE_BYTES`. ``"memcpy"`` supports any size to a CPU coprocessor,
+            and to a GPU coprocessor running a per-message function. A GPU coprocessor running a
+            persistent kernel over ``"memcpy"``, and every coprocessor over ``"rdma"``,
+            currently supports up to :data:`DEFAULT_MESSAGE_BYTES`.
         out_bytes (int): The size in bytes of each reply the controller receives. Defaults to
             :data:`DEFAULT_MESSAGE_BYTES`, with the same bound as ``in_bytes``.
 
@@ -491,5 +492,6 @@ class Placement:
                     raise ValueError(
                         f"transport='rdma' carries at most {DEFAULT_MESSAGE_BYTES} bytes per "
                         f"message, got {name}={size}. transport='memcpy' carries larger messages "
-                        "to a CPU coprocessor"
+                        "to a CPU coprocessor, and to a GPU coprocessor running a per-message "
+                        "function"
                     )
