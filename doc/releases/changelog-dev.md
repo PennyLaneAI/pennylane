@@ -640,7 +640,7 @@
   [(#10055)](https://github.com/PennyLaneAI/pennylane/pull/10055)
 
 * :func:`~.iterative_qpe` is now captured as a single :func:`~.capture.subroutine` instead of
-  falling back to an unrolled ``qp.for_loop``. 
+  falling back to an unrolled ``qp.for_loop``.
   [(#10220)](https://github.com/PennyLaneAI/pennylane/pull/10220)
 
 * Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
@@ -1060,7 +1060,7 @@
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
 <h3>Breaking changes 💔</h3>
-  
+
 * Tensorflow and tensorflow-autograph interfaces are removed.
   [(#10229)](https://github.com/PennyLaneAI/pennylane/pull/10229)
 
@@ -1173,6 +1173,12 @@
 
 * The :class:`pennylane.resource.Resources`, :class:`~.ResourceOperator`, and :class:`~.ErrorOperator` classes as well as the entire :mod:`pennylane.resource.error` module have been removed.
   [(#9786)](https://github.com/PennyLaneAI/pennylane/pull/9786)
+
+* Support for tapes and tape transforms has been removed from :func:`~.specs`.
+  This means that the options ``level="gradient"`` and ``level="all-mlir"`` are no longer supported.
+  To continue collecting resources from non-``qjit``'d qnodes, please see the :func:`~.resource.resources_from_tape` function.
+  The :meth:`QuantumScript.specs` function has also been removed.
+  [(#9988)](https://github.com/PennyLaneAI/pennylane/pull/9988)
 
 * Plxpr transforms and associated infrastructure have been removed.
   [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
