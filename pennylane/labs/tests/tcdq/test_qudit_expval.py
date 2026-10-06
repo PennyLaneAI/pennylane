@@ -35,9 +35,29 @@ jnp = pytest.importorskip("jax.numpy")
 NUM_SAMPLES = 10000
 
 
+def _sparse_gate(dense_vector):
+    """Convert a dense generator vector into the sparse ``(qudit, power)`` format."""
+    return [(int(q), int(p)) for q, p in enumerate(dense_vector) if p != 0]
+
+
+def _dense_generators(gate_indices, gate_powers, n_qudits):
+    """Expand padded ``(n_gates, max_weight)`` index/power arrays into dense generator vectors."""
+    indices = np.asarray(gate_indices)
+    powers = np.asarray(gate_powers)
+    dense = np.zeros((indices.shape[0], n_qudits), dtype=int)
+    rows = np.repeat(np.arange(indices.shape[0]), indices.shape[1])
+    flat_indices = indices.reshape(-1)
+    active = flat_indices < n_qudits  # padding slots carry the sentinel index n_qudits
+    dense[rows[active], flat_indices[active]] = powers.reshape(-1)[active]
+    return jnp.asarray(dense)
+
+
 def _build_qudit_expval_func_exact(config):
     """Build a brute-force reference evaluator by summing over all basis states."""
-    generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
+    gate_indices, gate_powers, param_map = _parse_qudit_generator_dict(
+        config.gates, config.n_qudits
+    )
+    generators = _dense_generators(gate_indices, gate_powers, config.n_qudits)
 
     dims = _dims_to_numpy(config.dims, config.n_qudits)  # (n_qudits,)
     dims_f = jnp.asarray(dims, dtype=jnp.float32)  # (n_qudits,)
@@ -235,10 +255,10 @@ def _pennylane_qubit_expval(generators_list, thetas_list, l_vec, m_vec):
 def _make_config_one_param_per_gate(
     d, n, generators_array, thetas, l_vecs, m_vecs, n_samples=NUM_SAMPLES, key=None
 ):
-    """Build a QuditCircuitConfig with one unique parameter per gate."""
+    """Build a QuditCircuitConfig with one unique parameter per gate (sparse gate format)."""
     if key is None:
         key = jax.random.PRNGKey(0)
-    gates = {i: [list(gen)] for i, gen in enumerate(generators_array)}
+    gates = {i: [_sparse_gate(gen)] for i, gen in enumerate(generators_array)}
     return QuditCircuitConfig(
         dims=d,
         n_qudits=n,
@@ -303,34 +323,191 @@ class TestQuditExpvalVsPennyLane:
 
 
 @pytest.mark.parametrize(
-    "circuit_def, n_qudits, expected_generators, expected_param_map",
+    "circuit_def, n_qudits, expected_indices, expected_powers, expected_param_map",
     [
-        ({0: [[1, 0, 2]]}, 3, [[1, 0, 2]], [0]),
-        ({0: [[1, 0]], 1: [[0, 2], [1, 1]]}, 2, [[1, 0], [0, 2], [1, 1]], [0, 1, 1]),
-        ({}, 2, np.zeros((0, 2), dtype=int), []),
-        ({3: [[0, 1]], 0: [[2, 0]]}, 2, [[2, 0], [0, 1]], [0, 3]),
+        # sparse (qudit, power) pairs
+        ({0: [[(0, 1), (2, 2)]]}, 3, [[0, 2]], [[1, 2]], [0]),
+        # the same gate given as a dense vector
+        ({0: [[1, 0, 2]]}, 3, [[0, 2]], [[1, 2]], [0]),
+        # lighter gates are padded with the sentinel index n_qudits and power 0
+        (
+            {0: [[(0, 1)]], 1: [[(1, 2)], [(0, 1), (1, 1)]]},
+            2,
+            [[0, 2], [1, 2], [0, 1]],
+            [[1, 0], [2, 0], [1, 1]],
+            [0, 1, 1],
+        ),
+        ({}, 2, np.zeros((0, 1), dtype=int), np.zeros((0, 1), dtype=int), []),
+        # gates are ordered by parameter index; qudits are sorted within a gate
+        ({3: [[(1, 1)]], 0: [[(2, 1), (0, 2)]]}, 3, [[0, 2], [1, 3]], [[2, 1], [1, 0]], [0, 3]),
+        # negative indices count from the end; zero powers are dropped
+        ({0: [[(-1, 1), (0, 0)]]}, 3, [[2]], [[1]], [0]),
+        # an empty generator is the identity: all padding
+        ({0: [[]]}, 2, [[2]], [[0]], [0]),
     ],
 )
-def test_parse_qudit_generator_dict(circuit_def, n_qudits, expected_generators, expected_param_map):
-    """_parse_qudit_generator_dict should produce the correct generator matrix and param map."""
-    generators, param_map = _parse_qudit_generator_dict(circuit_def, n_qudits)
+def test_parse_qudit_generator_dict(
+    circuit_def, n_qudits, expected_indices, expected_powers, expected_param_map
+):
+    """_parse_qudit_generator_dict should produce padded (n_gates, max_weight) arrays."""
+    gate_indices, gate_powers, param_map = _parse_qudit_generator_dict(circuit_def, n_qudits)
 
-    assert isinstance(generators, jnp.ndarray)
+    assert isinstance(gate_indices, jnp.ndarray)
+    assert isinstance(gate_powers, jnp.ndarray)
     assert isinstance(param_map, jnp.ndarray)
 
-    expected_generators = np.array(expected_generators)
-    expected_param_map = np.array(expected_param_map)
-
-    assert generators.shape == expected_generators.shape
-    assert param_map.shape == expected_param_map.shape
-    assert np.allclose(generators, expected_generators)
-    assert np.allclose(param_map, expected_param_map)
+    assert gate_indices.shape == gate_powers.shape == np.shape(expected_indices)
+    assert param_map.shape == (len(expected_param_map),)
+    assert np.array_equal(gate_indices, expected_indices)
+    assert np.array_equal(gate_powers, expected_powers)
+    assert np.array_equal(param_map, expected_param_map)
 
 
 def test_parse_qudit_generator_dict_wrong_length():
-    """Generator with wrong length should raise ValueError."""
+    """Dense generator with wrong length should raise ValueError."""
     with pytest.raises(ValueError, match="length"):
         _parse_qudit_generator_dict({0: [[1, 2]]}, n_qudits=3)
+
+
+@pytest.mark.parametrize(
+    "gate, error, match",
+    [
+        ([(0, 1), (0, 2)], ValueError, "more than once"),
+        ([(3, 1)], IndexError, "out of range"),
+        ([(-4, 1)], IndexError, "out of range"),
+        ([(0, -1)], ValueError, "non-negative"),
+        ([(0, 1, 2)], ValueError, "pairs"),
+        ([(0, 0.5)], ValueError, "integers"),
+    ],
+)
+def test_parse_qudit_generator_dict_invalid_gate(gate, error, match):
+    """Malformed sparse generators should raise a descriptive error."""
+    with pytest.raises(error, match=match):
+        _parse_qudit_generator_dict({0: [gate]}, n_qudits=3)
+
+
+class TestSparseGateRepresentation:
+    """The sparse gate format, the dense fallback, and the blocked phase accumulation."""
+
+    @staticmethod
+    def _random_gates(rng, n_qudits, dims, n_gates, max_weight=3):
+        """Random gates in both formats; ``dims`` is the per-qudit dimension list."""
+        sparse, dense = {}, {}
+        for i in range(n_gates):
+            weight = int(rng.integers(1, max_weight + 1))
+            qudits = np.sort(rng.choice(n_qudits, size=weight, replace=False))
+            pairs = [(int(q), int(rng.integers(1, dims[q]))) for q in qudits]
+            vec = [0] * n_qudits
+            for q, p in pairs:
+                vec[q] = p
+            sparse[i], dense[i] = [pairs], [vec]
+        return sparse, dense
+
+    def test_sparse_and_dense_formats_agree(self):
+        """Sparse pairs and dense vectors describing the same circuit give identical results."""
+        rng = np.random.default_rng(1)
+        dims, n = [2, 3, 4, 3], 4
+        sparse, dense = self._random_gates(rng, n, dims, n_gates=12)
+        l_vecs = np.array([[1, 0, 0, 0], [0, 2, 3, 1], [1, 1, 1, 1]])
+        m_vecs = np.array([[0, 0, 0, 0], [1, 0, 2, 0], [0, 1, 1, 2]])
+        params = jnp.array(rng.normal(size=12))
+
+        def run(gates):
+            config = QuditCircuitConfig(
+                dims=dims,
+                n_qudits=n,
+                gates=gates,
+                observables=(l_vecs, m_vecs),
+                n_samples=2000,
+                key=jax.random.PRNGKey(3),
+            )
+            return build_qudit_expval_func(config)(params)
+
+        vals_sparse, cov_sparse = run(sparse)
+        vals_dense, cov_dense = run(dense)
+        np.testing.assert_allclose(vals_sparse, vals_dense, atol=1e-6)
+        np.testing.assert_allclose(cov_sparse, cov_dense, atol=1e-9)
+
+    def test_parsed_shape_independent_of_n_qudits(self):
+        """The parsed arrays have shape (n_gates, max_weight) regardless of the register size."""
+        gates = {0: [[(0, 1), (3, 2)]], 1: [[(1, 1)]]}
+        for n_qudits in (4, 400):
+            gate_indices, gate_powers, param_map = _parse_qudit_generator_dict(gates, n_qudits)
+            assert gate_indices.shape == gate_powers.shape == (2, 2)
+            assert param_map.shape == (2,)
+            assert gate_indices[1, 1] == n_qudits  # padding uses the sentinel index
+
+    def test_block_size_does_not_change_result(self):
+        """Blocked accumulation (with a padded last block) matches the single-block path."""
+        rng = np.random.default_rng(2)
+        dims, n, n_gates = [3, 3, 2, 4, 3], 5, 37
+        sparse, _ = self._random_gates(rng, n, dims, n_gates=n_gates)
+        l_vecs = np.array([[1, 0, 0, 0, 0], [0, 2, 1, 3, 1]])
+        m_vecs = np.array([[0, 0, 0, 0, 0], [1, 0, 1, 2, 0]])
+        params = jnp.array(rng.normal(size=n_gates))
+        elems = jnp.array([[0, 0, 0, 0, 0], [1, 2, 1, 3, 2]])
+        amps = jnp.array([1 / np.sqrt(2), 1j / np.sqrt(2)])
+
+        def build(block_size):
+            config = QuditCircuitConfig(
+                dims=dims,
+                n_qudits=n,
+                gates=sparse,
+                observables=(l_vecs, m_vecs),
+                n_samples=2000,
+                key=jax.random.PRNGKey(0),
+                block_size=block_size,
+            )
+            return build_qudit_expval_func(config)
+
+        fn_single = build(block_size=1 << 13)  # all gates in one block
+        fn_blocked = build(block_size=5)  # 8 blocks, the last one padded
+
+        def loss(fn):
+            def _loss(p):
+                vals, _ = fn(p, init_state_elems=elems, init_state_amps=amps)
+                return jnp.sum(jnp.real(vals))
+
+            return _loss
+
+        vals_single, cov_single = fn_single(params)
+        vals_blocked, cov_blocked = jax.jit(fn_blocked)(params)
+        np.testing.assert_allclose(vals_blocked, vals_single, atol=1e-5)
+        np.testing.assert_allclose(cov_blocked, cov_single, atol=1e-8)
+        np.testing.assert_allclose(
+            jax.grad(loss(fn_blocked))(params), jax.grad(loss(fn_single))(params), atol=1e-4
+        )
+
+    def test_blocked_matches_exact(self):
+        """A circuit with more gates than block_size agrees with the exact reference."""
+        rng = np.random.default_rng(4)
+        d, n, n_gates = 3, 3, 20
+        _, dense = self._random_gates(rng, n, [d] * n, n_gates=n_gates, max_weight=2)
+        generators = np.array([g[0] for g in dense.values()])
+        thetas = rng.normal(size=n_gates) * 0.3
+        l_vecs = np.array([[1, 0, 0], [1, 2, 0], [0, 1, 1]])
+        m_vecs = np.array([[0, 0, 0], [0, 1, 2], [1, 0, 0]])
+
+        config, params = _make_config_one_param_per_gate(
+            d, n, generators, thetas, l_vecs, m_vecs, key=jax.random.PRNGKey(8)
+        )
+        config.block_size = 6
+        exact_vals, *_ = _build_qudit_expval_func_exact(config)(jnp.array(params))
+        mc_vals, _ = build_qudit_expval_func(config)(jnp.array(params))
+        np.testing.assert_allclose(mc_vals, exact_vals, atol=3.5 / np.sqrt(NUM_SAMPLES))
+
+    def test_invalid_block_size(self):
+        """A non-positive block_size is rejected."""
+        config = QuditCircuitConfig(
+            dims=3,
+            n_qudits=2,
+            gates={0: [[(0, 1)]]},
+            n_samples=10,
+            key=jax.random.PRNGKey(0),
+            block_size=0,
+        )
+        with pytest.raises(ValueError, match="block_size"):
+            build_qudit_expval_func(config)
 
 
 @pytest.mark.parametrize(

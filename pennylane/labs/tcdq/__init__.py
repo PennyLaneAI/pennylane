@@ -194,9 +194,10 @@ Qudit circuits
 The same workflow applies to qudit circuits (``d > 2``). Replace
 :class:`~CircuitConfig` with :class:`~QuditCircuitConfig` and
 :func:`~build_expval_func` with :func:`~build_qudit_expval_func`.
-Gate vectors now have length ``n_qudits`` with entries in
-:math:`\{0, \ldots, d-1\}` specifying the power of :math:`Z` on each
-qudit.
+Gates are given sparsely as lists of ``(qudit, power)`` pairs, where
+``power`` in :math:`\{1, \ldots, d-1\}` is the power of :math:`Z` applied
+on that qudit, so the size of the gate dictionary does not depend on
+``n_qudits``.
 
 .. code-block:: python
 
@@ -210,13 +211,13 @@ qudit.
 
    # Single-qudit and nearest-neighbour two-qudit gates
    gates = {
-       0: [[1, 0, 0, 0]],
-       1: [[0, 1, 0, 0]],
-       2: [[0, 0, 1, 0]],
-       3: [[0, 0, 0, 1]],
-       4: [[1, 1, 0, 0]],
-       5: [[0, 1, 1, 0]],
-       6: [[0, 0, 1, 1]],
+       0: [[(0, 1)]],
+       1: [[(1, 1)]],
+       2: [[(2, 1)]],
+       3: [[(3, 1)]],
+       4: [[(0, 1), (1, 1)]],
+       5: [[(1, 1), (2, 1)]],
+       6: [[(2, 1), (3, 1)]],
    }
 
    # Observables: displacement operators O(l, m) with m = 0
@@ -270,13 +271,13 @@ can estimate Heisenberg-Weyl moments, not only qudit IQP circuits.
 
    # Define single-qudit and nearest-neighbour two-qudit gates
    gates = {
-       0: [[1, 0, 0, 0]],
-       1: [[0, 1, 0, 0]],
-       2: [[0, 0, 1, 0]],
-       3: [[0, 0, 0, 1]],
-       4: [[1, 1, 0, 0]],
-       5: [[0, 1, 1, 0]],
-       6: [[0, 0, 1, 1]],
+       0: [[(0, 1)]],
+       1: [[(1, 1)]],
+       2: [[(2, 1)]],
+       3: [[(3, 1)]],
+       4: [[(0, 1), (1, 1)]],
+       5: [[(1, 1), (2, 1)]],
+       6: [[(2, 1), (3, 1)]],
    }
 
    circuit_config = QuditCircuitConfig(
