@@ -1302,6 +1302,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Set `qp.decompose`'s `pass_name` to `"graph-decomposition"` to match the new decomposition system in Catalyst.
+  [(#10242)](https://github.com/PennyLaneAI/pennylane/pull/10242)
+
 * Updated the decomposition of :class:`~.SumOfSlatersPrep` to replace a recursive by an iterative
   helper function to enable tracing it.
   [(#10055)](https://github.com/PennyLaneAI/pennylane/pull/10055)
