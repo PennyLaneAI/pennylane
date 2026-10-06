@@ -631,6 +631,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Computing and differentiating the matrix of a :class:`~.SpecialUnitary` acting on more than
+  five wires is now significantly faster.
+  [(#10253)](https://github.com/PennyLaneAI/pennylane/pull/10253)
+
 * :func:`~.math.binary_is_independent` now also accepts multiple vectors, stacked as the columns
   of a two-dimensional array, and returns a boolean array with one entry per vector.
   [(#10055)](https://github.com/PennyLaneAI/pennylane/pull/10055)
@@ -1702,6 +1706,10 @@
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
+
+* :class:`~.SpecialUnitary` no longer raises an error when acting on more than five wires with
+  broadcasted parameters.
+  [(#10253)](https://github.com/PennyLaneAI/pennylane/pull/10253)
 
 * Fixed `qp.math.ceil_log2` returning results that were off by one
   for inputs with more significant bits than a float can hold, like `2 ** 53 + 1`.
