@@ -281,19 +281,19 @@ def _calculate_select_swap_sizes(
 
     # Calculate depth: how many bitstrings we can load in parallel (power of 2)
     depth = num_wires_swap // num_targets
-    depth = int(2 ** math.floor(math.log2(min(depth, num_bitstrings))))
+    depth = 1 << math.floor_log2(min(depth, num_bitstrings))
 
     # Recalculate actual wires used by SWAP and the remaining for Select
     num_work_wires_swap = num_targets * depth - num_targets
     num_work_wires_select = num_work_wires - num_work_wires_swap
 
     # Adjust depth if Select doesn't have enough work wires for the required control logic
-    num_control_wires_select = num_control_wires - int(math.floor(math.log2(depth)))
+    num_control_wires_select = num_control_wires - int(math.floor_log2(depth))
     while num_work_wires_select < num_control_wires_select - 1:
         depth = depth // 2
         num_work_wires_swap = num_targets * (depth - 1)
         num_work_wires_select = num_work_wires - num_work_wires_swap
-        num_control_wires_select = num_control_wires - int(math.floor(math.log2(depth)))
+        num_control_wires_select = num_control_wires - int(math.floor_log2(depth))
 
     # As soon as there is an excess work wire for Select, reroute it to the CSWAPs themselves.
     num_work_wires_cswap = int(num_work_wires_select - max(0, num_control_wires_select - 1) >= 1)
