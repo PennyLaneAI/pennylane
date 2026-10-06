@@ -35,6 +35,13 @@ pytestmark = pytest.mark.usefixtures("enable_graph_decomposition")
 
 
 @pytest.mark.unit
+def test_pass_name():
+    """Makes sure the ``decompose`` transform's ``pass_name`` is set correctly."""
+    assert qp.decompose.pass_name == "graph-decomposition"
+    assert qp.transforms.decompose.pass_name == "graph-decomposition"
+
+
+@pytest.mark.unit
 def test_weighted_graph_handles_negative_weight():
     """Tests a DecompositionGraph raises a ValueError when given negative weights."""
 
