@@ -26,11 +26,12 @@ from scipy.stats import unitary_group
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import abstractify
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_udv
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
-from pennylane.typing import Complex, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Complex, Wire
 from pennylane.wires import Wires
 
 
@@ -237,6 +238,20 @@ class TestQubitUnitary:
         expected = fractional_matrix_power(U, 0.123)
 
         assert qp.math.allclose(pow_op.matrix(), expected)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("z", [2, 0.123])
+    def test_pow_decomposition_rule(self, z):
+        """Test the graph decomposition of Pow(QubitUnitary)."""
+        U = np.array(
+            [
+                [0.98877108 + 0.0j, 0.0 - 0.14943813j],
+                [0.0 - 0.14943813j, 0.98877108 + 0.0j],
+            ]
+        )
+        op = qp.pow(qp.QubitUnitary(U, wires=0), z)
+        for rule in qp.list_decomps("Pow(QubitUnitary)"):
+            _test_decomposition_rule(op, rule)
 
     def test_qubit_unitary_noninteger_pow_broadcasted(self):
         """Test broadcasted QubitUnitary raised to a non-integer power raises an error."""
@@ -1180,7 +1195,7 @@ class TestUnitaryLabels:
         assert len(cache["matrices"]) == 3
 
 
-class TestBlockEncode:
+class TestBlockEncode:  # pylint: disable=too-many-public-methods
     """Test the BlockEncode operation."""
 
     @pytest.mark.parametrize(
@@ -1244,8 +1259,9 @@ class TestBlockEncode:
         """Test that BlockEncode outputs expected attributes for various input matrix types."""
         op = qp.BlockEncode(input_matrix, wires)
         assert np.allclose(op.parameters, input_matrix)
-        assert op.hyperparameters["norm"] == expected_hyperparameters["norm"]
-        assert op.hyperparameters["subspace"] == expected_hyperparameters["subspace"]
+        # pylint: disable=protected-access
+        assert op._norm == expected_hyperparameters["norm"]
+        assert op._subspace == expected_hyperparameters["subspace"]
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),
@@ -1312,6 +1328,7 @@ class TestBlockEncode:
     def test_correct_output_matrix(self, input_matrix, wires, output_matrix):
         """Test that BlockEncode outputs the correct matrix."""
         assert np.allclose(qp.matrix(qp.BlockEncode(input_matrix, wires)), output_matrix)
+        assert np.allclose(qp.BlockEncode.compute_matrix(input_matrix, wires), output_matrix)
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),
@@ -1328,6 +1345,8 @@ class TestBlockEncode:
     def test_unitary(self, input_matrix, wires):
         """Test that BlockEncode matrices are unitary."""
         mat = qp.matrix(qp.BlockEncode(input_matrix, wires))
+        assert np.allclose(np.eye(len(mat)), mat.dot(mat.T.conj()))
+        mat = qp.BlockEncode.compute_matrix(input_matrix, wires)
         assert np.allclose(np.eye(len(mat)), mat.dot(mat.T.conj()))
 
     @pytest.mark.torch
@@ -1477,6 +1496,23 @@ class TestBlockEncode:
         assert np.allclose(np.eye(len(mat)), mat @ adj)
         assert np.allclose(np.eye(len(mat)), mat @ other_adj)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires"),
+        [
+            (1, 0),
+            (0.3, 0),
+            ([[0.1, 0.2], [0.3, 0.4]], range(2)),
+            ([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]], range(3)),
+            ([[0.2, 0, 0.2], [-0.2, 0.2, 0]], range(3)),
+        ],
+    )
+    def test_adjoint_decomposition_rule(self, input_matrix, wires):
+        """Test the graph decomposition of Adjoint(BlockEncode)."""
+        op = qp.adjoint(qp.BlockEncode(input_matrix, wires))
+        for rule in qp.list_decomps("Adjoint(BlockEncode)"):
+            _test_decomposition_rule(op, rule)
+
     def test_label(self):
         """Test the label method for BlockEncode op"""
         op = qp.BlockEncode(0.5, wires=[0, 1])
@@ -1554,6 +1590,53 @@ class TestBlockEncode:
         assert np.allclose(np.eye(mat.shape[0]), (mat @ mat.T.conj()).toarray())
         mat_dense = qp.matrix(qp.BlockEncode(sparse_matrix.toarray(), wires=range(num_wires)))
         assert qp.math.allclose(mat, mat_dense)
+        mat_static = qp.BlockEncode.compute_sparse_matrix(sparse_matrix, wires=range(num_wires))
+        assert qp.math.allclose(mat, mat_static)
+
+    @pytest.mark.parametrize(
+        ("A", "wires", "expected_shape", "expected_subspace"),
+        [
+            (AbstractArray((), float), 0, (1, 1), (1, 1, 2)),
+            (AbstractArray((1,), float), 0, (1, 1), (1, 1, 2)),
+            (AbstractArray((3,), float), range(2), (1, 3), (1, 3, 4)),
+            (AbstractArray((2, 2), float), range(2), (2, 2), (2, 2, 4)),
+            (AbstractArray((-1, -1), float), range(2), (-1, -1), (-1, -1, 4)),
+            (AbstractArray((2, 3), float), range(3), (2, 3), (2, 3, 8)),
+        ],
+    )
+    def test_abstract_array(self, A, wires, expected_shape, expected_subspace):
+        """Test that BlockEncode can be constructed with an AbstractArray."""
+        op = qp.BlockEncode(A, wires)
+        assert isinstance(op.A, AbstractArray)
+        assert op.A.shape == expected_shape
+        # pylint: disable=protected-access
+        assert op._subspace == expected_subspace
+        assert not op.has_sparse_matrix
+
+    def test_abstractify(self):
+        """Test that a concrete BlockEncode can be abstractified."""
+        op = qp.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1])
+        abstract_op = abstractify(op)
+        assert isinstance(abstract_op.A, AbstractArray)
+        # pylint: disable=protected-access
+        assert abstract_op.A.shape == (2, 2)
+        assert abstract_op.wires == AbstractWires(2)
+        assert abstract_op._subspace == (2, 2, 4)
+
+    @pytest.mark.parametrize("dtype", [float, complex])
+    def test_abstract_array_adjoint(self, dtype):
+        """Test that the adjoint of an abstract BlockEncode only transposes the shape."""
+        op = qp.BlockEncode(AbstractArray((2, 3), dtype), wires=range(3))
+        adj = op.adjoint()
+        assert isinstance(adj.A, AbstractArray)
+        # pylint: disable=protected-access
+        assert adj.A.shape == (3, 2)
+        assert adj._subspace == (3, 2, 8)
+
+    def test_abstract_array_invalid_hilbert_space(self):
+        """Test that a known abstract shape still validates the Hilbert space size."""
+        with pytest.raises(ValueError, match=r"Block encoding a \(2 x 2\) matrix"):
+            qp.BlockEncode(AbstractArray((2, 2), float), wires=0)
 
 
 class TestInterfaceMatricesLabel:
