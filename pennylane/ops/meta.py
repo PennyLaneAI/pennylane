@@ -23,11 +23,13 @@ from copy import copy
 from typing import Literal
 
 import pennylane as qp
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operation, Operator2
+from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 
-class Barrier(Operation):
+class Barrier(Operator2):
     r"""Barrier(wires)
     The Barrier operator, used to separate the compilation process into blocks or as a visual tool.
 
@@ -44,11 +46,17 @@ class Barrier(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, wires: WiresLike = (), only_visual=False):
-        wires = Wires(wires)
-        self.only_visual = only_visual
-        self.hyperparameters["only_visual"] = only_visual
-        super().__init__(wires=wires)
+    num_wires = None
+    """Any number of wires."""
+
+    compilable_argnames = ("only_visual",)
+    arg_specs = {"wires": Wire[-1]}
+
+    def __init__(self, wires: WiresLike = (), only_visual: bool = False):
+        super().__init__(wires=wires, only_visual=only_visual)
+
+    def __repr__(self):
+        return f"Barrier(wires={self.wires.tolist()})"
 
     @staticmethod
     def compute_decomposition(wires, only_visual=False):  # pylint: disable=unused-argument
@@ -79,14 +87,11 @@ class Barrier(Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return "||"
 
-    def _controlled(self, _):
-        return copy(self).queue()
-
     def adjoint(self):
-        return copy(self)
+        return Barrier(wires=self.wires, only_visual=self.only_visual)
 
     def pow(self, z):
-        return [copy(self)]
+        return [Barrier(wires=self.wires, only_visual=self.only_visual)]
 
     def simplify(self):
         if self.only_visual:
@@ -94,6 +99,14 @@ class Barrier(Operation):
                 return qp.Identity(self.wires[0])
             return qp.prod(*(qp.Identity(w) for w in self.wires))
         return self
+
+
+@custom_ctrl_dispatch.register
+def _ctrl_barrier(base: Barrier, control, control_values, *_):  # pylint: disable=unused-argument
+    """Controlling a ``Barrier`` has no effect, so the ``Barrier`` itself is returned."""
+    if qp.QueuingManager.recording():
+        qp.QueuingManager.append(base)
+    return base
 
 
 class Snapshot(Operation):
