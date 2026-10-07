@@ -75,6 +75,18 @@ Measurement processes:
 Total wires: 4
 Circuit Depth: 4
 
+The :func:`~pennylane.track` transform reports the same device-level information, but also
+returns the result of executing the circuit:
+
+>>> result, circuit_specs = qp.track(circuit)(x, y)
+>>> len(result)
+2
+>>> circuit_specs.resources.quantum_operations
+{'CRY': 1, 'Toffoli': 1, 'Rot': 1, 'RX': 1}
+
+Resources are tracked by mock-executing the circuit on ``null.qubit``, so ``result`` has the
+shape and dtype of the real result, but not its values.
+
 
 Circuit drawing
 ---------------
