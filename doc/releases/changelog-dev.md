@@ -746,6 +746,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
+  but instead expresses the Select block as another ``QROM`` with fewer controls and more target
+  qubits. This allows for scalable compilation of this decomposition rule.
+  [(#10207)](https://github.com/PennyLaneAI/pennylane/pull/10207)
+
 * A :class:`~.Controller` now takes the size of its messages in each direction, with the
   ``in_bytes`` and ``out_bytes`` keyword arguments. Left unset, they take the sizes its
   coprocessors' functions declare, or else 8 bytes. The ``"memcpy"`` transport carries messages of
