@@ -111,6 +111,24 @@ class AbstractOperator(jax.core.AbstractValue):  # pragma: no cover
         return qp.sum(a, b)
 
     @staticmethod
+    def _radd(a, b):
+        """Preserve operand order when ``+`` falls back to the captured right operand."""
+        return qp.sum(b, a)
+
+    @staticmethod
+    def _sub(a, b):
+        return qp.sum(a, qp.s_prod(-1, b))
+
+    @staticmethod
+    def _rsub(a, b):
+        """Preserve operand order when ``-`` falls back to the captured right operand."""
+        return qp.sum(b, qp.s_prod(-1, a))
+
+    @staticmethod
+    def _neg(a):
+        return qp.s_prod(-1, a)
+
+    @staticmethod
     def _pow(a, b):
         return qp.pow(a, b)
 
