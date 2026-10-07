@@ -43,15 +43,17 @@ class CoprocessorFunction:
             ``;``. A function whose library exports lifecycle hooks under
             ``<name>_info`` (for example ``catalyst_onnx_coprocessor_info``) receives these entries
             in its ``init`` hook once, before its first message, and is then called with the
-            context that hook returns.
+            context that hook returns. The keys ``in_bytes`` and ``out_bytes`` are reserved for
+            the message sizes, which Catalyst adds to the entries.
         per_message (bool): Whether the function is a host function called once per message,
             rather than a launcher that starts a persistent GPU kernel. It matters only on a GPU
-            coprocessor, which then runs the function per message. On a CPU
-            coprocessor every function is called per message.
+            coprocessor, which then runs the function per message, and only over the
+            ``"memcpy"`` transport. On a CPU coprocessor every function is called per message.
         message_bytes (tuple[int, int] or None): The ``(in_bytes, out_bytes)`` message sizes the
             function expects, or ``None`` to declare none.
 
-    .. seealso:: :class:`~.Coprocessor`, :func:`~.css_bp_decoder`, :func:`~.triton_decoder`
+    .. seealso:: :class:`~.Coprocessor`, :func:`~.css_bp_decoder`, :func:`~.onnx_decoder`,
+        :func:`~.triton_decoder`
 
     **Example**
 
@@ -95,6 +97,10 @@ class CoprocessorFunction:
     def __post_init__(self):
         if self.message_bytes is not None:
             object.__setattr__(self, "message_bytes", tuple(self.message_bytes))
+            if len(self.message_bytes) != 2:
+                raise ValueError(
+                    f"message_bytes must be an (in_bytes, out_bytes) pair, got {self.message_bytes}"
+                )
 
     @property
     def symbol_name(self) -> str:

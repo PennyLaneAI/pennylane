@@ -116,8 +116,9 @@ def onnx_decoder(
     :mod:`~.backline`.
 
     Each message the controller sends is the model's input tensor as raw bytes, and each reply is
-    its output tensor. The tensors' sizes become the controller's message sizes, so the controller
-    needs no ``in_bytes`` or ``out_bytes`` of its own. The model runs on a GPU when the installed
+    its output tensor. The tensors' sizes become the placement's message sizes
+    (:attr:`~.Placement.in_bytes` and :attr:`~.Placement.out_bytes`), so the controller needs no
+    ``in_bytes`` or ``out_bytes`` of its own. The model runs on a GPU when the installed
     onnxruntime has a GPU provider, and on the CPU otherwise.
 
     .. warning::
@@ -147,6 +148,8 @@ def onnx_decoder(
             model does not have one input and one output of a supported tensor type.
         TypeError: If ``device`` or ``threads`` is not an int.
         ImportError: If no onnxruntime package is installed, or it has no shared library.
+        Exception: An onnxruntime error, such as ``InvalidProtobuf``, if onnxruntime's CPU provider
+            cannot load the model, which it does to read the tensor sizes.
 
     .. seealso:: :class:`~.CoprocessorFunction`, :class:`~.Coprocessor`
 

@@ -17,8 +17,6 @@
 # pylint: disable=too-few-public-methods
 
 import importlib
-import importlib.machinery
-import importlib.util
 import sys
 
 import numpy as np
@@ -58,6 +56,11 @@ class TestCoprocessorFunction:
     def test_message_bytes_given_as_a_list_is_stored_as_a_tuple(self):
         """A declared size pair is kept as a tuple, so placements can compare and hash it."""
         assert CoprocessorFunction("fn", message_bytes=[120, 121]).message_bytes == (120, 121)
+
+    def test_message_bytes_must_be_a_pair(self):
+        """Declared message sizes are one size for each direction."""
+        with pytest.raises(ValueError, match="must be an \\(in_bytes, out_bytes\\) pair"):
+            CoprocessorFunction("fn", message_bytes=(120,))
 
     def test_config_defaults_to_empty(self):
         """A CoprocessorFunction built by hand carries no config."""
