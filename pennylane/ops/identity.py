@@ -442,7 +442,7 @@ def _ctrl_g_phase(base: GlobalPhase, control, control_values, *_):
         return NotImplemented
 
     phi = base.phi
-    if not qp.math.is_abstract(phi) and not isinstance(phi, AbstractArray):
+    if not isinstance(phi, AbstractArray):
         phi = -phi
 
     if len(control) == 1:

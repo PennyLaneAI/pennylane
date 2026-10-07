@@ -743,7 +743,7 @@ class TestGeneralOperations:
             pytest.skip("PL 2.0: GlobalPhase no longer acts on wires.")
 
         base_op = cls(*data) if cls is qp.GlobalPhase else cls(*data, wires=input_wires)
-        op = qp.ctrl(base_op, control=control_wires)
+        op = ControlledOp2(base_op, control_wires=control_wires)
         tape = QuantumScript([op, qp.X(0), qp.X(1)])
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -798,7 +798,7 @@ class TestGeneralOperations:
         num_params = 1 if cls is qp.GlobalPhase else 0
         data = [0.251][:num_params]
         base_op = cls(*data)
-        op = qp.ctrl(base_op, control=(0, 4))
+        op = ControlledOp2(base_op, control_wires=(0, 4))
         tape = QuantumScript([op])
         with pytest.raises(ValueError, match="controlled global gate with unknown"):
             _ = tape_mpl(tape)
