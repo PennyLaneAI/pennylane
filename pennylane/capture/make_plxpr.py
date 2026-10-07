@@ -16,15 +16,11 @@
 
 from collections.abc import Callable, Sequence
 
+import jax
+
 import pennylane as qp
 
 from .autograph import run_autograph
-
-has_jax = True
-try:
-    import jax
-except ImportError:  # pragma: no cover
-    has_jax = False
 
 
 def make_plxpr(func: Callable, static_argnums: int | Sequence[int] = (), autograph=True, **kwargs):
@@ -140,7 +136,6 @@ def make_plxpr(func: Callable, static_argnums: int | Sequence[int] = (), autogra
         [Array(8, dtype=int64, weak_type=True)]
 
     """
-    assert has_jax
     if not qp.capture.enabled():
         raise RuntimeError(
             "Capturing PLxPR with ``make_plxpr`` requires PennyLane capture to be enabled. "

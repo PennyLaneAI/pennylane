@@ -128,8 +128,8 @@ operations = {
     "QFT",
     "ThermalRelaxationError",
     "ECR",
-    "ParametrizedEvolution",
     "GlobalPhase",
+    "PPR",
 }
 
 DEFAULT_MIXED_GATES = operations | {"Snapshot"} | channels

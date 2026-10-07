@@ -179,7 +179,6 @@ Non-parametrized gates
     ~pennylane.SQISW
     ~pennylane.MultiControlledX
     ~pennylane.Barrier
-    ~pennylane.WireCut
 
 :html:`</div>`
 
@@ -200,6 +199,7 @@ Parametrized gates
     ~pennylane.RZ
     ~pennylane.MultiRZ
     ~pennylane.PauliRot
+    ~pennylane.PPR
     ~pennylane.PhaseShift
     ~pennylane.ControlledPhaseShift
     ~pennylane.CPhase
@@ -348,27 +348,5 @@ Observables
     ~pennylane.Projector
     ~pennylane.Hamiltonian
     ~pennylane.SparseHamiltonian
-
-:html:`</div>`
-
-.. _intro_ref_ops_pulse:
-
-Pulse-level operators
----------------------
-
-If you would like to learn more about the implementation of pulse-level control in PennyLane, see the
-:mod:`~.pulse` module documentation.
-
-
-Pulse operator
-^^^^^^^^^^^^^^
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.pulse.ParametrizedEvolution
-    ~pennylane.pulse.ParametrizedHamiltonian
 
 :html:`</div>`

@@ -15,6 +15,8 @@
 Contains the classical Jacobian transform.
 """
 
+import jax
+
 # pylint: disable=import-outside-toplevel
 import numpy as np
 
@@ -106,10 +108,6 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
          - ``array`` [2]
          - ``array``
          - ``tuple(array)``
-       * - ``'tf'``
-         - ``tuple(array)``
-         - ``array``
-         - ``tuple(array)``
        * - ``'torch'``
          - ``tuple(array)``
          - ``array``
@@ -181,33 +179,11 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
             jac = _jacobian(*args, **kwargs)
 
         elif qnode.interface in ["jax", "jax-jit"]:
-            import jax
 
             argnum = 0 if wrapper_argnum is None else wrapper_argnum
 
             def _jacobian(*args, **kwargs):
                 return jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
-
-            jac = _jacobian(*args, **kwargs)
-
-        elif (
-            qnode.interface == "tf"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            import tensorflow as tf
-
-            def _jacobian(*args, **kwargs):
-                if np.isscalar(wrapper_argnum):
-                    sub_args = args[wrapper_argnum]
-                elif wrapper_argnum is None:
-                    sub_args = args
-                else:
-                    sub_args = tuple(args[i] for i in wrapper_argnum)
-
-                with tf.GradientTape() as tape:
-                    gate_params = classical_preprocessing(*args, **kwargs)
-
-                jac = tape.jacobian(gate_params, sub_args)
-                return jac
 
             jac = _jacobian(*args, **kwargs)
 

@@ -112,7 +112,8 @@ def test_order_states(basis_states, exp_map):
     assert order_states(basis_states) == exp_map
 
 
-@pytest.mark.jax
+@pytest.mark.xfail_if_capture(reason="come back to this as we port Superposition [sc-128373]")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
@@ -161,6 +162,8 @@ class TestSuperposition:
         for op1, op2 in zip(decomposition, expected):
             assert qp.equal(op1, op2)
 
+    @pytest.mark.xfail_if_capture(reason="come back to this as we port Superposition [sc-128373]")
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("probs", "bases"), PROBS_BASES)
     def test_decomposition_new(self, probs, bases):
         """Test the decomposition of the Superposition template."""
@@ -300,26 +303,6 @@ class TestInterfaces:
         for i, base in enumerate(bases):
             dec = int("".join(map(str, base)), 2)
             assert jnp.isclose(output[dec], probs[i])
-
-    @pytest.mark.tf
-    def test_tensorflow(self, probs, bases):
-        """Test that Superposition can be correctly used with the TensorFlow interface."""
-        import tensorflow as tf
-
-        probs = tf.Variable(probs)
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.Superposition(
-                tf.sqrt(probs), bases=bases, wires=range(len(bases[0])), work_wire=len(bases[0])
-            )
-            return qp.probs(range(len(bases[0])))
-
-        output = circuit()
-        for i, base in enumerate(bases):
-            dec = int("".join(map(str, base)), 2)
-            assert np.isclose(output[dec], probs[i])
 
     @pytest.mark.torch
     def test_torch(self, probs, bases):

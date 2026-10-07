@@ -38,13 +38,15 @@ class TestBarrier:
 
         dev = qp.device("default.qubit", wires=3)
         qnode = qp.QNode(qfunc, dev)
-        gates = qp.specs(qnode)()["resources"].total_quantum_operations
+        tape = qp.workflow.construct_tape(qnode)()
+        gates = qp.resource.resources_from_tape(tape).total_quantum_operations
 
         assert gates == 3
 
         optimized_qfunc = qp.compile(qfunc)
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
-        optimized_gates = qp.specs(optimized_qnode)()["resources"].total_quantum_operations
+        optimized_tape = qp.workflow.construct_tape(optimized_qnode)()
+        optimized_gates = qp.resource.resources_from_tape(optimized_tape).total_quantum_operations
 
         assert optimized_gates == 2
 
@@ -61,7 +63,12 @@ class TestBarrier:
         optimized_qfunc = qp.compile(qfunc)
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
 
-        assert "Hadamard" not in qp.specs(optimized_qnode)()["resources"].quantum_operations
+        assert (
+            "Hadamard"
+            not in qp.resource.resources_from_tape(
+                qp.workflow.construct_tape(optimized_qnode)()
+            ).quantum_operations
+        )
 
     def test_barrier_edge_cases(self):
         r"""Test that the barrier works in edge cases."""
@@ -75,13 +82,15 @@ class TestBarrier:
 
         dev = qp.device("default.qubit", wires=3)
         qnode = qp.QNode(qfunc, dev)
-        gates = qp.specs(qnode)()["resources"].total_quantum_operations
+        tape = qp.workflow.construct_tape(qnode)()
+        gates = qp.resource.resources_from_tape(tape).total_quantum_operations
 
         assert gates == 4
 
         optimized_qfunc = qp.compile(qfunc)
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
-        assert "Hadamard" not in qp.specs(optimized_qnode)()["resources"].quantum_operations
+        optimized_tape = qp.workflow.construct_tape(optimized_qnode)()
+        assert "Hadamard" not in qp.resource.resources_from_tape(optimized_tape).quantum_operations
 
         def qfunc1():
             qp.Hadamard(wires=0)
@@ -93,7 +102,8 @@ class TestBarrier:
 
         dev = qp.device("default.qubit", wires=3)
         qnode = qp.QNode(qfunc1, dev)
-        gates = qp.specs(qnode)()["resources"].total_quantum_operations
+        tape = qp.workflow.construct_tape(qnode)()
+        gates = qp.resource.resources_from_tape(tape).total_quantum_operations
 
         assert gates == 4
 
@@ -108,7 +118,8 @@ class TestBarrier:
         dev = qp.device("default.qubit", wires=3)
         optimized_qfunc = qp.compile(qfunc2)
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
-        optimized_gates = qp.specs(optimized_qnode)()["resources"].total_quantum_operations
+        optimized_tape = qp.workflow.construct_tape(optimized_qnode)()
+        optimized_gates = qp.resource.resources_from_tape(optimized_tape).total_quantum_operations
 
         assert optimized_gates == 2
 
@@ -179,48 +190,6 @@ class TestBarrier:
     def test_op_matrix_fails(self):
         """Test that qp.matrix(op) and op.matrix() both fail."""
         op = qp.Barrier(0)
-        with pytest.raises(qp.operation.MatrixUndefinedError):
-            op.matrix()
-
-
-class TestWireCut:
-    """Tests for the WireCut operator"""
-
-    def test_behaves_as_identity(self):
-        """Tests that the WireCut operator behaves as the Identity in the
-        absence of cutting"""
-
-        dev = qp.device("default.qubit", wires=1)
-
-        @qp.qnode(dev)
-        def with_wirecut():
-            qp.PauliX(wires=0)
-            qp.WireCut(wires=0)
-            return qp.state()
-
-        @qp.qnode(dev)
-        def without_wirecut():
-            qp.PauliX(wires=0)
-            return qp.state()
-
-        assert np.allclose(with_wirecut(), without_wirecut())
-
-    def test_wires_empty_list_raises_error(self):
-        """Test that the WireCut operator raises an error when instantiated with an empty list."""
-        with pytest.raises(
-            ValueError,
-            match="WireCut: wrong number of wires. At least one wire has to be provided.",
-        ):
-            qp.WireCut(wires=[])
-
-    def test_qp_matrix_gives_identity(self):
-        """Test that qp.matrix(op) gives an identity."""
-        op = qp.WireCut(0)
-        assert np.allclose(qp.matrix(op), np.eye(2))
-
-    def test_op_matrix_fails(self):
-        """Test that qp.matrix(op) and op.matrix() both fail."""
-        op = qp.WireCut(0)
         with pytest.raises(qp.operation.MatrixUndefinedError):
             op.matrix()
 

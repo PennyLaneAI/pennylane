@@ -73,7 +73,7 @@ class TestDynamicWire:
 
 class TestAllocateOp:
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("disable_capture")
     def test_valid_operation(self):
         """Test that Allocate is a valid Operator."""
         op = Allocate.from_num_wires(3)
@@ -120,7 +120,7 @@ def test_dynamic_register_not_hashable():
         qp.wires.Wires((0, reg))
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("disable_capture")
 def test_Deallocate_validity():
     """Test that Deallocate is a valid operation."""
     wires = [DynamicWire(), DynamicWire()]
@@ -186,6 +186,24 @@ def test_allocate_kwargs():
     op = q.queue[0]
     assert op.state == AllocateState.ANY
     assert op.restored
+
+
+def test_allocate_zero_wires():
+    """Test that allocating zero wires queues neither Allocate nor Deallocate."""
+    with qp.queuing.AnnotatedQueue() as q:
+        wires = allocate(0, state="any", restored=True)
+        deallocate(wires)
+
+    assert isinstance(wires, DynamicRegister)
+    assert len(wires) == 0
+    assert q.queue == []
+
+    with qp.queuing.AnnotatedQueue() as q:
+        with allocate(0) as wires:
+            qp.X(0)
+
+    assert len(wires) == 0
+    assert q.queue == [qp.X(0)]
 
 
 class TestDeallocate:
@@ -362,6 +380,21 @@ class TestCaptureIntegration:
         with pytest.raises(NotImplementedError):
             deallocate(2)
 
+    def test_allocate_zero_wires(self):
+        """Test that allocating zero wires binds neither allocate nor deallocate."""
+        import jax
+
+        def f():
+            with allocate(0, state="zero", restored=True) as wires:
+                qp.X(0)
+                assert len(wires) == 0
+
+        jaxpr = jax.make_jaxpr(f)()
+        primitives = [eqn.primitive for eqn in jaxpr.eqns]
+        assert allocate_prim not in primitives
+        assert deallocate_prim not in primitives
+        assert len(primitives) == 1
+
     def test_no_dynamic_allocation_size(self):
         """Test that allocation size must be static with capture."""
 
@@ -379,12 +412,11 @@ class TestCaptureIntegration:
 @pytest.mark.integration
 class TestDeviceIntegration:
 
-    @pytest.mark.parametrize("dev_name", ("default.qubit",))
     @pytest.mark.parametrize("device_wires", (None, (0, 1, 2)))
-    def test_reuse_without_mcms(self, dev_name, device_wires, seed):
+    def test_reuse_without_mcms(self, device_wires, seed):
         """Test that a dynamic allocations that do not require mcms can be executed."""
 
-        @qp.qnode(qp.device(dev_name, wires=device_wires, seed=seed))
+        @qp.qnode(qp.device("default.qubit", wires=device_wires, seed=seed))
         def c():
             with allocate(1, restored=True) as wires:
                 qp.H(wires)
@@ -400,14 +432,13 @@ class TestDeviceIntegration:
         assert qp.math.allclose(res1, 0)
         assert qp.math.allclose(res2, 0)
 
-    @pytest.mark.parametrize("dev_name", ("default.qubit",))
     @pytest.mark.parametrize("device_wires", (None, (0, 1, 2, 3)))
     @pytest.mark.parametrize("mcm_method", ("tree-traversal", "deferred", "one-shot"))
-    def test_reuse_with_mcms(self, dev_name, device_wires, mcm_method, seed):
+    def test_reuse_with_mcms(self, device_wires, mcm_method, seed):
         """Test that a simple dynamic allocation can be executed."""
 
         @qp.set_shots(5000 if mcm_method == "one-shot" else None)
-        @qp.qnode(qp.device(dev_name, wires=device_wires, seed=seed), mcm_method=mcm_method)
+        @qp.qnode(qp.device("default.qubit", wires=device_wires, seed=seed), mcm_method=mcm_method)
         def c():
             with allocate(1, restored=False) as wires:
                 qp.H(wires)

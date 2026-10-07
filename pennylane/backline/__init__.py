@@ -29,7 +29,7 @@ GPUs, CPUs, FPGAs, and QPUs. For examples and tutorials see the
 .. note::
 
     Backline requires a recent version of PennyLane, Catalyst, and Lightning. Check out the `installation
-    instructions and requirements <https://github.com/PennyLaneAI/backline/tree/readme#installation>`__.
+    instructions and requirements <https://github.com/PennyLaneAI/backline/#installation>`__.
 
     Note that due to the wide range of system, network, and hardware configurations you can use
     Backline with, there are different installation requirements and steps depending on your
@@ -72,7 +72,7 @@ Backline provides the following abstractions for use with PennyLane and Catalyst
           device=qp.device("lightning.qubit", wires=1)
       )
 
-- :class:`.Coprocessor`: Hardware device :class:`~.Node` (such as CPUs, GPUs, or FPGAs)  that
+- :class:`.Coprocessor`: Hardware device :class:`~.Node` (such as CPUs or GPUs)  that
   receive information from a controller for processing. They run :class:`.CoprocessingFuncion`
   callables, potentially as a persistent kernel, such as a QEC decoder.
 

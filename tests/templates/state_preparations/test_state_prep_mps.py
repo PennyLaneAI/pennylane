@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.state_prep_mps import (
     _mps_prep_decomposition,
@@ -29,7 +30,7 @@ from pennylane.templates.state_preparations.state_prep_mps import (
 
 class TestMPSPrep:
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Check the template using the `assert_valid` function."""
         mps = [
@@ -623,6 +624,7 @@ class TestMPSPrep:
             ),
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self, mps, num_wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.MPSPrep(
@@ -660,7 +662,10 @@ class TestMPSPrep:
 
         def circuit(*_mps):
             _mps_prep_decomposition(
-                *_mps, wires=range(2, num_wires + 2), work_wires=[0, 1], right_canonicalize=True
+                list(_mps),
+                wires=range(2, num_wires + 2),
+                work_wires=[0, 1],
+                right_canonicalize=True,
             )
 
         plxpr = qp.capture.make_plxpr(circuit)(*mps)
@@ -698,12 +703,9 @@ class TestMPSPrep:
             assert op.wires == qp.wires.Wires([2 + ind] + [0, 1])
             assert op.name == "QubitUnitary"
 
-    @pytest.mark.parametrize(
-        ("work_wires", "msg"),
-        [(None, "The qp.MPSPrep decomposition requires"), (1, "Incorrect number of `work_wires`")],
-    )
-    def test_wires_decomposition(self, work_wires, msg):
-        """Checks that error is shown if no `work_wires` are given in decomposition"""
+    @pytest.mark.parametrize("work_wires", [None, 1])
+    def test_wires_decomposition(self, work_wires):
+        """Checks that no decomposition rule applies when insufficient `work_wires` are given."""
 
         mps = [
             np.array([[0.70710678, 0.0], [0.0, 0.70710678]]),
@@ -725,7 +727,7 @@ class TestMPSPrep:
         ]
 
         op = qp.MPSPrep(mps, wires=range(2, 5), work_wires=work_wires)
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(DecompositionUndefinedError, match="No applicable decomposition rule"):
             op.decomposition()
 
     def test_right_canonical(self):
@@ -804,8 +806,8 @@ class TestMPSPrep:
         # Test 1: Passing a numpy array shouldn't raise a truth-value ValueError
         work_wires_array = np.array([10, 11])
         op_array = qp.MPSPrep(mps, wires=[0, 1], work_wires=work_wires_array)
-        assert op_array.hyperparameters["work_wires"] == qp.wires.Wires([10, 11])
+        assert op_array.work_wires == qp.wires.Wires([10, 11])
 
         # Test 2: Passing a single integer shouldn't raise a TypeError on len()
         op_int = qp.MPSPrep(mps, wires=[0, 1], work_wires=10)
-        assert op_int.hyperparameters["work_wires"] == qp.wires.Wires([10])
+        assert op_int.work_wires == qp.wires.Wires([10])

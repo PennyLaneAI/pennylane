@@ -58,7 +58,7 @@ class TestInitialization:
         assert len(q.queue) == 1
         assert q.queue[0] is op
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
@@ -273,36 +273,6 @@ class TestIntegration:
 
         assert allclose(expected_state, state)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_execution_tf(self, coeffs, ops, seed):
-        """Test that the circuit executes as expected using tensorflow"""
-        import tensorflow as tf
-
-        time = tf.Variable(0.5, dtype=tf.complex128)
-        dev = qp.device("default.qubit", wires=[0, 1])
-
-        @qp.qnode(dev)
-        def circ(time):
-            hamiltonian = qp.dot(coeffs, ops)
-            qp.QDrift(hamiltonian, time, n=2, seed=seed)
-            return qp.state()
-
-        expected_decomp = _sample_decomposition(coeffs, ops, time, n=2, seed=seed)
-
-        initial_state = tf.Variable([1.0, 0.0, 0.0, 0.0], dtype=tf.complex128)
-
-        expected_state = tf.linalg.matvec(
-            reduce(
-                lambda x, y: x @ y,
-                [qp.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
-            ),
-            initial_state,
-        )
-        state = circ(time)
-
-        assert allclose(expected_state, state)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_jax(self, coeffs, ops, seed):
@@ -406,32 +376,6 @@ class TestIntegration:
             res_circ = circ(time, coeffs)
             res_circ.backward()
 
-    @pytest.mark.tf
-    def test_error_gradient_workflow_tf(self):
-        """Test that an error is raised if we require a gradient of QDrift with respect to hamiltonian coefficients."""
-        import tensorflow as tf
-
-        time = tf.Variable(1.5, dtype=tf.complex128)
-        coeffs = tf.Variable([1.23, -0.45], dtype=tf.complex128)
-
-        terms = [qp.PauliX(0), qp.PauliZ(0)]
-        dev = qp.device("default.qubit", wires=1)
-
-        @qp.qnode(dev)
-        def circ(time, coeffs):
-            h = qp.sum(
-                qp.s_prod(coeffs[0], terms[0]),
-                qp.s_prod(coeffs[1], terms[1]),
-            )
-            qp.QDrift(h, time, n=3)
-            return qp.expval(qp.Hadamard(0))
-
-        msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
-        with pytest.raises(QuantumFunctionError, match=msg):
-            with tf.GradientTape() as tape:
-                result = circ(time, coeffs)
-            tape.gradient(result, coeffs)
-
     @pytest.mark.jax
     def test_error_gradient_workflow_jax(self):
         """Test that an error is raised if we require a gradient of QDrift with respect to hamiltonian coefficients."""
@@ -519,43 +463,6 @@ class TestIntegration:
         ref_circ = reference_circ(ref_time, ref_coeffs)
         ref_circ.backward()
         reference_grad = ref_time.grad
-
-        assert allclose(measured_grad, reference_grad)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("n", (1, 5, 10))
-    def test_tf_gradient(self, n, seed):
-        """Test that the gradient is computed correctly using tensorflow"""
-        import tensorflow as tf
-
-        time = tf.Variable(1.5, dtype=tf.complex128)
-        coeffs = [1.23, -0.45]
-        terms = [qp.PauliX(0), qp.PauliZ(0)]
-
-        dev = qp.device("default.qubit", wires=1)
-
-        @qp.qnode(dev)
-        def circ(time, coeffs):
-            h = qp.dot(coeffs, terms)
-            qp.QDrift(h, time, n=n, seed=seed)
-            return qp.expval(qp.Hadamard(0))
-
-        @qp.qnode(dev)
-        def reference_circ(time, coeffs):
-            decomp = _sample_decomposition(coeffs, terms, time, n, seed)
-
-            for op in decomp:
-                qp.apply(op)
-
-            return qp.expval(qp.Hadamard(0))
-
-        with tf.GradientTape() as tape:
-            result = circ(time, coeffs)
-        measured_grad = tape.gradient(result, time)
-
-        with tf.GradientTape() as tape:
-            result = reference_circ(time, coeffs)
-        reference_grad = tape.gradient(result, time)
 
         assert allclose(measured_grad, reference_grad)
 

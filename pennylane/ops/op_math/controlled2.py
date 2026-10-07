@@ -46,10 +46,11 @@ from pennylane.decomposition.resources import (
     controlled_resource_rep,
     resolve_work_wire_type,
 )
+from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2, get_traced_and_non_traced_args
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
 
 from .symbolicop2 import SymbolicOp2
 
@@ -651,6 +652,8 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     general_rules = DecompCollection([])
     if op.base.has_matrix and len(op.base.wires) == 1:
         general_rules.append(to_controlled_unitary)
+    if len(op.control_wires) > 1:
+        general_rules.append(ctrl_many_zeroed_work_wires)
     if len(op.control_wires) > 2:
         general_rules.append(ctrl_single_work_wire)
 
@@ -777,7 +780,7 @@ def to_controlled_unitary(base, control_wires, control_values, work_wires, work_
     """Convert a controlled operator to a controlled qubit unitary."""
     qp.ControlledQubitUnitary(
         base.matrix(),
-        wires=control_wires + base.wires,
+        wires=concatenate_wires(control_wires, base.wires),
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
@@ -846,23 +849,18 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
     return _impl
 
 
-def _ctrl_single_work_wire_resource(
-    base, control_wires, control_values, work_wires, work_wire_type
-):
+def _ctrl_single_work_wire_resource(base, control_wires, *_, **__):
+    # NOTE: No need to pass work_wire information into the resources below
+    # as this rule assumes that no work wires are *explicitly* provided and instead
+    # the only work wire comes from allocation.
     return {
-        _ctrl_abstract(
-            base,
-            control_wires=Wire[1],
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        ): 1,
-        _ctrl_abstract(qp.X, Wire[len(control_wires)], Wire[len(work_wires)], work_wire_type): 2,
+        _ctrl_abstract(base, Wire[1]): 1,
+        qp.ctrl(qp.X(Wire[1]), Wire[len(control_wires)]): 2,
     }
 
 
-# pylint: disable=protected-access,unused-argument
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
-def _ctrl_single_work_wire(base, control_wires, control_values, work_wires, work_wire_type):
+def _ctrl_single_work_wire(base, control_wires, *_, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     with allocation.allocate(1, state="zero", restored=True) as aux:
         qp.ctrl(qp.X(aux[0]), control=control_wires)
@@ -871,6 +869,39 @@ def _ctrl_single_work_wire(base, control_wires, control_values, work_wires, work
 
 
 ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire, name="ctrl_single_work_wire")
+
+
+def _ctrl_many_zeroed_work_wires_resource(base, control_wires, *_, **__):
+    num_control_wires = len(control_wires)
+    return {
+        qp.TemporaryAND: num_control_wires - 1,
+        qp.adjoint(qp.TemporaryAND(Wire[3])): num_control_wires - 1,
+        _ctrl_abstract(base, Wire[1]): 1,
+    }
+
+
+def _ctrl_many_zeroed_work_wires_condition(control_wires, work_wires, work_wire_type, **_):
+    return (
+        len(control_wires) > 1
+        and len(work_wires) >= len(control_wires) - 1
+        and work_wire_type == "zeroed"
+    )
+
+
+@register_condition(_ctrl_many_zeroed_work_wires_condition)
+@register_resources(_ctrl_many_zeroed_work_wires_resource)
+def _ctrl_many_zeroed_work_wires(base, control_wires, work_wires, *_, **__):
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.prod2 import _multi_temporary_and_all_ones
+
+    effective_control = _multi_temporary_and_all_ones(control_wires, work_wires)
+    qp.ctrl(base, control=effective_control)
+    qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
+
+
+ctrl_many_zeroed_work_wires = flip_zero_control(
+    _ctrl_many_zeroed_work_wires, name="ctrl_many_zeroed_work_wires"
+)
 
 
 def _ctrl_abstract(
@@ -906,3 +937,8 @@ def _ctrl_abstract(
         work_wire_type=work_wire_type,
     )
     return abstractify(op)
+
+
+@to_name.register
+def _controlledop2_to_name(op: ControlledOp2):
+    return f"C({to_name(op.base)})"

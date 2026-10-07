@@ -23,7 +23,7 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     features = (0.0, 1.0, 2.0)
@@ -156,7 +156,7 @@ class TestDecomposition:
         ),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("features", "wires", "num_repeats", "pattern"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, wires, num_repeats, pattern):
         op = qp.IQPEmbedding(features, wires, n_repeats=num_repeats, pattern=pattern)
@@ -328,34 +328,6 @@ class TestInterfaces:
         grads2 = grad_fn2(features)
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
-    def test_tf(self, tol, features):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        features = tf.Variable(features)
-
-        dev = qp.device("default.qubit", wires=2)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(features)
-        grads = tape.jacobian(res, [features])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(features)
-        grads2 = tape2.jacobian(res2, [features])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])

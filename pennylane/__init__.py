@@ -28,6 +28,7 @@ from pennylane.core.queuing import QueuingManager
 from pennylane import compiler
 from pennylane.compiler import qjit
 from pennylane import capture
+from pennylane.capture import hint
 from pennylane import core
 from pennylane import control_flow
 from pennylane.control_flow import for_loop, while_loop
@@ -49,8 +50,6 @@ from pennylane.decomposition import (
 from pennylane import templates
 from pennylane import pauli
 from pennylane.pauli import pauli_decompose
-from pennylane.resource import specs
-from pennylane import resource
 from pennylane import qchem
 from pennylane.fermi import (
     FermiC,
@@ -80,6 +79,7 @@ from pennylane.qchem import (
 from pennylane.numeric_hamiltonians import (
     CDFHamiltonian,
     CGFHamiltonian,
+    VibronicHamiltonian,
 )
 from pennylane._grad import grad, jacobian, vjp, jvp, value_and_grad
 from pennylane._version import __version__
@@ -111,9 +111,10 @@ from pennylane.templates.tensornetworks import *
 from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
-from pennylane import qaoa
 from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
+from pennylane.resource import analyze, specs, track
+from pennylane import resource
 
 from pennylane.transforms import (
     transform,
@@ -160,6 +161,7 @@ from pennylane.ops.functions import (
     commutator,
     comm,
     single_qubit_zyz_angles,
+    subcircuit,
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *
@@ -172,10 +174,6 @@ from pennylane.debugging import (
     debug_tape,
 )
 from pennylane.shadows import ClassicalShadow
-from pennylane.qcut import cut_circuit, cut_circuit_mc
-from pennylane import pulse
-
-from pennylane import fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 from pennylane import gradients  # pylint:disable=wrong-import-order
 from pennylane.drawer import draw, draw_mpl

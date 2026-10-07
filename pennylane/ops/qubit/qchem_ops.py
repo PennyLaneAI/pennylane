@@ -30,7 +30,9 @@ from pennylane.decomposition.symbolic_decomposition import (
     pow_rotation,
 )
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
+from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -49,23 +51,6 @@ def _single_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> 
         `phase_prefactor=-0.5j` : `SingleExcitationMinus`
     """
     interface = qp.math.get_interface(phi)
-    if (
-        interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        if isinstance(phase_prefactor, complex):
-            phi = qp.math.cast_like(phi, 1j)
-        c = qp.math.cos(phi / 2)
-        s = qp.math.sin(phi / 2)
-        e = qp.math.exp(phase_prefactor * phi)
-        zeros = qp.math.zeros_like(phi)
-        rows = [
-            [e, zeros, zeros, zeros],
-            [zeros, c, -s, zeros],
-            [zeros, s, c, zeros],
-            [zeros, zeros, zeros, e],
-        ]
-        return qp.math.stack([stack_last(row) for row in rows], axis=-2)
-
     c = qp.math.cos(phi / 2)
     s = qp.math.sin(phi / 2)
     e = qp.math.exp(phase_prefactor * phi)
@@ -97,11 +82,6 @@ def _double_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> 
         `phase_prefactor=-0.5j` : `DoubleExcitationMinus`
     """
     interface = qp.math.get_interface(phi)
-
-    if interface == "tensorflow" and isinstance(
-        phase_prefactor, complex
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        phi = qp.math.cast_like(phi, 1j)
 
     c = qp.math.cos(phi / 2)
     s = qp.math.sin(phi / 2)
@@ -231,21 +211,34 @@ class SingleExcitation(Operator2):
 # needs to be wrapped in function due to circular dependencies
 # pylint: disable=unused-argument
 def _single_excitation_resources(phi, wires):
+    # ``Prod2`` takes its operands in matrix order, i.e. reversed relative to the order in which
+    # the decomposition below applies them.
+    basis = Prod2((qp.CNOT(wires=Wire[2]), qp.Hadamard(wires=Wire[1])))
+    unbasis = Prod2((qp.Hadamard(wires=Wire[1]), qp.CNOT(wires=Wire[2])))
     return {
-        qp.Hadamard: 2,
-        qp.CNOT: 2,
-        qp.RY: 2,
+        _change_op_basis_abstract(
+            basis,
+            Prod2((qp.RY(Float, wires=Wire[1]), qp.RY(Float, wires=Wire[1]))),
+            unbasis,
+        ): 1
     }
 
 
 @register_resources(_single_excitation_resources)
 def _single_excitation_decomp(phi: TensorLike, wires: WiresLike):
-    qp.Hadamard(wires[0])
-    qp.CNOT(wires)
-    qp.RY(-phi / 2, wires[0])
-    qp.RY(-phi / 2, wires[1])
-    qp.CNOT(wires)
-    qp.Hadamard(wires[0])
+    def _to_basis():
+        qp.Hadamard(wires[0])
+        qp.CNOT(wires)
+
+    def _rotations():
+        qp.RY(-phi / 2, wires[0])
+        qp.RY(-phi / 2, wires[1])
+
+    def _from_basis():
+        qp.CNOT(wires)
+        qp.Hadamard(wires[0])
+
+    qp.change_op_basis(_to_basis, _rotations, _from_basis)
 
 
 # pylint: disable=unused-argument
@@ -262,7 +255,29 @@ def _single_excitation_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(-phi / 2, "XY", wires=wires)
 
 
-add_decomps(SingleExcitation, _single_excitation_decomp, _single_excitation_ppr)
+# pylint: disable=unused-argument
+def _single_excitation_ppr_rz_resource(phi, wires):
+    return {
+        _change_op_basis_abstract(
+            qp.PPR(4, "XX", wires=Wire[2]),
+            Prod2((qp.RZ(Float, wires=Wire[1]), qp.RZ(Float, wires=Wire[1]))),
+            qp.PPR(-4, "XX", wires=Wire[2]),
+        ): 1
+    }
+
+
+@register_resources(_single_excitation_ppr_rz_resource)
+def _single_excitation_ppr_rz(phi: TensorLike, wires: WiresLike):
+    def _rotations():
+        qp.RZ(phi / 2, wires[0])
+        qp.RZ(-phi / 2, wires[1])
+
+    qp.change_op_basis(qp.PPR(4, "XX", wires=wires), _rotations, qp.PPR(-4, "XX", wires=wires))
+
+
+add_decomps(
+    SingleExcitation, _single_excitation_decomp, _single_excitation_ppr, _single_excitation_ppr_rz
+)
 add_decomps("Adjoint(SingleExcitation)", adjoint_rotation2)
 add_decomps("Pow(SingleExcitation)", pow_rotation2)
 
@@ -1402,11 +1417,6 @@ class FermionicSWAP(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.8776+0.4794j]],
                dtype=torch.complex128)
         """
-
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = qp.math.cast_like(phi, 1j)
 
         c = qp.math.cast_like(qp.math.cos(phi / 2), 1j)
         s = qp.math.cast_like(qp.math.sin(phi / 2), 1j)

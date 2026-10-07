@@ -289,11 +289,12 @@ def bind_new_parameters_hilbert_schmidt(op: HilbertSchmidt, params: Sequence[Ten
 
 @bind_new_parameters.register
 def bind_new_parameters_qsvt(op: QSVT, params: Sequence[TensorLike]):
-    ua = op.hyperparameters["UA"]
-    new_ua = bind_new_parameters(ua, params[: ua.num_params])
-    new_projectors = _bind_nested_operators(
-        op.hyperparameters["projectors"], params[ua.num_params :]
-    )
+    params = list(params)
+    if not params:
+        return copy.copy(op)
+
+    new_ua = bind_new_parameters(op.UA, params[: op.UA.num_params])
+    new_projectors = _bind_nested_operators(op.projectors, params[op.UA.num_params :])
     return QSVT(new_ua, new_projectors)
 
 

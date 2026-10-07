@@ -261,14 +261,13 @@ class TestQuantumMonteCarlo:
     def func(i):
         return np.sin(i) ** 2
 
-    @pytest.mark.jax
+    @pytest.mark.xfail_if_capture(reason="the _unflatten of QMC is not compatible with capture")
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Test standard validity criteria with assert_valid."""
         p = np.ones(4) / 4
         target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
-
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-        # Skip capture test because the _unflatten method of QMC is not compatible with capture
         qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
     DECOMP_PARAMS = [
@@ -276,7 +275,7 @@ class TestQuantumMonteCarlo:
         (np.ones(2) / 2, Wires(range(2)), Wires(range(2, 4))),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("p", "target_wires", "estimation_wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, p, target_wires, estimation_wires):
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
@@ -341,7 +340,7 @@ class TestQuantumMonteCarlo:
         Q = make_Q(A, R)
 
         with qp.queuing.AnnotatedQueue() as q_qpe_tape:
-            qp.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
+            qp.QuantumPhaseEstimation(qp.QubitUnitary(Q, wires=target_wires), estimation_wires)
 
         qpe_tape = qp.tape.QuantumScript.from_queue(q_qpe_tape)
         [qpe_tape], _ = qp.transforms.decompose(

@@ -23,17 +23,22 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 
 
-@pytest.mark.jax
-def test_standard_checks():
+@pytest.mark.parametrize("work_wires", [(), (2, 3)])
+@pytest.mark.usefixtures("enable_and_disable_capture")
+def test_standard_checks(work_wires):
     """Run standard checks with the assert_valid function."""
-    op = qp.FlipSign([0, 1], wires=("a", "b"))
+    op = qp.FlipSign([0, 1], wires=(0, 1), work_wires=work_wires)
     qp.ops.functions.assert_valid(op)
 
 
 def test_repr():
     """Test the repr for a flip sign operator."""
     op = qp.FlipSign([0, 1], wires=("a", "b"))
-    expected = "FlipSign(state=(0, 1), wires=['a', 'b'])"
+    expected = "FlipSign(state=(0, 1), wires=['a', 'b'], work_wires=[])"
+    assert repr(op) == expected
+
+    op = qp.FlipSign([0, 1], wires=("a", "b"), work_wires=["c"])
+    expected = "FlipSign(state=(0, 1), wires=['a', 'b'], work_wires=['c'])"
     assert repr(op) == expected
 
 
@@ -92,6 +97,13 @@ class TestFlipSign:
         """Test that the operation wires attribute is correct."""
         op = qp.FlipSign(state, wires=wires)
         assert op.wires == Wires(wires)
+
+    @pytest.mark.parametrize("work_wires", [None, (), [5, 6]])
+    def test_work_wires(self, work_wires):
+        """Test that work wires are stored but excluded from ``op.wires``."""
+        op = qp.FlipSign([1, 0, 1], wires=[0, 1, 2], work_wires=work_wires)
+        assert op.wires == Wires([0, 1, 2])
+        assert op.work_wires == Wires([] if work_wires is None else work_wires)
 
     @pytest.mark.parametrize("state, num_wires", [(-1, 1), (16, 4)])
     def test_invalid_state_error(self, state, num_wires):
@@ -178,30 +190,11 @@ class TestFlipSign:
             ([1, 0, 1, 0], [0, 1, 5, 4]),
         ],
     )
-    def test_decomposition_new(self, state, wires):
+    @pytest.mark.parametrize("work_wires", [(), (10,), (10, 11)])
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_decomposition_new(self, state, wires, work_wires):
         """Tests the decomposition rule implemented with the new system."""
-        op = qp.FlipSign(state, wires=wires)
-
-        for rule in qp.list_decomps(qp.FlipSign):
-            _test_decomposition_rule(op, rule)
-
-    @pytest.mark.parametrize(
-        "state, wires",
-        [
-            (0, 0),
-            (1, 3),
-            (2, range(2)),
-            (6, range(3)),
-            (8, range(4)),
-            ([1, 0], [1, 2]),
-            ([1, 1, 0], [4, 1, 2]),
-            ([1, 0, 1, 0], [0, 1, 5, 4]),
-        ],
-    )
-    @pytest.mark.capture
-    def test_decomposition_new_capture(self, state, wires):
-        """Tests the decomposition rule implemented with the new system."""
-        op = qp.FlipSign(state, wires=wires)
+        op = qp.FlipSign(state, wires=wires, work_wires=work_wires)
 
         for rule in qp.list_decomps(qp.FlipSign):
             _test_decomposition_rule(op, rule)

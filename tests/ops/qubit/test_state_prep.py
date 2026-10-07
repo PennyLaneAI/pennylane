@@ -128,7 +128,7 @@ class TestInputs:
 class TestStandardValidityBasisState:
     """Test `BasisState` validity, including its decomposition in JIT contexts."""
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("input_state", (np.array([0, 1]), [0, 1], (0, 1), (True, False)))
     def test_assert_valid(self, input_state):
         """Test standard validity."""
@@ -569,25 +569,6 @@ class TestStateVector:
         state = jax.numpy.array([1.0, 0.0])
         grad = jax.jacobian(circuit)(state)
         assert qp.math.get_interface(grad) == "jax"
-        assert np.array_equal(grad, [2.0, 0.0])
-
-    @pytest.mark.tf
-    def test_StatePrep_backprop_tf(self):
-        """Test backprop with tf"""
-        import tensorflow as tf
-
-        @qp.qnode(qp.device("default.qubit"), diff_method="backprop")
-        def circuit(state):
-            qp.StatePrep(state, wires=(0,))
-            qp.S(1)
-            return qp.expval(qp.PauliZ(0))
-
-        state = tf.Variable([1.0, 0.0])
-        with tf.GradientTape() as tape:
-            res = circuit(state)
-
-        grad = tape.jacobian(res, state)
-        assert qp.math.get_interface(grad) == "tensorflow"
         assert np.array_equal(grad, [2.0, 0.0])
 
     @pytest.mark.parametrize(

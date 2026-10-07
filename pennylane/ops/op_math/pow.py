@@ -238,25 +238,6 @@ class Pow(ScalarSymbolicOp):
     @staticmethod
     def _matrix(scalar, mat):
         if isinstance(scalar, int):
-            if (
-                qp.math.get_deep_interface(mat) == "tensorflow"
-            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-                # TensorFlow doesn't have a matrix_power func, and scipy.linalg.fractional_matrix_power
-                # is not differentiable. So we use a custom implementation of matrix power for integer
-                # exponents below.
-                if scalar == 0:
-                    # Used instead of qp.math.eye for tracing derivatives
-                    return mat @ math.linalg.inv(mat)
-                if scalar > 0:
-                    out = mat
-                else:
-                    out = mat = math.linalg.inv(mat)
-                    scalar *= -1
-
-                for _ in range(scalar - 1):
-                    out @= mat
-                return out
-
             return math.linalg.matrix_power(mat, scalar)
 
         return fractional_matrix_power(mat, scalar)
@@ -338,7 +319,9 @@ class Pow(ScalarSymbolicOp):
 
     def eigvals(self):
         base_eigvals = self.base.eigvals()
-        return [value**self.z for value in base_eigvals]
+        is_single_precision = math.get_dtype_name(base_eigvals) in ("float32", "complex64")
+        complex_dtype = "complex64" if is_single_precision else "complex128"
+        return math.cast(base_eigvals, complex_dtype) ** self.z
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property

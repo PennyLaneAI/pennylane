@@ -23,7 +23,7 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qp.AngleEmbedding(features=[1.0, 2.0, 3.0], wires=range(3), rotation="Z")
@@ -163,7 +163,7 @@ class TestDecomposition:
         ([1.5, 1.6, 0], range(3), "Y"),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("features", "wires", "rotation"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, wires, rotation):
         op = qp.AngleEmbedding(features, wires, rotation=rotation)
@@ -316,33 +316,6 @@ class TestInterfaces:
         grads2 = grad_fn2(features)
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        features = tf.Variable([1.0, 1.0, 1.0])
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(features)
-        grads = tape.gradient(res, [features])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(features)
-        grads2 = tape2.gradient(res2, [features])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):

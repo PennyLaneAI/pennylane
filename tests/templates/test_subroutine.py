@@ -254,6 +254,8 @@ class TestSubroutineOp:
         # pylint: disable=isinstance-second-argument-not-valid-type
         assert isinstance(self.op1, Example1Subroutine)
 
+    # SubroutineOp exists for the tape pipeline only. It does not need to be capture compatible.
+    @pytest.mark.usefixtures("disable_capture")
     def test_basic_validity(self):
         """Test that subroutine op passes basic validity checks."""
         qp.ops.functions.assert_valid(self.op1, skip_pickle=True)
@@ -609,22 +611,6 @@ class TestTapePLIntegration:
 
         out2 = qp.draw(c, decimals=None)(0.5, 1.2)
         assert out2 == "0: ─╭Tester─┤  <Z>\n1: ─╰Tester─┤  <Z>"
-
-    def test_specs(self):
-        """Test that subroutines show up as gate types in specs."""
-
-        @qp.templates.Subroutine
-        def Tester(x, y, wires):
-            qp.RX(x, wires[0])
-            qp.RY(y, wires[1])
-
-        @qp.qnode(qp.device("reference.qubit", wires=2))
-        def c(x, y):
-            Tester(x, y, wires=(0, 1))
-            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
-
-        specs = qp.specs(c, level="top")(0.5, 1.2)
-        assert specs.resources.quantum_operations["Tester"] == 1
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -1057,6 +1043,7 @@ class TestGraphDecomposition:
         qp.assert_equal(tape_ry[1], qp.RY(1.0, 1))
         qp.assert_equal(tape_ry[2], qp.RY(2.0, 2))
 
+    @pytest.mark.usefixtures("disable_capture")
     def test_inexact_resources_testing(self):
         """Test that assert_valid will work on a Subroutine with inexact resources."""
 

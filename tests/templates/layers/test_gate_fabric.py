@@ -25,7 +25,7 @@ from pennylane import numpy as pnp
 from pennylane.typing import Bool, Wire
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("include_pi", (True, False))
 def test_standard_validity(include_pi):
     """Check the operation using the assert_valid function."""
@@ -910,33 +910,6 @@ class TestInterfaces:
         grads2 = grad_fn2(weights)
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        weights = tf.Variable(np.random.random(size=(1, 1, 2)))
-
-        dev = qp.device("default.qubit", wires=4)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(weights)
-        grads = tape.gradient(res, [weights])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(weights)
-        grads2 = tape2.gradient(res2, [weights])
-
-        assert qp.math.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):

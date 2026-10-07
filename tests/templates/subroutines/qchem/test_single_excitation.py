@@ -23,7 +23,7 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
     weight = np.pi / 3
@@ -150,25 +150,7 @@ class TestDecomposition:
             [1, 2, 3, 4],
         ],
     )
-    @pytest.mark.capture
-    def test_decomposition_new_capture(self, single_wires):
-        """Tests the decomposition rule implemented with the new system."""
-        op = qp.FermionicSingleExcitation(
-            np.pi / 3,
-            wires=single_wires,
-        )
-
-        for rule in qp.list_decomps(qp.FermionicSingleExcitation):
-            _test_decomposition_rule(op, rule)
-
-    @pytest.mark.parametrize(
-        ("single_wires"),
-        [
-            [0, 1, 2],
-            [10, 11],
-            [1, 2, 3, 4],
-        ],
-    )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self, single_wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.FermionicSingleExcitation(
@@ -265,25 +247,6 @@ class TestInterfaces:
         grad_fn = jax.grad(circuit)
         grad_jit = jax.grad(jit_circuit)
         assert qp.math.allclose(grad_fn(weight), grad_jit(weight))
-
-    @pytest.mark.tf
-    def test_tf(self):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        weight = tf.Variable(0.5)
-        dev = qp.device("default.qubit", wires=4)
-
-        circuit = qp.QNode(circuit_template, dev)
-
-        circuit(weight)
-
-        with tf.GradientTape() as tape:
-            res = circuit(weight)
-
-        # check that the gradient is computed without error
-        tape.gradient(res, [weight])
 
     @pytest.mark.torch
     def test_torch(self):

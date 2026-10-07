@@ -25,6 +25,7 @@ import logging
 import warnings
 from collections import defaultdict
 
+import jax
 import numpy as np
 
 from pennylane import math
@@ -54,6 +55,7 @@ from pennylane.measurements import (
 )
 from pennylane.operation import operation_derivative
 from pennylane.ops import MeasurementValue, MidMeasure, Rot, X, Y, Z, adjoint
+from pennylane.resource import resources_from_tape
 from pennylane.wires import Wires
 
 from ._legacy_device import Device
@@ -318,7 +320,7 @@ class QubitDevice(Device):
                 executions=1,
                 shots=self._shots,
                 results=results,
-                resources=circuit.specs["resources"],
+                resources=resources_from_tape(circuit),
             )
             self.tracker.record()
 
@@ -862,7 +864,6 @@ class QubitDevice(Device):
         basis_states = np.arange(number_of_states)
         # pylint:disable = import-outside-toplevel
         if math.is_abstract(state_probability) and math.get_interface(state_probability) == "jax":
-            import jax
 
             key = jax.random.PRNGKey(np.random.randint(0, 2**31))
             if jax.numpy.ndim(state_probability) == 2:

@@ -273,6 +273,8 @@ def _get_mm(op: MidMeasure | PauliMeasure, bit_map, wire_map):
 
 @_get_meas.register
 def _get_c(op: Conditional, bit_map, wire_map):
+    if len(op.wires) == 0:
+        return op.meas_val.measurements, max(wire_map.values())
     return op.meas_val.measurements, max({wire_map[w] for w in op.wires})
 
 

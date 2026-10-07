@@ -45,9 +45,26 @@ def get_tape(angles, wires):
     )
 
 
+@pytest.mark.unit
+@pytest.mark.parametrize("alias_name", ["MultiplexedRotation", "UniformlyControlledRotation"])
+def test_aliases(alias_name):
+    """Test that SelectPauliRot aliases are public and instantiate SelectPauliRot."""
+    alias = getattr(qp, alias_name)
+
+    assert alias is qp.SelectPauliRot
+    assert getattr(qp.templates, alias_name) is qp.SelectPauliRot
+    assert alias_name in qp.__all__
+
+    angles = np.array([1.0, 2.0, 3.0, 4.0])
+    op = alias(angles, control_wires=[0, 1], target_wire=2, rot_axis="Y")
+    expected = qp.SelectPauliRot(angles, control_wires=[0, 1], target_wire=2, rot_axis="Y")
+
+    qp.assert_equal(op, expected)
+
+
 class TestSelectPauliRot:
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
@@ -215,7 +232,7 @@ class TestSelectPauliRot:
             for gate in dec[1::2]:
                 assert gate.name == "CNOT"
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("n", [1, 2, 3, 4])
     @pytest.mark.parametrize("axis", "XYZ")
     def test_decomposition_new(self, n, axis):
@@ -274,31 +291,6 @@ class TestSelectPauliRot:
         output = dev.execute(tape[0])[0]
 
         assert qp.math.allclose(output, output_torch)
-
-    @pytest.mark.tf
-    def test_interface_tf(self):
-        """Test that SelectPauliRot works with tensorflow"""
-
-        import tensorflow as tf
-
-        angles = [1, 2, 3, 4]
-
-        wires = qp.registers({"control": 2, "target": 1})
-        dev = qp.device("default.qubit", wires=3)
-
-        qs = get_tape(tf.Variable(angles), wires)
-
-        program, _ = dev.preprocess()
-        tape = program([qs])
-        output_tf = dev.execute(tape[0])[0]
-
-        qs = get_tape(angles, wires)
-
-        program, _ = dev.preprocess()
-        tape = program([qs])
-        output = dev.execute(tape[0])[0]
-
-        assert qp.math.allclose(output, output_tf)
 
     @pytest.mark.jax
     def test_jax_jit(self):

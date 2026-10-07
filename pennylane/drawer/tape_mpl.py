@@ -144,14 +144,6 @@ def _(op: ops.Barrier, drawer, layer, _):
 
 
 @_add_operation_to_drawer.register
-def _(op: ops.WireCut, drawer, layer, _):
-    ymin = min(op.wires) - 0.5
-    ymax = max(op.wires) + 0.5
-    drawer.ax.text(layer - 0.35, y=max(op.wires), s="✂", fontsize=40)
-    drawer.ax.vlines(layer, ymin=ymin, ymax=ymax, linestyle="--")
-
-
-@_add_operation_to_drawer.register
 def _(op: ops.MidMeasure, drawer, layer, _):
     text = None if op.postselect is None else str(int(op.postselect))
     drawer.measure(layer, op.wires[0], text=text)  # assume one wire
