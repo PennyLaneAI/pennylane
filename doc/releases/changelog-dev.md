@@ -1248,6 +1248,11 @@
 * ZX transforms now require ``pyzx>=0.10``. Upgrade with ``pip install 'pyzx>=0.10'``.
   [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
 
+* The `__repr__` of :class:`~.MultiControlledX` now also reports `work_wires` and
+  `work_wire_type` when work wires are provided, instead of only `wires` and non-trivial
+  `control_values`.
+  [(#10190)](https://github.com/PennyLaneAI/pennylane/pull/10190)
+
 * Jax 0.7.1 is now a hard requirement for PennyLane.
   [(#10192)](https://github.com/PennyLaneAI/pennylane/pull/10192)
 
