@@ -15,76 +15,24 @@
 
 from __future__ import annotations
 
-import copy
-import json
-import os
-import tempfile
-import time
 import warnings
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import partial
-from pathlib import Path
 
-import pennylane as qp
+from pennylane.workflow import QNode
 
 from ._utils import (
     apply_partial_args,
+    build_circuit_specs,
     get_marker_level_map,
     preprocess_level_input,
     unwrap_partial,
+    unwrap_qjit_qnode,
 )
 from .mlir_specs import resources_from_analysis_pass
 from .resource import CircuitSpecs, SpecsResources
-
-# Used for device-level qjit resource tracking
-_RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"
-
-
-def _specs_qjit_device_level_tracking(
-    qjit, original_qnode, compute_depth, *args, **kwargs
-) -> SpecsResources:
-    # pylint: disable=import-outside-toplevel
-    # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
-    from catalyst import QJIT
-
-    from ..devices import NullQubit
-
-    if compute_depth is None:
-        compute_depth = True
-
-    with tempfile.TemporaryDirectory(
-        prefix=f"{_RESOURCE_TRACKING_PREFIX}_{os.getpid()}_"
-    ) as tmpdirname:
-        filepath = Path(f"{tmpdirname}/{_RESOURCE_TRACKING_PREFIX}_{time.time_ns()}.json")
-
-        # When running at the device level, execute on null.qubit directly with resource tracking,
-        # which will give resource usage information for after all transforms have completed
-        # TODO: Find a way to inherit all devices args from input
-        original_device = original_qnode.device
-        spoofed_dev = NullQubit(
-            target_device=original_device,
-            wires=original_device.wires,
-            track_resources=True,
-            resources_filename=str(filepath),
-            compute_depth=compute_depth,
-        )
-
-        new_qnode = qjit.original_function.update(device=spoofed_dev)
-        new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
-
-        # Execute on null.qubit with resource tracking
-        new_qjit(*args, **kwargs)
-
-        with filepath.open("r", encoding="utf-8") as f:
-            resource_data = json.load(f)
-
-        return SpecsResources(
-            counts=resource_data["gate_types"],
-            measurement_processes=resource_data["measurements"],
-            num_wires=resource_data["num_wires"],
-            circuit_depth=resource_data["depth"],
-        )
+from .track import _run_with_resource_tracking
 
 
 def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs) -> tuple[
@@ -130,29 +78,17 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
 
 
 def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
-    # pylint: disable=import-outside-toplevel
-    # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
-    try:
-        from catalyst import QJIT
-    except ImportError as exc:  # pragma: no cover
-        raise ValueError(
-            f"qp.specs can only be applied to a qjit'd QNode, instead got: {qjit}"
-        ) from exc
+    original_qnode = unwrap_qjit_qnode(qjit, fn_name="qp.specs")
 
     if level is None:
         level = "device"
 
-    # Unwrap the original QNode if any transforms have been applied
-    if isinstance(qjit, QJIT) and isinstance(qjit.original_function, qp.QNode):
-        original_qnode = qjit.original_function
-    else:
-        raise ValueError(f"qp.specs can only be applied to a qjit'd QNode, instead got: {qjit}")
-
-    device = original_qnode.device
-
     if level == "device":
-        resources = _specs_qjit_device_level_tracking(
-            qjit, original_qnode, compute_depth, *args, **kwargs
+        # Tracking executes the circuit, but specs only reports the resources.
+        if compute_depth is None:
+            compute_depth = True
+        _, resources = _run_with_resource_tracking(
+            qjit, original_qnode, *args, compute_depth=compute_depth, **kwargs
         )
 
     elif isinstance(level, (int, tuple, list, range, str)):
@@ -169,15 +105,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     else:
         raise NotImplementedError(f"Unsupported level argument '{level}'.")
 
-    return CircuitSpecs(
-        resources=resources,
-        shots=original_qnode.shots,
-        device_name=device.name,
-        num_device_wires=(
-            len(original_qnode.device.wires) if original_qnode.device.wires is not None else None
-        ),
-        level=level,
-    )
+    return build_circuit_specs(original_qnode, resources, level)
 
 
 def specs(
@@ -207,6 +135,9 @@ def specs(
         A function that has the same argument signature as ``qnode``. This function returns a
         :class:`~.resource.CircuitSpecs` object containing the ``qnode`` specifications, including gate and
         measurement data, total wires, device information, shots, and more.
+
+    .. seealso:: :func:`~.track`, which returns the same information along with the result of
+        executing the circuit.
 
     .. warning::
 
@@ -533,7 +464,7 @@ def specs(
     """
     qnode, partial_args, partial_kwargs = unwrap_partial(qnode)
 
-    if isinstance(qnode, qp.QNode):
+    if isinstance(qnode, QNode):
         raise ValueError(
             "qp.specs no longer supports being applied to a bare QNode; it must be applied to "
             "a qjit'd QNode. Instead, apply qp.qjit to the QNode first or consider "

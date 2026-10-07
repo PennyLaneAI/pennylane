@@ -20,7 +20,7 @@ import tempfile
 import time
 from pathlib import Path
 
-import pennylane as qp
+from pennylane.core.transforms import CompilePipeline, transform
 
 from ._utils import make_level_name_unique
 from .parsing import parse_resources_json
@@ -116,7 +116,7 @@ def resources_from_analysis_pass(
     # pylint: disable=protected-access,too-many-arguments
 
     iter_pipeline = copy.deepcopy(original_qnode._compile_pipeline)
-    new_compile_pipeline = qp.CompilePipeline()
+    new_compile_pipeline = CompilePipeline()
 
     if isinstance(level, int):
         level = [level]
@@ -139,7 +139,7 @@ def resources_from_analysis_pass(
             level_to_name[0] = (
                 ", ".join(level_to_markers[0]) if 0 in level_to_markers else "Before MLIR Passes"
             )
-            new_compile_pipeline += qp.transform(pass_name="resource-analysis")(
+            new_compile_pipeline += transform(pass_name="resource-analysis")(
                 output_json=True, output_fname=fname
             )
 
@@ -157,7 +157,7 @@ def resources_from_analysis_pass(
                 level_name = make_level_name_unique(level_name, frozenset(level_to_name.values()))
                 fname_to_level[fname] = i
                 level_to_name[i] = level_name
-                new_compile_pipeline += qp.transform(pass_name="resource-analysis")(
+                new_compile_pipeline += transform(pass_name="resource-analysis")(
                     output_json=True, output_fname=fname
                 )
 
