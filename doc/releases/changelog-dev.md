@@ -2,6 +2,52 @@
 
 <h3>New features since last release</h3>
 
+
+* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
+  can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
+  [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
+
+  By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
+  with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
+  resource counts (no symbolic expressions).
+
+  ```python
+  @qp.qjit(capture=True)
+  @qp.qnode(qp.device('lightning.qubit', wires=10))
+  def c(n):
+
+      @qp.hint({"num-iters": 10})
+      @qp.for_loop(n)
+      def hinted_loop(i):
+          qp.X(i)
+
+      hinted_loop()
+
+      @qp.for_loop(n)
+      def unhinted_loop(i):
+          qp.Y(i)
+
+      unhinted_loop()
+
+      return qp.expval(qp.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qp.specs(c, level=0)(5).resources)
+  Symbolic Variables: a
+  Quantum operations:
+  - Total: a + 10
+    - PauliX: 10
+    - PauliY: a
+  Measurement processes:
+  - expval(PauliZ): 1
+  Total wires: 10
+  Circuit Depth: Not computed
+
+  ```
+  
+  The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
+
 * A new state preparation routine called :class:`~.PhaseGradientStatePrep` has been added, which
   prepares the phase gradient state 
   :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`.
@@ -630,6 +676,18 @@
   ```
 
 <h3>Improvements 🛠</h3>
+
+* A :class:`~.Controller` now takes the size of its messages in each direction, with the
+  ``in_bytes`` and ``out_bytes`` keyword arguments. Both default to 8. The ``"memcpy"`` transport
+  carries messages of any size to a CPU coprocessor, and to a GPU coprocessor running a
+  per-message function. A GPU coprocessor running a persistent kernel, and every coprocessor over
+  the ``"rdma"`` transport, carry up to 8 bytes.
+
+  .. code-block:: python
+
+      ctrl = qp.Controller(in_bytes=120, out_bytes=121)
+
+  [(#10224)](https://github.com/PennyLaneAI/pennylane/pull/10224)
 
 * Computing and differentiating the matrix of a :class:`~.SpecialUnitary` acting on more than
   five wires is now significantly faster.
@@ -1723,6 +1781,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the 
+  output matrix was with respect to a wrong wire ordering. The bug occurred in products where
+  groups of factors with overlapping wires caused a partial matrix with permuted wires, 
+  e.g. ``H(1) @ H(0) @ CNOT([2, 1]) @ CNOT([1, 0])``.
+  [(#10274)](https://github.com/PennyLaneAI/pennylane/pull/10274)
+
 * :class:`~.SpecialUnitary` no longer raises an error when acting on more than five wires with
   broadcasted parameters.
   [(#10253)](https://github.com/PennyLaneAI/pennylane/pull/10253)
@@ -1963,6 +2027,7 @@ Korbinian Kottmann,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,
+Mehrdad Malekmohammadi,
 William Maxwell,
 Anton Naim Ibrahim,
 Mudit Pandey,
