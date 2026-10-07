@@ -631,6 +631,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* The tabular printout of multi-level :class:`~.resource.CircuitSpecs` now sizes each level
+  column independently from its own header and cell contents, instead of using one shared width
+  across all levels.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Computing and differentiating the matrix of a :class:`~.SpecialUnitary` acting on more than
   five wires is now significantly faster.
   [(#10253)](https://github.com/PennyLaneAI/pennylane/pull/10253)

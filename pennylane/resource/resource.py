@@ -485,7 +485,7 @@ class SpecsResources(Resources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        super(SpecsResources, self).__post_init__()  # Fall through to parent post init
+        super().__post_init__()  # Fall through to parent post init
 
     def __getitem__(self, key):
         # Need to match
@@ -499,7 +499,7 @@ class SpecsResources(Resources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        return super(SpecsResources, self).__getitem__(key)
+        return super().__getitem__(key)
 
     @property
     def quantum_operations(self):
@@ -654,7 +654,7 @@ class PBCSpecsResources(SpecsResources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        s = super(PBCSpecsResources, self).to_pretty_str(preindent=preindent)
+        s = super().to_pretty_str(preindent=preindent)
 
         s += (
             "\nPBC Depths:\n"
@@ -676,7 +676,7 @@ class PBCSpecsResources(SpecsResources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        s = super(PBCSpecsResources, self)._repr_markdown_()
+        s = super()._repr_markdown_()
 
         s += (
             "\n"
@@ -838,40 +838,38 @@ class CircuitSpecs:
 
     def _get_table_format(
         self, flat_resources: dict[str, SpecsResources]
-    ) -> tuple[int, int, dict[str, None], dict[str, None]]:
+    ) -> tuple[int, list[int], dict[str, None], dict[str, None]]:
         """Helper for printing tabular format, determines column widths and all gate and measurement
         types across levels."""
         # This is the length of the longest metric name (currently "Measurement processes") plus padding
         max_metric_length = 22
-        max_column_size = max(len(level) for level in flat_resources) + 2
+        column_widths = []
 
         # Use dict for these since they are sorted by default unlike a set
         all_quantum_operations = {}
         all_meas_types = {}
 
         # This iteration order will present the gates in the order in which they appear
-        for res in flat_resources.values():
+        for level, res in flat_resources.items():
+            col_width = len(level) + 2
             # Flatten nested operation/measurement dicts into dotted keys of arbitrary depth
             for gate, count in _flatten_dict(res.quantum_operations).items():
                 all_quantum_operations[gate] = True
                 # Gate rows are indented by 2 extra spaces (e.g. "  - {gate}")
                 max_metric_length = max(max_metric_length, len(gate) + 4)
-                max_column_size = max(
-                    max_column_size, len(_count_to_str(count, extra_compact=True)) + 1
-                )
+                col_width = max(col_width, len(_count_to_str(count, extra_compact=True)) + 1)
             for meas, count in _flatten_dict(res.measurement_processes).items():
                 all_meas_types[meas] = True
                 max_metric_length = max(max_metric_length, len(meas) + 2)
-                max_column_size = max(
-                    max_column_size, len(_count_to_str(count, extra_compact=True)) + 1
-                )
-            max_column_size = max(
-                max_column_size,
+                col_width = max(col_width, len(_count_to_str(count, extra_compact=True)) + 1)
+            col_width = max(
+                col_width,
                 len(_count_to_str(res.num_wires, extra_compact=True)) + 1,
                 len(_count_to_str(res.total_quantum_operations, extra_compact=True)) + 1,
             )
+            column_widths.append(col_width)
 
-        return max_metric_length, max_column_size, all_quantum_operations, all_meas_types
+        return max_metric_length, column_widths, all_quantum_operations, all_meas_types
 
     def _to_pretty_str_tabular(self) -> str:
         """Helper for main ``to_pretty_str`` for tabular format, which is more compact when there
@@ -879,28 +877,27 @@ class CircuitSpecs:
         lines = self._get_specs_header()
 
         flat_resources = self._flattened_resources()
-        max_metric_length, max_column_size, all_quantum_operations, all_meas_types = (
+        max_metric_length, column_widths, all_quantum_operations, all_meas_types = (
             self._get_table_format(flat_resources)
         )
+        levels = list(flat_resources.keys())
+        resources = list(flat_resources.values())
 
-        num_cols = len(flat_resources)
         lines.append(
             "↓Metric".ljust(max_metric_length - 6)
             + "Level→"
             + " |"
-            + " |".join(level.rjust(max_column_size) for level in flat_resources)
+            + " |".join(level.rjust(w) for level, w in zip(levels, column_widths, strict=True))
         )
-        lines.append("-" * (max_metric_length + num_cols * (max_column_size + 2)))
+        lines.append("-" * (max_metric_length + sum(w + 2 for w in column_widths)))
 
         lines.append("Quantum operations:".ljust(max_metric_length) + " |")
         lines.append(
             "- Total".ljust(max_metric_length)
             + " |"
             + " |".join(
-                _count_to_str(res.total_quantum_operations, extra_compact=True).rjust(
-                    max_column_size
-                )
-                for res in flat_resources.values()
+                _count_to_str(res.total_quantum_operations, extra_compact=True).rjust(w)
+                for res, w in zip(resources, column_widths, strict=True)
             )
         )
         for gate in all_quantum_operations:
@@ -910,8 +907,8 @@ class CircuitSpecs:
                 + " |".join(
                     _count_to_str(
                         _flatten_dict(res.quantum_operations).get(gate, 0), extra_compact=True
-                    ).rjust(max_column_size)
-                    for res in flat_resources.values()
+                    ).rjust(w)
+                    for res, w in zip(resources, column_widths, strict=True)
                 )
             )
 
@@ -923,8 +920,8 @@ class CircuitSpecs:
                 + " |".join(
                     _count_to_str(
                         _flatten_dict(res.measurement_processes).get(meas, 0), extra_compact=True
-                    ).rjust(max_column_size)
-                    for res in flat_resources.values()
+                    ).rjust(w)
+                    for res, w in zip(resources, column_widths, strict=True)
                 )
             )
 
@@ -932,26 +929,26 @@ class CircuitSpecs:
             "Total wires".ljust(max_metric_length)
             + " |"
             + " |".join(
-                _count_to_str(res.num_wires, extra_compact=True).rjust(max_column_size)
-                for res in flat_resources.values()
+                _count_to_str(res.num_wires, extra_compact=True).rjust(w)
+                for res, w in zip(resources, column_widths, strict=True)
             )
         )
 
-        if any(r.circuit_depth is not None for r in flat_resources.values()):
+        if any(r.circuit_depth is not None for r in resources):
             lines.append(
                 "Circuit depth".ljust(max_metric_length)
                 + " |"
                 + " |".join(
                     (
-                        _count_to_str(res.circuit_depth, extra_compact=True).rjust(max_column_size)
+                        _count_to_str(res.circuit_depth, extra_compact=True)
                         if res.circuit_depth is not None
-                        else "-".rjust(max_column_size)
-                    )
-                    for res in flat_resources.values()
+                        else "-"
+                    ).rjust(w)
+                    for res, w in zip(resources, column_widths, strict=True)
                 )
             )
 
-        if any(isinstance(r, PBCSpecsResources) for r in flat_resources.values()):
+        if any(isinstance(r, PBCSpecsResources) for r in resources):
             lines.append("PBC Depths:".ljust(max_metric_length) + " |")
             lines.append(
                 "- Any commuting depth".ljust(max_metric_length)
@@ -961,8 +958,8 @@ class CircuitSpecs:
                         _count_to_str(r.any_commuting_depth, extra_compact=True)
                         if isinstance(r, PBCSpecsResources)
                         else "-"
-                    ).rjust(max_column_size)
-                    for r in flat_resources.values()
+                    ).rjust(w)
+                    for r, w in zip(resources, column_widths, strict=True)
                 )
             )
             lines.append(
@@ -973,8 +970,8 @@ class CircuitSpecs:
                         _count_to_str(r.qubit_disjoint_depth, extra_compact=True)
                         if isinstance(r, PBCSpecsResources)
                         else "-"
-                    ).rjust(max_column_size)
-                    for r in flat_resources.values()
+                    ).rjust(w)
+                    for r, w in zip(resources, column_widths, strict=True)
                 )
             )
 

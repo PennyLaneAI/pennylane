@@ -1670,17 +1670,17 @@ class TestCircuitSpecs:
         - 1: l1
         - 2: l2
 
-        ↓Metric         Level→ |    1 |  2-a |  2-b
-        -------------------------------------------
+        ↓Metric         Level→ |  1 |  2-a |  2-b
+        -----------------------------------------
         Quantum operations:    |
-        - Total                |    6 |    1 |    1
-          - Hadamard           |    4 |    0 |    0
-          - CNOT               |    2 |    1 |    1
+        - Total                |  6 |    1 |    1
+          - Hadamard           |  4 |    0 |    0
+          - CNOT               |  2 |    1 |    1
         Measurement processes: |
-        - expval(PauliX)       |    1 |    1 |    0
-        - expval(PauliZ)       |    1 |    0 |    1
-        Total wires            |    2 |    2 |    2
-        Circuit depth          |    2 |    1 |    1
+        - expval(PauliX)       |  1 |    1 |    0
+        - expval(PauliZ)       |  1 |    0 |    1
+        Total wires            |  2 |    2 |    2
+        Circuit depth          |  2 |    1 |    1
         """).strip()
 
     def test_str_multi_tabular_symbolic(self, example_specs_result_multi_symbolic):
@@ -1695,17 +1695,17 @@ class TestCircuitSpecs:
             - 1: l1
             - 2: l2
 
-            ↓Metric         Level→ |     1 |   2-a |   2-b
-            ----------------------------------------------
+            ↓Metric         Level→ |     1 |  2-a |  2-b
+            --------------------------------------------
             Quantum operations:    |
-            - Total                | 4*x+2 |     x |     x
-              - Hadamard           | 2*x+2 |     0 |     0
-              - CNOT               |   2*x |     x |     x
+            - Total                | 4*x+2 |    x |    x
+              - Hadamard           | 2*x+2 |    0 |    0
+              - CNOT               |   2*x |    x |    x
             Measurement processes: |
-            - expval(PauliX)       |     1 |     1 |     0
-            - expval(PauliZ)       |     1 |     0 |     1
-            Total wires            |     2 |     2 |     2
-            Circuit depth          |     2 |     1 |     1
+            - expval(PauliX)       |     1 |    1 |    0
+            - expval(PauliZ)       |     1 |    0 |    1
+            Total wires            |     2 |    2 |    2
+            Circuit depth          |     2 |    1 |    1
             """).strip()
 
     def test_str_multi_non_tabular(self, example_specs_result_multi):
