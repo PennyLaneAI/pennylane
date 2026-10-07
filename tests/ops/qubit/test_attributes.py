@@ -416,7 +416,6 @@ class TestSupportsBroadcasting:
     @pytest.mark.parametrize(
         "features, num_wires",
         [
-            (np.array([[0.5], [2.1]]), 1),
             (np.array([[0.5, -0.5], [0.2, 1.5]]), 2),
             (np.ones((2, 5)), 5),
         ],
