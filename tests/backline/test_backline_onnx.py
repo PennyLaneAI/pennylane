@@ -19,12 +19,13 @@ import importlib
 import importlib.machinery
 import importlib.util
 import sys
+import types
 from pathlib import Path
 
 import pytest
 
 from pennylane.backline import onnx_decoder
-from pennylane.backline.onnx import _onnx_message_bytes
+from pennylane.backline.onnx import _onnx_message_bytes, _tensor_message_bytes
 
 # An ONNX model whose uint8[1, 8] input passes through Identity to its uint8[1, 8] output.
 IDENTITY_U8X8_MODEL = Path(__file__).parent / "data" / "identity_u8x8.onnx"
@@ -164,3 +165,34 @@ class TestOnnxDecoder:
         odd.write_bytes(b"")
         with pytest.raises(ValueError, match="must not contain ';'"):
             onnx_decoder(odd)
+
+
+def _tensor(onnx_type, shape, name="x"):
+    """An onnxruntime tensor description, as a session's inputs and outputs report it."""
+    return types.SimpleNamespace(name=name, type=onnx_type, shape=shape)
+
+
+class TestTensorMessageBytes:
+    """The message sizes of a model's input and output tensors."""
+
+    def test_a_size_is_the_element_count_times_the_element_size(self):
+        """A float[2, 3] input is 24 bytes, and an int64[4] output 32."""
+        inputs, outputs = [_tensor("tensor(float)", [2, 3])], [_tensor("tensor(int64)", [4])]
+        assert _tensor_message_bytes(inputs, outputs) == (24, 32)
+
+    def test_a_dynamic_dimension_counts_as_one(self):
+        """A named, unknown or negative dimension counts as 1."""
+        inputs = [_tensor("tensor(uint8)", ["batch", None, -1, 8])]
+        assert _tensor_message_bytes(inputs, [_tensor("tensor(uint8)", [8])]) == (8, 8)
+
+    def test_a_model_with_two_inputs_raises(self):
+        inputs = [_tensor("tensor(uint8)", [8]), _tensor("tensor(uint8)", [8])]
+        with pytest.raises(ValueError, match="one input and one output, it has 2 and 1"):
+            _tensor_message_bytes(inputs, [_tensor("tensor(uint8)", [8])])
+
+    def test_an_unsupported_tensor_type_raises(self):
+        inputs = [_tensor("tensor(string)", [8], name="words")]
+        with pytest.raises(
+            ValueError, match=r"unsupported tensor type tensor\(string\) for 'words'"
+        ):
+            _tensor_message_bytes(inputs, [_tensor("tensor(uint8)", [8])])

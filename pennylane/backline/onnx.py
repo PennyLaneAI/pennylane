@@ -52,7 +52,12 @@ def _onnx_message_bytes(model: Path) -> tuple[int, int]:
     session = onnxruntime.InferenceSession(
         str(model), sess_options=options, providers=["CPUExecutionProvider"]
     )
-    inputs, outputs = session.get_inputs(), session.get_outputs()
+    return _tensor_message_bytes(session.get_inputs(), session.get_outputs())
+
+
+def _tensor_message_bytes(inputs, outputs) -> tuple[int, int]:
+    """The ``(in_bytes, out_bytes)`` of a model's single input and output tensors, as an
+    onnxruntime session describes them, with each dynamic dimension taken as 1."""
     if len(inputs) != 1 or len(outputs) != 1:
         raise ValueError(
             f"onnx_decoder: the model must have one input and one output, it has {len(inputs)} "
