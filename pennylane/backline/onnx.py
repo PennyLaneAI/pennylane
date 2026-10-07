@@ -78,13 +78,23 @@ def _tensor_message_bytes(inputs, outputs) -> tuple[int, int]:
 def _onnxruntime_library() -> str:
     """The onnxruntime shared library of the installed ``onnxruntime`` package."""
     spec = importlib.util.find_spec("onnxruntime")
-    if spec is None or not spec.submodule_search_locations:
+    package = None
+    if spec is not None and spec.submodule_search_locations:
+        package = Path(list(spec.submodule_search_locations)[0])
+    return _onnxruntime_library_in(package, sys.platform)
+
+
+def _onnxruntime_library_in(package: Path | None, platform: str) -> str:
+    """The shared library in the ``capi`` directory of the onnxruntime package at ``package``,
+    named as on ``platform``, a :data:`sys.platform` value. ``package`` is ``None`` when no
+    onnxruntime package is installed."""
+    if package is None:
         raise ImportError(
             "onnx_decoder needs an onnxruntime package, such as onnxruntime for the CPU or "
             "onnxruntime-migraphx for AMD GPUs"
         )
-    capi = Path(list(spec.submodule_search_locations)[0]) / "capi"
-    pattern = "libonnxruntime.*dylib" if sys.platform == "darwin" else "libonnxruntime.so*"
+    capi = package / "capi"
+    pattern = "libonnxruntime.*dylib" if platform == "darwin" else "libonnxruntime.so*"
     libraries = sorted(capi.glob(pattern))
     if not libraries:
         raise ImportError(f"no onnxruntime shared library found in {capi}")
@@ -183,18 +193,30 @@ def onnx_decoder(
         )
     _check_count("device", device, 0)
     _check_count("threads", threads, 1)
-    entries = [
-        f"model={model}",
-        f"ort_lib={_onnxruntime_library()}",
-        f"provider={provider}",
-        f"device={device}",
-        f"threads={threads}",
-    ]
+    return _onnx_function(
+        model,
+        _onnxruntime_library(),
+        _onnx_message_bytes(model),
+        provider=provider,
+        device=device,
+        threads=threads,
+    )
+
+
+def _onnx_function(
+    model: Path, ort_lib: str, message_bytes: tuple[int, int], **options
+) -> CoprocessorFunction:
+    """Catalyst's ONNX coprocessor function, running ``model`` through the onnxruntime shared
+    library ``ort_lib``, with ``message_bytes`` as its ``(in_bytes, out_bytes)``. Each of
+    ``options``, such as ``provider``, becomes a ``key=value`` config entry, in the order given.
+    Raises if a path contains ``;``, which separates config entries."""
+    entries = [f"model={model}", f"ort_lib={ort_lib}"]
+    entries += [f"{key}={value}" for key, value in options.items()]
     if any(";" in entry for entry in entries):
         raise ValueError("onnx_decoder: paths must not contain ';', which separates config entries")
     return CoprocessorFunction(
         name=_ONNX_FUNCTION,
         config=";".join(entries),
         per_message=True,
-        message_bytes=_onnx_message_bytes(model),
+        message_bytes=message_bytes,
     )
