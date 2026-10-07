@@ -1536,6 +1536,89 @@ def test_abstract_array_inputs():
 
 
 @pytest.mark.catalyst
+class TestSpecsHintIntegration:
+    """Test integration of hints with qp.specs."""
+
+    def test_for_loop_hint_outside(self):
+        """Test for_loop hints."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def c(n):
+
+            @qp.hint({"num-iters": 20})
+            @qp.for_loop(n)
+            def loop(i):
+                qp.X(i)
+
+            loop()
+
+            return qp.probs(wires=0)
+
+        r = qp.specs(c, level=0)(2)
+        assert r.resources.quantum_operations["PauliX"] == 20
+
+    def test_for_loop_hint_inside(self):
+        """Test for_loop hints where the loop itself is decorated."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def c(n):
+
+            @qp.for_loop(n)
+            @qp.hint({"num-iters": 4})
+            def loop(i):
+                qp.Y(i)
+
+            loop()
+
+            return qp.probs(wires=0)
+
+        r = qp.specs(c, level=0)(2)
+        assert r.resources.quantum_operations["PauliY"] == 4
+
+    def test_while_loop_hint_outside(self):
+        """Test while_loop hints."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def c(n):
+
+            @qp.hint({"num-iters": 20})
+            @qp.while_loop(lambda i: i < n)
+            def loop(i):
+                qp.X(i)
+                return i + 1
+
+            loop(0)
+
+            return qp.probs(wires=0)
+
+        r = qp.specs(c, level=0)(2)
+        assert r.resources.quantum_operations["PauliX"] == 20
+
+    def test_while_loop_hint_inside(self):
+        """Test while_loop hints where the loop itself is decorated."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def c(n):
+
+            @qp.while_loop(lambda i: i < n)
+            @qp.hint({"num-iters": 4})
+            def loop(i):
+                qp.Y(i)
+                return i + 1
+
+            loop(0)
+
+            return qp.probs(wires=0)
+
+        r = qp.specs(c, level=0)(2)
+        assert r.resources.quantum_operations["PauliY"] == 4
+
+
+@pytest.mark.catalyst
 class TestSpecsAbstractArrayIntegartion:
     """Test integration of qjit specs with abstract arrays."""
 
