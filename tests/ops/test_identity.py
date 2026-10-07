@@ -93,6 +93,26 @@ class TestControlledGlobalPhase:
         op = qp.ctrl(GlobalPhase(0.123), control=[0], control_values=[False])
         assert not isinstance(op, qp.PhaseShift)
 
+    def test_work_wires_passed_through(self):
+        """Regression test that work wires are forwarded to the multi-control dispatch."""
+        op = qp.ctrl(
+            GlobalPhase(0.123),
+            control=[0, 1, 2],
+            work_wires=[3, 4],
+            work_wire_type="zeroed",
+        )
+        assert list(op.work_wires) == [3, 4]
+        assert op.work_wire_type == "zeroed"
+        qp.assert_equal(
+            op,
+            qp.ctrl(
+                qp.PhaseShift(-0.123, wires=2),
+                control=[0, 1],
+                work_wires=[3, 4],
+                work_wire_type="zeroed",
+            ),
+        )
+
 
 def test_is_verified_hermitian():
     """Test that identity is verified to be hermitian."""
