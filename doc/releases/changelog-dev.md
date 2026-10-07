@@ -1806,7 +1806,7 @@
   of an environment variable holding a remote node's sudo password, in place of the
   ``"sudo_password"`` string, so the password stays out of source, config files and the node's
   repr.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10284)](https://github.com/PennyLaneAI/pennylane/pull/10284)
 
 <h3>Bug fixes 🐛</h3>
 
