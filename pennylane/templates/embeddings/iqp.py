@@ -215,11 +215,7 @@ def _iqp_embedding_resources(features, wires, n_repeats, pattern):
 def _iqp_embedding_decomposition(features, wires: WiresLike, n_repeats, pattern):
 
     if capture.enabled() or compiler.active():
-        wires, pattern, features = (
-            math.array(wires, like="jax"),
-            math.array(pattern, like="jax"),
-            math.array(features, like="jax"),
-        )
+        wires = math.array(wires, like="jax")
 
     if math.ndim(features) > 1:
         features = math.T(features)
