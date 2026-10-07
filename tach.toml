@@ -110,7 +110,7 @@ from = ["pennylane.core.qscript"]
 
 [[modules]]
 path = "pennylane.core.queuing"
-depends_on = ["pennylane.exceptions", "pennylane.pytrees"]
+depends_on = ["pennylane.exceptions"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
