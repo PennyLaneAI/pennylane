@@ -18,9 +18,9 @@ Tests for the QROM template.
 import math
 from functools import partial
 
+import hint_helpers
 import numpy
 import pytest
-from capture_utils import loop_hints
 
 import pennylane as qp
 from pennylane import numpy as np
@@ -434,7 +434,7 @@ class TestQROM:
         expected_left = (num_left_elbows - num_controls + 1) / num_main_loop_iterations
         expected_right = (num_right_elbows - num_controls + 1) / num_main_loop_iterations
 
-        assert loop_hints(plxpr.jaxpr) == [
+        assert hint_helpers.loop_hints(plxpr.jaxpr) == [
             None,
             pytest.approx(expected_right),
             pytest.approx(expected_left),

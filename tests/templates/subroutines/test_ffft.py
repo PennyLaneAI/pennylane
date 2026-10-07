@@ -13,9 +13,9 @@
 # limitations under the License.
 """Tests of the Fast Fermionic Fourier Transform (FFFT)."""
 
+import hint_helpers
 import numpy as np
 import pytest
-from capture_utils import loop_hints
 
 import pennylane as qp
 from pennylane import FermionicSWAP, PauliZ, device, list_decomps, qnode
@@ -177,7 +177,7 @@ def test_ffft_num_iters_hints(n_wires):
     # operator loop are static.
     swaps_per_layer = (num_layers + 1) / 2
     hints = [None, swaps_per_layer, None, None, swaps_per_layer]
-    assert loop_hints(plxpr.jaxpr) == hints
+    assert hint_helpers.loop_hints(plxpr.jaxpr) == hints
     assert 2 * num_layers * swaps_per_layer == num_fswaps
 
 

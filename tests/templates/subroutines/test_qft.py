@@ -15,9 +15,9 @@
 Unit tests for the qft template.
 """
 
+import hint_helpers
 import numpy as np
 import pytest
-from capture_utils import loop_hints
 from gate_data import QFT
 
 import pennylane as qp
@@ -80,7 +80,7 @@ class TestQFT:
         ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
         num_cps = sum(isinstance(op, qp.ControlledPhaseShift) for op in ops)
 
-        assert loop_hints(plxpr.jaxpr) == [None, num_cps / n_wires, None]
+        assert hint_helpers.loop_hints(plxpr.jaxpr) == [None, num_cps / n_wires, None]
 
     @pytest.mark.parametrize("n_qubits", range(2, 10))
     def test_QFT_adjoint_identity(self, n_qubits, tol):
