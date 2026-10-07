@@ -827,22 +827,44 @@ class TestMultiControlledX:
         mat2 = qp.MultiControlledX.compute_matrix([0, 1], control_values=[1])
         assert np.allclose(mat1, mat2)
 
-    def test_repr(self):
-        """Test that the inherited ``Operator2.__repr__`` shows every argument, including
-        ``work_wires`` and ``work_wire_type``."""
-        op = qp.MultiControlledX(wires=[0, 1, 2], control_values=[False, True])
-        assert repr(op) == (
-            f"MultiControlledX(wires={op.wires.tolist()}, "
-            f"control_values={op.control_values}, "
-            f"work_wires={op.work_wires.tolist()}, "
-            f"work_wire_type={op.work_wire_type})"
-        )
+    @pytest.mark.parametrize(
+        "kwargs, expected",
+        [
+            # trivial control values and missing work wires are not shown
+            ({}, "MultiControlledX(wires=[0, 1, 2])"),
+            ({"control_values": [True, True]}, "MultiControlledX(wires=[0, 1, 2])"),
+            (
+                {"control_values": [False, True]},
+                "MultiControlledX(wires=[0, 1, 2], control_values=[False, True])",
+            ),
+            (
+                {"work_wires": [3]},
+                "MultiControlledX(wires=[0, 1, 2], work_wires=[3], work_wire_type=borrowed)",
+            ),
+            (
+                {"work_wires": [3, 4], "work_wire_type": "zeroed"},
+                "MultiControlledX(wires=[0, 1, 2], work_wires=[3, 4], work_wire_type=zeroed)",
+            ),
+            (
+                {"control_values": [True, False], "work_wires": [3], "work_wire_type": "zeroed"},
+                "MultiControlledX(wires=[0, 1, 2], control_values=[True, False], "
+                "work_wires=[3], work_wire_type=zeroed)",
+            ),
+        ],
+    )
+    def test_repr(self, kwargs, expected):
+        """Test that ``__repr__`` shows non-trivial ``control_values`` and, if present, the
+        ``work_wires`` together with their ``work_wire_type``."""
+        assert repr(qp.MultiControlledX(wires=[0, 1, 2], **kwargs)) == expected
 
-    def test_repr_with_work_wires(self):
-        """Test that ``work_wires`` and ``work_wire_type`` are reported in the repr."""
+    def test_repr_abstract(self):
+        """Test that the abstract ``control_values`` and the abstract work wires are shown."""
         op = qp.MultiControlledX(wires=[0, 1, 2], work_wires=[3], work_wire_type="zeroed")
-        assert "work_wires=[3]" in repr(op)
-        assert "work_wire_type=zeroed" in repr(op)
+        op = abstractify(op)
+        assert repr(op) == (
+            "MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool), "
+            "work_wires=AbstractWires(1), work_wire_type=zeroed)"
+        )
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("num_work_wires", [0, 1, 2, 3])
