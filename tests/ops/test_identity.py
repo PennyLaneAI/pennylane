@@ -93,23 +93,31 @@ class TestControlledGlobalPhase:
         op = qp.ctrl(GlobalPhase(0.123), control=[0], control_values=[False])
         assert not isinstance(op, qp.PhaseShift)
 
-    def test_work_wires_passed_through(self):
+    @pytest.mark.parametrize(
+        "phi, control, work_wires, work_wire_type",
+        [
+            (0.123, [0, 1, 2], [3, 4], "zeroed"),
+            (0.5, [0, 1, 2], [3], "borrowed"),
+            (-1.0, [0, 1, 2, 3], [4, 5, 6], "zeroed"),
+        ],
+    )
+    def test_work_wires_passed_through(self, phi, control, work_wires, work_wire_type):
         """Regression test that work wires are forwarded to the multi-control dispatch."""
         op = qp.ctrl(
-            GlobalPhase(0.123),
-            control=[0, 1, 2],
-            work_wires=[3, 4],
-            work_wire_type="zeroed",
+            GlobalPhase(phi),
+            control=control,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
         )
-        assert list(op.work_wires) == [3, 4]
-        assert op.work_wire_type == "zeroed"
+        assert list(op.work_wires) == work_wires
+        assert op.work_wire_type == work_wire_type
         qp.assert_equal(
             op,
             qp.ctrl(
-                qp.PhaseShift(-0.123, wires=2),
-                control=[0, 1],
-                work_wires=[3, 4],
-                work_wire_type="zeroed",
+                qp.PhaseShift(-phi, wires=control[-1]),
+                control=control[:-1],
+                work_wires=work_wires,
+                work_wire_type=work_wire_type,
             ),
         )
 
