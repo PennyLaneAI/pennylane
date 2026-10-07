@@ -1802,6 +1802,10 @@
 * Improved coverage of testing operators and their decomposition rules with capture enabled.
   [(#10019)](https://github.com/PennyLaneAI/pennylane/pull/10019)
 
+* Added `post_device_pipeline` to `QNode`to be a pipeline representing user passes that are intended to run after
+  device specific transformations, if `qjit`-ed. `update_pipelines` added to cleanly update `QNode` with input compile and post-device pipeline.
+  [(#10285)](https://github.com/PennyLaneAI/pennylane/pull/10285)
+
 <h3>Documentation 📝</h3>
 
 * The dependency versions in the developer installation guide now match `pyproject.toml`, and a rendering issue in the list of optional dependencies was fixed.
