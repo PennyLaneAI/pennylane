@@ -2,10 +2,12 @@
 
 <h3>New features since last release</h3>
 
-
-* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
-  can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
+* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. With 
+  this release, the :func:`~.hint` function can be used on :func:`~.for_loop` and 
+  :func:`~.while_loop` to specify a heuristic number of times the loop will iterate, which gets rid
+  of symbolic expressions in :func:`~.specs`.
   [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
+  [(#10283)](https://github.com/PennyLaneAI/pennylane/pull/10283/)
 
   By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
   with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
@@ -46,7 +48,8 @@
 
   ```
   
-  The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
+  The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the 
+  unhinted loop.
 
 * A new state preparation routine called :class:`~.PhaseGradientStatePrep` has been added, which
   prepares the phase gradient state 
