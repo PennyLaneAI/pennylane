@@ -26,14 +26,15 @@ catalyst = pytest.importorskip("catalyst")
 pytestmark = pytest.mark.catalyst
 
 
+@pytest.mark.usefixtures("enable_and_disable_capture")
 class TestAnalyze:
-    """Test qp.analyze()"""
+    """Test qp.analyze() with capture enabled and disabled."""
 
     @pytest.fixture
     def circuit(self):
         """Fixture for a qjit'd circuit with two transforms and a marker between them."""
 
-        @qp.qjit
+        @qp.qjit(capture="global")
         @qp.transforms.merge_rotations
         @qp.marker("cancelled")
         @qp.transforms.cancel_inverses
@@ -124,7 +125,7 @@ class TestAnalyze:
         """Test that analyze counts the resources inside a loop with a number of iterations that
         is not known at compile time symbolically."""
 
-        @qp.qjit(autograph=True)
+        @qp.qjit(autograph=True, capture="global")
         @qp.qnode(qp.device("null.qubit", wires=1))
         def circuit(n):
             qp.Hadamard(0)
@@ -149,7 +150,7 @@ class TestAnalyze:
 
         assert qp.analyze(circuit, level=level)(0.1) == qp.specs(circuit, level=level)(0.1)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition", "enable_and_disable_capture")
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_with_catalyst_passes(self):
         """Test that analyze counts the resources after each pass of a pipeline of Catalyst passes,
         with program capture enabled and disabled."""
