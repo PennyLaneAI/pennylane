@@ -2,6 +2,52 @@
 
 <h3>New features since last release</h3>
 
+
+* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
+  can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
+  [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
+
+  By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
+  with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
+  resource counts (no symbolic expressions).
+
+  ```python
+  @qp.qjit(capture=True)
+  @qp.qnode(qp.device('lightning.qubit', wires=10))
+  def c(n):
+
+      @qp.hint({"num-iters": 10})
+      @qp.for_loop(n)
+      def hinted_loop(i):
+          qp.X(i)
+
+      hinted_loop()
+
+      @qp.for_loop(n)
+      def unhinted_loop(i):
+          qp.Y(i)
+
+      unhinted_loop()
+
+      return qp.expval(qp.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qp.specs(c, level=0)(5).resources)
+  Symbolic Variables: a
+  Quantum operations:
+  - Total: a + 10
+    - PauliX: 10
+    - PauliY: a
+  Measurement processes:
+  - expval(PauliZ): 1
+  Total wires: 10
+  Circuit Depth: Not computed
+
+  ```
+  
+  The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
+
 * A new state preparation routine called :class:`~.PhaseGradientStatePrep` has been added, which
   prepares the phase gradient state 
   :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`.
@@ -328,6 +374,62 @@
   The new function returns a tuple of four values, where the first three corresponds to the rotation
   angles of the ZYZ decomposition of this operator, and the last one corresponds to the global phase.
 
+* A new function called :func:`~.track` is available, which executes a ``qjit``-compiled QNode while
+  tracking the resources it uses, returning both the result of the execution and the corresponding
+  :class:`~.resource.CircuitSpecs`. This is the same device-level tracking that :func:`~.specs`
+  performs with ``level="device"``, but the result of the circuit execution is no longer discarded.
+  [(#10228)](https://github.com/PennyLaneAI/pennylane/pull/10228)
+
+  ```python
+  dev = qp.device("null.qubit", wires=2)
+
+  @qp.qjit
+  @qp.qnode(dev)
+  def circuit(theta):
+      qp.RX(theta, wires=0)
+      qp.CNOT(wires=(0, 1))
+      return qp.probs(wires=(0, 1))
+  ```
+
+  ```pycon
+  >>> result, circuit_specs = qp.track(circuit)(1.23)
+  >>> result.shape
+  (4,)
+  >>> circuit_specs.resources.quantum_operations
+  {'CNOT': 1, 'RX': 1}
+
+  ```
+
+* A new function called :func:`~.analyze` is available, which estimates the resources of a
+  ``qjit``-compiled QNode by compiling it up to the given ``level`` and analyzing the resulting
+  program, without executing it. This is the same pass-by-pass analysis that :func:`~.specs`
+  performs for ``qjit``-compiled QNodes.
+  [(#10237)](https://github.com/PennyLaneAI/pennylane/pull/10237)
+
+  ```python
+  dev = qp.device("null.qubit", wires=2)
+
+  @qp.qjit
+  @qp.transforms.merge_rotations
+  @qp.transforms.cancel_inverses
+  @qp.qnode(dev)
+  def circuit(x):
+      qp.RX(x, wires=0)
+      qp.RX(x, wires=0)
+      qp.X(0)
+      qp.X(0)
+      qp.CNOT([0, 1])
+      return qp.probs()
+  ```
+
+  ```pycon
+  >>> qp.analyze(circuit, level=0)(1.23).resources.quantum_operations
+  {'CNOT': 1, 'PauliX': 2, 'RX': 2}
+  >>> qp.analyze(circuit, level="user")(1.23).resources.quantum_operations
+  {'CNOT': 1, 'RX': 1}
+
+  ```
+
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
   In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.Expression` instances where `int` values would normally appear.
@@ -631,6 +733,18 @@
 
 <h3>Improvements 🛠</h3>
 
+* A :class:`~.Controller` now takes the size of its messages in each direction, with the
+  ``in_bytes`` and ``out_bytes`` keyword arguments. Both default to 8. The ``"memcpy"`` transport
+  carries messages of any size to a CPU coprocessor, and to a GPU coprocessor running a
+  per-message function. A GPU coprocessor running a persistent kernel, and every coprocessor over
+  the ``"rdma"`` transport, carry up to 8 bytes.
+
+  .. code-block:: python
+
+      ctrl = qp.Controller(in_bytes=120, out_bytes=121)
+
+  [(#10224)](https://github.com/PennyLaneAI/pennylane/pull/10224)
+
 * Computing and differentiating the matrix of a :class:`~.SpecialUnitary` acting on more than
   five wires is now significantly faster.
   [(#10253)](https://github.com/PennyLaneAI/pennylane/pull/10253)
@@ -928,6 +1042,11 @@
 
 * ``Wires.all_wires`` can now handle a list with mixed ``Wires`` and ``AbstractWires`` instances.
   [(#10223)](https://github.com/PennyLaneAI/pennylane/pull/10223)
+
+* ``qp.add_decomps`` no longer raises an error when the new decomposition rule is the exact same 
+  object as an existing one. An error is still raised if the new rule has the same name as an
+  existing rule, but is a different object to the rule with that name.
+  [(#10282)](https://github.com/PennyLaneAI/pennylane/pull/10282)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -1720,6 +1839,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* :class:`~.SumOfSlatersPrep` now falls back to identity encoding when the pairwise-difference
+  construction required for the compressed encoding would exceed approximately 1 GiB of peak memory.
+  This prevents excessive memory use during classical preprocessing of large sparse states.
+  Asymptotically, this increases the quantum resources notably, but examples in practice only show
+  very minor increases.
+  [(#10270)](https://github.com/PennyLaneAI/pennylane/pull/10270)
+
 * Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the 
   output matrix was with respect to a wrong wire ordering. The bug occurred in products where
   groups of factors with overlapping wires caused a partial matrix with permuted wires, 
@@ -1966,6 +2092,7 @@ Korbinian Kottmann,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,
+Mehrdad Malekmohammadi,
 William Maxwell,
 Anton Naim Ibrahim,
 Mudit Pandey,
@@ -1973,6 +2100,7 @@ Andrija Paurevic,
 Francesco Pernice Botta,
 David D.W. Ren,
 Jay Soni,
+Jaume Villasante,
 Paul Haochen Wang,
 Dennis Wayo,
 David Wierichs,
