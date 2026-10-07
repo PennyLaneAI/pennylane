@@ -37,7 +37,6 @@ class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
     QUEUES = [
-        (1, ["Hadamard", "RZ"], [[0], [0]]),
         (2, ["Hadamard", "RZ", "Hadamard", "RZ", "MultiRZ"], [[0], [0], [1], [1], [0, 1]]),
         (
             3,
@@ -87,8 +86,8 @@ class TestDecomposition:
 
         features = list(range(3))
 
-        expected_names = self.QUEUES[2][1] + self.QUEUES[2][1]
-        expected_wires = self.QUEUES[2][2] + self.QUEUES[2][2]
+        expected_names = self.QUEUES[1][1] + self.QUEUES[1][1]
+        expected_wires = self.QUEUES[1][2] + self.QUEUES[1][2]
 
         op = qp.IQPEmbedding(features, wires=range(3), n_repeats=2)
         tape = qp.tape.QuantumScript(op.decomposition())

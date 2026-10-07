@@ -197,11 +197,7 @@ class IQPEmbedding(Operator2):
         if pattern is None:
             pattern = list(combinations(range(len(wires)), 2))
         if isinstance(pattern, (list, tuple)):
-            pattern = (
-                math.zeros((0, 2), dtype=int)
-                if len(pattern) == 0
-                else math.asarray(pattern, dtype=int)
-            )
+            pattern = math.asarray(pattern, dtype=int)
 
         super().__init__(features, wires, n_repeats, pattern)
 
