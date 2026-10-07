@@ -2,6 +2,19 @@
 
 <h3>New features since last release</h3>
 
+* A new function called :func:`~pennylane.backline.onnx_decoder` has been added, which runs an
+  ONNX model on a Backline :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or
+  on the CPU. See :func:`~pennylane.backline.onnx_decoder` for the supported providers and usage
+  details.
+  [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
+
+  ```pycon
+  >>> fn = qp.backline.onnx_decoder("predecoder.onnx")  # doctest: +SKIP
+  >>> coproc = qp.Coprocessor(hardware="gpu", coprocessor_fn=fn)  # doctest: +SKIP
+  >>> dev = qp.Backline(  # doctest: +SKIP
+  ...     controller=qp.Controller(), coprocessors=[coproc], transport="memcpy"
+  ... )
+  ```
 
 * Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
   can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
@@ -734,16 +747,20 @@
 <h3>Improvements 🛠</h3>
 
 * A :class:`~.Controller` now takes the size of its messages in each direction, with the
-  ``in_bytes`` and ``out_bytes`` keyword arguments. Both default to 8. The ``"memcpy"`` transport
-  carries messages of any size to a CPU coprocessor, and to a GPU coprocessor running a
-  per-message function. A GPU coprocessor running a persistent kernel, and every coprocessor over
-  the ``"rdma"`` transport, carry up to 8 bytes.
-
-  .. code-block:: python
-
-      ctrl = qp.Controller(in_bytes=120, out_bytes=121)
-
+  ``in_bytes`` and ``out_bytes`` keyword arguments. Left unset, they take the sizes its
+  coprocessors' functions declare, or else 8 bytes. The ``"memcpy"`` transport carries messages of
+  any size to a CPU coprocessor, and to a GPU coprocessor running a per-message function. A GPU
+  coprocessor running a persistent kernel, and every coprocessor over the ``"rdma"`` transport,
+  carry up to 8 bytes.
   [(#10224)](https://github.com/PennyLaneAI/pennylane/pull/10224)
+  [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
+
+  ```python
+  ctrl = qp.Controller(in_bytes=120, out_bytes=121)
+  ```
+
+* :class:`~.CoprocessorFunction` now accepts ``config``, ``per_message`` and ``message_bytes``.
+  [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
 
 * Computing and differentiating the matrix of a :class:`~.SpecialUnitary` acting on more than
   five wires is now significantly faster.
