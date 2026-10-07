@@ -682,6 +682,18 @@
   resource counts when compiling them with Catalyst.
   [(#10241)](https://github.com/PennyLaneAI/pennylane/pull/10241)
 
+* A :class:`~.Controller` now takes the size of its messages in each direction, with the
+  ``in_bytes`` and ``out_bytes`` keyword arguments. Both default to 8. The ``"memcpy"`` transport
+  carries messages of any size to a CPU coprocessor, and to a GPU coprocessor running a
+  per-message function. A GPU coprocessor running a persistent kernel, and every coprocessor over
+  the ``"rdma"`` transport, carry up to 8 bytes.
+
+  .. code-block:: python
+
+      ctrl = qp.Controller(in_bytes=120, out_bytes=121)
+
+  [(#10224)](https://github.com/PennyLaneAI/pennylane/pull/10224)
+
 * Computing and differentiating the matrix of a :class:`~.SpecialUnitary` acting on more than
   five wires is now significantly faster.
   [(#10253)](https://github.com/PennyLaneAI/pennylane/pull/10253)
@@ -2017,6 +2029,7 @@ Korbinian Kottmann,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,
+Mehrdad Malekmohammadi,
 William Maxwell,
 Anton Naim Ibrahim,
 Mudit Pandey,
