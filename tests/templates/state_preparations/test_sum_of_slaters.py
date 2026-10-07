@@ -547,7 +547,7 @@ class TestSumOfSlatersPrep:
         sizes = SumOfSlatersPrep.required_register_sizes(indices, num_wires)
         d = ceil_log2(num_entries)
 
-        m = min(new_num_bits, 2 * d - 1)
+        m = _sos_encoding_size(new_num_bits, num_entries)
         assert sizes["wires"] == num_wires
         assert sizes["enumeration_wires"] == d
         assert sizes["identification_wires"] == max((new_num_bits > m) * m, 0)
@@ -574,7 +574,7 @@ class TestSumOfSlatersPrep:
 
         sizes = SumOfSlatersPrep.required_register_sizes(indices, n)
         d = ceil_log2(n)
-        m = min(num_bits, 2 * d - 1)
+        m = _sos_encoding_size(num_bits, n)
         assert sizes["wires"] == n
         assert sizes["enumeration_wires"] == d
         assert sizes["identification_wires"] == max((num_bits > m) * m, 0)
@@ -586,6 +586,8 @@ class TestSumOfSlatersPrep:
 
     def test_register_sizes_memory_limit_fallback(self):
         """Test that register sizing uses the identity encoding above the memory limit."""
+        assert _sos_encoding_size(34, 90102) == 34
+        # pylint: disable-next=protected-access
         sizes = SumOfSlatersPrep._required_register_sizes_from_nums(
             num_entries=90102, num_bits=34, num_wires=36
         )
@@ -613,8 +615,18 @@ class TestSumOfSlatersPrep:
             "enumeration_wires": d,
             "identification_wires": 2 * d - 1,
             "qrom_work_wires": d - 1,
-            "mcx_cache_wires": max(2 * d - 2, num_wires - 1),
+            "mcx_cache_wires": _sos_encoding_size(num_wires, num_entries) - 1,
         }
+
+    @pytest.mark.parametrize(
+        "num_entries, num_wires, expected_m",
+        [(1521, 22, 21), (90102, 36, 36)],
+    )
+    def test_register_sizes_abstract_encoding_limit(self, num_entries, num_wires, expected_m):
+        """Test that abstract sizing accounts for whether compression is feasible."""
+        sizes = SumOfSlatersPrep.required_register_sizes(Int[num_entries], num_wires)
+
+        assert sizes["mcx_cache_wires"] == expected_m - 1
 
     @pytest.mark.parametrize("num_wires", [3, 4, 5])
     @pytest.mark.parametrize("num_entries", [2, 4, 5, 6])

@@ -45,6 +45,10 @@ _COMPRESSION_PAIRWISE_ENTRY_LIMIT = 2**25
 Put a limit on the amount of work done by the compression optimization's pre-processing.
 This limit corresponds roughly to ~1GB peak memory usage:
    2**25 (pairwise scalar entries) * 8 (size of int64) * 4 (overhead)
+
+The limit bounds the pairwise-difference arrays constructed by ``_find_single_w`` and
+``_find_ell``. The latter may perform the pairwise work repeatedly, so this limits peak memory
+but does not strictly bound total runtime.
 """
 
 
@@ -53,7 +57,11 @@ def _sos_encoding_size(r: int, D: int) -> int:
     compressed_size = 2 * math.ceil_log2(D) - 1
     if r <= compressed_size:
         return r
-    if r * (D * (D - 1) // 2) > _COMPRESSION_PAIRWISE_ENTRY_LIMIT:
+
+    # _find_single_w constructs one r-component difference vector for each unordered pair of
+    # bitstrings. This also upper-bounds the size of the pairwise constructions in _find_ell.
+    num_pairwise_entries = r * (D * (D - 1) // 2)
+    if num_pairwise_entries > _COMPRESSION_PAIRWISE_ENTRY_LIMIT:
         return r
     return compressed_size
 
@@ -1075,12 +1083,16 @@ class SumOfSlatersPrep(Operator2):
         """Compute the upper bound of the required register sizes, if only the number of
         basis states, but not the concrete states to be prepared, is known."""
         d = math.ceil_log2(num_entries)
+        # The reduced encoding width r is unknown, but is at most num_wires. Computing the
+        # encoding size at this upper bound accounts for both compressed and identity encodings,
+        # including identity fallback when compression exceeds the pairwise-entry limit.
+        max_encoding_size = _sos_encoding_size(num_wires, num_entries)
         return {
             "wires": num_wires,
             "enumeration_wires": d,
             "identification_wires": 2 * d - 1,
             "qrom_work_wires": d - 1,
-            "mcx_cache_wires": max(2 * d - 2, num_wires - 1),
+            "mcx_cache_wires": max_encoding_size - 1,
         }
 
 

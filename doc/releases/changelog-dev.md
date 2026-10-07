@@ -1194,7 +1194,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* An operator can now be reconstructed from operator_p with abstract wires in the form of 
+* An operator can now be reconstructed from operator_p with abstract wires in the form of
   AbstractQubit, jax.core.ShapedArray, AbstractWires, and AbstractArray.
   [(#10165)](https://github.com/PennyLaneAI/pennylane/pull/10165)
 
@@ -1590,6 +1590,11 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* :class:`~.SumOfSlatersPrep` now falls back to identity encoding when the pairwise-difference
+  construction required for the compressed encoding would exceed approximately 1 GiB of peak memory.
+  This prevents excessive memory use during classical preprocessing of large sparse states.
+  [(#10270)](https://github.com/PennyLaneAI/pennylane/pull/10270)
 
 * Fixed a bug where a fixed decomposition rule assigned to :class:`~.MultiControlledX` via the
   ``fixed_decomps`` keyword argument of :func:`~.transforms.decompose` was being ignored.
