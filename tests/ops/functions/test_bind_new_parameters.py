@@ -174,6 +174,23 @@ def test_operator_2_ops(op, new_params, expected_op):
     assert new_op is not op
 
 
+def test_operator2_rebinds_dynamic_args_by_name():
+    """Operator2 dynamic args are rebound by name, not constructor order.
+
+    ``IQPEmbedding(features, wires, n_repeats, pattern)`` has ``wires`` between
+    the two dynamic args, so a positional ``cls(*dynamic_args, wires=...)``
+    reconstruct would fail.
+    """
+
+    op = qp.IQPEmbedding([1.0, 2.0], wires=[0, 1], pattern=[[0, 1]])
+    new_op = bind_new_parameters(op, ([0.0, 0.0], np.array([[0, 1]])))
+
+    assert qp.math.allclose(new_op.arguments["features"], [0.0, 0.0])
+    assert qp.math.allclose(new_op.arguments["pattern"], [[0, 1]])
+    assert new_op.wires.labels == (0, 1)
+    assert new_op is not op
+
+
 @pytest.mark.parametrize(
     "op, new_params, expected_op",
     [
