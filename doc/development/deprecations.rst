@@ -104,10 +104,10 @@ Completed deprecation cycles
   ``max_independent_set``, ``min_vertex_cover``, ``max_clique``, ``max_weight_cycle``,
   ``bit_driver``, ``edge_driver``), the ansatz layers (``cost_layer``, ``mixer_layer``)
   and the ``pennylane.qaoa.cycle`` helpers. :class:`~.QAOAEmbedding` is unaffected.
-  
+
   - Removed in releases after v0.45
 
-* Maintenance support for the ``tensorflow`` interface has been removed. Future versions of 
+* Maintenance support for the ``tensorflow`` interface has been removed. Future versions of
 * The ``pennylane.pulse`` module has been removed. This includes ``ParametrizedHamiltonian`` and
   ``ParametrizedEvolution``, as well as the ``stoch_pulse_grad`` and ``pulse_odegen``
   pulse-level gradient transforms.
