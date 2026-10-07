@@ -104,7 +104,6 @@ class TestInitialization:
         assert qs.trainable_params == []
         assert qs._trainable_params == []
         assert qs._graph is None
-        assert qs._specs is None
         assert qs._shots.total_shots is None
         assert qs._batch_size is _UNSET_BATCH_SIZE
         assert qs.batch_size is None
@@ -180,15 +179,13 @@ sample_measurements = [
 class TestUpdate:
     """Test the methods called by _update."""
 
-    def test_cached_graph_specs_reset(self):
-        """Test that update resets the graph and specs"""
+    def test_cached_graph_reset(self):
+        """Test that update resets the graph"""
         qs = QuantumScript()
         qs._graph = "hello"
-        qs._specs = "something"
 
         qs._update()
         assert qs._graph is None
-        assert qs._specs is None
 
     # pylint: disable=superfluous-parens
     def test_update_circuit_info_wires(self):
@@ -648,37 +645,6 @@ class TestInfomationProperties:
 
         # test that if we request it again, we get the same object
         assert qs.graph is g
-
-    def test_empty_qs_specs(self):
-        """Tests the specs of an script."""
-        qs = QuantumScript()
-        assert qs._specs is None
-
-        assert qs.specs["resources"] == qp.resource.SpecsResources(
-            num_wires=0,
-            counts={},
-            measurement_processes={},
-            circuit_depth=0,
-        )
-
-        assert qs._specs is qs.specs
-
-    def test_specs_tape(self, make_script):
-        """Tests that regular scripts return correct specifications"""
-        qs = make_script
-
-        assert qs._specs is None
-        specs = qs.specs
-        assert qs._specs is specs
-
-        counts = {"RX": 2, "Rot": 1, "CNOT": 1}
-        expected_resources = qp.resource.SpecsResources(
-            num_wires=3,
-            counts=counts,
-            measurement_processes={"expval(PauliX)": 1, "probs(2 wires)": 1},
-            circuit_depth=3,
-        )
-        assert specs["resources"] == expected_resources
 
     @pytest.mark.parametrize(
         "shots, total_shots, shot_vector",

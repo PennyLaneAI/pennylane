@@ -35,8 +35,35 @@ Args:
     d (int): Number of enumeration qubits, given by :math:`\lceil \log_2(D)\rceil` where :math:`D`
         is the number of Slater determinants populated in the state to be prepared.
     r (int): Number of bits required after reducing the state ``indices`` with ``select_sos_rows``.
-    m (int): Number of encoding qubits. Equals :math:`\min(2d-1, r)`.
+    m (int): Number of encoding qubits. Equals either :math:`2d-1` when compression is used or
+        :math:`r` when the identity encoding is used.
 """
+
+
+_COMPRESSION_PAIRWISE_ENTRY_LIMIT = 2**25
+"""
+Put a limit on the amount of work done by the compression optimization's pre-processing.
+This limit corresponds roughly to ~1GB peak memory usage:
+   2**25 (pairwise scalar entries) * 8 (size of int64) * 4 (overhead)
+
+The limit bounds the pairwise-difference arrays constructed by ``_find_single_w`` and
+``_find_ell``. The latter may perform the pairwise work repeatedly, so this limits peak memory
+but does not strictly bound total runtime.
+"""
+
+
+def _sos_encoding_size(r: int, D: int) -> int:
+    """Choose the encoding width, falling back to identity above the pairwise-entry limit."""
+    compressed_size = 2 * math.ceil_log2(D) - 1
+    if r <= compressed_size:
+        return r
+
+    # _find_single_w constructs one r-component difference vector for each unordered pair of
+    # bitstrings. This also upper-bounds the size of the pairwise constructions in _find_ell.
+    num_pairwise_entries = r * (D * (D - 1) // 2)
+    if num_pairwise_entries > _COMPRESSION_PAIRWISE_ENTRY_LIMIT:
+        return r
+    return compressed_size
 
 
 def _columns_differ(bits: np.ndarray) -> bool:
@@ -172,7 +199,7 @@ def select_sos_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
 
 def _find_ell(bits_basis: np.ndarray, set_M: np.ndarray, set_N: np.ndarray) -> np.ndarray:
     r"""Find replacement vector :math:`\ell` to construct lower-rank set of bit strings during
-    recursive computation of kernel space :math:`\mathcal{W}` in ``_get_w_vectors``.
+    iterative computation of kernel space :math:`\mathcal{W}` in ``_find_w``.
 
     In more general terms, we get as input a basis ``bits_basis``,
     a set ``set_M`` of bitstrings that are spanned by all but the last bitstring in that basis
@@ -292,7 +319,9 @@ def _find_single_w(bits):
 
 
 def _step_3_in_find_w(bits_basis, other_bits):
-    """Step 3 of _find_w, which is triggered when t=1 in the recursion but initially we had t>1."""
+    """Step 3 of _find_w, which finds the single remaining vector w_1 once all other basis
+    vectors have been peeled off iteratively (i.e. the reduced problem has t=1). Returns the
+    vector with shape ``(r,)``."""
     r = bits_basis.shape[0]
     all_bits = np.concatenate([bits_basis, other_bits], axis=1)
     # Compute set(V) ∪ (set(V) - set(V)). We will skip 0 by starting our search at 1 below
@@ -309,47 +338,62 @@ def _step_3_in_find_w(bits_basis, other_bits):
         w_bits_in_basis = math.int_to_binary(i, width=bits_basis.shape[1] - 1)
         w = (bits_basis[:, :-1] @ w_bits_in_basis) % 2
         if not np.any(np.all(w[:, None] == all_bitstrings_to_avoid, axis=0)):
-            return w[:, None]
+            return w
 
     raise ValueError("Unexpected exception: There should always be a w found.")  # pragma: no cover
 
 
 def _find_w(bits_basis, other_bits, t):
-    """Compute the kernel space W from the original bit strings, including a basis for their
+    r"""Compute the kernel space W from the original bit strings, including a basis for their
     column space. See the documentation of ``compute_sos_encoding`` for details.
+
+    The vectors :math:`\{w_k\}` are constructed iteratively: in each iteration we peel off the
+    last basis vector, reducing the problem from ``t`` to ``t-1``, and record one replacement
+    vector ``w_t``. This continues until a single vector ``w_1`` remains, which is found by brute
+    force in ``_step_3_in_find_w``. The recorded vectors are then assembled into ``W`` with
+    columns ordered as ``[w_1, w_2, ..., w_t]``.
     """
-    if t == 1:
-        # Step 3: brute-force search of a single vector w_1
-        return _step_3_in_find_w(bits_basis, other_bits)
+    # Vectors w_t, w_{t-1}, ..., w_1 collected in the order they are found, i.e. with decreasing
+    # index. They are reversed and stacked into W after the loop.
+    w_vectors = []
 
-    v_r = bits_basis[:, -1]
-    bits_without_v_r = np.concatenate([bits_basis[:, :-1], other_bits], axis=1)
+    # We peel off one basis vector per iteration, reducing the problem from t to t-1, until a
+    # single vector w_1 remains.
+    for _ in range(t - 1):
+        v_r = bits_basis[:, -1]
+        bits_without_v_r = np.concatenate([bits_basis[:, :-1], other_bits], axis=1)
 
-    # Step 4: Split the set of bitstrings into three sets:
-    #  - set_M <> \mathcal{M}
-    #  - v_r <> \{v_l\}
-    #  - set_N <> \mathcal{N}
-    indep_of_reduced_basis = np.array(
-        [math.binary_is_independent(vec, bits_basis[:, :-1]) for vec in bits_without_v_r.T]
-    )
+        # Step 4: Split the set of bitstrings into three sets:
+        #  - set_M <> \mathcal{M}
+        #  - v_r <> \{v_l\}
+        #  - set_N <> \mathcal{N}
+        indep_of_reduced_basis = math.binary_is_independent(bits_without_v_r, bits_basis[:, :-1])
 
-    # Note that the first t-1 columns of set_M are guaranteed to match bits_basis[:, :-1]
-    set_M = bits_without_v_r[:, np.where(~indep_of_reduced_basis)[0]]
-    set_N = bits_without_v_r[:, np.where(indep_of_reduced_basis)[0]]
+        # Note that the first columns of set_M are guaranteed to match bits_basis[:, :-1]
+        set_M = bits_without_v_r[:, ~indep_of_reduced_basis]
+        set_N = bits_without_v_r[:, indep_of_reduced_basis]
 
-    # Step 6: Brute-force search bitstring ell to replace v_l. Step 5 is included in _find_ell
-    ell = _find_ell(bits_basis, set_M, set_N)
+        # Step 6: Brute-force search bitstring ell to replace v_l. Step 5 is included in _find_ell
+        ell = _find_ell(bits_basis, set_M, set_N)
 
-    # Step 7: Compute new set sub_bits <> \mathcal{V}' of bitstrings in span of bits_basis[:, :-1]
-    #         and call _find_w recursively on the sub_bits to compute sub_W <> \mathcal{W}'
-    w_t = (v_r + ell) % 2
-    _set_N = (set_N + w_t[:, None]) % 2
-    sub_bits = np.concatenate([set_M, ell[:, None], _set_N], axis=1)
-    sub_W = _find_w(bits_basis[:, :-1], sub_bits[:, bits_basis.shape[1] - 1 :], t - 1)
+        # Step 7: Compute new set sub_bits <> \mathcal{V}' of bitstrings in span of
+        #         bits_basis[:, :-1], which is processed in the next iteration to find the next
+        #         replacement vector.
+        w_t = (v_r + ell) % 2
+        w_vectors.append(w_t)
+        _set_N = (set_N + w_t[:, None]) % 2
+        sub_bits = np.concatenate([set_M, ell[:, None], _set_N], axis=1)
 
-    # Step 8: Append the replacement vector w_t to sub_W
-    W = np.concatenate([sub_W, w_t[:, None]], axis=1)
-    return W
+        # Peel off the last basis vector and continue with the reduced problem.
+        other_bits = sub_bits[:, bits_basis.shape[1] - 1 :]
+        bits_basis = bits_basis[:, :-1]
+
+    # Step 3: brute-force search of the single remaining vector w_1
+    w_vectors.append(_step_3_in_find_w(bits_basis, other_bits))
+
+    # Step 8: Reverse back into increasing index order and stack the vectors as the columns of W,
+    #         i.e. ordered as [w_1, w_2, ..., w_t].
+    return np.stack(w_vectors[::-1], axis=1)
 
 
 def _find_U_from_W(W):
@@ -372,9 +416,11 @@ def _find_U_from_W(W):
 
 def compute_sos_encoding(bits):
     r"""Map :math:`D` different bitstrings of length :math:`r` to :math:`D` different
-    bitstrings :math:`b` of length :math:`m = \min(r, 2d-1)` where
-    :math:`d=\lceil\log_2(D)\rceil`. The function computes both the mapping :math:`U` and the
-    output bitstrings :math:`b`.
+    bitstrings :math:`b`. The encoding length is :math:`m = \min(r, 2d-1)` where
+    :math:`d=\lceil\log_2(D)\rceil`, unless the pairwise-difference construction would result
+    in an unreasonable runtime and/or memory requirement, in which case the identity encoding with
+    :math:`m=r` is used. The function computes both the mapping :math:`U` and the output
+    bitstrings :math:`b`.
     This algorithm forms the constructive proof of Lemma 1 in
     `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
     It is the main classical coprocessing step required for the sparse state preparation
@@ -387,9 +433,8 @@ def compute_sos_encoding(bits):
 
     Returns:
         tuple[np.ndarray]: Two bit arrays. The first is :math:`U`, which maps the input ``bits``
-        to :math:`D` distinct bitstrings :math:`\{b_i\}` of length :math:`\min(r, m)`, where
-        :math:`m=2\lceil \log_2(D)\rceil-1`. The second array are the bitstrings
-        :math:`\{b_i\}` themselves, stored as columns.
+        to :math:`D` distinct bitstrings :math:`\{b_i\}` of length :math:`m`. The second array
+        are the bitstrings :math:`\{b_i\}` themselves, stored as columns.
 
     .. warning::
 
@@ -397,6 +442,13 @@ def compute_sos_encoding(bits):
         work with a reduced input here.
         Furthermore, this function assumes that the bitstrings are not overly redundant, so
         that it might error out if ``select_sos_rows`` is not used.
+
+    .. note::
+
+        Compression constructs collections of pairwise differences with quadratic scaling in
+        the number of bitstrings. If they contain more than ~32 million scalar entries, a
+        conservative proxy for approximately 1 GiB of peak memory, this function returns the
+        identity encoding instead.
 
     .. seealso:: :func:`~.select_sos_rows`
 
@@ -558,7 +610,7 @@ def compute_sos_encoding(bits):
 
         **Case 2b:** :math:`t>1`
 
-        If :math:`t>1`, we recursively construct the :math:`\{w_k\}`, which is implemented in
+        If :math:`t>1`, we iteratively construct the :math:`\{w_k\}`, which is implemented in
         ``_find_w``.
         We proceed in the following steps, thinking of ordered sets whenever we speak of sets.
 
@@ -568,8 +620,8 @@ def compute_sos_encoding(bits):
            the indices :math:`\{1,\dots, r\}`, i.e. the basis is :math:`\mathcal{B}=\{v_1,\dots,v_r\}`.
            This is implemented in ``qp.math.binary_select_basis``, which returns the basis and
            the remaining columns separately. This step will only ever be executed once.
-        2. If :math:`t=1` (which can happen despite :math:`t>1` initially, because we will use
-           recursion), go to step 3. Else go to step 4.
+        2. If :math:`t=1` (which can happen despite :math:`t>1` initially, because we reduce
+           :math:`t` by one in each iteration), go to step 3. Else go to step 4.
         3. Brute-force search a linear combination :math:`w_1` of the basis vectors
            :math:`\mathcal{B}` that is not contained in the set
            :math:`\mathcal{V}\cup(\mathcal{V}-\mathcal{V})\cup \{0\}`, where the set difference
@@ -608,10 +660,10 @@ def compute_sos_encoding(bits):
         as rows. The same is true for case 2b), where we only had to compute a single :math:`w_1`.
     """
     r, D = bits.shape
-    d = math.ceil_log2(D)
-    m = 2 * d - 1
-    if r <= m:
-        # Case 1: We can use the identity mapping
+    m = _sos_encoding_size(r, D)
+    if r == m:
+        # Case 1: We can use the identity mapping, either because compression is unnecessary or
+        # because it would require unreasonable classical processing by the brute force impl below.
         U = np.eye(r, dtype=int)
         return U, bits
 
@@ -1026,7 +1078,7 @@ class SumOfSlatersPrep(Operator2):
             }
 
         d = math.ceil_log2(num_entries)
-        m = min(num_bits, 2 * d - 1)
+        m = _sos_encoding_size(num_bits, num_entries)
         if num_bits <= m:
             # Identity encoding. We do not need the identification register but can use the
             # (subselection of) system wires directly
@@ -1047,13 +1099,32 @@ class SumOfSlatersPrep(Operator2):
     def _required_register_sizes_abstract(num_entries: int, num_wires: int) -> dict:
         """Compute the upper bound of the required register sizes, if only the number of
         basis states, but not the concrete states to be prepared, is known."""
+        if num_entries == 1:
+            return {
+                "wires": num_wires,
+                "enumeration_wires": 0,
+                "identification_wires": 0,
+                "qrom_work_wires": 0,
+                "mcx_cache_wires": 0,
+            }
+
         d = math.ceil_log2(num_entries)
+        compressed_size = 2 * d - 1
+        # The reduced encoding width r is unknown, but is at most the smaller of the number of
+        # target wires and entries. Evaluate both register bounds across that full range.
+        max_num_bits = min(num_wires, num_entries)
+        max_encoding_size = _sos_encoding_size(max_num_bits, num_entries)
+        min_compressible_size = compressed_size + 1
+        compression_possible = (
+            max_num_bits >= min_compressible_size
+            and _sos_encoding_size(min_compressible_size, num_entries) == compressed_size
+        )
         return {
             "wires": num_wires,
             "enumeration_wires": d,
-            "identification_wires": 2 * d - 1,
+            "identification_wires": compressed_size if compression_possible else 0,
             "qrom_work_wires": d - 1,
-            "mcx_cache_wires": 2 * d - 2,
+            "mcx_cache_wires": max_encoding_size - 1,
         }
 
 
@@ -1073,7 +1144,7 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     if num_entries == 1:
         return {qp.BasisState(Bool[num_wires], Wire[num_wires]): 1}
     d = math.ceil_log2(num_entries)
-    m = min(num_bits, 2 * d - 1)
+    m = _sos_encoding_size(num_bits, num_entries)
 
     identity_encoding = num_bits == m
 
@@ -1159,12 +1230,12 @@ def _preprocess(v_bits, wires):
     # if selector_ids has length r, vtilde_bits has shape (r, num_entries)
     selector_ids, vtilde_bits = select_sos_rows(v_bits)
     selected_wires = [wires[idx] for idx in selector_ids]
-    # u_bits has shape (2d-1, r), b_bits has shape (2d-1, num_entries)
+    # u_bits has shape (m, r), b_bits has shape (m, num_entries)
     u_bits, b_bits = compute_sos_encoding(vtilde_bits)
 
     r = len(vtilde_bits)
     d = math.ceil_log2(num_entries)
-    m = min(r, 2 * d - 1)
+    m = u_bits.shape[0]
     assert u_bits.shape == (m, r), f"{u_bits.shape=}, {(m, r)=}"
     assert b_bits.shape == (m, num_entries)
 
