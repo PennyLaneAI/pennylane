@@ -19,7 +19,7 @@ whether PennyLane is using a queuing context or program capture.
 
 import copy
 
-from pennylane import capture, pytrees  # tach-ignore
+from pennylane import capture, pytrees
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 
 

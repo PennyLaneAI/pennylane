@@ -192,7 +192,7 @@ from contextlib import contextmanager
 from threading import RLock
 from typing import Optional
 
-from pennylane import capture  # tach-ignore
+from pennylane import capture
 from pennylane.exceptions import QueuingError
 
 
