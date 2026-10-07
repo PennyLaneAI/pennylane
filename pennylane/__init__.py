@@ -27,6 +27,7 @@ from pennylane.core.queuing import QueuingManager, apply
 from pennylane import compiler
 from pennylane.compiler import qjit
 from pennylane import capture
+from pennylane.capture import hint
 from pennylane import core
 from pennylane import control_flow
 from pennylane.control_flow import for_loop, while_loop
@@ -48,8 +49,6 @@ from pennylane.decomposition import (
 from pennylane import templates
 from pennylane import pauli
 from pennylane.pauli import pauli_decompose
-from pennylane.resource import specs
-from pennylane import resource
 from pennylane import qchem
 from pennylane.fermi import (
     FermiC,
@@ -113,6 +112,8 @@ from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
+from pennylane.resource import analyze, specs, track
+from pennylane import resource
 
 from pennylane.transforms import (
     transform,

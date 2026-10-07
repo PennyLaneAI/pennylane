@@ -316,22 +316,19 @@ class TestPassByPassSpecs:
         no_passes = qp.qjit(simple_circuit)
         with pytest.raises(
             ValueError,
-            match=r"The 'level' argument to .*\.specs for QJIT'd QNodes is out of "
-            "bounds, got -5.",
+            match="The 'level' argument for QJIT'd QNodes is out of bounds, got -5.",
         ):
             qp.specs(no_passes, level=-5)()
 
         with pytest.raises(
             ValueError,
-            match=r"The 'level' argument to .*\.specs for QJIT'd "
-            "QNodes is out of bounds, got 10.",
+            match="The 'level' argument for QJIT'd QNodes is out of bounds, got 10.",
         ):
             qp.specs(no_passes, level=10)()
 
         with pytest.raises(
             ValueError,
-            match=r"The 'level' argument to .*\.specs for QJIT'd "
-            "QNodes is out of bounds, got 10.",
+            match="The 'level' argument for QJIT'd QNodes is out of bounds, got 10.",
         ):
             qp.specs(no_passes, level=[10, 11])()
 
@@ -348,7 +345,7 @@ class TestPassByPassSpecs:
 
         with pytest.raises(
             ValueError,
-            match=r"Specs encountered the following tape transforms: .*dummy_transform.*\. Tape transforms are no longer supported by specs.",
+            match=r"Encountered the following tape transforms: .*dummy_transform.*\. Tape transforms are no longer supported.",
         ):
             qp.specs(simple_circuit, level="all")()
 
@@ -1464,7 +1461,7 @@ class TestMarkerIntegration:
 
         with pytest.warns(
             UserWarning,
-            match=r"The 'level' argument to .*\.specs for QJIT'd QNodes has been sorted to be "
+            match="The 'level' argument for QJIT'd QNodes has been sorted to be "
             "in ascending order with no duplicate levels.",
         ):
             actual = qp.specs(simple_circuit, level=["m0", "m1", "m1-duplicate"])()
@@ -1533,6 +1530,89 @@ def test_abstract_array_inputs():
     s = qp.specs(c, level=0)(qp.typing.AbstractArray((3,), float), qp.typing.Wire[3])
     assert s.resources.quantum_operations["PauliX"] == 3
     assert s.resources.quantum_operations["RX"] == 3
+
+
+@pytest.mark.catalyst
+class TestSpecsHintIntegration:
+    """Test integration of hints with qp.specs."""
+
+    def test_for_loop_hint_outside(self):
+        """Test for_loop hints."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def c(n):
+
+            @qp.hint({"num-iters": 20})
+            @qp.for_loop(n)
+            def loop(i):
+                qp.X(i)
+
+            loop()
+
+            return qp.probs(wires=0)
+
+        r = qp.specs(c, level=0)(2)
+        assert r.resources.quantum_operations["PauliX"] == 20
+
+    def test_for_loop_hint_inside(self):
+        """Test for_loop hints where the loop itself is decorated."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def c(n):
+
+            @qp.for_loop(n)
+            @qp.hint({"num-iters": 4})
+            def loop(i):
+                qp.Y(i)
+
+            loop()
+
+            return qp.probs(wires=0)
+
+        r = qp.specs(c, level=0)(2)
+        assert r.resources.quantum_operations["PauliY"] == 4
+
+    def test_while_loop_hint_outside(self):
+        """Test while_loop hints."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def c(n):
+
+            @qp.hint({"num-iters": 20})
+            @qp.while_loop(lambda i: i < n)
+            def loop(i):
+                qp.X(i)
+                return i + 1
+
+            loop(0)
+
+            return qp.probs(wires=0)
+
+        r = qp.specs(c, level=0)(2)
+        assert r.resources.quantum_operations["PauliX"] == 20
+
+    def test_while_loop_hint_inside(self):
+        """Test while_loop hints where the loop itself is decorated."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def c(n):
+
+            @qp.while_loop(lambda i: i < n)
+            @qp.hint({"num-iters": 4})
+            def loop(i):
+                qp.Y(i)
+                return i + 1
+
+            loop(0)
+
+            return qp.probs(wires=0)
+
+        r = qp.specs(c, level=0)(2)
+        assert r.resources.quantum_operations["PauliY"] == 4
 
 
 @pytest.mark.catalyst
