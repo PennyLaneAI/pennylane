@@ -416,7 +416,9 @@ def _controlled_g_phase_resource(
 
 
 @custom_ctrl_dispatch.register
-def _ctrl_g_phase(base: GlobalPhase, control, control_values, *_):
+def _ctrl_g_phase(
+    base: GlobalPhase, control, control_values, work_wires=None, work_wire_type="borrowed"
+):
     r"""
     Custom controlled global phase dispatch.
 
@@ -449,7 +451,12 @@ def _ctrl_g_phase(base: GlobalPhase, control, control_values, *_):
         # The global phase becomes a phase shift on the single control wire.
         return qp.PhaseShift(phi, control[-1])
     # For multiple controls, a phase shift on the last control wire, controlled by the rest.
-    return qp.ctrl(qp.PhaseShift(phi, control[-1]), control=control[:-1])
+    return qp.ctrl(
+        qp.PhaseShift(phi, control[-1]),
+        control=control[:-1],
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
 
 
 @register_resources(_controlled_g_phase_resource, exact=False)
