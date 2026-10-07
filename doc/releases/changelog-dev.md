@@ -403,8 +403,10 @@
 * A new function called :func:`~.analyze` is available, which estimates the resources of a
   ``qjit``-compiled QNode by compiling it up to the given ``level`` and analyzing the resulting
   program, without executing it. This is the same pass-by-pass analysis that :func:`~.specs`
-  performs for ``qjit``-compiled QNodes.
+  performs for ``qjit``-compiled QNodes, with further support for supporting device-specific transformations
+  in ``level``.
   [(#10237)](https://github.com/PennyLaneAI/pennylane/pull/10237)
+  [(#10285)](https://github.com/PennyLaneAI/pennylane/pull/10285)
 
   ```python
   dev = qp.device("null.qubit", wires=2)
