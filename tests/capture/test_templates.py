@@ -1283,11 +1283,9 @@ class TestModifiedTemplates:
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.PhaseAdder(**kwargs))
+        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        assert len(tape) == 1
+        qp.assert_equal(tape.operations[0], qp.PhaseAdder(**kwargs))
 
     def test_adder(self):
         """Test the primitive bind call of Adder."""
@@ -1311,17 +1309,11 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.Adder._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert_eqn_matches_op(eqn, qp.Adder)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.Adder(**kwargs))
+        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        assert len(tape) == 1
+        qp.assert_equal(tape.operations[0], qp.Adder(**kwargs))
 
     def test_semiadder(self):
         """Test the primitive bind call of SemiAdder."""
