@@ -2,6 +2,52 @@
 
 <h3>New features since last release</h3>
 
+
+* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
+  can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
+  [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
+
+  By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
+  with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
+  resource counts (no symbolic expressions).
+
+  ```python
+  @qp.qjit(capture=True)
+  @qp.qnode(qp.device('lightning.qubit', wires=10))
+  def c(n):
+
+      @qp.hint({"num-iters": 10})
+      @qp.for_loop(n)
+      def hinted_loop(i):
+          qp.X(i)
+
+      hinted_loop()
+
+      @qp.for_loop(n)
+      def unhinted_loop(i):
+          qp.Y(i)
+
+      unhinted_loop()
+
+      return qp.expval(qp.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qp.specs(c, level=0)(5).resources)
+  Symbolic Variables: a
+  Quantum operations:
+  - Total: a + 10
+    - PauliX: 10
+    - PauliY: a
+  Measurement processes:
+  - expval(PauliZ): 1
+  Total wires: 10
+  Circuit Depth: Not computed
+
+  ```
+  
+  The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
+
 * A new state preparation routine called :class:`~.PhaseGradientStatePrep` has been added, which
   prepares the phase gradient state 
   :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`.
@@ -328,6 +374,32 @@
   The new function returns a tuple of four values, where the first three corresponds to the rotation
   angles of the ZYZ decomposition of this operator, and the last one corresponds to the global phase.
 
+* A new function called :func:`~.track` is available, which executes a ``qjit``-compiled QNode while
+  tracking the resources it uses, returning both the result of the execution and the corresponding
+  :class:`~.resource.CircuitSpecs`. This is the same device-level tracking that :func:`~.specs`
+  performs with ``level="device"``, but the result of the circuit execution is no longer discarded.
+  [(#10228)](https://github.com/PennyLaneAI/pennylane/pull/10228)
+
+  ```python
+  dev = qp.device("null.qubit", wires=2)
+
+  @qp.qjit
+  @qp.qnode(dev)
+  def circuit(theta):
+      qp.RX(theta, wires=0)
+      qp.CNOT(wires=(0, 1))
+      return qp.probs(wires=(0, 1))
+  ```
+
+  ```pycon
+  >>> result, circuit_specs = qp.track(circuit)(1.23)
+  >>> result.shape
+  (4,)
+  >>> circuit_specs.resources.quantum_operations
+  {'CNOT': 1, 'RX': 1}
+
+  ```
+
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
   In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.Expression` instances where `int` values would normally appear.
@@ -631,6 +703,18 @@
 
 <h3>Improvements 🛠</h3>
 
+* A :class:`~.Controller` now takes the size of its messages in each direction, with the
+  ``in_bytes`` and ``out_bytes`` keyword arguments. Both default to 8. The ``"memcpy"`` transport
+  carries messages of any size to a CPU coprocessor, and to a GPU coprocessor running a
+  per-message function. A GPU coprocessor running a persistent kernel, and every coprocessor over
+  the ``"rdma"`` transport, carry up to 8 bytes.
+
+  .. code-block:: python
+
+      ctrl = qp.Controller(in_bytes=120, out_bytes=121)
+
+  [(#10224)](https://github.com/PennyLaneAI/pennylane/pull/10224)
+
 * Computing and differentiating the matrix of a :class:`~.SpecialUnitary` acting on more than
   five wires is now significantly faster.
   [(#10253)](https://github.com/PennyLaneAI/pennylane/pull/10253)
@@ -640,7 +724,7 @@
   [(#10055)](https://github.com/PennyLaneAI/pennylane/pull/10055)
 
 * :func:`~.iterative_qpe` is now captured as a single :func:`~.capture.subroutine` instead of
-  falling back to an unrolled ``qp.for_loop``. 
+  falling back to an unrolled ``qp.for_loop``.
   [(#10220)](https://github.com/PennyLaneAI/pennylane/pull/10220)
 
 * Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
@@ -1060,7 +1144,7 @@
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
 <h3>Breaking changes 💔</h3>
-  
+
 * Tensorflow and tensorflow-autograph interfaces are removed.
   [(#10229)](https://github.com/PennyLaneAI/pennylane/pull/10229)
 
@@ -1173,6 +1257,12 @@
 
 * The :class:`pennylane.resource.Resources`, :class:`~.ResourceOperator`, and :class:`~.ErrorOperator` classes as well as the entire :mod:`pennylane.resource.error` module have been removed.
   [(#9786)](https://github.com/PennyLaneAI/pennylane/pull/9786)
+
+* Support for tapes and tape transforms has been removed from :func:`~.specs`.
+  This means that the options ``level="gradient"`` and ``level="all-mlir"`` are no longer supported.
+  To continue collecting resources from non-``qjit``'d qnodes, please see the :func:`~.resource.resources_from_tape` function.
+  The :meth:`QuantumScript.specs` function has also been removed.
+  [(#9988)](https://github.com/PennyLaneAI/pennylane/pull/9988)
 
 * Plxpr transforms and associated infrastructure have been removed.
   [(#9637)](https://github.com/PennyLaneAI/pennylane/pull/9637)
@@ -1398,7 +1488,7 @@
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
       :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.QuantumPhaseEstimation`, :class:`~.IQP`,
-      :class:`~.QSVT`, :class:`~.BlockEncode`
+      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#10164)](https://github.com/PennyLaneAI/pennylane/pull/10164)
   [(#10178)](https://github.com/PennyLaneAI/pennylane/pull/10178)
@@ -1433,6 +1523,7 @@
   [(#10223)](https://github.com/PennyLaneAI/pennylane/pull/10223)
   [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
   [(#10226)](https://github.com/PennyLaneAI/pennylane/pull/10226)
+  [(#10267)](https://github.com/PennyLaneAI/pennylane/pull/10267)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1677,6 +1768,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The dependency versions in the developer installation guide now match `pyproject.toml`, and a rendering issue in the list of optional dependencies was fixed.
+  [(#10232)](https://github.com/PennyLaneAI/pennylane/pull/10232)
+
 * Fixed four incorrect links that referred to hardcoded `blob/master/` URLs by replacing them with relative paths.
   [(#10211)](https://github.com/PennyLaneAI/pennylane/pull/10211)
 
@@ -1710,6 +1804,12 @@
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the 
+  output matrix was with respect to a wrong wire ordering. The bug occurred in products where
+  groups of factors with overlapping wires caused a partial matrix with permuted wires, 
+  e.g. ``H(1) @ H(0) @ CNOT([2, 1]) @ CNOT([1, 0])``.
+  [(#10274)](https://github.com/PennyLaneAI/pennylane/pull/10274)
 
 * :class:`~.SpecialUnitary` no longer raises an error when acting on more than five wires with
   broadcasted parameters.
@@ -1951,6 +2051,7 @@ Korbinian Kottmann,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,
+Mehrdad Malekmohammadi,
 William Maxwell,
 Anton Naim Ibrahim,
 Mudit Pandey,
@@ -1958,9 +2059,11 @@ Andrija Paurevic,
 Francesco Pernice Botta,
 David D.W. Ren,
 Jay Soni,
+Jaume Villasante,
 Paul Haochen Wang,
 Dennis Wayo,
 David Wierichs,
+Ziqi Xu,
 Jake Zaia,
 Hongsheng Zheng,
 Zinan Zhou.

@@ -46,12 +46,14 @@ def test_chained_modifiers():
     # result unwrapped
     assert out == 0.0
 
+    tape_resources = qp.resource.resources_from_tape(tape)
+
     assert len(dev.tracker.history) == 6
     assert dev.tracker.history["batches"] == [1]
     assert dev.tracker.history["simulations"] == [1]
     assert dev.tracker.history["executions"] == [1]
     assert dev.tracker.history["results"] == [0.0]
-    assert dev.tracker.history["resources"] == [tape.specs["resources"]]
+    assert dev.tracker.history["resources"] == [tape_resources]
     assert dev.tracker.history["shots"] == [50]
 
 
