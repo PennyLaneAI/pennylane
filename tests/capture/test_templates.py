@@ -799,57 +799,35 @@ class TestModifiedTemplates:
         )
 
     @pytest.mark.parametrize(
-        "features, wires, kwargs, expected_repeats, expected_pattern",
+        "features, wires, pattern, n_repeats",
         [
-            (jnp.array([2.3, 0.1]), [2, 0], {}, 1, ((0, 1),)),
-            (
-                jnp.array([0.4, 0.2, 0.1]),
-                [2, 1, 0],
-                {"pattern": [[2, 0], [1, 0]]},
-                1,
-                ((2, 0), (1, 0)),
-            ),
-            (jnp.array([0.4, 0.1]), [0, 10], {"n_repeats": 3, "pattern": None}, 3, ((0, 1),)),
+            (jnp.array([2.3, 0.1]), [2, 0], jnp.array([[0, 1]]), 1),
+            (jnp.array([0.4, 0.2, 0.1]), [2, 1, 0], jnp.array([[2, 0], [1, 0]]), 1),
+            (jnp.array([0.4, 0.1]), [0, 10], jnp.array([[0, 1]]), 3),
         ],
     )
-    def test_iqp_embedding(self, features, wires, kwargs, expected_repeats, expected_pattern):
+    def test_iqp_embedding(self, features, wires, pattern, n_repeats):
         """Test the primitive bind call of IQPEmbedding."""
 
-        def qfunc(features):
-            qp.IQPEmbedding(features, wires, **kwargs)
+        def qfunc(features, pattern, wires):
+            qp.IQPEmbedding(features, wires, n_repeats=n_repeats, pattern=pattern)
 
-        qfunc(features)
-        jaxpr = jax.make_jaxpr(qfunc)(features)
+        qfunc(features, pattern, wires)
+        jaxpr = jax.make_jaxpr(qfunc)(features, pattern, wires)
 
         assert len(jaxpr.eqns) == 1
         eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(eqn, qp.IQPEmbedding)
-        assert eqn.invars[0] == jaxpr.jaxpr.invars[0]
-        assert [invar.val for invar in eqn.invars[2:]] == list(wires)
+        assert eqn.invars == jaxpr.jaxpr.invars
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
         n_repeats_values, _ = eqn.params["n_repeats"]
-        assert tuple(n_repeats_values) == (expected_repeats,)
+        assert tuple(n_repeats_values) == (n_repeats,)
         assert "pattern" not in eqn.params
 
-        tape = plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, features)
-        assert qp.math.allclose(tape.operations[0].arguments["pattern"], expected_pattern)
-
-    def test_iqp_embedding_traced_pattern(self):
-        """A traced integer pattern is a dynamic invar, not a compilable param."""
-
-        features = jnp.array([0.4, 0.2, 0.1])
-        pattern = jnp.array([[0, 2], [1, 2]])
-
-        def qfunc(features, pattern):
-            qp.IQPEmbedding(features, [0, 1, 2], pattern=pattern)
-
-        jaxpr = jax.make_jaxpr(qfunc)(features, pattern)
-        eqn = jaxpr.eqns[-1]
-        assert_eqn_matches_op(eqn, qp.IQPEmbedding)
-        assert eqn.invars[:2] == jaxpr.jaxpr.invars
-        assert "pattern" not in eqn.params
+        tape = plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, features, pattern, *wires)
+        assert qp.math.allclose(tape.operations[0].arguments["pattern"], pattern)
 
     @pytest.mark.parametrize("template", [qp.MERA, qp.MPS, qp.TTN])
     def test_tensor_networks(self, template):
