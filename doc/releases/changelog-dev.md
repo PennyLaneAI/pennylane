@@ -1188,6 +1188,14 @@
   pulse-level gradient transforms.
   [(#10238)](https://github.com/PennyLaneAI/pennylane/pull/10238)
 
+* :class:`~.IQPEmbedding`'s ``pattern`` argument now lists pairs of *indices into* ``wires``,
+  rather than wire labels. This matches the ``pattern`` argument of :class:`~.IQP`. 
+  It is a dynamic ``(K, 2)`` integer
+  tensor. The default all-pairs pattern is unchanged.
+  To entangle the first and third of ``wires=["z", "a", "k"]``, pass ``pattern=[[0, 2]]``
+  (previously ``pattern=[["z", "k"]]``).
+  [(#10221)](https://github.com/PennyLaneAI/pennylane/pull/10221)
+
 * :class:`~.QuantumPhaseEstimation` now only accepts an :class:`~.Operator` as the ``unitary``, and the
   ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
   To use a unitary matrix, wrap it in a :class:`~.QubitUnitary`:
@@ -1523,7 +1531,7 @@
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
       :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.QuantumPhaseEstimation`, :class:`~.IQP`,
-      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`
+      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`, :class:`~.IQPEmbedding`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#10164)](https://github.com/PennyLaneAI/pennylane/pull/10164)
   [(#10178)](https://github.com/PennyLaneAI/pennylane/pull/10178)
@@ -1555,6 +1563,7 @@
   [(#10069)](https://github.com/PennyLaneAI/pennylane/pull/10069)
   [(#10085)](https://github.com/PennyLaneAI/pennylane/pull/10085)
   [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
+  [(#10221)](https://github.com/PennyLaneAI/pennylane/pull/10221)
   [(#10223)](https://github.com/PennyLaneAI/pennylane/pull/10223)
   [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
   [(#10226)](https://github.com/PennyLaneAI/pennylane/pull/10226)
@@ -1838,6 +1847,10 @@
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
+
+* :func:`~.ops.functions.bind_new_parameters` now rebinds :class:`~.Operator2` dynamic
+  arguments by name and no longer assumes dynamic arguments to declared positionally.
+  [(#10221)](https://github.com/PennyLaneAI/pennylane/pull/10221)
 
 * :class:`~.SumOfSlatersPrep` now falls back to identity encoding when the pairwise-difference
   construction required for the compressed encoding would exceed approximately 1 GiB of peak memory.
