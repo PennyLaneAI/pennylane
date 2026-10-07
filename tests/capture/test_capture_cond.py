@@ -1246,6 +1246,27 @@ class TestCondBranchProbHintsCapture:
         # order is (true, elif, false); remaining mass is clamped at 0
         assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.7, 0.0, 0.7))
 
+    def test_explicit_zero_preserved_with_unhinted_branches(self):
+        """An explicit ``branch-prob`` of ``0.0`` must not be treated as missing."""
+
+        def f(pred, elif_pred):
+            @qp.hint({"branch-prob": 0.0})
+            def true_fn():
+                return 1
+
+            def elif_fn():
+                return 2
+
+            def false_fn():
+                return 3
+
+            return qp.cond(pred, true_fn, false_fn, elifs=((elif_pred, elif_fn),))()
+
+        jaxpr = jax.make_jaxpr(f)(True, False)
+        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        # order is (true, elif, false); remaining 1.0 split across two unhinted branches
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.0, 0.5, 0.5))
+
     def test_decorator_form_sets_estimated_probabilities(self):
         """Decorator-style ``else_if`` / ``otherwise`` should also populate probs."""
 

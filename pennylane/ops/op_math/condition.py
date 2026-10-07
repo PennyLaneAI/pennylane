@@ -135,7 +135,7 @@ def _setup_probs(branch_fns) -> None | tuple[float, ...]:
 
     total = sum(s for s in branch_probs if s is not None)
     guess = max(1 - total, 0) / (len(branch_fns) - n_encountered)
-    return tuple[float](p or guess for p in branch_probs)
+    return tuple[float](guess if p is None else p for p in branch_probs)
 
 
 class Conditional(SymbolicOp, Operation):
@@ -690,7 +690,7 @@ def cond(
 
                 def false_fn():
                     for _ in range(10):
-                     qp.Y(0)
+                        qp.Y(0)
 
                 def elif_fn():
                     for _ in range(10):
@@ -926,8 +926,9 @@ def _cond_abstract_eval(*_, jaxpr_branches, **__):
     return [out.aval for out in jaxpr_branches[0].outvars]
 
 
+# pylint: disable=unused-argument
 @cond_prim.def_impl
-def _cond_impl(*all_args, jaxpr_branches, consts_slices, args_slice):
+def _cond_impl(*all_args, jaxpr_branches, consts_slices, args_slice, estimated_probabilities):
     args_slice = slice(*args_slice)
     consts_slices = [slice(*s) for s in consts_slices]
 

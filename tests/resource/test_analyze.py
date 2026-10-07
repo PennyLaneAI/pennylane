@@ -216,8 +216,8 @@ class TestAnalyze:
 
 
 @pytest.mark.catalyst
-class TestSpecsHintIntegration:
-    """Test integration of hints with qp.specs."""
+class TestAnalyzeHintIntegration:
+    """Test integration of hints with qp.analyze."""
 
     def test_for_loop_hint_outside(self):
         """Test for_loop hints."""
