@@ -24,6 +24,7 @@ import jax
 import numpy as np
 
 from pennylane import math
+from pennylane.capture import enabled as capture_enabled  # tach-ignore
 from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
 from pennylane.typing import AbstractWires, Wire, _AbstractWireTypeFactory
@@ -167,7 +168,14 @@ class Wires(Sequence):
 
     def __getitem__(self, idx):
         """Method to support indexing. Returns a Wires object if index is a slice,
-        or a label if index is an integer."""
+        or a label if index is an integer.
+
+        A dynamic (traced) index selects a label using ``jax.lax.select_n``, so that indexing a
+        register of static wire labels with a traced index works under program capture / ``jit``.
+        """
+        if math.is_abstract(idx) and capture_enabled():
+            return jax.lax.select_n(idx, *self._labels)
+
         if isinstance(idx, slice):
             # use _override=True because there is no need to verify that a slice from
             # an existing Wires object is valid or not.

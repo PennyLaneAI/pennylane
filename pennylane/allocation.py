@@ -20,19 +20,14 @@ from enum import StrEnum
 from numbers import Integral
 from typing import Literal
 
+import jax
+
+from pennylane.capture import QpPrimitive
 from pennylane.capture import enabled as capture_enabled
 from pennylane.core.operator import Operator
 from pennylane.math import is_abstract
-from pennylane.wires import DynamicWire, Wires
-
-has_jax = True
-try:
-    # pylint: disable=ungrouped-imports
-    from pennylane.capture import QpPrimitive
-    from pennylane.wires import AbstractQubit
-except ImportError:
-    jax = None
-    has_jax = False
+from pennylane.pytrees import register_pytree
+from pennylane.wires import AbstractQubit, DynamicWire, Wires
 
 
 class AllocateState(StrEnum):
@@ -47,37 +42,61 @@ class AllocateState(StrEnum):
 _MAGIC_STATES = frozenset({AllocateState.MAGIC_T, AllocateState.MAGIC_T_ADJ})
 
 
-if not has_jax:
-    allocate_prim = None
-    deallocate_prim = None
-else:
-    allocate_prim = QpPrimitive("allocate")
-    allocate_prim.multiple_results = True
+class AbstractRegister(jax.core.AbstractValue):
+    """An abstract value representing a register of dynamically-allocated qubits."""
 
-    @allocate_prim.def_impl
-    def _allocate_primitive_impl(
-        *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
-    ):
-        raise NotImplementedError("jaxpr containing qubit allocation cannot be executed.")
+    def __init__(self, num_wires):
+        self.num_wires = num_wires
 
-    # pylint: disable=unused-argument
-    @allocate_prim.def_abstract_eval
-    def _allocate_primitive_abstract_eval(
-        *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
-    ):
-        return [AbstractQubit() for _ in range(num_wires)]
+    def __eq__(self, other):
+        return isinstance(other, AbstractRegister) and self.num_wires == other.num_wires
 
-    deallocate_prim = QpPrimitive("deallocate")
-    deallocate_prim.multiple_results = True
+    def __hash__(self):
+        return hash(("AbstractRegister", self.num_wires))
 
-    @deallocate_prim.def_impl
-    def _deallocate_primitive_impl(*wires):
-        raise NotImplementedError("jaxpr containing qubit deallocation cannot be executed.")
 
-    # pylint: disable=unused-argument
-    @deallocate_prim.def_abstract_eval
-    def _deallocate_primitive_abstract_eval(*wires):
-        return []
+allocate_prim = QpPrimitive("allocate")
+
+
+@allocate_prim.def_impl
+def _allocate_primitive_impl(
+    *, num_wires, state=AllocateState.ZERO, restored=False
+):  # pylint: disable=unused-argument
+    raise NotImplementedError("jaxpr containing qubit allocation cannot be executed.")
+
+
+@allocate_prim.def_abstract_eval
+def _allocate_primitive_abstract_eval(
+    *, num_wires, state=AllocateState.ZERO, restored=False
+):  # pylint: disable=unused-argument
+    return AbstractRegister(num_wires)
+
+
+extract_prim = QpPrimitive("extract")
+
+
+@extract_prim.def_impl
+def _extract_primitive_impl(idx, register):  # pylint: disable=unused-argument
+    raise NotImplementedError("jaxpr containing qubit extraction cannot be executed.")
+
+
+@extract_prim.def_abstract_eval
+def _extract_primitive_abstract_eval(idx, register):  # pylint: disable=unused-argument
+    return AbstractQubit()
+
+
+deallocate_prim = QpPrimitive("deallocate")
+deallocate_prim.multiple_results = True
+
+
+@deallocate_prim.def_impl
+def _deallocate_primitive_impl(register):  # pylint: disable=unused-argument
+    raise NotImplementedError("jaxpr containing qubit deallocation cannot be executed.")
+
+
+@deallocate_prim.def_abstract_eval
+def _deallocate_primitive_abstract_eval(register):  # pylint: disable=unused-argument
+    return []
 
 
 class Allocate(Operator):
@@ -184,9 +203,8 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     if isinstance(wires, Sequence) and len(wires) == 0:
         return None
     if capture_enabled():
-        if not isinstance(wires, Sequence):
-            wires = (wires,)
-        return deallocate_prim.bind(*wires)
+        # Under capture, a dynamically-allocated register is deallocated via its register tracer.
+        return deallocate_prim.bind(wires._register)  # pylint: disable=protected-access
     wires = Wires(wires)
     if not_dynamic_wires := [w for w in wires if not isinstance(w, DynamicWire)]:
         raise ValueError(f"deallocate only accepts DynamicWire wires. Got {not_dynamic_wires}")
@@ -194,10 +212,57 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
 
 
 class DynamicRegister(Wires):
-    """A specialized ``Wires`` class for dynamic wires with a context manager for automatic deallocation."""
+    """A specialized ``Wires`` class for dynamically-allocated wires, with a context manager for
+    automatic deallocation.
+
+    A ``DynamicRegister`` can be initialized either with a sequence of wire labels (``DynamicWire``s
+    or abstract qubits) or, under program capture, with an :class:`AbstractRegister` tracer. When
+    constructed from a register tracer, the individual qubits are produced lazily via the ``extract``
+    primitive the first time the wire labels are accessed, and then cached. Flattening the register
+    therefore yields its individual qubits, and unflattening produces a ``Wires`` holding them.
+    """
+
+    def __init__(self, wires, _override=False):
+        self._register = None
+        if is_abstract(wires) and isinstance(wires.aval, AbstractRegister):
+            # Wrap a register tracer: the qubit labels are materialized lazily from it.
+            self._register = wires
+            self._labels = None
+            self._lazy_labels = None
+            self._hash = None
+            return
+
+        super().__init__(wires, _override=_override)
+
+    @property
+    def _labels(self):
+        if self._lazy_labels is None and self._register is not None:
+            # Materialize the register's qubits once, by extracting each of them, then cache.
+            self._lazy_labels = tuple(
+                extract_prim.bind(i, self._register) for i in range(self._register.aval.num_wires)
+            )
+        return self._lazy_labels
+
+    @_labels.setter
+    def _labels(self, value):
+        self._lazy_labels = value
+
+    def __getitem__(self, idx):
+        # When backed by a register tracer, each (non-slice) index extracts a qubit directly, since
+        # ``select_n`` (used by ``Wires.__getitem__`` for dynamic indices) does not accept qubits.
+        if self._register is not None:
+            return extract_prim.bind(idx, self._register)
+        return super().__getitem__(idx)
+
+    def __len__(self):
+        # Avoid materializing the qubits just to report the size of an un-materialized register.
+        if self._register is not None:
+            return self._register.aval.num_wires
+        return len(self._labels)
 
     def __repr__(self):
-        return f"<DynamicRegister: size={len(self._labels)}>"
+        size = len(self._labels) if self._register is None else self._register.aval.num_wires
+        return f"<DynamicRegister: size={size}>"
 
     def __enter__(self):
         return self
@@ -207,6 +272,10 @@ class DynamicRegister(Wires):
 
     def __hash__(self):
         raise TypeError("unhashable type 'DynamicRegister'")
+
+
+# pylint: disable=protected-access
+register_pytree(DynamicRegister, DynamicRegister._flatten, DynamicRegister._unflatten)
 
 
 def allocate(
@@ -390,10 +459,9 @@ def allocate(
             raise NotImplementedError(
                 "Number of allocated wires must be static when capture is enabled."
             )
-        wires = allocate_prim.bind(num_wires=num_wires, state=state, restored=restored)
-    else:
-        wires = [DynamicWire() for _ in range(num_wires)]
-    reg = DynamicRegister(wires)
-    if not capture_enabled():
-        Allocate(reg, state=state, restored=restored)
+        register = allocate_prim.bind(num_wires=num_wires, state=state, restored=restored)
+        return DynamicRegister(register)
+
+    reg = DynamicRegister([DynamicWire() for _ in range(num_wires)])
+    Allocate(reg, state=state, restored=restored)
     return reg
