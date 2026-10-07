@@ -2,6 +2,19 @@
 
 <h3>New features since last release</h3>
 
+* A new function called :func:`~pennylane.backline.onnx_decoder` has been added, which runs an
+  ONNX model on a Backline :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or
+  on the CPU. See :func:`~pennylane.backline.onnx_decoder` for the supported providers and usage
+  details.
+  [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
+
+  ```pycon
+  >>> fn = qp.backline.onnx_decoder("predecoder.onnx")  # doctest: +SKIP
+  >>> coproc = qp.Coprocessor(hardware="gpu", coprocessor_fn=fn)  # doctest: +SKIP
+  >>> dev = qp.Backline(  # doctest: +SKIP
+  ...     controller=qp.Controller(), coprocessors=[coproc], transport="memcpy"
+  ... )
+  ```
 
 * Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
   can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
@@ -375,6 +388,62 @@
   The new function returns a tuple of four values, where the first three corresponds to the rotation
   angles of the ZYZ decomposition of this operator, and the last one corresponds to the global phase.
 
+* A new function called :func:`~.track` is available, which executes a ``qjit``-compiled QNode while
+  tracking the resources it uses, returning both the result of the execution and the corresponding
+  :class:`~.resource.CircuitSpecs`. This is the same device-level tracking that :func:`~.specs`
+  performs with ``level="device"``, but the result of the circuit execution is no longer discarded.
+  [(#10228)](https://github.com/PennyLaneAI/pennylane/pull/10228)
+
+  ```python
+  dev = qp.device("null.qubit", wires=2)
+
+  @qp.qjit
+  @qp.qnode(dev)
+  def circuit(theta):
+      qp.RX(theta, wires=0)
+      qp.CNOT(wires=(0, 1))
+      return qp.probs(wires=(0, 1))
+  ```
+
+  ```pycon
+  >>> result, circuit_specs = qp.track(circuit)(1.23)
+  >>> result.shape
+  (4,)
+  >>> circuit_specs.resources.quantum_operations
+  {'CNOT': 1, 'RX': 1}
+
+  ```
+
+* A new function called :func:`~.analyze` is available, which estimates the resources of a
+  ``qjit``-compiled QNode by compiling it up to the given ``level`` and analyzing the resulting
+  program, without executing it. This is the same pass-by-pass analysis that :func:`~.specs`
+  performs for ``qjit``-compiled QNodes.
+  [(#10237)](https://github.com/PennyLaneAI/pennylane/pull/10237)
+
+  ```python
+  dev = qp.device("null.qubit", wires=2)
+
+  @qp.qjit
+  @qp.transforms.merge_rotations
+  @qp.transforms.cancel_inverses
+  @qp.qnode(dev)
+  def circuit(x):
+      qp.RX(x, wires=0)
+      qp.RX(x, wires=0)
+      qp.X(0)
+      qp.X(0)
+      qp.CNOT([0, 1])
+      return qp.probs()
+  ```
+
+  ```pycon
+  >>> qp.analyze(circuit, level=0)(1.23).resources.quantum_operations
+  {'CNOT': 1, 'PauliX': 2, 'RX': 2}
+  >>> qp.analyze(circuit, level="user")(1.23).resources.quantum_operations
+  {'CNOT': 1, 'RX': 1}
+
+  ```
+
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
   In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.Expression` instances where `int` values would normally appear.
@@ -678,6 +747,22 @@
 
 <h3>Improvements 🛠</h3>
 
+* A :class:`~.Controller` now takes the size of its messages in each direction, with the
+  ``in_bytes`` and ``out_bytes`` keyword arguments. Left unset, they take the sizes its
+  coprocessors' functions declare, or else 8 bytes. The ``"memcpy"`` transport carries messages of
+  any size to a CPU coprocessor, and to a GPU coprocessor running a per-message function. A GPU
+  coprocessor running a persistent kernel, and every coprocessor over the ``"rdma"`` transport,
+  carry up to 8 bytes.
+  [(#10224)](https://github.com/PennyLaneAI/pennylane/pull/10224)
+  [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
+
+  ```python
+  ctrl = qp.Controller(in_bytes=120, out_bytes=121)
+  ```
+
+* :class:`~.CoprocessorFunction` now accepts ``config``, ``per_message`` and ``message_bytes``.
+  [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
+
 * Computing and differentiating the matrix of a :class:`~.SpecialUnitary` acting on more than
   five wires is now significantly faster.
   [(#10253)](https://github.com/PennyLaneAI/pennylane/pull/10253)
@@ -980,6 +1065,11 @@
 * ``Wires.all_wires`` can now handle a list with mixed ``Wires`` and ``AbstractWires`` instances.
   [(#10223)](https://github.com/PennyLaneAI/pennylane/pull/10223)
 
+* ``qp.add_decomps`` no longer raises an error when the new decomposition rule is the exact same 
+  object as an existing one. An error is still raised if the new rule has the same name as an
+  existing rule, but is a different object to the rule with that name.
+  [(#10282)](https://github.com/PennyLaneAI/pennylane/pull/10282)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
@@ -1119,6 +1209,14 @@
   ``ParametrizedEvolution``, as well as the ``stoch_pulse_grad`` and ``pulse_odegen``
   pulse-level gradient transforms.
   [(#10238)](https://github.com/PennyLaneAI/pennylane/pull/10238)
+
+* :class:`~.IQPEmbedding`'s ``pattern`` argument now lists pairs of *indices into* ``wires``,
+  rather than wire labels. This matches the ``pattern`` argument of :class:`~.IQP`. 
+  It is a dynamic ``(K, 2)`` integer
+  tensor. The default all-pairs pattern is unchanged.
+  To entangle the first and third of ``wires=["z", "a", "k"]``, pass ``pattern=[[0, 2]]``
+  (previously ``pattern=[["z", "k"]]``).
+  [(#10221)](https://github.com/PennyLaneAI/pennylane/pull/10221)
 
 * :class:`~.QuantumPhaseEstimation` now only accepts an :class:`~.Operator` as the ``unitary``, and the
   ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
@@ -1455,7 +1553,7 @@
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
       :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.QuantumPhaseEstimation`, :class:`~.IQP`,
-      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`
+      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`, :class:`~.IQPEmbedding`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#10164)](https://github.com/PennyLaneAI/pennylane/pull/10164)
   [(#10178)](https://github.com/PennyLaneAI/pennylane/pull/10178)
@@ -1487,6 +1585,7 @@
   [(#10069)](https://github.com/PennyLaneAI/pennylane/pull/10069)
   [(#10085)](https://github.com/PennyLaneAI/pennylane/pull/10085)
   [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
+  [(#10221)](https://github.com/PennyLaneAI/pennylane/pull/10221)
   [(#10223)](https://github.com/PennyLaneAI/pennylane/pull/10223)
   [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
   [(#10226)](https://github.com/PennyLaneAI/pennylane/pull/10226)
@@ -1771,6 +1870,17 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* :func:`~.ops.functions.bind_new_parameters` now rebinds :class:`~.Operator2` dynamic
+  arguments by name and no longer assumes dynamic arguments to declared positionally.
+  [(#10221)](https://github.com/PennyLaneAI/pennylane/pull/10221)
+
+* :class:`~.SumOfSlatersPrep` now falls back to identity encoding when the pairwise-difference
+  construction required for the compressed encoding would exceed approximately 1 GiB of peak memory.
+  This prevents excessive memory use during classical preprocessing of large sparse states.
+  Asymptotically, this increases the quantum resources notably, but examples in practice only show
+  very minor increases.
+  [(#10270)](https://github.com/PennyLaneAI/pennylane/pull/10270)
+
 * Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the 
   output matrix was with respect to a wrong wire ordering. The bug occurred in products where
   groups of factors with overlapping wires caused a partial matrix with permuted wires, 
@@ -2017,6 +2127,7 @@ Korbinian Kottmann,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,
+Mehrdad Malekmohammadi,
 William Maxwell,
 Anton Naim Ibrahim,
 Mudit Pandey,
@@ -2024,6 +2135,7 @@ Andrija Paurevic,
 Francesco Pernice Botta,
 David D.W. Ren,
 Jay Soni,
+Jaume Villasante,
 Paul Haochen Wang,
 Dennis Wayo,
 David Wierichs,

@@ -1493,7 +1493,6 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize(
         "features, num_wires",
         [
-            (pnp.array([[0.5], [2.1]]), 1),
             (pnp.array([[0.5, -0.5], [0.2, 1.5]]), 2),
             (pnp.ones((2, 5)), 5),
         ],
@@ -1509,7 +1508,7 @@ class TestControlledSupportsBroadcasting:
             features,
             list(range(num_wires)),
             n_repeats=2,
-            pattern=op.base.hyperparameters["pattern"],
+            pattern=op.base.arguments["pattern"],
         )
         op.decomposition()
 

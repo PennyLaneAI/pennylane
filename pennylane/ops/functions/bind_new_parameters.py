@@ -88,7 +88,8 @@ def bind_new_dynamic_arguments(
     dynamic_args: Sequence[TensorLike],
 ) -> Operator2:
     kwargs = op.wire_args | op.static_args | op.compilable_args | op.hybrid_args
-    return op.__class__(*dynamic_args, **kwargs)
+    kwargs.update(zip(op.dynamic_argnames, dynamic_args, strict=True))
+    return op.__class__(**kwargs)
 
 
 @bind_new_parameters.register
