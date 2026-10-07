@@ -22,7 +22,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RZ, H, MultiRZ
-from pennylane.typing import AbstractArray, Float, Int, Wire
+from pennylane.typing import Float, Int, Wire
 from pennylane.wires import WiresLike
 
 
