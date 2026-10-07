@@ -39,15 +39,16 @@ class CoprocessorFunction:
         lib_path (str, None): Path to the shared library providing the symbol. Defaults to
             ``None``, in which case the runtime resolves :attr:`name` from the symbols already
             loaded on the host.
-        config (str): The function's own configuration, as ``key=value`` entries separated by
-            ``;``. A function whose library exports lifecycle hooks under
-            ``<name>_info`` (for example ``catalyst_onnx_coprocessor_info``) receives these entries
-            in its ``init`` hook once, before its first message, and is then called with the
-            context that hook returns. The keys ``in_bytes`` and ``out_bytes`` are reserved for
-            the message sizes, which Catalyst adds to the entries.
+        config (str): The function's configuration, in the form of a semicolon-separated set of
+            keys and values, for example ``"key1=value1;key2=value2"``. A function whose library
+            exports lifecycle hooks under ``<name>_info`` (for example
+            ``catalyst_onnx_coprocessor_info``) receives these entries in its ``init`` hook once,
+            before its first message, and is then called with the context that hook returns. The
+            keys ``in_bytes`` and ``out_bytes`` are reserved for the message sizes, which Catalyst
+            adds to the entries.
         per_message (bool): Whether the function is a host function called once per message,
-            rather than a launcher that starts a persistent GPU kernel. This option applies only on a GPU
-            coprocessor, which then runs the function per message, and only over the
+            rather than a launcher that starts a persistent GPU kernel. This option applies only on
+            a GPU coprocessor, which then runs the function per message, and only over the
             ``"memcpy"`` transport. On a CPU coprocessor every function is called per message.
         message_bytes (tuple[int, int] or None): The ``(in_bytes, out_bytes)`` message sizes the
             function expects, or ``None`` to declare none.
@@ -82,8 +83,9 @@ class CoprocessorFunction:
     runtime resolves :attr:`name` from the symbols already loaded on the host."""
 
     config: str = ""
-    """The function's own ``key=value;...`` configuration, handed to the ``init`` hook its library
-    exports under ``<name>_info``."""
+    """The function's configuration, as semicolon-separated keys and values such as
+    ``"key1=value1;key2=value2"``, handed to the ``init`` hook its library exports under
+    ``<name>_info``."""
 
     per_message: bool = False
     """Whether the function is called once per message, rather than launching a persistent GPU
