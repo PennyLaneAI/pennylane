@@ -1834,6 +1834,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* :class:`~.SumOfSlatersPrep` now falls back to identity encoding when the pairwise-difference
+  construction required for the compressed encoding would exceed approximately 1 GiB of peak memory.
+  This prevents excessive memory use during classical preprocessing of large sparse states.
+  Asymptotically, this increases the quantum resources notably, but examples in practice only show
+  very minor increases.
+  [(#10270)](https://github.com/PennyLaneAI/pennylane/pull/10270)
+
 * Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the 
   output matrix was with respect to a wrong wire ordering. The bug occurred in products where
   groups of factors with overlapping wires caused a partial matrix with permuted wires, 
