@@ -747,6 +747,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
+  but instead expresses the Select block as another ``QROM`` with fewer controls and more target
+  qubits. This allows for scalable compilation of this decomposition rule.
+  [(#10207)](https://github.com/PennyLaneAI/pennylane/pull/10207)
+
 * A :class:`~.Controller` now takes the size of its messages in each direction, with the
   ``in_bytes`` and ``out_bytes`` keyword arguments. Left unset, they take the sizes its
   coprocessors' functions declare, or else 8 bytes. The ``"memcpy"`` transport carries messages of
@@ -1247,6 +1252,11 @@
 
 * ZX transforms now require ``pyzx>=0.10``. Upgrade with ``pip install 'pyzx>=0.10'``.
   [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
+
+* The `__repr__` of :class:`~.MultiControlledX` now also reports `work_wires` and
+  `work_wire_type` when work wires are provided, instead of only `wires` and non-trivial
+  `control_values`.
+  [(#10190)](https://github.com/PennyLaneAI/pennylane/pull/10190)
 
 * Jax 0.7.1 is now a hard requirement for PennyLane.
   [(#10192)](https://github.com/PennyLaneAI/pennylane/pull/10192)
