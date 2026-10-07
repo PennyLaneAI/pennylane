@@ -1844,7 +1844,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * :func:`~.ops.functions.bind_new_parameters` now rebinds :class:`~.Operator2` dynamic
-  arguments by name, so they no longer need to be a prefix of the constructor signature.
+  arguments by name and no longer assumes dynamic arguments to declared positionally.
   [(#10221)](https://github.com/PennyLaneAI/pennylane/pull/10221)
 
 * :class:`~.SumOfSlatersPrep` now falls back to identity encoding when the pairwise-difference
