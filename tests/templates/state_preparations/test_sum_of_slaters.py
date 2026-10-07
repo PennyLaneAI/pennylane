@@ -600,33 +600,60 @@ class TestSumOfSlatersPrep:
             "mcx_cache_wires": 33,
         }
 
-    @pytest.mark.parametrize("num_wires", [3, 5, 8])
-    @pytest.mark.parametrize("num_entries", [2, 4, 5, 16])
-    def test_register_sizes_abstract(self, num_wires, num_entries):
-        """Test that ``required_register_sizes`` dispatches to the abstract computation when
-        given an abstract ``indices`` input, returning the expected upper-bound sizes."""
-
-        indices = Int[num_entries]
-        sizes = SumOfSlatersPrep.required_register_sizes(indices, num_wires)
-
-        d = ceil_log2(num_entries)
-        assert sizes == {
-            "wires": num_wires,
-            "enumeration_wires": d,
-            "identification_wires": 2 * d - 1,
-            "qrom_work_wires": d - 1,
-            "mcx_cache_wires": _sos_encoding_size(num_wires, num_entries) - 1,
-        }
-
     @pytest.mark.parametrize(
-        "num_entries, num_wires, expected_m",
-        [(1521, 22, 21), (90102, 36, 36)],
+        "num_entries, num_wires, expected",
+        [
+            (
+                1,
+                8,
+                {
+                    "wires": 8,
+                    "enumeration_wires": 0,
+                    "identification_wires": 0,
+                    "qrom_work_wires": 0,
+                    "mcx_cache_wires": 0,
+                },
+            ),
+            (
+                111,
+                12,
+                {
+                    "wires": 12,
+                    "enumeration_wires": 7,
+                    "identification_wires": 0,
+                    "qrom_work_wires": 6,
+                    "mcx_cache_wires": 11,
+                },
+            ),
+            (
+                45,
+                18,
+                {
+                    "wires": 18,
+                    "enumeration_wires": 6,
+                    "identification_wires": 11,
+                    "qrom_work_wires": 5,
+                    "mcx_cache_wires": 10,
+                },
+            ),
+            (
+                90102,
+                36,
+                {
+                    "wires": 36,
+                    "enumeration_wires": 17,
+                    "identification_wires": 0,
+                    "qrom_work_wires": 16,
+                    "mcx_cache_wires": 35,
+                },
+            ),
+        ],
     )
-    def test_register_sizes_abstract_encoding_limit(self, num_entries, num_wires, expected_m):
-        """Test that abstract sizing accounts for whether compression is feasible."""
+    def test_register_sizes_abstract(self, num_entries, num_wires, expected):
+        """Test abstract register sizing in the identity, compression, and fallback regimes."""
         sizes = SumOfSlatersPrep.required_register_sizes(Int[num_entries], num_wires)
 
-        assert sizes["mcx_cache_wires"] == expected_m - 1
+        assert sizes == expected
 
     @pytest.mark.parametrize("num_wires", [3, 4, 5])
     @pytest.mark.parametrize("num_entries", [2, 4, 5, 6])

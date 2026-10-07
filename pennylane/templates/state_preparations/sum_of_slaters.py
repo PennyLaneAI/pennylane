@@ -1099,15 +1099,30 @@ class SumOfSlatersPrep(Operator2):
     def _required_register_sizes_abstract(num_entries: int, num_wires: int) -> dict:
         """Compute the upper bound of the required register sizes, if only the number of
         basis states, but not the concrete states to be prepared, is known."""
+        if num_entries == 1:
+            return {
+                "wires": num_wires,
+                "enumeration_wires": 0,
+                "identification_wires": 0,
+                "qrom_work_wires": 0,
+                "mcx_cache_wires": 0,
+            }
+
         d = math.ceil_log2(num_entries)
-        # The reduced encoding width r is unknown, but is at most num_wires. Computing the
-        # encoding size at this upper bound accounts for both compressed and identity encodings,
-        # including identity fallback when compression exceeds the pairwise-entry limit.
-        max_encoding_size = _sos_encoding_size(num_wires, num_entries)
+        compressed_size = 2 * d - 1
+        # The reduced encoding width r is unknown, but is at most the smaller of the number of
+        # target wires and entries. Evaluate both register bounds across that full range.
+        max_num_bits = min(num_wires, num_entries)
+        max_encoding_size = _sos_encoding_size(max_num_bits, num_entries)
+        min_compressible_size = compressed_size + 1
+        compression_possible = (
+            max_num_bits >= min_compressible_size
+            and _sos_encoding_size(min_compressible_size, num_entries) == compressed_size
+        )
         return {
             "wires": num_wires,
             "enumeration_wires": d,
-            "identification_wires": 2 * d - 1,
+            "identification_wires": compressed_size if compression_possible else 0,
             "qrom_work_wires": d - 1,
             "mcx_cache_wires": max_encoding_size - 1,
         }
