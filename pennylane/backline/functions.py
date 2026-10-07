@@ -46,7 +46,7 @@ class CoprocessorFunction:
             context that hook returns. The keys ``in_bytes`` and ``out_bytes`` are reserved for
             the message sizes, which Catalyst adds to the entries.
         per_message (bool): Whether the function is a host function called once per message,
-            rather than a launcher that starts a persistent GPU kernel. It matters only on a GPU
+            rather than a launcher that starts a persistent GPU kernel. This option applies only on a GPU
             coprocessor, which then runs the function per message, and only over the
             ``"memcpy"`` transport. On a CPU coprocessor every function is called per message.
         message_bytes (tuple[int, int] or None): The ``(in_bytes, out_bytes)`` message sizes the
