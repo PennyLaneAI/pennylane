@@ -106,6 +106,39 @@ class TestTrack:
         assert specs.resources.circuit_depth == 2
         assert specs == qp.specs(circuit, level="device")(0.5)
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_pbc_pipeline(self):
+        """Test that track counts device-level resources after a Clifford+T → PPR → PPM
+        compilation pipeline, including H/T from lowered magic-state fabrication."""
+
+        @qp.qjit(capture=True)
+        @qp.transforms.ppr_to_ppm
+        @qp.transforms.to_ppr
+        @catalyst.passes.graph_decomposition(gate_set=qp.gate_sets.CLIFFORD_T)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def qfunc():
+            qp.Toffoli([0, 1, 2])
+            qp.Hadamard(0)
+            qp.Hadamard(0)
+            return qp.expval(qp.Z(0))
+
+        results, specs = qp.track(qfunc)()
+
+        assert results.shape == ()
+        assert specs.level == "device"
+        assert specs.resources.counts == {
+            "T": 7,
+            "Hadamard": 7,
+            "PauliMeasure-w2": 31,
+            "PauliMeasure-w3": 6,
+            "PauliRot-pi-w1": 12,
+            "PauliMeasure-w1": 37,
+            "PauliRot-pi-w2": 6,
+            "GlobalPhase": 17,
+        }
+        assert specs.resources.num_wires == 4
+        assert specs.resources.circuit_depth == 40
+
     def test_partial(self, circuit):
         """Test track for a partial-wrapped Catalyst jitted QNode."""
 

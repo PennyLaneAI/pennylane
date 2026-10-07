@@ -212,6 +212,45 @@ class TestAnalyze:
             "T": 4,
         }
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_pbc_pipeline(self):
+        """Test that analyze counts resources after each stage of a Clifford+T → PPR → PPM
+        compilation pipeline."""
+
+        @qp.qjit(capture=True)
+        @qp.transforms.ppr_to_ppm
+        @qp.transforms.to_ppr
+        @catalyst.passes.graph_decomposition(gate_set=qp.gate_sets.CLIFFORD_T)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def qfunc():
+            qp.Toffoli([0, 1, 2])
+            qp.Hadamard(0)
+            qp.Hadamard(0)
+            return qp.expval(qp.Z(0))
+
+        specs = qp.analyze(qfunc, level="all")()
+
+        assert specs.level == {
+            0: "Before MLIR Passes",
+            1: "graph-decomposition",
+            2: "to-ppr",
+            3: "ppr-to-ppm",
+        }
+        assert [resources.counts for resources in specs.resources.values()] == [
+            {"Hadamard": 2, "Toffoli": 1},
+            {"Adjoint(T)": 3, "CNOT": 6, "Hadamard": 4, "T": 4},
+            {"GlobalPhase": 17, "PPR-pi/4-w1": 24, "PPR-pi/4-w2": 6, "PPR-pi/8-w1": 7},
+            {
+                "GlobalPhase": 17,
+                "PPM-w1": 37,
+                "PPM-w2": 31,
+                "PPM-w3": 6,
+                "PPR-pi/2-w1": 31,
+                "PPR-pi/2-w2": 6,
+                "pbc.fabricate": 7,
+            },
+        ]
+
     @pytest.mark.parametrize("level", [None, 1.5])
     def test_unsupported_level(self, circuit, level):
         """Test that a helpful error message is raised for levels of an unsupported type."""
