@@ -316,22 +316,19 @@ class TestPassByPassSpecs:
         no_passes = qp.qjit(simple_circuit)
         with pytest.raises(
             ValueError,
-            match=r"The 'level' argument to .*\.specs for QJIT'd QNodes is out of "
-            "bounds, got -5.",
+            match="The 'level' argument for QJIT'd QNodes is out of bounds, got -5.",
         ):
             qp.specs(no_passes, level=-5)()
 
         with pytest.raises(
             ValueError,
-            match=r"The 'level' argument to .*\.specs for QJIT'd "
-            "QNodes is out of bounds, got 10.",
+            match="The 'level' argument for QJIT'd QNodes is out of bounds, got 10.",
         ):
             qp.specs(no_passes, level=10)()
 
         with pytest.raises(
             ValueError,
-            match=r"The 'level' argument to .*\.specs for QJIT'd "
-            "QNodes is out of bounds, got 10.",
+            match="The 'level' argument for QJIT'd QNodes is out of bounds, got 10.",
         ):
             qp.specs(no_passes, level=[10, 11])()
 
@@ -348,7 +345,7 @@ class TestPassByPassSpecs:
 
         with pytest.raises(
             ValueError,
-            match=r"Specs encountered the following tape transforms: .*dummy_transform.*\. Tape transforms are no longer supported by specs.",
+            match=r"Encountered the following tape transforms: .*dummy_transform.*\. Tape transforms are no longer supported.",
         ):
             qp.specs(simple_circuit, level="all")()
 
@@ -1464,7 +1461,7 @@ class TestMarkerIntegration:
 
         with pytest.warns(
             UserWarning,
-            match=r"The 'level' argument to .*\.specs for QJIT'd QNodes has been sorted to be "
+            match="The 'level' argument for QJIT'd QNodes has been sorted to be "
             "in ascending order with no duplicate levels.",
         ):
             actual = qp.specs(simple_circuit, level=["m0", "m1", "m1-duplicate"])()
