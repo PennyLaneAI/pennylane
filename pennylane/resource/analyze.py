@@ -19,6 +19,8 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import partial
 
+import pennylane.capture as capture
+
 from ._utils import (
     apply_partial_args,
     build_circuit_specs,
@@ -46,7 +48,7 @@ def _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs) -> tupl
 
     has_device_level: bool = level == "device" or level == "all"
     if has_device_level:
-        if qjit.compile_options.capture != True:
+        if not qjit.compile_options.capture or (qjit.compile_options.capture == "global" and not capture.enabled()):
             raise ValueError("Device level is only supported when capture is enabled.")
 
     # Easier to assume level is always a sorted list of int levels
