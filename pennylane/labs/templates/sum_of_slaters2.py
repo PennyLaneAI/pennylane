@@ -26,7 +26,7 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     _sos_state_prep_with_wires,
     select_sos_rows,
 )
-from pennylane.typing import Bool, Complex, Int, Wire
+from pennylane.typing import Bool, Complex, Wire
 from pennylane.wires import Wires
 
 
@@ -410,7 +410,7 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     # Step 2 in paper (p.7)
     resources[
         qp.QROM(
-            bitstrings=Int[num_entries, num_wires],
+            bitstrings=Bool[num_entries, num_wires],
             control_wires=Wire[d],
             target_wires=Wire[num_wires],
             work_wires=Wire[d - 1],
