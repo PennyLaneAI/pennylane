@@ -21,8 +21,10 @@ import pytest
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.templates.subroutines.arithmetic.temporary_and import (
     _adjoint_temporary_and,
+    _adjoint_temporary_and_ppm,
     _adjoint_temporary_and_to_toffoli,
     _temporary_and_to_toffoli,
 )
@@ -166,7 +168,17 @@ class TestTemporaryAND:
                 matrix = qp.matrix(rule, wire_order=wires)(wires, control_values=cvals)
             self.compare_to_toffoli_on_zero(matrix, "input", cvals)
 
-    @pytest.mark.parametrize("rule", qp.list_decomps("Adjoint(TemporaryAND)"))
+    @pytest.mark.parametrize(
+        "rule",
+        [
+            (
+                pytest.param(rule, marks=pytest.mark.catalyst)
+                if rule.name == "_adjoint_temporary_and_ppm"
+                else rule
+            )
+            for rule in qp.list_decomps("Adjoint(TemporaryAND)")
+        ],
+    )
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_adjoint_temporary_and_decomposition(self, control_values, rule, seed):
         """
@@ -174,29 +186,43 @@ class TestTemporaryAND:
         """
         sys_wires = [0, 1, 2]
         work_wires = [3]  # auxiliary qubit for deferred measure
-        dev = qp.device("default.qubit", wires=sys_wires + work_wires)
+        dev = qp.device("lightning.qubit", wires=sys_wires + work_wires, seed=seed)
 
-        @qp.qnode(dev)
         def circuit(state):
             # Prepare control state
             qp.StatePrep(state, wires=sys_wires[:2])
             op = qp.TemporaryAND(wires=sys_wires, control_values=control_values)
             rule(op)
             # Unprepare control state
-            qp.adjoint(qp.StatePrep)(state, wires=sys_wires[:2])
+            # qp.adjoint(qp.StatePrep(state, wires=sys_wires[:2]))
             return qp.probs(wires=sys_wires)
+
+        if rule.name == "_adjoint_temporary_and_ppm":
+            # We need some workarounds for this rule because it uses PauliMeasure
+            gate_set = {"Toffoli", "CNOT", "RX", "RY", "RZ", "PauliMeasure", "X", "CZ"}
+            circuit = qp.qjit(
+                qp.decompose(
+                    qp.QNode(circuit, dev, shots=10_000, mcm_method="one-shot"), gate_set=gate_set
+                ),
+                capture=True,
+            )
+            atol = 1e-2
+        else:
+            circuit = qp.QNode(circuit, dev)
+            atol = 1e-8
 
         rng = np.random.default_rng(seed)
         state = rng.random(4) + 1j * rng.random(4)
         state /= np.linalg.norm(state)
         probs = circuit(state)
-        assert qp.math.allclose(probs, np.eye(8)[0])
+        assert qp.math.allclose(probs[::2], np.abs(state) ** 2, atol=atol)
+        assert qp.math.allclose(probs[1::2], 0)
 
     @pytest.mark.parametrize("rule", qp.list_decomps("Adjoint(TemporaryAND)"))
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_adjoint_temporary_and_integration(self, rule):
         wires = [0, 1, "aux0", 2]
-        gate_set = {"X", "Hadamard", "CNOT", "CZ", "MidMeasureMP", "Toffoli"}
+        gate_set = {"X", "Hadamard", "CNOT", "CZ", "MidMeasureMP", "Toffoli", "PauliMeasure"}
 
         @qp.set_shots(1)
         @qp.qnode(qp.device("default.qubit", wires=wires), interface=None)
@@ -244,6 +270,14 @@ class TestTemporaryAND:
         elif rule == _adjoint_temporary_and_to_toffoli:
             expected_operators += [qp.Toffoli([0, 1, "aux0"])]
 
+        elif rule == _adjoint_temporary_and_ppm:
+            expected_operators += [
+                PauliMeasure("X", "aux0"),
+                "ConditionalCZ",
+                PauliMeasure("Z", "aux0"),
+                "ConditionalX",
+            ]
+
         else:
             raise NotImplementedError(f"Please add expected operators for rule {rule}")
 
@@ -255,13 +289,24 @@ class TestTemporaryAND:
                 assert op.postselect == exp_op.postselect
                 assert op.reset == exp_op.reset
 
+            elif isinstance(op, PauliMeasure):
+                assert op.pauli_word == exp_op.pauli_word
+                assert op.wires == exp_op.wires
+                assert op.postselect == exp_op.postselect
+
             # manual check for the conditional operator
             elif isinstance(op, qp.ops.op_math.condition.Conditional):
-                assert exp_op == "ConditionalCZ"
-                assert isinstance(op.base, qp.CZ)
-                assert list(op.base.wires) == [0, 1]
-                meas = op.meas_val  # same as the expr passed to qp.cond
-                assert list(meas.wires) == ["aux0"]
+                assert exp_op in ["ConditionalCZ", "ConditionalX"]
+                if exp_op == "ConditionalCZ":
+                    assert isinstance(op.base, qp.CZ)
+                    assert list(op.base.wires) == [0, 1]
+                    meas = op.meas_val  # same as the expr passed to qp.cond
+                    assert list(meas.wires) == ["aux0"]
+                else:
+                    assert isinstance(op.base, qp.X)
+                    assert list(op.base.wires) == ["aux0"]
+                    meas = op.meas_val  # same as the expr passed to qp.cond
+                    assert list(meas.wires) == ["aux0"]
 
             else:
                 qp.assert_equal(op, exp_op)
