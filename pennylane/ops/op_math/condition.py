@@ -673,7 +673,7 @@ def cond(
 
         **Resource Profiling and Compiler Hints:**
 
-        When used with resource profiling with :func:`~.specs` and qjit, resources will be reported
+        When used with resource profiling with :func:`~.analyze` and qjit, resources will be reported
         as a maximum across all possible branches by default. For example:
 
         .. code-block:: python
@@ -701,7 +701,7 @@ def cond(
 
                 return qp.expval(qp.Z(0))
 
-        >>> print(qp.specs(circuit, level=0)(True, True).resources)
+        >>> print(qp.analyze(circuit)(True, True).resources)
         Quantum operations:
         - Total: 30
           - PauliX: 10
@@ -742,7 +742,7 @@ def cond(
 
                 return qp.expval(qp.Z(0))
 
-        >>> print(qp.specs(circuit, level=0)(True, True).resources)
+        >>> print(qp.analyze(circuit)(True, True).resources)
         Quantum operations:
         - Total: 12
           - PauliX: 6
