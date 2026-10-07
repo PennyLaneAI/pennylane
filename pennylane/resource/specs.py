@@ -30,29 +30,6 @@ from .track import _run_with_resource_tracking
 def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     original_qnode = unwrap_qjit_qnode(qjit, fn_name="qp.specs")
 
-    # Unwrap the original QNode if any transforms have been applied
-    if isinstance(qjit, QJIT) and isinstance(qjit.original_function, qp.QNode):
-        return qjit.original_function
-
-    raise ValueError(f"{fn_name} can only be applied to a qjit'd QNode, instead got: {qjit}")
-
-
-def _build_circuit_specs(original_qnode, resources, level) -> CircuitSpecs:
-    """Assemble the ``CircuitSpecs`` describing a qjit'd QNode at a given level."""
-    return CircuitSpecs(
-        resources=resources,
-        shots=original_qnode.shots,
-        device_name=original_qnode.device.name,
-        num_device_wires=(
-            len(original_qnode.device.wires) if original_qnode.device.wires is not None else None
-        ),
-        level=level,
-    )
-
-
-def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
-    original_qnode = unwrap_qjit_qnode(qjit, fn_name="qp.specs")
-
     if level is None:
         level = "device"
 
@@ -77,8 +54,6 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
         raise NotImplementedError(f"Unsupported level argument '{level}'.")
 
     return build_circuit_specs(original_qnode, resources, level)
-
-    return results, _build_circuit_specs(original_qnode, resources, level)
 
 
 def specs(
