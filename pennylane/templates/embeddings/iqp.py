@@ -194,15 +194,14 @@ class IQPEmbedding(Operator2):
         if n_features != len(wires):
             raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
-        if not isinstance(pattern, AbstractArray):
-            if pattern is None:
-                pattern = list(combinations(range(len(wires)), 2))
-            if isinstance(pattern, (list, tuple)):
-                pattern = (
-                    math.zeros((0, 2), dtype=int)
-                    if len(pattern) == 0
-                    else math.asarray(pattern, dtype=int)
-                )
+        if pattern is None:
+            pattern = list(combinations(range(len(wires)), 2))
+        if isinstance(pattern, (list, tuple)):
+            pattern = (
+                math.zeros((0, 2), dtype=int)
+                if len(pattern) == 0
+                else math.asarray(pattern, dtype=int)
+            )
 
         super().__init__(features, wires, n_repeats, pattern)
 
