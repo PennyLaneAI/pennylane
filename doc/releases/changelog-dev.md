@@ -1016,6 +1016,7 @@
 * ``qp.add_decomps`` no longer raises an error when the new decomposition rule is the exact same 
   object as an existing one. An error is still raised if the new rule has the same name as an
   existing rule, but is a different object to the rule with that name.
+  [(#10282)](https://github.com/PennyLaneAI/pennylane/pull/10282)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
