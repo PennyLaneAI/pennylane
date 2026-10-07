@@ -116,15 +116,15 @@ class TestInspectDecompGraph:
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
             CHOSEN: Decomposition 2 (name: controlled(_multi_rz_decomposition))
-            0: ─╭X─╭RZ(0.50)─╭X─┤
-            1: ─├●─│─────────├●─┤
-            3: ─├●─├●────────├●─┤
-            4: ─├●─├●────────├●─┤
-            5: ─╰●─╰●────────╰●─┤
-            Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed): 2, PauliX: 3}
-            Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed): 2}
-            Full Expansion Gates: {CNOT: 160, GlobalPhase: 140, RX: 60, RY: 20, RZ: 144}
-            Weighted Cost: 384.0
+            0: ─╭(X)@RZ(0.50)@(X)─┤
+            1: ─├(X)@RZ(0.50)@(X)─┤
+            3: ─├●────────────────┤
+            4: ─├●────────────────┤
+            5: ─╰●────────────────┤
+            Estimated First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
+            Actual First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
+            Full Expansion Gates: {CNOT: 46, GlobalPhase: 19, RX: 17, RZ: 22}
+            Weighted Cost: 85.0
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
@@ -143,35 +143,37 @@ class TestInspectDecompGraph:
             #### **CHOSEN:** Decomposition 2 (name: controlled(_multi_rz_decomposition))
 
             ```
-            0: ─╭X─╭RZ(0.50)─╭X─┤
-            1: ─├●─│─────────├●─┤
-            3: ─├●─├●────────├●─┤
-            4: ─├●─├●────────├●─┤
-            5: ─╰●─╰●────────╰●─┤
+            0: ─╭(X)@RZ(0.50)@(X)─┤
+            1: ─├(X)@RZ(0.50)@(X)─┤
+            3: ─├●────────────────┤
+            4: ─├●────────────────┤
+            5: ─╰●────────────────┤
             ```
             <details><summary>Gate Counts and Wire Allocations</summary>
 
             | First-Level Expansion | Estimated | Actual |
             | :--- | :--- | :--- |
-            | Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)) | 1 | 1 |
-            | MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed) | 2 | 2 |
+            | Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)) | 1 | 1 |
             | PauliX | 3 | 0 |
 
             | Full Expansion | Count |
             | :--- | :--- |
-            | CNOT | 160 |
-            | GlobalPhase | 140 |
-            | RX | 60 |
-            | RY | 20 |
-            | RZ | 144 |
-            | **Weighted Cost** | 384.0 |
+            | CNOT | 46 |
+            | GlobalPhase | 19 |
+            | RX | 17 |
+            | RZ | 22 |
+            | **Weighted Cost** | 85.0 |
             </details>
             """).strip()
 
     def test_work_wires_available(self):
         """Tests that the correct output is produced when there are available work wires."""
 
-        @decomp_inspector(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, num_work_wires=2)
+        # weight the rotations above the Cliffords, so that decompositions using fewer rotations
+        # win outright instead of tying with rotation-heavy ones
+        rotations = qp.gate_sets.ROTATIONS_PLUS_CNOT | {qp.RX: 50, qp.RY: 50, qp.RZ: 50}
+
+        @decomp_inspector(gate_set=rotations, num_work_wires=2)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
@@ -182,7 +184,7 @@ class TestInspectDecompGraph:
         op = qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
         result = inspector.inspect_decomps(op, num_work_wires=2)
         assert str(result) == dedent("""
-            CHOSEN: Decomposition 0 (name: ctrl_single_work_wire)
+            Decomposition 0 (name: ctrl_single_work_wire)
             0: ──────────╭MultiRZ(0.50)───────┤
             1: ──────────├MultiRZ(0.50)───────┤
             3: ───────╭●─│──────────────╭●────┤
@@ -192,26 +194,26 @@ class TestInspectDecompGraph:
             Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed): 2, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed): 2}
             Wire Allocations: {'zero': 1}
-            Full Expansion Gates: {CNOT: 36, GlobalPhase: 72, MidMeasure: 2, RX: 18, RY: 14, RZ: 60}
-            Weighted Cost: 130.0
+            Full Expansion Gates: {CNOT: 26, GlobalPhase: 55, MidMeasure: 2, RX: 19, RY: 10, RZ: 42}
+            Weighted Cost: 3578.0
 
             Decomposition 1 (name: ctrl_many_zeroed_work_wires)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
-            Decomposition 2 (name: controlled(_multi_rz_decomposition))
-            0: ─╭X─╭RZ(0.50)─╭X─┤
-            1: ─├●─│─────────├●─┤
-            3: ─├●─├●────────├●─┤
-            4: ─├●─├●────────├●─┤
-            5: ─╰●─╰●────────╰●─┤
-            Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed): 2, PauliX: 3}
-            Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed): 2}
-            Full Expansion Gates: {CNOT: 76, GlobalPhase: 94, MidMeasure: 4, RX: 38, RY: 16, RZ: 84}
-            Weighted Cost: 218.0
+            CHOSEN: Decomposition 2 (name: controlled(_multi_rz_decomposition))
+            0: ─╭(X)@RZ(0.50)@(X)─┤
+            1: ─├(X)@RZ(0.50)@(X)─┤
+            3: ─├●────────────────┤
+            4: ─├●────────────────┤
+            5: ─╰●────────────────┤
+            Estimated First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
+            Actual First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
+            Full Expansion Gates: {CNOT: 46, GlobalPhase: 19, RX: 17, RZ: 22}
+            Weighted Cost: 1996.0
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
-            #### **CHOSEN:** Decomposition 0 (name: ctrl_single_work_wire)
+            #### Decomposition 0 (name: ctrl_single_work_wire)
 
             ```
             0: ──────────╭MultiRZ(0.50)───────┤
@@ -235,13 +237,13 @@ class TestInspectDecompGraph:
 
             | Full Expansion | Count |
             | :--- | :--- |
-            | CNOT | 36 |
-            | GlobalPhase | 72 |
+            | CNOT | 26 |
+            | GlobalPhase | 55 |
             | MidMeasure | 2 |
-            | RX | 18 |
-            | RY | 14 |
-            | RZ | 60 |
-            | **Weighted Cost** | 130.0 |
+            | RX | 19 |
+            | RY | 10 |
+            | RZ | 42 |
+            | **Weighted Cost** | 3578.0 |
             </details>
 
             ---
@@ -252,32 +254,29 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### Decomposition 2 (name: controlled(_multi_rz_decomposition))
+            #### **CHOSEN:** Decomposition 2 (name: controlled(_multi_rz_decomposition))
 
             ```
-            0: ─╭X─╭RZ(0.50)─╭X─┤
-            1: ─├●─│─────────├●─┤
-            3: ─├●─├●────────├●─┤
-            4: ─├●─├●────────├●─┤
-            5: ─╰●─╰●────────╰●─┤
+            0: ─╭(X)@RZ(0.50)@(X)─┤
+            1: ─├(X)@RZ(0.50)@(X)─┤
+            3: ─├●────────────────┤
+            4: ─├●────────────────┤
+            5: ─╰●────────────────┤
             ```
             <details><summary>Gate Counts and Wire Allocations</summary>
 
             | First-Level Expansion | Estimated | Actual |
             | :--- | :--- | :--- |
-            | Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)) | 1 | 1 |
-            | MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed) | 2 | 2 |
+            | Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)) | 1 | 1 |
             | PauliX | 3 | 0 |
 
             | Full Expansion | Count |
             | :--- | :--- |
-            | CNOT | 76 |
-            | GlobalPhase | 94 |
-            | MidMeasure | 4 |
-            | RX | 38 |
-            | RY | 16 |
-            | RZ | 84 |
-            | **Weighted Cost** | 218.0 |
+            | CNOT | 46 |
+            | GlobalPhase | 19 |
+            | RX | 17 |
+            | RZ | 22 |
+            | **Weighted Cost** | 1996.0 |
             </details>
             """).strip()
 
@@ -304,9 +303,9 @@ class TestInspectDecompGraph:
             Actual First-Level Expansion Gates: {Toffoli: 4}
             Wire Allocations: {'any': 1}
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
-            Weighted Cost: 71.0
+            Weighted Cost: 2374.0
 
-            Decomposition 2 (name: one_zeroed_worker)
+            CHOSEN: Decomposition 2 (name: one_zeroed_worker)
             0: ───────╭●─────●╮────┤
             1: ───────├●─────●┤────┤
             2: ───────│──╭●───│────┤
@@ -316,7 +315,7 @@ class TestInspectDecompGraph:
             Actual First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, TemporaryAND: 1, Toffoli: 1}
             Wire Allocations: {'zero': 1}
             Full Expansion Gates: {CNOT: 11, GlobalPhase: 25, MidMeasure: 1, RX: 7, RY: 5, RZ: 20}
-            Weighted Cost: 44.0
+            Weighted Cost: 1612.0
 
             Decomposition 3 (name: two_borrowed_workers)
             Insufficient work wires: requires 2 but only 1 available.
@@ -334,9 +333,9 @@ class TestInspectDecompGraph:
             Actual First-Level Expansion Gates: {Toffoli: 4}
             Wire Allocations: {'any': 1}
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
-            Weighted Cost: 71.0
+            Weighted Cost: 2374.0
 
-            CHOSEN: Decomposition 6 (name: many_zeroed_workers)
+            Decomposition 6 (name: many_zeroed_workers)
             0: ──────────╭●────────┤
             1: ───────╭●─│───●╮────┤
             2: ───────├●─│───●┤────┤
@@ -346,13 +345,13 @@ class TestInspectDecompGraph:
             Actual First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, TemporaryAND: 1, Toffoli: 1}
             Wire Allocations: {'zero': 1}
             Full Expansion Gates: {CNOT: 11, GlobalPhase: 25, MidMeasure: 1, RX: 7, RY: 5, RZ: 20}
-            Weighted Cost: 44.0
+            Weighted Cost: 1612.0
             """).strip()
 
     def test_missing_ops(self):
         """Tests that missing operators are correctly reported."""
 
-        @decomp_inspector(gate_set={"RZ", "RX", "CNOT"}, num_work_wires=2)
+        @decomp_inspector(gate_set={"RZ", "RX", "CNOT", "PPR"}, num_work_wires=2)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.PauliRot(0.5, "XYZ", [0, 1, 2])
@@ -363,33 +362,31 @@ class TestInspectDecompGraph:
         result = inspector.inspect_decomps(op)
         assert str(result) == dedent("""
             Decomposition 0 (name: _pauli_rot_decomposition)
-            0: ──H────────╭MultiRZ(0.50)──H─────────┤
-            1: ──RX(1.57)─├MultiRZ(0.50)──RX(-1.57)─┤
-            2: ───────────╰MultiRZ(0.50)────────────┤
-            First-Level Expansion Gates: {Hadamard: 2, MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)): 1, RX: 2}
-            Missing Ops: {Hadamard}
+            0: ─╭(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
+            1: ─├(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
+            2: ─╰(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
+            First-Level Expansion Gates: {(PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard): 1}
+            Missing Ops: {(PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard)}
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: _pauli_rot_decomposition)
 
             ```
-            0: ──H────────╭MultiRZ(0.50)──H─────────┤
-            1: ──RX(1.57)─├MultiRZ(0.50)──RX(-1.57)─┤
-            2: ───────────╰MultiRZ(0.50)────────────┤
+            0: ─╭(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
+            1: ─├(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
+            2: ─╰(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
             ```
             <details><summary>Gate Counts and Wire Allocations</summary>
 
             | First-Level Expansion | Count |
             | :--- | :--- |
-            | Hadamard | 2 |
-            | MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) | 1 |
-            | RX | 2 |
+            | (PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard) | 1 |
             </details>
 
             | Missing Ops |
             | :--- |
-            | Hadamard |
+            | (PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard) |
             """).strip()
 
         assert str(inspector.inspect_decomps(qp.H(0))) == dedent("""

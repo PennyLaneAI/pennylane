@@ -196,6 +196,8 @@ class TestMethods:
             [qp.X(0), qp.Z(1)],
             [qp.RZ(1.23, 0), qp.X(0), qp.Z(1)],
             [qp.Hadamard(0), qp.CNOT([0, 1])],
+            # merging overlapping groups reorders the wires relative to the ``Prod2`` op's wires.
+            [qp.Hadamard(1), qp.Hadamard(0), qp.CNOT([2, 1]), qp.CNOT([1, 0])],
         ],
     )
     def test_matrix(self, factors):
@@ -216,6 +218,24 @@ class TestMethods:
             [np.kron(qp.matrix(qp.RX(xi, 0)), qp.matrix(qp.RY(yi, 1))) for xi, yi in zip(x, y)]
         )
         assert mat.shape == (3, 4, 4)
+        assert np.allclose(mat, expected)
+
+    @pytest.mark.parametrize(
+        "factors",
+        (
+            (qp.H(1), qp.H(0), qp.CNOT([2, 1]), qp.CNOT([1, 0])),
+            (qp.CNOT([1, 3]), qp.X(0), qp.CNOT([3, 2]), qp.Toffoli([2, 0, 1])),
+        ),
+    )
+    @pytest.mark.parametrize("wire_order", [None, [0, 1, 2, 3], [3, 2, 0, 1]])
+    def test_matrix_merged_overlapping_groups(self, wire_order, factors):
+        """Test the matrix when merging overlapping groups reorders the wires relative to
+        the wires of the ``Prod2`` op, and we need to reorder them back."""
+        prod_op = Prod2(factors)
+        mat = prod_op.matrix(wire_order=wire_order)
+        if wire_order is None:
+            wire_order = prod_op.wires
+        expected = reduce(np.matmul, [factor.matrix(wire_order=wire_order) for factor in factors])
         assert np.allclose(mat, expected)
 
     @pytest.mark.parametrize(
