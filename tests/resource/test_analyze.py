@@ -70,7 +70,7 @@ class TestAnalyze:
             measurement_processes={"ExpectationMP": [], "SampleMP": [], "CountsMP": []},
         )
 
-        @qp.qjit(capture=True)(capture="global")
+        @qp.qjit(capture=True)
         @qp.transforms.merge_rotations
         @qp.marker("cancelled")
         @qp.transforms.cancel_inverses
@@ -228,7 +228,12 @@ class TestAnalyze:
         if qp.capture.enabled():
             specs = qp.analyze(circuit, level="all")(0.5)
 
-            assert specs.level == {0: "Before MLIR Passes", 1: "cancel-inverses", 2: "merge-rotations", 3: "Device Preprocessing"}
+            assert specs.level == {
+                0: "Before MLIR Passes",
+                1: "cancel-inverses",
+                2: "merge-rotations",
+                3: "Device Preprocessing",
+            }
             assert [resources.counts for resources in specs.resources.values()] == [
                 {"Hadamard": 2, "RX": 2, "CNOT": 1},
                 {"RX": 2, "CNOT": 1},

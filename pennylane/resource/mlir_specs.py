@@ -172,7 +172,9 @@ def resources_from_analysis_pass(
                 output_json=True, output_fname=fname
             )
 
-        new_qnode = original_qnode.update_pipelines(new_compile_pipeline, post_device_pipeline=new_post_device_pipeline)
+        new_qnode = original_qnode.update_pipelines(
+            new_compile_pipeline, post_device_pipeline=new_post_device_pipeline
+        )
         compile_options = copy.deepcopy(qjit.compile_options)
         compile_options.target = "mlir"
         compile_options.lower_to_llvm = False

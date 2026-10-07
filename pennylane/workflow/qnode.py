@@ -643,7 +643,7 @@ class QNode:
     @property
     def post_device_pipeline(self) -> CompilePipeline:
         """The post-device compile pipeline used by the QNode.
-        
+
         .. note::
             When `qjit` is used to compile the QNode, device-specific transformations are applied after the compile pipeline.
             The transformations belonging to the `QNode` that need to be **applied after** the device-specific transformations
@@ -758,7 +758,11 @@ class QNode:
 
         return updated_qn
 
-    def update_pipelines(self, compile_pipeline: CompilePipeline, post_device_pipeline: CompilePipeline = CompilePipeline()) -> QNode:
+    def update_pipelines(
+        self,
+        compile_pipeline: CompilePipeline,
+        post_device_pipeline: CompilePipeline = CompilePipeline(),
+    ) -> QNode:
         """Update the compile and post-device compile pipelines used by the QNode.
 
         Args:

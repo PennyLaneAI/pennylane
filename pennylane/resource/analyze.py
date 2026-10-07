@@ -44,11 +44,15 @@ def _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs) -> tupl
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
 
-    return_single_level: bool = isinstance(level, (int, str)) and level != "all" and level != "all-user"
+    return_single_level: bool = (
+        isinstance(level, (int, str)) and level != "all" and level != "all-user"
+    )
 
     has_device_level: bool = level == "device" or level == "all"
     if has_device_level:
-        if not qjit.compile_options.capture or (qjit.compile_options.capture == "global" and not capture.enabled()):
+        if not qjit.compile_options.capture or (
+            qjit.compile_options.capture == "global" and not capture.enabled()
+        ):
             raise ValueError("Device level is only supported when capture is enabled.")
 
     # Easier to assume level is always a sorted list of int levels
