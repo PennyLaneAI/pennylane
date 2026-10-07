@@ -1374,7 +1374,7 @@ class TestPPR:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("denominator", [-8, -4, -2, 2, 4, 8])
-    @pytest.mark.parametrize("pauli_word", ["X", "Y", "Z", "ZZ", "XY", "ZXY", "YZXY"])
+    @pytest.mark.parametrize("pauli_word", ["X", "Y", "Z", "ZZ", "XY", "ZXY", "IX", "YIZ", "YZXY"])
     def test_standard_validity(self, denominator, pauli_word):
         """Run the standard operator validity checks."""
         wires = list(range(len(pauli_word)))
