@@ -278,6 +278,7 @@ class CondCallable:
         def decorator(branch_fn):
             self.preds.append(pred)
             self.branch_fns.append(branch_fn)
+            self._branch_probs = _setup_probs((*self.branch_fns, self.otherwise_fn))
             return self
 
         return decorator
@@ -290,6 +291,7 @@ class CondCallable:
             otherwise_fn (callable): the function to apply if all ``self.preds`` evaluate to ``False``
         """
         self.otherwise_fn = otherwise_fn
+        self._branch_probs = _setup_probs((*self.branch_fns, self.otherwise_fn))
         return self
 
     @property
