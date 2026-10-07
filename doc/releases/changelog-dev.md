@@ -691,21 +691,19 @@
 <h3>Improvements 🛠</h3>
 
 * A :class:`~.Controller` now takes the size of its messages in each direction, with the
-  ``in_bytes`` and ``out_bytes`` keyword arguments. Both default to 8. The ``"memcpy"`` transport
-  carries messages of any size to a CPU coprocessor, and to a GPU coprocessor running a
-  per-message function. A GPU coprocessor running a persistent kernel, and every coprocessor over
-  the ``"rdma"`` transport, carry up to 8 bytes.
-
-  .. code-block:: python
-
-      ctrl = qp.Controller(in_bytes=120, out_bytes=121)
-
+  ``in_bytes`` and ``out_bytes`` keyword arguments. Left unset, they take the sizes its
+  coprocessors' functions declare, or else 8 bytes. The ``"memcpy"`` transport carries messages of
+  any size to a CPU coprocessor, and to a GPU coprocessor running a per-message function. A GPU
+  coprocessor running a persistent kernel, and every coprocessor over the ``"rdma"`` transport,
+  carry up to 8 bytes.
   [(#10224)](https://github.com/PennyLaneAI/pennylane/pull/10224)
+  [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
 
-* :class:`~.CoprocessorFunction` now accepts ``config``, ``per_message`` and ``message_bytes``. A
-  :class:`~.Controller` that leaves ``in_bytes`` and ``out_bytes`` unset now takes the sizes its
-  coprocessors' functions declare, available as :attr:`~.Placement.in_bytes` and
-  :attr:`~.Placement.out_bytes`.
+  ```python
+  ctrl = qp.Controller(in_bytes=120, out_bytes=121)
+  ```
+
+* :class:`~.CoprocessorFunction` now accepts ``config``, ``per_message`` and ``message_bytes``.
   [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
 
 * Computing and differentiating the matrix of a :class:`~.SpecialUnitary` acting on more than
