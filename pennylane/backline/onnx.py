@@ -45,13 +45,13 @@ _ONNX_ELEMENT_BYTES = {
 
 def _onnx_message_bytes(model: Path) -> tuple[int, int]:
     """The ``(in_bytes, out_bytes)`` of an ONNX model's single input and output tensors, with each
-    dynamic dimension taken as 1, read with the installed onnxruntime's CPU provider."""
+    dynamic dimension taken as 1, read with the installed onnxruntime's CPU provider.
+
+    The session uses onnxruntime's default graph optimizations, as Catalyst's ONNX coprocessor
+    function does, since some tensor shapes are known only after them and both must read the same
+    sizes."""
     onnxruntime = importlib.import_module("onnxruntime")
-    options = onnxruntime.SessionOptions()
-    options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL
-    session = onnxruntime.InferenceSession(
-        str(model), sess_options=options, providers=["CPUExecutionProvider"]
-    )
+    session = onnxruntime.InferenceSession(str(model), providers=["CPUExecutionProvider"])
     return _tensor_message_bytes(session.get_inputs(), session.get_outputs())
 
 
