@@ -237,6 +237,10 @@ class TestOutBytes:
         """The committed size is the default."""
         assert _resolve_out_bytes(qp.Controller(), None) == 8
 
+    def test_a_controllers_own_size_is_the_default(self):
+        """A controller's non-default reply size is the default."""
+        assert _resolve_out_bytes(qp.Controller(out_bytes=121), None) == 121
+
     @pytest.mark.parametrize("controller", [qp.Controller(), object()])
     def test_the_transport_default_is_eight_bytes(self, controller):
         """An unconfigured reply uses the transport's default message size."""
@@ -371,6 +375,19 @@ class TestRecordedRound:
         (correction,) = jaxpr.jaxpr.outvars
         assert correction.aval.shape == (8,)
         assert str(correction.aval.dtype) == "uint8"
+
+    def test_the_correction_is_the_controllers_size(self, x64):
+        """A controller's non-default reply size sets the bytes collected and the result's shape."""
+        dev = qp.Backline(
+            controller=qp.Controller(device=qp.device("null.qubit", wires=2), out_bytes=121),
+            coprocessors=[a_coprocessor()],
+            transport="memcpy",
+        )
+        jaxpr = a_round(x64, dev)
+
+        assert calls_of(jaxpr)[3].params["out_bytes"] == (121,)
+        (correction,) = jaxpr.jaxpr.outvars
+        assert correction.aval.shape == (121,)
 
     def test_an_unconfigured_correction_uses_the_transport_default(self, x64):
         """The Python return shape agrees with the transport dialect's 8-byte default."""

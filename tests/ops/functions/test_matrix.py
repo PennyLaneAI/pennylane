@@ -654,32 +654,6 @@ class TestValidation:
 
 
 class TestInterfaces:
-    @pytest.mark.tf
-    def test_tf(self):
-        """Test with tensorflow interface"""
-        import tensorflow as tf
-
-        @partial(qp.matrix, wire_order=[0, 1, 2])
-        def circuit(beta, theta):
-            qp.RZ(beta, wires=0)
-            qp.RZ(theta[0], wires=1)
-            qp.CRY(theta[1], wires=[1, 2])
-
-        beta = 0.1
-        # input tensorflow parameters
-        theta = tf.Variable([0.2, 0.3])
-        matrix = circuit(beta, theta)
-
-        # expected matrix
-        theta_np = theta.numpy()
-        matrix1 = np.kron(
-            qp.RZ(beta, wires=0).matrix(),
-            np.kron(qp.RZ(theta_np[0], wires=1).matrix(), I),
-        )
-        matrix2 = np.kron(I, qp.CRY(theta_np[1], wires=[1, 2]).matrix())
-        expected_matrix = matrix2 @ matrix1
-
-        assert np.allclose(matrix, expected_matrix)
 
     @pytest.mark.torch
     def test_torch(self):
@@ -838,30 +812,6 @@ class TestDifferentiation:
         assert isinstance(matrix, torch.Tensor)
         assert np.allclose(l.detach(), 2 * np.cos(v / 2))
         assert np.allclose(dl.detach(), -np.sin(v / 2))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
-    def test_tensorflow(self, v):
-        import tensorflow as tf
-
-        def circuit(theta):
-            qp.RX(theta, wires=0)
-            qp.PauliZ(wires=0)
-            qp.CNOT(wires=[0, 1])
-
-        def loss(theta):
-            U = qp.matrix(circuit, wire_order=[0, 1])(theta)
-            return qp.math.real(qp.math.trace(U))
-
-        x = tf.Variable(v)
-        with tf.GradientTape() as tape:
-            l = loss(x)
-        dl = tape.gradient(l, x)
-        matrix = qp.matrix(circuit, wire_order=[0, 1])(x)
-
-        assert isinstance(matrix, tf.Tensor)
-        assert np.allclose(l, 2 * np.cos(v / 2))
-        assert np.allclose(dl, -np.sin(v / 2))
 
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_get_unitary_matrix_autograd_differentiable(self, v):

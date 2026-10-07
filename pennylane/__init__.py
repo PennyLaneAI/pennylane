@@ -27,6 +27,7 @@ from pennylane.core.queuing import QueuingManager, apply
 from pennylane import compiler
 from pennylane.compiler import qjit
 from pennylane import capture
+from pennylane.capture import hint
 from pennylane import core
 from pennylane import control_flow
 from pennylane.control_flow import for_loop, while_loop
@@ -111,7 +112,6 @@ from pennylane.templates.tensornetworks import *
 from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
-from pennylane import qaoa
 from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
 
@@ -173,10 +173,6 @@ from pennylane.debugging import (
     debug_tape,
 )
 from pennylane.shadows import ClassicalShadow
-from pennylane.qcut import cut_circuit, cut_circuit_mc
-from pennylane import pulse
-
-from pennylane import fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 from pennylane import gradients  # pylint:disable=wrong-import-order
 from pennylane.drawer import draw, draw_mpl

@@ -128,12 +128,6 @@ def rz_phase_gradient(
         work_wires = [f"work_{i}" for i in range(precision - 1)]
         wire_order = [wire] + angle_wires + phase_grad_wires + work_wires
 
-
-        def phase_gradient(wires):
-            for i, w in enumerate(wires):
-                qp.H(w)
-                qp.PhaseShift(-np.pi/2**i, w)
-
         @qp.transforms.decompose(max_expansion=1)
         @rz_phase_gradient(
             angle_wires=angle_wires,
@@ -142,7 +136,7 @@ def rz_phase_gradient(
         )
         @qp.qnode(qp.device("default.qubit"))
         def rz_circ(phi, wire):
-            phase_gradient(phase_grad_wires)  # prepare phase gradient state
+            qp.PhaseGradientStatePrep(phase_grad_wires)
 
             qp.Hadamard(wire)  # transform rotation
             qp.RZ(phi, wire)
@@ -165,9 +159,9 @@ def rz_phase_gradient(
      ang_0: ────├MultiX(M0)─╭SemiAdder─├MultiX(M0)────├GlobalPhase(2.75)─┤
      ang_1: ────├MultiX(M0)─├SemiAdder─├MultiX(M0)────├GlobalPhase(2.75)─┤
      ang_2: ────╰MultiX(M0)─├SemiAdder─╰MultiX(M0)────├GlobalPhase(2.75)─┤
-     phg_0: ──H──Rϕ(-3.14)──├SemiAdder────────────────├GlobalPhase(2.75)─┤
-     phg_1: ──H──Rϕ(-1.57)──├SemiAdder────────────────├GlobalPhase(2.75)─┤
-     phg_2: ──H──Rϕ(-0.79)──├SemiAdder────────────────├GlobalPhase(2.75)─┤
+     phg_0: ──H──Z──────────├SemiAdder────────────────├GlobalPhase(2.75)─┤
+     phg_1: ──H──S†─────────├SemiAdder────────────────├GlobalPhase(2.75)─┤
+     phg_2: ──H──T†─────────├SemiAdder────────────────├GlobalPhase(2.75)─┤
     work_0: ────────────────├SemiAdder────────────────├GlobalPhase(2.75)─┤
     work_1: ────────────────╰SemiAdder────────────────╰GlobalPhase(2.75)─┤
     <BLANKLINE>

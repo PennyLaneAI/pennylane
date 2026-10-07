@@ -13,7 +13,7 @@ PennyLane offers functionality to inspect, visualize or analyze quantum circuits
 
 Most of these tools are implemented as **transforms**.  Transforms take a :class:`~pennylane.QNode` instance and return a function:
 
->>> @qp.qnode(dev, diff_method='parameter-shift')
+>>> @qp.qnode(dev)
 ... def my_qnode(x, a=True):
 ...     # ...
 >>> new_func = my_transform(qnode)
@@ -32,16 +32,17 @@ Extracting properties of a circuit
 
 The :func:`~pennylane.specs` transform takes a
 QNode and creates a function that returns
-details about the QNode, including depth, number of gates, and number of
-gradient executions required.
+details about the QNode, including circuit depth,
+number of gates and measurements, and device info.
 
 For example:
 
 .. code-block:: python
 
-    dev = qp.device('default.qubit', wires=4)
+    dev = qp.device('lightning.qubit', wires=4)
 
-    @qp.qnode(dev, diff_method='parameter-shift')
+    @qp.qjit
+    @qp.qnode(dev)
     def circuit(x, y):
         qp.RX(x[0], wires=0)
         qp.Toffoli(wires=(0, 1, 2))
@@ -57,21 +58,21 @@ details and resource information:
 >>> y = qp.numpy.array(0.4, requires_grad=False)
 >>> specs_func = qp.specs(circuit)
 >>> specs_func(x, y)
-Device: default.qubit
+Device: lightning.qubit
 Device wires: 4
 Shots: Shots(total=None)
-Level: gradient
+Level: device
 <BLANKLINE>
 Quantum operations:
 - Total: 4
-  - RX: 1
-  - Toffoli: 1
   - CRY: 1
+  - Toffoli: 1
   - Rot: 1
+  - RX: 1
 Measurement processes:
-- expval(PauliZ): 1
 - expval(PauliX): 1
-Total wires: 3
+- expval(PauliZ): 1
+Total wires: 4
 Circuit Depth: 4
 
 
@@ -320,24 +321,6 @@ False
 >>> g.has_path(obs[0], ops[0])
 False
 
-
-Another way to construct the "causal" DAG of a circuit is to use the
-:func:`~pennylane.qcut.tape_to_graph` function used by the ``qcut`` module. This
-function takes a quantum tape and creates a ``MultiDiGraph`` instance from the ``networkx`` python package.
-
-Using the above example, we get:
-
->>> g2 = qp.qcut.tape_to_graph(tape)
->>> type(g2)
-<class 'networkx.classes.multidigraph.MultiDiGraph'>
->>> for k, v in g2.adjacency():
-...    print(k, v)
-H(0) {expval(Z(0)): {0: {'wire': 0}}}
-CNOT(wires=[1, 2]) {CNOT(wires=[2, 3]): {0: {'wire': 2}}, CNOT(wires=[3, 1]): {0: {'wire': 1}}}
-CNOT(wires=[2, 3]) {CNOT(wires=[3, 1]): {0: {'wire': 3}}}
-CNOT(wires=[3, 1]) {}
-expval(Z(0)) {}
-
 DAG of non-commuting ops
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -378,17 +361,3 @@ CNOT(wires=[1, 2])
 [3, 4, 5, 6]
 >>> second_node.predecessors
 []
-
-Fourier representation
-----------------------
-
-Parametrized quantum circuits often compute functions in the parameters that
-can be represented by Fourier series of a low degree.
-
-The :doc:`../code/qp_fourier` module contains functionality to compute and visualize
-properties of such Fourier series.
-
-.. image:: ../_static/fourier_vis_radial_box.png
-    :align: center
-    :width: 500px
-    :target: javascript:void(0);

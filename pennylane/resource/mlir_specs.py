@@ -35,7 +35,7 @@ def _execute_analysis_pass(
     compile_options,
     *args,
     **kwargs,
-):  # pragma: no cover
+):
     """
     Helper function to compile the QNode with the resource analysis pass inserted, which will output
     the necessary JSON files for MLIR analysis.
@@ -43,12 +43,10 @@ def _execute_analysis_pass(
     This function will stop compilation before lowering to LLVM, avoiding the typical Catalyst
     compilation strategy.
     """
-    # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
-
     # pylint: disable=import-outside-toplevel,protected-access
     try:
         from catalyst import QJIT
-    except ImportError as e:
+    except ImportError as e:  # pragma: no cover
         raise ImportError(
             "Catalyst must be installed to use specs with QJIT-compiled QNodes. "
             "Please install Catalyst and try again."
@@ -61,7 +59,9 @@ def _execute_analysis_pass(
     if new_qjit.mlir_module is None:
         new_qjit.workspace = new_qjit._get_workspace()
         new_qjit.jaxed_function = None
-        if new_qjit.compiled_function and new_qjit.compiled_function.shared_object:
+        if (
+            new_qjit.compiled_function and new_qjit.compiled_function.shared_object
+        ):  # pragma: no cover
             new_qjit.compiled_function.shared_object.close()
 
         new_qjit.jaxpr, new_qjit.out_type, new_qjit.out_treedef, new_qjit.c_sig = new_qjit.capture(
@@ -71,7 +71,7 @@ def _execute_analysis_pass(
         new_qjit.mlir_module = new_qjit.generate_ir()
 
     # Force resolution of this property to finish going through all MLIR passes
-    if new_qjit.mlir_opt is None:
+    if new_qjit.mlir_opt is None:  # pragma: no cover
         raise ValueError(
             "Specs failed to compile the QNode with the specified passes for MLIR analysis."
         )
@@ -81,13 +81,11 @@ def resources_from_analysis_pass(
     qjit,
     original_qnode,
     level: int | tuple[int] | list[int],
-    num_tape_levels: int,
     level_to_markers: dict[int, list[str]],
     level_to_name: dict[int, str],
     *args,
     **kwargs,
-) -> dict[str, SpecsResources | list[SpecsResources]]:  # pragma: no cover
-    # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
+) -> dict[str, SpecsResources | list[SpecsResources]]:
     """
     Helper function to get specs information from MLIR analysis passes inserted at the specified
     levels.
@@ -105,7 +103,6 @@ def resources_from_analysis_pass(
         original_qnode (:class:`~pennylane.QNode`): the original QNode before any compilation
         level (int | tuple[int] | list[int]): the levels at which to insert resource analysis passes
             for resource counting
-        num_tape_levels (int): the number of tape transform levels in the compile pipeline
         level_to_markers (dict[int, list[str]]): mapping from level number to a list of marker names
         level_to_name (dict[int, str]): mapping from level number to the name to use for that level
             in the output. Note that this argument is mutated by this function
@@ -118,46 +115,35 @@ def resources_from_analysis_pass(
 
     # pylint: disable=protected-access,too-many-arguments
 
-    new_qnode = copy.deepcopy(original_qnode)
-    iter_pipeline = new_qnode._compile_pipeline
+    iter_pipeline = copy.deepcopy(original_qnode._compile_pipeline)
     new_compile_pipeline = qp.CompilePipeline()
 
-    max_level = max(level) if isinstance(level, (list, tuple)) else level
+    if isinstance(level, int):
+        level = [level]
+    max_level = max(level)
     max_legal_level = len(iter_pipeline)
     fname_to_level = {}
+
+    if max_level > max_legal_level:
+        bad_levels = ", ".join(str(lvl) for lvl in level if lvl > max_legal_level)
+        raise ValueError(f"Requested specs levels {bad_levels} not found in MLIR pass list.")
 
     with tempfile.TemporaryDirectory(
         prefix=f"{_RESOURCE_ANALYSIS_PREFIX}_{os.getpid()}_"
     ) as tmpdirname:
         fname_prefix = f"{tmpdirname}/{_RESOURCE_ANALYSIS_PREFIX}_{time.time_ns()}_level_"
 
-        if num_tape_levels > 0:
-            # Account for the inserted lowering pass which comes after all tape transforms
-            max_legal_level += 1
-
-            # Add all tape transforms first, which come before any MLIR passes
-            new_compile_pipeline += iter_pipeline[: num_tape_levels - 1]
-            iter_pipeline = iter_pipeline[num_tape_levels - 1 :]
-
-        if max_level > max_legal_level:
-            bad_levels = ", ".join(str(lvl) for lvl in level if lvl > max_legal_level)
-            raise ValueError(f"Requested specs levels {bad_levels} not found in MLIR pass list.")
-
-        if num_tape_levels in level:
+        if 0 in level:
             fname = f"{fname_prefix}before.json"
-            fname_to_level[fname] = (
-                num_tape_levels  # num_tape_levels == the level of the lowering pass
-            )
-            level_to_name[num_tape_levels] = (
-                ", ".join(level_to_markers[num_tape_levels])
-                if num_tape_levels in level_to_markers
-                else "Before MLIR Passes"
+            fname_to_level[fname] = 0
+            level_to_name[0] = (
+                ", ".join(level_to_markers[0]) if 0 in level_to_markers else "Before MLIR Passes"
             )
             new_compile_pipeline += qp.transform(pass_name="resource-analysis")(
                 output_json=True, output_fname=fname
             )
 
-        for i, comp_pass in enumerate(iter_pipeline, start=num_tape_levels + 1):
+        for i, comp_pass in enumerate(iter_pipeline, start=1):
             if i > max_level:
                 break
             new_compile_pipeline += comp_pass
@@ -175,6 +161,7 @@ def resources_from_analysis_pass(
                     output_json=True, output_fname=fname
                 )
 
+        new_qnode = copy.copy(original_qnode)
         new_qnode._compile_pipeline = new_compile_pipeline
         compile_options = copy.deepcopy(qjit.compile_options)
         compile_options.target = "mlir"

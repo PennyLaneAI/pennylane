@@ -14,6 +14,8 @@
 """Contains the SuperpositionTHC template, used as a subroutine in tensor
 hypercontraction (THC) qubitization."""
 
+from collections import defaultdict
+
 import numpy as np
 
 from pennylane import math
@@ -34,7 +36,8 @@ from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic.left_classical_comparator import LeftClassicalComparator
 from .arithmetic.left_quantum_comparator import LeftQuantumComparator
-from .multix import MultiX
+from .arithmetic.temporary_and import TemporaryAND
+from .flip_sign import FlipSign
 
 
 class SuperpositionTHC(Operator2):
@@ -161,13 +164,14 @@ class SuperpositionTHC(Operator2):
         nu_wires = Wires(nu_wires)
         work_wires = Wires(work_wires)
 
-        if len(mu_wires) != len(nu_wires):
+        n = len(mu_wires)
+        if len(nu_wires) != n:
             raise ValueError(
                 f"mu_wires and nu_wires must contain the same number of wires, but got "
-                f"{len(mu_wires)} and {len(nu_wires)}."
+                f"{n} and {len(nu_wires)}."
             )
 
-        min_work_wires = 3 * len(mu_wires) + 5
+        min_work_wires = 3 * n + 5
         if len(work_wires) < min_work_wires:
             raise ValueError(
                 f"At least {min_work_wires} work_wires (3 * len(mu_wires) + 5) should be "
@@ -178,16 +182,15 @@ class SuperpositionTHC(Operator2):
             {"mu_wires": mu_wires, "nu_wires": nu_wires, "work_wires": work_wires}
         )
 
-        if N // 2 > M + 1:
+        if M < N // 2 - 1:
             raise ValueError("M must be greater than or equal to N//2 - 1.")
 
         # The index registers must be able to hold the one-body sentinel value
         # ``M`` (the column flagged by ``nu = M``), so ``M <= 2 ** n - 1``.
-        n = len(mu_wires)
         if M > 2**n - 1:
             raise ValueError(
                 f"mu_wires and nu_wires each need at least ceil(log2(M + 1)) wires. "
-                f"Got M={M} with {n} wires, which allows M up to {2**n - 1}. "
+                f"Got M={M} with {n} wires, which only allows M up to {2**n - 1}. "
                 f"Provide at least {math.ceil_log2(M + 1)} wires per index register."
             )
 
@@ -217,7 +220,8 @@ def _left_inequalities(
       one-body terms).
 
     The auxiliary wires used on each comparator are drawn from disjoint slices of ``work_wires``
-    starting at index ``7``.
+    starting at index ``7``, except for the one-body sentinel flag calculator, which resets its
+    work wires directly and therefore takes the whole pool from index ``7`` on.
 
     Args:
         M (int): The THC rank.
@@ -241,16 +245,13 @@ def _left_inequalities(
         # We check if the register is in state M.
         # To do so, we use the fact that a MultiControlledX with control_values = 0 detects if
         # the register is in state 0, and we shift that state with MultiX before and after.
-        # The work wires are reset to |0> so we can use them in the comparators as well below.
-        # TODO: alternatively could replace this zero-controlled MultiControlledX with
-        # a ladder of `TemporaryAND`.
-        MultiX(math.int_to_binary(M, len(nu_wires)), wires=nu_wires)
+        # TODO: Replace by TemporaryAND ladder if it does not cost the qubits for too long
         MultiControlledX(
             wires=nu_wires + work_wires[3:4],
-            control_values=[0] * len(nu_wires),
+            control_values=math.int_to_binary(M, n),
             work_wires=work_wires[7:],
+            work_wire_type="zeroed",
         )
-        MultiX(math.int_to_binary(M, len(nu_wires)), wires=nu_wires)
 
     LeftClassicalComparator(
         nu_wires,
@@ -266,6 +267,7 @@ def _left_inequalities(
         work_wires=work_wires[7 + n - 1 : 7 + 2 * n - 1],
         comparator="<=",
     )
+
     LeftClassicalComparator(
         mu_wires,
         N // 2,
@@ -275,22 +277,14 @@ def _left_inequalities(
     )
 
 
-def _controlled_z(num_control_wires, num_work_wires):
-    """Resources for a borrowed-work multi-controlled ``Z``."""
+def _controlled_pauli(pauli, num_control_wires, num_work_wires, control_values=None):
+    """Resources for a zeroed-work multi-controlled single-qubit Pauli."""
     return ctrl(
-        Z(Wire[1]),
-        control=Wire[num_control_wires],
-        work_wires=Wire[num_work_wires],
-    )
-
-
-def _controlled_x(num_control_wires, num_work_wires, control_values=None):
-    """Resources for a borrowed-work multi-controlled ``X``."""
-    return ctrl(
-        X(Wire[1]),
+        pauli(Wire[1]),
         control=Wire[num_control_wires],
         control_values=control_values,
         work_wires=Wire[num_work_wires],
+        work_wire_type="zeroed",
     )
 
 
@@ -301,44 +295,40 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
     n = len(mu_wires)
     num_work_wires = len(work_wires)
 
-    # Number of borrowed work wires available to each gate: everything from index 7 on is
-    # comparator scratch, restored to |0> by the time the multi-controlled gates run.
-    ctrl_work = max(0, num_work_wires - 7)
-    mcx_work = ctrl_work
+    # Number of zeroed work wires available to each gate, spelled as in the decomposition:
+    # extra_work = work_wires[3n+5:], the MCX of _left_inequalities takes work_wires[7:], the
+    # reflection takes work_wires[1:] and the Controlled(Z) of step 3 one wire more than
+    # extra_work. The Controlled(X) of step 6 is the only one left with extra_work alone.
+    extra_work = max(0, num_work_wires - (3 * n + 5))
 
     lcc_le = LeftClassicalComparator(Wire[n], M, Wire[1], Wire[n - 1], comparator="<=")
     lcc_gt = LeftClassicalComparator(Wire[n], N // 2, Wire[1], Wire[n - 1], comparator=">=")
     lqc = LeftQuantumComparator(Wire[n], Wire[n], Wire[1], Wire[n], comparator="<=")
-    basis = MultiX(Bool[n], Wire[n])
-    mcx = _controlled_x(n, mcx_work, control_values=[0] * n)
+    mcx = _controlled_pauli(X, n, num_work_wires - 7, control_values=Bool[n])
 
-    resources = {}
+    resources = defaultdict(int)
 
-    def _add(rep, count):
-        resources[rep] = resources.get(rep, 0) + count
-
-    _add(GlobalPhase, 1)
-    _add(Hadamard, 6 * n)
-    _add(X, 4 * n + 4)
-    _add(RY, 3)
-    _add(_controlled_x(2, ctrl_work), 4)
-    _add(_controlled_x(3, ctrl_work), 1)
-    _add(_controlled_z(3, ctrl_work), 1)
-    _add(_controlled_z(2 * n, ctrl_work), 1)
+    resources[GlobalPhase] += 1
+    resources[Hadamard] += 6 * n
+    resources[X] += 4
+    resources[RY] += 2
+    resources[TemporaryAND] += 2
+    resources[
+        FlipSign([0] * (2 * n + 1), Wire[2 * n + 1], work_wires=Wire[num_work_wires - 1])
+    ] += 1
+    resources[adjoint(TemporaryAND(Wire[3]))] += 2
+    resources[_controlled_pauli(X, 3, extra_work)] += 1
+    resources[_controlled_pauli(Z, 3, extra_work + 1)] += 1
     # _left_inequalities applied twice in the forward direction
-    _add(lcc_le, 2)
-    _add(lcc_gt, 2)
-    _add(lqc, 2)
-    _add(basis, 4)
+    resources[lcc_le] += 2
+    resources[lcc_gt] += 2
+    resources[lqc] += 2
     # _left_inequalities applied twice as an adjoint.
-    _add(adjoint(lcc_le), 2)
-    _add(adjoint(lcc_gt), 2)
-    _add(adjoint(lqc), 2)
-    _add(adjoint(basis), 2)
-    _add(mcx, 2)
-    _add(adjoint(mcx), 1)
-
-    return resources
+    resources[adjoint(lcc_le)] += 2
+    resources[adjoint(lcc_gt)] += 2
+    resources[adjoint(lqc)] += 2
+    resources[mcx] += 3
+    return dict(resources)
 
 
 @register_resources(_superposition_thc_resources)
@@ -355,10 +345,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     work_wires = Wires(work_wires)
 
     n = len(mu_wires)
-    # Everything past the seven flag wires is comparator scratch: ``_left_inequalities`` returns
-    # it to |0>, so the multi-controlled gates below can borrow all of it instead of only the
-    # wires supplied past the ``3n + 5`` minimum (which is an empty slice at the minimum).
-    extra_work = work_wires[7:]
+    extra_work = work_wires[7 + 3 * n - 2 :]
 
     # 1. Equal superposition over both index registers.
     for wire in mu_wires + nu_wires:
@@ -373,32 +360,44 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     angle = 2 * math.arcsin(cos_val)
 
     RY(angle, wires=work_wires[0])
-    X(wires=work_wires[5])
 
     # 3. Flag the valid index pairs, then mark the "success" subspace with a phase.
     _left_inequalities(M, N, mu_wires, nu_wires, work_wires)
 
-    ctrl(X(work_wires[5]), control=work_wires[3:5], work_wires=extra_work)
-    ctrl(Z(work_wires[5]), control=work_wires[0:3], work_wires=extra_work)
-    ctrl(X(work_wires[5]), control=work_wires[3:5], work_wires=extra_work)
+    # Replace Toffolis by temporary ANDs. For this, we need to move the PauliX on work_wires[5]
+    # around a little bit
+    TemporaryAND(work_wires[3:6])
+    X(wires=work_wires[5])
+    # The comparators leave their scratch dirty until the adjoint of step 4, so the only
+    # zeroed wires here are the not-yet-written success flag and whatever was passed in extra.
+    ctrl(
+        Z(work_wires[5]),
+        control=work_wires[0:3],
+        work_wires=work_wires[6:7] + extra_work,
+        work_wire_type="zeroed",
+    )
+    X(wires=work_wires[5])
+    adjoint(TemporaryAND(work_wires[3:6]))
 
     # 4. Uncompute the flags and the amplitude-marking rotation. The closure keeps ``M``
     # and ``N`` concrete; passing them as traced arguments breaks the comparators, whose
     # classical operands must be compile-time constants.
-    adjoint(lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires))()
+    # ``lazy=False`` adjoints each op of the body in place rather than wrapping the body in a
+    # region that is reversed later. The comparators uncompute their elbows through
+    # ``Adjoint(TemporaryAND)``, whose measurement-based rule is not reversible, so a lazy
+    # adjoint region would put a mid-circuit measurement inside an inverse.
+    adjoint(lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires), lazy=False)()
     RY(-angle, wires=work_wires[0])
 
     # 5. Reflection about the equal-superposition state (the amplification step).
     for wire in mu_wires + nu_wires:
         Hadamard(wire)
 
-    # Fig. 3 has a typo; these X gates must be added.
-    for wire in mu_wires + nu_wires + work_wires[:1]:
-        X(wires=wire)
+    # Fig. 3 has a typo; the correct reflection state is [0...0]
+    # Step 4 undid every flag and every comparator, so all of ``work_wires`` but the amplitude
+    # amplification wire is zeroed and can absorb the controls of this reflection.
+    FlipSign([0] * (2 * n + 1), mu_wires + nu_wires + work_wires[:1], work_wires=work_wires[1:])
     GlobalPhase(np.pi)
-    ctrl(Z(work_wires[0]), control=mu_wires + nu_wires, work_wires=extra_work)
-    for wire in mu_wires + nu_wires + work_wires[:1]:
-        X(wires=wire)
 
     for wire in mu_wires + nu_wires:
         Hadamard(wire)
@@ -406,17 +405,22 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     # 6. Recompute the flags onto the output ancilla register (work_wires[5], work_wires[6]).
     _left_inequalities(M, N, mu_wires, nu_wires, work_wires)
 
-    ctrl(X(work_wires[5]), control=work_wires[3:5], work_wires=extra_work)
-    ctrl(X(work_wires[6]), control=work_wires[1:3] + work_wires[5:6], work_wires=extra_work)
-    ctrl(X(work_wires[5]), control=work_wires[3:5], work_wires=extra_work)
-
+    TemporaryAND(work_wires[3:6])
     X(wires=work_wires[5])
+    ctrl(
+        X(work_wires[6]),
+        control=work_wires[1:3] + work_wires[5:6],
+        work_wires=extra_work,
+        work_wire_type="zeroed",
+    )
+    X(wires=work_wires[5])
+    adjoint(TemporaryAND(work_wires[3:6]))
 
     # 7. Final uncomputation, keeping the diagonal (mu = nu) equality flag.
+    # ``lazy=False`` for the same reason as in step 4.
     adjoint(
-        lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True)
+        lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True), lazy=False
     )()  # The rotation that would clean work_wires[0] back to |0> is omitted (see note above).
-    RY(angle, wires=work_wires[0])
 
 
 add_decomps(SuperpositionTHC, _superposition_thc)

@@ -25,6 +25,8 @@ from enum import StrEnum
 from functools import partial
 from typing import TYPE_CHECKING, Any, overload
 
+import jax
+
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import TransformError
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
@@ -33,7 +35,6 @@ from .cotransform_cache import CotransformCache
 from .transform import BoundTransform, Transform
 
 if TYPE_CHECKING:
-    import jax
 
     from pennylane.workflow import QNode
 
@@ -46,7 +47,6 @@ class ProtectedLevel(StrEnum):
     GRADIENT = "gradient"
     DEVICE = "device"
     ALL = "all"
-    ALL_MLIR = "all-mlir"
 
 
 def _batch_postprocessing(
