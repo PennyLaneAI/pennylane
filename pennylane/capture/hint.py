@@ -147,6 +147,8 @@ def hint(hints: dict[str, Any]) -> Callable:
     * :func:`~.for_loop` and :func:`~.while_loop` support `"num-iters"` to indicate a heuristic
       number of loop iterations for the purposes of resource estimation with
       :func:`~.specs`. See Usage Details for more information.
+    * The branches to :func:`~.cond` support ``"branch-prob"`` to indicate the probability
+      that a branch will be hit.
 
     .. warning::
 

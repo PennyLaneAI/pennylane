@@ -261,6 +261,7 @@ class CondCallable:
             elif_preds, elif_fns = list(zip(*elifs, strict=True))
             self.preds.extend(elif_preds)
             self.branch_fns.extend(elif_fns)
+
         self._branch_probs = _setup_probs((*self.branch_fns, self.otherwise_fn))
 
     def else_if(self, pred):
@@ -667,6 +668,94 @@ def cond(
         >>> z = np.array(0.3)
         >>> qnode(par, x, y, z)
         np.float64(-0.3092...)
+
+        **Resource Profiling and Compiler Hints:**
+
+        When used with resource profiling with :func:`~.specs` and qjit, resources will be reported
+        as a maximum across all possible branches by default. For example:
+
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=1)
+
+            @qp.qjit(capture=True)
+            @qp.qnode(dev)
+            def circuit(m1, m2):
+
+                def true_fn():
+                    for _ in range(10):
+                        qp.X(0)
+
+                def false_fn():
+                    for _ in range(10):
+                     qp.Y(0)
+
+                def elif_fn():
+                    for _ in range(10):
+                        qp.X(0)
+                        qp.Z(0)
+
+                qp.cond(m1, true_fn, false_fn, elifs=(m2, elif_fn))()
+
+                return qp.expval(qp.Z(0))
+
+        >>> print(qp.specs(circuit, level=0)(True, True).resources)
+        Quantum operations:
+        - Total: 30
+          - PauliX: 10
+          - PauliY: 10
+          - PauliZ: 10
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
+
+        The count for each operator is the largest encountered across all three branches. To prevent this overcounting,
+        :func:`~.hint` can indicate the probabibility each branch will be hit, leading to a weighted average instead.
+
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=1)
+
+            @qp.qjit(capture=True)
+            @qp.qnode(dev)
+            def circuit(m1, m2):
+
+                @qp.hint({"branch-prob": 0.4})
+                def true_fn():
+                    for _ in range(10):
+                        qp.X(0)
+
+                @qp.hint({"branch-prob": 0.4})
+                def false_fn():
+                    for _ in range(10):
+                        qp.Y(0)
+
+                def elif_fn():
+                    for _ in range(10):
+                        qp.X(0)
+                        qp.Z(0)
+
+                qp.cond(m1, true_fn, false_fn, elifs=(m2, elif_fn))()
+
+                return qp.expval(qp.Z(0))
+
+        >>> print(qp.specs(circuit, level=0)(True, True).resources)
+        Quantum operations:
+        - Total: 12
+          - PauliX: 6
+          - PauliY: 4
+          - PauliZ: 2
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
+
+        Due to the presence of a compiler hint, the resources are now weighted by the branch probabilities.
+        Unhinted branches, like ``elif_fn``, have the remaining probability equally distributed amoung them.
+        In this case, the ``elif_fn`` gets a ``0.2`` probability. The 6 ``PauliX`` gates come from ``0.4``
+        of the ``true_fn`` resources and ``0.2`` of the ``elif_fn` resources.
+
     """
 
     if active_jit := compiler.active_compiler():
