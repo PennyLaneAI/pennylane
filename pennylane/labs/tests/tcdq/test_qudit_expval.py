@@ -23,10 +23,13 @@ from scipy.linalg import expm
 
 import pennylane as qp
 from pennylane.labs.tcdq.qudit_expval_functions import (
+    _BYTES_PER_GB,
     QuditCircuitConfig,
     _dims_to_numpy,
     _gates_to_dense_generators,
     _parse_qudit_gate_dict,
+    _qudit_phase_block_size,
+    _qudit_phase_bytes_per_gate,
     build_qudit_expval_func,
 )
 
@@ -1616,3 +1619,106 @@ class TestQuditExpvalWithPhaseLayer:
         grad_val = jax.grad(loss)(phase_params)
         assert grad_val.shape == phase_params.shape
         assert not jnp.allclose(grad_val, 0.0)
+
+
+class TestQuditPhaseBlocking:
+    """The memory-bounded blocked phase computation must match the single-block result."""
+
+    @staticmethod
+    def _random_gates(n_qudits, n_gates, dims, seed):
+        rng = np.random.default_rng(seed)
+        gates = {}
+        for i in range(n_gates):
+            weight = int(rng.integers(1, 4))
+            support = sorted(int(q) for q in rng.choice(n_qudits, size=weight, replace=False))
+            gates[i] = [{q: int(rng.integers(1, dims[q])) for q in support}]
+        gates[0].append({0: 1, 1: 1})  # two gates sharing one parameter
+        return gates
+
+    def test_block_size_helper(self):
+        """Block size is at least one and shrinks with weight, samples and observables."""
+        budget = 10 * _qudit_phase_bytes_per_gate(2, 100, 50)
+        assert _qudit_phase_block_size(budget, 2, 100, 50) == 10
+        assert _qudit_phase_block_size(budget, 1, 100, 50) > 10
+        assert _qudit_phase_block_size(budget, 3, 100, 50) < 10
+        assert _qudit_phase_block_size(budget, 2, 1000, 50) < 10
+        assert _qudit_phase_block_size(1, 4, 10_000, 10_000) == 1
+
+    @pytest.mark.parametrize("dims", [[3] * 6, [2, 3, 4, 5, 3, 2]])
+    def test_blocked_matches_single_block(self, dims):
+        """Forcing many small blocks (with padding) reproduces the single-block values and gradients."""
+        n_qudits, n_gates, n_samples, n_obs = len(dims), 23, 256, 7
+        gates = self._random_gates(n_qudits, n_gates, dims, seed=0)
+        rng = np.random.default_rng(1)
+        dims_np = _dims_to_numpy(dims, n_qudits)
+        l_vecs = np.stack([rng.integers(0, dims_np) for _ in range(n_obs)])
+        m_vecs = np.stack([rng.integers(0, dims_np) for _ in range(n_obs)])
+        elems = np.stack([rng.integers(0, dims_np) for _ in range(3)])
+        amps = rng.normal(size=3) + 1j * rng.normal(size=3)
+        amps = amps / np.linalg.norm(amps)
+
+        def phase_fn(p, z):
+            return jnp.sum(p[:n_qudits] * z.astype(jnp.float32)) + p[-1]
+
+        common = {
+            "dims": dims,
+            "n_qudits": n_qudits,
+            "gates": gates,
+            "observables": (l_vecs, m_vecs),
+            "n_samples": n_samples,
+            "key": jax.random.PRNGKey(7),
+            "init_state_elems": elems,
+            "init_state_amps": amps,
+            "phase_fn": phase_fn,
+        }
+        # block_size 2 for weight-1 gates and 1 for heavier gates: scan path with padding
+        tiny = 2.5 * _qudit_phase_bytes_per_gate(1, n_samples, n_obs) / _BYTES_PER_GB
+        fn_single = build_qudit_expval_func(QuditCircuitConfig(max_memory=1.0, **common))
+        fn_blocked = build_qudit_expval_func(QuditCircuitConfig(max_memory=tiny, **common))
+
+        params = jnp.array(rng.normal(size=n_gates))
+        phase_params = jnp.array(rng.normal(size=n_qudits + 1))
+
+        for call_kwargs in [
+            {},
+            {"key": jax.random.PRNGKey(3), "n_samples": 128},
+            {"observables": (l_vecs[:2], m_vecs[:2])},
+        ]:
+            ev_s, cov_s = fn_single(params, phase_params, **call_kwargs)
+            ev_b, cov_b = fn_blocked(params, phase_params, **call_kwargs)
+            np.testing.assert_allclose(ev_b, ev_s, atol=1e-5, rtol=1e-5)
+            np.testing.assert_allclose(cov_b, cov_s, atol=1e-6, rtol=1e-4)
+
+        def loss(fn):
+            return lambda p, q: jnp.real(jnp.sum(fn(p, q)[0]))
+
+        grad_s = jax.grad(loss(fn_single), argnums=(0, 1))(params, phase_params)
+        grad_b = jax.grad(loss(fn_blocked), argnums=(0, 1))(params, phase_params)
+        for g_s, g_b in zip(grad_s, grad_b):
+            np.testing.assert_allclose(g_b, g_s, atol=1e-5, rtol=1e-5)
+
+    def test_blocked_matches_exact(self):
+        """The blocked estimator still agrees with the brute-force reference within MC error."""
+        d, n = 3, 3
+        generators = np.array([[1, 0, 2], [0, 2, 1], [1, 1, 0], [2, 0, 0], [0, 1, 1]])
+        thetas = np.array([0.4, -0.3, 0.7, 0.2, -0.5])
+        l_vecs = np.array([[1, 0, 2], [0, 1, 0]])
+        m_vecs = np.array([[0, 1, 0], [2, 0, 1]])
+        gates = _dense_rows_to_sparse(generators)
+        tiny = 1.0 * _qudit_phase_bytes_per_gate(1, NUM_SAMPLES, 2) / _BYTES_PER_GB
+        config = QuditCircuitConfig(
+            dims=d,
+            n_qudits=n,
+            gates=gates,
+            observables=(l_vecs, m_vecs),
+            n_samples=NUM_SAMPLES,
+            key=jax.random.PRNGKey(5),
+            max_memory=tiny,
+        )
+        mc_vals, mc_cov = build_qudit_expval_func(config)(jnp.array(thetas))
+        for i, (l, m) in enumerate(zip(l_vecs, m_vecs)):
+            ref = qudit_expectation_brute_force(n, d, generators, thetas, l, m)
+            tol = max(
+                3.5 * float(np.sqrt(mc_cov[i, 0, 0])), 3.5 * float(np.sqrt(mc_cov[i, 1, 1])), 1e-5
+            )
+            assert np.isclose(mc_vals[i], ref, atol=tol)
