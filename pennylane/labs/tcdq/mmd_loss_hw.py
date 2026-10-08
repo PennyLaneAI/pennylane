@@ -393,7 +393,7 @@ def build_mmd_loss_hw(
     >>> circuit_config = QuditCircuitConfig(
     ...     dims=3,
     ...     n_qudits=2,
-    ...     gates={0: [[1, 0]], 1: [[0, 1]]},
+    ...     gates={0: [{0: 1}], 1: [{1: 1}]},
     ...     n_samples=512,
     ...     key=jax.random.PRNGKey(0),
     ... )
