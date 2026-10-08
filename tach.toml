@@ -130,7 +130,7 @@ from = ["pennylane.core.transforms"]
 
 [[modules]]
 path = "pennylane.math"
-depends_on = ["pennylane._grad", "pennylane.numpy"]
+depends_on = ["pennylane._grad", "pennylane.numpy", "pennylane.typing"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 

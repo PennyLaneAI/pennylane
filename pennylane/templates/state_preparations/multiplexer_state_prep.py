@@ -95,10 +95,6 @@ class MultiplexerStatePreparation(Operator2):
         super().__init__(state_vector, wires=wires)
 
 
-def _is_complex_state(state_vector, **__):
-    return math.get_dtype_name(state_vector).startswith("complex")
-
-
 def _select_pauli_rot_resources(num_wires) -> dict:
     return {
         qp.SelectPauliRot(Float[2**i], control_wires=Wire[i], target_wire=Wire[1], rot_axis="Y"): 1
@@ -122,7 +118,7 @@ def _real_multiplexer_state_prep_resources(state_vector, wires, check=False) -> 
     return _select_pauli_rot_resources(len(wires))
 
 
-@register_condition(lambda state_vector, **_: not _is_complex_state(state_vector))
+@register_condition(lambda state_vector, **_: not math.is_complex_dtype(state_vector))
 @register_resources(_real_multiplexer_state_prep_resources)
 def _real_multiplexer_state_prep_decomposition(state_vector, wires, **_):
     r"""Decomposition of MultiplexerStatePreparation for a real-valued state vector."""
@@ -140,7 +136,7 @@ def _complex_multiplexer_state_prep_resources(state_vector, wires, check=False) 
     return resources
 
 
-@register_condition(_is_complex_state)
+@register_condition(lambda state_vector, **_: math.is_complex_dtype(state_vector))
 @register_resources(_complex_multiplexer_state_prep_resources, exact=False)
 def _complex_multiplexer_state_prep_decomposition(state_vector, wires, **_):
     r"""Decomposition of MultiplexerStatePreparation for a complex-valued state vector."""

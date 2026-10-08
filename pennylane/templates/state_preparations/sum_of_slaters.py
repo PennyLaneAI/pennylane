@@ -23,8 +23,7 @@ from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.templates.state_preparations.multiplexer_state_prep import _is_complex_state
-from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, TensorLike, Wire
+from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
@@ -1154,7 +1153,7 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     resources = defaultdict(int)
 
     # Step 1 in paper (p.7)
-    state_type = Complex if _is_complex_state(coefficients) else Float
+    state_type, _ = math.get_abstract_and_cast_dtype(coefficients)
     resources[qp.MultiplexerStatePreparation(state_type[2**d], wires=Wire[d])] += 1
 
     # Step 2 in paper (p.7)
@@ -1264,12 +1263,12 @@ def _sos_state_prep_with_wires(
 
     # Step 1: Dense state preparation in enumeration register
     missing_dim = 2 ** len(enumeration_wires) - len(coefficients)
-    dtype = complex if _is_complex_state(coefficients) else float
+    _, cast_dtype = math.get_abstract_and_cast_dtype(coefficients)
     coefficients = qp.math.concatenate(
         [coefficients, qp.math.cast_like(qp.math.zeros(missing_dim), coefficients)],
         like=qp.math.get_interface(coefficients),
     )
-    qp.MultiplexerStatePreparation(qp.math.cast(coefficients, dtype), wires=enumeration_wires)
+    qp.MultiplexerStatePreparation(qp.math.cast(coefficients, cast_dtype), wires=enumeration_wires)
 
     # Step 2 in paper (p.7): QROM to load v_bits into system register
     qp.QROM(
