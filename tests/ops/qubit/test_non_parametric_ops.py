@@ -1409,7 +1409,9 @@ class TestPPR:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("sign", [1, -1])
-    @pytest.mark.parametrize("pauli_word", ["X", "Y", "Z", "ZZ", "XY", "ZXY", "IX", "YIZ", "YZXY"])
+    @pytest.mark.parametrize(
+        "pauli_word", ["X", "Y", "Z", "ZZ", "XY", "ZXY", "IX", "YIZ", "YZXY", "III"]
+    )
     def test_standard_validity(self, op_cls, sign, pauli_word):
         """Run the standard operator validity checks."""
         wires = list(range(len(pauli_word)))
