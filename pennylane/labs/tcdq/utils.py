@@ -260,8 +260,7 @@ def create_random_qudit_gates(
     rng = np.random.default_rng(seed)
     gates_dict = {}
 
-    from tqdm import tqdm
-    for i in tqdm(range(n_gates)):
+    for i in range(n_gates):
         weight = int(rng.integers(min_weight, max_weight + 1))
         support = sorted(int(q) for q in rng.choice(n_qudits, size=weight, replace=False))
         gates_dict[i] = [{q: int(rng.integers(1, dims[q])) for q in support}]

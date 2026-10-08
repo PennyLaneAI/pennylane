@@ -38,6 +38,10 @@ import jax.numpy as jnp
 import numpy as np
 from jax.typing import ArrayLike
 
+_REAL_DTYPE = jnp.float32
+_COMPLEX_DTYPE = jnp.complex64
+_INDEX_DTYPE = jnp.int32
+
 
 @dataclass
 class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
@@ -283,7 +287,7 @@ def _parse_qudit_gate_dict(
             omega=omega,
             supports=np.stack(sup_list),
             powers=np.stack(pow_list),
-            param_indices=jnp.array(pidx_list, dtype=int),
+            param_indices=jnp.array(pidx_list, dtype=_INDEX_DTYPE),
         )
         for omega, (sup_list, pow_list, pidx_list) in sorted(buckets.items())
     ]
@@ -325,8 +329,11 @@ def _compute_qudit_samples(
 ) -> jnp.ndarray:
     """Generates uniformly random dit-strings from the product Z_{d_1} x ... x Z_{d_n}."""
 
-    maxval = jnp.asarray(dims, dtype=jnp.int32)[jnp.newaxis, :]  # (1, n_qudits)
-    return jax.random.randint(key, shape=(num_samples, n_qudits), minval=0, maxval=maxval)
+    maxval = jnp.asarray(dims, dtype=_INDEX_DTYPE)[jnp.newaxis, :]  # (1, n_qudits)
+    # Draw with JAX's default integer dtype so the random stream for a given key is unchanged,
+    # then narrow to 32-bit for the downstream computation.
+    samples = jax.random.randint(key, shape=(num_samples, n_qudits), minval=0, maxval=maxval)
+    return samples.astype(_INDEX_DTYPE)
 
 
 _BYTES_PER_GB = 1024**3
@@ -361,12 +368,12 @@ def _obs_phase_matrix(
 
     :math:`J[i, j] = \\exp(i\\pi \\sum_k m_{ik} (2 z_{jk} - l_{ik}) / d_k)`.
     """
-    s_f = samples.astype(jnp.float32)
-    inv_d = (1.0 / jnp.asarray(dims, dtype=jnp.float32))[jnp.newaxis, :]  # (1, n_qudits)
+    s_f = samples.astype(_REAL_DTYPE)
+    inv_d = (1.0 / jnp.asarray(dims, dtype=_REAL_DTYPE))[jnp.newaxis, :]  # (1, n_qudits)
     m_scaled = m_f * inv_d  # (n_obs, n_qudits)
     return jnp.exp(
         1j * jnp.pi * (2 * m_scaled @ s_f.T - jnp.sum(m_scaled * l_f, axis=1, keepdims=True))
-    )
+    ).astype(_COMPLEX_DTYPE)
 
 
 class _PrecomputedObsData(NamedTuple):
@@ -413,7 +420,7 @@ def _group_block_contribution(
     omega = supports.shape[1]
     theta = theta_ext[param_indices]  # (block,)
 
-    g = powers.astype(jnp.float32)[:, :, jnp.newaxis]  # (block, omega, 1)
+    g = powers.astype(_REAL_DTYPE)[:, :, jnp.newaxis]  # (block, omega, 1)
     d_s = dims_f[supports][:, :, jnp.newaxis]  # (block, omega, 1)
     z_at_support = jnp.take(samples_t, supports, axis=0)  # (block, omega, n_samples)
     l_at_support = jnp.take(l_t, supports, axis=0)  # (block, omega, n_obs)
@@ -452,9 +459,9 @@ def _group_phase_diffs(
     storing them, keeping gradient memory bounded as well.
     """
     n_gates, omega = group.supports.shape
-    supports = jnp.asarray(group.supports, dtype=jnp.int32)
-    powers = jnp.asarray(group.powers, dtype=jnp.int32)
-    param_indices = jnp.asarray(group.param_indices, dtype=jnp.int32)
+    supports = jnp.asarray(group.supports, dtype=_INDEX_DTYPE)
+    powers = jnp.asarray(group.powers, dtype=_INDEX_DTYPE)
+    param_indices = jnp.asarray(group.param_indices, dtype=_INDEX_DTYPE)
 
     block_fn = jax.checkpoint(
         lambda s, p, i: _group_block_contribution(theta_ext, samples_t, l_t, dims_f, s, p, i)
@@ -476,8 +483,7 @@ def _group_phase_diffs(
     def accumulate(total, block):
         return total + block_fn(*block), None
 
-    carry_dtype = jnp.result_type(theta_ext.dtype, samples_t.dtype)
-    zero = jnp.zeros((l_t.shape[1], samples_t.shape[1]), dtype=carry_dtype)
+    zero = jnp.zeros((l_t.shape[1], samples_t.shape[1]), dtype=_REAL_DTYPE)
     total, _ = jax.lax.scan(
         accumulate,
         zero,
@@ -503,13 +509,13 @@ def _accumulate_phase_diffs(
     """Assemble the accumulated phase-difference matrix from all weight groups."""
     n_samples = samples.shape[0]
     n_obs = l_vecs.shape[0]
-    theta = jnp.asarray(gates_params)
-    theta_ext = jnp.concatenate([theta, jnp.zeros((1,), dtype=theta.dtype)])
-    samples_t = samples.astype(jnp.float32).T  # (n_qudits, n_samples)
-    l_t = jnp.asarray(l_vecs).astype(jnp.float32).T  # (n_qudits, n_obs)
-    dims_f = jnp.asarray(dims, dtype=jnp.float32)
+    theta = jnp.asarray(gates_params).astype(_REAL_DTYPE)
+    theta_ext = jnp.concatenate([theta, jnp.zeros((1,), dtype=_REAL_DTYPE)])
+    samples_t = samples.astype(_REAL_DTYPE).T  # (n_qudits, n_samples)
+    l_t = jnp.asarray(l_vecs).astype(_REAL_DTYPE).T  # (n_qudits, n_obs)
+    dims_f = jnp.asarray(dims, dtype=_REAL_DTYPE)
 
-    accumulated = jnp.zeros((n_obs, n_samples))
+    accumulated = jnp.zeros((n_obs, n_samples), dtype=_REAL_DTYPE)
     for group in gate_groups:
         block_size = _qudit_phase_block_size(max_memory_bytes, group.omega, n_samples, n_obs)
         accumulated = accumulated + _group_phase_diffs(
@@ -517,7 +523,7 @@ def _accumulate_phase_diffs(
         )
 
     if vmapped_phase_func is not None:
-        accumulated += vmapped_phase_func(phase_fn_params, samples, l_vecs)
+        accumulated += vmapped_phase_func(phase_fn_params, samples, l_vecs).astype(_REAL_DTYPE)
 
     return accumulated
 
@@ -530,13 +536,13 @@ def _compute_initial_state_correction(
     dims: ArrayLike,
 ) -> jnp.ndarray:
     """Compute the correction factor for a non-standard initial state."""
-    s_f = samples.astype(jnp.float32)
-    X_state = jnp.asarray(state_elems).astype(jnp.float32)  # (N, n)
-    Psi = jnp.asarray(state_amps)  # (N,)
-    inv_d = (1.0 / jnp.asarray(dims, dtype=jnp.float32))[jnp.newaxis, :]  # (1, n)
+    s_f = samples.astype(_REAL_DTYPE)
+    X_state = jnp.asarray(state_elems).astype(_REAL_DTYPE)  # (N, n)
+    Psi = jnp.asarray(state_amps).astype(_COMPLEX_DTYPE)  # (N,)
+    inv_d = (1.0 / jnp.asarray(dims, dtype=_REAL_DTYPE))[jnp.newaxis, :]  # (1, n)
 
     # ω^{Z·X^T} where ω_j = exp(2πi/d_j) — shape (s, N)
-    omega_ZX = jnp.exp(2j * jnp.pi * ((s_f * inv_d) @ X_state.T))
+    omega_ZX = jnp.exp(2j * jnp.pi * ((s_f * inv_d) @ X_state.T)).astype(_COMPLEX_DTYPE)
 
     # Ψ̃^(2) = ω^{Z·X^T} · Ψ — shape (s,)
     psi_tilde_2 = omega_ZX @ Psi
@@ -545,7 +551,7 @@ def _compute_initial_state_correction(
     F_mat = Psi.conj()[:, jnp.newaxis] * omega_ZX.conj().T
 
     # Ψ̃^(1) = ω^{L·X^T} · F — shape (l, s)
-    omega_LX = jnp.exp(2j * jnp.pi * ((l_f * inv_d) @ X_state.T))  # (l, N)
+    omega_LX = jnp.exp(2j * jnp.pi * ((l_f * inv_d) @ X_state.T)).astype(_COMPLEX_DTYPE)  # (l, N)
     psi_tilde_1 = omega_LX @ F_mat
 
     # H = Ψ̃^(1) ⊙ (1_{l×1} · (Ψ̃^(2))^T) — shape (l, s)
@@ -669,10 +675,10 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
         )
 
     if config.observables is not None:
-        l_vecs = jnp.array(config.observables[0], dtype=jnp.int32)
-        m_vecs = jnp.array(config.observables[1], dtype=jnp.int32)
-        l_f = l_vecs.astype(jnp.float32)
-        m_f = m_vecs.astype(jnp.float32)
+        l_vecs = jnp.array(config.observables[0], dtype=_INDEX_DTYPE)
+        m_vecs = jnp.array(config.observables[1], dtype=_INDEX_DTYPE)
+        l_f = l_vecs.astype(_REAL_DTYPE)
+        m_f = m_vecs.astype(_REAL_DTYPE)
         n_obs = l_vecs.shape[0]
         defaults = _PrecomputedObsData(
             l_vecs=l_vecs,
@@ -720,9 +726,9 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
             of the mean estimator, shape ``(n_obs, 2, 2)``.
         """
         if observables is not None:
-            l_vecs = jnp.array(observables[0], dtype=jnp.int32)
-            l_f = l_vecs.astype(jnp.float32)
-            m_f = jnp.array(observables[1], dtype=jnp.int32).astype(jnp.float32)
+            l_vecs = jnp.array(observables[0], dtype=_INDEX_DTYPE)
+            l_f = l_vecs.astype(_REAL_DTYPE)
+            m_f = jnp.array(observables[1], dtype=_INDEX_DTYPE).astype(_REAL_DTYPE)
         elif defaults is not None:
             l_vecs, l_f, m_f = defaults.l_vecs, defaults.l_f, defaults.m_f
         else:
@@ -761,7 +767,7 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
         state_elems = config.init_state_elems if init_state_elems is None else init_state_elems
         state_amps = config.init_state_amps if init_state_amps is None else init_state_amps
 
-        integrand = obs_pm * jnp.exp(1j * accumulated_phase_diffs)
+        integrand = obs_pm * jnp.exp(1j * accumulated_phase_diffs).astype(_COMPLEX_DTYPE)
         if state_elems is not None and state_amps is not None:
             H = _compute_initial_state_correction(samples, l_f, state_elems, state_amps, dims)
             integrand = integrand * H
