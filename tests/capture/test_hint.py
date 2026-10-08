@@ -96,6 +96,18 @@ class TestHintAPI:
         assert hinted.f is f
         assert hinted(3) == 4
 
+    def test_hint_direct_form(self):
+        """``qp.hint(f, hints)`` should apply hints directly."""
+
+        def f(x):
+            return x + 1
+
+        hinted = qp.hint(f, {"identity": True})
+        assert isinstance(hinted, HintedCallable)
+        assert hinted.hints == {"identity": True}
+        assert hinted.f is f
+        assert hinted(3) == 4
+
     def test_hint_as_decorator(self):
         """``qp.hint`` should work as a decorator."""
 
@@ -115,6 +127,15 @@ class TestHintAPI:
             return x
 
         assert f.hints == {"a": 1, "b": 2}
+
+    def test_hint_decorator_form_requires_dict(self):
+        """Passing a non-dict as the sole argument should raise ``TypeError``."""
+
+        def f(x):
+            return x
+
+        with pytest.raises(TypeError, match="decorator form expects a dict"):
+            qp.hint(f)
 
     def test_repr(self):
         """``HintedCallable`` should expose the wrapped function and hints."""
