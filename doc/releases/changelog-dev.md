@@ -123,7 +123,7 @@
   building blocks of Pauli-based computations directly expressible.
   [(#10107)](https://github.com/PennyLaneAI/pennylane/pull/10107)
   [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10287)](https://github.com/PennyLaneAI/pennylane/pull/10287)
 
   ```pycon
   >>> import pennylane as qp
