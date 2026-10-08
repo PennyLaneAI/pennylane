@@ -1003,7 +1003,7 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
 
         flat_qfunc = capture.flatfn.FlatFn(obj)
         jaxpr = jax.make_jaxpr(flat_qfunc)(*args, **kwargs)
-        flat_args = jax.tree_util.tree_leaves(args)
+        flat_args = jax.tree_util.tree_leaves((args, kwargs))
 
         n_args = len(flat_args)
         n_consts = len(jaxpr.consts)
