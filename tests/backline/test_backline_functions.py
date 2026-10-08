@@ -53,6 +53,23 @@ class TestCoprocessorFunction:
             "decode", lib_path="/a.so"
         )
 
+    def test_message_bytes_given_as_a_list_is_stored_as_a_tuple(self):
+        """A declared size pair is kept as a tuple, so placements can compare and hash it."""
+        assert CoprocessorFunction("fn", message_bytes=[120, 121]).message_bytes == (120, 121)
+
+    def test_message_bytes_must_be_a_pair(self):
+        """Declared message sizes are one size for each direction."""
+        with pytest.raises(ValueError, match="must be an \\(in_bytes, out_bytes\\) pair"):
+            CoprocessorFunction("fn", message_bytes=(120,))
+
+    def test_config_defaults_to_empty(self):
+        """A CoprocessorFunction built by hand carries no config."""
+        assert CoprocessorFunction("fn").config == ""
+
+    def test_per_message_defaults_to_false(self):
+        """A CoprocessorFunction built by hand is launched once, not called per message."""
+        assert not CoprocessorFunction("fn").per_message
+
 
 class TestTritonDecoder:
     """The Triton decoder compilation entry point."""
