@@ -45,10 +45,10 @@ def _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs) -> tupl
     compile_pipeline = original_qnode.compile_pipeline
 
     return_single_level: bool = (
-        isinstance(level, (int, str)) and level != "all" and level != "all-user"
+        isinstance(level, (int, str)) and level not in ("all", "all-user")
     )
 
-    has_device_level: bool = level == "device" or level == "all"
+    has_device_level: bool = level in ("device", "all")
     if has_device_level:
         if not qjit.compile_options.capture or (
             qjit.compile_options.capture == "global" and not capture.enabled()
