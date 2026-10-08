@@ -443,6 +443,40 @@
 
   ```
 
+* A new function called :func:`~.estimate` is available, which provides a quick projection of the
+  resources of a ``qjit``-compiled QNode onto a target gate set, without executing the circuit.
+  The original circuit, before any user transforms, is decomposed into the ``target`` gate set
+  and the resulting operations are counted. The QNode must be compiled with
+  ``qp.qjit(capture=True)``.
+  [(#10296)](https://github.com/PennyLaneAI/pennylane/pull/10296)
+
+  ```python
+  dev = qp.device("null.qubit", wires=2)
+
+  @qp.qjit(capture=True)
+  @qp.qnode(dev)
+  def circuit(x):
+      qp.CZ([0, 1])
+      qp.RX(x, wires=1)
+      return qp.probs()
+  ```
+
+  ```pycon
+  >>> circuit_specs = qp.estimate(circuit, target={"Hadamard", "CNOT", "RX"})(1.23)
+  >>> circuit_specs.resources.quantum_operations
+  {'CNOT': 1, 'Hadamard': 2, 'RX': 1}
+
+  ```
+
+  Gates that are already in the ``target`` gate set are kept:
+
+  ```pycon
+  >>> circuit_specs = qp.estimate(circuit, target={"CZ", "RX"})(1.23)
+  >>> circuit_specs.resources.quantum_operations
+  {'CZ': 1, 'RX': 1}
+
+  ```
+
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
   In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.Expression` instances where `int` values would normally appear.

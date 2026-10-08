@@ -112,7 +112,7 @@ from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
-from pennylane.resource import analyze, specs, track
+from pennylane.resource import analyze, estimate, specs, track
 from pennylane import resource
 
 from pennylane.transforms import (

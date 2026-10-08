@@ -135,6 +135,29 @@ Measurement processes:
 Total wires: 4
 Circuit Depth: Not computed
 
+The :func:`~pennylane.estimate` transform gives a quick projection of the resources onto a target
+gate set. It decomposes the original circuit, before any transforms, into the ``target`` gate set
+and counts the result, without executing it. It requires program capture:
+
+.. code-block:: python
+
+    @qp.qjit(capture=True)
+    @qp.transforms.cancel_inverses
+    @qp.qnode(dev)
+    def decomposed_circuit(x):
+        qp.RX(x, wires=0)
+        qp.X(0)
+        qp.X(0)
+        qp.CZ([0, 1])
+        return qp.expval(qp.Z(0))
+
+>>> target = {"RX", "PauliX", "Hadamard", "CNOT"}
+>>> qp.estimate(decomposed_circuit, target=target)(0.1).resources.quantum_operations
+{'CNOT': 1, 'Hadamard': 2, 'PauliX': 2, 'RX': 1}
+
+Both ``PauliX`` gates are counted, since ``cancel_inverses`` is ignored, and the ``CZ`` gate is
+decomposed into ``Hadamard`` and ``CNOT`` gates.
+
 
 Circuit drawing
 ---------------
