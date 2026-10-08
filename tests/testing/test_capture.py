@@ -371,28 +371,36 @@ class TestAssertEqnMatchesOp:
             qp.testing.assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
 
 
-class TestSingleOperatorEqn:
-    """Tests for the single_operator_eqn function."""
+class TestFindEqns:
+    """Tests for the find_eqns function."""
 
-    def test_returns_the_operator_eqn(self):
-        """Test that the only operator equation is returned."""
+    def test_returns_matching_eqns_in_order(self):
+        """Test that only the equations with the given primitive are returned, in order."""
 
         def f(x):
             qp.RX(2 * x, 0)
+            qp.RY(x, 1)
 
         jaxpr = jax.make_jaxpr(f)(0.5)
-        eqn = qp.testing.single_operator_eqn(jaxpr.jaxpr)
-        assert eqn.primitive is operator_p
-        assert eqn.params["op_cls"] is qp.RX
+        eqns = qp.testing.find_eqns(jaxpr, operator_p)
+        assert [eqn.params["op_cls"] for eqn in eqns] == [qp.RX, qp.RY]
+        [mul_eqn] = qp.testing.find_eqns(jaxpr.jaxpr, jax.lax.mul_p)
+        assert mul_eqn.outvars[0] in eqns[0].invars
 
-    @pytest.mark.parametrize("num_ops", (0, 2))
-    def test_error_if_not_exactly_one(self, num_ops):
-        """Test that an error is raised unless there is exactly one operator equation."""
+    def test_no_matches(self):
+        """Test that an empty list is returned when no equation uses the primitive."""
+        jaxpr = jax.make_jaxpr(lambda x: qp.RX(x, 0))(0.5)
+        assert not qp.testing.find_eqns(jaxpr, jax.lax.mul_p)
+
+    def test_nested_eqns_not_searched(self):
+        """Test that equations inside nested jaxprs are not returned."""
 
         def f(x):
-            for _ in range(num_ops):
-                qp.RX(x, 0)
+            @qp.for_loop(2)
+            def loop(i):
+                qp.RX(x, i)
+
+            loop()
 
         jaxpr = jax.make_jaxpr(f)(0.5)
-        with pytest.raises(AssertionError):
-            qp.testing.single_operator_eqn(jaxpr.jaxpr)
+        assert not qp.testing.find_eqns(jaxpr, operator_p)

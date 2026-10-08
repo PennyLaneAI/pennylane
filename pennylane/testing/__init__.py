@@ -26,13 +26,8 @@ Program capture
     ~plxpr_to_tape
     ~assert_eqn_matches_op
     ~extract_all_primitives
-    ~single_operator_eqn
+    ~find_eqns
 
 """
 
-from .capture import (
-    assert_eqn_matches_op,
-    extract_all_primitives,
-    plxpr_to_tape,
-    single_operator_eqn,
-)
+from .capture import assert_eqn_matches_op, extract_all_primitives, find_eqns, plxpr_to_tape

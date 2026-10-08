@@ -15,7 +15,7 @@
 Utilities for testing programs captured with :mod:`~pennylane.capture`.
 """
 
-from jax.extend.core import ClosedJaxpr, Jaxpr
+from jax.extend.core import ClosedJaxpr, Jaxpr, JaxprEqn, Primitive
 
 from pennylane.capture import pause
 from pennylane.capture.primitives import operator_p
@@ -69,11 +69,9 @@ def plxpr_to_tape(plxpr: Jaxpr, consts, *args) -> QuantumScript:
     wire_map = collector.state["dynamic_wire_map"]
     mcm_map = {}
     with pause():
-        operations = [_map_op_wires(op, wire_map, mcm_map) for op in collector.state["ops"]]
-        measurements = [
-            _map_meas_wires(m, wire_map, mcm_map) for m in collector.state["measurements"]
-        ]
-    return QuantumScript(operations, measurements)
+        ops = [_map_op_wires(op, wire_map, mcm_map) for op in collector.state["ops"]]
+        meas = [_map_meas_wires(m, wire_map, mcm_map) for m in collector.state["measurements"]]
+    return QuantumScript(ops, meas)
 
 
 def _map_op_wires(op, wire_map, mcm_map):
@@ -93,7 +91,7 @@ def _map_meas_wires(m, wire_map, mcm_map):
     return new_meas
 
 
-def extract_all_primitives(jaxpr: Jaxpr) -> set:
+def extract_all_primitives(jaxpr: Jaxpr | ClosedJaxpr) -> set:
     """Collect the primitives of every equation in a jaxpr, including the equations of
     jaxprs nested inside higher-order primitives such as ``qnode``, ``cond`` and ``for_loop``.
 
@@ -114,27 +112,27 @@ def extract_all_primitives(jaxpr: Jaxpr) -> set:
     >>> plxpr = jax.make_jaxpr(f)(0.5)
     >>> sorted(p.name for p in qp.testing.extract_all_primitives(plxpr.jaxpr))
     ['for_loop', 'operator']
-    >>> qp.capture.disable()
 
     """
-    primitives = set()
 
+    if isinstance(jaxpr, ClosedJaxpr):
+        return extract_all_primitives(jaxpr.jaxpr)
+
+    primitives = set()
     for eqn in jaxpr.eqns:
+
+        # add the primitive itself
         primitives.add(eqn.primitive)
 
         # Search all params rather than specific keys (like 'qfunc_jaxpr') so that new
         # higher-order primitives are covered without changes here.
         for val in eqn.params.values():
-            if isinstance(val, Jaxpr):
+            if isinstance(val, (Jaxpr, ClosedJaxpr)):
                 primitives.update(extract_all_primitives(val))
-            elif isinstance(val, ClosedJaxpr):
-                primitives.update(extract_all_primitives(val.jaxpr))
             elif isinstance(val, (list, tuple)):
-                for item in val:
-                    if isinstance(item, Jaxpr):
-                        primitives.update(extract_all_primitives(item))
-                    elif isinstance(item, ClosedJaxpr):
-                        primitives.update(extract_all_primitives(item.jaxpr))
+                _jaxprs = (item for item in val if isinstance(item, (Jaxpr, ClosedJaxpr)))
+                for _jaxpr in _jaxprs:
+                    primitives.update(extract_all_primitives(_jaxpr))
 
     return primitives
 
@@ -158,7 +156,6 @@ def assert_eqn_matches_op(eqn, expected_op: type) -> None:
     >>> qp.capture.enable()
     >>> plxpr = jax.make_jaxpr(lambda x: qp.RX(x, 0))(0.5)
     >>> qp.testing.assert_eqn_matches_op(plxpr.eqns[0], qp.RX)
-    >>> qp.capture.disable()
 
     """
     if issubclass(expected_op, Operator2):
@@ -168,20 +165,29 @@ def assert_eqn_matches_op(eqn, expected_op: type) -> None:
         assert eqn.primitive == expected_op._primitive  # pylint: disable=protected-access
 
 
-def single_operator_eqn(jaxpr: Jaxpr):
-    """Return the only equation in a jaxpr that uses the ``operator`` primitive, which is
-    the primitive used to capture subclasses of :class:`~.core.Operator2`.
+def find_eqns(jaxpr: Jaxpr, primitive: Primitive) -> list[JaxprEqn]:
+    """Find the equations in a jaxpr that use a given primitive.
+
+    Only the top-level equations are searched, not those of jaxprs nested inside
+    higher-order primitives.
 
     Args:
         jaxpr (jax.extend.core.Jaxpr | jax.extend.core.ClosedJaxpr): the jaxpr to search
+        primitive (jax.extend.core.Primitive): the primitive to look for
 
     Returns:
-        jax.extend.core.JaxprEqn: the operator equation
+        list[jax.extend.core.JaxprEqn]: the matching equations, in program order
 
-    Raises:
-        AssertionError: if the jaxpr does not contain exactly one operator equation
+    **Example**
+
+    Unpacking the result checks that there is exactly one matching equation:
+
+    >>> from pennylane.capture.primitives import operator_p
+    >>> qp.capture.enable()
+    >>> plxpr = jax.make_jaxpr(lambda x: qp.RX(x, 0))(0.5)
+    >>> [eqn] = qp.testing.find_eqns(plxpr, operator_p)
+    >>> eqn.params["op_cls"]
+    <class 'pennylane.ops.qubit.parametric_ops_single_qubit.RX'>
 
     """
-    op_eqns = [e for e in jaxpr.eqns if e.primitive is operator_p]
-    assert len(op_eqns) == 1
-    return op_eqns[0]
+    return [eqn for eqn in jaxpr.eqns if eqn.primitive == primitive]

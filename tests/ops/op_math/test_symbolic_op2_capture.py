@@ -28,7 +28,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import AbstractOperator, operator_p
-from pennylane.testing import single_operator_eqn
+from pennylane.testing import find_eqns
 from tests.core.operator.operator2_utils import NonParametricOp
 
 
@@ -45,7 +45,7 @@ class TestAdjointCapture:
             adjoint_fn = partial(adjoint_fn, lazy=lazy)
 
         jaxpr = jax.make_jaxpr(lambda x: adjoint_fn(RX2(x, wires=0)).tracer)(0.5)
-        eqn = single_operator_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
 
         assert eqn.params["op_cls"] is RX2
         assert eqn.params["adjoint"] is lazy
@@ -62,7 +62,7 @@ class TestAdjointCapture:
             pytest.skip("This test is for Adjoint2, not eager adjoint.")
 
         jaxpr = jax.make_jaxpr(lambda x: adjoint_fn(RX2(x, wires=0)))(0.5)
-        eqn = single_operator_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert jaxpr.jaxpr.invars[0] in eqn.invars
 
     def test_double_adjoint_cancels(self, adjoint_fn, lazy):
@@ -73,7 +73,7 @@ class TestAdjointCapture:
             adjoint_fn = partial(adjoint_fn, lazy=lazy)
 
         jaxpr = jax.make_jaxpr(lambda x: adjoint_fn(adjoint_fn(RX2(x, wires=0))).tracer)(0.5)
-        eqn = single_operator_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert eqn.params["adjoint"] is False
 
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
@@ -128,7 +128,7 @@ class TestAdjointCapture:
             return adjoint_fn(base).tracer
 
         jaxpr = jax.make_jaxpr(f)()
-        eqn = single_operator_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert eqn.params["adjoint"] is lazy
 
         # pylint: disable=unbalanced-tuple-unpacking
@@ -173,7 +173,7 @@ class TestControlledCapture:
     def test_single_equation_records_control_metadata(self, ctrl_fn):
         """Test that controlled capture produces one equation on the base operator."""
         jaxpr = jax.make_jaxpr(lambda x: ctrl_fn(RX2(x, wires=1), [0]).tracer)(0.5)
-        eqn = single_operator_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
 
         assert eqn.params["op_cls"] is RX2
         assert eqn.params["n_ctrls"] == 1
@@ -187,7 +187,7 @@ class TestControlledCapture:
     def test_dynamic_params_flow_to_inputs(self, ctrl_fn):
         """Test that dynamic base parameters are passed as equation inputs."""
         jaxpr = jax.make_jaxpr(lambda x: ctrl_fn(RX2(x, wires=1), [0]))(0.5)
-        eqn = single_operator_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert jaxpr.jaxpr.invars[0] in eqn.invars
 
     def test_multiple_control_wires(self, ctrl_fn):
@@ -195,7 +195,7 @@ class TestControlledCapture:
         jaxpr = jax.make_jaxpr(
             lambda x: ctrl_fn(RX2(x, wires=2), [0, 1], control_values=[True, False]).tracer
         )(0.5)
-        eqn = single_operator_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
 
         assert eqn.params["n_ctrls"] == 2
         assert eqn.invars[-4].val == 0
@@ -228,7 +228,7 @@ class TestControlledCapture:
             return ctrl_fn(base, [1]).tracer
 
         jaxpr = jax.make_jaxpr(f)()
-        eqn = single_operator_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert eqn.params["n_ctrls"] == 1
 
         # pylint: disable=unbalanced-tuple-unpacking
@@ -247,7 +247,7 @@ class TestControlledCapture:
     def test_nested_controlled_single_equation(self, ctrl_fn):
         """Test that nested controlled operators collapse to a single equation."""
         jaxpr = jax.make_jaxpr(lambda x: ctrl_fn(ctrl_fn(RX2(x, wires=2), [1]), [0]).tracer)(0.5)
-        eqn = single_operator_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
 
         assert eqn.params["op_cls"] is RX2
         assert eqn.params["n_ctrls"] == 2
@@ -283,7 +283,7 @@ class TestControlledCapture:
             ).tracer
 
         jaxpr = jax.make_jaxpr(f)(0.5, 5)
-        eqn = single_operator_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
 
         assert eqn.params["n_ctrls"] == 1
         assert eqn.params["n_ctrl_work_wires"] == 1
@@ -319,7 +319,7 @@ class TestControlledCapture:
                 work_wire_type=outer_type,
             ).tracer
         )(0.5)
-        eqn = single_operator_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
 
         assert eqn.params["n_ctrls"] == 2
         assert eqn.params["n_ctrl_work_wires"] == 2
@@ -420,7 +420,7 @@ class TestNestedSymbolicOpCapture:
             adjoint_fn = partial(adjoint_fn, lazy=lazy)
 
         jaxpr = jax.make_jaxpr(lambda x: ctrl_fn(adjoint_fn(RX2(x, wires=1)), [0]).tracer)(0.5)
-        eqn = single_operator_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
 
         assert eqn.params["op_cls"] is RX2
         assert eqn.params["n_ctrls"] == 1
@@ -440,7 +440,7 @@ class TestNestedSymbolicOpCapture:
             adjoint_fn = partial(adjoint_fn, lazy=lazy)
 
         jaxpr = jax.make_jaxpr(lambda x: adjoint_fn(ctrl_fn(RX2(x, wires=1), [0])).tracer)(0.5)
-        eqn = single_operator_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
 
         assert eqn.params["op_cls"] is RX2
         assert eqn.params["n_ctrls"] == 1
