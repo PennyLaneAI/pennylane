@@ -1910,6 +1910,13 @@
   broadcasted parameters.
   [(#10253)](https://github.com/PennyLaneAI/pennylane/pull/10253)
 
+* The graph-based decomposition rule of a multi-controlled :class:`~.PhaseShift`, which expands into
+  ``2**(n+1) - 1`` :class:`~.PauliRot` gates for ``n`` control wires, is now only offered for up to
+  nine control wires. From ten control wires on the decomposition graph never picks it, but
+  consumers that materialize every candidate rule of an operator, such as :func:`~.qjit` with
+  program capture, used to spend minutes (or never finish) building it.
+  [(#10276)](https://github.com/PennyLaneAI/pennylane/pull/10276)
+
 * Fixed `qp.math.ceil_log2` returning results that were off by one
   for inputs with more significant bits than a float can hold, like `2 ** 53 + 1`.
   [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)

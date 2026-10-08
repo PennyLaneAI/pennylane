@@ -32,6 +32,7 @@ import pennylane as qp
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
+    register_condition,
     register_resources,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -930,6 +931,22 @@ def _controlled_phase_shift_resource(base, control_wires, *_, **__):
     return resources
 
 
+# The phase-polynomial decomposition creates 2^(n+1) - 1 gates, which explodes for large n.
+# Past ~10 control wires, PennyLane's decomposition graph already prefers the polynomial PhaseShift
+# rule over PauliRot (e.g., 1,336 gates vs 2,048 at 10 controls).
+#
+# Capping this rule at 10 controls doesn't affect graph selection, but it prevents compilers
+# like `qjit` (with program capture) from generating millions of useless terms.
+_MAX_PHASE_POLYNOMIAL_CONTROL_WIRES = 9
+
+
+def _controlled_phase_shift_condition(
+    base, control_wires, *_, **__
+):  # pylint: disable=unused-argument
+    return len(control_wires) <= _MAX_PHASE_POLYNOMIAL_CONTROL_WIRES
+
+
+@register_condition(_controlled_phase_shift_condition)
 @register_resources(_controlled_phase_shift_resource)
 def _controlled_phase_shift_decomp(base, control_wires, *_, **__):
     wires = concatenate_wires(control_wires, base.wires)
