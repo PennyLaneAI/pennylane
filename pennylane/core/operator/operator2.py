@@ -2002,7 +2002,15 @@ def pop_op_eqns(ops: Iterable):
             # for some reason the frame now wraps equations in lambdas
             eqn = op.tracer.parent
             old_eqns.append(eqn)
-            frame.tracing_eqns = [r for r in frame.tracing_eqns if r() is not eqn]
+
+            eqns = frame.tracing_eqns
+            # NOTE: Check from the end of the list as symboilc operators
+            # consume its base immediately after the base was traced so the entry to be dropped
+            # is at or very near the tail of the equation list
+            for i in range(len(eqns) - 1, -1, -1):
+                if eqns[i]() is eqn:
+                    del eqns[i]
+                    break
 
             # delete reference to tracer after its equation has been deleted
             op.tracer = None
