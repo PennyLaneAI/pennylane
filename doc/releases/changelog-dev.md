@@ -952,7 +952,7 @@
   :class:`~.PartialUnaryStatePreparation` now pass real-valued coefficients on as a real-valued
   state vector to :class:`~.MultiplexerStatePreparation`, so that they benefit from this cheaper
   decomposition, also when the coefficients are traced.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10288)](https://github.com/PennyLaneAI/pennylane/pull/10288)
 
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
