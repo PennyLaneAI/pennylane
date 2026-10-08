@@ -42,7 +42,7 @@ from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
-from pennylane.typing import AbstractWires, Float, TensorLike, Wire
+from pennylane.typing import AbstractWires, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, concatenate_wires
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -2349,25 +2349,6 @@ class PPR_8(_FixedAnglePPR):
     _denominator = 8
 
 
-def _ppr_to_paulirot_resources(pauli_word, **_):
-    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
-
-
-@register_resources(_ppr_to_paulirot_resources)
-def _ppr2_to_paulirot(sign, pauli_word, wires):
-    qp.PauliRot(sign * np.pi, pauli_word, wires=wires)
-
-
-@register_resources(_ppr_to_paulirot_resources)
-def _ppr4_to_paulirot(sign, pauli_word, wires):
-    qp.PauliRot(sign * np.pi / 2, pauli_word, wires=wires)
-
-
-@register_resources(_ppr_to_paulirot_resources)
-def _ppr8_to_paulirot(sign, pauli_word, wires):
-    qp.PauliRot(sign * np.pi / 4, pauli_word, wires=wires)
-
-
 _PAULI_OPS = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
 
 
@@ -2487,9 +2468,9 @@ def _ppr8_to_clifford_t(sign, pauli_word, wires):
     _ppr_via_z_gate(sign, pauli_word, wires, T)
 
 
-add_decomps(PPR_2, _ppr2_to_paulirot, _ppr2_to_paulis)
-add_decomps(PPR_4, _ppr4_to_paulirot, _ppr4_to_cliffords)
-add_decomps(PPR_8, _ppr8_to_paulirot, _ppr8_to_clifford_t)
+add_decomps(PPR_2, _ppr2_to_paulis)
+add_decomps(PPR_4, _ppr4_to_cliffords)
+add_decomps(PPR_8, _ppr8_to_clifford_t)
 
 
 def _adjoint_ppr_flip_sign_resources(base):
