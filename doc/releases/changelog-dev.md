@@ -1043,7 +1043,7 @@
   (:func:`~pennylane.decomposition.enable_graph`) automatically selects the cheaper rule.
   [(#9698)](https://github.com/PennyLaneAI/pennylane/pull/9698)
 
-* :func:`~core.queuing.apply` is now compatible with program capture.
+* :func:`~pennylane.apply` is now compatible with program capture.
   [(#9831)](https://github.com/PennyLaneAI/pennylane/pull/9831)
   [(#10103)](https://github.com/PennyLaneAI/pennylane/pull/10103)
 
@@ -1445,6 +1445,11 @@
 
 * The ``qp.decomposition.reconstruct`` function and all infrastructure built around it has been removed.
   [(#9711)](https://github.com/PennyLaneAI/pennylane/pull/9711)
+
+* :func:`~pennylane.apply` has moved from :mod:`pennylane.core.queuing` to the standalone
+  :mod:`pennylane.core.apply` module, and is no longer importable from
+  ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
+  [(#10114)](https://github.com/PennyLaneAI/pennylane/pull/10114)
 
 <h3>Deprecations 👋</h3>
 
