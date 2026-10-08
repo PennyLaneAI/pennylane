@@ -19,8 +19,9 @@ not depend on any parameters.
 # pylint: disable=arguments-differ,unused-argument
 
 import cmath
+from collections import Counter
 from copy import copy
-from functools import lru_cache, reduce
+from functools import lru_cache
 from typing import Literal, override
 from warnings import warn
 
@@ -29,12 +30,14 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math
+from pennylane.capture.autograph import disable_autograph
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
@@ -2239,14 +2242,8 @@ class PPR(Operator2):
         True
 
         """
-        theta = np.pi / angle_denominator * 2
-        multi_Z_rot_matrix = qp.MultiRZ.compute_matrix(theta, list(range(len(pauli_word))))
-
-        # conjugate with Hadamard and RX to create the Pauli string
-        # pylint: disable-next=protected-access
-        conjugation_factors = (qp.PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in pauli_word)
-        conjugation_matrix = reduce(math.kron, conjugation_factors)
-        return math.conj(conjugation_matrix) @ multi_Z_rot_matrix @ conjugation_matrix
+        # PPR(k, P) = exp(-i π/k P) = PauliRot(2π/k, P)
+        return qp.PauliRot.compute_matrix(2 * np.pi / angle_denominator, pauli_word)
 
 
 def _ppr_to_paulirot_resources(pauli_word, **_):
@@ -2258,7 +2255,91 @@ def _ppr_to_paulirot(angle_denominator, pauli_word, wires):
     qp.PauliRot(np.pi / angle_denominator * 2, pauli_word, wires=wires)
 
 
-add_decomps(PPR, _ppr_to_paulirot)
+def _ppr_z_gate(angle_denominator, wires):
+    """The single-qubit gate equal to ``PPR(angle_denominator, "Z")`` up to a global phase,
+    for ``abs(angle_denominator)`` in ``(4, 8)``."""
+    gate = S(wires) if abs(angle_denominator) == 4 else T(wires)
+    return gate if angle_denominator > 0 else qp.adjoint(gate)
+
+
+def _ppr_to_clifford_t_resources(angle_denominator, pauli_word, **_):
+    active_word = pauli_word.replace("I", "")
+    if not active_word:
+        return {qp.GlobalPhase: 1}
+
+    # PPR is a Pauli operator for angle_denominator=±2
+    if abs(angle_denominator) == 2:
+        paulis = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
+        return {qp.GlobalPhase: 1, **Counter(paulis[gate] for gate in active_word)}
+
+    # gates in the order they are applied in
+    compute, uncompute = [], []
+    for gate in active_word:
+        if gate == "X":
+            compute.append(Hadamard(Wire[1]))
+            uncompute.append(Hadamard(Wire[1]))
+        elif gate == "Y":
+            compute.extend([qp.adjoint(S(Wire[1])), Hadamard(Wire[1])])
+            uncompute.extend([Hadamard(Wire[1]), S(Wire[1])])
+    ladder = [qp.CNOT(Wire[2])] * (len(active_word) - 1)
+    compute, uncompute = compute + ladder, ladder + uncompute
+
+    z_gate = _ppr_z_gate(angle_denominator, Wire[1])
+    if not compute:
+        return {qp.GlobalPhase: 1, z_gate: 1}
+
+    compute = compute[0] if len(compute) == 1 else qp.prod(*reversed(compute))
+    uncompute = uncompute[0] if len(uncompute) == 1 else qp.prod(*reversed(uncompute))
+
+    return {qp.GlobalPhase: 1, _change_op_basis_abstract(compute, z_gate, uncompute): 1}
+
+
+@register_resources(_ppr_to_clifford_t_resources)
+@disable_autograph
+def _ppr_to_clifford_t(angle_denominator, pauli_word, wires):
+    active = [(wire, gate) for wire, gate in zip(wires, pauli_word, strict=True) if gate != "I"]
+    active_wires = [wire for wire, _ in active]
+
+    qp.GlobalPhase(np.pi / angle_denominator)
+    if not active:
+        return
+
+    if abs(angle_denominator) == 2:
+        # a π/2 PPR is a Pauli word up to a global phase
+        paulis = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
+        for wire, gate in active:
+            paulis[gate](wires=wire)
+        return
+
+    central_op = _ppr_z_gate(angle_denominator, active_wires[0])
+
+    if pauli_word.replace("I", "") == "Z":
+        return
+
+    def _compute():
+        for wire, gate in active:
+            if gate == "X":
+                Hadamard(wires=wire)
+            elif gate == "Y":
+                qp.adjoint(S(wires=wire))
+                Hadamard(wires=wire)
+        for i in range(len(active_wires) - 1, 0, -1):
+            qp.CNOT(wires=(active_wires[i], active_wires[i - 1]))
+
+    def _uncompute():
+        for i in range(1, len(active_wires)):
+            qp.CNOT(wires=(active_wires[i], active_wires[i - 1]))
+        for wire, gate in active:
+            if gate == "X":
+                Hadamard(wires=wire)
+            elif gate == "Y":
+                Hadamard(wires=wire)
+                S(wires=wire)
+
+    qp.change_op_basis(_compute, central_op, _uncompute)
+
+
+add_decomps(PPR, _ppr_to_paulirot, _ppr_to_clifford_t)
 
 
 def _adjoint_ppr_to_ppr_resources(base):
