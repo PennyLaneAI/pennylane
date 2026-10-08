@@ -222,6 +222,8 @@ _ABSTRACT_OR_META_TYPES = {
     qp.templates.core.CollectedSubroutine,
     # pylint: disable-next=protected-access
     qp.templates.subroutines.arithmetic.out_square._SquareArithmeticOp,
+    # pylint: disable-next=protected-access
+    qp.ops.qubit.non_parametric_ops._FixedAnglePPR,
     StatePrepBase,
     StatePrepBase2,
     PowOperation,
