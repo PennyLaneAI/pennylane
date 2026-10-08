@@ -330,6 +330,7 @@ from .utils import (
     create_lattice_gates,
     create_local_gates,
     create_random_gates,
+    create_random_qudit_gates,
     generate_pauli_observables,
 )
 
@@ -351,5 +352,6 @@ __all__ = [
     "create_lattice_gates",
     "create_local_gates",
     "create_random_gates",
+    "create_random_qudit_gates",
     "generate_pauli_observables",
 ]

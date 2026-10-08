@@ -17,6 +17,7 @@ These functions generate the ``gates`` and ``observables`` inputs expected by
 :class:`~pennylane.labs.tcdq.CircuitConfig`.
 """
 
+from collections.abc import Sequence
 from itertools import combinations
 
 import networkx as nx
@@ -200,3 +201,69 @@ def generate_pauli_observables(
                 observables.append(obs_row)
 
     return observables
+
+
+def create_random_qudit_gates(
+    n_gates: int,
+    dims: Sequence[int],
+    min_weight: int = 1,
+    max_weight: int = 2,
+    seed: int = None,
+) -> dict[int, list[dict[int, int]]]:
+    r"""Generate a sparse qudit gate dictionary with randomly chosen supports and powers.
+
+    This is the qudit analogue of :func:`~pennylane.labs.tcdq.create_random_gates`.
+    Each gate acts on a uniformly random subset of qudits whose size (the gate
+    *weight*) is drawn uniformly from ``[min_weight, max_weight]``. On every
+    active qudit :math:`j` the power of :math:`Z` is drawn uniformly from
+    :math:`\{1, \ldots, d_j - 1\}`, so each gate has exactly the drawn weight.
+
+    Args:
+        n_gates (int): Number of gates (and trainable parameters) to generate.
+        dims (Sequence[int]): Local dimension :math:`d_j \geq 2` of each qudit. The
+            number of qudits is ``len(dims)``.
+        min_weight (int): Minimum number of active qudits per gate. Defaults to ``1``.
+        max_weight (int): Maximum number of active qudits per gate. Defaults to ``2``.
+        seed (int): Random seed for reproducibility. Defaults to ``None``.
+
+    Returns:
+        dict[int, list[dict[int, int]]]: A gate dictionary suitable for
+        :class:`~pennylane.labs.tcdq.QuditCircuitConfig`. Parameter index ``i``
+        maps to a single sparse gate ``{qudit_index: z_power}`` with sorted keys.
+
+    Raises:
+        ValueError: If ``n_gates`` is negative, if any dimension is smaller than 2, or if
+            the weight bounds do not satisfy ``1 <= min_weight <= max_weight <= len(dims)``.
+
+    **Example**
+
+    >>> from pennylane.labs.tcdq import create_random_qudit_gates
+    >>> gates = create_random_qudit_gates(n_gates=4, dims=[3, 3, 4, 2], max_weight=3, seed=0)
+    >>> len(gates)
+    4
+    >>> all(1 <= len(gate) <= 3 for (gate,) in gates.values())
+    True
+    """
+    dims = [int(d) for d in dims]
+    n_qudits = len(dims)
+
+    if n_gates < 0:
+        raise ValueError(f"n_gates must be non-negative, got {n_gates}.")
+    if any(d < 2 for d in dims):
+        raise ValueError(f"All qudit dimensions must be at least 2, got dims={dims}.")
+    if not 1 <= min_weight <= max_weight <= n_qudits:
+        raise ValueError(
+            "Weights must satisfy 1 <= min_weight <= max_weight <= len(dims); "
+            f"got min_weight={min_weight}, max_weight={max_weight}, len(dims)={n_qudits}."
+        )
+
+    rng = np.random.default_rng(seed)
+    gates_dict = {}
+
+    from tqdm import tqdm
+    for i in tqdm(range(n_gates)):
+        weight = int(rng.integers(min_weight, max_weight + 1))
+        support = sorted(int(q) for q in rng.choice(n_qudits, size=weight, replace=False))
+        gates_dict[i] = [{q: int(rng.integers(1, dims[q])) for q in support}]
+
+    return gates_dict
