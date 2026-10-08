@@ -35,6 +35,10 @@ from jax.typing import ArrayLike
 
 from .qudit_expval_functions import _dims_to_numpy
 
+_REAL_DTYPE = jnp.float32
+_COMPLEX_DTYPE = jnp.complex64
+_INDEX_DTYPE = jnp.int32
+
 
 @dataclass(frozen=True)
 class QuditMMDConfig:
@@ -93,7 +97,7 @@ def _cycle_marginal_probs(d: int, t: float) -> jnp.ndarray:
     For the derivation, see
     `Section IV B of Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/abs/2607.06675>`_.
     """
-    k = jnp.arange(d)
+    k = jnp.arange(d, dtype=_REAL_DTYPE)
     log_p = -4.0 * t * jnp.sin(jnp.pi * k / d) ** 2
     p = jnp.exp(log_p)
     return p / jnp.sum(p)
@@ -109,7 +113,7 @@ def _complete_marginal_probs(d: int, t: float) -> jnp.ndarray:
     For the derivation, see
     `Section IV B of Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/abs/2607.06675>`_.
     """
-    log_unnorm = jnp.zeros(d).at[1:].set(-t * d)
+    log_unnorm = jnp.zeros(d, dtype=_REAL_DTYPE).at[1:].set(-t * d)
     p = jnp.exp(log_unnorm)
     return p / jnp.sum(p)
 
@@ -123,7 +127,7 @@ def _marginal_probs(d: int, bandwidth: float, graph_type: str) -> jnp.ndarray:
     raise ValueError(f"Unknown graph_type {graph_type!r}; use 'cycle' or 'complete'.")
 
 
-def _sample_fourier_indices(  # pylint: disable=too-many-arguments
+def _sample_fourier_indices(  # pylint: disable=too-many-arguments,too-many-locals
     key: ArrayLike,
     n_ops: int,
     n_qudits: int,
@@ -146,13 +150,22 @@ def _sample_fourier_indices(  # pylint: disable=too-many-arguments
         Integer array of shape ``(n_ops, n_qudits)``; column ``i`` has entries
         in :math:`\\{0, \\ldots, d_i-1\\}`.
     """
-    all_obs = jnp.zeros((n_ops, n_qudits), dtype=jnp.int32)
-    keys = jax.random.split(key, len(wire_tuple)) if wire_tuple else []
-    for col_key, wire in zip(keys, wire_tuple):
-        d_i = int(dims[wire])
+    # Group the visible wires by local dimension so that every group is sampled with a
+    # single ``jax.random.choice`` and written with a single scatter. Looping over wires
+    # instead would trace one choice and one full-width scatter per qudit, making the
+    # jitted graph (and its compile time and memory) grow with ``n_qudits``.
+    wires_by_dim: dict[int, list[int]] = {}
+    for wire in wire_tuple:
+        wires_by_dim.setdefault(int(dims[wire]), []).append(int(wire))
+
+    all_obs = jnp.zeros((n_ops, n_qudits), dtype=_INDEX_DTYPE)
+    keys = jax.random.split(key, len(wires_by_dim)) if wires_by_dim else []
+    for group_key, (d_i, wires) in zip(keys, sorted(wires_by_dim.items())):
         marginal = _marginal_probs(d_i, bandwidth, graph_type)
-        col = jax.random.choice(col_key, d_i, shape=(n_ops,), p=marginal)
-        all_obs = all_obs.at[:, wire].set(col.astype(jnp.int32))
+        cols = jax.random.choice(group_key, d_i, shape=(n_ops, len(wires)), p=marginal)
+        all_obs = all_obs.at[:, jnp.asarray(wires, dtype=_INDEX_DTYPE)].set(
+            cols.astype(_INDEX_DTYPE)
+        )
     return all_obs
 
 
@@ -180,10 +193,10 @@ def _empirical_fourier_moments(
     Returns:
         Complex array of shape ``(n_obs,)``.
     """
-    inv_d = 1.0 / jnp.asarray(dims_visible, dtype=float)
-    l_scaled = l_visible.astype(float) * inv_d[jnp.newaxis, :]
-    inner = l_scaled @ X_data.astype(float).T
-    return jnp.mean(jnp.exp(2j * jnp.pi * inner), axis=1)
+    inv_d = 1.0 / jnp.asarray(dims_visible, dtype=_REAL_DTYPE)
+    l_scaled = l_visible.astype(_REAL_DTYPE) * inv_d[jnp.newaxis, :]
+    inner = l_scaled @ X_data.astype(_REAL_DTYPE).T
+    return jnp.mean(jnp.exp(2j * jnp.pi * inner).astype(_COMPLEX_DTYPE), axis=1)
 
 
 def _pp_term(mu_p_hat: jnp.ndarray, m: int) -> jnp.ndarray:
@@ -316,9 +329,9 @@ def _compute_qudit_loss_for_bandwidth(
 
     mu_q_hat, cov = model_output if isinstance(model_output, tuple) else (model_output, None)
 
-    mu_q_hat = jnp.asarray(mu_q_hat)
+    mu_q_hat = jnp.asarray(mu_q_hat).astype(_COMPLEX_DTYPE)
     if cov is not None:
-        cov = jnp.asarray(cov)
+        cov = jnp.asarray(cov).astype(_REAL_DTYPE)
 
     if mu_q_hat.shape != (n_ops,):
         raise ValueError(
@@ -393,7 +406,7 @@ def build_mmd_loss_hw(
     >>> circuit_config = QuditCircuitConfig(
     ...     dims=3,
     ...     n_qudits=2,
-    ...     gates={0: [[1, 0]], 1: [[0, 1]]},
+    ...     gates={0: [{0: 1}], 1: [{1: 1}]},
     ...     n_samples=512,
     ...     key=jax.random.PRNGKey(0),
     ... )
@@ -484,7 +497,7 @@ def build_mmd_loss_hw(
             )
 
         active_key = jax.random.PRNGKey(0) if key is None else key
-        X_data = jnp.asarray(target_data)
+        X_data = jnp.asarray(target_data).astype(_INDEX_DTYPE)
 
         if X_data.ndim != 2:
             raise ValueError(f"target_data must be 2-D, got shape {X_data.shape}")

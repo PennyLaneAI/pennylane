@@ -23,9 +23,13 @@ from scipy.linalg import expm
 
 import pennylane as qp
 from pennylane.labs.tcdq.qudit_expval_functions import (
+    _BYTES_PER_GB,
     QuditCircuitConfig,
     _dims_to_numpy,
-    _parse_qudit_generator_dict,
+    _gates_to_dense_generators,
+    _parse_qudit_gate_dict,
+    _qudit_phase_block_size,
+    _qudit_phase_bytes_per_gate,
     build_qudit_expval_func,
 )
 
@@ -37,10 +41,10 @@ NUM_SAMPLES = 10000
 
 def _build_qudit_expval_func_exact(config):
     """Build a brute-force reference evaluator by summing over all basis states."""
-    generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
-
     dims = _dims_to_numpy(config.dims, config.n_qudits)  # (n_qudits,)
     dims_f = jnp.asarray(dims, dtype=jnp.float32)  # (n_qudits,)
+    generators, param_map = _gates_to_dense_generators(config.gates, config.n_qudits, dims)
+    generators, param_map = jnp.array(generators), jnp.array(param_map)
 
     all_states = jnp.array(
         list(itertools.product(*(range(int(d_j)) for d_j in dims))),
@@ -232,13 +236,30 @@ def _pennylane_qubit_expval(generators_list, thetas_list, l_vec, m_vec):
     return float(circuit())
 
 
+def _dense_rows_to_sparse(generators_array):
+    """Convert dense generator rows into the sparse ``{qudit: power}`` gate format."""
+    return {
+        i: [{j: int(p) for j, p in enumerate(gen) if int(p) != 0}]
+        for i, gen in enumerate(generators_array)
+    }
+
+
+def _sparse_gates_to_rows(gates, n_qudits):
+    """Expand a list of sparse ``{qudit: power}`` gates into dense generator rows."""
+    rows = np.zeros((len(gates), n_qudits), dtype=int)
+    for i, gate in enumerate(gates):
+        for qudit, power in gate.items():
+            rows[i, qudit] = power
+    return rows
+
+
 def _make_config_one_param_per_gate(
     d, n, generators_array, thetas, l_vecs, m_vecs, n_samples=NUM_SAMPLES, key=None
 ):
     """Build a QuditCircuitConfig with one unique parameter per gate."""
     if key is None:
         key = jax.random.PRNGKey(0)
-    gates = {i: [list(gen)] for i, gen in enumerate(generators_array)}
+    gates = _dense_rows_to_sparse(generators_array)
     return QuditCircuitConfig(
         dims=d,
         n_qudits=n,
@@ -256,25 +277,25 @@ class TestQuditExpvalVsPennyLane:
         "n, generators, thetas, l_vecs, m_vecs",
         [
             # Single qubit, X observable
-            (1, [[1]], [0.37], [[1]], [[0]]),
+            (1, [{0: 1}], [0.37], [[1]], [[0]]),
             # Single qubit, Z observable
-            (1, [[1]], [0.7], [[0]], [[1]]),
+            (1, [{0: 1}], [0.7], [[0]], [[1]]),
             # Single qubit, Y observable (D(1,1) = Y)
-            (1, [[1]], [0.5], [[1]], [[1]]),
+            (1, [{0: 1}], [0.5], [[1]], [[1]]),
             # Single qubit, identity observable
-            (1, [[1]], [0.9], [[0]], [[0]]),
+            (1, [{0: 1}], [0.9], [[0]], [[0]]),
             # Two qubits, X0 X1
-            (2, [[1, 0], [1, 1]], [0.5, 0.2], [[1, 1]], [[0, 0]]),
+            (2, [{0: 1}, {0: 1, 1: 1}], [0.5, 0.2], [[1, 1]], [[0, 0]]),
             # Two qubits, X0 Z1
-            (2, [[1, 0], [0, 1]], [0.3, 0.6], [[1, 0]], [[0, 1]]),
+            (2, [{0: 1}, {1: 1}], [0.3, 0.6], [[1, 0]], [[0, 1]]),
             # Two qubits, Y0 Y1 (sign = +1 since (-1)^2 = +1)
-            (2, [[1, 1]], [0.4], [[1, 1]], [[1, 1]]),
+            (2, [{0: 1, 1: 1}], [0.4], [[1, 1]], [[1, 1]]),
             # Two qubits, Z0 Z1; two-body gate
-            (2, [[1, 1]], [0.2], [[0, 0]], [[1, 1]]),
+            (2, [{0: 1, 1: 1}], [0.2], [[0, 0]], [[1, 1]]),
             # Three qubits, batch of observables
             (
                 3,
-                [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                [{0: 1}, {1: 1}, {2: 1}],
                 [0.1, 0.2, 0.3],
                 [[1, 0, 0], [0, 1, 0], [1, 1, 0]],
                 [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
@@ -283,7 +304,7 @@ class TestQuditExpvalVsPennyLane:
     )
     def test_matches_pennylane(self, n, generators, thetas, l_vecs, m_vecs):
         """Qudit expectation values must match exact PennyLane simulation for d=2."""
-        generators_arr = np.array(generators)
+        generators_arr = _sparse_gates_to_rows(generators, n)
         thetas_arr = np.array(thetas)
         l_arr = np.array(l_vecs)
         m_arr = np.array(m_vecs)
@@ -303,54 +324,117 @@ class TestQuditExpvalVsPennyLane:
 
 
 @pytest.mark.parametrize(
-    "circuit_def, n_qudits, expected_generators, expected_param_map",
+    "circuit_def, n_qudits, dims, expected_groups",
     [
-        ({0: [[1, 0, 2]]}, 3, [[1, 0, 2]], [0]),
-        ({0: [[1, 0]], 1: [[0, 2], [1, 1]]}, 2, [[1, 0], [0, 2], [1, 1]], [0, 1, 1]),
-        ({}, 2, np.zeros((0, 2), dtype=int), []),
-        ({3: [[0, 1]], 0: [[2, 0]]}, 2, [[2, 0], [0, 1]], [0, 3]),
+        # one weight-2 gate
+        ({0: [{0: 1, 2: 2}]}, 3, 3, {2: ([[0, 2]], [[1, 2]], [0])}),
+        # mixed weights, shared parameter, dict keys given out of order
+        (
+            {0: [{0: 1}], 1: [{1: 2}, {1: 1, 0: 1}]},
+            2,
+            3,
+            {1: ([[0], [1]], [[1], [2]], [0, 1]), 2: ([[0, 1]], [[1, 1]], [1])},
+        ),
+        # empty circuit
+        ({}, 2, 3, {}),
+        # parameter keys sorted, not insertion order
+        ({3: [{1: 1}], 0: [{0: 2}]}, 2, 3, {1: ([[0], [1]], [[2], [1]], [0, 3])}),
+        # powers reduced modulo the local dimension; zero-power entries dropped
+        ({0: [{0: 4, 1: 3}]}, 2, 3, {1: ([[0]], [[1]], [0])}),
+        # identity gate (all powers vanish mod d) is dropped entirely
+        ({0: [{0: 3}], 1: [{1: 1}]}, 2, 3, {1: ([[1]], [[1]], [1])}),
+        # negative qudit indices count from the end
+        ({0: [{-1: 1, 0: 1}]}, 3, 2, {2: ([[0, 2]], [[1, 1]], [0])}),
+        # per-qudit dimensions
+        ({0: [{0: 1, 1: 5}]}, 2, [2, 5], {1: ([[0]], [[1]], [0])}),
     ],
 )
-def test_parse_qudit_generator_dict(circuit_def, n_qudits, expected_generators, expected_param_map):
-    """_parse_qudit_generator_dict should produce the correct generator matrix and param map."""
-    generators, param_map = _parse_qudit_generator_dict(circuit_def, n_qudits)
+def test_parse_qudit_gate_dict(circuit_def, n_qudits, dims, expected_groups):
+    """_parse_qudit_gate_dict should bucket gates by weight with sorted sparse supports."""
+    groups = _parse_qudit_gate_dict(circuit_def, n_qudits, _dims_to_numpy(dims, n_qudits))
 
-    assert isinstance(generators, jnp.ndarray)
-    assert isinstance(param_map, jnp.ndarray)
+    assert [g.omega for g in groups] == sorted(expected_groups)
+    for group in groups:
+        exp_supports, exp_powers, exp_pidx = expected_groups[group.omega]
+        assert isinstance(group.supports, np.ndarray)
+        assert isinstance(group.powers, np.ndarray)
+        assert isinstance(group.param_indices, jnp.ndarray)
+        assert group.supports.shape == (len(exp_pidx), group.omega)
+        assert group.powers.shape == (len(exp_pidx), group.omega)
+        np.testing.assert_array_equal(group.supports, np.array(exp_supports))
+        np.testing.assert_array_equal(group.powers, np.array(exp_powers))
+        np.testing.assert_array_equal(group.param_indices, np.array(exp_pidx))
 
+
+@pytest.mark.parametrize(
+    "circuit_def, n_qudits, dims, expected_generators, expected_param_map",
+    [
+        ({0: [{0: 1, 2: 2}]}, 3, 3, [[1, 0, 2]], [0]),
+        ({0: [{0: 1}], 1: [{1: 2}, {0: 1, 1: 1}]}, 2, 3, [[1, 0], [0, 2], [1, 1]], [0, 1, 1]),
+        ({}, 2, 3, np.zeros((0, 2), dtype=int), []),
+        ({3: [{1: 1}], 0: [{0: 2}]}, 2, 3, [[2, 0], [0, 1]], [0, 3]),
+        # identity gates are kept so param_map stays aligned with the input
+        ({0: [{0: 3}], 1: [{1: 1}]}, 2, 3, [[0, 0], [0, 1]], [0, 1]),
+    ],
+)
+def test_gates_to_dense_generators(
+    circuit_def, n_qudits, dims, expected_generators, expected_param_map
+):
+    """The dense expansion used by brute-force references must match the sparse input."""
+    generators, param_map = _gates_to_dense_generators(
+        circuit_def, n_qudits, _dims_to_numpy(dims, n_qudits)
+    )
     expected_generators = np.array(expected_generators)
-    expected_param_map = np.array(expected_param_map)
-
     assert generators.shape == expected_generators.shape
-    assert param_map.shape == expected_param_map.shape
-    assert np.allclose(generators, expected_generators)
-    assert np.allclose(param_map, expected_param_map)
+    np.testing.assert_array_equal(generators, expected_generators)
+    np.testing.assert_array_equal(param_map, np.array(expected_param_map))
 
 
-def test_parse_qudit_generator_dict_wrong_length():
-    """Generator with wrong length should raise ValueError."""
-    with pytest.raises(ValueError, match="length"):
-        _parse_qudit_generator_dict({0: [[1, 2]]}, n_qudits=3)
+def test_parse_qudit_gate_dict_rejects_dense_vectors():
+    """A dense length-n_qudits list is no longer a valid gate."""
+    with pytest.raises(TypeError, match="dict mapping qudit index"):
+        _parse_qudit_gate_dict({0: [[1, 0, 2]]}, 3, _dims_to_numpy(3, 3))
+
+
+@pytest.mark.parametrize("bad_index", [3, 7, -4])
+def test_parse_qudit_gate_dict_index_out_of_range(bad_index):
+    """Qudit indices outside [-n_qudits, n_qudits) raise IndexError."""
+    with pytest.raises(IndexError, match="out of range"):
+        _parse_qudit_gate_dict({0: [{bad_index: 1}]}, 3, _dims_to_numpy(3, 3))
+
+
+def test_build_qudit_expval_func_rejects_dense_gates():
+    """The public entry point surfaces the TypeError for dense gates."""
+    config = QuditCircuitConfig(
+        dims=3,
+        n_qudits=2,
+        gates={0: [[1, 0]]},
+        observables=(np.array([[1, 0]]), np.array([[0, 0]])),
+        n_samples=16,
+        key=jax.random.PRNGKey(0),
+    )
+    with pytest.raises(TypeError, match="dict mapping qudit index"):
+        build_qudit_expval_func(config)
 
 
 @pytest.mark.parametrize(
     "n, thetas, generators, l, m",
     [
         # Single qubit, Z observable
-        (1, [0.7], [[1]], [0], [1]),
+        (1, [0.7], [{0: 1}], [0], [1]),
         # Single qubit, X observable
-        (1, [0.37], [[1]], [1], [0]),
+        (1, [0.37], [{0: 1}], [1], [0]),
         # Two qubits, two gates, X0 Z1
-        (2, [0.3, 0.6], [[1, 0], [0, 1]], [1, 0], [0, 1]),
+        (2, [0.3, 0.6], [{0: 1}, {1: 1}], [1, 0], [0, 1]),
         # Two qubits, entangling gate, Y0 Y1
-        (2, [0.4], [[1, 1]], [1, 1], [1, 1]),
+        (2, [0.4], [{0: 1, 1: 1}], [1, 1], [1, 1]),
         # Three qubits, three gates, Z0 I1 X2
-        (3, [0.1, 0.2, 0.3], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [0, 0, 1], [1, 0, 0]),
+        (3, [0.1, 0.2, 0.3], [{0: 1}, {1: 1}, {2: 1}], [0, 0, 1], [1, 0, 0]),
     ],
 )
 def test_qudit_expval_exact_matches_pennylane(n, thetas, generators, l, m):
     """Test _build_qudit_expval_func_exact against PennyLane for d=2."""
-    generators = np.array(generators)
+    generators = _sparse_gates_to_rows(generators, n)
     thetas = np.array(thetas)
     l_vecs = np.array([l])
     m_vecs = np.array([m])
@@ -372,26 +456,26 @@ class TestQuditExpvalBatchedVsExact:
     @pytest.mark.parametrize(
         "d, n, generators, thetas, l_vecs, m_vecs",
         [
-            (2, 1, [[1]], [0.5], [[1]], [[0]]),
-            (2, 1, [[1]], [0.3], [[0]], [[1]]),
-            (2, 2, [[1, 0], [1, 1]], [0.5, 0.2], [[1, 1]], [[0, 0]]),
+            (2, 1, [{0: 1}], [0.5], [[1]], [[0]]),
+            (2, 1, [{0: 1}], [0.3], [[0]], [[1]]),
+            (2, 2, [{0: 1}, {0: 1, 1: 1}], [0.5, 0.2], [[1, 1]], [[0, 0]]),
             (
                 2,
                 2,
-                [[1, 0], [0, 1]],
+                [{0: 1}, {1: 1}],
                 [0.4, 0.6],
                 [[1, 0], [0, 1], [1, 1]],
                 [[0, 0], [0, 0], [0, 0]],
             ),
-            (3, 1, [[1]], [0.42], [[1]], [[0]]),
-            (3, 1, [[2]], [0.3], [[1]], [[1]]),
-            (3, 2, [[1, 0], [0, 2]], [0.5, 0.2], [[1, 1]], [[0, 1]]),
-            (4, 2, [[1, 2], [3, 1]], [0.3, 0.7], [[0, 0]], [[0, 0]]),
+            (3, 1, [{0: 1}], [0.42], [[1]], [[0]]),
+            (3, 1, [{0: 2}], [0.3], [[1]], [[1]]),
+            (3, 2, [{0: 1}, {1: 2}], [0.5, 0.2], [[1, 1]], [[0, 1]]),
+            (4, 2, [{0: 1, 1: 2}, {0: 3, 1: 1}], [0.3, 0.7], [[0, 0]], [[0, 0]]),
         ],
     )
     def test_matches_exact(self, d, n, generators, thetas, l_vecs, m_vecs):
         """Batched Monte Carlo must agree with the exact qudit expval within sampling noise."""
-        generators_arr = np.array(generators)
+        generators_arr = _sparse_gates_to_rows(generators, n)
         thetas_arr = np.array(thetas)
         l_arr = np.array(l_vecs)
         m_arr = np.array(m_vecs)
@@ -424,15 +508,15 @@ class TestQuditExpvalBatchedVsMatrix:
     @pytest.mark.parametrize(
         "d, n, generators, thetas, l_vecs, m_vecs",
         [
-            (2, 2, [[1, 0], [0, 1]], [0.3, 0.6], [[1, 0]], [[0, 1]]),
-            (3, 2, [[1, 0], [0, 2]], [0.5, 0.2], [[1, 1]], [[2, 1]]),
-            (3, 2, [[1, 2], [0, 2]], [0.1, 0.8], [[1, 1]], [[1, 2]]),
-            (3, 1, [[2]], [0.3], [[1]], [[1]]),
+            (2, 2, [{0: 1}, {1: 1}], [0.3, 0.6], [[1, 0]], [[0, 1]]),
+            (3, 2, [{0: 1}, {1: 2}], [0.5, 0.2], [[1, 1]], [[2, 1]]),
+            (3, 2, [{0: 1, 1: 2}, {1: 2}], [0.1, 0.8], [[1, 1]], [[1, 2]]),
+            (3, 1, [{0: 2}], [0.3], [[1]], [[1]]),
         ],
     )
     def test_matches_matrix_reference(self, d, n, generators, thetas, l_vecs, m_vecs):
         """Batched Monte Carlo must agree with the dense matrix reference."""
-        generators_arr = np.array(generators)
+        generators_arr = _sparse_gates_to_rows(generators, n)
         thetas_arr = np.array(thetas)
         l_arr = np.array(l_vecs)
         m_arr = np.array(m_vecs)
@@ -471,7 +555,7 @@ class TestQuditExpvalNonUniformDims:
             (
                 [2, 3],
                 2,
-                [[1, 0], [0, 2], [1, 1]],
+                [{0: 1}, {1: 2}, {0: 1, 1: 1}],
                 [0.5, 0.2, 0.3],
                 [[1, 1], [0, 2]],
                 [[0, 1], [1, 0]],
@@ -480,7 +564,7 @@ class TestQuditExpvalNonUniformDims:
             (
                 [3, 4],
                 2,
-                [[1, 0], [0, 3], [2, 1]],
+                [{0: 1}, {1: 3}, {0: 2, 1: 1}],
                 [0.4, 0.7, 0.1],
                 [[2, 3], [1, 0]],
                 [[1, 2], [0, 1]],
@@ -489,7 +573,7 @@ class TestQuditExpvalNonUniformDims:
             (
                 [2, 3, 4],
                 3,
-                [[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 2, 3]],
+                [{0: 1}, {1: 1}, {2: 1}, {0: 1, 1: 2, 2: 3}],
                 [0.2, 0.5, 0.3, 0.15],
                 [[1, 0, 0], [0, 2, 3], [1, 1, 1]],
                 [[0, 0, 0], [1, 1, 2], [0, 2, 1]],
@@ -498,7 +582,7 @@ class TestQuditExpvalNonUniformDims:
     )
     def test_matches_exact_and_matrix(self, dims, n, generators, thetas, l_vecs, m_vecs):
         """Batched MC must agree with both the exact and dense-matrix references."""
-        generators_arr = np.array(generators)
+        generators_arr = _sparse_gates_to_rows(generators, n)
         thetas_arr = np.array(thetas)
         l_arr = np.array(l_vecs)
         m_arr = np.array(m_vecs)
@@ -667,7 +751,7 @@ class TestQuditExpvalBatchedEdgeCases:
     def test_parameter_broadcasting(self):
         """Multiple gates sharing a parameter index should all use the same theta."""
         d, n = 2, 3
-        gates = {0: [[1, 0, 0], [0, 1, 0]], 1: [[0, 0, 1]]}
+        gates = {0: [{0: 1}, {1: 1}], 1: [{2: 1}]}
         thetas_unique = np.array([0.5, 0.3])
         l_vecs = np.array([[1, 0, 0]])
         m_vecs = np.array([[0, 0, 0]])
@@ -839,20 +923,20 @@ class TestQuditExpvalBatchedEdgeCases:
     "d, n, thetas, generators, l, m",
     [
         # d=2, single qubit, single gate
-        (2, 1, [0.5], [[1]], [1], [0]),
+        (2, 1, [0.5], [{0: 1}], [1], [0]),
         # d=2, two qubits, two-body gate
-        (2, 2, [0.4], [[1, 1]], [1, 1], [0, 0]),
+        (2, 2, [0.4], [{0: 1, 1: 1}], [1, 1], [0, 0]),
         # d=3, single qutrit, single gate
-        (3, 1, [0.7], [[2]], [1], [2]),
+        (3, 1, [0.7], [{0: 2}], [1], [2]),
         # d=3, two qutrits, two gates
-        (3, 2, [0.3, 0.6], [[1, 0], [0, 2]], [2, 1], [1, 0]),
+        (3, 2, [0.3, 0.6], [{0: 1}, {1: 2}], [2, 1], [1, 0]),
         # d=4, single ququart
-        (4, 1, [1.1], [[3]], [2], [1]),
+        (4, 1, [1.1], [{0: 3}], [2], [1]),
     ],
 )
 def test_qudit_expval_batched_matches_exact(d, n, thetas, generators, l, m):
     """Test build_qudit_expval_func against the exact version for various dimensions."""
-    generators = np.array(generators)
+    generators = _sparse_gates_to_rows(generators, n)
     thetas = np.array(thetas)
     l_vecs = np.array([l])
     m_vecs = np.array([m])
@@ -890,14 +974,14 @@ class TestQuditExpvalBatchedWithInitState:
         "d, n, generators, thetas, l_vecs, m_vecs, state_elems, state_amps",
         [
             # d=2, single computational basis state |1>
-            (2, 1, [[1]], [0.5], [[1]], [[0]], [[1]], [1.0]),
+            (2, 1, [{0: 1}], [0.5], [[1]], [[0]], [[1]], [1.0]),
             # d=2, n=2, computational basis state |10>
-            (2, 2, [[1, 0], [0, 1]], [0.4, 0.6], [[1, 0]], [[0, 0]], [[1, 0]], [1.0]),
+            (2, 2, [{0: 1}, {1: 1}], [0.4, 0.6], [[1, 0]], [[0, 0]], [[1, 0]], [1.0]),
             # d=2, n=2, equal superposition (|00> + |11>)/sqrt(2), multiple observables
             (
                 2,
                 2,
-                [[1, 0], [0, 1]],
+                [{0: 1}, {1: 1}],
                 [0.3, 0.5],
                 [[1, 0], [0, 1], [1, 1]],
                 [[0, 0], [0, 0], [0, 0]],
@@ -908,7 +992,7 @@ class TestQuditExpvalBatchedWithInitState:
             (
                 2,
                 2,
-                [[1, 0], [1, 1]],
+                [{0: 1}, {0: 1, 1: 1}],
                 [0.4, 0.2],
                 [[1, 1]],
                 [[1, 0]],
@@ -916,14 +1000,14 @@ class TestQuditExpvalBatchedWithInitState:
                 [1 / np.sqrt(2), 1 / np.sqrt(2)],
             ),
             # d=3, single qutrit, basis state |2>
-            (3, 1, [[1]], [0.42], [[1]], [[0]], [[2]], [1.0]),
+            (3, 1, [{0: 1}], [0.42], [[1]], [[0]], [[2]], [1.0]),
             # d=3, n=2, basis state |1, 2>
-            (3, 2, [[1, 0], [0, 2]], [0.5, 0.2], [[1, 1]], [[0, 1]], [[1, 2]], [1.0]),
+            (3, 2, [{0: 1}, {1: 2}], [0.5, 0.2], [[1, 1]], [[0, 1]], [[1, 2]], [1.0]),
             # d=3, n=2, equal superposition (|00> + |12> + |21>)/sqrt(3)
             (
                 3,
                 2,
-                [[1, 0], [0, 1]],
+                [{0: 1}, {1: 1}],
                 [0.3, 0.4],
                 [[1, 0], [0, 1]],
                 [[0, 0], [0, 0]],
@@ -934,7 +1018,7 @@ class TestQuditExpvalBatchedWithInitState:
             (
                 3,
                 2,
-                [[1, 0]],
+                [{0: 1}],
                 [0.5],
                 [[1, 0]],
                 [[0, 0]],
@@ -945,7 +1029,7 @@ class TestQuditExpvalBatchedWithInitState:
             (
                 2,
                 2,
-                [[1, 0], [0, 1]],
+                [{0: 1}, {1: 1}],
                 [0.3, 0.5],
                 [[1, 1]],
                 [[1, 1]],
@@ -956,7 +1040,7 @@ class TestQuditExpvalBatchedWithInitState:
             (
                 3,
                 2,
-                [[1, 0], [0, 1]],
+                [{0: 1}, {1: 1}],
                 [0.3, 0.4],
                 [[1, 2], [0, 1]],
                 [[2, 1], [0, 0]],
@@ -964,16 +1048,16 @@ class TestQuditExpvalBatchedWithInitState:
                 [1 / np.sqrt(2), 1 / np.sqrt(2)],
             ),
             # d=4, n=2, basis state
-            (4, 2, [[1, 2], [3, 1]], [0.3, 0.7], [[1, 0]], [[0, 0]], [[0, 1]], [1.0]),
+            (4, 2, [{0: 1, 1: 2}, {0: 3, 1: 1}], [0.3, 0.7], [[1, 0]], [[0, 0]], [[0, 1]], [1.0]),
             # d=4, n=1, complex amplitudes with m != 0
-            (4, 1, [[2]], [0.5], [[1]], [[2]], [[0], [3]], [1 / np.sqrt(2), 1j / np.sqrt(2)]),
+            (4, 1, [{0: 2}], [0.5], [[1]], [[2]], [[0], [3]], [1 / np.sqrt(2), 1j / np.sqrt(2)]),
         ],
     )
     def test_matches_matrix_reference(
         self, d, n, generators, thetas, l_vecs, m_vecs, state_elems, state_amps
     ):
         """Batched Monte Carlo with init state must agree with dense matrix reference."""
-        generators_arr = np.array(generators)
+        generators_arr = _sparse_gates_to_rows(generators, n)
         thetas_arr = np.array(thetas)
         l_arr = np.array(l_vecs)
         m_arr = np.array(m_vecs)
@@ -1059,7 +1143,7 @@ class TestQuditExpvalBatchedWithInitState:
         elems = np.array([[0, 0], [1, 1]])
         amps = np.array([1 / np.sqrt(2), 1 / np.sqrt(2)], dtype=complex)
 
-        gates = {i: [list(gen)] for i, gen in enumerate(generators)}
+        gates = _dense_rows_to_sparse(generators)
         config = QuditCircuitConfig(
             dims=d,
             n_qudits=n,
@@ -1102,7 +1186,7 @@ class TestQuditExpvalBatchedWithInitState:
         runtime_elems = np.array([[1, 1]])
         runtime_amps = np.array([1.0 + 0j])
 
-        gates = {i: [list(gen)] for i, gen in enumerate(generators)}
+        gates = _dense_rows_to_sparse(generators)
         config = QuditCircuitConfig(
             dims=d,
             n_qudits=n,
@@ -1324,28 +1408,28 @@ class TestQuditExpvalBatchedWithInitState:
     "d, n, thetas, generators, l, m, state_elems, state_amps",
     [
         # d=2, single qubit, computational basis |1>
-        (2, 1, [0.5], [[1]], [1], [0], [[1]], [1.0]),
+        (2, 1, [0.5], [{0: 1}], [1], [0], [[1]], [1.0]),
         # d=2, two qubits, |10>
-        (2, 2, [0.4, 0.6], [[1, 0], [0, 1]], [1, 0], [0, 0], [[1, 0]], [1.0]),
+        (2, 2, [0.4, 0.6], [{0: 1}, {1: 1}], [1, 0], [0, 0], [[1, 0]], [1.0]),
         # d=2, two qubits, superposition (|00> + |11>)/sqrt(2)
         (
             2,
             2,
             [0.3, 0.5],
-            [[1, 0], [0, 1]],
+            [{0: 1}, {1: 1}],
             [1, 0],
             [0, 0],
             [[0, 0], [1, 1]],
             [1 / np.sqrt(2), 1 / np.sqrt(2)],
         ),
         # d=3, single qutrit, |2> with complex amplitude
-        (3, 1, [0.7], [[2]], [1], [2], [[2]], [1.0 + 0j]),
+        (3, 1, [0.7], [{0: 2}], [1], [2], [[2]], [1.0 + 0j]),
         # d=3, two qutrits, superposition (|01> + i|20>)/sqrt(2)
         (
             3,
             2,
             [0.3],
-            [[1, 2]],
+            [{0: 1, 1: 2}],
             [2, 1],
             [1, 0],
             [[0, 1], [2, 0]],
@@ -1357,7 +1441,7 @@ def test_qudit_expval_batched_init_state_matches_brute_force(
     d, n, thetas, generators, l, m, state_elems, state_amps
 ):
     """Test build_qudit_expval_func with init_state against the dense matrix reference."""
-    generators = np.array(generators)
+    generators = _sparse_gates_to_rows(generators, n)
     thetas = np.array(thetas)
     state_elems = np.array(state_elems)
     state_amps = np.array(state_amps, dtype=complex)
@@ -1419,7 +1503,7 @@ class TestQuditExpvalWithPhaseLayer:
         phase_params = jnp.array([0.1, 0.5, 2.0, 1.0])
         n_samples = 80000
 
-        gates = {i: [list(gen)] for i, gen in enumerate(generators)}
+        gates = _dense_rows_to_sparse(generators)
         config = QuditCircuitConfig(
             dims=d,
             n_qudits=n,
@@ -1465,7 +1549,7 @@ class TestQuditExpvalWithPhaseLayer:
         state_amps = np.array([1 / np.sqrt(3), 1 / np.sqrt(3), 1 / np.sqrt(3)], dtype=complex)
         n_samples = 80000
 
-        gates = {i: [list(gen)] for i, gen in enumerate(generators)}
+        gates = _dense_rows_to_sparse(generators)
         config = QuditCircuitConfig(
             dims=d,
             n_qudits=n,
@@ -1515,7 +1599,7 @@ class TestQuditExpvalWithPhaseLayer:
         m_vecs = np.array([[0, 0]])
         phase_params = jnp.array([0.1, 0.5, 2.0])
 
-        gates = {i: [list(gen)] for i, gen in enumerate(generators)}
+        gates = _dense_rows_to_sparse(generators)
         config = QuditCircuitConfig(
             dims=d,
             n_qudits=n,
@@ -1535,3 +1619,106 @@ class TestQuditExpvalWithPhaseLayer:
         grad_val = jax.grad(loss)(phase_params)
         assert grad_val.shape == phase_params.shape
         assert not jnp.allclose(grad_val, 0.0)
+
+
+class TestQuditPhaseBlocking:
+    """The memory-bounded blocked phase computation must match the single-block result."""
+
+    @staticmethod
+    def _random_gates(n_qudits, n_gates, dims, seed):
+        rng = np.random.default_rng(seed)
+        gates = {}
+        for i in range(n_gates):
+            weight = int(rng.integers(1, 4))
+            support = sorted(int(q) for q in rng.choice(n_qudits, size=weight, replace=False))
+            gates[i] = [{q: int(rng.integers(1, dims[q])) for q in support}]
+        gates[0].append({0: 1, 1: 1})  # two gates sharing one parameter
+        return gates
+
+    def test_block_size_helper(self):
+        """Block size is at least one and shrinks with weight, samples and observables."""
+        budget = 10 * _qudit_phase_bytes_per_gate(2, 100, 50)
+        assert _qudit_phase_block_size(budget, 2, 100, 50) == 10
+        assert _qudit_phase_block_size(budget, 1, 100, 50) > 10
+        assert _qudit_phase_block_size(budget, 3, 100, 50) < 10
+        assert _qudit_phase_block_size(budget, 2, 1000, 50) < 10
+        assert _qudit_phase_block_size(1, 4, 10_000, 10_000) == 1
+
+    @pytest.mark.parametrize("dims", [[3] * 6, [2, 3, 4, 5, 3, 2]])
+    def test_blocked_matches_single_block(self, dims):
+        """Forcing many small blocks (with padding) reproduces the single-block values and gradients."""
+        n_qudits, n_gates, n_samples, n_obs = len(dims), 23, 256, 7
+        gates = self._random_gates(n_qudits, n_gates, dims, seed=0)
+        rng = np.random.default_rng(1)
+        dims_np = _dims_to_numpy(dims, n_qudits)
+        l_vecs = np.stack([rng.integers(0, dims_np) for _ in range(n_obs)])
+        m_vecs = np.stack([rng.integers(0, dims_np) for _ in range(n_obs)])
+        elems = np.stack([rng.integers(0, dims_np) for _ in range(3)])
+        amps = rng.normal(size=3) + 1j * rng.normal(size=3)
+        amps = amps / np.linalg.norm(amps)
+
+        def phase_fn(p, z):
+            return jnp.sum(p[:n_qudits] * z.astype(jnp.float32)) + p[-1]
+
+        common = {
+            "dims": dims,
+            "n_qudits": n_qudits,
+            "gates": gates,
+            "observables": (l_vecs, m_vecs),
+            "n_samples": n_samples,
+            "key": jax.random.PRNGKey(7),
+            "init_state_elems": elems,
+            "init_state_amps": amps,
+            "phase_fn": phase_fn,
+        }
+        # block_size 2 for weight-1 gates and 1 for heavier gates: scan path with padding
+        tiny = 2.5 * _qudit_phase_bytes_per_gate(1, n_samples, n_obs) / _BYTES_PER_GB
+        fn_single = build_qudit_expval_func(QuditCircuitConfig(max_memory=1.0, **common))
+        fn_blocked = build_qudit_expval_func(QuditCircuitConfig(max_memory=tiny, **common))
+
+        params = jnp.array(rng.normal(size=n_gates))
+        phase_params = jnp.array(rng.normal(size=n_qudits + 1))
+
+        for call_kwargs in [
+            {},
+            {"key": jax.random.PRNGKey(3), "n_samples": 128},
+            {"observables": (l_vecs[:2], m_vecs[:2])},
+        ]:
+            ev_s, cov_s = fn_single(params, phase_params, **call_kwargs)
+            ev_b, cov_b = fn_blocked(params, phase_params, **call_kwargs)
+            np.testing.assert_allclose(ev_b, ev_s, atol=1e-5, rtol=1e-5)
+            np.testing.assert_allclose(cov_b, cov_s, atol=1e-6, rtol=1e-4)
+
+        def loss(fn):
+            return lambda p, q: jnp.real(jnp.sum(fn(p, q)[0]))
+
+        grad_s = jax.grad(loss(fn_single), argnums=(0, 1))(params, phase_params)
+        grad_b = jax.grad(loss(fn_blocked), argnums=(0, 1))(params, phase_params)
+        for g_s, g_b in zip(grad_s, grad_b):
+            np.testing.assert_allclose(g_b, g_s, atol=1e-5, rtol=1e-5)
+
+    def test_blocked_matches_exact(self):
+        """The blocked estimator still agrees with the brute-force reference within MC error."""
+        d, n = 3, 3
+        generators = np.array([[1, 0, 2], [0, 2, 1], [1, 1, 0], [2, 0, 0], [0, 1, 1]])
+        thetas = np.array([0.4, -0.3, 0.7, 0.2, -0.5])
+        l_vecs = np.array([[1, 0, 2], [0, 1, 0]])
+        m_vecs = np.array([[0, 1, 0], [2, 0, 1]])
+        gates = _dense_rows_to_sparse(generators)
+        tiny = 1.0 * _qudit_phase_bytes_per_gate(1, NUM_SAMPLES, 2) / _BYTES_PER_GB
+        config = QuditCircuitConfig(
+            dims=d,
+            n_qudits=n,
+            gates=gates,
+            observables=(l_vecs, m_vecs),
+            n_samples=NUM_SAMPLES,
+            key=jax.random.PRNGKey(5),
+            max_memory=tiny,
+        )
+        mc_vals, mc_cov = build_qudit_expval_func(config)(jnp.array(thetas))
+        for i, (l, m) in enumerate(zip(l_vecs, m_vecs)):
+            ref = qudit_expectation_brute_force(n, d, generators, thetas, l, m)
+            tol = max(
+                3.5 * float(np.sqrt(mc_cov[i, 0, 0])), 3.5 * float(np.sqrt(mc_cov[i, 1, 1])), 1e-5
+            )
+            assert np.isclose(mc_vals[i], ref, atol=tol)
