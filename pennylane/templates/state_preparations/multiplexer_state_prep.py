@@ -19,7 +19,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import register_condition
 from pennylane.templates.state_preparations.mottonen import _get_alpha_y
-from pennylane.typing import Complex, Float, Wire
+from pennylane.typing import AbstractArray, Complex, Float, Wire
 from pennylane.wires import Wires
 
 
@@ -91,6 +91,11 @@ class MultiplexerStatePreparation(Operator2):
                 raise ValueError(
                     f"State vector must have norm 1.0; the input state vector has norm {norm}"
                 )
+        # Resource signatures distinguish real and complex states, but not their precision.
+        # Canonicalize abstract inputs without casting concrete arrays or tracers.
+        if isinstance(state_vector, AbstractArray):
+            state_type = Complex if math.is_complex_dtype(state_vector) else Float
+            state_vector = state_type[state_vector.shape]
 
         super().__init__(state_vector, wires=wires)
 
