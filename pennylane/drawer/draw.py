@@ -780,11 +780,11 @@ def draw_mpl(
 
         .. code-block:: python
 
-            ctrl_gphase = qp.ctrl(qp.GlobalPhase, control=[2])
-            fig, ax = qp.draw_mpl(ctrl_gphase, **draw_kwargs)(phi=0.5)
+            ctrl_identity = qp.ctrl(qp.Identity, control=[2])
+            fig, ax = qp.draw_mpl(ctrl_identity, **draw_kwargs)()
             fig.show()
 
-        .. figure:: ../../_static/draw_mpl/ctrl_gphase.png
+        .. figure:: ../../_static/draw_mpl/ctrl_identity.png
             :align: center
             :width: 40%
             :target: javascript:void(0);

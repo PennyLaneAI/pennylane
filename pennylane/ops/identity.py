@@ -422,22 +422,21 @@ def _ctrl_g_phase(
     r"""
     Custom controlled global phase dispatch.
 
-    Since the phase shift is applied to the target qubit irregardless of the target qubit's state,
-    the phase shift can factor out of the target state entirely.
-
-    Then, since the phase shift matrix is:
+    A :class:`~.GlobalPhase` applies the phase :math:`e^{-i\phi}` to the whole state regardless of
+    any qubit's state, so it has no target wires. Controlling it applies :math:`e^{-i\phi}` only
+    when the control qubit is in the :math:`|1\rangle` state, which acts on that qubit as
 
     .. math::
 
         \begin{bmatrix}
             1 & 0 \\
             0 & e^{-i \phi}
-        \end{bmatrix}
+        \end{bmatrix}.
 
-    we can apply a phase shift to the control qubit to get the phase on the
-    :math:`|1\rangle` state of the control qubit.
-
-    This generalizes to multiple control qubits.
+    This equals :math:`\text{PhaseShift}(-\phi)`, since
+    :math:`\text{PhaseShift}(\theta) = \text{diag}(1, e^{i\theta})`, so a single-controlled global
+    phase reduces to a phase shift on the control qubit. For multiple controls, the phase shift on
+    the last control is itself controlled by the remaining controls.
     """
 
     if not _is_empty_or_all_true(control_values):
@@ -465,7 +464,7 @@ def _controlled_g_phase_decomp(
     control_wires,
     control_values,
     work_wires,
-    work_wire_type,  # pylint: disable=unused-argument
+    work_wire_type,
 ):
     """The decomposition rule for a controlled global phase."""
 
@@ -494,6 +493,7 @@ def _controlled_g_phase_decomp(
         qp.PhaseShift(-base.phi, wires=control_wires[-1]),
         control=control_wires[:-1],
         work_wires=work_wires,
+        work_wire_type=work_wire_type,
     )
     _x_flips()  # pylint: disable=no-value-for-parameter
 

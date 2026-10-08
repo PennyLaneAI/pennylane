@@ -791,6 +791,32 @@ class TestGeneralOperations:
         plt.close()
 
     @pytest.mark.parametrize("cls", [qp.GlobalPhase, qp.Identity])
+    def test_ctrl_global_op_control_values(self, cls):
+        """Test that a controlled global operator reached through the public ``qp.ctrl`` API
+        draws properly. A zero control value keeps a single-controlled ``GlobalPhase`` a genuine
+        controlled global gate instead of lowering it to a ``PhaseShift``."""
+
+        num_params = 1 if cls is qp.GlobalPhase else 0
+        data = [0.3625][:num_params]
+        base_op = cls(*data) if cls is qp.GlobalPhase else cls(*data, wires=[2])
+
+        op = qp.ctrl(base_op, control=[0], control_values=[False])
+        assert isinstance(op, ControlledOp2)
+        qp.assert_equal(op.base, base_op)
+
+        tape = QuantumScript([op, qp.X(1), qp.X(2)])
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            fig, ax = tape_mpl(tape, wire_order=[0, 1, 2, 3])
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)
+        # One control node for the single control wire.
+        assert isinstance(ax.patches[0], mpl.patches.Circle)
+        assert ax.patches[0].center == (0, 0)
+        plt.close()
+
+    @pytest.mark.parametrize("cls", [qp.GlobalPhase, qp.Identity])
     def test_ctrl_global_op_without_target(self, cls):
         """Test that an error is raised if a controlled GlobalPhase is present that can
         not infer any target wires."""
