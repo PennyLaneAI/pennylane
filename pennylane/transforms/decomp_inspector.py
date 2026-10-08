@@ -379,8 +379,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     5: ─╰●────────────────┤
     Estimated First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
     Actual First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
-    Full Expansion Gates: {CNOT: 46, GlobalPhase: 19, RX: 17, RZ: 22}
-    Weighted Cost: 1996.0
+    Full Expansion Gates: {CNOT: 44, GlobalPhase: 19, RX: 15, RZ: 24}
+    Weighted Cost: 1994.0
 
     The CNOT ladder of the base operator stays unchanged, and the control applies only to the ``RZ``:
 
@@ -395,8 +395,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     5: ────╰●───────────┤
     Estimated First-Level Expansion Gates: {CNOT: 2, Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
     Actual First-Level Expansion Gates: {CNOT: 2, Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
-    Full Expansion Gates: {CNOT: 46, GlobalPhase: 16, RX: 14, RZ: 22}
-    Weighted Cost: 1846.0
+    Full Expansion Gates: {CNOT: 44, GlobalPhase: 16, RX: 12, RZ: 24}
+    Weighted Cost: 1844.0
 
     For applicable decompositions, the "First-Level Expansion" label refers to the operators immediately produced by the decomposition rule,
     whereas the "Full Expansion" refers to the circuit produced by decomposing the operator all the way
@@ -549,8 +549,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         6: ─╰●────────────────┤
         Estimated First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, PauliX: 4}
         Actual First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1}
-        Full Expansion Gates: {CNOT: 134, GlobalPhase: 25, RX: 23, RZ: 46}
-        Weighted Cost: 3584.0
+        Full Expansion Gates: {CNOT: 124, GlobalPhase: 48, RX: 24, RY: 4, RZ: 64}
+        Weighted Cost: 4724.0
 
         Decomposing the chosen change of basis once more again leaves the CNOT ladder bare:
 
@@ -564,8 +564,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         6: ────╰●───────────┤
         Estimated First-Level Expansion Gates: {CNOT: 2, Controlled(RZ, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, PauliX: 4}
         Actual First-Level Expansion Gates: {CNOT: 2, Controlled(RZ, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1}
-        Full Expansion Gates: {CNOT: 134, GlobalPhase: 21, RX: 19, RZ: 46}
-        Weighted Cost: 3384.0
+        Full Expansion Gates: {CNOT: 124, GlobalPhase: 44, RX: 20, RY: 4, RZ: 64}
+        Weighted Cost: 4524.0
 
         Similarly, for the ``MultiControlledX`` in the circuit:
 
@@ -582,8 +582,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
          [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
         Estimated First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, Controlled(GlobalPhase, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 4, PauliX: 4, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
         Actual First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, Controlled(GlobalPhase, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 4, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
-        Full Expansion Gates: {CNOT: 58, GlobalPhase: 62, RX: 25, RY: 12, RZ: 57}
-        Weighted Cost: 4758.0
+        Full Expansion Gates: {CNOT: 48, GlobalPhase: 85, RX: 26, RY: 16, RZ: 75}
+        Weighted Cost: 5898.0
         <BLANKLINE>
         Decomposition 1 (name: one_borrowed_worker)
         2: ────╭●────────────────╭●────────────────┤

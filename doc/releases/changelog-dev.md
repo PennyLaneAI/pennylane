@@ -1448,6 +1448,12 @@
 * Set `qp.decompose`'s `pass_name` to `"graph-decomposition"` to match the new decomposition system in Catalyst.
   [(#10242)](https://github.com/PennyLaneAI/pennylane/pull/10242)
 
+* Added a decomposition rule for multi-controlled :class:`~.PhaseShift` gates that uses only
+  :class:`~.ControlledPhaseShift` and :class:`~.MultiControlledX` gates, and limited the exponentially-large
+  phase-polynomial rule to at most 9 control wires. The decomposition of a controlled :class:`~.GlobalPhase`
+  now uses this rule directly, which keeps the decomposition graph small.
+  [(#10286)](https://github.com/PennyLaneAI/pennylane/pull/10286)
+
 * Updated the decomposition of :class:`~.SumOfSlatersPrep` to replace a recursive by an iterative
   helper function to enable tracing it.
   [(#10055)](https://github.com/PennyLaneAI/pennylane/pull/10055)

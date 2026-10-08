@@ -20,7 +20,7 @@ from functools import lru_cache
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import SparseMatrixUndefinedError
@@ -387,7 +387,6 @@ def _controlled_g_phase_resource(
     base, control_wires, control_values, work_wires, work_wire_type
 ):  # pylint: disable=unused-argument
     num_control_wires = len(control_wires)
-    num_work_wires = len(work_wires)
 
     resources = {}
 
@@ -420,10 +419,13 @@ def _controlled_g_phase_decomp(
     base,
     control_wires,
     control_values,
-    work_wires,
+    work_wires,  # pylint: disable=unused-argument
     work_wire_type,  # pylint: disable=unused-argument
 ):
-    """The decomposition rule for a controlled global phase."""
+    """The decomposition rule for a controlled global phase.
+
+    Work wires are not needed: the multi-controlled phase shift borrows its target wire.
+    """
 
     if qp.compiler.active() or qp.capture.enabled():
         control_wires = qp.math.array(control_wires, like="jax")

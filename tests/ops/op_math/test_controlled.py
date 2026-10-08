@@ -1089,9 +1089,22 @@ class TestDecomposition:
             assert decomp[i] == qp.PauliX(wires=ctrl_wire)
             i += 1
 
-        for exp in expected:
-            assert decomp[i] == exp
-            i += 1
+        if base_cls is qp.GlobalPhase and len(ctrl_wires) > 2:
+            # A multi-controlled global phase is decomposed into ControlledPhaseShift and
+            # MultiControlledX gates, so only the unitary of the middle section is compared.
+            num_middle = len(decomp) - 2 * len(ctrl_wires)
+            assert num_middle > 0
+            middle = QuantumScript(decomp[i : i + num_middle])
+            wire_order = Wires(ctrl_wires)
+            assert np.allclose(
+                qp.matrix(middle, wire_order=wire_order),
+                qp.matrix(QuantumScript(expected), wire_order=wire_order),
+            )
+            i += num_middle
+        else:
+            for exp in expected:
+                assert decomp[i] == exp
+                i += 1
 
         for ctrl_wire in ctrl_wires:
             assert decomp[i] == qp.PauliX(wires=ctrl_wire)

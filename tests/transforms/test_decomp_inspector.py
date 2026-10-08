@@ -122,8 +122,8 @@ class TestInspectDecompGraph:
             5: ─╰●────────────────┤
             Estimated First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
-            Full Expansion Gates: {CNOT: 46, GlobalPhase: 19, RX: 17, RZ: 22}
-            Weighted Cost: 85.0
+            Full Expansion Gates: {CNOT: 44, GlobalPhase: 19, RX: 15, RZ: 24}
+            Weighted Cost: 83.0
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
@@ -157,11 +157,11 @@ class TestInspectDecompGraph:
 
             | Full Expansion | Count |
             | :--- | :--- |
-            | CNOT | 46 |
+            | CNOT | 44 |
             | GlobalPhase | 19 |
-            | RX | 17 |
-            | RZ | 22 |
-            | **Weighted Cost** | 85.0 |
+            | RX | 15 |
+            | RZ | 24 |
+            | **Weighted Cost** | 83.0 |
             </details>
             """).strip()
 
@@ -207,8 +207,8 @@ class TestInspectDecompGraph:
             5: ─╰●────────────────┤
             Estimated First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
-            Full Expansion Gates: {CNOT: 46, GlobalPhase: 19, RX: 17, RZ: 22}
-            Weighted Cost: 1996.0
+            Full Expansion Gates: {CNOT: 44, GlobalPhase: 19, RX: 15, RZ: 24}
+            Weighted Cost: 1994.0
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
@@ -271,11 +271,11 @@ class TestInspectDecompGraph:
 
             | Full Expansion | Count |
             | :--- | :--- |
-            | CNOT | 46 |
+            | CNOT | 44 |
             | GlobalPhase | 19 |
-            | RX | 17 |
-            | RZ | 22 |
-            | **Weighted Cost** | 1996.0 |
+            | RX | 15 |
+            | RZ | 24 |
+            | **Weighted Cost** | 1994.0 |
             </details>
             """).strip()
 
@@ -304,7 +304,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
             Weighted Cost: 2374.0
 
-            CHOSEN: Decomposition 2 (name: one_zeroed_worker)
+            Decomposition 2 (name: one_zeroed_worker)
             0: ───────╭●─────●╮────┤
             1: ───────├●─────●┤────┤
             2: ───────│──╭●───│────┤
@@ -334,7 +334,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
             Weighted Cost: 2374.0
 
-            Decomposition 6 (name: many_zeroed_workers)
+            CHOSEN: Decomposition 6 (name: many_zeroed_workers)
             0: ──────────╭●────────┤
             1: ───────╭●─│───●╮────┤
             2: ───────├●─│───●┤────┤
