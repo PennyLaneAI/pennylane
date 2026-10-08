@@ -1076,12 +1076,7 @@
   [(#10282)](https://github.com/PennyLaneAI/pennylane/pull/10282)
 
 * A new :mod:`pennylane.testing` module collects utilities for testing code built with PennyLane.
-  It contains :func:`~.testing.plxpr_to_tape`, which is still available as
-  ``qp.tape.plxpr_to_tape``, and helpers for inspecting captured programs:
-  :func:`~.testing.assert_eqn_matches_op`, :func:`~.testing.extract_all_primitives` and
-  :func:`~.testing.single_operator_eqn`. :func:`~.assert_equal` is also available as
-  ``qp.testing.assert_equal``.
-  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
+  [(#10293)](https://github.com/PennyLaneAI/pennylane/pull/10293)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 

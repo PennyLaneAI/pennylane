@@ -51,8 +51,7 @@ from pennylane.wires import DynamicWire
 
 
 class CollectOpsandMeas(FlattenedInterpreter):
-    """Collect the dropped operations and measurements in a plxpr. Used by
-    :func:`~.testing.plxpr_to_tape`.
+    """Collect the dropped operations and measurements in a plxpr.
 
     .. code-block:: python
 

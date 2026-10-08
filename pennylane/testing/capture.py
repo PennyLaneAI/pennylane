@@ -25,16 +25,13 @@ from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
 
-def plxpr_to_tape(plxpr: Jaxpr, consts, *args, shots=None) -> QuantumScript:
+def plxpr_to_tape(plxpr: Jaxpr, consts, *args) -> QuantumScript:
     """Convert a plxpr into a tape.
 
     Args:
-        plxpr (jax.extend.core.Jaxpr): a pennylane variant jaxpr
+        plxpr (jax.extend.core.Jaxpr): the jaxpr to extract a program from
         consts (list): the consts for the jaxpr
         *args : the arguments to execute the plxpr with
-
-    Keyword Args:
-        shots (None, int, Sequence[int], Shots): the shots for the tape.
 
     Returns:
         QuantumScript: a single quantum script containing the quantum operations and measurements
@@ -76,7 +73,7 @@ def plxpr_to_tape(plxpr: Jaxpr, consts, *args, shots=None) -> QuantumScript:
         measurements = [
             _map_meas_wires(m, wire_map, mcm_map) for m in collector.state["measurements"]
         ]
-    return QuantumScript(operations, measurements, shots=shots)
+    return QuantumScript(operations, measurements)
 
 
 def _map_op_wires(op, wire_map, mcm_map):

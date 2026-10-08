@@ -12,16 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains utilities for testing code built with PennyLane, such as custom
-operators, decomposition rules, and programs captured with :mod:`~pennylane.capture`.
-
-The equality assertion :func:`~pennylane.assert_equal` is also available as
-``qp.testing.assert_equal``.
-
-.. seealso::
-
-    :mod:`pennylane.devices.tests`, the integration test suite that can be run against
-    any PennyLane device with the ``pl-device-test`` command.
+This module contains utilities for testing PennyLane objects, such as operators,
+decomposition rules, and captured programs.
 
 Program capture
 ^^^^^^^^^^^^^^^
@@ -37,8 +29,6 @@ Program capture
     ~single_operator_eqn
 
 """
-
-from pennylane.ops.functions.equal import assert_equal
 
 from .capture import (
     assert_eqn_matches_op,

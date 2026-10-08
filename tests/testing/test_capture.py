@@ -50,14 +50,13 @@ class TestPlxprToTape:
             return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(-0.5)
-        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1.2, shots=100)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1.2)
         qp.assert_equal(tape[0], qp.RX(1.2, 0))
         qp.assert_equal(tape[1], qp.CNOT((0, 1)))
         qp.assert_equal(tape[2], qp.QFT((0, 1, 2)))
         assert len(tape.operations) == 3
 
         qp.assert_equal(tape.measurements[0], qp.expval(qp.Z(0)))
-        assert tape.shots == qp.measurements.Shots(100)
 
     def test_qnode(self):
         """Test a qnode can be transformed into a tape."""
@@ -71,14 +70,13 @@ class TestPlxprToTape:
             return qp.expval(qp.Z(0))
 
         jaxpr = jax.make_jaxpr(f)(-0.5)
-        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1.2, shots=100)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1.2)
         qp.assert_equal(tape[0], qp.RX(1.2, 0))
         qp.assert_equal(tape[1], qp.CNOT((0, 1)))
         qp.assert_equal(tape[2], qp.QFT((0, 1, 2)))
         assert len(tape.operations) == 3
 
         qp.assert_equal(tape.measurements[0], qp.expval(qp.Z(0)))
-        assert tape.shots == qp.measurements.Shots(100)
 
     def test_for_loop(self):
         """Test collecting the operations in a for loop."""
