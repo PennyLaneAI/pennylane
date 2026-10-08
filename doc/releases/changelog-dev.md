@@ -795,6 +795,11 @@
   decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
   [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
 
+* Added a decomposition of :class:`~.PPR` to the Clifford+T gate set, so that circuits of
+  PPRs can be decomposed exactly to :data:`~.gate_sets.CLIFFORD_T` if ``PPR`` is not in the gate
+  set.
+  [(#10272)](https://github.com/PennyLaneAI/pennylane/pull/10272)
+
 * :class:`~.FlipSign` now accepts `work_wires`, which are forwarded to the multi-controlled
   :class:`~.Z` gate in its decomposition. Providing work wires substantially reduces the gate count.
   [(#10159)](https://github.com/PennyLaneAI/pennylane/pull/10159)
@@ -1874,6 +1879,10 @@
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed :meth:`~.PPR.matrix` raising a ``KeyError`` when the Pauli word contains the identity
+  character ``"I"``.
+  [(#10272)](https://github.com/PennyLaneAI/pennylane/pull/10272)
 
 * :func:`~.ops.functions.bind_new_parameters` now rebinds :class:`~.Operator2` dynamic
   arguments by name and no longer assumes dynamic arguments to declared positionally.
