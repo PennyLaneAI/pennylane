@@ -260,6 +260,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qp_resource
    code/qp_shadows
    code/qp_spin
+   code/qp_testing
    code/qp_transforms
 
 .. toctree::

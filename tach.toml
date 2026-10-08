@@ -413,3 +413,7 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 [[modules]]
 path = "pennylane.workflow"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.testing"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]

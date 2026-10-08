@@ -1075,6 +1075,14 @@
   existing rule, but is a different object to the rule with that name.
   [(#10282)](https://github.com/PennyLaneAI/pennylane/pull/10282)
 
+* A new :mod:`pennylane.testing` module collects utilities for testing code built with PennyLane.
+  It contains :func:`~.testing.plxpr_to_tape`, which is still available as
+  ``qp.tape.plxpr_to_tape``, and helpers for inspecting captured programs:
+  :func:`~.testing.assert_eqn_matches_op`, :func:`~.testing.extract_all_primitives` and
+  :func:`~.testing.single_operator_eqn`. :func:`~.assert_equal` is also available as
+  ``qp.testing.assert_equal``.
+  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
@@ -1976,7 +1984,7 @@
   JAX array.
   [(#10036)](https://github.com/PennyLaneAI/pennylane/pull/10036)
 
-* Fixed a bug where :func:`~.tape.plxpr_to_tape` raised an error when the program contains
+* Fixed a bug where :func:`~.testing.plxpr_to_tape` raised an error when the program contains
   arithmetic operations performed on mid-circuit measurement values.
   [(#10028)](https://github.com/PennyLaneAI/pennylane/pull/10028)
 

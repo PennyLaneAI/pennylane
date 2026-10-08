@@ -221,6 +221,8 @@ from pennylane import qnn
 
 from pennylane import estimator
 
+from pennylane import testing
+
 # pylint:disable=wrong-import-order
 from importlib.metadata import version as _metadata_version
 

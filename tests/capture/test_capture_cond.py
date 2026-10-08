@@ -34,7 +34,7 @@ jax = pytest.importorskip("jax")
 # must be below jax importorskip
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import cond_prim
-from tests.capture.capture_utils import assert_eqn_matches_op, extract_all_primitives
+from pennylane.testing import assert_eqn_matches_op, extract_all_primitives
 
 
 @pytest.fixture
@@ -992,7 +992,7 @@ class TestDynamicShapes:
             qp.cond(condition == 2, rx, ry)(0.5, 1)
 
         jaxpr = jax.make_jaxpr(f)(0)
-        [op] = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1).operations
+        [op] = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1).operations
         qp.assert_equal(op, qp.RY(0.5, 1))
 
     def test_cond_abstracted_axes(self):
