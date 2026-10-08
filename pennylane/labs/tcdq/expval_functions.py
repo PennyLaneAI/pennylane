@@ -17,6 +17,7 @@ This module estimates Pauli expectation values for IQP circuits without
 simulating the full quantum state.
 """
 
+import math
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -28,6 +29,10 @@ from jax.typing import ArrayLike
 _REAL_DTYPE = jnp.float32
 _COMPLEX_DTYPE = jnp.complex64
 _INDEX_DTYPE = jnp.int32
+
+_PHASE_BYTES_PER_GATE_SAMPLE = 16
+_PHASE_BYTES_PER_GATE_OBSERVABLE = 4
+_BYTES_PER_GB = 1024**3
 
 
 @dataclass
@@ -67,8 +72,10 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
         phase_fn (Callable | None): Optional custom phase function
             ``phase_fn(params, bitstring)`` applied as an extra diagonal layer.
             Defaults to ``None``.
-        block_size (int): Controls the memory usage of the generator matrix during the phase
-            difference computation. Higher block size increases memory usage.
+        max_memory (float): Upper bound, in gigabytes (1 GB = 1024**3 bytes), on
+            the temporary memory used by the phase-difference computation. The gates are
+            processed in blocks whose size is derived from this budget together with the
+            number of samples and observables. Defaults to ``1.0``.
 
     **Example**
 
@@ -104,8 +111,8 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
     init_state_amps: ArrayLike | None = None
     #: Optional custom phase function applied as an extra diagonal layer.
     phase_fn: Callable | None = None
-    #: Controls the memory usage of the generator matrix during the phase difference computation. Higher block size increases memory usage.
-    block_size: int = 1 << 17
+    #: Upper bound, in gigabytes, on the temporary memory used by the phase-difference computation.
+    max_memory: float = 1.0
 
 
 def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
@@ -175,6 +182,19 @@ def _parity_dot(a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
 
 def _parity_signs(parity: jnp.ndarray) -> jnp.ndarray:
     return 1 - 2 * parity.astype(_REAL_DTYPE)
+
+
+def _memory_budget_bytes(max_memory: float) -> int:
+    """Convert a ``max_memory`` budget to an integer number of bytes."""
+    return int(max_memory * _BYTES_PER_GB)
+
+
+def _phase_block_size(max_memory_bytes: int, n_samples: int, n_observables: int) -> int:
+    """Number of gates per block such that the phase computation stays within ``max_memory_bytes``."""
+    bytes_per_gate = (
+        _PHASE_BYTES_PER_GATE_SAMPLE * n_samples + _PHASE_BYTES_PER_GATE_OBSERVABLE * n_observables
+    )
+    return max(1, max_memory_bytes // bytes_per_gate)
 
 
 # pylint: disable=too-many-arguments
@@ -266,16 +286,18 @@ def _core_expval_execution(
     gate_indices: jnp.ndarray,
     param_map: jnp.ndarray,
     vmapped_phase_func: Callable | None,
-    block_size: int,
+    max_memory: float,
 ) -> tuple[jnp.ndarray, jnp.ndarray]:
     """Evaluate the Monte Carlo integrand and return expectation values and variances."""
     bitflips, mask_XY, y_real, y_imag = obs_data
+    block_size = _phase_block_size(
+        _memory_budget_bytes(max_memory), samples.shape[0], bitflips.shape[0]
+    )
 
     samples_t = _pad_sentinel_row(samples.T)
     bitflips_t = _pad_sentinel_row(bitflips.T)
 
     gates_params = jnp.asarray(gates_params)
-    out_dtype = jnp.promote_types(gates_params.dtype, _REAL_DTYPE)
     gates_params = gates_params.astype(_REAL_DTYPE)
     E = _phase_differences(gates_params, samples_t, bitflips_t, gate_indices, param_map, block_size)
 
@@ -322,7 +344,7 @@ def _core_expval_execution(
     expvals = jnp.mean(integrand, axis=1)
     variances = jnp.var(integrand, axis=-1, ddof=1) / samples.shape[0]
 
-    return expvals.astype(out_dtype), variances.astype(out_dtype)
+    return expvals, variances
 
 
 def build_expval_func(
@@ -384,6 +406,18 @@ def build_expval_func(
         :class:`~pennylane.labs.tcdq.CircuitConfig`,
         `IQPopt: Fast optimization of instantaneous quantum polynomial circuits in JAX <https://arxiv.org/abs/2501.04776>`_
     """
+    max_memory = config.max_memory
+    if (
+        isinstance(max_memory, bool)
+        or not isinstance(max_memory, (int, float, np.integer, np.floating))
+        or not math.isfinite(max_memory)
+        or max_memory <= 0
+    ):
+        raise ValueError(
+            "CircuitConfig.max_memory must be a positive, finite number of gigabytes, "
+            f"got {max_memory!r}."
+        )
+
     gate_indices, param_map = _parse_generator_dict(config.gates, config.n_qubits)
 
     vmapped_phase_func = None
@@ -466,7 +500,7 @@ def build_expval_func(
             gate_indices,
             param_map,
             vmapped_phase_func,
-            config.block_size,
+            config.max_memory,
         )
 
     return expval_execution
