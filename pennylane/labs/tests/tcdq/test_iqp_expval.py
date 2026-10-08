@@ -19,7 +19,9 @@ import pytest
 import pennylane as qp
 from pennylane.labs.tcdq.expval_functions import (
     CircuitConfig,
+    _memory_budget_bytes,
     _parse_generator_dict,
+    _phase_block_size,
     build_expval_func,
 )
 
@@ -215,8 +217,8 @@ class TestIQPExpval:
     ):
         """Test built expval function versus full PennyLane simulation."""
         # pylint: disable=too-many-arguments
-        generators_binary, param_map = _parse_generator_dict(gates, n_qubits)
-        generators_pl = [list(np.where(row)[0]) for row in generators_binary]
+        generators, param_map = _parse_generator_dict(gates, n_qubits)
+        generators_pl = [[int(q) for q in row if q != n_qubits] for row in generators]
         params_pl = np.array(params)[param_map]
 
         obs_batch, _ = _prepare_obs_batch(obs_strings)
@@ -344,10 +346,10 @@ class TestIQPExpval:
 @pytest.mark.parametrize(
     "circuit_def,n_qubits,expected_generators,expected_param_map",
     [
-        ({0: [[0, 1]]}, 3, [[1, 1, 0]], [0]),
-        ({0: [[0]], 1: [[1, 2], [0, 2]]}, 3, [[1, 0, 0], [0, 1, 1], [1, 0, 1]], [0, 1, 1]),
-        ({}, 2, np.zeros((0, 2), dtype=int), []),
-        ({10: [[0]], 2: [[1]]}, 2, [[0, 1], [1, 0]], [2, 10]),
+        ({0: [[0, 1]]}, 3, [[0, 1]], [0]),
+        ({0: [[0]], 1: [[1, 2], [0, 2]]}, 3, [[0, 3], [1, 2], [0, 2]], [0, 1, 1]),
+        ({}, 2, np.empty((0, 1)), []),
+        ({10: [[0]], 2: [[1]]}, 2, [[1], [0]], [2, 10]),
     ],
 )
 def test_parse_generator_dict(circuit_def, n_qubits, expected_generators, expected_param_map):
@@ -374,3 +376,105 @@ def test_parse_generator_dict_index_error():
 
     with pytest.raises(IndexError):
         _parse_generator_dict(circuit_def, n_qubits)
+
+
+class TestMemoryBudget:
+    """Tests for sizing the phase-difference blocks from ``max_memory``."""
+
+    @pytest.mark.parametrize(
+        "gb, expected", [(1, 1 << 30), (1.0, 1 << 30), (0.5, 1 << 29), (2.5, 5 << 29)]
+    )
+    def test_memory_budget_bytes(self, gb, expected):
+        """Gigabytes are binary (1024**3 bytes) and accept ints and floats."""
+        assert _memory_budget_bytes(gb) == expected
+        assert isinstance(_memory_budget_bytes(gb), int)
+
+    def test_phase_block_size_scaling(self):
+        """The block size scales linearly with the budget and inversely with the shapes."""
+        base = _phase_block_size(1 << 30, 2000, 100)
+        assert _phase_block_size(1 << 31, 2000, 100) == 2 * base
+        assert _phase_block_size(1 << 30, 4000, 200) == base // 2
+        assert base * (16 * 2000 + 4 * 100) <= 1 << 30
+
+    def test_phase_block_size_floor(self):
+        """A budget too small for a single gate still yields one gate per block."""
+        assert _phase_block_size(1, 2000, 100) == 1
+
+    @pytest.mark.parametrize("bad", [0, -1, 0.0, -0.5, True, None, "1", float("nan"), float("inf")])
+    def test_invalid_max_memory(self, bad):
+        """Non-positive, non-finite or non-numeric budgets raise a clear error at build time."""
+        config = CircuitConfig(
+            gates={0: [[0]]},
+            n_samples=10,
+            key=jax.random.PRNGKey(0),
+            n_qubits=1,
+            observables=[[3]],
+            max_memory=bad,
+        )
+        with pytest.raises(ValueError, match="max_memory must be a positive, finite number"):
+            build_expval_func(config)
+
+    @pytest.mark.parametrize("n_samples", [7, 64])
+    def test_results_independent_of_budget(self, n_samples):
+        """Blocked (multi-block, padded) and single-block evaluations agree, in value and gradient."""
+        n_qubits = 5
+        gates = {
+            0: [[0, 1], [1, 2]],
+            1: [[2, 3], [3, 4], [0, 4]],
+            2: [[0], [1], [2], [3], [4]],
+            3: [[0, 1, 2], [2, 3, 4]],
+        }  # 12 gates, not a power of two, so small budgets exercise the padding path
+        observables = [[3, 3, 0, 0, 0], [1, 1, 0, 0, 0], [2, 3, 1, 0, 0], [0, 0, 0, 3, 3]]
+        params = jnp.array([0.3, -1.1, 0.7, 0.2])
+
+        def make(max_memory):
+            config = CircuitConfig(
+                gates=gates,
+                n_samples=n_samples,
+                key=jax.random.PRNGKey(3),
+                n_qubits=n_qubits,
+                observables=observables,
+                max_memory=max_memory,
+            )
+            return build_expval_func(config)
+
+        f_single = make(1.0)
+        assert _phase_block_size(_memory_budget_bytes(1.0), n_samples, len(observables)) >= 12
+
+        # budget for exactly 5 gates -> 3 blocks, 3 padded rows
+        five_gates_gb = 5 * (16 * n_samples + 4 * len(observables)) / 1024**3
+        assert (
+            _phase_block_size(_memory_budget_bytes(five_gates_gb), n_samples, len(observables)) == 5
+        )
+        f_blocked = make(five_gates_gb)
+
+        tiny_gb = 1 / 1024**3  # one byte: one gate per block
+        assert _phase_block_size(_memory_budget_bytes(tiny_gb), n_samples, len(observables)) == 1
+        f_one = make(tiny_gb)
+
+        ref_ev, ref_var = f_single(params)
+        ref_grad = jax.grad(lambda p: jnp.sum(f_single(p)[0]))(params)
+
+        for f in (f_blocked, f_one):
+            ev, var = f(params)
+            grad = jax.grad(lambda p, f=f: jnp.sum(f(p)[0]))(params)
+            assert np.allclose(ev, ref_ev, atol=1e-5)
+            assert np.allclose(var, ref_var, atol=1e-5)
+            assert np.allclose(grad, ref_grad, atol=1e-5)
+
+    def test_runtime_override_respects_budget(self):
+        """Overriding ``n_samples`` at call time still runs within the configured budget."""
+        gates = {0: [[0, 1]], 1: [[1, 2]], 2: [[0]], 3: [[2]]}
+        config = CircuitConfig(
+            gates=gates,
+            n_samples=8,
+            key=jax.random.PRNGKey(0),
+            n_qubits=3,
+            observables=[[3, 3, 0], [0, 3, 3]],
+            max_memory=2 * (16 * 64 + 4 * 2) / 1024**3,  # two gates per block at 64 samples
+        )
+        f = build_expval_func(config)
+        ev_default, _ = f(jnp.array([0.1, 0.2, 0.3, 0.4]))
+        ev_override, _ = f(jnp.array([0.1, 0.2, 0.3, 0.4]), n_samples=64, key=jax.random.PRNGKey(1))
+        assert ev_default.shape == ev_override.shape == (2,)
+        assert np.all(np.abs(ev_override) <= 1.0 + 1e-6)
