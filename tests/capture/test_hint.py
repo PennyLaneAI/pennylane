@@ -60,8 +60,29 @@ class TestProcessHints:
         assert process_hints({}, _SUPPORTED) == {}
 
 
+class TestApplyHint:
+    """Unit tests for :func:`~pennylane.capture.hint.apply_hint`."""
+
+    def test_wraps_callable(self):
+        """A plain callable should become a ``HintedCallable``."""
+
+        def f(x):
+            return x + 1
+
+        hinted = apply_hint(f, {"identity": True})
+        assert isinstance(hinted, HintedCallable)
+        assert hinted.hints == {"identity": True}
+        assert hinted.f is f
+        assert hinted(3) == 4
+
+    def test_unsupported_type(self):
+        """Unsupported types should raise ``NotImplementedError``."""
+        with pytest.raises(NotImplementedError, match="No registered way to apply compiler hints"):
+            apply_hint(3, {"num-iters": 1})
+
+
 class TestHintAPI:
-    """Tests for :func:`~.hint`, :class:`~HintedCallable`, and :func:`~apply_hint`."""
+    """Tests for :func:`~.hint` and :class:`~HintedCallable`."""
 
     def test_hint_wraps_callable(self):
         """``qp.hint`` should wrap a plain callable in ``HintedCallable``."""
@@ -105,8 +126,3 @@ class TestHintAPI:
         text = repr(hinted)
         assert "HintedCallable" in text
         assert "num-iters" in text
-
-    def test_apply_hint_unsupported_type(self):
-        """Unsupported types should raise ``NotImplementedError``."""
-        with pytest.raises(NotImplementedError, match="No registered way to apply compiler hints"):
-            apply_hint(3, {"num-iters": 1})
