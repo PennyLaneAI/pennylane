@@ -1545,3 +1545,26 @@ class TestPPR:
             -1j * np.pi * sign / denominator * qp.matrix(pw, wire_order=wires)
         )
         assert np.allclose(mat_ppr, expected_manual)
+
+
+class TestPPRCliffordTDecomposition:
+    """Tests for the decomposition of PPR to the Clifford+T gate set."""
+
+    @pytest.mark.parametrize("denominator", [-8, -4, -2, 2, 4, 8])
+    @pytest.mark.parametrize("pauli_word", ["I", "IIX", "XIYZ", "ZIZZ"])
+    def test_clifford_t_decomp_with_identities(self, denominator, pauli_word):
+        """Test the Clifford+T rule of PPR on Pauli words with identities."""
+        rule = qp.list_decomps(qp.PPR)["_ppr_to_clifford_t"]
+        op = qp.PPR(denominator, pauli_word, wires=range(len(pauli_word)))
+        _test_decomposition_rule(op, rule)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_decompose_to_clifford_t(self):
+        """Test that PPRs decompose to the Clifford+T gate set."""
+        ops = [qp.PPR(8, "XYZ", [0, 1, 2]), qp.PPR(-4, "YZX", [1, 0, 2]), qp.PPR(2, "ZY", [0, 2])]
+        tape = qp.tape.QuantumScript(ops)
+        (new_tape,), _ = qp.transforms.decompose(tape, gate_set=qp.gate_sets.CLIFFORD_T)
+
+        assert all(op in qp.gate_sets.CLIFFORD_T for op in new_tape.operations)
+        wire_order = [0, 1, 2]
+        assert np.allclose(qp.matrix(new_tape, wire_order), qp.matrix(tape, wire_order))
