@@ -122,8 +122,8 @@ class TestInspectDecompGraph:
             5: ─╰●────────────────┤
             Estimated First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
-            Full Expansion Gates: {CNOT: 44, GlobalPhase: 19, RX: 15, RZ: 24}
-            Weighted Cost: 83.0
+            Full Expansion Gates: {CNOT: 46, GlobalPhase: 16, RX: 14, RZ: 22}
+            Weighted Cost: 82.0
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
@@ -157,11 +157,11 @@ class TestInspectDecompGraph:
 
             | Full Expansion | Count |
             | :--- | :--- |
-            | CNOT | 44 |
-            | GlobalPhase | 19 |
-            | RX | 15 |
-            | RZ | 24 |
-            | **Weighted Cost** | 83.0 |
+            | CNOT | 46 |
+            | GlobalPhase | 16 |
+            | RX | 14 |
+            | RZ | 22 |
+            | **Weighted Cost** | 82.0 |
             </details>
             """).strip()
 
@@ -207,8 +207,8 @@ class TestInspectDecompGraph:
             5: ─╰●────────────────┤
             Estimated First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
-            Full Expansion Gates: {CNOT: 44, GlobalPhase: 19, RX: 15, RZ: 24}
-            Weighted Cost: 1994.0
+            Full Expansion Gates: {CNOT: 46, GlobalPhase: 16, RX: 14, RZ: 22}
+            Weighted Cost: 1846.0
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
@@ -271,11 +271,11 @@ class TestInspectDecompGraph:
 
             | Full Expansion | Count |
             | :--- | :--- |
-            | CNOT | 44 |
-            | GlobalPhase | 19 |
-            | RX | 15 |
-            | RZ | 24 |
-            | **Weighted Cost** | 1994.0 |
+            | CNOT | 46 |
+            | GlobalPhase | 16 |
+            | RX | 14 |
+            | RZ | 22 |
+            | **Weighted Cost** | 1846.0 |
             </details>
             """).strip()
 
