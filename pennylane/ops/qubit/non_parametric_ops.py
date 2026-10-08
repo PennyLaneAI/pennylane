@@ -2420,7 +2420,29 @@ def _ppr_via_z_gate_resources(gate, sign, pauli_word, wires):
 def _ppr_via_z_gate(sign, pauli_word, wires, gate):
     """Apply the Pauli product rotation that is equal to ``gate`` (``S`` or ``T``) or its adjoint
     for the Pauli word ``"Z"``, up to a global phase, by changing the basis of ``pauli_word`` to
-    a single Pauli ``Z``."""
+    a single Pauli ``Z``.
+
+    Examples:
+
+    For ``pauli_word="XYZ"``, ``gate=T`` and ``sign=1``:
+
+    .. code-block:: text
+
+        0: ──H────────╭X──T─╭X──H───────
+        1: ──S†──H─╭X─╰●────╰●─╭X──H──S─
+        2: ────────╰●──────────╰●───────
+
+    For ``pauli_word="IYZIX"``, ``gate=S`` and ``sign=-1``, the identities are skipped, the
+    central gate acts on the first non-identity wire, and the central gate is adjoint.
+
+    .. code-block:: text
+
+        0: ────────────────────────
+        1: ──S†──H─╭X──S†─╭X──H──S─
+        2: ─────╭X─╰●─────╰●─╭X────
+        3: ─────│────────────│─────
+        4: ──H──╰●───────────╰●──H─
+    """
     active = [(wire, pauli) for wire, pauli in zip(wires, pauli_word, strict=True) if pauli != "I"]
     if not active:
         return
