@@ -948,7 +948,10 @@
 
 * :class:`~.MultiplexerStatePreparation` now has separate decomposition rules for real-valued and
   complex-valued state vectors, so that the resources of the real-valued rule do not include a
-  :class:`~.DiagonalQubitUnitary`.
+  :class:`~.DiagonalQubitUnitary`. :class:`~.SumOfSlatersPrep` and
+  :class:`~.PartialUnaryStatePreparation` now pass real-valued coefficients on as a real-valued
+  state vector to :class:`~.MultiplexerStatePreparation`, so that they benefit from this cheaper
+  decomposition, also when the coefficients are traced.
   [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.

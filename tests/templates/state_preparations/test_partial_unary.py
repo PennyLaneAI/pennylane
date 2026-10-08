@@ -22,6 +22,7 @@ import pennylane as qp
 from pennylane.decomposition import list_decomps
 from pennylane.math import binary_matrix_rank, ceil_log2
 from pennylane.ops.functions import assert_valid
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.partial_unary import (
     PartialUnaryStatePreparation,
     PUIsometryFinder,
@@ -489,6 +490,23 @@ class TestPartialUnaryStatePreparation:
         target = np.zeros(32, dtype=complex)
         target[list(indices)] = coefficients
         assert np.allclose(circuit()[::4], target)
+
+    @pytest.mark.parametrize(
+        "coefficients, state_type",
+        [
+            (np.array([1, -1, 2, -2, 3]) / np.sqrt(19), Float),
+            (np.array([1, 1, 2, 2, 3]), Float),
+            (np.array([1, 1j, -2, -2j, 3]) / np.sqrt(19), Complex),
+        ],
+    )
+    def test_multiplexer_dtype_follows_coefficients(self, coefficients, state_type):
+        """Test that the MultiplexerStatePreparation in the decomposition is real-valued
+        for real-valued coefficients and complex-valued for complex-valued coefficients."""
+        op = PartialUnaryStatePreparation(coefficients, range(5), (0, 3, 7, 17, 25), [5, 6])
+        [rule] = list_decomps(PartialUnaryStatePreparation)
+        resources = rule.compute_resources(**op.arguments).gate_counts
+        assert qp.MultiplexerStatePreparation(state_type[8], wires=Wire[3]) in resources
+        _test_decomposition_rule(op, rule)
 
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
