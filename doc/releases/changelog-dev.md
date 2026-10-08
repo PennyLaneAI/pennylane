@@ -746,6 +746,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* :func:`~.specs` now preserves fractional resource counts returned by Catalyst (for example
+  from probabilistic branch hints or fractional loop iteration estimates) instead of ceiling
+  them to integers. Near-integer float noise is still cleaned to an ``int``.
+
 * The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
   but instead expresses the Select block as another ``QROM`` with fewer controls and more target
   qubits. This allows for scalable compilation of this decomposition rule.

@@ -413,8 +413,10 @@ class SpecsResources(Resources):
     lead to unexpected behaviour.
 
     Args:
-        counts (dict[str, int]): A dictionary mapping gate names to their counts.
-        measurement_processes (dict[str, int]): A dictionary mapping measurement processes to their counts.
+        counts (dict[str, int | float | Expression]): A dictionary mapping gate names to their counts.
+            Counts may be fractional when they represent expected values from compiler hints.
+        measurement_processes (dict[str, int | float | Expression]): A dictionary mapping measurement
+            processes to their counts.
         num_wires (int): The number of unique wires. For circuits that do not use
           dynamic wires, this should be equal to the number of device wires.
         circuit_depth (int | None): The depth of the circuit, or None if not computed. Defaults to ``None``.
@@ -460,17 +462,17 @@ class SpecsResources(Resources):
         Circuit Depth: 2
     """
 
-    measurement_processes: dict[str, int | Expression] = field(
+    measurement_processes: dict[str, int | float | Expression] = field(
         metadata={"display_name": "Measurement processes"}
     )
 
-    num_wires: int | Expression = field(metadata={"display_name": "Total wires"})
-    circuit_depth: int | Expression | None = field(
+    num_wires: int | float | Expression = field(metadata={"display_name": "Total wires"})
+    circuit_depth: int | float | Expression | None = field(
         default=None, metadata={"display_name": "Circuit depth"}
     )
 
     # Automatically generated
-    total_quantum_operations: int | Expression = field(
+    total_quantum_operations: int | float | Expression = field(
         init=False, metadata={"display_name": "Total quantum operations"}
     )
 
