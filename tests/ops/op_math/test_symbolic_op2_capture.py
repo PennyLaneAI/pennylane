@@ -92,8 +92,7 @@ class TestAdjointCapture:
             return adjoint_fn(op).tracer, adjoint_fn(op).tracer
 
         jaxpr = jax.make_jaxpr(f)(0.5)
-        eqns = [e for e in jaxpr.jaxpr.eqns if e.primitive == operator_p]
-        assert len(eqns) == 2
+        assert len(find_eqns(jaxpr, operator_p)) == 2
 
         ops = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
 
@@ -162,8 +161,7 @@ class TestAdjointCapture:
                 adjoint_fn(RX2(x, wires=0))._bind_primitive()
 
         jaxpr = jax.make_jaxpr(fn)(1.5)
-        op_eqns = tuple(eqn for eqn in jaxpr.eqns if eqn.primitive is operator_p)
-        assert len(op_eqns) == 0
+        assert not find_eqns(jaxpr, operator_p)
 
 
 @pytest.mark.parametrize("ctrl_fn", [qp.ctrl, ControlledOp2])
@@ -267,8 +265,7 @@ class TestControlledCapture:
                 ctrl_fn(RX2(x, wires=1), [0])._bind_primitive()
 
         jaxpr = jax.make_jaxpr(fn)(1.5)
-        op_eqns = tuple(eqn for eqn in jaxpr.eqns if eqn.primitive is operator_p)
-        assert len(op_eqns) == 0
+        assert not find_eqns(jaxpr, operator_p)
 
     @pytest.mark.parametrize("traced_work_wire", [False, True])
     def test_work_wires_recorded(self, ctrl_fn, traced_work_wire):
