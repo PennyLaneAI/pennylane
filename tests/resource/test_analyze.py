@@ -20,7 +20,7 @@ import pytest
 import pennylane as qp
 from pennylane.core.shots import Shots
 from pennylane.devices.capabilities import DeviceCapabilities, OperatorProperties
-from pennylane.resource import CircuitSpecs, SpecsResources
+from pennylane.resource import CircuitSpecs, PBCSpecsResources, SpecsResources
 
 catalyst = pytest.importorskip("catalyst")
 
@@ -245,6 +245,41 @@ class TestAnalyze:
                 ValueError, match="Device level is only supported when capture is enabled"
             ):
                 specs = qp.analyze(circuit, level="all")(0.5)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_pbc_pipeline(self):
+        """Test that analyze counts device-level resources after a Clifford+T → PPR → PPM
+        compilation pipeline."""
+
+        @qp.qjit(capture=True)
+        @qp.transforms.ppr_to_ppm
+        @qp.transforms.to_ppr
+        @catalyst.passes.graph_decomposition(gate_set=qp.gate_sets.CLIFFORD_T)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def qfunc():
+            qp.Toffoli([0, 1, 2])
+            qp.Hadamard(0)
+            qp.Hadamard(0)
+            return qp.expval(qp.Z(0))
+
+        specs = qp.analyze(qfunc, level="device")()
+
+        assert specs.level == "Device Preprocessing"
+        assert specs.resources == PBCSpecsResources(
+            counts={
+                "GlobalPhase": 17,
+                "PPM-w1": 37,
+                "PPM-w2": 31,
+                "PPM-w3": 6,
+                "PPR-pi/2-w1": 31,
+                "PPR-pi/2-w2": 6,
+                "pbc.fabricate": 7,
+            },
+            measurement_processes={"expval(PauliZ)": 1},
+            num_wires=40,
+            any_commuting_depth=68,
+            qubit_disjoint_depth=75,
+        )
 
     def test_partial(self, circuit):
         """Test analyze for a partial-wrapped Catalyst jitted QNode."""
