@@ -22,7 +22,7 @@ from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import expand_matrix
-from pennylane.ops import PPR, Hadamard, MultiRZ, PauliX
+from pennylane.ops import PPR_4, Hadamard, MultiRZ, PauliX
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -120,7 +120,7 @@ class IQP(Operator2):
         layers = []
 
         if spin_sym:
-            pauli_mat = PPR.compute_matrix(4, "Y" + "X" * (num_wires - 1))
+            pauli_mat = PPR_4.compute_matrix(1, "Y" + "X" * (num_wires - 1))
             layers.append(pauli_mat)
 
         for par, gate in zip(weights, pattern, strict=True):
@@ -138,7 +138,7 @@ def _instantaneous_quantum_polynomial_resources(
     num_wires = len(wires)
     resources = defaultdict(int)
     if spin_sym:
-        resources[PPR(4, pauli_word="Y" + "X" * (num_wires - 1), wires=Wire[num_wires])] = 1
+        resources[PPR_4(1, pauli_word="Y" + "X" * (num_wires - 1), wires=Wire[num_wires])] = 1
 
     resources[Hadamard] = 2 * num_wires
 
@@ -154,7 +154,7 @@ def _instantaneous_quantum_polynomial_decomposition(weights, wires, pattern, spi
     num_wires = len(wires)
 
     if spin_sym:
-        PPR(4, "Y" + "X" * (num_wires - 1), wires=wires)
+        PPR_4(1, "Y" + "X" * (num_wires - 1), wires=wires)
 
     for i in range(num_wires):
         Hadamard(wires[i])

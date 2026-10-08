@@ -19,8 +19,9 @@ not depend on any parameters.
 # pylint: disable=arguments-differ,unused-argument
 
 import cmath
+from collections import Counter
 from copy import copy
-from functools import lru_cache, reduce
+from functools import lru_cache
 from typing import Literal, override
 from warnings import warn
 
@@ -29,12 +30,14 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math
+from pennylane.capture.autograph import disable_autograph
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
@@ -1564,18 +1567,18 @@ def _swap_to_cnot(wires, **_):
 
 def _swap_to_ppr_resource(wires: WiresLike):
     return {
-        qp.PPR(4, pauli_word="XX", wires=Wire[2]): 1,
-        qp.PPR(4, pauli_word="YY", wires=Wire[2]): 1,
-        qp.PPR(4, pauli_word="ZZ", wires=Wire[2]): 1,
+        qp.PPR_4(1, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PPR_4(1, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PPR_4(1, pauli_word="ZZ", wires=Wire[2]): 1,
         qp.GlobalPhase: 1,
     }
 
 
 @register_resources(_swap_to_ppr_resource)
 def _swap_to_ppr(wires, **_):
-    qp.PPR(4, "YY", wires=wires)
-    qp.PPR(4, "XX", wires=wires)
-    qp.PPR(4, "ZZ", wires=wires)
+    qp.PPR_4(1, "YY", wires=wires)
+    qp.PPR_4(1, "XX", wires=wires)
+    qp.PPR_4(1, "ZZ", wires=wires)
     qp.GlobalPhase(-np.pi / 4)
 
 
@@ -1880,15 +1883,15 @@ def _iswap_decomp(wires):
 
 def _iswap_to_ppr_resource(wires: WiresLike):
     return {
-        qp.PPR(-4, pauli_word="XX", wires=Wire[2]): 1,
-        qp.PPR(-4, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PPR_4(-1, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PPR_4(-1, pauli_word="YY", wires=Wire[2]): 1,
     }
 
 
 @register_resources(_iswap_to_ppr_resource)
 def _iswap_to_ppr(wires):
-    qp.PPR(-4, "YY", wires=wires)
-    qp.PPR(-4, "XX", wires=wires)
+    qp.PPR_4(-1, "YY", wires=wires)
+    qp.PPR_4(-1, "XX", wires=wires)
 
 
 add_decomps(ISWAP, _iswap_decomp, _iswap_to_ppr)
@@ -2055,15 +2058,15 @@ def _siswap_decomp(wires):
 
 def _siswap_to_ppr_resource(wires: WiresLike):
     return {
-        qp.PPR(-8, pauli_word="XX", wires=Wire[2]): 1,
-        qp.PPR(-8, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PPR_8(-1, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PPR_8(-1, pauli_word="YY", wires=Wire[2]): 1,
     }
 
 
 @register_resources(_siswap_to_ppr_resource)
 def _siswap_to_ppr(wires, **_):
-    qp.PPR(-8, "YY", wires=wires)
-    qp.PPR(-8, "XX", wires=wires)
+    qp.PPR_8(-1, "YY", wires=wires)
+    qp.PPR_8(-1, "XX", wires=wires)
 
 
 add_decomps(SISWAP, _siswap_decomp, _siswap_to_ppr)
@@ -2088,81 +2091,18 @@ add_decomps("Pow(SISWAP)", make_pow_decomp_with_period2(8), _pow_siswap_to_zz, _
 SQISW = SISWAP
 
 
-class PPR(Operator2):
-    r"""PPR(angle_denominator, pauli_word, wires)
-    A Pauli product rotation (PPR) with a fixed angle.
+class _FixedAnglePPR(Operator2, is_baseclass=True):
+    """Shared ``Operator2`` boilerplate for :class:`~.PPR_2`, :class:`~.PPR_4`, and
+    :class:`~.PPR_8`, the Pauli product rotations by the angle ``±π / _denominator``."""
 
-    .. math::
-
-        \text{PPR}(k, P) = \exp\left(-i \frac{\pi}{k} P\right),
-
-    where :math:`P` is a Pauli word and we call :math:`\varphi = \pi / k` the rotation angle,
-    following the literature convention (e.g.
-    `:math:`\mathrm{PPR}(-4, \mathrm{X})=\exp(-i\pi / (-4) X)=\exp(i\tfrac{\pi}{4} X)`).
-    The denominator :math:`k` is restricted to :math:`\pm 2`, :math:`\pm 4` and :math:`\pm 8`,
-    so that ``PPR`` covers exactly those Pauli product rotations that occur in Clifford+T circuits:
-
-    * ``angle_denominator=±2``: a :math:`\pm\pi/2` PPR (signed Pauli),
-    * ``angle_denominator=±4``: a :math:`\pm\pi/4` PPR (Clifford),
-    * ``angle_denominator=±8``: a :math:`\pm\pi/8` PPR (non-Clifford).
-
-    The Pauli-based computation literature commonly writes a PPR with this angle convention,
-    whereas :class:`~.PauliRot` follows the convention
-    :math:`\mathrm{PauliRot}(\theta, P)=\exp(-i \theta / 2 P)`, i.e., :math:`\varphi = \theta / 2`.
-
-    .. note:: ``PPR`` corresponds to the respective operators in the Pauli-based computation
-        (``pbc``) dialect of Catalyst, and follows the same angle convention.
-
-    .. seealso:: :class:`~.PauliRot` for a Pauli product rotation with an arbitrary angle, and
-        :func:`~.pauli_measure` for PPM, the measurement counterpart of a PPR.
-        For more information on Pauli-based computation (PBC), check out the
-        `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
-
-    Args:
-        angle_denominator (int): the denominator :math:`k` of the rotation angle
-            :math:`\varphi = \pi / k`. Must be one of ``±2``, ``±4``, or ``±8``.
-        pauli_word (str): the Pauli word defining the rotation, consisting of the characters
-            ``"X"``, ``"Y"``, ``"Z"``, and ``"I"``. Its length must match the length of ``wires``.
-        wires (Sequence[int] or int): the wires the operation acts on. The length must match
-            length of ``pauli_word``.
-
-    Raises:
-        ValueError: if ``angle_denominator`` is not an allowed integer denominator
-        ValueError: if the Pauli word contains characters other than ``X``, ``Y``, ``Z``, and ``I``
-        ValueError: if no wires are provided
-        ValueError: if the number of wires does not match the length of the Pauli word
-
-    **Example**
-
-    A :math:`\pi/8` PPR on the Pauli word :math:`X \otimes Y` is created by requesting the
-    corresponding angle :math:`\varphi=\pi/8`:
-
-    >>> op = qp.PPR(8, "XY", wires=[0, 1])
-    >>> op
-    PPR(8, 'XY', wires=[0, 1])
-
-    Negative denominators denote the inverse rotations:
-
-    >>> qp.PPR(-8, "XY", wires=[0, 1])
-    PPR(-8, 'XY', wires=[0, 1])
-
-    When compiling further to Pauli product measurements (PPM), ``PPR`` should first be lowered
-    using PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
-
-    """
-
-    compilable_argnames = ("angle_denominator", "pauli_word")
+    compilable_argnames = ("sign", "pauli_word")
     arg_specs = {"wires": Wire[-1]}
 
-    _ALLOWED_DENOMINATORS = (-8, -4, -2, 2, 4, 8)
+    _denominator: int
 
-    def __init__(self, angle_denominator: int, pauli_word: str, wires: WiresLike):
-        if angle_denominator not in self._ALLOWED_DENOMINATORS:
-            raise ValueError(
-                "The angle denominator must be an integer in "
-                f"{self._ALLOWED_DENOMINATORS}, denoting the rotation angle "
-                f"pi / angle_denominator, but got {angle_denominator}."
-            )
+    def __init__(self, sign: int, pauli_word: str, wires: WiresLike):
+        if sign not in (1, -1):
+            raise ValueError(f"The sign must be 1 or -1, but got {sign}.")
 
         if not set(pauli_word).issubset({"X", "Y", "Z", "I"}):
             raise ValueError(
@@ -2170,7 +2110,7 @@ class PPR(Operator2):
                 "Allowed characters are X, Y, Z and I."
             )
 
-        super().__init__(angle_denominator, pauli_word, wires=wires)
+        super().__init__(sign, pauli_word, wires=wires)
 
         if not self.wires:
             raise ValueError("At least one wire has to be provided.")
@@ -2187,7 +2127,7 @@ class PPR(Operator2):
         r"""A customizable string representation of the operator.
 
         Args:
-            decimals=None (int): unused, as ``PPR`` has no trainable parameters
+            decimals=None (int): unused, as PPRs have no trainable parameters
             base_label=None (str): overwrite the non-parameter component of the label
             cache=None (dict): dictionary that carries information between label calls
                 in the same drawing
@@ -2197,35 +2137,30 @@ class PPR(Operator2):
 
         **Example:**
 
-        >>> op = qp.PPR(8, "XY", wires=[0, 1])
+        >>> op = qp.PPR_8(1, "XY", wires=[0, 1])
         >>> op.label()
         'PPR(π/8, XY)'
         >>> op.label(base_label="PPR")
         'PPR'
         """
-        denominator = self.angle_denominator
-        sign = "-" if denominator < 0 else ""
-        angle_label = f"{sign}π/{abs(denominator)}"
-        return base_label or f"PPR({angle_label}, {self.pauli_word})"
+        sign = "-" if self.sign < 0 else ""
+        return base_label or f"PPR({sign}π/{self._denominator}, {self.pauli_word})"
 
     @override
     def __repr__(self) -> str:
-        return f"PPR({self.angle_denominator}, '{self.pauli_word}', wires={self.wires})"
+        return f"{self.name}({self.sign}, '{self.pauli_word}', wires={self.wires})"
 
-    @staticmethod
+    @classmethod
     def compute_matrix(  # pylint: disable=unused-argument
-        angle_denominator: int, pauli_word: str, wires=None
+        cls, sign: int, pauli_word: str, wires=None
     ) -> TensorLike:
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+        r"""Representation of the operator as a canonical matrix in the computational basis (class method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.PPR.matrix`
-
-
         Args:
-            angle_denominator (TensorLike): rotation angle
+            sign (int): sign of the rotation angle, ``1`` or ``-1``
             pauli_word (str): string representation of Pauli word
 
         Returns:
@@ -2233,20 +2168,187 @@ class PPR(Operator2):
 
         **Example**
 
-        >>> mat = qp.PPR.compute_matrix(-4, 'X')
+        >>> mat = qp.PPR_4.compute_matrix(-1, 'X')
         >>> expected = ((qp.I(0) + 1j * qp.X(0))/np.sqrt(2)).matrix()
         >>> np.allclose(mat, expected)
         True
 
         """
-        theta = np.pi / angle_denominator * 2
-        multi_Z_rot_matrix = qp.MultiRZ.compute_matrix(theta, list(range(len(pauli_word))))
+        return qp.PauliRot.compute_matrix(2 * np.pi * sign / cls._denominator, pauli_word)
 
-        # conjugate with Hadamard and RX to create the Pauli string
-        # pylint: disable-next=protected-access
-        conjugation_factors = (qp.PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in pauli_word)
-        conjugation_matrix = reduce(math.kron, conjugation_factors)
-        return math.conj(conjugation_matrix) @ multi_Z_rot_matrix @ conjugation_matrix
+
+class PPR_2(_FixedAnglePPR):
+    r"""PPR_2(sign, pauli_word, wires)
+    A Pauli product rotation (PPR) by the angle :math:`\pm\pi/2`.
+
+    .. math::
+
+        \text{PPR}_2(s, P) = \exp\left(-i s \frac{\pi}{2} P\right) = -i s P,
+
+    where :math:`s=\pm 1` is the sign of the rotation angle and :math:`P` is a Pauli word.
+    Up to a global phase, ``PPR_2`` is the Pauli word :math:`P` itself, independently of
+    the sign.
+
+    The Pauli-based computation literature commonly writes PPRs with this angle convention,
+    whereas :class:`~.PauliRot` follows the convention
+    :math:`\mathrm{PauliRot}(\theta, P)=\exp(-i \theta / 2 P)`.
+
+    .. note:: ``PPR_2`` corresponds to the ``pbc.ppr`` operation with rotation kind
+        :math:`\pm 2` in the Pauli-based computation (``pbc``) dialect of Catalyst, and follows
+        the same angle convention.
+
+    .. seealso:: :class:`~.PPR_4` and :class:`~.PPR_8` for PPRs by :math:`\pm\pi/4` and
+        :math:`\pm\pi/8`, :class:`~.PauliRot` for a Pauli product rotation with an arbitrary
+        angle, and :func:`~.pauli_measure` for PPM, the measurement counterpart of a PPR.
+        For more information on Pauli-based computation (PBC), check out the
+        `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
+
+    Args:
+        sign (int): the sign :math:`s` of the rotation angle. Must be ``1`` or ``-1``.
+        pauli_word (str): the Pauli word defining the rotation, consisting of the characters
+            ``"X"``, ``"Y"``, ``"Z"``, and ``"I"``. Its length must match the length of ``wires``.
+        wires (Sequence[int] or int): the wires the operation acts on. The length must match
+            length of ``pauli_word``.
+
+    Raises:
+        ValueError: if ``sign`` is not ``1`` or ``-1``
+        ValueError: if the Pauli word contains characters other than ``X``, ``Y``, ``Z``, and ``I``
+        ValueError: if no wires are provided
+        ValueError: if the number of wires does not match the length of the Pauli word
+
+    **Example**
+
+    >>> op = qp.PPR_2(1, "XY", wires=[0, 1])
+    >>> op
+    PPR_2(1, 'XY', wires=[0, 1])
+
+    The inverse rotation is obtained with ``sign=-1``:
+
+    >>> qp.PPR_2(-1, "XY", wires=[0, 1])
+    PPR_2(-1, 'XY', wires=[0, 1])
+
+    When compiling further to Pauli product measurements (PPM), ``PPR_2`` should first be lowered
+    using PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
+
+    """
+
+    _denominator = 2
+
+
+class PPR_4(_FixedAnglePPR):
+    r"""PPR_4(sign, pauli_word, wires)
+    A Clifford Pauli product rotation (PPR) by the angle :math:`\pm\pi/4`.
+
+    .. math::
+
+        \text{PPR}_4(s, P) = \exp\left(-i s \frac{\pi}{4} P\right),
+
+    where :math:`s=\pm 1` is the sign of the rotation angle and :math:`P` is a Pauli word.
+    For :math:`P=Z`, ``PPR_4`` is equal to :class:`~.S` (:math:`s=1`) or its adjoint
+    (:math:`s=-1`), up to a global phase.
+
+    The Pauli-based computation literature commonly writes PPRs with this angle convention,
+    whereas :class:`~.PauliRot` follows the convention
+    :math:`\mathrm{PauliRot}(\theta, P)=\exp(-i \theta / 2 P)`.
+
+    .. note:: ``PPR_4`` corresponds to the ``pbc.ppr`` operation with rotation kind
+        :math:`\pm 4` in the Pauli-based computation (``pbc``) dialect of Catalyst, and follows
+        the same angle convention.
+
+    .. seealso:: :class:`~.PPR_2` and :class:`~.PPR_8` for PPRs by :math:`\pm\pi/2` and
+        :math:`\pm\pi/8`, :class:`~.PauliRot` for a Pauli product rotation with an arbitrary
+        angle, and :func:`~.pauli_measure` for PPM, the measurement counterpart of a PPR.
+        For more information on Pauli-based computation (PBC), check out the
+        `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
+
+    Args:
+        sign (int): the sign :math:`s` of the rotation angle. Must be ``1`` or ``-1``.
+        pauli_word (str): the Pauli word defining the rotation, consisting of the characters
+            ``"X"``, ``"Y"``, ``"Z"``, and ``"I"``. Its length must match the length of ``wires``.
+        wires (Sequence[int] or int): the wires the operation acts on. The length must match
+            length of ``pauli_word``.
+
+    Raises:
+        ValueError: if ``sign`` is not ``1`` or ``-1``
+        ValueError: if the Pauli word contains characters other than ``X``, ``Y``, ``Z``, and ``I``
+        ValueError: if no wires are provided
+        ValueError: if the number of wires does not match the length of the Pauli word
+
+    **Example**
+
+    >>> op = qp.PPR_4(1, "XY", wires=[0, 1])
+    >>> op
+    PPR_4(1, 'XY', wires=[0, 1])
+
+    The inverse rotation is obtained with ``sign=-1``:
+
+    >>> qp.PPR_4(-1, "XY", wires=[0, 1])
+    PPR_4(-1, 'XY', wires=[0, 1])
+
+    When compiling further to Pauli product measurements (PPM), ``PPR_4`` should first be lowered
+    using PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
+
+    """
+
+    _denominator = 4
+
+
+class PPR_8(_FixedAnglePPR):
+    r"""PPR_8(sign, pauli_word, wires)
+    A non-Clifford Pauli product rotation (PPR) by the angle :math:`\pm\pi/8`.
+
+    .. math::
+
+        \text{PPR}_8(s, P) = \exp\left(-i s \frac{\pi}{8} P\right),
+
+    where :math:`s=\pm 1` is the sign of the rotation angle and :math:`P` is a Pauli word.
+    For :math:`P=Z`, ``PPR_8`` is equal to :class:`~.T` (:math:`s=1`) or its adjoint
+    (:math:`s=-1`), up to a global phase.
+
+    The Pauli-based computation literature commonly writes PPRs with this angle convention,
+    whereas :class:`~.PauliRot` follows the convention
+    :math:`\mathrm{PauliRot}(\theta, P)=\exp(-i \theta / 2 P)`.
+
+    .. note:: ``PPR_8`` corresponds to the ``pbc.ppr`` operation with rotation kind
+        :math:`\pm 8` in the Pauli-based computation (``pbc``) dialect of Catalyst, and follows
+        the same angle convention.
+
+    .. seealso:: :class:`~.PPR_2` and :class:`~.PPR_4` for PPRs by :math:`\pm\pi/2` and
+        :math:`\pm\pi/4`, :class:`~.PauliRot` for a Pauli product rotation with an arbitrary
+        angle, and :func:`~.pauli_measure` for PPM, the measurement counterpart of a PPR.
+        For more information on Pauli-based computation (PBC), check out the
+        `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
+
+    Args:
+        sign (int): the sign :math:`s` of the rotation angle. Must be ``1`` or ``-1``.
+        pauli_word (str): the Pauli word defining the rotation, consisting of the characters
+            ``"X"``, ``"Y"``, ``"Z"``, and ``"I"``. Its length must match the length of ``wires``.
+        wires (Sequence[int] or int): the wires the operation acts on. The length must match
+            length of ``pauli_word``.
+
+    Raises:
+        ValueError: if ``sign`` is not ``1`` or ``-1``
+        ValueError: if the Pauli word contains characters other than ``X``, ``Y``, ``Z``, and ``I``
+        ValueError: if no wires are provided
+        ValueError: if the number of wires does not match the length of the Pauli word
+
+    **Example**
+
+    >>> op = qp.PPR_8(1, "XY", wires=[0, 1])
+    >>> op
+    PPR_8(1, 'XY', wires=[0, 1])
+
+    The inverse rotation is obtained with ``sign=-1``:
+
+    >>> qp.PPR_8(-1, "XY", wires=[0, 1])
+    PPR_8(-1, 'XY', wires=[0, 1])
+
+    When compiling further to Pauli product measurements (PPM), ``PPR_8`` should first be lowered
+    using PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
+
+    """
+
+    _denominator = 8
 
 
 def _ppr_to_paulirot_resources(pauli_word, **_):
@@ -2254,21 +2356,142 @@ def _ppr_to_paulirot_resources(pauli_word, **_):
 
 
 @register_resources(_ppr_to_paulirot_resources)
-def _ppr_to_paulirot(angle_denominator, pauli_word, wires):
-    qp.PauliRot(np.pi / angle_denominator * 2, pauli_word, wires=wires)
+def _ppr2_to_paulirot(sign, pauli_word, wires):
+    qp.PauliRot(sign * np.pi, pauli_word, wires=wires)
 
 
-add_decomps(PPR, _ppr_to_paulirot)
+@register_resources(_ppr_to_paulirot_resources)
+def _ppr4_to_paulirot(sign, pauli_word, wires):
+    qp.PauliRot(sign * np.pi / 2, pauli_word, wires=wires)
 
 
-def _adjoint_ppr_to_ppr_resources(base):
-    num_wires = len(base.wires)
-    return {PPR(-base.angle_denominator, pauli_word=base.pauli_word, wires=Wire[num_wires]): 1}
+@register_resources(_ppr_to_paulirot_resources)
+def _ppr8_to_paulirot(sign, pauli_word, wires):
+    qp.PauliRot(sign * np.pi / 4, pauli_word, wires=wires)
 
 
-@register_resources(_adjoint_ppr_to_ppr_resources)
-def _adjoint_ppr_to_ppr(base):
-    PPR(-base.angle_denominator, pauli_word=base.pauli_word, wires=base.wires)
+_PAULI_OPS = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
 
 
-add_decomps("Adjoint(PPR)", _adjoint_ppr_to_ppr)
+def _ppr2_to_paulis_resources(pauli_word, **_):
+    return {qp.GlobalPhase: 1, **Counter(_PAULI_OPS[p] for p in pauli_word if p != "I")}
+
+
+@register_resources(_ppr2_to_paulis_resources)
+@disable_autograph
+def _ppr2_to_paulis(sign, pauli_word, wires):
+    qp.GlobalPhase(sign * np.pi / 2)
+    for wire, pauli in zip(wires, pauli_word, strict=True):
+        if pauli != "I":
+            _PAULI_OPS[pauli](wires=wire)
+
+
+def _z_gate(sign, gate, wires):
+    """``gate`` (``S`` or ``T``) for ``sign=1`` and its adjoint for ``sign=-1``."""
+    return gate(wires) if sign > 0 else qp.adjoint(gate(wires))
+
+
+def _ppr_via_z_gate_resources(sign, pauli_word, gate):
+    """Resources of ``_ppr_via_z_gate`` and a global phase."""
+    active_word = pauli_word.replace("I", "")
+    if not active_word:
+        return {qp.GlobalPhase: 1}
+
+    # gates in the order they are applied in
+    compute, uncompute = [], []
+    for pauli in active_word:
+        if pauli == "X":
+            compute.append(Hadamard(Wire[1]))
+            uncompute.append(Hadamard(Wire[1]))
+        elif pauli == "Y":
+            compute.extend([qp.adjoint(S(Wire[1])), Hadamard(Wire[1])])
+            uncompute.extend([Hadamard(Wire[1]), S(Wire[1])])
+    ladder = [qp.CNOT(Wire[2])] * (len(active_word) - 1)
+    compute, uncompute = compute + ladder, ladder + uncompute
+
+    z_gate = _z_gate(sign, gate, Wire[1])
+    if not compute:
+        return {qp.GlobalPhase: 1, z_gate: 1}
+
+    compute = compute[0] if len(compute) == 1 else qp.prod(*reversed(compute))
+    uncompute = uncompute[0] if len(uncompute) == 1 else qp.prod(*reversed(uncompute))
+
+    return {qp.GlobalPhase: 1, _change_op_basis_abstract(compute, z_gate, uncompute): 1}
+
+
+def _ppr_via_z_gate(sign, pauli_word, wires, gate):
+    """Apply the Pauli product rotation that is equal to ``gate`` (``S`` or ``T``) or its adjoint
+    for the Pauli word ``"Z"``, up to a global phase, by changing the basis of ``pauli_word`` to
+    a single Pauli ``Z``."""
+    active = [(wire, pauli) for wire, pauli in zip(wires, pauli_word, strict=True) if pauli != "I"]
+    if not active:
+        return
+
+    active_wires = [wire for wire, _ in active]
+    central_op = _z_gate(sign, gate, active_wires[0])
+    if pauli_word.replace("I", "") == "Z":
+        return
+
+    def _compute():
+        for wire, pauli in active:
+            if pauli == "X":
+                Hadamard(wires=wire)
+            elif pauli == "Y":
+                qp.adjoint(S(wires=wire))
+                Hadamard(wires=wire)
+        for i in range(len(active_wires) - 1, 0, -1):
+            qp.CNOT(wires=(active_wires[i], active_wires[i - 1]))
+
+    def _uncompute():
+        for i in range(1, len(active_wires)):
+            qp.CNOT(wires=(active_wires[i], active_wires[i - 1]))
+        for wire, pauli in active:
+            if pauli == "X":
+                Hadamard(wires=wire)
+            elif pauli == "Y":
+                Hadamard(wires=wire)
+                S(wires=wire)
+
+    qp.change_op_basis(_compute, central_op, _uncompute)
+
+
+def _ppr4_to_cliffords_resources(sign, pauli_word, **_):
+    return _ppr_via_z_gate_resources(sign, pauli_word, S)
+
+
+@register_resources(_ppr4_to_cliffords_resources)
+@disable_autograph
+def _ppr4_to_cliffords(sign, pauli_word, wires):
+    qp.GlobalPhase(sign * np.pi / 4)
+    _ppr_via_z_gate(sign, pauli_word, wires, S)
+
+
+def _ppr8_to_clifford_t_resources(sign, pauli_word, **_):
+    return _ppr_via_z_gate_resources(sign, pauli_word, T)
+
+
+@register_resources(_ppr8_to_clifford_t_resources)
+@disable_autograph
+def _ppr8_to_clifford_t(sign, pauli_word, wires):
+    qp.GlobalPhase(sign * np.pi / 8)
+    _ppr_via_z_gate(sign, pauli_word, wires, T)
+
+
+add_decomps(PPR_2, _ppr2_to_paulirot, _ppr2_to_paulis)
+add_decomps(PPR_4, _ppr4_to_paulirot, _ppr4_to_cliffords)
+add_decomps(PPR_8, _ppr8_to_paulirot, _ppr8_to_clifford_t)
+
+
+def _adjoint_ppr_flip_sign_resources(base):
+    op_cls = type(base)
+    return {op_cls(-base.sign, pauli_word=base.pauli_word, wires=Wire[len(base.wires)]): 1}
+
+
+@register_resources(_adjoint_ppr_flip_sign_resources)
+def _adjoint_ppr_flip_sign(base):
+    type(base)(-base.sign, pauli_word=base.pauli_word, wires=base.wires)
+
+
+add_decomps("Adjoint(PPR_2)", _adjoint_ppr_flip_sign)
+add_decomps("Adjoint(PPR_4)", _adjoint_ppr_flip_sign)
+add_decomps("Adjoint(PPR_8)", _adjoint_ppr_flip_sign)

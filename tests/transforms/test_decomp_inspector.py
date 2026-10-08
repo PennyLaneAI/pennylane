@@ -193,7 +193,7 @@ class TestInspectDecompGraph:
             Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool)): 2, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool)): 2}
             Wire Allocations: {'zero': 1}
-            Full Expansion Gates: {CNOT: 26, GlobalPhase: 55, MidMeasure: 2, RX: 19, RY: 10, RZ: 42}
+            Full Expansion Gates: {CNOT: 26, GlobalPhase: 67, MidMeasure: 2, RX: 19, RY: 10, RZ: 42}
             Weighted Cost: 3578.0
 
             Decomposition 1 (name: ctrl_many_zeroed_work_wires)
@@ -237,7 +237,7 @@ class TestInspectDecompGraph:
             | Full Expansion | Count |
             | :--- | :--- |
             | CNOT | 26 |
-            | GlobalPhase | 55 |
+            | GlobalPhase | 67 |
             | MidMeasure | 2 |
             | RX | 19 |
             | RY | 10 |
@@ -313,7 +313,7 @@ class TestInspectDecompGraph:
             Estimated First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, PauliX: 3, TemporaryAND: 1, Toffoli: 1}
             Actual First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, TemporaryAND: 1, Toffoli: 1}
             Wire Allocations: {'zero': 1}
-            Full Expansion Gates: {CNOT: 11, GlobalPhase: 25, MidMeasure: 1, RX: 7, RY: 5, RZ: 20}
+            Full Expansion Gates: {CNOT: 11, GlobalPhase: 31, MidMeasure: 1, RX: 7, RY: 5, RZ: 20}
             Weighted Cost: 1612.0
 
             Decomposition 3 (name: two_borrowed_workers)
@@ -343,14 +343,14 @@ class TestInspectDecompGraph:
             Estimated First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, PauliX: 3, TemporaryAND: 1, Toffoli: 1}
             Actual First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, TemporaryAND: 1, Toffoli: 1}
             Wire Allocations: {'zero': 1}
-            Full Expansion Gates: {CNOT: 11, GlobalPhase: 25, MidMeasure: 1, RX: 7, RY: 5, RZ: 20}
+            Full Expansion Gates: {CNOT: 11, GlobalPhase: 31, MidMeasure: 1, RX: 7, RY: 5, RZ: 20}
             Weighted Cost: 1612.0
             """).strip()
 
     def test_missing_ops(self):
         """Tests that missing operators are correctly reported."""
 
-        @decomp_inspector(gate_set={"RZ", "RX", "CNOT", "PPR"}, num_work_wires=2)
+        @decomp_inspector(gate_set={"RZ", "RX", "CNOT", "PPR_4"}, num_work_wires=2)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.PauliRot(0.5, "XYZ", [0, 1, 2])
@@ -364,8 +364,8 @@ class TestInspectDecompGraph:
             0: ─╭(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
             1: ─├(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
             2: ─╰(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
-            First-Level Expansion Gates: {(PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard): 1}
-            Missing Ops: {(PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard)}
+            First-Level Expansion Gates: {(PPR_4(-1, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR_4(1, 'X', wires=AbstractWires(1)) @ Hadamard): 1}
+            Missing Ops: {(PPR_4(-1, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR_4(1, 'X', wires=AbstractWires(1)) @ Hadamard)}
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
@@ -380,12 +380,12 @@ class TestInspectDecompGraph:
 
             | First-Level Expansion | Count |
             | :--- | :--- |
-            | (PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard) | 1 |
+            | (PPR_4(-1, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR_4(1, 'X', wires=AbstractWires(1)) @ Hadamard) | 1 |
             </details>
 
             | Missing Ops |
             | :--- |
-            | (PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard) |
+            | (PPR_4(-1, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR_4(1, 'X', wires=AbstractWires(1)) @ Hadamard) |
             """).strip()
 
         assert str(inspector.inspect_decomps(qp.H(0))) == dedent("""
