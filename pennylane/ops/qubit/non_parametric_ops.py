@@ -21,7 +21,7 @@ not depend on any parameters.
 import cmath
 from collections import Counter
 from copy import copy
-from functools import lru_cache
+from functools import lru_cache, partial
 from typing import Literal, override
 from warnings import warn
 
@@ -30,7 +30,6 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math
-from pennylane.capture.autograph import disable_autograph
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
@@ -2186,8 +2185,7 @@ class PPR_2(_FixedAnglePPR):
         \text{PPR}_2(s, P) = \exp\left(-i s \frac{\pi}{2} P\right) = -i s P,
 
     where :math:`s=\pm 1` is the sign of the rotation angle and :math:`P` is a Pauli word.
-    Up to a global phase, ``PPR_2`` is the Pauli word :math:`P` itself, independently of
-    the sign.
+    Up to a sign-dependent global phase, ``PPR_2`` is the Pauli word :math:`P` itself.
 
     The Pauli-based computation literature commonly writes PPRs with this angle convention,
     whereas :class:`~.PauliRot` follows the convention
@@ -2228,7 +2226,7 @@ class PPR_2(_FixedAnglePPR):
     PPR_2(-1, 'XY', wires=[0, 1])
 
     When compiling further to Pauli product measurements (PPM), ``PPR_2`` should first be lowered
-    using PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
+    using the PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
 
     """
 
@@ -2286,7 +2284,7 @@ class PPR_4(_FixedAnglePPR):
     PPR_4(-1, 'XY', wires=[0, 1])
 
     When compiling further to Pauli product measurements (PPM), ``PPR_4`` should first be lowered
-    using PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
+    using the PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
 
     """
 
@@ -2344,7 +2342,7 @@ class PPR_8(_FixedAnglePPR):
     PPR_8(-1, 'XY', wires=[0, 1])
 
     When compiling further to Pauli product measurements (PPM), ``PPR_8`` should first be lowered
-    using PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
+    using the PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
 
     """
 
@@ -2378,7 +2376,6 @@ def _ppr2_to_paulis_resources(pauli_word, **_):
 
 
 @register_resources(_ppr2_to_paulis_resources)
-@disable_autograph
 def _ppr2_to_paulis(sign, pauli_word, wires):
     qp.GlobalPhase(sign * np.pi / 2)
     for wire, pauli in zip(wires, pauli_word, strict=True):
@@ -2391,8 +2388,9 @@ def _z_gate(sign, gate, wires):
     return gate(wires) if sign > 0 else qp.adjoint(gate(wires))
 
 
-def _ppr_via_z_gate_resources(sign, pauli_word, gate):
+def _ppr_via_z_gate_resources(gate, sign, pauli_word, wires):
     """Resources of ``_ppr_via_z_gate`` and a global phase."""
+    # pylint: disable=unused-argument
     active_word = pauli_word.replace("I", "")
     if not active_word:
         return {qp.GlobalPhase: 1}
@@ -2455,23 +2453,13 @@ def _ppr_via_z_gate(sign, pauli_word, wires, gate):
     qp.change_op_basis(_compute, central_op, _uncompute)
 
 
-def _ppr4_to_cliffords_resources(sign, pauli_word, **_):
-    return _ppr_via_z_gate_resources(sign, pauli_word, S)
-
-
-@register_resources(_ppr4_to_cliffords_resources)
-@disable_autograph
+@register_resources(partial(_ppr_via_z_gate_resources, gate=S))
 def _ppr4_to_cliffords(sign, pauli_word, wires):
     qp.GlobalPhase(sign * np.pi / 4)
     _ppr_via_z_gate(sign, pauli_word, wires, S)
 
 
-def _ppr8_to_clifford_t_resources(sign, pauli_word, **_):
-    return _ppr_via_z_gate_resources(sign, pauli_word, T)
-
-
-@register_resources(_ppr8_to_clifford_t_resources)
-@disable_autograph
+@register_resources(partial(_ppr_via_z_gate_resources, gate=T))
 def _ppr8_to_clifford_t(sign, pauli_word, wires):
     qp.GlobalPhase(sign * np.pi / 8)
     _ppr_via_z_gate(sign, pauli_word, wires, T)
@@ -2483,8 +2471,7 @@ add_decomps(PPR_8, _ppr8_to_paulirot, _ppr8_to_clifford_t)
 
 
 def _adjoint_ppr_flip_sign_resources(base):
-    op_cls = type(base)
-    return {op_cls(-base.sign, pauli_word=base.pauli_word, wires=Wire[len(base.wires)]): 1}
+    return {type(base)(-base.sign, pauli_word=base.pauli_word, wires=Wire[len(base.wires)]): 1}
 
 
 @register_resources(_adjoint_ppr_flip_sign_resources)
