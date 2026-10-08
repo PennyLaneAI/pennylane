@@ -144,18 +144,18 @@ def hint(hints: dict[str, Any]) -> Callable:
 
     **Available Hints:**
 
-    * ``"num-iters": val`` — Both :func:`~.for_loop` and :func:`~.while_loop` support 
-      ``"num-iters"`` to indicate a heuristic number of loop iterations for the purposes of resource 
+    * ``"num-iters": val`` — Both :func:`~.for_loop` and :func:`~.while_loop` support
+      ``"num-iters"`` to indicate a heuristic number of loop iterations for the purposes of resource
       estimation with :func:`~.specs`. See Usage Details for more information.
 
     .. warning::
 
         By definition, the :func:`~.qjit` compiler may decide to completely ignore any instances of
-        ``hint`` in a program; a compiler hint is something that does not affect program 
-        correctness, meaning that the compiler can safely ignore them and still provide correct 
+        ``hint`` in a program; a compiler hint is something that does not affect program
+        correctness, meaning that the compiler can safely ignore them and still provide correct
         results.
 
-        While close mispellings may be accepted (e.g., ``"num-iter"``), spellings sufficiently far 
+        While close mispellings may be accepted (e.g., ``"num-iter"``), spellings sufficiently far
         away from the target will be ignored.
 
     .. details::
@@ -197,10 +197,10 @@ def hint(hints: dict[str, Any]) -> Callable:
         Total wires: 10
         Circuit Depth: Not computed
 
-        The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the 
+        The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the
         unhinted loop.
 
-        Note that hints can be overwritten. The following will use ``20`` as the number of 
+        Note that hints can be overwritten. The following will use ``20`` as the number of
         iterations:
 
         .. code-block:: python
@@ -219,7 +219,7 @@ def hint(hints: dict[str, Any]) -> Callable:
                 loop(0)
                 return qp.expval(qp.Z(0))
 
-        Compiler hints will also be discarded without warning if they do not match the expected type 
+        Compiler hints will also be discarded without warning if they do not match the expected type
         of hint. The next example would run without warning:
 
         .. code-block:: python
