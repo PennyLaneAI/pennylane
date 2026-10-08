@@ -2184,11 +2184,8 @@ class PPR_2(_FixedAnglePPR):
         \text{PPR}_2(s, P) = \exp\left(-i s \frac{\pi}{2} P\right) = -i s P,
 
     where :math:`s=\pm 1` is the sign of the rotation angle and :math:`P` is a Pauli word.
-    Up to a sign-dependent global phase, ``PPR_2`` is the Pauli word :math:`P` itself.
-
-    The Pauli-based computation literature commonly writes PPRs with this angle convention,
-    whereas :class:`~.PauliRot` follows the convention
-    :math:`\mathrm{PauliRot}(\theta, P)=\exp(-i \theta / 2 P)`.
+    Up to a sign-dependent global phase, ``PPR_2`` is equivalent to the Pauli word
+    :math:`P` itself (e.g., ``PPR_2(1, "XY", wires=[0, 1])`` is equivalent to :math:`-iX_0Y_1`).
 
     .. note:: ``PPR_2`` corresponds to the ``pbc.ppr`` operation with rotation kind
         :math:`\pm 2` in the Pauli-based computation (``pbc``) dialect of Catalyst, and follows
@@ -2196,7 +2193,8 @@ class PPR_2(_FixedAnglePPR):
 
     .. seealso:: :class:`~.PPR_4` and :class:`~.PPR_8` for PPRs by :math:`\pm\pi/4` and
         :math:`\pm\pi/8`, :class:`~.PauliRot` for a Pauli product rotation with an arbitrary
-        angle, and :func:`~.pauli_measure` for PPM, the measurement counterpart of a PPR.
+        angle (albeit following a different angle convention), and :func:`~.pauli_measure`
+        for PPM, the measurement counterpart of a PPR.
         For more information on Pauli-based computation (PBC), check out the
         `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
 
@@ -2224,8 +2222,8 @@ class PPR_2(_FixedAnglePPR):
     >>> qp.PPR_2(-1, "XY", wires=[0, 1])
     PPR_2(-1, 'XY', wires=[0, 1])
 
-    When compiling further to Pauli product measurements (PPM), ``PPR_2`` should first be lowered
-    using the PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
+    To compile ``PPR_2`` with PBC compilation passes (e.g., :func:`~.ppr_to_ppm` or
+    :func:`~.ppm_compilation`), the :func:`~.to_ppr` pass must be used beforehand.
 
     """
 
@@ -2240,7 +2238,7 @@ class PPR_4(_FixedAnglePPR):
         \text{PPR}_4(s, P) = \exp\left(-i s \frac{\pi}{4} P\right),
 
     where :math:`s=\pm 1` is the sign of the rotation angle and :math:`P` is a Pauli word.
-    For :math:`P=Z`, ``PPR_4`` is equal to :class:`~.S` (:math:`s=1`) or its adjoint
+    For :math:`P=Z`, ``PPR_4`` is equivalent to :class:`~.S` (:math:`s=1`) or its adjoint
     (:math:`s=-1`), up to a global phase.
 
     The Pauli-based computation literature commonly writes PPRs with this angle convention,
@@ -2253,7 +2251,8 @@ class PPR_4(_FixedAnglePPR):
 
     .. seealso:: :class:`~.PPR_2` and :class:`~.PPR_8` for PPRs by :math:`\pm\pi/2` and
         :math:`\pm\pi/8`, :class:`~.PauliRot` for a Pauli product rotation with an arbitrary
-        angle, and :func:`~.pauli_measure` for PPM, the measurement counterpart of a PPR.
+        angle (albeit following a different angle convention), and :func:`~.pauli_measure`
+        for PPM, the measurement counterpart of a PPR.
         For more information on Pauli-based computation (PBC), check out the
         `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
 
@@ -2281,8 +2280,8 @@ class PPR_4(_FixedAnglePPR):
     >>> qp.PPR_4(-1, "XY", wires=[0, 1])
     PPR_4(-1, 'XY', wires=[0, 1])
 
-    When compiling further to Pauli product measurements (PPM), ``PPR_4`` should first be lowered
-    using the PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
+    To compile ``PPR_4`` with PBC compilation passes (e.g., :func:`~.ppr_to_ppm` or
+    :func:`~.ppm_compilation`), the :func:`~.to_ppr` pass must be used beforehand.
 
     """
 
@@ -2297,7 +2296,7 @@ class PPR_8(_FixedAnglePPR):
         \text{PPR}_8(s, P) = \exp\left(-i s \frac{\pi}{8} P\right),
 
     where :math:`s=\pm 1` is the sign of the rotation angle and :math:`P` is a Pauli word.
-    For :math:`P=Z`, ``PPR_8`` is equal to :class:`~.T` (:math:`s=1`) or its adjoint
+    For :math:`P=Z`, ``PPR_8`` is equivalent to :class:`~.T` (:math:`s=1`) or its adjoint
     (:math:`s=-1`), up to a global phase.
 
     The Pauli-based computation literature commonly writes PPRs with this angle convention,
@@ -2310,7 +2309,8 @@ class PPR_8(_FixedAnglePPR):
 
     .. seealso:: :class:`~.PPR_2` and :class:`~.PPR_4` for PPRs by :math:`\pm\pi/2` and
         :math:`\pm\pi/4`, :class:`~.PauliRot` for a Pauli product rotation with an arbitrary
-        angle, and :func:`~.pauli_measure` for PPM, the measurement counterpart of a PPR.
+        angle (albeit following a different angle convention), and :func:`~.pauli_measure`
+        for PPM, the measurement counterpart of a PPR.
         For more information on Pauli-based computation (PBC), check out the
         `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
 
@@ -2338,8 +2338,8 @@ class PPR_8(_FixedAnglePPR):
     >>> qp.PPR_8(-1, "XY", wires=[0, 1])
     PPR_8(-1, 'XY', wires=[0, 1])
 
-    When compiling further to Pauli product measurements (PPM), ``PPR_8`` should first be lowered
-    using the PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
+    To compile ``PPR_8`` with PBC compilation passes (e.g., :func:`~.ppr_to_ppm` or
+    :func:`~.ppm_compilation`), the :func:`~.to_ppr` pass must be used beforehand.
 
     """
 
