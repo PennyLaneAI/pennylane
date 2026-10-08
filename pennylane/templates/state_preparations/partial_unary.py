@@ -975,7 +975,7 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
     ids = np.array([bijection[i] for i in range(num_entries)])
     dense_size = 2**n_subspace
     dense_state = math.scatter(ids, coefficients, dense_size, like=math.get_interface(coefficients))
-    qp.MultiplexerStatePreparation(dense_state, subspace_wires)
+    qp.MultiplexerStatePreparation(math.cast(dense_state, complex), subspace_wires)
 
     if not circuit:
         return

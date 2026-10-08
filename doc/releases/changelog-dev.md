@@ -946,6 +946,11 @@
   phases are purely real, i.e. :math:`\pm 1`.
   [(#9561)](https://github.com/PennyLaneAI/pennylane/pull/9561)
 
+* :class:`~.MultiplexerStatePreparation` now has separate decomposition rules for real-valued and
+  complex-valued state vectors, so that the resources of the real-valued rule do not include a
+  :class:`~.DiagonalQubitUnitary`.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
   For example, a controlled multi-target-``X`` operation previously decomposed as
