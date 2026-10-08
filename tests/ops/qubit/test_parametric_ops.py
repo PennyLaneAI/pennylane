@@ -3920,6 +3920,7 @@ def test_op_aliases_are_valid():
 class TestControlledPhaseShiftMCXDecomposition:
     """Tests for the MultiControlledX-based decomposition of a multi-controlled PhaseShift."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("num_controls", range(2, 7))
     def test_decomposition_rule(self, num_controls):
         """Tests the resources and the unitary of the MCX-based decomposition rule."""
