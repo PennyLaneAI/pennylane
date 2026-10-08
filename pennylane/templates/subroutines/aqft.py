@@ -163,7 +163,7 @@ def _AQFT_resources(order, wires):
 @register_resources(_AQFT_resources)
 def _AQFT_decomposition(wires, order):
     num_wires = len(wires)
-    shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
+    shifts = [2 * np.pi / (2**i) for i in range(2, num_wires + 1)]
 
     if compiler.active() or capture.enabled():
         shifts = math.array(shifts, like="jax")
@@ -188,7 +188,7 @@ def _AQFT_decomposition(wires, order):
 
     wire_loop()  # pylint: disable=no-value-for-parameter
 
-    @for_loop(len(wires) // 2)
+    @for_loop(num_wires // 2)
     def half_wire_loop(k):
         wire1 = wires[k]
         wire2 = wires[-k - 1]
