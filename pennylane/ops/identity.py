@@ -25,8 +25,9 @@ from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
-from pennylane.typing import Float, TensorLike, Wire
+from pennylane.typing import AbstractArray, Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 
@@ -412,6 +413,49 @@ def _controlled_g_phase_resource(
     resources.update(_mc_phase_shift_counts(num_control_wires - 1))
 
     return resources
+
+
+@custom_ctrl_dispatch.register
+def _ctrl_g_phase(
+    base: GlobalPhase, control, control_values, work_wires=None, work_wire_type="borrowed"
+):
+    r"""
+    Custom controlled global phase dispatch.
+
+    A :class:`~.GlobalPhase` applies the phase :math:`e^{-i\phi}` to the whole state regardless of
+    any qubit's state, so it has no target wires. Controlling it applies :math:`e^{-i\phi}` only
+    when the control qubit is in the :math:`|1\rangle` state, which acts on that qubit as
+
+    .. math::
+
+        \begin{bmatrix}
+            1 & 0 \\
+            0 & e^{-i \phi}
+        \end{bmatrix}.
+
+    This equals :math:`\text{PhaseShift}(-\phi)`, since
+    :math:`\text{PhaseShift}(\theta) = \text{diag}(1, e^{i\theta})`, so a single-controlled global
+    phase reduces to a phase shift on the control qubit. For multiple controls, the phase shift on
+    the last control is itself controlled by the remaining controls.
+    """
+
+    if not _is_empty_or_all_true(control_values):
+        return NotImplemented
+
+    phi = base.phi
+    if not isinstance(phi, AbstractArray):
+        phi = -phi
+
+    if len(control) == 1:
+        # The global phase becomes a phase shift on the single control wire.
+        return qp.PhaseShift(phi, control[-1])
+    # For multiple controls, a phase shift on the last control wire, controlled by the rest.
+    return qp.ctrl(
+        qp.PhaseShift(phi, control[-1]),
+        control=control[:-1],
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
 
 
 @register_resources(_controlled_g_phase_resource, exact=False)

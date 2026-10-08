@@ -23,6 +23,7 @@ from functools import singledispatch
 
 from pennylane import capture, ops, queuing
 from pennylane.core import Operator2
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator
 from pennylane.ops import (
     Adjoint,
@@ -77,7 +78,7 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
         new_op = copy.deepcopy(op)
         new_op._data = tuple(params)  # pylint: disable=protected-access
         if queuing.QueuingManager.recording() or capture.enabled():
-            return queuing.apply(new_op)
+            return apply(new_op)
         return new_op
 
 
