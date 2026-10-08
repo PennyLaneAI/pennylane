@@ -416,10 +416,14 @@ class SpecsResources(Resources):
         counts (dict[str, int | float | Expression]): A dictionary mapping gate names to their counts.
             Counts may be fractional when they represent expected values from compiler hints.
         measurement_processes (dict[str, int | float | Expression]): A dictionary mapping measurement
-            processes to their counts.
-        num_wires (int): The number of unique wires. For circuits that do not use
-          dynamic wires, this should be equal to the number of device wires.
-        circuit_depth (int | None): The depth of the circuit, or None if not computed. Defaults to ``None``.
+            processes to their counts. Counts may be fractional when they represent expected values
+            from compiler hints.
+        num_wires (int | float | Expression): The number of unique wires. For circuits that do not use
+          dynamic wires, this should be equal to the number of device wires. May be fractional when
+          it represents an expected value from compiler hints.
+        circuit_depth (int | float | Expression | None): The depth of the circuit, or None if not
+          computed. Defaults to ``None``. May be fractional when it represents an expected value
+          from compiler hints.
 
     .. seealso::
 
@@ -634,12 +638,16 @@ class PBCSpecsResources(SpecsResources):
         lead to unexpected behaviour.
 
     Args:
-        any_commuting_depth (int | Expression | None): The any commuting depth of the circuit.
-        qubit_disjoint_depth (int | Expression | None): The qubit disjoint depth of the circuit.
+        any_commuting_depth (int | float | Expression): The any commuting depth of the circuit.
+            May be fractional when it represents an expected value from compiler hints.
+        qubit_disjoint_depth (int | float | Expression): The qubit disjoint depth of the circuit.
+            May be fractional when it represents an expected value from compiler hints.
     """
 
-    any_commuting_depth: int | Expression = field(metadata={"display_name": "Any commuting depth"})
-    qubit_disjoint_depth: int | Expression = field(
+    any_commuting_depth: int | float | Expression = field(
+        metadata={"display_name": "Any commuting depth"}
+    )
+    qubit_disjoint_depth: int | float | Expression = field(
         metadata={"display_name": "Qubit disjoint depth"}
     )
 
