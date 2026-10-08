@@ -2177,8 +2177,7 @@ class _FixedAnglePPR(Operator2, is_baseclass=True):
 
 
 class PPR_2(_FixedAnglePPR):
-    r"""PPR_2(sign, pauli_word, wires)
-    A Pauli product rotation (PPR) by the angle :math:`\pm\pi/2`.
+    r"""A Pauli product rotation (PPR) by the angle :math:`\pm\pi/2`.
 
     .. math::
 
@@ -2234,8 +2233,7 @@ class PPR_2(_FixedAnglePPR):
 
 
 class PPR_4(_FixedAnglePPR):
-    r"""PPR_4(sign, pauli_word, wires)
-    A Clifford Pauli product rotation (PPR) by the angle :math:`\pm\pi/4`.
+    r"""A Clifford Pauli product rotation (PPR) by the angle :math:`\pm\pi/4`.
 
     .. math::
 
@@ -2292,8 +2290,7 @@ class PPR_4(_FixedAnglePPR):
 
 
 class PPR_8(_FixedAnglePPR):
-    r"""PPR_8(sign, pauli_word, wires)
-    A non-Clifford Pauli product rotation (PPR) by the angle :math:`\pm\pi/8`.
+    r"""A non-Clifford Pauli product rotation (PPR) by the angle :math:`\pm\pi/8`.
 
     .. math::
 
