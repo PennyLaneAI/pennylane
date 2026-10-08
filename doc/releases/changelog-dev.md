@@ -2,6 +2,19 @@
 
 <h3>New features since last release</h3>
 
+* A new function called :func:`~pennylane.backline.onnx_decoder` has been added, which runs an
+  ONNX model on a Backline :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or
+  on the CPU. See :func:`~pennylane.backline.onnx_decoder` for the supported providers and usage
+  details.
+  [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
+
+  ```pycon
+  >>> fn = qp.backline.onnx_decoder("predecoder.onnx")  # doctest: +SKIP
+  >>> coproc = qp.Coprocessor(hardware="gpu", coprocessor_fn=fn)  # doctest: +SKIP
+  >>> dev = qp.Backline(  # doctest: +SKIP
+  ...     controller=qp.Controller(), coprocessors=[coproc], transport="memcpy"
+  ... )
+  ```
 
 * Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
   can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
@@ -733,17 +746,26 @@
 
 <h3>Improvements 🛠</h3>
 
+* The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
+  but instead expresses the Select block as another ``QROM`` with fewer controls and more target
+  qubits. This allows for scalable compilation of this decomposition rule.
+  [(#10207)](https://github.com/PennyLaneAI/pennylane/pull/10207)
+
 * A :class:`~.Controller` now takes the size of its messages in each direction, with the
-  ``in_bytes`` and ``out_bytes`` keyword arguments. Both default to 8. The ``"memcpy"`` transport
-  carries messages of any size to a CPU coprocessor, and to a GPU coprocessor running a
-  per-message function. A GPU coprocessor running a persistent kernel, and every coprocessor over
-  the ``"rdma"`` transport, carry up to 8 bytes.
-
-  .. code-block:: python
-
-      ctrl = qp.Controller(in_bytes=120, out_bytes=121)
-
+  ``in_bytes`` and ``out_bytes`` keyword arguments. Left unset, they take the sizes its
+  coprocessors' functions declare, or else 8 bytes. The ``"memcpy"`` transport carries messages of
+  any size to a CPU coprocessor, and to a GPU coprocessor running a per-message function. A GPU
+  coprocessor running a persistent kernel, and every coprocessor over the ``"rdma"`` transport,
+  carry up to 8 bytes.
   [(#10224)](https://github.com/PennyLaneAI/pennylane/pull/10224)
+  [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
+
+  ```python
+  ctrl = qp.Controller(in_bytes=120, out_bytes=121)
+  ```
+
+* :class:`~.CoprocessorFunction` now accepts ``config``, ``per_message`` and ``message_bytes``.
+  [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
 
 * Computing and differentiating the matrix of a :class:`~.SpecialUnitary` acting on more than
   five wires is now significantly faster.
@@ -772,6 +794,11 @@
 * Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a
   decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
   [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
+
+* Added a decomposition of :class:`~.PPR` to the Clifford+T gate set, so that circuits of
+  PPRs can be decomposed exactly to :data:`~.gate_sets.CLIFFORD_T` if ``PPR`` is not in the gate
+  set.
+  [(#10272)](https://github.com/PennyLaneAI/pennylane/pull/10272)
 
 * :class:`~.FlipSign` now accepts `work_wires`, which are forwarded to the multi-controlled
   :class:`~.Z` gate in its decomposition. Providing work wires substantially reduces the gate count.
@@ -1188,6 +1215,14 @@
   pulse-level gradient transforms.
   [(#10238)](https://github.com/PennyLaneAI/pennylane/pull/10238)
 
+* :class:`~.IQPEmbedding`'s ``pattern`` argument now lists pairs of *indices into* ``wires``,
+  rather than wire labels. This matches the ``pattern`` argument of :class:`~.IQP`. 
+  It is a dynamic ``(K, 2)`` integer
+  tensor. The default all-pairs pattern is unchanged.
+  To entangle the first and third of ``wires=["z", "a", "k"]``, pass ``pattern=[[0, 2]]``
+  (previously ``pattern=[["z", "k"]]``).
+  [(#10221)](https://github.com/PennyLaneAI/pennylane/pull/10221)
+
 * :class:`~.QuantumPhaseEstimation` now only accepts an :class:`~.Operator` as the ``unitary``, and the
   ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
   To use a unitary matrix, wrap it in a :class:`~.QubitUnitary`:
@@ -1217,6 +1252,11 @@
 
 * ZX transforms now require ``pyzx>=0.10``. Upgrade with ``pip install 'pyzx>=0.10'``.
   [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
+
+* The `__repr__` of :class:`~.MultiControlledX` now also reports `work_wires` and
+  `work_wire_type` when work wires are provided, instead of only `wires` and non-trivial
+  `control_values`.
+  [(#10190)](https://github.com/PennyLaneAI/pennylane/pull/10190)
 
 * Jax 0.7.1 is now a hard requirement for PennyLane.
   [(#10192)](https://github.com/PennyLaneAI/pennylane/pull/10192)
@@ -1523,7 +1563,7 @@
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
       :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.QuantumPhaseEstimation`, :class:`~.IQP`,
-      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`
+      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`, :class:`~.IQPEmbedding`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#10164)](https://github.com/PennyLaneAI/pennylane/pull/10164)
   [(#10178)](https://github.com/PennyLaneAI/pennylane/pull/10178)
@@ -1555,6 +1595,7 @@
   [(#10069)](https://github.com/PennyLaneAI/pennylane/pull/10069)
   [(#10085)](https://github.com/PennyLaneAI/pennylane/pull/10085)
   [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
+  [(#10221)](https://github.com/PennyLaneAI/pennylane/pull/10221)
   [(#10223)](https://github.com/PennyLaneAI/pennylane/pull/10223)
   [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
   [(#10226)](https://github.com/PennyLaneAI/pennylane/pull/10226)
@@ -1838,6 +1879,14 @@
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed :meth:`~.PPR.matrix` raising a ``KeyError`` when the Pauli word contains the identity
+  character ``"I"``.
+  [(#10272)](https://github.com/PennyLaneAI/pennylane/pull/10272)
+
+* :func:`~.ops.functions.bind_new_parameters` now rebinds :class:`~.Operator2` dynamic
+  arguments by name and no longer assumes dynamic arguments to declared positionally.
+  [(#10221)](https://github.com/PennyLaneAI/pennylane/pull/10221)
 
 * :class:`~.SumOfSlatersPrep` now falls back to identity encoding when the pairwise-difference
   construction required for the compressed encoding would exceed approximately 1 GiB of peak memory.

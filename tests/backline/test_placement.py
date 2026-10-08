@@ -43,12 +43,22 @@ def test_nodes_default_to_cpu_hardware():
     assert coprocessor.hardware == "cpu"
 
 
-def test_controller_owns_message_sizes():
-    """Controllers provide transport message sizes without backend initialization arguments."""
+def test_controller_message_sizes_default_to_unset():
+    """A controller leaves its message sizes unset until a placement resolves them."""
     controller = qp.Controller()
 
-    assert controller.in_bytes == 8
-    assert controller.out_bytes == 8
+    assert controller.in_bytes is None
+    assert controller.out_bytes is None
+
+
+def test_a_placement_resolves_unset_message_sizes_to_eight_bytes():
+    """With no size set or declared, a placement sends and receives 8 bytes, and leaves the
+    controller as it was built."""
+    dev = qp.Backline(controller=qp.Controller(), transport="memcpy")
+
+    assert dev.placement.in_bytes == 8
+    assert dev.placement.out_bytes == 8
+    assert dev.placement.controller.in_bytes is None
 
 
 def test_controller_message_sizes_are_chosen_by_the_caller():
@@ -139,6 +149,82 @@ def test_memcpy_accepts_messages_above_eight_bytes():
     dev = qp.Backline(controller=controller, coprocessors=[coprocessor], transport="memcpy")
 
     assert dev.placement.controller.out_bytes == 121
+
+
+def _sized_coprocessor(name, sizes):
+    fn = qp.CoprocessorFunction("decoder", message_bytes=sizes)
+    return qp.Coprocessor(name=name, coprocessor_fn=fn)
+
+
+def test_unset_message_sizes_are_taken_from_the_coprocessor_function():
+    """A controller that sets no sizes sends what its coprocessor's function declares."""
+    dev = qp.Backline(
+        controller=qp.Controller(),
+        coprocessors=[_sized_coprocessor("gpu0", (120, 121))],
+        transport="memcpy",
+    )
+
+    assert dev.placement.in_bytes == 120
+    assert dev.placement.out_bytes == 121
+
+
+def test_a_set_message_size_matching_the_function_is_kept():
+    """Setting one size that agrees with the function, the other is still taken from it."""
+    dev = qp.Backline(
+        controller=qp.Controller(in_bytes=120),
+        coprocessors=[_sized_coprocessor("gpu0", (120, 121))],
+        transport="memcpy",
+    )
+
+    assert dev.placement.in_bytes == 120
+    assert dev.placement.out_bytes == 121
+
+
+@pytest.mark.parametrize("name, size", [("in_bytes", 168), ("out_bytes", 169)])
+def test_a_set_message_size_differing_from_the_function_raises(name, size):
+    """A size the controller sets must match the one its coprocessor's function declares."""
+    with pytest.raises(ValueError, match=f"controller's {name}={size} does not match.*'gpu0'"):
+        qp.Backline(
+            controller=qp.Controller(**{name: size}),
+            coprocessors=[_sized_coprocessor("gpu0", (120, 121))],
+            transport="memcpy",
+        )
+
+
+def test_coprocessors_declaring_the_same_sizes_are_accepted():
+    """Replicas of one function share the controller's sizes."""
+    dev = qp.Backline(
+        controller=qp.Controller(),
+        coprocessors=[
+            _sized_coprocessor("gpu0", (120, 121)),
+            _sized_coprocessor("gpu1", (120, 121)),
+        ],
+        transport="memcpy",
+    )
+
+    assert dev.placement.in_bytes == 120
+
+
+def test_coprocessors_declaring_different_sizes_raise():
+    """One controller sends one size, so coprocessors declaring different ones are rejected."""
+    with pytest.raises(ValueError, match="'gpu0' expects 120 B in, 121 B out, 'gpu1' expects 96"):
+        qp.Backline(
+            controller=qp.Controller(),
+            coprocessors=[
+                _sized_coprocessor("gpu0", (120, 121)),
+                _sized_coprocessor("gpu1", (96, 97)),
+            ],
+            transport="memcpy",
+        )
+
+
+def test_a_declared_size_above_eight_bytes_is_rejected_over_rdma():
+    """Sizes taken from a function are subject to the transport's limit, like set ones."""
+    fn = qp.CoprocessorFunction("decoder", message_bytes=(120, 121))
+    coprocessor = qp.Coprocessor(coprocessor_fn=fn, endpoint=qp.Endpoint("127.0.0.1", 7760))
+
+    with pytest.raises(ValueError, match="transport='rdma' carries at most 8 bytes.*in_bytes=120"):
+        qp.Backline(controller=qp.Controller(), coprocessors=[coprocessor], transport="rdma")
 
 
 def test_coprocessor_stores_endpoint():
