@@ -1211,6 +1211,15 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Controlling a :class:`~.GlobalPhase` now returns a different operator. When all control values are
+  ``1``, ``qp.ctrl(qp.GlobalPhase(phi), control=...)`` is lowered in python to a :class:`~.PhaseShift`
+  (single control) or a controlled :class:`~.PhaseShift` (multiple controls), acting on a smaller
+  subspace. The result is therefore no longer a ``Controlled`` instance with a ``GlobalPhase`` base,
+  so attributes such as ``.base`` and ``.control_wires`` and the ``C(GlobalPhase)`` name no longer
+  apply in that case. A genuine controlled global phase is still produced when some control values
+  are ``0``.
+  [(#10279)](https://github.com/PennyLaneAI/pennylane/pull/10279)
+
 * Tensorflow and tensorflow-autograph interfaces are removed.
   [(#10229)](https://github.com/PennyLaneAI/pennylane/pull/10229)
 
