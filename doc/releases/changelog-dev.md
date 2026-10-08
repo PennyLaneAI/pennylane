@@ -746,6 +746,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
+  but instead expresses the Select block as another ``QROM`` with fewer controls and more target
+  qubits. This allows for scalable compilation of this decomposition rule.
+  [(#10207)](https://github.com/PennyLaneAI/pennylane/pull/10207)
+
 * A :class:`~.Controller` now takes the size of its messages in each direction, with the
   ``in_bytes`` and ``out_bytes`` keyword arguments. Left unset, they take the sizes its
   coprocessors' functions declare, or else 8 bytes. The ``"memcpy"`` transport carries messages of
@@ -789,6 +794,11 @@
 * Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a
   decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
   [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
+
+* Added a decomposition of :class:`~.PPR` to the Clifford+T gate set, so that circuits of
+  PPRs can be decomposed exactly to :data:`~.gate_sets.CLIFFORD_T` if ``PPR`` is not in the gate
+  set.
+  [(#10272)](https://github.com/PennyLaneAI/pennylane/pull/10272)
 
 * :class:`~.FlipSign` now accepts `work_wires`, which are forwarded to the multi-controlled
   :class:`~.Z` gate in its decomposition. Providing work wires substantially reduces the gate count.
@@ -1195,6 +1205,11 @@
   resource operators from their quantum functions.
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
+* Performance gains for qubit workflows in the TCDQ module. The new
+  `CircuitConfig.max_memory_gb` option bounds the temporary memory (in GB) used by the
+  phase computation; gates are processed in blocks sized from this budget.
+  [(#10246)](https://github.com/PennyLaneAI/pennylane/pull/10246)
+
 <h3>Breaking changes 💔</h3>
 
 * Tensorflow and tensorflow-autograph interfaces are removed.
@@ -1242,6 +1257,11 @@
 
 * ZX transforms now require ``pyzx>=0.10``. Upgrade with ``pip install 'pyzx>=0.10'``.
   [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
+
+* The `__repr__` of :class:`~.MultiControlledX` now also reports `work_wires` and
+  `work_wire_type` when work wires are provided, instead of only `wires` and non-trivial
+  `control_values`.
+  [(#10190)](https://github.com/PennyLaneAI/pennylane/pull/10190)
 
 * Jax 0.7.1 is now a hard requirement for PennyLane.
   [(#10192)](https://github.com/PennyLaneAI/pennylane/pull/10192)
@@ -1870,6 +1890,10 @@
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed :meth:`~.PPR.matrix` raising a ``KeyError`` when the Pauli word contains the identity
+  character ``"I"``.
+  [(#10272)](https://github.com/PennyLaneAI/pennylane/pull/10272)
 
 * :func:`~.ops.functions.bind_new_parameters` now rebinds :class:`~.Operator2` dynamic
   arguments by name and no longer assumes dynamic arguments to declared positionally.
