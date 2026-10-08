@@ -1205,6 +1205,11 @@
   resource operators from their quantum functions.
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
+* Performance gains for qubit workflows in the TCDQ module. The new
+  `CircuitConfig.max_memory_gb` option bounds the temporary memory (in GB) used by the
+  phase computation; gates are processed in blocks sized from this budget.
+  [(#10246)](https://github.com/PennyLaneAI/pennylane/pull/10246)
+
 <h3>Breaking changes 💔</h3>
 
 * Tensorflow and tensorflow-autograph interfaces are removed.
