@@ -746,11 +746,6 @@
 
 <h3>Improvements 🛠</h3>
 
-* :func:`~.decompose` is now a pass-only transform that always dispatches to Catalyst's
-  ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
-  available as :func:`~.transforms._tape_decompose`.
-  [(#10304)](https://github.com/PennyLaneAI/pennylane/pull/10304)
-
 * The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
   but instead expresses the Select block as another ``QROM`` with fewer controls and more target
   qubits. This allows for scalable compilation of this decomposition rule.
@@ -1216,6 +1211,11 @@
   [(#10246)](https://github.com/PennyLaneAI/pennylane/pull/10246)
 
 <h3>Breaking changes 💔</h3>
+
+* :func:`~.decompose` is now a pass-only transform that always dispatches to Catalyst's
+  ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
+  available as :func:`~.transforms._tape_decompose`.
+  [(#10304)](https://github.com/PennyLaneAI/pennylane/pull/10304)
 
 * Controlling a :class:`~.GlobalPhase` now returns a different operator. When all control values are
   ``1``, ``qp.ctrl(qp.GlobalPhase(phi), control=...)`` is lowered in python to a :class:`~.PhaseShift`

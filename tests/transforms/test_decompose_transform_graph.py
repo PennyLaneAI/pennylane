@@ -27,7 +27,7 @@ from pennylane.exceptions import DecompositionWarning
 from pennylane.ops.mid_measure import MidMeasure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.condition import Conditional
-from pennylane.transforms.decompose import _resolve_gate_set
+from pennylane.transforms.decompose import _decompose_setup_inputs, _resolve_gate_set
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
@@ -48,6 +48,27 @@ def test_pass_name():
         qp.transforms._tape_decompose.tape_transform
         is not None
     )
+
+
+@pytest.mark.unit
+def test_decompose_setup_inputs():
+    """Test that ``_decompose_setup_inputs`` forwards only the provided options."""
+    # pylint: disable=protected-access
+    args, options = _decompose_setup_inputs(gate_set={"RX", "CNOT"})
+    assert args == ()
+    assert options == {"gate_set": {"RX", "CNOT"}}
+
+    args, options = _decompose_setup_inputs(gate_set="RX")
+    assert args == ()
+    assert options == {"gate_set": {"RX"}}
+
+    fixed = {qp.CNOT: null_decomp}
+    alt = {qp.RX: [null_decomp]}
+    args, options = _decompose_setup_inputs(
+        gate_set=qp.RX, fixed_decomps=fixed, alt_decomps=alt
+    )
+    assert args == ()
+    assert options == {"gate_set": {qp.RX}, "fixed_decomps": fixed, "alt_decomps": alt}
 
 
 @pytest.mark.unit

@@ -100,9 +100,9 @@ class TrotterCGF(Operator2):
         registers = qp.registers({"hadamard": 1, "system": M * N})
         gate_set = {"Hadamard", "BasisRotation", "RZ", "CNOT", "PhaseShift", "ForLoop"}
 
-        @qp.qjit
-        @qp.transforms._tape_decompose(gate_set=gate_set)
-        @qp.qnode(qp.device("lightning.qubit"))
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("lightning.qubit", wires=1 + M * N))
         def trotter_circuit():
             qp.H(registers["hadamard"])
 
