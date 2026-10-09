@@ -109,8 +109,7 @@ def apply_hint(f, hints: dict[str, Any]):
 
     By default, all callables are converted to a :class:`~HintedCallable` for deferred handling.
 
-    >>>
-
+    >>> def f(x): return x
     >>> hinted_f = qp.hint({"identity": True})(f)
     >>> hinted_f
     <HintedCallable(<function f at 0x113e21260>, {'identity': True})>
