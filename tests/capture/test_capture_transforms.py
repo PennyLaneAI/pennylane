@@ -145,6 +145,49 @@ class TestCaptureTransforms:
         # Verifying that transformed function can execute
         _ = transformed_func(*args)
 
+    @pytest.mark.parametrize(
+        "args, kwargs",
+        [
+            ((1.5, {"offsets": [2.5, 3.5]}), {}),
+            ((1.5,), {"y": {"offsets": [2.5, 3.5]}}),
+            ((), {"y": {"offsets": [2.5, 3.5]}, "x": 1.5}),
+        ],
+        ids=["positional", "mixed", "keywords"],
+    )
+    def test_transform_qfunc_keyword_args(self, args, kwargs):
+        """Test keyword pytrees alongside captured constants and transform arguments."""
+        weights = jnp.array([2.0, 3.0])
+
+        def func(x, y):
+            return weights[0] * x + weights[1] * y["offsets"][0] - y["offsets"][1]
+
+        transformed_func = z_to_hadamard(func, 0, 1, dummy_kwarg1="foo")
+        jaxpr = jax.make_jaxpr(transformed_func)(*args, **kwargs)
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.5, 2.5, 3.5)
+        assert qp.math.allclose(result, [7.0])
+        assert qp.math.allclose(transformed_func(*args, **kwargs), 7.0)
+
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    @pytest.mark.parametrize(
+        "kwargs",
+        [{"x": 0.5}, {"offset": 0.25, "x": 0.5}],
+        ids=["keyword", "keyword_only"],
+    )
+    def test_transform_qnode_keyword_args(self, kwargs):
+        """Test transformed QNode keyword inputs with dynamic-shape staging enabled."""
+
+        @qp.transforms.cancel_inverses
+        @qp.qnode(qp.device("default.qubit", wires=1))
+        def circuit(x, *, offset=0.0):
+            qp.RX(x + offset, wires=0)
+            return qp.probs()
+
+        jaxpr = jax.make_jaxpr(circuit)(**kwargs)
+
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].invars == jaxpr.jaxpr.invars
+
     def test_transform_qnode_capture(self):
         """Test that a transformed QNode is captured correctly."""
         dev = qp.device("default.qubit", wires=2)

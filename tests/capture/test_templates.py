@@ -64,9 +64,6 @@ unmodified_templates_cases = [
     (qp.AngleEmbedding, (jnp.array([1.0, 0.0]), [2, 3]), {}),
     (qp.AngleEmbedding, (jnp.array([0.4]), [0]), {"rotation": "X"}),
     (qp.AngleEmbedding, (jnp.array([0.3, 0.1, 0.2]),), {"rotation": "Z", "wires": [0, 2, 3]}),
-    (qp.IQPEmbedding, (jnp.array([2.3, 0.1]), [2, 0]), {}),
-    (qp.IQPEmbedding, (jnp.array([0.4, 0.2, 0.1]), [2, 1, 0]), {"pattern": [[2, 0], [1, 0]]}),
-    (qp.IQPEmbedding, (jnp.array([0.4, 0.1]), [0, 10]), {"n_repeats": 3, "pattern": None}),
     (qp.QAOAEmbedding, (jnp.array([1.0, 0.0]), jnp.ones((3, 3)), [2, 3]), {}),
     (qp.QAOAEmbedding, (jnp.array([0.4]), jnp.ones((2, 1)), [0]), {"local_field": "X"}),
     (
@@ -336,6 +333,7 @@ tested_modified_templates = [
     qp.HilbertSchmidt,
     qp.HybridQRAM,
     qp.IQP,
+    qp.IQPEmbedding,
     qp.LocalHilbertSchmidt,
     qp.QDrift,
     qp.QSVT,
@@ -800,6 +798,37 @@ class TestModifiedTemplates:
             tape.operations[0], qp.IQP(weights, wires=wires, pattern=pattern, spin_sym=True)
         )
 
+    @pytest.mark.parametrize(
+        "features, wires, pattern, n_repeats",
+        [
+            (jnp.array([2.3, 0.1]), [2, 0], jnp.array([[0, 1]]), 1),
+            (jnp.array([0.4, 0.2, 0.1]), [2, 1, 0], jnp.array([[2, 0], [1, 0]]), 1),
+            (jnp.array([0.4, 0.1]), [0, 10], jnp.array([[0, 1]]), 3),
+        ],
+    )
+    def test_iqp_embedding(self, features, wires, pattern, n_repeats):
+        """Test the primitive bind call of IQPEmbedding."""
+
+        def qfunc(features, pattern, wires):
+            qp.IQPEmbedding(features, wires, n_repeats=n_repeats, pattern=pattern)
+
+        qfunc(features, pattern, wires)
+        jaxpr = jax.make_jaxpr(qfunc)(features, pattern, wires)
+
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.IQPEmbedding)
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        n_repeats_values, _ = eqn.params["n_repeats"]
+        assert tuple(n_repeats_values) == (n_repeats,)
+        assert "pattern" not in eqn.params
+
+        tape = plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, features, pattern, *wires)
+        assert qp.math.allclose(tape.operations[0].arguments["pattern"], pattern)
+
     @pytest.mark.parametrize("template", [qp.MERA, qp.MPS, qp.TTN])
     def test_tensor_networks(self, template):
         """Test the primitive bind call of MERA, MPS, and TTN."""
@@ -911,7 +940,7 @@ class TestModifiedTemplates:
         wires = [0, 1, 2]
 
         def qfunc(mps):
-            qp.MPSPrep(mps=mps, wires=wires)
+            return qp.MPSPrep(mps=mps, wires=wires).tracer
 
         # Validate inputs
         qfunc(mps)
@@ -922,24 +951,10 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.MPSPrep._primitive
-        assert eqn.invars[:4] == jaxpr.jaxpr.invars
-        assert [invar.val for invar in eqn.invars[4:]] == [0, 1, 2]
-        expected_params = {
-            "n_wires": 3,
-            "work_wires": None,
-            "right_canonicalize": False,
-        }
-        actual_params = {k: v for k, v in eqn.params.items() if k in expected_params}
-        assert actual_params == expected_params
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert_eqn_matches_op(eqn, qp.MPSPrep)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *mps)
-
-        assert len(q) == 1
-        assert q.queue[0] == qp.MPSPrep(mps=mps, wires=wires)
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *mps)
+        qp.assert_equal(op, qp.MPSPrep(mps, wires=wires))
 
     def test_all_singles_doubles(self):
         arguments = (

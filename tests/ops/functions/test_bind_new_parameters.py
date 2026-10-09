@@ -174,6 +174,23 @@ def test_operator_2_ops(op, new_params, expected_op):
     assert new_op is not op
 
 
+def test_operator2_rebinds_dynamic_args_by_name():
+    """Operator2 dynamic args are rebound by name, not constructor order.
+
+    ``IQPEmbedding(features, wires, n_repeats, pattern)`` has ``wires`` between
+    the two dynamic args, so a positional ``cls(*dynamic_args, wires=...)``
+    reconstruct would fail.
+    """
+
+    op = qp.IQPEmbedding([1.0, 2.0], wires=[0, 1], pattern=[[0, 1]])
+    new_op = bind_new_parameters(op, ([0.0, 0.0], np.array([[0, 1]])))
+
+    assert qp.math.allclose(new_op.arguments["features"], [0.0, 0.0])
+    assert qp.math.allclose(new_op.arguments["pattern"], [[0, 1]])
+    assert new_op.wires.labels == (0, 1)
+    assert new_op is not op
+
+
 @pytest.mark.parametrize(
     "op, new_params, expected_op",
     [
@@ -513,14 +530,35 @@ def test_conditional_ops(op, new_params, expected_op):
     assert new_op.meas_val.measurements == [mp0]
 
 
+class KeywordOnlyOperation(qp.operation.Operator):
+    """Operation with a constructor unsupported by the generic parameter-binding path."""
+
+    num_wires = 1
+
+    def __init__(self, *, param, wires):
+        super().__init__(param, wires=wires)
+
+
 def test_unsupported_op_copy_and_set():
     """Test that trying to use `bind_new_parameters` on an operator without
     a supported dispatcher will fall back to copying the operator and setting
     its private parameter storage to the new parameters."""
-    op = qp.PCPhase(0.123, 2, wires=[1, 2])
+    op = KeywordOnlyOperation(param=0.123, wires=0)
     new_op = bind_new_parameters(op, [0.456])
 
-    expected_op = qp.PCPhase(0.456, 2, wires=[1, 2])
+    expected_op = KeywordOnlyOperation(param=0.456, wires=0)
 
     qp.assert_equal(new_op, expected_op)
+    assert new_op is not op
+
+
+def test_unsupported_op_copy_and_set_in_queue():
+    """Test that the fallback path queues the copy with its new parameters."""
+    op = KeywordOnlyOperation(param=0.123, wires=0)
+
+    with qp.queuing.AnnotatedQueue() as queue:
+        new_op = bind_new_parameters(op, [0.456])
+
+    assert queue.queue == [new_op]
+    qp.assert_equal(new_op, KeywordOnlyOperation(param=0.456, wires=0))
     assert new_op is not op
