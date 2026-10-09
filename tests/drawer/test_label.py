@@ -83,7 +83,8 @@ class TestLabelledOp:
 def test_decomposition(op):
     """Tests that the decomposition of label op works."""
 
-    @qp.transforms._tape_decompose(gate_set={type(op)})  # pylint: disable=protected-access
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(gate_set={type(op)})
     @qp.qnode(qp.device("default.qubit"))
     def circuit():
         qp.drawer.label(op, "foo")

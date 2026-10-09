@@ -447,7 +447,8 @@ class TestIntegerComparator:
         """Tests that the decomposition is correct under the new system."""
 
         tape = qp.tape.QuantumScript([qp.IntegerComparator(42, wires=[0, 1, 2, 3, 4, 5, 6])])
-        [decomp], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
+        [decomp], _ = qp.transforms._tape_decompose(
             tape,
             gate_set={qp.X, qp.CNOT, qp.Hadamard, qp.T, "Adjoint(T)", qp.RX, qp.RY, qp.RZ},
         )

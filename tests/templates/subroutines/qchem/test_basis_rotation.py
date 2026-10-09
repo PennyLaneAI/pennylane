@@ -601,9 +601,8 @@ class TestInterfaces:
             assert qp.math.allclose(res, res3, atol=tol, rtol=0)
 
         gate_set = {"BasisState", "PhaseShift", "SingleExcitation"}
-        circuit_dec = qp.transforms._tape_decompose(
-            circuit, gate_set=gate_set
-        )  # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
+        circuit_dec = qp.transforms._tape_decompose(circuit, gate_set=gate_set)
         specs = qp.specs(catalyst.qjit(circuit_dec), level="device")(unitary_matrix)
         assert all(res in gate_set for res in specs.resources.quantum_operations)
 
