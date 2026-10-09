@@ -27,8 +27,8 @@ jnp = pytest.importorskip("jax.numpy")
 # pylint: disable=wrong-import-position
 import pennylane as qp
 from pennylane.capture.primitives import qnode_prim, transform_prim
+from pennylane.testing import assert_eqn_matches_op
 from pennylane.transforms.core import transform
-from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 

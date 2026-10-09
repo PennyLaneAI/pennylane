@@ -166,7 +166,7 @@ class TestQSVTBasics:
                 rule(UA=UA, projectors=projectors)  # pylint: disable=cell-var-from-loop
 
             jaxpr = qp.capture.make_plxpr(circuit)()
-            tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+            tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
             # NOTE: Need to flatten COB before comparing.
             flat_expected = []
