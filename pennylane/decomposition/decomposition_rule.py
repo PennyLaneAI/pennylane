@@ -636,7 +636,12 @@ def _canonicalize_signature(op_type, rule):
         return rule.is_applicable(**_get_arguments(*args, **kwargs))
 
     @register_condition(_condition_fn)
-    @register_resources(_resource_fn, work_wires=_get_work_wire_spec(), name=rule.name)
+    @register_resources(
+        _resource_fn,
+        work_wires=_get_work_wire_spec(),
+        exact=rule.exact_resources,
+        name=rule.name,
+    )
     def _impl(*args, **kwargs):
         rule._impl(**_get_arguments(*args, **kwargs))
 

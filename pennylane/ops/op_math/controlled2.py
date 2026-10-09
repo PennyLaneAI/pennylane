@@ -810,8 +810,7 @@ def flip_zero_control(
         arguments = _get_arguments(*args, **kwargs)
         new_arguments = arguments | {"control_values": None}
         gate_counts = rule.compute_resources(**new_arguments).gate_counts
-        if ctrl_values := arguments["control_values"]:
-            gate_counts[qp.X] = gate_counts.get(qp.X, 0) + len(ctrl_values)
+        gate_counts[qp.X] = gate_counts.get(qp.X, 0) + len(arguments["control_values"])
         return gate_counts
 
     @register_condition(_condition_fn)

@@ -723,7 +723,7 @@ class TestUnaryIterator:
         pml.Select."""
         # pylint: disable=unused-argument
         decomp = qp.list_decomps(qp.Select)[1]
-        assert decomp is _select_decomp_unary
+        assert decomp.name == _select_decomp_unary.name
 
     @pytest.mark.parametrize(
         "c, K, expected_ops, expected_ops_partial",
