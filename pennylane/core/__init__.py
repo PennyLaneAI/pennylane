@@ -21,7 +21,6 @@ Queuing
 
     ~QueuingManager
     ~AnnotatedQueue
-    ~apply
 
 Operator Types
 ~~~~~~~~~~~~~~
@@ -44,6 +43,13 @@ Operator Types
 
 Utility Functions
 ~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.core.apply
+
+.. autosummary::
+    :toctree: api
+
+    ~apply
 
 .. currentmodule:: pennylane.core.operator
 
@@ -104,7 +110,8 @@ Transforms
 
 """
 
-from .queuing import QueuingManager, AnnotatedQueue, apply
+from .apply import apply
+from .queuing import QueuingManager, AnnotatedQueue
 
 from .operator import (
     Channel,

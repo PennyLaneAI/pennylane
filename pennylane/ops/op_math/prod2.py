@@ -26,8 +26,8 @@ from scipy.sparse import kron as sparse_kron
 
 import pennylane as qp
 from pennylane import capture, compiler, control_flow, math
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.core.queuing import apply
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError

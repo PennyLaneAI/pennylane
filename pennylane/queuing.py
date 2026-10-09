@@ -15,7 +15,8 @@
 The previous location for pennylane.core.queuing.
 """
 
-# pylint: disable=wildcard-import, unused-wildcard-import
+# pylint: disable=wildcard-import, unused-wildcard-import, unused-import
+from pennylane.core.apply import apply
 from pennylane.core.queuing import *  # tach-ignore
 
 
