@@ -748,6 +748,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* The decompositions of :class:`~.QROM` (unary iteration), :class:`~.QFT`, :class:`~.AQFT` and
+  :class:`~.FFFT` now provide `num-iters` hints for loops with dynamic bounds, avoiding symbolic
+  resource counts when compiling them with Catalyst.
+  [(#10241)](https://github.com/PennyLaneAI/pennylane/pull/10241)
+
 * The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
   but instead expresses the Select block as another ``QROM`` with fewer controls and more target
   qubits. This allows for scalable compilation of this decomposition rule.

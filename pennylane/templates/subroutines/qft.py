@@ -18,7 +18,7 @@ This submodule contains the template for QFT.
 import numpy as np
 
 from pennylane import compiler, math
-from pennylane.capture import enabled
+from pennylane.capture import enabled, hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
@@ -153,15 +153,14 @@ def _qft_decomposition(wires: WiresLike):
         shifts = math.array(shifts, like="jax")
         wires = math.array(wires, like="jax")
 
-    shift_len = len(shifts)
-
     @for_loop(num_wires)
     def outer_loop(i):
         Hadamard(wires[i])
 
         if num_wires > 1:
 
-            @for_loop(shift_len - i)
+            @hint({"num-iters": (num_wires - 1) / 2})
+            @for_loop(num_wires - 1 - i)
             def cphaseshift_loop(j):
                 ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
 
