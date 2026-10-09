@@ -126,7 +126,7 @@ def decomp_rule_to_tape(op: Operator, rule: DecompositionRule) -> QuantumScript:
 
 
 def assert_valid_decomp_rule(
-    op: Operator, rule: DecompositionRule, skip_decomp_matrix_check: bool = False
+    op: Operator, rule: DecompositionRule, skip_matrix_check: bool = False
 ) -> None:
     """Check that a decomposition rule is consistent with the operator it decomposes.
 
@@ -137,7 +137,7 @@ def assert_valid_decomp_rule(
     Args:
         op (Operator): the operator to decompose
         rule (DecompositionRule): a decomposition rule for ``op``
-        skip_decomp_matrix_check (bool): If ``True``, the matrix of the decomposition is not
+        skip_matrix_check (bool): If ``True``, the matrix of the decomposition is not
             compared with the matrix of ``op``.
 
     Raises:
@@ -214,7 +214,7 @@ def assert_valid_decomp_rule(
         )
 
     # Tests that the decomposition produces the same matrix
-    if op.has_matrix and not skip_decomp_matrix_check and not _decomp_contains_mcm(rule, params):
+    if op.has_matrix and not skip_matrix_check and not _decomp_contains_mcm(rule, params):
         # Add projector to the additional wires (work wires) on the tape
         work_wires = tape.wires - op.wires
         all_wires = op.wires + work_wires

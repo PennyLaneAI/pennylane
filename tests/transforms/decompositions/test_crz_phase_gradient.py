@@ -63,7 +63,7 @@ def test_valid_decomp(p):
 
     custom_decomp = make_crz_to_phase_gradient_decomp(**kwargs)
     op = qp.CRZ(phi, [0, 1])
-    _test_decomposition_rule(op, custom_decomp, skip_decomp_matrix_check=True)
+    _test_decomposition_rule(op, custom_decomp, skip_matrix_check=True)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
