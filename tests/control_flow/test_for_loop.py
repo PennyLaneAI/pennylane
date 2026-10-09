@@ -18,6 +18,7 @@ Tests for the for_loop
 import pytest
 
 import pennylane as qp
+from pennylane.control_flow.for_loop import ForLoopCallable
 
 
 @pytest.mark.capture
@@ -163,3 +164,15 @@ class TestForLoopHints:
         loop = qp.hint({"num-iters": 7})(qp.for_loop(3)(body))
         assert loop.num_iters_hint == 7
         assert loop(0) == 3
+
+    def test_direct_form_preserves_for_loop_callable(self):
+        """``qp.hint(loop, hints)`` should return a ``ForLoopCallable`` with the new hint."""
+
+        @qp.for_loop(3)
+        def loop(i, x):  # pylint: disable=unused-argument
+            return x + 1
+
+        new_loop = qp.hint(loop, {"num-iters": 4})
+        assert isinstance(new_loop, ForLoopCallable)
+        assert new_loop.num_iters_hint == 4
+        assert new_loop(0) == 3
