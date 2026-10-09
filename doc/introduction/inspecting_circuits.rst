@@ -135,11 +135,11 @@ Measurement processes:
 Total wires: 4
 Circuit Depth: Not computed
 
-The :func:`~pennylane.estimate` function provides fast resource estimates of a quantum circuit by analyzing
-decomposition pathways to a target gate set with respect to the specified level of compilation. In the following example, 
-circuit compilation via the specified pipeline (just a single :func:`~.cancel_inverses`) is bypassed with 
-``level=0``, and 
-specifying a ``target`` gate set will analyze decomposition pathways to that gate set on the uncompiled circuit.
+The :func:`~pennylane.estimate` function provides fast resource estimates of a quantum circuit by
+analyzing decomposition pathways to a target gate set with respect to the specified level of
+compilation. In the following example, circuit compilation via the specified pipeline (just a
+single :func:`~.cancel_inverses`) is bypassed with ``level=0``, and specifying a ``target`` gate
+set will analyze decomposition pathways to that gate set on the uncompiled circuit.
 
 .. code-block:: python
 
@@ -154,12 +154,21 @@ specifying a ``target`` gate set will analyze decomposition pathways to that gat
         return qp.expval(qp.Z(0))
 
 >>> target = {"RX", "PauliX", "Hadamard", "CNOT"}
->>> qp.estimate(circuit, level=0, target=target)(0.1).resources.quantum_operations
-{'CNOT': 1, 'Hadamard': 2, 'PauliX': 2, 'RX': 1}
+>>> print(qp.estimate(circuit, level=0, target=target)(0.1).resources)
+Quantum operations:
+- Total: 6
+  - CNOT: 1
+  - Hadamard: 2
+  - PauliX: 2
+  - RX: 1
+Measurement processes:
+- expval(PauliZ): 1
+Total wires: 4
+Circuit Depth: Not computed
 
-Note that both ``PauliX`` gates are counted (:func:`~.cancel_inverses` is ignored with ``level=0``) and the ``CZ`` gate's
-decomposition pathway to ``CNOT`` and ``H`` is shown in the final resource estimate.
-
+Note that both ``PauliX`` gates are counted (:func:`~.cancel_inverses` is ignored with
+``level=0``) and the ``CZ`` gate's decomposition pathway to ``CNOT`` and ``H`` is shown in the
+final resource estimate.
 
 
 Circuit drawing

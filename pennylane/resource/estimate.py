@@ -68,19 +68,20 @@ def estimate(
     *,
     target: Iterable[type | str] | dict[type | str, float],
 ) -> Callable[..., CircuitSpecs]:
-    r"""Provides fast resource estimates of a quantum circuit by analyzing decomposition pathways with respect to a specified level of compilation.
-    
+    r"""Provides fast resource estimates of a quantum circuit by analyzing decomposition pathways
+    with respect to a specified level of compilation.
+
     .. note:: Only circuits compiled with :func:`qjit(capture=True) <~.qjit>` are supported.
 
     The ``estimate`` function provides fast resource estimates of a quantum circuit by analyzing
-decomposition 
-    pathways to a target gate set with respect to the specified level of compilation. The estimated circuit is never executed.
+    decomposition pathways to a target gate set with respect to the specified level of
+    compilation. The estimated circuit is never executed.
 
     Args:
-        qnode (:class:`~catalyst.jit.QJIT`): the qjit'd QNode for which to estimate resources. 
-        level (str | int): The level of compilation from which to project the resources onto the ``target``. Only
-            ``"top"`` or ``0``, the original circuit before any compilation passes have been applied, is
-            currently supported.
+        qnode (:class:`~catalyst.jit.QJIT`): the qjit'd QNode for which to estimate resources.
+        level (str | int): The level of compilation from which to project the resources onto the
+            ``target``. Only ``"top"`` or ``0``, the original circuit before any compilation
+            passes have been applied, is currently supported. Defaults to ``"top"``.
         target (Iterable[type | str] | dict[type | str, float]): The gate set to project the
             resources onto, in any form accepted by the ``gate_set`` argument of
             :func:`~.decompose`.
@@ -97,7 +98,7 @@ decomposition
     **Example**
 
     Consider the following circuit.
-    
+
     .. code-block:: python
 
         dev = qp.device("null.qubit", wires=2)
@@ -106,16 +107,17 @@ decomposition
         @qp.transforms.cancel_inverses
         @qp.qnode(dev)
         def circuit(x):
-            qp.Hadamard(0)
-            qp.Hadamard(0)
+            qp.X(0)
+            qp.X(0)
             qp.CZ([0, 1])
             qp.RX(x, wires=1)
             return qp.probs()
 
-    By calling ``estimate`` on this circuit with ``level=0/"top"``, the :func:`~.cancel_inverses` pass is ignored. Subsequently, the operations
-    in the original circuit will have their resources projected into the ``target`` gate set by analyzing possible decomposition pathways.
+    By calling ``estimate`` on this circuit with ``level=0/"top"``, the :func:`~.cancel_inverses`
+    pass is ignored. Subsequently, the operations in the original circuit will have their
+    resources projected into the ``target`` gate set by analyzing possible decomposition pathways.
 
-    >>> print(qp.estimate(circuit, target={"Hadamard", "CNOT", "RX"})(1.23))
+    >>> print(qp.estimate(circuit, target={"PauliX", "Hadamard", "CNOT", "RX"})(1.23))
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
@@ -124,23 +126,25 @@ decomposition
     Quantum operations:
     - Total: 6
       - CNOT: 1
-      - Hadamard: 4
+      - Hadamard: 2
+      - PauliX: 2
       - RX: 1
     Measurement processes:
     - probs(all wires): 1
     Total wires: 2
     Circuit Depth: Not computed
 
-    Since :func:`~.cancel_inverses` is ignored, both ``Hadamard`` gates
-    are counted. The ``CZ`` gate is decomposed into ``Hadamard`` and ``CNOT`` gates.
+    Since :func:`~.cancel_inverses` is ignored, both ``PauliX`` gates are counted. The ``CZ`` gate
+    is decomposed into ``Hadamard`` and ``CNOT`` gates.
 
     .. details::
         :title: Symbolic resource counts
 
         Since the circuit is not executed, the projected resources are subject to the same
-        compile-time constraints as :func:`~.analyze`. In particular, operations inside a loop
-        whose number of iterations depends on runtime values are counted symbolically, using
-        :class:`~.resource.Expression` instances instead of integers.
+        compile-time constraints as :func:`~.analyze`, as both functions use the resource analysis
+        pass. In particular, operations inside a loop whose number of iterations depends on
+        runtime values are counted symbolically, using :class:`~.resource.Expression` instances
+        instead of integers.
 
         For example, the number of ``CZ`` gates in the following circuit, and therefore the number
         of gates they decompose into, depends on the value of ``n``:
@@ -177,10 +181,13 @@ decomposition
         >>> resources.subs(a=5).quantum_operations
         {'CNOT': 5, 'Hadamard': 11}
 
-        Loops inside the decomposition rules used to reach the ``target`` gate set are counted
-        symbolically as well, so the result can be symbolic even if the circuit has no dynamic
-        control flow.
+        .. note::
+
+            Loops inside the decomposition rules used to reach the ``target`` gate set are counted
+            symbolically as well, so the result can be symbolic even if the circuit has no dynamic
+            control flow.
     """
+    # TODO: [sc-133408] Add a qp.hint example to the docstring once hints survive decomposition
     qnode, partial_args, partial_kwargs = unwrap_partial(qnode)
 
     return apply_partial_args(

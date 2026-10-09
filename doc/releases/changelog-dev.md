@@ -445,13 +445,13 @@
 
 * A new function called :func:`~pennylane.estimate` is available, which provides a quick projection of the
   resources of a ``qjit``-compiled QNode onto a target gate set, without executing the circuit.
-  Before any specified compilation passes, the original circuit's operations and their possible decomposition pathways to the ``target`` gate set are analyzed
-  and the resulting operations are counted. Note that :func:`~.estimate` is only supported with
-  ``qp.qjit(capture=True)``.
+  Before any specified compilation passes, the original circuit's operations and their possible
+  decomposition pathways to the ``target`` gate set are analyzed and the resulting operations are
+  counted. Note that :func:`~.estimate` is only supported with ``qp.qjit(capture=True)``.
   [(#10296)](https://github.com/PennyLaneAI/pennylane/pull/10296)
-  
+
   Consider the following circuit.
-  
+
   ```python
   dev = qp.device("null.qubit", wires=2)
 
@@ -464,17 +464,30 @@
   ```
 
   ```pycon
-  >>> circuit_specs = qp.estimate(circuit, target={"Hadamard", "CNOT", "RX"})(1.23)
-  >>> circuit_specs.resources.quantum_operations
-  {'CNOT': 1, 'Hadamard': 2, 'RX': 1}
+  >>> print(qp.estimate(circuit, target={"Hadamard", "CNOT", "RX"})(1.23).resources)
+  Quantum operations:
+  - Total: 4
+    - CNOT: 1
+    - Hadamard: 2
+    - RX: 1
+  Measurement processes:
+  - probs(all wires): 1
+  Total wires: 2
+  Circuit Depth: Not computed
   ```
 
   Gates that are already in the ``target`` gate set are kept:
 
   ```pycon
-  >>> circuit_specs = qp.estimate(circuit, target={"CZ", "RX"})(1.23)
-  >>> circuit_specs.resources.quantum_operations
-  {'CZ': 1, 'RX': 1}
+  >>> print(qp.estimate(circuit, target={"CZ", "RX"})(1.23).resources)
+  Quantum operations:
+  - Total: 2
+    - CZ: 1
+    - RX: 1
+  Measurement processes:
+  - probs(all wires): 1
+  Total wires: 2
+  Circuit Depth: Not computed
   ```
 
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow

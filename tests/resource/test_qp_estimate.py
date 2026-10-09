@@ -28,6 +28,7 @@ pytestmark = pytest.mark.catalyst
 TARGET = {"Hadamard", "CNOT", "RX"}
 
 
+@pytest.mark.capture
 class TestEstimate:
     """Test qp.estimate()"""
 
@@ -35,7 +36,7 @@ class TestEstimate:
     def circuit(self):
         """Fixture for a qjit'd circuit with a user transform."""
 
-        @qp.qjit(capture=True)
+        @qp.qjit
         @qp.transforms.cancel_inverses
         @qp.qnode(qp.device("lightning.qubit", wires=2))
         def circuit(x):
@@ -107,7 +108,7 @@ class TestEstimate:
         """Test that estimate counts the resources inside a loop with a number of iterations that
         is not known at compile time symbolically."""
 
-        @qp.qjit(capture=True)
+        @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=2))
         def circuit(n):
             @qp.for_loop(n)
@@ -133,7 +134,6 @@ class TestEstimate:
 
         assert specs == qp.estimate(circuit, target=TARGET)(0.5)
 
-    @pytest.mark.usefixtures("enable_capture")
     def test_global_capture(self):
         """Test that estimate supports capture="global" when program capture is enabled."""
 
@@ -146,20 +146,6 @@ class TestEstimate:
         specs = qp.estimate(circuit, target={"Hadamard", "CNOT"})()
 
         assert specs.resources.quantum_operations == {"Hadamard": 2, "CNOT": 1}
-
-    @pytest.mark.usefixtures("disable_capture")
-    @pytest.mark.parametrize("capture", [False, "global"])
-    def test_error_without_capture(self, capture):
-        """Test that an error is raised if the QNode is compiled without program capture."""
-
-        @qp.qjit(capture=capture)
-        @qp.qnode(qp.device("lightning.qubit", wires=1))
-        def circuit():
-            qp.Hadamard(0)
-            return qp.probs()
-
-        with pytest.raises(ValueError, match=r"qp.estimate requires program capture"):
-            qp.estimate(circuit, target=TARGET)()
 
     def test_level_zero(self, circuit):
         """Test that level=0 is the same as level="top"."""
@@ -193,3 +179,18 @@ class TestEstimate:
 
         with pytest.raises(ValueError, match="qp.estimate can only be applied to a qjit'd QNode"):
             qp.estimate(circuit, target=TARGET)()
+
+
+@pytest.mark.usefixtures("disable_capture")
+@pytest.mark.parametrize("capture", [False, "global"])
+def test_error_without_capture(capture):
+    """Test that an error is raised if the QNode is compiled without program capture."""
+
+    @qp.qjit(capture=capture)
+    @qp.qnode(qp.device("lightning.qubit", wires=1))
+    def circuit():
+        qp.Hadamard(0)
+        return qp.probs()
+
+    with pytest.raises(ValueError, match=r"qp.estimate requires program capture"):
+        qp.estimate(circuit, target=TARGET)()
