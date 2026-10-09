@@ -173,16 +173,11 @@ class TestRotGateFusion:
         assert np.all(np.isfinite(fused_angles))
         self.run_interface_test(angles, angles)
 
-    def test_full_rot_fusion_rounding_above_one(self):
-        """Regression test for issue #10185. ``Rot(0, t, pi/2)`` followed by ``Rot(pi/2, t, 0)``
-        is diagonal for every ``t``, so the magnitude passed to ``arccos`` is 1 up to rounding.
-        For some ``t`` it is rounded slightly above 1, which used to give ``NaN``. Many values of
-        ``t`` are checked because which ones round above 1 depends on the platform."""
-        thetas = np.linspace(0, np.pi, 1001)
-        zeros, half_pi = np.zeros_like(thetas), np.full_like(thetas, np.pi / 2)
-        angles_1 = np.stack([zeros, thetas, half_pi], axis=1)
-        angles_2 = np.stack([half_pi, thetas, zeros], axis=1)
-
+    @staticmethod
+    def check_fused_rots_finite(angles_1, angles_2):
+        """Check that fusing two batches of Rot angles gives finite angles that reproduce the
+        product. Near the singularities, arccos and sqrt limit the accuracy of the fused angles
+        to about sqrt(machine epsilon), so a slightly looser tolerance than the default is used."""
         fused_angles = fuse_rot_angles(angles_1, angles_2)
         assert np.all(np.isfinite(fused_angles))
 
@@ -192,9 +187,28 @@ class TestRotGateFusion:
 
         matrix_expected = qp.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
         matrix_obtained = qp.Rot(*qp.math.transpose(fused_angles), wires=0).matrix()
-        # Near the singularity, arccos limits the accuracy of the fused angles to about
-        # sqrt(machine epsilon), so a slightly looser tolerance than the default is used.
         assert qp.math.allclose(matrix_expected, matrix_obtained, atol=1e-7)
+
+    def test_full_rot_fusion_rounding_above_one(self):
+        """Regression test for issue #10185. ``Rot(0, t, pi/2)`` followed by ``Rot(pi/2, t, 0)``
+        is diagonal for every ``t``, so the magnitude passed to ``arccos`` is 1 up to rounding.
+        For some ``t`` it is rounded slightly above 1, which used to give ``NaN``. Many values of
+        ``t`` are checked because which ones round above 1 depends on the platform."""
+        thetas = np.linspace(0, np.pi, 1001)
+        zeros, half_pi = np.zeros_like(thetas), np.full_like(thetas, np.pi / 2)
+        angles_1 = np.stack([zeros, thetas, half_pi], axis=1)
+        angles_2 = np.stack([half_pi, thetas, zeros], axis=1)
+        self.check_fused_rots_finite(angles_1, angles_2)
+
+    def test_full_rot_fusion_rounding_below_zero(self):
+        """Regression test for issue #10185. ``Rot(0, t, pi)`` followed by ``Rot(pi, pi - t, 0)``
+        is anti-diagonal for every ``t``, so the value passed to ``sqrt`` is 0 up to rounding.
+        For some ``t`` it is rounded slightly below 0, which used to give ``NaN``."""
+        thetas = np.linspace(0, np.pi, 1001)
+        zeros, pis = np.zeros_like(thetas), np.full_like(thetas, np.pi)
+        angles_1 = np.stack([zeros, thetas, pis], axis=1)
+        angles_2 = np.stack([pis, np.pi - thetas, zeros], axis=1)
+        self.check_fused_rots_finite(angles_1, angles_2)
 
     # pylint: disable=too-many-arguments
     def run_jacobian_test(self, all_angles, jac_fn, is_batched, jit_fn=None, array_fn=None):
