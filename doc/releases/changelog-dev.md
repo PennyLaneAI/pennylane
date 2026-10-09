@@ -2,6 +2,30 @@
 
 <h3>New features since last release</h3>
 
+* :func:`~.transforms.gridsynth` has a new ``method`` keyword argument. ``method="mixed"``
+  implements the mixed diagonal approximation of
+  [arXiv:2203.10064](https://arxiv.org/abs/2203.10064) (Section 3.4): each rotation randomly
+  applies one of two Clifford+T sequences whose errors cancel on average, which roughly halves the
+  T-count at the same accuracy.
+  [(#10290)](https://github.com/PennyLaneAI/pennylane/pull/10290)
+
+  ```python
+  qp.decomposition.enable_graph()
+
+  @qp.qjit(capture=True, target="mlir")
+  @qp.transforms.gridsynth(epsilon=1e-6, method="mixed")
+  @qp.transforms.decompose(gate_set={"RZ", "Hadamard"})
+  @qp.qnode(qp.device("null.qubit", wires=1))
+  def circuit(x: float):
+      qp.RZ(x, 0)
+      return qp.expval(qp.Z(0))
+  ```
+
+  ```pycon
+  >>> qp.specs(circuit, level="user")(1.1).resources.quantum_operations["T"]
+  33
+  ```
+
 * A new function called :func:`~pennylane.backline.onnx_decoder` has been added, which runs an
   ONNX model on a Backline :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or
   on the CPU. See :func:`~pennylane.backline.onnx_decoder` for the supported providers and usage
