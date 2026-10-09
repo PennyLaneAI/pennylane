@@ -1106,12 +1106,6 @@
   number of control wires/angles.
   [(#9655)](https://github.com/PennyLaneAI/pennylane/pull/9655)
 
-* A variant of :class:`~.SumOfSlatersPrep`, accessible as `labs.templates.SumOfSlatersPrep2` was
-  added and removed again. The existing class supports all use cases that were handled by
-  the temporary labs variant.
-  [(#9539)](https://github.com/PennyLaneAI/pennylane/pull/9539)
-  [(#10289)](https://github.com/PennyLaneAI/pennylane/pull/10289)
-
 * Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp`
   decomposition rule factories to be compatible with program capture.
   [(#9537)](https://github.com/PennyLaneAI/pennylane/pull/9537)
