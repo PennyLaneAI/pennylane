@@ -1899,6 +1899,14 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where :func:`~.transforms.single_qubit_fusion` (through ``fuse_rot_angles``)
+  produced a gate with ``NaN`` rotation angles when the two fused rotations compose to a
+  diagonal or anti-diagonal unitary, such as fusing two Hadamards. A floating-point rounding
+  error could push the squared magnitude passed to ``sqrt`` and ``arccos`` slightly outside
+  ``[0, 1]``; it is now clipped to that interval.
+  [(#10185)](https://github.com/PennyLaneAI/pennylane/issues/10185)
+  [(#10188)](https://github.com/PennyLaneAI/pennylane/pull/10188)
+
 * Fixed :meth:`~.PPR.matrix` raising a ``KeyError`` when the Pauli word contains the identity
   character ``"I"``.
   [(#10272)](https://github.com/PennyLaneAI/pennylane/pull/10272)
@@ -2159,6 +2167,7 @@ Jacob Kitchen,
 Korbinian Kottmann,
 Isabel Nha Minh Le,
 Christina Lee,
+Dongjae Lee,
 Joseph Lee,
 Mehrdad Malekmohammadi,
 William Maxwell,
