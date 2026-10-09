@@ -125,7 +125,7 @@ def decomp_rule_to_tape(op: Operator, rule: DecompositionRule) -> QuantumScript:
     return plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
 
 
-def assert_valid_decomposition_rule(
+def assert_valid_decomp_rule(
     op: Operator, rule: DecompositionRule, skip_decomp_matrix_check: bool = False
 ) -> None:
     """Check that a decomposition rule is consistent with the operator it decomposes.
@@ -158,8 +158,8 @@ def assert_valid_decomposition_rule(
         good_rule = qp.register_resources({qp.H: 2, qp.CZ: 1})(cnot_to_cz)
         bad_rule = qp.register_resources({qp.H: 1, qp.CZ: 1})(cnot_to_cz)
 
-    >>> qp.testing.assert_valid_decomposition_rule(qp.CNOT([0, 1]), good_rule)
-    >>> qp.testing.assert_valid_decomposition_rule(qp.CNOT([0, 1]), bad_rule)
+    >>> qp.testing.assert_valid_decomp_rule(qp.CNOT([0, 1]), good_rule)
+    >>> qp.testing.assert_valid_decomp_rule(qp.CNOT([0, 1]), bad_rule)
     Traceback (most recent call last):
         ...
     AssertionError:

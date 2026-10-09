@@ -44,7 +44,7 @@ def test_old_import_paths():
     new_objects = {
         "assert_valid": qp.testing.assert_valid,
         "_check_eigendecomposition": _check_eigendecomposition,
-        "_test_decomposition_rule": qp.testing.assert_valid_decomposition_rule,
+        "_test_decomposition_rule": qp.testing.assert_valid_decomp_rule,
     }
     assert set(old_module.__all__) == set(new_objects)
     for name, new_object in new_objects.items():
