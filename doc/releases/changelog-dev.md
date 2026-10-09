@@ -1075,6 +1075,12 @@
   existing rule, but is a different object to the rule with that name.
   [(#10282)](https://github.com/PennyLaneAI/pennylane/pull/10282)
 
+* :class:`~.GQSP` now accepts a ``shift`` argument that multiplies the encoded polynomial by
+  :math:`U^{\text{shift}}`. A negative shift (e.g. to encode Laurent polynomials) is absorbed into the
+  controlled unitaries at no extra cost, by replacing ``ctrl(U, control_values=[0])`` with
+  ``ctrl(adjoint(U), control_values=[1])``.
+  [(#10305)](https://github.com/PennyLaneAI/pennylane/pull/10305)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
