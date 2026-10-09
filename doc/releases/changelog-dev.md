@@ -1901,6 +1901,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed captured transforms dropping keyword arguments to the transformed function,
+  including when calling transformed QNodes with `qp.qjit(capture=True)`.
+  [(#10301)](https://github.com/PennyLaneAI/pennylane/pull/10301)
+
 * Fixed :meth:`~.PPR.matrix` raising a ``KeyError`` when the Pauli word contains the identity
   character ``"I"``.
   [(#10272)](https://github.com/PennyLaneAI/pennylane/pull/10272)
