@@ -21,7 +21,6 @@ Functions for parsing Catalyst resource JSON data into :class:`~.resource.SpecsR
 
 import copy
 import itertools
-import math
 import warnings
 from collections import defaultdict
 from typing import Any
@@ -33,12 +32,21 @@ from .resource import PBCSpecsResources, SpecsResources, num_to_letters
 _FLOAT_PRECISION_PLACES = 4
 
 
-def _safe_ceil(value: int | float | Expression) -> int | Expression:
-    """Rounds a value up to the nearest integer. Accounts for precision issues."""
-    # NOTE: This function only uses absolute tolerance and not relative tolerance.
-    # For extremely high values, this may result in off-by-one errors due to float precision
-    # artifacts, however, these errors are negligible for these extremely high resource counts.
-    return math.ceil(round(value, _FLOAT_PRECISION_PLACES))
+def _normalize_count(value: int | float | Expression) -> int | float | Expression:
+    """Clean float precision noise without discarding fractional expected counts.
+
+    Near-integer floats (within ``_FLOAT_PRECISION_PLACES``) collapse to ``int``.
+    True fractional values from Catalyst (e.g. probabilistic branch weighting or
+    fractional ``estimated_iterations``) are preserved.
+    """
+    if isinstance(value, Expression):
+        return value
+    if isinstance(value, float):
+        rounded = round(value, _FLOAT_PRECISION_PLACES)
+        if rounded == int(rounded):
+            return int(rounded)
+        return rounded
+    return value
 
 
 def _generate_display_name_for_symbolic_var(var: str, display_names: dict[str, str]) -> str:
@@ -238,8 +246,7 @@ def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
     """
     Converts a :class:`~.resource.SpecsResources` instance to a subclass if possible.
 
-    Ensures that all counts are rounded up to the nearest integer, as required by the
-    :class:`~.resource.SpecsResources` class.
+    Normalizes float precision artifacts while preserving fractional expected counts.
 
     Args:
         res (SpecsResources): The :class:`~.resource.SpecsResources` object to convert.
@@ -249,20 +256,22 @@ def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
             a subclass type if the original object contained the appropriate extra data.
     """
     kwargs = {
-        "counts": {op: _safe_ceil(count) for op, count in res.counts.items()},
+        "counts": {op: _normalize_count(count) for op, count in res.counts.items()},
         "measurement_processes": {
-            meas: _safe_ceil(count) for meas, count in res.measurement_processes.items()
+            meas: _normalize_count(count) for meas, count in res.measurement_processes.items()
         },
-        "num_wires": _safe_ceil(res.num_wires) if res.num_wires is not None else None,
-        "circuit_depth": _safe_ceil(res.circuit_depth) if res.circuit_depth is not None else None,
+        "num_wires": _normalize_count(res.num_wires) if res.num_wires is not None else None,
+        "circuit_depth": (
+            _normalize_count(res.circuit_depth) if res.circuit_depth is not None else None
+        ),
     }
     # Copy the extra fields to avoid mutating the original object
     extra = copy.deepcopy(res.extra)
 
     if "pbc_depth" in extra:
         pbc_depth = extra.pop("pbc_depth")
-        kwargs["any_commuting_depth"] = _safe_ceil(pbc_depth.pop("any_commuting_depth"))
-        kwargs["qubit_disjoint_depth"] = _safe_ceil(pbc_depth.pop("qubit_disjoint_depth"))
+        kwargs["any_commuting_depth"] = _normalize_count(pbc_depth.pop("any_commuting_depth"))
+        kwargs["qubit_disjoint_depth"] = _normalize_count(pbc_depth.pop("qubit_disjoint_depth"))
         # Pylint gets confused by the dynamic updates to kwargs here
         # pylint: disable=missing-kwoa
         return PBCSpecsResources(

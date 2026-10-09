@@ -373,12 +373,12 @@ class TestConvertToSubclass:
 
         assert res.extra == pbc_data  # Ensure the original extra data is unchanged
 
-    def test_convert_rounds_floats(self):
-        """Test that _convert_to_subclass rounds float counts and measurement processes to integers."""
+    def test_convert_preserves_fractional_counts(self):
+        """Fractional expected counts should be preserved; near-integers clean to int."""
         res = SpecsResources(
             counts={"Hadamard": Expression({("x",): 1.2, (): 1.5}), "PauliX": 2.2, "PauliZ": 6.9},
             measurement_processes={"expval(PauliZ)": 1.5},
-            num_wires=10.00000000000001,  # Test that precision errors don't ceil
+            num_wires=10.00000000000001,  # float noise collapses to int
             circuit_depth=5.9,
         )
 
@@ -386,10 +386,33 @@ class TestConvertToSubclass:
 
         assert isinstance(converted, SpecsResources)
         assert converted.counts == {
-            "Hadamard": Expression({("x",): 1.2, (): 2}),
-            "PauliX": 3,
-            "PauliZ": 7,
+            "Hadamard": Expression({("x",): 1.2, (): 1.5}),
+            "PauliX": 2.2,
+            "PauliZ": 6.9,
         }
-        assert converted.measurement_processes == {"expval(PauliZ)": 2}
+        assert converted.measurement_processes == {"expval(PauliZ)": 1.5}
         assert converted.num_wires == 10
-        assert converted.circuit_depth == 6
+        assert converted.circuit_depth == 5.9
+
+    def test_parse_preserves_fractional_quantum_operations(self):
+        """Fractional gate counts in Catalyst JSON should survive parsing."""
+        data = {
+            "circuit": {
+                "metadata": {
+                    "qnode": True,
+                    "has_branches": False,
+                    "device_name": "null.qubit",
+                    "auto_qubit_management": False,
+                },
+                "num_qubits": {"alloc": 0.5, "arg": 0, "total": 0.5},
+                "classical_instructions": {},
+                "quantum_operations": {"1": {"Hadamard": 0.5, "PauliX": 1.5}},
+                "function_calls": {"static": {}, "dynamic": {}},
+                "measurement_processes": {},
+                "extended_fields": {},
+            }
+        }
+
+        (resources,) = parse_resources_json(data)
+        assert resources.quantum_operations == {"Hadamard": 0.5, "PauliX": 1.5}
+        assert resources.num_wires == 0.5
