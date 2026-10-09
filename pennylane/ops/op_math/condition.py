@@ -754,7 +754,7 @@ def cond(
         Due to the presence of a compiler hint, the resources are now weighted by the branch probabilities.
         Unhinted branches, like ``elif_fn``, have the remaining probability equally distributed amoung them.
         In this case, the ``elif_fn`` gets a ``0.2`` probability. The 6 ``PauliX`` gates come from ``0.4``
-        of the ``true_fn`` resources and ``0.2`` of the ``elif_fn` resources.
+        of the ``true_fn`` resources and ``0.2`` of the ``elif_fn`` resources.
 
     """
 
