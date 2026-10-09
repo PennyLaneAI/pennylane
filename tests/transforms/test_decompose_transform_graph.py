@@ -64,9 +64,7 @@ def test_decompose_setup_inputs():
 
     fixed = {qp.CNOT: null_decomp}
     alt = {qp.RX: [null_decomp]}
-    args, options = _decompose_setup_inputs(
-        gate_set=qp.RX, fixed_decomps=fixed, alt_decomps=alt
-    )
+    args, options = _decompose_setup_inputs(gate_set=qp.RX, fixed_decomps=fixed, alt_decomps=alt)
     assert args == ()
     assert options == {"gate_set": {qp.RX}, "fixed_decomps": fixed, "alt_decomps": alt}
 

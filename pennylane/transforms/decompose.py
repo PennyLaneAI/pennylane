@@ -44,32 +44,22 @@ def _decompose_setup_inputs(
     fixed_decomps: dict | None = None,
     alt_decomps: dict | None = None,
 ):
-    """Decompose a quantum circuit toward a target gate set via Catalyst's graph-decomposition pass.
+    """Validate and pack options for Catalyst's ``graph-decomposition`` pass.
 
-    .. warning::
-
-        This transform must be applied within a workflow compiled with :func:`~.qjit`.
-        It is a frontend for Catalyst's ``graph_decomposition`` compilation pass.
-        For tape-based (non-compiled) decomposition, use :func:`~.transforms._tape_decompose`.
+    Wraps a single gate type or name into a set, and includes ``fixed_decomps`` /
+    ``alt_decomps`` in the options dict only when they are provided.
 
     Args:
-        gate_set (Iterable[type | str] | dict[type | str, float]): Target gate set after
-            decomposition. A mapping may supply relative costs used by the graph solver.
-        fixed_decomps (dict | None): Map operators to specific decomposition rules.
-        alt_decomps (dict | None): Map operators to alternative decomposition rules considered
-            by the graph solver.
+        gate_set (Iterable[type | str] | dict[type | str, float]): Target gate set, or a
+            single operator type/name that will be wrapped as a one-element set.
+        fixed_decomps (dict | None): Optional map from operators to fixed decomposition
+            rules. Omitted from the returned options when ``None``.
+        alt_decomps (dict | None): Optional map from operators to alternative decomposition
+            rules. Omitted from the returned options when ``None``.
 
-    **Example**
-
-    .. code-block:: python
-
-        @qp.qjit(capture=True)
-        @qp.decompose(gate_set={"RX", "RY", "RZ", "CNOT", "GlobalPhase"})
-        @qp.qnode(qp.device("lightning.qubit", wires=2))
-        def circuit():
-            qp.Hadamard(0)
-            qp.CNOT([0, 1])
-            return qp.expval(qp.Z(0))
+    Returns:
+        tuple[tuple, dict]: Empty positional args and the keyword options forwarded to
+        the Catalyst pass under capture.
 
     """
     if isinstance(gate_set, (type, str)):
@@ -85,7 +75,37 @@ def _decompose_setup_inputs(
     return (), options
 
 
+# Public documentation for :func:`~.decompose` (assigned to ``__doc__`` below so that
+# ``_decompose_setup_inputs`` can keep its own docstring).
 decompose = transform(pass_name="graph-decomposition", setup_inputs=_decompose_setup_inputs)
+decompose.__doc__ = """Decompose a quantum circuit toward a target gate set via Catalyst's graph-decomposition pass.
+
+.. warning::
+
+    This transform must be applied within a workflow compiled with :func:`~.qjit`.
+    It is a frontend for Catalyst's ``graph_decomposition`` compilation pass.
+    For tape-based (non-compiled) decomposition, use :func:`~.transforms._tape_decompose`.
+
+Args:
+    gate_set (Iterable[type | str] | dict[type | str, float]): Target gate set after
+        decomposition. A mapping may supply relative costs used by the graph solver.
+    fixed_decomps (dict | None): Map operators to specific decomposition rules.
+    alt_decomps (dict | None): Map operators to alternative decomposition rules considered
+        by the graph solver.
+
+**Example**
+
+.. code-block:: python
+
+    @qp.qjit(capture=True)
+    @qp.decompose(gate_set={"RX", "RY", "RZ", "CNOT", "GlobalPhase"})
+    @qp.qnode(qp.device("lightning.qubit", wires=2))
+    def circuit():
+        qp.Hadamard(0)
+        qp.CNOT([0, 1])
+        return qp.expval(qp.Z(0))
+
+"""
 
 
 @transform
