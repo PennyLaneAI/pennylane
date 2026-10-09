@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains unit tests for ``qp.ops.functions.assert_valid``.
+This module contains unit tests for ``qp.testing.assert_valid``.
 """
 
 # pylint: disable=too-few-public-methods,unused-argument
 
 import copy
+import importlib
 from pickle import PicklingError
 
 import numpy as np
@@ -37,6 +38,16 @@ from pennylane.testing.operators import (
 from pennylane.typing import Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
+
+
+def test_old_import_paths():
+    """Test that the old locations of assert_valid and its helpers give the same objects."""
+    old_module = importlib.import_module("pennylane.ops.functions.assert_valid")
+    for name in old_module.__all__:
+        assert getattr(old_module, name) is getattr(qp.testing.operators, name)
+
+    # importing the old module must not shadow the function of the same name
+    assert qp.ops.functions.assert_valid is qp.testing.assert_valid
 
 
 class TestDecompositionErrors:

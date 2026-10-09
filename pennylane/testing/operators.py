@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the qp.ops.functions.check_validity function for determining whether or not an
-Operator class is correctly defined.
+This module contains :func:`~.testing.assert_valid`, which checks whether an operator is correctly
+defined.
 """
 
 import copy
@@ -34,11 +34,11 @@ from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args, to_name
 from pennylane.exceptions import EigvalsUndefinedError
+from pennylane.ops.functions.equal import assert_equal
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.composite2 import CompositeOp2
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow2 import Pow2
-from pennylane.ops.functions.equal import assert_equal
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires

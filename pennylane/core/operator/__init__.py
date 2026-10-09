@@ -125,15 +125,6 @@ Other
 
     ~operation_derivative
 
-.. currentmodule:: pennylane
-
-PennyLane also provides a function for checking the consistency and correctness of an operator instance.
-
-.. autosummary::
-    :toctree: api
-
-    ~ops.functions.assert_valid
-
 Operation attributes
 ~~~~~~~~~~~~~~~~~~~~
 

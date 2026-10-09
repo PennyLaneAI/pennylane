@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Pytest configuration file for ops.functions submodule.
+Pytest configuration file for the pennylane.testing tests.
 
 Generates parametrizations of operators to test in test_assert_valid.py.
 """
