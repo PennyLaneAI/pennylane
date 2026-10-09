@@ -15,6 +15,8 @@
 Tests for ``qp.testing.assert_valid_decomposition_rule`` and ``qp.testing.decomp_rule_to_tape``.
 """
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 
