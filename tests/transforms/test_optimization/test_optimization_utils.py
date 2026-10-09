@@ -173,6 +173,29 @@ class TestRotGateFusion:
         assert np.all(np.isfinite(fused_angles))
         self.run_interface_test(angles, angles)
 
+    def test_full_rot_fusion_rounding_above_one(self):
+        """Regression test for issue #10185. ``Rot(0, t, pi/2)`` followed by ``Rot(pi/2, t, 0)``
+        is diagonal for every ``t``, so the magnitude passed to ``arccos`` is 1 up to rounding.
+        For some ``t`` it is rounded slightly above 1, which used to give ``NaN``. Many values of
+        ``t`` are checked because which ones round above 1 depends on the platform."""
+        thetas = np.linspace(0, np.pi, 1001)
+        zeros, half_pi = np.zeros_like(thetas), np.full_like(thetas, np.pi / 2)
+        angles_1 = np.stack([zeros, thetas, half_pi], axis=1)
+        angles_2 = np.stack([half_pi, thetas, zeros], axis=1)
+
+        fused_angles = fuse_rot_angles(angles_1, angles_2)
+        assert np.all(np.isfinite(fused_angles))
+
+        def original_ops():
+            qp.Rot(*qp.math.transpose(angles_1), wires=0)
+            qp.Rot(*qp.math.transpose(angles_2), wires=0)
+
+        matrix_expected = qp.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
+        matrix_obtained = qp.Rot(*qp.math.transpose(fused_angles), wires=0).matrix()
+        # Near the singularity, arccos limits the accuracy of the fused angles to about
+        # sqrt(machine epsilon), so a slightly looser tolerance than the default is used.
+        assert qp.math.allclose(matrix_expected, matrix_obtained, atol=1e-7)
+
     # pylint: disable=too-many-arguments
     def run_jacobian_test(self, all_angles, jac_fn, is_batched, jit_fn=None, array_fn=None):
         """Execute standard test lines for testing Jacobians with different interfaces.
