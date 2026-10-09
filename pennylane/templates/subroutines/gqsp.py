@@ -106,7 +106,7 @@ class GQSP(Operator2):
         :math:`|0\rangle\langle 0| \otimes I + |1\rangle\langle 1| \otimes U^{\dagger}`,
         which equals the original operator multiplied by :math:`I \otimes U^{\dagger}`.
         If :math:`|s| > d`, the remaining :math:`|s| - d` powers are applied as
-        ``qp.pow(qp.adjoint(U), |s| - d)``. A positive shift is applied as ``qp.pow(U, s)``.
+        ``qp.pow(qp.adjoint(U), abs(s) - d)``. A positive shift is applied as ``qp.pow(U, s)``.
 
         This can be used to encode a Laurent polynomial
         :math:`P(x) = \sum_{k=-m}^{n} c_k x^k`: compute the angles of the polynomial
@@ -200,7 +200,7 @@ def _GQSP_decomposition(
     num_absorbed, remaining = _num_shifted_ctrl_ops(shift, len(thetas) - 1)
 
     # Powers of the unitary that cannot be absorbed into the controlled unitaries. These
-    # commute with every other gate of the circuit since they act only on the target wires.
+    # commute with every other gate of the circuit since they are powers of the same operator.
     if remaining > 0:
         ops.pow(unitary, remaining)
     elif remaining < 0:
