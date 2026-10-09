@@ -776,12 +776,18 @@ class TestControlledSelectTHC:
         with qp.decomposition.toggle_graph_ctx(True):
             # one ChangeOpBasis per V sandwich plus one for the index swaps, and the control
             # lands on the outside of each of them
-            tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][0]  # pylint: disable=protected-access
+            tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][
+                0
+            ]  # pylint: disable=protected-access
             names = [op.name for op in tape.operations]
             assert sum(name.startswith("C(ChangeOpBasis") for name in names) == 3
 
-            tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][0]  # pylint: disable=protected-access
-            tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][0]  # pylint: disable=protected-access
+            tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][
+                0
+            ]  # pylint: disable=protected-access
+            tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][
+                0
+            ]  # pylint: disable=protected-access
 
         loads = [op for op in tape.operations if "QROM" in op.name or "SemiAdder" in op.name]
         assert len(loads) == 12

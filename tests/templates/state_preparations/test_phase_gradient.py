@@ -79,7 +79,9 @@ class TestDecomposition:
             circuit = qp.qjit(circuit, capture=True)
 
         else:
-            circuit = qp.transforms._tape_decompose(circuit, gate_set=gate_set)  # pylint: disable=protected-access
+            circuit = qp.transforms._tape_decompose(
+                circuit, gate_set=gate_set
+            )  # pylint: disable=protected-access
             tape = qp.workflow.construct_tape(circuit)()
             assert all(op.name in gate_set for op in tape.operations)
         assert np.allclose(circuit(), _expected_state(num_wires))

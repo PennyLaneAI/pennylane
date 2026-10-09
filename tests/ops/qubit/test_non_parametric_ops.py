@@ -1570,7 +1570,9 @@ class TestPPRCliffordTDecomposition:
         """Test that PPRs decompose to the Clifford+T gate set."""
         ops = [qp.PPR(8, "XYZ", [0, 1, 2]), qp.PPR(-4, "YZX", [1, 0, 2]), qp.PPR(2, "ZY", [0, 2])]
         tape = qp.tape.QuantumScript(ops)
-        (new_tape,), _ = qp.transforms._tape_decompose(tape, gate_set=qp.gate_sets.CLIFFORD_T)  # pylint: disable=protected-access
+        (new_tape,), _ = qp.transforms._tape_decompose(
+            tape, gate_set=qp.gate_sets.CLIFFORD_T
+        )  # pylint: disable=protected-access
 
         assert all(op in qp.gate_sets.CLIFFORD_T for op in new_tape.operations)
         wire_order = [0, 1, 2]

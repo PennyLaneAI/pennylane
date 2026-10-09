@@ -103,9 +103,11 @@ class TestMultiplier:
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
         k, x_wires, mod, work_wires = 4, [0, 1, 2], 7, [3, 4, 5, 6, 7]
-        multiplier_decomposition = qp.transforms._tape_decompose(  # pylint: disable=protected-access
-            qp.tape.QuantumScript([qp.Multiplier(k, x_wires, mod, work_wires)]), max_expansion=2
-        )[0][0].operations
+        multiplier_decomposition = (
+            qp.transforms._tape_decompose(  # pylint: disable=protected-access
+                qp.tape.QuantumScript([qp.Multiplier(k, x_wires, mod, work_wires)]), max_expansion=2
+            )[0][0].operations
+        )
 
         op_list = []
         if mod != 2 ** len(x_wires):

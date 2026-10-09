@@ -42,7 +42,9 @@ def test_pass_name():
     assert qp.transforms.decompose.pass_name == "graph-decomposition"
     assert qp.transforms.decompose.tape_transform is None
     assert qp.transforms._tape_decompose.pass_name is None  # pylint: disable=protected-access
-    assert qp.transforms._tape_decompose.tape_transform is not None  # pylint: disable=protected-access
+    assert (
+        qp.transforms._tape_decompose.tape_transform is not None
+    )  # pylint: disable=protected-access
 
 
 @pytest.mark.unit
@@ -53,7 +55,9 @@ def test_weighted_graph_handles_negative_weight():
 
     # edge case: negative gate weight
     with pytest.raises(ValueError, match="Negative weights"):
-        qp.transforms._tape_decompose(tape, gate_set={"CNOT": -10.0, "RZ": 1.0})  # pylint: disable=protected-access
+        qp.transforms._tape_decompose(
+            tape, gate_set={"CNOT": -10.0, "RZ": 1.0}
+        )  # pylint: disable=protected-access
 
 
 @pytest.mark.unit
@@ -167,14 +171,18 @@ class TestDecomposeGraphEnabled:
 
         tape = qp.tape.QuantumScript([])
         with pytest.raises(TypeError, match="The gate_set argument is required."):
-            qp.transforms._tape_decompose(tape, stopping_condition=lambda op: True)  # pylint: disable=protected-access
+            qp.transforms._tape_decompose(
+                tape, stopping_condition=lambda op: True
+            )  # pylint: disable=protected-access
 
     @pytest.mark.integration
     def test_mixed_gate_set_specification(self):
         """Tests that the gate_set can be specified as both a type and a string."""
 
         tape = qp.tape.QuantumScript([qp.RX(0.5, wires=[0]), qp.CNOT(wires=[0, 1])])
-        [new_tape], _ = qp.transforms._tape_decompose(tape, gate_set={"RX", qp.CNOT})  # pylint: disable=protected-access
+        [new_tape], _ = qp.transforms._tape_decompose(
+            tape, gate_set={"RX", qp.CNOT}
+        )  # pylint: disable=protected-access
         assert new_tape.operations == tape.operations
 
     @pytest.mark.integration
@@ -421,7 +429,9 @@ class TestDecomposeGraphEnabled:
             with pytest.warns(
                 DecompositionWarning, match="The graph-based decomposition system is unable"
             ):
-                [new_tape], _ = qp.transforms._tape_decompose([tape], gate_set={"RX"})  # pylint: disable=protected-access
+                [new_tape], _ = qp.transforms._tape_decompose(
+                    [tape], gate_set={"RX"}
+                )  # pylint: disable=protected-access
 
         assert new_tape.operations == [qp.RX(np.pi, wires=0), qp.GlobalPhase(-np.pi / 2)]
 
@@ -436,7 +446,9 @@ class TestDecomposeGraphEnabled:
         # So this also tests logic involving custom controlled operators.
         ops = [qp.ctrl(qp.MultiRZ(0.5, wires=[0, 1]), control=[2])]
         tape = qp.tape.QuantumScript(ops)
-        [new_tape], _ = qp.transforms._tape_decompose(tape, gate_set={"RZ", "CNOT", "Toffoli"})  # pylint: disable=protected-access
+        [new_tape], _ = qp.transforms._tape_decompose(
+            tape, gate_set={"RZ", "CNOT", "Toffoli"}
+        )  # pylint: disable=protected-access
         assert new_tape.operations == [
             # The conjugating ladder stays control-free
             qp.CNOT(wires=[1, 0]),
@@ -491,7 +503,9 @@ class TestDecomposeGraphEnabled:
 
         op = qp.ctrl(qp.pow(qp.QubitUnitary([[0, 1], [1, 0]], wires=0), 1), control=1)
         tape = qp.tape.QuantumScript([op])
-        [new_tape], _ = qp.transforms._tape_decompose(tape, gate_set={qp.ControlledQubitUnitary})  # pylint: disable=protected-access
+        [new_tape], _ = qp.transforms._tape_decompose(
+            tape, gate_set={qp.ControlledQubitUnitary}
+        )  # pylint: disable=protected-access
         assert new_tape.operations == [qp.ControlledQubitUnitary([[0, 1], [1, 0]], wires=[1, 0])]
 
     @pytest.mark.integration

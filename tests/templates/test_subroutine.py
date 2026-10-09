@@ -316,7 +316,9 @@ class TestSubroutineOp:
 
         tape = qp.tape.QuantumScript([self.op1])
 
-        [new_tape], _ = qp.transforms._tape_decompose(tape, gate_set={qp.PauliRot})  # pylint: disable=protected-access
+        [new_tape], _ = qp.transforms._tape_decompose(
+            tape, gate_set={qp.PauliRot}
+        )  # pylint: disable=protected-access
 
         qp.assert_equal(new_tape[0], qp.PauliRot(0.5, "XY", (0, "a")))
         qp.assert_equal(new_tape[1], qp.PauliRot(0.6, "YZ", ("a", 1)))
@@ -974,7 +976,9 @@ class TestGraphDecomposition:
 
         op = qp.ctrl(RXLayer.operator(np.array([1, 2, 3]), (1, 2, 3)), (4, 5))
         tape = qp.tape.QuantumScript([op])
-        new_tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][0]  # pylint: disable=protected-access
+        new_tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][
+            0
+        ]  # pylint: disable=protected-access
         qp.assert_equal(new_tape[0], qp.ctrl(qp.RX(1, 1), (4, 5)))
         qp.assert_equal(new_tape[1], qp.ctrl(qp.RX(2, 2), (4, 5)))
         qp.assert_equal(new_tape[2], qp.ctrl(qp.RX(3, 3), (4, 5)))
@@ -1033,12 +1037,16 @@ class TestGraphDecomposition:
         op = SubroutineDemoOp(wires=(0, 1, 2))
         tape = qp.tape.QuantumScript([op])
 
-        tape_rx = qp.transforms._tape_decompose(tape, gate_set={qp.RX})[0][0]  # pylint: disable=protected-access
+        tape_rx = qp.transforms._tape_decompose(tape, gate_set={qp.RX})[0][
+            0
+        ]  # pylint: disable=protected-access
         qp.assert_equal(tape_rx[0], qp.RX(0.0, 0))
         qp.assert_equal(tape_rx[1], qp.RX(1.0, 1))
         qp.assert_equal(tape_rx[2], qp.RX(2.0, 2))
 
-        tape_ry = qp.transforms._tape_decompose(tape, gate_set={qp.RY})[0][0]  # pylint: disable=protected-access
+        tape_ry = qp.transforms._tape_decompose(tape, gate_set={qp.RY})[0][
+            0
+        ]  # pylint: disable=protected-access
         qp.assert_equal(tape_ry[0], qp.RY(0.0, 0))
         qp.assert_equal(tape_ry[1], qp.RY(1.0, 1))
         qp.assert_equal(tape_ry[2], qp.RY(2.0, 2))
@@ -1072,7 +1080,9 @@ class TestGraphDecomposition:
         params = np.array([0.5, 1.2, 3.4])
         wires = [0, 1, 2]
         tape = qp.tape.QuantumScript([f.operator(params, wires, "X")])
-        [decomposed], _ = qp.transforms._tape_decompose(tape, gate_set=qp.gate_sets.ALL_OPS)  # pylint: disable=protected-access
+        [decomposed], _ = qp.transforms._tape_decompose(
+            tape, gate_set=qp.gate_sets.ALL_OPS
+        )  # pylint: disable=protected-access
         print(decomposed.circuit)
         qp.assert_equal(decomposed[0], qp.PauliRot(0.5, "X", 0))
         qp.assert_equal(decomposed[1], qp.PauliRot(1.2, "X", 1))
