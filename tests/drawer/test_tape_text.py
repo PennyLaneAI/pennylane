@@ -36,6 +36,7 @@ from pennylane.drawer._add_obj import (
     _add_subroutine_mcm_grouping_symbols,
 )
 from pennylane.drawer.tape_text import _Config
+from pennylane.ops.op_math import ControlledOp2
 
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
 default_wire_layers = {i: [[-1, 10]] for i in range(4)}
@@ -546,7 +547,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         expected = copy(expected)
         data = (0.5124,) if cls is qp.GlobalPhase else ()
         base_op = cls(*data, wires=wires) if cls is qp.Identity else cls(*data)
-        op = qp.ctrl(base_op, control=control_wires)
+        op = ControlledOp2(base_op, control_wires=control_wires)
         n_wires = len(wire_map)
         if n_wires > 4:
             expected[-1] = "├" + expected[-1][1:]

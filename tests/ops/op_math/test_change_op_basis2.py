@@ -32,9 +32,9 @@ from pennylane.ops.op_math import ChangeOpBasis2, Prod2, change_op_basis
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.change_op_basis import _validate_callable
 from pennylane.templates import Subroutine
+from pennylane.testing import assert_eqn_matches_op
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
-from tests.capture.capture_utils import assert_eqn_matches_op
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
@@ -128,7 +128,7 @@ def test_change_op_basis_concrete_legacy_operand_capture():
     import jax
 
     # Building with capture paused yields a concrete legacy operator rather than a tracer, so
-    # ``_apply_op_or_func`` takes the ``isinstance(op, Operator)`` -> ``queuing.apply`` branch.
+    # ``_apply_op_or_func`` takes the ``isinstance(op, Operator)`` -> ``apply`` branch.
     with qp.capture.pause():
         legacy_op = qp.ControlledSequence(qp.RX(0.1, 0), control=1)
 
@@ -294,7 +294,7 @@ def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
         qp.change_op_basis(compute_op(0), target_op(1), uncompute)
 
     jaxpr = qp.capture.make_plxpr(circuit)()
-    tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+    tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
     expected_uncompute = uncompute_op(0) if uncompute_op else qp.adjoint(compute_op(0))
     assert tape.operations == [compute_op(0), target_op(1), expected_uncompute]
 
@@ -585,7 +585,7 @@ class TestDecomposition:
         """Test that capture applies each decomposition operand in order."""
 
         jaxpr = qp.capture.make_plxpr(lambda: change_op_basis(*ops_lst))()
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
         assert tape.operations == list(ops_lst)
 
