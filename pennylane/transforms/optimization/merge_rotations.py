@@ -187,7 +187,7 @@ def merge_rotations(
         error=qp.operation.DecompositionUndefinedError,
         strict=False,
     )
-    list_copy = expanded_tape.operations
+    list_copy = expanded_tape.operations.copy()
     new_operations = []
     while len(list_copy) > 0:
         current_gate = list_copy[0]

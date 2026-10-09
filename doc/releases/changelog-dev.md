@@ -1899,6 +1899,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* :func:`~.transforms.merge_rotations` no longer empties the operations of an input tape
+  that needs no decomposition.
+  [(#10303)](https://github.com/PennyLaneAI/pennylane/pull/10303)
+
 * Fixed :meth:`~.PPR.matrix` raising a ``KeyError`` when the Pauli word contains the identity
   character ``"I"``.
   [(#10272)](https://github.com/PennyLaneAI/pennylane/pull/10272)
@@ -2159,6 +2163,7 @@ Jacob Kitchen,
 Korbinian Kottmann,
 Isabel Nha Minh Le,
 Christina Lee,
+Dongjae Lee,
 Joseph Lee,
 Mehrdad Malekmohammadi,
 William Maxwell,
