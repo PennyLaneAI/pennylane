@@ -19,6 +19,8 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import partial
 
+import pennylane.capture as capture
+
 from ._utils import (
     apply_partial_args,
     build_circuit_specs,
@@ -42,7 +44,14 @@ def _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs) -> tupl
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
 
-    return_single_level: bool = isinstance(level, (int, str)) and level != "all"
+    return_single_level: bool = isinstance(level, (int, str)) and level not in ("all", "all-user")
+
+    has_device_level: bool = level in ("device", "all")
+    if has_device_level:
+        if not qjit.compile_options.capture or (
+            qjit.compile_options.capture == "global" and not capture.enabled()
+        ):
+            raise ValueError("Device level is only supported when capture is enabled.")
 
     # Easier to assume level is always a sorted list of int levels
     level = preprocess_level_input(level, compile_pipeline)
@@ -77,9 +86,6 @@ def _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs) -> tupl
 def _analyze_qjit(qjit, level, *args, **kwargs) -> CircuitSpecs:
     """Compile a qjit'd QNode up to the given level and return the specs found by analyzing it."""
     original_qnode = unwrap_qjit_qnode(qjit, fn_name="qp.analyze")
-
-    if level == "device":
-        raise NotImplementedError("qp.analyze does not support level='device' yet.")
 
     resources, level = _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs)
 
@@ -125,11 +131,10 @@ def analyze(
         * An iterable: A ``list``, ``tuple``, or similar containing ints and/or marker names.
           Should be sorted in ascending transform order with no duplicates. The output will
           provide resource information for each level.
+        * The string ``"device"``: The circuit after the device preprocessing transforms have been applied.
+        * The string ``"all-user"``: To provide information at each stage of compilation with respect to user-specified transforms.
         * The string ``"all"``: To provide information at each stage of compilation with respect
-          to user-specified transforms.
-
-        Levels that include the device preprocessing transforms, such as ``"device"``, are not
-        currently supported.
+          to user-specified and device-specific transforms.
 
     **Example**
 

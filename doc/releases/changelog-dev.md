@@ -418,8 +418,10 @@
 * A new function called :func:`~.analyze` is available, which estimates the resources of a
   ``qjit``-compiled QNode by compiling it up to the given ``level`` and analyzing the resulting
   program, without executing it. This is the same pass-by-pass analysis that :func:`~.specs`
-  performs for ``qjit``-compiled QNodes.
+  performs for ``qjit``-compiled QNodes, with further support for supporting device-specific transformations
+  in ``level``.
   [(#10237)](https://github.com/PennyLaneAI/pennylane/pull/10237)
+  [(#10285)](https://github.com/PennyLaneAI/pennylane/pull/10285)
 
   ```python
   dev = qp.device("null.qubit", wires=2)
@@ -1863,6 +1865,10 @@
 
 * Improved coverage of testing operators and their decomposition rules with capture enabled.
   [(#10019)](https://github.com/PennyLaneAI/pennylane/pull/10019)
+
+* Added `post_device_pipeline` to `QNode`to be a pipeline representing user passes that are intended to run after
+  device specific transformations, if `qjit`-ed. `update_pipelines` added to cleanly update `QNode` with input compile and post-device pipeline.
+  [(#10285)](https://github.com/PennyLaneAI/pennylane/pull/10285)
 
 <h3>Documentation 📝</h3>
 

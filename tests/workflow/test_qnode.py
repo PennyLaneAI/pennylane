@@ -1320,6 +1320,19 @@ class TestShots:
         updated_qnode = qn.update_shots(shots=75)
         assert updated_qnode._shots == qp.measurements.Shots(75)
 
+    def test_update_pipelines(self):
+        """Test that QNode compile pipelines can be updated via update_pipelines."""
+        dev = qp.device("default.qubit", wires=1)
+        qn = qp.QNode(dummyfunc, dev)
+
+        new_compile = qp.CompilePipeline(qp.transforms.cancel_inverses)
+        new_post_device = qp.CompilePipeline(qp.transforms.merge_rotations)
+        updated = qn.update_pipelines(new_compile, new_post_device)
+
+        assert updated is not qn
+        assert updated.compile_pipeline is new_compile
+        assert updated.post_device_pipeline is new_post_device
+
 
 class TestCompilePipelineIntegration:
     """Tests for the integration of the transform program with the qnode."""
