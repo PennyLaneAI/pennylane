@@ -30,5 +30,5 @@ def loop_hints(jaxpr, skip_none=False):
             for sub in param if isinstance(param, (list, tuple)) else (param,):
                 sub = getattr(sub, "jaxpr", sub)
                 if hasattr(sub, "eqns"):
-                    hints.extend(loop_hints(sub))
+                    hints.extend(loop_hints(sub, skip_none=skip_none))
     return hints
