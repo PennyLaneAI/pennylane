@@ -23,10 +23,11 @@ import jax
 
 import pennylane as qp
 from pennylane import QueuingManager, math
-from pennylane.capture import FlatFn
+from pennylane.capture import FlatFn, HintedCallable
 from pennylane.capture.autograph import wraps
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
+from pennylane.capture.hint import process_hints
 from pennylane.compiler import compiler
 from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.exceptions import ConditionalTransformError
@@ -111,6 +112,27 @@ def _format_and_validate_branch_fn(fn):
 
 def _empty_return_fn(*_, **__):
     return None
+
+
+def _get_hint(branch_fn):
+    if not isinstance(branch_fn, HintedCallable):
+        return None
+    hints = process_hints(branch_fn.hints, {"branch-prob"})
+    p = hints.get("branch-prob")
+    return float(p) if p is not None else p
+
+
+def _setup_probs(branch_fns) -> None | tuple[float, ...]:
+    branch_probs = [_get_hint(f) for f in branch_fns]
+    n_encountered = sum(bool(p is not None) for p in branch_probs)
+    if not n_encountered:
+        return None
+    if n_encountered == len(branch_fns):
+        return tuple[float](branch_probs)
+
+    total = sum(s for s in branch_probs if s is not None)
+    guess = max(1 - total, 0) / (len(branch_fns) - n_encountered)
+    return tuple[float](guess if p is None else p for p in branch_probs)
 
 
 class Conditional(SymbolicOp, Operation):
@@ -237,6 +259,8 @@ class CondCallable:
             self.preds.extend(elif_preds)
             self.branch_fns.extend(elif_fns)
 
+        self._branch_probs = _setup_probs((*self.branch_fns, self.otherwise_fn))
+
     def else_if(self, pred):
         """Decorator that allows else-if functions to be registered with a corresponding
         boolean predicate.
@@ -251,6 +275,7 @@ class CondCallable:
         def decorator(branch_fn):
             self.preds.append(pred)
             self.branch_fns.append(branch_fn)
+            self._branch_probs = _setup_probs((*self.branch_fns, self.otherwise_fn))
             return self
 
         return decorator
@@ -263,6 +288,7 @@ class CondCallable:
             otherwise_fn (callable): the function to apply if all ``self.preds`` evaluate to ``False``
         """
         self.otherwise_fn = otherwise_fn
+        self._branch_probs = _setup_probs((*self.branch_fns, self.otherwise_fn))
         return self
 
     @property
@@ -352,6 +378,7 @@ class CondCallable:
             jaxpr_branches=jaxpr_branches,
             consts_slices=consts_slices,
             args_slice=slice(end_const_ind, None),
+            estimated_probabilities=self._branch_probs,
         )
         assert flat_true_fn.out_tree is not None, "out_tree of flat_true_fn should exist"
         results = results[-flat_true_fn.out_tree.num_leaves :]
@@ -640,6 +667,94 @@ def cond(
         >>> z = np.array(0.3)
         >>> qnode(par, x, y, z)
         np.float64(-0.3092...)
+
+        **Resource Profiling and Compiler Hints:**
+
+        When used with resource profiling with :func:`~.analyze` and qjit, resources will be reported
+        as a maximum across all possible branches by default. For example:
+
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=1)
+
+            @qp.qjit(capture=True)
+            @qp.qnode(dev)
+            def circuit(m1, m2):
+
+                def true_fn():
+                    for _ in range(10):
+                        qp.X(0)
+
+                def false_fn():
+                    for _ in range(10):
+                        qp.Y(0)
+
+                def elif_fn():
+                    for _ in range(10):
+                        qp.X(0)
+                        qp.Z(0)
+
+                qp.cond(m1, true_fn, false_fn, elifs=(m2, elif_fn))()
+
+                return qp.expval(qp.Z(0))
+
+        >>> print(qp.analyze(circuit)(True, True).resources)
+        Quantum operations:
+        - Total: 30
+          - PauliX: 10
+          - PauliY: 10
+          - PauliZ: 10
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
+
+        The count for each operator is the largest encountered across all three branches. To prevent this overcounting,
+        :func:`~.hint` can indicate the probabibility each branch will be hit, leading to a weighted average instead.
+
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=1)
+
+            @qp.qjit(capture=True)
+            @qp.qnode(dev)
+            def circuit(m1, m2):
+
+                @qp.hint({"branch-prob": 0.4})
+                def true_fn():
+                    for _ in range(10):
+                        qp.X(0)
+
+                @qp.hint({"branch-prob": 0.4})
+                def false_fn():
+                    for _ in range(10):
+                        qp.Y(0)
+
+                def elif_fn():
+                    for _ in range(10):
+                        qp.X(0)
+                        qp.Z(0)
+
+                qp.cond(m1, true_fn, false_fn, elifs=(m2, elif_fn))()
+
+                return qp.expval(qp.Z(0))
+
+        >>> print(qp.analyze(circuit)(True, True).resources)
+        Quantum operations:
+        - Total: 12
+          - PauliX: 6
+          - PauliY: 4
+          - PauliZ: 2
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
+
+        Due to the presence of a compiler hint, the resources are now weighted by the branch probabilities.
+        Unhinted branches, like ``elif_fn``, have the remaining probability equally distributed amoung them.
+        In this case, the ``elif_fn`` gets a ``0.2`` probability. The 6 ``PauliX`` gates come from ``0.4``
+        of the ``true_fn`` resources and ``0.2`` of the ``elif_fn`` resources.
+
     """
 
     if active_jit := compiler.active_compiler():
@@ -808,8 +923,9 @@ def _cond_abstract_eval(*_, jaxpr_branches, **__):
     return [out.aval for out in jaxpr_branches[0].outvars]
 
 
+# pylint: disable=unused-argument
 @cond_prim.def_impl
-def _cond_impl(*all_args, jaxpr_branches, consts_slices, args_slice):
+def _cond_impl(*all_args, jaxpr_branches, consts_slices, args_slice, estimated_probabilities):
     args_slice = slice(*args_slice)
     consts_slices = [slice(*s) for s in consts_slices]
 
