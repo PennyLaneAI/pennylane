@@ -445,11 +445,13 @@
 
 * A new function called :func:`~pennylane.estimate` is available, which provides a quick projection of the
   resources of a ``qjit``-compiled QNode onto a target gate set, without executing the circuit.
-  The original circuit, before any user transforms, is decomposed into the ``target`` gate set
-  and the resulting operations are counted. The QNode must be compiled with
+  Before any specified compilation passes, the original circuit's operations and their possible decomposition pathways to the ``target`` gate set are analyzed
+  and the resulting operations are counted. Note that :func:`~.estimate` is only supported with
   ``qp.qjit(capture=True)``.
   [(#10296)](https://github.com/PennyLaneAI/pennylane/pull/10296)
-
+  
+  Consider the following circuit.
+  
   ```python
   dev = qp.device("null.qubit", wires=2)
 
@@ -465,7 +467,6 @@
   >>> circuit_specs = qp.estimate(circuit, target={"Hadamard", "CNOT", "RX"})(1.23)
   >>> circuit_specs.resources.quantum_operations
   {'CNOT': 1, 'Hadamard': 2, 'RX': 1}
-
   ```
 
   Gates that are already in the ``target`` gate set are kept:
@@ -474,7 +475,6 @@
   >>> circuit_specs = qp.estimate(circuit, target={"CZ", "RX"})(1.23)
   >>> circuit_specs.resources.quantum_operations
   {'CZ': 1, 'RX': 1}
-
   ```
 
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow

@@ -68,20 +68,18 @@ def estimate(
     *,
     target: Iterable[type | str] | dict[type | str, float],
 ) -> Callable[..., CircuitSpecs]:
-    r"""Provides a quick, low-fidelity projection of the resources of a quantum circuit onto a
-    target gate set.
+    r"""Provides fast resource estimates of a quantum circuit by analyzing decomposition pathways with respect to a specified level of compilation.
+    
+    .. note:: Only circuits compiled with :func:`qjit(capture=True) <~.qjit>` are supported.
 
-    This transform converts a QNode into a callable that takes the circuit at ``level``,
-    decomposes it into the ``target`` gate set and counts the resulting resources, without
-    executing the circuit or unrolling its control flow.
+    The ``estimate`` function provides fast resource estimates of a quantum circuit by analyzing
+decomposition 
+    pathways to a target gate set with respect to the specified level of compilation. The estimated circuit is never executed.
 
     Args:
-        qnode (:class:`~catalyst.jit.QJIT`): the qjit'd QNode for which to estimate resources.
-            It must be compiled with program capture enabled, for example with
-            ``qp.qjit(capture=True)``. ``functools.partial`` wrappers around supported callables
-            are also accepted.
-        level (str | int): The level of compilation from which to project the resources. Only
-            ``"top"`` or ``0``, the original circuit before any transforms have been applied, is
+        qnode (:class:`~catalyst.jit.QJIT`): the qjit'd QNode for which to estimate resources. 
+        level (str | int): The level of compilation from which to project the resources onto the ``target``. Only
+            ``"top"`` or ``0``, the original circuit before any compilation passes have been applied, is
             currently supported.
         target (Iterable[type | str] | dict[type | str, float]): The gate set to project the
             resources onto, in any form accepted by the ``gate_set`` argument of
@@ -94,10 +92,12 @@ def estimate(
 
     .. seealso:: :func:`~.analyze`, which provides the resources of the circuit at a given
         compilation level without decomposing it, and :func:`~.track`, which counts the resources
-        used after device preprocessing by executing the circuit.
+        used after full compilation by executing the circuit.
 
     **Example**
 
+    Consider the following circuit.
+    
     .. code-block:: python
 
         dev = qp.device("null.qubit", wires=2)
@@ -111,6 +111,9 @@ def estimate(
             qp.CZ([0, 1])
             qp.RX(x, wires=1)
             return qp.probs()
+
+    By calling ``estimate`` on this circuit with ``level=0/"top"``, the :func:`~.cancel_inverses` pass is ignored. Subsequently, the operations
+    in the original circuit will have their resources projected into the ``target`` gate set by analyzing possible decomposition pathways.
 
     >>> print(qp.estimate(circuit, target={"Hadamard", "CNOT", "RX"})(1.23))
     Device: null.qubit
@@ -128,7 +131,7 @@ def estimate(
     Total wires: 2
     Circuit Depth: Not computed
 
-    At ``level="top"``, the ``cancel_inverses`` transform is ignored, so both ``Hadamard`` gates
+    Since :func:`~.cancel_inverses` is ignored, both ``Hadamard`` gates
     are counted. The ``CZ`` gate is decomposed into ``Hadamard`` and ``CNOT`` gates.
 
     .. details::
