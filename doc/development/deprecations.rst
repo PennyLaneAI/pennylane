@@ -123,7 +123,7 @@ Completed deprecation cycles
 
 * Maintenance support for the ``tensorflow`` interface has been removed. Future versions of
   PennyLane will not work with TensorFlow. Instead, we recommend using the
-  :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
+  ``jax`` or ``torch`` interface for
   machine learning applications to benefit from enhanced support and features.
 
   - Deprecated in v0.43

@@ -45,10 +45,6 @@ class AdagradOptimizer(GradientDescentOptimizer):
         stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.1).
         eps (float): offset :math:`\epsilon` added for numerical stability (default value: 1e-08).
 
-    .. note::
-
-        When using ``torch`` or ``jax`` interfaces, refer to :doc:`Gradients and training </introduction/interfaces>` for suitable optimizers.
-
     """
 
     def __init__(self, stepsize=0.01, eps=1e-8):

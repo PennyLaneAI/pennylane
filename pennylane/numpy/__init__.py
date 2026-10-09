@@ -18,15 +18,13 @@ Overview
 The PennyLane NumPy subpackage provides a differentiable wrapper around NumPy, that enables
 backpropagation through standard NumPy code.
 
-This version of NumPy **must** be used when using PennyLane with the :doc:`Autograd interface
-</introduction/interfaces/numpy>`:
+This version of NumPy **must** be used when using PennyLane with the Autograd interface:
 
 >>> from pennylane import numpy as np
 
 .. note::
 
-    If using other interfaces, such as :doc:`PyTorch </introduction/interfaces/torch>`,
-    or :doc:`JAX </introduction/interfaces/jax>`, then the PennyLane-provided NumPy
+    If using other interfaces, such as PyTorch or JAX, then the PennyLane-provided NumPy
     should not be used; instead, simply use the standard NumPy import.
 
 This package is a wrapper around ``autograd.numpy``; for details on all available functions,

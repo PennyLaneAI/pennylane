@@ -197,18 +197,12 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    introduction/circuits
-   introduction/interfaces
    introduction/operations
    introduction/measurements
-   introduction/dynamic_quantum_circuits
-   introduction/templates
-   introduction/inspecting_circuits
+   introduction/subroutines
    introduction/compiling_circuits
-   introduction/compiling_workflows
-   introduction/importing_workflows
    introduction/chemistry
    introduction/data
-   introduction/logging
 
 .. toctree::
    :maxdepth: 1
@@ -217,8 +211,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
 
    development/release_notes.md
    development/deprecations
-   news/new_opmath
-   news/program_capture_sharp_bits
+   news/sharp_bits
 
 .. toctree::
    :maxdepth: 1

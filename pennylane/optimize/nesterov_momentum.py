@@ -37,10 +37,6 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.01).
         momentum (float): the user-defined hyperparameter :math:`m` (default value: 0.9).
 
-    .. note::
-
-        When using ``torch`` or ``jax`` interfaces, refer to :doc:`Gradients and training </introduction/interfaces>` for suitable optimizers.
-
     """
 
     def compute_grad(
