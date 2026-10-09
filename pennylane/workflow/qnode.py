@@ -761,7 +761,7 @@ class QNode:
     def update_pipelines(
         self,
         compile_pipeline: CompilePipeline,
-        post_device_pipeline: CompilePipeline = CompilePipeline(),
+        post_device_pipeline: CompilePipeline | None = None,
     ) -> QNode:
         """Update the compile and post-device compile pipelines used by the QNode.
 
@@ -772,6 +772,9 @@ class QNode:
         Returns:
             qnode (QNode): new QNode with updated compile and post-device compile pipelines
         """
+
+        if post_device_pipeline is None:
+            post_device_pipeline = CompilePipeline()
 
         # Create a copy of the current QNode
         updated_qn = copy.copy(self)

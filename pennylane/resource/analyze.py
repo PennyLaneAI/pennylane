@@ -44,9 +44,7 @@ def _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs) -> tupl
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
 
-    return_single_level: bool = (
-        isinstance(level, (int, str)) and level not in ("all", "all-user")
-    )
+    return_single_level: bool = isinstance(level, (int, str)) and level not in ("all", "all-user")
 
     has_device_level: bool = level in ("device", "all")
     if has_device_level:
