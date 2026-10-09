@@ -322,14 +322,6 @@ class BasisRotation(Operator2):
         super().__init__(unitary_matrix, wires=wires)
 
 
-def _is_complex_matrix(unitary_matrix, **__):
-    return math.get_dtype_name(unitary_matrix).startswith("complex")
-
-
-def _is_real_matrix(unitary_matrix, **__):
-    return not _is_complex_matrix(unitary_matrix)
-
-
 def _is_jax_jit(U):
     return math.is_abstract(U) and not _qjit_or_capture()
 
@@ -359,7 +351,7 @@ def _real_basis_rotation_resources(unitary_matrix, wires, check=False):
     return {PhaseShift: 1, SingleExcitation: dim * (dim - 1) // 2}
 
 
-@register_condition(_is_real_matrix)
+@register_condition(lambda unitary_matrix, **_: not math.is_complex_dtype(unitary_matrix))
 @register_resources(_real_basis_rotation_resources, exact=False)
 def _real_basis_rotation_decomp(unitary_matrix, wires, **_):
 
@@ -404,7 +396,7 @@ def _complex_basis_rotation_resources(unitary_matrix, wires, check=False):
     return {PhaseShift: dim + se_count, SingleExcitation: se_count}
 
 
-@register_condition(_is_complex_matrix)
+@register_condition(lambda unitary_matrix, **_: math.is_complex_dtype(unitary_matrix))
 @register_resources(_complex_basis_rotation_resources, exact=False)
 def _complex_basis_rotation_decomp(unitary_matrix, wires, **_):
 

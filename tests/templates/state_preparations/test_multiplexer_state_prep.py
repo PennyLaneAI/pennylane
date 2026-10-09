@@ -21,15 +21,27 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+
+_REAL_STATE = np.array([-0.84223628, -0.40036496, 0.08974619, -0.34970212])
+_COMPLEX_STATE = np.array(
+    [
+        0.17157142 + 0.09585932j,
+        0.00852997 - 0.21056896j,
+        0.12986199 + 0.94654822j,
+        0.04206036 - 0.04873857j,
+    ]
+)
 
 
 class TestMultiplexerStatePreparation:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_standard_validity(self):
+    @pytest.mark.parametrize("dtype_factor", [1.0, 1j])
+    def test_standard_validity(self, dtype_factor):
         """Check the operation using the assert_valid function."""
 
-        state = np.random.rand(2**4) * 1j
+        state = np.random.rand(2**4) * dtype_factor
         state /= np.linalg.norm(state)
 
         wires = range(4)
@@ -37,6 +49,22 @@ class TestMultiplexerStatePreparation:
         op = qp.MultiplexerStatePreparation(state_vector=state, wires=wires)
 
         qp.ops.functions.assert_valid(op, skip_differentiation=True)
+
+    @pytest.mark.parametrize(
+        ("state", "applicable_rule"),
+        [
+            (_REAL_STATE, "_real_multiplexer_state_prep_decomposition"),
+            (_COMPLEX_STATE, "_complex_multiplexer_state_prep_decomposition"),
+            (_REAL_STATE.astype(complex), "_complex_multiplexer_state_prep_decomposition"),
+        ],
+    )
+    def test_decomposition_rules(self, state, applicable_rule):
+        """Test that the decomposition rule matching the dtype of the state vector is applicable
+        and valid, and that the other rule is not applicable."""
+        op = qp.MultiplexerStatePreparation(state, wires=range(2))
+        for rule in qp.list_decomps(qp.MultiplexerStatePreparation):
+            assert rule.is_applicable(**op.arguments) is (rule.name == applicable_rule)
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
         ("state", "msg_match"),

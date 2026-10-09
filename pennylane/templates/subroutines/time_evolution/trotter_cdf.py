@@ -26,7 +26,7 @@ from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math import ctrl
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
-from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import WiresLike
 
 from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
@@ -458,7 +458,7 @@ def _cdf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
     num_onebody_rotations = num_onebody_blocks * 2 * num_cas
 
     # NOTE: 'BasisRotation' decomposes differently depending on the dtype of the unitary matrix.
-    dtype_leaf = Complex if math.get_dtype_name(leaf_tensors).startswith("complex") else Float
+    dtype_leaf, _ = math.get_abstract_and_cast_dtype(leaf_tensors)
     sysrot_key = BasisRotation(dtype_leaf[num_cas, num_cas], wires=Wire[num_cas])
     resources[sysrot_key] += 2 * num_sysrot_calls
 

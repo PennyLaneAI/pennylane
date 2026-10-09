@@ -62,7 +62,7 @@ class StateMP(StateMeasurement):
         # pylint:disable=redefined-outer-name
         def cast_to_complex(state):
             dtype = str(state.dtype)
-            if "complex" in dtype:
+            if math.is_complex_dtype(state):
                 return state
             floating_single = "float32" in dtype or "complex64" in dtype
             return math.cast(state, "complex64" if floating_single else "complex128")
