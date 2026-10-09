@@ -116,23 +116,22 @@
   [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
   [(#10120)](https://github.com/PennyLaneAI/pennylane/pull/10120)
 
-* A new operator called :class:`pennylane.PPR` has been added, which represents a Pauli product
-  rotation with a fixed angle
-  :math:`\theta = \pi / k`, following this angle convention:
-  :math:`\mathrm{PPR}(-4, \mathrm{X})=\exp(-i\pi / (-4) X)=\exp(i\tfrac{\pi}{4} X)`.
-  The denominator
-  :math:`k` is restricted to :math:`\pm 2`, :math:`\pm 4` and :math:`\pm 8`, covering exactly the
-  :math:`\pm\pi/2`, :math:`\pm\pi/4` and :math:`\pm\pi/8` Pauli product rotations of Clifford+T
-  circuits. Together with :func:`~.pauli_measure`, this makes the building blocks of Pauli-based
-  computations directly expressible.
+* Three new operators called :class:`pennylane.PPR_2`, :class:`pennylane.PPR_4` and
+  :class:`pennylane.PPR_8` have been added, which represent the Pauli product rotations
+  :math:`\exp(-i s \tfrac{\pi}{k} P)` with :math:`k=2, 4, 8` and the sign :math:`s=\pm 1`,
+  covering exactly the :math:`\pm\pi/2`, :math:`\pm\pi/4` and :math:`\pm\pi/8` Pauli product
+  rotations of Clifford+T circuits. Each of them can be decomposed exactly into the Clifford+T
+  gate set. Together with :func:`~.pauli_measure`, this makes the
+  building blocks of Pauli-based computations directly expressible.
   [(#10107)](https://github.com/PennyLaneAI/pennylane/pull/10107)
   [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
+  [(#10287)](https://github.com/PennyLaneAI/pennylane/pull/10287)
 
   ```pycon
   >>> import pennylane as qp
-  >>> op = qp.PPR(4, "XY", wires=[0, 1])
+  >>> op = qp.PPR_4(-1, "XY", wires=[0, 1])
   >>> op
-  PPR(4, 'XY', wires=[0, 1])
+  PPR_4(-1, 'XY', wires=[0, 1])
 
   ```
 
@@ -796,11 +795,6 @@
 * Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a
   decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
   [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
-
-* Added a decomposition of :class:`~.PPR` to the Clifford+T gate set, so that circuits of
-  PPRs can be decomposed exactly to :data:`~.gate_sets.CLIFFORD_T` if ``PPR`` is not in the gate
-  set.
-  [(#10272)](https://github.com/PennyLaneAI/pennylane/pull/10272)
 
 * :class:`~.FlipSign` now accepts `work_wires`, which are forwarded to the multi-controlled
   :class:`~.Z` gate in its decomposition. Providing work wires substantially reduces the gate count.
@@ -1907,10 +1901,6 @@
 * Fixed captured transforms dropping keyword arguments to the transformed function,
   including when calling transformed QNodes with `qp.qjit(capture=True)`.
   [(#10301)](https://github.com/PennyLaneAI/pennylane/pull/10301)
-
-* Fixed :meth:`~.PPR.matrix` raising a ``KeyError`` when the Pauli word contains the identity
-  character ``"I"``.
-  [(#10272)](https://github.com/PennyLaneAI/pennylane/pull/10272)
 
 * :func:`~.ops.functions.bind_new_parameters` now rebinds :class:`~.Operator2` dynamic
   arguments by name and no longer assumes dynamic arguments to declared positionally.

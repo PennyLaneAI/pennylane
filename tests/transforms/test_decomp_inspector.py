@@ -352,7 +352,7 @@ class TestInspectDecompGraph:
     def test_missing_ops(self):
         """Tests that missing operators are correctly reported."""
 
-        @decomp_inspector(gate_set={"RZ", "RX", "CNOT", "PPR"}, num_work_wires=2)
+        @decomp_inspector(gate_set={"RZ", "RX", "CNOT", "PPR_4"}, num_work_wires=2)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.PauliRot(0.5, "XYZ", [0, 1, 2])
@@ -366,8 +366,8 @@ class TestInspectDecompGraph:
             0: ─╭(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
             1: ─├(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
             2: ─╰(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
-            First-Level Expansion Gates: {(PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard): 1}
-            Missing Ops: {(PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard)}
+            First-Level Expansion Gates: {(PPR_4(-1, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR_4(1, 'X', wires=AbstractWires(1)) @ Hadamard): 1}
+            Missing Ops: {(PPR_4(-1, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR_4(1, 'X', wires=AbstractWires(1)) @ Hadamard)}
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
@@ -382,12 +382,12 @@ class TestInspectDecompGraph:
 
             | First-Level Expansion | Count |
             | :--- | :--- |
-            | (PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard) | 1 |
+            | (PPR_4(-1, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR_4(1, 'X', wires=AbstractWires(1)) @ Hadamard) | 1 |
             </details>
 
             | Missing Ops |
             | :--- |
-            | (PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard) |
+            | (PPR_4(-1, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR_4(1, 'X', wires=AbstractWires(1)) @ Hadamard) |
             """).strip()
 
         assert str(inspector.inspect_decomps(qp.H(0))) == dedent("""
