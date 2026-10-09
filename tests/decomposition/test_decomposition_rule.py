@@ -550,6 +550,25 @@ class TestDecompDictionary:
 
         _decompositions_private.pop("AnotherOp")  # cleanup
 
+    def test_add_decomp_exact_alias(self):
+        """Tests that adding exactly the same decomp rule twice does not error out."""
+
+        class AnotherOp(Operator):  # pylint: disable=too-few-public-methods
+            pass
+
+        @register_resources({qp.RZ: 2, qp.CNOT: 1})
+        def custom_decomp(theta, wires, **_):
+            qp.RZ(theta, wires=wires[0])
+            qp.CNOT(wires=[wires[0], wires[1]])
+            qp.RZ(theta, wires=wires[0])
+
+        qp.add_decomps(AnotherOp, custom_decomp)
+
+        # this shouldn't error out
+        qp.add_decomps(AnotherOp, custom_decomp)
+
+        assert list(qp.list_decomps(AnotherOp)) == [custom_decomp]
+
     def test_local_decomp_context(self):
         """Tests the local context manager for decompositions."""
 
@@ -660,6 +679,7 @@ class TestDecompDictionary:
                 "_controlled_rule",
                 "controlled(custom_rule)",
                 "controlled(custom_rule2)",
+                "ctrl_many_zeroed_work_wires",
                 "ctrl_single_work_wire",
                 "to_controlled_unitary",
             }
@@ -725,7 +745,8 @@ class TestDecompDictionary:
 
         with qp.decomposition.local_decomps():
             qp.add_decomps(DynOp, custom_rule)
-            op = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[2])
+            # Single control wire so general multi-control rules are not listed.
+            op = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[1])
             assert list(qp.list_decomps(op)) == []
 
 

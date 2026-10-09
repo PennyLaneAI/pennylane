@@ -177,6 +177,7 @@ from .flatfn import FlatFn
 from .make_plxpr import make_plxpr
 from .autograph import run_autograph, disable_autograph
 from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_rule
+from .hint import hint, HintedCallable, apply_hint
 
 # Import Patcher for contextual patching (preferred over global patches)
 from .patching import Patcher
@@ -208,14 +209,14 @@ def __getattr__(key):
         return QpPrimitive
 
     if key == "AbstractOperator":
-        from .primitives import _get_abstract_operator
+        from .primitives import AbstractOperator
 
-        return _get_abstract_operator()
+        return AbstractOperator
 
     if key == "AbstractMeasurement":
-        from .primitives import _get_abstract_measurement
+        from .primitives import AbstractMeasurement
 
-        return _get_abstract_measurement()
+        return AbstractMeasurement
 
     if key == "qnode_prim":
         from ..workflow._capture_qnode import qnode_prim

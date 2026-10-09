@@ -20,6 +20,8 @@ from string import ascii_letters as alphabet
 
 import numpy as np
 import scipy as sp
+from jax.lax import cond
+from jax.random import binomial
 
 import pennylane as qp
 from pennylane import math, ops
@@ -163,12 +165,7 @@ def apply_operation_einsum(op: Operator, state, is_state_batched: bool = False):
     # We use this implicit casting strategy as autograd raises ComplexWarnings
     # when backpropagating if casting explicitly. Some type of casting is needed
     # to prevent ComplexWarnings with backpropagation with other interfaces
-    if (
-        math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        mat = math.cast_like(op.matrix(), state)
-    else:
-        mat = op.matrix() + 0j
+    mat = op.matrix() + 0j
 
     total_indices = len(state.shape) - is_state_batched
     num_indices = len(op.wires)
@@ -214,12 +211,7 @@ def apply_operation_tensordot(op: Operator, state, is_state_batched: bool = Fals
     # We use this implicit casting strategy as autograd raises ComplexWarnings
     # when backpropagating if casting explicitly. Some type of casting is needed
     # to prevent ComplexWarnings with backpropagation with other interfaces
-    if (
-        math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        mat = math.cast_like(op.matrix(), state)
-    else:
-        mat = op.matrix() + 0j
+    mat = op.matrix() + 0j
 
     total_indices = len(state.shape) - is_state_batched
     num_indices = len(op.wires)
@@ -381,8 +373,6 @@ def apply_conditional(
     prng_key = execution_kwargs.get("prng_key", None)
     interface = math.get_deep_interface(state)
     if interface == "jax":
-        # pylint: disable=import-outside-toplevel
-        from jax.lax import cond
 
         return cond(
             op.meas_val.concretize(mid_measurements),
@@ -457,8 +447,6 @@ def apply_mid_measure(
             prob0 = prob0 / norm
 
     if prng_key is not None:
-        # pylint: disable=import-outside-toplevel
-        from jax.random import binomial
 
         def binomial_fn(n, p):
             return binomial(prng_key, n, p).astype(int)
@@ -531,11 +519,6 @@ def apply_pauliz(op: ops.Z, state, is_state_batched: bool = False, debugger=None
     axis = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
-    if (
-        n_dim >= 9 and math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
-
     sl_0 = _get_slice(0, axis, n_dim)
     sl_1 = _get_slice(1, axis, n_dim)
 
@@ -549,11 +532,6 @@ def apply_phaseshift(op: ops.PhaseShift, state, is_state_batched: bool = False, 
     """Apply PhaseShift to state."""
 
     n_dim = math.ndim(state)
-
-    if (
-        n_dim >= 9 and math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     axis = op.wires[0] + is_state_batched
 
@@ -578,11 +556,6 @@ def apply_T(op: ops.T, state, is_state_batched: bool = False, debugger=None, **_
     axis = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
-    if (
-        n_dim >= 9 and math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
-
     sl_0 = _get_slice(0, axis, n_dim)
     sl_1 = _get_slice(1, axis, n_dim)
 
@@ -596,11 +569,6 @@ def apply_S(op: ops.S, state, is_state_batched: bool = False, debugger=None, **_
 
     axis = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
-
-    if (
-        n_dim >= 9 and math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     sl_0 = _get_slice(0, axis, n_dim)
     sl_1 = _get_slice(1, axis, n_dim)
@@ -619,11 +587,6 @@ def apply_hadamard(op: ops.Hadamard, state, is_state_batched: bool = False, debu
     if state_interface == "autograd":
         if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
             return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
-
-    if (
-        n_dim >= 9 and state_interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     if state_interface == "numpy":
@@ -664,11 +627,6 @@ def _apply_rotation_1q(  # pylint: disable=too-many-return-statements
     if state_interface == "autograd":
         if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
             return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
-
-    if (
-        n_dim >= 9 and state_interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     axis = op.wires[0] + is_state_batched
@@ -766,11 +724,6 @@ def apply_cnot(op: ops.CNOT, state, is_state_batched: bool = False, debugger=Non
     control_axes = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
-    if (
-        n_dim >= 9 and math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
-
     sl_0 = _get_slice(0, control_axes, n_dim)
     sl_1 = _get_slice(1, control_axes, n_dim)
 
@@ -867,16 +820,13 @@ def _apply_grover_without_matrix(state, op_wires, is_state_batched):
         # If the operation acts on all wires, we can skip the tensor product with all-ones state
         new_shape = (-1,) + (1,) * num_wires if is_state_batched else (1,) * num_wires
         return prefactor * math.reshape(collapsed, new_shape) - state
-        # [todo]: Once Tensorflow support expand_dims with multiple axes in the second argument,
-        # use the following line instead of the two above.
-        # return prefactor * math.expand_dims(collapsed, sum_axes) - state
 
     all_plus = math.cast_like(math.full([2] * num_wires, prefactor), state)
     # After the Kronecker product (realized with tensordot with axes=0), we need to move
     # the new axes to the summed-away axes' positions. Finally, subtract the original state.
     source = list(range(math.ndim(collapsed), math.ndim(state)))
     # Probably it will be better to use math.full or math.tile to create the outer product
-    # here computed with math.tensordot. However, Tensorflow and Torch do not have full support
+    # here computed with math.tensordot. However, Torch does not have full support.
     return math.moveaxis(math.tensordot(collapsed, all_plus, axes=0), source, sum_axes) - state
 
 
@@ -915,96 +865,3 @@ def apply_snapshot(
         debugger.snapshots[op.tag] = [debugger.snapshots[op.tag], snapshot]
 
     return state
-
-
-# pylint:disable=import-outside-toplevel
-@apply_operation.register
-def apply_parametrized_evolution(
-    op: qp.pulse.ParametrizedEvolution,
-    state,
-    is_state_batched: bool = False,
-    debugger=None,
-    **_,
-):
-    """Apply ParametrizedEvolution by evolving the state rather than the operator matrix
-    if we are operating on more than half of the subsystem"""
-
-    # shape(state) is static (not a tracer), we can use an if statement
-    num_wires = len(math.shape(state)) - is_state_batched
-    state = math.cast(state, complex)
-    if (
-        2 * len(op.wires) <= num_wires
-        or op.hyperparameters["complementary"]
-        or (is_state_batched and op.hyperparameters["return_intermediate"])
-    ):
-        # the subsystem operated on is half as big as the total system, or less
-        # or we want complementary time evolution
-        # or both the state and the operation have a batch dimension
-        # --> evolve matrix
-        return _apply_operation_default(op, state, is_state_batched, debugger)
-    # otherwise --> evolve state
-    return _evolve_state_vector_under_parametrized_evolution(op, state, num_wires, is_state_batched)
-
-
-def _evolve_state_vector_under_parametrized_evolution(
-    operation: qp.pulse.ParametrizedEvolution, state, num_wires, is_state_batched
-):
-    """Uses an odeint solver to compute the evolution of the input ``state`` under the given
-    ``ParametrizedEvolution`` operation.
-
-    Args:
-        state (array[complex]): input state
-        operation (ParametrizedEvolution): operation to apply on the state
-
-    Raises:
-        ValueError: If the parameters and time windows of the ``ParametrizedEvolution`` are
-            not defined.
-
-    Returns:
-        TensorLike[complex]: output state
-    """
-
-    try:
-        import jax
-        from jax.experimental.ode import odeint
-
-        from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
-
-    except ImportError as e:  # pragma: no cover
-        raise ImportError(
-            "Module jax is required for the ``ParametrizedEvolution`` class. "
-            "You can install jax via: pip install jax"
-        ) from e
-
-    if operation.data is None or operation.t is None:
-        raise ValueError(
-            "The parameters and the time window are required to execute a ParametrizedEvolution "
-            "You can update these values by calling the ParametrizedEvolution class: EV(params, t)."
-        )
-
-    if is_state_batched:
-        batch_dim = state.shape[0]
-        state = math.moveaxis(state.reshape((batch_dim, 2**num_wires)), 1, 0)
-        out_shape = [2] * num_wires + [batch_dim]  # this shape is before moving the batch_dim back
-    else:
-        state = state.flatten()
-        out_shape = [2] * num_wires
-
-    with jax.ensure_compile_time_eval():
-        H_jax = ParametrizedHamiltonianPytree.from_hamiltonian(  # pragma: no cover
-            operation.H,
-            dense=operation.dense,
-            wire_order=list(np.arange(num_wires)),
-        )
-
-    def fun(y, t):
-        """dy/dt = -i H(t) y"""
-        return (-1j * H_jax(operation.data, t=t)) @ y
-
-    result = odeint(fun, state, operation.t, **operation.odeint_kwargs)
-    if operation.hyperparameters["return_intermediate"]:
-        return math.reshape(result, [-1] + out_shape)
-    result = math.reshape(result[-1], out_shape)
-    if is_state_batched:
-        return math.moveaxis(result, -1, 0)
-    return result

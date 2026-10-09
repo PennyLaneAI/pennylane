@@ -31,16 +31,17 @@ import copy
 from collections import defaultdict
 from collections.abc import Callable
 from copy import deepcopy
-from functools import lru_cache, update_wrapper
-from importlib.util import find_spec
+from functools import update_wrapper
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ParamSpec
 
+import jax
 import numpy as np
 
 from pennylane import capture, math
 from pennylane.capture import subroutine as capture_subroutine
 from pennylane.core import queuing
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator, abstractify
 from pennylane.decomposition import (
     CompressedResourceOp,
@@ -55,8 +56,6 @@ from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import AbstractArray, AbstractWires, Wire
 from pennylane.wires import Wires, is_abstract_qubit
-
-has_jax = find_spec("jax") is not None
 
 
 def _make_signature_key(subroutine: "Subroutine", *args, **kwargs):
@@ -235,33 +234,23 @@ def _default_setup_inputs(*args, **kwargs):
     return args, kwargs
 
 
-@lru_cache
-def _get_array_types():
-    if has_jax:
-        import jax  # pylint: disable=import-outside-toplevel
-
-        return (jax.numpy.ndarray, np.ndarray)
-    return (np.ndarray,)
-
-
-@lru_cache
-def _get_non_array_iterables():
-    return (
-        list,
-        tuple,
-        Wires,
-        range,
-        capture.autograph.ag_primitives.PRange,
-        set,
-    )
+_ARRAY_TYPES = (jax.numpy.ndarray, np.ndarray)
+_NON_ARRAY_ITERABLES = (
+    list,
+    tuple,
+    Wires,
+    range,
+    capture.autograph.ag_primitives.PRange,
+    set,
+)
 
 
 def _setup_wires(wires):
-    if isinstance(wires, _get_array_types()):
+    if isinstance(wires, _ARRAY_TYPES):
         if wires.shape == ():
             return (wires,)
         return wires
-    if isinstance(wires, _get_non_array_iterables()):
+    if isinstance(wires, _NON_ARRAY_ITERABLES):
         return tuple(wires)
     return (wires,)
 
@@ -378,7 +367,7 @@ class SubroutineOp(Operation):
 
     def decomposition(self):
         if queuing.QueuingManager.recording():
-            _ = [queuing.apply(op) for op in self._decomp]
+            _ = [apply(op) for op in self._decomp]
         return self._decomp
 
     def label(
@@ -417,7 +406,7 @@ def _calculate_resources(subroutine: "Subroutine", signature_key):
 # pylint: disable=unused-argument
 @register_resources(_calculate_resources)
 def _Subroutine_decomp(*data, wires, decomposition):
-    _ = [queuing.apply(op) for op in decomposition]
+    _ = [apply(op) for op in decomposition]
 
 
 add_decomps(SubroutineOp, _Subroutine_decomp)
@@ -459,7 +448,7 @@ class Subroutine:
             qp.RX(x, wires[0])
             qp.RY(y, wires[0])
 
-        @qp.qnode(qp.device('default.qubit'))
+        @qp.qnode(qp.device('lightning.qubit'))
         def c():
             MyTemplate(0.1, 0.2, 0)
             return qp.state()
@@ -470,14 +459,6 @@ class Subroutine:
     0: ──MyTemplate(0.10,0.20)─┤  State
     >>> print(qp.draw(c, level="device")())
     0: ──RX(0.10)──RY(0.20)─┤  State
-    >>> print(qp.specs(c)().resources)
-    Quantum operations:
-    - Total: 1
-      - MyTemplate: 1
-    Measurement processes:
-    - state(all wires): 1
-    Total wires: 1
-    Circuit Depth: 1
 
     For multiple wire register inputs or use of a different name than ``"wires"``, the
     ``wire_argnames`` can be provided:
@@ -790,8 +771,6 @@ class Subroutine:
         for wire_argname in self.wire_argnames:
             register = _setup_wires(bound_args.arguments[wire_argname])
             if capture.enabled():
-                import jax  # pylint: disable=import-outside-toplevel
-
                 if len(register) > 0 and math.get_interface(register) != "jax":
                     # convert the integers in wires to tracers
                     wires = [(w if is_abstract_qubit(w) else jax.numpy.array(w)) for w in register]
@@ -877,13 +856,9 @@ class CollectedSubroutine(Operation):
         return self._decomp
 
 
-if CollectedSubroutine._primitive is not None:  # pylint: disable=protected-access
-
-    @CollectedSubroutine._primitive.def_abstract_eval  # pylint: disable=protected-access
-    def _(*args, **kwargs):
-        raise NotImplementedError(
-            "CollectedSubroutine should never be hit during abstract evaluation."
-        )
+@CollectedSubroutine._primitive.def_abstract_eval  # pylint: disable=protected-access
+def _(*args, **kwargs):
+    raise NotImplementedError("CollectedSubroutine should never be hit during abstract evaluation.")
 
 
 __all__ = [

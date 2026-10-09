@@ -156,11 +156,11 @@ def marginal_prob(prob, axis):
 
     **Example**
 
-    >>> x = tf.Variable([1, 0, 0, 1.], dtype=tf.float64) / np.sqrt(2)
+    >>> x = torch.tensor([1, 0, 0, 1.], dtype=torch.float64) / np.sqrt(2)
     >>> marginal_prob(x, axis=[0, 1])
-    <tf.Tensor: shape=(4,), dtype=float64, numpy=array([0.70710678, 0.        , 0.        , 0.70710678])>
+    tensor([0.7071, 0.0000, 0.0000, 0.7071], dtype=torch.float64)
     >>> marginal_prob(x, axis=[0])
-    <tf.Tensor: shape=(2,), dtype=float64, numpy=array([0.70710678, 0.70710678])>
+    tensor([0.7071, 0.7071], dtype=torch.float64)
     """
     prob = np.flatten(prob)
     num_wires = int(np.log2(len(prob)))
@@ -205,11 +205,10 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
-    >>> z = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
+    >>> z = torch.tensor([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=torch.complex128)
     >>> reduce_dm(z, indices=[1])
-    tf.Tensor(
-    [[1.+0.j 0.+0.j]
-     [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+    tensor([[1.+0.j, 0.+0.j],
+            [0.+0.j, 0.+0.j]], dtype=torch.complex128)
 
     >>> x = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
     ...               [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
@@ -286,8 +285,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
            [[0.+0.j, 0.+0.j],
             [0.+0.j, 1.+0.j]]])
     """
-    # Autograd does not support same indices sum in backprop, and tensorflow
-    # has a limit of 8 dimensions if same indices are used
+    # Autograd does not support same indices sum in backprop
     matrix = math.cast(matrix, dtype=c_dtype)
     if math.ndim(matrix) == 2:
         is_batched = False
@@ -296,7 +294,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
         is_batched = True
         batch_dim, dim = matrix.shape[:2]
 
-    if math.get_interface(matrix) in ["autograd", "tensorflow"]:
+    if math.get_interface(matrix) == "autograd":
         return _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim, dim)
 
     # Dimension and reshape
@@ -414,11 +412,10 @@ def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
-    >>> z = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
+    >>> z = torch.tensor([1, 0, 0, 0], dtype=torch.complex128)
     >>> reduce_statevector(z, indices=[1])
-    tf.Tensor(
-    [[1.+0.j 0.+0.j]
-     [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+    tensor([[1.+0.j, 0.+0.j],
+            [0.+0.j, 0.+0.j]], dtype=torch.complex128)
 
     >>> x = np.array([[1, 0, 0, 0], [0, 1, 0, 0]])
     >>> reduce_statevector(x, indices=[1])

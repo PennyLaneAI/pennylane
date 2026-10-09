@@ -69,14 +69,6 @@ def _layout(M, N, beth, extra_work=0, num_batches=1):
     )
 
 
-def _prep_gradient(wires):
-    """Prepare the shared phase gradient state, which is a product state."""
-    beth = len(wires)
-    for j, wire in enumerate(wires):
-        qp.Hadamard(wire)
-        qp.PhaseShift(-2 * np.pi * 2 ** (beth - 1 - j) / 2**beth, wires=wire)
-
-
 class TestCascadeAngles:
     """Tests for the classical Givens cascade."""
 
@@ -411,7 +403,7 @@ class TestSelectTHCOperator:
             for wire, value in prep.items():
                 if value:
                     qp.X(wire)
-            _prep_gradient(gradient)
+            qp.PhaseGradientStatePrep(gradient)
             SelectTHC(
                 _static_matrix(chi),
                 _static_matrix(tev),
@@ -422,7 +414,7 @@ class TestSelectTHCOperator:
                 gradient,
                 work,
             )
-            qp.adjoint(_prep_gradient)(gradient)
+            qp.adjoint(qp.PhaseGradientStatePrep(gradient))
             return qp.state()
 
         sel = [slice(None)] * ntot
@@ -477,7 +469,7 @@ class TestSelectTHCOperator:
             qp.X(flags[0])  # success
             for w in flags[3:]:  # the two spin flags
                 qp.Hadamard(w)
-            _prep_gradient(gradient)
+            qp.PhaseGradientStatePrep(gradient)
             SelectTHC(
                 _static_matrix(chi),
                 _static_matrix(self.tev),
@@ -488,7 +480,7 @@ class TestSelectTHCOperator:
                 gradient,
                 work,
             )
-            qp.adjoint(_prep_gradient)(gradient)
+            qp.adjoint(qp.PhaseGradientStatePrep(gradient))
             for w in flags[3:]:
                 qp.Hadamard(w)
             return qp.state()
@@ -573,10 +565,10 @@ class TestPhaseGradientRotation:  # pylint: disable=too-few-public-methods
         def circuit(column):
             qp.BasisState(bits, wires=angle)
             qp.BasisState(qp.math.int_to_binary(column, 2), wires=system)
-            _prep_gradient(gradient)
+            qp.PhaseGradientStatePrep(gradient)
             fn = qp.adjoint(_apply_loaded_rotation) if adjoint else _apply_loaded_rotation
             fn(system, angle, beth, [0], gradient, adder_work)
-            qp.adjoint(_prep_gradient)(gradient)
+            qp.adjoint(qp.PhaseGradientStatePrep(gradient))
             for bit, wire in zip(bits, angle):  # undo the angle load
                 if bit:
                     qp.X(wire)
@@ -656,7 +648,7 @@ class TestSelectTHCInvariants:
         def circuit():
             for w in system + index + flags:
                 qp.Hadamard(w)
-            _prep_gradient(gradient)
+            qp.PhaseGradientStatePrep(gradient)
             SelectTHC(
                 _static_matrix(chi),
                 _static_matrix(np.eye(N // 2)),
@@ -726,7 +718,7 @@ class TestSelectTHCInvariants:
                 qp.Hadamard(system[0])
                 qp.X(index[0])
                 qp.X(flags[0])
-                _prep_gradient(gradient)
+                qp.PhaseGradientStatePrep(gradient)
                 SelectTHC(
                     _static_matrix(chi),
                     _static_matrix(tev),
@@ -738,7 +730,7 @@ class TestSelectTHCInvariants:
                     work,
                     num_batches,
                 )
-                qp.adjoint(_prep_gradient)(gradient)
+                qp.adjoint(qp.PhaseGradientStatePrep(gradient))
                 return qp.state()
 
             state = np.asarray(circuit()).reshape([2] * ntot)
@@ -782,10 +774,11 @@ class TestControlledSelectTHC:
         tape = qp.tape.QuantumScript.from_queue(q)
 
         with qp.decomposition.toggle_graph_ctx(True):
-            # one ChangeOpBasis per V sandwich, and the control lands on the outside of it
+            # one ChangeOpBasis per V sandwich plus one for the index swaps, and the control
+            # lands on the outside of each of them
             tape = qp.transforms.decompose(tape, max_expansion=1)[0][0]
             names = [op.name for op in tape.operations]
-            assert sum(name.startswith("C(ChangeOpBasis") for name in names) == 2
+            assert sum(name.startswith("C(ChangeOpBasis") for name in names) == 3
 
             tape = qp.transforms.decompose(tape, max_expansion=1)[0][0]
             tape = qp.transforms.decompose(tape, max_expansion=1)[0][0]
@@ -805,9 +798,7 @@ class TestControlledSelectTHC:
             for w in wires["flag_wires"][3:]:
                 qp.Hadamard(w)
             grad = wires["gradient_wires"]
-            for j, w in enumerate(grad):
-                qp.Hadamard(w)
-                qp.PhaseShift(-2 * np.pi * 2 ** (len(grad) - 1 - j) / 2 ** len(grad), wires=w)
+            qp.PhaseGradientStatePrep(grad)
             for w in wires["index_wires"]:
                 qp.Hadamard(w)
             qp.Hadamard(wires["system_wires"][0])

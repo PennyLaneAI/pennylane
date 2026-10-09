@@ -21,8 +21,9 @@ import copy
 import numpy as np
 
 from pennylane import ops
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator2, abstractify
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -281,9 +282,9 @@ def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
 add_decomps(Reflection, _reflection_decomposition)
 
 # pylint: disable=protected-access
-if Reflection._primitive is not None:
 
-    @Reflection._primitive.def_impl
-    def _(*args, n_wires, **kwargs):
-        (U, alpha), reflection_wires = args[:-n_wires], args[-n_wires:]
-        return type.__call__(Reflection, U, alpha, reflection_wires=reflection_wires, **kwargs)
+
+@Reflection._primitive.def_impl
+def _(*args, n_wires, **kwargs):
+    (U, alpha), reflection_wires = args[:-n_wires], args[-n_wires:]
+    return type.__call__(Reflection, U, alpha, reflection_wires=reflection_wires, **kwargs)

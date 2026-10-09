@@ -13,14 +13,17 @@
 # limitations under the License.
 """For loop."""
 
-import functools
 import logging
 import warnings
-from typing import Literal
+from typing import Any, Literal
+
+import jax
 
 from pennylane import capture, math
-from pennylane.capture import FlatFn, enabled
+from pennylane.capture import FlatFn, HintedCallable, apply_hint, enabled
+from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
+from pennylane.capture.hint import process_hints
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 from pennylane.exceptions import CaptureWarning
 
@@ -160,6 +163,56 @@ def for_loop(
     .. details::
         :title: Usage Details
 
+        **Compiler hints and Resource Profiling:**
+
+        When running resource analysis on a qjit workflow, loops may appear symbolically. Calling :func:`~.specs` on the ``circuit`` above, we get
+
+        >>> s = qp.specs(qp.qjit(circuit, capture=True), level=0)(3, 0.5)
+        >>> print(s.resources)
+        Symbolic Variables: a
+        Quantum operations:
+        - Total: a
+        - RX: a
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
+
+        To resolve symbolic expressions directly, :func:`~.hint` can be used indicate the likely number of iterations
+        on the loop:
+
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=1)
+
+            @qp.qnode(dev)
+            def circuit(n: int, x: float):
+
+                @qp.hint({"num-iters": 10})
+                @qp.for_loop(0, n, 1)
+                def loop_rx(i, x):
+                    # perform some work and update (some of) the arguments
+                    qp.RX(x, wires=0)
+
+                    # update the value of x for the next iteration
+                    return jnp.sin(x)
+
+                # apply the for loop
+                final_x = loop_rx(x)
+
+                return qp.expval(qp.Z(0))
+
+        >>> s = qp.specs(qp.qjit(circuit, capture=True), level=0)(3, 0.5)
+        Quantum operations:
+        - Total: 10
+          - RX: 10
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
+
+        **Dynamic Shapes Support:**
+
         .. note::
 
             The following examples may yield different outputs depending on how the
@@ -282,84 +335,99 @@ def for_loop(
         Returns:
             Callable: a callable with the same signature as ``body_fn``
         """
+        if isinstance(body_fn, HintedCallable):
+            hints = process_hints(body_fn.hints, {"num-iters"})
+            num_iters_hint = hints.get("num-iters", None)
+            body_fn = body_fn.f
+        else:
+            num_iters_hint = None
+
         return ForLoopCallable(
-            start, stop, step, body_fn, allow_array_resizing=allow_array_resizing
+            start,
+            stop,
+            step,
+            body_fn,
+            allow_array_resizing=allow_array_resizing,
+            num_iters_hint=num_iters_hint,
         )
 
     return _decorator
 
 
-@functools.lru_cache
-def _get_for_loop_qfunc_prim():
-    """Get the loop_for primitive for quantum functions."""
+for_loop_prim = QpPrimitive("for_loop")
+for_loop_prim.multiple_results = True
+for_loop_prim.prim_type = "higher_order"
 
-    # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import QpPrimitive
 
-    for_loop_prim = QpPrimitive("for_loop")
-    for_loop_prim.multiple_results = True
-    for_loop_prim.prim_type = "higher_order"
+def _for_loop_setup_env(tracers, params):
+    # slice out start, stop, step
+    tracers = tracers[3:]
+    # tracers now (*consts, *abstract_shapes, *args)
+    tracer_consts = tracers[slice(*params["consts_slice"])]
+    abstract_shapes_slice = slice(*params["abstract_shapes_slice"])
+    tracer_abstract_shapes = tracers[abstract_shapes_slice]
+    args_slice = slice(*params["args_slice"])
+    tracer_args = tracers[args_slice]
 
-    def setup_env(tracers, params):
-        # slice out start, stop, step
-        tracers = tracers[3:]
-        # tracers now (*consts, *abstract_shapes, *args)
-        tracer_consts = tracers[slice(*params["consts_slice"])]
-        abstract_shapes_slice = slice(*params["abstract_shapes_slice"])
-        tracer_abstract_shapes = tracers[abstract_shapes_slice]
-        args_slice = slice(*params["args_slice"])
-        tracer_args = tracers[args_slice]
+    # invars now (*abstract_shapes, i, *args)
+    var_consts = params["jaxpr_body_fn"].constvars
+    jaxpr_invars = params["jaxpr_body_fn"].invars
 
-        # invars now (*abstract_shapes, i, *args)
-        var_consts = params["jaxpr_body_fn"].constvars
-        jaxpr_invars = params["jaxpr_body_fn"].invars
+    num_abstract_shapes = abstract_shapes_slice.stop - abstract_shapes_slice.start
+    invars_abstract_shapes = jaxpr_invars[:num_abstract_shapes]
+    # skip index
+    invars_args = jaxpr_invars[num_abstract_shapes + 1 :]
 
-        num_abstract_shapes = abstract_shapes_slice.stop - abstract_shapes_slice.start
-        invars_abstract_shapes = jaxpr_invars[:num_abstract_shapes]
-        # skip index
-        invars_args = jaxpr_invars[num_abstract_shapes + 1 :]
+    env = dict(zip(invars_abstract_shapes, tracer_abstract_shapes, strict=True))
+    env.update(dict(zip(invars_args, tracer_args, strict=True)))
+    env.update(dict(zip(var_consts, tracer_consts, strict=True)))
+    return env
 
-        env = dict(zip(invars_abstract_shapes, tracer_abstract_shapes, strict=True))
-        env.update(dict(zip(invars_args, tracer_args, strict=True)))
-        env.update(dict(zip(var_consts, tracer_consts, strict=True)))
-        return env
 
-    register_custom_staging_rule(
-        for_loop_prim,
-        get_jaxpr_from_params=lambda params: params["jaxpr_body_fn"],
-        setup_env=setup_env,
-    )
+register_custom_staging_rule(
+    for_loop_prim,
+    get_jaxpr_from_params=lambda params: params["jaxpr_body_fn"],
+    setup_env=_for_loop_setup_env,
+)
 
-    # pylint: disable=too-many-arguments
-    @for_loop_prim.def_impl
-    def _impl(
-        start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
-    ):
-        # Convert tuples back to slices (tuples are used for JAX 0.7.1 hashability)
-        consts_slice = slice(*consts_slice)
-        args_slice = slice(*args_slice)
-        abstract_shapes_slice = slice(*abstract_shapes_slice)
 
-        consts = args[consts_slice]
-        init_state = args[args_slice]
-        abstract_shapes = args[abstract_shapes_slice]
+# pylint: disable=too-many-arguments, unused-argument
+@for_loop_prim.def_impl
+def _for_loop_impl(
+    start,
+    stop,
+    step,
+    *args,
+    jaxpr_body_fn,
+    consts_slice,
+    args_slice,
+    abstract_shapes_slice,
+    estimated_iterations,
+):
+    # Convert tuples back to slices (tuples are used for JAX 0.7.1 hashability)
+    consts_slice = slice(*consts_slice)
+    args_slice = slice(*args_slice)
+    abstract_shapes_slice = slice(*abstract_shapes_slice)
 
-        # in case start >= stop, return the initial state
-        fn_res = init_state
+    consts = args[consts_slice]
+    init_state = args[args_slice]
+    abstract_shapes = args[abstract_shapes_slice]
 
-        for i in range(start, stop, step):
-            fn_res = capture.eval_jaxpr(jaxpr_body_fn, consts, *abstract_shapes, i, *fn_res)
+    # in case start >= stop, return the initial state
+    fn_res = init_state
 
-        return fn_res
+    for i in range(start, stop, step):
+        fn_res = capture.eval_jaxpr(jaxpr_body_fn, consts, *abstract_shapes, i, *fn_res)
 
-    # pylint: disable=unused-argument
-    @for_loop_prim.def_abstract_eval
-    def __abstract_eval(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
-        args_slice = slice(*args_slice)
-        abstract_shapes_slice = slice(*abstract_shapes_slice)
-        return args[abstract_shapes_slice] + args[args_slice]
+    return fn_res
 
-    return for_loop_prim
+
+# pylint: disable=unused-argument
+@for_loop_prim.def_abstract_eval
+def _for_loop_abstract_eval(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
+    args_slice = slice(*args_slice)
+    abstract_shapes_slice = slice(*abstract_shapes_slice)
+    return args[abstract_shapes_slice] + args[args_slice]
 
 
 class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-arguments
@@ -391,12 +459,14 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         body_fn,
         *,
         allow_array_resizing: Literal["auto", True, False] = "auto",
+        num_iters_hint: int | None = None,
     ):
         self.start = start
         self.stop = stop
         self.step = step
         self.body_fn = body_fn
         self.allow_array_resizing = allow_array_resizing
+        self.num_iters_hint = num_iters_hint
 
     def _call_capture_disabled(self, *init_state):
         args = init_state
@@ -414,8 +484,6 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         return fn_res
 
     def _get_jaxpr(self, init_state, allow_array_resizing):
-
-        import jax  # pylint: disable=import-outside-toplevel
 
         f_consts_extracted, dynamic_consts = promote_consts_to_inputs(self.body_fn)
 
@@ -462,8 +530,6 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
     def _call_capture_enabled(self, *init_state):
 
-        import jax  # pylint: disable=import-outside-toplevel
-
         try:
             jaxpr_body_fn, abstract_shapes, flat_args, out_tree = self._get_jaxpr(
                 init_state, allow_array_resizing=self.allow_array_resizing
@@ -489,8 +555,6 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
                 f"is the loop index. Got num_inputs {ni} and num_outputs {no}."
             )
 
-        for_loop_prim = _get_for_loop_qfunc_prim()
-
         consts_slice = slice(0, len(jaxpr_body_fn.consts))
         abstract_shapes_slice = slice(consts_slice.stop, consts_slice.stop + len(abstract_shapes))
         args_slice = slice(abstract_shapes_slice.stop, None)
@@ -513,6 +577,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             consts_slice=consts_slice,
             args_slice=args_slice,
             abstract_shapes_slice=abstract_shapes_slice,
+            estimated_iterations=self.num_iters_hint,
         )
 
         results = results[-out_tree.num_leaves :]
@@ -538,3 +603,18 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         if enabled() and not start_equals_stop:
             return self._call_capture_enabled(*init_state)
         return self._call_capture_disabled(*init_state)
+
+
+@apply_hint.register
+def _apply_hint_to_for_loop(
+    f: ForLoopCallable, hints: dict[Literal["num-iters"], Any]
+) -> ForLoopCallable:
+    hints = process_hints(hints, {"num-iters"})
+    return ForLoopCallable(
+        f.start,
+        f.stop,
+        f.step,
+        f.body_fn,
+        allow_array_resizing=f.allow_array_resizing,
+        num_iters_hint=hints.get("num-iters", None),
+    )

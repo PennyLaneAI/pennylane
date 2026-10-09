@@ -25,10 +25,10 @@ from pennylane.templates.subroutines.alias_sampling_thc import _build_thc_pairs,
 @pytest.mark.parametrize(
     "M, N, aleph, beth, expected",
     [
-        (1, 2, 1, 1, {"system": 2, "index": 2, "prep_garbage": 15, "gradient": 2, "work": 1}),
-        (2, 2, 1, 1, {"system": 2, "index": 4, "prep_garbage": 18, "gradient": 2, "work": 2}),
-        (2, 2, 2, 1, {"system": 2, "index": 4, "prep_garbage": 20, "gradient": 2, "work": 2}),
-        (2, 4, 2, 3, {"system": 4, "index": 4, "prep_garbage": 21, "gradient": 4, "work": 6}),
+        (1, 2, 1, 1, {"system": 2, "index": 2, "prep_garbage": 14, "gradient": 2, "work": 2}),
+        (2, 2, 1, 1, {"system": 2, "index": 4, "prep_garbage": 17, "gradient": 2, "work": 2}),
+        (2, 2, 2, 1, {"system": 2, "index": 4, "prep_garbage": 19, "gradient": 2, "work": 3}),
+        (2, 4, 2, 3, {"system": 4, "index": 4, "prep_garbage": 20, "gradient": 4, "work": 6}),
     ],
 )
 def test_qubitization_thc_wires(M, N, aleph, beth, expected):
@@ -123,16 +123,11 @@ def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, num_walks=1):
     system = list(wires["system_wires"])
     auxiliaries = [w for w in range(total) if w not in system]
 
-    def gradient_state():
-        for j, wire in enumerate(wires["gradient_wires"]):
-            qp.Hadamard(wire)
-            qp.PhaseShift(-2 * np.pi * 2 ** (beth - 1 - j) / 2**beth, wires=wire)
-
     @qp.transforms.decompose(stopping_condition=lambda op: len(op.wires) <= 3)
     @qp.qnode(qp.device("default.qubit", wires=total))
     def circuit():
         qp.StatePrep(psi, wires=system)
-        gradient_state()
+        qp.PhaseGradientStatePrep(wires["gradient_wires"])
         for _ in range(num_walks):
             qp.QubitizationTHC(
                 tuple(map(tuple, zeta)),
@@ -147,7 +142,7 @@ def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, num_walks=1):
                 wires["gradient_wires"],
                 wires["work_wires"],
             )
-        qp.adjoint(gradient_state)()
+        qp.adjoint(qp.PhaseGradientStatePrep(wires["gradient_wires"]))
         return qp.state()
 
     state = np.asarray(circuit()).reshape([2] * total)

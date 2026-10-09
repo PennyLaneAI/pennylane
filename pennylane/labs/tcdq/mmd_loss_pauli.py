@@ -29,6 +29,8 @@ import jax.numpy as jnp
 import numpy as np
 from jax.typing import ArrayLike
 
+_REAL_DTYPE = jnp.float32
+
 
 @dataclass(frozen=True)
 class MMDConfig:
@@ -135,7 +137,9 @@ def _compute_single_mmd(
 
     ``model_expvals_variances`` may be ``None`` for an exact model.
     """
-    tr_train = jnp.mean(1 - 2 * ((target_data @ visible_ops.T) % 2), axis=0)
+    out_dtype = jnp.promote_types(model_expvals.dtype, _REAL_DTYPE)
+    counts = target_data.astype(_REAL_DTYPE) @ visible_ops.astype(_REAL_DTYPE).T
+    tr_train = jnp.mean(1 - 2 * (counts % 2), axis=0).astype(out_dtype)
     m = target_data.shape[0]
 
     result = model_expvals**2
@@ -177,13 +181,18 @@ def _compute_loss_for_bandwidth(
     wire_list = list(wire_tuple)
 
     p_mmd = (1 - jnp.exp(-1 / (2 * bandwidth**2))) / 2
-    visible_ops = jnp.array(
-        jax.random.binomial(subkey, 1, p_mmd, shape=(n_ops, len(wire_tuple))),
-        dtype=float,
-    )
 
-    all_ops = jnp.zeros((n_ops, n_qubits), dtype=float)
-    all_ops = all_ops.at[:, wire_list].set(visible_ops)
+    prob = jnp.asarray(p_mmd)
+    q = jnp.where(prob < 0.5, prob, 1.0 - prob)
+    uniforms = jax.random.uniform(jax.random.split(subkey)[0], (n_ops, len(wire_tuple)), prob.dtype)
+    successes = uniforms >= jnp.exp(jnp.log1p(-q))
+    visible_ops = jnp.where(prob < 0.5, successes, ~successes).astype(_REAL_DTYPE)
+
+    if len(wire_tuple) == n_qubits and wire_list == list(range(n_qubits)):
+        all_ops = visible_ops
+    else:
+        all_ops = jnp.zeros((n_ops, n_qubits), dtype=visible_ops.dtype)
+        all_ops = all_ops.at[:, wire_list].set(visible_ops)
 
     pauli_obs = _binary_ops_to_pauli_int(all_ops)
 

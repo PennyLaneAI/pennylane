@@ -289,11 +289,18 @@ def draw(
         For controlled versions of these globally acting operators, the control
         nodes are exempt from the expansion:
 
-        >>> ctrl_gphase = qp.ctrl(qp.GlobalPhase, control=[2])
-        >>> print(qp.draw(ctrl_gphase, **draw_kwargs)(phi=0.5))
-        0: ─╭GlobalPhase(0.50)─┤
-        1: ─├GlobalPhase(0.50)─┤
-        2: ─╰●─────────────────┤
+        >>> print(qp.draw(qp.ctrl(qp.Identity, control=[2]), **draw_kwargs)())
+        0: ─╭I─┤
+        1: ─├I─┤
+        2: ─╰●─┤
+
+        A controlled :class:`~.GlobalPhase` is rewritten as a :class:`~.PhaseShift`
+        on the control wire:
+
+        >>> print(qp.draw(qp.ctrl(qp.GlobalPhase, control=[2]), **draw_kwargs)(phi=0.5))
+        0: ────────────┤
+        1: ────────────┤
+        2: ──Rϕ(-0.50)─┤
 
     """
     qnode, partial_args, partial_kwargs = _unwrap_partial(qnode)
@@ -773,11 +780,11 @@ def draw_mpl(
 
         .. code-block:: python
 
-            ctrl_gphase = qp.ctrl(qp.GlobalPhase, control=[2])
-            fig, ax = qp.draw_mpl(ctrl_gphase, **draw_kwargs)(phi=0.5)
+            ctrl_identity = qp.ctrl(qp.Identity, control=[2])
+            fig, ax = qp.draw_mpl(ctrl_identity, **draw_kwargs)()
             fig.show()
 
-        .. figure:: ../../_static/draw_mpl/ctrl_gphase.png
+        .. figure:: ../../_static/draw_mpl/ctrl_identity.png
             :align: center
             :width: 40%
             :target: javascript:void(0);
