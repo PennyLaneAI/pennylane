@@ -18,7 +18,7 @@ Adds ``qp.hint``, a tool for annotating things with compiler hints.
 import functools
 from collections.abc import Callable, Set
 from difflib import SequenceMatcher
-from typing import Any
+from typing import Any, overload
 
 
 def process_hints(hints: dict[str, Any], supported: Set[str]) -> dict[str, Any]:
@@ -133,6 +133,10 @@ def _stack_to_HintedCallable(f: HintedCallable, hints: dict) -> HintedCallable:
     return HintedCallable(f, f.hints | hints)
 
 
+@overload
+def hint(f_or_hints: dict[str, Any], hints: None = None) -> Callable: ...
+@overload
+def hint(f_or_hints: Any, hints: dict[str, Any]) -> Any: ...
 def hint(f_or_hints, hints: dict[str, Any] | None = None):
     """Attaches a compiler hint to applicable functionality.
 
