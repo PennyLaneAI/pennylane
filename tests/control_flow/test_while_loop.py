@@ -16,6 +16,7 @@ Tests for the while_loop
 """
 
 import pennylane as qp
+from pennylane.control_flow.while_loop import WhileLoopCallable
 
 
 def test_while_loop_python_fallback():
@@ -118,3 +119,14 @@ class TestWhileLoopHints:
 
         loop = qp.hint({"num-iters": 7})(qp.while_loop(lambda i: i < 3)(body))
         assert loop.num_iters_hint == 7
+
+    def test_direct_form_preserves_while_loop_callable(self):
+        """``qp.hint(loop, hints)`` should return a ``WhileLoopCallable`` with the new hint."""
+
+        @qp.while_loop(lambda i: i < 3)
+        def loop(i):
+            return i + 1
+
+        new_loop = qp.hint(loop, {"num-iters": 4})
+        assert isinstance(new_loop, WhileLoopCallable)
+        assert new_loop.num_iters_hint == 4
