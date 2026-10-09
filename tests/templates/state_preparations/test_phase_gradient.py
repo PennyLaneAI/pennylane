@@ -94,7 +94,7 @@ class TestDecomposition:
 class TestPPRDecomposition:
     """Tests for the decomposition into Pauli product rotations."""
 
-    @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 7])
+    @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 7, 10, 14, 16])
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_prepares_state(self, num_wires):
         """Test that decomposing into PPRs prepares the phase gradient state."""
@@ -121,7 +121,7 @@ class TestPPRDecomposition:
         phase = -q.queue[-1].data[0]
         for j in range(num_wires):
             wire_ops = [op for op in q.queue if op.wires == qp.wires.Wires(j)]
-            state = qp.matrix(qp.tape.QuantumScript(wire_ops), wire_order=[j])[:, 0]
+            state = qp.matrix(wire_ops, wire_order=[j])[:, 0]
             target = np.array([1, np.exp(-1j * np.pi / 2**j)]) / np.sqrt(2)
             overlap = np.vdot(target, state)
             squared_errors.append(np.linalg.norm(state - overlap / np.abs(overlap) * target) ** 2)
