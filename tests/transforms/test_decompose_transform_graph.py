@@ -38,7 +38,11 @@ pytestmark = pytest.mark.usefixtures("enable_graph_decomposition")
 def test_pass_name():
     """Makes sure the ``decompose`` transform's ``pass_name`` is set correctly."""
     assert qp.decompose.pass_name == "graph-decomposition"
+    assert qp.decompose.tape_transform is None
     assert qp.transforms.decompose.pass_name == "graph-decomposition"
+    assert qp.transforms.decompose.tape_transform is None
+    assert qp.transforms._tape_decompose.pass_name is None
+    assert qp.transforms._tape_decompose.tape_transform is not None
 
 
 @pytest.mark.unit
@@ -49,14 +53,14 @@ def test_weighted_graph_handles_negative_weight():
 
     # edge case: negative gate weight
     with pytest.raises(ValueError, match="Negative weights"):
-        qp.transforms.decompose(tape, gate_set={"CNOT": -10.0, "RZ": 1.0})
+        qp.transforms._tape_decompose(tape, gate_set={"CNOT": -10.0, "RZ": 1.0})
 
 
 @pytest.mark.unit
 def test_weights_affect_graph_decomposition():
     tape = qp.tape.QuantumScript([qp.CRX(0.1, wires=[0, 1]), qp.Toffoli(wires=[0, 1, 2])])
 
-    [new_tape], _ = qp.transforms.decompose(
+    [new_tape], _ = qp.transforms._tape_decompose(
         tape, gate_set={qp.Toffoli: 1.23, qp.RX: 4.56, qp.CZ: 0.01, qp.H: 420, qp.CRZ: 100}
     )
     assert new_tape.operations == [
@@ -67,7 +71,7 @@ def test_weights_affect_graph_decomposition():
         qp.Toffoli(wires=[0, 1, 2]),
     ]
 
-    [new_tape], _ = qp.transforms.decompose(
+    [new_tape], _ = qp.transforms._tape_decompose(
         tape, gate_set={qp.Toffoli: 1.23, qp.RX: 4.56, qp.CZ: 0.01, qp.H: 0.1, qp.CRZ: 0.1}
     )
     assert new_tape.operations == [
@@ -163,14 +167,14 @@ class TestDecomposeGraphEnabled:
 
         tape = qp.tape.QuantumScript([])
         with pytest.raises(TypeError, match="The gate_set argument is required."):
-            qp.transforms.decompose(tape, stopping_condition=lambda op: True)
+            qp.transforms._tape_decompose(tape, stopping_condition=lambda op: True)
 
     @pytest.mark.integration
     def test_mixed_gate_set_specification(self):
         """Tests that the gate_set can be specified as both a type and a string."""
 
         tape = qp.tape.QuantumScript([qp.RX(0.5, wires=[0]), qp.CNOT(wires=[0, 1])])
-        [new_tape], _ = qp.transforms.decompose(tape, gate_set={"RX", qp.CNOT})
+        [new_tape], _ = qp.transforms._tape_decompose(tape, gate_set={"RX", qp.CNOT})
         assert new_tape.operations == tape.operations
 
     @pytest.mark.integration
@@ -185,7 +189,9 @@ class TestDecomposeGraphEnabled:
             ]
         )
 
-        [new_tape], _ = qp.transforms.decompose(tape, gate_set={"Hadamard", "CNOT", "RZ", "RY"})
+        [new_tape], _ = qp.transforms._tape_decompose(
+            tape, gate_set={"Hadamard", "CNOT", "RZ", "RY"}
+        )
         assert new_tape.operations == [
             # H is in the target gate set
             qp.H(0),
@@ -201,7 +207,9 @@ class TestDecomposeGraphEnabled:
             qp.CNOT(wires=[2, 1]),
         ]
 
-        [new_tape], _ = qp.transforms.decompose(tape, gate_set={"RY", "RZ", "CZ", "GlobalPhase"})
+        [new_tape], _ = qp.transforms._tape_decompose(
+            tape, gate_set={"RY", "RZ", "CZ", "GlobalPhase"}
+        )
         assert new_tape.operations == [
             # The H decomposes to RZ and RY
             qp.RZ(np.pi, wires=[0]),
@@ -259,7 +267,7 @@ class TestDecomposeGraphEnabled:
             qp.Z(wires[1])
 
         tape = qp.tape.QuantumScript([qp.CNOT(wires=[1, 0])])
-        [new_tape], _ = qp.transforms.decompose(
+        [new_tape], _ = qp.transforms._tape_decompose(
             tape,
             gate_set={"RY", "RZ", "CZ", "Hadamard", "GlobalPhase"},
             fixed_decomps={qp.CNOT: my_cnot},
@@ -287,7 +295,7 @@ class TestDecomposeGraphEnabled:
             qp.Z(wires[1])
 
         tape = qp.tape.QuantumScript([qp.CNOT(wires=[1, 0])])
-        [new_tape], _ = qp.transforms.decompose(
+        [new_tape], _ = qp.transforms._tape_decompose(
             tape,
             gate_set={"RY", "RZ", "CZ", "Hadamard", "GlobalPhase"},
             alt_decomps={qp.CNOT: [my_cnot]},
@@ -311,7 +319,7 @@ class TestDecomposeGraphEnabled:
             qp.Z(wires[1])
 
         tape = qp.tape.QuantumScript([qp.CNOT(wires=[1, 0])])
-        [new_tape], _ = qp.transforms.decompose(
+        [new_tape], _ = qp.transforms._tape_decompose(
             tape,
             gate_set={"RY", "RZ", "CZ", "PauliZ", "GlobalPhase"},
             alt_decomps={qp.CNOT: [my_cnot]},
@@ -349,7 +357,7 @@ class TestDecomposeGraphEnabled:
         with pytest.warns(
             DecompositionWarning, match="The graph-based decomposition system is unable"
         ):
-            [new_tape], _ = qp.transforms.decompose(
+            [new_tape], _ = qp.transforms._tape_decompose(
                 [tape],
                 gate_set={"CNOT", "Hadamard"},
                 fixed_decomps={CustomOpWithFallback: my_decomp},
@@ -369,7 +377,9 @@ class TestDecomposeGraphEnabled:
 
         with qp.decomposition.local_decomps():
             qp.add_decomps(CustomOp1, _decomp)
-            [decomp], _ = qp.decompose(tape, gate_set=qp.gate_sets.CLIFFORD_T, strict=False)
+            [decomp], _ = qp.transforms._tape_decompose(
+                tape, gate_set=qp.gate_sets.CLIFFORD_T, strict=False
+            )
 
         assert decomp.operations == [AnotherOp([0, 1])]
         assert not recwarn
@@ -393,7 +403,9 @@ class TestDecomposeGraphEnabled:
 
         with qp.decomposition.local_decomps():
             qp.add_decomps(CustomOp1, _decomp, _decomp2)
-            [decomp], _ = qp.decompose(tape, gate_set=qp.gate_sets.CLIFFORD_T, strict=False)
+            [decomp], _ = qp.transforms._tape_decompose(
+                tape, gate_set=qp.gate_sets.CLIFFORD_T, strict=False
+            )
 
         assert decomp.operations == [AnotherOp([0, 1]), qp.H(1), qp.CNOT([0, 1]), qp.H(1)]
         assert not recwarn
@@ -409,7 +421,7 @@ class TestDecomposeGraphEnabled:
             with pytest.warns(
                 DecompositionWarning, match="The graph-based decomposition system is unable"
             ):
-                [new_tape], _ = qp.transforms.decompose([tape], gate_set={"RX"})
+                [new_tape], _ = qp.transforms._tape_decompose([tape], gate_set={"RX"})
 
         assert new_tape.operations == [qp.RX(np.pi, wires=0), qp.GlobalPhase(-np.pi / 2)]
 
@@ -424,7 +436,7 @@ class TestDecomposeGraphEnabled:
         # So this also tests logic involving custom controlled operators.
         ops = [qp.ctrl(qp.MultiRZ(0.5, wires=[0, 1]), control=[2])]
         tape = qp.tape.QuantumScript(ops)
-        [new_tape], _ = qp.transforms.decompose(tape, gate_set={"RZ", "CNOT", "Toffoli"})
+        [new_tape], _ = qp.transforms._tape_decompose(tape, gate_set={"RZ", "CNOT", "Toffoli"})
         assert new_tape.operations == [
             # The conjugating ladder stays control-free
             qp.CNOT(wires=[1, 0]),
@@ -448,7 +460,7 @@ class TestDecomposeGraphEnabled:
             work_wire_type="zeroed",
         )
         tape = qp.tape.QuantumScript([op])
-        [new_tape], _ = qp.transforms.decompose(
+        [new_tape], _ = qp.transforms._tape_decompose(
             tape, gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", "CRZ", "X"}
         )
         assert [operation.name for operation in new_tape.operations] == (
@@ -463,7 +475,7 @@ class TestDecomposeGraphEnabled:
             qp.change_op_basis(qp.SWAP([1, 2]), qp.PhaseAdder(1, x_wires=[1, 2])), control=0
         )
         tape = qp.tape.QuantumScript([op])
-        [new_tape], _ = qp.transforms.decompose(
+        [new_tape], _ = qp.transforms._tape_decompose(
             tape, gate_set=qp.gate_sets.ALL_OPS, max_expansion=1
         )
 
@@ -479,7 +491,7 @@ class TestDecomposeGraphEnabled:
 
         op = qp.ctrl(qp.pow(qp.QubitUnitary([[0, 1], [1, 0]], wires=0), 1), control=1)
         tape = qp.tape.QuantumScript([op])
-        [new_tape], _ = qp.decompose(tape, gate_set={qp.ControlledQubitUnitary})
+        [new_tape], _ = qp.transforms._tape_decompose(tape, gate_set={qp.ControlledQubitUnitary})
         assert new_tape.operations == [qp.ControlledQubitUnitary([[0, 1], [1, 0]], wires=[1, 0])]
 
     @pytest.mark.integration
@@ -499,7 +511,7 @@ class TestDecomposeGraphEnabled:
                 qp.adjoint(CustomOp1(0.1, 0.2, 0.3, wires=[0])),
             ]
         )
-        [new_tape], _ = qp.transforms.decompose(
+        [new_tape], _ = qp.transforms._tape_decompose(
             tape, gate_set={"CNOT", "RX", "RY", "RZ"}, fixed_decomps={CustomOp1: custom_decomp}
         )
         assert new_tape.operations == [
@@ -538,7 +550,7 @@ class TestDecomposeGraphEnabled:
         def _expensive_decomp(wires, **_):
             raise NotImplementedError
 
-        @qp.transforms.decompose(
+        @qp.transforms._tape_decompose(
             gate_set={qp.RX, qp.RY, qp.RZ, qp.CNOT, "measure", "ppm"},
             fixed_decomps={qp.GlobalPhase: null_decomp},
             alt_decomps={CustomOp1: [_custom_decomp, _expensive_decomp]},
@@ -634,7 +646,7 @@ class TestDecomposeGraphEnabled:
         op2 = CustomOpDynamicWireDecomp(wires=[0, 1, 2])
         tape = qp.tape.QuantumScript([op1, op2])
 
-        [decomp], _ = qp.transforms.decompose(
+        [decomp], _ = qp.transforms._tape_decompose(
             [tape],
             gate_set={qp.Toffoli, qp.RZ, qp.RY, qp.CNOT},
             num_work_wires=num_work_wires,
@@ -674,7 +686,7 @@ class TestDecomposeGraphEnabled:
         op2 = CustomOpDynamicWireDecomp(wires=[0, 1, 4])
         tape = qp.tape.QuantumScript([op1, op2])
 
-        [decomp], _ = qp.transforms.decompose(
+        [decomp], _ = qp.transforms._tape_decompose(
             [tape],
             gate_set={qp.Toffoli: 1, qp.CRot: 7, qp.CNOT: 1},
             num_work_wires=None,
@@ -756,7 +768,9 @@ class TestDecomposeGraphEnabled:
             qp.add_decomps(CustomOp1, _custom_decomp)
             qp.add_decomps(DynOp, _dynop_decomp)
 
-            [result], _ = qp.decompose([tape], gate_set={qp.CNOT, qp.H, OneWireDynOp})
+            [result], _ = qp.transforms._tape_decompose(
+                [tape], gate_set={qp.CNOT, qp.H, OneWireDynOp}
+            )
 
         assert result.operations == expected
 
@@ -792,7 +806,7 @@ def test_stopping_condition():
 
     tape = qp.tape.QuantumScript([qp.QubitUnitary(U, wires=[0, 1])])
 
-    [decomp], _ = qp.transforms.decompose(
+    [decomp], _ = qp.transforms._tape_decompose(
         tape,
         gate_set={qp.RZ, qp.RY, qp.GlobalPhase, qp.CNOT},
         stopping_condition=stopping_condition,

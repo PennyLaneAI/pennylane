@@ -399,7 +399,7 @@ def to_zx(tape, expand_measurements=False):
         kwargs = {"gate_set": gate_sets.PYZX}
         if qp.decomposition.enabled_graph():
             kwargs["fixed_decomps"] = {qp.GlobalPhase: null_decomp}
-        [mapped_tape], _ = qp.transforms.decompose(mapped_tape, **kwargs)
+        [mapped_tape], _ = qp.transforms._tape_decompose(mapped_tape, **kwargs)
 
         if expand_measurements:
             [mapped_tape], _ = qp.transforms.diagonalize_measurements(mapped_tape, to_eigvals=True)

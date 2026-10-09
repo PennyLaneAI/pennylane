@@ -100,7 +100,7 @@ class TestBuildingBlocks:
         if not decompose_right_elbow:
             gate_set.add("Adjoint(TemporaryAND)")
 
-        @qp.decompose(gate_set=gate_set)
+        @qp.transforms._tape_decompose(gate_set=gate_set)
         @qp.qnode(qp.device("default.qubit"))
         def node(x_state, y_state, transformed_state):
             qp.StatePrep(x_state, x_wires)

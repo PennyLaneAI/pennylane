@@ -319,7 +319,7 @@ class TestQuantumMonteCarlo:
         queue_before_qpe = tape.operations[:2]
 
         # Build a new tape from all operations following the two QubitUnitary ops and expand it
-        [tape], _ = qp.transforms.decompose(
+        [tape], _ = qp.transforms._tape_decompose(
             qp.tape.QuantumScript(tape.operations[2:]),
             gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
             max_expansion=2,
@@ -343,7 +343,7 @@ class TestQuantumMonteCarlo:
             qp.QuantumPhaseEstimation(qp.QubitUnitary(Q, wires=target_wires), estimation_wires)
 
         qpe_tape = qp.tape.QuantumScript.from_queue(q_qpe_tape)
-        [qpe_tape], _ = qp.transforms.decompose(
+        [qpe_tape], _ = qp.transforms._tape_decompose(
             qpe_tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=2
         )
 

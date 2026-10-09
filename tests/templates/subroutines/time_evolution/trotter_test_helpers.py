@@ -144,7 +144,7 @@ def hadamard_test(
     psi /= np.linalg.norm(psi)
 
     @qp.qnode(dev)
-    @qp.transforms.decompose(gate_set=TROTTER_GATE_SET)
+    @qp.transforms._tape_decompose(gate_set=TROTTER_GATE_SET)
     def circ():
         qp.StatePrep(psi, wires=sys_wires)
         qp.H(anc)
@@ -164,7 +164,7 @@ def control_branches(
     op = qp.ctrl(
         trotter_cls(t, steps, ham, wires=sys_wires, double_phase=double_phase), control=[anc]
     )
-    [tape], _ = qp.transforms.decompose(
+    [tape], _ = qp.transforms._tape_decompose(
         [qp.tape.QuantumScript([op], [])], gate_set=TROTTER_GATE_SET
     )
     matrix = qp.matrix(tape, wire_order=[anc] + list(sys_wires))

@@ -389,7 +389,7 @@ class TestSingleExcitationDecompositions:
         tape = qp.tape.QuantumScript([op], [])
         expected_matrix = qp.matrix(tape, wire_order=[0, 1, control])
 
-        [decomp], _ = qp.transforms.decompose(
+        [decomp], _ = qp.transforms._tape_decompose(
             tape, gate_set={qp.CNOT, qp.RY, qp.RZ, qp.Hadamard, qp.GlobalPhase, qp.PauliX}
         )
         gates = decomp.operations

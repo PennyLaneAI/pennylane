@@ -34,7 +34,7 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import ControlledOp2
-from pennylane.transforms import decompose
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp

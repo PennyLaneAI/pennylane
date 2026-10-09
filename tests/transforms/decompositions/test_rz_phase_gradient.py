@@ -127,7 +127,7 @@ def test_as_fixed_decomps(phi, p):
     custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
     gate_set = {"SemiAdder", "CNOT", "PauliX", "GlobalPhase"}
 
-    @qp.transforms.decompose(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
+    @qp.transforms._tape_decompose(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
     @qp.qnode(qp.device("null.qubit"))
     def circuit():
         qp.RZ(phi, 0)
@@ -157,7 +157,7 @@ def test_as_alt_decomps(phi, p):
     custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
     gate_set = {"SemiAdder", "CNOT", "PauliX", "GlobalPhase"}
 
-    @qp.transforms.decompose(gate_set=gate_set, alt_decomps={qp.RZ: [custom_decomp]})
+    @qp.transforms._tape_decompose(gate_set=gate_set, alt_decomps={qp.RZ: [custom_decomp]})
     @qp.qnode(qp.device("null.qubit"))
     def circuit():
         qp.RZ(phi, 0)
@@ -188,7 +188,7 @@ def test_integration_multi_wire(seed):
 
     custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
 
-    @qp.transforms.decompose(
+    @qp.transforms._tape_decompose(
         gate_set={
             "StatePrep",
             "PhaseGradientStatePrep",

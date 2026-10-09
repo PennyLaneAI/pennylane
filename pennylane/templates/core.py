@@ -199,7 +199,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
             MyOp(wires=0)
             return qp.state()
 
-    >>> print(qp.draw(qp.decompose(c, max_expansion=1))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(c, max_expansion=1))())
     0: ──S(M0)─┤  State
     <BLANKLINE>
     M0 =
@@ -622,14 +622,14 @@ class Subroutine:
     0: ─╭MyOp─┤  <Z>
     1: ─├MyOp─┤
     2: ─╰MyOp─┤
-    >>> print(qp.draw(qp.decompose(c, max_expansion=1))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(c, max_expansion=1))())
     0: ─╭RXLayer(M0)─┤  <Z>
     1: ─├RXLayer(M0)─┤
     2: ─╰RXLayer(M0)─┤
     <BLANKLINE>
     M0 =
     [0. 1. 2.]
-    >>> print(qp.draw(qp.decompose(c, max_expansion=2))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(c, max_expansion=2))())
     0: ──RX(0.00)─┤  <Z>
     1: ──RX(1.00)─┤
     2: ──RX(2.00)─┤

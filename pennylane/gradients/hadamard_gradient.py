@@ -29,7 +29,8 @@ from pennylane.decomposition import gate_sets
 from pennylane.measurements import ProbabilityMP, expval
 from pennylane.ops import Sum
 from pennylane.pauli import PauliWord, pauli_decompose
-from pennylane.transforms import decompose, split_to_single_terms
+from pennylane.transforms import _tape_decompose as decompose
+from pennylane.transforms import split_to_single_terms
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn, ResultBatch
 from pennylane.wires import Wires

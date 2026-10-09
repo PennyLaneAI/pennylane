@@ -120,7 +120,7 @@ class BasisRotation(Operator2):
         The ``BasisRotation`` is implemented with :class:`~.PhaseShift` and
         :class:`~.SingleExcitation` gates:
 
-        >>> @qp.decompose(gate_set=qp.gate_sets.ALL_OPS)
+        >>> @qp.transforms._tape_decompose(gate_set=qp.gate_sets.ALL_OPS)
         ... def circ():
         ...     qp.BasisRotation(wires=wires, unitary_matrix=umat)
         >>> print(qp.draw(circ)())
@@ -132,7 +132,7 @@ class BasisRotation(Operator2):
 
         >>> from scipy.stats import ortho_group
         >>> O = ortho_group.rvs(4, random_state=51)
-        >>> @qp.decompose(gate_set=qp.gate_sets.ALL_OPS)
+        >>> @qp.transforms._tape_decompose(gate_set=qp.gate_sets.ALL_OPS)
         ... def circ():
         ...     qp.BasisRotation(wires=range(4), unitary_matrix=O)
         >>> print(qp.draw(circ)())

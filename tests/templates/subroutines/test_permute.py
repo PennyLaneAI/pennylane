@@ -23,7 +23,7 @@ import pytest
 import pennylane as qp
 from pennylane.decomposition import gate_sets
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.transforms import decompose
+from pennylane.transforms import _tape_decompose as decompose
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

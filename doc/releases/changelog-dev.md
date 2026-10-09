@@ -746,6 +746,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* :func:`~.decompose` is now a pass-only transform that always dispatches to Catalyst's
+  ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
+  available as :func:`~.transforms._tape_decompose`.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
   but instead expresses the Select block as another ``QROM`` with fewer controls and more target
   qubits. This allows for scalable compilation of this decomposition rule.

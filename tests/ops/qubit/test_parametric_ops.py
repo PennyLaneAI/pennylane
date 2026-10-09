@@ -724,7 +724,7 @@ class TestDecompositions:
         tape = qp.tape.QuantumScript([op], [])
         expected_matrix = qp.matrix(tape, wire_order=[2, 3, 4])
 
-        [decomp], _ = qp.transforms.decompose(
+        [decomp], _ = qp.transforms._tape_decompose(
             tape,
             gate_set={
                 qp.CNOT,
@@ -752,7 +752,7 @@ class TestDecompositions:
         tape = qp.tape.QuantumScript([op], [])
         expected_matrix = qp.matrix(tape, wire_order=[0, 1, 2, control])
 
-        [decomp], _ = qp.transforms.decompose(
+        [decomp], _ = qp.transforms._tape_decompose(
             tape, gate_set={qp.CNOT, qp.RZ, qp.GlobalPhase, qp.PauliX}
         )
         gates = decomp.operations
@@ -812,7 +812,7 @@ class TestDecompositions:
         tape = qp.tape.QuantumScript([qp.PCPhase(0.123, 12, wires=[0, 1, 2, 3, 4, 5, 6, 7, 8])], [])
         expected_matrix = qp.matrix(tape, wire_order=[0, 1, 2, 3, 4, 5, 6, 7, 8])
 
-        [decomp], _ = qp.transforms.decompose(
+        [decomp], _ = qp.transforms._tape_decompose(
             tape, gate_set={qp.RX, qp.RY, qp.RZ, qp.CNOT, qp.X, qp.Toffoli, qp.GlobalPhase}
         )
         mat = qp.matrix(decomp, wire_order=[0, 1, 2, 3, 4, 5, 6, 7, 8])

@@ -23,7 +23,7 @@ import numpy as np
 from pennylane import math
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
-from pennylane.transforms import decompose
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 

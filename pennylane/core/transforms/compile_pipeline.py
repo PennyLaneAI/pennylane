@@ -232,10 +232,10 @@ class CompilePipeline:
 
         Additionally, multiple compilation pipelines can be concatenated:
 
-        >>> another_pipeline = qp.decompose(gate_set={qp.RX, qp.RZ, qp.CNOT}) + qp.transforms.combine_global_phases
+        >>> another_pipeline = qp.transforms._tape_decompose(gate_set={qp.RX, qp.RZ, qp.CNOT}) + qp.transforms.combine_global_phases
         >>> print(another_pipeline + pipeline)
         CompilePipeline(
-          [1] decompose(gate_set=...),
+          [1] _tape_decompose(gate_set=...),
           [2] combine_global_phases(),
           [3] remove_barrier(),
           [4] merge_rotations(),
