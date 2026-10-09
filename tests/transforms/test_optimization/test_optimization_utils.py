@@ -163,10 +163,10 @@ class TestRotGateFusion:
         self.run_interface_test(angles_1, angles_2)
 
     def test_full_rot_fusion_diagonal_singularity(self):
-        """Regression test for issue #10185. Fusing two Hadamards (each represented by
-        ``Rot(pi, pi / 2, 0)``) lands on a diagonal singularity where a floating-point
-        rounding error pushes the intermediate magnitude slightly above 1. The unguarded
-        ``arccos`` then returned NaN. The fused angles must instead be finite and reproduce
+        """Regression test for issue #10185. Fusing two ``Rot(pi, pi / 2, 0)`` gates, each equal
+        to a Hadamard up to a global phase, lands on a diagonal singularity. On some platforms a
+        floating-point rounding error pushes the squared magnitude slightly above 1, and the
+        unclipped ``arccos`` returned NaN. The fused angles must instead be finite and reproduce
         the original operation."""
         angles = [np.pi, np.pi / 2, 0.0]
         fused_angles = fuse_rot_angles(angles, angles)
