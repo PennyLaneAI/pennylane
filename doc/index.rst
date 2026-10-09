@@ -240,24 +240,15 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qp_compiler
    code/qp_data
    code/qp_decomposition
-   code/qp_debugging
    code/qp_drawer
-   code/qp_estimator
    code/qp_fermi
    code/qp_gradients
-   code/qp_io
-   code/qp_kernels
    code/qp_labs
    code/qp_liealg
-   code/qp_logging
    code/qp_math
-   code/qp_noise
-   code/qp_numpy
    code/qp_ops_op_math
    code/qp_pauli
    code/qp_qchem
-   code/qp_qnn
-   code/qp_resource
    code/qp_shadows
    code/qp_spin
    code/qp_transforms
@@ -270,14 +261,12 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qp_capture
    code/qp_concurrency
    code/qp_core_operator
-   code/qp_core_queuing
    code/qp_devices
    code/qp_exceptions
    code/qp_ftqc
    code/qp_gate_sets
    code/qp_measurements
    code/qp_pytrees
-   code/qp_tape
    code/qp_templates_core
    code/qp_typing
    code/qp_wires
