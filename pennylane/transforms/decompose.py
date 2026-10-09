@@ -441,7 +441,7 @@ def _tape_decompose(
                 qp.RY(np.pi/2, wires[1])
                 qp.Z(wires[1])
 
-            @qp.decompose(
+            @qp.transforms._tape_decompose(
                 gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
                 alt_decomps={qp.CNOT: [my_cnot1, my_cnot2]},
                 fixed_decomps={qp.IsingXX: isingxx_decomp},
@@ -466,7 +466,7 @@ def _tape_decompose(
         chosen that includes a ``qp.PauliRot`` instance, Catalyst cannot execute the program. If
         this behaviour is encountered, this can be counteracted by adding a prohibitively large
         penalty to the graph solution should it encounter a ``qp.PauliRot`` instance (e.g.,
-        ``qp.decompose(..., gate_set={..., qp.PauliRot: 100_000})``).
+        ``qp.transforms._tape_decompose(..., gate_set={..., qp.PauliRot: 100_000})``).
     """
 
     if not enabled_graph() and (fixed_decomps or alt_decomps):
@@ -481,6 +481,8 @@ def _tape_decompose(
     if all(stopping_condition(op) for op in tape.operations):
         return (tape,), null_postprocessing
 
+    # If the decomposition graph is enabled, we create a DecompositionGraph instance
+    # to optimize the decomposition.
     decomp_graph_solution = None
 
     if enabled_graph():
