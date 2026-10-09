@@ -109,8 +109,9 @@ def analyze(
         including gate and measurement data, wire allocations, device information, shots, and
         more.
 
-    .. seealso:: :func:`~.specs`, which provides the same analysis, and :func:`~.track`, which
-        counts the resources used after device preprocessing by mock-executing the circuit.
+    .. seealso:: :func:`~.estimate`, which provides fast resource estimates by analyzing
+        decomposition pathways to a target gate set, and :func:`~.track`, which counts the
+        resources used after device preprocessing by mock-executing the circuit.
 
     .. note::
 

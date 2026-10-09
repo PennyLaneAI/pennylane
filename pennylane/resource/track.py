@@ -118,8 +118,9 @@ def track(
         :class:`~.resource.CircuitSpecs` object containing the ``qnode`` specifications,
         including gate and measurement data, total wires, device information, shots, and more.
 
-    .. seealso:: :func:`~.analyze`, which estimates the
-        resources at a given compilation level without executing the circuit.
+    .. seealso:: :func:`~.analyze`, which estimates the resources at a given compilation level
+        without executing the circuit, and :func:`~.estimate`, which provides fast resource
+        estimates by analyzing decomposition pathways to a target gate set.
 
     .. note::
 
