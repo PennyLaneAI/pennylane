@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.ops.mid_measure import MeasurementValue, MidMeasure
-from tests.capture.capture_utils import assert_eqn_matches_op
+from pennylane.testing import assert_eqn_matches_op
 
 jax = pytest.importorskip("jax")
 import jax.numpy as jnp

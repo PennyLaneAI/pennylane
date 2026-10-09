@@ -230,7 +230,7 @@ class TestCaptureIQPE:
             lambda phi: qp.iterative_qpe(qp.RZ(phi, wires=[0]), aux_wire=1, iters=iters)
         )(2.0)
         cjaxpr = jaxpr.eqns[0].params["jaxpr"]
-        captured = qp.tape.plxpr_to_tape(cjaxpr.jaxpr, cjaxpr.consts, 2.0, 0, 1)
+        captured = qp.testing.plxpr_to_tape(cjaxpr.jaxpr, cjaxpr.consts, 2.0, 0, 1)
 
         # LEGACY TAPE
         qp.capture.disable()
