@@ -19,8 +19,10 @@
 * Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
   can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
   [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
+  [(#10297)](https://github.com/PennyLaneAI/pennylane/pull/10297)
+  [(#10251)](https://github.com/PennyLaneAI/pennylane/pull/10251)
 
-  By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
+  By hinting control flow like :func:`~.for_loop`, :func:`~.while_loop`, and :func:`~.cond` profiling
   with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
   resource counts (no symbolic expressions).
 
@@ -1080,6 +1082,9 @@
   existing rule, but is a different object to the rule with that name.
   [(#10282)](https://github.com/PennyLaneAI/pennylane/pull/10282)
 
+* A new :mod:`pennylane.testing` module collects utilities for testing code built with PennyLane.
+  [(#10293)](https://github.com/PennyLaneAI/pennylane/pull/10293)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
@@ -1904,6 +1909,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed captured transforms dropping keyword arguments to the transformed function,
+  including when calling transformed QNodes with `qp.qjit(capture=True)`.
+  [(#10301)](https://github.com/PennyLaneAI/pennylane/pull/10301)
+
 * Fixed :meth:`~.PPR.matrix` raising a ``KeyError`` when the Pauli word contains the identity
   character ``"I"``.
   [(#10272)](https://github.com/PennyLaneAI/pennylane/pull/10272)
@@ -2000,7 +2009,7 @@
   JAX array.
   [(#10036)](https://github.com/PennyLaneAI/pennylane/pull/10036)
 
-* Fixed a bug where :func:`~.tape.plxpr_to_tape` raised an error when the program contains
+* Fixed a bug where :func:`~.testing.plxpr_to_tape` raised an error when the program contains
   arithmetic operations performed on mid-circuit measurement values.
   [(#10028)](https://github.com/PennyLaneAI/pennylane/pull/10028)
 

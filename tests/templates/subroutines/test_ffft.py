@@ -146,7 +146,7 @@ def test_ffft_circuit_capture(wires, expected_circuit):
 
     plxpr = qp.capture.make_plxpr(rule, autograph=False)(wires=op.wires)
     flat_args = jax.tree.leaves({"wires": op.wires})
-    tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_args)
+    tape = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_args)
     ops = tape.operations
 
     assert len(ops) == len(expected_circuit)
