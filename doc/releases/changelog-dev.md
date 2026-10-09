@@ -19,8 +19,9 @@
 * Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
   can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
   [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
+  [(#10251)](https://github.com/PennyLaneAI/pennylane/pull/10251)
 
-  By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
+  By hinting control flow like :func:`~.for_loop`, :func:`~.while_loop`, and :func:`~.cond` profiling
   with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
   resource counts (no symbolic expressions).
 
@@ -1042,7 +1043,7 @@
   (:func:`~pennylane.decomposition.enable_graph`) automatically selects the cheaper rule.
   [(#9698)](https://github.com/PennyLaneAI/pennylane/pull/9698)
 
-* :func:`~core.queuing.apply` is now compatible with program capture.
+* :func:`~pennylane.apply` is now compatible with program capture.
   [(#9831)](https://github.com/PennyLaneAI/pennylane/pull/9831)
   [(#10103)](https://github.com/PennyLaneAI/pennylane/pull/10103)
 
@@ -1444,6 +1445,11 @@
 
 * The ``qp.decomposition.reconstruct`` function and all infrastructure built around it has been removed.
   [(#9711)](https://github.com/PennyLaneAI/pennylane/pull/9711)
+
+* :func:`~pennylane.apply` has moved from :mod:`pennylane.core.queuing` to the standalone
+  :mod:`pennylane.core.apply` module, and is no longer importable from
+  ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
+  [(#10114)](https://github.com/PennyLaneAI/pennylane/pull/10114)
 
 <h3>Deprecations 👋</h3>
 
@@ -1892,6 +1898,10 @@
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed captured transforms dropping keyword arguments to the transformed function,
+  including when calling transformed QNodes with `qp.qjit(capture=True)`.
+  [(#10301)](https://github.com/PennyLaneAI/pennylane/pull/10301)
 
 * Fixed :meth:`~.PPR.matrix` raising a ``KeyError`` when the Pauli word contains the identity
   character ``"I"``.

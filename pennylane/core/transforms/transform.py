@@ -29,10 +29,11 @@ import jax
 from pennylane import capture, math
 from pennylane.capture import autograph, register_custom_staging_rule
 from pennylane.capture.custom_primitives import QpPrimitive
+from pennylane.core.apply import apply
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript
-from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.exceptions import TransformError
 from pennylane.pytrees import flatten
 from pennylane.typing import ResultBatch
@@ -1003,7 +1004,7 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
 
         flat_qfunc = capture.flatfn.FlatFn(obj)
         jaxpr = jax.make_jaxpr(flat_qfunc)(*args, **kwargs)
-        flat_args = jax.tree_util.tree_leaves(args)
+        flat_args = jax.tree_util.tree_leaves((args, kwargs))
 
         n_args = len(flat_args)
         n_consts = len(jaxpr.consts)

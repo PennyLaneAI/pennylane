@@ -19,7 +19,7 @@ from collections import Counter, defaultdict
 from functools import reduce
 
 from pennylane import math
-from pennylane.core import queuing
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import change_op_basis_resource_rep
@@ -198,7 +198,7 @@ def _controlled_change_op_basis_decomposition(
     work_wires,
     work_wire_type,
 ):
-    queuing.apply(base.compute_op)
+    apply(base.compute_op)
     ctrl(
         base.target_op,
         control=control_wires,
@@ -206,7 +206,7 @@ def _controlled_change_op_basis_decomposition(
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    queuing.apply(base.uncompute_op)
+    apply(base.uncompute_op)
 
 
 def _change_op_basis_resources(compute_op, target_op, uncompute_op):
@@ -221,9 +221,9 @@ def _change_op_basis_resources(compute_op, target_op, uncompute_op):
 
 @register_resources(_change_op_basis_resources)
 def _change_op_basis_decomp(compute_op, target_op, uncompute_op):
-    queuing.apply(compute_op)
-    queuing.apply(target_op)
-    queuing.apply(uncompute_op)
+    apply(compute_op)
+    apply(target_op)
+    apply(uncompute_op)
 
 
 add_decomps(ChangeOpBasis2, _change_op_basis_decomp)
