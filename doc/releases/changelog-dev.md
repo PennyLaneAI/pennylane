@@ -443,7 +443,7 @@
 
   ```
 
-* A new function called :func:`~.estimate` is available, which provides a quick projection of the
+* A new function called :func:`~pennylane.estimate` is available, which provides a quick projection of the
   resources of a ``qjit``-compiled QNode onto a target gate set, without executing the circuit.
   The original circuit, before any user transforms, is decomposed into the ``target`` gate set
   and the resulting operations are counted. The QNode must be compiled with
