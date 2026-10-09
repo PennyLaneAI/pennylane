@@ -333,7 +333,7 @@ class TestDecomposition:
         assert np.all(jaxpr.consts[0] == wires)
 
         # Validate the produced tape
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, bitstring)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, bitstring)
         expected = [qp.X(0), qp.X(2)]
 
         assert len(tape.operations) == len(expected)

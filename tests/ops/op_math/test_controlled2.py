@@ -123,7 +123,7 @@ class TestControlled2:
         # pylint: disable=import-outside-toplevel
         import jax
 
-        from tests.capture.capture_utils import assert_eqn_matches_op
+        from pennylane.testing import assert_eqn_matches_op
 
         def circuit():
             CustomControlled([0, 1])
@@ -638,7 +638,7 @@ class TestControlledOp2:
             qp.ctrl(op2, control=[3, 4], control_values=cvals)
 
         jaxpr = jax.make_jaxpr(circ)(jax.numpy.array([True, False]))
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, jax.numpy.array([False, True]))
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, jax.numpy.array([False, True]))
         assert tape.operations == [
             qp.ctrl(qp.H(0), control=[1, 2], control_values=[0, 1]),
             qp.ctrl(qp.H(1), control=[2, 3, 0], control_values=[0, 1, 1]),

@@ -32,7 +32,7 @@ from jax.core import eval_jaxpr
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
 from pennylane.capture.primitives import cond_prim
 from pennylane.exceptions import AutoGraphError
-from tests.capture.capture_utils import extract_all_primitives
+from pennylane.testing import extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
 
