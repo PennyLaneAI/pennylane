@@ -149,8 +149,11 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
     return []
 
 
+# pylint: disable=unused-argument
 @CollectOpsandMeas.register_primitive(cond_prim)
-def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
+def _cond_primitive(
+    self, *all_args, jaxpr_branches, consts_slices, args_slice, estimated_probabilities
+):
     n_branches = len(jaxpr_branches)
     conditions = all_args[: n_branches - 1]
     args = all_args[slice(*args_slice)]
