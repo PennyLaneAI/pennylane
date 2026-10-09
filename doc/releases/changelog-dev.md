@@ -973,7 +973,7 @@
   With this upgrade, it decomposes into a ``TemporaryAND`` ladder and individual ``CNOT`` gates when work wires are available:
 
   ```python
-  @qp.transforms.decompose(
+  @qp.transforms._tape_decompose(
       gate_set={"TemporaryAND":4, "Adjoint(TemporaryAND)":1, "MultiControlledX":7, "CNOT":1}
   )
   @qp.qnode(qp.device("default.qubit"))

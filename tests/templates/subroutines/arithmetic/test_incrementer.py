@@ -18,7 +18,8 @@ Tests for the Incrementer template.
 import numpy as np
 import pytest
 
-from pennylane import Incrementer, ctrl, decompose, device, qnode
+from pennylane import Incrementer, ctrl, device, qnode
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import state
 from pennylane.ops import CNOT, PauliX
