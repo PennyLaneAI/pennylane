@@ -100,7 +100,7 @@ class TemporaryAND(Operator2):
 
         qp.decomposition.enable_graph()
 
-        @qp.decompose(gate_set={qp.Toffoli, qp.X})
+        @qp.transforms._tape_decompose(gate_set={qp.Toffoli, qp.X})
         def circuit():
             qp.TemporaryAND((0, 1, 2))
             return qp.expval(qp.Z(2))

@@ -391,7 +391,7 @@ class QSVT(Operator2):
     To see the implementation details, we can expand the circuit via :func:`qp.decompose <.transforms.decompose>`:
 
     >>> q_script = qp.tape.QuantumScript(ops=[qp.QSVT(block_encoding, phase_shifts)])
-    >>> q_scripts, func = qp.decompose(q_script, gate_set=qp.decomposition.gate_sets.ALL_QUBIT_OPS)
+    >>> q_scripts, func = qp.transforms._tape_decompose(q_script, gate_set=qp.decomposition.gate_sets.ALL_QUBIT_OPS)
     >>> q_script = func(q_scripts)
     >>> print(q_script.draw(decimals=2))
     0: ──RZ(-2.46)──H──RZ(1.00)──H──RZ(-8.00)─┤

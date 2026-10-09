@@ -133,7 +133,7 @@ class SumOfSlatersPrep2(qp.core.operator.Operation):
 
         num_wires = sum(sizes.values())
 
-        @qp.decompose(gate_set=gate_set)
+        @qp.transforms._tape_decompose(gate_set=gate_set)
         @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
         def circuit():
             SumOfSlatersPrep2(coefficients, **all_wires, indices=indices)
@@ -225,7 +225,7 @@ class SumOfSlatersPrep2(qp.core.operator.Operation):
 
             num_wires = sum(sizes.values())
 
-            @qp.decompose(gate_set=gate_set)
+            @qp.transforms._tape_decompose(gate_set=gate_set)
             @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
             def circuit():
                 SumOfSlatersPrep2(coefficients, **all_wires, indices=indices)

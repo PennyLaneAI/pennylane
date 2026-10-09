@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Generator, Iterable, Sequence
-from functools import partial
 
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.core import queuing
@@ -40,8 +39,77 @@ def null_postprocessing(results):
     return results[0]
 
 
-@partial(transform, pass_name="graph-decomposition")
-def decompose(
+def _decompose_setup_inputs(
+    gate_set: Iterable[type | str] | dict[type | str, float],
+    fixed_decomps: dict | None = None,
+    alt_decomps: dict | None = None,
+):
+    """Validate and pack options for Catalyst's ``graph-decomposition`` pass.
+
+    Wraps a single gate type or name into a set, and includes ``fixed_decomps`` /
+    ``alt_decomps`` in the options dict only when they are provided.
+
+    Args:
+        gate_set (Iterable[type | str] | dict[type | str, float]): Target gate set, or a
+            single operator type/name that will be wrapped as a one-element set.
+        fixed_decomps (dict | None): Optional map from operators to fixed decomposition
+            rules. Omitted from the returned options when ``None``.
+        alt_decomps (dict | None): Optional map from operators to alternative decomposition
+            rules. Omitted from the returned options when ``None``.
+
+    Returns:
+        tuple[tuple, dict]: Empty positional args and the keyword options forwarded to
+        the Catalyst pass under capture.
+
+    """
+    if isinstance(gate_set, (type, str)):
+        gate_set = {gate_set}
+
+    # Only forward keys the user set. Under capture, Catalyst's from_plxpr handler
+    # dispatches these onto ``catalyst.passes.graph_decomposition``.
+    options = {"gate_set": gate_set}
+    if fixed_decomps is not None:
+        options["fixed_decomps"] = fixed_decomps
+    if alt_decomps is not None:
+        options["alt_decomps"] = alt_decomps
+    return (), options
+
+
+# Public documentation for :func:`~.decompose` (assigned to ``__doc__`` below so that
+# ``_decompose_setup_inputs`` can keep its own docstring).
+decompose = transform(pass_name="graph-decomposition", setup_inputs=_decompose_setup_inputs)
+decompose.__doc__ = """Decompose a quantum circuit toward a target gate set via Catalyst's graph-decomposition pass.
+
+.. warning::
+
+    This transform must be applied within a workflow compiled with :func:`~.qjit`.
+    It is a frontend for Catalyst's ``graph_decomposition`` compilation pass.
+    For tape-based (non-compiled) decomposition, use :func:`~.transforms._tape_decompose`.
+
+Args:
+    gate_set (Iterable[type | str] | dict[type | str, float]): Target gate set after
+        decomposition. A mapping may supply relative costs used by the graph solver.
+    fixed_decomps (dict | None): Map operators to specific decomposition rules.
+    alt_decomps (dict | None): Map operators to alternative decomposition rules considered
+        by the graph solver.
+
+**Example**
+
+.. code-block:: python
+
+    @qp.qjit(capture=True)
+    @qp.decompose(gate_set={"RX", "RY", "RZ", "CNOT", "GlobalPhase"})
+    @qp.qnode(qp.device("lightning.qubit", wires=2))
+    def circuit():
+        qp.Hadamard(0)
+        qp.CNOT([0, 1])
+        return qp.expval(qp.Z(0))
+
+"""
+
+
+@transform
+def _tape_decompose(
     tape,
     *,
     gate_set=None,
@@ -53,7 +121,11 @@ def decompose(
     alt_decomps: dict | None = None,
     strict: bool = True,
 ):  # pylint: disable=too-many-arguments
-    """Decomposes a quantum circuit into a user-specified gate set.
+    """Tape-based decomposition of a quantum circuit into a user-specified gate set.
+
+    This is the Python/tape execution path formerly provided by :func:`~.decompose`.
+    :func:`~.decompose` now always dispatches to Catalyst's ``graph-decomposition`` pass
+    under :func:`~.qjit`.
 
     .. note::
 
@@ -66,6 +138,8 @@ def decompose(
 
         For more information on PennyLane's decomposition tools and features, check out the
         :doc:`Compiling Circuits page </introduction/compiling_circuits>`.
+
+        For compiled workflows, use :func:`~.decompose` with :func:`~.qjit`.
 
     Args:
         tape (QuantumScript or QNode or Callable): A quantum circuit (QNode or quantum function).
@@ -131,7 +205,7 @@ def decompose(
 
     You can decompose the circuit into a set of gates:
 
-    >>> batch, fn = qp.decompose(tape, gate_set={qp.CNOT, qp.RX})
+    >>> batch, fn = qp.transforms._tape_decompose(tape, gate_set={qp.CNOT, qp.RX})
     >>> batch[0].circuit
     [CNOT(wires=[0, 1]), RX(1.2, wires=[0]), CNOT(wires=[0, 1]), expval(Z(0))]
 
@@ -139,7 +213,7 @@ def decompose(
 
     .. code-block:: python
 
-        @qp.decompose(gate_set={qp.Toffoli, "RX", "RZ", "GlobalPhase"})
+        @qp.transforms._tape_decompose(gate_set={qp.Toffoli, "RX", "RZ", "GlobalPhase"})
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.Hadamard(wires=[0])
@@ -159,7 +233,7 @@ def decompose(
 
     .. code-block:: python
 
-        @qp.decompose(gate_set={"H", "T", "CNOT", "GlobalPhase"}, stopping_condition=lambda op: len(op.wires) <= 2)
+        @qp.transforms._tape_decompose(gate_set={"H", "T", "CNOT", "GlobalPhase"}, stopping_condition=lambda op: len(op.wires) <= 2)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.Hadamard(wires=[0])
@@ -193,13 +267,13 @@ def decompose(
             qp.Hadamard(wires=target_wires)
             qp.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)
 
-    >>> print(qp.draw(qp.decompose(circuit, max_expansion=0))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=0))())
     0: ──H─╭QuantumPhaseEstimation─┤
     1: ────├QuantumPhaseEstimation─┤
     2: ────├QuantumPhaseEstimation─┤
     3: ────╰QuantumPhaseEstimation─┤
 
-    >>> print(qp.draw(qp.decompose(circuit, max_expansion=1))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=1))())
     0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
     1: ──H─╰●──────│───────│───────╭QFT†─┤
     2: ──H─────────╰●──────│───────├QFT†─┤
@@ -209,7 +283,7 @@ def decompose(
     [[0.877...+0.j         0.        -0.479...j]
      [0.        -0.479...j 0.877...+0.j        ]]
 
-    >>> print(qp.draw(qp.decompose(circuit, max_expansion=2))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=2))())
     0: ──H─╭U(M0)─╭U(M1)─╭U(M2)───────────────────────────────────────────────────────────┤
     1: ──H─╰●─────│──────│──────╭SWAP†──────────────────────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
     2: ──H────────╰●─────│──────│──────────╭(Rϕ(1.57))†──H†─│────────────╰(Rϕ(1.57))†─────┤
@@ -242,7 +316,7 @@ def decompose(
             qp.decomposition.enable_graph()
 
             tape = qp.tape.QuantumScript.from_queue(q)
-            [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ", "CNOT"})
+            [new_tape], _ = qp.transforms._tape_decompose([tape], gate_set={"RX", "RY", "RZ", "CZ", "CNOT"})
 
         >>> new_tape.operations
         [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
@@ -253,7 +327,7 @@ def decompose(
 
         .. code-block:: python
 
-            @qp.decompose(
+            @qp.transforms._tape_decompose(
                 gate_set={qp.Toffoli: 1.23, qp.RX: 4.56, qp.CZ: 0.01, qp.H: 420, qp.CRZ: 100}
             )
             @qp.qnode(qp.device("default.qubit"))
@@ -269,7 +343,7 @@ def decompose(
 
         .. code-block:: python
 
-            @qp.decompose(
+            @qp.transforms._tape_decompose(
                 gate_set={qp.Toffoli: 1.23, qp.RX: 4.56, qp.CZ: 0.01, qp.H: 0.1, qp.CRZ: 0.1}
             )
             @qp.qnode(qp.device("default.qubit"))
@@ -323,7 +397,7 @@ def decompose(
 
         .. code-block:: python
 
-            @qp.decompose(
+            @qp.transforms._tape_decompose(
                 gate_set={qp.RZ, qp.RY, qp.GlobalPhase, qp.CNOT},
                 stopping_condition=stopping_condition,
             )
@@ -387,7 +461,7 @@ def decompose(
                 qp.RY(np.pi/2, wires[1])
                 qp.Z(wires[1])
 
-            @qp.decompose(
+            @qp.transforms._tape_decompose(
                 gate_set={"RX", "RZ", "CZ", "GlobalPhase"},
                 alt_decomps={qp.CNOT: [my_cnot1, my_cnot2]},
                 fixed_decomps={qp.IsingXX: isingxx_decomp},
@@ -412,7 +486,7 @@ def decompose(
         chosen that includes a ``qp.PauliRot`` instance, Catalyst cannot execute the program. If
         this behaviour is encountered, this can be counteracted by adding a prohibitively large
         penalty to the graph solution should it encounter a ``qp.PauliRot`` instance (e.g.,
-        ``qp.transforms.decomopose(..., gate_set={..., qp.PauliRot: 100_000})``).
+        ``qp.transforms._tape_decompose(..., gate_set={..., qp.PauliRot: 100_000})``).
     """
 
     if not enabled_graph() and (fixed_decomps or alt_decomps):

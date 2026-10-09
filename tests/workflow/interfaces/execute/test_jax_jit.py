@@ -633,7 +633,8 @@ class TestJaxExecuteIntegration:
             qscript = qp.tape.QuantumScript(
                 [qp.RX(a, wires=0), MyU3(*p, wires=0)], [qp.expval(qp.PauliX(0))]
             )
-            [qscript], _ = qp.decompose(
+            # pylint: disable-next=protected-access
+            [qscript], _ = qp.transforms._tape_decompose(
                 qscript, stopping_condition=qp.devices.default_qubit.stopping_condition
             )
             return execute([qscript], device, **execute_kwargs)[0]

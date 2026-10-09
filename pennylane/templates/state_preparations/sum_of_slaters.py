@@ -764,7 +764,7 @@ class SumOfSlatersPrep(Operator2):
         first_free_wire = max(wires)+1
 
         @qp.transforms.resolve_dynamic_wires(min_int=first_free_wire)
-        @qp.decompose(gate_set=gate_set, num_work_wires=14)
+        @qp.transforms._tape_decompose(gate_set=gate_set, num_work_wires=14)
         @qp.qnode(qp.device("lightning.qubit", wires=21))
         def circuit():
             qp.SumOfSlatersPrep(coefficients, wires, indices)
@@ -852,7 +852,7 @@ class SumOfSlatersPrep(Operator2):
             first_free_wire = max(wires)+1
 
             @qp.transforms.resolve_dynamic_wires(min_int=first_free_wire)
-            @qp.decompose(gate_set=gate_set, num_work_wires=11)
+            @qp.transforms._tape_decompose(gate_set=gate_set, num_work_wires=11)
             @qp.qnode(qp.device("lightning.qubit", wires=16))
             def circuit():
                 qp.SumOfSlatersPrep(coefficients, wires, indices)

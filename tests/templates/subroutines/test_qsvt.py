@@ -36,7 +36,7 @@ from pennylane.templates.subroutines.qsvt import (
     _W_of_x,
     _z_rotation,
 )
-from pennylane.transforms import decompose
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 
 def qfunc(A):

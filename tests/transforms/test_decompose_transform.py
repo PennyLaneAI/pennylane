@@ -24,7 +24,12 @@ import pennylane.numpy as qnp
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import AnnotatedQueue
 from pennylane.ops import Conditional, MidMeasure
-from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
+from pennylane.transforms.decompose import (
+    _operator_decomposition_gen,
+)
+from pennylane.transforms.decompose import (
+    _tape_decompose as decompose,  # pylint: disable=protected-access
+)
 
 # pylint: disable=unnecessary-lambda-assignment
 # pylint: disable=too-few-public-methods
@@ -82,10 +87,12 @@ def test_fixed_alt_decomps_not_available():
     tape = qp.tape.QuantumScript([])
 
     with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
-        qp.decompose(tape, fixed_decomps={qp.CNOT: my_cnot})
+        # pylint: disable-next=protected-access
+        qp.transforms._tape_decompose(tape, fixed_decomps={qp.CNOT: my_cnot})
 
     with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
-        qp.decompose(tape, alt_decomps={qp.CNOT: [my_cnot]})
+        # pylint: disable-next=protected-access
+        qp.transforms._tape_decompose(tape, alt_decomps={qp.CNOT: [my_cnot]})
 
 
 class TestDecompose:
@@ -273,7 +280,8 @@ class TestDecompose:
                 qp.ops.Conditional(m0, qp.RX(0.5, wires=0)),
             ]
         )
-        [decomposed_tape], _ = qp.decompose(
+        # pylint: disable-next=protected-access
+        [decomposed_tape], _ = qp.transforms._tape_decompose(
             [tape], gate_set={qp.RX, qp.RZ, MidMeasure, qp.GlobalPhase}
         )
         assert len(decomposed_tape.operations) == 13
@@ -318,7 +326,8 @@ class TestDecompose:
 def test_null_postprocessing():
     """Tests the null postprocessing function in the decompose transform"""
     tape = qp.tape.QuantumScript([qp.Hadamard(0), qp.RX(0, 0)])
-    (_,), fn = qp.decompose(tape, gate_set={qp.RX, qp.RZ, qp.GlobalPhase})
+    # pylint: disable-next=protected-access
+    (_,), fn = qp.transforms._tape_decompose(tape, gate_set={qp.RX, qp.RZ, qp.GlobalPhase})
     assert fn((1,)) == 1
 
 
@@ -412,4 +421,5 @@ class TestPrivateHelpers:
 
         tape = qp.tape.QuantumScript([])
         with pytest.raises(TypeError, match="Invalid gate_set type."):
-            qp.decompose(tape, gate_set=123)
+            # pylint: disable-next=protected-access
+            qp.transforms._tape_decompose(tape, gate_set=123)

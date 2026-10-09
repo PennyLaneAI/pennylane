@@ -969,7 +969,7 @@
   With this upgrade, it decomposes into a ``TemporaryAND`` ladder and individual ``CNOT`` gates when work wires are available:
 
   ```python
-  @qp.transforms.decompose(
+  @qp.transforms._tape_decompose(
       gate_set={"TemporaryAND":4, "Adjoint(TemporaryAND)":1, "MultiControlledX":7, "CNOT":1}
   )
   @qp.qnode(qp.device("default.qubit"))
@@ -1212,6 +1212,11 @@
   [(#10246)](https://github.com/PennyLaneAI/pennylane/pull/10246)
 
 <h3>Breaking changes 💔</h3>
+
+* :func:`~.decompose` is now a pass-only transform that always dispatches to Catalyst's
+  ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
+  available as :func:`~.transforms._tape_decompose`.
+  [(#10304)](https://github.com/PennyLaneAI/pennylane/pull/10304)
 
 * Controlling a :class:`~.GlobalPhase` now returns a different operator. When all control values are
   ``1``, ``qp.ctrl(qp.GlobalPhase(phi), control=...)`` is lowered in python to a :class:`~.PhaseShift`

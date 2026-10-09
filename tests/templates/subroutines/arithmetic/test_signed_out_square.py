@@ -200,7 +200,8 @@ class TestSignedOutSquare:
         }
 
         @qp.set_shots(1)
-        @qp.decompose(gate_set=gate_set, max_expansion=3)
+        # pylint: disable-next=protected-access
+        @qp.transforms._tape_decompose(gate_set=gate_set, max_expansion=3)
         @qp.qnode(dev)
         def circuit(x, z, x_wires, work_wires):
             qp.BasisEmbedding(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)

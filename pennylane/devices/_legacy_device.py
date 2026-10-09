@@ -40,7 +40,8 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.ops import LinearCombination, MidMeasure, Prod, Projector, SProd, Sum
-from pennylane.transforms import broadcast_expand, decompose, split_non_commuting
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import broadcast_expand, split_non_commuting
 from pennylane.wires import Wires
 
 from .tracker import Tracker
