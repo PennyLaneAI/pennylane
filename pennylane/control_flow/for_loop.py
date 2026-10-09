@@ -145,14 +145,14 @@ def for_loop(
             return qp.expval(qp.Z(0))
 
     >>> circuit(7, 1.6)
-    array(0.97926626)
+    Array(0.979...)
 
     ``for_loop`` is also :func:`~.qjit` compatible; when used with the
     :func:`~.qjit` decorator, the for loop will not be unrolled, and instead
     will be captured as-is during compilation and executed during runtime:
 
     >>> qp.qjit(circuit)(7, 1.6)
-    Array(0.97926626, dtype=float64)
+    Array(0.979..., dtype=float64)
 
     .. note::
 
@@ -165,9 +165,9 @@ def for_loop(
 
         **Compiler hints and Resource Profiling:**
 
-        When running resource analysis on a qjit workflow, loops may appear symbolically. Calling :func:`~.specs` on the ``circuit`` above, we get
+        When running resource analysis on a qjit workflow, loops may appear symbolically. Calling :func:`~.analyze` on the ``circuit`` above, we get
 
-        >>> s = qp.specs(qp.qjit(circuit, capture=True), level=0)(3, 0.5)
+        >>> s = qp.analyze(qp.qjit(circuit, capture=True))(3, 0.5)
         >>> print(s.resources)
         Symbolic Variables: a
         Quantum operations:
@@ -202,7 +202,7 @@ def for_loop(
 
                 return qp.expval(qp.Z(0))
 
-        >>> s = qp.specs(qp.qjit(circuit, capture=True), level=0)(3, 0.5)
+        >>> print(qp.analyze(qp.qjit(circuit, capture=True))(3, 0.5).resources)
         Quantum operations:
         - Total: 10
           - RX: 10
