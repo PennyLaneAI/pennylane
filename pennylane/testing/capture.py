@@ -96,7 +96,7 @@ def extract_all_primitives(jaxpr: Jaxpr | ClosedJaxpr) -> set:
     jaxprs nested inside higher-order primitives such as ``qnode``, ``cond`` and ``for_loop``.
 
     Args:
-        jaxpr (jax.extend.core.Jaxpr): the jaxpr to search
+        jaxpr (jax.extend.core.Jaxpr | jax.extend.core.ClosedJaxpr): the jaxpr to search
 
     Returns:
         set[jax.extend.core.Primitive]: all primitives found
@@ -165,7 +165,7 @@ def assert_eqn_matches_op(eqn, expected_op: type) -> None:
         assert eqn.primitive == expected_op._primitive  # pylint: disable=protected-access
 
 
-def find_eqns(jaxpr: Jaxpr, primitive: Primitive) -> list[JaxprEqn]:
+def find_eqns(jaxpr: Jaxpr | ClosedJaxpr, primitive: Primitive) -> list[JaxprEqn]:
     """Find the equations in a jaxpr that use a given primitive.
 
     Only the top-level equations are searched, not those of jaxprs nested inside
