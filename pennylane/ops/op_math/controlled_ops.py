@@ -48,6 +48,7 @@ from pennylane.ops.op_math.controlled2 import (
     ControlledOp2,
     _setup_control_values,
     _validate_work_wire_type,
+    flip_zero_control,
 )
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
@@ -63,17 +64,17 @@ from .controlled import (
     custom_ctrl_dispatch,
 )
 from .decompositions.controlled_decompositions import (
-    _wrap_mcx_rule_w_alloc,
-    controlled_two_qubit_unitary_rule,
-    ctrl_decomp_bisect_rule,
+    _ctrl_decomp_bisect,
+    _ctrl_two_qubit_unitary,
+    _multi_ctrl_decomp_zyz,
+    _single_ctrl_decomp_zyz,
+    augment_with_alloc,
     decompose_mcx_many_workers,
     decompose_mcx_one_worker,
     decompose_mcx_two_controls_elbows,
     decompose_mcx_two_workers,
     decompose_mcx_with_no_worker,
     mcx_to_cnot_or_toffoli,
-    multi_control_decomp_zyz_rule,
-    single_ctrl_decomp_zyz_rule,
 )
 from .pow2 import pow_involutory as pow_involutory2
 
@@ -248,10 +249,10 @@ def _to_general_c_qu(U, wires, control_values, work_wires, work_wire_type, **_):
 
 add_decomps(
     ControlledQubitUnitary,
-    ctrl_decomp_bisect_rule,
-    single_ctrl_decomp_zyz_rule,
-    multi_control_decomp_zyz_rule,
-    controlled_two_qubit_unitary_rule,
+    flip_zero_control(_ctrl_decomp_bisect, "ctrl_decomp_bisect", ControlledQubitUnitary),
+    flip_zero_control(_single_ctrl_decomp_zyz, "single_ctrl_zyz", ControlledQubitUnitary),
+    flip_zero_control(_multi_ctrl_decomp_zyz, "multi_ctrl_zyz", ControlledQubitUnitary),
+    flip_zero_control(_ctrl_two_qubit_unitary, "ctrl_two_qubit_unitary", ControlledQubitUnitary),
     _to_general_c_qu,
 )
 
@@ -1508,14 +1509,14 @@ def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
         return [mcx_to_cnot_or_toffoli]
 
     if len(op.wires) == 3:
-        elbow_rule = _wrap_mcx_rule_w_alloc(decompose_mcx_two_controls_elbows, 1, "zeroed")
+        elbow_rule = augment_with_alloc(decompose_mcx_two_controls_elbows, 1, "zeroed")
         return [mcx_to_cnot_or_toffoli, elbow_rule]
 
     capture_compatible_rules = [
-        _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "zeroed", "two_zeroed_workers"),
-        _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "borrowed", "two_borrowed_workers"),
-        _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "zeroed", "one_zeroed_worker"),
-        _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "borrowed", "one_borrowed_worker"),
+        augment_with_alloc(decompose_mcx_two_workers, 2, "zeroed", "two_zeroed_workers"),
+        augment_with_alloc(decompose_mcx_two_workers, 2, "borrowed", "two_borrowed_workers"),
+        augment_with_alloc(decompose_mcx_one_worker, 1, "zeroed", "one_zeroed_worker"),
+        augment_with_alloc(decompose_mcx_one_worker, 1, "borrowed", "one_borrowed_worker"),
         decompose_mcx_with_no_worker,
     ]
     if qp.capture.enabled():
@@ -1523,13 +1524,13 @@ def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
 
     # TODO: the following decomposition rules are not capture compatible [sc-129521]
     return [
-        _wrap_mcx_rule_w_alloc(
+        augment_with_alloc(
             decompose_mcx_many_workers,
             len(op.control_wires) - 2,
             "zeroed",
             "many_zeroed_workers",
         ),
-        _wrap_mcx_rule_w_alloc(
+        augment_with_alloc(
             decompose_mcx_many_workers,
             len(op.control_wires) - 2,
             "borrowed",
@@ -1546,11 +1547,11 @@ add_decomps(
     decompose_mcx_two_workers,
     decompose_mcx_one_worker,
     decompose_mcx_with_no_worker,
-    _wrap_mcx_rule_w_alloc(decompose_mcx_two_controls_elbows, 1, "zeroed"),
-    _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "zeroed", "two_zeroed_workers"),
-    _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "borrowed", "two_borrowed_workers"),
-    _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "zeroed", "one_zeroed_worker"),
-    _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "borrowed", "one_borrowed_worker"),
+    augment_with_alloc(decompose_mcx_two_controls_elbows, 1, "zeroed"),
+    augment_with_alloc(decompose_mcx_two_workers, 2, "zeroed", "two_zeroed_workers"),
+    augment_with_alloc(decompose_mcx_two_workers, 2, "borrowed", "two_borrowed_workers"),
+    augment_with_alloc(decompose_mcx_one_worker, 1, "zeroed", "one_zeroed_worker"),
+    augment_with_alloc(decompose_mcx_one_worker, 1, "borrowed", "one_borrowed_worker"),
     # TODO: include the allocation-wrapped versions of decompose_mcx_many_workers
     # after we support tracer indexing into allocated wires. [sc-129521]
 )
