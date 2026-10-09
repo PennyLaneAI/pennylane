@@ -31,7 +31,7 @@ from pennylane.exceptions import TermsUndefinedError, WireError
 from pennylane.measurements import expval, probs
 from pennylane.ops.functions import generator, matrix
 from pennylane.ops.qubit.attributes import has_unitary_generator
-from pennylane.transforms import _tape_decompose as decompose
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires

@@ -21,7 +21,7 @@ import pytest
 import pennylane as qp
 from pennylane import Snapshot
 from pennylane.decomposition import gate_sets
-from pennylane.transforms import _tape_decompose as decompose
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 
 class TestBarrier:

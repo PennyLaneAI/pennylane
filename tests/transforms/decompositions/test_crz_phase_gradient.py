@@ -105,7 +105,7 @@ def test_as_fixed_decomps(phi, p):
     custom_decomp = make_crz_to_phase_gradient_decomp(**kwargs)
     gate_set = {"SemiAdder", "CNOT", "PauliX"}
 
-    @qp.transforms._tape_decompose(gate_set=gate_set, fixed_decomps={qp.CRZ: custom_decomp})
+    @qp.transforms._tape_decompose(gate_set=gate_set, fixed_decomps={qp.CRZ: custom_decomp})  # pylint: disable=protected-access
     @qp.qnode(qp.device("null.qubit"))
     def circuit():
         qp.CRZ(phi, [0, 1])
@@ -135,7 +135,7 @@ def test_as_alt_decomps(phi, p):
     custom_decomp = make_crz_to_phase_gradient_decomp(**kwargs)
     gate_set = {"SemiAdder", "CNOT", "PauliX"}
 
-    @qp.transforms._tape_decompose(gate_set=gate_set, alt_decomps={qp.CRZ: [custom_decomp]})
+    @qp.transforms._tape_decompose(gate_set=gate_set, alt_decomps={qp.CRZ: [custom_decomp]})  # pylint: disable=protected-access
     @qp.qnode(qp.device("null.qubit"))
     def circuit():
         qp.CRZ(phi, [0, 1])
@@ -166,7 +166,7 @@ def test_integration_multi_wire(seed):
 
     custom_decomp = make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
 
-    @qp.transforms._tape_decompose(
+    @qp.transforms._tape_decompose(  # pylint: disable=protected-access
         gate_set={
             "StatePrep",
             "PhaseGradientStatePrep",

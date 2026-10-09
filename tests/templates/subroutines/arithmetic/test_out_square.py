@@ -125,7 +125,7 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
         return qp.probs(wires=total_wires)
 
     if use_jit:
-        circuit = qp.qjit(qp.transforms._tape_decompose(circuit, max_expansion=2))
+        circuit = qp.qjit(qp.transforms._tape_decompose(circuit, max_expansion=2))  # pylint: disable=protected-access
 
     rng = np.random.default_rng(seed)
 
@@ -184,7 +184,7 @@ class TestOutSquare:
 
         @qp.qjit
         @qp.set_shots(1)
-        @qp.transforms._tape_decompose(max_expansion=2, fixed_decomps=fixed_decomps)
+        @qp.transforms._tape_decompose(max_expansion=2, fixed_decomps=fixed_decomps)  # pylint: disable=protected-access
         @qp.qnode(dev)
         def circuit(x, y, x_wires, work_wires):
             qp.BasisEmbedding(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)

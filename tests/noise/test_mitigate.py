@@ -30,7 +30,7 @@ from pennylane.noise.mitigate import (
     mitigate_with_zne,
     richardson_extrapolate,
 )
-from pennylane.transforms import _tape_decompose as decompose, broadcast_expand
+from pennylane.transforms import _tape_decompose as decompose, broadcast_expand  # pylint: disable=protected-access
 
 with qp.queuing.AnnotatedQueue() as q_tape:
     qp.BasisState([1], wires=0)

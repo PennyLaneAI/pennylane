@@ -306,7 +306,7 @@ class TestHybridQRAM:
 
         dev = qp.device("lightning.qubit", wires=8)
 
-        @qp.transforms._tape_decompose(max_expansion=1)
+        @qp.transforms._tape_decompose(max_expansion=1)  # pylint: disable=protected-access
         @qp.qnode(dev)
         def circuit():
             HybridQRAM(
@@ -543,7 +543,7 @@ class TestSelectOnlyQRAM:
 
         dev = qp.device("lightning.qubit")
 
-        @qp.transforms._tape_decompose
+        @qp.transforms._tape_decompose  # pylint: disable=protected-access
         @qp.qnode(dev)
         def circuit():
             SelectOnlyQRAM(

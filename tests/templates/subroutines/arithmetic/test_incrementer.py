@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 from pennylane import Incrementer, ctrl, device, qnode
-from pennylane.transforms import _tape_decompose as decompose
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import state
 from pennylane.ops import CNOT, PauliX

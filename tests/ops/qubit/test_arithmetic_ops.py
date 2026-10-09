@@ -25,7 +25,7 @@ import pytest
 import pennylane as qp
 from pennylane.decomposition import gate_sets
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.transforms import _tape_decompose as decompose
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 from pennylane.wires import Wires
 
 label_data = [
@@ -447,7 +447,7 @@ class TestIntegerComparator:
         """Tests that the decomposition is correct under the new system."""
 
         tape = qp.tape.QuantumScript([qp.IntegerComparator(42, wires=[0, 1, 2, 3, 4, 5, 6])])
-        [decomp], _ = qp.transforms._tape_decompose(
+        [decomp], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
             tape,
             gate_set={qp.X, qp.CNOT, qp.Hadamard, qp.T, "Adjoint(T)", qp.RX, qp.RY, qp.RZ},
         )

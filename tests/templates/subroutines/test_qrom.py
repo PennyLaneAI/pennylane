@@ -784,7 +784,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.transforms._tape_decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
@@ -830,7 +830,7 @@ class TestMeasurementQROM:
         x_state /= np.linalg.norm(x_state)
 
         @qp.qjit(capture=True)
-        @qp.transforms._tape_decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.qnode(dev)
         def circuit():
             qp.StatePrep(x_state, wires=control_wires, pad_with=0.0)
@@ -889,7 +889,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.transforms._tape_decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):
@@ -950,7 +950,7 @@ class TestMeasurementQROM:
         shots = 10
 
         @qp.qjit(capture=True)
-        @qp.transforms._tape_decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.set_shots(shots)
         @qp.qnode(dev)
         def circuit(j):

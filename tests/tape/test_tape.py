@@ -27,7 +27,7 @@ from pennylane.decomposition import gate_sets
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import ExpectationMP, ProbabilityMP
 from pennylane.tape import QuantumTape
-from pennylane.transforms import _tape_decompose as decompose
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 
 def test_adjoint_deprecated():

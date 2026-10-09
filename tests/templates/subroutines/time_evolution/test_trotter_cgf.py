@@ -758,7 +758,7 @@ class TestIntegration:
         registers = qp.registers({"hadamard": 1, "system": M * N})
 
         @qp.qjit
-        @qp.transforms._tape_decompose(gate_set=target_gates)
+        @qp.transforms._tape_decompose(gate_set=target_gates)  # pylint: disable=protected-access
         @qp.qnode(qp.device("lightning.qubit"))
         def trotter_circuit():
             qp.H(registers["hadamard"])

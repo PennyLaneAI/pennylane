@@ -49,7 +49,7 @@ import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.transforms import _tape_decompose as decompose
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 # pylint: disable=too-few-public-methods
 from pennylane.typing import Bool, Wire
@@ -1570,7 +1570,7 @@ class TestPPRCliffordTDecomposition:
         """Test that PPRs decompose to the Clifford+T gate set."""
         ops = [qp.PPR(8, "XYZ", [0, 1, 2]), qp.PPR(-4, "YZX", [1, 0, 2]), qp.PPR(2, "ZY", [0, 2])]
         tape = qp.tape.QuantumScript(ops)
-        (new_tape,), _ = qp.transforms._tape_decompose(tape, gate_set=qp.gate_sets.CLIFFORD_T)
+        (new_tape,), _ = qp.transforms._tape_decompose(tape, gate_set=qp.gate_sets.CLIFFORD_T)  # pylint: disable=protected-access
 
         assert all(op in qp.gate_sets.CLIFFORD_T for op in new_tape.operations)
         wire_order = [0, 1, 2]
