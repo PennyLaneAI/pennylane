@@ -18,15 +18,12 @@ In PennyLane, quantum computations, which involve the execution of one or more q
 are represented as *quantum node* objects. A quantum node is used to
 declare the quantum circuit, and also ties the computation to a specific device that executes it.
 
-QNodes can interface with any of the supported numerical and machine learning libraries---:doc:`NumPy <interfaces/numpy>`,
-:doc:`PyTorch <interfaces/torch>`, and
-:doc:`JAX <interfaces/jax>`---indicated by providing an optional ``interface`` argument
+QNodes can interface with any of the supported numerical and machine learning libraries---NumPy,
+PyTorch, and JAX---indicated by providing an optional ``interface`` argument
 when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with
-library-specific data structures (e.g., NumPy and JAX arrays or Pytorch tensors) and
-:doc:`optimizers <interfaces>`.
+library-specific data structures (e.g., NumPy and JAX arrays or Pytorch tensors) and optimizers.
 
-By default, QNodes use the NumPy interface. The other PennyLane interfaces are
-introduced in more detail in the section on :doc:`interfaces <interfaces>`.
+By default, QNodes use the NumPy interface.
 
 
 .. _intro_vcirc_qfunc:

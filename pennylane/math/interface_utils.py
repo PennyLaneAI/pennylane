@@ -137,7 +137,7 @@ def get_interface(*values):
 def _get_interface_of_single_tensor(tensor):
     """Returns the name of the package that any array/tensor manipulations
     will dispatch to. The returned strings correspond to those used for PennyLane
-    :doc:`interfaces </introduction/interfaces>`.
+    interfaces.
 
     Args:
         tensor (tensor_like): tensor input

@@ -500,14 +500,8 @@ introductory quickstarts:
 * **Templates**: new templates should be added to the :doc:`/introduction/templates` quickstart,
   located at ``doc/introduction/templates.rst``. For more details, see :doc:`../adding_operators`.
 
-* **Optimizers**: new optimizers should be added to the relevant quickstart section
-  in :doc:`/introduction/interfaces`, located at ``doc/introduction/interfaces.rst``.
-
 * **Measurement**: new measurement functions should be added to the :doc:`/introduction/measurements` quickstart,
   located at ``doc/introduction/measurements.rst``.
-
-* **Interfaces**: new interfaces should include a quickstart guide in the ``introduction/interfaces``
-  directory, with a link and table of contents entry added to the ``introduction/interfaces.rst`` page.
 
 Finally, any underlying logic change, new feature, or UI change to the core PennyLane QNode interface
 should be reflected on the :doc:`/introduction/circuits` quickstart, located at

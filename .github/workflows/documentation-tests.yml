@@ -117,18 +117,10 @@ jobs:
           --ignore=doc/news
           --ignore=doc/introduction/chemistry.rst
           --ignore=doc/introduction/compiling_circuits.rst
-          --ignore=doc/introduction/compiling_workflows.rst
           --ignore=doc/introduction/circuits.rst
           --ignore=doc/introduction/data.rst
-          --ignore=doc/introduction/dynamic_quantum_circuits.rst
-          --ignore=doc/introduction/importing_workflows.rst
-          --ignore=doc/introduction/inspecting_circuits.rst
-          --ignore=doc/introduction/interfaces.rst
-          --ignore=doc/introduction/interfaces
-          --ignore=doc/introduction/logging.rst
           --ignore=doc/introduction/measurements.rst
           --ignore=doc/introduction/templates.rst
-          --ignore=doc/introduction/unsupported_gradients.rst
           "
 
           IGNORE="
