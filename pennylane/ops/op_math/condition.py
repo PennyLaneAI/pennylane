@@ -114,19 +114,17 @@ def _empty_return_fn(*_, **__):
     return None
 
 
+def _get_hint(branch_fn):
+    if not isinstance(branch_fn, HintedCallable):
+        return None
+    hints = process_hints(branch_fn.hints, {"branch_prob"})
+    p = hints.get("branch-prob")
+    return float(p) if p is not None else p
+
+
 def _setup_probs(branch_fns) -> None | tuple[float, ...]:
-    branch_probs = []
-    n_encountered = 0
-    for branch_fn in branch_fns:
-        if isinstance(branch_fn, HintedCallable):
-            hints = process_hints(branch_fn.hints, {"branch-prob"})
-            p = hints.get("branch-prob")
-            if p is not None:
-                p = float(p)
-                n_encountered += 1
-            branch_probs.append(p)
-        else:
-            branch_probs.append(None)
+    branch_probs = [_get_hint(f) for f in branch_fns]
+    n_encountered = sum(bool(p is not None) for p in branch_probs)
 
     if not n_encountered:
         return None
