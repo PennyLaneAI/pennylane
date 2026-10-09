@@ -17,6 +17,7 @@ from functools import wraps
 
 from pennylane.core.qscript import QuantumScript
 from pennylane.devices.qubit.sampling import get_num_shots_and_executions
+from pennylane.resource import resources_from_tape
 
 from ..device_api import Device
 from ..execution_config import ExecutionConfig
@@ -40,20 +41,21 @@ def _track_execute(untracked_execute):
             self.tracker.record()
             for r, c in zip(batch_results, batch, strict=True):
                 qpu_executions, shots = get_num_shots_and_executions(c)
+                resources = resources_from_tape(c)
                 if c.shots:
                     self.tracker.update(
                         simulations=1,
                         executions=qpu_executions,
                         results=r,
                         shots=shots,
-                        resources=c.specs["resources"],
+                        resources=resources,
                     )
                 else:
                     self.tracker.update(
                         simulations=1,
                         executions=qpu_executions,
                         results=r,
-                        resources=c.specs["resources"],
+                        resources=resources,
                     )
                 self.tracker.record()
         return results
@@ -88,7 +90,7 @@ def _track_execute_and_compute_derivatives(untracked_execute_and_compute_derivat
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             for c in batch:
-                self.tracker.update(resources=c.specs["resources"])
+                self.tracker.update(resources=resources_from_tape(c))
             self.tracker.update(
                 execute_and_derivative_batches=1,
                 executions=len(batch),
@@ -124,7 +126,7 @@ def _track_execute_and_compute_jvp(untracked_execute_and_compute_jvp):
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             for c in batch:
-                self.tracker.update(resources=c.specs["resources"])
+                self.tracker.update(resources=resources_from_tape(c))
             self.tracker.update(execute_and_jvp_batches=1, executions=len(batch), jvps=len(batch))
             self.tracker.record()
 
@@ -158,7 +160,7 @@ def _track_execute_and_compute_vjp(untracked_execute_and_compute_vjp):
         if self.tracker.active:
             batch = (circuits,) if isinstance(circuits, QuantumScript) else circuits
             for c in batch:
-                self.tracker.update(resources=c.specs["resources"])
+                self.tracker.update(resources=resources_from_tape(c))
             self.tracker.update(execute_and_vjp_batches=1, executions=len(batch), vjps=len(batch))
             self.tracker.record()
         return untracked_execute_and_compute_vjp(self, circuits, cotangents, execution_config)

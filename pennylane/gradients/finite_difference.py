@@ -155,9 +155,6 @@ def finite_diff_coeffs(n, approx_order, strategy):
     b = np.zeros_like(shifts)
     b[n] = factorial(n)
 
-    # Note: using np.linalg.solve instead of scipy.linalg.solve can cause a bus error when this
-    # is inside a tf.py_function inside a tf.function, as occurs with the tensorflow-autograph interface
-    # Bus errors were potentially specific to the M1 Mac. Change with caution.
     coeffs = linalg_solve(A, b)
 
     coeffs_and_shifts = np.stack([coeffs, shifts])

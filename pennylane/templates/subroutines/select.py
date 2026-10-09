@@ -21,13 +21,14 @@ from itertools import product
 import numpy as np
 
 from pennylane import capture, math
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import AbstractWires, Wire
+from pennylane.typing import Wire
 from pennylane.wires import Wires, validate_no_wire_overlaps
 
 from .arithmetic.temporary_and import TemporaryAND
@@ -360,35 +361,13 @@ class Select(Operator2):
                 + "wires are required."
             )
 
-        # Concrete target wires have known labels and are deduplicated, while abstract wires are
-        # assumed disjoint from all other wires and only contribute to the total wire count.
-        concrete_target_wires = Wires([])
-        num_abstract_target_wires = 0
-        for op in self.ops:
-            # CompressedResourceOps have no accessible wires and are skipped.
-            if not isinstance(op, Operator):
-                continue
-            if isinstance(op.wires, AbstractWires):
-                num_abstract_target_wires += len(op.wires)
-            else:
-                concrete_target_wires += op.wires
-
-        if num_abstract_target_wires:
-            all_target_wires = Wire[len(concrete_target_wires) + num_abstract_target_wires]
-        else:
-            all_target_wires = concrete_target_wires
-
-        self._target_wires = all_target_wires
-
-        # ``wires`` is the union of control and target wires (work wires are excluded). Control and
-        # target wires are disjoint, so when either is abstract only the total count is known.
-        if isinstance(self.control, AbstractWires) or isinstance(all_target_wires, AbstractWires):
-            self._wires = Wire[len(self.control) + len(all_target_wires)]
-        else:
-            self._wires = self.control + all_target_wires
+        target_wire_args = tuple(op.wires for op in self.ops if isinstance(op, Operator))
+        self._target_wires = Wires.all_wires(target_wire_args)
+        all_wire_args = (self.control, self._target_wires)
+        self._wires = Wires.all_wires(all_wire_args)
 
         wire_args = {
-            "target_wires": all_target_wires,
+            "target_wires": self._target_wires,
             "control": self.control,
             "work_wires": self.work_wires,
         }
