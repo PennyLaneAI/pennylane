@@ -497,7 +497,7 @@ introductory quickstarts:
 * **Operations**: new operations should be added to the :doc:`/introduction/operations` quickstart
   located at ``doc/introduction/operations.rst``. For more details, see :doc:`../adding_operators`.
 
-* **Templates**: new templates should be added to the :doc:`/introduction/templates` quickstart,
+* **Subroutines**: new subroutines should be added to the :doc:`/introduction/templates` quickstart,
   located at ``doc/introduction/templates.rst``. For more details, see :doc:`../adding_operators`.
 
 * **Measurement**: new measurement functions should be added to the :doc:`/introduction/measurements` quickstart,

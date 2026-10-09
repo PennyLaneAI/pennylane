@@ -1,7 +1,7 @@
 .. _contributing_operators:
 
-Adding new operators
-====================
+Adding new subroutines
+======================
 
 The following steps will help you to create custom operators, and to
 potentially add them to PennyLane.
@@ -232,7 +232,7 @@ If the above operator omitted the ``_unflatten`` custom definition, it would rai
 
     AssertionError: FlipAndRotate._unflatten must be able to reproduce the original operation
     from (0.1,) and (Wires(['q3', 'q1']), (('do_flip', True),)). You may need to override
-    either the _unflatten or _flatten method. 
+    either the _unflatten or _flatten method.
     For local testing, try type(op)._unflatten(*op._flatten())
 
 
@@ -244,7 +244,7 @@ The new gate can be used with PennyLane devices.
   PennyLane leaves the gate implementation up to the device. The device
   might have a hardcoded implementation, *or* it may refer to one of the
   numerical representations of the operator (such as :meth:`.Operator.matrix`).
-  
+
 - If the device does not support an operation, PennyLane will automatically
   decompose the gate using :meth:`.Operator.decomposition`.
 
@@ -326,7 +326,7 @@ implementations. The onus is on the contributors of new operators to add them to
 .. note::
 
     The attributes for qubit gates are currently found in ``pennylane/ops/qubit/attributes.py``.
-    
+
     Included attributes are listed in the ``Operation``
     `documentation <https://pennylane.readthedocs.io/en/latest/code/qp_operation.html#operation-attributes>`__.
 
@@ -343,21 +343,21 @@ The new operation may have to be imported in the module's ``__init__.py`` file i
 Make sure that all hyperparameters and errors are tested, and that the parameters can be passed as
 tensors from all supported autodifferentiation frameworks.
 
-Don't forget to also add the new operator to the documentation in the ``docs/introduction/operations.rst`` file, or to
-the template gallery if it is an ansatz. The latter is done by adding a ``gallery-item``
-to the correct section in ``doc/introduction/templates.rst``:
+Don't forget to also add the new operator to the documentation in the ``doc/introduction/operations.rst`` file, or to
+the list of subroutines if it is an ansatz. The latter is done by adding an entry to the ``autosummary``
+in the correct section of ``doc/introduction/templates.rst``:
 
-.. code-block::
+.. code-block:: rst
 
-  .. gallery-item::
-    :link: ../code/api/pennylane.templates.<templ_type>.MyNewTemplate.html
-    :description: MyNewTemplate
-    :figure: ../_static/templates/<templ_type>/my_new_template.png
+  .. autosummary::
+      :nosignatures:
+
+      ~pennylane.MyNewSubroutine
 
 .. note::
 
-  This loads the image of the template added to ``doc/_static/templates/test_<templ_type>/``. Make sure that
-  this image has the same dimensions and style as other template icons in the folder.
+  The list displays the first line of the subroutine's docstring, so make sure that it is a concise
+  summary of what the subroutine does.
 
 Here are a few more tips for adding operators:
 
@@ -374,3 +374,95 @@ Here are a few more tips for adding operators:
 * *Input checks.* Checking the inputs of the operation introduces an overhead and clashes with tools like
   just-in-time compilation. Find a balance of adding meaningful sanity checks (such as for the shape of tensors),
   but keeping them to a minimum.
+
+
+Custom subroutines
+------------------
+
+Creating a custom subroutine can be as simple as defining a function that creates operations and does not have a return
+statement:
+
+.. code-block:: python
+
+    import pennylane as qp
+
+    def MySubroutine(a, b, wires):
+        c = qp.math.sin(a) + b
+        qp.RX(c, wires=wires[0])
+
+    n_wires = 3
+    dev = qp.device("lightning.qubit", wires=n_wires)
+
+    @qp.qjit(capture=True)
+    @qp.qnode(dev)
+    def circuit(a, b):
+        MySubroutine(a, b, wires=range(n_wires))
+        return qp.expval(qp.PauliZ(0))
+
+>>> circuit(2, 3)
+Array(-0.71950657, dtype=float64)
+
+.. note::
+
+    Classical processing inside a subroutine must be compatible with JIT compilation. PennyLane's
+    :mod:`math <pennylane.math>` library provides framework-agnostic functions, such as the
+    ``qp.math.sin`` used above, that can be used for this purpose.
+
+To turn a quantum function into a subroutine class like the built-in subroutines above, decorate it with
+:func:`~pennylane.subcircuit`. The quantum function must not return anything, and its resources must be
+registered with :func:`~pennylane.register_resources`. Its arguments are classified via keyword arguments
+such as ``dynamic_argnames``; arguments named ``wires`` are treated as wires by default:
+
+.. code-block:: python
+
+    import numpy as np
+
+    @qp.subcircuit(dynamic_argnames=("weights",))
+    @qp.register_resources({qp.RY: 2, qp.CNOT: 1})
+    def EntangledRotations(weights, wires):
+        qp.RY(weights[0], wires=wires[0])
+        qp.RY(weights[1], wires=wires[1])
+        qp.CNOT(wires=wires)
+
+    dev = qp.device("lightning.qubit", wires=2)
+
+    @qp.qjit(capture=True)
+    @qp.decompose(gate_set={qp.RY, qp.CNOT})
+    @qp.qnode(dev)
+    def circuit(weights):
+        EntangledRotations(weights, wires=[0, 1])
+        return qp.expval(qp.PauliZ(1))
+
+    weights = np.array([0.1, 0.2])
+
+``EntangledRotations`` is now an :class:`~.Operator2` subclass, and appears as a single operation in
+the circuit. Its quantum function body is registered as its decomposition, which
+:func:`~pennylane.decompose` uses to lower it into gates supported by the device:
+
+>>> print(qp.draw(circuit, level="top")(weights))
+0: ─╭EntangledRotations(M0)─┤
+1: ─╰EntangledRotations(M0)─┤  <Z>
+<BLANKLINE>
+M0 =
+[0.1 0.2]
+>>> print(qp.draw(circuit)(weights))
+0: ──RY(0.10)─╭●─┤
+1: ──RY(0.20)─╰X─┤  <Z>
+>>> circuit(weights)
+Array(0.97517033, dtype=float64)
+
+As suggested by the camel-case naming, built-in subroutines in PennyLane are classes. Classes are more complex
+data structures than functions, since they can define properties and methods of subroutines (such as gradient
+recipes or matrix representations). Consult the :ref:`Contributing operators <contributing_operators>`
+page to learn how to code up your own subroutine class, and how to add it to the PennyLane subroutine library.
+
+Layering Function
+-----------------
+
+The layer function creates a new subroutine by repeatedly applying a sequence of quantum
+gates to a set of wires. You can import this function both via
+``qp.layer`` and ``qp.templates.layer``.
+
+.. autosummary::
+
+    pennylane.layer
