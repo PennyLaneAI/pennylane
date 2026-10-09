@@ -1887,7 +1887,7 @@
 
 * :func:`~.transforms.merge_rotations` no longer empties the operations of an input tape
   that needs no decomposition.
-  [(#PRNUM)](https://github.com/PennyLaneAI/pennylane/pull/PRNUM)
+  [(#10303)](https://github.com/PennyLaneAI/pennylane/pull/10303)
 
 * Fixed :meth:`~.PPR.matrix` raising a ``KeyError`` when the Pauli word contains the identity
   character ``"I"``.
