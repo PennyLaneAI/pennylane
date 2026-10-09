@@ -315,8 +315,6 @@ We can also visualize the circuit and dynamically queue operations directly to t
     0: ──RX─╭●─────┤
     1: ──H──╰X──RZ─┤
 
-See :doc:`/code/qp_debugging` for more information and detailed examples.
-
 Graph representation
 --------------------
 
