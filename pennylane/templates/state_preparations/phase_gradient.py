@@ -11,17 +11,44 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# Portions of this file (the rotation sequences used in
+# _phase_gradient_state_prep_ppr_decomposition below) are derived from pygridsynth:
+# https://github.com/quantum-programming/pygridsynth
+#
+# MIT License
+#
+# Copyright (c) 2024-2025 Shun Yamamoto and Nobuyuki Yoshioka
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 r"""
 Contains the PhaseGradientStatePrep template.
 """
 
+from collections import Counter
+
 import numpy as np
 
 import pennylane as qp
-from pennylane import capture, compiler, math
-from pennylane.control_flow import for_loop
+from pennylane import math
 from pennylane.core.operator import StatePrepBase2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.exceptions import WireError
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires, WiresLike
@@ -70,14 +97,9 @@ class PhaseGradientStatePrep(StatePrepBase2):
     >>> np.allclose(circuit(), np.exp(-2j * np.pi * np.arange(B) / B) / np.sqrt(B))
     True
 
-    The decomposition consists of :class:`~.Hadamard` gates and phase gates (:class:`~.PhaseShift`):
+    The decomposition is supported on up to 30 wires and consists of :class:`~.PPR` gates (and
+    a :class:`~.GlobalPhase`).
 
-    >>> print(qp.draw(qp.PhaseGradientStatePrep(wires=range(5)).decomposition)())
-    0: ──H──Z─────────┤
-    1: ──H──S†────────┤
-    2: ──H──T†────────┤
-    3: ──H──Rϕ(-0.39)─┤
-    4: ──H──Rϕ(-0.20)─┤
     """
 
     arg_specs = {"wires": Wire[-1]}
@@ -116,44 +138,137 @@ class PhaseGradientStatePrep(StatePrepBase2):
         return ket
 
 
-def _phase_gradient_state_prep_resources(wires: AbstractWires):
-    num_wires = len(wires)
-    resources = {qp.Hadamard: num_wires}
-    if num_wires > 0:
-        resources[qp.Z] = 1
-    if num_wires > 1:
-        resources[qp.adjoint(qp.S(Wire[1]))] = 1
-    if num_wires > 2:
-        resources[qp.adjoint(qp.T(Wire[1]))] = 1
-    if num_wires > 3:
-        resources[qp.PhaseShift] = num_wires - 3
+# Wires 0 to 2 are based on the exact gates Z, S^dagger and T^dagger. For j >= 3, the PPRs are
+# based on Clifford+T approximations of RZ(-pi / 2**j) obtained with pygridsynth v2.0.0
+# The gate sequence for wire j is obtained by
+#     pygridsynth.gridsynth_gates(-mpmath.pi / 2**j, mpmath.mpf(epsilon), up_to_phase=True)
+# with the following tolerances epsilon (wire: epsilon):
+#     3: 2.5e-12, 4: 4e-13, 5: 5e-13, 6: 3e-13, 7: 6e-12, 8: 3e-13, 9: 1e-12, 10: 2e-13,
+#     11: 6e-13, 12: 2e-12, 13: 4e-13, 14: 2.1e-12, 15: 3e-13, 16: 8e-14, 17: 1.3e-12,
+#     18: 7e-13, 19: 3e-13, 20: 3e-12, 21: 2e-12, 22: 2e-13, 23: 6e-13, 24: 2e-13, 25: 3e-13,
+#     26: 5e-13, 27: 8e-14, 28: 2.66e-13, 29: 5.3e-13
+# The sequence, and the preceding Hadamard, is processed into a pure π/8 PPR sequence, up to a
+# leading Clifford PPR.
+
+_INITIAL_PPRS = (
+    (-4, "Y"),
+    (4, "X"),
+    (4, "X"),
+    (2, "X"),
+    (4, "X"),
+    (4, "Y"),
+    (4, "X"),
+    (-4, "X"),
+    (2, "X"),
+    (-4, "X"),
+    (-4, "X"),
+    (4, "Y"),
+    (4, "X"),
+    (-4, "Y"),
+    (-4, "X"),
+    None,
+    (2, "X"),
+    (-4, "X"),
+    (2, "X"),
+    (4, "Y"),
+    (-4, "Y"),
+    (4, "X"),
+    (4, "Y"),
+    (4, "X"),
+    (2, "X"),
+    (4, "X"),
+    None,
+    (4, "Y"),
+    (4, "X"),
+    (2, "X"),
+)
+
+# fmt: off
+_PI_OVER_8_PPRS = (
+    "",
+    "",
+    "Z",
+    "yZyXyXZyZyXyzyzXyzXyXZXZyXZXZXYZYxZxZxyZxyZyZxyxzyzyzyzyxyZyZyZyZyXyXyXZyXZyXyXyzyxyxzyzyxzyzyxyZxyxyxzyxzxYzxYxYxZYZXY",
+    "xyxzyzXzXyzXyXZyXyXZyXyzXyzXzYzxzxzyxzxzxYxZxZYxZxyxzxYxYxZYZYxYzxYzxYzYzxYxYxZYxYxZYxYzxYzxYxZxyxzyzXyzXyzXzXzYXYXYZXZXYXY",
+    "ZyZyXyzyxyZxyxzxYxYxYzYXYXzXzXzYzYXYXYXzXyXyzXzXyXZyZxyZxZxZYxZxZYxZYZYZYZYZYxZxZYxZxyxyxzxzxzyxzxYzYXzXyzyzXzXzXyXyXZXZXYZX",
+    "xZYxYzYXYXYXYZXZXZyXyzXyXyzXzYzxYxZxZYZYxZxZYZYxZYxZYxYzYzYzYXzYXzYzYzxYxZxyxzyxyZyZyZxZYxYzYzYXzXzXzYXYZXZXYXYXYZXZXZXYZXZXYZX",
+    "zXzXzYzxYzxzyzyxzyzXyzyzXyzXzYzxYxZYxZYZXYZYZYxZxZxZxyZyZxZYZYZXZXZyZyZxZxyxzyzyxzxYzxzxzxYxZYZYxYxZxyZyXZXZyZyZyX",
+    "YxZYZYZXYXYZXZXZyXZXZXYZXZyXyXyzXzYzYzYzxYzxYzYzxzxzxYxYzxzxYzYzYXYXzYzYXzXyXZXYXzXzXzXzXyXyXZXYXzXzYzYXYZYxZYZYZXYZYZXZXYXY",
+    "ZYxZxyZyXyXyXZXYXzYzxzxzyzyzXyXyXZXYZXZyXyXyzyzXyzXyzXzXzYzxYxZYxYzxzxYzYXzYzYXzXyXyzyzyxzyzyzyzXzXzYXYXYZYZYxZxZxZYxZYZY",
+    "XZyXyzyzyxzyxyZxZxyxzxYxZxyZxZxZxyZxZxZYxZxZYxZYZXZXZyXZyZxyxzyzyzyxyZxZxyxzyzXzXyXZyZyZyZyXyzXyzyzXzYXYZXYXYXYZXYXYZYxZxyxzxYxZYZY",
+    "YXYZYZYZXYXYXzYzYzxYxZxZYxYxYxYzxzyxzyxyxzyxyZxZYxYxYzxzyzyzXzYzxzxYzYXYZXYZYxYzYXzYXzYXzXyzXzYXzYXYZXYZYZYZXYXzXyzXzXyXZyZyX",
+    "ZXZyZxZYxZYxZxZYZXZyZyXZyXZXZXYZXZyZyXZyXZXZXYZXZyZyZxZxZxyxyZyZyXZyZyZxyZxZYxYxZYZYZXYZXZyXyXyXZyXyXyzXzXyzyxyZyXyXyX",
+    "zXzYXzYXzXzXyXZyZxyxzxzxzxYzYzYXzYzxYxZxZxyZyZxZxZxyxzxYxZxyZxyZxZxZYxYxZYxZxZYZXZyXyXyXyzXyXyzXyXyzXyXyzXyXZyZxyZyXZXZXYXYZY",
+    "zyxyZxyxzyxzxzxYxYzxzxYxZxZYZXZyXyzyxzxYxYxZYZXZXZXZyXyzXzXzYzxzxzxYxZxZYxYzYXzXzYzYzYXzYXzYzYzxYxZYZXYXYXzXyzXyXZXZyZyX",
+    "YzxYxYxZxyZxyxzxzyzyxzyxyZxyZxyxyZxyZxZYZYxZYZXYXYZXZyZyZyZyZyZxZYxYzxYzYXYZXZXZXYZXYZXZyZxZxZYxZYZXYXzXzXyzyxzxYxZYxZYxYzYXY",
+    "xyxyxzyxzyzyxzyzXyzyxyxzxzyxzyxyZyZyXZXZXYZXYZXYXYXzYXzXyXyzXzYzYXzXzYzYXYZYxYzYzxYzxYxZYxZxZYZXYXYZYxYxZxyxzyzXyXyzyxzyzXyXZXZX",
+    "XYZYxZYxZxyxyxyZxZYxYxZYxZxZxyZxZxZxyxyxyxyZxyZyZyXyzyzXzXyzyxyZyXyzyxyxzxYzYzxYxYxZxZxZYxYzxYzxYxZxyxzxYzYXzXzYXYXzXyXZ",
+    "XyzXzYXzXzYXzXzYXYZYZXZXYZXYXYZXYXYXYXzXyzXzYXzYzYzYXzXyXyzXzXzYzYXYXYZYxZYZYZXYZXZyXZXYZYxYxZxZxZxyZxyZyZyXZXYXzYzxYzYzYXY",
+    "yxzyzXyXyzyxzxzyzyxzxYxYxYzxzxYxYzYzxYzxzyzXzXyzyzyzyzyxzyxzxYxZYxZxZxZYZXZyXZyXZyXZXYXYZXYXYXYZYZYZXZyZyZyZyZxZxZYxZYZXZXZXY",
+    "YZXYXYXYZYZXZXZyZyZyXZyZyZxyxzyxyZyZxZYZXZyXZXZyZxZYZYxYzxYzxYzxYxYzYXzXzYXzYXzXzXzYXzYXzXzXyzXzXzYzxzxzyxzxzyxzxYxZxZYZY",
+    "xyxyZyXyzyzyzXzXyXyzXzXyzXyzyzyxzyxzxzxYzYXzYXzXyXZyZxZxZYxZYZYZXYZYZYZYxZYZYZYZXZyZyXZXZXZXZyZxyxyZxyZxyxzxYzxYzYXYXY",
+    "yxzxzyzXyXZyXyzXyXZXYXzYXYZXZyXyzyzyzyzyxzxzxzyxyZyZxZYxZxyxyxzxYzxzxzyxzxzxYzYzxzyxzxzxYzYXYZYxZYxYxYzYXYXYZYxYxYxYxZYZXZyX",
+    "zxzyzXyzXyzXzYXzXzXyXZXYXzYzxYxYzYzxYxYxZxZYxYxZYZYxYxYzxYxZYZXZXZXYZXZyXyXyzXyXZyXZyZxyxzyxzxzyzXyXyXZXZyXZXYZYZXYXYXYXYXY",
+    "YzYXzYzxzxYxZYZXYZXYZXZyZyZyZyZyZxyZyZyZxyxzxYzYXzXzXyzXyXyzyzXzYXYXYXYZXYZYxYxYzYzxzyzyzXzYzYXYZXYXYXzXzXyXyXZyZyXyXZXYXYZXZyX",
+    "ZxyxyxzxzxYzxzyxyZyXZyXyzXyXZXZXYZXZyXZXYXYZYxYzYXzXzYXzYzYzxzyzXzYzxzxYzxYxYzYzxzyxzyxzyzXyXyzyxzyxyZxyZyXZXZyZxyxyZxZYxZYZY",
+    "xYzYzYXYXzYXzYzYzxzyzXyXyXyzyzyxzyzyzyxyxzyzyzyzyxyxyZyXyXZXZyZxyxyxyxyxzyzXzXzYzxYzxzyzXzXyXyXyzXyzXyzXzYXzYXYXzXzXzXzYXYXY",
+    "YxYzYzxYxZxyZyZyXZyZyXZyXZyZxyZxyZyZyXZyZxZYxYxYzYXYZYZYZYZXYZYxZxZYxYxYxYxZxyxyxzyxyxyZxyxyZxZxyxzyzyxzyxyZyZxZYZXZXYXzYXYXzYXY",
+    "xYzxYzxYzYXYXYXYZYZYZYZXYXzYXzYXYZXYXYZYZYZYxZYZXZyXyXyXyzXzXyzyzyxzxzxzyzXyXyzyzyzyzXyXZXYZYZXYXzXyzXyXZyZyXZyZyZxyZxyZxZxZYZYZY",
+    "xYxZxZxyxzyzXyXyzXyzyzyxzyzXyXyzXyzXzXzXyzXyzyxyxyxyxyxyZxZYZYZXZXZXYXYXzXyzXzYzxzyzXzYzxYzYzxzyzyzyzXzYzxzyzXyzyxzxzyzXzYzYXzXyX",
+)
+
+_GLOBAL_PHASES = (
+    0.0, 0.0, -0.39269908169872414, 0.19634954085053827, 2.4543692606172054, -1.9144080232811331,
+    1.5953400194010237, 0.7976700097031784, -0.7792622402458426, -3.138524692014499,
+    -0.7838641826095573, -3.1408256631960407, 1.5711798219926387, -0.785206415798946,
+    -1.1780013712959445, -2.7488456349914205, -1.5707723583450672, 2.356206474417838,
+    0.7854041555095971, 0.3927020777549259, 1.5707978248243835, 0.7853989124122822,
+    -1.178096870589138, -2.356194302938653, -2.748893478264377, -1.9634953616802364,
+    -2.748893548484341, -2.7488935601876974, 2.7488935777426624, -1.5707963238689968,
+)
+# fmt: on
+
+
+def _ppr_counts(num_wires):
+    counts = Counter()
+    for init, pprs in zip(_INITIAL_PPRS[:num_wires], _PI_OVER_8_PPRS[:num_wires], strict=True):
+        if init is not None:
+            counts[init] += 1
+        counts.update((8 if p.isupper() else -8, p.upper()) for p in pprs)
+    return counts
+
+
+def _phase_gradient_state_prep_ppr_resources(wires: AbstractWires):
+    resources = {
+        qp.PPR(denominator, pauli, wires=Wire[1]): count
+        for (denominator, pauli), count in _ppr_counts(len(wires)).items()
+    }
+    resources[qp.GlobalPhase] = 1
     return resources
 
 
-@register_resources(_phase_gradient_state_prep_resources)
-def _phase_gradient_state_prep_decomposition(wires: WiresLike):
+@register_condition(lambda wires: len(wires) <= len(_PI_OVER_8_PPRS))
+@register_resources(_phase_gradient_state_prep_ppr_resources)
+def _phase_gradient_state_prep_ppr_decomposition(wires: WiresLike):
+    # Wire j is prepared in the state (|0> + exp(-i pi / 2**j)|1>) / sqrt(2) by the PPR
+    # ``_INITIAL_PPRS[j]`` (angle denominator, Pauli word; no gate if ``None``), followed by the π/8
+    # PPRs in ``_PI_OVER_8_PPRS[j]``, where upper (lower) case letters denote PPRs with angle π/8
+    # (-π/8). Together with the global phase given by summing ``_GLOBAL_PHASES`` over the wires,
+    # the state prepared on 30 wires deviates from the phase gradient state by
+    # less than 1e-12 in the 2-norm.
+
     num_wires = len(wires)
-    if compiler.active() or capture.enabled():
-        wires = math.array(wires, like="jax")
-
-    @for_loop(num_wires)
-    def hadamard_loop(i):
-        qp.Hadamard(wires[i])
-
-    hadamard_loop()  # pylint: disable=no-value-for-parameter
-
-    if num_wires > 0:
-        qp.Z(wires[0])
-    if num_wires > 1:
-        qp.adjoint(qp.S(wires[1]))
-    if num_wires > 2:
-        qp.adjoint(qp.T(wires[2]))
-
-    @for_loop(3, num_wires)
-    def phase_shift_loop(i):
-        qp.PhaseShift(-np.pi * 2.0**-i, wires[i])
-
-    phase_shift_loop()  # pylint: disable=no-value-for-parameter
+    for wire, init, pprs in zip(
+        wires, _INITIAL_PPRS[:num_wires], _PI_OVER_8_PPRS[:num_wires], strict=True
+    ):
+        if init is not None:
+            qp.PPR(*init, wires=wire)
+        for p in pprs:
+            qp.PPR(8 if p.isupper() else -8, p.upper(), wires=wire)
+    qp.GlobalPhase(sum(_GLOBAL_PHASES[: len(wires)]))
 
 
-add_decomps(PhaseGradientStatePrep, _phase_gradient_state_prep_decomposition)
+add_decomps(
+    PhaseGradientStatePrep,
+    _phase_gradient_state_prep_ppr_decomposition,
+)
