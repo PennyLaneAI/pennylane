@@ -27,12 +27,12 @@ import scipy.sparse
 import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.core.operator import Operator
-from pennylane.ops.functions import assert_valid
-from pennylane.ops.functions.assert_valid import (
+from pennylane.testing.operators import (
     _check_bind_new_parameters_op2,
     _check_eigendecomposition,
     _check_pytree,
     _test_decomposition_rule,
+    assert_valid,
 )
 from pennylane.typing import Wire
 from pennylane.wires import Wires
