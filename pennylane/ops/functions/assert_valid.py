@@ -16,10 +16,9 @@ Former location of :func:`~.testing.assert_valid`, kept as an alias of
 :mod:`pennylane.testing.operators` until Catalyst and Lightning use the new location.
 """
 
-from pennylane.testing.operators import (
-    _check_eigendecomposition,
-    _test_decomposition_rule,
-    assert_valid,
+from pennylane.testing.decompositions import (
+    assert_valid_decomposition_rule as _test_decomposition_rule,
 )
+from pennylane.testing.operators import _check_eigendecomposition, assert_valid
 
 __all__ = ["assert_valid", "_check_eigendecomposition", "_test_decomposition_rule"]
