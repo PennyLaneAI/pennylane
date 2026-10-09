@@ -18,6 +18,7 @@ from operator2_utils import CompilableOp, DynOp, StaticOp
 
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.operator2 import operator_p
+from pennylane.testing import find_eqns
 from pennylane.typing import AbstractArray, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
@@ -191,4 +192,4 @@ def test_bind_primitive():
 
     cjaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(2.0)
     # Make sure the operator primitive is in the JAXPR
-    assert len([e for e in cjaxpr.eqns if e.primitive is operator_p]) == 1
+    assert len(find_eqns(cjaxpr, operator_p)) == 1
