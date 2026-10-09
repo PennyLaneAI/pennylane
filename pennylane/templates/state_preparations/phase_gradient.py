@@ -138,28 +138,17 @@ class PhaseGradientStatePrep(StatePrepBase2):
         return ket
 
 
-# Wire j is prepared in the state (|0> + exp(-i pi / 2**j)|1>) / sqrt(2) by the PPR
-# ``_INITIAL_PPRS[j]`` (angle denominator, Pauli word; no gate if ``None``), followed by the pi/8
-# PPRs in ``_PI_OVER_8_PPRS[j]``, where upper (lower) case letters denote PPRs with angle pi/8
-# (-pi/8). Together with the global phase given by summing ``_GLOBAL_PHASES`` over the wires, the
-# state prepared on 30 wires deviates from the phase gradient state by less than 1e-12 in the
-# 2-norm.
-#
 # Wires 0 to 2 are based on the exact gates Z, S^dagger and T^dagger. For j >= 3, the PPRs are
 # based on Clifford+T approximations of RZ(-pi / 2**j) obtained with pygridsynth v2.0.0
-# (https://github.com/quantum-programming/pygridsynth), an implementation of the Ross-Selinger
-# algorithm [N. J. Ross and P. Selinger, "Optimal ancilla-free Clifford+T approximation of
-# z-rotations", Quantum Inf. Comput. 16, 901 (2016), arXiv:1403.2975]. The gate sequence for wire
-# j is returned by
+# The gate sequence for wire j is obtained by
 #     pygridsynth.gridsynth_gates(-mpmath.pi / 2**j, mpmath.mpf(epsilon), up_to_phase=True)
 # with the following tolerances epsilon (wire: epsilon):
 #     3: 2.5e-12, 4: 4e-13, 5: 5e-13, 6: 3e-13, 7: 6e-12, 8: 3e-13, 9: 1e-12, 10: 2e-13,
 #     11: 6e-13, 12: 2e-12, 13: 4e-13, 14: 2.1e-12, 15: 3e-13, 16: 8e-14, 17: 1.3e-12,
 #     18: 7e-13, 19: 3e-13, 20: 3e-12, 21: 2e-12, 22: 2e-13, 23: 6e-13, 24: 2e-13, 25: 3e-13,
 #     26: 5e-13, 27: 8e-14, 28: 2.66e-13, 29: 5.3e-13
-# Each sequence is preceded by a Hadamard gate, and all Clifford gates are commuted to the start of
-# the circuit, where they act on |0> and are replaced by a single PPR. Leading pi/8 PPRs that only
-# contribute a phase are dropped.
+# The sequence, and the preceding Hadamard, is processed into a pure π/8 PPR sequence, up to a
+# leading Clifford PPR.
 
 _INITIAL_PPRS = (
     (-4, "Y"),
@@ -261,6 +250,13 @@ def _phase_gradient_state_prep_ppr_resources(wires: AbstractWires):
 @register_condition(lambda wires: len(wires) <= len(_PI_OVER_8_PPRS))
 @register_resources(_phase_gradient_state_prep_ppr_resources)
 def _phase_gradient_state_prep_ppr_decomposition(wires: WiresLike):
+    # Wire j is prepared in the state (|0> + exp(-i pi / 2**j)|1>) / sqrt(2) by the PPR
+    # ``_INITIAL_PPRS[j]`` (angle denominator, Pauli word; no gate if ``None``), followed by the π/8
+    # PPRs in ``_PI_OVER_8_PPRS[j]``, where upper (lower) case letters denote PPRs with angle π/8
+    # (-π/8). Together with the global phase given by summing ``_GLOBAL_PHASES`` over the wires,
+    # the state prepared on 30 wires deviates from the phase gradient state by
+    # less than 1e-12 in the 2-norm.
+
     num_wires = len(wires)
     for wire, init, pprs in zip(
         wires, _INITIAL_PPRS[:num_wires], _PI_OVER_8_PPRS[:num_wires], strict=True
