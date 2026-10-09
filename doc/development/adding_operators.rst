@@ -215,10 +215,10 @@ FlipAndRotate(0.1, wires=['q3', 'q1'])
 >>> op.adjoint()
 FlipAndRotate(-0.1, wires=['q3', 'q1'])
 
-Once the class has been created, you can run a suite of validation checks using :func:`.ops.functions.assert_valid`.
+Once the class has been created, you can run a suite of validation checks using :func:`~.testing.assert_valid`.
 This function will warn you of some common errors in custom operators.
 
->>> qp.ops.functions.assert_valid(op)
+>>> qp.testing.assert_valid(op)
 
 If the above operator omitted the ``_unflatten`` custom definition, it would raise:
 

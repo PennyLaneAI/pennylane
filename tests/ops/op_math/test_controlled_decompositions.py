@@ -615,7 +615,7 @@ class TestMCXDecomposition:
                 decompose_mcx_many_workers(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
-        _test_decomposition_rule(mcx, decompose_mcx_many_workers, skip_decomp_matrix_check=True)
+        _test_decomposition_rule(mcx, decompose_mcx_many_workers, skip_matrix_check=True)
 
         tape = qp.tape.QuantumScript.from_queue(q)
         matrix = _tape_to_matrix(tape, wire_order=control_wires + work_wires + [target_wire])
@@ -653,7 +653,7 @@ class TestMCXDecomposition:
                 decompose_mcx_one_worker(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
-        _test_decomposition_rule(mcx, decompose_mcx_one_worker, skip_decomp_matrix_check=True)
+        _test_decomposition_rule(mcx, decompose_mcx_one_worker, skip_matrix_check=True)
 
         # Verify that the decomposition produces an equivalent matrix.
         tape = qp.tape.QuantumScript.from_queue(q)
@@ -691,7 +691,7 @@ class TestMCXDecomposition:
                 decompose_mcx_two_workers(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
-        _test_decomposition_rule(mcx, decompose_mcx_two_workers, skip_decomp_matrix_check=True)
+        _test_decomposition_rule(mcx, decompose_mcx_two_workers, skip_matrix_check=True)
 
         # Verify that the decomposition produces an equivalent matrix.
         tape = qp.tape.QuantumScript.from_queue(q)
@@ -721,7 +721,7 @@ class TestMCXDecomposition:
                 decompose_mcx_with_no_worker(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
-        _test_decomposition_rule(mcx, decompose_mcx_with_no_worker, skip_decomp_matrix_check=True)
+        _test_decomposition_rule(mcx, decompose_mcx_with_no_worker, skip_matrix_check=True)
 
         # Verify that the decomposition produces an equivalent matrix.
         tape = qp.tape.QuantumScript.from_queue(q)

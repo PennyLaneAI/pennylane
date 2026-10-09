@@ -15,6 +15,27 @@
 This module contains utilities for testing PennyLane objects, such as operators,
 decomposition rules, and captured programs.
 
+Operators
+^^^^^^^^^
+
+.. currentmodule:: pennylane.testing
+
+.. autosummary::
+    :toctree: api
+
+    ~assert_valid
+
+Decompositions
+^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.testing
+
+.. autosummary::
+    :toctree: api
+
+    ~assert_valid_decomp_rule
+    ~decomp_rule_to_tape
+
 Program capture
 ^^^^^^^^^^^^^^^
 
@@ -31,3 +52,5 @@ Program capture
 """
 
 from .capture import assert_eqn_matches_op, extract_all_primitives, find_eqns, plxpr_to_tape
+from .decompositions import assert_valid_decomp_rule, decomp_rule_to_tape
+from .operators import assert_valid
