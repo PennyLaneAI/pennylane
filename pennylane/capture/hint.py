@@ -112,7 +112,7 @@ def apply_hint(f, hints: dict[str, Any]):
     >>> def f(x): return x
     >>> hinted_f = qp.hint({"identity": True})(f)
     >>> hinted_f
-    <HintedCallable(<function f at 0x113e21260>, {'identity': True})>
+    <HintedCallable(<function f at ...>, {'identity': True})>
     >>> hinted_f.hints
     {'identity': True}
 
@@ -146,7 +146,9 @@ def hint(hints: dict[str, Any]) -> Callable:
 
     * :func:`~.for_loop` and :func:`~.while_loop` support `"num-iters"` to indicate a heuristic
       number of loop iterations for the purposes of resource estimation with
-      :func:`~.specs`. See Usage Details for more information.
+      :func:`~.analyze`. See Usage Details for more information.
+    * The branches to :func:`~.cond` support ``"branch-prob"`` to indicate the probability
+      that a branch will be hit.
 
     .. warning::
 
@@ -161,7 +163,7 @@ def hint(hints: dict[str, Any]) -> Callable:
         :title: Usage Details
 
         By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
-        with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
+        with :func:`~.analyze` can heuristically specify the number of iterations, leading to concrete
         resource counts (no symbolic expressions).
 
         .. code-block:: python
@@ -185,7 +187,7 @@ def hint(hints: dict[str, Any]) -> Callable:
 
                 return qp.expval(qp.Z(0))
 
-        >>> print(qp.specs(c, level=0)(5).resources)
+        >>> print(qp.analyze(c)(5).resources)
         Symbolic Variables: a
         Quantum operations:
         - Total: a + 10
