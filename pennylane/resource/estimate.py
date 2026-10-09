@@ -79,6 +79,7 @@ def estimate(
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the qjit'd QNode for which to estimate resources.
+            ``functools.partial`` wrappers around supported callables are also accepted.
         level (str | int): The level of compilation from which to project the resources onto the
             ``target``. Only ``"top"`` or ``0``, the original circuit before any compilation
             passes have been applied, is currently supported. Defaults to ``"top"``.

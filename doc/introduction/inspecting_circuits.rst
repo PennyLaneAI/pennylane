@@ -167,8 +167,8 @@ Total wires: 4
 Circuit Depth: Not computed
 
 Note that both ``PauliX`` gates are counted (:func:`~.cancel_inverses` is ignored with
-``level=0``) and the ``CZ`` gate's decomposition pathway to ``CNOT`` and ``H`` is shown in the
-final resource estimate.
+``level=0``) and the ``CZ`` gate's decomposition pathway to ``CNOT`` and ``Hadamard`` is shown in
+the final resource estimate.
 
 
 Circuit drawing
