@@ -59,7 +59,7 @@
 
 - <strong>*Hardware agnostic, hardware ready.*</strong>
 
-  PennyLane integrates with a wide range of [quantum hardware devices](https://pennylane.ai/devices). Whether superconducting qubits, trapped ion systems, neutral atoms, or photonics, PennyLane provides the tools to [estimate resources](https://pennylane.ai/qml/demos/re_how_to_use_pennylane_for_resource_estimation) and [compile circuits](https://pennylane.ai/topics/quantum-compilation) specifically for the [hardware devices](https://pennylane.ai/topics/quantum-hardware) of today—and tomorrow!
+  PennyLane integrates with a wide range of [quantum hardware devices](https://pennylane.ai/devices). Whether superconducting qubits, trapped ion systems, neutral atoms, or photonics, PennyLane provides the tools to [estimate resources](https://pennylane.ai/qml/demos/re_how_to_use_pennylane_for_resource_estimation) and [compile circuits](https://pennylane.ai/topics/quantum-compilation) specifically for the [hardware devices](https://pennylane.ai/topics/quantum-hardware) of today and tomorrow!
 
 - <strong>*Participate, collaborate, innovate.*</strong>
 
@@ -78,7 +78,7 @@ python -m pip install pennylane
 
 ## Docker support
 
-Docker images are found on the [PennyLane Docker Hub page](https://hub.docker.com/u/pennylaneai), where there is also a detailed description about PennyLane Docker support. [See description here](https://docs.pennylane.ai/projects/lightning/en/stable/dev/docker.html) for more information.
+Docker images are found on the [PennyLane Docker Hub page](https://hub.docker.com/u/pennylaneai), where there is also a detailed description of PennyLane Docker support. [See description here](https://docs.pennylane.ai/projects/lightning/en/stable/dev/docker.html) for more information.
 
 ## Getting started
 
@@ -98,7 +98,7 @@ You can also check out our [documentation](https://pennylane.readthedocs.io), an
 
 ## Demos
 
-Take a deeper dive into quantum computing by exploring quantum computing research with the [PennyLane Demos](https://pennylane.ai/qml/demonstrations)—covering fundamental quantum concepts alongside the latest quantum algorithm research results.
+Take a deeper dive into quantum computing by exploring research in quantum computing with the [PennyLane Demos](https://pennylane.ai/qml/demonstrations)—covering fundamental quantum concepts alongside the latest quantum algorithm research results.
 
 If you would like to contribute your own demo, see our [demo submission
 guide](https://pennylane.ai/qml/demos_submission).
@@ -110,7 +110,7 @@ guide](https://pennylane.ai/qml/demos_submission).
 
 ## Contributing to PennyLane
 
-We welcome contributions—simply fork the PennyLane repository, and then make a [pull
+We welcome contributions. Simply fork the PennyLane repository, and then make a [pull
 request](https://help.github.com/articles/about-pull-requests/) containing your contribution. All
 contributors to PennyLane will be listed as authors on the releases.
 
@@ -127,7 +127,7 @@ details.
 - **Source Code:** https://github.com/PennyLaneAI/pennylane
 - **Issue Tracker:** https://github.com/PennyLaneAI/pennylane/issues
 
-If you are having issues, please let us know by posting the issue on our GitHub issue tracker.
+If you are having issues, please let us know by posting an issue on our GitHub issue tracker.
 
 Join the [PennyLane Discussion Forum](https://discuss.pennylane.ai/) to connect with the quantum community, get support, and engage directly with our team. It’s the perfect place to share ideas, ask questions, and collaborate with fellow researchers and developers!
 
