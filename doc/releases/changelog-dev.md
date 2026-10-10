@@ -1903,6 +1903,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed `qp.noise.add_noise` with `level="device"` appending the gradient expansion and the
+  device preprocessing a second time, which duplicated the device program of resolved
+  pipelines and applied it twice during execution.
+  [(#10308)](https://github.com/PennyLaneAI/pennylane/pull/10308)
+
 * Fixed captured transforms dropping keyword arguments to the transformed function,
   including when calling transformed QNodes with `qp.qjit(capture=True)`.
   [(#10301)](https://github.com/PennyLaneAI/pennylane/pull/10301)
@@ -2145,6 +2150,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+akashy0162,
 Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,
