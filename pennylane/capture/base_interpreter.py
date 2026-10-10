@@ -507,7 +507,16 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
 
 @PlxprInterpreter.register_primitive(for_loop_prim)
 def handle_for_loop(
-    self, start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+    self,
+    start,
+    stop,
+    step,
+    *args,
+    jaxpr_body_fn,
+    consts_slice,
+    args_slice,
+    abstract_shapes_slice,
+    estimated_iterations,
 ):
     """Handle a for loop primitive."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
@@ -532,11 +541,12 @@ def handle_for_loop(
         consts_slice=consts_slice,
         args_slice=args_slice,
         abstract_shapes_slice=abstract_shapes_slice,
+        estimated_iterations=estimated_iterations,
     )
 
 
 @PlxprInterpreter.register_primitive(cond_prim)
-def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
+def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice, estimated_probabilities):
     """Handle a cond primitive."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
     args_slice = slice(*args_slice)
@@ -565,6 +575,7 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
         jaxpr_branches=new_jaxprs,
         consts_slices=new_consts_slices,
         args_slice=new_args_slice,
+        estimated_probabilities=estimated_probabilities,
     )
 
 
@@ -577,6 +588,7 @@ def handle_while_loop(
     body_slice,
     cond_slice,
     args_slice,
+    estimated_iterations,
 ):
     """Handle a while loop primitive."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
@@ -604,6 +616,7 @@ def handle_while_loop(
         body_slice=body_consts,
         cond_slice=cond_consts,
         args_slice=args_slice,
+        estimated_iterations=estimated_iterations,
     )
 
 
@@ -721,6 +734,7 @@ def _quantum_subroutine_eval(self, *invals, jaxpr, **params):
     return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
 
+# pylint: disable=unused-argument
 @FlattenedInterpreter.register_primitive(while_loop_prim)
 def flatten_while_loop(
     self,
@@ -730,6 +744,7 @@ def flatten_while_loop(
     body_slice,
     cond_slice,
     args_slice,
+    estimated_iterations,
 ):
     """Handle the while loop by a flattened python strategy."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
@@ -751,8 +766,11 @@ def flatten_while_loop(
 FlattenedHigherOrderPrimitives[while_loop_prim] = flatten_while_loop
 
 
+# pylint: disable=unused-argument
 @FlattenedInterpreter.register_primitive(cond_prim)
-def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
+def flattened_cond(
+    self, *invals, jaxpr_branches, consts_slices, args_slice, estimated_probabilities
+):
     """Handle the cond primitive by a flattened python strategy."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
     args_slice = slice(*args_slice)
@@ -776,9 +794,19 @@ def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
 FlattenedHigherOrderPrimitives[cond_prim] = flattened_cond
 
 
+# pylint: disable=unused-argument
 @FlattenedInterpreter.register_primitive(for_loop_prim)
 def flattened_for(
-    self, start, stop, step, *invals, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+    self,
+    start,
+    stop,
+    step,
+    *invals,
+    jaxpr_body_fn,
+    consts_slice,
+    args_slice,
+    abstract_shapes_slice,
+    estimated_iterations,
 ):
     """Handle the for loop by a flattened python strategy."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)

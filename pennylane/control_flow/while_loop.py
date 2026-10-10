@@ -14,15 +14,16 @@
 """While loop."""
 
 from collections.abc import Callable
-from typing import Literal
+from typing import Any, Literal
 
 import jax
 from jax import numpy as jnp
 
 from pennylane import capture
-from pennylane.capture import FlatFn, enabled
+from pennylane.capture import FlatFn, HintedCallable, apply_hint, enabled
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
+from pennylane.capture.hint import process_hints
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 
 from ._loop_abstract_axes import (
@@ -126,6 +127,54 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
     .. details::
         :title: Usage Details
+
+        **Compiler Hints and Resource Profling:**
+
+        When running resource analysis on a qjit workflow, the resource analysis assumes
+        a single run of the while loop. Calling :func:`~.analyze` on the ``circuit`` above, we get
+
+        >>> print(qp.analyze(qp.qjit(circuit, capture=True))(1.1).resources)
+        Quantum operations:
+        - Total: 1
+          - RX: 1
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
+
+        In this case, :func:`~.hint` can be used indicate the likely number of iterations
+        on the loop:
+
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=1)
+
+            @qp.qjit(capture=True)
+            @qp.qnode(dev)
+            def circuit(x: float):
+
+                @qp.hint({"num-iters": 15})
+                @qp.while_loop(lambda x: x < 2.0)
+                def loop_rx(x):
+                    # perform some work and update (some of) the arguments
+                    qp.RX(x, wires=0)
+                    return x ** 2
+
+                # apply the while loop
+                loop_rx(x)
+
+                return qp.expval(qp.Z(0))
+
+        >>> print(qp.analyze(qp.qjit(circuit, capture=True))(0.5).resources)
+        Quantum operations:
+        - Total: 15
+          - RX: 15
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
+
+        **Dynamic Shape Support:**
 
         .. note::
 
@@ -234,7 +283,19 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
         Returns:
             Callable: a callable with the same signature as ``body_fn`` and ``cond_fn``.
         """
-        return WhileLoopCallable(cond_fn, body_fn, allow_array_resizing=allow_array_resizing)
+        if isinstance(body_fn, HintedCallable):
+            hints = process_hints(body_fn.hints, {"num-iters"})
+            num_iters_hint = hints.get("num-iters", None)
+            body_fn = body_fn.f
+        else:
+            num_iters_hint = None
+
+        return WhileLoopCallable(
+            cond_fn,
+            body_fn,
+            allow_array_resizing=allow_array_resizing,
+            num_iters_hint=num_iters_hint,
+        )
 
     return _decorator
 
@@ -260,6 +321,7 @@ register_custom_staging_rule(
 )
 
 
+# pylint: disable=too-many-arguments, unused-argument
 @while_loop_prim.def_impl
 def _while_loop_impl(
     *args,
@@ -268,6 +330,7 @@ def _while_loop_impl(
     body_slice,
     cond_slice,
     args_slice,
+    estimated_iterations,
 ):
     body_slice = slice(*body_slice)
     cond_slice = slice(*cond_slice)
@@ -305,10 +368,12 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         cond_fn: Callable,
         body_fn: Callable,
         allow_array_resizing: Literal["auto", True, False] = "auto",
+        num_iters_hint: int | None = None,
     ):
         self.cond_fn: Callable = cond_fn
         self.body_fn: Callable = body_fn
         self.allow_array_resizing = allow_array_resizing
+        self.num_iters_hint = num_iters_hint
 
     def _call_capture_disabled(self, *init_state):
         args = init_state
@@ -379,6 +444,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             body_slice=body_consts,
             cond_slice=cond_consts,
             args_slice=args_slice,
+            estimated_iterations=self.num_iters_hint,
         )
 
         results = results[-out_tree.num_leaves :]
@@ -401,3 +467,16 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             return self._call_capture_enabled(*init_state)
 
         return self._call_capture_disabled(*init_state)
+
+
+@apply_hint.register
+def _apply_hint_to_while_loop(
+    f: WhileLoopCallable, hints: dict[Literal["num-iters"], Any]
+) -> WhileLoopCallable:
+    hints = process_hints(hints, {"num-iters"})
+    return WhileLoopCallable(
+        f.cond_fn,
+        f.body_fn,
+        allow_array_resizing=f.allow_array_resizing,
+        num_iters_hint=hints.get("num-iters", None),
+    )

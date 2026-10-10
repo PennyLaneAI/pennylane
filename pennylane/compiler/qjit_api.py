@@ -50,9 +50,9 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             the current environment. The default is ``"catalyst"``.
         autograph (bool): Experimental support for automatically converting Python control
             flow statements to Catalyst-compatible control flow. Currently supports Python ``if``,
-            ``elif``, ``else``, and ``for`` statements. Note that this feature requires an
-            available TensorFlow installation. See the
-            :doc:`AutoGraph guide <catalyst:dev/autograph>` for more information.
+            ``elif``, ``else``, and ``for`` statements. Note that this feature requires the
+            ``diastatic-malt`` package, a standalone fork of the AutoGraph module originally from
+            TensorFlow. See the :doc:`AutoGraph guide <catalyst:dev/autograph>` for more information.
         keep_intermediate (bool): Whether or not to store the intermediate files throughout the
             compilation. The files are stored at the location where the Python script is called.
             If ``True``, intermediate representations are available via the
@@ -84,7 +84,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
         PermissionError: Problems creating temporary directory
         OSError: Problems while creating folder for intermediate files
         AutoGraphError: Raised if there was an issue converting the given the function(s).
-        ImportError: Raised if AutoGraph is turned on and TensorFlow could not be found.
+        ImportError: Raised if AutoGraph is turned on and ``diastatic-malt`` could not be found.
 
     **Example**
 

@@ -16,6 +16,7 @@ Tests for the while_loop
 """
 
 import pennylane as qp
+from pennylane.control_flow.while_loop import WhileLoopCallable
 
 
 def test_while_loop_python_fallback():
@@ -57,3 +58,75 @@ def test_fallback_while_loop_qnode():
     tape = qp.workflow.construct_tape(circuit)(1)
     expected = [qp.PauliX(0) for i in range(4)]
     _ = [qp.assert_equal(i, j) for i, j in zip(tape.operations, expected)]
+
+
+class TestWhileLoopHints:
+    """Tests for ``num-iters`` compiler hints on :func:`~.while_loop`."""
+
+    def test_typo_on_hinted_body_is_canonicalized(self):
+        """A typo'd key on a HintedCallable body should still set the hint."""
+
+        @qp.hint({"num_iters": 10})
+        def body(i):  # pylint: disable=unused-argument
+            return i + 1
+
+        loop = qp.while_loop(lambda i: i < 3)(body)
+        assert loop.num_iters_hint == 10
+
+    def test_typo_on_apply_hint_is_canonicalized(self):
+        """Applying a typo'd hint to a while-loop callable should canonicalize it."""
+
+        def body(i):  # pylint: disable=unused-argument
+            return i + 1
+
+        loop = qp.hint({"num_iters": 10})(qp.while_loop(lambda i: i < 3)(body))
+        assert loop.num_iters_hint == 10
+
+    def test_unknown_hint_on_body_is_ignored(self):
+        """Unrecognized hint keys on the body should be ignored."""
+
+        @qp.hint({"identity": True})
+        def body(i):  # pylint: disable=unused-argument
+            return i + 1
+
+        loop = qp.while_loop(lambda i: i < 3)(body)
+        assert loop.num_iters_hint is None
+
+    def test_unknown_hint_on_apply_is_ignored(self):
+        """Unrecognized keys applied to a while-loop callable should be ignored."""
+
+        def body(i):  # pylint: disable=unused-argument
+            return i + 1
+
+        loop = qp.hint({"identity": True})(qp.while_loop(lambda i: i < 3)(body))
+        assert loop.num_iters_hint is None
+
+    def test_valid_hint_on_body(self):
+        """A correctly spelled hint on the body should be accepted."""
+
+        @qp.hint({"num-iters": 10})
+        def body(i):  # pylint: disable=unused-argument
+            return i + 1
+
+        loop = qp.while_loop(lambda i: i < 3)(body)
+        assert loop.num_iters_hint == 10
+
+    def test_valid_apply_hint(self):
+        """Applying a correctly spelled hint should set ``num_iters_hint``."""
+
+        def body(i):  # pylint: disable=unused-argument
+            return i + 1
+
+        loop = qp.hint({"num-iters": 7})(qp.while_loop(lambda i: i < 3)(body))
+        assert loop.num_iters_hint == 7
+
+    def test_direct_form_preserves_while_loop_callable(self):
+        """``qp.hint(loop, hints)`` should return a ``WhileLoopCallable`` with the new hint."""
+
+        @qp.while_loop(lambda i: i < 3)
+        def loop(i):
+            return i + 1
+
+        new_loop = qp.hint(loop, {"num-iters": 4})
+        assert isinstance(new_loop, WhileLoopCallable)
+        assert new_loop.num_iters_hint == 4

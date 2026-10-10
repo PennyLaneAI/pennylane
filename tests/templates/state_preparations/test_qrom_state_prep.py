@@ -139,7 +139,7 @@ class TestQROMStatePreparation:
         )
 
         for gate in decomposition:
-            assert gate.name in ["QROM", "Adjoint(QROM)", "CRY", "C(GlobalPhase)"]
+            assert gate.name in ["QROM", "Adjoint(QROM)", "CRY", "PhaseShift"]
 
     @pytest.mark.jax
     def test_interface_jax(self):
@@ -230,48 +230,3 @@ class TestQROMStatePreparation:
         output = dev.execute(tape[0])[0]
 
         assert qp.math.allclose(output, output_torch)
-
-    @pytest.mark.tf
-    def test_interface_tf(self):
-        """Test QROMStatePreparation works with tensorflow"""
-
-        import tensorflow as tf
-
-        state = [1 / 2, -1 / 2, 1 / 2, -1 / 2]
-
-        wires = qp.registers({"work": 2, "precision": 2, "state": 2})
-        dev = qp.device("default.qubit", wires=6)
-
-        qs = qp.tape.QuantumScript(
-            [
-                qp.QROMStatePreparation(
-                    tf.Variable(state),
-                    wires=wires["state"],
-                    work_wires=wires["work"],
-                    precision_wires=wires["precision"],
-                )
-            ],
-            [qp.state()],
-        )
-
-        program, _ = dev.preprocess()
-        tape = program([qs])
-        output_tf = dev.execute(tape[0])[0]
-
-        qs = qp.tape.QuantumScript(
-            [
-                qp.QROMStatePreparation(
-                    state,
-                    wires=wires["state"],
-                    work_wires=wires["work"],
-                    precision_wires=wires["precision"],
-                )
-            ],
-            [qp.state()],
-        )
-
-        program, _ = dev.preprocess()
-        tape = program([qs])
-        output = dev.execute(tape[0])[0]
-
-        assert qp.math.allclose(output, output_tf)

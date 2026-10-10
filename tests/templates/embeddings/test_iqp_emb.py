@@ -21,6 +21,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.typing import Wire
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -29,14 +30,13 @@ def test_standard_validity():
     features = (0.0, 1.0, 2.0)
 
     op = qp.IQPEmbedding(features, wires=(0, 1, 2))
-    qp.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
     QUEUES = [
-        (1, ["Hadamard", "RZ"], [[0], [0]]),
         (2, ["Hadamard", "RZ", "Hadamard", "RZ", "MultiRZ"], [[0], [0], [1], [1], [0, 1]]),
         (
             3,
@@ -86,8 +86,8 @@ class TestDecomposition:
 
         features = list(range(3))
 
-        expected_names = self.QUEUES[2][1] + self.QUEUES[2][1]
-        expected_wires = self.QUEUES[2][2] + self.QUEUES[2][2]
+        expected_names = self.QUEUES[1][1] + self.QUEUES[1][1]
+        expected_wires = self.QUEUES[1][2] + self.QUEUES[1][2]
 
         op = qp.IQPEmbedding(features, wires=range(3), n_repeats=2)
         tape = qp.tape.QuantumScript(op.decomposition())
@@ -121,6 +121,27 @@ class TestDecomposition:
             assert gate.name == expected_names[i]
             assert gate.wires.labels == tuple(expected_wires[i])
 
+    def test_map_wires_preserves_pattern_indices(self):
+        """Pattern stores indices into wires, so map_wires remaps wires only."""
+
+        op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=[0, 1, 2], pattern=[[0, 2], [1, 2]])
+        mapped = op.map_wires({0: "a", 1: "b", 2: "c"})
+
+        assert mapped.wires.labels == ("a", "b", "c")
+        assert qp.math.allclose(mapped.arguments["pattern"], ((0, 2), (1, 2)))
+
+        tape = qp.tape.QuantumScript(mapped.decomposition())
+        multi_rz_wires = [gate.wires.labels for gate in tape.operations if gate.name == "MultiRZ"]
+        assert multi_rz_wires == [("a", "c"), ("b", "c")]
+
+    def test_custom_pattern_uses_indices_into_wires(self):
+        """A custom pattern addresses positions in wires, not wire labels."""
+
+        op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=["z", "a", "k"], pattern=[[0, 2]])
+        tape = qp.tape.QuantumScript(op.decomposition())
+        multi_rz_wires = [gate.wires.labels for gate in tape.operations if gate.name == "MultiRZ"]
+        assert multi_rz_wires == [("z", "k")]
+
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         features = np.random.random(size=(3,))
@@ -145,13 +166,13 @@ class TestDecomposition:
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     DECOMP_PARAMS = [
-        ([1.0, 2.0], [1, 2], 2, [[1, 2], [1, 2]]),
-        ([1.0, 2.0, 3.0, 4.0], [1, 2, 3, 4], 3, [[2, 1], [1, 2]]),
+        ([1.0, 2.0], [1, 2], 2, [[0, 1], [0, 1]]),
+        ([1.0, 2.0, 3.0, 4.0], [1, 2, 3, 4], 3, [[1, 0], [0, 1]]),
         pytest.param(
             [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [3.0, 3.0, 3.0]],
             [1, 2, 3],
             4,
-            [[2, 1], [1, 3]],
+            [[1, 0], [0, 2]],
             marks=pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited."),
         ),
     ]
@@ -199,6 +220,24 @@ class TestInputs:
 
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit(f=features)
+
+    @pytest.mark.parametrize("wires", [Wire[3], ["z", "a", "k"]])
+    def test_default_pattern_is_indices(self, wires):
+        """Default pattern is all pairs of indices into wires."""
+
+        op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=wires)
+        assert qp.math.allclose(op.arguments["pattern"], ((0, 1), (0, 2), (1, 2)))
+
+    def test_bind_new_parameters_updates_features_and_pattern(self):
+        """Dynamic features and pattern can be rebound even though wires sits between them."""
+
+        op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=[0, 1, 2], pattern=[[0, 2]])
+        new = qp.ops.functions.bind_new_parameters(
+            op, ([0.0, 0.0, 0.0], np.array([[0, 1], [1, 2]]))
+        )
+        assert qp.math.allclose(new.arguments["features"], [0.0, 0.0, 0.0])
+        assert qp.math.allclose(new.arguments["pattern"], [[0, 1], [1, 2]])
+        assert new.wires.labels == (0, 1, 2)
 
 
 def circuit_template(features):
@@ -328,34 +367,6 @@ class TestInterfaces:
         grads2 = grad_fn2(features)
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
-    def test_tf(self, tol, features):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        features = tf.Variable(features)
-
-        dev = qp.device("default.qubit", wires=2)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(features)
-        grads = tape.jacobian(res, [features])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(features)
-        grads2 = tape2.jacobian(res2, [features])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])

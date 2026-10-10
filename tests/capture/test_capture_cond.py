@@ -34,7 +34,7 @@ jax = pytest.importorskip("jax")
 # must be below jax importorskip
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import cond_prim
-from tests.capture.capture_utils import assert_eqn_matches_op, extract_all_primitives
+from pennylane.testing import assert_eqn_matches_op, extract_all_primitives
 
 
 @pytest.fixture
@@ -992,7 +992,7 @@ class TestDynamicShapes:
             qp.cond(condition == 2, rx, ry)(0.5, 1)
 
         jaxpr = jax.make_jaxpr(f)(0)
-        [op] = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1).operations
+        [op] = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1).operations
         qp.assert_equal(op, qp.RY(0.5, 1))
 
     def test_cond_abstracted_axes(self):
@@ -1077,3 +1077,217 @@ class TestDynamicShapes:
 
         assert_eqn_matches_op(true_branch.eqns[-1], qp.RX)
         assert_eqn_matches_op(false_branch.eqns[-1], qp.RY)
+
+
+class TestCondBranchProbHintsCapture:
+    """Tests that ``branch-prob`` reaches the cond capture primitive."""
+
+    def test_estimated_probabilities_in_jaxpr(self):
+        """``branch-prob`` should become ``estimated_probabilities`` on ``cond``."""
+
+        def f(pred):
+            @qp.hint({"branch-prob": 0.4})
+            def true_fn():
+                return 1
+
+            @qp.hint({"branch-prob": 0.6})
+            def false_fn():
+                return 2
+
+            return qp.cond(pred, true_fn, false_fn)()
+
+        jaxpr = jax.make_jaxpr(f)(True)
+        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.4, 0.6))
+
+    def test_integer_branch_probs(self):
+        """Integer ``branch-prob`` values should be accepted and cast to float."""
+
+        def f(pred):
+            @qp.hint({"branch-prob": 1})
+            def true_fn():
+                return 1
+
+            @qp.hint({"branch-prob": 0})
+            def false_fn():
+                return 2
+
+            return qp.cond(pred, true_fn, false_fn)()
+
+        jaxpr = jax.make_jaxpr(f)(True)
+        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((1.0, 0.0))
+
+    @pytest.mark.parametrize(
+        "provided",
+        (
+            "branch_prob",
+            "branchprob",
+            "Branch-Prob",
+            "branch-probs",
+            "branc-prob",
+        ),
+    )
+    def test_typo_branch_prob_is_canonicalized(self, provided):
+        """Close misspellings of ``branch-prob`` should still populate probabilities."""
+
+        def f(pred):
+            @qp.hint({provided: 0.3})
+            def true_fn():
+                return 1
+
+            @qp.hint({provided: 0.7})
+            def false_fn():
+                return 2
+
+            return qp.cond(pred, true_fn, false_fn)()
+
+        jaxpr = jax.make_jaxpr(f)(True)
+        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.3, 0.7))
+
+    def test_unknown_hint_is_ignored(self):
+        """A completely unrelated hint key should leave probabilities unset."""
+
+        def f(pred):
+            @qp.hint({"identity": True})
+            def true_fn():
+                return 1
+
+            @qp.hint({"num-iters": 10})
+            def false_fn():
+                return 2
+
+            return qp.cond(pred, true_fn, false_fn)()
+
+        jaxpr = jax.make_jaxpr(f)(True)
+        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] is None
+
+    def test_without_hint_has_none_estimated_probabilities(self):
+        """Unhinted cond branches should bind ``estimated_probabilities=None``."""
+
+        def f(pred):
+            return qp.cond(pred, lambda: 1, lambda: 2)()
+
+        jaxpr = jax.make_jaxpr(f)(True)
+        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] is None
+
+    def test_partial_hints_fill_remaining_probability(self):
+        """Unhinted branches should receive the remaining probability mass."""
+
+        def f(pred, elif_pred):
+            @qp.hint({"branch-prob": 0.4})
+            def true_fn():
+                return 1
+
+            @qp.hint({"branch-prob": 0.4})
+            def false_fn():
+                return 2
+
+            def elif_fn():
+                return 3
+
+            return qp.cond(pred, true_fn, false_fn, elifs=((elif_pred, elif_fn),))()
+
+        jaxpr = jax.make_jaxpr(f)(True, False)
+        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.4, 0.2, 0.4))
+
+    def test_multiple_unhinted_branches_share_remainder(self):
+        """Multiple unhinted branches should share the remaining probability equally."""
+
+        def f(pred, elif_pred1, elif_pred2):
+            @qp.hint({"branch-prob": 0.4})
+            def true_fn():
+                return 1
+
+            def elif_fn1():
+                return 2
+
+            def elif_fn2():
+                return 3
+
+            def false_fn():
+                return 4
+
+            return qp.cond(
+                pred,
+                true_fn,
+                false_fn,
+                elifs=((elif_pred1, elif_fn1), (elif_pred2, elif_fn2)),
+            )()
+
+        jaxpr = jax.make_jaxpr(f)(True, False, False)
+        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        # remaining 0.6 split across three unhinted branches
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.4, 0.2, 0.2, 0.2))
+
+    def test_unhinted_branch_gets_zero_when_hints_exceed_one(self):
+        """If hinted probs already sum above 1, unhinted branches get probability 0."""
+
+        def f(pred, elif_pred):
+            @qp.hint({"branch-prob": 0.7})
+            def true_fn():
+                return 1
+
+            @qp.hint({"branch-prob": 0.7})
+            def false_fn():
+                return 2
+
+            def elif_fn():
+                return 3
+
+            return qp.cond(pred, true_fn, false_fn, elifs=((elif_pred, elif_fn),))()
+
+        jaxpr = jax.make_jaxpr(f)(True, False)
+        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        # order is (true, elif, false); remaining mass is clamped at 0
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.7, 0.0, 0.7))
+
+    def test_explicit_zero_preserved_with_unhinted_branches(self):
+        """An explicit ``branch-prob`` of ``0.0`` must not be treated as missing."""
+
+        def f(pred, elif_pred):
+            @qp.hint({"branch-prob": 0.0})
+            def true_fn():
+                return 1
+
+            def elif_fn():
+                return 2
+
+            def false_fn():
+                return 3
+
+            return qp.cond(pred, true_fn, false_fn, elifs=((elif_pred, elif_fn),))()
+
+        jaxpr = jax.make_jaxpr(f)(True, False)
+        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        # order is (true, elif, false); remaining 1.0 split across two unhinted branches
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.0, 0.5, 0.5))
+
+    def test_decorator_form_sets_estimated_probabilities(self):
+        """Decorator-style ``else_if`` / ``otherwise`` should also populate probs."""
+
+        def f(pred, elif_pred):
+            @qp.cond(pred)
+            @qp.hint({"branch-prob": 0.5})
+            def true_fn():
+                return 1
+
+            @true_fn.else_if(elif_pred)
+            @qp.hint({"branch-prob": 0.25})
+            def elif_fn():
+                return 2
+
+            @true_fn.otherwise
+            @qp.hint({"branch-prob": 0.25})
+            def false_fn():
+                return 3
+
+            return true_fn()
+
+        jaxpr = jax.make_jaxpr(f)(True, False)
+        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.5, 0.25, 0.25))

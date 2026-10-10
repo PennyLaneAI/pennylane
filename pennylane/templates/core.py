@@ -41,6 +41,7 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.capture import subroutine as capture_subroutine
 from pennylane.core import queuing
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator, abstractify
 from pennylane.decomposition import (
     CompressedResourceOp,
@@ -366,7 +367,7 @@ class SubroutineOp(Operation):
 
     def decomposition(self):
         if queuing.QueuingManager.recording():
-            _ = [queuing.apply(op) for op in self._decomp]
+            _ = [apply(op) for op in self._decomp]
         return self._decomp
 
     def label(
@@ -405,7 +406,7 @@ def _calculate_resources(subroutine: "Subroutine", signature_key):
 # pylint: disable=unused-argument
 @register_resources(_calculate_resources)
 def _Subroutine_decomp(*data, wires, decomposition):
-    _ = [queuing.apply(op) for op in decomposition]
+    _ = [apply(op) for op in decomposition]
 
 
 add_decomps(SubroutineOp, _Subroutine_decomp)
@@ -447,7 +448,7 @@ class Subroutine:
             qp.RX(x, wires[0])
             qp.RY(y, wires[0])
 
-        @qp.qnode(qp.device('default.qubit'))
+        @qp.qnode(qp.device('lightning.qubit'))
         def c():
             MyTemplate(0.1, 0.2, 0)
             return qp.state()
@@ -458,14 +459,6 @@ class Subroutine:
     0: ──MyTemplate(0.10,0.20)─┤  State
     >>> print(qp.draw(c, level="device")())
     0: ──RX(0.10)──RY(0.20)─┤  State
-    >>> print(qp.specs(c)().resources)
-    Quantum operations:
-    - Total: 1
-      - MyTemplate: 1
-    Measurement processes:
-    - state(all wires): 1
-    Total wires: 1
-    Circuit Depth: 1
 
     For multiple wire register inputs or use of a different name than ``"wires"``, the
     ``wire_argnames`` can be provided:

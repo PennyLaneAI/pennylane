@@ -130,7 +130,7 @@ def test_captured_decomposition_does_not_add_hamiltonian_to_tape():
 
     time = 0.5
     plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(time)
-    tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, time)
+    tape = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, time)
 
     expected = qp.ApproxTimeEvolution(hamiltonian, time, 1)
 
