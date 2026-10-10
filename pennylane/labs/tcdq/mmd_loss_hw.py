@@ -46,9 +46,9 @@ class QuditMMDConfig:
     visible wire.
 
     Args:
-        bandwidth (float | Sequence[float]): The bandwidth :math:`\sigma^2` of the kernel. If a sequence is provided,
-            the loss is evaluated for each value and then averaged, unless
-            ``return_per_bandwidth=True``.
+        bandwidth (float | Sequence[float]): Heat-kernel time :math:`t` of the graph heat
+            kernel :math:`\exp(-tL)`. If a sequence is provided, the loss is evaluated for
+            each value and then averaged, unless ``return_per_bandwidth=True``.
         n_ops (int): Number of sampled observables per bandwidth. Larger
             values reduce estimator variance.
         graph_type (str): Graph whose spectrum defines the kernel.
@@ -69,7 +69,7 @@ class QuditMMDConfig:
     >>> config = QuditMMDConfig(bandwidth=[0.3, 1.0], n_ops=64, graph_type="cycle")
     """
 
-    #: Width of the graph heat kernel (scalar or sequence for multi-bandwidth).
+    #: Heat-diffusion time :math:`t` (scalar or sequence for multiple times).
     bandwidth: float | Sequence[float] = None
     #: Number of sampled observables per bandwidth.
     n_ops: int = None

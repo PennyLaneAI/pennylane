@@ -1122,6 +1122,14 @@
 * TCDQ qudit MMD loss function now supports phase layers.
   [(#10035)](https://github.com/PennyLaneAI/pennylane/pull/10035)
 
+* ``build_mmd_loss`` replaced with ``build_mmd_loss_pauli`` and now supports any expectation value function
+  using Pauli-type observables.
+  [(#10123)](https://github.com/PennyLaneAI/pennylane/pull/10123)
+
+* Config option added to qubit MMD loss that bootstraps target data by default to ensure
+  unbiasedness of the estimator
+  [(#10128)](https://github.com/PennyLaneAI/pennylane/pull/10128)
+
 * Update phase gradient transforms to use ``BasisState`` instead of ``BasisEmbedding``.
   This is an improvement as the latter is not consistently dispatched to ``C(BasisState)`` in ``controlled_resource_rep``, which
   led to compilation errors when using the old Catalyst frontend ``catalyst.device.decomposition.catalyst_decompose``.
@@ -1866,6 +1874,10 @@
 
 <h3>Documentation 📝</h3>
 
+* Clarified that the bandwidth parameters of the TCDQ MMD losses represent the Gaussian
+  kernel width for qubits and the graph heat-kernel time for qudits.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * The dependency versions in the developer installation guide now match `pyproject.toml`, and a rendering issue in the list of optional dependencies was fixed.
   [(#10232)](https://github.com/PennyLaneAI/pennylane/pull/10232)
 
@@ -2128,14 +2140,6 @@
 
 * Various decomposition rules are updated so that they accept positionally passed arguments.
   [(#10088)](https://github.com/PennyLaneAI/pennylane/pull/10088)
-
-* ``build_mmd_loss`` replaced with ``build_mmd_loss_pauli`` and now supports any expectation value function
-  using Pauli-type observables.
-  [(#10123)](https://github.com/PennyLaneAI/pennylane/pull/10123)
-
-* Config option added to qubit MMD loss that bootstraps target data by default to ensure
-  unbiasedness of the estimator
-  [(#10128)](https://github.com/PennyLaneAI/pennylane/pull/10128)
 
 * Fixed a bug in the TCDQ module that caused incorrect results for states with complex coefficients.
   [(#10215)](https://github.com/PennyLaneAI/pennylane/pull/10215)
