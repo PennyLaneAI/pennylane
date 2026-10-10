@@ -1903,6 +1903,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed :func:`~pennylane.density_matrix` on ``default.clifford`` returning a non-Hermitian matrix
+  with negative probabilities for states with complex amplitudes. The outer product used to build
+  the density matrix was missing the complex conjugate of the second factor, so it computed
+  :math:`|\psi\rangle\langle\psi|^T` instead of :math:`|\psi\rangle\langle\psi|`.
+  [(#10217)](https://github.com/PennyLaneAI/pennylane/pull/10217)
+
 * Fixed captured transforms dropping keyword arguments to the transformed function,
   including when calling transformed QNodes with `qp.qjit(capture=True)`.
   [(#10301)](https://github.com/PennyLaneAI/pennylane/pull/10301)

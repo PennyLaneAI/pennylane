@@ -182,6 +182,29 @@ def test_meas_qinfo_clifford(meas_op):
     assert np.allclose(qnode_clfrd(), qnode_qubit())
 
 
+def test_density_matrix_complex_amplitudes():
+    """Test that density matrices with complex amplitudes are valid and agree with
+    `default.qubit`."""
+    dev_c = qp.device("default.clifford", wires=1)
+    dev_q = qp.device("default.qubit", wires=1)
+
+    def circuit():
+        qp.Hadamard(wires=0)
+        qp.S(wires=0)
+        return qp.density_matrix(wires=[0])
+
+    qnode_clfrd = qp.QNode(circuit, dev_c)
+    qnode_qubit = qp.QNode(circuit, dev_q)
+
+    density_matrix = qnode_clfrd()
+
+    # the state is (|0> + i|1>)/sqrt(2), so the imaginary part must be preserved
+    assert qp.math.allclose(density_matrix, qnode_qubit())
+    assert qp.math.allclose(density_matrix, qp.math.conj(qp.math.transpose(density_matrix)))
+    assert qp.math.allclose(qp.math.trace(density_matrix), 1.0)
+    assert qp.math.all(qp.math.real(qp.math.diagonal(density_matrix)) >= 0)
+
+
 @pytest.mark.parametrize("shots", [None, 100_000])
 @pytest.mark.parametrize(
     "ops",

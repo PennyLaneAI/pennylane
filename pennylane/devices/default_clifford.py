@@ -767,7 +767,8 @@ class DefaultClifford(Device):
         """Measure the density matrix from the state of simulator device."""
         wires = list(meas.wires)
         state_vector = math.array(tableau_simulator.state_vector(endian="big"))
-        return math.reduce_dm(math.einsum("i, j->ij", state_vector, state_vector), wires)
+        # the outer product |psi><psi| requires conjugating the second factor
+        return math.reduce_dm(math.einsum("i, j->ij", state_vector, math.conj(state_vector)), wires)
 
     def _measure_state(self, _, tableau_simulator, **kwargs):
         """Measure the state of the simulator device."""
