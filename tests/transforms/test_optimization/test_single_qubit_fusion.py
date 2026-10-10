@@ -70,7 +70,8 @@ class TestSingleQubitFusion:
         assert qp.math.allclose(matrix_obtained, matrix_expected)
 
     def test_single_qubit_fusion_no_gates_after(self):
-        """Test that gates with nothing after are applied without modification."""
+        """Test that gates with nothing after are applied without modification,
+        and contribute no global phase since their decomposition is not used."""
 
         def qfunc():
             qp.RZ(0.1, wires=0)
@@ -79,9 +80,88 @@ class TestSingleQubitFusion:
         transformed_qfunc = single_qubit_fusion(qfunc)
         transformed_ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
-        names_expected = ["RZ", "Hadamard", "GlobalPhase"]
-        wires_expected = [Wires(0), Wires(1), Wires([])]
+        names_expected = ["RZ", "Hadamard"]
+        wires_expected = [Wires(0), Wires(1)]
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
+
+        # Exact equality, not equivalence up to a phase: the unitary must be unchanged.
+        matrix_expected = qp.matrix(qfunc, [0, 1])()
+        matrix_obtained = qp.matrix(transformed_qfunc, [0, 1])()
+        assert qp.math.allclose(matrix_obtained, matrix_expected)
+
+    def test_unfused_gates_add_no_global_phase(self):
+        """Test that gates on different wires, which cannot fuse, leave the circuit
+        unchanged rather than picking up a GlobalPhase (issue #10172)."""
+
+        tape = qp.tape.QuantumScript([qp.Hadamard(0), qp.Hadamard(1)])
+        [transformed_tape], _ = single_qubit_fusion(tape)
+
+        compare_operation_lists(
+            transformed_tape.operations, ["Hadamard", "Hadamard"], [Wires(0), Wires(1)]
+        )
+        matrix_expected = qp.matrix(tape, wire_order=[0, 1])
+        matrix_obtained = qp.matrix(transformed_tape, wire_order=[0, 1])
+        assert qp.math.allclose(matrix_obtained, matrix_expected)
+
+    def test_unfused_gate_phase_is_observable_under_ctrl(self):
+        """Test that a spurious global phase does not become a relative phase when
+        the transformed circuit is controlled (the observable symptom in #10172)."""
+
+        def block():
+            qp.Hadamard(wires=1)
+            qp.Hadamard(wires=2)
+
+        fused_block = single_qubit_fusion(block)
+        device = qp.device("default.qubit", wires=3)
+
+        @qp.qnode(device)
+        def original():
+            qp.Hadamard(wires=0)
+            qp.ctrl(block, control=0)()
+            return qp.expval(qp.X(0))
+
+        @qp.qnode(device)
+        def transformed():
+            qp.Hadamard(wires=0)
+            qp.ctrl(fused_block, control=0)()
+            return qp.expval(qp.X(0))
+
+        assert qp.math.allclose(transformed(), original())
+
+    def test_gate_before_excluded_gate_adds_no_global_phase(self):
+        """Test that a gate kept as-is because its neighbour is excluded contributes
+        no global phase."""
+
+        def qfunc():
+            qp.Hadamard(wires=0)
+            qp.RZ(0.3, wires=0)
+
+        transformed_qfunc = single_qubit_fusion(qfunc, exclude_gates=["RZ"])
+        transformed_ops = qp.tape.make_qscript(transformed_qfunc)().operations
+
+        compare_operation_lists(transformed_ops, ["Hadamard", "RZ"], [Wires(0), Wires(0)])
+        matrix_expected = qp.matrix(qfunc, [0])()
+        matrix_obtained = qp.matrix(transformed_qfunc, [0])()
+        assert qp.math.allclose(matrix_obtained, matrix_expected)
+
+    def test_lone_gate_converted_to_rot_keeps_its_phase(self):
+        """Test that a gate rewritten as a Rot without a fusion partner (because the
+        next gate on its wire is multi-qubit) still contributes its phase, so the
+        fix for #10172 does not drop a phase that is needed."""
+
+        def qfunc():
+            qp.Hadamard(wires=0)
+            qp.CNOT(wires=[0, 1])
+
+        transformed_qfunc = single_qubit_fusion(qfunc)
+        transformed_ops = qp.tape.make_qscript(transformed_qfunc)().operations
+
+        names_expected = ["Rot", "CNOT", "GlobalPhase"]
+        wires_expected = [Wires(0), Wires([0, 1]), Wires([])]
+        compare_operation_lists(transformed_ops, names_expected, wires_expected)
+        matrix_expected = qp.matrix(qfunc, [0, 1])()
+        matrix_obtained = qp.matrix(transformed_qfunc, [0, 1])()
+        assert qp.math.allclose(matrix_obtained, matrix_expected)
 
     def test_single_qubit_cancelled_fusion(self):
         """Test if a sequence of single-qubit gates that all cancel yields no operations."""
@@ -147,11 +227,12 @@ class TestSingleQubitFusion:
         )
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
-        # Compare matrices
+        # Compare matrices exactly: excluded gates are kept as-is and must not
+        # contribute to the global phase.
         matrix_expected = qp.matrix(qfunc, [0, 1])()
 
         matrix_obtained = qp.matrix(transformed_qfunc, [0, 1])()
-        assert check_matrix_equivalence(matrix_expected, matrix_obtained)
+        assert qp.math.allclose(matrix_obtained, matrix_expected)
 
     def test_single_qubit_fusion_multiple_qubits(self):
         """Test that all sequences of single-qubit gates across multiple qubits fuse properly."""
