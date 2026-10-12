@@ -253,7 +253,18 @@ def _hadamard_ppm(wires, **__):
         qp.cond(m1, qp.Z)(work_wires[0])  # Reset work wire to |+>
 
 
-add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry, _hadamard_ppm)
+def _hadamard_ppr_resources(wires: WiresLike):
+    return {qp.PPR_2(1, "Z", Wire[1]): 1, qp.PPR_4(1, "Y", Wire[1]): 1, qp.GlobalPhase: 1}
+
+
+@register_resources(_hadamard_rz_ry_resources)
+def _hadamard_ppr(wires: WiresLike, **__):
+    qp.PPR_2(1, "Z", wires=wires)
+    qp.PPR_4(1, "Y", wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
+
+
+add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry, _hadamard_ppm, _hadamard_ppr)
 add_decomps("Adjoint(Hadamard)", self_adjoint)
 add_decomps("Pow(Hadamard)", pow_involutory2)
 
