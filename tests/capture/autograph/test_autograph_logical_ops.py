@@ -28,7 +28,7 @@ from jax.core import eval_jaxpr
 
 import pennylane as qp
 from pennylane.capture.autograph import run_autograph
-from tests.capture.capture_utils import extract_all_primitives
+from pennylane.testing import extract_all_primitives
 
 
 @pytest.mark.capture

@@ -24,6 +24,10 @@ from collections.abc import Iterable
 from functools import partial, wraps
 from typing import TYPE_CHECKING
 
+from pennylane.workflow import QNode
+
+from .resource import CircuitSpecs
+
 if TYPE_CHECKING:
     from pennylane.core.transforms import CompilePipeline
 
@@ -49,6 +53,38 @@ def apply_partial_args(fn, args, kwargs):
         return fn(*args, *call_args, **{**kwargs, **call_kwargs})
 
     return wrapper
+
+
+def unwrap_qjit_qnode(qjit, *, fn_name: str) -> QNode:
+    """Return the QNode underlying a qjit'd workflow, raising a helpful error otherwise.
+
+    ``fn_name`` is the name of the public function to report in the error message.
+    """
+    # pylint: disable=import-outside-toplevel
+    # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
+    try:
+        from catalyst import QJIT
+    except ImportError as exc:  # pragma: no cover
+        raise ImportError(f"Catalyst must be installed to use {fn_name}.") from exc
+
+    # Unwrap the original QNode if any transforms have been applied
+    if isinstance(qjit, QJIT) and isinstance(qjit.original_function, QNode):
+        return qjit.original_function
+
+    raise ValueError(f"{fn_name} can only be applied to a qjit'd QNode, instead got: {qjit}")
+
+
+def build_circuit_specs(original_qnode, resources, level) -> CircuitSpecs:
+    """Assemble the ``CircuitSpecs`` describing a qjit'd QNode at a given level."""
+    return CircuitSpecs(
+        resources=resources,
+        shots=original_qnode.shots,
+        device_name=original_qnode.device.name,
+        num_device_wires=(
+            len(original_qnode.device.wires) if original_qnode.device.wires is not None else None
+        ),
+        level=level,
+    )
 
 
 def preprocess_level_input(
@@ -81,8 +117,8 @@ def preprocess_level_input(
     # pylint: disable=too-many-branches
     if trans := [pass_ for pass_ in compile_pipeline if pass_.pass_name is None]:
         raise ValueError(
-            f"Specs encountered the following tape transforms: {trans}."
-            " Tape transforms are no longer supported by specs."
+            f"Encountered the following tape transforms: {trans}."
+            " Tape transforms are no longer supported."
         )
 
     marker_to_level = get_marker_level_map(compile_pipeline)
@@ -106,7 +142,12 @@ def preprocess_level_input(
     if isinstance(level, (int, str)):
         level = [level]
     else:
-        level = list(level)
+        try:
+            level = list(level)
+        except TypeError as exc:
+            raise ValueError(
+                f"Invalid level '{level}', expected int, str, or an iterable of those."
+            ) from exc
 
     # Convert marker names to the associated level number
     for i, lvl in enumerate(level):
@@ -120,8 +161,7 @@ def preprocess_level_input(
         elif isinstance(lvl, int) and not isinstance(lvl, bool):
             if lvl < 0 or lvl >= total_levels:
                 raise ValueError(
-                    "The 'level' argument to qp.specs for QJIT'd QNodes is out of bounds, "
-                    f"got {lvl}."
+                    f"The 'level' argument for QJIT'd QNodes is out of bounds, got {lvl}."
                 )
         else:
             raise ValueError(f"Invalid level '{lvl}' in level list, expected int or str.")
@@ -129,7 +169,7 @@ def preprocess_level_input(
     level_sorted = sorted(set(level))
     if level != level_sorted:
         warnings.warn(
-            "The 'level' argument to qp.specs for QJIT'd QNodes has been sorted to be in ascending "
+            "The 'level' argument for QJIT'd QNodes has been sorted to be in ascending "
             "order with no duplicate levels.",
             UserWarning,
         )

@@ -316,22 +316,19 @@ class TestPassByPassSpecs:
         no_passes = qp.qjit(simple_circuit)
         with pytest.raises(
             ValueError,
-            match=r"The 'level' argument to .*\.specs for QJIT'd QNodes is out of "
-            "bounds, got -5.",
+            match="The 'level' argument for QJIT'd QNodes is out of bounds, got -5.",
         ):
             qp.specs(no_passes, level=-5)()
 
         with pytest.raises(
             ValueError,
-            match=r"The 'level' argument to .*\.specs for QJIT'd "
-            "QNodes is out of bounds, got 10.",
+            match="The 'level' argument for QJIT'd QNodes is out of bounds, got 10.",
         ):
             qp.specs(no_passes, level=10)()
 
         with pytest.raises(
             ValueError,
-            match=r"The 'level' argument to .*\.specs for QJIT'd "
-            "QNodes is out of bounds, got 10.",
+            match="The 'level' argument for QJIT'd QNodes is out of bounds, got 10.",
         ):
             qp.specs(no_passes, level=[10, 11])()
 
@@ -348,7 +345,7 @@ class TestPassByPassSpecs:
 
         with pytest.raises(
             ValueError,
-            match=r"Specs encountered the following tape transforms: .*dummy_transform.*\. Tape transforms are no longer supported by specs.",
+            match=r"Encountered the following tape transforms: .*dummy_transform.*\. Tape transforms are no longer supported.",
         ):
             qp.specs(simple_circuit, level="all")()
 
@@ -1464,7 +1461,7 @@ class TestMarkerIntegration:
 
         with pytest.warns(
             UserWarning,
-            match=r"The 'level' argument to .*\.specs for QJIT'd QNodes has been sorted to be "
+            match="The 'level' argument for QJIT'd QNodes has been sorted to be "
             "in ascending order with no duplicate levels.",
         ):
             actual = qp.specs(simple_circuit, level=["m0", "m1", "m1-duplicate"])()
@@ -1533,6 +1530,210 @@ def test_abstract_array_inputs():
     s = qp.specs(c, level=0)(qp.typing.AbstractArray((3,), float), qp.typing.Wire[3])
     assert s.resources.quantum_operations["PauliX"] == 3
     assert s.resources.quantum_operations["RX"] == 3
+
+
+@pytest.mark.catalyst
+class TestSpecsHintIntegration:
+    """Test integration of hints with qp.specs."""
+
+    def test_for_loop_hint_outside(self):
+        """Test for_loop hints."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def c(n):
+
+            @qp.hint({"num-iters": 20})
+            @qp.for_loop(n)
+            def loop(i):
+                qp.X(i)
+
+            loop()
+
+            return qp.probs(wires=0)
+
+        r = qp.specs(c, level=0)(2)
+        assert r.resources.quantum_operations["PauliX"] == 20
+
+    def test_for_loop_hint_inside(self):
+        """Test for_loop hints where the loop itself is decorated."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def c(n):
+
+            @qp.for_loop(n)
+            @qp.hint({"num-iters": 4})
+            def loop(i):
+                qp.Y(i)
+
+            loop()
+
+            return qp.probs(wires=0)
+
+        r = qp.specs(c, level=0)(2)
+        assert r.resources.quantum_operations["PauliY"] == 4
+
+    def test_while_loop_hint_outside(self):
+        """Test while_loop hints."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def c(n):
+
+            @qp.hint({"num-iters": 20})
+            @qp.while_loop(lambda i: i < n)
+            def loop(i):
+                qp.X(i)
+                return i + 1
+
+            loop(0)
+
+            return qp.probs(wires=0)
+
+        r = qp.specs(c, level=0)(2)
+        assert r.resources.quantum_operations["PauliX"] == 20
+
+    def test_while_loop_hint_inside(self):
+        """Test while_loop hints where the loop itself is decorated."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def c(n):
+
+            @qp.while_loop(lambda i: i < n)
+            @qp.hint({"num-iters": 4})
+            def loop(i):
+                qp.Y(i)
+                return i + 1
+
+            loop(0)
+
+            return qp.probs(wires=0)
+
+        r = qp.specs(c, level=0)(2)
+        assert r.resources.quantum_operations["PauliY"] == 4
+
+    def test_cond_branch_prob_weighted_resources(self):
+        """``branch-prob`` should weight resources instead of taking a max over branches."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def circuit(m1, m2):
+
+            @qp.hint({"branch-prob": 0.4})
+            def true_fn():
+                for _ in range(10):
+                    qp.X(0)
+
+            @qp.hint({"branch-prob": 0.4})
+            def false_fn():
+                for _ in range(10):
+                    qp.Y(0)
+
+            def elif_fn():
+                for _ in range(10):
+                    qp.X(0)
+                    qp.Z(0)
+
+            qp.cond(m1, true_fn, false_fn, elifs=(m2, elif_fn))()
+            return qp.expval(qp.Z(0))
+
+        r = qp.specs(circuit, level=0)(True, True)
+        assert r.resources.quantum_operations["PauliX"] == 6
+        assert r.resources.quantum_operations["PauliY"] == 4
+        assert r.resources.quantum_operations["PauliZ"] == 2
+        assert r.resources.total_quantum_operations == 12
+
+    def test_cond_multiple_unhinted_branches(self):
+        """Multiple unhinted branches should share remaining probability in specs."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def circuit(m1, m2, m3):
+
+            @qp.hint({"branch-prob": 0.4})
+            def true_fn():
+                for _ in range(10):
+                    qp.X(0)
+
+            def elif_fn1():
+                for _ in range(10):
+                    qp.Y(0)
+
+            def elif_fn2():
+                for _ in range(10):
+                    qp.Z(0)
+
+            def false_fn():
+                for _ in range(10):
+                    qp.H(0)
+
+            qp.cond(m1, true_fn, false_fn, elifs=((m2, elif_fn1), (m3, elif_fn2)))()
+            return qp.expval(qp.Z(0))
+
+        r = qp.specs(circuit, level=0)(True, False, False)
+        # remaining 0.6 split three ways -> 0.2 each: 4 X, 2 Y, 2 Z, 2 H
+        assert r.resources.quantum_operations["PauliX"] == 4
+        assert r.resources.quantum_operations["PauliY"] == 2
+        assert r.resources.quantum_operations["PauliZ"] == 2
+        assert r.resources.quantum_operations["Hadamard"] == 2
+        assert r.resources.total_quantum_operations == 10
+
+    def test_cond_branch_probs_sum_greater_than_one(self):
+        """When hinted probs sum above 1, later branches are truncated in specs."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def circuit(m1, m2):
+
+            @qp.hint({"branch-prob": 0.7})
+            def true_fn():
+                for _ in range(10):
+                    qp.X(0)
+
+            @qp.hint({"branch-prob": 0.7})
+            def false_fn():
+                for _ in range(10):
+                    qp.Y(0)
+
+            def elif_fn():
+                for _ in range(10):
+                    qp.Z(0)
+
+            qp.cond(m1, true_fn, false_fn, elifs=(m2, elif_fn))()
+            return qp.expval(qp.Z(0))
+
+        r = qp.specs(circuit, level=0)(True, False)
+        # pennylane fills unhinted with 0 -> (0.7, 0.0, 0.7); catalyst clamps total weight to 1
+        assert r.resources.quantum_operations["PauliX"] == 7
+        assert r.resources.quantum_operations["PauliZ"] == 0
+        assert r.resources.quantum_operations["PauliY"] == 3
+        assert r.resources.total_quantum_operations == 10
+
+    def test_cond_low_branch_prob_rounds_resources_to_zero(self):
+        """Low probability times low gate count should floor to zero resources."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def circuit(m):
+
+            @qp.hint({"branch-prob": 0.4})
+            def true_fn():
+                qp.X(0)
+
+            @qp.hint({"branch-prob": 0.6})
+            def false_fn():
+                qp.Y(0)
+
+            qp.cond(m, true_fn, false_fn)()
+            return qp.expval(qp.Z(0))
+
+        r = qp.specs(circuit, level=0)(True)
+        # 0.4 * 1 floors to 0; 0.6 * 1 rounds to 1
+        assert r.resources.quantum_operations["PauliX"] == 0
+        assert r.resources.quantum_operations["PauliY"] == 1
+        assert r.resources.total_quantum_operations == 1
 
 
 @pytest.mark.catalyst
