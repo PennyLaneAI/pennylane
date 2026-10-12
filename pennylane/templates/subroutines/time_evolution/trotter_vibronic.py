@@ -735,16 +735,23 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
             probability hints that assume ``fragment_idx`` to be uniformly distributed over
             ``range(num_fragments)``.
     """
+    if num_fragments == 1:
+        # Only have fragment_idx 0, which does not need a circuit.
+        return
     n = len(wires)
     # ``key = (0, fragment_idx)``, so the bits that differ between ``key[0]`` and ``key[1]``
     # (see ``_diagonalization_support``) are exactly the bits of ``fragment_idx`` itself.
     shifts = np.arange(n - 1, -1, -1)
 
-    # A fragment applies one Hadamard if any of its bits is set, and one CNOT per further set bit
-    num_set_bits = np.bitwise_count(np.arange(num_fragments))
-    num_applied = np.count_nonzero(num_set_bits)
-    apply_prob = num_applied / num_fragments
-    cnot_prob = (np.sum(num_set_bits) - num_applied) / (n * num_applied) if num_applied else 0.0
+    # Compute resource hints probabilities
+    # at least a Hadamard is applied for all but the first fragment
+    apply_anything_prob = (num_fragments - 1) / num_fragments
+    # CNOTs are applied whenever more than one bit is set in the fragment index, overall we compute
+    # all set bits and subtract `num_fragments-1`, the number of "first set bits":
+    num_cnots = np.sum(np.bitwise_count(np.arange(num_fragments))) - (num_fragments - 1)
+    # For the probability we have to normalize by the inner loop size (n) and the effective outer
+    # loop size (num_fragments - 1)
+    cnot_prob = num_cnots / (n * (num_fragments - 1))
 
     if compiler.active() or capture.enabled():
         wires_arr = math.array(list(wires), like="jax")
@@ -759,7 +766,7 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
     control_wire = wires_arr[control_pos]
 
     @cond(any_diff)
-    @hint({"branch-prob": apply_prob})
+    @hint({"branch-prob": apply_anything_prob})
     def _apply():
         Hadamard(wires=[control_wire])
 
