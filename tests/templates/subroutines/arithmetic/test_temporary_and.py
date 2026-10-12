@@ -208,25 +208,26 @@ class TestTemporaryAND:
         work_wires = [3]  # auxiliary qubit for deferred measure
         dev = qp.device("lightning.qubit", wires=sys_wires + work_wires, seed=seed)
 
-        rule = qp.list_decomps("Adjoint(TemporaryAND)")["_adjoint_temporary_and_ppm"]
-        gate_set = {"Toffoli", "CNOT", "RX", "RY", "RZ", "PauliMeasure", "X", "CZ"}
+        gate_set = {"Toffoli", "CNOT", "RX", "RY", "RZ", "PauliMeasure", "X", "CZ", "GlobalPhase"}
 
         @qp.qjit(capture=True)
         @qp.decompose(gate_set=gate_set)
-        @qp.qnode(dev, shots=10_000, mcm_method="one-shot")
+        @qp.qnode(dev, shots=100, mcm_method="one-shot")
         def circuit(state):
             # Prepare control state
             qp.StatePrep(state, wires=sys_wires[:2])
             op = qp.TemporaryAND(wires=sys_wires, control_values=control_values)
-            rule(op)
+            _adjoint_temporary_and_ppm(op)
+            qp.adjoint(qp.MottonenStatePreparation.compute_decomposition)(
+                state, wires=sys_wires[:2]
+            )
             return qp.probs(wires=sys_wires)
 
         rng = np.random.default_rng(seed)
         state = rng.random(4) + 1j * rng.random(4)
         state /= np.linalg.norm(state)
         probs = circuit(state)
-        assert qp.math.allclose(probs[::2], np.abs(state) ** 2, atol=1e-2)
-        assert qp.math.allclose(probs[1::2], 0)
+        assert qp.math.allclose(probs, np.eye(1, 8))
 
     @pytest.mark.parametrize("rule", qp.list_decomps("Adjoint(TemporaryAND)"))
     @pytest.mark.usefixtures("enable_graph_decomposition")
