@@ -168,54 +168,63 @@ class TestTemporaryAND:
                 matrix = qp.matrix(rule, wire_order=wires)(wires, control_values=cvals)
             self.compare_to_toffoli_on_zero(matrix, "input", cvals)
 
-    @pytest.mark.parametrize(
-        "rule",
-        [
-            (
-                pytest.param(rule, marks=pytest.mark.catalyst)
-                if rule.name == "_adjoint_temporary_and_ppm"
-                else rule
-            )
-            for rule in qp.list_decomps("Adjoint(TemporaryAND)")
-        ],
-    )
+    @pytest.mark.parametrize("rule", qp.list_decomps("Adjoint(TemporaryAND)"))
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_adjoint_temporary_and_decomposition(self, control_values, rule, seed):
-        """
-        Validate the MCM-based decomposition of Adjoint(TemporaryAND).
-        """
+        """Validate various decompositions of Adjoint(TemporaryAND), excluding the PPM-based rule,
+        which is tested in test_adjoint_temporary_and_ppm_decomposition below."""
+        if rule.name == "_adjoint_temporary_and_ppm":
+            pytest.skip(
+                reason=(
+                    "The PPM-based decomposition requires special handling and is tested separately "
+                    "in test_adjoint_temporary_and_ppm_decomposition."
+                )
+            )
         sys_wires = [0, 1, 2]
         work_wires = [3]  # auxiliary qubit for deferred measure
-        dev = qp.device("lightning.qubit", wires=sys_wires + work_wires, seed=seed)
+        dev = qp.device("default.qubit", wires=sys_wires + work_wires)
 
+        @qp.qnode(dev)
         def circuit(state):
             # Prepare control state
             qp.StatePrep(state, wires=sys_wires[:2])
             op = qp.TemporaryAND(wires=sys_wires, control_values=control_values)
             rule(op)
             # Unprepare control state
-            # qp.adjoint(qp.StatePrep(state, wires=sys_wires[:2]))
+            qp.adjoint(qp.StatePrep)(state, wires=sys_wires[:2])
             return qp.probs(wires=sys_wires)
-
-        if rule.name == "_adjoint_temporary_and_ppm":
-            # We need some workarounds for this rule because it uses PauliMeasure
-            gate_set = {"Toffoli", "CNOT", "RX", "RY", "RZ", "PauliMeasure", "X", "CZ"}
-            circuit = qp.qjit(
-                qp.decompose(
-                    qp.QNode(circuit, dev, shots=10_000, mcm_method="one-shot"), gate_set=gate_set
-                ),
-                capture=True,
-            )
-            atol = 1e-2
-        else:
-            circuit = qp.QNode(circuit, dev)
-            atol = 1e-8
 
         rng = np.random.default_rng(seed)
         state = rng.random(4) + 1j * rng.random(4)
         state /= np.linalg.norm(state)
         probs = circuit(state)
-        assert qp.math.allclose(probs[::2], np.abs(state) ** 2, atol=atol)
+        assert qp.math.allclose(probs, np.eye(1, 8))
+
+    @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
+    def test_adjoint_temporary_and_ppm_decomposition(self, control_values, seed):
+        """Validate the PPM-based decomposition of Adjoint(TemporaryAND)."""
+        sys_wires = [0, 1, 2]
+        work_wires = [3]  # auxiliary qubit for deferred measure
+        dev = qp.device("lightning.qubit", wires=sys_wires + work_wires, seed=seed)
+
+        rule = qp.list_decomps("Adjoint(TemporaryAND)")["_adjoint_temporary_and_ppm"]
+        gate_set = {"Toffoli", "CNOT", "RX", "RY", "RZ", "PauliMeasure", "X", "CZ"}
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=gate_set)
+        @qp.qnode(dev, shots=10_000, mcm_method="one-shot")
+        def circuit(state):
+            # Prepare control state
+            qp.StatePrep(state, wires=sys_wires[:2])
+            op = qp.TemporaryAND(wires=sys_wires, control_values=control_values)
+            rule(op)
+            return qp.probs(wires=sys_wires)
+
+        rng = np.random.default_rng(seed)
+        state = rng.random(4) + 1j * rng.random(4)
+        state /= np.linalg.norm(state)
+        probs = circuit(state)
+        assert qp.math.allclose(probs[::2], np.abs(state) ** 2, atol=1e-2)
         assert qp.math.allclose(probs[1::2], 0)
 
     @pytest.mark.parametrize("rule", qp.list_decomps("Adjoint(TemporaryAND)"))
