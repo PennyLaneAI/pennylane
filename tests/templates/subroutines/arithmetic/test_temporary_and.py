@@ -200,6 +200,7 @@ class TestTemporaryAND:
         probs = circuit(state)
         assert qp.math.allclose(probs, np.eye(1, 8))
 
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_adjoint_temporary_and_ppm_decomposition(self, control_values, seed):
         """Validate the PPM-based decomposition of Adjoint(TemporaryAND)."""
