@@ -16,6 +16,7 @@
 
 import warnings
 
+import hint_helpers
 import numpy as np
 
 # pylint: disable=no-value-for-parameter
@@ -23,6 +24,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.op_math.composite2 import CompositeOp2
 from pennylane.transforms.decompositions import (
     make_selectpaulirot_to_phase_gradient_decomp,
 )
@@ -314,3 +316,172 @@ def test_rot_axis_zero_controls(rot_axis, expected_op):
 
     assert len(q.queue) == 1
     assert isinstance(q.queue[0], expected_op)
+
+
+def _leaf_ops(ops):
+    """Recursively unpack composite operators (change of basis, products)."""
+    for op in ops:
+        if isinstance(op, CompositeOp2):
+            yield from _leaf_ops(op.decomposition())
+        else:
+            yield op
+
+
+def _bits_to_angles(bits):
+    bits = np.array(bits)
+    return bits @ (2.0 ** -np.arange(1, bits.shape[1] + 1)) * 4 * np.pi
+
+
+# Cases for a 4-bit angle register: (binary angles, precision_stats, expected truncated width)
+PRECISION_STATS_CASES = [
+    ([[1, 0, 1, 0], [0, 1, 0, 0]], {3: 5}, 3),
+    ([[1, 0, 0, 0], [0, 1, 0, 0]], {1: 1, 2: 3}, 2),
+    ([[1, 0, 0, 1], [0, 0, 0, 0]], {2: 1, 3: 1}, 4),
+    ([[0, 0, 0, 0], [0, 0, 0, 0]], {0: 1, 4: 1}, 0),
+    ([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [1, 1, 0, 0]], {2: 1, 4: 1}, 2),
+]
+
+
+def test_precision_stats_invalid_key():
+    """Test that precision_stats keys outside of 0..len(angle_wires) raise an error."""
+    with pytest.raises(ValueError, match="precision_stats keys must be between 0 and 3"):
+        make_selectpaulirot_to_phase_gradient_decomp(
+            [2, 3, 4], [5, 6, 7], [8, 9], precision_stats={4: 1}
+        )
+
+
+@pytest.mark.parametrize("rot_axis", ["X", "Y", "Z"])
+@pytest.mark.parametrize("bits, precision_stats, width", PRECISION_STATS_CASES)
+def test_precision_stats_truncates(bits, precision_stats, width, rot_axis):
+    """Test that the QROM, the phase-gradient flips and the SemiAdder are truncated to the
+    smallest precision in ``precision_stats`` that suffices for all angles, or to full precision
+    otherwise."""
+    num_controls = int(np.log2(len(bits)))
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(4)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(4)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(3)])
+    rule = make_selectpaulirot_to_phase_gradient_decomp(
+        angle_wires, phase_grad_wires, work_wires, precision_stats=precision_stats
+    )
+
+    with qp.queuing.AnnotatedQueue() as q:
+        rule(_bits_to_angles(bits), list(range(num_controls)), num_controls, rot_axis)
+    ops = list(_leaf_ops(q.queue))
+
+    if width == 0:
+        assert not ops
+        return
+    adders = [op for op in ops if isinstance(op, qp.SemiAdder)]
+    qroms = [op for op in ops if isinstance(op, qp.QROM)]
+    flips = [op for op in ops if isinstance(op, qp.MultiControlledX)]
+    assert len(adders) == 1 and len(qroms) == 2 and len(flips) == 2 * width
+    assert adders[0].x_wires == angle_wires[:width]
+    assert adders[0].y_wires == phase_grad_wires[:width]
+    for qrom in qroms:
+        assert qrom.target_wires == angle_wires[:width]
+        assert np.array_equal(qrom.bitstrings, np.array(bits)[:, :width])
+    assert {op.target_wires[0] for op in flips} == set(phase_grad_wires[:width])
+    # The uncomputation of the basis change is a single adjoint operator
+    num_basis_ops = {"X": 2, "Y": 3, "Z": 0}[rot_axis]
+    assert len(ops) == 3 + 2 * width + num_basis_ops
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("rot_axis", ["X", "Y", "Z"])
+@pytest.mark.parametrize("bits, precision_stats, width", PRECISION_STATS_CASES)
+def test_precision_stats_valid_decomp(bits, precision_stats, width, rot_axis):
+    """Test that the rule with ``precision_stats`` yields a valid decomposition."""
+    # pylint: disable=unused-argument
+    if qp.capture.enabled() and rot_axis != "Z":
+        pytest.xfail("The nested change of basis for X and Y is flattened with capture enabled.")
+    num_controls = int(np.log2(len(bits)))
+    rule = make_selectpaulirot_to_phase_gradient_decomp(
+        [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10], precision_stats=precision_stats
+    )
+    op = qp.SelectPauliRot(
+        _bits_to_angles(bits),
+        control_wires=list(range(11, 11 + num_controls)),
+        target_wire=11 + num_controls,
+        rot_axis=rot_axis,
+    )
+    _test_decomposition_rule(op, rule)
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize(
+    "precision_stats, expected",
+    [
+        ({1: 1, 3: 3}, (0.25, 0.75, 0.0)),
+        ({2: 1, 4: 3}, (0.25, 0.75)),
+        ({0: 2, 4: 2}, (0.5, 0.5)),
+    ],
+)
+def test_precision_stats_hints(precision_stats, expected):
+    """Test that the conditional branches are hinted with the probabilities derived from
+    ``precision_stats``."""
+    import jax
+
+    rule = make_selectpaulirot_to_phase_gradient_decomp(
+        [2, 3, 4, 5], [6, 7, 8, 9], [10, 11, 12], precision_stats=precision_stats
+    )
+    jaxpr = jax.make_jaxpr(lambda angles: rule(angles, [0], 1, "Z"))(np.array([0.4, 0.2]))
+    assert hint_helpers.cond_hints(jaxpr.jaxpr, skip_none=True) == [pytest.approx(expected)]
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+@pytest.mark.parametrize("rot_axis", ["X", "Y", "Z"])
+@pytest.mark.parametrize("bits, precision_stats, width", PRECISION_STATS_CASES)
+def test_precision_stats_integration(bits, precision_stats, width, rot_axis, seed):
+    """Test that the decomposition with ``precision_stats`` realizes SelectPauliRot."""
+    # pylint: disable=unused-argument
+    angles = _bits_to_angles(bits)
+    num_controls = int(np.log2(len(bits)))
+    ctrl_wires = list(range(num_controls))
+    target_wire = num_controls
+    sys_wires = ctrl_wires + [target_wire]
+
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(4)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(4)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(3)])
+    all_wires = angle_wires + phase_grad_wires + work_wires + qp.wires.Wires(sys_wires)
+
+    custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
+        angle_wires, phase_grad_wires, work_wires, precision_stats=precision_stats
+    )
+
+    gate_set = {
+        "QROM",
+        "SemiAdder",
+        "CNOT",
+        "PauliX",
+        "Hadamard",
+        "S",
+        "Adjoint(S)",
+        "PhaseGradientStatePrep",
+        "Adjoint(PhaseGradientStatePrep)",
+        "StatePrep",
+    }
+
+    @qp.decompose(gate_set=gate_set, fixed_decomps={qp.SelectPauliRot: custom_decomp})
+    @qp.qnode(qp.device("default.qubit", wires=all_wires))
+    def circuit(in_state):
+        qp.StatePrep(in_state, wires=sys_wires)
+        qp.PhaseGradientStatePrep(wires=phase_grad_wires)
+        qp.SelectPauliRot(
+            angles, control_wires=ctrl_wires, target_wire=target_wire, rot_axis=rot_axis
+        )
+        qp.adjoint(qp.PhaseGradientStatePrep(wires=phase_grad_wires))
+        return qp.state()
+
+    rng = np.random.default_rng(seed)
+    in_state = rng.random(2 ** len(sys_wires)) + 1j * rng.random(2 ** len(sys_wires))
+    in_state /= np.linalg.norm(in_state)
+
+    out_state = circuit(in_state)
+
+    op = qp.SelectPauliRot(
+        angles, control_wires=ctrl_wires, target_wire=target_wire, rot_axis=rot_axis
+    )
+    zeros = np.eye(2 ** (len(all_wires) - len(sys_wires)), 1)[:, 0]
+    expected = np.kron(zeros, qp.matrix(op, wire_order=sys_wires) @ in_state)
+    assert np.allclose(out_state, expected)

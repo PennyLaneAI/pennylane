@@ -16,11 +16,13 @@
 
 # pylint: disable=no-value-for-parameter, disable=too-many-arguments
 
+import hint_helpers
 import numpy as np
 import pytest
 
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.op_math.composite2 import CompositeOp2
 from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
 
 
@@ -201,4 +203,148 @@ def test_integration_multi_wire(seed):
     out_state_expected = qp.matrix(qp.CRZ(phi, wires)) @ in_state
     out_state_expected = np.kron(zeros, out_state_expected)
 
+    assert np.allclose(out_state, out_state_expected)
+
+
+def _leaf_ops(ops):
+    """Recursively unpack composite operators (change of basis, products)."""
+    for op in ops:
+        if isinstance(op, CompositeOp2):
+            yield from _leaf_ops(op.decomposition())
+        else:
+            yield op
+
+
+# Cases for a 4-bit angle register: (binary angle, precision_stats, expected truncated width)
+PRECISION_STATS_CASES = [
+    ([1, 0, 1, 0], {3: 5}, 3),
+    ([1, 0, 1, 0], {1: 2, 3: 5, 4: 1}, 3),
+    ([1, 0, 1, 0], {2: 1, 4: 1}, 4),
+    ([1, 0, 1, 0], {1: 1, 2: 1}, 4),
+    ([1, 0, 0, 0], {2: 1}, 2),
+    ([0, 0, 0, 0], {0: 1, 3: 1}, 0),
+    ([0, 0, 0, 0], {2: 1}, 2),
+]
+
+
+def _bits_to_angle(bits, unit):
+    return sum(b * 2.0 ** -(i + 1) for i, b in enumerate(bits)) * unit
+
+
+@pytest.mark.parametrize("key", [-1, 5])
+def test_precision_stats_invalid_key(key):
+    """Test that precision_stats keys outside of 0..len(angle_wires) raise an error."""
+    with pytest.raises(ValueError, match="precision_stats keys must be between 0 and 4"):
+        make_crz_to_phase_gradient_decomp(
+            [2, 3, 4, 5], [6, 7, 8, 9], [10, 11, 12], precision_stats={key: 1}
+        )
+
+
+@pytest.mark.parametrize("bits, precision_stats, width", PRECISION_STATS_CASES)
+def test_precision_stats_truncates(bits, precision_stats, width):
+    """Test that the data loading, the phase-gradient flips and the SemiAdder are truncated to
+    the smallest precision in ``precision_stats`` that suffices for the angle, or to full
+    precision otherwise."""
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(4)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(4)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(3)])
+    rule = make_crz_to_phase_gradient_decomp(
+        angle_wires, phase_grad_wires, work_wires, precision_stats=precision_stats
+    )
+
+    with qp.queuing.AnnotatedQueue() as q:
+        rule(_bits_to_angle(bits, 4 * np.pi), wires=[0, 1])
+    ops = list(_leaf_ops(q.queue))
+
+    if width == 0:
+        assert not ops
+        return
+    adders = [op for op in ops if isinstance(op, qp.SemiAdder)]
+    fanouts = [op for op in ops if isinstance(op, qp.ops.Controlled)]
+    assert len(adders) == 1 and len(fanouts) == 4
+    assert adders[0].x_wires == angle_wires[:width]
+    assert adders[0].y_wires == phase_grad_wires[:width]
+    angle_fanouts = [op for op in fanouts if op.base.wires == angle_wires[:width]]
+    flip_fanouts = [op for op in fanouts if op.base.wires == phase_grad_wires[:width]]
+    assert len(angle_fanouts) == len(flip_fanouts) == 2
+    for fanout in angle_fanouts:
+        assert list(fanout.base.bitstring) == bits[:width]
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("bits, precision_stats, width", PRECISION_STATS_CASES)
+def test_precision_stats_valid_decomp(bits, precision_stats, width):
+    """Test that the rule with ``precision_stats`` yields a valid decomposition."""
+    # pylint: disable=unused-argument
+    rule = make_crz_to_phase_gradient_decomp(
+        [2, 3, 4, 5], [6, 7, 8, 9], [10, 11, 12], precision_stats=precision_stats
+    )
+    op = qp.CRZ(_bits_to_angle(bits, 4 * np.pi), [0, 1])
+    _test_decomposition_rule(op, rule, skip_decomp_matrix_check=True)
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize(
+    "precision_stats, expected",
+    [
+        ({1: 1, 3: 3}, (0.25, 0.75, 0.0)),
+        ({2: 1, 4: 3}, (0.25, 0.75)),
+        ({0: 2, 4: 2}, (0.5, 0.5)),
+    ],
+)
+def test_precision_stats_hints(precision_stats, expected):
+    """Test that the conditional branches are hinted with the probabilities derived from
+    ``precision_stats``."""
+    import jax
+
+    rule = make_crz_to_phase_gradient_decomp(
+        [2, 3, 4, 5], [6, 7, 8, 9], [10, 11, 12], precision_stats=precision_stats
+    )
+    jaxpr = jax.make_jaxpr(lambda phi: rule(phi, wires=[0, 1]))(0.4)
+    assert hint_helpers.cond_hints(jaxpr.jaxpr) == [pytest.approx(expected)]
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+@pytest.mark.parametrize("bits, precision_stats, width", PRECISION_STATS_CASES)
+def test_precision_stats_integration(bits, precision_stats, width, seed):
+    """Test that the decomposition with ``precision_stats`` realizes CRZ."""
+    # pylint: disable=unused-argument
+    phi = _bits_to_angle(bits, 4 * np.pi)
+    wires = [0, 1]
+    angle_wires = [f"aux_{i}" for i in range(4)]
+    phase_grad_wires = [f"qft_{i}" for i in range(4)]
+    work_wires = [f"work_{i}" for i in range(3)]
+    all_wires = angle_wires + phase_grad_wires + work_wires + wires
+
+    custom_decomp = make_crz_to_phase_gradient_decomp(
+        angle_wires, phase_grad_wires, work_wires, precision_stats=precision_stats
+    )
+
+    @qp.transforms.decompose(
+        gate_set={
+            "StatePrep",
+            "PhaseGradientStatePrep",
+            "Adjoint(PhaseGradientStatePrep)",
+            "CNOT",
+            "PauliX",
+            "SemiAdder",
+        },
+        fixed_decomps={qp.CRZ: custom_decomp},
+    )
+    @qp.qnode(qp.device("default.qubit", wires=all_wires))
+    def circuit(phi, in_state):
+        qp.StatePrep(in_state, wires=wires)
+        qp.PhaseGradientStatePrep(wires=phase_grad_wires)
+        qp.CRZ(phi, wires)
+        qp.adjoint(qp.PhaseGradientStatePrep(wires=phase_grad_wires))
+        return qp.state()
+
+    rng = np.random.default_rng(seed=seed)
+    in_state = rng.random(4) + 1j * rng.random(4)
+    in_state /= np.linalg.norm(in_state)
+
+    out_state = circuit(phi, in_state)
+
+    zeros = np.eye(2 ** (len(all_wires) - 2), 1)[:, 0]
+    out_state_expected = np.kron(zeros, qp.matrix(qp.CRZ(phi, wires)) @ in_state)
     assert np.allclose(out_state, out_state_expected)

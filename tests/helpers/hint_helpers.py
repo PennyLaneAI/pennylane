@@ -32,3 +32,21 @@ def loop_hints(jaxpr, skip_none=False):
                 if hasattr(sub, "eqns"):
                     hints.extend(loop_hints(sub, skip_none=skip_none))
     return hints
+
+
+def cond_hints(jaxpr, skip_none=False):
+    """Return the ``estimated_probabilities`` of all ``cond`` primitives in ``jaxpr`` and its
+    nested jaxprs, in depth-first order.
+    Skips hints that are None if ``skip_none=True``."""
+    hints = []
+    for eqn in jaxpr.eqns:
+        if eqn.primitive.name == "cond":
+            hint = eqn.params["estimated_probabilities"]
+            if not (skip_none and hint is None):
+                hints.append(hint)
+        for param in eqn.params.values():
+            for sub in param if isinstance(param, (list, tuple)) else (param,):
+                sub = getattr(sub, "jaxpr", sub)
+                if hasattr(sub, "eqns"):
+                    hints.extend(cond_hints(sub, skip_none=skip_none))
+    return hints
