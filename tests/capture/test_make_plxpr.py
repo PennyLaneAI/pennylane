@@ -32,7 +32,7 @@ jax = pytest.importorskip("jax")
 from jax import numpy as jnp
 
 from pennylane.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
-from tests.capture.capture_utils import extract_all_primitives
+from pennylane.testing import extract_all_primitives
 
 
 def test_error_is_raised_with_capture_disabled():
