@@ -748,6 +748,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a decomposition of ``Adjoint(TemporaryAND)`` to PPMs (:func:`~.pauli_measure`)
+  and a :class:`~.CZ` gate, instead of :func:`~.measure` with an explicit basis change.
+  [(#10310)](https://github.com/PennyLaneAI/pennylane/pull/10310)
+
 * The decompositions of :class:`~.QROM` (unary iteration), :class:`~.QFT`, :class:`~.AQFT` and
   :class:`~.FFFT` now provide `num-iters` hints for loops with dynamic bounds, avoiding symbolic
   resource counts when compiling them with Catalyst.
