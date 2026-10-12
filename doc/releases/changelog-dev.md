@@ -748,6 +748,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* The decompositions of :class:`~.QROM` (unary iteration), :class:`~.QFT`, :class:`~.AQFT` and
+  :class:`~.FFFT` now provide `num-iters` hints for loops with dynamic bounds, avoiding symbolic
+  resource counts when compiling them with Catalyst.
+  [(#10241)](https://github.com/PennyLaneAI/pennylane/pull/10241)
+
 * The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
   but instead expresses the Select block as another ``QROM`` with fewer controls and more target
   qubits. This allows for scalable compilation of this decomposition rule.
@@ -1115,12 +1120,6 @@
   to use unary iteration in the decomposition of the used `QROM` operation for the specified
   number of control wires/angles.
   [(#9655)](https://github.com/PennyLaneAI/pennylane/pull/9655)
-
-* Added a variant of `SumOfSlatersPrep` to labs, accessible as `labs.templates.SumOfSlatersPrep2`.
-  This variant handles work wires explicitly instead of allocating them dynamically in the
-  decomposition. This enables usage of `SumOfSlatersPrep2` with `qp.qjit` with
-  capture _disabled_ (`qp.capture.disable()`).
-  [(#9539)](https://github.com/PennyLaneAI/pennylane/pull/9539)
 
 * Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp`
   decomposition rule factories to be compatible with program capture.
