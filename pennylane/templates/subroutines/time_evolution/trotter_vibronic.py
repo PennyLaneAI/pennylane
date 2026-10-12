@@ -21,6 +21,7 @@ import numpy as np
 
 from pennylane import capture, compiler, math
 from pennylane.allocation import allocate
+from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
@@ -713,7 +714,7 @@ def _diagonalization_support(key, n_wires):
     return int(support[0]), [int(k) for k in support[1:]]
 
 
-def _diagonalize_vibronic_circuit(fragment_idx, wires):
+def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
     r"""Diagonalize position fragment ``fragment_idx`` by applying Clifford operations on the
     electronic register, following the ``key = (0, fragment_idx)`` convention (see
     :func:`_diagonalization_matrix`).
@@ -730,11 +731,21 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires):
         fragment_idx (int): index of the position fragment. The circuit is the identity if
             ``fragment_idx == 0``.
         wires (WiresLike): electronic wires on which the fragment acts.
+        num_fragments (int): total number of position fragments. The conditionals carry branch
+            probability hints that assume ``fragment_idx`` to be uniformly distributed over
+            ``range(num_fragments)``.
     """
     n = len(wires)
     # ``key = (0, fragment_idx)``, so the bits that differ between ``key[0]`` and ``key[1]``
     # (see ``_diagonalization_support``) are exactly the bits of ``fragment_idx`` itself.
     shifts = np.arange(n - 1, -1, -1)
+
+    # A fragment applies one Hadamard if any of its bits is set, and one CNOT per further set bit
+    num_set_bits = np.bitwise_count(np.arange(num_fragments))
+    num_applied = np.count_nonzero(num_set_bits)
+    apply_prob = num_applied / num_fragments
+    cnot_prob = (np.sum(num_set_bits) - num_applied) / (n * num_applied) if num_applied else 0.0
+
     if compiler.active() or capture.enabled():
         wires_arr = math.array(list(wires), like="jax")
         shifts = math.array(shifts, like="jax")
@@ -748,12 +759,14 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires):
     control_wire = wires_arr[control_pos]
 
     @cond(any_diff)
+    @hint({"branch-prob": apply_prob})
     def _apply():
         Hadamard(wires=[control_wire])
 
         @for_loop(n - 1, -1, -1)
         def _cnots(w):
             @cond((diff[w] > 0) & (w != control_pos))
+            @hint({"branch-prob": cnot_prob})
             def _maybe_cnot():
                 CNOT(wires=[control_wire, wires_arr[w]])
 
@@ -1081,7 +1094,7 @@ def _trotter_step_second_order(
         bilinear_coeffs = all_bilinear[i]
 
         adjoint(_diagonalize_vibronic_circuit, lazy=False)(
-            fragment_idx=i, wires=registers["electronic"]
+            fragment_idx=i, wires=registers["electronic"], num_fragments=num_position_fragments
         )
 
         def constant_term(prev_bitstrings):
@@ -1165,7 +1178,9 @@ def _trotter_step_second_order(
 
         # Finish up the coefficients register by unloading the last loaded coefficients
         QROM(prev_bitstrings, **qrom_wires)
-        _diagonalize_vibronic_circuit(fragment_idx=i, wires=registers["electronic"])
+        _diagonalize_vibronic_circuit(
+            fragment_idx=i, wires=registers["electronic"], num_fragments=num_position_fragments
+        )
 
     def kinetic_fragment():
         # use ``time``, not ``first_order_time_step`` because the kinetic fragment is the

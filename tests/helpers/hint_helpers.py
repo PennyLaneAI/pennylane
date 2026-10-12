@@ -16,19 +16,30 @@ Pytest helper functions for inspecting captured programs.
 """
 
 
-def loop_hints(jaxpr, skip_none=False):
-    """Return the ``estimated_iterations`` of all ``for_loop`` and ``while_loop`` primitives in
-    ``jaxpr`` and its nested jaxprs, in depth-first order.
-    Skips hints that are None if ``skip_none=True``."""
+def _collect_hints(jaxpr, primitive_names, param_name, skip_none):
     hints = []
     for eqn in jaxpr.eqns:
-        if eqn.primitive.name in {"for_loop", "while_loop"}:
-            hint = eqn.params["estimated_iterations"]
+        if eqn.primitive.name in primitive_names:
+            hint = eqn.params[param_name]
             if not (skip_none and hint is None):
                 hints.append(hint)
         for param in eqn.params.values():
             for sub in param if isinstance(param, (list, tuple)) else (param,):
                 sub = getattr(sub, "jaxpr", sub)
                 if hasattr(sub, "eqns"):
-                    hints.extend(loop_hints(sub, skip_none=skip_none))
+                    hints.extend(_collect_hints(sub, primitive_names, param_name, skip_none))
     return hints
+
+
+def loop_hints(jaxpr, skip_none=False):
+    """Return the ``estimated_iterations`` of all ``for_loop`` and ``while_loop`` primitives in
+    ``jaxpr`` and its nested jaxprs, in depth-first order.
+    Skips hints that are None if ``skip_none=True``."""
+    return _collect_hints(jaxpr, {"for_loop", "while_loop"}, "estimated_iterations", skip_none)
+
+
+def cond_hints(jaxpr, skip_none=False):
+    """Return the ``estimated_probabilities`` of all ``cond`` primitives in ``jaxpr`` and its
+    nested jaxprs, in depth-first order.
+    Skips hints that are None if ``skip_none=True``."""
+    return _collect_hints(jaxpr, {"cond"}, "estimated_probabilities", skip_none)

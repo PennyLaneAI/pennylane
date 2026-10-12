@@ -483,6 +483,47 @@ class TestQROM:
             None,
         ]
 
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        ("num_bitstrings", "num_controls"),
+        [(3, 2), (4, 2), (5, 3), (6, 3), (8, 3), (11, 4), (16, 4), (21, 5)],
+    )
+    def test_unary_iteration_branch_prob_hints(self, num_bitstrings, num_controls, seed):
+        """Test that the conditionals for flipping the iteration bit in the unary iteration carry
+        ``branch-prob`` hints that reproduce the number of gates applied within the main loop."""
+        import jax
+
+        rng = np.random.default_rng(seed)
+        bitstrings = rng.integers(0, 2, size=(num_bitstrings, 2))
+        control_wires = list(range(num_controls))
+        target_wires = [num_controls, num_controls + 1]
+        work_wires = list(range(num_controls + 2, 2 * num_controls + 1))
+
+        plxpr = jax.make_jaxpr(
+            lambda: _qrom_unary_iteration(
+                bitstrings, control_wires, target_wires, work_wires, clean=True
+            )
+        )()
+        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        num_x = sum(isinstance(op, qp.X) for op in ops)
+        num_cnots = sum(isinstance(op, qp.CNOT) for op in ops)
+        num_main_loop_iterations = num_bitstrings - 1
+        # The X is applied twice in a single iteration, if at all
+        quarter_prob = num_x / 2 / num_main_loop_iterations
+        # One CNOT is applied in each iteration, and a second one in a single iteration, if at all
+        mid_prob = (num_cnots - num_main_loop_iterations) / num_main_loop_iterations
+
+        quarter_hint = pytest.approx((quarter_prob, 1 - quarter_prob))
+        mid_hint = pytest.approx((mid_prob, 1 - mid_prob))
+        non_mid_hint = pytest.approx((1 - mid_prob, mid_prob))
+        assert hint_helpers.cond_hints(plxpr.jaxpr) == [
+            quarter_hint,
+            non_mid_hint,
+            quarter_hint,
+            mid_hint,
+            mid_hint,
+        ]
+
 
 @pytest.mark.parametrize(
     ("control_wires", "target_wires", "work_wires", "msg_match"),

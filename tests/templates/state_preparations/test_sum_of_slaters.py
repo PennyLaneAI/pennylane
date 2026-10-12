@@ -18,6 +18,7 @@ Unit tests for the SumOfSlatersPrep template.
 import copy
 from itertools import combinations, product
 
+import hint_helpers
 import numpy as np
 import pytest
 
@@ -840,6 +841,49 @@ class TestSumOfSlatersPrep:
         assert "MultiplexerStatePreparation" in jaxpr_text
         assert "QROM" in jaxpr_text
         assert "TemporaryAND" in jaxpr_text
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("force_non_id_encoding", [False, True])
+    @pytest.mark.parametrize("num_wires, num_entries", [(7, 7), (8, 10), (10, 37)])
+    def test_branch_prob_hints(self, num_wires, num_entries, force_non_id_encoding, seed):
+        """Test that the conditionals in the encoding and uncomputation loops carry
+        ``branch-prob`` hints that reproduce the number of applied gates."""
+        import jax  # pylint: disable=import-outside-toplevel
+
+        coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
+        if force_non_id_encoding:
+            indices = self.force_powers_of_two(indices, num_wires)
+        v_bits = qp.math.int_to_binary(np.array(indices), num_wires).T
+        _, sos_data = _preprocess(v_bits, range(num_wires))
+        all_wires = qp.registers(SumOfSlatersPrep.required_register_sizes(indices, num_wires))
+
+        plxpr = jax.make_jaxpr(
+            lambda: _sos_state_prep(coefficients, indices=indices, **all_wires)
+        )()
+        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+
+        def is_cnot_onto(op, register):
+            return isinstance(op, qp.CNOT) and op.wires[1] in all_wires[register]
+
+        num_id_cnots = sum(is_cnot_onto(op, "identification_wires") for op in ops)
+        num_enum_cnots = sum(is_cnot_onto(op, "enumeration_wires") for op in ops)
+        # The last flip comes after the last CNOT onto the enumeration register
+        last_enum_cnot = max(i for i, op in enumerate(ops) if is_cnot_onto(op, "enumeration_wires"))
+        num_last_x = sum(isinstance(op, qp.X) for op in ops[last_enum_cnot:])
+        num_flip_x = sum(isinstance(op, qp.X) for op in ops) - num_last_x
+
+        m, r, d = sos_data.m, sos_data.r, sos_data.d
+        flip_prob = num_flip_x / ((num_entries - 1) * m)
+        enum_cnot_prob = num_enum_cnots / ((num_entries - 1) * d)
+        last_flip_prob = num_last_x / m
+        expected = [pytest.approx((p, 1 - p)) for p in [flip_prob, enum_cnot_prob, last_flip_prob]]
+        if r != m:
+            assert force_non_id_encoding
+            # The encoding is applied before and after the uncomputation
+            id_cnot_prob = num_id_cnots / (2 * m * r)
+            id_cnot_hint = pytest.approx((id_cnot_prob, 1 - id_cnot_prob))
+            expected = [id_cnot_hint, *expected, id_cnot_hint]
+        assert hint_helpers.cond_hints(plxpr.jaxpr) == expected
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("force_non_id_encoding", (False, True))

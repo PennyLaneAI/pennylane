@@ -1242,6 +1242,14 @@ def _preprocess(v_bits, wires):
     return selected_wires, SoSData(u_bits, b_bits, d, r, m)
 
 
+def _apply_cnot(wires):
+    qp.CNOT(wires)
+
+
+def _apply_x(wires):
+    qp.X(wires)
+
+
 def _sos_state_prep_with_wires(
     data: tuple[np.ndarray, np.ndarray, SoSData],
     *,
@@ -1300,13 +1308,16 @@ def _sos_state_prep_with_wires(
         # Step 3-4) in paper (p.7): Encode the b_bits from Lemma 1 in the identification
         # register. Note that we skip this step if identity_encoding=True, because the encoding
         # is trivial in this case. This is an additional optimization compared to the paper.
+        # Across all iterations, one CNOT is applied per set bit in u_bits.
+        encoding_cnot = qp.hint(_apply_cnot, {"branch-prob": np.mean(data.u_bits)})
+
         @for_loop(data.m)
         def encoding(i):
             u = u_bits[i]
 
             @for_loop(data.r)
             def inner_loop(j):
-                qp.cond(u[j], qp.CNOT)([selected_wires[j], identification_wires[i]])
+                qp.cond(u[j], encoding_cnot)([selected_wires[j], identification_wires[i]])
 
             inner_loop()
 
@@ -1316,19 +1327,30 @@ def _sos_state_prep_with_wires(
     def left_elbow_ladder(i):
         qp.TemporaryAND(elbow_triples[i])
 
+    # Across all k > 0, one CNOT is applied per set bit in k.
+    enumeration_cnot = qp.hint(
+        _apply_cnot,
+        {"branch-prob": np.mean(qp.math.int_to_binary(np.arange(1, num_entries), data.d))},
+    )
+
     @for_loop(data.d)
     def cnot_loop(j, k):
         bit_is_set = (k >> (data.d - 1 - j)) & 1
-        qp.cond(bit_is_set, qp.CNOT)([cnot_control_wire, enumeration_wires[j]])
+        qp.cond(bit_is_set, enumeration_cnot)([cnot_control_wire, enumeration_wires[j]])
         return k
 
     @for_loop(data.m - 2, -1, -1)
     def right_elbow_ladder(i):
         qp.adjoint(qp.TemporaryAND(elbow_triples[i]))
 
+    # Across all k > 0, the flipped bits are data.b_bits[:, k] ^ prev_bits, where prev_bits
+    # is data.b_bits[:, k - 1], or all ones for k = 1.
+    prev_bits = np.concatenate([np.ones((data.m, 1), dtype=int), data.b_bits[:, 1:-1]], axis=1)
+    flip_x = qp.hint(_apply_x, {"branch-prob": np.mean(data.b_bits[:, 1:] ^ prev_bits)})
+
     @for_loop(data.m)
     def flip(i, bits_to_flip):
-        qp.cond(bits_to_flip[i], qp.X)(mcx_ctrl_wires[i])
+        qp.cond(bits_to_flip[i], flip_x)(mcx_ctrl_wires[i])
         return bits_to_flip
 
     # Start the for loop at 1 because we don't need to do anything for 0 anyway
@@ -1345,9 +1367,11 @@ def _sos_state_prep_with_wires(
 
     last_bits = uncompute_enumeration(np.ones(data.m, dtype=int))
 
+    last_flip_x = qp.hint(_apply_x, {"branch-prob": np.mean(1 - data.b_bits[:, -1])})
+
     @for_loop(data.m)
     def last_flip(i):
-        qp.cond(1 - last_bits[i], qp.X)(mcx_ctrl_wires[i])
+        qp.cond(1 - last_bits[i], last_flip_x)(mcx_ctrl_wires[i])
 
     last_flip()
 

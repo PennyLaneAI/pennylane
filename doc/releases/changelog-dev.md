@@ -753,6 +753,13 @@
   resource counts when compiling them with Catalyst.
   [(#10241)](https://github.com/PennyLaneAI/pennylane/pull/10241)
 
+* The decompositions of :class:`~.QROM` (unary iteration), :class:`~.Incrementer`,
+  :class:`~.PartialUnaryStatePreparation`, :class:`~.SumOfSlatersPrep` and
+  :class:`~.TrotterVibronic` now provide `branch-prob` hints for conditionals whose trigger
+  frequency is known from the surrounding loops, replacing the worst-case resource counts of
+  unhinted conditionals by the exact average counts when compiling them with Catalyst.
+  [(#10311)](https://github.com/PennyLaneAI/pennylane/pull/10311)
+
 * The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
   but instead expresses the Select block as another ``QROM`` with fewer controls and more target
   qubits. This allows for scalable compilation of this decomposition rule.
