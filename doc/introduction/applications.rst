@@ -1,3 +1,5 @@
+TODO: turn into QML and QChem
+
 .. role:: html(raw)
    :format: html
 
@@ -66,12 +68,12 @@ space can also be specified for each backend.
 Importing the Hamiltonian and ansatz state
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If the electronic Hamiltonian is built independently using 
-`OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools, it can be readily converted 
-to a PennyLane observable using the :func:`~.pennylane.import_operator` function. There is also 
+If the electronic Hamiltonian is built independently using
+`OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools, it can be readily converted
+to a PennyLane observable using the :func:`~.pennylane.import_operator` function. There is also
 capability to import wavefunctions (states) that have been pre-computed by traditional quantum chemistry methods
 from `PySCF <https://github.com/pyscf/pyscf>`_, which could be used to for example provide a better
-starting point to a quantum algorithm. State import can be accomplished using the :func:`~pennylane.qchem.import_state` 
+starting point to a quantum algorithm. State import can be accomplished using the :func:`~pennylane.qchem.import_state`
 utility function.
 
 

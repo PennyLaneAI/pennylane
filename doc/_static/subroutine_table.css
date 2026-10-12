@@ -1,0 +1,85 @@
+/* Styles for the ``subroutine-table`` directive (doc/_ext/subroutine_table.py) */
+
+table.subroutine-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  border: none;
+  margin: 1rem 0 2rem;
+}
+
+table.subroutine-table tr.row-odd,
+table.subroutine-table tr.row-even {
+  background: transparent;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+table.subroutine-table tr:first-child {
+  border-top: 1px solid #e5e5e5;
+}
+
+table.subroutine-table td {
+  vertical-align: middle;
+  padding: 12px 16px;
+  border: none !important;
+}
+
+table.subroutine-table td p {
+  margin: 0;
+}
+
+/* Column widths are set by the directive, so that consecutive tables line up */
+table.subroutine-table td.subroutine-thumbnail {
+  padding-left: 0;
+}
+
+table.subroutine-table td.subroutine-thumbnail img {
+  display: block;
+  width: 240px;
+  height: 135px;
+  object-fit: contain;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+}
+
+/* On narrow screens, stack each entry: thumbnail and name side by side, summary below */
+@media (max-width: 600px) {
+  table.subroutine-table,
+  table.subroutine-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  table.subroutine-table tr.row-odd,
+  table.subroutine-table tr.row-even {
+    display: grid;
+    grid-template-columns: 174px minmax(0, 1fr);
+    column-gap: 12px;
+    align-items: center;
+    padding: 12px 0;
+  }
+
+  table.subroutine-table td,
+  table.subroutine-table td.subroutine-thumbnail,
+  table.subroutine-table td:nth-child(2) {
+    display: block;
+    width: auto;
+    padding: 0;
+  }
+
+  table.subroutine-table td:nth-child(2) {
+    overflow-wrap: anywhere;
+  }
+
+  table.subroutine-table td:nth-child(3) {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+  }
+
+  table.subroutine-table td.subroutine-thumbnail img {
+    width: 174px;
+    height: 99px;
+  }
+}

@@ -344,20 +344,22 @@ Make sure that all hyperparameters and errors are tested, and that the parameter
 tensors from all supported autodifferentiation frameworks.
 
 Don't forget to also add the new operator to the documentation in the ``doc/introduction/operations.rst`` file, or to
-the list of subroutines if it is an ansatz. The latter is done by adding an entry to the ``autosummary``
-in the correct section of ``doc/introduction/templates.rst``:
+the list of subroutines if it is an ansatz. The latter is done by adding an entry, consisting of the
+subroutine and the path to a thumbnail image, to the ``subroutine-table`` in the correct section of
+``doc/introduction/subroutines.rst``:
 
 .. code-block:: rst
 
-  .. autosummary::
+  .. subroutine-table::
       :nosignatures:
 
-      ~pennylane.MyNewSubroutine
+      ~pennylane.MyNewSubroutine    /_static/templates/<subroutine_type>/my_new_subroutine.png
 
 .. note::
 
-  The list displays the first line of the subroutine's docstring, so make sure that it is a concise
-  summary of what the subroutine does.
+  The table displays the first line of the subroutine's docstring, so make sure that it is a concise
+  summary of what the subroutine does. The thumbnail should have the same style as the other
+  images in ``doc/_static/templates/``.
 
 Here are a few more tips for adding operators:
 

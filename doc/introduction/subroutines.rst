@@ -3,92 +3,75 @@
 
 .. _intro_ref_temp:
 
-Built-in Subroutines
+Built-in subroutines
 ====================
 
-PennyLane provides a growing library of pre-coded subroutines of common variational circuit architectures
-that can be used to easily build, evaluate, and train more complex models. In the
-literature, such architectures are commonly known as an *ansatz*. Subroutines can be used to
-:ref:`prepare quantum states <intro_ref_temp_stateprep>` as the first operation in a circuit,
-or simply as general :ref:`building blocks <intro_ref_temp_subroutines>` that a circuit is built from.
-
-The following are the built-in subroutines provided by PennyLane.
+PennyLane2 provides a growing library of subroutines for common tasks, including
+state preparation, data reading and loading, quantum arithmetic, and more.
 
 .. _intro_ref_temp_stateprep:
 
 State preparation
 -----------------
 
-State preparation subroutines transform the zero state :math:`|0\dots 0 \rangle` to another initial
-state, and are typically used as the first operation in a circuit.
+State preparation subroutines transform the zero state :math:`|0\dots 0 \rangle`
+to another initial state, and are typically used as the first operation in a
+circuit.
 
-:html:`<div class="summary-table">`
-
-.. autosummary::
+.. subroutine-table::
     :nosignatures:
 
-    ~pennylane.MPSPrep
-    ~pennylane.MultiplexerStatePreparation
-    ~pennylane.SumOfSlatersPrep
-    ~pennylane.PartialUnaryStatePreparation
-    ~pennylane.UniformPrep
-    ~pennylane.AliasSampling
-    ~pennylane.PhaseGradientStatePrep
-
-:html:`</div>`
+    ~pennylane.MPSPrep                        /_static/templates/tensornetworks/MPS_template.png
+    ~pennylane.MultiplexerStatePreparation    /_static/templates/state_preparations/multiplexerSP_template.png
+    ~pennylane.SumOfSlatersPrep               /_static/templates/state_preparations/sumofslatersprep_template.png
+    ~pennylane.PartialUnaryStatePreparation   /_static/templates/state_preparations/partialunarystatepreparation_template.png
+    ~pennylane.UniformPrep                    /_static/templates/state_preparations/uniformprep.png
+    ~pennylane.AliasSampling                  /_static/templates/state_preparations/aliassampling.png
+    ~pennylane.PhaseGradientStatePrep         /_static/templates/state_preparations/phasegradientstateprep_template.png
 
 .. _intro_ref_temp_subroutines:
 
 Arithmetic subroutines
 ----------------------
 
-Quantum arithmetic subroutines enable in-place and out-place modular operations such
-as addition, multiplication and exponentiation.
+Quantum arithmetic subroutines enable in-place and out-place modular operations
+such as addition, multiplication, and exponentiation.
 
-:html:`<div class="summary-table">`
-
-.. autosummary::
+.. subroutine-table::
     :nosignatures:
 
-    ~pennylane.SemiAdder
-    ~pennylane.Incrementer
-    ~pennylane.OutMultiplier
-    ~pennylane.SignedOutMultiplier
-    ~pennylane.OutSquare
-    ~pennylane.SignedOutSquare
-    ~pennylane.LeftClassicalComparator
-    ~pennylane.LeftQuantumComparator
-
-:html:`</div>`
+    ~pennylane.SemiAdder                 /_static/templates/arithmetic/semiadder.png
+    ~pennylane.Incrementer               /_static/templates/arithmetic/adder.png
+    ~pennylane.OutMultiplier             /_static/templates/arithmetic/outmultiplier.png
+    ~pennylane.SignedOutMultiplier       /_static/templates/arithmetic/signedoutmultiplier.png
+    ~pennylane.OutSquare                 /_static/templates/arithmetic/outsquare.png
+    ~pennylane.SignedOutSquare           /_static/templates/arithmetic/signedoutsquare.png
+    ~pennylane.LeftClassicalComparator   /_static/templates/arithmetic/leftclassicalcomparator.png
+    ~pennylane.LeftQuantumComparator     /_static/templates/arithmetic/leftquantumcomparator.png
 
 .. _intro_ref_temp_qchem:
 
 Other subroutines
 -----------------
 
-Other useful subroutines which do not belong to the previous categories can be found here.
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
+.. subroutine-table::
     :nosignatures:
 
-    ~pennylane.IQP
-    ~pennylane.IQPEmbedding
-    ~pennylane.TrotterCDF
-    ~pennylane.TrotterCGF
-    ~pennylane.TrotterVibronic
-    ~pennylane.QuantumPhaseEstimation
-    ~pennylane.QFT
-    ~pennylane.AQFT
-    ~pennylane.FlipSign
-    ~pennylane.QSVT
-    ~pennylane.GQSP
-    ~pennylane.Select
-    ~pennylane.OneBodyBlockEncoding
-    ~pennylane.QROM
-    ~pennylane.SelectPauliRot
-    ~pennylane.TemporaryAND
-    ~pennylane.BasisRotation
-
-:html:`</div>`
+    ~pennylane.IQP                      /_static/templates/subroutines/iqp.png
+    ~pennylane.IQPEmbedding             /_static/templates/embeddings/iqp.png
+    ~pennylane.TrotterCDF               /_static/templates/subroutines/trotter_product.png
+    ~pennylane.TrotterCGF               /_static/templates/subroutines/trotter_product.png
+    ~pennylane.TrotterVibronic          /_static/templates/subroutines/trotter_product.png
+    ~pennylane.QuantumPhaseEstimation   /_static/templates/subroutines/qpe.svg
+    ~pennylane.iterative_qpe            /_static/templates/subroutines/iterative_qpe.svg
+    ~pennylane.QFT                      /_static/templates/subroutines/qft.svg
+    ~pennylane.AQFT                     /_static/templates/subroutines/aqft.png
+    ~pennylane.FlipSign                 /_static/templates/subroutines/flip_sign.png
+    ~pennylane.QSVT                     /_static/templates/subroutines/qsvt.png
+    ~pennylane.GQSP                     /_static/templates/subroutines/gqsp.png
+    ~pennylane.Select                   /_static/templates/subroutines/select_cropped.png
+    ~pennylane.OneBodyBlockEncoding     /_static/templates/subroutines/onebodyblockencoding.png
+    ~pennylane.QROM                     /_static/templates/qrom/qrom_thumbnail.png
+    ~pennylane.SelectPauliRot           /_static/templates/subroutines/select_pauli_rot_cropped.png
+    ~pennylane.TemporaryAND             /_static/templates/subroutines/temporary_and.png
+    ~pennylane.BasisRotation            /_static/templates/subroutines/basis_rotation.jpeg
