@@ -78,7 +78,7 @@ def test_weights_affect_graph_decomposition():
     ]
 
 
-class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+class CustomOp1(Operation):  # pylint: disable=too-few-public-methods
     resource_keys = set()
 
     @property
@@ -365,10 +365,10 @@ class TestDecomposeGraphEnabled:
         def _decomp(wires):
             AnotherOp(wires)
 
-        tape = qp.tape.QuantumScript([CustomOp([0, 1])])
+        tape = qp.tape.QuantumScript([CustomOp1([0, 1])])
 
         with qp.decomposition.local_decomps():
-            qp.add_decomps(CustomOp, _decomp)
+            qp.add_decomps(CustomOp1, _decomp)
             [decomp], _ = qp.decompose(tape, gate_set=qp.gate_sets.CLIFFORD_T, strict=False)
 
         assert decomp.operations == [AnotherOp([0, 1])]
@@ -389,10 +389,10 @@ class TestDecomposeGraphEnabled:
             qp.CNOT(wires)
             qp.H(wires[1])
 
-        tape = qp.tape.QuantumScript([AnotherOp([0, 1]), CustomOp([0, 1])])
+        tape = qp.tape.QuantumScript([AnotherOp([0, 1]), CustomOp1([0, 1])])
 
         with qp.decomposition.local_decomps():
-            qp.add_decomps(CustomOp, _decomp, _decomp2)
+            qp.add_decomps(CustomOp1, _decomp, _decomp2)
             [decomp], _ = qp.decompose(tape, gate_set=qp.gate_sets.CLIFFORD_T, strict=False)
 
         assert decomp.operations == [AnotherOp([0, 1]), qp.H(1), qp.CNOT([0, 1]), qp.H(1)]
@@ -496,11 +496,11 @@ class TestDecomposeGraphEnabled:
             [
                 qp.adjoint(qp.RX(0.5, wires=[0])),
                 qp.adjoint(qp.adjoint(qp.MultiRZ(0.5, wires=[0, 1]))),
-                qp.adjoint(CustomOp(0.1, 0.2, 0.3, wires=[0])),
+                qp.adjoint(CustomOp1(0.1, 0.2, 0.3, wires=[0])),
             ]
         )
         [new_tape], _ = qp.transforms.decompose(
-            tape, gate_set={"CNOT", "RX", "RY", "RZ"}, fixed_decomps={CustomOp: custom_decomp}
+            tape, gate_set={"CNOT", "RX", "RY", "RZ"}, fixed_decomps={CustomOp1: custom_decomp}
         )
         assert new_tape.operations == [
             qp.RX(-0.5, wires=[0]),
@@ -541,11 +541,11 @@ class TestDecomposeGraphEnabled:
         @qp.transforms.decompose(
             gate_set={qp.RX, qp.RY, qp.RZ, qp.CNOT, "measure", "ppm"},
             fixed_decomps={qp.GlobalPhase: null_decomp},
-            alt_decomps={CustomOp: [_custom_decomp, _expensive_decomp]},
+            alt_decomps={CustomOp1: [_custom_decomp, _expensive_decomp]},
         )
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            CustomOp(wires=[0, 1])
+            CustomOp1(wires=[0, 1])
             m0 = qp.measure(0) if m_type == "mcm" else qp.pauli_measure("XZ", wires=[0, 1])
             qp.cond(m0, qp.X)(0)
             return qp.probs()
@@ -731,7 +731,7 @@ class TestDecomposeGraphEnabled:
             OneWireDynOp(phi / 2, wires[1])
 
         with qp.queuing.AnnotatedQueue() as q:
-            CustomOp(0.6, [0, 1])
+            CustomOp1(0.6, [0, 1])
             DynOp(0.5, [0, 1])
 
         tape = qp.tape.QuantumScript.from_queue(q)
@@ -753,7 +753,7 @@ class TestDecomposeGraphEnabled:
 
         with qp.decomposition.local_decomps():
 
-            qp.add_decomps(CustomOp, _custom_decomp)
+            qp.add_decomps(CustomOp1, _custom_decomp)
             qp.add_decomps(DynOp, _dynop_decomp)
 
             [result], _ = qp.decompose([tape], gate_set={qp.CNOT, qp.H, OneWireDynOp})

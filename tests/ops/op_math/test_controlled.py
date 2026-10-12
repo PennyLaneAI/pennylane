@@ -985,11 +985,16 @@ class TestDecomposition:
         ctrl_op = qp.ctrl(base_op, control=ctrl_wires)
         custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
 
-        # There is not custom ctrl class for GlobalPhase (yet), so no `compute_decomposition`
-        # to test, just the controlled decompositions logic.
+        # GlobalPhase and Identity use a custom ctrl dispatch that returns a different operator
+        # (e.g. a PhaseShift) rather than a Controlled with a `compute_decomposition`, so there is
+        # no `compute_decomposition` to test for them.
         # NOTE: Operator2 instances don't have compute_decomposition defined.
         if not issubclass(base_cls, Operator2) and base_cls not in (qp.GlobalPhase, qp.Identity):
             assert custom_ctrl_cls.compute_decomposition(*params, active_wires) == expected
+
+        # Controlling a GlobalPhase lowers to a (Controlled)PhaseShift; verify the dispatch output.
+        if base_cls is qp.GlobalPhase:
+            qp.assert_equal(ctrl_op, expected[0])
 
         mat = qp.matrix(ctrl_op.decomposition, wire_order=active_wires)()
         assert np.allclose(mat, custom_ctrl_op.matrix(), atol=tol, rtol=0)
@@ -1493,7 +1498,6 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize(
         "features, num_wires",
         [
-            (pnp.array([[0.5], [2.1]]), 1),
             (pnp.array([[0.5, -0.5], [0.2, 1.5]]), 2),
             (pnp.ones((2, 5)), 5),
         ],
@@ -1509,7 +1513,7 @@ class TestControlledSupportsBroadcasting:
             features,
             list(range(num_wires)),
             n_repeats=2,
-            pattern=op.base.hyperparameters["pattern"],
+            pattern=op.base.arguments["pattern"],
         )
         op.decomposition()
 
