@@ -230,7 +230,9 @@ class TestDiagonalization:
         assert np.allclose(_diagonalization_matrix((0, fragment_idx), n), circuit_matrix)
 
     @pytest.mark.capture
-    @pytest.mark.parametrize("n, num_fragments", [(1, 1), (1, 2), (2, 3), (2, 4), (3, 6), (3, 8)])
+    @pytest.mark.parametrize(
+        "n, num_fragments", [(1, 1), (1, 2), (2, 3), (2, 4), (3, 1), (3, 6), (3, 8)]
+    )
     def test_branch_prob_hints(self, n, num_fragments):
         """Test that the conditionals carry ``branch-prob`` hints that reproduce the number of
         gates applied across all fragments."""
@@ -241,6 +243,10 @@ class TestDiagonalization:
             partial(_diagonalize_vibronic_circuit, wires=wires, num_fragments=num_fragments)
         )(0)
         hints = hint_helpers.cond_hints(plxpr.jaxpr)
+        if num_fragments == 1:
+            assert len(hints) == 0
+            return
+
         assert len(hints) == 2
 
         num_hadamards = num_cnots = 0
