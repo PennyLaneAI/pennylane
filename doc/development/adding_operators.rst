@@ -1,7 +1,7 @@
 .. _contributing_operators:
 
-Adding new subroutines
-======================
+Adding new quantum operators
+===========================
 
 The following steps will help you to create custom operators, and to
 potentially add them to PennyLane.
