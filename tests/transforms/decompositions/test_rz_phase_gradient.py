@@ -244,6 +244,7 @@ PRECISION_STATS_CASES = [
     ([1, 0, 0, 0], {2: 1}, 2),
     ([0, 0, 0, 0], {0: 1, 3: 1}, 0),
     ([0, 0, 0, 0], {2: 1}, 2),
+    ([1, 0, 1, 0], {4: 3}, 4),
 ]
 
 
@@ -323,6 +324,23 @@ def test_precision_stats_hints(precision_stats, expected):
     )
     jaxpr = jax.make_jaxpr(lambda phi: rule(phi, wires=[0]))(0.4)
     assert hint_helpers.cond_hints(jaxpr.jaxpr) == [pytest.approx(expected)]
+
+
+@pytest.mark.capture
+def test_precision_stats_full_precision_only_has_no_cond():
+    """Test that no conditional is used if ``precision_stats`` only contains the full precision,
+    in which case the full precision is applied directly."""
+    import jax
+
+    rule = make_rz_to_phase_gradient_decomp(
+        [1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11], precision_stats={4: 3}
+    )
+    jaxpr = jax.make_jaxpr(lambda phi: rule(phi, wires=[0]))(0.4)
+    assert not hint_helpers.cond_hints(jaxpr.jaxpr)
+
+    ops = list(_leaf_ops(qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4).operations))
+    adders = [op for op in ops if isinstance(op, qp.SemiAdder)]
+    assert len(adders) == 1 and adders[0].x_wires == qp.wires.Wires([1, 2, 3, 4])
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
