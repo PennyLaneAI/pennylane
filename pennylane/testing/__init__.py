@@ -33,6 +33,7 @@ Decompositions
 .. autosummary::
     :toctree: api
 
+    ~assert_decomposable
     ~assert_valid_decomp_rule
     ~decomp_rule_to_tape
 
@@ -52,5 +53,5 @@ Program capture
 """
 
 from .capture import assert_eqn_matches_op, extract_all_primitives, find_eqns, plxpr_to_tape
-from .decompositions import assert_valid_decomp_rule, decomp_rule_to_tape
+from .decompositions import assert_decomposable, assert_valid_decomp_rule, decomp_rule_to_tape
 from .operators import assert_valid

@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for ``qp.testing.assert_valid_decomp_rule`` and ``qp.testing.decomp_rule_to_tape``.
+Tests for ``qp.testing.assert_valid_decomp_rule``, ``qp.testing.assert_decomposable`` and
+``qp.testing.decomp_rule_to_tape``.
 """
 
 # pylint: disable=too-few-public-methods
@@ -22,7 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import Operator
-from pennylane.testing import assert_valid_decomp_rule, decomp_rule_to_tape
+from pennylane.testing import assert_decomposable, assert_valid_decomp_rule, decomp_rule_to_tape
 from pennylane.typing import Wire
 from tests.core.operator.operator2_utils import OneWireDynOp
 
@@ -185,7 +186,10 @@ class TestAssertValidDecompositionRule:
 
         rule_wrong_ops = qp.register_resources({qp.X: 2, qp.Z: 2}, exact=False)(rule)
         op = MyOp([0, 1])
-        with pytest.raises(AssertionError, match="Gate counts expected from"):
+        with pytest.raises(
+            AssertionError,
+            match=r"The resources is missing gates in the actual decomposition: \['PauliY'\]",
+        ):
             assert_valid_decomp_rule(op, rule_wrong_ops)
 
     def test_new_decomposition_rule_with_mcm_skips_matrix_check(self, mocker):
@@ -239,3 +243,58 @@ class TestAssertValidDecompositionRule:
             loop()  # pylint: disable=no-value-for-parameter
 
         assert_valid_decomp_rule(OneWireDynOp(0.5, wires=0), rule)
+
+
+class MyOneWireOp(Operator):
+    """A one-wire operator without any registered decomposition rules."""
+
+    num_wires = 1
+
+
+@qp.register_condition(lambda: False)
+@qp.register_resources({qp.Y: 5})
+def _never_applicable(wires):
+    qp.X(wires)
+
+
+@qp.register_resources({qp.X: 1})
+def _to_x(wires):
+    qp.X(wires)
+
+
+@qp.register_resources({qp.X: 2})
+def _to_x_bad_resources(wires):
+    qp.X(wires)
+
+
+class TestAssertDecomposable:
+    """Tests for ``qp.testing.assert_decomposable``."""
+
+    def test_valid_rules(self):
+        """Test that no error is raised if the registered rules are valid."""
+        assert_decomposable(qp.CNOT([0, 1]))
+
+    def test_no_rules(self):
+        """Test that an error is raised if no rules are registered for the operator."""
+        with pytest.raises(AssertionError, match="No decomposition rules are registered"):
+            assert_decomposable(MyOneWireOp(0))
+
+    def test_no_applicable_rules(self):
+        """Test that an error is raised if none of the registered rules are applicable."""
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(MyOneWireOp, _never_applicable)
+            with pytest.raises(AssertionError, match="None of the decomposition rules"):
+                assert_decomposable(MyOneWireOp(0))
+
+    def test_inapplicable_rules_are_skipped(self):
+        """Test that inapplicable rules are not checked if another rule is applicable."""
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(MyOneWireOp, _never_applicable, _to_x)
+            assert_decomposable(MyOneWireOp(0))
+
+    def test_invalid_applicable_rule(self):
+        """Test that an error is raised if an applicable rule is invalid."""
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(MyOneWireOp, _to_x, _to_x_bad_resources)
+            with pytest.raises(AssertionError, match="do not match the resource estimate"):
+                assert_decomposable(MyOneWireOp(0))

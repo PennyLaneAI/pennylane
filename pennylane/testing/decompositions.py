@@ -16,16 +16,17 @@ Utilities for testing decomposition rules.
 """
 
 from collections import defaultdict
-from functools import partial
+from functools import partial, singledispatch
 
 import jax
 
 import pennylane as qp
-from pennylane.core.operator import Operator, Operator1, abstractify
+from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.tape import QuantumScript
+from pennylane.templates.core import SubroutineOp
 
 from .capture import plxpr_to_tape
 
@@ -98,23 +99,37 @@ def decomp_rule_to_tape(op: Operator, rule: DecompositionRule) -> QuantumScript:
 
     # Match each operator model's capture boundary: legacy hyperparameters remain
     # closed over, while Operator2 exposes its dynamic, wire, and hybrid arguments.
-    if isinstance(op, Operator1):
-        decomposition = partial(rule, **op.hyperparameters)
-        capture_args = op.data
-        capture_kwargs = {"wires": op.wires}
-    else:
-        decomposition = partial(rule, **op.static_args, **op.compilable_args)
-        capture_args = ()
-        wire_args = {k: qp.math.array(w, like="jax") for k, w in op.wire_args.items()}
-        capture_kwargs = {**op.dynamic_args, **wire_args, **op.hybrid_args}
-
-    plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(*capture_args, **capture_kwargs)
-    flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
+    decomp, args, kwargs = _prepare_decomp_for_capture(op, rule)
+    plxpr = qp.capture.make_plxpr(decomp, autograph=False)(*args, **kwargs)
+    flat_capture_args = jax.tree.leaves((args, kwargs))
     return plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
 
 
+@singledispatch
+def _prepare_decomp_for_capture(op: Operator, rule: DecompositionRule):
+    raise NotImplementedError
+
+
+@_prepare_decomp_for_capture.register
+def _prepare_for_operator1(op: Operator1, rule: DecompositionRule):
+    decomp = partial(rule, **op.hyperparameters)
+    capture_args = op.data
+    capture_kwargs = {"wires": op.wires}
+    return decomp, capture_args, capture_kwargs
+
+
+@_prepare_decomp_for_capture.register
+def _prepare_operator2_rule(op: Operator2, rule: DecompositionRule):
+    decomp = partial(rule, **op.static_args, **op.compilable_args)
+    wire_args = {k: qp.math.array(w, like="jax") for k, w in op.wire_args.items()}
+    capture_kwargs = {**op.dynamic_args, **wire_args, **op.hybrid_args}
+    return decomp, (), capture_kwargs
+
+
 def assert_valid_decomp_rule(
-    op: Operator, rule: DecompositionRule, skip_matrix_check: bool = False
+    op: Operator,
+    rule: DecompositionRule,
+    check_matrix: bool = True,
 ) -> None:
     """Check that a decomposition rule is consistent with the operator it decomposes.
 
@@ -125,14 +140,14 @@ def assert_valid_decomp_rule(
     Args:
         op (Operator): the operator to decompose
         rule (DecompositionRule): a decomposition rule for ``op``
-        skip_matrix_check (bool): If ``True``, the matrix of the decomposition is not
-            compared with the matrix of ``op``.
+        check_matrix (bool): If ``True``, the matrix of the decomposition is compared with the
+            matrix of ``op``. Defaults to ``True``.
 
     Raises:
         AssertionError: if the rule is not consistent with ``op``
 
-    .. seealso:: :func:`~.testing.assert_valid`, which runs this check for every rule
-        registered for an operator.
+    .. seealso:: :func:`~.testing.assert_decomposable`, which runs this check for every rule
+        registered for an operator and requires at least one of them to be applicable.
 
     **Example**
 
@@ -163,13 +178,13 @@ def assert_valid_decomp_rule(
 
     # Test that the resource function is correct
     resources = rule.compute_resources(**params)
-    estimated_gate_counts = resources.gate_counts
+    estimated_gates = resources.gate_counts
 
     # Make sure all counts are int
-    for gate, count in estimated_gate_counts.items():
+    for gate, count in estimated_gates.items():
         assert isinstance(count, int), (
-            f"Resource count for '{gate}' in '{op.name}' decomp rule '{rule.name}' must be an integer, "
-            f"but got {type(count)} ({count}). "
+            f"Resource count for '{gate}' in '{op.name}' decomp rule '{rule.name}' must "
+            f"be an integer, but got {type(count)} ({count}). "
         )
 
     tape = decomp_rule_to_tape(op, rule)
@@ -178,30 +193,26 @@ def assert_valid_decomp_rule(
     if total_work_wires:
         tape = _resolve_dynamic_wires(tape, total_work_wires)
 
-    actual_gate_counts = defaultdict(int)
+    actual_gates = defaultdict(int)
     for _op in tape.operations:
         if isinstance(_op, qp.ops.Conditional):
             _op = _op.base
         op_rep = abstractify(_op)
-        actual_gate_counts[op_rep] += 1
-    actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
+        actual_gates[op_rep] += 1
 
-    if rule.exact_resources and not (
-        isinstance(op, qp.templates.SubroutineOp) and not op.subroutine.exact_resources
-    ):
-        _assert_counts_match(estimated_gate_counts, actual_gate_counts)
+    # Every SubroutineOp shares one generic decomposition rule, which always claims exact resources
+    # but takes its gate counts from the subroutine's own ``compute_resources``. A subroutine with
+    # ``exact_resources=False`` therefore only needs to pass the weaker check below.
+    is_inexact_subroutine = isinstance(op, SubroutineOp) and not op.subroutine.exact_resources
+    if rule.exact_resources and not is_inexact_subroutine:
+        _assert_counts_match(estimated_gates, actual_gates)
     else:
-        # If the resource estimate is not expected to match exactly to the actual
-        # decomposition, at least make sure that all gates are accounted for.
-        assert all(op in estimated_gate_counts for op in actual_gate_counts), (
-            "\nGate counts expected from resource function to contain actual gates:\n"
-            f"{list(estimated_gate_counts.keys())}\nActual gates:\n{list(actual_gate_counts.keys())}\n"
-            "Missing in gate counts from resource function:\n"
-            f"{[op for op in actual_gate_counts if op not in estimated_gate_counts]}"
-        )
+        # An inexact resource estimate must still account for every gate in the decomposition.
+        missing = sorted(str(gate) for gate in actual_gates.keys() - estimated_gates.keys())
+        assert not missing, f"The resources is missing gates in the actual decomposition: {missing}"
 
     # Tests that the decomposition produces the same matrix
-    if op.has_matrix and not skip_matrix_check and not _decomp_contains_mcm(rule, params):
+    if check_matrix and op.has_matrix and not _decomp_contains_mcm(rule, params):
         # Add projector to the additional wires (work wires) on the tape
         work_wires = tape.wires - op.wires
         all_wires = op.wires + work_wires
@@ -215,3 +226,44 @@ def assert_valid_decomp_rule(
         assert qp.math.allclose(
             op_matrix, decomp_matrix
         ), "decomposition must produce the same matrix as the operator."
+
+
+def assert_decomposable(op: Operator, check_matrix: bool = True) -> None:
+    """Check that an operator can be decomposed with its registered decomposition rules.
+
+    At least one rule registered for ``op`` with :func:`~.add_decomps` must be applicable to
+    ``op``, and every applicable rule is checked with :func:`~.testing.assert_valid_decomp_rule`.
+
+    Args:
+        op (Operator): the operator to decompose
+        check_matrix (bool): If ``True``, the matrix of each decomposition is compared with the
+            matrix of ``op``. Defaults to ``True``.
+
+    Raises:
+        AssertionError: if no registered rule is applicable to ``op``, or if an applicable rule
+            is not consistent with ``op``
+
+    **Example**
+
+    .. code-block:: python
+
+        class MyOp(qp.operation.Operator):
+            num_wires = 1
+
+    >>> qp.testing.assert_decomposable(qp.CNOT([0, 1]))
+    >>> qp.testing.assert_decomposable(MyOp(0))
+    Traceback (most recent call last):
+        ...
+    AssertionError: No decomposition rules are registered for MyOp(wires=[0]).
+
+    """
+
+    rules = qp.list_decomps(op)
+    assert rules, f"No decomposition rules are registered for {op}."
+
+    params, _, _ = _get_decomp_args(op)
+    applicable_rules = [rule for rule in rules if rule.is_applicable(**params)]
+    assert applicable_rules, f"None of the decomposition rules registered for {op} are applicable."
+
+    for rule in applicable_rules:
+        assert_valid_decomp_rule(op, rule, check_matrix=check_matrix)
