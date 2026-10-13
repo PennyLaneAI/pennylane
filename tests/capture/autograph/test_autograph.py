@@ -45,7 +45,7 @@ from jax import make_jaxpr
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import cond_prim, for_loop_prim
 from pennylane.exceptions import AutoGraphError
-from tests.capture.capture_utils import assert_eqn_matches_op, extract_all_primitives
+from pennylane.testing import assert_eqn_matches_op, extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
 
