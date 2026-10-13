@@ -72,7 +72,7 @@ def estimate(
     with respect to a specified level of compilation.
 
     .. note::
-    
+
         Only qnodes which have been compiled with program capture enabled are supported.
         e.g. via compiling with :func:`qjit(capture=True) <~.qjit>` or using :func:`~.capture.enable` to enable program capture globally.
 
