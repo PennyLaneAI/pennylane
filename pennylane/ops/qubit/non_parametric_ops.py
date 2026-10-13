@@ -257,7 +257,7 @@ def _hadamard_ppr_resources(wires: WiresLike):
     return {qp.PPR_2(1, "Z", Wire[1]): 1, qp.PPR_4(1, "Y", Wire[1]): 1, qp.GlobalPhase: 1}
 
 
-@register_resources(_hadamard_rz_ry_resources)
+@register_resources(_hadamard_ppr_resources)
 def _hadamard_ppr(wires: WiresLike, **__):
     qp.PPR_2(1, "Z", wires=wires)
     qp.PPR_4(1, "Y", wires=wires)
