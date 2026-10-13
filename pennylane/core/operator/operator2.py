@@ -2008,7 +2008,7 @@ def pop_op_eqns(ops: Iterable):
             # NOTE: Check from the end of the list as symbolic operators
             # consume its base immediately after the base was traced so the entry to be dropped
             # is at or very near the tail of the equation list
-            for i in range(len(eqns) - 1, -1, -1):
+            for i in reversed(range(len(eqns))):
                 if eqns[i]() is eqn:
                     del eqns[i]
                     break
