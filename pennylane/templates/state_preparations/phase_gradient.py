@@ -45,7 +45,10 @@ class PhaseGradientStatePrep(StatePrepBase2):
     .. seealso::
 
         Compiling :class:`~.RZ` gates to phase-gradient operations with
-        :func:`~.transforms.rz_phase_gradient`, and the opt-in Jones distillation rule
+        :func:`~.transforms.rz_phase_gradient`.
+
+        Approximate Clifford+T preparation of this state via
+        `Jones distillation <https://arxiv.org/abs/1303.3066>`__ with
         :func:`~.transforms.decompositions.make_phase_gradient_distillation_decomp`.
 
     .. note::

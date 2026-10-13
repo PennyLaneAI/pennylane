@@ -21,7 +21,7 @@ import pytest
 import pennylane as qp
 from pennylane.decomposition.decomposition_rule import _fix_decomp
 from pennylane.exceptions import WireError
-from pennylane.transforms.decompositions.phase_gradient_state_prep import (
+from pennylane.transforms.decompositions.phase_gradient_state_prep_decomp import (
     _jones_num_rounds,
     _jones_register_sizes,
     _jones_seed,
