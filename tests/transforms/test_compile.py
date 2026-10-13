@@ -122,6 +122,24 @@ class TestCompile:
         assert new_tape.shots == tape.shots
         assert new_tape.circuit == tape[2:]
 
+    @pytest.mark.parametrize("gate", [qp.S, qp.T, qp.SX])
+    def test_compile_cancels_adjoint_in_basis(self, gate):
+        """An adjoint should survive expansion so its inverse can be cancelled."""
+        tape = qp.tape.QuantumScript([gate(0), qp.adjoint(gate(0))], [qp.expval(qp.Z(0))])
+
+        [compiled], _ = qp.compile(tape)
+
+        assert compiled.operations == []
+        assert compiled.measurements == tape.measurements
+
+    def test_compile_preserves_adjoint_in_custom_basis(self):
+        """An adjoint of a basis gate is retained when the pipeline is empty."""
+        tape = qp.tape.QuantumScript([qp.S(0), qp.adjoint(qp.S(0))])
+
+        [compiled], _ = qp.compile(tape, pipeline=[], basis_set=["S", "PhaseShift"])
+
+        qp.assert_equal(compiled, tape)
+
 
 class TestCompileIntegration:
     """Integration tests to verify outputs of compilation pipelines."""
