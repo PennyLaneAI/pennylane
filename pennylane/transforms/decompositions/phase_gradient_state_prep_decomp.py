@@ -208,7 +208,7 @@ def _distillation_resources(num_wires, mode):
 
 
 def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-until-success"):
-    r"""Create an opt-in Jones distillation rule for :class:`~.PhaseGradientStatePrep`.
+    r"""Create a decomposition rule for :class:`~.PhaseGradientStatePrep` based on Jones distillation.
 
     The rule implements the Fourier-state distillation protocol from
     `Jones (2013) <https://arxiv.org/abs/1303.3066>`__ and uses only Clifford gates,
