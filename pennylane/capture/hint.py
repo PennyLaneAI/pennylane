@@ -18,7 +18,7 @@ Adds ``qp.hint``, a tool for annotating things with compiler hints.
 import functools
 from collections.abc import Callable, Set
 from difflib import SequenceMatcher
-from typing import Any
+from typing import Any, overload
 
 
 def process_hints(hints: dict[str, Any], supported: Set[str]) -> dict[str, Any]:
@@ -112,7 +112,7 @@ def apply_hint(f, hints: dict[str, Any]):
     >>> def f(x): return x
     >>> hinted_f = qp.hint({"identity": True})(f)
     >>> hinted_f
-    <HintedCallable(<function f at 0x113e21260>, {'identity': True})>
+    <HintedCallable(<function f at ...>, {'identity': True})>
     >>> hinted_f.hints
     {'identity': True}
 
@@ -132,21 +132,33 @@ def _stack_to_HintedCallable(f: HintedCallable, hints: dict) -> HintedCallable:
     return HintedCallable(f, f.hints | hints)
 
 
-def hint(hints: dict[str, Any]) -> Callable:
+@overload
+def hint(f_or_hints: dict[str, Any], hints: None = None) -> Callable: ...
+@overload
+def hint(f_or_hints: Any, hints: dict[str, Any]) -> Any: ...
+def hint(f_or_hints, hints: dict[str, Any] | None = None):
     """Attaches a compiler hint to applicable functionality.
 
+    Can be used as a decorator or applied directly:
+
+    * ``@qp.hint({"num-iters": 10})`` / ``qp.hint({"num-iters": 10})(f)``
+    * ``qp.hint(f, {"num-iters": 10})``
+
     Args:
-        `hints` (dict[str, Any]):
-            A dictionary containing compiler hint information.
+        f_or_hints: either a dictionary of hints (decorator form), or the object
+            to annotate (direct form)
+        hints (dict[str, Any]): dictionary of hints; required for the direct form
 
     Returns:
-        Callable: a decorator that can be applied.
+        A decorator when only a hint dictionary is passed, otherwise the hinted object.
 
     **Available Hints:**
 
     * :func:`~.for_loop` and :func:`~.while_loop` support `"num-iters"` to indicate a heuristic
       number of loop iterations for the purposes of resource estimation with
-      :func:`~.specs`. See Usage Details for more information.
+      :func:`~.analyze`. See Usage Details for more information.
+    * The branches to :func:`~.cond` support ``"branch-prob"`` to indicate the probability
+      that a branch will be hit.
 
     .. warning::
 
@@ -161,7 +173,7 @@ def hint(hints: dict[str, Any]) -> Callable:
         :title: Usage Details
 
         By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
-        with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
+        with :func:`~.analyze` can heuristically specify the number of iterations, leading to concrete
         resource counts (no symbolic expressions).
 
         .. code-block:: python
@@ -185,7 +197,7 @@ def hint(hints: dict[str, Any]) -> Callable:
 
                 return qp.expval(qp.Z(0))
 
-        >>> print(qp.specs(c, level=0)(5).resources)
+        >>> print(qp.analyze(c)(5).resources)
         Symbolic Variables: a
         Quantum operations:
         - Total: a + 10
@@ -197,6 +209,16 @@ def hint(hints: dict[str, Any]) -> Callable:
         Circuit Depth: Not computed
 
         The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
+
+        The same annotation can be applied directly instead of as a decorator:
+
+        .. code-block:: python
+
+            @qp.for_loop(n)
+            def hinted_loop(i):
+                qp.X(i)
+
+            hinted_loop = qp.hint(hinted_loop, {"num-iters": 10})
 
         Note that hints can be overwritten. The following will use ``20`` as the number of iterations:
 
@@ -235,8 +257,16 @@ def hint(hints: dict[str, Any]) -> Callable:
                 return qp.expval(qp.Z(0))
 
     """
+    if hints is not None:
+        return apply_hint(f_or_hints, hints)
+
+    if not isinstance(f_or_hints, dict):
+        raise TypeError(
+            "hint() decorator form expects a dict of hints; "
+            "use hint(f, hints) to apply directly."
+        )
 
     def decorator(f):
-        return apply_hint(f, hints)
+        return apply_hint(f, f_or_hints)
 
     return decorator
