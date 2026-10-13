@@ -229,12 +229,13 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
     Returns:
         pennylane.decomposition.DecompositionRule: the fixed decomposition rule
 
-    ``mode="repeat-until-success"`` implements local retries with nested
-    :func:`~.while_loop`\ s and requires program capture. Each loop is annotated with its
-    expected number of attempts via :func:`~.hint`, such that :func:`~.analyze` reports expected
-    resource counts. ``mode="postselect"`` represents the successful branch and is useful for
-    analytic simulation and fidelity checks.
     """
+
+    # ``mode="repeat-until-success"`` implements local retries with nested
+    # :func:`~.while_loop`\ s and requires program capture. Each loop is annotated with its
+    # expected number of attempts via :func:`~.hint`, such that :func:`~.analyze` reports expected
+    # resource counts. ``mode="postselect"`` represents the successful branch and is useful for
+    # analytic simulation and fidelity checks.
     if mode not in {"repeat-until-success", "postselect"}:
         raise ValueError("mode must be 'repeat-until-success' or 'postselect'; " f"got {mode!r}.")
 
