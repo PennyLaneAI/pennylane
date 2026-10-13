@@ -14,6 +14,8 @@
 r"""Jones distillation decomposition for phase-gradient state preparation."""
 
 import math
+from collections import defaultdict
+from functools import lru_cache
 
 import pennylane as qp
 from pennylane.decomposition import register_resources
@@ -29,8 +31,9 @@ def _jones_num_rounds(num_wires):
     numerator = 2 * num_wires - 2 * math.log2(math.pi)
     asymptotic_rounds = max(1, math.ceil(math.log2(numerator / math.log2(9))))
 
-    # Jones's sideband estimate is asymptotic. One extra round closes the finite-size gap
-    # for small registers while preserving the O(log(n)) round count.
+    # Jones's sideband estimate is asymptotic and falls short for some finite registers
+    # (e.g. n=14). One extra round for n >= 5 restores the target infidelity, smaller
+    # registers reach it without.
     return asymptotic_rounds + int(num_wires >= 5)
 
 
@@ -45,12 +48,34 @@ def _jones_register_sizes(num_wires):
     return (2, *reversed(sizes))
 
 
-def _required_workspace(register_sizes):
-    """Return the peak number of wires needed by a depth-first local-retry tree."""
-    required = register_sizes[0]
-    for child_size, output_size in zip(register_sizes, register_sizes[1:]):
-        required = max(3 * output_size - 1, child_size + required)
-    return required
+_MAX_SIMULATED_SIZE = 16
+
+
+@lru_cache
+def _jones_success_probabilities(register_sizes):
+    """Return the success probability of each distillation round.
+
+    Rounds are simulated as coefficient squaring in the Fourier basis. Rounds producing more than
+    ``_MAX_SIMULATED_SIZE`` wires succeed with probability one up to about ``1e-4`` and are not
+    simulated.
+    """
+    dim = 2 ** register_sizes[0]
+    state = qp.math.exp(-2j * math.pi * qp.math.arange(dim, like="numpy") / dim) / math.sqrt(dim)
+
+    probabilities = []
+    for child_size, output_size in zip(register_sizes[:-1], register_sizes[1:], strict=True):
+        if output_size > _MAX_SIMULATED_SIZE:
+            probabilities.append(1.0)
+            continue
+
+        dim = 2**output_size
+        tail_dim = 2 ** (output_size - child_size)
+        tail = qp.math.ones(tail_dim, like="numpy") / math.sqrt(tail_dim)
+        squared = (qp.math.fft.ifft(qp.math.kron(state, tail)) * math.sqrt(dim)) ** 2
+        probabilities.append(float(qp.math.sum(qp.math.abs(squared) ** 2)))
+        state = qp.math.fft.fft(squared / qp.math.linalg.norm(squared)) / math.sqrt(dim)
+
+    return tuple(probabilities)
 
 
 def _jones_seed(wires):
@@ -61,14 +86,6 @@ def _jones_seed(wires):
         qp.Z(wires[0])
     if len(wires) > 1:
         qp.adjoint(qp.S(wires[1]))
-
-
-def _all_zero(measurements):
-    """Combine captured measurement outcomes into one Boolean success value."""
-    success = qp.math.logical_not(measurements[0])
-    for measurement in measurements[1:]:
-        success = qp.math.logical_and(success, qp.math.logical_not(measurement))
-    return success
 
 
 def _reset(wires):
@@ -120,7 +137,7 @@ def _distillation_attempt(
     if mode == "postselect":
         return True
 
-    success = _all_zero(measurements)
+    success = qp.math.sum(qp.math.array(measurements, like="jax")) == 0
 
     @qp.cond(qp.math.logical_not(success))
     def reset_output():
@@ -136,67 +153,59 @@ def _prepare_distilled_state(level, output_wires, scratch_wires, register_sizes,
         _jones_seed(output_wires)
         return
 
-    if mode == "postselect":
-        _distillation_attempt(level, output_wires, scratch_wires, register_sizes, mode)
-        return
-
     def not_success(success):
         return qp.math.logical_not(success)
 
+    expected_attempts = (
+        1 / _jones_success_probabilities(register_sizes)[level - 1]
+        if mode == "repeat-until-success"
+        else 1
+    )
+
+    @qp.hint({"num-iters": expected_attempts})
     @qp.while_loop(not_success)
-    def retry(_success):
-        return _distillation_attempt(level, output_wires, scratch_wires, register_sizes, mode)
+    def retry(success):
+        # Using the carry keeps MLIR canonicalization from rebuilding the loop and dropping the hint
+        return qp.math.logical_or(
+            success,
+            _distillation_attempt(level, output_wires, scratch_wires, register_sizes, mode),
+        )
 
     retry(False)
-
-
-def _accumulate(resources, resource, count):
-    resources[resource] = resources.get(resource, 0) + count
 
 
 def _distillation_resources(num_wires, mode):
     """Resources in the statically captured tree, counting each retry body once."""
     register_sizes = _jones_register_sizes(num_wires)
-    resources = {}
+    resources = defaultdict(int)
 
     if len(register_sizes) == 1:
-        _accumulate(resources, qp.Hadamard, num_wires)
+        resources[qp.Hadamard] += num_wires
         if num_wires:
-            _accumulate(resources, qp.Z, 1)
+            resources[qp.Z] += 1
         if num_wires > 1:
-            _accumulate(resources, qp.adjoint(qp.S(Wire[1])), 1)
+            resources[qp.adjoint(qp.S(Wire[1]))] += 1
         return resources
 
     num_states = 2 ** (len(register_sizes) - 1)
     seed_size = register_sizes[0]
-    _accumulate(resources, qp.Hadamard, num_states * seed_size)
-    _accumulate(resources, qp.Z, num_states)
-    _accumulate(resources, qp.adjoint(qp.S(Wire[1])), num_states)
+    resources[qp.Hadamard] += num_states * seed_size
+    resources[qp.Z] += num_states
+    resources[qp.adjoint(qp.S(Wire[1]))] += num_states
 
     for level, (child_size, output_size) in enumerate(
-        zip(register_sizes, register_sizes[1:]), start=1
+        zip(register_sizes[:-1], register_sizes[1:], strict=True), start=1
     ):
         num_nodes = 2 ** (len(register_sizes) - level - 1)
-        _accumulate(
-            resources,
-            qp.SemiAdder(Wire[output_size], Wire[output_size], Wire[output_size - 1]),
-            num_nodes,
-        )
-        _accumulate(
-            resources,
-            qp.Hadamard,
-            num_nodes * (2 * (output_size - child_size) + output_size),
-        )
+        adder = qp.SemiAdder(Wire[output_size], Wire[output_size], Wire[output_size - 1])
+        resources[adder] += num_nodes
+        resources[qp.Hadamard] += num_nodes * (2 * (output_size - child_size) + output_size)
         mid_measure = qp.ops.MidMeasure(
             Wire[1], reset=True, postselect=0 if mode == "postselect" else None
         )
-        _accumulate(resources, mid_measure, num_nodes * output_size)
+        resources[mid_measure] += num_nodes * output_size
         if mode == "repeat-until-success":
-            _accumulate(
-                resources,
-                qp.ops.MidMeasure(Wire[1], reset=True),
-                num_nodes * output_size,
-            )
+            resources[qp.ops.MidMeasure(Wire[1], reset=True)] += num_nodes * output_size
 
     return resources
 
@@ -204,47 +213,43 @@ def _distillation_resources(num_wires, mode):
 def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-until-success"):
     r"""Create an opt-in Jones distillation rule for :class:`~.PhaseGradientStatePrep`.
 
-    The rule uses only Clifford gates, :class:`~.SemiAdder`, mid-circuit measurements, and
-    classical control. ``mode="repeat-until-success"`` implements local retries with nested
-    :func:`~.while_loop` instances. ``mode="postselect"`` represents the successful branch and
-    is useful for analytic simulation and fidelity checks.
+    The rule implements the Fourier-state distillation protocol from
+    `Jones (2013) <https://arxiv.org/abs/1303.3066>`__ and uses only Clifford gates,
+    :class:`~.SemiAdder`, mid-circuit measurements, and classical control. The prepared state is
+    approximate: the number of distillation rounds grows as :math:`\mathcal{O}(\log n)` for an
+    :math:`n`-qubit register and targets an infidelity of at most :math:`\sin^2(\pi/2^n)`.
 
     The output, auxiliary, and work registers require :math:`n`, :math:`n`, and :math:`n-1`
     wires, respectively. All wires must be distinct and start in :math:`|0\rangle`. The
     decomposition uses the negative-phase convention of :class:`~.PhaseGradientStatePrep`.
 
-    The resources visible to ``specs(..., level="all-mlir")`` describe each static loop body
-    once, not the expected number of retries. If :math:`C_{r-1}` is the expected child cost,
-    :math:`A_r` the cost of one addition and verification, and :math:`p_r` its success
-    probability, the expected cost obeys
-
-    .. math::
-
-        C_r = \frac{2 C_{r-1} + A_r}{p_r}.
-
     Args:
-        aux_wires (WiresLike): auxiliary register with the same size as the output register
+        aux_wires (WiresLike): auxiliary register with the same size as the output register,
+            i.e. the target register of the ``PhaseGradientStatePrep`` operator to be decomposed.
         work_wires (WiresLike): at least :math:`n-1` clean wires used by :class:`~.SemiAdder`
-        mode (str): ``"repeat-until-success"`` or ``"postselect"``
+        mode (str): ``"repeat-until-success"`` (default) or ``"postselect"``, see below
 
     Returns:
         pennylane.decomposition.DecompositionRule: the fixed decomposition rule
 
-    .. note::
-
-        Include ``"measure"`` in a Catalyst graph-decomposition gate set. This preserves the
-        measurement-assisted uncomputation of :class:`~.TemporaryAND`; omitting it can double
-        the :math:`T` count.
-
-        For Catalyst capture, fix the generated rule with the developer-facing ``_fix_decomp``
-        function inside a :func:`~.decomposition.local_decomps` context. Keep the context active
-        while lazy qjit capture or ``specs`` runs.
+    ``mode="repeat-until-success"`` implements local retries with nested
+    :func:`~.while_loop`\ s and requires program capture. Each loop is annotated with its
+    expected number of attempts via :func:`~.hint`, such that :func:`~.analyze` reports expected
+    resource counts. ``mode="postselect"`` represents the successful branch and is useful for
+    analytic simulation and fidelity checks.
     """
     if mode not in {"repeat-until-success", "postselect"}:
         raise ValueError("mode must be 'repeat-until-success' or 'postselect'; " f"got {mode!r}.")
 
     aux_wires = Wires(aux_wires)
     work_wires = Wires(work_wires)
+    num_work_wires = max(0, len(aux_wires) - 1)
+    if len(work_wires) < num_work_wires:
+        raise WireError(
+            "work_wires must contain at least len(aux_wires) - 1 wires; "
+            f"got {len(work_wires)} work wires and {len(aux_wires)} auxiliary wires."
+        )
+    work_wires = work_wires[:num_work_wires]
 
     def resource_fn(wires):
         return _distillation_resources(len(wires), mode)
@@ -259,34 +264,15 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
                 "aux_wires must have the same size as the PhaseGradientStatePrep register; "
                 f"got {len(aux_wires)} auxiliary wires and {num_wires} output wires."
             )
-        if len(work_wires) < max(0, num_wires - 1):
-            raise WireError(
-                "work_wires must contain at least len(wires) - 1 wires; "
-                f"got {len(work_wires)} work wires and {num_wires=}"
-            )
-
-        selected_work_wires = work_wires[: max(0, num_wires - 1)]
         validate_no_wire_overlaps(
-            {
-                "wires": output_wires,
-                "aux_wires": aux_wires,
-                "work_wires": selected_work_wires,
-            }
+            {"wires": output_wires, "aux_wires": aux_wires, "work_wires": work_wires}
         )
 
         register_sizes = _jones_register_sizes(num_wires)
-        available_wires = output_wires + aux_wires + selected_work_wires
-        required_wires = _required_workspace(register_sizes)
-        if required_wires > len(available_wires):
-            raise WireError(
-                f"Jones schedule requires {required_wires} wires, but only "
-                f"{len(available_wires)} were provided."
-            )
-
         _prepare_distilled_state(
             len(register_sizes) - 1,
             list(output_wires),
-            list(aux_wires + selected_work_wires),
+            list(aux_wires + work_wires),
             register_sizes,
             mode,
         )

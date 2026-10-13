@@ -13,7 +13,7 @@
 # limitations under the License.
 """Tests for the Jones PhaseGradientStatePrep decomposition."""
 
-from importlib import import_module
+import re
 
 import numpy as np
 import pytest
@@ -21,17 +21,21 @@ import pytest
 import pennylane as qp
 from pennylane.decomposition.decomposition_rule import _fix_decomp
 from pennylane.exceptions import WireError
+from pennylane.transforms.decompositions.phase_gradient_state_prep import (
+    _jones_num_rounds,
+    _jones_register_sizes,
+    _jones_seed,
+    _jones_success_probabilities,
+    make_phase_gradient_distillation_decomp,
+)
 
-phase_gradient_decomp = import_module(
-    "pennylane.transforms.decompositions.phase_gradient_state_prep"
-)
-make_phase_gradient_distillation_decomp = (
-    phase_gradient_decomp.make_phase_gradient_distillation_decomp
-)
-_jones_num_rounds = getattr(phase_gradient_decomp, "_jones_num_rounds")
-_jones_register_sizes = getattr(phase_gradient_decomp, "_jones_register_sizes")
-_jones_seed = getattr(phase_gradient_decomp, "_jones_seed")
-_required_workspace = getattr(phase_gradient_decomp, "_required_workspace")
+
+def _required_workspace(register_sizes):
+    """Return the peak number of wires needed by a depth-first local-retry tree."""
+    required = register_sizes[0]
+    for child_size, output_size in zip(register_sizes[:-1], register_sizes[1:], strict=True):
+        required = max(3 * output_size - 1, child_size + required)
+    return required
 
 
 def _target_state(num_wires):
@@ -48,20 +52,18 @@ def _seed_state(num_wires):
 
 
 def _distill(state):
-    """Apply coefficient squaring in the Fourier basis and return state and success."""
+    """Apply coefficient squaring in the Fourier basis and renormalize."""
     dim = len(state)
-    coefficients = np.sqrt(dim) * np.fft.ifft(state)
-    squared = coefficients**2
-    success = np.sum(np.abs(squared) ** 2)
-    return np.fft.fft(squared / np.sqrt(success)) / np.sqrt(dim), success
+    squared = (np.sqrt(dim) * np.fft.ifft(state)) ** 2
+    return np.fft.fft(squared / np.linalg.norm(squared)) / np.sqrt(dim)
 
 
 def _simulate_schedule(num_wires):
     sizes = _jones_register_sizes(num_wires)
     state = _seed_state(sizes[0])
-    for old_size, new_size in zip(sizes, sizes[1:]):
+    for old_size, new_size in zip(sizes[:-1], sizes[1:], strict=True):
         tail = np.ones(2 ** (new_size - old_size)) / np.sqrt(2 ** (new_size - old_size))
-        state, _ = _distill(np.kron(state, tail))
+        state = _distill(np.kron(state, tail))
     return state
 
 
@@ -76,16 +78,23 @@ def test_seed_sign_and_endianness():
     assert np.allclose(circuit(), _seed_state(3))
 
 
-def test_one_round_squares_coefficients_and_success():
-    """One symmetric round squares Fourier coefficients and succeeds near 0.67."""
-    state = _seed_state(8)
-    coefficients = np.sqrt(len(state)) * np.fft.ifft(state)
-    result, success = _distill(state)
-    result_coefficients = np.sqrt(len(result)) * np.fft.ifft(result)
+@pytest.mark.parametrize("num_wires", [3, 4])
+def test_postselected_rule_matches_schedule_simulation(num_wires):
+    """The postselected circuit prepares the state predicted by the Fourier-space model."""
+    rule = make_phase_gradient_distillation_decomp(
+        aux_wires=range(num_wires, 2 * num_wires),
+        work_wires=range(2 * num_wires, 3 * num_wires - 1),
+        mode="postselect",
+    )
 
-    expected = coefficients**2 / np.sqrt(np.sum(np.abs(coefficients) ** 4))
-    assert np.allclose(result_coefficients, expected)
-    assert success == pytest.approx(0.669, abs=0.01)
+    @qp.qnode(qp.device("default.qubit"), mcm_method="deferred")
+    def circuit():
+        rule(wires=range(num_wires))
+        return qp.density_matrix(range(num_wires))
+
+    rho = circuit()
+    expected = _simulate_schedule(num_wires)
+    assert np.allclose(rho, np.outer(expected, expected.conj()))
 
 
 @pytest.mark.parametrize("num_wires", [3, 5, 8, 11, 14])
@@ -107,13 +116,45 @@ def test_distilled_state_supports_phase_kickback(num_wires):
     assert np.abs(kickback_phase - expected_phase) <= error_bound
 
 
-@pytest.mark.parametrize("num_wires", [3, 5, 8, 14, 20])
-def test_schedule_fits_three_register_layout(num_wires):
+def test_schedule_fits_three_register_layout():
     """The depth-first retry schedule fits output, auxiliary, and adder-work registers."""
-    sizes = _jones_register_sizes(num_wires)
-    assert sizes[-1] == num_wires
-    assert len(sizes) == _jones_num_rounds(num_wires) + 1
-    assert _required_workspace(sizes) <= 3 * num_wires - 1
+    for num_wires in range(3, 200):
+        sizes = _jones_register_sizes(num_wires)
+        assert sizes[-1] == num_wires
+        assert len(sizes) == _jones_num_rounds(num_wires) + 1
+        assert _required_workspace(sizes) <= 3 * num_wires - 1
+
+
+@pytest.mark.parametrize("num_wires", [3, 4])
+def test_success_probability_matches_circuit(num_wires):
+    """The simulated success probability is the all-zero probability of the source register."""
+    output = list(range(num_wires))
+    source = list(range(num_wires, 2 * num_wires))
+    work = list(range(2 * num_wires, 3 * num_wires - 1))
+
+    @qp.qnode(qp.device("default.qubit"))
+    def circuit():
+        _jones_seed(output[:2])
+        _jones_seed(source[:2])
+        for wire in output[2:] + source[2:]:
+            qp.Hadamard(wire)
+        qp.SemiAdder(source, output, work)
+        for wire in source:
+            qp.Hadamard(wire)
+        return qp.probs(source)
+
+    probabilities = _jones_success_probabilities(_jones_register_sizes(num_wires))
+    assert circuit()[0] == pytest.approx(probabilities[0])
+
+
+def test_success_probabilities_skip_large_rounds():
+    """Rounds above the simulation threshold are treated as always successful."""
+    sizes = _jones_register_sizes(40)
+    probabilities = _jones_success_probabilities(sizes)
+
+    assert len(probabilities) == len(sizes) - 1
+    for size, probability in zip(sizes[1:], probabilities, strict=True):
+        assert probability == 1.0 if size > 16 else 0.5 < probability < 1
 
 
 def test_postselected_rule_queues_expected_operations():
@@ -136,7 +177,7 @@ def test_postselected_rule_queues_expected_operations():
 
 
 def test_repeat_rule_captures_nested_local_loops():
-    """A multi-round rule captures separate retry loops for its subtrees."""
+    """A multi-round rule captures separate retry loops hinted with their expected attempts."""
     jax = pytest.importorskip("jax")
     jnp = jax.numpy
     num_wires = 5
@@ -152,6 +193,10 @@ def test_repeat_rule_captures_nested_local_loops():
         qp.capture.disable()
 
     assert str(plxpr).count("while_loop[") > 1
+
+    hints = {float(h) for h in re.findall(r"estimated_iterations=([\d.]+)", str(plxpr))}
+    probabilities = _jones_success_probabilities(_jones_register_sizes(num_wires))
+    assert sorted(hints) == pytest.approx(sorted({1 / p for p in probabilities}))
 
 
 def test_resources_are_structural_one_attempt_counts():
@@ -227,8 +272,8 @@ def test_fixed_rule_is_opt_in():
 )
 def test_wire_validation(aux, work, match):
     """Auxiliary registers must have the correct size and be disjoint."""
-    rule = make_phase_gradient_distillation_decomp(aux, work, mode="postselect")
     with pytest.raises((WireError, ValueError), match=match):
+        rule = make_phase_gradient_distillation_decomp(aux, work, mode="postselect")
         rule(wires=[0, 1, 2])
 
 
@@ -238,18 +283,9 @@ def test_mode_validation():
         make_phase_gradient_distillation_decomp([], [], mode="unknown")
 
 
-def test_schedule_workspace_validation(monkeypatch):
-    """The generated rule rejects a schedule that exceeds the supplied workspace."""
-    rule = make_phase_gradient_distillation_decomp(aux_wires=[3, 4, 5], work_wires=[6, 7])
-    monkeypatch.setattr(phase_gradient_decomp, "_required_workspace", lambda _: 9)
-
-    with pytest.raises(WireError, match="requires 9 wires, but only 8 were provided"):
-        rule(wires=[0, 1, 2])
-
-
 @pytest.mark.catalyst
 @pytest.mark.usefixtures("enable_graph_decomposition")
-def test_qjit_graph_decomposition_and_all_mlir_specs():
+def test_qjit_graph_decomposition_and_analyze():
     """The retry rule survives capture and graph decomposition to Clifford+T and MCM."""
     catalyst = pytest.importorskip("catalyst")
     num_wires = 3
@@ -279,9 +315,9 @@ def test_qjit_graph_decomposition_and_all_mlir_specs():
             qp.PhaseGradientStatePrep(registers["grad"])
             return qp.state()
 
-        specs = qp.specs(circuit, level="all-mlir")()
+        analysis = qp.analyze(circuit, level="all")()
 
-    final_resources = specs.resources[max(specs.resources)]
+    final_resources = analysis.resources[max(analysis.resources)]
     gate_types = final_resources.quantum_operations
 
     assert gate_types.get("SemiAdder", 0) == 0
@@ -289,4 +325,22 @@ def test_qjit_graph_decomposition_and_all_mlir_specs():
     assert gate_types.get("PhaseShift", 0) == 0
     assert gate_types.get("RZ", 0) == 0
     assert gate_types["MidCircuitMeasure"] > 0
-    assert gate_types["T"] + gate_types["Adjoint(T)"] == 8
+    # 8 T gates per attempt (16 without measurement-based uncomputation), scaled by the expected
+    # 4/3 attempts if graph decomposition keeps the loop hint
+    assert 8 <= gate_types["T"] + gate_types["Adjoint(T)"] < 16
+
+
+@pytest.mark.catalyst
+def test_qjit_analyze_counts_expected_attempts():
+    """The retry hints survive compilation and scale the reported resources."""
+    pytest.importorskip("catalyst")
+    rule = make_phase_gradient_distillation_decomp(aux_wires=range(3, 6), work_wires=range(6, 8))
+
+    @qp.qjit(capture=True, target="mlir")
+    @qp.qnode(qp.device("null.qubit", wires=8))
+    def circuit():
+        rule(wires=range(3))
+        return qp.state()
+
+    gate_types = qp.analyze(circuit, level=0)().resources.quantum_operations
+    assert gate_types["Hadamard"] == 9 / 0.75

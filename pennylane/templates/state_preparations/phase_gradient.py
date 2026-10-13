@@ -82,7 +82,8 @@ class PhaseGradientStatePrep(StatePrepBase2):
     3: ──H──Rϕ(-0.39)─┤
     4: ──H──Rϕ(-0.20)─┤
 
-    For an approximate Clifford+T preparation, explicitly select the Jones distillation rule:
+    For an approximate Clifford+T preparation, construct the Jones distillation rule and
+    pass it to ``fixed_decomps``:
 
     >>> registers = qp.registers({"grad": 5, "aux": 5, "work": 4})
     >>> rule = qp.transforms.decompositions.make_phase_gradient_distillation_decomp(

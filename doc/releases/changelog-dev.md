@@ -67,9 +67,9 @@
   prepares the phase gradient state
   :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`.
   It is a catalytic state for (generalized) rotation gates.
-  Its exact product-state decomposition remains the default, while
-  :func:`~.transforms.decompositions.make_phase_gradient_distillation_decomp` provides an opt-in
-  Jones repeat-until-success construction for Clifford+T workflows.
+  :func:`~.transforms.decompositions.make_phase_gradient_distillation_decomp` can be used to
+  create a decomposition rule based on Jones' repeat-until-success construction, which avoids the
+  arbitrary-angle phase shifts of the default decomposition.
   See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
   [(#10227)](https://github.com/PennyLaneAI/pennylane/pull/10227)
   [(#10245)](https://github.com/PennyLaneAI/pennylane/pull/10245)
