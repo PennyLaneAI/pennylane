@@ -107,13 +107,15 @@ def _check_decomposition_legacy(op, skip_wire_mapping):
         compute_decomp_output = None
 
     assert isinstance(decomp_output, list), "decomposition must be a list"
-    assert isinstance(compute_decomp_output, list), "decomposition must be a list"
+    if compute_decomp_output is not None:
+        assert isinstance(compute_decomp_output, list), "decomposition must be a list"
 
     allocations = [op for op in decomp_output if isinstance(op, qp.allocation.Allocate)]
     if allocations:
         total_work_wires = sum(len(op.wires) for op in allocations)
         decomp_output = _resolve_dynamic_wires(decomp_output, total_work_wires)
-        compute_decomp_output = _resolve_dynamic_wires(compute_decomp_output, total_work_wires)
+        if compute_decomp_output is not None:
+            compute_decomp_output = _resolve_dynamic_wires(compute_decomp_output, total_work_wires)
         queued_tape = _resolve_dynamic_wires(queued_tape, total_work_wires)
 
     assert op not in decomp_output, "an operator should not be included in its own decomposition"
@@ -156,7 +158,8 @@ def _check_decomposition_legacy(op, skip_wire_mapping):
         for mapped_op, orig_op in zip(mapped_decomp, decomp_output, strict=True):
             assert (
                 # pylint: disable-next=no-member
-                mapped_op.wires == qp.map_wires(orig_op, wire_map).wires
+                mapped_op.wires
+                == qp.map_wires(orig_op, wire_map).wires
             ), "Operators in decomposition of wire-mapped operator must have mapped wires."
 
 

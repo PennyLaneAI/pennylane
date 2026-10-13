@@ -89,7 +89,9 @@ class TestDecompositionErrors:
                 qp.X(wires[0])
                 return [qp.Y(wires[1])]
 
-        with pytest.raises(AssertionError, match="decomposition must match queued operations"):
+        with pytest.raises(
+            AssertionError, match="decomposition must queue all operators correctly"
+        ):
             assert_valid(BadDecompQueueLength(wires=[0, 1]), skip_pickle=True)
 
     def test_bad_decomposition_queuing(self):
@@ -103,7 +105,9 @@ class TestDecompositionErrors:
                     other_op = qp.RY(2.3, 0)
                 return [other_op]
 
-        with pytest.raises(AssertionError, match="decomposition must match queued operations"):
+        with pytest.raises(
+            AssertionError, match="decomposition must queue all operators correctly"
+        ):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
     def test_bad_decomposition_with_mcm(self):
@@ -135,7 +139,9 @@ class TestDecompositionErrors:
                     meas2 = qp.ops.MidMeasure(wires[0], meas_uid=253)
                 return [meas0, meas2]
 
-        with pytest.raises(AssertionError, match="decomposition must match queued operations"):
+        with pytest.raises(
+            AssertionError, match="decomposition must queue all operators correctly"
+        ):
             assert_valid(BadDecompQueue(wires=[0, 1]), skip_pickle=True)
 
     @pytest.mark.jax
@@ -166,7 +172,10 @@ class TestDecompositionErrors:
 
             has_decomposition = False
 
-        with pytest.raises(AssertionError, match="If has_decomposition is False"):
+        with pytest.raises(
+            AssertionError,
+            match="DecompositionUndefinedError expected if op.has_decomposition is False",
+        ):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
     def test_decomposition_must_not_contain_op(self):
@@ -283,7 +292,7 @@ def test_mismatched_mat_decomp():
         def decomposition(self):
             return [qp.PauliX(self.wires)]
 
-    with pytest.raises(AssertionError, match=r"matrix and matrix from decomposition must match"):
+    with pytest.raises(AssertionError, match=r"The decomposition does not match op.matrix"):
         assert_valid(MisMatchedMatDecomp(0), skip_pickle=True)
 
 
@@ -607,9 +616,7 @@ class TestOperator2AssertValid:
             def compute_decomposition(wires, phi):
                 return [qp.RX(phi, wires[0])]
 
-        with pytest.raises(
-            AssertionError, match=r"matrix and matrix from decomposition must match"
-        ):
+        with pytest.raises(AssertionError, match=r"The decomposition does not match op.matrix"):
             assert_valid(MatDecompMismatch(wires=0, phi=1.0), skip_pickle=True)
 
     def test_check_sparse_matrix(self):
