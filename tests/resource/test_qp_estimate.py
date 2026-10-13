@@ -170,6 +170,14 @@ class TestEstimate:
         ):
             qp.estimate(circuit, target=target)(0.5)
 
+    def test_default_target_is_device(self, circuit):
+        """Test that the default target is "device", which is not supported yet."""
+
+        with pytest.raises(
+            NotImplementedError, match="qp.estimate does not support target='device'"
+        ):
+            qp.estimate(circuit)(0.5)
+
     def test_error_with_non_qjit(self):
         """Test that an error is raised if the QNode is not qjit'd."""
 

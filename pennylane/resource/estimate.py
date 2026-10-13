@@ -66,7 +66,7 @@ def estimate(
     qnode,
     level: str | int = "top",
     *,
-    target: Iterable[type | str] | dict[type | str, float],
+    target: str | Iterable[type | str] | dict[type | str, float] = "device",
 ) -> Callable[..., CircuitSpecs]:
     r"""Provides fast resource estimates of a quantum circuit by analyzing decomposition pathways
     with respect to a specified level of compilation.
@@ -86,9 +86,10 @@ def estimate(
         level (str | int): The level of compilation from which to project the resources onto the
             ``target``. Only ``"top"`` or ``0``, the original circuit before any compilation
             passes have been applied, is currently supported. Defaults to ``"top"``.
-        target (Iterable[type | str] | dict[type | str, float]): The gate set to project the
-            resources onto, in any form accepted by the ``gate_set`` argument of
-            :func:`~.decompose`.
+        target (str | Iterable[type | str] | dict[type | str, float]): The gate set to project
+            the resources onto, in any form accepted by the ``gate_set`` argument of
+            :func:`~.decompose`. Defaults to ``"device"``, the gate set of the QNode's device,
+            which is not supported yet; a gate set must currently be provided explicitly.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
