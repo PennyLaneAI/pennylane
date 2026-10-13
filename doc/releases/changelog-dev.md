@@ -962,6 +962,16 @@
   phases are purely real, i.e. :math:`\pm 1`.
   [(#9561)](https://github.com/PennyLaneAI/pennylane/pull/9561)
 
+* :class:`~.MultiplexerStatePreparation` now has separate decomposition rules for real-valued and
+  complex-valued state vectors, so that the resources of the real-valued rule do not include a
+  :class:`~.DiagonalQubitUnitary`. :class:`~.SumOfSlatersPrep` and
+  :class:`~.PartialUnaryStatePreparation` now pass real-valued coefficients on as a real-valued
+  state vector to :class:`~.MultiplexerStatePreparation`, so that they benefit from this cheaper
+  decomposition, also when the coefficients are traced. The new
+  ``qp.math.is_complex_dtype`` and ``qp.math.get_abstract_and_cast_dtype`` functions support
+  checking complex data types and selecting matching abstract and Python cast data types.
+  [(#10288)](https://github.com/PennyLaneAI/pennylane/pull/10288)
+
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
   For example, a controlled multi-target-``X`` operation previously decomposed as
@@ -1486,6 +1496,10 @@
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
 
 <h3>Internal changes ⚙️</h3>
+
+* Updated the `cond` branch-probability tests of `qp.specs` and `qp.analyze`, since Catalyst now
+  reports fractional resource counts that are rounded up once at the end.
+  [(#10313)](https://github.com/PennyLaneAI/pennylane/pull/10313)
 
 * Set `qp.decompose`'s `pass_name` to `"graph-decomposition"` to match the new decomposition system in Catalyst.
   [(#10242)](https://github.com/PennyLaneAI/pennylane/pull/10242)
