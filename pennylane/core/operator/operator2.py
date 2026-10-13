@@ -2005,7 +2005,7 @@ def pop_op_eqns(ops: Iterable):
             old_eqns.append(eqn)
 
             eqns = frame.tracing_eqns
-            # NOTE: Check from the end of the list as symboilc operators
+            # NOTE: Check from the end of the list as symbolic operators
             # consume its base immediately after the base was traced so the entry to be dropped
             # is at or very near the tail of the equation list
             for i in range(len(eqns) - 1, -1, -1):
