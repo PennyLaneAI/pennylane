@@ -1484,6 +1484,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Updated the `cond` branch-probability tests of `qp.specs` and `qp.analyze`, since Catalyst now
+  reports fractional resource counts that are rounded up once at the end.
+  [(#10313)](https://github.com/PennyLaneAI/pennylane/pull/10313)
+
 * Set `qp.decompose`'s `pass_name` to `"graph-decomposition"` to match the new decomposition system in Catalyst.
   [(#10242)](https://github.com/PennyLaneAI/pennylane/pull/10242)
 
