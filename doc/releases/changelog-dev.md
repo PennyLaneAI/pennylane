@@ -1903,6 +1903,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Branches can now be `Operator2` instances with `qp.cond` with catalyst and `capture=True`.
+
 * Fixed captured transforms dropping keyword arguments to the transformed function,
   including when calling transformed QNodes with `qp.qjit(capture=True)`.
   [(#10301)](https://github.com/PennyLaneAI/pennylane/pull/10301)
