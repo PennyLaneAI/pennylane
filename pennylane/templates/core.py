@@ -405,11 +405,11 @@ def _calculate_resources(subroutine: "Subroutine", signature_key):
 
 # pylint: disable=unused-argument
 @register_resources(_calculate_resources)
-def _subroutine_decomp(*data, wires, decomposition):
+def _Subroutine_decomp(*data, wires, decomposition):
     _ = [apply(op) for op in decomposition]
 
 
-add_decomps(SubroutineOp, _subroutine_decomp)
+add_decomps(SubroutineOp, _Subroutine_decomp)
 
 P = ParamSpec("P")
 
