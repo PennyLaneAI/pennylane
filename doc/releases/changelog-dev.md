@@ -19,8 +19,10 @@
 * Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
   can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
   [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
+  [(#10297)](https://github.com/PennyLaneAI/pennylane/pull/10297)
+  [(#10251)](https://github.com/PennyLaneAI/pennylane/pull/10251)
 
-  By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
+  By hinting control flow like :func:`~.for_loop`, :func:`~.while_loop`, and :func:`~.cond` profiling
   with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
   resource counts (no symbolic expressions).
 
@@ -746,6 +748,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* The decompositions of :class:`~.QROM` (unary iteration), :class:`~.QFT`, :class:`~.AQFT` and
+  :class:`~.FFFT` now provide `num-iters` hints for loops with dynamic bounds, avoiding symbolic
+  resource counts when compiling them with Catalyst.
+  [(#10241)](https://github.com/PennyLaneAI/pennylane/pull/10241)
+
 * The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
   but instead expresses the Select block as another ``QROM`` with fewer controls and more target
   qubits. This allows for scalable compilation of this decomposition rule.
@@ -951,6 +958,16 @@
   phases are purely real, i.e. :math:`\pm 1`.
   [(#9561)](https://github.com/PennyLaneAI/pennylane/pull/9561)
 
+* :class:`~.MultiplexerStatePreparation` now has separate decomposition rules for real-valued and
+  complex-valued state vectors, so that the resources of the real-valued rule do not include a
+  :class:`~.DiagonalQubitUnitary`. :class:`~.SumOfSlatersPrep` and
+  :class:`~.PartialUnaryStatePreparation` now pass real-valued coefficients on as a real-valued
+  state vector to :class:`~.MultiplexerStatePreparation`, so that they benefit from this cheaper
+  decomposition, also when the coefficients are traced. The new
+  ``qp.math.is_complex_dtype`` and ``qp.math.get_abstract_and_cast_dtype`` functions support
+  checking complex data types and selecting matching abstract and Python cast data types.
+  [(#10288)](https://github.com/PennyLaneAI/pennylane/pull/10288)
+
 * Instances of `C(Prod)` now have a significantly more efficient decomposition in terms of `TemporaryAND` operators when work wires are provided.
 
   For example, a controlled multi-target-``X`` operation previously decomposed as
@@ -1075,6 +1092,9 @@
   existing rule, but is a different object to the rule with that name.
   [(#10282)](https://github.com/PennyLaneAI/pennylane/pull/10282)
 
+* A new :mod:`pennylane.testing` module collects utilities for testing code built with PennyLane.
+  [(#10293)](https://github.com/PennyLaneAI/pennylane/pull/10293)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
@@ -1100,12 +1120,6 @@
   to use unary iteration in the decomposition of the used `QROM` operation for the specified
   number of control wires/angles.
   [(#9655)](https://github.com/PennyLaneAI/pennylane/pull/9655)
-
-* Added a variant of `SumOfSlatersPrep` to labs, accessible as `labs.templates.SumOfSlatersPrep2`.
-  This variant handles work wires explicitly instead of allocating them dynamically in the
-  decomposition. This enables usage of `SumOfSlatersPrep2` with `qp.qjit` with
-  capture _disabled_ (`qp.capture.disable()`).
-  [(#9539)](https://github.com/PennyLaneAI/pennylane/pull/9539)
 
 * Updated the `make_selectpaulirot_to_phase_gradient_decomp` and `make_rz_to_phase_gradient_decomp`
   decomposition rule factories to be compatible with program capture.
@@ -1478,6 +1492,10 @@
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
 
 <h3>Internal changes ⚙️</h3>
+
+* Updated the `cond` branch-probability tests of `qp.specs` and `qp.analyze`, since Catalyst now
+  reports fractional resource counts that are rounded up once at the end.
+  [(#10313)](https://github.com/PennyLaneAI/pennylane/pull/10313)
 
 * Set `qp.decompose`'s `pass_name` to `"graph-decomposition"` to match the new decomposition system in Catalyst.
   [(#10242)](https://github.com/PennyLaneAI/pennylane/pull/10242)
@@ -1905,6 +1923,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed captured transforms dropping keyword arguments to the transformed function,
+  including when calling transformed QNodes with `qp.qjit(capture=True)`.
+  [(#10301)](https://github.com/PennyLaneAI/pennylane/pull/10301)
+
 * Fixed :meth:`~.PPR.matrix` raising a ``KeyError`` when the Pauli word contains the identity
   character ``"I"``.
   [(#10272)](https://github.com/PennyLaneAI/pennylane/pull/10272)
@@ -2001,7 +2023,7 @@
   JAX array.
   [(#10036)](https://github.com/PennyLaneAI/pennylane/pull/10036)
 
-* Fixed a bug where :func:`~.tape.plxpr_to_tape` raised an error when the program contains
+* Fixed a bug where :func:`~.testing.plxpr_to_tape` raised an error when the program contains
   arithmetic operations performed on mid-circuit measurement values.
   [(#10028)](https://github.com/PennyLaneAI/pennylane/pull/10028)
 
