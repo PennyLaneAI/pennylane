@@ -32,46 +32,33 @@ from .capture import plxpr_to_tape
 
 def _resolve_dynamic_wires(ops, num_zeroed):
     """Apply the transform resolve_dynamic_wires to a list of operations or tape."""
-    if unwrap := not isinstance(ops, qp.tape.QuantumScript):
-        ops = qp.tape.QuantumScript(ops)
+
+    if not isinstance(ops, qp.tape.QuantumScript):
+        tape = qp.tape.QuantumScript(ops)
+        return _resolve_dynamic_wires(tape, num_zeroed).operations
+
     zeroed = range(len(ops.wires), len(ops.wires) + num_zeroed)
-    [ops], _ = qp.transforms.resolve_dynamic_wires([ops], zeroed=zeroed)
-    if unwrap:
-        ops = ops.operations
-    return ops
+    return qp.transforms.resolve_dynamic_wires([ops], zeroed=zeroed)[0][0]
 
 
-def _assert_counts_match(counts_0, counts_1):
-    if counts_0 == counts_1:
+def _assert_counts_match(expected, actual):
+    """Assert that the gate counts expected from a resource function match the actual gate
+    counts, where gates missing from either side are counted as zero."""
+
+    mismatches = sorted(
+        (str(op), actual.get(op, 0), expected.get(op, 0))
+        for op in expected.keys() | actual.keys()
+        if actual.get(op, 0) != expected.get(op, 0)
+    )
+
+    if not mismatches:
         return
 
-    miscounts = [
-        (op, val, counts_0[op])
-        for op, val in counts_1.items()
-        if op in counts_0 and val != counts_0[op]
-    ]
-    if miscounts:
-        op_len = max([8] + [len(str(op)) for op, *_ in miscounts])
-        miscounts_str = (
-            f"\nThe numbers are off for following ops:"
-            f"\n{'Operator'.rjust(op_len)} : Actual  !=  Resource function\n"
-        )
-        miscounts_str += "\n".join(
-            f"{str(op).rjust(op_len)} : {str(val0).rjust(6)}  !=  {val1}"
-            for op, val0, val1 in miscounts
-        )
-    else:
-        miscounts_str = ""
-    assertion_error_string = (
-        f"\nGate counts expected from resource function:\n{counts_0}"
-        f"\nActual gate counts:\n{dict(counts_1)}"
-        f"{miscounts_str}"
-        "\nMissing entirely in gate counts from resource function:\n"
-        f"{[op for op in counts_1 if op not in counts_0]}\n"
-        "Missing entirely in actual gate counts:\n"
-        f"{[op for op in counts_0 if op not in counts_1]}"
-    )
-    raise AssertionError(assertion_error_string)
+    width = max(len("Operator"), *(len(op) for op, _, _ in mismatches))
+    rows = [f"{'Operator'.rjust(width)} : Actual  !=  Resource Estimate"]
+    rows += [f"{op.rjust(width)} : {str(a).rjust(6)}  !=  {e}" for op, a, e in mismatches]
+    rows_str = "\n".join(rows)
+    raise AssertionError("The actual gate counts do not match the resource estimate:\n" + rows_str)
 
 
 def decomp_rule_to_tape(op: Operator, rule: DecompositionRule) -> QuantumScript:
@@ -163,8 +150,9 @@ def assert_valid_decomp_rule(
     Traceback (most recent call last):
         ...
     AssertionError:
-    Gate counts expected from resource function:
-    ...
+    The gate counts do not match the resource function:
+    Operator : Actual  !=  Resource function
+    Hadamard :      2  !=  1
 
     """
 
@@ -201,8 +189,7 @@ def assert_valid_decomp_rule(
     if rule.exact_resources and not (
         isinstance(op, qp.templates.SubroutineOp) and not op.subroutine.exact_resources
     ):
-        non_zero_gate_counts = {k: v for k, v in estimated_gate_counts.items() if v > 0}
-        _assert_counts_match(non_zero_gate_counts, actual_gate_counts)
+        _assert_counts_match(estimated_gate_counts, actual_gate_counts)
     else:
         # If the resource estimate is not expected to match exactly to the actual
         # decomposition, at least make sure that all gates are accounted for.

@@ -160,12 +160,15 @@ class TestAssertValidDecompositionRule:
             qp.Y(wires[1])
 
         rule_wrong_numbers = qp.register_resources({qp.X: 2, qp.Y: 3})(rule)
-        with pytest.raises(AssertionError, match="The numbers are off"):
+        with pytest.raises(AssertionError, match=r"PauliY :      2  !=  3$"):
             assert_valid_decomp_rule(op, rule_wrong_numbers)
 
         rule_wrong_ops = qp.register_resources({qp.X: 2, qp.Z: 2})(rule)
-        with pytest.raises(AssertionError, match="Missing entirely in gate counts"):
+        with pytest.raises(AssertionError, match=r"PauliY :\s+2  !=  0\n  PauliZ :\s+0  !=  2$"):
             assert_valid_decomp_rule(op, rule_wrong_ops)
+
+        rule_zero_count = qp.register_resources({qp.X: 2, qp.Y: 2, qp.Z: 0})(rule)
+        assert_valid_decomp_rule(op, rule_zero_count)
 
     def test_bad_new_decomposition_rule_inexact(self):
         """Test that an informative error is raised if the
