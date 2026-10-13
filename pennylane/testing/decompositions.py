@@ -55,10 +55,11 @@ def _assert_counts_match(expected, actual):
         return
 
     width = max(len("Operator"), *(len(op) for op, _, _ in mismatches))
-    rows = [f"{'Operator'.rjust(width)} : Actual  !=  Resource Estimate"]
-    rows += [f"{op.rjust(width)} : {str(a).rjust(6)}  !=  {e}" for op, a, e in mismatches]
-    rows_str = "\n".join(rows)
-    raise AssertionError("The actual gate counts do not match the resource estimate:\n" + rows_str)
+    header = [f"{'Operator'.rjust(width)} : Actual  !=  Resource Estimate"]
+    # 6 is the width of the word "Actual"
+    rows = [f"{op.rjust(width)} : {str(a).rjust(6)}  !=  {e}" for op, a, e in mismatches]
+    table = "\n".join(header + rows)
+    raise AssertionError("The actual gate counts do not match the resource estimate:\n" + table)
 
 
 def decomp_rule_to_tape(op: Operator, rule: DecompositionRule) -> QuantumScript:
@@ -149,9 +150,8 @@ def assert_valid_decomp_rule(
     >>> qp.testing.assert_valid_decomp_rule(qp.CNOT([0, 1]), bad_rule)
     Traceback (most recent call last):
         ...
-    AssertionError:
-    The gate counts do not match the resource function:
-    Operator : Actual  !=  Resource function
+    AssertionError: The actual gate counts do not match the resource estimate:
+    Operator : Actual  !=  Resource Estimate
     Hadamard :      2  !=  1
 
     """
