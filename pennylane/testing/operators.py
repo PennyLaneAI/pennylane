@@ -155,12 +155,11 @@ def _check_decomposition_legacy(op, skip_wire_mapping):
         mapped_decomp = mapped_op.decomposition()
         if allocations:
             mapped_decomp = _resolve_dynamic_wires(mapped_decomp, total_work_wires)
+
         for mapped_op, orig_op in zip(mapped_decomp, decomp_output, strict=True):
-            assert (
-                mapped_op.wires
-                # pylint: disable-next=no-member
-                == qp.map_wires(orig_op, wire_map).wires
-            ), "Operators in decomposition of wire-mapped operator must have mapped wires."
+            comment = "Operators in decomposition of wire-mapped operator must have mapped wires."
+            # pylint: disable-next=no-member
+            assert mapped_op.wires == qp.map_wires(orig_op, wire_map).wires, comment
 
 
 def _check_decomposition_new(op, skip_decomp_matrix_check=False):
@@ -398,9 +397,6 @@ def _check_pytree(op):
 
 def _check_capture(op):
 
-    if isinstance(op, qp.templates.SubroutineOp):
-        return
-
     if not all(isinstance(w, int) for w in op.wires):
         return
 
@@ -506,12 +502,6 @@ def _check_wires(op, skip_wire_mapping):
     mapped_op = op.map_wires(wire_map)
     new_wires = qp.wires.Wires([i + 10 * len(op.wires) for i in range(len(op.wires))])
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
-
-
-def _get_signature(op):
-    if isinstance(op, Operator2):
-        return (), op.arguments
-    return op.data, {"wires": op.wires, **op.hyperparameters}
 
 
 # pylint: disable=too-many-arguments

@@ -161,6 +161,24 @@ class TestDecompositionErrors:
             assert_valid(BadDecompositionWireMap(wires=0), skip_pickle=True)
         assert_valid(BadDecompositionWireMap(wires=0), skip_pickle=True, skip_wire_mapping=True)
 
+    def test_mapped_op_without_decomposition(self):
+        """Test that the wire-mapped decompositions are not compared if ``map_wires`` returns
+        an operator that has no decomposition."""
+
+        class NoDecompOp(Operator):
+            pass
+
+        class MapsToNoDecompOp(Operator):
+
+            @staticmethod
+            def compute_decomposition(wires):
+                return [qp.X(wires[0])]
+
+            def map_wires(self, wire_map):
+                return NoDecompOp(wires=[wire_map.get(w, w) for w in self.wires])
+
+        assert_valid(MapsToNoDecompOp(wires=0), skip_pickle=True)
+
     def test_error_has_decomposition_but_claims_not_to(self):
         """Test that an error is raised if has_decomposition is False but a decomposition is
         defined."""
