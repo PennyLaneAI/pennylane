@@ -150,7 +150,7 @@ def prod(*ops, lazy=True):
                 op.operands if isinstance(op, Prod2) else (op,) for op in ops
             )
         )
-        for op in ops:
+        for op in reversed(ops):
             remove_from_program(op)
 
         return Prod2(operands)
