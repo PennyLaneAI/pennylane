@@ -958,24 +958,18 @@ def _controlled_phase_shift_decomp(base, control_wires, *_, **__):
     qp.GlobalPhase(-base.phi / 2**n)
 
 
-def _mcx_resource_rep(num_controls):
-    """Abstract rep of the MultiControlledX (borrowing one work wire) emitted by ``_mc_phase_shift``."""
-    return abstractify(
-        qp.MultiControlledX(
-            wires=list(range(num_controls + 1)),
-            work_wires=[num_controls + 1],
-            work_wire_type="borrowed",
-        )
-    )
-
-
 def _mc_phase_shift_counts(num_controls):
     """Gate counts of ``_mc_phase_shift`` for ``num_controls >= 1`` control wires."""
     counts = {qp.ControlledPhaseShift: 2 * (num_controls - 1) + 1}
     if num_controls >= 2:
         counts[qp.CNOT] = 2
     for m in range(2, num_controls):
-        counts[_mcx_resource_rep(m)] = 2
+        counts[
+            qp.MultiControlledX(
+                wires=Wire[m + 1],
+                work_wires=Wire[1],
+            )
+        ] = 2
     return counts
 
 
