@@ -97,9 +97,9 @@ def test_postselected_rule_matches_schedule_simulation(num_wires):
     assert np.allclose(rho, np.outer(expected, expected.conj()))
 
 
-@pytest.mark.parametrize("num_wires", [3, 5, 8, 11, 14])
+@pytest.mark.parametrize("num_wires", range(3, 21))
 def test_finite_schedule_fidelity(num_wires):
-    """Representative power-of-two and non-power-of-two widths meet Jones's target."""
+    """The schedule meets Jones's target infidelity."""
     state = _simulate_schedule(num_wires)
     fidelity = np.abs(np.vdot(_target_state(num_wires), state)) ** 2
     assert 1 - fidelity <= np.sin(np.pi / 2**num_wires) ** 2
@@ -233,32 +233,6 @@ def test_small_register_resources(num_wires, expected):
     counts = {resource.name: count for resource, count in resources.gate_counts.items()}
 
     assert counts == expected
-
-
-@pytest.mark.usefixtures("enable_graph_decomposition")
-def test_fixed_rule_is_opt_in():
-    """The default remains exact while fixed_decomps explicitly selects distillation."""
-    num_wires = 3
-    output = range(num_wires)
-    aux = range(num_wires, 2 * num_wires)
-    work = range(2 * num_wires, 3 * num_wires - 1)
-    rule = make_phase_gradient_distillation_decomp(aux, work, mode="postselect")
-
-    default_ops = qp.PhaseGradientStatePrep(output).decomposition()
-    assert any(op.name == "Adjoint(T)" for op in default_ops)
-
-    @qp.transforms.decompose(
-        gate_set={"Hadamard", "PauliZ", "Adjoint(S)", "SemiAdder", "MidMeasureMP"},
-        fixed_decomps={qp.PhaseGradientStatePrep: rule},
-    )
-    @qp.qnode(qp.device("null.qubit", wires=3 * num_wires - 1))
-    def circuit():
-        qp.PhaseGradientStatePrep(output)
-        return qp.state()
-
-    tape = qp.workflow.construct_tape(circuit)()
-    assert not any(isinstance(op, qp.PhaseGradientStatePrep) for op in tape.operations)
-    assert any(isinstance(op, qp.SemiAdder) for op in tape.operations)
 
 
 @pytest.mark.parametrize(

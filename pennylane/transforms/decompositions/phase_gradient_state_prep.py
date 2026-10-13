@@ -24,17 +24,12 @@ from pennylane.wires import WireError, Wires, validate_no_wire_overlaps
 
 
 def _jones_num_rounds(num_wires):
-    """Return a finite-size-safe number of Jones distillation rounds."""
+    """Return the number of Jones distillation rounds."""
     if num_wires < 3:
         return 0
 
     numerator = 2 * num_wires - 2 * math.log2(math.pi)
-    asymptotic_rounds = max(1, math.ceil(math.log2(numerator / math.log2(9))))
-
-    # Jones's sideband estimate is asymptotic and falls short for some finite registers
-    # (e.g. n=14). One extra round for n >= 5 restores the target infidelity, smaller
-    # registers reach it without.
-    return asymptotic_rounds + int(num_wires >= 5)
+    return max(1, math.ceil(math.log2(numerator / math.log2(9))))
 
 
 def _jones_register_sizes(num_wires):
@@ -42,9 +37,11 @@ def _jones_register_sizes(num_wires):
     if num_wires < 3:
         return (num_wires,)
 
+    # Children have floor(s/2) + 1 qubits. Halving even registers exactly (e.g. 7 -> 14) misses
+    # the target infidelity at finite sizes.
     sizes = [num_wires]
     for _ in range(_jones_num_rounds(num_wires) - 1):
-        sizes.append(max(3, (sizes[-1] + 1) // 2))
+        sizes.append(max(3, sizes[-1] // 2 + 1))
     return (2, *reversed(sizes))
 
 
