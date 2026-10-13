@@ -131,9 +131,9 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
         **Compiler Hints and Resource Profling:**
 
         When running resource analysis on a qjit workflow, the resource analysis assumes
-        a single run of the while loop. Calling :func:`~.specs` on the ``circuit`` above, we get
+        a single run of the while loop. Calling :func:`~.analyze` on the ``circuit`` above, we get
 
-        >>> print(qp.specs(qp.qjit(circuit, capture=True), level=0)(1.1).resources)
+        >>> print(qp.analyze(qp.qjit(circuit, capture=True))(1.1).resources)
         Quantum operations:
         - Total: 1
           - RX: 1
@@ -165,7 +165,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
 
                 return qp.expval(qp.Z(0))
 
-        >>> print(qp.specs(qp.qjit(circuit, capture=True), level=0)(0.5).resources)
+        >>> print(qp.analyze(qp.qjit(circuit, capture=True))(0.5).resources)
         Quantum operations:
         - Total: 15
           - RX: 15
