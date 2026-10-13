@@ -31,6 +31,7 @@ from pennylane.capture.hint import process_hints
 from pennylane.compiler import compiler
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator, Operator1, Operator2
+from pennylane.core.operator.base import AbstractOperator
 from pennylane.core.operator.operator2 import pop_op_eqns
 from pennylane.exceptions import ConditionalTransformError
 from pennylane.ops.op_math.symbolicop import SymbolicOp
@@ -137,9 +138,14 @@ def _setup_probs(branch_fns) -> None | tuple[float, ...]:
     return tuple[float](guess if p is None else p for p in branch_probs)
 
 
-def _handle_input(fn, branch_name: str):
+def _1_op_input(fn, branch_name: str):
     if fn is None:
         return fn
+
+    if math.is_abstract(fn) and isinstance(fn.aval, AbstractOperator):
+        raise ValueError(
+            f"Got Operator1 AbstractOperator as input to cond {branch_name}. Only Operator2 is supported."
+        )
     if isinstance(fn, Operator1):
         raise ValueError(
             f"Got Operator1 input {fn} to cond {branch_name}. Only Operator2 is supported."
@@ -167,9 +173,9 @@ def _handle_op_inputs(condition, true_fn, false_fn, elifs):
         # elifs = (elif_condition, elif_function)
         elifs = (elifs,)
 
-    new_true_fn = _handle_input(true_fn, "true_fn")
-    new_false_fn = _handle_input(false_fn, "false_fn")
-    new_elifs = tuple((c, _handle_input(fn, "elif")) for c, fn in elifs)
+    new_true_fn = _1_op_input(true_fn, "true_fn")
+    new_false_fn = _1_op_input(false_fn, "false_fn")
+    new_elifs = tuple((c, _1_op_input(fn, "elif")) for c, fn in elifs)
 
     return CondCallable(condition, new_true_fn, new_false_fn, new_elifs)()
 
