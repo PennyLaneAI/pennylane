@@ -59,7 +59,6 @@ class TestGridsynth:
 
 
 @pytest.mark.catalyst
-@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_mixed_method_halves_t_count_in_specs():
     """Test that specs reports roughly half the T gates for the mixed method at the same
     epsilon, using the resource hints of the gridsynth pass."""
@@ -68,7 +67,6 @@ def test_mixed_method_halves_t_count_in_specs():
     def t_count(method):
         @qp.qjit(capture=True, target="mlir")
         @qp.transforms.gridsynth(epsilon=1e-6, method=method)
-        @qp.transforms.decompose(gate_set={"RZ", "Hadamard"})
         @qp.qnode(qp.device("null.qubit", wires=1))
         def circuit(x: float):
             qp.RZ(x, 0)

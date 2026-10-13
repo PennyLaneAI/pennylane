@@ -5,16 +5,14 @@
 * :func:`~.transforms.gridsynth` has a new ``method`` keyword argument. ``method="mixed"``
   implements the mixed diagonal approximation of
   [arXiv:2203.10064](https://arxiv.org/abs/2203.10064) (Section 3.4): each rotation randomly
-  applies one of two Clifford+T sequences whose errors cancel on average, which roughly halves the
-  T-count at the same accuracy.
+  applies one of eight Clifford+T sequences, an under- or an over-rotation twirled over
+  `{I, S, Z, S†}`, whose coherent errors cancel on average. This roughly halves the T-count at the
+  same accuracy.
   [(#10290)](https://github.com/PennyLaneAI/pennylane/pull/10290)
 
   ```python
-  qp.decomposition.enable_graph()
-
   @qp.qjit(capture=True, target="mlir")
   @qp.transforms.gridsynth(epsilon=1e-6, method="mixed")
-  @qp.transforms.decompose(gate_set={"RZ", "Hadamard"})
   @qp.qnode(qp.device("null.qubit", wires=1))
   def circuit(x: float):
       qp.RZ(x, 0)
