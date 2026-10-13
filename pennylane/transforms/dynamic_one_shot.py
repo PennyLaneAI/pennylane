@@ -289,7 +289,6 @@ def parse_native_mid_circuit_measurements(
     assert results is not None  # condition needed to not break signature
     interface = math.get_deep_interface(results)
     interface = "numpy" if interface == "builtins" else interface
-    interface = "tensorflow" if interface == "tf" else interface
 
     all_mcms = [op for op in circuit.operations if is_mcm(op)]
     mcm_samples = math.hstack(
@@ -464,13 +463,6 @@ def _gather_samples(measurement: SampleMP, samples, is_valid, postselect_mode=No
 @gather_non_mcm.register
 def _gather_expval(measurement: ExpectationMP, samples, is_valid, postselect_mode=None):
     samples = math.stack(samples)
-    if (
-        math.get_interface(is_valid) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        # Tensorflow requires arrays that are used for arithmetic with each other to have the
-        # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
-        # index other tf.Tensors (is_valid is used to index valid samples).
-        is_valid = math.cast_like(is_valid, samples)
     return math.sum(math.squeeze(samples) * is_valid) / math.sum(is_valid)
 
 
@@ -478,34 +470,14 @@ def _gather_expval(measurement: ExpectationMP, samples, is_valid, postselect_mod
 @gather_non_mcm.register
 def _gather_probability(measurement: ProbabilityMP, samples, is_valid, postselect_mode=None):
     samples = math.stack(samples, axis=0)
-    if (
-        math.get_interface(is_valid) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        # Tensorflow requires arrays that are used for arithmetic with each other to have the
-        # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
-        # index other tf.Tensors (is_valid is used to index valid samples).
-        is_valid = math.cast_like(is_valid, samples)
     return math.sum(samples * math.reshape(is_valid, (-1, 1)), axis=0) / math.sum(is_valid)
 
 
 @gather_non_mcm.register
 def _gather_variance(measurement: VarianceMP, samples, is_valid, postselect_mode=None):
     samples = math.stack(samples)
-    if (
-        interface := math.get_interface(is_valid)
-    ) == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        # Tensorflow requires arrays that are used for arithmetic with each other to have the
-        # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
-        # index other tf.Tensors (is_valid is used to index valid samples).
-        is_valid = math.cast_like(is_valid, samples)
     samples = math.squeeze(samples)
     expval = math.sum(samples * is_valid) / math.sum(is_valid)
-    if (
-        interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        # Casting needed for tensorflow
-        samples = math.cast_like(samples, expval)
-        is_valid = math.cast_like(is_valid, expval)
     return math.sum((samples - expval) ** 2 * is_valid) / math.sum(is_valid)
 
 
@@ -532,8 +504,7 @@ def gather_mcm(measurement: MeasurementProcess, samples, is_valid, postselect_mo
             values = [list(m.branches.values()) for m in mv]
             values = list(itertools.product(*values))
             values = [math.array([v], like=interface, dtype=mcm_samples.dtype) for v in values]
-            # Need to use boolean functions explicitly as Tensorflow does not allow integer math
-            # on boolean arrays
+            # Use boolean functions explicitly; integer math on boolean arrays is not portable.
             counts = [
                 math.count_nonzero(math.logical_and(math.all(mcm_samples == v, axis=1), is_valid))
                 for v in values
@@ -546,8 +517,7 @@ def gather_mcm(measurement: MeasurementProcess, samples, is_valid, postselect_mo
 
     mcm_samples = math.array(mv.concretize(samples), like=interface)
     if isinstance(measurement, ProbabilityMP):
-        # Need to use boolean functions explicitly as Tensorflow does not allow integer math
-        # on boolean arrays
+        # Use boolean functions explicitly; integer math on boolean arrays is not portable.
         mcm_samples = math.squeeze(mcm_samples)
         counts = [
             math.count_nonzero(math.logical_and((mcm_samples == v), is_valid))

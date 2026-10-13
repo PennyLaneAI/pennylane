@@ -70,6 +70,7 @@ load_entry_points = [
     "qasm_file",
     "qasm",
     "qiskit_op",
+    "qiskit_noise",
     "qiskit",
     "quil_file",
     "quil",
@@ -94,6 +95,7 @@ class TestLoad:
         [
             (qp.from_qiskit, "qiskit"),
             (qp.from_qiskit_op, "qiskit_op"),
+            (qp.from_qiskit_noise, "qiskit_noise"),
         ],
     )
     def test_qiskit_converter_does_not_exist(self, monkeypatch, method, entry_point_name):
@@ -116,6 +118,7 @@ class TestLoad:
         [
             (qp.from_qiskit, "qiskit"),
             (qp.from_qiskit_op, "qiskit_op"),
+            (qp.from_qiskit_noise, "qiskit_noise"),
         ],
     )
     def test_qiskit_converter_load_fails(self, monkeypatch, method, entry_point_name):
@@ -136,6 +139,7 @@ class TestLoad:
         [
             (qp.from_qiskit, "qiskit"),
             (qp.from_qiskit_op, "qiskit_op"),
+            (qp.from_qiskit_noise, "qiskit_noise"),
             (qp.from_pyquil, "pyquil_program"),
             (qp.from_quil, "quil"),
             (qp.from_quil_file, "quil_file"),

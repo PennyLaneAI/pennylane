@@ -19,7 +19,7 @@ Defines the base class for Operator and Operation.
 import abc
 import copy
 import warnings
-from collections.abc import Callable, Hashable, Iterable, Set
+from collections.abc import Hashable, Iterable, Set
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Union
 from warnings import warn
 
@@ -1025,30 +1025,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         self._batch_size = None
         params = self.data
-
-        try:
-            ndims = tuple(qp.math.ndim(p) for p in params)
-        except (
-            ValueError
-        ) as e:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            # TODO:[dwierichs] When using tf.function with an input_signature that contains
-            # an unknown-shaped input, ndim() will not be able to determine the number of
-            # dimensions because they are not specified yet. Failing example: Let `fun` be
-            # a single-parameter QNode.
-            # `tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))`
-            # There might be a way to support batching nonetheless, which remains to be
-            # investigated. For now, the batch_size is left to be `None` when instantiating
-            # an operation with abstract parameters that make `qp.math.ndim` fail.
-            if any(is_abstract(p) for p in params):
-                self._batch_size = None
-                self._ndim_params = (0,) * len(params)
-                return
-            raise e  # pragma: no cover
+        ndims = tuple(qp.math.ndim(p) for p in params)
 
         if any(len(qp.math.shape(p)) >= 1 and qp.math.shape(p)[0] is None for p in params):
             # if the batch dimension is unknown, then skip the validation
             # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
-            # typically during compilation of a function decorated with jax.jit or tf.function
+            # typically during compilation of a function decorated with jax.jit
             return  # pragma: no cover
 
         self._ndim_params = ndims
@@ -1481,10 +1463,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     __radd__ = __add__
 
-    def __mul__(self, other: Callable | TensorLike) -> "Operator":
+    def __mul__(self, other: TensorLike) -> "Operator":
         """The scalar multiplication between scalars and Operators."""
-        if callable(other):
-            return qp.pulse.ParametrizedHamiltonian([other], [self])
         if isinstance(other, TensorLike):
             return qp.s_prod(scalar=other, operator=self, lazy=False)
         return NotImplemented  # pragma: no cover

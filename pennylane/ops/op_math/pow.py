@@ -22,8 +22,9 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator, Operator2, abstractify
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -237,25 +238,6 @@ class Pow(ScalarSymbolicOp):
     @staticmethod
     def _matrix(scalar, mat):
         if isinstance(scalar, int):
-            if (
-                qp.math.get_deep_interface(mat) == "tensorflow"
-            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-                # TensorFlow doesn't have a matrix_power func, and scipy.linalg.fractional_matrix_power
-                # is not differentiable. So we use a custom implementation of matrix power for integer
-                # exponents below.
-                if scalar == 0:
-                    # Used instead of qp.math.eye for tracing derivatives
-                    return mat @ math.linalg.inv(mat)
-                if scalar > 0:
-                    out = mat
-                else:
-                    out = mat = math.linalg.inv(mat)
-                    scalar *= -1
-
-                for _ in range(scalar - 1):
-                    out @= mat
-                return out
-
             return math.linalg.matrix_power(mat, scalar)
 
         return fractional_matrix_power(mat, scalar)

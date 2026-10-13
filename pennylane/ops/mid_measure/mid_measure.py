@@ -353,8 +353,7 @@ def measure(
               with postselection states that have zero or close to zero probability.
 
             * With analytic execution, ``qp.mutual_info`` will raise errors when using any interfaces except
-              ``jax``, and ``qp.vn_entropy`` will raise an error with the ``tensorflow`` interface when the
-              postselection state has zero probability.
+              ``jax`` when the postselection state has zero probability.
 
             * When using JIT, ``QNode``'s may have unexpected behaviour when postselection on a zero
               probability state is performed. Due to floating point precision, the zero probability may not be

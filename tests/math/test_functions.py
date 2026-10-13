@@ -354,7 +354,7 @@ class TestCast:
         assert fn.get_interface(res) == fn.get_interface(t)
 
         if hasattr(res, "numpy"):
-            # if tensorflow or pytorch, extract view of underlying data
+            # if pytorch, extract view of underlying data
             res = res.numpy()
             t = t.numpy()
 
@@ -369,7 +369,7 @@ class TestCast:
         assert fn.get_interface(res) == fn.get_interface(t)
 
         if hasattr(res, "numpy"):
-            # if tensorflow or pytorch, extract view of underlying data
+            # if pytorch, extract view of underlying data
             res = res.numpy()
             t = t.numpy()
 
@@ -384,7 +384,7 @@ class TestCast:
         assert fn.get_interface(res) == fn.get_interface(t)
 
         if hasattr(res, "numpy"):
-            # if tensorflow or pytorch, extract view of underlying data
+            # if pytorch, extract view of underlying data
             res = res.numpy()
             t = t.numpy()
 
@@ -419,7 +419,7 @@ def test_cast_like(t1, t2):
     """Test that casting t1 like t2 results in t1 being cast to the same datatype as t2"""
     res = fn.cast_like(t1, t2)
 
-    # if tensorflow or pytorch, extract view of underlying data
+    # if pytorch, extract view of underlying data
     if hasattr(res, "numpy"):
         res = res.numpy()
 
@@ -472,7 +472,7 @@ class TestConcatenate:
         t2 = onp.array([[3], [4]])
         res = fn.concatenate([t1, t2], axis=1)
 
-        # if tensorflow or pytorch, extract view of underlying data
+        # if pytorch, extract view of underlying data
         if hasattr(res, "numpy"):
             res = res.numpy()
 
@@ -485,7 +485,7 @@ class TestConcatenate:
         t2 = onp.array([5])
         res = fn.concatenate([t1, t2], axis=None)
 
-        # if tensorflow or pytorch, extract view of underlying data
+        # if pytorch, extract view of underlying data
         if hasattr(res, "numpy"):
             res = res.numpy()
 
@@ -501,7 +501,7 @@ class TestConvertLike:
         """Test that converting t1 like t2 results in t1 being cast to the same tensor type as t2"""
         res = fn.convert_like(t1, t2)
 
-        # if tensorflow or pytorch, extract view of underlying data
+        # if pytorch, extract view of underlying data
         if hasattr(res, "numpy"):
             res = res.numpy()
 
@@ -1165,7 +1165,7 @@ class TestOnesLike:
         assert fn.get_interface(res) == fn.get_interface(t)
         assert fn.allclose(res, np.ones(t.shape))
 
-        # if tensorflow or pytorch, extract view of underlying data
+        # if pytorch, extract view of underlying data
         if hasattr(res, "numpy"):
             res = res.numpy()
             t = t.numpy()
@@ -1185,7 +1185,7 @@ class TestOnesLike:
         assert fn.get_interface(res) == fn.get_interface(t)
         assert fn.allclose(res, np.ones(t.shape))
 
-        # if tensorflow or pytorch, extract view of underlying data
+        # if pytorch, extract view of underlying data
         if hasattr(res, "numpy"):
             res = res.numpy()
             t = t.numpy()
@@ -1468,7 +1468,7 @@ class TestStack:
         t2 = onp.array([3, 4])
         res = fn.stack([t1, t2], axis=1)
 
-        # if tensorflow or pytorch, extract view of underlying data
+        # if pytorch, extract view of underlying data
         if hasattr(res, "numpy"):
             res = res.numpy()
 
@@ -1512,7 +1512,7 @@ class TestSum:
         a specific axis"""
         res = fn.sum(t1, axis=(0, 2))
 
-        # if tensorflow or pytorch, extract view of underlying data
+        # if pytorch, extract view of underlying data
         if hasattr(res, "numpy"):
             res = res.numpy()
 
@@ -1532,7 +1532,7 @@ class TestSum:
         a specific axis, while keepdims avoids the summed dimensions from being removed"""
         res = fn.sum(t1, axis=(0, 2), keepdims=True)
 
-        # if tensorflow or pytorch, extract view of underlying data
+        # if pytorch, extract view of underlying data
         if hasattr(res, "numpy"):
             res = res.numpy()
 
@@ -1550,7 +1550,7 @@ def test_T(t):
 
     assert fn.get_interface(res) == fn.get_interface(t)
 
-    # if tensorflow or pytorch, extract view of underlying data
+    # if pytorch, extract view of underlying data
     if hasattr(res, "numpy"):
         res = res.numpy()
         t = t.numpy()
@@ -2479,16 +2479,11 @@ class TestSize:
         ([[0], [1], [2], [3], [4], [5]], 6),
     ]
 
-    @pytest.mark.parametrize(
-        "interface",
-        [
-            pytest.param("torch", marks=pytest.mark.torch),
-        ],
-    )
+    @pytest.mark.torch
     @pytest.mark.parametrize(("array", "size"), array_and_size)
-    def test_size_torch_and_tf(self, array, size, interface):
-        """Test size function with the torch and tf interfaces."""
-        r = fn.size(fn.asarray(array, like=interface))
+    def test_size_torch(self, array, size):
+        """Test size function with the torch."""
+        r = fn.size(fn.asarray(array, like="torch"))
         assert r == size
 
 

@@ -704,19 +704,6 @@ class TestMatrix:
         assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
 
-    @pytest.mark.tf
-    def test_batching_tf(self):
-        """Test that Pow matrix has batching support with the tensorflow interface."""
-        import tensorflow as tf
-
-        x = tf.constant([-1.0, -2.0, -3.0])
-        y = tf.constant([1.0, 2.0, 3.0])
-        op = Pow(qp.RX(x, 0), y)
-        mat = op.matrix()
-        true_mat = qp.math.stack([Pow(qp.RX(i, 0), j).matrix() for i, j in zip(x, y)])
-        assert qp.math.allclose(mat, true_mat)
-        assert mat.shape == (3, 2, 2)
-
     def check_matrix(self, param, z):
         """Interface-independent helper function that checks that the matrix of a power op
         of an IsingZZ is the same as the matrix for its decomposition."""
@@ -758,25 +745,6 @@ class TestMatrix:
 
         param = torch.tensor(2.34)
         assert self.check_matrix(param, z)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
-    def test_matrix_against_shortcut_tf(self, z):
-        """Test the matrix using a tf variable parameter."""
-        import tensorflow as tf
-
-        param = tf.Variable(2.34)
-        assert self.check_matrix(param, z)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("z", [-3, -1, 0, 1, 3])
-    def test_matrix_tf_int_z(self, z):
-        """Test that matrix works with integer power."""
-        import tensorflow as tf
-
-        theta = tf.Variable(1.0)
-        mat = qp.pow(qp.RX(theta, wires=0), z=z).matrix()
-        assert qp.math.allclose(mat, qp.RX.compute_matrix(1.0 * z))
 
     def test_matrix_wire_order(self):
         """Test that the wire_order keyword rearranges ording."""
@@ -997,40 +965,6 @@ class TestIntegration:
             return qp.state()
 
         circ()
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("z", [-3, -1, 0, 1, -3])
-    @pytest.mark.parametrize("diff_method", ["adjoint", "backprop", "best"])
-    def test_ctrl_grad_int_z_tf(self, z, diff_method):
-        """Test that controlling a Pow op is differentiable with integer exponents."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(x):
-            qp.Hadamard(0)
-            qp.ctrl(Pow(qp.RX(x, wires=1), z=z), control=0)
-            return qp.expval(qp.PauliZ(1))
-
-        @qp.qnode(dev)
-        def expected_circuit(x):
-            qp.Hadamard(0)
-            qp.CRX(x * z, wires=[0, 1])
-            return qp.expval(qp.PauliZ(1))
-
-        x = tf.Variable(1.23)
-
-        with tf.GradientTape() as res_tape:
-            res = circuit(x)
-        res_grad = res_tape.gradient(res, x)
-
-        with tf.GradientTape() as expected_tape:
-            expected = expected_circuit(x)
-        expected_grad = expected_tape.gradient(expected, x)
-
-        assert np.allclose(res, expected)
-        assert np.allclose(res_grad, expected_grad)
 
 
 # pylint: disable-next=too-few-public-methods

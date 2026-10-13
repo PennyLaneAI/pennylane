@@ -38,19 +38,6 @@ def _autograd_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
 
 
 # pylint: disable=import-outside-toplevel, unused-argument
-def _tf_jac(
-    classical_function, argnums, *args, **kwargs
-) -> TensorLike:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-    if not math.get_trainable_indices(args):
-        raise QuantumFunctionError("No trainable parameters.")
-    import tensorflow as tf
-
-    with tf.GradientTape() as tape:
-        gate_params = classical_function(*args, **kwargs)
-    return tape.jacobian(gate_params, args)
-
-
-# pylint: disable=import-outside-toplevel, unused-argument
 def _torch_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
     if not math.get_trainable_indices(args):
         raise QuantumFunctionError("No trainable parameters.")
@@ -70,7 +57,6 @@ _jac_map = {
     None: _numpy_jac,
     "numpy": _numpy_jac,
     "autograd": _autograd_jac,
-    "tf": _tf_jac,
     "torch": _torch_jac,
     "jax": _jax_jac,
     "jax-jit": _jax_jac,

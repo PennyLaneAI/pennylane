@@ -47,7 +47,6 @@ class ProtectedLevel(StrEnum):
     GRADIENT = "gradient"
     DEVICE = "device"
     ALL = "all"
-    ALL_MLIR = "all-mlir"
 
 
 def _batch_postprocessing(

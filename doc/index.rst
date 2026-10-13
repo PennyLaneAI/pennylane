@@ -251,17 +251,16 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qp_liealg
    code/qp_logging
    code/qp_math
+   code/qp_noise
    code/qp_numpy
    code/qp_ops_op_math
    code/qp_pauli
-   code/qp_pulse
-   code/qp_qaoa
    code/qp_qchem
-   code/qp_qcut
    code/qp_qnn
    code/qp_resource
    code/qp_shadows
    code/qp_spin
+   code/qp_testing
    code/qp_transforms
 
 .. toctree::
@@ -271,6 +270,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
 
    code/qp_capture
    code/qp_concurrency
+   code/qp_core_apply
    code/qp_core_operator
    code/qp_core_queuing
    code/qp_devices

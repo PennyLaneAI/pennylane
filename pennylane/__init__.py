@@ -22,11 +22,13 @@ from pennylane import exceptions
 from pennylane.boolean_fn import BooleanFn
 from pennylane import numpy
 from pennylane import queuing
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.apply import apply
+from pennylane.core.queuing import QueuingManager
 
 from pennylane import compiler
 from pennylane.compiler import qjit
 from pennylane import capture
+from pennylane.capture import hint
 from pennylane import core
 from pennylane import control_flow
 from pennylane.control_flow import for_loop, while_loop
@@ -48,8 +50,6 @@ from pennylane.decomposition import (
 from pennylane import templates
 from pennylane import pauli
 from pennylane.pauli import pauli_decompose
-from pennylane.resource import specs
-from pennylane import resource
 from pennylane import qchem
 from pennylane.fermi import (
     FermiC,
@@ -111,9 +111,10 @@ from pennylane.templates.tensornetworks import *
 from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
-from pennylane import qaoa
 from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
+from pennylane.resource import analyze, specs, track
+from pennylane import resource
 
 from pennylane.transforms import (
     transform,
@@ -133,6 +134,15 @@ from pennylane.transforms import (
     clifford_t_decomposition,
     gridsynth,
     CompilePipeline,
+)
+from pennylane.noise import (
+    add_noise,
+    insert,
+    mitigate_with_zne,
+    fold_global,
+    poly_extrapolate,
+    richardson_extrapolate,
+    exponential_extrapolate,
 )
 from pennylane.ops.functions import (
     dot,
@@ -164,9 +174,6 @@ from pennylane.debugging import (
     debug_tape,
 )
 from pennylane.shadows import ClassicalShadow
-from pennylane.qcut import cut_circuit, cut_circuit_mc
-from pennylane import pulse
-
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 from pennylane import gradients  # pylint:disable=wrong-import-order
 from pennylane.drawer import draw, draw_mpl
@@ -176,6 +183,7 @@ from pennylane.io import (
     from_qasm,
     to_openqasm,
     from_qiskit,
+    from_qiskit_noise,
     from_qiskit_op,
     from_quil,
     from_quil_file,
@@ -189,6 +197,9 @@ from pennylane.io import (
 from pennylane import logging  # pylint:disable=wrong-import-order
 
 from pennylane import data
+
+from pennylane import noise
+from pennylane.noise import NoiseModel
 
 from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
@@ -210,6 +221,8 @@ from pennylane.liealg import lie_closure, structure_constants, center
 from pennylane import qnn
 
 from pennylane import estimator
+
+from pennylane import testing
 
 # pylint:disable=wrong-import-order
 from importlib.metadata import version as _metadata_version

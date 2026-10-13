@@ -136,7 +136,7 @@ as well as potential further capabilities, by providing the following class attr
 
   Examples of capabilities are:
 
-  * ``'model'`` (*str*): either ``'qubit'`` or ``'cv'``.
+  * ``'model'`` (*str*): ``'qubit'``.
 
   * ``'returns_state'`` (*bool*): ``True`` if the device returns the quantum state via ``dev.state``.
 
@@ -161,8 +161,7 @@ Adding arguments to your device
 
 .. important::
 
-    PennyLane supports both qubit and continuous-variable (CV) devices. However, from
-    here onwards, we will demonstrate plugin development focusing on qubit-based devices
+    From here onwards, we will demonstrate plugin development focusing on qubit-based devices
     inheriting from the :class:`~pennylane.devices.QubitDevice` class.
 
 Defining the ``__init__`` method of a custom device is not necessary; by default,
