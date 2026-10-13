@@ -750,7 +750,7 @@
 
 * :func:`~pennylane.compile` now retains adjoints of basis gates until optimization transforms run,
   allowing adjacent inverse pairs to cancel instead of being decomposed into different gates.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10322)](https://github.com/PennyLaneAI/pennylane/pull/10322)
 
 * The decompositions of :class:`~.QROM` (unary iteration), :class:`~.QFT`, :class:`~.AQFT` and
   :class:`~.FFFT` now provide `num-iters` hints for loops with dynamic bounds, avoiding symbolic
