@@ -193,6 +193,18 @@ class TestDecompositionErrors:
 
         assert_valid(ValidMCMDecomp(wires=0), skip_pickle=True)
 
+    @pytest.mark.jax
+    def test_pauli_measures_can_be_compared(self):
+        """Tests that decompositions with Pauli measurements can be compared correctly."""
+
+        class ValidPauliMeasureDecomp(Operator):
+            @staticmethod
+            def compute_decomposition(wires):
+                mcm = qp.pauli_measure("XY", wires=wires)
+                return mcm.measurements
+
+        assert_valid(ValidPauliMeasureDecomp(wires=[0, 1]), skip_pickle=True)
+
 
 class TestBadMatrix:
     """Tests involving matrix validation."""
