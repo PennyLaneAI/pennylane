@@ -394,8 +394,8 @@ class TestAnalyzeHintIntegration:
         assert r.resources.quantum_operations["PauliY"] == 3
         assert r.resources.total_quantum_operations == 10
 
-    def test_cond_low_branch_prob_rounds_resources_to_zero(self):
-        """Low probability times low gate count should floor to zero resources."""
+    def test_cond_low_branch_prob_rounds_resources_up(self):
+        """Fractional resource counts from branch probabilities are rounded up."""
 
         @qp.qjit(capture=True)
         @qp.qnode(qp.device("null.qubit", wires=1))
@@ -413,7 +413,7 @@ class TestAnalyzeHintIntegration:
             return qp.expval(qp.Z(0))
 
         r = qp.analyze(circuit)(True)
-        # 0.4 * 1 floors to 0; 0.6 * 1 rounds to 1
-        assert r.resources.quantum_operations["PauliX"] == 0
+        # catalyst reports the fractional counts 0.4 X and 0.6 Y, each of which is rounded up
+        assert r.resources.quantum_operations["PauliX"] == 1
         assert r.resources.quantum_operations["PauliY"] == 1
-        assert r.resources.total_quantum_operations == 1
+        assert r.resources.total_quantum_operations == 2
