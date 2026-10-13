@@ -221,7 +221,8 @@ the machine the runtime lives on.
 from . import runtime
 from .decode import decode
 from .device import Backline
-from .functions import CoprocessorFunction, css_bp_decoder, onnx_decoder, triton_decoder
+from .functions import CoprocessorFunction, css_bp_decoder, triton_decoder
+from .onnx import onnx_decoder
 from .placement import Controller, Coprocessor, Endpoint, Node, Placement
 from .transports import Transport, get_transport, register_transport
 

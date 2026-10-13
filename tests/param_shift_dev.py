@@ -70,7 +70,8 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
 
         if self.tracker.active:
             for c in circuits:
-                self.tracker.update(resources=c.specs["resources"])
+                resources = qp.resource.resources_from_tape(c)
+                self.tracker.update(resources=resources)
             self.tracker.update(
                 execute_and_derivative_batches=1,
                 derivatives=len(circuits),
@@ -112,7 +113,8 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
 
         if self.tracker.active:
             for c in circuits:
-                self.tracker.update(resources=c.specs["resources"])
+                resources = qp.resource.resources_from_tape(c)
+                self.tracker.update(resources=resources)
             self.tracker.update(
                 execute_and_jvp_batches=1, executions=len(circuits), jvps=len(circuits)
             )
@@ -153,7 +155,7 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
 
         if self.tracker.active:
             for c in circuits:
-                self.tracker.update(resources=c.specs["resources"])
+                self.tracker.update(resources=qp.resource.resources_from_tape(c))
             self.tracker.update(
                 execute_and_vjp_batches=1, executions=len(circuits), vjps=len(circuits)
             )

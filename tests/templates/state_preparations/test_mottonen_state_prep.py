@@ -289,7 +289,7 @@ class TestDecomposition:
         circuit(state_vector)
         tape = spy.call_args[0][0][0]
 
-        assert tape.specs["resources"].quantum_operations["CNOT"] == n_CNOT
+        assert qp.resource.resources_from_tape(tape).quantum_operations["CNOT"] == n_CNOT
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
