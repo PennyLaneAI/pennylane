@@ -167,9 +167,6 @@ def _dims_to_numpy(dims: int | Sequence[int], n_qudits: int) -> np.ndarray:
 class SparseGateGroup(NamedTuple):
     """Gates of equal weight :math:`\\omega` stored in sparse ``(support, power)`` form.
 
-    Only the active qudits of each gate are kept, so the storage cost is
-    ``O(n_gates * omega)`` instead of ``O(n_gates * n_qudits)``.
-
     Args:
         omega (int): Number of active qudits shared by every gate in the group.
         supports (np.ndarray): Active qudit indices, shape ``(n_gates, omega)``,
@@ -194,10 +191,6 @@ def _normalize_sparse_gate(
     gate: dict[int, int], n_qudits: int, dims: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
     """Validate one sparse gate and return its sorted ``(support, powers)`` arrays.
-
-    Qudit indices may be negative (Python-style, counted from the end). Powers
-    are reduced modulo the local dimension of their qudit and zero powers are
-    dropped, so the returned support contains only genuinely active qudits.
 
     Raises:
         TypeError: If ``gate`` is not a ``dict`` (e.g. a dense length-``n_qudits`` vector).
