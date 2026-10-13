@@ -31,7 +31,6 @@ from pennylane.labs.tcdq.mmd_loss_hw import (
 from pennylane.labs.tcdq.qudit_expval_functions import (
     QuditCircuitConfig,
     _dims_to_numpy,
-    _gates_to_dense_generators,
     build_qudit_expval_func,
 )
 
@@ -63,20 +62,21 @@ def _call_qudit_mmd_loss(
     return _build_loss(circuit_config, mmd_config)(params, target_data, key)
 
 
-def _qudit_phi_g_z(gen, z, d):
-    """Reference implementation of the per-gate eigenvalue factor."""
-    n = len(z)
-    dims = _dims_to_numpy(d, n)
+def _qudit_phi_g_z(gate, z, dims):
+    """Reference per-gate eigenvalue factor for a sparse gate ``{qudit: power}``.
+
+    Qudits absent from ``gate`` contribute ``sqrt(2) cos(pi/4) = 1``, so only the
+    support is iterated.
+    """
     val = 1.0
-    for j in range(n):
-        val *= np.sqrt(2.0) * np.cos(2.0 * np.pi * z[j] * gen[j] / dims[j] + np.pi / 4.0)
+    for q, p in gate.items():
+        val *= np.sqrt(2.0) * np.cos(2.0 * np.pi * z[q] * p / dims[q] + np.pi / 4.0)
     return val
 
 
-def _flatten_gates(gates, n_qudits, d):
-    """Flatten the sparse gate dictionary into dense generators plus parameter indices."""
-    generators, flat_pidx = _gates_to_dense_generators(gates, n_qudits, _dims_to_numpy(d, n_qudits))
-    return [np.array(g, dtype=int) for g in generators], [int(i) for i in flat_pidx]
+def _flatten_gates(gates):
+    """Flatten the sparse gate dictionary into ``(gate, param_idx)`` pairs."""
+    return [(gate, int(pidx)) for pidx in sorted(gates) for gate in gates[pidx]]
 
 
 def _qudit_circuit_probs(gates, params, n_qudits, d, phase_fn=None, phase_params=None):
@@ -88,7 +88,7 @@ def _qudit_circuit_probs(gates, params, n_qudits, d, phase_fn=None, phase_params
     """
     params = np.asarray(params, dtype=float)
     dims = _dims_to_numpy(d, n_qudits)
-    flat_gens, flat_pidx = _flatten_gates(gates, n_qudits, d)
+    flat_gates = _flatten_gates(gates)
     omega = np.exp(2j * np.pi / dims)  # per-qudit roots of unity, shape (n_qudits,)
     all_states = list(itertools.product(*(range(int(d_j)) for d_j in dims)))
     n_states = int(np.prod(dims))
@@ -96,9 +96,7 @@ def _qudit_circuit_probs(gates, params, n_qudits, d, phase_fn=None, phase_params
     gammas = np.zeros(n_states, dtype=complex)
     for k, z in enumerate(all_states):
         z_arr = np.array(z)
-        phase = sum(
-            params[pidx] * _qudit_phi_g_z(g, z_arr, dims) for g, pidx in zip(flat_gens, flat_pidx)
-        )
+        phase = sum(params[pidx] * _qudit_phi_g_z(g, z_arr, dims) for g, pidx in flat_gates)
         if phase_fn is not None:
             phase += float(phase_fn(phase_params, jnp.array(z_arr)))
         gammas[k] = np.exp(1j * phase)
@@ -120,7 +118,7 @@ def _qudit_expval_exact(gates, params, l_vec, n_qudits, d):
     """Return one exact observable moment by summing over all basis states."""
     params = np.asarray(params, dtype=float)
     dims = _dims_to_numpy(d, n_qudits)
-    flat_gens, flat_pidx = _flatten_gates(gates, n_qudits, d)
+    flat_gates = _flatten_gates(gates)
     all_states = list(itertools.product(*(range(int(d_j)) for d_j in dims)))
     n_states = int(np.prod(dims))
     l_arr = np.array(l_vec)
@@ -131,7 +129,7 @@ def _qudit_expval_exact(gates, params, l_vec, n_qudits, d):
         z_minus_l = (z - l_arr) % dims
         delta = sum(
             params[pidx] * (_qudit_phi_g_z(g, z, dims) - _qudit_phi_g_z(g, z_minus_l, dims))
-            for g, pidx in zip(flat_gens, flat_pidx)
+            for g, pidx in flat_gates
         )
         total += np.exp(1j * delta)
     return total / n_states

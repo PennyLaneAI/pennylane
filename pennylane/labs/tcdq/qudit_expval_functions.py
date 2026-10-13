@@ -262,37 +262,6 @@ def _parse_qudit_gate_dict(
     ]
 
 
-def _gates_to_dense_generators(
-    circuit_def: dict[int, list[dict[int, int]]], n_qudits: int, dims: ArrayLike
-) -> tuple[np.ndarray, np.ndarray]:
-    """Expand sparse gates into a dense generator matrix (for brute-force references).
-
-    This is intentionally *not* used by the estimator; it exists so that
-    exhaustive reference implementations and tests can consume the same
-    ``gates`` dictionary. Gates are flattened in the same order as
-    :func:`_parse_qudit_gate_dict` visits them (sorted parameter index, then
-    list order) and identity gates are kept so that the returned
-    ``param_map`` has one entry per gate in ``circuit_def``.
-
-    Returns:
-        tuple[np.ndarray, np.ndarray]: ``(generators, param_map)`` with shapes
-        ``(n_gates, n_qudits)`` and ``(n_gates,)``.
-    """
-    dims = np.asarray(dims, dtype=int)
-    rows: list[np.ndarray] = []
-    param_map: list[int] = []
-    for param_idx in sorted(circuit_def.keys()):
-        for gate in circuit_def[param_idx]:
-            support, powers = _normalize_sparse_gate(gate, n_qudits, dims)
-            row = np.zeros((n_qudits,), dtype=int)
-            row[support] = powers
-            rows.append(row)
-            param_map.append(int(param_idx))
-
-    generators = np.stack(rows) if rows else np.zeros((0, n_qudits), dtype=int)
-    return generators, np.asarray(param_map, dtype=int)
-
-
 def _compute_qudit_samples(
     key: ArrayLike, num_samples: int, n_qudits: int, dims: ArrayLike
 ) -> jnp.ndarray:
