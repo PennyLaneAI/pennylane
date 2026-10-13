@@ -474,6 +474,7 @@
   - probs(all wires): 1
   Total wires: 2
   Circuit Depth: Not computed
+
   ```
 
   Gates that are already in the ``target`` gate set are kept:
@@ -488,6 +489,7 @@
   - probs(all wires): 1
   Total wires: 2
   Circuit Depth: Not computed
+
   ```
 
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
