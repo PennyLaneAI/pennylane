@@ -108,3 +108,8 @@ def _rdma():
 @register_transport("memcpy")
 def _memcpy():
     return Transport("memcpy")
+
+
+@register_transport("none")
+def _none():
+    return Transport("none")

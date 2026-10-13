@@ -496,6 +496,9 @@ class Placement:
             object.__setattr__(self, "transport", get_transport(self.transport))
         self._resolve_message_sizes()
 
+        if self.transport.name == "none" and self.coprocessors:
+            raise ValueError('Cannot use transport="none" with coprocessors')
+
         if self.transport.name == "rdma":
             for coprocessor in self.coprocessors:
                 # TODO: how should we handle when these fields are provided for `memcpy`
