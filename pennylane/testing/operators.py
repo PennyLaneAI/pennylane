@@ -157,8 +157,8 @@ def _check_decomposition_legacy(op, skip_wire_mapping):
             mapped_decomp = _resolve_dynamic_wires(mapped_decomp, total_work_wires)
         for mapped_op, orig_op in zip(mapped_decomp, decomp_output, strict=True):
             assert (
-                # pylint: disable-next=no-member
                 mapped_op.wires
+                # pylint: disable-next=no-member
                 == qp.map_wires(orig_op, wire_map).wires
             ), "Operators in decomposition of wire-mapped operator must have mapped wires."
 
