@@ -231,7 +231,7 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
 
     **Example**
 
-    The rule is passed to :func:`~.decompose` via ``fixed_decomps``.
+    The rule is passed to :func:`~.decompose` via ``fixed_decomps``:
 
     .. code-block:: python
 
