@@ -229,6 +229,34 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
     Returns:
         pennylane.decomposition.DecompositionRule: the fixed decomposition rule
 
+    **Example**
+
+    The rule is passed to :func:`~.decompose` via ``fixed_decomps``.
+
+    .. code-block:: python
+
+        import pennylane as qp
+
+        qp.decomposition.enable_graph()
+
+        registers = qp.registers({"grad": 3, "aux": 3, "work": 2})
+        rule = qp.transforms.decompositions.make_phase_gradient_distillation_decomp(
+            registers["aux"], registers["work"]
+        )
+        gate_set = {"Hadamard", "S", "Adjoint(S)", "T", "Adjoint(T)", "CNOT", "X", "Z", "measure"}
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=gate_set, fixed_decomps={qp.PhaseGradientStatePrep: rule})
+        @qp.qnode(qp.device("lightning.qubit", wires=8))
+        def circuit():
+            qp.PhaseGradientStatePrep(registers["grad"])
+            return qp.state()
+
+    The auxiliary register is returned to :math:`|0\rangle`, and only Clifford+T gates and
+    mid-circuit measurements remain:
+
+    >>> sorted(qp.analyze(circuit)().resources.quantum_operations)
+    ['Adjoint(S)', 'Adjoint(T)', 'CNOT', 'Hadamard', 'MidCircuitMeasure', 'PauliX', 'PauliZ', 'T']
     """
 
     # ``mode="repeat-until-success"`` implements local retries with nested
