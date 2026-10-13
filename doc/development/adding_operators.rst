@@ -1,22 +1,142 @@
 .. _contributing_operators:
 
 Adding new quantum operators
-===========================
+============================
 
-The following steps will help you to create custom operators, and to
-potentially add them to PennyLane.
+This page will outline the steps to help create custom quantum operators that
+can either be formally added to PennyLane2 or just used locally.
 
-Note that in PennyLane, a circuit ansatz consisting of multiple gates is also an operator --- one whose
-action is defined by specifying a representation as a combination of other operators.
-For historical reasons, you find circuit ansaetze in the ``pennylane/template/`` folder,
-while all other operations are found in ``pennylane/ops/``.
+Here, the term "quantum operators" encompasses anything that can be programmed
+onto a quantum device. This includes
+:doc:`gates </introduction/operations>`, elaborate
+:doc:`subroutines </introduction/subroutines>`, and mid-circuit measurements.
 
-The base classes to construct new operators, :class:`~.Operator` and
-corresponding subclasses, are found in ``pennylane/operations.py``.
+Decomposition and resource estimation
+#####################################
 
-.. note::
+The motivation for adding a custom operator is often because it represents some
+self-contained computational block that not only will be used many times, but
+also because it could be *implemented* (or decomposed into elementary gates) in
+different ways.
 
-  Check :doc:`/code/qp_measurements` for documentation on how to create new measurements.
+PennyLane2 offers a robust and modularized decomposition framework, wherein
+any quantum operator can define different decompositions in terms of other
+operators.
+
+TODO: Briefly explain ``register_resources``, ``add_decomps``, abstract typing,
+and resource-only decomps if supported (sc-130108)
+
+Important classes and functions
+###############################
+
+The two most important functionalities in PennyLane2 for creating new operators
+are:
+
+.. autosummary::
+
+    ~pennylane.core.operator.Operator2
+    ~pennylane.subcircuit
+
+The :class:`~pennylane.core.operator.Operator2` class and the
+:func:`~pennylane.subcircuit` function only differ syntactically; using either
+will result in a valid quantum operator. For most use cases,
+:func:`~pennylane.subcircuit` is recommended for its ease of use. Utilizing the
+:class:`~pennylane.core.operator.Operator2` class is recommended for the utmost
+customization.
+
+Input argument types
+####################
+
+When creating a new quantum operator in PennyLane2, the input arguments to the
+operator must be accurately binned into the following categories for
+compatibility with the :func:`~pennylane.qjit` compiler.
+
+* ``wire_argnames`` : The names of arguments corresponding to wires. Values for
+  these arguments are automatically wrapped in :class:`~.Wires` objects by the
+  :class:`~pennylane.core.operator.Operator2` constructor. For example,
+  :class:`~pennylane.MultiControlledX`'s ``wires`` and ``work_wires`` arguments
+  belong in ``wire_argnames``.
+
+* ``dynamic_argnames`` : The names of arguments that are scalars, arrays, or
+  castable to arrays. These arguments can be treated by the
+  :func:`~pennylane.qjit` compiler as dynamic. For example, the ``bitstrings``
+  argument in :class:`~pennylane.QROM` is an array of integer values (``0`` and
+  ``1``), and can therefore be in ``dynamic_argnames``.
+
+* ``static_argnames`` : The names of arguments whose concrete values are known
+  at compile time, but that do not need to be accessible to the
+  :func:`~pennylane.qjit` compiler. For example, the ``partial`` argument in
+  :class:`~pennylane.Select` is a Boolean flag that only changes how the
+  operator is decomposed, and therefore belongs in ``static_argnames``.
+
+* ``compilable_argnames`` : The names of arguments whose concrete values are
+  known at compile time and *are* visible to the :func:`~pennylane.qjit`
+  compiler. These can be numbers, strings, and lists, tuples, or dictionaries of
+  them. For example, the ``pauli_word`` argument in :class:`~pennylane.PauliRot`
+  is a string (e.g., ``"XYZ"``), and can therefore be in
+  ``compilable_argnames``. An operator can specify either
+  ``compilable_argnames`` or ``static_argnames`` and ``hybrid_argnames``, but
+  not both.
+
+* ``hybrid_argnames`` : The names of arguments that hold dynamic data wrapped in
+  static structures (Pytrees), such as other operators or collections of wires
+  or arrays. These names cannot appear in ``dynamic_argnames``,
+  ``static_argnames``, or ``compilable_argnames``, but they can appear in
+  ``wire_argnames`` when the argument contains nested structures of wires. For
+  example, the ``ops`` argument in :class:`~pennylane.Select` is a list of
+  operators, and therefore belongs in ``hybrid_argnames``.
+
+An example
+##########
+
+Creating a custom operator using both :func:`~pennylane.subcircuit` and
+:class:`~pennylane.core.operator.Operator2` will be shown in this section.
+
+The following is an example for a two-wire gate called ``FlipAndEntangle``. This
+operator flips a wire, measures another wire (a mid-circuit measurement) and
+conditionally applies a different :class:`~pennylane.CNOT` gate given the
+mid-circuit measurement result.
+
+First, its input arguments need to be binned into the proper categories. Its
+call signature is ``FlipAndRotate(angle, rot_axes, wires)``.
+
+* ``angle`` : the angle of rotation (a ``float``). This can go in
+  ``dynamic_argnames``.
+* ``rot_axes`` : a length-2 list of some combination of ``"X"``, ``"Y"``, and
+  ``"Z"``, representing an axis of rotation. Depending on the measurement result
+  of ``wires[0]``, the wire that gets flipped, a rotation gate corresponding to
+  the axis of rotation is applied to ``wires[1]``. This can go in
+  ``compilable_argnames``.
+* ``wires`` : the wires the operator acts on. The first wire gets flipped, the
+  other is rotated. This can go in ``wire_argnames``.
+
+We can define ``FlipAndRotate`` as a quantum function and turn it into a proper
+quantum operator by decorating with :func:`~pennylane.subcircuit` :
+
+.. code-block:: python
+
+    import pennylane as qp
+
+    @qp.subcircuit(
+        dynamic_argnams={"angle"},
+        compilable_argnames={"rot_axes"},
+        wire_argnames={"wires"},
+    )
+    def FlipAndRotate(angle, rot_axes, wires):
+        qp.X(wires[0])
+        m = qp.measure(1)
+
+        def true_fn():
+            qp.PauliRot(2 * angle, rot_axes[0], wires=wires[1])
+
+        def false_fn():
+            qp.PauliRot(2 * angle, rot_axes[1], wires=wires[1])
+
+        qp.cond(m, true_fn, false_fn)()
+
+>>> type(FlipAndRotate)
+
+
 
 Abstraction
 ###########

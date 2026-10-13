@@ -21,13 +21,13 @@ circuit.
 .. subroutine-table::
     :nosignatures:
 
-    ~pennylane.MPSPrep                        /_static/templates/tensornetworks/MPS_template.png
-    ~pennylane.MultiplexerStatePreparation    /_static/templates/state_preparations/multiplexerSP_template.png
-    ~pennylane.SumOfSlatersPrep               /_static/templates/state_preparations/sumofslatersprep_template.png
-    ~pennylane.PartialUnaryStatePreparation   /_static/templates/state_preparations/partialunarystatepreparation_template.png
-    ~pennylane.UniformPrep                    /_static/templates/state_preparations/uniformprep.png
-    ~pennylane.AliasSampling                  /_static/templates/state_preparations/aliassampling.png
-    ~pennylane.PhaseGradientStatePrep         /_static/templates/state_preparations/phasegradientstateprep_template.png
+    ~pennylane.MPSPrep                        /_static/subroutine_thumbnails/mps_prep.svg
+    ~pennylane.MultiplexerStatePreparation    /_static/subroutine_thumbnails/multiplexer_state_prep.svg
+    ~pennylane.SumOfSlatersPrep               /_static/subroutine_thumbnails/sum_of_slaters_prep.svg
+    ~pennylane.PartialUnaryStatePreparation   /_static/subroutine_thumbnails/partial_unary_state_prep.svg
+    ~pennylane.UniformPrep                    /_static/subroutine_thumbnails/uniform_prep.svg
+    ~pennylane.AliasSampling                  /_static/subroutine_thumbnails/alias_sampling.svg
+    ~pennylane.PhaseGradientStatePrep         /_static/subroutine_thumbnails/phase_gradient_prep.svg
 
 .. _intro_ref_temp_subroutines:
 
@@ -40,14 +40,14 @@ such as addition, multiplication, and exponentiation.
 .. subroutine-table::
     :nosignatures:
 
-    ~pennylane.SemiAdder                 /_static/templates/arithmetic/semiadder.png
-    ~pennylane.Incrementer               /_static/templates/arithmetic/adder.png
-    ~pennylane.OutMultiplier             /_static/templates/arithmetic/outmultiplier.png
-    ~pennylane.SignedOutMultiplier       /_static/templates/arithmetic/signedoutmultiplier.png
-    ~pennylane.OutSquare                 /_static/templates/arithmetic/outsquare.png
-    ~pennylane.SignedOutSquare           /_static/templates/arithmetic/signedoutsquare.png
-    ~pennylane.LeftClassicalComparator   /_static/templates/arithmetic/leftclassicalcomparator.png
-    ~pennylane.LeftQuantumComparator     /_static/templates/arithmetic/leftquantumcomparator.png
+    ~pennylane.SemiAdder                 /_static/subroutine_thumbnails/semi_adder.svg
+    ~pennylane.Incrementer               /_static/subroutine_thumbnails/incrementer.svg
+    ~pennylane.OutMultiplier             /_static/subroutine_thumbnails/out_multiplier.svg
+    ~pennylane.SignedOutMultiplier       /_static/subroutine_thumbnails/signed_out_multiplier.svg
+    ~pennylane.OutSquare                 /_static/subroutine_thumbnails/out_square.svg
+    ~pennylane.SignedOutSquare           /_static/subroutine_thumbnails/signed_out_square.svg
+    ~pennylane.LeftClassicalComparator   /_static/subroutine_thumbnails/left_classical_comparator.svg
+    ~pennylane.LeftQuantumComparator     /_static/subroutine_thumbnails/left_quantum_comparator.svg
 
 .. _intro_ref_temp_qchem:
 
@@ -57,21 +57,21 @@ Other subroutines
 .. subroutine-table::
     :nosignatures:
 
-    ~pennylane.IQP                      /_static/templates/subroutines/iqp.png
-    ~pennylane.IQPEmbedding             /_static/templates/embeddings/iqp.png
-    ~pennylane.TrotterCDF               /_static/templates/subroutines/trotter_product.png
-    ~pennylane.TrotterCGF               /_static/templates/subroutines/trotter_product.png
-    ~pennylane.TrotterVibronic          /_static/templates/subroutines/trotter_product.png
-    ~pennylane.QuantumPhaseEstimation   /_static/templates/subroutines/qpe.svg
-    ~pennylane.iterative_qpe            /_static/templates/subroutines/iterative_qpe.svg
-    ~pennylane.QFT                      /_static/templates/subroutines/qft.svg
-    ~pennylane.AQFT                     /_static/templates/subroutines/aqft.png
-    ~pennylane.FlipSign                 /_static/templates/subroutines/flip_sign.png
-    ~pennylane.QSVT                     /_static/templates/subroutines/qsvt.png
-    ~pennylane.GQSP                     /_static/templates/subroutines/gqsp.png
-    ~pennylane.Select                   /_static/templates/subroutines/select_cropped.png
-    ~pennylane.OneBodyBlockEncoding     /_static/templates/subroutines/onebodyblockencoding.png
-    ~pennylane.QROM                     /_static/templates/qrom/qrom_thumbnail.png
-    ~pennylane.SelectPauliRot           /_static/templates/subroutines/select_pauli_rot_cropped.png
-    ~pennylane.TemporaryAND             /_static/templates/subroutines/temporary_and.png
-    ~pennylane.BasisRotation            /_static/templates/subroutines/basis_rotation.jpeg
+    ~pennylane.IQP                      /_static/subroutine_thumbnails/iqp.svg
+    ~pennylane.IQPEmbedding             /_static/subroutine_thumbnails/iqp_embedding.svg
+    ~pennylane.TrotterCDF               /_static/subroutine_thumbnails/trotter_product.svg
+    ~pennylane.TrotterCGF               /_static/subroutine_thumbnails/trotter_product.svg
+    ~pennylane.TrotterVibronic          /_static/subroutine_thumbnails/trotter_product.svg
+    ~pennylane.QuantumPhaseEstimation   /_static/subroutine_thumbnails/qpe.svg
+    ~pennylane.iterative_qpe            /_static/subroutine_thumbnails/iterative_qpe.svg
+    ~pennylane.QFT                      /_static/subroutine_thumbnails/qft.svg
+    ~pennylane.AQFT                     /_static/subroutine_thumbnails/aqft.svg
+    ~pennylane.FlipSign                 /_static/subroutine_thumbnails/flip_sign.svg
+    ~pennylane.QSVT                     /_static/subroutine_thumbnails/qsvt.svg
+    ~pennylane.GQSP                     /_static/subroutine_thumbnails/gqsp.svg
+    ~pennylane.Select                   /_static/subroutine_thumbnails/select.svg
+    ~pennylane.OneBodyBlockEncoding     /_static/subroutine_thumbnails/one_body_block_encoding.svg
+    ~pennylane.QROM                     /_static/subroutine_thumbnails/qrom.svg
+    ~pennylane.SelectPauliRot           /_static/subroutine_thumbnails/select_pauli_rot.svg
+    ~pennylane.TemporaryAND             /_static/subroutine_thumbnails/temporary_and.svg
+    ~pennylane.BasisRotation            /_static/subroutine_thumbnails/basis_rotation.svg

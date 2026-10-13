@@ -8,10 +8,10 @@ Elementary quantum operations
 
 .. currentmodule:: pennylane.ops
 
-PennyLane2 supports a wide variety of quantum operators (gates and measurements).
+PennyLane2 supports a wide variety of quantum operations.
 
-Qubit operators
----------------
+Qubit operations
+----------------
 
 .. _intro_ref_ops_nonparam:
 
@@ -108,6 +108,10 @@ Other gates
 Observables
 ^^^^^^^^^^^
 
+The following operations can be the argument of certain
+:doc:`terminal measurements <measurements>`, like :func:`~.expval` and
+`~.sample`.
+
 :html:`<div class="summary-table">`
 
 .. autosummary::
@@ -146,11 +150,7 @@ These functions create valid quantum circuit operations from other operators.
     ~pennylane.evolve
 
 
->>> op = qp.prod(qp.PauliX(0), qp.PauliZ(1))
->>> op = qp.sum(qp.Hadamard(0), op)
->>> op = qp.s_prod(1.2, op)
->>> op
-1.2 * (H(0) + X(0) @ Z(1))
+TODO: update code examples
 
 Utility functions
 ^^^^^^^^^^^^^^^^^
@@ -172,3 +172,5 @@ and more.
     ~pennylane.is_hermitian
     ~pennylane.is_unitary
     ~pennylane.pauli_decompose
+
+TODO: update code examples
