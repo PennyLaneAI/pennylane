@@ -974,13 +974,19 @@ def _mc_phase_shift_counts(num_controls):
 
 
 def _mc_phase_shift(phi, controls, target):
-    r"""Multi-controlled phase shift without recursing into other controlled operators.
+    """Decomposes a multi-controlled PhaseShift into polynomial gate count.
 
-    With :math:`A` the AND of all but the last control :math:`b`, :math:`Ab = (A + b - A\oplus b)/2`,
-    so :math:`C^k P(\varphi) = C^{k-1}P(\varphi/2)\, CP_{b,t}(\varphi/2)\, \mathrm{MCX}_{A\to b}\,
-    CP_{b,t}(-\varphi/2)\, \mathrm{MCX}_{A\to b}`, applied iteratively to the first factor. The target is
-    idle during the MCX gates and serves as their borrowed work wire. Only ``ControlledPhaseShift`` and
-    ``MultiControlledX`` are emitted, with a number of gates that is polynomial in the number of controls.
+    Uses the identity A * b = (A + b - (A ^ b)) / 2, where 'b' is the last
+    control and 'A' is the AND of all preceding controls.
+
+    This reduces C^k P(phi) down to:
+      1. ControlledPhaseShift(phi / 2) on [last_ctrl, target]
+      2. MCX on last_ctrl conditioned on rest (using target as borrowed ancilla)
+      3. ControlledPhaseShift(-phi / 2) on [last_ctrl, target]
+      4. MCX on last_ctrl conditioned on rest (uncomputes step 2)
+      5. Recurses on the remaining controls with phi / 2
+
+    Emits only ControlledPhaseShift, CNOT, and MultiControlledX gates.
     """
     controls = list(controls)
     while len(controls) > 1:
