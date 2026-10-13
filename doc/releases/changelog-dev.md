@@ -1210,6 +1210,9 @@
   phase computation; gates are processed in blocks sized from this budget.
   [(#10246)](https://github.com/PennyLaneAI/pennylane/pull/10246)
 
+* TCDQ qudit workflows now accept gates in a sparse representation.
+  [(#10317)](https://github.com/PennyLaneAI/pennylane/pull/10317)
+
 <h3>Breaking changes 💔</h3>
 
 * Tensorflow and tensorflow-autograph interfaces are removed.
