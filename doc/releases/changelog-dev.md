@@ -1903,7 +1903,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Branches can now be `Operator2` instances with `qp.cond` with catalyst and `capture=True`.
+* `qp.cond` can now handle `Operator2` instances being provided instead of branch functions.
+  While this syntax was supported with tape-based PennyLane, it had never been
+  properly supported with program capture and catalyst.
 
 * Fixed captured transforms dropping keyword arguments to the transformed function,
   including when calling transformed QNodes with `qp.qjit(capture=True)`.

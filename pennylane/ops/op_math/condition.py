@@ -24,6 +24,7 @@ import jax
 import pennylane as qp
 from pennylane import QueuingManager, math
 from pennylane.capture import FlatFn, HintedCallable
+from pennylane.capture import enabled as capture_enabled
 from pennylane.capture.autograph import wraps
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
@@ -138,7 +139,7 @@ def _setup_probs(branch_fns) -> None | tuple[float, ...]:
     return tuple[float](guess if p is None else p for p in branch_probs)
 
 
-def _1_op_input(fn, branch_name: str):
+def _handle_op(fn, branch_name: str):
     if fn is None:
         return fn
 
@@ -163,19 +164,9 @@ def _1_op_input(fn, branch_name: str):
 
 
 def _handle_op_inputs(condition, true_fn, false_fn, elifs):
-    # at least one inputs is an Operator
-
-    if (
-        len(elifs) == 2
-        and not isinstance(elifs[0], (tuple, list))
-        and isinstance(elifs[1], (Callable, Operator))
-    ):
-        # elifs = (elif_condition, elif_function)
-        elifs = (elifs,)
-
-    new_true_fn = _1_op_input(true_fn, "true_fn")
-    new_false_fn = _1_op_input(false_fn, "false_fn")
-    new_elifs = tuple((c, _1_op_input(fn, "elif")) for c, fn in elifs)
+    new_true_fn = _handle_op(true_fn, "true_fn")
+    new_false_fn = _handle_op(false_fn, "false_fn")
+    new_elifs = tuple((c, _handle_op(fn, "elif")) for c, fn in elifs)
 
     return CondCallable(condition, new_true_fn, new_false_fn, new_elifs)()
 
@@ -292,13 +283,6 @@ class CondCallable:
         self.branch_fns = [true_fn]
         self.otherwise_fn = false_fn
 
-        if (
-            len(elifs) == 2
-            and not isinstance(elifs[0], (tuple, list))
-            and isinstance(elifs[1], Callable)
-        ):
-            # elifs = (elif_condition, elif_function)
-            elifs = (elifs,)
         if elifs:
             elif_preds, elif_fns = list(zip(*elifs, strict=True))
             self.preds.extend(elif_preds)
@@ -430,10 +414,35 @@ class CondCallable:
         return jax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
 
     def __call__(self, *args, **kwargs):
-        if qp.capture.enabled() and any(math.is_abstract(p) for p in self.preds):
+        if capture_enabled() and any(math.is_abstract(p) for p in self.preds):
             return self.__call_capture_enabled(*args, **kwargs)
 
         return self.__call_capture_disabled(*args, **kwargs)
+
+
+def _capture_dispatch(condition, true_fn, false_fn, elifs):
+    if (
+        len(elifs) == 2
+        and not isinstance(elifs[0], (tuple, list))
+        and isinstance(elifs[1], (Callable, Operator))
+    ):
+        # elifs = (elif_condition, elif_function)
+        elifs = (elifs,)
+
+    if isinstance(true_fn, Operator):
+        return _handle_op_inputs(condition, true_fn, false_fn, elifs)
+
+    if math.is_abstract(true_fn) and isinstance(true_fn.aval, AbstractOperator):
+        raise ValueError("Operator1 instances cannot be provided as true_fn to pennylane.cond.")
+
+    if isinstance(false_fn, Operator):
+        raise ValueError(f"Cannot provide Operator false_fn {false_fn} with callable true_fn.")
+
+    for _, elif_fn in elifs:
+        if isinstance(elif_fn, Operator):
+            raise ValueError(f"Cannot provide Operator elif_fn {elif_fn} with callable true_fn")
+
+    return CondCallable(condition, true_fn, false_fn, elifs)
 
 
 def cond(
@@ -827,10 +836,7 @@ def cond(
         if true_fn is None:
             return lambda fn: CondCallable(condition, fn)
 
-        if isinstance(true_fn, Operator):
-            return _handle_op_inputs(condition, true_fn, false_fn, elifs)
-
-        return CondCallable(condition, true_fn, false_fn, elifs)
+        return _capture_dispatch(condition, true_fn, false_fn, elifs)
 
     if true_fn is None:
         raise TypeError(
