@@ -16,6 +16,8 @@ Unit tests for the Prod arithmetic class of qubit operations
 """
 
 # pylint:disable=protected-access, unused-argument
+from functools import reduce
+
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -32,10 +34,7 @@ from pennylane.wires import Wires
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
 
-no_mat_ops = (
-    qp.Barrier,
-    qp.WireCut,
-)
+no_mat_ops = (qp.Barrier,)
 
 non_param_ops = (
     (qp.Identity, gd.I),
@@ -577,6 +576,24 @@ class TestMatrix:
         with pytest.raises(MatrixUndefinedError):
             prod_op.matrix()
 
+    @pytest.mark.parametrize(
+        "factors",
+        (
+            (qp.H(1), qp.H(0), qp.CNOT([2, 1]), qp.CNOT([1, 0])),
+            (qp.CNOT([1, 3]), qp.X(0), qp.CNOT([3, 2]), qp.Toffoli([2, 0, 1])),
+        ),
+    )
+    @pytest.mark.parametrize("wire_order", [None, [0, 1, 2, 3], [3, 2, 0, 1]])
+    def test_merged_overlapping_groups(self, wire_order, factors):
+        """Test the matrix when merging overlapping groups reorders the wires relative to
+        the wires of the ``Prod`` op, and we need to reorder them back."""
+        prod_op = Prod(*factors)
+        mat = prod_op.matrix(wire_order=wire_order)
+        if wire_order is None:
+            wire_order = prod_op.wires
+        expected = reduce(np.matmul, [factor.matrix(wire_order=wire_order) for factor in factors])
+        assert np.allclose(mat, expected)
+
     def test_prod_ops_multi_terms(self):
         """Test matrix is correct for a product of more than two terms."""
         prod_op = Prod(qp.PauliX(wires=0), qp.PauliY(wires=0), qp.PauliZ(wires=0))
@@ -792,33 +809,6 @@ class TestMatrix:
 
         assert torch.allclose(mat, true_mat)
 
-    @pytest.mark.tf
-    def test_prod_tf(self):
-        """Test matrix is cast correctly using tf parameters."""
-        import tensorflow as tf
-
-        theta = tf.Variable(1.23)
-        rot_params = tf.Variable([0.12, 3.45, 6.78])
-
-        prod_op = Prod(
-            qp.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0),
-            qp.RX(theta, wires=1),
-            qp.Identity(wires=0),
-        )
-        mat = prod_op.matrix()
-
-        true_mat = (
-            qnp.kron(gd.Rot3(0.12, 3.45, 6.78), qnp.eye(2))
-            @ qnp.kron(qnp.eye(2), gd.Rotx(1.23))
-            @ qnp.eye(4)
-        )
-        true_mat = tf.Variable(true_mat)
-        true_mat = tf.Variable(true_mat, dtype=tf.complex128)
-
-        assert isinstance(mat, tf.Tensor)
-        assert mat.dtype == true_mat.dtype
-        assert np.allclose(mat, true_mat)
-
     # sparse matrix tests:
 
     @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
@@ -905,22 +895,6 @@ class TestProperties:
         """Test is_verified_hermitian property updates correctly."""
         prod_op = prod(*ops_lst)
         assert prod_op.is_verified_hermitian == hermitian_status
-
-    @pytest.mark.tf
-    def test_is_hermitian_tf(self):
-        """Test that is_hermitian works when a tf type scalar is provided."""
-        # pylint:disable=invalid-unary-operand-type
-        import tensorflow as tf
-
-        theta = tf.Variable(1.23)
-        prod_ops = (
-            prod(qp.RX(theta, wires=0), qp.RX(-theta, wires=0), qp.PauliZ(wires=1)),
-            prod(qp.RX(theta, wires=0), qp.RX(-theta, wires=1), qp.PauliZ(wires=2)),
-        )
-        true_hermitian_states = (True, False)
-
-        for op, hermitian_state in zip(prod_ops, true_hermitian_states):
-            assert qp.is_hermitian(op) == hermitian_state
 
     @pytest.mark.jax
     def test_is_hermitian_jax(self):
@@ -1270,22 +1244,6 @@ class TestSimplify:
         result = qp.s_prod(c3, prod(qp.PauliZ(0), qp.PauliZ(1)))
         simplified_op = op.simplify()
 
-        qp.assert_equal(simplified_op, result)
-
-    @pytest.mark.tf
-    def test_simplify_pauli_rep_tf(self):
-        """Test that simplifying operators with a valid pauli representation works with tf interface."""
-        import tensorflow as tf
-
-        c1, c2, c3 = (
-            tf.Variable(1.23, dtype=tf.complex128),
-            tf.Variable(2.0, dtype=tf.complex128),
-            tf.Variable(2.46j, dtype=tf.complex128),
-        )
-
-        op = prod(qp.s_prod(c1, qp.PauliX(0)), qp.s_prod(c2, prod(qp.PauliY(0), qp.PauliZ(1))))
-        result = qp.s_prod(c3, prod(qp.PauliZ(0), qp.PauliZ(1)))
-        simplified_op = op.simplify()
         qp.assert_equal(simplified_op, result)
 
     @pytest.mark.torch

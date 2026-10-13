@@ -289,53 +289,6 @@ def test_partial_evaluation_jax(diff_method):
     assert np.allclose(grad, indiv_grad)
 
 
-@pytest.mark.tf
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"])
-def test_partial_evaluation_tf(diff_method):
-    """Test gradient of partial evaluation matches gradients of
-    individual full evaluations using TF"""
-    import tensorflow as tf
-
-    dev = qp.device("default.qubit", wires=2)
-
-    @qp.qnode(dev, diff_method=diff_method)
-    def circuit(x, y):
-        qp.RX(x, wires=0)
-        qp.RY(y[..., 0], wires=0)
-        qp.RY(y[..., 1], wires=1)
-        return qp.expval(qp.PauliZ(wires=0) @ qp.PauliZ(wires=1))
-
-    batch_size = 4
-
-    # the partial argument to construct a new circuit with
-    y = tf.Variable(np.random.uniform(size=2), trainable=True)
-
-    # the batched argument to the new partial circuit
-    x = tf.Variable(np.random.uniform(size=batch_size), trainable=True)
-
-    batched_partial_circuit = qp.batch_partial(circuit, y=y)
-
-    with tf.GradientTape() as tape:
-        out = batched_partial_circuit(x)
-
-    # we could also sum over the batch dimension and use the regular
-    # gradient instead of the jacobian, but either works
-    grad = tf.linalg.tensor_diag_part(tape.jacobian(out, x))
-
-    # check the results against individually executed circuits
-    indiv_grad = []
-    for x_indiv in tf.unstack(x):
-        # create a new variable since tensors created by
-        # indexing a trainable variable aren't themselves trainable
-        x_indiv = tf.Variable(x_indiv, trainable=True)
-
-        with tf.GradientTape() as tape:
-            out_indiv = circuit(x_indiv, y)
-        indiv_grad.append(tape.gradient(out_indiv, x_indiv))
-
-    assert np.allclose(grad, indiv_grad)
-
-
 @pytest.mark.torch
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"])
 def test_partial_evaluation_torch(diff_method):
@@ -507,60 +460,6 @@ def test_lambda_evaluation_jax(diff_method):
         grad_wrt_second_arg = jax.grad(circuit, argnums=1)(x, y + y0_indiv * np.ones(2))
         grad_wrt_y0 = jnp.sum(grad_wrt_second_arg)
         indiv_grad.append(grad_wrt_y0)
-
-    assert np.allclose(grad, indiv_grad)
-
-
-@pytest.mark.tf
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"])
-def test_lambda_evaluation_tf(diff_method):
-    """Test gradient of lambda argument replacement matches
-    gradients of individual full evaluations using TF"""
-    import tensorflow as tf
-
-    dev = qp.device("default.qubit", wires=2)
-
-    @qp.qnode(dev, diff_method=diff_method)
-    def circuit(x, y):
-        qp.RX(x, wires=0)
-        qp.RY(y[..., 0], wires=0)
-        qp.RY(y[..., 1], wires=1)
-        return qp.expval(qp.PauliZ(wires=0) @ qp.PauliZ(wires=1))
-
-    batch_size = 4
-
-    # the first partial argument
-    x = tf.Variable(np.random.uniform(size=()))
-
-    # the base value of the second partial argument
-    y = tf.Variable(np.random.uniform(size=2))
-
-    # the second partial argument as a function of the inputs
-    fn = lambda y0: y + y0 * tf.ones(2, dtype=tf.float64)
-
-    # values for the second argument
-    y0 = tf.Variable(np.random.uniform(size=batch_size), trainable=True)
-
-    batched_partial_circuit = qp.batch_partial(circuit, x=x, preprocess={"y": fn})
-
-    with tf.GradientTape() as tape:
-        out = batched_partial_circuit(y0)
-
-    # we could also sum over the batch dimension and use the regular
-    # gradient instead of the jacobian, but either works
-    grad = tf.linalg.tensor_diag_part(tape.jacobian(out, y0))
-
-    # check the results against individually executed circuits
-    indiv_grad = []
-    for y0_indiv in tf.unstack(y0):
-        # create a new variable since tensors created by
-        # indexing a trainable variable aren't themselves trainable
-        y0_indiv = tf.Variable(y0_indiv, trainable=True)
-
-        with tf.GradientTape() as tape:
-            out_indiv = circuit(x, y + y0_indiv * tf.ones(2, dtype=tf.float64))
-
-        indiv_grad.append(tape.gradient(out_indiv, y0_indiv))
 
     assert np.allclose(grad, indiv_grad)
 

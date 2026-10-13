@@ -499,7 +499,7 @@ def _(op: qtemps.ControlledSequence):
 @_map_to_resource_op.register
 def _(op: qtemps.QuantumPhaseEstimation):
     res_base = _map_to_resource_op(op.hyperparameters["unitary"])
-    estimation_wires = op.hyperparameters["estimation_wires"]
+    estimation_wires = op.estimation_wires
     num_estimation_wires = len(estimation_wires)
     return re_temps.QPE(
         base=res_base,
@@ -609,6 +609,11 @@ def _(op: qtemps.QROMStatePreparation):
         positive_and_real=positive_and_real,
         wires=op_wires,
     )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.PhaseGradientStatePrep):
+    return re_temps.PhaseGradient(num_wires=len(op.wires), wires=op.wires)
 
 
 @_map_to_resource_op.register

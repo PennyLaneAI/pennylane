@@ -20,6 +20,7 @@ import copy
 from collections.abc import Sequence
 
 import numpy as np
+from jax import numpy as jnp
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
@@ -28,12 +29,6 @@ from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
 from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class AllSinglesDoubles(Operation):
@@ -276,15 +271,13 @@ class AllSinglesDoubles(Operation):
         return shape_
 
 
-if AllSinglesDoubles._primitive is not None:
-
-    @AllSinglesDoubles._primitive.def_impl
-    def _(*args, **kwargs):  # pylint: disable=unused-argument
-        # need to convert array values into integers
-        # for plxpr, all wires must be integers
-        # could be abstract when using tracing evaluation in interpreter
-        wires = tuple(w if math.is_abstract(w) else int(w) for w in args[1])
-        return type.__call__(AllSinglesDoubles, args[0], wires, args[2], args[3], args[4])
+@AllSinglesDoubles._primitive.def_impl
+def _(*args, **kwargs):  # pylint: disable=unused-argument
+    # need to convert array values into integers
+    # for plxpr, all wires must be integers
+    # could be abstract when using tracing evaluation in interpreter
+    wires = tuple(w if math.is_abstract(w) else int(w) for w in args[1])
+    return type.__call__(AllSinglesDoubles, args[0], wires, args[2], args[3], args[4])
 
 
 def _all_singles_doubles_resouces(num_singles, num_doubles, num_wires):
@@ -299,7 +292,7 @@ def _all_singles_doubles_resouces(num_singles, num_doubles, num_wires):
 def _all_singles_doubles_decomposition(weights, wires, hf_state, singles, doubles):
     BasisState(hf_state, wires=wires)
 
-    if has_jax and capture.enabled():
+    if capture.enabled():
         weights, doubles, singles = jnp.array(weights), jnp.array(doubles), jnp.array(singles)
 
     @for_loop(len(doubles))

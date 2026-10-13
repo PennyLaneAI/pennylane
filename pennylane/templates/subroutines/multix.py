@@ -426,11 +426,8 @@ def _controlled_multix_ladder(base, control_wires, work_wires, work_wire_type, *
     num_needed = len(control_wires) - 1
     available = list(work_wires[:num_needed]) if work_wire_type == "zeroed" else []
     num_to_allocate = num_needed - len(available)
-    if num_to_allocate > 0:
-        with allocate(num_to_allocate, state="zero", restored=True) as allocated:
-            _multix_ladder_fanout(base, control_wires, work_wires=available + list(allocated))
-    else:
-        _multix_ladder_fanout(base, control_wires, work_wires=available)
+    with allocate(num_to_allocate, state="zero", restored=True) as allocated:
+        _multix_ladder_fanout(base, control_wires, work_wires=available + list(allocated))
 
 
 add_decomps("C(MultiX)", flip_zero_control2(_controlled_multix_ladder))

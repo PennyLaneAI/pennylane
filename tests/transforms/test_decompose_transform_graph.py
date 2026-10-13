@@ -35,6 +35,13 @@ pytestmark = pytest.mark.usefixtures("enable_graph_decomposition")
 
 
 @pytest.mark.unit
+def test_pass_name():
+    """Makes sure the ``decompose`` transform's ``pass_name`` is set correctly."""
+    assert qp.decompose.pass_name == "graph-decomposition"
+    assert qp.transforms.decompose.pass_name == "graph-decomposition"
+
+
+@pytest.mark.unit
 def test_weighted_graph_handles_negative_weight():
     """Tests a DecompositionGraph raises a ValueError when given negative weights."""
 
@@ -71,7 +78,7 @@ def test_weights_affect_graph_decomposition():
     ]
 
 
-class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+class CustomOp1(Operation):  # pylint: disable=too-few-public-methods
     resource_keys = set()
 
     @property
@@ -358,10 +365,10 @@ class TestDecomposeGraphEnabled:
         def _decomp(wires):
             AnotherOp(wires)
 
-        tape = qp.tape.QuantumScript([CustomOp([0, 1])])
+        tape = qp.tape.QuantumScript([CustomOp1([0, 1])])
 
         with qp.decomposition.local_decomps():
-            qp.add_decomps(CustomOp, _decomp)
+            qp.add_decomps(CustomOp1, _decomp)
             [decomp], _ = qp.decompose(tape, gate_set=qp.gate_sets.CLIFFORD_T, strict=False)
 
         assert decomp.operations == [AnotherOp([0, 1])]
@@ -382,10 +389,10 @@ class TestDecomposeGraphEnabled:
             qp.CNOT(wires)
             qp.H(wires[1])
 
-        tape = qp.tape.QuantumScript([AnotherOp([0, 1]), CustomOp([0, 1])])
+        tape = qp.tape.QuantumScript([AnotherOp([0, 1]), CustomOp1([0, 1])])
 
         with qp.decomposition.local_decomps():
-            qp.add_decomps(CustomOp, _decomp, _decomp2)
+            qp.add_decomps(CustomOp1, _decomp, _decomp2)
             [decomp], _ = qp.decompose(tape, gate_set=qp.gate_sets.CLIFFORD_T, strict=False)
 
         assert decomp.operations == [AnotherOp([0, 1]), qp.H(1), qp.CNOT([0, 1]), qp.H(1)]
@@ -410,25 +417,43 @@ class TestDecomposeGraphEnabled:
     def test_controlled_decomp(self):
         """Tests decomposing a controlled operation."""
 
-        # The C(MultiRZ) is decomposed by applying control on the base decomposition.
-        # The decomposition of MultiRZ contains two CNOTs
-        # So this also tests applying control on an PauliX based operation
+        # MultiRZ decomposes into a ChangeOpBasis conjugating an RZ with a CNOT ladder, so
+        # controlling it only controls the RZ and leaves the ladder as plain CNOTs rather than
+        # promoting them to Toffolis.
         # The decomposition of MultiRZ also contains an RZ gate
         # So this also tests logic involving custom controlled operators.
         ops = [qp.ctrl(qp.MultiRZ(0.5, wires=[0, 1]), control=[2])]
         tape = qp.tape.QuantumScript(ops)
         [new_tape], _ = qp.transforms.decompose(tape, gate_set={"RZ", "CNOT", "Toffoli"})
         assert new_tape.operations == [
-            # Decomposition of C(CNOT)
-            qp.Toffoli(wires=[2, 1, 0]),
+            # The conjugating ladder stays control-free
+            qp.CNOT(wires=[1, 0]),
             # Decomposition of C(RZ) -> CRZ
             qp.RZ(0.25, wires=[0]),
             qp.CNOT(wires=[2, 0]),
             qp.RZ(-0.25, wires=[0]),
             qp.CNOT(wires=[2, 0]),
-            # Decomposition of C(CNOT)
-            qp.Toffoli(wires=[2, 1, 0]),
+            # The conjugating ladder stays control-free
+            qp.CNOT(wires=[1, 0]),
         ]
+
+    @pytest.mark.integration
+    def test_controlled_op_shared_control(self):
+        """A 4-control RZ with 3 zeroed work wires should collapse to one TemporaryAND
+        ladder plus a single CRZ, not a CRZ per control wire."""
+        op = qp.ctrl(
+            qp.RZ(0.5, 0),
+            control=[1, 2, 3, 4],
+            work_wires=[5, 6, 7],
+            work_wire_type="zeroed",
+        )
+        tape = qp.tape.QuantumScript([op])
+        [new_tape], _ = qp.transforms.decompose(
+            tape, gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", "CRZ", "X"}
+        )
+        assert [operation.name for operation in new_tape.operations] == (
+            ["TemporaryAND"] * 3 + ["CRZ"] + ["Adjoint(TemporaryAND)"] * 3
+        )
 
     @pytest.mark.integration
     def test_controlled_change_op_basis(self):
@@ -471,11 +496,11 @@ class TestDecomposeGraphEnabled:
             [
                 qp.adjoint(qp.RX(0.5, wires=[0])),
                 qp.adjoint(qp.adjoint(qp.MultiRZ(0.5, wires=[0, 1]))),
-                qp.adjoint(CustomOp(0.1, 0.2, 0.3, wires=[0])),
+                qp.adjoint(CustomOp1(0.1, 0.2, 0.3, wires=[0])),
             ]
         )
         [new_tape], _ = qp.transforms.decompose(
-            tape, gate_set={"CNOT", "RX", "RY", "RZ"}, fixed_decomps={CustomOp: custom_decomp}
+            tape, gate_set={"CNOT", "RX", "RY", "RZ"}, fixed_decomps={CustomOp1: custom_decomp}
         )
         assert new_tape.operations == [
             qp.RX(-0.5, wires=[0]),
@@ -516,11 +541,11 @@ class TestDecomposeGraphEnabled:
         @qp.transforms.decompose(
             gate_set={qp.RX, qp.RY, qp.RZ, qp.CNOT, "measure", "ppm"},
             fixed_decomps={qp.GlobalPhase: null_decomp},
-            alt_decomps={CustomOp: [_custom_decomp, _expensive_decomp]},
+            alt_decomps={CustomOp1: [_custom_decomp, _expensive_decomp]},
         )
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            CustomOp(wires=[0, 1])
+            CustomOp1(wires=[0, 1])
             m0 = qp.measure(0) if m_type == "mcm" else qp.pauli_measure("XZ", wires=[0, 1])
             qp.cond(m0, qp.X)(0)
             return qp.probs()
@@ -706,7 +731,7 @@ class TestDecomposeGraphEnabled:
             OneWireDynOp(phi / 2, wires[1])
 
         with qp.queuing.AnnotatedQueue() as q:
-            CustomOp(0.6, [0, 1])
+            CustomOp1(0.6, [0, 1])
             DynOp(0.5, [0, 1])
 
         tape = qp.tape.QuantumScript.from_queue(q)
@@ -728,7 +753,7 @@ class TestDecomposeGraphEnabled:
 
         with qp.decomposition.local_decomps():
 
-            qp.add_decomps(CustomOp, _custom_decomp)
+            qp.add_decomps(CustomOp1, _custom_decomp)
             qp.add_decomps(DynOp, _dynop_decomp)
 
             [result], _ = qp.decompose([tape], gate_set={qp.CNOT, qp.H, OneWireDynOp})

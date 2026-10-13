@@ -24,6 +24,7 @@ come from the ``inject-transport-session`` pass; :func:`decode` only drives the 
 
 from __future__ import annotations
 
+import jax.numpy as jnp
 import numpy as np
 
 from pennylane import math
@@ -95,14 +96,18 @@ def _byte_count(array) -> int:
     return count * np.dtype(dtype).itemsize
 
 
-def _resolve_out_bytes(controller, out_bytes) -> int:
+def _resolve_out_bytes(placement, controller, out_bytes) -> int:
     """How many bytes the correction reply occupies.
 
-    Explicit ``out_bytes`` wins; otherwise use the controller's committed reply size.
+    Explicit ``out_bytes`` wins. Otherwise it is the reply size the placement commits, or with no
+    placement the controller's own size, or :data:`DEFAULT_MESSAGE_BYTES` when that is unset.
     """
     if out_bytes is not None:
         return int(out_bytes)
-    return int(getattr(controller, "out_bytes", DEFAULT_MESSAGE_BYTES))
+    if placement is not None:
+        return int(placement.out_bytes)
+    size = getattr(controller, "out_bytes", None)
+    return DEFAULT_MESSAGE_BYTES if size is None else int(size)
 
 
 def _resolve_nodes(controller, coprocessor):
@@ -148,7 +153,6 @@ def _validate_packed(syndrome, in_bytes, out_bytes):
         else math.get_interface(syndrome)
     )
     if interface == "jax":
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
 
         syndrome = jnp.asarray(syndrome, dtype=jnp.uint8)
     else:
@@ -166,7 +170,6 @@ def _validate_packed(syndrome, in_bytes, out_bytes):
 def _pack(syndrome):
     """Pack a syndrome bit vector into 8 little-endian bytes."""
     if math.get_interface(syndrome) == "jax":
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
 
         xp = jnp
     else:
@@ -181,7 +184,6 @@ def _pack(syndrome):
 def _unpack(correction):
     """Unpack 8 little-endian bytes into a 64-entry boolean bit vector."""
     if math.get_interface(correction) == "jax":
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
 
         xp = jnp
     else:
@@ -218,13 +220,12 @@ def decode(  # pylint: disable=too-many-arguments
         syndrome: The syndrome to send. Passed by data pointer, so its byte length comes from its
             shape and dtype at compile time. With ``bitpack=True``, this must be a 1D bit vector
             with at most 64 entries.
-        controller (Controller): The :class:`~.Controller` whose session drives the round, and whose
-            :attr:`~.Controller.out_bytes` supplies the default reply size.
+        controller (Controller): The :class:`~.Controller` whose session drives the round.
         coprocessor (Coprocessor | None): The :class:`~.Coprocessor` the round targets. Selects the
             session key; which coprocessor serves the round is otherwise fixed by the session's
             configuration.
-        out_bytes (int, None): The correction reply size in bytes. Defaults to the controller's
-            :attr:`~.Controller.out_bytes`.
+        out_bytes (int, None): The correction reply size in bytes. Defaults to the placement's
+            :attr:`~.Placement.out_bytes`.
         in_bytes (int, None): How many bytes of ``syndrome`` to send, at most what the round was
             committed to carry. Defaults to ``syndrome``'s full byte length.
         decoder_id (int): Which coprocessor-side decoder handles this round.
@@ -281,7 +282,7 @@ def decode(  # pylint: disable=too-many-arguments
         reply_bytes = _PACKED_U64_BYTES
     else:
         nbytes = _byte_count(syndrome) if in_bytes is None else int(in_bytes)
-        reply_bytes = _resolve_out_bytes(controller, out_bytes)
+        reply_bytes = _resolve_out_bytes(placement, controller, out_bytes)
 
     # The live controller session the setup pass registered under `key`.
     session = runtime_call(

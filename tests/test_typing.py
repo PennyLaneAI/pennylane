@@ -66,17 +66,6 @@ class TestTensorLike:
         tensor = torch.Tensor(1)
         assert isinstance(tensor, TensorLike)
 
-    @pytest.mark.tf
-    def test_isinstance_tf_tensor_is_tensor_like(self):
-        """Tests that a tensorflow Tensor is a Tensor"""
-        import tensorflow as tf
-
-        tensor = tf.constant([1, 2, 3])
-        assert isinstance(tensor, tf.Tensor)
-        assert isinstance(tensor, TensorLike)
-        var = tf.Variable(9)
-        assert isinstance(var, TensorLike)
-
     def test_subclass_unknown_type(self):
         """Test that an unknown type returns False."""
 
@@ -107,14 +96,6 @@ class TestTensorLike:
         import torch
 
         assert issubclass(torch.Tensor, TensorLike)
-
-    @pytest.mark.tf
-    def test_subclass_tf_tensor_is_tensor_like(self):
-        """Tests that a tensorflow Tensor is a Tensor"""
-        import tensorflow as tf
-
-        assert issubclass(tf.Tensor, TensorLike)
-        assert issubclass(tf.Variable, TensorLike)
 
 
 # pylint: disable=protected-access,too-many-public-methods
@@ -607,3 +588,36 @@ class TestAbstractWires:
 
         with pytest.raises(TypeError, match="Cannot index into an AbstractWires with"):
             _ = Wire[-1][2]
+
+    def test_is_compatible_with_abstract_wires(self):
+        """Test compatibility checks against another ``AbstractWires``."""
+        # A dynamic ``AbstractWires`` is compatible with any number of wires.
+        assert AbstractWires(-1).is_compatible_with(AbstractWires(3))
+        assert AbstractWires(-1).is_compatible_with(AbstractWires(-1))
+
+        # A fixed ``AbstractWires`` is only compatible with a matching number of wires.
+        assert AbstractWires(2).is_compatible_with(AbstractWires(2))
+        assert not AbstractWires(2).is_compatible_with(AbstractWires(3))
+
+        # A dynamic value has an unknown number of wires, so it is not compatible with a fixed spec.
+        assert not AbstractWires(2).is_compatible_with(AbstractWires(-1))
+
+    def test_is_compatible_with_sequences(self):
+        """Test compatibility checks against sequences and arrays of wire labels."""
+        assert AbstractWires(2).is_compatible_with([0, 1])
+        assert AbstractWires(2).is_compatible_with((3, 4))
+        assert AbstractWires(2).is_compatible_with(np.array([0, 1]))
+
+        assert not AbstractWires(2).is_compatible_with([0, 1, 2])
+        assert AbstractWires(-1).is_compatible_with([0, 1, 2])
+
+    def test_is_compatible_with_scalar(self):
+        """Test compatibility against scalar values."""
+        assert AbstractWires(1).is_compatible_with(5)
+        assert not AbstractWires(2).is_compatible_with(5)
+
+    def test_is_compatible_with_invalid(self):
+        """Test that values that cannot represent a 1D sequence of wires are not
+        compatible."""
+        assert not AbstractWires(2).is_compatible_with(None)
+        assert not AbstractWires(2).is_compatible_with(np.ones((2, 2)))

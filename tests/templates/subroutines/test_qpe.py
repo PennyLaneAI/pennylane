@@ -20,14 +20,14 @@ import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qp
-from pennylane.exceptions import QuantumFunctionError
 
 
-@pytest.mark.xfail_if_capture(reason="come back to this when we port QPE [sc-128367]")
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
-    op = qp.QuantumPhaseEstimation(np.eye(4), target_wires=(0, 1), estimation_wires=[2, 5])
+    op = qp.QuantumPhaseEstimation(
+        qp.QubitUnitary(np.eye(4), wires=(0, 1)), estimation_wires=[2, 5]
+    )
     assert op.target_wires == qp.wires.Wires([0, 1])
     qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
@@ -40,7 +40,7 @@ class TestDecomposition:
 
         m = qp.RX(0.3, wires=0).matrix()
 
-        op = qp.QuantumPhaseEstimation(m, target_wires=[0], estimation_wires=[1, 2])
+        op = qp.QuantumPhaseEstimation(qp.QubitUnitary(m, wires=[0]), estimation_wires=[1, 2])
         qscript = qp.tape.QuantumScript(op.decomposition())
 
         unitary = qp.QubitUnitary(m, wires=[0])
@@ -88,7 +88,7 @@ class TestDecomposition:
                 qp.Hadamard(wires=target_wires)
 
                 qp.QuantumPhaseEstimation(
-                    m, target_wires=target_wires, estimation_wires=estimation_wires
+                    qp.QubitUnitary(m, wires=target_wires), estimation_wires=estimation_wires
                 )
                 qp.probs(estimation_wires)
 
@@ -140,7 +140,7 @@ class TestDecomposition:
                 qp.StatePrep(state, wires=target_wires)
 
                 qp.QuantumPhaseEstimation(
-                    unitary, target_wires=target_wires, estimation_wires=estimation_wires
+                    qp.QubitUnitary(unitary, wires=target_wires), estimation_wires=estimation_wires
                 )
                 qp.probs(estimation_wires)
 
@@ -254,35 +254,22 @@ class TestDecomposition:
         # This is a large error, but we'd need to push the qubit number up more to get it lower
         assert np.allclose(estimates[-1], phase, rtol=1e-2)
 
-    def test_wires_specified(self):
-        """Tests errors with specifying target_wires and estimation_wires"""
+    def test_unitary_must_be_operator(self):
+        """Tests that a matrix unitary or the removed ``target_wires`` argument raise an error"""
 
         unitary = unitary_group.rvs(4, random_state=1967)
 
-        with pytest.raises(
-            QuantumFunctionError,
-            match="Target wires must be specified if the unitary is expressed as a matrix.",
-        ):
+        with pytest.raises(TypeError, match="must be an Operator, got ndarray"):
             qp.QuantumPhaseEstimation(unitary, estimation_wires=[2, 3])
 
-        unitary = qp.RX(3, wires=[0])
-        with pytest.raises(
-            QuantumFunctionError,
-            match="The unitary is expressed as an operator, which already has target wires "
-            "defined, do not additionally specify target wires.",
-        ):
-            qp.QuantumPhaseEstimation(unitary, target_wires=[1], estimation_wires=[2, 3])
+        with pytest.raises(TypeError, match="target_wires"):
+            qp.QuantumPhaseEstimation(qp.RX(3, wires=[0]), target_wires=[0], estimation_wires=[2])
 
-        with pytest.raises(
-            QuantumFunctionError,
-            match="No estimation wires specified.",
-        ):
-            qp.QuantumPhaseEstimation(unitary)
+        with pytest.raises(TypeError, match="estimation_wires"):
+            qp.QuantumPhaseEstimation(qp.RX(3, wires=[0]))
 
     def test_map_wires(self):
         """Tests that QPE behaves correctly in a wire map"""
-        # pylint: disable=protected-access
-
         unitary = qp.RX(np.pi / 4, wires=[0]) @ qp.CNOT(wires=[0, 1])
         qpe = qp.QuantumPhaseEstimation(unitary, estimation_wires=[2, 3])
         new_qpe = qp.map_wires(
@@ -296,9 +283,9 @@ class TestDecomposition:
         )
 
         assert list(new_qpe.wires) == [2, 3, 4, 5]
-        assert list(new_qpe._hyperparameters["target_wires"]) == [2, 3]
-        assert list(new_qpe._hyperparameters["estimation_wires"]) == [4, 5]
-        assert list(new_qpe._hyperparameters["unitary"].wires) == [2, 3]
+        assert list(new_qpe.target_wires) == [2, 3]
+        assert list(new_qpe.estimation_wires) == [4, 5]
+        assert list(new_qpe.unitary.wires) == [2, 3]
 
     def test_adjoint(self):
         """Test that the QPE adjoint works."""
@@ -309,14 +296,12 @@ class TestDecomposition:
             qp.Hadamard(wires=0)
             qp.PauliX(wires=1)
             qp.QuantumPhaseEstimation(
-                qp.PauliX.compute_matrix(),
-                target_wires=[0],
+                qp.QubitUnitary(qp.PauliX.compute_matrix(), wires=[0]),
                 estimation_wires=[1, 2],
             )
 
             qp.adjoint(qp.QuantumPhaseEstimation)(
-                qp.PauliX.compute_matrix(),
-                target_wires=[0],
+                qp.QubitUnitary(qp.PauliX.compute_matrix(), wires=[0]),
                 estimation_wires=[1, 2],
             )
             qp.Hadamard(wires=0)
@@ -344,7 +329,7 @@ class TestDecomposition:
             qp.Hadamard(wires=target_wires)
 
             qp.QuantumPhaseEstimation(
-                unitary, target_wires=target_wires, estimation_wires=estimation_wires
+                qp.QubitUnitary(unitary, wires=target_wires), estimation_wires=estimation_wires
             )
 
             return qp.probs(estimation_wires)
@@ -358,5 +343,5 @@ def test_same_wires():
     """Tests if a QuantumFunctionError is raised if target_wires and estimation_wires contain a
     common element"""
 
-    with pytest.raises(QuantumFunctionError, match="The target wires and estimation wires"):
-        qp.QuantumPhaseEstimation(np.eye(4), target_wires=[0, 1], estimation_wires=[1, 2])
+    with pytest.raises(ValueError, match="target_wires and estimation_wires must not overlap"):
+        qp.QuantumPhaseEstimation(qp.QubitUnitary(np.eye(4), wires=[0, 1]), estimation_wires=[1, 2])

@@ -240,9 +240,9 @@ def _prepselprep_decomp(*_, wires, lcu, control, target_wires):
 add_decomps(PrepSelPrep, _prepselprep_decomp)
 
 # pylint: disable=protected-access
-if PrepSelPrep._primitive is not None:
 
-    @PrepSelPrep._primitive.def_impl
-    def _(*args, n_wires, **kwargs):
-        (lcu,), control = args[:-n_wires], args[-n_wires:]
-        return type.__call__(PrepSelPrep, lcu, control, **kwargs)
+
+@PrepSelPrep._primitive.def_impl
+def _(*args, n_wires, **kwargs):
+    (lcu,), control = args[:-n_wires], args[-n_wires:]
+    return type.__call__(PrepSelPrep, lcu, control, **kwargs)

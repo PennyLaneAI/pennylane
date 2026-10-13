@@ -21,6 +21,7 @@ from collections import Counter
 from collections.abc import Sequence
 
 import numpy as np
+from jax import numpy as jnp
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
@@ -32,12 +33,6 @@ from pennylane.wires import Wires, WiresLike
 
 from .fermionic_double_excitation import FermionicDoubleExcitation
 from .fermionic_single_excitation import FermionicSingleExcitation
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class UCCSD(Operation):
@@ -349,7 +344,7 @@ def _UCCSD_decomposition(weights, wires, s_wires, d_wires, init_state, n_repeats
     if n_repeats == 1 and len(math.shape(weights)) == 1:
         weights = math.expand_dims(weights, 0)
 
-    if has_jax and capture.enabled():
+    if capture.enabled():
         weights, d_wires, s_wires = jnp.array(weights), jnp.array(d_wires), jnp.array(s_wires)
 
     @for_loop(n_repeats)

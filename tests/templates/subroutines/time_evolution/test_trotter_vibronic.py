@@ -724,13 +724,6 @@ def _binary_decimals_int(value, precision):
     return int(np.dot(np.asarray(bits), 2 ** np.arange(precision)[::-1]))
 
 
-def _prepare_phase_gradient(pg_wires):
-    """Prepare PennyLane's phase-gradient state |∇n> = (1/sqrt(N)) sum_m e^{-2 pi i m/N} |m>."""
-    for i, w in enumerate(pg_wires):
-        qp.H(w)
-        qp.PhaseShift(-np.pi / 2**i, w)
-
-
 def _phase_gradient_int(hamiltonian, wires, mode_value=0, electronic_state=0, evolution_time=1.0):
     """Run ``TrotterVibronic`` with the phase-gradient register prepared in ``|0>`` and return the
     integer it holds afterwards.
@@ -843,7 +836,7 @@ class TestNumericalCorrectness:
             qp.Hadamard(wires["electronic"][0])  # electronic |+>
             if mode_value:
                 qp.BasisState(qp.math.int_to_binary(mode_value, k), wires=wires["vib_wires"])
-            _prepare_phase_gradient(wires["phase_gradient"])
+            qp.PhaseGradientStatePrep(wires["phase_gradient"])
             make_op(hamiltonian, wires, evolution_time=t, num_trotter_steps=1)
             return qp.density_matrix(wires=wires["electronic"])
 

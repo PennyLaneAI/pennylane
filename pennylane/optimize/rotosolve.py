@@ -19,7 +19,7 @@ import numpy as np
 import scipy as sp
 
 from pennylane import math
-from pennylane.fourier import reconstruct  # tach-ignore
+from pennylane.optimize.reconstruct import reconstruct
 from pennylane.workflow import QNode
 
 
@@ -295,12 +295,14 @@ class RotosolveOptimizer:
 
     >>> rot_weights = np.array([0.4, 0.8, 1.2], requires_grad=False)
     >>> crot_weights = np.array([0.5, 1.0, 1.5], requires_grad=False)
-    >>> spectrum_fn = qp.fourier.qnode_spectrum(cost_function)
-    >>> spectra = spectrum_fn(*param, rot_weights=rot_weights, crot_weights=crot_weights)
-    >>> spectra["rot_param"]
-    {(0,): [-0.4, 0.0, 0.4], (1,): [-0.8, 0.0, 0.8], (2,): [-1.2, 0.0, 1.2]}
-    >>> spectra["crot_param"]
-    {(0,): [-0.5, -0.25, 0.0, 0.25, 0.5], (1,): [-1.0, -0.5, 0.0, 0.5, 1.0], (2,): [-1.5, -0.75, 0.0, 0.75, 1.5]}
+    >>> spectra = {
+    ...     "rot_param": {(0,): [-0.4, 0.0, 0.4], (1,): [-0.8, 0.0, 0.8], (2,): [-1.2, 0.0, 1.2]},
+    ...     "crot_param": {
+    ...         (0,): [-0.5, -0.25, 0.0, 0.25, 0.5],
+    ...         (1,): [-1.0, -0.5, 0.0, 0.5, 1.0],
+    ...         (2,): [-1.5, -0.75, 0.0, 0.75, 1.5],
+    ...     },
+    ... }
 
     We may provide these spectra instead of ``nums_frequency`` to Rotosolve to
     enable the optimization of the QNode at these weights:
@@ -402,7 +404,7 @@ class RotosolveOptimizer:
         only contains one positive frequency, for a parameter, an analytic formula is
         used to return the minimum of the univariate restriction.
 
-        For multiple frequencies, :func:`.fourier.reconstruct` is used to reconstruct
+        For multiple frequencies, :func:`~.pennylane.optimize.reconstruct.reconstruct` is used to reconstruct
         the univariate restriction and a numeric minimization is performed instead.
         The latter minimization is performed using the ``substep_optimizer`` passed to
         ``RotosolveOptimizer`` at initialization.
@@ -560,7 +562,7 @@ class RotosolveOptimizer:
         only contains one positive frequency, for a parameter, an analytic formula is
         used to return the minimum of the univariate restriction.
 
-        For multiple frequencies, :func:`.fourier.reconstruct` is used to reconstruct
+        For multiple frequencies, :func:`~.pennylane.optimize.reconstruct.reconstruct` is used to reconstruct
         the univariate restriction and a numeric minimization is performed instead.
         The latter minimization is performed using the ``substep_optimizer`` passed to
         ``RotosolveOptimizer`` at initialization.

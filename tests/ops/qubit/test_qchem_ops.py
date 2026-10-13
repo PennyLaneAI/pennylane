@@ -34,6 +34,8 @@ from scipy.linalg import expm, fractional_matrix_power
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.gradients import parameter_frequencies
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Float, Wire
 
 PARAMETRIZED_QCHEM_OPERATIONS = [
@@ -269,37 +271,6 @@ class TestSingleExcitation:
 
         assert np.allclose(qp.grad(circuit)(phi), np.sin(phi))
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    @pytest.mark.parametrize(
-        ("excitation", "phi"),
-        [
-            (qp.SingleExcitation, -0.1),
-            (qp.SingleExcitationPlus, 0.2),
-            (qp.SingleExcitationMinus, np.pi / 4),
-        ],
-    )
-    def test_tf(self, excitation, phi, diff_method):
-        """Tests that gradients and operations are computed correctly using the
-        tensorflow interface"""
-
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev, diff_method=diff_method, interface="tf")
-        def circuit(phi):
-            qp.PauliX(wires=0)
-            excitation(phi, wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        phi_t = tf.Variable(phi, dtype=tf.float64)
-        with tf.GradientTape() as tape:
-            res = circuit(phi_t)
-
-        grad = tape.gradient(res, phi_t)
-        assert np.allclose(grad, np.sin(phi))
-
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
@@ -340,15 +311,23 @@ class TestSingleExcitationDecompositions:
         with qp.queuing.AnnotatedQueue() as q:
             rule(**op.arguments)
 
-        expected = [
-            qp.Hadamard(wires[0]),
-            qp.CNOT(wires),
-            qp.RY(-phi / 2, wires[0]),
-            qp.RY(-phi / 2, wires[1]),
-            qp.CNOT(wires),
-            qp.Hadamard(wires[0]),
-        ]
-        for actual, exp in zip(q.queue, expected, strict=True):
+        # the rule queues a single ChangeOpBasis, which is what lets a control skip the
+        # Hadamard/CNOT basis change. Operands are in matrix order, i.e. reversed relative to
+        # the order they are applied in.
+        (cob,) = q.queue
+        for actual, exp in zip(
+            cob.compute_op.operands, [qp.CNOT(wires), qp.Hadamard(wires[0])], strict=True
+        ):
+            qp.assert_equal(actual, exp)
+        for actual, exp in zip(
+            cob.target_op.operands,
+            [qp.RY(-phi / 2, wires[1]), qp.RY(-phi / 2, wires[0])],
+            strict=True,
+        ):
+            qp.assert_equal(actual, exp)
+        for actual, exp in zip(
+            cob.uncompute_op.operands, [qp.Hadamard(wires[0]), qp.CNOT(wires)], strict=True
+        ):
             qp.assert_equal(actual, exp)
 
     @pytest.mark.capture
@@ -366,8 +345,9 @@ class TestSingleExcitationDecompositions:
             rule(phi, wires=qp.wires.Wires((w0, w1)))
 
         jaxpr = jax.make_jaxpr(circuit)(phi, *wires)
-        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
+        ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
 
+        # the rule queues a ChangeOpBasis with an explicit inverse basis change
         expected = [
             qp.Hadamard(wires[0]),
             qp.CNOT(wires),
@@ -384,14 +364,42 @@ class TestSingleExcitationDecompositions:
         rule = qp.list_decomps(qp.SingleExcitation)[0]
         op = qp.SingleExcitation(0.5, wires=(0, 1))
 
+        # the rule reports a single ChangeOpBasis; operands are in matrix order
+        basis = Prod2((qp.CNOT(Wire[2]), qp.Hadamard(Wire[1])))
+        unbasis = Prod2((qp.Hadamard(Wire[1]), qp.CNOT(Wire[2])))
         expected = qp.decomposition.Resources(
             {
-                qp.Hadamard(Wire[1]): 2,
-                qp.CNOT(Wire[2]): 2,
-                qp.RY(Float, Wire[1]): 2,
+                _change_op_basis_abstract(
+                    basis,
+                    Prod2((qp.RY(Float, Wire[1]), qp.RY(Float, Wire[1]))),
+                    unbasis,
+                ): 1
             }
         )
         assert rule.compute_resources(**op.arguments) == expected
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_decomposition_graph(self):
+        r"""Controlling ``SingleExcitation`` should control only the two inner ``RY``'s, leaving the
+        conjugating Hadamard/CNOT basis change bare. This comes out of the generic
+        ``C(ChangeOpBasis)`` rule rather than a dedicated ``C(SingleExcitation)`` rule."""
+        phi = 0.6931
+        control = 2
+        op = qp.ctrl(qp.SingleExcitation(phi, wires=[0, 1]), control=[control])
+        tape = qp.tape.QuantumScript([op], [])
+        expected_matrix = qp.matrix(tape, wire_order=[0, 1, control])
+
+        [decomp], _ = qp.transforms.decompose(
+            tape, gate_set={qp.CNOT, qp.RY, qp.RZ, qp.Hadamard, qp.GlobalPhase, qp.PauliX}
+        )
+        gates = decomp.operations
+
+        conjugation = gates[:2] + gates[-2:]
+        assert [g.name for g in conjugation] == ["Hadamard", "CNOT", "CNOT", "Hadamard"]
+        assert all(control not in g.wires for g in conjugation)
+
+        mat = qp.matrix(decomp, wire_order=[0, 1, control])
+        assert qp.math.allclose(mat, expected_matrix)
 
     def test_ppr_queuing(self):
         """Test the operations queued by the Pauli-rotation decomposition rule."""
@@ -425,7 +433,7 @@ class TestSingleExcitationDecompositions:
             rule(phi, wires=qp.wires.Wires((w0, w1)))
 
         jaxpr = jax.make_jaxpr(circuit)(phi, *wires)
-        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
+        ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
 
         expected = [
             qp.PauliRot(phi / 2, "YX", wires=wires),
@@ -479,7 +487,7 @@ class TestSingleExcitationDecompositions:
             rule(base=base)
 
         jaxpr = jax.make_jaxpr(circuit)(phi, *wires)
-        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
+        ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
 
         expected = [qp.SingleExcitation(-phi, wires=wires)]
         for actual, exp in zip(ops, expected, strict=True):
@@ -527,7 +535,7 @@ class TestSingleExcitationDecompositions:
             rule(base=base, z=z)
 
         jaxpr = jax.make_jaxpr(circuit)(phi, *wires)
-        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
+        ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
 
         expected = [qp.SingleExcitation(phi * z, wires=wires)]
         for actual, exp in zip(ops, expected, strict=True):
@@ -697,29 +705,6 @@ class TestDoubleExcitation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "excitation", [qp.DoubleExcitation, qp.DoubleExcitationPlus, qp.DoubleExcitationMinus]
-    )
-    def test_tf(self, excitation):
-        """Tests that operations are computed correctly using the
-        tensorflow interface"""
-
-        dev = qp.device("default.qubit")
-        state = np.array(
-            [0, 0, 0, -1 / np.sqrt(2), 0, 0, 0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 0, 0]
-        )
-
-        @qp.qnode(dev, interface="tf")
-        def circuit(phi):
-            qp.PauliX(wires=0)
-            qp.PauliX(wires=1)
-            excitation(phi, wires=[0, 1, 2, 3])
-
-            return qp.state()
-
-        assert np.allclose(state, circuit(np.pi / 2))
-
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "excitation", [qp.DoubleExcitation, qp.DoubleExcitationPlus, qp.DoubleExcitationMinus]
@@ -767,38 +752,6 @@ class TestDoubleExcitation:
             return qp.expval(qp.PauliZ(0))
 
         assert np.allclose(qp.grad(circuit)(phi), np.sin(phi))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    @pytest.mark.parametrize(
-        ("excitation", "phi"),
-        [
-            (qp.DoubleExcitation, -0.1),
-            (qp.DoubleExcitationPlus, 0.2),
-            (qp.DoubleExcitationMinus, np.pi / 4),
-        ],
-    )
-    def test_tf_grad(self, excitation, phi, diff_method):
-        """Tests that gradients are computed correctly using the
-        tensorflow interface"""
-
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev, diff_method=diff_method, interface="tf")
-        def circuit(phi):
-            qp.PauliX(wires=0)
-            qp.PauliX(wires=1)
-            excitation(phi, wires=[0, 1, 2, 3])
-            return qp.expval(qp.PauliZ(0))
-
-        phi_t = tf.Variable(phi, dtype=tf.float64)
-        with tf.GradientTape() as tape:
-            res = circuit(phi_t)
-
-        grad = tape.gradient(res, phi_t)
-        assert np.allclose(grad, np.sin(phi))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
@@ -983,43 +936,6 @@ class TestOrbitalRotation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
-    @pytest.mark.tf
-    def test_tf(self):
-        """Tests that operations are computed correctly using the
-        tensorflow interface"""
-
-        dev = qp.device("default.qubit")
-        state = np.array(
-            [
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                -0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-            ]
-        )
-
-        @qp.qnode(dev, interface="tf")
-        def circuit(phi):
-            qp.PauliX(wires=0)
-            qp.PauliX(wires=1)
-            qp.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-
-            return qp.state()
-
-        assert np.allclose(state, circuit(np.pi / 2))
-
     @pytest.mark.jax
     def test_jax(self):
         """Tests that operations are computed correctly using the
@@ -1118,32 +1034,6 @@ class TestOrbitalRotation:
         total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
         assert np.allclose(qp.grad(total)(phi), self.expected_grad_fn(phi))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    @pytest.mark.parametrize(
-        ("phi"),
-        [-0.1, 0.1421],
-    )
-    def test_tf_grad(self, phi, diff_method):
-        """Tests that gradients are computed correctly using the
-        tensorflow interface"""
-
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit")
-
-        circuit_0 = qp.QNode(self.grad_circuit_0, dev, interface="tf", diff_method=diff_method)
-        circuit_1 = qp.QNode(self.grad_circuit_1, dev, interface="tf", diff_method=diff_method)
-        total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
-
-        phi_t = tf.Variable(phi, dtype=tf.float64)
-        with tf.GradientTape() as tape:
-            res = total(phi_t)
-
-        grad = tape.gradient(res, phi_t)
-
-        assert np.allclose(grad, self.expected_grad_fn(phi))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
@@ -1327,37 +1217,6 @@ class TestFermionicSWAP:
             return qp.expval(qp.PauliZ(0))
 
         assert np.allclose(qp.grad(circuit)(phi), np.sin(phi))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    @pytest.mark.parametrize(
-        ("phi"),
-        [
-            -0.1,
-            0.2,
-            np.pi / 4,
-        ],
-    )
-    def test_tf(self, phi, diff_method):
-        """Tests that gradients and operations are computed correctly using the
-        tensorflow interface"""
-
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev, diff_method=diff_method, interface="tf")
-        def circuit(phi):
-            qp.PauliX(wires=0)
-            qp.FermionicSWAP(phi, wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        phi_t = tf.Variable(phi, dtype=tf.float64)
-        with tf.GradientTape() as tape:
-            res = circuit(phi_t)
-
-        grad = tape.gradient(res, phi_t)
-        assert np.allclose(grad, np.sin(phi))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])

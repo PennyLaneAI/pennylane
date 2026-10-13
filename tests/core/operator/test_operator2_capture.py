@@ -29,27 +29,21 @@ from operator2_utils import (
     TwoDynOp,
 )
 
+jax = pytest.importorskip("jax")
+from jax.core import ShapedArray
+
 import pennylane as qp
 from pennylane import apply
-from pennylane.typing import Float, Wire
-
-jax = pytest.importorskip("jax")
 from pennylane.capture import PlxprInterpreter
+from pennylane.capture.primitives import AbstractOperator, operator_p, symbolic_array_prim
+from pennylane.pytrees import unflatten
+from pennylane.testing import find_eqns
+from pennylane.typing import Float, Int, Wire
+from pennylane.wires import AbstractQubit
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
-# pylint: disable=wrong-import-position
-from pennylane.capture.primitives import AbstractOperator, operator_p, symbolic_array_prim
-from pennylane.pytrees import unflatten
-
 # ---------------------- Helpers ----------------------
-
-
-def _single_op_eqn(jaxpr):
-    """Return the only operator equation in a jaxpr, asserting there is just one."""
-    op_eqns = [e for e in jaxpr.eqns if e.primitive is operator_p]
-    assert len(op_eqns) == 1
-    return op_eqns[0]
 
 
 def _eval(jaxpr, *args):
@@ -142,33 +136,33 @@ class TestCaptureBasics:
     def test_dynamic_args_are_inputs(self):
         """Test that dynamic arguments are passed as equation inputs."""
         jaxpr = jax.make_jaxpr(lambda a, b: TwoDynOp(a, b, wires=0))(0.5, 0.6)
-        eqn = _single_op_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         for invar in jaxpr.jaxpr.invars:
             assert invar in eqn.invars
 
     def test_wires_passed_as_inputs(self):
         """Test that wires are passed as equation inputs."""
         jaxpr = jax.make_jaxpr(lambda w: DynOp(0.5, wires=w))(0)
-        eqn = _single_op_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert eqn.params["wire_lens"] == (1,)
         assert jaxpr.jaxpr.invars[0] in eqn.invars
 
     def test_multiple_wire_arguments(self):
         """Test that operators with multiple wire arguments record each length."""
         jaxpr = jax.make_jaxpr(lambda: MultiWireOp(wires=[0, 1], ctrl_wires=2))()
-        eqn = _single_op_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert eqn.params["wire_lens"] == (2, 1)
 
     def test_static_arg_in_params(self):
         """Test that static arguments are stored as equation parameters."""
         jaxpr = jax.make_jaxpr(lambda: StaticOp("a", wires=0))()
-        eqn = _single_op_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert unflatten(*eqn.params["label"]) == "a"
 
     def test_compilable_arg_in_params(self):
         """Test that compilable arguments are stored as equation parameters."""
         jaxpr = jax.make_jaxpr(lambda: CompilableOp(5, wires=0))()
-        eqn = _single_op_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert unflatten(*eqn.params["n"]) == 5
 
 
@@ -261,7 +255,7 @@ class TestHybridCapture:
     def test_numeric_hybrid_leaves_are_inputs(self):
         """Test that numeric leaves of a hybrid argument are passed as inputs."""
         jaxpr = jax.make_jaxpr(lambda x: HybridOp([x, 1.0], wires=0))(0.5)
-        eqn = _single_op_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert eqn.params["hybrid_lens"] == (2,)
         assert jaxpr.jaxpr.invars[0] in eqn.invars
 
@@ -316,13 +310,13 @@ class TestHybridCapture:
             HybridOp([inner], wires=0)
 
         jaxpr = jax.make_jaxpr(f)(0.5)
-        eqn = _single_op_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert jaxpr.jaxpr.invars[0] in eqn.invars
 
     def test_hybrid_wire_arg_with_other_hybrid(self):
         """Test that hybrid wire arguments mixed with other hybrid arguments are handled correctly."""
         jaxpr = jax.make_jaxpr(lambda x: MixedHybridOp(x, [x, 1.5], [[0], [1, 2]], wires=3))(0.5)
-        eqn = _single_op_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
 
         assert eqn.params["wire_lens"] == (1,)
         assert eqn.params["hybrid_lens"] == (2, 3)
@@ -349,13 +343,13 @@ class TestHybridCapture:
     def test_no_hybrid_forward_mask(self):
         """Operators without hybrid arguments should have an empty forward mask."""
         jaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(0.5)
-        eqn = _single_op_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert eqn.params["forward_mask"] == ()
 
     def test_numeric_hybrid_forward_mask(self):
         """Numeric hybrid leaves should not be marked as forward arguments."""
         jaxpr = jax.make_jaxpr(lambda x: HybridOp([x, 1.0], wires=0))(0.5)
-        eqn = _single_op_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert eqn.params["forward_mask"] == (False, False)
         assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
 
@@ -367,7 +361,7 @@ class TestHybridCapture:
             HybridOp([inner], wires=0)
 
         jaxpr = jax.make_jaxpr(f)(0.5)
-        eqn = _single_op_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert eqn.params["forward_mask"] == (True, False)
         assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
 
@@ -384,7 +378,7 @@ class TestHybridCapture:
             TupleHybridOp((x, DynOp(x, wires=0)), wires=0)
 
         jaxpr = jax.make_jaxpr(f)(0.5)
-        eqn = _single_op_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert eqn.params["forward_mask"] == (False, True, False)
         assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
 
@@ -401,14 +395,14 @@ class TestHybridCapture:
             HybridOp([MultiWireDyn(x, wires=[0, 1, 2])], wires=0)
 
         jaxpr = jax.make_jaxpr(f)(0.5)
-        eqn = _single_op_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert eqn.params["forward_mask"] == (True, False, False, False)
         assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
 
     def test_mixed_hybrid_forward_mask(self):
         """Forward masks should only mark non-wire hybrid leaves."""
         jaxpr = jax.make_jaxpr(lambda x: MixedHybridOp(x, [x, 1.5], [[0], [1, 2]], wires=3))(0.5)
-        eqn = _single_op_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert eqn.params["forward_mask"] == (False, False, False, False, False)
         assert len(eqn.params["forward_mask"]) == sum(eqn.params["hybrid_lens"])
 
@@ -436,6 +430,9 @@ class TestReconstruction:
         [op] = _eval(jaxpr, 0.7)
         qp.assert_equal(op, DynOp(0.7, wires=0))
 
+        [aop] = _eval(jaxpr, qp.typing.Float)
+        qp.assert_equal(aop, DynOp(Float, wires=0))
+
     def test_dynamic_args_roundtrip(self):
         """Test that an operator with multiple dynamic args round-trips."""
         jaxpr = jax.make_jaxpr(lambda a, b: TwoDynOp(a, b, wires=0).tracer)(0.5, 0.6)
@@ -447,6 +444,10 @@ class TestReconstruction:
         jaxpr = jax.make_jaxpr(lambda x: StaticOp("a", wires=x).tracer)(0)
         [op] = _eval(jaxpr, 1)
         qp.assert_equal(op, StaticOp("a", wires=1))
+
+        [aop] = _eval(jaxpr, qp.wires.AbstractQubit())
+        # abstractqubit just promoted back to AbstractWire
+        qp.assert_equal(aop, StaticOp("a", qp.typing.Wire[1]))
 
     def test_compilable_roundtrip(self):
         """Test that a compilable argument round-trips through capture and evaluation."""
@@ -496,6 +497,38 @@ class TestReconstruction:
         [op] = _eval(jaxpr, 0.3)
         qp.assert_equal(op, FullOp(0.3, "lbl", [1.0, 2.0], wires=0))
 
+    @pytest.mark.parametrize(
+        "wires, expected_wires",
+        (
+            # single abstract wire
+            ((AbstractQubit(),), Wire[1]),
+            ((ShapedArray((), np.int64),), Wire[1]),
+            ((Int,), Wire[1]),
+            ((Wire[1],), Wire[1]),
+            # multiple all-abstract wires collapse to AbstractWires
+            ((AbstractQubit(), AbstractQubit()), Wire[2]),
+            ((ShapedArray((), np.int64), ShapedArray((), np.int64)), Wire[2]),
+            ((Int, Int), Wire[2]),
+            ((Wire[1], Wire[1]), Wire[2]),
+            ((AbstractQubit(), ShapedArray((), np.int64), Int), Wire[3]),
+        ),
+    )
+    def test_abstract_wire_reconstruction(self, wires, expected_wires):
+        """Test that ``operator_p`` reconstructs with abstract and mixed wire types."""
+        concrete = tuple(range(len(wires)))
+        jaxpr = jax.make_jaxpr(lambda *ws: DynOp(0.5, wires=ws).tracer)(*concrete)
+        [op] = _eval(jaxpr, *wires)
+        qp.assert_equal(op, DynOp(0.5, wires=expected_wires))
+
+    @pytest.mark.parametrize("abstract_wire", (AbstractQubit(), ShapedArray((), int), Wire[1], Int))
+    def test_error_if_both_abstract_and_concrete_wires(self, abstract_wire):
+        """Test an error is raised if both a type of abstract wire and a type of concrete wire are
+        provided."""
+
+        jaxpr = jax.make_jaxpr(lambda *ws: DynOp(0.5, wires=ws).tracer)(0, 1)
+        with pytest.raises(ValueError, match="combination of both concrete wires and "):
+            _ = _eval(jaxpr, 0, abstract_wire)
+
 
 class TestApply:
     @pytest.mark.parametrize("op2", [DynOp(1.0, wires=0), FullOp(0.3, "lbl", [1.0, 2.0], wires=0)])
@@ -506,7 +539,7 @@ class TestApply:
             apply(op2)
 
         jaxpr = jax.make_jaxpr(f)()
-        eqn = _single_op_eqn(jaxpr)
+        [eqn] = find_eqns(jaxpr, operator_p)
         assert eqn.params["op_cls"] == type(op2)
 
     def test_raises(self):

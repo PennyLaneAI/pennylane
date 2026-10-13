@@ -21,34 +21,6 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import partial
 
-has_jax = True
-is_jax_compatible = True
-
-REQUIRED_JAX_VERSION = "0.7.1"
-
-try:
-    import jax  # pylint: disable=unused-import
-    from packaging import version
-
-    jax_version = version.parse(jax.__version__)
-    required_version = version.parse(REQUIRED_JAX_VERSION)
-    if jax_version != required_version:  # pragma: no cover
-        is_jax_compatible = False
-except ImportError:  # pragma: no cover
-    has_jax = False
-    is_jax_compatible = False
-
-
-def _verify_jax_installation():
-    if not has_jax:
-        raise ImportError("capture requires JAX to be installed.")
-    if not is_jax_compatible:  # pragma: no cover
-        raise ImportError(
-            f"PennyLane's program capture requires JAX=={REQUIRED_JAX_VERSION} to be installed to "
-            f"ensure functionality. You have JAX {jax.__version__} installed. Please pin JAX by "
-            f"running: pip install --upgrade jax=={REQUIRED_JAX_VERSION} jaxlib=={REQUIRED_JAX_VERSION}"
-        )
-
 
 def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[], bool], Callable]:
     r"""Create four functions, corresponding to an activation switch, a deactivation switch,
@@ -67,7 +39,6 @@ def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[
     def enable_fn() -> None:
         """Enable the capturing mechanism of hybrid quantum-classical programs
         in a PennyLane Program Representation (plxpr)."""
-        _verify_jax_installation()
         _FEATURE_ENABLED.set(True)
 
     def disable_fn() -> None:
@@ -83,10 +54,6 @@ def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[
     @contextmanager
     def toggle_ctx_fn(new_state: bool):
         """A context manager in which capture is enabled or disabled temporarily."""
-
-        # Verify that the correct jax version is installed
-        if new_state:
-            _verify_jax_installation()
 
         token = _FEATURE_ENABLED.set(new_state)
         try:

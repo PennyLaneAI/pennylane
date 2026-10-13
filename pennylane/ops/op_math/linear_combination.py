@@ -499,13 +499,11 @@ class LinearCombination(Sum):
         return new_op
 
 
-if LinearCombination._primitive is not None:
-
-    @LinearCombination._primitive.def_impl
-    def _(*args, n_obs, **kwargs):
-        coeffs = args[:n_obs]
-        observables = args[n_obs:]
-        return type.__call__(LinearCombination, coeffs, observables, **kwargs)
+@LinearCombination._primitive.def_impl
+def _(*args, n_obs, **kwargs):
+    coeffs = args[:n_obs]
+    observables = args[n_obs:]
+    return type.__call__(LinearCombination, coeffs, observables, **kwargs)
 
 
 # this just exists for the docs build for now, since we're waiting until the next PR to fix the docs

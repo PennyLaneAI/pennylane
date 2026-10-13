@@ -27,10 +27,7 @@ from importlib.util import find_spec
 import numpy
 import scipy
 
-if find_spec("jax"):
-    jax_version = version("jax")
-else:
-    jax_version = None  # pragma: no cover
+jax_version = version("jax")
 
 
 def _pkg_location():

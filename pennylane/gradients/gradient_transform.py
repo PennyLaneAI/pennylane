@@ -24,9 +24,8 @@ from pennylane.pytrees import flatten, unflatten
 SUPPORTED_GRADIENT_KWARGS = {
     "approx_order",
     "argnum",
-    "atol",
     "aux_wire",
-    "broadcast",  # [TODO: This is in param_shift. Unify with use_broadcasting in stoch_pulse_grad
+    "broadcast",
     "device_wires",
     "diagonal_shifts",
     "fallback_fn",
@@ -36,14 +35,11 @@ SUPPORTED_GRADIENT_KWARGS = {
     "mode",
     "n",
     "num_directions",
-    "num_split_times",
     "off_diagonal_shifts",
     "sampler",
     "sampler_rng",
-    "sampler_seed",
     "shifts",
     "strategy",
-    "use_broadcasting",
     "validate_params",
 }
 

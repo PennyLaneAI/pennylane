@@ -39,7 +39,7 @@ from pennylane.math import Interface
 from pennylane.typing import TensorLike
 
 from .execution import execute
-from .resolution import SupportedDiffMethods, _validate_jax_version
+from .resolution import SupportedDiffMethods
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -554,8 +554,6 @@ class QNode:
         self.func = func
         self.device: Device = device
         self._interface = Interface(interface)
-        if self._interface in (Interface.JAX, Interface.JAX_JIT):
-            _validate_jax_version()
         self.diff_method = diff_method
         _validate_diff_method(self.device, self.diff_method)
 

@@ -13,30 +13,30 @@ for more an example.
 The following Python packages are hard dependencies, and will automatically
 be installed alongside PennyLane:
 
-* `numpy <http://numpy.org/>`_
+* `numpy <http://numpy.org/>`_ >= 2.0
 * `scipy <http://scipy.org/>`_
 * `NetworkX <https://networkx.github.io/>`_
 * `rustworkx <https://github.com/Qiskit/rustworkx>`_ >= 0.14.0
-* `autograd <https://github.com/HIPS/autograd>`_
+* `autograd <https://github.com/HIPS/autograd>`_ < 1.9
 * `appdirs <https://github.com/ActiveState/appdirs>`_
-* `autoray <https://github.com/jcmgray/autoray>`__ == 0.8.2
+* `autoray <https://github.com/jcmgray/autoray>`__ == 0.8.10
 * `cachetools <https://github.com/tkem/cachetools>`_
-* `pennylane-lightning <https://github.com/PennyLaneAI/pennylane-lightning>`_ >= 0.42
+* `pennylane-lightning <https://github.com/PennyLaneAI/pennylane-lightning>`_ >= 0.45
 * `requests <https://github.com/psf/requests>`_
 * `typing_extensions <https://github.com/python/typing_extensions>`_
 * `packaging <https://github.com/pypa/packaging>`_
 * `diastatic-malt <https://github.com/PennyLaneAI/diastatic-malt>`_
+* `gast <https://github.com/serge-sans-paille/gast>`_
 
 The following Python packages are optional:
 
 * `openfermionpyscf <https://github.com/quantumlib/OpenFermion-PySCF>`_, for the non-differentiable backend of the ``qp.qchem`` module
 * ``matplotlib``: for ``qp.draw_mpl`` and associated code
 * ``quimb``: for the ``default.tensor`` device
-* ``pyzx``: for ``qp.transforms.to_zx`` and ``qp.transforms.from_zx``
+* ``pyzx>=0.10``: for ``qp.transforms.to_zx``, ``qp.transforms.from_zx``, and ZX optimization transforms
 * ``stim``: for ``default.clifford``
 * ``openqasm3`` and ``antlr3_python3_runtime``: for ``qp.from_qasm3``
-* ``kahypar`` and ``opt_einsum`` for ``qcut``
-* ``cvxopt``for ``qp.kernels.closest_psd_matrix``
+* ``cvxopt``: for ``qp.kernels.closest_psd_matrix``
 
 .. _install_interfaces:
 
@@ -46,7 +46,7 @@ Interface dependencies
 For development of the PyTorch and JAX interfaces, there are additional
 requirements which must be installed manually:
 
-* **JAX interface**: ``jax`` and ``jaxlib`` ~= 0.6.0
+* **JAX interface**: ``jax`` and ``jaxlib`` == 0.7.1
 
 * **PyTorch interface**: ``pytorch``
 

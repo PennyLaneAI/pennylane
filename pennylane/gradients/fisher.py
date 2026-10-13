@@ -16,6 +16,8 @@
 # pylint: disable=import-outside-toplevel, not-callable
 from functools import partial
 
+import jax
+
 from pennylane import math
 from pennylane._grad import jacobian
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
@@ -40,19 +42,6 @@ def _torch_jac(circ):
         if len(args) > 1:
             return torch.autograd.functional.jacobian(loss, args, create_graph=True)
         return torch.autograd.functional.jacobian(loss, *args, create_graph=True)
-
-    return wrapper
-
-
-# TODO: create qp.math.jacobian and replace it here
-def _tf_jac(circ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-    """TF jacobian as a callable function"""
-    import tensorflow as tf
-
-    def wrapper(*args, **kwargs):
-        with tf.GradientTape() as tape:
-            loss = circ(*args, **kwargs)
-        return tape.jacobian(loss, args)
 
     return wrapper
 
@@ -249,7 +238,6 @@ def classical_fisher(qnode, argnums=0):
         interface = qnode.interface
 
         if interface in ("jax", "jax-jit"):
-            import jax
 
             jac = jax.jacobian(new_qnode, argnums=argnums)
 
@@ -259,10 +247,6 @@ def classical_fisher(qnode, argnums=0):
         elif interface == "autograd":
             jac = jacobian(new_qnode)
 
-        elif (
-            interface == "tf"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            jac = _tf_jac(new_qnode)
         else:
             raise ValueError(
                 f"Interface {interface} not supported for jacobian calculations."
@@ -276,14 +260,7 @@ def classical_fisher(qnode, argnums=0):
 
         # In case multiple variables are used, we create a list of cfi matrices
         if isinstance(j, tuple):
-            res = []
-            for j_i in j:
-                res.append(_compute_cfim(p, j_i))
-
-            if len(j) == 1:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-                return res[0]
-
-            return res
+            return [_compute_cfim(p, j_i) for j_i in j]
 
         return _compute_cfim(p, j)
 

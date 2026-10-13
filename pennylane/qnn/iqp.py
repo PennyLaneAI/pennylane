@@ -15,15 +15,10 @@
 This submodule defines methods for estimating the expectations of Pauli-Z operators following an IQP circuit.
 """
 
+import jax
+import jax.numpy as jnp
 import numpy as np
 from scipy.sparse import csr_matrix, dok_matrix
-
-has_jax = True
-try:
-    import jax
-    import jax.numpy as jnp
-except ImportError as e:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 def _len_gen(gates):
@@ -346,11 +341,6 @@ def iqp_expval(
     """
 
     params = jnp.array(weights)
-
-    if not has_jax:
-        raise ImportError(
-            "JAX is required for use of IQP expectation value estimation."
-        )  # pragma: no cover
 
     # do not batch ops if ops is sparse
     if isinstance(ops, csr_matrix):

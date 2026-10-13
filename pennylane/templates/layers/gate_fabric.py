@@ -17,6 +17,7 @@ Contains the quantum-number-preserving GateFabric template.
 
 # pylint: disable=too-many-arguments
 import numpy as np
+from jax import numpy as jnp
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
@@ -25,12 +26,6 @@ from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import BasisState, DoubleExcitation, OrbitalRotation, cond
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class GateFabric(Operation):
@@ -347,7 +342,7 @@ def _gate_fabric_decomposition(weights, wires, init_state, include_pi):
             wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
         ]
 
-    if has_jax and capture.enabled():
+    if capture.enabled():
         weights, wires, init_state, wire_pattern, n_layers = (
             jnp.array(weights),
             jnp.array(wires),

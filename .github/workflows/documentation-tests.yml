@@ -76,7 +76,6 @@ jobs:
           WONT_FIX="
           --ignore=pennylane/labs
           --ignore=pennylane/logging
-          --ignore=pennylane/workflow/interfaces/tensorflow.py
           --ignore=pennylane/devices/_legacy_device.py
           --ignore=pennylane/devices/_qubit_device.py
           "
@@ -92,10 +91,8 @@ jobs:
           --ignore=pennylane/pulse
           --ignore=pennylane/io
           --ignore=pennylane/qnn
-          --ignore=pennylane/qaoa
           --ignore=pennylane/data
           --ignore=pennylane/debugging
-          --ignore=pennylane/qcut
           --ignore=pennylane/qchem
           "
 

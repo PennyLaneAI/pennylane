@@ -39,7 +39,7 @@ jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import AbstractMeasurement
-from tests.capture.capture_utils import assert_eqn_matches_op
+from pennylane.testing import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -271,27 +271,6 @@ class TestCounts:
 
         jaxpr = jax.make_jaxpr(w)().jaxpr
         assert len(jaxpr.outvars) == 3
-
-
-def test_primitive_none_behavior():
-    """Test that if the obs primitive is None, the measurement can still
-    be created, but it just won't be captured into jaxpr.
-    """
-
-    # pylint: disable=too-few-public-methods
-    class MyMeasurement(qp.measurements.MeasurementProcess):
-        pass
-
-    MyMeasurement._obs_primitive = None
-
-    def f():
-        return MyMeasurement(wires=qp.wires.Wires((0, 1)))
-
-    mp = f()
-    assert isinstance(mp, MyMeasurement)
-
-    jaxpr = jax.make_jaxpr(f)()
-    assert len(jaxpr.eqns) == 0
 
 
 # pylint: disable=unnecessary-lambda

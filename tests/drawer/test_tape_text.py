@@ -36,6 +36,7 @@ from pennylane.drawer._add_obj import (
     _add_subroutine_mcm_grouping_symbols,
 )
 from pennylane.drawer.tape_text import _Config
+from pennylane.ops.op_math import ControlledOp2
 
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
 default_wire_layers = {i: [[-1, 10]] for i in range(4)}
@@ -546,7 +547,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
         expected = copy(expected)
         data = (0.5124,) if cls is qp.GlobalPhase else ()
         base_op = cls(*data, wires=wires) if cls is qp.Identity else cls(*data)
-        op = qp.ctrl(base_op, control=control_wires)
+        op = ControlledOp2(base_op, control_wires=control_wires)
         n_wires = len(wire_map)
         if n_wires > 4:
             expected[-1] = "├" + expected[-1][1:]
@@ -650,18 +651,6 @@ class TestDecimals:
         tape_torch = qp.tape.QuantumScript.from_queue(q_tape_torch)
         expected = "0: ──Rot(1.23,2.35,3.46)─┤"
         assert tape_text(tape_torch, decimals=2) == expected
-
-    @pytest.mark.tf
-    def test_tensorflow_parameters(self):
-        """Test tensorflow parameters display as normal numbers."""
-        import tensorflow as tf
-
-        with qp.queuing.AnnotatedQueue() as q_tape_tf:
-            qp.Rot(tf.Variable(1.234), tf.Variable(2.345), tf.Variable(3.456), wires=0)
-
-        tape_tf = qp.tape.QuantumScript.from_queue(q_tape_tf)
-        expected = "0: ──Rot(1.23,2.35,3.46)─┤"
-        assert tape_text(tape_tf, decimals=2) == expected
 
     @pytest.mark.jax
     def test_jax_parameters(self):

@@ -3093,6 +3093,7 @@ dependencies = [
     { name = "cachetools" },
     { name = "diastatic-malt" },
     { name = "gast" },
+    { name = "jax" },
     { name = "networkx" },
     { name = "numpy" },
     { name = "packaging" },
@@ -3143,8 +3144,6 @@ docs = [
     { name = "fsspec" },
     { name = "galois" },
     { name = "h5py" },
-    { name = "jax" },
-    { name = "jaxlib" },
     { name = "jinja2" },
     { name = "m2r2" },
     { name = "matplotlib" },
@@ -3172,8 +3171,6 @@ docs = [
     { name = "torch" },
 ]
 doctest = [
-    { name = "jax" },
-    { name = "jaxlib" },
     { name = "matplotlib" },
     { name = "pytest" },
     { name = "pyzx" },
@@ -3222,6 +3219,7 @@ requires-dist = [
     { name = "cvxpy", marker = "extra == 'kernels'" },
     { name = "diastatic-malt" },
     { name = "gast" },
+    { name = "jax", specifier = "==0.7.1" },
     { name = "networkx" },
     { name = "numpy", specifier = ">=2.0" },
     { name = "packaging" },
@@ -3267,8 +3265,6 @@ docs = [
     { name = "fsspec" },
     { name = "galois" },
     { name = "h5py" },
-    { name = "jax", specifier = "==0.7.1" },
-    { name = "jaxlib", specifier = "==0.7.1" },
     { name = "jinja2", specifier = ">=3.1" },
     { name = "m2r2" },
     { name = "matplotlib", specifier = "==3.10.0" },
@@ -3296,8 +3292,6 @@ docs = [
     { name = "torch", specifier = "~=2.9.0" },
 ]
 doctest = [
-    { name = "jax", specifier = "==0.7.1" },
-    { name = "jaxlib", specifier = "==0.7.1" },
     { name = "matplotlib" },
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "pyzx" },
