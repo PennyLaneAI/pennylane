@@ -2198,6 +2198,10 @@ class PPR_2(_FixedAnglePPR):
     Up to a sign-dependent global phase, ``PPR_2`` is equivalent to the Pauli word
     :math:`P` itself (e.g., ``PPR_2(1, "XY", wires=[0, 1])`` is equivalent to :math:`-iX_0Y_1`).
 
+    The Pauli-based computation literature commonly writes PPRs with this angle convention,
+    whereas :class:`~.PauliRot` follows the convention
+    :math:`\mathrm{PauliRot}(\theta, P)=\exp(-i \theta / 2 P)`.
+
     .. note:: ``PPR_2`` corresponds to the ``pbc.ppr`` operation with rotation kind
         :math:`\pm 2` in the Pauli-based computation (``pbc``) dialect of Catalyst, and follows
         the same angle convention.
