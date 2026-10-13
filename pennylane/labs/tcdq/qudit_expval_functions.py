@@ -80,9 +80,7 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
             example, with ``dims=3`` and ``n_qudits=2``,
             ``{0: [{0: 1}], 1: [{1: 1}], 2: [{0: 1, 1: 1}]}`` defines three
             gates: :math:`Z^1` on qudit 0, :math:`Z^1` on qudit 1, and
-            :math:`Z^1 \otimes Z^1` on both. Only the active qudits of each
-            gate are stored, so the cost of describing a :math:`k`-local
-            circuit scales with :math:`k` rather than with ``n_qudits``.
+            :math:`Z^1 \otimes Z^1` on both.
         n_samples (int): Number of random dit-strings drawn for the
             estimation.
         key (ArrayLike): JAX PRNG key for random dit-string generation.
