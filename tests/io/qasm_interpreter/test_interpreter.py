@@ -1481,7 +1481,7 @@ class TestGates:
         assert q.queue == [
             PauliX("q0"),
             CNOT(wires=["q0", "q1"]),
-            Controlled(GlobalPhase(2.0), control_wires=["q0"]),
+            PhaseShift(-2.0, wires=["q0"]),
             GlobalPhase(3.0),
             RX(0.5, wires=["q0"]),
             RY(0.2, wires=["q0"]),
