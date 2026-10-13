@@ -71,7 +71,10 @@ def estimate(
     r"""Provides fast resource estimates of a quantum circuit by analyzing decomposition pathways
     with respect to a specified level of compilation.
 
-    .. note:: Only circuits compiled with :func:`qjit(capture=True) <~.qjit>` are supported.
+    .. note::
+    
+        Only qnodes which have been compiled with program capture enabled are supported.
+        e.g. via compiling with :func:`qjit(capture=True) <~.qjit>` or using :func:`~.capture.enable` to enable program capture globally.
 
     The ``estimate`` function provides fast resource estimates of a quantum circuit by analyzing
     decomposition pathways to a target gate set with respect to the specified level of
