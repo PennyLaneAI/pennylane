@@ -30,7 +30,7 @@ from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args, to_name
 from pennylane.exceptions import EigvalsUndefinedError
-from pennylane.ops.functions.equal import _equal, assert_equal
+from pennylane.ops.functions.equal import assert_equal
 from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.composite2 import CompositeOp2
@@ -155,6 +155,7 @@ def _check_decomposition_legacy(op, skip_wire_mapping):
             mapped_decomp = _resolve_dynamic_wires(mapped_decomp, total_work_wires)
         for mapped_op, orig_op in zip(mapped_decomp, decomp_output, strict=True):
             assert (
+                # pylint: disable-next=no-member
                 mapped_op.wires == qp.map_wires(orig_op, wire_map).wires
             ), "Operators in decomposition of wire-mapped operator must have mapped wires."
 
