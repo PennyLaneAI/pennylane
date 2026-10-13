@@ -233,17 +233,6 @@ def _parse_qudit_gate_dict(
 ) -> list[SparseGateGroup]:
     """Convert a sparse qudit gate dictionary into weight-grouped support/power arrays.
 
-    This is the qudit analogue of
-    :func:`~pennylane.labs.tcdq.expval_functions._parse_generator_dict`. It never
-    materialises a dense ``(n_gates, n_qudits)`` generator matrix: each gate is
-    stored through its active qudits only, and gates are bucketed by weight so
-    that the downstream :math:`2^\\omega` angle-addition expansion can be
-    vectorised within each bucket.
-
-    Gates whose support is empty after reducing powers modulo ``dims`` act as
-    the identity and are dropped. Their parameter index is still a valid slot
-    in ``gates_params``; it simply receives zero gradient.
-
     Args:
         circuit_def (dict[int, list[dict[int, int]]]): Maps parameter indices to lists
             of sparse gates ``{qudit_index: z_power}``.
@@ -431,11 +420,7 @@ def _build_weight_group(
     l_vecs: jnp.ndarray,
     dims: np.ndarray,
 ) -> WeightGroupData:
-    """Precompute the factor matrices for a group of gates with the same weight.
-
-    The supports and powers come straight from the sparse gate description, so
-    no dense generator matrix is scanned here.
-    """
+    """Precompute the factor matrices for a group of gates with the same weight."""
     n_gates, omega = group.supports.shape
     num_samples = samples.shape[0]
     n_obs = l_vecs.shape[0]

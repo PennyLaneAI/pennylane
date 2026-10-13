@@ -195,9 +195,7 @@ The same workflow applies to qudit circuits (``d > 2``). Replace
 :class:`~CircuitConfig` with :class:`~QuditCircuitConfig` and
 :func:`~build_expval_func` with :func:`~build_qudit_expval_func`.
 Each gate is a sparse ``dict`` mapping a qudit index to the power of
-:math:`Z` applied on that qudit (entries in :math:`\{1, \ldots, d-1\}`);
-qudits that are not listed are left untouched, so a :math:`k`-local gate
-costs :math:`O(k)` to describe regardless of ``n_qudits``.
+:math:`Z` applied on that qudit (entries in :math:`\{1, \ldots, d-1\}`).
 
 .. code-block:: python
 
