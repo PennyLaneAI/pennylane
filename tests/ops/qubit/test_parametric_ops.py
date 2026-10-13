@@ -3966,22 +3966,24 @@ class TestControlledPhaseShiftMCXDecomposition:
         assert _controlled_phase_shift_mcx_condition(control_wires=[0, 1])
 
     @pytest.mark.integration
+    @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_graph_decomposition(self):
         """Tests that a many-controlled PhaseShift decomposes with only MCX-based gates."""
+        import catalyst
 
         wires = list(range(6))
-        tape = qp.tape.QuantumScript([qp.ctrl(qp.PhaseShift(0.4, wires=5), control=wires[:5])])
-        expected_matrix = qp.matrix(tape, wire_order=wires)
+        gate_set = {"ControlledPhaseShift", "CNOT", "Toffoli", "MultiControlledX", "PauliX", "X"}
 
-        [decomp], _ = qp.transforms.decompose(
-            tape, gate_set={"ControlledPhaseShift", "CNOT", "Toffoli", "MultiControlledX", "X"}
-        )
-        assert {op.name for op in decomp.operations} <= {
-            "ControlledPhaseShift",
-            "CNOT",
-            "Toffoli",
-            "MultiControlledX",
-            "X",
-        }
-        assert qp.math.allclose(qp.matrix(decomp, wire_order=wires), expected_matrix)
+        @qp.qjit(capture=True, target="mlir")
+        @catalyst.passes.graph_decomposition(gate_set=gate_set)
+        @qp.qnode(qp.device("null.qubit", wires=wires))
+        def c():
+            qp.ctrl(qp.PhaseShift(0.4, wires=5), control=wires[:5])
+
+        specs = qp.specs(c, level=1)()
+        assert set(specs.resources.quantum_operations.keys()) <= gate_set
+        assert specs.resources.quantum_operations["CNOT"] == 2
+        assert specs.resources.quantum_operations["ControlledPhaseShift"] == 9
+        assert specs.resources.quantum_operations["MultiControlledX"] == 6
+        assert specs.resources.quantum_operations["PauliX"] == 10
