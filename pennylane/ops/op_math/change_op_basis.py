@@ -145,7 +145,7 @@ def change_op_basis(
             )
             return qp.state()
 
-        circuit2 = qp.decompose(circuit, max_expansion=1)
+        circuit2 = qp.transforms._tape_decompose(circuit, max_expansion=1)
 
     When this circuit is decomposed, the ``compute_op`` and ``uncompute_op`` are not controlled,
     resulting in a much more resource-efficient decomposition:
@@ -180,7 +180,7 @@ def change_op_basis(
             qp.change_op_basis(compute, target)
             return qp.state()
 
-        circuit3 = qp.decompose(circuit, max_expansion=1)
+        circuit3 = qp.transforms._tape_decompose(circuit, max_expansion=1)
 
     >>> print(qp.draw(circuit3)())
     0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤ ╭State
