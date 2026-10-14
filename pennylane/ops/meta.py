@@ -58,32 +58,6 @@ class Barrier(Operator2):
     def __repr__(self):
         return f"Barrier(wires={self.wires.tolist()})"
 
-    @staticmethod
-    def compute_decomposition(wires, only_visual=False):  # pylint: disable=unused-argument
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.Barrier.decomposition`.
-
-        ``Barrier`` decomposes into an empty list for all arguments.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-            only_visual (Bool): True if we do not want it to have an impact on the compilation process. Default is False.
-
-        Returns:
-            list: decomposition of the operator
-
-        **Example:**
-
-        >>> print(qp.Barrier.compute_decomposition(0))
-        []
-
-        """
-        return []
-
     def label(self, decimals=None, base_label=None, cache=None):
         return "||"
 
