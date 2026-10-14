@@ -108,8 +108,7 @@ class TrotterProduct(Operation):
            with Catalyst's ``@qjit`` decorator. Setting this option to
            ``False`` skips the validation step without changing the
            generated time-evolution operation. Users are responsible for
-           ensuring that the Hamiltonian is Hermitian.       
-
+           ensuring that the Hamiltonian is Hermitian.
     Raises:
         TypeError: The ``hamiltonian`` is not of type :class:`~.Sum`.
         ValueError: The ``hamiltonian`` has only one term or no terms.
