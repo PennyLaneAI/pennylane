@@ -99,7 +99,8 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
-* The ``pennylane.qnn`` module has been removed, including ``TorchLayer`` and ``iqp_expval``.
+* The ``pennylane.qnn`` module has been removed, including ``TorchLayer``.
+  ``pennylane.qnn.iqp_expval`` has been moved to :func:`pennylane.math.iqp_expval`.
 
   - Removed in releases after v0.45
 
@@ -108,10 +109,10 @@ Completed deprecation cycles
   ``max_independent_set``, ``min_vertex_cover``, ``max_clique``, ``max_weight_cycle``,
   ``bit_driver``, ``edge_driver``), the ansatz layers (``cost_layer``, ``mixer_layer``)
   and the ``pennylane.qaoa.cycle`` helpers. :class:`~.QAOAEmbedding` is unaffected.
-  
+
   - Removed in releases after v0.45
 
-* Maintenance support for the ``tensorflow`` interface has been removed. Future versions of 
+* Maintenance support for the ``tensorflow`` interface has been removed. Future versions of
 * The ``pennylane.pulse`` module has been removed. This includes ``ParametrizedHamiltonian`` and
   ``ParametrizedEvolution``, as well as the ``stoch_pulse_grad`` and ``pulse_odegen``
   pulse-level gradient transforms.

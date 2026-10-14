@@ -81,6 +81,7 @@ from .multi_dispatch import (
     unwrap,
     where,
 )
+from .iqp import iqp_expval
 from .quantum import (
     cov_matrix,
     dm_from_state_vector,
@@ -251,6 +252,7 @@ __all__ = [
     "get_trainable_indices",
     "grad",
     "int_to_binary",
+    "iqp_expval",
     "in_backprop",
     "is_abstract",
     "is_independent",

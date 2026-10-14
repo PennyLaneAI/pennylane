@@ -3,7 +3,7 @@
 <h3>New features since last release</h3>
 
 * A new state preparation routine called :class:`~.PhaseGradientStatePrep` has been added, which
-  prepares the phase gradient state 
+  prepares the phase gradient state
   :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`.
   It is a catalytic state for (generalized) rotation gates.
   See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
@@ -632,7 +632,7 @@
 <h3>Improvements 🛠</h3>
 
 * :func:`~.iterative_qpe` is now captured as a single :func:`~.capture.subroutine` instead of
-  falling back to an unrolled ``qp.for_loop``. 
+  falling back to an unrolled ``qp.for_loop``.
   [(#10220)](https://github.com/PennyLaneAI/pennylane/pull/10220)
 
 * Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
@@ -1052,7 +1052,7 @@
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
 <h3>Breaking changes 💔</h3>
-  
+
 * Tensorflow and tensorflow-autograph interfaces are removed.
   [(#10229)](https://github.com/PennyLaneAI/pennylane/pull/10229)
 
@@ -1061,7 +1061,8 @@
   pulse-level gradient transforms.
   [(#10238)](https://github.com/PennyLaneAI/pennylane/pull/10238)
 
-* The ``pennylane.qnn`` module has been removed, including ``TorchLayer`` and ``iqp_expval``.
+* The ``pennylane.qnn`` module has been removed, including ``TorchLayer``.
+  ``pennylane.qnn.iqp_expval`` has been moved to :func:`pennylane.math.iqp_expval`.
   [(#10247)](https://github.com/PennyLaneAI/pennylane/pull/10247)
 
 * :class:`~.QuantumPhaseEstimation` now only accepts an :class:`~.Operator` as the ``unitary``, and the
@@ -1077,7 +1078,7 @@
   ```
 
   [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
-  
+
 * The ``pennylane.qaoa`` module has been removed. This includes the mixer Hamiltonians
   (``x_mixer``, ``xy_mixer``, ``bit_flip_mixer``), the cost Hamiltonians (``maxcut``,
   ``max_independent_set``, ``min_vertex_cover``, ``max_clique``, ``max_weight_cycle``,
