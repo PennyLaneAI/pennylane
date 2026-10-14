@@ -15,12 +15,18 @@
 Tests for compiler hint utilities.
 """
 
+from functools import partial
+
 import pytest
 
 import pennylane as qp
-from pennylane.capture.hint import HintedCallable, apply_hint, process_hints
+from pennylane.capture.hint import HintedCallable, apply_hint, get_hints, process_hints
 
 _SUPPORTED = frozenset({"num-iters"})
+
+
+def _f(x, y=0):
+    return x + y
 
 
 class TestProcessHints:
@@ -79,6 +85,21 @@ class TestApplyHint:
         """Unsupported types should raise ``NotImplementedError``."""
         with pytest.raises(NotImplementedError, match="No registered way to apply compiler hints"):
             apply_hint(3, {"num-iters": 1})
+
+
+@pytest.mark.parametrize(
+    "f, expected",
+    (
+        (_f, {}),
+        (partial(_f, y=2), {}),
+        (qp.hint(_f, {"a": 1}), {"a": 1}),
+        (partial(qp.hint(_f, {"a": 1}), y=2), {"a": 1}),
+        (qp.hint(partial(qp.hint(_f, {"a": 1, "b": 1}), y=2), {"b": 2}), {"a": 1, "b": 2}),
+    ),
+)
+def test_get_hints_through_wrappers(f, expected):
+    """Test that ``get_hints`` finds hints through partials, with outer hints taking precedence."""
+    assert get_hints(f) == expected
 
 
 class TestHintAPI:

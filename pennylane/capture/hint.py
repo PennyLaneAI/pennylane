@@ -95,6 +95,35 @@ class HintedCallable:
         return self.f(*args, **kwargs)
 
 
+def get_hints(f) -> dict[str, Any]:
+    """Collect the compiler hints attached to ``f``.
+
+    Looks through ``functools.partial`` and nested :class:`~.HintedCallable` layers, so that
+    hints are not lost when a hinted callable gets wrapped in a partial. Hints from outer
+    layers take precedence over hints from inner layers.
+
+    Args:
+        f: the object to collect hints from
+
+    Returns:
+        dict[str, Any]: the merged hints, empty if ``f`` carries no hints
+
+    >>> from functools import partial
+    >>> def f(x, y): return x + y
+    >>> get_hints(partial(qp.hint(f, {"num-iters": 10}), y=1))
+    {'num-iters': 10}
+
+    """
+    hints = {}
+    while isinstance(f, (HintedCallable, functools.partial)):
+        if isinstance(f, HintedCallable):
+            hints = f.hints | hints
+            f = f.f
+        else:
+            f = f.func
+    return hints
+
+
 @functools.singledispatch
 def apply_hint(f, hints: dict[str, Any]):
     """A single dispatch function that applies a hint to a certain type of object.

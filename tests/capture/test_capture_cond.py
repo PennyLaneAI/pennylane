@@ -1292,6 +1292,26 @@ class TestCondBranchProbHintsCapture:
         cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
         assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.5, 0.25, 0.25))
 
+    @pytest.mark.parametrize(
+        "wrap",
+        (
+            lambda f: partial(qp.hint(f, {"branch-prob": 0.4}), y=1),
+            lambda f: qp.hint(partial(qp.hint(f, {"branch-prob": 0.4}), y=1), {"other": 1}),
+        ),
+    )
+    def test_hint_under_partial(self, wrap):
+        """``branch-prob`` should be found when the hinted branch is wrapped in a partial."""
+
+        def true_fn(x, y):
+            return x + y
+
+        def f(pred, x):
+            return qp.cond(pred, wrap(true_fn), lambda x: x)(x)
+
+        jaxpr = jax.make_jaxpr(f)(True, 0)
+        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.4, 0.6))
+
     def test_hinted_operator_types_as_branches(self):
         """Hinted operator classes and partials of them should be usable as branches."""
 
