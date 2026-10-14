@@ -6,28 +6,45 @@ Adding new quantum operators
 This page will outline the steps to help create custom quantum operators that
 can either be formally added to PennyLane2 or just used locally.
 
-Here, the term "quantum operators" encompasses anything that can be programmed
-onto a quantum device. This includes
-:doc:`gates </introduction/operations>`, elaborate
-:doc:`subroutines </introduction/subroutines>`, and mid-circuit measurements.
+.. note::
 
-Decomposition and resource estimation
-#####################################
-
-The motivation for adding a custom operator is often because it represents some
-self-contained computational block that not only will be used many times, but
-also because it could be *implemented* (or decomposed into elementary gates) in
-different ways.
-
-PennyLane2 offers a robust and modularized decomposition framework, wherein
-any quantum operator can define different decompositions in terms of other
-operators.
-
-TODO: Briefly explain ``register_resources``, ``add_decomps``, abstract typing,
-and resource-only decomps if supported (sc-130108)
+    The term "quantum operators" encompasses anything that can be programmed
+    onto a quantum device. This includes
+    :doc:`gates </introduction/operations>`, elaborate
+    :doc:`subroutines </introduction/subroutines>`, and mid-circuit
+    measurements.
 
 Important classes and functions
 ###############################
+
+Decomposition and resource estimation
+-------------------------------------
+
+Adding a custom operator is often convenient because it represents some
+self-contained block that not only will be used repetitively, but also because
+it could be *implemented* (or decomposed into elementary gates) differently
+ways.
+
+PennyLane2 offers a robust and modularized decomposition algorithm, wherein any
+quantum operator can define different decompositions in terms of other
+operators. Creating new decomposition rules involves the following functions and
+modules.
+
+.. autosummary::
+
+    ~pennylane.register_resources
+    ~pennylane.add_decomps
+    ~pennylane.typing
+
+The decomposition algorithm in PennyLane2 bases its output on the resources
+required to compile a circuit into a target gate set. The
+:func:`~pennylane.register_resources` function is the avenue to specifying
+an individual decomposition rule's quantum resources. An example will be
+provided further down this page that uses :func:`~pennylane.register_resources`,
+:func:`~pennylane.add_decomps`, and the :mod:`~pennylane.typing` module.
+
+Operator creation
+-----------------
 
 The two most important functionalities in PennyLane2 for creating new operators
 are:
@@ -44,8 +61,8 @@ will result in a valid quantum operator. For most use cases,
 :class:`~pennylane.core.operator.Operator2` class is recommended for the utmost
 customization.
 
-Input argument types
-####################
+Operator argument types
+#######################
 
 When creating a new quantum operator in PennyLane2, the input arguments to the
 operator must be accurately binned into the following categories for
@@ -117,11 +134,20 @@ quantum operator by decorating with :func:`~pennylane.subcircuit` :
 
     import pennylane as qp
 
+    def flip_rotate_resources(rot_axes):
+        return {
+            qp.PauliRot(qp.typing.Float, rot_axes[0], wires=qp.typing.Wire): 1,
+            qp.PauliRot(qp.typing.Float, rot_axes[1], wires=qp.typing.Wire): 1,
+            qp.X: 1,
+            qp.ops.mid_measure.MidMeasure(qp.typing.Wire): 1
+        }
+
     @qp.subcircuit(
         dynamic_argnams={"angle"},
         compilable_argnames={"rot_axes"},
         wire_argnames={"wires"},
     )
+    @qp.register_resources(flip_rotate_resources)
     def FlipAndRotate(angle, rot_axes, wires):
         qp.X(wires[0])
         m = qp.measure(1)
