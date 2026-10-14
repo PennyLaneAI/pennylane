@@ -619,7 +619,7 @@ class TestCondOperatorInstances:
         with pytest.raises(ValueError, match="Got Operator1 input"):
             jax.make_jaxpr(f)(True)
 
-    def test_operator1_created_during_tracing_raises(self):
+    def test_operator1_false_fn_created_during_tracing_raises(self):
         """Test that Operator1 instances created during tracing are rejected."""
 
         class OldOp(Operator):  # pylint: disable=too-few-public-methods
