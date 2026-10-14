@@ -2669,14 +2669,14 @@ class TestPauliRot:
         op = qp.PauliRot(theta, "XY", wires=[0, 1])
         (cob,) = op.decomposition()
 
-        assert [gate.name for gate in cob.compute_op.operands] == ["PPR", "Hadamard"]
-        qp.assert_equal(cob.compute_op.operands[0], qp.PPR(4, "X", wires=1))
+        assert [gate.name for gate in cob.compute_op.operands] == ["PPR_4", "Hadamard"]
+        qp.assert_equal(cob.compute_op.operands[0], qp.PPR_4(1, "X", wires=1))
         qp.assert_equal(cob.compute_op.operands[1], qp.Hadamard(wires=0))
 
         qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0, 1]))
 
-        assert [gate.name for gate in cob.uncompute_op.operands] == ["PPR", "Hadamard"]
-        qp.assert_equal(cob.uncompute_op.operands[0], qp.PPR(-4, "X", wires=1))
+        assert [gate.name for gate in cob.uncompute_op.operands] == ["PPR_4", "Hadamard"]
+        qp.assert_equal(cob.uncompute_op.operands[0], qp.PPR_4(-1, "X", wires=1))
         qp.assert_equal(cob.uncompute_op.operands[1], qp.Hadamard(wires=0))
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
@@ -2686,14 +2686,14 @@ class TestPauliRot:
         op = qp.PauliRot(theta, "XIYZ", wires=[0, 1, 2, 3])
         (cob,) = op.decomposition()
 
-        assert [gate.name for gate in cob.compute_op.operands] == ["PPR", "Hadamard"]
-        qp.assert_equal(cob.compute_op.operands[0], qp.PPR(4, "X", wires=2))
+        assert [gate.name for gate in cob.compute_op.operands] == ["PPR_4", "Hadamard"]
+        qp.assert_equal(cob.compute_op.operands[0], qp.PPR_4(1, "X", wires=2))
         qp.assert_equal(cob.compute_op.operands[1], qp.Hadamard(wires=0))
 
         qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0, 2, 3]))
 
-        assert [gate.name for gate in cob.uncompute_op.operands] == ["PPR", "Hadamard"]
-        qp.assert_equal(cob.uncompute_op.operands[0], qp.PPR(-4, "X", wires=2))
+        assert [gate.name for gate in cob.uncompute_op.operands] == ["PPR_4", "Hadamard"]
+        qp.assert_equal(cob.uncompute_op.operands[0], qp.PPR_4(-1, "X", wires=2))
         qp.assert_equal(cob.uncompute_op.operands[1], qp.Hadamard(wires=0))
 
     def test_PauliRot_single_basis_gate_is_unwrapped(self):
@@ -2706,9 +2706,9 @@ class TestPauliRot:
         qp.assert_equal(cob.uncompute_op, qp.Hadamard(0))
 
         (cob,) = qp.PauliRot(theta, "Y", wires=0).decomposition()
-        qp.assert_equal(cob.compute_op, qp.PPR(4, "X", wires=0))
+        qp.assert_equal(cob.compute_op, qp.PPR_4(1, "X", wires=0))
         qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0]))
-        qp.assert_equal(cob.uncompute_op, qp.PPR(-4, "X", wires=0))
+        qp.assert_equal(cob.uncompute_op, qp.PPR_4(-1, "X", wires=0))
 
     @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
