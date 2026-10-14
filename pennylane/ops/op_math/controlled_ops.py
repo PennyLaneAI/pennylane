@@ -33,8 +33,8 @@ from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
+    _list_decomps,
     get_fixed_decomp,
-    list_decomps,
 )
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
@@ -1483,7 +1483,7 @@ def _to_op_list(rule):
     return _inner
 
 
-@list_decomps.register
+@_list_decomps.register
 def _list_mcx_decomps(op: MultiControlledX):
     # fixed_decomps should override everything
     if fixed_rule := get_fixed_decomp(op):
