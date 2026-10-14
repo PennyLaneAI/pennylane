@@ -496,7 +496,7 @@ class TestCapture:
         """Test that a ValidOp can be captured into and reconstructed from jaxpr."""
         import jax
 
-        from tests.capture.capture_utils import assert_eqn_matches_op
+        from pennylane.testing import assert_eqn_matches_op
 
         def qfunc():
             return Prod2((qp.RX(1.2, wires=0), qp.PauliZ(0)))
