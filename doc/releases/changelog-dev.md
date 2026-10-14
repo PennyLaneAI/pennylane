@@ -21,6 +21,7 @@
   [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
   [(#10297)](https://github.com/PennyLaneAI/pennylane/pull/10297)
   [(#10251)](https://github.com/PennyLaneAI/pennylane/pull/10251)
+  [(#10325)](https://github.com/PennyLaneAI/pennylane/pull/10325)
 
   By hinting control flow like :func:`~.for_loop`, :func:`~.while_loop`, and :func:`~.cond` profiling
   with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete

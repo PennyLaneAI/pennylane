@@ -82,6 +82,10 @@ def _add_abstract_shapes(f):
 
 
 def _is_operator_type(fn):
+    """Determine whether ``fn`` is a subclass of ``Operator``, or a (possibly nested) hinted
+    or ``partial`` wrapper of an ``Operator`` subclass."""
+    while isinstance(fn, (HintedCallable, functools.partial)):
+        fn = fn.f if isinstance(fn, HintedCallable) else fn.func
     return isinstance(fn, type) and issubclass(fn, Operator)
 
 
@@ -89,7 +93,7 @@ def _format_and_validate_branch_fn(fn):
     """Normalizes conditional branches to prevent quantum operators from being returned."""
 
     # Format directly returned operators as a function with no return
-    if _is_operator_type(fn) or (isinstance(fn, functools.partial) and _is_operator_type(fn.func)):
+    if _is_operator_type(fn):
 
         def fn_with_no_return(*args, **kwargs):
             fn(*args, **kwargs)

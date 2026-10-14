@@ -25,7 +25,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.exceptions import ConditionalTransformError
-from pennylane.ops.op_math.condition import CondCallable
+from pennylane.ops.op_math.condition import CondCallable, _is_operator_type
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -1291,3 +1291,46 @@ class TestCondBranchProbHintsCapture:
         jaxpr = jax.make_jaxpr(f)(True, False)
         cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
         assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.5, 0.25, 0.25))
+
+    def test_hinted_operator_types_as_branches(self):
+        """Hinted operator classes and partials of them should be usable as branches."""
+
+        def f(pred, x):
+            qp.cond(
+                pred,
+                qp.hint(qp.X, {"branch-prob": 0.4}),
+                qp.hint(partial(qp.RX, wires=0), {"branch-prob": 0.6}),
+            )(x)
+
+        jaxpr = jax.make_jaxpr(f)(True, 0)
+        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.4, 0.6))
+
+        true_branch, false_branch = cond_eqn.params["jaxpr_branches"]
+        assert true_branch.outvars == []
+        assert false_branch.outvars == []
+        assert_eqn_matches_op(true_branch.eqns[-1], qp.X)
+        assert_eqn_matches_op(false_branch.eqns[-1], qp.RX)
+
+
+def _x_qfunc(wire):
+    qp.X(wire)
+
+
+@pytest.mark.parametrize(
+    "fn, expected",
+    (
+        (qp.X, True),
+        (partial(qp.RX, wires=0), True),
+        (qp.hint(qp.X, {"branch-prob": 0.4}), True),
+        (qp.hint(qp.hint(qp.X, {"a": 1}), {"b": 2}), True),
+        (qp.hint(partial(qp.RX, wires=0), {"branch-prob": 0.4}), True),
+        (partial(qp.hint(qp.RX, {"branch-prob": 0.4}), wires=0), True),
+        (_x_qfunc, False),
+        (qp.hint(_x_qfunc, {"branch-prob": 0.4}), False),
+        (partial(qp.hint(_x_qfunc, {"a": 1}), 0), False),
+    ),
+)
+def test_is_operator_type_unwraps_hints_and_partials(fn, expected):
+    """Test that ``_is_operator_type`` sees through nested hints and partials."""
+    assert _is_operator_type(fn) is expected
