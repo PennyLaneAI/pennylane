@@ -69,6 +69,40 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
     def circuit(self, qnode):
         """Fixture for the qjit'd QNode with a user transform."""
         return qp.qjit(qp.transforms.cancel_inverses(qnode))
+        
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_decomposition(self):
+        """Test the resources of a simple circuit projected onto Clifford+T"""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def circuit():
+            qp.Toffoli([0, 1, 2])
+            qp.Hadamard(0)
+            qp.Hadamard(0)
+            return qp.expval(qp.Z(0))
+
+        resources = qp.estimate(circuit, target=qp.gate_sets.CLIFFORD_T)().resources
+
+        assert resources == SpecsResources(
+            counts={"Adjoint(T)": 3, "CNOT": 6, "Hadamard": 4, "T": 4},
+            measurement_processes={"expval(PauliZ)": 1},
+            num_wires=3,
+        )
+
+        @qp.qjit(capture=True)
+        @qp.transforms.decompose(gate_set=qp.gate_sets.CLIFFORD_T)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def decomposed_circuit():
+            qp.Toffoli([0, 1, 2])
+            qp.Hadamard(0)
+            qp.Hadamard(0)
+            return qp.expval(qp.Z(0))
+
+        analyzed = qp.analyze(decomposed_circuit, level=1)().resources
+        assert analyzed.counts == resources.counts
+        assert analyzed.measurement_processes == resources.measurement_processes
+        assert analyzed.num_wires == resources.num_wires
 
     def test_specs(self, circuit):
         """Test that estimate ignores the user transforms and decomposes the circuit into the
