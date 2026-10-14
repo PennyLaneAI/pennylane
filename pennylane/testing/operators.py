@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains :func:`~.testing.assert_valid`, which checks whether an operator is correctly
-defined.
+This module contains ``assert_valid``, which checks that an operator is correctly defined.
 """
 
 import copy
@@ -26,24 +25,44 @@ import jax
 import numpy as np
 import scipy.sparse
 
-import pennylane as qp
-from pennylane import capture, math
+from pennylane import capture, decomposition, math, ops, pytrees
+from pennylane._grad import jacobian
+from pennylane.allocation import Allocate
+from pennylane.core import apply, queuing
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
-from pennylane.decomposition import DecompositionRule
-from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
+from pennylane.decomposition import has_decomp, list_decomps
+from pennylane.decomposition.decomposition_rule import DecompositionRule, _decomp_contains_mcm
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args, to_name
-from pennylane.exceptions import EigvalsUndefinedError
-from pennylane.ops.functions.equal import assert_equal
+from pennylane.devices import device
+from pennylane.exceptions import (
+    DecompositionUndefinedError,
+    DiagGatesUndefinedError,
+    EigvalsUndefinedError,
+    GeneratorUndefinedError,
+    MatrixUndefinedError,
+    SparseMatrixUndefinedError,
+)
+from pennylane.measurements import MeasurementProcess, probs
+from pennylane.ops import functions as op_funcs
 from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
-from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.ops.op_math.composite2 import CompositeOp2
-from pennylane.ops.op_math.controlled2 import ControlledOp2
-from pennylane.ops.op_math.pow2 import Pow2
-from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
-from pennylane.pytrees import flatten
-from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.ops.op_math import (
+    Adjoint2,
+    CompositeOp2,
+    Conditional,
+    Controlled,
+    ControlledOp2,
+    Pow2,
+    SymbolicOp2,
+)
+from pennylane.tape import QuantumScript
+from pennylane.templates.core import SubroutineOp
+from pennylane.templates.subroutines.qsvt import QSVT
+from pennylane.templates.subroutines.select import Select
+from pennylane.transforms import resolve_dynamic_wires
+from pennylane.typing import AbstractArray, AbstractWires, TensorLike
 from pennylane.wires import Wires
+from pennylane.workflow import QNode
 
 from .capture import plxpr_to_tape
 
@@ -51,40 +70,42 @@ from .capture import plxpr_to_tape
 def _assert_error_raised(func, expected_error_type, failure_comment):
 
     def inner_func(*args, **kwargs):
-        error_raised = False
         try:
             func(*args, **kwargs)
         except expected_error_type:
-            error_raised = True
-        assert error_raised, failure_comment
+            return
+        raise AssertionError(failure_comment)
 
     return inner_func
 
 
 def _resolve_dynamic_wires(ops, num_zeroed):
     """Apply the transform resolve_dynamic_wires to a list of operations or tape."""
-    if unwrap := not isinstance(ops, qp.tape.QuantumScript):
-        ops = qp.tape.QuantumScript(ops)
+
+    if not isinstance(ops, QuantumScript):
+        tape = QuantumScript(ops)
+        return _resolve_dynamic_wires(tape, num_zeroed).operations
+
     zeroed = range(len(ops.wires), len(ops.wires) + num_zeroed)
-    [ops], _ = qp.transforms.resolve_dynamic_wires([ops], zeroed=zeroed)
-    if unwrap:
-        ops = ops.operations
-    return ops
+    return resolve_dynamic_wires([ops], zeroed=zeroed)[0][0]
 
 
 def _assert_equal(op0, op1):
     """Assert that two operators are equal using :func:`~.assert_equal`, except that mid-circuit
     measurements which differ only by their ``meas_uid`` are considered equal."""
+
+    # strip the meas_uid from the arguments before comparing
     if isinstance(op0, (MidMeasure, PauliMeasure)) and isinstance(op1, type(op0)):
         op0 = type(op0)(**{**op0.arguments, "meas_uid": None})
         op1 = type(op1)(**{**op1.arguments, "meas_uid": None})
-    qp.assert_equal(op0, op1)
+
+    op_funcs.assert_equal(op0, op1)
 
 
 def _assert_equal_ops(ops0, ops1):
     """Assert that two sequences of operators are equal for the purpose of testing."""
-    comment = f"The two operator lists have different lengths, got {len(ops0)} and {len(ops1)}"
-    assert len(ops0) == len(ops1), comment
+    len0, len1 = len(ops0), len(ops1)
+    assert len0 == len1, f"The two lists of ops have different lengths, got {len0} and {len1}"
     for op0, op1 in zip(ops0, ops1, strict=True):
         _assert_equal(op0, op1)
 
@@ -97,35 +118,35 @@ def _check_decomposition_legacy(op, skip_wire_mapping):
         failure_comment = "DecompositionUndefinedError expected if op.has_decomposition is False."
         _assert_error_raised(
             op.decomposition,
-            qp.operation.DecompositionUndefinedError,
+            DecompositionUndefinedError,
             failure_comment=failure_comment,
         )()
         _, args, kwargs = _get_decomp_args(op)
         _assert_error_raised(
             op.compute_decomposition,
-            qp.operation.DecompositionUndefinedError,
+            DecompositionUndefinedError,
             failure_comment=failure_comment,
         )(*args, **kwargs)
         return
 
-    with qp.queuing.AnnotatedQueue() as queued_decomp:
+    with queuing.AnnotatedQueue() as queued_decomp:
         decomp_output = op.decomposition()
 
-    queued_tape = qp.tape.QuantumScript.from_queue(queued_decomp)
+    queued_tape = QuantumScript.from_queue(queued_decomp)
 
     try:
         _, args, kwargs = _get_decomp_args(op)
         compute_decomp_output = type(op).compute_decomposition(*args, **kwargs)
-    except (qp.exceptions.DecompositionUndefinedError, TypeError):
+    except (DecompositionUndefinedError, TypeError):
         # sometimes decomposition is defined but not compute_decomposition
         # Also sometimes compute_decomposition can have a different signature
         compute_decomp_output = None
 
-    assert isinstance(decomp_output, list), "decomposition must be a list"
+    assert isinstance(decomp_output, list), "op.decomposition must return a list"
     if compute_decomp_output is not None:
-        assert isinstance(compute_decomp_output, list), "decomposition must be a list"
+        assert isinstance(compute_decomp_output, list), "op.compute_decomposition must be a list"
 
-    allocations = [op for op in decomp_output if isinstance(op, qp.allocation.Allocate)]
+    allocations = [op for op in decomp_output if isinstance(op, Allocate)]
     if allocations:
         total_work_wires = sum(len(op.wires) for op in allocations)
         decomp_output = _resolve_dynamic_wires(decomp_output, total_work_wires)
@@ -147,11 +168,10 @@ def _check_decomposition_legacy(op, skip_wire_mapping):
         raise AssertionError("decomposition must queue all operators correctly.") from e
 
     if op.has_matrix:
-        decomp_tape = qp.tape.QuantumScript(decomp_output)
         op_matrix = op.matrix()
-        decomp_mat = qp.matrix(decomp_tape, wire_order=op.wires)
+        decomp_mat = op_funcs.matrix(decomp_output, wire_order=op.wires)
         comment = f"The decomposition does not match op.matrix. Got \n{op_matrix}\n\n {decomp_mat}"
-        assert qp.math.allclose(op_matrix, decomp_mat), comment
+        assert math.allclose(op_matrix, decomp_mat), comment
 
     if not skip_wire_mapping:
 
@@ -174,7 +194,7 @@ def _check_decomposition_legacy(op, skip_wire_mapping):
         for mapped_op, orig_op in zip(mapped_decomp, decomp_output, strict=True):
             comment = "Operators in decomposition of wire-mapped operator must have mapped wires."
             # pylint: disable-next=no-member
-            assert mapped_op.wires == qp.map_wires(orig_op, wire_map).wires, comment
+            assert mapped_op.wires == op_funcs.map_wires(orig_op, wire_map).wires, comment
 
 
 def _check_decomposition_new(op, skip_decomp_matrix_check=False):
@@ -187,25 +207,25 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
         err_msg = "resource_params must have the same keys as specified by resource_keys"
         assert set(op.resource_params.keys()) == set(op_type.resource_keys), err_msg
 
-        if op_type.resource_params is qp.operation.Operator.resource_params:
+        if op_type.resource_params is Operator.resource_params:
             err_msg = "resource_params must be defined for operators with decompositions"
-            assert not qp.decomposition.has_decomp(op_type), err_msg
+            assert not has_decomp(op_type), err_msg
 
-    for rule in qp.list_decomps(op):
+    for rule in list_decomps(op):
         _test_decomposition_rule(op, rule, skip_decomp_matrix_check)
 
-    for rule in qp.list_decomps(f"Adjoint({to_name(op)})"):
-        adj_op = qp.adjoint(op)
+    for rule in list_decomps(f"Adjoint({to_name(op)})"):
+        adj_op = ops.adjoint(op)
         _test_decomposition_rule(adj_op, rule, skip_decomp_matrix_check)
 
-    for rule in qp.list_decomps(f"Pow({to_name(op)})"):
+    for rule in list_decomps(f"Pow({to_name(op)})"):
         for z in [2, 3, 4, 8, 9]:
-            pow_op = qp.pow(op, z)
+            pow_op = ops.pow(op, z)
             _test_decomposition_rule(pow_op, rule, skip_decomp_matrix_check)
 
-    for rule in qp.list_decomps(f"C({to_name(op)})"):
+    for rule in list_decomps(f"C({to_name(op)})"):
         for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
-            ctrl = qp.ops.Controlled if isinstance(op, Operator1) else qp.ops.ControlledOp2
+            ctrl = Controlled if isinstance(op, Operator1) else ControlledOp2
             int_wires = [w for w in op.wires if isinstance(w, int)]
             max_wire = max(int_wires) if int_wires else -1
             control_wires = [i + max_wire + 1 for i in range(n_ctrl_wires)]
@@ -216,6 +236,7 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
 
 
 def _assert_counts_match(counts_0, counts_1):
+
     if counts_0 == counts_1:
         return
 
@@ -249,9 +270,9 @@ def _assert_counts_match(counts_0, counts_1):
 
 
 def _decomp_rule_to_tape(rule, args, kwargs):
-    with qp.queuing.AnnotatedQueue() as q:
+    with queuing.AnnotatedQueue() as q:
         rule(*args, **kwargs)
-    return qp.tape.QuantumScript.from_queue(q)
+    return QuantumScript.from_queue(q)
 
 
 def _capture_decomp_rule_to_tape(rule, op):
@@ -265,10 +286,10 @@ def _capture_decomp_rule_to_tape(rule, op):
     else:
         decomposition = partial(rule, **op.static_args, **op.compilable_args)
         capture_args = ()
-        wire_args = {k: qp.math.array(w, like="jax") for k, w in op.wire_args.items()}
+        wire_args = {k: math.array(w, like="jax") for k, w in op.wire_args.items()}
         capture_kwargs = {**op.dynamic_args, **wire_args, **op.hybrid_args}
 
-    plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(*capture_args, **capture_kwargs)
+    plxpr = capture.make_plxpr(decomposition, autograph=False)(*capture_args, **capture_kwargs)
     flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
     return plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
 
@@ -294,7 +315,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
 
     tape = (
         _capture_decomp_rule_to_tape(rule, op)
-        if qp.capture.enabled()
+        if capture.enabled()
         else _decomp_rule_to_tape(rule, args, kwargs)
     )
 
@@ -304,14 +325,14 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
 
     actual_gate_counts = defaultdict(int)
     for _op in tape.operations:
-        if isinstance(_op, qp.ops.Conditional):
+        if isinstance(_op, Conditional):
             _op = _op.base
         op_rep = abstractify(_op)
         actual_gate_counts[op_rep] += 1
     actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
 
     if rule.exact_resources and not (
-        isinstance(op, qp.templates.SubroutineOp) and not op.subroutine.exact_resources
+        isinstance(op, SubroutineOp) and not op.subroutine.exact_resources
     ):
         non_zero_gate_counts = {k: v for k, v in estimated_gate_counts.items() if v > 0}
         _assert_counts_match(non_zero_gate_counts, actual_gate_counts)
@@ -331,13 +352,13 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         work_wires = tape.wires - op.wires
         all_wires = op.wires + work_wires
         if work_wires:
-            op = op @ qp.Projector([0] * len(work_wires), wires=work_wires)
-            tape.operations.insert(0, qp.Projector([0] * len(work_wires), wires=work_wires))
+            op = op @ ops.Projector([0] * len(work_wires), wires=work_wires)
+            tape.operations.insert(0, ops.Projector([0] * len(work_wires), wires=work_wires))
 
         op_matrix = op.matrix(wire_order=all_wires)
-        with qp.capture.pause():
-            decomp_matrix = qp.matrix(tape, wire_order=all_wires)
-        assert qp.math.allclose(
+        with capture.pause():
+            decomp_matrix = op_funcs.matrix(tape, wire_order=all_wires)
+        assert math.allclose(
             op_matrix, decomp_matrix
         ), "decomposition must produce the same matrix as the operator."
 
@@ -346,17 +367,15 @@ def _check_matrix(op):
     """Check that if the operation says it has a matrix, it does. Otherwise a ``MatrixUndefinedError`` should be raised."""
     if op.has_matrix:
         mat = op.matrix()
-        assert isinstance(mat, qp.typing.TensorLike), "matrix must be a TensorLike"
+        assert isinstance(mat, TensorLike), "matrix must be a TensorLike"
         l = 2 ** len(op.wires)
         failure_comment = f"matrix must be two dimensional with shape ({l}, {l})"
-        assert qp.math.shape(mat) == (l, l), failure_comment
+        assert math.shape(mat) == (l, l), failure_comment
     else:
         failure_comment = (
             "If has_matrix is False, the matrix method must raise a ``MatrixUndefinedError``."
         )
-        _assert_error_raised(
-            op.matrix, qp.operation.MatrixUndefinedError, failure_comment=failure_comment
-        )()
+        _assert_error_raised(op.matrix, MatrixUndefinedError, failure_comment=failure_comment)()
 
 
 def _check_sparse_matrix(op):
@@ -366,7 +385,7 @@ def _check_sparse_matrix(op):
         assert isinstance(mat, scipy.sparse.csr_matrix), "matrix must be a TensorLike"
         l = 2 ** len(op.wires)
         failure_comment = f"matrix must be two dimensional with shape ({l}, {l})"
-        assert qp.math.shape(mat) == (l, l), failure_comment
+        assert math.shape(mat) == (l, l), failure_comment
 
         assert isinstance(
             op.sparse_matrix(), scipy.sparse.csr_matrix
@@ -384,7 +403,7 @@ def _check_sparse_matrix(op):
         failure_comment = "If has_sparse_matrix is False, the matrix method must raise a ``SparseMatrixUndefinedError``."
         _assert_error_raised(
             op.sparse_matrix,
-            qp.operation.SparseMatrixUndefinedError,
+            SparseMatrixUndefinedError,
             failure_comment=failure_comment,
         )()
 
@@ -396,7 +415,7 @@ def _check_eigendecomposition(op):
         try:
             _, args, kwargs = _get_decomp_args(op)
             compute_dg = type(op).compute_diagonalizing_gates(*args, **kwargs)
-        except (qp.operation.DiagGatesUndefinedError, TypeError):
+        except (DiagGatesUndefinedError, TypeError):
             # sometimes diagonalizing gates is defined but not compute_diagonalizing_gates
             # compute_diagonalizing_gates might also have a different call signature
             compute_dg = dg
@@ -405,9 +424,7 @@ def _check_eigendecomposition(op):
             assert op1 == op2, "diagonalizing_gates and compute_diagonalizing_gates must match"
     else:
         failure_comment = "If has_diagonalizing_gates is False, diagonalizing_gates must raise a DiagGatesUndefinedError"
-        _assert_error_raised(
-            op.diagonalizing_gates, qp.operation.DiagGatesUndefinedError, failure_comment
-        )()
+        _assert_error_raised(op.diagonalizing_gates, DiagGatesUndefinedError, failure_comment)()
 
     try:
         eg = op.eigvals()
@@ -425,19 +442,19 @@ def _check_eigendecomposition(op):
         has_eigvals = False
 
     if has_eigvals:
-        assert qp.math.allclose(eg, compute_eg), "eigvals and compute_eigvals must match"
+        assert math.allclose(eg, compute_eg), "eigvals and compute_eigvals must match"
 
     if (eg is not None or compute_eg is not None) and op.has_diagonalizing_gates:
         eg = eg if eg is not None else compute_eg
-        dg = qp.prod(*dg[::-1]) if len(dg) > 0 else qp.Identity(op.wires)
-        eg = qp.QubitUnitary(np.diag(eg), wires=op.wires)
-        decomp = qp.prod(qp.adjoint(dg), eg, dg)
+        dg = ops.prod(*dg[::-1]) if len(dg) > 0 else ops.Identity(op.wires)
+        eg = ops.QubitUnitary(np.diag(eg), wires=op.wires)
+        decomp = ops.prod(ops.adjoint(dg), eg, dg)
         # The decomposition's wires may be ordered differently than the operator's wires,
         # so both matrices must be computed in the same wire order.
-        decomp_mat = qp.matrix(decomp, wire_order=op.wires)
-        original_mat = qp.matrix(op, wire_order=op.wires)
+        decomp_mat = op_funcs.matrix(decomp, wire_order=op.wires)
+        original_mat = op_funcs.matrix(op, wire_order=op.wires)
         failure_comment = f"eigenvalues and diagonalizing gates must be able to reproduce the original operator. Got \n{decomp_mat}\n\n{original_mat}"
-        assert qp.math.allclose(decomp_mat, original_mat), failure_comment
+        assert math.allclose(decomp_mat, original_mat), failure_comment
 
 
 def _check_generator(op):
@@ -445,29 +462,29 @@ def _check_generator(op):
 
     if op.has_generator:
         gen = op.generator()
-        assert isinstance(gen, qp.operation.Operator)
-        new_op = qp.exp(gen, 1j * op.data[0])
-        assert qp.math.allclose(
-            qp.matrix(op, wire_order=op.wires), qp.matrix(new_op, wire_order=op.wires)
+        assert isinstance(gen, Operator)
+        new_op = ops.exp(gen, 1j * op.data[0])
+        assert math.allclose(
+            op_funcs.matrix(op, wire_order=op.wires), op_funcs.matrix(new_op, wire_order=op.wires)
         )
     else:
         failure_comment = (
             "If has_generator is False, the matrix method must raise a ``GeneratorUndefinedError``."
         )
         _assert_error_raised(
-            op.generator, qp.operation.GeneratorUndefinedError, failure_comment=failure_comment
+            op.generator, GeneratorUndefinedError, failure_comment=failure_comment
         )()
 
 
 def _check_copy(op, skip_deepcopy):
     """Check that copies and deep copies give identical objects."""
     copied_op = copy.copy(op)
-    assert qp.equal(copied_op, op), "copied op must be equal with qp.equal"
+    assert op_funcs.equal(copied_op, op), "copied op must be equal with equal"
     assert copied_op == op, "copied op must be equivalent to original operation"
     assert copied_op is not op, "copied op must be a separate instance from original operation"
     if not skip_deepcopy:
         try:
-            assert_equal(copy.deepcopy(op), op)
+            op_funcs.assert_equal(copy.deepcopy(op), op)
         except AssertionError as e:
             raise AssertionError("deep copied op must also be equal") from e
 
@@ -495,7 +512,7 @@ def _check_pytree(op):
         raise AssertionError(message) from e
 
     try:
-        assert_equal(op, new_op)
+        op_funcs.assert_equal(op, new_op)
     except AssertionError as e:
         raise AssertionError(
             "metadata and data must be able to reproduce the original operation"
@@ -505,8 +522,8 @@ def _check_pytree(op):
     unflattened = jax.tree_util.tree_unflatten(struct, leaves)
     assert unflattened == op, f"op must be a valid pytree. Got {unflattened} instead of {op}."
 
-    leaves, struct = qp.pytrees.flatten(op)
-    unflattened = qp.pytrees.unflatten(leaves, struct)
+    leaves, struct = pytrees.flatten(op)
+    unflattened = pytrees.unflatten(leaves, struct)
     assert unflattened == op, f"op must be a valid pytree. Got {unflattened} instead of {op}."
 
     if isinstance(op, Operator1):
@@ -516,21 +533,21 @@ def _check_pytree(op):
         # intentionally omit some nested parameters (for example, ``Evolution`` excludes its
         # generator's parameters), but every exposed parameter must still occur in pytree order.
         def nested_pl_object(obj):
-            return obj is not op and isinstance(obj, (Operator, qp.measurements.MeasurementProcess))
+            return obj is not op and isinstance(obj, (Operator, MeasurementProcess))
 
-        legacy_leaves, _ = flatten(op, is_leaf=nested_pl_object)
+        legacy_leaves, _ = pytrees.flatten(op, is_leaf=nested_pl_object)
         ordered_data = []
         for leaf in legacy_leaves:
             if isinstance(leaf, Operator1):
                 ordered_data.extend(leaf.data)
             elif isinstance(leaf, Operator2):
                 ordered_data.extend(leaf.dynamic_args.values())
-            elif not isinstance(leaf, qp.measurements.MeasurementProcess):
+            elif not isinstance(leaf, MeasurementProcess):
                 ordered_data.append(leaf)
 
         ordered_data = iter(ordered_data)
         for data_item in op.data:
-            if not any(qp.math.allclose(data_item, leaf) for leaf in ordered_data):
+            if not any(math.allclose(data_item, leaf) for leaf in ordered_data):
                 raise AssertionError(
                     "data must be the terminal leaves of the pytree in the same order. "
                     f"Could not find {data_item} in the remaining leaves."
@@ -553,11 +570,11 @@ def _check_capture(op):
 
     jaxpr = jax.make_jaxpr(test_fn)(*data)
     new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
-    assert_equal(op, new_op)
+    op_funcs.assert_equal(op, new_op)
 
     leaves = jax.tree_util.tree_leaves(jaxpr.eqns[-1].params)
     error_msg = "capture params cannot contain tracers"
-    assert not any(qp.math.is_abstract(l) for l in leaves), error_msg
+    assert not any(math.is_abstract(l) for l in leaves), error_msg
 
 
 def _check_pickle(op):
@@ -570,21 +587,21 @@ def _check_pickle(op):
 def _check_bind_new_parameters(op):
     """Check that bind new parameters can create a new op with different data."""
     new_data = [d * 0.0 for d in op.data]
-    new_data_op = qp.ops.functions.bind_new_parameters(op, new_data)
+    new_data_op = op_funcs.bind_new_parameters(op, new_data)
     failure_comment = "bind_new_parameters must be able to update the operator with new data."
     for d1, d2 in zip(new_data_op.data, new_data, strict=True):
-        assert qp.math.allclose(d1, d2), failure_comment
+        assert math.allclose(d1, d2), failure_comment
 
 
 def _check_bind_new_parameters_op2(op):
     """Check that bind new parameters can create a new op with different bound arguments."""
     dyn_args = op.base.dynamic_args if isinstance(op, SymbolicOp2) else op.dynamic_args
     new_dyn_args = {k: math.cast_like(v * 0.0, v) for k, v in dyn_args.items()}
-    new_data_op = qp.ops.functions.bind_new_parameters(op, tuple(new_dyn_args.values()))
+    new_data_op = op_funcs.bind_new_parameters(op, tuple(new_dyn_args.values()))
     failure_comment = "bind_new_parameters must be able to update the operator2 with new arguments."
     for name, val in new_dyn_args.items():
         op_to_check = new_data_op.base if isinstance(new_data_op, SymbolicOp2) else new_data_op
-        assert qp.math.allclose(op_to_check.arguments[name], val), failure_comment
+        assert math.allclose(op_to_check.arguments[name], val), failure_comment
 
 
 def _check_bind_new_parameters_symbolicop2(op):
@@ -594,12 +611,12 @@ def _check_bind_new_parameters_symbolicop2(op):
         for k, v in op.base.arguments.items()
         if k in op.base.dynamic_argnames
     }
-    new_data_op = qp.ops.functions.bind_new_parameters(op, new_dyn_args.values())
+    new_data_op = op_funcs.bind_new_parameters(op, new_dyn_args.values())
     failure_comment = (
         "bind_new_parameters must be able to update the symbolicop2 with new arguments."
     )
     for name, val in new_dyn_args.items():
-        assert qp.math.allclose(new_data_op.base.arguments[name], val), failure_comment
+        assert math.allclose(new_data_op.base.arguments[name], val), failure_comment
 
 
 def _check_differentiation(op):
@@ -608,19 +625,19 @@ def _check_differentiation(op):
     if op.num_params == 0:
         return
 
-    data, struct = qp.pytrees.flatten(op)
+    data, struct = pytrees.flatten(op)
 
     def circuit(*args):
-        qp.apply(qp.pytrees.unflatten(args, struct))
-        return qp.probs(wires=op.wires)
+        apply(pytrees.unflatten(args, struct))
+        return probs(wires=op.wires)
 
-    qnode_ref = qp.QNode(circuit, qp.device("default.qubit"), diff_method="backprop")
-    qnode_ps = qp.QNode(circuit, qp.device("default.qubit"), diff_method="parameter-shift")
+    qnode_ref = QNode(circuit, device("default.qubit"), diff_method="backprop")
+    qnode_ps = QNode(circuit, device("default.qubit"), diff_method="parameter-shift")
 
-    params = [x if isinstance(x, int) else qp.numpy.array(x) for x in data]
+    params = [x if isinstance(x, int) else pnp.array(x) for x in data]
 
-    ps = qp.jacobian(qnode_ps)(*params)
-    expected_bp = qp.jacobian(qnode_ref)(*params)
+    ps = jacobian(qnode_ps)(*params)
+    expected_bp = jacobian(qnode_ref)(*params)
 
     error_msg = (
         "Parameter-shift does not produce the same Jacobian as with backpropagation. "
@@ -630,25 +647,25 @@ def _check_differentiation(op):
 
     if isinstance(ps, tuple):
         for actual, expected in zip(ps, expected_bp, strict=True):
-            assert qp.math.allclose(actual, expected), error_msg
+            assert math.allclose(actual, expected), error_msg
     else:
-        assert qp.math.allclose(ps, expected_bp), error_msg
+        assert math.allclose(ps, expected_bp), error_msg
 
 
 def _check_wires(op, skip_wire_mapping):
     """Check that wires are a ``Wires`` class and can be mapped."""
-    assert isinstance(op.wires, qp.wires.Wires), "wires must be a wires instance"
+    assert isinstance(op.wires, Wires), "wires must be a wires instance"
     if skip_wire_mapping:
         return
     wire_map = {w: i + 10 * len(op.wires) for i, w in enumerate(op.wires)}
     mapped_op = op.map_wires(wire_map)
-    new_wires = qp.wires.Wires([i + 10 * len(op.wires) for i in range(len(op.wires))])
+    new_wires = Wires([i + 10 * len(op.wires) for i in range(len(op.wires))])
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
 # pylint: disable=too-many-arguments
 def _assert_valid_operator2(
-    op: qp.core.Operator2,
+    op: Operator2,
     skip_deepcopy=False,
     skip_differentiation=False,
     skip_new_decomp=False,
@@ -684,11 +701,11 @@ def _assert_valid_operator2(
     assert isinstance(op.wire_argnames, tuple), "wire_argnames must be a tuple"
     assert isinstance(op.static_argnames, tuple), "static_argnames must be a tuple"
     assert isinstance(op.dynamic_argnames, tuple), "dynamic_argnames must be a tuple"
-    assert_equal(type(op)(**op.arguments), op)
+    op_funcs.assert_equal(type(op)(**op.arguments), op)
 
     # check abstractify
     abstractified_op = abstractify(op)
-    leaves, _ = flatten(abstractified_op, lambda l: isinstance(l, Wires))
+    leaves, _ = pytrees.flatten(abstractified_op, lambda l: isinstance(l, Wires))
     for l in leaves:
         if not isinstance(l, (AbstractArray, AbstractWires, CompressedResourceOp)):
             raise AssertionError(
@@ -698,10 +715,6 @@ def _assert_valid_operator2(
     # Some operators (e.g. composites and ``Select``) hold their data inside operator-valued
     # arguments rather than dynamic arguments, so their ``data`` does not correspond to
     # ``dynamic_argnames`` and this check does not apply.
-    # pylint: disable=import-outside-toplevel
-    from pennylane.templates.subroutines.qsvt import QSVT
-    from pennylane.templates.subroutines.select import Select
-
     if not isinstance(op, (Adjoint2, CompositeOp2, ControlledOp2, Pow2, Select, QSVT)):
 
         error_msg = "ndim_params must have the same length as dynamic_argnames"
@@ -710,7 +723,7 @@ def _assert_valid_operator2(
         for (name, val), dim in zip(op.dynamic_args.items(), op.ndim_params, strict=True):
             # make sure that the bound args are not outside the allowed dimensions
             error_msg = f"shape of {name} is not equal to dimension in ndim_params"
-            assert len(qp.math.shape(val)) == dim, error_msg
+            assert len(math.shape(val)) == dim, error_msg
 
     for (name, val), dim in zip(op.wire_args.items(), op.wire_sizes, strict=True):
         # make sure wires have the right sizes
@@ -719,7 +732,7 @@ def _assert_valid_operator2(
             assert dim is None or len(val) == dim, error_msg
 
     for name, val in op.hybrid_args.items():
-        leaves, _ = flatten(val, is_leaf=lambda l: isinstance(l, Operator))
+        leaves, _ = pytrees.flatten(val, is_leaf=lambda l: isinstance(l, Operator))
         for leaf in leaves:
             if isinstance(leaf, Operator):
                 assert_valid(
@@ -735,7 +748,7 @@ def _assert_valid_operator2(
                 )
 
     if not skip_bind_new_parameters:
-        if isinstance(op, qp.ops.op_math.symbolicop2.SymbolicOp2):
+        if isinstance(op, SymbolicOp2):
             _check_bind_new_parameters_symbolicop2(op)
         else:
             _check_bind_new_parameters_op2(op)
@@ -743,7 +756,7 @@ def _assert_valid_operator2(
 
 # pylint: disable=too-many-arguments
 def assert_valid(
-    op: qp.core.Operator,
+    op: Operator,
     *,
     skip_deepcopy=False,
     skip_differentiation=False,
@@ -778,13 +791,13 @@ def assert_valid(
 
     .. code-block:: python
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(Operator):
 
             def __init__(self, data, wires):
                 self._data = data
                 super().__init__(wires=wires)
 
-        op = MyOp(qp.numpy.array(0.5), wires=0)
+        op = MyOp(pnp.array(0.5), wires=0)
 
     >>> assert_valid(op)
     Traceback (most recent call last):
@@ -794,7 +807,7 @@ def assert_valid(
 
     .. code-block:: python
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(Operator):
 
             def __init__(self, wires):
                 self.hyperparameters["unhashable_list"] = []
@@ -808,7 +821,7 @@ def assert_valid(
     AssertionError: metadata output from _flatten must be hashable. Got metadata (Wires([0]), (('unhashable_list', []),))
 
     """
-    if isinstance(op, qp.core.Operator2):
+    if isinstance(op, Operator2):
         _assert_valid_operator2(
             op,
             skip_deepcopy,
@@ -825,8 +838,8 @@ def assert_valid(
         assert isinstance(op.parameters, list), "op.parameters must be a list"
 
         for d, p in zip(op.data, op.parameters, strict=True):
-            assert isinstance(d, qp.typing.TensorLike), "each data element must be tensorlike"
-            assert qp.math.allclose(d, p), "data and parameters must match."
+            assert isinstance(d, TensorLike), "each data element must be tensorlike"
+            assert math.allclose(d, p), "data and parameters must match."
 
         if not skip_bind_new_parameters:
             _check_bind_new_parameters(op)
@@ -848,5 +861,5 @@ def assert_valid(
     _check_generator(op)
     if not skip_differentiation and not capture.enabled():
         _check_differentiation(op)
-    if qp.capture.enabled():
+    if capture.enabled():
         _check_capture(op)
