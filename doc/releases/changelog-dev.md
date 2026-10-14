@@ -851,6 +851,18 @@
   resource operators from their quantum functions.
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
+* Added :func:`~.labs.tcdq.shot_resources`, which returns a resource operator for one
+  computational-basis shot of the circuit described by a :class:`~.labs.tcdq.CircuitConfig` or
+  :class:`~.labs.tcdq.QuditCircuitConfig`, to be priced with
+  :func:`~.labs.estimator_beta.estimate`. It is built from the new resource operators
+  :class:`~.labs.estimator_beta.templates.IQPSamplingShot`,
+  :class:`~.labs.estimator_beta.templates.QuditSamplingShot`,
+  :class:`~.labs.estimator_beta.templates.ParityPhaseLayer` and
+  :class:`~.labs.estimator_beta.templates.QuditFourierTransform`. A trainable phase layer is
+  priced through the ``phase_op`` argument, e.g. with the new
+  :class:`~.labs.estimator_beta.templates.SumPhaseLayer` for phase functions of the digit sum.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 <h3>Breaking changes 💔</h3>
 
 * :class:`~.GlobalPhase` no longer accepts the `wires` argument in order to mirror its MLIR lowered operation.

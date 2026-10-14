@@ -40,3 +40,13 @@ from .state_prep import (
     LabsMottonenStatePreparation,
     LabsSumOfSlatersPrep,
 )
+
+from .tcdq_sampling import (
+    IQPSamplingShot,
+    ParityPhaseLayer,
+    QuditFourierTransform,
+    QuditSamplingShot,
+    SumPhaseLayer,
+    iqp_parity_weights_from_gates,
+    qudit_parity_weights_from_gates,
+)

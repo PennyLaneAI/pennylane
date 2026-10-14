@@ -61,6 +61,22 @@ State Preparation
     ~LabsCosineWindow
     ~LabsSumOfSlatersPrep
 
+TCDQ Sampling
+~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.estimator_beta.templates
+
+.. autosummary::
+    :toctree: api
+
+    ~IQPSamplingShot
+    ~QuditSamplingShot
+    ~ParityPhaseLayer
+    ~QuditFourierTransform
+    ~SumPhaseLayer
+    ~iqp_parity_weights_from_gates
+    ~qudit_parity_weights_from_gates
+
 Alternate Decompositions
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -129,6 +145,15 @@ from .resource_config import LabsResourceConfig
 from .templates import LabsCosineWindow
 from .templates import LabsMottonenStatePreparation
 from .templates import LabsSumOfSlatersPrep
+from .templates import (
+    IQPSamplingShot,
+    ParityPhaseLayer,
+    QuditFourierTransform,
+    QuditSamplingShot,
+    SumPhaseLayer,
+    iqp_parity_weights_from_gates,
+    qudit_parity_weights_from_gates,
+)
 
 from .templates import (
     SelectCopyQROM,
