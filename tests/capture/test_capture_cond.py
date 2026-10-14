@@ -664,7 +664,8 @@ class TestCondOperatorInstances:
             qp.cond(pred, lambda: None, lambda: None, elifs=((False, qp.Y(0)),))
 
         with pytest.raises(
-            ValueError, match="Cannot provide Operator elif_fn .* with callable true_fn"
+            ValueError,
+            match="Cannot provide an Operator as elif_fn if true_fn is a callable",
         ):
             jax.make_jaxpr(f)(True)
 
@@ -693,7 +694,8 @@ class TestCondOperatorInstances:
             qp.cond(pred, lambda: None, lambda: None, elifs=((False, OldOp(wires=0)),))
 
         with pytest.raises(
-            ValueError, match="Cannot provide Operator elif_fn .* with callable true_fn"
+            ValueError,
+            match="Cannot provide an Operator as elif_fn if true_fn is a callable",
         ):
             jax.make_jaxpr(f)(True)
 

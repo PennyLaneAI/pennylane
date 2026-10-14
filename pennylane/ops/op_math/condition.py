@@ -448,7 +448,9 @@ def _capture_dispatch(condition, true_fn, false_fn, elifs):
 
     for _, elif_fn in elifs:
         if _is_operator(elif_fn):
-            raise ValueError(f"Cannot provide Operator elif_fn {elif_fn} with callable true_fn.")
+            raise ValueError(
+                f"Cannot provide an Operator as elif_fn if true_fn is a callable. Got {elif_fn}"
+            )
 
     return CondCallable(condition, true_fn, false_fn, elifs)
 
