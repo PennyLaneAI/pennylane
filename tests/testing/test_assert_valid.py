@@ -18,7 +18,6 @@ This module contains unit tests for ``qp.testing.assert_valid``.
 # pylint: disable=too-few-public-methods,unused-argument
 
 import copy
-import importlib
 from pickle import PicklingError
 
 import numpy as np
@@ -28,11 +27,11 @@ import scipy.sparse
 import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.core.operator import Operator
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.testing.operators import (
     _check_bind_new_parameters_op2,
     _check_eigendecomposition,
     _check_pytree,
-    _test_decomposition_rule,
     assert_valid,
 )
 from pennylane.typing import Wire
@@ -51,7 +50,7 @@ class TestDecompositionErrors:
             def compute_decomposition(wires):
                 qp.RX(1.2, wires=0)
 
-        with pytest.raises(AssertionError, match=r"decomposition must be a list"):
+        with pytest.raises(AssertionError, match=r"op.decomposition must return a list"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
     def test_bad_decomposition_lengths(self):
@@ -316,7 +315,7 @@ class TestDecompositionErrors:
 
         rule = qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1})(mcm_rule)
 
-        spy = mocker.spy(qp.testing.operators, "matrix")
+        spy = mocker.spy(qp.ops.functions, "matrix")
         _test_decomposition_rule(op, rule)
         spy.assert_not_called()
 
@@ -710,7 +709,7 @@ class TestOperator2AssertValid:
             def compute_decomposition(phi, wires):
                 qp.RX(phi, wires=wires[0])  # queues but returns ``None``
 
-        with pytest.raises(AssertionError, match=r"decomposition must be a list"):
+        with pytest.raises(AssertionError, match=r"op.decomposition must return a list"):
             assert_valid(BadDecomp(1.2, wires=0), skip_pickle=True)
 
     def test_check_matrix(self):

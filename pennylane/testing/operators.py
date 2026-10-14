@@ -18,20 +18,19 @@ This module contains ``assert_valid``, which checks that an operator is correctl
 import copy
 import itertools
 import pickle
-from collections import defaultdict
-from functools import partial
 
 import jax
 import numpy as np
-import scipy.sparse
+import scipy.sparse as sp
 
-from pennylane import capture, decomposition, math, ops, pytrees
+from pennylane import capture, math
+from pennylane import numpy as pnp
+from pennylane import ops, pytrees
 from pennylane._grad import jacobian
 from pennylane.allocation import Allocate
 from pennylane.core import apply, queuing
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import has_decomp, list_decomps
-from pennylane.decomposition.decomposition_rule import DecompositionRule, _decomp_contains_mcm
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args, to_name
 from pennylane.devices import device
@@ -49,22 +48,19 @@ from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
 from pennylane.ops.op_math import (
     Adjoint2,
     CompositeOp2,
-    Conditional,
     Controlled,
     ControlledOp2,
     Pow2,
     SymbolicOp2,
 )
 from pennylane.tape import QuantumScript
-from pennylane.templates.core import SubroutineOp
 from pennylane.templates.subroutines.qsvt import QSVT
 from pennylane.templates.subroutines.select import Select
-from pennylane.transforms import resolve_dynamic_wires
 from pennylane.typing import AbstractArray, AbstractWires, TensorLike
 from pennylane.wires import Wires
 from pennylane.workflow import QNode
 
-from .capture import plxpr_to_tape
+from .decompositions import _resolve_dynamic_wires, _test_decomposition_rule
 
 
 def _assert_error_raised(func, expected_error_type, failure_comment):
@@ -77,17 +73,6 @@ def _assert_error_raised(func, expected_error_type, failure_comment):
         raise AssertionError(failure_comment)
 
     return inner_func
-
-
-def _resolve_dynamic_wires(ops, num_zeroed):
-    """Apply the transform resolve_dynamic_wires to a list of operations or tape."""
-
-    if not isinstance(ops, QuantumScript):
-        tape = QuantumScript(ops)
-        return _resolve_dynamic_wires(tape, num_zeroed).operations
-
-    zeroed = range(len(ops.wires), len(ops.wires) + num_zeroed)
-    return resolve_dynamic_wires([ops], zeroed=zeroed)[0][0]
 
 
 def _assert_equal(op0, op1):
@@ -115,17 +100,16 @@ def _check_decomposition_legacy(op, skip_wire_mapping):
     """Checks involving the decomposition."""
 
     if not op.has_decomposition:
-        failure_comment = "DecompositionUndefinedError expected if op.has_decomposition is False."
         _assert_error_raised(
             op.decomposition,
             DecompositionUndefinedError,
-            failure_comment=failure_comment,
+            "DecompositionUndefinedError expected if op.has_decomposition is False.",
         )()
         _, args, kwargs = _get_decomp_args(op)
         _assert_error_raised(
             op.compute_decomposition,
             DecompositionUndefinedError,
-            failure_comment=failure_comment,
+            "DecompositionUndefinedError expected if op.has_decomposition is False.",
         )(*args, **kwargs)
         return
 
@@ -235,181 +219,53 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
             _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check)
 
 
-def _assert_counts_match(counts_0, counts_1):
-
-    if counts_0 == counts_1:
-        return
-
-    miscounts = [
-        (op, val, counts_0[op])
-        for op, val in counts_1.items()
-        if op in counts_0 and val != counts_0[op]
-    ]
-    if miscounts:
-        op_len = max([8] + [len(str(op)) for op, *_ in miscounts])
-        miscounts_str = (
-            f"\nThe numbers are off for following ops:"
-            f"\n{'Operator'.rjust(op_len)} : Actual  !=  Resource function\n"
-        )
-        miscounts_str += "\n".join(
-            f"{str(op).rjust(op_len)} : {str(val0).rjust(6)}  !=  {val1}"
-            for op, val0, val1 in miscounts
-        )
-    else:
-        miscounts_str = ""
-    assertion_error_string = (
-        f"\nGate counts expected from resource function:\n{counts_0}"
-        f"\nActual gate counts:\n{dict(counts_1)}"
-        f"{miscounts_str}"
-        "\nMissing entirely in gate counts from resource function:\n"
-        f"{[op for op in counts_1 if op not in counts_0]}\n"
-        "Missing entirely in actual gate counts:\n"
-        f"{[op for op in counts_0 if op not in counts_1]}"
-    )
-    raise AssertionError(assertion_error_string)
-
-
-def _decomp_rule_to_tape(rule, args, kwargs):
-    with queuing.AnnotatedQueue() as q:
-        rule(*args, **kwargs)
-    return QuantumScript.from_queue(q)
-
-
-def _capture_decomp_rule_to_tape(rule, op):
-
-    # Match each operator model's capture boundary: legacy hyperparameters remain
-    # closed over, while Operator2 exposes its dynamic, wire, and hybrid arguments.
-    if isinstance(op, Operator1):
-        decomposition = partial(rule, **op.hyperparameters)
-        capture_args = op.data
-        capture_kwargs = {"wires": op.wires}
-    else:
-        decomposition = partial(rule, **op.static_args, **op.compilable_args)
-        capture_args = ()
-        wire_args = {k: math.array(w, like="jax") for k, w in op.wire_args.items()}
-        capture_kwargs = {**op.dynamic_args, **wire_args, **op.hybrid_args}
-
-    plxpr = capture.make_plxpr(decomposition, autograph=False)(*capture_args, **capture_kwargs)
-    flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
-    return plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
-
-
-def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
-    """Tests that a decomposition rule is consistent with the operator."""
-
-    params, args, kwargs = _get_decomp_args(op)
-
-    if not rule.is_applicable(**params):
-        return
-
-    # Test that the resource function is correct
-    resources = rule.compute_resources(**params)
-    estimated_gate_counts = resources.gate_counts
-
-    # Make sure all counts are int
-    for gate, count in estimated_gate_counts.items():
-        assert isinstance(count, int), (
-            f"Resource count for '{gate}' in '{op.name}' decomp rule '{rule.name}' must be an integer, "
-            f"but got {type(count)} ({count}). "
-        )
-
-    tape = (
-        _capture_decomp_rule_to_tape(rule, op)
-        if capture.enabled()
-        else _decomp_rule_to_tape(rule, args, kwargs)
-    )
-
-    total_work_wires = rule.get_work_wire_spec(**params).total
-    if total_work_wires:
-        tape = _resolve_dynamic_wires(tape, total_work_wires)
-
-    actual_gate_counts = defaultdict(int)
-    for _op in tape.operations:
-        if isinstance(_op, Conditional):
-            _op = _op.base
-        op_rep = abstractify(_op)
-        actual_gate_counts[op_rep] += 1
-    actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
-
-    if rule.exact_resources and not (
-        isinstance(op, SubroutineOp) and not op.subroutine.exact_resources
-    ):
-        non_zero_gate_counts = {k: v for k, v in estimated_gate_counts.items() if v > 0}
-        _assert_counts_match(non_zero_gate_counts, actual_gate_counts)
-    else:
-        # If the resource estimate is not expected to match exactly to the actual
-        # decomposition, at least make sure that all gates are accounted for.
-        assert all(op in estimated_gate_counts for op in actual_gate_counts), (
-            "\nGate counts expected from resource function to contain actual gates:\n"
-            f"{list(estimated_gate_counts.keys())}\nActual gates:\n{list(actual_gate_counts.keys())}\n"
-            "Missing in gate counts from resource function:\n"
-            f"{[op for op in actual_gate_counts if op not in estimated_gate_counts]}"
-        )
-
-    # Tests that the decomposition produces the same matrix
-    if op.has_matrix and not skip_decomp_matrix_check and not _decomp_contains_mcm(rule, params):
-        # Add projector to the additional wires (work wires) on the tape
-        work_wires = tape.wires - op.wires
-        all_wires = op.wires + work_wires
-        if work_wires:
-            op = op @ ops.Projector([0] * len(work_wires), wires=work_wires)
-            tape.operations.insert(0, ops.Projector([0] * len(work_wires), wires=work_wires))
-
-        op_matrix = op.matrix(wire_order=all_wires)
-        with capture.pause():
-            decomp_matrix = op_funcs.matrix(tape, wire_order=all_wires)
-        assert math.allclose(
-            op_matrix, decomp_matrix
-        ), "decomposition must produce the same matrix as the operator."
-
-
 def _check_matrix(op):
     """Check that if the operation says it has a matrix, it does. Otherwise a ``MatrixUndefinedError`` should be raised."""
-    if op.has_matrix:
-        mat = op.matrix()
-        assert isinstance(mat, TensorLike), "matrix must be a TensorLike"
-        l = 2 ** len(op.wires)
-        failure_comment = f"matrix must be two dimensional with shape ({l}, {l})"
-        assert math.shape(mat) == (l, l), failure_comment
-    else:
-        failure_comment = (
-            "If has_matrix is False, the matrix method must raise a ``MatrixUndefinedError``."
-        )
-        _assert_error_raised(op.matrix, MatrixUndefinedError, failure_comment=failure_comment)()
+
+    if not op.has_matrix:
+        _assert_error_raised(
+            op.matrix,
+            MatrixUndefinedError,
+            "MatrixUndefinedError expected if op.has_matrix is False.",
+        )()
+        return
+
+    mat = op.matrix()
+    assert isinstance(mat, TensorLike), "matrix must be a TensorLike"
+    l = 2 ** len(op.wires)
+    failure_comment = f"matrix must be two dimensional with shape ({l}, {l})"
+    assert math.shape(mat) == (l, l), failure_comment
 
 
 def _check_sparse_matrix(op):
     """Check that if the operation says it has a sparse matrix, it does. Otherwise a ``SparseMatrixUndefinedError`` should be raised."""
-    if op.has_sparse_matrix:
-        mat = op.sparse_matrix()
-        assert isinstance(mat, scipy.sparse.csr_matrix), "matrix must be a TensorLike"
-        l = 2 ** len(op.wires)
-        failure_comment = f"matrix must be two dimensional with shape ({l}, {l})"
-        assert math.shape(mat) == (l, l), failure_comment
 
-        assert isinstance(
-            op.sparse_matrix(), scipy.sparse.csr_matrix
-        ), "sparse matrix should default to csr format"
-        assert isinstance(
-            op.sparse_matrix(format="csc"), scipy.sparse.csc_matrix
-        ), "sparse matrix should be formatted as csc"
-        assert isinstance(
-            op.sparse_matrix(format="lil"), scipy.sparse.lil_matrix
-        ), "sparse matrix should be formatted as lil"
-        assert isinstance(
-            op.sparse_matrix(format="coo"), scipy.sparse.coo_matrix
-        ), "sparse matrix should be formatted as coo"
-    else:
-        failure_comment = "If has_sparse_matrix is False, the matrix method must raise a ``SparseMatrixUndefinedError``."
+    if not op.has_sparse_matrix:
         _assert_error_raised(
             op.sparse_matrix,
             SparseMatrixUndefinedError,
-            failure_comment=failure_comment,
+            "SparseMatrixUndefinedError expected if op.has_sparse_matrix is False.",
         )()
+        return
+
+    mat = op.sparse_matrix()
+    assert isinstance(mat, sp.csr_matrix), "op.sparse_matrix() must be a sparse matrix"
+    l = 2 ** len(op.wires)
+    failure_comment = f"matrix must be two dimensional with shape ({l}, {l})"
+    assert math.shape(mat) == (l, l), failure_comment
+    default_mat = op.sparse_matrix()
+    assert isinstance(default_mat, sp.csr_matrix), "sparse matrix should default to csr format"
+    csc_mat = op.sparse_matrix(format="csc")
+    assert isinstance(csc_mat, sp.csc_matrix), "sparse matrix should be formatted as csc"
+    lil_mat = op.sparse_matrix(format="lil")
+    assert isinstance(lil_mat, sp.lil_matrix), "sparse matrix should be formatted as lil"
+    coo_mat = op.sparse_matrix(format="coo")
+    assert isinstance(coo_mat, sp.coo_matrix), "sparse matrix should be formatted as coo"
 
 
 def _check_eigendecomposition(op):
     """Checks involving diagonalizing gates and eigenvalues."""
+
     if op.has_diagonalizing_gates:
         dg = op.diagonalizing_gates()
         try:
@@ -423,8 +279,11 @@ def _check_eigendecomposition(op):
         for op1, op2 in zip(dg, compute_dg, strict=True):
             assert op1 == op2, "diagonalizing_gates and compute_diagonalizing_gates must match"
     else:
-        failure_comment = "If has_diagonalizing_gates is False, diagonalizing_gates must raise a DiagGatesUndefinedError"
-        _assert_error_raised(op.diagonalizing_gates, DiagGatesUndefinedError, failure_comment)()
+        _assert_error_raised(
+            op.diagonalizing_gates,
+            DiagGatesUndefinedError,
+            "DiagGatesUndefinedError expected if op.has_diagonalizing_gates is False.",
+        )()
 
     try:
         eg = op.eigvals()
