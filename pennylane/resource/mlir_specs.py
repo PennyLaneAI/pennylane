@@ -143,7 +143,7 @@ def resources_from_analysis_pass(
             new_compile_pipeline += transform(pass_name="resource-analysis")(
                 output_json=True, output_fname=fname
             )
-        
+
         for i, comp_pass in enumerate(iter_pipeline, start=1):
             if i > max_level:
                 break
@@ -161,12 +161,6 @@ def resources_from_analysis_pass(
                 if is_estimate:
                     new_compile_pipeline[-1].kwargs['output_json'] = True
                     new_compile_pipeline[-1].kwargs['output_fname'] = fname
-                    # resource_analysis_kwargs = kwargs.get('estimate', {})
-                    # resource_analysis_kwargs['output_json'] = True
-                    # resource_analysis_kwargs['output_fname'] = fname
-                    # new_compile_pipeline = CompilePipeline(transform(pass_name="resource-analysis")(**resource_analysis_kwargs))
-                    # new_compile_pipeline += transform(pass_name="resource-analysis")(**resource_analysis_kwargs)
-                    # kwargs.pop('estimate')
                 else:
                     new_compile_pipeline += transform(pass_name="resource-analysis")(
                         output_json=True, output_fname=fname

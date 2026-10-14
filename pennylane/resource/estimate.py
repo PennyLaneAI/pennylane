@@ -56,12 +56,9 @@ def _estimate_qjit(qjit, level, target, *args, **kwargs) -> CircuitSpecs:
     # At level="top", the user transforms are skipped and only the decomposition is applied
     estimate_qnode = copy.copy(original_qnode)
     decompose_args = decompose(gate_set=target)
-    # temp = CompilePipeline(decompose(gate_set=target))
-    # estimate_qnode._compile_pipeline = temp
     resource_analysis_transform = transform(pass_name="resource-analysis")(**decompose_args.kwargs)
     estimate_qnode._compile_pipeline = CompilePipeline(resource_analysis_transform)    
     resources = resources_from_analysis_pass(qjit, estimate_qnode, 1, {}, {}, True, *args, **kwargs)
-    # resources = resources_from_analysis_pass(qjit, estimate_qnode, 1, {}, {}, False, *args, **kwargs)
 
     return build_circuit_specs(original_qnode, next(iter(resources.values())), level)
 
