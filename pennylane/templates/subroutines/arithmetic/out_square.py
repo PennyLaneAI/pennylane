@@ -188,7 +188,7 @@ class OutSquare(_SquareArithmeticOp):
 
             dev = qp.device("lightning.qubit", wires=20, seed=295)
 
-            @qp.decompose(max_expansion=1) # To see resources easily
+            @qp.transforms._tape_decompose(max_expansion=1) # To see resources easily
             @qp.qnode(dev, shots=1_000)
             def circuit(zeroed):
                 qp.BasisState(qp.math.int_to_binary(13, len(x_wires)), wires=x_wires)
