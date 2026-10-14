@@ -2008,9 +2008,9 @@ def pop_op_eqns(ops: Iterable):
             # NOTE: Check from the end of the list as symbolic operators
             # consume its base immediately after the base was traced so the entry to be dropped
             # is at or very near the tail of the equation list
-            for i in reversed(range(len(eqns))):
-                if eqns[i]() is eqn:
-                    del eqns[i]
+            for i, iter_eqn in enumerate(reversed(eqns)):
+                if iter_eqn() is eqn:
+                    del eqns[-1-i]
                     break
 
             # delete reference to tracer after its equation has been deleted
