@@ -1319,18 +1319,24 @@ class TestCondBranchProbHintsCapture:
             qp.cond(
                 pred,
                 qp.hint(qp.X, {"branch-prob": 0.4}),
-                qp.hint(partial(qp.RX, wires=0), {"branch-prob": 0.6}),
+                qp.hint(partial(qp.RX, wires=0), {"branch-prob": 0.3}),
+                elifs=(
+                    (False, partial(qp.hint(qp.RZ, {"branch-prob": 0.2}), wires=0)),
+                    (False, partial(qp.RY, wires=1)),
+                    (False, partial(qp.RY, wires=2)),
+                ),
             )(x)
 
         jaxpr = jax.make_jaxpr(f)(True, 0)
         cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
-        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.4, 0.6))
+        # true_fn, hinted first elif, 2 unhinted elifs share remaining weight, false_fn
+        expected_probs = (0.4, 0.2, 0.05, 0.05, 0.3)
+        expected_ops = (qp.X, qp.RZ, qp.RY, qp.RY, qp.RX)
 
-        true_branch, false_branch = cond_eqn.params["jaxpr_branches"]
-        assert true_branch.outvars == []
-        assert false_branch.outvars == []
-        assert_eqn_matches_op(true_branch.eqns[-1], qp.X)
-        assert_eqn_matches_op(false_branch.eqns[-1], qp.RX)
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx(expected_probs)
+        for branch, exp_op in zip(cond_eqn.params["jaxpr_branches"], expected_ops):
+            assert branch.outvars == []
+            assert_eqn_matches_op(branch.eqns[-1], exp_op)
 
 
 def _x_qfunc(wire):
