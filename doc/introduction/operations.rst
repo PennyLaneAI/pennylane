@@ -149,8 +149,35 @@ These functions create valid quantum circuit operations from other operators.
     ~pennylane.prod
     ~pennylane.evolve
 
+.. code-block:: python
 
-TODO: update code examples
+    import pennylane as qp
+
+    @qp.qjit(capture=True)
+    @qp.qnode(qp.device("lightning.qubit", wires=2))
+    def circuit(x):
+        qp.adjoint(qp.S)(wires=0)
+        qp.ctrl(qp.RX, control=0)(x, wires=1)
+        qp.pow(qp.T(wires=1), z=2)
+        qp.evolve(qp.X(0) @ qp.X(1), x)
+        return qp.expval(qp.Z(1))
+
+>>> print(qp.analyze(circuit)(0.5))
+Device: lightning.qubit
+Device wires: 2
+Shots: Shots(total=None)
+Level: Before MLIR Passes
+<BLANKLINE>
+Quantum operations:
+- Total: 4
+  - Adjoint(S): 1
+  - C(RX): 1
+  - Evolution: 1
+  - Pow2: 1
+Measurement processes:
+- expval(PauliZ): 1
+Total wires: 2
+Circuit Depth: Not computed
 
 Utility functions
 ^^^^^^^^^^^^^^^^^
@@ -173,4 +200,16 @@ and more.
     ~pennylane.is_unitary
     ~pennylane.pauli_decompose
 
-TODO: update code examples
+>>> qp.dot([0.5, 0.3], [qp.X(0), qp.Z(0) @ qp.Z(1)])
+0.5 * X(0) + 0.3 * (Z(0) @ Z(1))
+>>> qp.simplify(qp.X(0) @ qp.X(0) @ qp.Z(1))
+Z(1)
+>>> qp.map_wires(qp.CNOT([0, 1]), {0: "a", 1: "b"})
+CNOT(wires=['a', 'b'])
+>>> qp.matrix(qp.Hadamard(0))
+array([[ 0.70710678,  0.70710678],
+       [ 0.70710678, -0.70710678]])
+>>> qp.is_commuting(qp.X(0), qp.Z(1))
+True
+>>> qp.pauli_decompose(qp.math.array([[1, 1], [1, -1]]))
+1.0 * X(0) + 1.0 * Z(0)
