@@ -63,10 +63,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
                 self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
             )
 
-        # operands were traced in order, so the last one is closest to the tail of the
-        # frame's equation list; remove in reverse so each backward search is O(1)
-        for op in reversed(operands):
-            remove_from_program(op)
+        remove_from_program(*operands)
 
     # FIX: This is a temporary work-around. Long-term fix is to remove `_init_pauli_rep`
     # from the constructor [sc-130145].

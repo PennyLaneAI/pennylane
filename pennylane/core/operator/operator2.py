@@ -1988,33 +1988,51 @@ def _op_aval(*_, **__):
 def pop_op_eqns(ops: Iterable):
     """Delete the jaxpr equations for operators that have been used as data.
 
-    These equations must be deleted because operators used as data are treated as
-    pytrees wrapping dynamic data rather than instructions. Thus, the equation that
-    corresponds to the operator as an instruction should be removed.
+    When quantum operators are passed or manipulated as data structures (e.g., in a pytree),
+    their operations must not execute as side-effecting quantum instructions during tracing.
+    This function removes their corresponding equations from the active JAX tracing frames.
+
+    All 'ops' are removed in one backward pass per frame, so the cost of removal is set
+    by the deepest target and does not depend on the order of 'ops'.
     """
     old_eqns = []
 
+    # Maps frame ID -> (frame_obj, set_of_target_equation_ids)
+    # This allows us to sweep each frame's equation list only once.
+    targets_by_frame = {}
+
+    # Phase 1: Collect equation targets and group them by their frame
     for op in ops:
         if op.tracer is not None:
             # pylint: disable=protected-access
             frame = op.tracer._trace.frame
             assert frame.auto_dce is False  # eqns are stored differently if this is enabled
 
-            # for some reason the frame now wraps equations in lambdas
+            # NOTE: JAX frame equation lists wrap equations in zero argument callables
             eqn = op.tracer.parent
             old_eqns.append(eqn)
 
-            eqns = frame.tracing_eqns
-            # NOTE: Check from the end of the list as symbolic operators
-            # consume its base immediately after the base was traced so the entry to be dropped
-            # is at or very near the tail of the equation list
-            for i, iter_eqn in enumerate(reversed(eqns)):
-                if iter_eqn() is eqn:
-                    del eqns[-1 - i]
-                    break
+            # Store ID of equation in the target set
+            targets_by_frame.setdefault(id(frame), (frame, set()))[1].add(id(eqn))
 
-            # delete reference to tracer after its equation has been deleted
+            # Detach tracer from op to make a pure data object
             op.tracer = None
+
+    # Phase 2: Sweep each frame's equation list backwards and perform batch deletion
+    for frame, targets in targets_by_frame.values():
+        eqns = frame.tracing_eqns
+
+        # NOTE: Iterate backwards, target equations are almost always near the tail
+        for i in reversed(range(len(eqns))):
+            key = id(eqns[i]())
+
+            if key in targets:
+                targets.discard(key)
+                del eqns[i]
+
+                # All targets for this frame have been pruned, can terminate early
+                if not targets:
+                    break
 
     return old_eqns
 
