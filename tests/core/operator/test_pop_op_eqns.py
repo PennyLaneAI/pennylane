@@ -13,15 +13,13 @@
 """Tests for ``pop_op_eqns``, which deletes the plxpr equation of an operator
 that has been consumed by another operator (e.g. ``CNOT`` consuming ``X``)."""
 
+import jax
+
 # pylint: disable=protected-access, wrong-import-position, wrong-import-order
 import pytest
-
-import pennylane as qp
-
-jax = pytest.importorskip("jax")
-
 from jax._src.interpreters.partial_eval import JaxprStackFrame
 
+import pennylane as qp
 from pennylane.core.operator.operator2 import pop_op_eqns
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture, pytest.mark.usefixtures("enable_capture")]
