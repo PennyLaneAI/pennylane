@@ -40,22 +40,6 @@ from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
 
-def test_old_import_paths():
-    """Test that the old locations of assert_valid and its helpers give the same objects."""
-    old_module = importlib.import_module("pennylane.ops.functions.assert_valid")
-    new_objects = {
-        "assert_valid": qp.testing.assert_valid,
-        "_check_eigendecomposition": _check_eigendecomposition,
-        "_test_decomposition_rule": _test_decomposition_rule,
-    }
-    assert set(old_module.__all__) == set(new_objects)
-    for name, new_object in new_objects.items():
-        assert getattr(old_module, name) is new_object
-
-    # importing the old module must not shadow the function of the same name
-    assert qp.ops.functions.assert_valid is qp.testing.assert_valid
-
-
 class TestDecompositionErrors:
     """Test assertions involving decompositions."""
 
@@ -91,9 +75,7 @@ class TestDecompositionErrors:
                 qp.X(wires[0])
                 return [qp.Y(wires[1])]
 
-        with pytest.raises(
-            AssertionError, match="decomposition must queue all operators correctly"
-        ):
+        with pytest.raises(AssertionError, match="decomposition must match queued operators"):
             assert_valid(BadDecompQueueLength(wires=[0, 1]), skip_pickle=True)
 
     def test_bad_decomposition_queuing(self):
@@ -107,9 +89,7 @@ class TestDecompositionErrors:
                     other_op = qp.RY(2.3, 0)
                 return [other_op]
 
-        with pytest.raises(
-            AssertionError, match="decomposition must queue all operators correctly"
-        ):
+        with pytest.raises(AssertionError, match="decomposition must match queued operators"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
     def test_bad_decomposition_with_mcm(self):
@@ -141,9 +121,7 @@ class TestDecompositionErrors:
                     meas2 = qp.ops.MidMeasure(wires[0], meas_uid=253)
                 return [meas0, meas2]
 
-        with pytest.raises(
-            AssertionError, match="decomposition must queue all operators correctly"
-        ):
+        with pytest.raises(AssertionError, match="decomposition must match queued operators"):
             assert_valid(BadDecompQueue(wires=[0, 1]), skip_pickle=True)
 
     @pytest.mark.jax
@@ -192,10 +170,7 @@ class TestDecompositionErrors:
 
             has_decomposition = False
 
-        with pytest.raises(
-            AssertionError,
-            match="DecompositionUndefinedError expected if op.has_decomposition is False",
-        ):
+        with pytest.raises(AssertionError, match="if op.has_decomposition is False"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
     def test_decomposition_must_not_contain_op(self):

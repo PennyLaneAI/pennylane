@@ -165,7 +165,7 @@ def _check_decomposition_legacy(op, skip_wire_mapping):
     try:
         _assert_equal_ops(decomp_output, queued_tape)
     except AssertionError as e:
-        raise AssertionError("decomposition must queue all operators correctly.") from e
+        raise AssertionError("decomposition must match queued operators.") from e
 
     if op.has_matrix:
         op_matrix = op.matrix()
