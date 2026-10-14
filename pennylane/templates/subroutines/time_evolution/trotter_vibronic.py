@@ -137,7 +137,7 @@ class TrotterVibronic(Operator2):
         all_wires = qp.wires.Wires.all_wires(list(wires.values()))
 
         # decompose by one step to see the top-level sub-templates
-        @qp.decompose(max_expansion=1, gate_set=qp.gate_sets.ALL_OPS | {qp.PhaseGradientStatePrep})
+        @qp.transforms._tape_decompose(max_expansion=1, gate_set=qp.gate_sets.ALL_OPS | {qp.PhaseGradientStatePrep})
         @qp.qnode(qp.device("default.qubit", wires=all_wires))
         def circuit():
             qp.PhaseGradientStatePrep(wires["phase_gradient"])
