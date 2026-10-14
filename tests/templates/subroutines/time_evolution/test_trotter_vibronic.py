@@ -14,7 +14,9 @@
 """Tests for the ``TrotterVibronic`` template."""
 
 from dataclasses import replace
+from functools import partial
 
+import hint_helpers
 import numpy as np
 import pytest
 
@@ -204,7 +206,9 @@ class TestDiagonalization:
         """Test that the correct Clifford circuit is queued for the ``(0, fragment_idx)`` key."""
         wires = list(range(int(qp.math.ceil_log2(n_states))))
         with qp.queuing.AnnotatedQueue() as q:
-            _diagonalize_vibronic_circuit(fragment_idx=fragment_idx, wires=wires)
+            _diagonalize_vibronic_circuit(
+                fragment_idx=fragment_idx, wires=wires, num_fragments=n_states
+            )
         control = wires[support[0]]
         expected = [qp.Hadamard(control)] + [qp.CNOT([control, wires[i]]) for i in support[1:]]
         assert q.queue == expected
@@ -212,7 +216,7 @@ class TestDiagonalization:
     def test_zero_fragment_idx_is_identity(self):
         """Test that fragment index 0 (key ``(0, 0)``) queues no operations and yields identity."""
         with qp.queuing.AnnotatedQueue() as q:
-            _diagonalize_vibronic_circuit(fragment_idx=0, wires=[0, 1])
+            _diagonalize_vibronic_circuit(fragment_idx=0, wires=[0, 1], num_fragments=4)
         assert q.queue == []
         assert np.allclose(_diagonalization_matrix((0, 0), 2), np.eye(4))
 
@@ -221,9 +225,40 @@ class TestDiagonalization:
         """Test that the dense diagonalization matrix matches the circuit unitary."""
         wires = list(range(n))
         circuit_matrix = qp.matrix(_diagonalize_vibronic_circuit, wires)(
-            fragment_idx=fragment_idx, wires=wires
+            fragment_idx=fragment_idx, wires=wires, num_fragments=2**n
         )
         assert np.allclose(_diagonalization_matrix((0, fragment_idx), n), circuit_matrix)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        "n, num_fragments", [(1, 1), (1, 2), (2, 3), (2, 4), (3, 1), (3, 6), (3, 8)]
+    )
+    def test_branch_prob_hints(self, n, num_fragments):
+        """Test that the conditionals carry ``branch-prob`` hints that reproduce the number of
+        gates applied across all fragments."""
+        import jax  # pylint: disable=import-outside-toplevel
+
+        wires = list(range(n))
+        plxpr = jax.make_jaxpr(
+            partial(_diagonalize_vibronic_circuit, wires=wires, num_fragments=num_fragments)
+        )(0)
+        hints = hint_helpers.cond_hints(plxpr.jaxpr)
+        if num_fragments == 1:
+            assert len(hints) == 0
+            return
+
+        assert len(hints) == 2
+
+        num_hadamards = num_cnots = 0
+        for fragment_idx in range(num_fragments):
+            ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, fragment_idx).operations
+            num_hadamards += sum(isinstance(op, qp.Hadamard) for op in ops)
+            num_cnots += sum(isinstance(op, qp.CNOT) for op in ops)
+
+        # Hints for the Hadamard (with nested CNOT loop) and for each CNOT in the loop
+        assert hints[0][0] == pytest.approx(num_hadamards / num_fragments)
+        if num_hadamards:
+            assert hints[1][0] == pytest.approx(num_cnots / (num_hadamards * n))
 
     def test_matrix_is_orthogonal(self):
         """Test that the diagonalization matrix is orthogonal."""
