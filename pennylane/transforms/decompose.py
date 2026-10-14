@@ -75,7 +75,7 @@ def _decompose_setup_inputs(
     return (), options
 
 
-# Public documentation for :func:`~.transforms.decompose` (assigned to ``__doc__`` below so that
+# Public documentation for :func:`~.decompose` (assigned to ``__doc__`` below so that
 # ``_decompose_setup_inputs`` can keep its own docstring).
 decompose = transform(pass_name="graph-decomposition", setup_inputs=_decompose_setup_inputs)
 decompose.__doc__ = """Decompose a quantum circuit toward a target gate set via Catalyst's graph-decomposition pass.

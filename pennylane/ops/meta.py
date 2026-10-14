@@ -24,7 +24,7 @@ from typing import Literal
 
 import pennylane as qp
 from pennylane.core.operator import Operation, Operator2
-from pennylane.decomposition.decomposition_rule import add_decomps
+from pennylane.decomposition.decomposition_rule import add_decomps, register_resources
 from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
 from pennylane.typing import Wire
 from pennylane.wires import WiresLike
@@ -88,7 +88,7 @@ def barrier_resources(wires: WiresLike, only_visual: bool = False):
     return {}
 
 
-@qp.transforms.register_resources(barrier_resources)
+@register_resources(barrier_resources)
 def barrier_decomposition(wires: WiresLike, only_visual: bool = False):
     pass
 
