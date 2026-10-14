@@ -1,4 +1,4 @@
-# Release 0.46.0 (development release)
+﻿# Release 0.46.0 (development release)
 
 <h3>New features since last release</h3>
 
@@ -1911,7 +1911,7 @@
 
 * The docstring of :class:`~.TrotterProduct` now documents the `check_hermitian` argument, including when to set it to `False` for
   runtime-dependent coefficients under :func:`~pennylane.qjit`.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10326)](https://github.com/PennyLaneAI/pennylane/pull/10326)
 
 <h3>Bug fixes 🐛</h3>
 
