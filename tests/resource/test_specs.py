@@ -1711,8 +1711,8 @@ class TestSpecsHintIntegration:
         assert r.resources.quantum_operations["PauliY"] == 3
         assert r.resources.total_quantum_operations == 10
 
-    def test_cond_low_branch_prob_rounds_resources_to_zero(self):
-        """Low probability times low gate count should floor to zero resources."""
+    def test_cond_low_branch_prob_rounds_resources_up(self):
+        """Fractional resources from branch probabilities are rounded up."""
 
         @qp.qjit(capture=True)
         @qp.qnode(qp.device("null.qubit", wires=1))
@@ -1730,10 +1730,10 @@ class TestSpecsHintIntegration:
             return qp.expval(qp.Z(0))
 
         r = qp.specs(circuit, level=0)(True)
-        # 0.4 * 1 floors to 0; 0.6 * 1 rounds to 1
-        assert r.resources.quantum_operations["PauliX"] == 0
+        # 0.4 * 1 and 0.6 * 1 both round up to 1
+        assert r.resources.quantum_operations["PauliX"] == 1
         assert r.resources.quantum_operations["PauliY"] == 1
-        assert r.resources.total_quantum_operations == 1
+        assert r.resources.total_quantum_operations == 2
 
 
 @pytest.mark.catalyst
