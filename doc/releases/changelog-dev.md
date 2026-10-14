@@ -861,7 +861,7 @@
   :class:`~.labs.estimator_beta.templates.QuditFourierTransform`. A trainable phase layer is
   priced through the ``phase_op`` argument, e.g. with the new
   :class:`~.labs.estimator_beta.templates.SumPhaseLayer` for phase functions of the digit sum.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10330)](https://github.com/PennyLaneAI/pennylane/pull/10330)
 
 <h3>Breaking changes 💔</h3>
 
