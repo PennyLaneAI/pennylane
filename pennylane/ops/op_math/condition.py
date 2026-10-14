@@ -114,6 +114,12 @@ def _format_and_validate_branch_fn(fn):
     return wrapped_fn
 
 
+def _drop_operator_return(fn):
+    """Wrap operator types so that they do not return the created operator. Other branch
+    functions are returned unchanged."""
+    return _format_and_validate_branch_fn(fn) if _is_operator_type(fn) else fn
+
+
 def _empty_return_fn(*_, **__):
     return None
 
@@ -766,15 +772,15 @@ def cond(
         if true_fn is None:
             return ops_loader.cond(condition)
 
-        cond_func = ops_loader.cond(condition)(true_fn)
+        cond_func = ops_loader.cond(condition)(_drop_operator_return(true_fn))
 
         # Optional 'elif' branches
         for cond_val, elif_fn in elifs:
-            cond_func.else_if(cond_val)(elif_fn)
+            cond_func.else_if(cond_val)(_drop_operator_return(elif_fn))
 
         # Optional 'else' branch
         if false_fn:
-            cond_func.otherwise(false_fn)
+            cond_func.otherwise(_drop_operator_return(false_fn))
 
         return cond_func
 
