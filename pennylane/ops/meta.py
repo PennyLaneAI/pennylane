@@ -26,7 +26,7 @@ import pennylane as qp
 from pennylane.core.operator import Operation, Operator2
 from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
 from pennylane.typing import Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import WiresLike
 
 
 class Barrier(Operator2):
