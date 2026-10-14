@@ -84,12 +84,14 @@ def _ctrl_barrier(base: Barrier, control, control_values, *_):  # pylint: disabl
     return base
 
 
-def barrier_resources(wires: WiresLike, only_visual: bool = False):
+def barrier_resources(wires: WiresLike, only_visual: bool = False):  # pylint: disable=unused-argument
+    """Resources for the Barrier operation."""
     return {}
 
 
 @register_resources(barrier_resources)
-def barrier_decomposition(wires: WiresLike, only_visual: bool = False):
+def barrier_decomposition(wires: WiresLike, only_visual: bool = False):  # pylint: disable=unused-argument
+    """Decomposition of the Barrier operation."""
     pass
 
 
