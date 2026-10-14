@@ -37,6 +37,7 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.combine_global_phases
     ~transforms.commute_controlled
     ~transforms.decompose
+    ~transforms._tape_decompose
     ~transforms.disentangle_cnot
     ~transforms.disentangle_swap
     ~transforms.merge_amplitude_embedding
