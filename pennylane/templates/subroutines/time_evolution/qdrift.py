@@ -16,8 +16,9 @@
 import copy
 
 from pennylane import math
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import Evolution, LinearCombination, Sum
 from pennylane.wires import Wires

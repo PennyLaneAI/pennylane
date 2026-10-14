@@ -213,7 +213,7 @@ def register_resources(
             qp.CZ(wires=wires)
             qp.H(wires=wires[1])
 
-        @qp.decompose(gate_set={qp.CZ, qp.H}, fixed_decomps={qp.CNOT: my_cnot})
+        @qp.transforms._tape_decompose(gate_set={qp.CZ, qp.H}, fixed_decomps={qp.CNOT: my_cnot})
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.CNOT(wires=[0, 1])
@@ -317,7 +317,7 @@ def register_resources(
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
 
-          @qp.decompose(fixed_decomps=decomps, num_work_wires=1)
+          @qp.transforms._tape_decompose(fixed_decomps=decomps, num_work_wires=1)
           @qp.qnode(qp.device("default.qubit"))
           def circuit():
               qp.ctrl(qp.Rot(0.1, 0.2, 0.3, wires=3), control=[0, 1, 2])
@@ -1100,7 +1100,7 @@ def null_decomp(*_, **__):
 
         qp.decomposition.enable_graph()
 
-        @qp.decompose(
+        @qp.transforms._tape_decompose(
             gate_set={qp.RZ},
             fixed_decomps={qp.GlobalPhase: null_decomp}
         )
