@@ -2010,7 +2010,7 @@ def pop_op_eqns(ops: Iterable):
             # is at or very near the tail of the equation list
             for i, iter_eqn in enumerate(reversed(eqns)):
                 if iter_eqn() is eqn:
-                    del eqns[-1-i]
+                    del eqns[-1 - i]
                     break
 
             # delete reference to tracer after its equation has been deleted
