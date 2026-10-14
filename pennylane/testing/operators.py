@@ -562,8 +562,12 @@ def _check_properties_legacy(op: Operator):
 def _check_properties_operator2(op: Operator2) -> None:
     """Checks the properties of an Operator2."""
 
-    assert isinstance(op.data, tuple), "op.data must be a tuple"
-    assert isinstance(op.num_wires, int), "op.num_wires must be a int"
+    # the following two properties are not necessarily promised
+    if hasattr(op, "data"):
+        assert isinstance(op.data, tuple), "op.data must be a tuple"
+    if hasattr(op, "num_wires"):
+        assert isinstance(op.num_wires, int), "op.num_wires must be a int"
+
     assert isinstance(op.wires, Wires), "op.wires must be a Wires instance"
     assert isinstance(op.ndim_params, tuple), "ndim_params must be a tuple"
     assert isinstance(op.compilable_argnames, tuple), "compilable_argnames must be a tuple"
@@ -650,8 +654,7 @@ def assert_valid(
     >>> assert_valid(op)
     Traceback (most recent call last):
         ...
-    AssertionError: MyOp._unflatten must be able to reproduce the original operation from () and (Wires([0]), ()). You may need to override either the _unflatten or _flatten method.
-    For local testing, try type(op)._unflatten(*op._flatten())
+    AssertionError: MyOp._unflatten must be able to reproduce the original operator from () and (Wires([0]), ()). You may need to override either _unflatten or _flatten. For local testing, try type(op)._unflatten(*op._flatten()).
 
     .. code-block:: python
 
