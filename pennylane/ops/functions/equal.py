@@ -48,7 +48,6 @@ from pennylane.ops.op_math.composite2 import CompositeOp2
 from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPrep, Select
@@ -966,29 +965,6 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
 
 
 @_equal_dispatch.register
-def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedEvolution, **kwargs):
-    # check times match
-    if op1.t is None or op2.t is None:
-        if not (op1.t is None and op2.t is None):
-            return False
-    elif not math.allclose(op1.t, op2.t):
-        return False
-
-    # check parameters passed to operator match
-    operator_check = _equal_operators(op1, op2, **kwargs)
-    if isinstance(operator_check, str):
-        return False
-
-    # check H.coeffs match
-    if len(op1.H.coeffs) != len(op2.H.coeffs) or len(op1.H.ops) != len(op2.H.ops):
-        return False
-    if not all(c1 == c2 for c1, c2 in zip(op1.H.coeffs, op2.H.coeffs, strict=True)):
-        return False
-
-    return all(equal(o1, o2, **kwargs) for o1, o2 in zip(op1.H.ops, op2.H.ops, strict=True))
-
-
-@_equal_dispatch.register
 def _equal_measurements(
     op1: MeasurementProcess,
     op2: MeasurementProcess,
@@ -1211,10 +1187,9 @@ def _equal_qsvt(op1: QSVT, op2: QSVT, **kwargs):
     if len(projectors1) != len(projectors2):
         return f"op1 and op2 have a different number of projectors. Got {projectors1} and {projectors2}."
     for i, (p1, p2) in enumerate(zip(projectors1, projectors2, strict=True)):
-        try:
-            assert_equal(p1, p2, **kwargs)
-        except AssertionError as e:
-            return f"op1 and op2 have different projectors at position {i}. Got {p1} and {p2}, which differ: {e}."
+        comparer = _equal(p1, p2, **kwargs)
+        if isinstance(comparer, str):
+            return f"op1 and op2 have different projectors at position {i}. Got {p1} and {p2}, which differ: {comparer}."
     return True
 
 

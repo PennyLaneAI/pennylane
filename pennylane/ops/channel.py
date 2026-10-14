@@ -346,11 +346,6 @@ class DepolarizingChannel(Channel):
         if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
-        if (
-            np.get_interface(p) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = np.cast_like(p, 1j)
-
         K0 = np.sqrt(1 - p + _SQRT_STABILITY_EPS) * np.convert_like(np.eye(2, dtype=complex), p)
         K1 = np.sqrt(p / 3 + _SQRT_STABILITY_EPS) * np.convert_like(
             np.array([[0, 1], [1, 0]], dtype=complex), p
@@ -659,7 +654,7 @@ class PauliError(Channel):
         )
 
         interface = np.get_interface(p)
-        if interface == "tensorflow" or "Y" in operators:
+        if "Y" in operators:
             if interface == "numpy":
                 p = (1 + 0j) * p
             else:

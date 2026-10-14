@@ -74,7 +74,6 @@ def _post_process(density_matrix, num_axes, like, is_state_batched=True):
     dtype = str(density_matrix.dtype)
     floating_single = "float32" in dtype or "complex64" in dtype
     dtype = "complex64" if floating_single else "complex128"
-    dtype = "complex128" if like == "tensorflow" else dtype
     if not is_state_batched:
         density_matrix = math.reshape(density_matrix, (2,) * num_axes)
     return math.cast(math.asarray(density_matrix, like=like), dtype)

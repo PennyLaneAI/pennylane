@@ -24,6 +24,10 @@ from collections.abc import Iterable
 from functools import partial, wraps
 from typing import TYPE_CHECKING
 
+from pennylane.workflow import QNode
+
+from .resource import CircuitSpecs
+
 if TYPE_CHECKING:
     from pennylane.core.transforms import CompilePipeline
 
@@ -51,39 +55,41 @@ def apply_partial_args(fn, args, kwargs):
     return wrapper
 
 
-def get_last_tape_transform_level(compile_pipeline: "CompilePipeline") -> int:
-    """Helper function to get the last level from a :class:`~.CompilePipeline` which is a tape
-    transform and not an MLIR pass.
+def unwrap_qjit_qnode(qjit, *, fn_name: str) -> QNode:
+    """Return the QNode underlying a qjit'd workflow, raising a helpful error otherwise.
 
-    .. note::
-
-        The returned level includes an implicit level 0 which corresponds to the original circuit before any transforms.
-
-    .. warning::
-
-        This function is intended for internal use only and may change or be removed in future releases.
-
-    Args:
-        compile_pipeline: The :class:`~.CompilePipeline` to analyse, which may contain both user-applied tape transforms
-            and MLIR passes
-
-    Returns:
-        int: The last level which is a tape transform and not an MLIR pass, or 0 if there are no tape transforms
+    ``fn_name`` is the name of the public function to report in the error message.
     """
-    # Find the seam where transforms end and MLIR passes begin
-    # If the pass name is None, it indicates a transform which is NOT also a Catalyst pass
-    for i, trans in reversed(list(enumerate(compile_pipeline))):
-        if trans.pass_name is None:
-            #  Add 1 to account for the implicit "Before Tape Transforms" at level=0
-            return i + 1
-    return 0
+    # pylint: disable=import-outside-toplevel
+    # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
+    try:
+        from catalyst import QJIT
+    except ImportError as exc:  # pragma: no cover
+        raise ImportError(f"Catalyst must be installed to use {fn_name}.") from exc
+
+    # Unwrap the original QNode if any transforms have been applied
+    if isinstance(qjit, QJIT) and isinstance(qjit.original_function, QNode):
+        return qjit.original_function
+
+    raise ValueError(f"{fn_name} can only be applied to a qjit'd QNode, instead got: {qjit}")
+
+
+def build_circuit_specs(original_qnode, resources, level) -> CircuitSpecs:
+    """Assemble the ``CircuitSpecs`` describing a qjit'd QNode at a given level."""
+    return CircuitSpecs(
+        resources=resources,
+        shots=original_qnode.shots,
+        device_name=original_qnode.device.name,
+        num_device_wires=(
+            len(original_qnode.device.wires) if original_qnode.device.wires is not None else None
+        ),
+        level=level,
+    )
 
 
 def preprocess_level_input(
-    level: str | int | slice | list[int | str],
-    marker_to_level: dict[str, int],
-    pipeline_len: int,
-    num_tape_levels: int,
+    level: str | int | list[int | str],
+    compile_pipeline: "CompilePipeline",
 ) -> list[int]:
     """Preprocesses a level input to always return a sorted list of integers.
 
@@ -92,58 +98,70 @@ def preprocess_level_input(
         This function is intended for internal use only and may change or be removed in future releases.
 
     Args:
-        level (str | int | slice | iter[int | str]): The level input to preprocess
-        marker_to_level (dict[str, int]): Mapping from marker names to their associated level numbers.
-            Note that this should already account for any inserted lowering pass.
-        pipeline_len (int): The length of the compile pipeline (number of transforms and passes)
-        num_tape_levels (int): The number of tape levels in the compile pipeline (including the implicit level 0)
+        level (str | int | iter[int | str]): The level input to preprocess
+        compile_pipeline ("CompilePipeline"): The compilation pipeline (the sequence of transforms)
     Returns:
         list[int]: The preprocessed level input
 
     Examples:
-        >>> marker_to_level = {"before": 0, "after": 1}
-        >>> preprocess_level_input("before", marker_to_level, 2, 1)
+        >>> pipeline = qp.CompilePipeline([qp.transforms.cancel_inverses, qp.transforms.merge_rotations])
+        >>> pipeline.add_marker("before", 0)
+        >>> pipeline.add_marker("after", 1)
+        >>> preprocess_level_input("before", pipeline)
         [0]
-        >>> preprocess_level_input([0, "after"], marker_to_level, 2, 1)
+        >>> preprocess_level_input([0, "after"], pipeline)
         [0, 1]
-        >>> preprocess_level_input(slice(0, 2), marker_to_level, 2, 1)
-        [0, 1]
+        >>> preprocess_level_input("all", pipeline)
+        [0, 1, 2]
     """
-    # Account for "Before MLIR passes" level
-    total_levels = pipeline_len + 1
+    # pylint: disable=too-many-branches
+    if trans := [pass_ for pass_ in compile_pipeline if pass_.pass_name is None]:
+        raise ValueError(
+            f"Encountered the following tape transforms: {trans}."
+            " Tape transforms are no longer supported."
+        )
 
-    if num_tape_levels > 1:
-        # Account for an additional "Before Tape Transforms" level
-        total_levels += 1
+    marker_to_level = get_marker_level_map(compile_pipeline)
+
+    # Account for "Before MLIR passes" level
+    total_levels = len(compile_pipeline) + 1
+
+    # Explicitly deny old level shorthands
+    if level in ("gradient", "all-mlir"):
+        raise ValueError(f"The level '{level}' is no longer supported by qp.specs.")
 
     default_level_map = {
+        "top": [0],
+        "user": [len(compile_pipeline)],
         "all": list(range(0, total_levels)),
-        "all-mlir": list(range(num_tape_levels, total_levels)),
-        "user": [total_levels - 1],
     }
     if isinstance(level, str) and level in default_level_map:
         return default_level_map[level]
 
+    # Convert single entries to a list for uniform processing
     if isinstance(level, (int, str)):
         level = [level]
-    elif isinstance(level, slice):
-        stop = level.stop if level.stop is not None else total_levels
-        step = level.step if level.step is not None else 1
-        level = list(range(level.start or 0, stop, step))
     else:
-        level = list(level)
+        try:
+            level = list(level)
+        except TypeError as exc:
+            raise ValueError(
+                f"Invalid level '{level}', expected int, str, or an iterable of those."
+            ) from exc
 
     # Convert marker names to the associated level number
     for i, lvl in enumerate(level):
-        if isinstance(lvl, str):
+        if isinstance(lvl, str) and lvl != "all":
+            if lvl in default_level_map:
+                level[i] = default_level_map[lvl][0]
+                continue
             if lvl not in marker_to_level:
                 raise ValueError(f"Marker name '{lvl}' not found in the compile pipeline.")
             level[i] = marker_to_level[lvl]
-        elif isinstance(lvl, int):
+        elif isinstance(lvl, int) and not isinstance(lvl, bool):
             if lvl < 0 or lvl >= total_levels:
                 raise ValueError(
-                    "The 'level' argument to qp.specs for QJIT'd QNodes is out of bounds, "
-                    f"got {lvl}."
+                    f"The 'level' argument for QJIT'd QNodes is out of bounds, got {lvl}."
                 )
         else:
             raise ValueError(f"Invalid level '{lvl}' in level list, expected int or str.")
@@ -151,7 +169,7 @@ def preprocess_level_input(
     level_sorted = sorted(set(level))
     if level != level_sorted:
         warnings.warn(
-            "The 'level' argument to qp.specs for QJIT'd QNodes has been sorted to be in ascending "
+            "The 'level' argument for QJIT'd QNodes has been sorted to be in ascending "
             "order with no duplicate levels.",
             UserWarning,
         )
@@ -196,17 +214,8 @@ def get_marker_level_map(compile_pipeline: "CompilePipeline") -> dict[str, int]:
     """
     marker_to_level: dict[str, int] = {}
 
-    num_tape_levels = get_last_tape_transform_level(compile_pipeline)
-    if num_tape_levels != 0:
-        # Account for the "Before Tape Transforms" tape at level 0
-        num_tape_levels += 1
-
     for marker in compile_pipeline.markers:
         lvl = compile_pipeline.get_marker_level(marker)
         marker_to_level[marker] = lvl
-
-        # Account for the MLIR lowering pass if necessary
-        if 0 < num_tape_levels <= lvl:
-            marker_to_level[marker] += 1
 
     return marker_to_level

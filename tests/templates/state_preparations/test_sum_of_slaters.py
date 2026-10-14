@@ -26,18 +26,20 @@ from pennylane import math
 from pennylane.decomposition import list_decomps
 from pennylane.math import binary_matrix_rank, ceil_log2
 from pennylane.ops.functions import assert_valid
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.sum_of_slaters import (
     SumOfSlatersPrep,
     _columns_differ,
     _find_ell,
     _find_single_w,
     _preprocess,
+    _sos_encoding_size,
     _sos_state_prep,
     _sos_state_prep_with_wires,
     compute_sos_encoding,
     select_sos_rows,
 )
-from pennylane.typing import Int
+from pennylane.typing import Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
 
@@ -365,6 +367,19 @@ class TestComputeSosEncoding:
         assert np.allclose((U @ bits) % 2, b)
         assert _columns_differ(b)
 
+    @pytest.mark.parametrize("r, D", [(22, 1800)])
+    def test_memory_limit_falls_back_to_identity(self, r, D):
+        """Test that compression falls back to identity when its estimated temporary memory
+        exceeds the limit."""
+        assert r > 2 * ceil_log2(D) - 1
+        assert _sos_encoding_size(r, D) == r
+
+        bits = random_distinct_bitstrings(r, D, 519, full_rank=True)
+        U, b = compute_sos_encoding(bits)
+
+        assert np.array_equal(U, np.eye(r, dtype=int))
+        assert np.array_equal(b, bits)
+
     @pytest.mark.parametrize(
         "r, D",
         [
@@ -533,7 +548,7 @@ class TestSumOfSlatersPrep:
         sizes = SumOfSlatersPrep.required_register_sizes(indices, num_wires)
         d = ceil_log2(num_entries)
 
-        m = min(new_num_bits, 2 * d - 1)
+        m = _sos_encoding_size(new_num_bits, num_entries)
         assert sizes["wires"] == num_wires
         assert sizes["enumeration_wires"] == d
         assert sizes["identification_wires"] == max((new_num_bits > m) * m, 0)
@@ -560,7 +575,7 @@ class TestSumOfSlatersPrep:
 
         sizes = SumOfSlatersPrep.required_register_sizes(indices, n)
         d = ceil_log2(n)
-        m = min(num_bits, 2 * d - 1)
+        m = _sos_encoding_size(num_bits, n)
         assert sizes["wires"] == n
         assert sizes["enumeration_wires"] == d
         assert sizes["identification_wires"] == max((num_bits > m) * m, 0)
@@ -570,23 +585,76 @@ class TestSumOfSlatersPrep:
         registered_work_wires = _sos_state_prep.get_work_wire_spec(coefficients, range(n), indices)
         assert sum(sizes.values()) - n == registered_work_wires.total
 
-    @pytest.mark.parametrize("num_wires", [3, 5, 8])
-    @pytest.mark.parametrize("num_entries", [2, 4, 5, 16])
-    def test_register_sizes_abstract(self, num_wires, num_entries):
-        """Test that ``required_register_sizes`` dispatches to the abstract computation when
-        given an abstract ``indices`` input, returning the expected upper-bound sizes."""
+    def test_register_sizes_memory_limit_fallback(self):
+        """Test that register sizing uses the identity encoding above the memory limit."""
+        assert _sos_encoding_size(34, 90102) == 34
+        # pylint: disable-next=protected-access
+        sizes = SumOfSlatersPrep._required_register_sizes_from_nums(
+            num_entries=90102, num_bits=34, num_wires=36
+        )
 
-        indices = Int[num_entries]
-        sizes = SumOfSlatersPrep.required_register_sizes(indices, num_wires)
-
-        d = ceil_log2(num_entries)
         assert sizes == {
-            "wires": num_wires,
-            "enumeration_wires": d,
-            "identification_wires": 2 * d - 1,
-            "qrom_work_wires": d - 1,
-            "mcx_cache_wires": 2 * d - 2,
+            "wires": 36,
+            "enumeration_wires": 17,
+            "identification_wires": 0,
+            "qrom_work_wires": 16,
+            "mcx_cache_wires": 33,
         }
+
+    @pytest.mark.parametrize(
+        "num_entries, num_wires, expected",
+        [
+            (
+                1,
+                8,
+                {
+                    "wires": 8,
+                    "enumeration_wires": 0,
+                    "identification_wires": 0,
+                    "qrom_work_wires": 0,
+                    "mcx_cache_wires": 0,
+                },
+            ),
+            (
+                111,
+                12,
+                {
+                    "wires": 12,
+                    "enumeration_wires": 7,
+                    "identification_wires": 0,
+                    "qrom_work_wires": 6,
+                    "mcx_cache_wires": 11,
+                },
+            ),
+            (
+                45,
+                18,
+                {
+                    "wires": 18,
+                    "enumeration_wires": 6,
+                    "identification_wires": 11,
+                    "qrom_work_wires": 5,
+                    "mcx_cache_wires": 10,
+                },
+            ),
+            (
+                90102,
+                36,
+                {
+                    "wires": 36,
+                    "enumeration_wires": 17,
+                    "identification_wires": 0,
+                    "qrom_work_wires": 16,
+                    "mcx_cache_wires": 35,
+                },
+            ),
+        ],
+    )
+    def test_register_sizes_abstract(self, num_entries, num_wires, expected):
+        """Test abstract register sizing in the identity, compression, and fallback regimes."""
+        sizes = SumOfSlatersPrep.required_register_sizes(Int[num_entries], num_wires)
+
+        assert sizes == expected
 
     @pytest.mark.parametrize("num_wires", [3, 4, 5])
     @pytest.mark.parametrize("num_entries", [2, 4, 5, 6])
@@ -611,6 +679,22 @@ class TestSumOfSlatersPrep:
 
         # Ensure they are Python integers, not other (NumPy) integers.
         assert all(isinstance(count, int) for count in resources.gate_counts.values())
+
+    @pytest.mark.parametrize(
+        "coefficients, state_type",
+        [
+            (np.array([1, -1, 1, -1]) / 2, Float),
+            (np.array([1, 1, 1, 1]), Float),
+            (np.array([1, 1j, -1, -1j]) / 2, Complex),
+        ],
+    )
+    def test_multiplexer_dtype_follows_coefficients(self, coefficients, state_type):
+        """Test that the MultiplexerStatePreparation in the decomposition is real-valued
+        for real-valued coefficients and complex-valued for complex-valued coefficients."""
+        op = SumOfSlatersPrep(coefficients, range(3), indices=(0, 3, 5, 6))
+        resources = _sos_state_prep.compute_resources(**op.arguments).gate_counts
+        assert qp.MultiplexerStatePreparation(state_type[4], wires=Wire[2]) in resources
+        _test_decomposition_rule(op, _sos_state_prep)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(

@@ -64,7 +64,7 @@ _PARAMETER_GATES = (qp.RX, qp.RY, qp.RZ, qp.Rot, qp.PhaseShift)
 _CLIFFORD_T_GATES = tuple(_CLIFFORD_T_ONE_GATES + _CLIFFORD_T_TWO_GATES) + (qp.GlobalPhase,)
 
 # Gates to be skipped during decomposition
-_SKIP_OP_TYPES = (qp.Barrier, qp.Snapshot, qp.WireCut, MeasurementValue)
+_SKIP_OP_TYPES = (qp.Barrier, qp.Snapshot, MeasurementValue)
 
 # Stores the cache of a specified size for the decomposition function
 # that is used to decompose the RZ gates in the Clifford+T basis.

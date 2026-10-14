@@ -269,14 +269,6 @@ class ScalarSymbolicOp(SymbolicOp):
         if scalar_interface == "torch":
             # otherwise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
             base_matrix = pl_math.convert_like(base_matrix, self.scalar)
-        elif (
-            scalar_interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            # just cast everything to complex128. Otherwise we may have casting problems
-            # where things get truncated like in SProd(tf.Variable(0.1), qp.X(0))
-            scalar = pl_math.cast(scalar, "complex128")
-            base_matrix = pl_math.cast(base_matrix, "complex128")
-
         # compute scalar operation on base matrix taking batching into account
         scalar_size = pl_math.size(scalar)
         if scalar_size != 1:

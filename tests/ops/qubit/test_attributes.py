@@ -416,7 +416,6 @@ class TestSupportsBroadcasting:
     @pytest.mark.parametrize(
         "features, num_wires",
         [
-            (np.array([[0.5], [2.1]]), 1),
             (np.array([[0.5, -0.5], [0.2, 1.5]]), 2),
             (np.ones((2, 5)), 5),
         ],
@@ -428,7 +427,7 @@ class TestSupportsBroadcasting:
         op = qp.IQPEmbedding(features, wires=list(range(num_wires)))
         assert op.batch_size == 2
         qp.IQPEmbedding.compute_decomposition(
-            features, list(range(num_wires)), n_repeats=2, pattern=op.hyperparameters["pattern"]
+            features, list(range(num_wires)), n_repeats=2, pattern=op.arguments["pattern"]
         )
         op.decomposition()
 

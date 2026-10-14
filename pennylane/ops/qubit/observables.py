@@ -850,24 +850,7 @@ class StateVectorProjector(Projector):
         # Alternatively, we could take the adjoint of the Mottonen decomposition for the state vector.
         # https://quantumcomputing.stackexchange.com/questions/10239/how-can-i-fill-a-unitary-knowing-only-its-first-column
 
-        if (
-            qp.math.get_interface(state_vector) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            dtype_name = qp.math.get_dtype_name(state_vector)
-            if dtype_name == "int32":
-                state_vector = qp.math.cast(state_vector, np.complex64)
-            elif dtype_name == "int64":
-                state_vector = qp.math.cast(state_vector, np.complex128)
-
         angle = qp.math.angle(state_vector[0])
-        if (
-            qp.math.get_interface(angle) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            if qp.math.get_dtype_name(angle) == "float32":
-                angle = qp.math.cast(angle, np.complex64)
-            else:
-                angle = qp.math.cast(angle, np.complex128)
-
         phase = qp.math.exp(-1.0j * angle)
         psi = phase * state_vector
         denominator = qp.math.sqrt(2 + 2 * psi[0])

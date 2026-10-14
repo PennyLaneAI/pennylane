@@ -178,10 +178,6 @@ def _register_vjp(state0, state1):
         _register_jax_vjp()
     elif interface == "torch":
         _register_torch_vjp()
-    elif (
-        interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        _register_tf_vjp()
 
 
 def _compute_fidelity_vanilla(density_matrix0, density_matrix1):
@@ -223,9 +219,9 @@ def _compute_fidelity_vjp0(dm0, dm1, grad_out):
         u0_dag = math.transpose(math.conj(u0))
         grad_dm0 = sqrt_dm1 @ u0 @ (1 / math.sqrt(evs0)[..., None] * u0_dag) @ sqrt_dm1
 
-        # torch and tensorflow use the Wirtinger derivative which is a different convention
+        # torch uses the Wirtinger derivative which is a different convention
         # than the one autograd and jax use for complex differentiation
-        if math.get_interface(dm0) in ["torch", "tensorflow"]:
+        if math.get_interface(dm0) == "torch":
             grad_dm0 = math.sum(math.sqrt(evs0), -1) * grad_dm0
         else:
             grad_dm0 = math.sum(math.sqrt(evs0), -1) * math.transpose(grad_dm0)
@@ -237,9 +233,9 @@ def _compute_fidelity_vjp0(dm0, dm1, grad_out):
     u0_dag = math.transpose(math.conj(u0), (0, 2, 1))
     grad_dm0 = sqrt_dm1 @ u0 @ (1 / math.sqrt(evs0)[..., None] * u0_dag) @ sqrt_dm1
 
-    # torch and tensorflow use the Wirtinger derivative which is a different convention
+    # torch uses the Wirtinger derivative which is a different convention
     # than the one autograd and jax use for complex differentiation
-    if math.get_interface(dm0) in ["torch", "tensorflow"]:
+    if math.get_interface(dm0) == "torch":
         grad_dm0 = math.sum(math.sqrt(evs0), -1)[:, None, None] * grad_dm0
     else:
         grad_dm0 = math.sum(math.sqrt(evs0), -1)[:, None, None] * math.transpose(
@@ -343,26 +339,3 @@ def _register_torch_vjp():
             return _compute_fidelity_grad(dm0, dm1, grad_out)
 
     ar.register_function("torch", "compute_fidelity", _TorchFidelity.apply)
-
-
-############################### tensorflow ################################
-
-
-@lru_cache(maxsize=None)
-def _register_tf_vjp():  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-    """
-    Register the custom VJP for tensorflow
-    """
-    # pylint: disable=import-outside-toplevel
-    import tensorflow as tf
-
-    @tf.custom_gradient
-    def _compute_fidelity_tf(dm0, dm1):
-        fid = _compute_fidelity_vanilla(dm0, dm1)
-
-        def vjp(grad_out):
-            return _compute_fidelity_grad(dm0, dm1, grad_out)
-
-        return fid, vjp
-
-    ar.register_function("tensorflow", "compute_fidelity", _compute_fidelity_tf)

@@ -213,7 +213,7 @@ def register_resources(
             qp.CZ(wires=wires)
             qp.H(wires=wires[1])
 
-        @qp.decompose(gate_set={qp.CZ, qp.H}, fixed_decomps={qp.CNOT: my_cnot})
+        @qp.transforms._tape_decompose(gate_set={qp.CZ, qp.H}, fixed_decomps={qp.CNOT: my_cnot})
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.CNOT(wires=[0, 1])
@@ -317,7 +317,7 @@ def register_resources(
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
 
-          @qp.decompose(fixed_decomps=decomps, num_work_wires=1)
+          @qp.transforms._tape_decompose(fixed_decomps=decomps, num_work_wires=1)
           @qp.qnode(qp.device("default.qubit"))
           def circuit():
               qp.ctrl(qp.Rot(0.1, 0.2, 0.3, wires=3), control=[0, 1, 2])
@@ -573,14 +573,14 @@ class DecompCollection:
 
     def append(self, rule: DecompositionRule):
         """Add a decomposition rule to the collection."""
-        if rule.name in self._decomps:
+        if rule.name in self._decomps and rule is not self._decomps[rule.name]:
             raise ValueError(f"A decomposition of the name: {rule.name} already exists!")
         self._decomps[rule.name] = rule
 
     def extend(self, rules: DecompCollection | Sequence[DecompositionRule]):
         """Add a sequence of decomposition rules to the collection."""
-        if dup_name := next((rule.name for rule in rules if rule.name in self), None):
-            raise ValueError(f"A decomposition of the name: {dup_name} already exists!")
+        if dup := next((r.name for r in rules if r.name in self and r is not self[r.name]), None):
+            raise ValueError(f"A decomposition of the name: {dup} already exists!")
         decomps = rules if isinstance(rules, DecompCollection) else DecompCollection(rules)
         self._decomps |= decomps._decomps  # pylint: disable=protected-access
 
@@ -1100,7 +1100,7 @@ def null_decomp(*_, **__):
 
         qp.decomposition.enable_graph()
 
-        @qp.decompose(
+        @qp.transforms._tape_decompose(
             gate_set={qp.RZ},
             fixed_decomps={qp.GlobalPhase: null_decomp}
         )

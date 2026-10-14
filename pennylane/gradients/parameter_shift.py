@@ -34,7 +34,8 @@ from pennylane.measurements import ExpectationMP, VarianceMP, expval
 from pennylane.ops import U2, U3, CRot, PauliRot, Prod, Rot, SingleExcitation, prod
 from pennylane.ops.functions import eigvals, generator
 from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.transforms import decompose, split_to_single_terms
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import split_to_single_terms
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
@@ -1246,7 +1247,6 @@ def parameter_frequencies(op: Operation | Operator2) -> list[tuple[int | float, 
 
     These frequencies encode the behaviour of the operator :math:`U(\mathbf{p})`
     on the value of the expectation value as the parameters are modified.
-    For more details, please see the :mod:`.pennylane.fourier` module.
 
     Returns:
         list[tuple[int or float]]: Tuple of frequencies for each parameter.

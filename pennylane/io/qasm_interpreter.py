@@ -15,7 +15,7 @@ from openqasm3 import ast
 from openqasm3.ast import FunctionCall
 from openqasm3.visitor import QASMNode
 
-from pennylane import ops
+from pennylane import math, ops
 from pennylane.control_flow import for_loop, while_loop
 from pennylane.core.operator import Operator
 from pennylane.ops import MeasurementValue, MidMeasure, measure
@@ -449,9 +449,9 @@ def _get_bit_type_val(var):
     if isinstance(var, Variable) and var.ty == "BitType":
         return bin(var.val)[2:].zfill(var.size)
     if isinstance(var, Variable) and var.ty == "IntType":
-        return bin(var.val)[2:].zfill(int(np.floor(np.log2(var.val))) + 1)
+        return bin(var.val)[2:].zfill(math.floor_log2(var.val) + 1)
     if isinstance(var, int):
-        return bin(var)[2:].zfill(int(np.floor(np.log2(var))) + 1)
+        return bin(var)[2:].zfill(math.floor_log2(var) + 1)
     raise TypeError(f"Cannot convert {type(var)} to bitstring.")
 
 

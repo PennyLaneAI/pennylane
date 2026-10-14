@@ -34,6 +34,8 @@ The following frameworks are currently supported:
 
 import autoray as ar
 
+from pennylane.typing import AbstractArray, Complex, Float
+
 from .binary_linalg import (
     binary_decimals,
     binary_finite_reduced_row_echelon,
@@ -111,6 +113,7 @@ from .utils import (
     convert_like,
     in_backprop,
     is_abstract,
+    floor_log2,
     requires_grad,
 )
 from .interface_utils import (
@@ -141,11 +144,48 @@ T = ar.numpy.transpose
 def get_dtype_name(x) -> str:
     """An interface independent way of getting the name of the datatype.
 
-    >>> x = tf.Variable(0.1)
-    >>> qp.math.get_dtype_name(tf.Variable(0.1))
+    >>> x = torch.tensor(0.1)
+    >>> qp.math.get_dtype_name(x)
     'float32'
     """
     return ar.get_dtype_name(x)
+
+
+def is_complex_dtype(obj) -> bool:
+    """Return whether an object's data type is complex-valued.
+
+    Args:
+        obj (tensor_like): Object whose data type is checked.
+
+    Returns:
+        bool: Whether the object's data type is complex-valued.
+
+    >>> x = np.array([1.0, 2.0])
+    >>> qp.math.is_complex_dtype(x)
+    False
+    >>> x = np.array([1.0j, 2.0j])
+    >>> qp.math.is_complex_dtype(x)
+    True
+    """
+    if isinstance(obj, bool):
+        return False
+    return get_dtype_name(obj).startswith("complex")
+
+
+def get_abstract_and_cast_dtype(obj) -> tuple[AbstractArray, type]:
+    """Return the abstract and Python cast dtypes for an object's real or complex dtype.
+
+    Args:
+        obj (tensor_like): Object whose data type determines the returned dtypes.
+
+    Returns:
+        tuple[AbstractArray, type]: The abstract PennyLane and Python cast dtypes.
+
+    >>> x = np.array([1.0j, 2.0j])
+    >>> qp.math.get_abstract_and_cast_dtype(x)
+    (AbstractArray((), complex128, weak_type=True), <class 'complex'>)
+    """
+    return (Complex, complex) if is_complex_dtype(obj) else (Float, float)
 
 
 def is_real_obj_or_close(obj):
@@ -164,7 +204,7 @@ def is_real_obj_or_close(obj):
     >>> qp.math.is_real_obj_or_close(x)
     True
 
-    >>> x = tf.Variable(0.4+0.2j)
+    >>> x = torch.tensor(0.4+0.2j)
     >>> qp.math.is_real_obj_or_close(x)
     False
 
@@ -177,7 +217,7 @@ def is_real_obj_or_close(obj):
     input is close to real-valued.
     """
     # Check if object is purely real
-    if not get_dtype_name(obj).startswith("complex"):
+    if not is_complex_dtype(obj):
         return True
 
     # If it's a concrete array, check if the imaginary part is effectively zero
@@ -240,8 +280,10 @@ __all__ = [
     "eye",
     "fidelity",
     "fidelity_statevector",
+    "floor_log2",
     "frobenius_inner_product",
     "gammainc",
+    "get_abstract_and_cast_dtype",
     "get_dtype_name",
     "get_interface",
     "get_batch_size",
@@ -251,6 +293,7 @@ __all__ = [
     "int_to_binary",
     "in_backprop",
     "is_abstract",
+    "is_complex_dtype",
     "is_independent",
     "is_real_obj_or_close",
     "iscomplex",
