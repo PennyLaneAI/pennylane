@@ -18,7 +18,7 @@ Adds ``qp.hint``, a tool for annotating things with compiler hints.
 import functools
 from collections.abc import Callable, Set
 from difflib import SequenceMatcher
-from typing import Any
+from typing import Any, overload
 
 
 def process_hints(hints: dict[str, Any], supported: Set[str]) -> dict[str, Any]:
@@ -132,15 +132,25 @@ def _stack_to_HintedCallable(f: HintedCallable, hints: dict) -> HintedCallable:
     return HintedCallable(f, f.hints | hints)
 
 
-def hint(hints: dict[str, Any]) -> Callable:
+@overload
+def hint(f_or_hints: dict[str, Any], hints: None = None) -> Callable: ...
+@overload
+def hint(f_or_hints: Any, hints: dict[str, Any]) -> Any: ...
+def hint(f_or_hints, hints: dict[str, Any] | None = None):
     """Attaches a compiler hint to applicable functionality.
 
+    Can be used as a decorator or applied directly:
+
+    * ``@qp.hint({"num-iters": 10})`` / ``qp.hint({"num-iters": 10})(f)``
+    * ``qp.hint(f, {"num-iters": 10})``
+
     Args:
-        `hints` (dict[str, Any]):
-            A dictionary containing compiler hint information.
+        f_or_hints: either a dictionary of hints (decorator form), or the object
+            to annotate (direct form)
+        hints (dict[str, Any]): dictionary of hints; required for the direct form
 
     Returns:
-        Callable: a decorator that can be applied.
+        A decorator when only a hint dictionary is passed, otherwise the hinted object.
 
     **Available Hints:**
 
@@ -200,6 +210,16 @@ def hint(hints: dict[str, Any]) -> Callable:
 
         The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
 
+        The same annotation can be applied directly instead of as a decorator:
+
+        .. code-block:: python
+
+            @qp.for_loop(n)
+            def hinted_loop(i):
+                qp.X(i)
+
+            hinted_loop = qp.hint(hinted_loop, {"num-iters": 10})
+
         Note that hints can be overwritten. The following will use ``20`` as the number of iterations:
 
         .. code-block:: python
@@ -237,8 +257,16 @@ def hint(hints: dict[str, Any]) -> Callable:
                 return qp.expval(qp.Z(0))
 
     """
+    if hints is not None:
+        return apply_hint(f_or_hints, hints)
+
+    if not isinstance(f_or_hints, dict):
+        raise TypeError(
+            "hint() decorator form expects a dict of hints; "
+            "use hint(f, hints) to apply directly."
+        )
 
     def decorator(f):
-        return apply_hint(f, hints)
+        return apply_hint(f, f_or_hints)
 
     return decorator
