@@ -58,7 +58,7 @@ def _decompose_setup_inputs(
             rules. Omitted from the returned options when ``None``.
 
     Returns:
-        tuple[tuple, dict]: Empty positional args and the keyword options forwarded to
+        tuple[tuple, dict]: positional and keyword arguments forwarded to
         the Catalyst pass under capture.
 
     """
