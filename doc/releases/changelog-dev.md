@@ -2144,6 +2144,13 @@
 * Fixed a bug in the TCDQ module that caused incorrect results for states with complex coefficients.
   [(#10215)](https://github.com/PennyLaneAI/pennylane/pull/10215)
 
+* With program capture enabled, resource estimates of decomposition rules now recursively unroll
+  :class:`~.ChangeOpBasis` operators that are nested in other ``ChangeOpBasis`` operators, matching
+  the gates produced by the captured decomposition. In addition, the resource function of the
+  decomposition rule produced by :func:`~.transforms.decompositions.make_selectpaulirot_to_phase_gradient_decomp`
+  now correctly reports ``Adjoint(Hadamard)`` for ``rot_axis="X"``.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 
 <h3>Contributors ✍️</h3>
 

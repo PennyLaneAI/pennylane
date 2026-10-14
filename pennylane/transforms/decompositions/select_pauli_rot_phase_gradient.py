@@ -70,7 +70,7 @@ def _select_pauli_rot_phase_gradient(
             def x_basis_comp():
                 qp.Hadamard(target_wire)
 
-            return qp.change_op_basis(x_basis_comp, inner_cob)
+            return qp.change_op_basis(x_basis_comp, inner_cob, x_basis_comp)
 
         case "Y":
 

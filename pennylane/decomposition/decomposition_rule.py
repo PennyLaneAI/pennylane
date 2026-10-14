@@ -1182,7 +1182,8 @@ def _unroll_change_op_basis_resource(op_rep):
     if operands is not None:
         gate_counts = defaultdict(int)
         for operand in operands:
-            for inner_op, count in _unroll_prod_operand(operand).items():
+            unrolled_operand = _unroll_change_op_basis(_unroll_prod_operand(operand))
+            for inner_op, count in unrolled_operand.items():
                 gate_counts[inner_op] += count
         return gate_counts
 

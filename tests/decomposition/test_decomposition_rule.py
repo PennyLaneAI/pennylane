@@ -1302,6 +1302,27 @@ class TestCOBUnroll:  # pylint: disable=too-few-public-methods
         result = _unroll_change_op_basis({wrapper(cob): 2, wrapped_z: 3})
         assert result == {wrapper(x_rep): 4, wrapper(y_rep): 2, wrapped_z: 3}
 
+    def test_unroll_nested_change_op_basis_resources(self):
+        """ChangeOpBasis resource keys nested in another ChangeOpBasis are recursively expanded."""
+
+        x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
+        inner_cob = _change_op_basis_abstract(x_rep, y_rep, x_rep)
+        outer_cob = _change_op_basis_abstract(z_rep, inner_cob, z_rep)
+
+        result = _unroll_change_op_basis({outer_cob: 3})
+        assert result == {z_rep: 6, x_rep: 6, y_rep: 3}
+
+    def test_unroll_change_op_basis_nested_in_prod_resources(self):
+        """ChangeOpBasis resource keys inside a Prod operand of a ChangeOpBasis are expanded."""
+
+        x_rep, y_rep, z_rep, h_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z, qp.H))
+        inner_cob = _change_op_basis_abstract(y_rep, z_rep, y_rep)
+        prod_rep = qp.ops.prod(x_rep, inner_cob)
+        outer_cob = _change_op_basis_abstract(prod_rep, h_rep, prod_rep)
+
+        result = _unroll_change_op_basis({outer_cob: 2})
+        assert result == {x_rep: 4, y_rep: 8, z_rep: 4, h_rep: 2}
+
     @pytest.mark.capture
     def test_compute_resources_returns_unrolled(self):
         """Tests that compute_resources returns a dictionary where COBs are unrolled."""
