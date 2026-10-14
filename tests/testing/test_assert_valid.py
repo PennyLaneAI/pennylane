@@ -413,7 +413,7 @@ class TestBadCopyComparison:
             def __deepcopy__(self, memo):
                 return BadDeepComparison(1)
 
-        with pytest.raises(AssertionError, match=r"deep copied op must also be equal"):
+        with pytest.raises(AssertionError, match=r"op1 and op2 have different wires"):
             assert_valid(BadDeepComparison(0), skip_pickle=True)
 
 
@@ -555,7 +555,7 @@ class TestPytree:
         op = BadPytree(wires=0, val="b")
         with pytest.raises(
             AssertionError,
-            match=r"metadata and data must be able to reproduce the original operation",
+            match=r"BadPytree._unflatten must be able to reproduce the original operator",
         ):
             assert_valid(op, skip_pickle=True)
 
@@ -572,7 +572,9 @@ class TestPytree:
                 self.hyperparameters["val"] = val
 
         op = qp.adjoint(BadPytree(wires=0, val="b"))
-        with pytest.raises(AssertionError, match=r"op must be a valid pytree."):
+        with pytest.raises(
+            AssertionError, match=r"jax.tree_util.tree_unflatten must be able to reproduce"
+        ):
             assert_valid(op, skip_pickle=True)
 
     @pytest.mark.jax

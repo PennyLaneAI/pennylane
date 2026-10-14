@@ -582,7 +582,7 @@ def _check_properties_operator2(op: Operator2) -> None:
     leaves, _ = pytrees.flatten(abstractified, lambda l: isinstance(l, Wires))
 
     abstract_types = (AbstractArray, AbstractWires, CompressedResourceOp)
-    if l := next((l for l in leaves if not isinstance(l, abstract_types)), None) is not None:
+    if (l := next((l for l in leaves if not isinstance(l, abstract_types)), None)) is not None:
         message = f"Op not properly abstractified. {abstractified} had non-abstract leaf {l}."
         raise AssertionError(message)
 
@@ -673,6 +673,22 @@ def assert_valid(
 
     """
     _check_properties(op)
+    if isinstance(op, Operator2):
+        for val in op.hybrid_args.values():
+            leaves, _ = pytrees.flatten(val, is_leaf=lambda l: isinstance(l, Operator))
+            for leaf in leaves:
+                if isinstance(leaf, Operator):
+                    assert_valid(
+                        leaf,
+                        skip_deepcopy=skip_deepcopy,
+                        skip_differentiation=skip_differentiation,
+                        skip_new_decomp=skip_new_decomp,
+                        skip_decomp_matrix_check=skip_decomp_matrix_check,
+                        skip_pickle=skip_pickle,
+                        skip_wire_mapping=skip_wire_mapping,
+                        skip_bind_new_parameters=skip_bind_new_parameters,
+                        skip_eigvals=skip_eigvals,
+                    )
     _check_pytree(op)
     _check_copy(op, skip_deepcopy=skip_deepcopy)
     if not skip_bind_new_parameters:
