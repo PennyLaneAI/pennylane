@@ -15,6 +15,10 @@ r"""
 Decomposition rule for RZ in terms of `phase gradient states <https://pennylane.ai/compilation/phase-gradient/b-rotations>`__
 """
 
+from functools import partial
+
+import numpy as np
+
 import pennylane as qp
 from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
@@ -48,7 +52,57 @@ def validate_phase_gradient_wires(angle_wires, phase_grad_wires, work_wires):
     return angle_wires, phase_grad_wires, work_wires
 
 
-def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
+def _precisions_to_support(precision_stats, max_precision):
+    """Validate ``precision_stats`` and return the non-zero precisions that a decomposition rule
+    may use, always including the full precision ``max_precision``."""
+    if not precision_stats:
+        return {max_precision}
+    if any(not 0 <= p <= max_precision for p in precision_stats):
+        raise ValueError(
+            f"precision_stats keys must be between 0 and {max_precision}, but got "
+            f"{sorted(precision_stats)}."
+        )
+    return {max_precision} | {p for p in precision_stats if p > 0}
+
+
+def _dispatch_precision(binary_int, precision_stats, branch_fn):
+    """Apply ``branch_fn(p)`` for the smallest precision ``p`` in ``precision_stats`` that can
+    represent ``binary_int`` without its trailing zeros. If there is no such ``p``, the full
+    precision is used. The branches are hinted with the probabilities given by
+    ``precision_stats``.
+
+    Args:
+        binary_int (TensorLike): binary representation(s) of the angle(s), with the precision
+            along the last axis. May be traced.
+        precision_stats (dict[int, int]): number of rotations for each precision.
+        branch_fn (Callable): function that applies the operations for a given precision.
+    """
+    max_precision = qp.math.shape(binary_int)[-1]
+    # Position of the last set bit across all angles, i.e. the required precision
+    required = qp.math.max(binary_int * qp.math.arange(1, max_precision + 1))
+
+    total = sum(precision_stats.values())
+    precisions = sorted(precision_stats)
+    preds = [required <= p for p in precisions]
+    branches = [
+        qp.hint(partial(branch_fn, p), {"branch-prob": precision_stats[p] / total})
+        for p in precisions
+    ]
+    if precisions[-1] == max_precision:
+        preds.pop()
+        otherwise = branches.pop()
+    else:
+        otherwise = partial(branch_fn, max_precision)
+
+    if not branches:
+        otherwise()
+        return
+    qp.cond(preds[0], branches[0], otherwise, elifs=list(zip(preds[1:], branches[1:])))()
+
+
+def make_rz_to_phase_gradient_decomp(
+    angle_wires, phase_grad_wires, work_wires, precision_stats=None
+):
     r"""
     Create a custom decomposition rule for :class:`~.RZ` gates.
 
@@ -61,11 +115,37 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         angle_wires (Wires): wires that encode the binary representation of the rotation angle
         phase_grad_wires (Wires): wires that carry a phase gradient state
         work_wires (Wires): additional work wires for :class:`~.SemiAdder` decomposition
+        precision_stats (dict[int, int] | None): Optional statistics of the number of bits
+            required by the rotation angles, mapping a number of bits to the number of rotations
+            requiring that many bits (i.e., the precision without trailing zeros). If provided,
+            the data loading and the :class:`~.SemiAdder` are truncated to the smallest number of
+            bits in ``precision_stats`` that suffices for a given angle, using :func:`~.cond`
+            branches that are hinted with the corresponding probabilities via :func:`~.hint`.
+            If no number of bits in ``precision_stats`` suffices, the full precision is used.
+            Keys must lie between ``0`` and ``len(angle_wires)``. An empty dictionary is treated
+            like ``None``. See the note below for caveats. Defaults to ``None``.
 
     Returns:
         qp.decomposition.DecompositionRule: decomposition rule to be used within :func:`~.pennylane.decompose`.
 
     .. seealso:: :func:`~.make_selectpaulirot_to_phase_gradient_decomp`
+
+    .. note::
+
+        When using ``precision_stats``, keep the following in mind:
+
+        * ``precision_stats`` is only expected to work with program capture enabled
+          (``qp.capture.enable()``). Without program capture, the angles must be concrete;
+          traced angles, e.g., under ``qp.qjit(capture=False)``, raise an error.
+        * The resource function of the rule adds up the cost of all supported precisions, so
+          that the graph-based decomposition system accounts for the operators in all
+          conditional branches. This over-reports the cost of the rule, so that the
+          decomposition graph may prefer another rule over this one when it is passed via
+          ``alt_decomps``. Use ``fixed_decomps`` to enforce this rule.
+        * Angles that require more bits than the largest key in ``precision_stats`` fall back
+          to the full precision. Unless ``len(angle_wires)`` is a key in ``precision_stats``,
+          this fallback branch is hinted with probability ``0``, so that resource estimates
+          based on the hints do not account for these angles.
 
     **Example**
 
@@ -117,23 +197,40 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     angle_wires, phase_grad_wires, work_wires = validate_phase_gradient_wires(
         angle_wires, phase_grad_wires, work_wires
     )
+    precision = len(angle_wires)
+    precisions = _precisions_to_support(precision_stats, precision)
 
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
-        # rz decomposition costs, using information about angle_wires etc from the outer scope
-        target_op = qp.SemiAdder(
-            Wire[len(angle_wires)],
-            Wire[len(phase_grad_wires)],
-            Wire[len(work_wires)],
-        )
-        precision = len(angle_wires)
-        fanout = qp.ctrl(qp.MultiX(Bool[precision], Wire[precision]), control=Wire[1])
-        change_basis_rep = ChangeOpBasis2(fanout, target_op, fanout)
-        return {change_basis_rep: 1, qp.GlobalPhase: 1}
+        # rz decomposition costs, using information about angle_wires etc from the outer scope.
+        # With precision_stats, each supported precision is counted once.
+        resources = {qp.GlobalPhase: 1}
+        for p in precisions:
+            target_op = qp.SemiAdder(Wire[p], Wire[p], Wire[len(work_wires)])
+            fanout = qp.ctrl(qp.MultiX(Bool[p], Wire[p]), control=Wire[1])
+            resources[ChangeOpBasis2(fanout, target_op, fanout)] = 1
+        return resources
 
     # MultiX only emits a gate per set bit, so the gate count depends on the concrete angle.
     @qp.register_resources(_resource_fn, exact=False)
     def _rz_phase_gradient_decomp(phi, wires):
         qp.GlobalPhase(phi / 2)
-        _rz_phase_gradient(phi, wires, angle_wires, phase_grad_wires, work_wires)
+        if not precision_stats:
+            _rz_phase_gradient(phi, wires, angle_wires, phase_grad_wires, work_wires)
+            return
+
+        binary_int = qp.math.binary_decimals(phi, precision, unit=2 * np.pi)
+        control_wire = Wires(wires)[0]
+
+        def _branch(p):
+            if p == 0:
+                return
+
+            def compute_fn():
+                qp.ctrl(qp.MultiX(binary_int[:p], angle_wires[:p]), control=control_wire)
+
+            target_fn = partial(qp.SemiAdder, angle_wires[:p], phase_grad_wires[:p], work_wires)
+            qp.change_op_basis(compute_fn, target_fn, compute_fn)
+
+        _dispatch_precision(binary_int, precision_stats, _branch)
 
     return _rz_phase_gradient_decomp

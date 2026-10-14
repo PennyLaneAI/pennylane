@@ -1089,6 +1089,15 @@
 * A new :mod:`pennylane.testing` module collects utilities for testing code built with PennyLane.
   [(#10293)](https://github.com/PennyLaneAI/pennylane/pull/10293)
 
+* The phase gradient decomposition rule factories :func:`~.make_rz_to_phase_gradient_decomp`,
+  :func:`~.make_crz_to_phase_gradient_decomp` and
+  :func:`~.make_selectpaulirot_to_phase_gradient_decomp` accept an optional ``precision_stats``
+  argument. If provided, the data loading and the :class:`~.SemiAdder` are truncated to the
+  number of bits required by the angle(s), dispatching with hinted :func:`~.cond` branches.
+  In addition, the resources of :func:`~.make_selectpaulirot_to_phase_gradient_decomp` for
+  ``rot_axis="X"`` have been fixed.
+  [(#10312)](https://github.com/PennyLaneAI/pennylane/pull/10312)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
