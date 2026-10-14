@@ -350,7 +350,7 @@ class TestResourceRule:
         with warnings.catch_warnings():
             warnings.simplefilter("error", CaptureWarning)
             jaxpr = jax.make_jaxpr(circuit)(*args)
-        operations = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *args).operations
+        operations = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *args).operations
         assert_resource_counts_match(resources, operations)
 
 
@@ -622,7 +622,7 @@ class TestControlledDecomposition:
             warnings.simplefilter("error", CaptureWarning)
             jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
 
-        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
+        ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
         # One-body terms emit ``CRZ`` (PennyLane's single-control shortcut for ``ctrl(RZ)``);
         # two-body terms emit ``ControlledOp2`` wrapping ``IsingZZ``.
         assert {type(op).__name__ for op in ops} == {
@@ -683,7 +683,7 @@ class TestDoublePhaseControlledDecomposition:
             warnings.simplefilter("error", CaptureWarning)
             jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
 
-        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
+        ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
         assert {type(op).__name__ for op in ops} == {"BasisRotation", "CNOT", "RZ", "IsingZZ"}
 
     def test_double_phase_controlled_matches_expm(self, diagonal_hamiltonian_cdf):

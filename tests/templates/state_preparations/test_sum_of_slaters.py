@@ -26,6 +26,7 @@ from pennylane import math
 from pennylane.decomposition import list_decomps
 from pennylane.math import binary_matrix_rank, ceil_log2
 from pennylane.ops.functions import assert_valid
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.sum_of_slaters import (
     SumOfSlatersPrep,
     _columns_differ,
@@ -38,7 +39,7 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     compute_sos_encoding,
     select_sos_rows,
 )
-from pennylane.typing import Int
+from pennylane.typing import Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
 
@@ -678,6 +679,22 @@ class TestSumOfSlatersPrep:
 
         # Ensure they are Python integers, not other (NumPy) integers.
         assert all(isinstance(count, int) for count in resources.gate_counts.values())
+
+    @pytest.mark.parametrize(
+        "coefficients, state_type",
+        [
+            (np.array([1, -1, 1, -1]) / 2, Float),
+            (np.array([1, 1, 1, 1]), Float),
+            (np.array([1, 1j, -1, -1j]) / 2, Complex),
+        ],
+    )
+    def test_multiplexer_dtype_follows_coefficients(self, coefficients, state_type):
+        """Test that the MultiplexerStatePreparation in the decomposition is real-valued
+        for real-valued coefficients and complex-valued for complex-valued coefficients."""
+        op = SumOfSlatersPrep(coefficients, range(3), indices=(0, 3, 5, 6))
+        resources = _sos_state_prep.compute_resources(**op.arguments).gate_counts
+        assert qp.MultiplexerStatePreparation(state_type[4], wires=Wire[2]) in resources
+        _test_decomposition_rule(op, _sos_state_prep)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(

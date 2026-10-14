@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, math
 from pennylane.core.operator import Operator2
-from pennylane.typing import AbstractWires, Bool, Complex, Int, TensorLike, Wire
+from pennylane.typing import AbstractWires, Bool, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 _U64 = np.uint64
@@ -821,7 +821,9 @@ class PartialUnaryStatePreparation(Operator2):
     dynamic_argnames = ("coefficients",)
     wire_argnames = ("wires", "work_wires")
     compilable_argnames = ("indices",)
-    arg_specs = {"coefficients": Complex[-1], "wires": Wire[-1]}
+    # NOTE: 'coefficients' is deliberately left out of the 'arg_specs' as real-valued
+    # coefficients lead to a cheaper MultiplexerStatePreparation than complex-valued ones.
+    arg_specs = {"wires": Wire[-1]}
 
     def __init__(
         self,
@@ -876,7 +878,10 @@ def _partial_unary_state_prep_resources(coefficients, wires, indices, work_wires
     # QROM needs n_subspace - 1 work wires, while Toffoli needs one zeroed work wire.
     needed_work_wires = max(n_subspace - 1, 1)
     effective_num_wires = num_wires + max(len(work_wires) - needed_work_wires, 0)
-    resources[qp.MultiplexerStatePreparation(Complex[2**n_subspace], wires=Wire[n_subspace])] += 1
+    state_type, _ = math.get_abstract_and_cast_dtype(coefficients)
+    resources[
+        qp.MultiplexerStatePreparation(state_type[2**n_subspace], wires=Wire[n_subspace])
+    ] += 1
 
     if is_affine:
         resources[qp.X] += effective_num_wires
@@ -973,9 +978,11 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
 
     # Step 1: Dense state preparation
     ids = np.array([bijection[i] for i in range(num_entries)])
-    dense_size = 2**n_subspace
-    dense_state = math.scatter(ids, coefficients, dense_size, like=math.get_interface(coefficients))
-    qp.MultiplexerStatePreparation(dense_state, subspace_wires)
+    dense_state = math.scatter(
+        ids, coefficients, 2**n_subspace, like=math.get_interface(coefficients)
+    )
+    _, cast_dtype = math.get_abstract_and_cast_dtype(coefficients)
+    qp.MultiplexerStatePreparation(math.cast(dense_state, cast_dtype), subspace_wires)
 
     if not circuit:
         return
