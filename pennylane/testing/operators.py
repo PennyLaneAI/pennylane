@@ -548,7 +548,7 @@ def _check_properties(op: Operator):
     raise NotImplementedError
 
 
-@_check_properties.dispatch
+@_check_properties.register
 def _check_properties_legacy(op: Operator):
     """Checks the properties of an Operator1."""
     assert isinstance(op.data, tuple), "op.data must be a tuple"
