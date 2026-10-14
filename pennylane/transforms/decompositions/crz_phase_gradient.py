@@ -51,7 +51,7 @@ def make_crz_to_phase_gradient_decomp(
             At least ``len(angle_wires)-1`` work wires are required.
         precision_stats (dict[int, int] | None): Optional statistics of the number of bits
             required by the rotation angles. See :func:`~.make_rz_to_phase_gradient_decomp` for
-            details. Defaults to ``None``.
+            details and caveats, in particular regarding program capture. Defaults to ``None``.
 
     Returns:
         func: decomposition rule to be used within :func:`~.pennylane.decompose`.
@@ -155,7 +155,7 @@ def make_crz_to_phase_gradient_decomp(
             target_op = qp.SemiAdder(angle_wires[:p], phase_grad_wires[:p], work_wires=work_wires)
             qp.change_op_basis(_compute_fn, target_op, _compute_fn)
 
-        if precision_stats is None:
+        if not precision_stats:
             _branch(precision)
         else:
             _dispatch_precision(binary_int, precision_stats, _branch)

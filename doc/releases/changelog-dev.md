@@ -1092,7 +1092,7 @@
   number of bits required by the angle(s), dispatching with hinted :func:`~.cond` branches.
   In addition, the resources of :func:`~.make_selectpaulirot_to_phase_gradient_decomp` for
   ``rot_axis="X"`` have been fixed.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10312)](https://github.com/PennyLaneAI/pennylane/pull/10312)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 

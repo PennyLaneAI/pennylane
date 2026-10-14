@@ -129,7 +129,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(
             required by the ``SelectPauliRot`` operators, mapping a number of bits to the number
             of operators requiring that many bits. The bits required by an operator are the
             maximum over all of its angles. See :func:`~.make_rz_to_phase_gradient_decomp` for
-            details. Defaults to ``None``.
+            details and caveats, in particular regarding program capture. Defaults to ``None``.
 
     Returns:
         func: decomposition rule to be used within :func:`~.pennylane.decompose`.
@@ -265,7 +265,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(
 
         return change_basis_rep_basis_adapted
 
-    @qp.register_resources(_resource_fn, exact=precision_stats is None)
+    @qp.register_resources(_resource_fn, exact=not precision_stats)
     def _select_pauli_rot_phase_gradient_decomp(angles, control_wires, target_wire, rot_axis, **_):
         if len(control_wires) == 0:
             match rot_axis:
@@ -284,7 +284,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(
                 "received {len(work_wires)} but require {len(control_wires) - 1}"
             )
 
-        if precision_stats is None:
+        if not precision_stats:
             _select_pauli_rot_phase_gradient(
                 angles,
                 rot_axis,

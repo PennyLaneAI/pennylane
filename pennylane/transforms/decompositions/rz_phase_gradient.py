@@ -55,7 +55,7 @@ def validate_phase_gradient_wires(angle_wires, phase_grad_wires, work_wires):
 def _precisions_to_support(precision_stats, max_precision):
     """Validate ``precision_stats`` and return the non-zero precisions that a decomposition rule
     may use, always including the full precision ``max_precision``."""
-    if precision_stats is None:
+    if not precision_stats:
         return {max_precision}
     if any(not 0 <= p <= max_precision for p in precision_stats):
         raise ValueError(
@@ -122,12 +122,30 @@ def make_rz_to_phase_gradient_decomp(
             bits in ``precision_stats`` that suffices for a given angle, using :func:`~.cond`
             branches that are hinted with the corresponding probabilities via :func:`~.hint`.
             If no number of bits in ``precision_stats`` suffices, the full precision is used.
-            Keys must lie between ``0`` and ``len(angle_wires)``. Defaults to ``None``.
+            Keys must lie between ``0`` and ``len(angle_wires)``. An empty dictionary is treated
+            like ``None``. See the note below for caveats. Defaults to ``None``.
 
     Returns:
         qp.decomposition.DecompositionRule: decomposition rule to be used within :func:`~.pennylane.decompose`.
 
     .. seealso:: :func:`~.make_selectpaulirot_to_phase_gradient_decomp`
+
+    .. note::
+
+        When using ``precision_stats``, keep the following in mind:
+
+        * ``precision_stats`` is only expected to work with program capture enabled
+          (``qp.capture.enable()``). Without program capture, the angles must be concrete;
+          traced angles, e.g., under ``qp.qjit(capture=False)``, raise an error.
+        * The resource function of the rule adds up the cost of all supported precisions, so
+          that the graph-based decomposition system accounts for the operators in all
+          conditional branches. This over-reports the cost of the rule, so that the
+          decomposition graph may prefer another rule over this one when it is passed via
+          ``alt_decomps``. Use ``fixed_decomps`` to enforce this rule.
+        * Angles that require more bits than the largest key in ``precision_stats`` fall back
+          to the full precision. Unless ``len(angle_wires)`` is a key in ``precision_stats``,
+          this fallback branch is hinted with probability ``0``, so that resource estimates
+          based on the hints do not account for these angles.
 
     **Example**
 
@@ -196,7 +214,7 @@ def make_rz_to_phase_gradient_decomp(
     @qp.register_resources(_resource_fn, exact=False)
     def _rz_phase_gradient_decomp(phi, wires):
         qp.GlobalPhase(phi / 2)
-        if precision_stats is None:
+        if not precision_stats:
             _rz_phase_gradient(phi, wires, angle_wires, phase_grad_wires, work_wires)
             return
 
