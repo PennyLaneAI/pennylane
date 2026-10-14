@@ -667,6 +667,34 @@ class TestCondOperatorInstances:
         ):
             jax.make_jaxpr(f)(True)
 
+    def test_callable_true_fn_with_operator1_false_fn_tracer_raises(self):
+        """Test that an Operator1 false_fn created during tracing is rejected."""
+
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+            """Legacy Operator1-style operator."""
+
+        def f(pred):
+            qp.cond(pred, lambda: None, OldOp(wires=0))
+
+        with pytest.raises(
+            ValueError, match="Cannot provide Operator false_fn .* with callable true_fn"
+        ):
+            jax.make_jaxpr(f)(True)
+
+    def test_callable_true_fn_with_operator1_elif_tracer_raises(self):
+        """Test that an Operator1 elif created during tracing is rejected."""
+
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+            """Legacy Operator1-style operator."""
+
+        def f(pred):
+            qp.cond(pred, lambda: None, lambda: None, elifs=((False, OldOp(wires=0)),))
+
+        with pytest.raises(
+            ValueError, match="Cannot provide Operator elif_fn .* with callable true_fn"
+        ):
+            jax.make_jaxpr(f)(True)
+
     @pytest.mark.parametrize(
         "elif_branch",
         [lambda: None, "nope", 1],

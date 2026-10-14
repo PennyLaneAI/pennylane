@@ -32,8 +32,8 @@ from pennylane.capture.hint import process_hints
 from pennylane.compiler import compiler
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator, Operator1, Operator2
-from pennylane.core.operator.base import AbstractOperator
-from pennylane.core.operator.operator2 import pop_op_eqns
+from pennylane.core.operator.base import AbstractOperator  # tach-ignore
+from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.exceptions import ConditionalTransformError
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
@@ -420,6 +420,12 @@ class CondCallable:
         return self.__call_capture_disabled(*args, **kwargs)
 
 
+def _is_operator(op):
+    return isinstance(op, Operator) or (
+        math.is_abstract(op) and isinstance(op.aval, AbstractOperator)
+    )
+
+
 def _capture_dispatch(condition, true_fn, false_fn, elifs):
     if (
         len(elifs) == 2
@@ -435,11 +441,11 @@ def _capture_dispatch(condition, true_fn, false_fn, elifs):
     if math.is_abstract(true_fn) and isinstance(true_fn.aval, AbstractOperator):
         raise ValueError("Operator1 instances cannot be provided as true_fn to pennylane.cond.")
 
-    if isinstance(false_fn, Operator):
+    if _is_operator(false_fn):
         raise ValueError(f"Cannot provide Operator false_fn {false_fn} with callable true_fn.")
 
     for _, elif_fn in elifs:
-        if isinstance(elif_fn, Operator):
+        if _is_operator(elif_fn):
             raise ValueError(f"Cannot provide Operator elif_fn {elif_fn} with callable true_fn")
 
     return CondCallable(condition, true_fn, false_fn, elifs)
