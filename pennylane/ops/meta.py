@@ -24,7 +24,7 @@ from typing import Literal
 
 import pennylane as qp
 from pennylane.core.operator import Operation, Operator2
-from pennylane.decomposition.decomposition_rule import add_decomps, register_resources
+from pennylane.decomposition.decomposition_rule import add_decomps, null_decomp
 from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
 from pennylane.typing import Wire
 from pennylane.wires import WiresLike
@@ -84,21 +84,7 @@ def _ctrl_barrier(base: Barrier, control, control_values, *_):  # pylint: disabl
     return base
 
 
-def barrier_resources(
-    wires: WiresLike, only_visual: bool = False
-):  # pylint: disable=unused-argument
-    """Resources for the Barrier operation."""
-    return {}
-
-
-@register_resources(barrier_resources)
-def barrier_decomposition(
-    wires: WiresLike, only_visual: bool = False
-):  # pylint: disable=unused-argument
-    """Decomposition of the Barrier operation."""
-
-
-add_decomps(Barrier, barrier_decomposition)
+add_decomps(Barrier, null_decomp)
 
 
 class Snapshot(Operation):
