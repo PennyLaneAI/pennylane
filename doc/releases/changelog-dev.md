@@ -1220,7 +1220,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* :func:`~.decompose` is now a pass-only transform that always dispatches to Catalyst's
+* :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's
   ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
   available as :func:`~.transforms._tape_decompose`.
   [(#10304)](https://github.com/PennyLaneAI/pennylane/pull/10304)
