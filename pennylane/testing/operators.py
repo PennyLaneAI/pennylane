@@ -565,7 +565,7 @@ def _check_properties_operator2(op: Operator2) -> None:
     # the following two properties are not necessarily promised
     if hasattr(op, "data"):
         assert isinstance(op.data, tuple), "op.data must be a tuple"
-    if hasattr(op, "num_wires"):
+    if hasattr(op, "num_wires") and op.num_wires is not None:
         assert isinstance(op.num_wires, int), "op.num_wires must be a int"
 
     assert isinstance(op.wires, Wires), "op.wires must be a Wires instance"
