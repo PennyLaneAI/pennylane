@@ -16,6 +16,8 @@ Unit tests for the Prod arithmetic class of qubit operations
 """
 
 # pylint:disable=protected-access, unused-argument
+from functools import reduce
+
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -573,6 +575,24 @@ class TestMatrix:
         prod_op = Prod(op(wires=0), qp.PauliX(wires=2), qp.PauliZ(wires=1))
         with pytest.raises(MatrixUndefinedError):
             prod_op.matrix()
+
+    @pytest.mark.parametrize(
+        "factors",
+        (
+            (qp.H(1), qp.H(0), qp.CNOT([2, 1]), qp.CNOT([1, 0])),
+            (qp.CNOT([1, 3]), qp.X(0), qp.CNOT([3, 2]), qp.Toffoli([2, 0, 1])),
+        ),
+    )
+    @pytest.mark.parametrize("wire_order", [None, [0, 1, 2, 3], [3, 2, 0, 1]])
+    def test_merged_overlapping_groups(self, wire_order, factors):
+        """Test the matrix when merging overlapping groups reorders the wires relative to
+        the wires of the ``Prod`` op, and we need to reorder them back."""
+        prod_op = Prod(*factors)
+        mat = prod_op.matrix(wire_order=wire_order)
+        if wire_order is None:
+            wire_order = prod_op.wires
+        expected = reduce(np.matmul, [factor.matrix(wire_order=wire_order) for factor in factors])
+        assert np.allclose(mat, expected)
 
     def test_prod_ops_multi_terms(self):
         """Test matrix is correct for a product of more than two terms."""

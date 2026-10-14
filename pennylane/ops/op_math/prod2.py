@@ -26,8 +26,8 @@ from scipy.sparse import kron as sparse_kron
 
 import pennylane as qp
 from pennylane import capture, compiler, control_flow, math
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.core.queuing import apply
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
@@ -157,10 +157,13 @@ class Prod2(CompositeOp2):
             return self.pauli_rep.to_mat(wire_order=wire_order or self.wires)
 
         mats: list[TensorLike] = []
+        mats_wires: list[Wires] = []
         batched: list[bool] = []
         for ops in self.overlapping_ops:
             gen = ((op.matrix(), op.wires) for op in ops)
-            reduced_mat, _ = math.reduce_matrices(gen, reduce_func=math.matmul)
+            reduced_mat, reduced_wires = math.reduce_matrices(gen, reduce_func=math.matmul)
+            # Record the wires the reduced matrix of this batch of overlapping ops acts on
+            mats_wires.append(reduced_wires)
 
             if self.batch_size is not None:
                 batched.append(any(op.batch_size is not None for op in ops))
@@ -180,7 +183,12 @@ class Prod2(CompositeOp2):
                     for i in range(self.batch_size)
                 ]
             )
-        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
+
+        # Combine the wires of all matrices to the wires that full_mat acts on (order is preserved)
+        full_wires = Wires.all_wires(mats_wires)
+        # Even if no wire_order is given, we need to map from full_wires to self.wires
+        wire_order = wire_order or self.wires
+        return math.expand_matrix(full_mat, full_wires, wire_order=wire_order)
 
     @property
     @handle_recursion_error

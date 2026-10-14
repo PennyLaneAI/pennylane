@@ -333,7 +333,7 @@ class TestDecomposition:
         assert np.all(jaxpr.consts[0] == wires)
 
         # Validate the produced tape
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, bitstring)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, bitstring)
         expected = [qp.X(0), qp.X(2)]
 
         assert len(tape.operations) == len(expected)
@@ -445,7 +445,8 @@ class TestDecomposition:
         """A single-control C(MultiX) fans out to one controlled-X per set bit (a CNOT for a
         control on |1>), lowering to the requested gate set."""
 
-        @qp.transforms.decompose(gate_set=gate_set)
+        # pylint: disable-next=protected-access
+        @qp.transforms._tape_decompose(gate_set=gate_set)
         @qp.qnode(qp.device("null.qubit", wires=4))
         def circuit():
             qp.ctrl(
@@ -455,8 +456,9 @@ class TestDecomposition:
             )
             return qp.state()
 
-        specs = qp.specs(circuit)()["resources"].quantum_operations
-        assert dict(specs) == expected
+        tape = qp.workflow.construct_tape(circuit)()
+        resources = qp.resource.resources_from_tape(tape).quantum_operations
+        assert resources == expected
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("control_values", [[1], [0]])
@@ -496,7 +498,8 @@ class TestDecomposition:
         control = [0, 1, 2, 3]
         targets = [4, 5, 6, 7]
 
-        @qp.transforms.decompose(
+        # pylint: disable-next=protected-access
+        @qp.transforms._tape_decompose(
             # PauliX is required for solvability (flip_zero_control's declared resources), even
             # though this concrete, all-1-control circuit never emits one.
             gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", "CNOT", "PauliX"},
@@ -507,12 +510,13 @@ class TestDecomposition:
             qp.ctrl(qp.MultiX(bitstring, wires=targets), control=control)
             return qp.state()
 
-        specs = qp.specs(circuit)()["resources"].quantum_operations
+        tape = qp.workflow.construct_tape(circuit)()
+        resources = qp.resource.resources_from_tape(tape).quantum_operations
         num_controls = len(control)
         num_set_bits = sum(bitstring)
         # One CNOT per set target bit fanned out from the ladder's single work wire, instead of
         # one MultiControlledX (which itself needs O(num_controls) gates) per set target bit.
-        assert dict(specs) == {
+        assert resources == {
             "Allocate": 1,
             "Deallocate": 1,
             "TemporaryAND": num_controls - 1,

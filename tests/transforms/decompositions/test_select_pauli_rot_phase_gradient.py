@@ -129,7 +129,8 @@ def test_as_fixed_decomps(prec, num_controls):
         angle_wires, phase_grad_wires, work_wires
     )
 
-    @qp.transforms.decompose(
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(
         gate_set={
             "QROM",
             "SemiAdder",
@@ -145,7 +146,8 @@ def test_as_fixed_decomps(prec, num_controls):
         qp.SelectPauliRot(angles, control_wires=range(num_controls), target_wire=num_controls)
         return qp.state()
 
-    specs = qp.specs(circuit)(angles)["resources"].quantum_operations
+    tape = qp.workflow.construct_tape(circuit)(angles)
+    specs = qp.resource.resources_from_tape(tape).quantum_operations
     expected_specs = {
         "QROM": 2,
         "CNOT": 2 * prec,
@@ -203,7 +205,8 @@ def test_integration_multi_wire(rot_axis, seed):
     if rot_axis in ("X", "Y"):
         gs |= {"Hadamard"}
 
-    @qp.decompose(
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(
         gate_set=gs,
         fixed_decomps={qp.SelectPauliRot: custom_decomp},
     )

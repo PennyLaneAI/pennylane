@@ -34,6 +34,8 @@ The following frameworks are currently supported:
 
 import autoray as ar
 
+from pennylane.typing import AbstractArray, Complex, Float
+
 from .binary_linalg import (
     binary_decimals,
     binary_finite_reduced_row_echelon,
@@ -150,6 +152,43 @@ def get_dtype_name(x) -> str:
     return ar.get_dtype_name(x)
 
 
+def is_complex_dtype(obj) -> bool:
+    """Return whether an object's data type is complex-valued.
+
+    Args:
+        obj (tensor_like): Object whose data type is checked.
+
+    Returns:
+        bool: Whether the object's data type is complex-valued.
+
+    >>> x = np.array([1.0, 2.0])
+    >>> qp.math.is_complex_dtype(x)
+    False
+    >>> x = np.array([1.0j, 2.0j])
+    >>> qp.math.is_complex_dtype(x)
+    True
+    """
+    if isinstance(obj, bool):
+        return False
+    return get_dtype_name(obj).startswith("complex")
+
+
+def get_abstract_and_cast_dtype(obj) -> tuple[AbstractArray, type]:
+    """Return the abstract and Python cast dtypes for an object's real or complex dtype.
+
+    Args:
+        obj (tensor_like): Object whose data type determines the returned dtypes.
+
+    Returns:
+        tuple[AbstractArray, type]: The abstract PennyLane and Python cast dtypes.
+
+    >>> x = np.array([1.0j, 2.0j])
+    >>> qp.math.get_abstract_and_cast_dtype(x)
+    (AbstractArray((), complex128, weak_type=True), <class 'complex'>)
+    """
+    return (Complex, complex) if is_complex_dtype(obj) else (Float, float)
+
+
 def is_real_obj_or_close(obj):
     """Convert an array to its real part if it is close to being real-valued, and afterwards
     return whether the resulting data type is real.
@@ -179,7 +218,7 @@ def is_real_obj_or_close(obj):
     input is close to real-valued.
     """
     # Check if object is purely real
-    if not get_dtype_name(obj).startswith("complex"):
+    if not is_complex_dtype(obj):
         return True
 
     # If it's a concrete array, check if the imaginary part is effectively zero
@@ -245,6 +284,7 @@ __all__ = [
     "floor_log2",
     "frobenius_inner_product",
     "gammainc",
+    "get_abstract_and_cast_dtype",
     "get_dtype_name",
     "get_interface",
     "get_batch_size",
@@ -255,6 +295,7 @@ __all__ = [
     "iqp_expval",
     "in_backprop",
     "is_abstract",
+    "is_complex_dtype",
     "is_independent",
     "is_real_obj_or_close",
     "iscomplex",
