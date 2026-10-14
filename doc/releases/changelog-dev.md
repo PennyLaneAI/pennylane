@@ -1905,7 +1905,7 @@
 
 * `qp.cond` can now handle `Operator2` instances being provided instead of branch functions.
   While this syntax was supported with tape-based PennyLane, it had never been
-  properly supported with program capture and catalyst.
+  properly supported with program capture and Catalyst.
   [(#10324)](https://github.com/PennyLaneAI/pennylane/pull/10324)
 
 * Fixed captured transforms dropping keyword arguments to the transformed function,
