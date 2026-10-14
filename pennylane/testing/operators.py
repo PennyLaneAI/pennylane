@@ -18,6 +18,7 @@ This module contains ``assert_valid``, which checks that an operator is correctl
 import copy
 import itertools
 import pickle
+from functools import singledispatch
 
 import jax
 import numpy as np
@@ -264,20 +265,24 @@ def _check_sparse_matrix(op):
 
 
 def _check_eigendecomposition(op):
-    """Checks involving diagonalizing gates and eigenvalues."""
+    """Check that the diagonalizing gates and eigenvalues of an operator agree with their
+    ``compute_*`` counterparts, and together reproduce the matrix of the operator."""
 
+    _, args, kwargs = _get_decomp_args(op)
+
+    diagonalizing_gates = None
     if op.has_diagonalizing_gates:
-        dg = op.diagonalizing_gates()
+        # op.diagonalizing_gates() should always work
+        diagonalizing_gates = op.diagonalizing_gates()
         try:
-            _, args, kwargs = _get_decomp_args(op)
-            compute_dg = type(op).compute_diagonalizing_gates(*args, **kwargs)
-        except (DiagGatesUndefinedError, TypeError):
-            # sometimes diagonalizing gates is defined but not compute_diagonalizing_gates
-            # compute_diagonalizing_gates might also have a different call signature
-            compute_dg = dg
-
-        for op1, op2 in zip(dg, compute_dg, strict=True):
-            assert op1 == op2, "diagonalizing_gates and compute_diagonalizing_gates must match"
+            compute_diagonalizing_gates = type(op).compute_diagonalizing_gates(*args, **kwargs)
+            _assert_equal_ops(diagonalizing_gates, compute_diagonalizing_gates)
+        except DiagGatesUndefinedError:
+            pass  # when diagonalizing_gates() is defined but compute_diagonalizing_gates() isn't.
+        except AssertionError as e:
+            # The assertion error would've been raised from _assert_equal_ops
+            error_message = "diagonalizing_gates and compute_diagonalizing_gates must match"
+            raise AssertionError(error_message) from e
     else:
         _assert_error_raised(
             op.diagonalizing_gates,
@@ -286,66 +291,65 @@ def _check_eigendecomposition(op):
         )()
 
     try:
-        eg = op.eigvals()
+        eigvals = op.eigvals()
     except EigvalsUndefinedError:
-        eg = None
+        return  # the following tests depend on the operator having eigvals
 
-    has_eigvals = True
+    if isinstance(op, Operator1):
+        # compute_eigvals takes the same arguments excluding wires
+        kwargs = {k: v for k, v in kwargs.items() if k != "wires"}
+
     try:
-        _, args, kwargs = _get_decomp_args(op)
-        if isinstance(op, Operator1):
-            kwargs = {k: v for k, v in kwargs.items() if k != "wires"}
-        compute_eg = type(op).compute_eigvals(*args, **kwargs)
+        compute_eigvals = type(op).compute_eigvals(*args, **kwargs)
+        assert math.allclose(compute_eigvals, eigvals), "eigvals and compute_eigvals must match"
     except EigvalsUndefinedError:
-        compute_eg = eg
-        has_eigvals = False
+        pass  # when compute_eigvals isn't defined, which is fine
 
-    if has_eigvals:
-        assert math.allclose(eg, compute_eg), "eigvals and compute_eigvals must match"
+    if diagonalizing_gates is None:
+        return  # the following tests depends on diagonalizing_gates existing
 
-    if (eg is not None or compute_eg is not None) and op.has_diagonalizing_gates:
-        eg = eg if eg is not None else compute_eg
-        dg = ops.prod(*dg[::-1]) if len(dg) > 0 else ops.Identity(op.wires)
-        eg = ops.QubitUnitary(np.diag(eg), wires=op.wires)
-        decomp = ops.prod(ops.adjoint(dg), eg, dg)
-        # The decomposition's wires may be ordered differently than the operator's wires,
-        # so both matrices must be computed in the same wire order.
-        decomp_mat = op_funcs.matrix(decomp, wire_order=op.wires)
-        original_mat = op_funcs.matrix(op, wire_order=op.wires)
-        failure_comment = f"eigenvalues and diagonalizing gates must be able to reproduce the original operator. Got \n{decomp_mat}\n\n{original_mat}"
-        assert math.allclose(decomp_mat, original_mat), failure_comment
+    # The diagonalizing gates map the operator to a diagonal matrix with the eigenvalues.
+    diag = ops.prod(*diagonalizing_gates[::-1]) if diagonalizing_gates else ops.Identity(op.wires)
+    eigvals_op = ops.QubitUnitary(np.diag(eigvals), wires=op.wires)
+    decomp = ops.prod(ops.adjoint(diag), eigvals_op, diag)
+
+    # The decomposition's wires may be ordered differently than the operator's wires,
+    # so both matrices must be computed in the same wire order.
+    decomp_mat = op_funcs.matrix(decomp, wire_order=op.wires)
+    original_mat = op_funcs.matrix(op, wire_order=op.wires)
+    failure_comment = f"eigenvalues and diagonalizing gates must be able to reproduce the original operator. Got \n{decomp_mat}\n\n{original_mat}"
+    assert math.allclose(decomp_mat, original_mat), failure_comment
 
 
 def _check_generator(op):
     """Checks that if an operator's has_generator property is True, it has a generator."""
 
-    if op.has_generator:
-        gen = op.generator()
-        assert isinstance(gen, Operator)
-        new_op = ops.exp(gen, 1j * op.data[0])
-        assert math.allclose(
-            op_funcs.matrix(op, wire_order=op.wires), op_funcs.matrix(new_op, wire_order=op.wires)
-        )
-    else:
-        failure_comment = (
-            "If has_generator is False, the matrix method must raise a ``GeneratorUndefinedError``."
-        )
+    if not op.has_generator:
         _assert_error_raised(
-            op.generator, GeneratorUndefinedError, failure_comment=failure_comment
+            op.generator,
+            GeneratorUndefinedError,
+            "GeneratorUndefinedError expected if op.has_generator is False.",
         )()
+        return
+
+    gen = op.generator()
+    assert isinstance(gen, Operator)
+    new_op = ops.exp(gen, 1j * op.data[0])
+    matrix = op_funcs.matrix(op, wire_order=op.wires)
+    expected = op_funcs.matrix(new_op, wire_order=op.wires)
+    assert math.allclose(matrix, expected)
 
 
 def _check_copy(op, skip_deepcopy):
     """Check that copies and deep copies give identical objects."""
+
     copied_op = copy.copy(op)
     assert op_funcs.equal(copied_op, op), "copied op must be equal with equal"
     assert copied_op == op, "copied op must be equivalent to original operation"
     assert copied_op is not op, "copied op must be a separate instance from original operation"
+
     if not skip_deepcopy:
-        try:
-            op_funcs.assert_equal(copy.deepcopy(op), op)
-        except AssertionError as e:
-            raise AssertionError("deep copied op must also be equal") from e
+        op_funcs.assert_equal(copy.deepcopy(op), op)
 
 
 # pylint: disable=import-outside-toplevel, protected-access
@@ -356,64 +360,75 @@ def _check_pytree(op):
     try:
         assert hash(metadata), "metadata must be hashable"
     except Exception as e:
-        raise AssertionError(
-            f"metadata output from _flatten must be hashable. Got metadata {metadata}"
-        ) from e
+        error_message = f"metadata output from _flatten must be hashable. Got metadata {metadata}"
+        raise AssertionError(error_message) from e
 
     try:
         new_op = type(op)._unflatten(data, metadata)
-    except Exception as e:
-        message = (
-            f"{type(op).__name__}._unflatten must be able to reproduce the original operation from "
-            f"{data} and {metadata}. You may need to override either the _unflatten or _flatten method. "
-            f"\nFor local testing, try type(op)._unflatten(*op._flatten())"
-        )
-        raise AssertionError(message) from e
-
-    try:
         op_funcs.assert_equal(op, new_op)
-    except AssertionError as e:
+    except Exception as e:
         raise AssertionError(
-            "metadata and data must be able to reproduce the original operation"
+            f"{type(op).__name__}._unflatten must be able to reproduce the original operator "
+            f"from {data} and {metadata}. You may need to override either _unflatten or _flatten. "
+            f"For local testing, try type(op)._unflatten(*op._flatten())."
         ) from e
 
     leaves, struct = jax.tree_util.tree_flatten(op)
     unflattened = jax.tree_util.tree_unflatten(struct, leaves)
-    assert unflattened == op, f"op must be a valid pytree. Got {unflattened} instead of {op}."
+    try:
+        op_funcs.assert_equal(unflattened, op)
+    except AssertionError as e:
+        raise AssertionError(
+            f"jax.tree_util.tree_unflatten must be able to reproduce the original operator {op} "
+            f"from the output of jax.tree_util.tree_flatten(op). Got {unflattened}."
+        ) from e
 
     leaves, struct = pytrees.flatten(op)
     unflattened = pytrees.unflatten(leaves, struct)
-    assert unflattened == op, f"op must be a valid pytree. Got {unflattened} instead of {op}."
+    try:
+        op_funcs.assert_equal(unflattened, op)
+    except AssertionError as e:
+        raise AssertionError(
+            f"qp.pytrees.unflatten must be able to reproduce the original operator {op} "
+            f"from the output of qp.pytrees.flatten(op). Got {unflattened}."
+        ) from e
 
     if isinstance(op, Operator1):
-        # Nested operators can contribute parameters or structural leaves (such as Operator2
-        # wires) that are intentionally absent from the outer legacy ``data`` view. Stop at
-        # nested PennyLane objects and expand only their numerical data. The outer ``data`` may
-        # intentionally omit some nested parameters (for example, ``Evolution`` excludes its
-        # generator's parameters), but every exposed parameter must still occur in pytree order.
-        def nested_pl_object(obj):
-            return obj is not op and isinstance(obj, (Operator, MeasurementProcess))
+        _check_pytree_operator1(op)
 
-        legacy_leaves, _ = pytrees.flatten(op, is_leaf=nested_pl_object)
-        ordered_data = []
-        for leaf in legacy_leaves:
-            if isinstance(leaf, Operator1):
-                ordered_data.extend(leaf.data)
-            elif isinstance(leaf, Operator2):
-                ordered_data.extend(leaf.dynamic_args.values())
-            elif not isinstance(leaf, MeasurementProcess):
-                ordered_data.append(leaf)
 
-        ordered_data = iter(ordered_data)
-        for data_item in op.data:
-            if not any(math.allclose(data_item, leaf) for leaf in ordered_data):
-                raise AssertionError(
-                    "data must be the terminal leaves of the pytree in the same order. "
-                    f"Could not find {data_item} in the remaining leaves."
-                )
+def _check_pytree_operator1(op):
+    """Operator1 specific pytree tests."""
+
+    # Nested operators can contribute parameters or structural leaves (such as Operator2
+    # wires) that are intentionally absent from the outer legacy ``data`` view. Stop at
+    # nested PennyLane objects and expand only their numerical data. The outer ``data`` may
+    # intentionally omit some nested parameters (for example, ``Evolution`` excludes its
+    # generator's parameters), but every exposed parameter must still occur in pytree order.
+    def nested_pl_object(obj):
+        return obj is not op and isinstance(obj, (Operator, MeasurementProcess))
+
+    leaves, _ = pytrees.flatten(op, is_leaf=nested_pl_object)
+    ordered_data = []
+    for leaf in leaves:
+        if isinstance(leaf, Operator1):
+            ordered_data.extend(leaf.data)
+        elif isinstance(leaf, Operator2):
+            ordered_data.extend(leaf.dynamic_args.values())
+        elif not isinstance(leaf, MeasurementProcess):
+            ordered_data.append(leaf)
+
+    ordered_data = iter(ordered_data)
+    for data_item in op.data:
+        if not any(math.allclose(data_item, leaf) for leaf in ordered_data):
+            raise AssertionError(
+                "data must be the terminal leaves of the pytree in the same order. "
+                f"Could not find {data_item} in the remaining leaves."
+            )
 
 
 def _check_capture(op):
+    """Tests that op can be captured."""
 
     if not all(isinstance(w, int) for w in op.wires):
         return
@@ -443,7 +458,14 @@ def _check_pickle(op):
     assert unpickled == op, "operation must be able to be pickled and unpickled"
 
 
-def _check_bind_new_parameters(op):
+@singledispatch
+def _check_bind_new_parameters(op: Operator):
+    """Check that bind new parameters can create a new op with different bound arguments."""
+    raise NotImplementedError
+
+
+@_check_bind_new_parameters.register
+def _check_bind_new_parameters_legacy(op: Operator):
     """Check that bind new parameters can create a new op with different data."""
     new_data = [d * 0.0 for d in op.data]
     new_data_op = op_funcs.bind_new_parameters(op, new_data)
@@ -452,8 +474,9 @@ def _check_bind_new_parameters(op):
         assert math.allclose(d1, d2), failure_comment
 
 
-def _check_bind_new_parameters_op2(op):
-    """Check that bind new parameters can create a new op with different bound arguments."""
+@_check_bind_new_parameters.register
+def _check_bind_new_parameters_op2(op: Operator2):
+    """Check that bind_new_parameters works for an Operator2"""
     dyn_args = op.base.dynamic_args if isinstance(op, SymbolicOp2) else op.dynamic_args
     new_dyn_args = {k: math.cast_like(v * 0.0, v) for k, v in dyn_args.items()}
     new_data_op = op_funcs.bind_new_parameters(op, tuple(new_dyn_args.values()))
@@ -463,7 +486,8 @@ def _check_bind_new_parameters_op2(op):
         assert math.allclose(op_to_check.arguments[name], val), failure_comment
 
 
-def _check_bind_new_parameters_symbolicop2(op):
+@_check_bind_new_parameters.register
+def _check_bind_new_parameters_symbolicop2(op: SymbolicOp2):
     """Check that bind new parameters can create a new op with different bound arguments."""
     new_dyn_args = {
         k: math.cast_like(v * 0.0, v)
@@ -471,11 +495,9 @@ def _check_bind_new_parameters_symbolicop2(op):
         if k in op.base.dynamic_argnames
     }
     new_data_op = op_funcs.bind_new_parameters(op, new_dyn_args.values())
-    failure_comment = (
-        "bind_new_parameters must be able to update the symbolicop2 with new arguments."
-    )
+    message = "bind_new_parameters must be able to update the symbolicop2 with new arguments."
     for name, val in new_dyn_args.items():
-        assert math.allclose(new_data_op.base.arguments[name], val), failure_comment
+        assert math.allclose(new_data_op.base.arguments[name], val), message
 
 
 def _check_differentiation(op):
@@ -494,7 +516,6 @@ def _check_differentiation(op):
     qnode_ps = QNode(circuit, device("default.qubit"), diff_method="parameter-shift")
 
     params = [x if isinstance(x, int) else pnp.array(x) for x in data]
-
     ps = jacobian(qnode_ps)(*params)
     expected_bp = jacobian(qnode_ref)(*params)
 
@@ -514,45 +535,35 @@ def _check_differentiation(op):
 def _check_wires(op, skip_wire_mapping):
     """Check that wires are a ``Wires`` class and can be mapped."""
     assert isinstance(op.wires, Wires), "wires must be a wires instance"
-    if skip_wire_mapping:
-        return
-    wire_map = {w: i + 10 * len(op.wires) for i, w in enumerate(op.wires)}
-    mapped_op = op.map_wires(wire_map)
-    new_wires = Wires([i + 10 * len(op.wires) for i in range(len(op.wires))])
-    assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
+    if not skip_wire_mapping:
+        wire_map = {w: i + 10 * len(op.wires) for i, w in enumerate(op.wires)}
+        mapped_op = op.map_wires(wire_map)
+        new_wires = Wires([i + 10 * len(op.wires) for i in range(len(op.wires))])
+        assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
-# pylint: disable=too-many-arguments
-def _assert_valid_operator2(
-    op: Operator2,
-    skip_deepcopy=False,
-    skip_differentiation=False,
-    skip_new_decomp=False,
-    skip_decomp_matrix_check=False,
-    skip_pickle=False,
-    skip_wire_mapping=False,
-    skip_bind_new_parameters=False,
-    skip_eigvals=False,
-) -> None:
-    """
-    Runs basic validation checks on an :class:`~.core.Operator2` to make sure it has been correctly defined.
+@singledispatch
+def _check_properties(op: Operator):
+    """Check the properties of an operator."""
+    raise NotImplementedError
 
-    Args:
-        op: The operator to validate.
-        skip_deepcopy: If ``True``, the deepcopy test will be skipped.
-        skip_differentiation: If ``True``, the differentiation test will be skipped.
-        skip_new_decomp: If ``True``, the new decomposition test will be skipped.
-        skip_decomp_matrix_check: If ``True``, the decomposition matrix check will be skipped.
-        skip_pickle: If ``True``, the pickle test will be skipped.
-        skip_wire_mapping: If ``True``, the wire mapping test will be skipped.
-        skip_bind_new_parameters: If ``True``, the ``bind_new_parameters`` test will be skipped.
-        skip_eigvals: If ``True``, the eigendecomposition tests will be skipped.
-    """
 
-    # Note: these attributes are in the spec but not the implementation yet.
-    # assert isinstance(op.data, tuple), "op.data must be a tuple"
-    # assert isinstance(op.num_wires, int), "op.num_wires must be a int"
+@_check_properties.dispatch
+def _check_properties_legacy(op: Operator):
+    """Checks the properties of an Operator1."""
+    assert isinstance(op.data, tuple), "op.data must be a tuple"
+    assert isinstance(op.parameters, list), "op.parameters must be a list"
+    for d, p in zip(op.data, op.parameters, strict=True):
+        assert isinstance(d, TensorLike), "each data element must be tensorlike"
+        assert math.allclose(d, p), "data and parameters must match."
 
+
+@_check_properties.register
+def _check_properties_operator2(op: Operator2) -> None:
+    """Checks the properties of an Operator2."""
+
+    assert isinstance(op.data, tuple), "op.data must be a tuple"
+    assert isinstance(op.num_wires, int), "op.num_wires must be a int"
     assert isinstance(op.wires, Wires), "op.wires must be a Wires instance"
     assert isinstance(op.ndim_params, tuple), "ndim_params must be a tuple"
     assert isinstance(op.compilable_argnames, tuple), "compilable_argnames must be a tuple"
@@ -563,13 +574,13 @@ def _assert_valid_operator2(
     op_funcs.assert_equal(type(op)(**op.arguments), op)
 
     # check abstractify
-    abstractified_op = abstractify(op)
-    leaves, _ = pytrees.flatten(abstractified_op, lambda l: isinstance(l, Wires))
-    for l in leaves:
-        if not isinstance(l, (AbstractArray, AbstractWires, CompressedResourceOp)):
-            raise AssertionError(
-                f"Op not properly abstractified. {abstractified_op} had non-abstract leaf {l}."
-            )
+    abstractified = abstractify(op)
+    leaves, _ = pytrees.flatten(abstractified, lambda l: isinstance(l, Wires))
+
+    abstract_types = (AbstractArray, AbstractWires, CompressedResourceOp)
+    if l := next((l for l in leaves if not isinstance(l, abstract_types)), None) is not None:
+        message = f"Op not properly abstractified. {abstractified} had non-abstract leaf {l}."
+        raise AssertionError(message)
 
     # Some operators (e.g. composites and ``Select``) hold their data inside operator-valued
     # arguments rather than dynamic arguments, so their ``data`` does not correspond to
@@ -584,33 +595,11 @@ def _assert_valid_operator2(
             error_msg = f"shape of {name} is not equal to dimension in ndim_params"
             assert len(math.shape(val)) == dim, error_msg
 
-    for (name, val), dim in zip(op.wire_args.items(), op.wire_sizes, strict=True):
-        # make sure wires have the right sizes
-        if op.wire_sizes:
+    if op.wire_sizes:
+        for (name, val), dim in zip(op.wire_args.items(), op.wire_sizes, strict=True):
+            # make sure wires have the right sizes
             error_msg = f"Wires argument {name} has an invalid dimension."
             assert dim is None or len(val) == dim, error_msg
-
-    for name, val in op.hybrid_args.items():
-        leaves, _ = pytrees.flatten(val, is_leaf=lambda l: isinstance(l, Operator))
-        for leaf in leaves:
-            if isinstance(leaf, Operator):
-                assert_valid(
-                    leaf,
-                    skip_deepcopy=skip_deepcopy,
-                    skip_differentiation=skip_differentiation,
-                    skip_new_decomp=skip_new_decomp,
-                    skip_decomp_matrix_check=skip_decomp_matrix_check,
-                    skip_pickle=skip_pickle,
-                    skip_wire_mapping=skip_wire_mapping,
-                    skip_bind_new_parameters=skip_bind_new_parameters,
-                    skip_eigvals=skip_eigvals,
-                )
-
-    if not skip_bind_new_parameters:
-        if isinstance(op, SymbolicOp2):
-            _check_bind_new_parameters_symbolicop2(op)
-        else:
-            _check_bind_new_parameters_op2(op)
 
 
 # pylint: disable=too-many-arguments
@@ -680,31 +669,11 @@ def assert_valid(
     AssertionError: metadata output from _flatten must be hashable. Got metadata (Wires([0]), (('unhashable_list', []),))
 
     """
-    if isinstance(op, Operator2):
-        _assert_valid_operator2(
-            op,
-            skip_deepcopy,
-            skip_differentiation,
-            skip_new_decomp,
-            skip_decomp_matrix_check,
-            skip_pickle,
-            skip_wire_mapping,
-            skip_bind_new_parameters,
-            skip_eigvals,
-        )
-    else:
-        assert isinstance(op.data, tuple), "op.data must be a tuple"
-        assert isinstance(op.parameters, list), "op.parameters must be a list"
-
-        for d, p in zip(op.data, op.parameters, strict=True):
-            assert isinstance(d, TensorLike), "each data element must be tensorlike"
-            assert math.allclose(d, p), "data and parameters must match."
-
-        if not skip_bind_new_parameters:
-            _check_bind_new_parameters(op)
-
+    _check_properties(op)
     _check_pytree(op)
     _check_copy(op, skip_deepcopy=skip_deepcopy)
+    if not skip_bind_new_parameters:
+        _check_bind_new_parameters(op)
     if len(op.wires) <= 26:
         _check_wires(op, skip_wire_mapping=skip_wire_mapping)
     if not skip_pickle:

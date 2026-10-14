@@ -29,7 +29,7 @@ from pennylane.core import Operator2
 from pennylane.core.operator import Operator
 from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.testing.operators import (
-    _check_bind_new_parameters_op2,
+    _check_bind_new_parameters,
     _check_eigendecomposition,
     _check_pytree,
     assert_valid,
@@ -364,7 +364,7 @@ class TestBadMatrix:
                 return np.eye(2)
 
         with pytest.raises(
-            AssertionError, match="If has_matrix is False, the matrix method must raise"
+            AssertionError, match="MatrixUndefinedError expected if op.has_matrix is False"
         ):
             assert_valid(BadMat(wires=0), skip_pickle=True)
 
@@ -848,7 +848,7 @@ class TestOperator2AssertValid:
 
         op = IgnoresParams(0.5, wires=0)
         with pytest.raises(AssertionError, match=r"bind_new_parameters must be able to update"):
-            _check_bind_new_parameters_op2(op)
+            _check_bind_new_parameters(op)
 
     def test_hybrid_ops_arg(self):
         """``assert_valid`` fails if a hybrid op arg is invalid."""
