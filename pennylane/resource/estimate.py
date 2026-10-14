@@ -73,16 +73,12 @@ def estimate(
 
     .. note::
 
-        Only qnodes which have been compiled with program capture enabled are supported.
-        e.g. via compiling with :func:`qjit(capture=True) <~.qjit>` or using :func:`~.capture.enable` to enable program capture globally.
+        Only QNodes which have been decorated with :func:`@qp.qjit(capture=True) <~pennylane.qjit>` are supported.
 
-    The ``estimate`` function provides fast resource estimates of a quantum circuit by analyzing
-    decomposition pathways to a target gate set with respect to the specified level of
-    compilation. The estimated circuit is never executed.
+    The ``estimate`` function never executes the circuit. It only provides fast resource estimates.
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the qjit'd QNode for which to estimate resources.
-            ``functools.partial`` wrappers around supported callables are also accepted.
         level (str | int): The level of compilation from which to project the resources onto the
             ``target``. Only ``"top"`` or ``0``, the original circuit before any compilation
             passes have been applied, is currently supported. Defaults to ``"top"``.
@@ -146,10 +142,8 @@ def estimate(
         :title: Symbolic resource counts
 
         Since the circuit is not executed, the projected resources are subject to the same
-        compile-time constraints as :func:`~.analyze`, as both functions use the resource analysis
-        pass. In particular, operations inside a loop whose number of iterations depends on
-        runtime values are counted symbolically, using :class:`~.resource.Expression` instances
-        instead of integers.
+        compile-time constraints as :func:`~.analyze`. In particular, operations inside a loop whose number of iterations depends on
+        runtime values are counted symbolically.
 
         For example, the number of ``CZ`` gates in the following circuit, and therefore the number
         of gates they decompose into, depends on the value of ``n``:
