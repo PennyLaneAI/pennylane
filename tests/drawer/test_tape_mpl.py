@@ -793,7 +793,8 @@ class TestGeneralOperations:
     @pytest.mark.parametrize("cls", [qp.GlobalPhase, qp.Identity])
     def test_ctrl_global_op_control_values(self, cls):
         """Test that a controlled global operator reached through the public ``qp.ctrl`` API
-        draws properly."""
+        draws properly. A zero control value keeps a single-controlled ``GlobalPhase`` a genuine
+        controlled global gate instead of lowering it to a ``PhaseShift``."""
 
         num_params = 1 if cls is qp.GlobalPhase else 0
         data = [0.3625][:num_params]
