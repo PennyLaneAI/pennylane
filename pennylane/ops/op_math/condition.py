@@ -27,7 +27,7 @@ from pennylane.capture import FlatFn, HintedCallable
 from pennylane.capture.autograph import wraps
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
-from pennylane.capture.hint import get_hints, process_hints
+from pennylane.capture.hint import get_hints
 from pennylane.compiler import compiler
 from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.exceptions import ConditionalTransformError
@@ -125,8 +125,7 @@ def _empty_return_fn(*_, **__):
 
 
 def _get_hint(branch_fn):
-    hints = process_hints(get_hints(branch_fn), {"branch-prob"})
-    p = hints.get("branch-prob")
+    p = get_hints(branch_fn, {"branch-prob"}).get("branch-prob")
     return float(p) if p is not None else p
 
 

@@ -93,13 +93,16 @@ class TestApplyHint:
         (_f, {}),
         (partial(_f, y=2), {}),
         (qp.hint(_f, {"a": 1}), {"a": 1}),
+        (qp.hint(_f, {"a": 1, "identity": True}), {"a": 1}),
         (partial(qp.hint(_f, {"a": 1}), y=2), {"a": 1}),
-        (qp.hint(partial(qp.hint(_f, {"a": 1, "b": 1}), y=2), {"b": 2}), {"a": 1, "b": 2}),
+        (qp.hint(partial(qp.hint(_f, {"a": 1, "bb": 1}), y=2), {"bb": 2}), {"a": 1, "bb": 2}),
+        (qp.hint(partial(qp.hint(_f, {"b_b": 1}), y=2), {"bb": 2}), {"bb": 2}),
     ),
 )
 def test_get_hints_through_wrappers(f, expected):
-    """Test that ``get_hints`` finds hints through partials, with outer hints taking precedence."""
-    assert get_hints(f) == expected
+    """Test that ``get_hints`` finds hints through partials, with outer hints taking precedence,
+    and remaps them onto the supported keys."""
+    assert get_hints(f, {"a", "bb"}) == expected
 
 
 class TestHintAPI:

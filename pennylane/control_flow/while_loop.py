@@ -283,8 +283,7 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
         Returns:
             Callable: a callable with the same signature as ``body_fn`` and ``cond_fn``.
         """
-        hints = process_hints(get_hints(body_fn), {"num-iters"})
-        num_iters_hint = hints.get("num-iters", None)
+        num_iters_hint = get_hints(body_fn, {"num-iters"}).get("num-iters", None)
         if isinstance(body_fn, HintedCallable):
             body_fn = body_fn.f
 

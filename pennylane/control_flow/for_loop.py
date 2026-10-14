@@ -335,8 +335,7 @@ def for_loop(
         Returns:
             Callable: a callable with the same signature as ``body_fn``
         """
-        hints = process_hints(get_hints(body_fn), {"num-iters"})
-        num_iters_hint = hints.get("num-iters", None)
+        num_iters_hint = get_hints(body_fn, {"num-iters"}).get("num-iters", None)
         if isinstance(body_fn, HintedCallable):
             body_fn = body_fn.f
 
