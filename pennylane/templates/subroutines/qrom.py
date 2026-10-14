@@ -33,7 +33,7 @@ from pennylane.decomposition import (
 from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
+from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic import TemporaryAND
@@ -344,7 +344,7 @@ def _select_swap_resources(
     # Select block (implemented as a nested QROM over concatenated columns)
     num_targets_select = depth * num_targets
     bigger_qrom = QROM(
-        Int[num_columns, num_targets_select],
+        Bool[num_columns, num_targets_select],
         Wire[num_control_wires_select],
         Wire[num_targets_select],
         Wire[num_work_wires_select],
