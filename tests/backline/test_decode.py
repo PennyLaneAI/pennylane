@@ -231,20 +231,21 @@ class TestOutBytes:
     def test_an_explicit_size_wins(self):
         """The call site's override wins."""
         controller = qp.Controller()
-        assert _resolve_out_bytes(controller, 16) == 16
+        assert _resolve_out_bytes(None, controller, 16) == 16
 
-    def test_the_committed_size_is_the_default(self):
-        """The committed size is the default."""
-        assert _resolve_out_bytes(qp.Controller(), None) == 8
+    def test_the_placement_size_is_the_default(self):
+        """The reply size the placement commits is the default."""
+        dev = qp.Backline(controller=qp.Controller(out_bytes=121), transport="memcpy")
+        assert _resolve_out_bytes(dev.placement, dev.placement.controller, None) == 121
 
-    def test_a_controllers_own_size_is_the_default(self):
-        """A controller's non-default reply size is the default."""
-        assert _resolve_out_bytes(qp.Controller(out_bytes=121), None) == 121
+    def test_without_a_placement_the_controller_size_is_the_default(self):
+        """With no placement, the controller's own size is used."""
+        assert _resolve_out_bytes(None, qp.Controller(out_bytes=16), None) == 16
 
     @pytest.mark.parametrize("controller", [qp.Controller(), object()])
     def test_the_transport_default_is_eight_bytes(self, controller):
         """An unconfigured reply uses the transport's default message size."""
-        assert _resolve_out_bytes(controller, None) == 8
+        assert _resolve_out_bytes(None, controller, None) == 8
 
 
 @pytest.mark.jax

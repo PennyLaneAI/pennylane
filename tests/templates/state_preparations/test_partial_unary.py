@@ -22,6 +22,7 @@ import pennylane as qp
 from pennylane.decomposition import list_decomps
 from pennylane.math import binary_matrix_rank, ceil_log2
 from pennylane.ops.functions import assert_valid
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.partial_unary import (
     PartialUnaryStatePreparation,
     PUIsometryFinder,
@@ -436,31 +437,16 @@ def assert_pui_correctness(rule, coefficients, indices, wire_specs):
         if _qjit:
             from catalyst.device.decomposition import catalyst_decompose
 
-            # Side step the condition that the Select-SWAP network needs to be non-trivial. This
-            # allows us to use the non-for_loop QROM decomposition
-            # until dynamic allocation + for_loop is figured out.
-            # pylint: disable=cell-var-from-loop
-            sel_swap_rule = qp.list_decomps("QROM")["_select_swap"]
-
-            @qp.register_resources(sel_swap_rule._compute_resources)
-            def qrom_decomp(*args, **kwargs):
-                sel_swap_rule._impl(*args, **kwargs)
-
             gate_set = {
-                "Select",
                 "MultiplexerStatePreparation",
                 "ForLoop",
                 "Cond",
                 "CNOT",
                 "PauliX",
                 "MultiControlledX",
+                "QROM",
             }
-            fixed_decomp = {"QROM": qrom_decomp}
-            func = qp.qjit(
-                catalyst_decompose(
-                    func, capabilities=None, target_gates=gate_set, fixed_decomps=fixed_decomp
-                )
-            )
+            func = qp.qjit(catalyst_decompose(func, capabilities=None, target_gates=gate_set))
 
         out_state = func()
         # We infer the total and aux wire counts from the state shape, because small-scale
@@ -505,6 +491,23 @@ class TestPartialUnaryStatePreparation:
         target[list(indices)] = coefficients
         assert np.allclose(circuit()[::4], target)
 
+    @pytest.mark.parametrize(
+        "coefficients, state_type",
+        [
+            (np.array([1, -1, 2, -2, 3]) / np.sqrt(19), Float),
+            (np.array([1, 1, 2, 2, 3]), Float),
+            (np.array([1, 1j, -2, -2j, 3]) / np.sqrt(19), Complex),
+        ],
+    )
+    def test_multiplexer_dtype_follows_coefficients(self, coefficients, state_type):
+        """Test that the MultiplexerStatePreparation in the decomposition is real-valued
+        for real-valued coefficients and complex-valued for complex-valued coefficients."""
+        op = PartialUnaryStatePreparation(coefficients, range(5), (0, 3, 7, 17, 25), [5, 6])
+        [rule] = list_decomps(PartialUnaryStatePreparation)
+        resources = rule.compute_resources(**op.arguments).gate_counts
+        assert qp.MultiplexerStatePreparation(state_type[8], wires=Wire[3]) in resources
+        _test_decomposition_rule(op, rule)
+
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("provide_work_wires", [False, True])
@@ -541,7 +544,18 @@ class TestPartialUnaryStatePreparation:
         assert len(op.indices) == 15
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize("provide_work_wires", [False, True])
+    @pytest.mark.parametrize(
+        "provide_work_wires",
+        [
+            pytest.param(
+                False,
+                marks=pytest.mark.pl2do(
+                    reason="Dynamic wire allocation together with for_loop iteration (used in QROM) is not supported yet. See epic [sc-130789]"
+                ),
+            ),
+            True,
+        ],
+    )
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "num_wires,num_entries",

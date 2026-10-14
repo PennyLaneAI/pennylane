@@ -561,7 +561,8 @@ class TestDecomposition:
         op = qp.exp(hamiltonian, coeff)
         tape = qp.tape.QuantumScript([op])
 
-        [decomp_tape], _ = qp.transforms.decompose(tape, gate_set={"PauliRot"})
+        # pylint: disable-next=protected-access
+        [decomp_tape], _ = qp.transforms._tape_decompose(tape, gate_set={"PauliRot"})
         assert len(decomp_tape) == 1
         assert not qp.math.iscomplex(decomp_tape[0].data[0])
         actual_matrix = qp.matrix(decomp_tape, wire_order=op.wires)

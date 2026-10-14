@@ -128,7 +128,7 @@ def rz_phase_gradient(
         work_wires = [f"work_{i}" for i in range(precision - 1)]
         wire_order = [wire] + angle_wires + phase_grad_wires + work_wires
 
-        @qp.transforms.decompose(max_expansion=1)
+        @qp.transforms._tape_decompose(max_expansion=1)
         @rz_phase_gradient(
             angle_wires=angle_wires,
             phase_grad_wires=phase_grad_wires,

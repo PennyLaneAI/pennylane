@@ -134,7 +134,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             angle_wires, phase_grad_wires, work_wires
         )
 
-        @qp.decompose(
+        @qp.transforms._tape_decompose(
             gate_set={"QROM", "Adjoint(QROM)", "SemiAdder", "MultiControlledX", "GlobalPhase"},
             fixed_decomps={qp.SelectPauliRot: custom_decomp}
         )
