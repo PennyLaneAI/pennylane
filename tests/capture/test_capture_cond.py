@@ -652,7 +652,8 @@ class TestCondOperatorInstances:
             qp.cond(pred, lambda: None, qp.Z(0))
 
         with pytest.raises(
-            ValueError, match="Cannot provide Operator false_fn .* with callable true_fn"
+            ValueError,
+            match="Cannot provide an Operator as false_fn if true_fn is a callable",
         ):
             jax.make_jaxpr(f)(True)
 
@@ -677,7 +678,8 @@ class TestCondOperatorInstances:
             qp.cond(pred, lambda: None, OldOp(wires=0))
 
         with pytest.raises(
-            ValueError, match="Cannot provide Operator false_fn .* with callable true_fn"
+            ValueError,
+            match="Cannot provide an Operator as false_fn if true_fn is a callable",
         ):
             jax.make_jaxpr(f)(True)
 

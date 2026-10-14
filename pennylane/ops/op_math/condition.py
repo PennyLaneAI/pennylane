@@ -159,7 +159,7 @@ def _handle_op(fn, branch_name: str):
 
         return new_fn
     raise ValueError(
-        f"With Operator2 true_fn, all other branches must be Operator2 or None. Got {fn} for {branch_name}."
+        f"If true_fn is an Operator2, all other branches must be Operator2 or None. Got {fn} for {branch_name}."
     )
 
 
@@ -442,11 +442,13 @@ def _capture_dispatch(condition, true_fn, false_fn, elifs):
         raise ValueError("Operator1 instances cannot be provided as true_fn to pennylane.cond.")
 
     if _is_operator(false_fn):
-        raise ValueError(f"Cannot provide Operator false_fn {false_fn} with callable true_fn.")
+        raise ValueError(
+            f"Cannot provide an Operator as false_fn if true_fn is a callable. Got {false_fn}"
+        )
 
     for _, elif_fn in elifs:
         if _is_operator(elif_fn):
-            raise ValueError(f"Cannot provide Operator elif_fn {elif_fn} with callable true_fn")
+            raise ValueError(f"Cannot provide Operator elif_fn {elif_fn} with callable true_fn.")
 
     return CondCallable(condition, true_fn, false_fn, elifs)
 
