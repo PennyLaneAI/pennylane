@@ -100,7 +100,14 @@ class TrotterProduct(Operation):
         time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
         n (int): An integer representing the number of Trotter steps to perform
         order (int): An integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-        check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator
+        check_hermitian (bool): Whether to check if the Hamiltonian terms are
+            verified to be Hermitian. Defaults to ``True``. Set to ``False``
+            to skip this validation when the Hamiltonian is known to be
+            Hermitian but its terms cannot be verified, for example when
+            using runtime-dependent coefficients under tracing or compilation
+            with Catalyst's ``@qjit`` decorator. Disabling this check does not
+            verify Hermiticity, so users are responsible for ensuring that
+            the Hamiltonian is Hermitian.
 
     Raises:
         TypeError: The ``hamiltonian`` is not of type :class:`~.Sum`.
