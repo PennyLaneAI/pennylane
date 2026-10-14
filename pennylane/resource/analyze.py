@@ -109,7 +109,7 @@ def analyze(
         including gate and measurement data, wire allocations, device information, shots, and
         more.
 
-    .. seealso:: :func:`~.estimate`, which provides fast resource estimates by analyzing
+    .. seealso:: :func:`~pennylane.estimate`, which provides fast resource estimates by analyzing
         decomposition pathways to a target gate set, and :func:`~.track`, which counts the
         resources used after device preprocessing by mock-executing the circuit.
 

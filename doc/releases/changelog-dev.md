@@ -447,7 +447,7 @@
   resources of a ``qjit``-compiled QNode onto a target gate set, without executing the circuit.
   Before any specified compilation passes, the original circuit's operations and their possible
   decomposition pathways to the ``target`` gate set are analyzed and the resulting operations are
-  counted. Note that :func:`~.estimate` is only supported with ``qp.qjit(capture=True)``.
+  counted. Note that :func:`~pennylane.estimate` is only supported with ``qp.qjit(capture=True)``.
   [(#10296)](https://github.com/PennyLaneAI/pennylane/pull/10296)
 
   Consider the following circuit.
