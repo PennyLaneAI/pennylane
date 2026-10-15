@@ -1483,6 +1483,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added an autouse fixture that undoes any changes a test makes to the registry of decomposition
+  rules, and removed the `qp.decomposition.local_decomps` blocks that only served as cleanup.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Updated the `cond` branch-probability tests of `qp.specs` and `qp.analyze`, since Catalyst now
   reports fractional resource counts that are rounded up once at the end.
   [(#10313)](https://github.com/PennyLaneAI/pennylane/pull/10313)
