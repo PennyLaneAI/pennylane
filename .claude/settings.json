@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Running black + isort...",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$PWD}/scripts/format-hook.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}
