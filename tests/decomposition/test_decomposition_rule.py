@@ -766,7 +766,7 @@ class TestExcludeDecomps:
         assert [rule.name for rule in qp.list_decomps(qp.CRX)] == all_names
 
     def test_exclude_as_context_manager(self):
-        """Tests that the rules are restored when the context exits, also on exceptions."""
+        """Tests that the rules are restored when the context exits."""
 
         all_names = [rule.name for rule in qp.list_decomps(qp.CRX)]
 
