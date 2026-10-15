@@ -39,7 +39,7 @@ def get_runtime_call_prim():
     runtime_call_prim = QpPrimitive("runtime_call")
     runtime_call_prim.multiple_results = True
 
-    # pylint: disable=unused-argument
+    # pylint: disable=unused-argument, too-many-arguments
     @runtime_call_prim.def_abstract_eval
     def _(*args, signature, symbol, out_bytes, dispatch, library, local_constants):
         return operands.result_avals(signature, out_bytes)
