@@ -123,7 +123,8 @@ def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, num_walks=1):
     system = list(wires["system_wires"])
     auxiliaries = [w for w in range(total) if w not in system]
 
-    @qp.transforms.decompose(stopping_condition=lambda op: len(op.wires) <= 3)
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(stopping_condition=lambda op: len(op.wires) <= 3)
     @qp.qnode(qp.device("default.qubit", wires=total))
     def circuit():
         qp.StatePrep(psi, wires=system)
