@@ -40,8 +40,10 @@ class MMDConfig:
     dataset.
 
     Args:
-        bandwidth (float | Sequence[float]): The bandwidth :math:`\sigma^2` of the kernel. If a sequence is provided,
-            the loss is evaluated for each value and then averaged, unless
+        bandwidth (float | Sequence[float]): Width :math:`\sigma` of the Gaussian kernel
+            :math:`\exp(-\lVert x-y\rVert^2/(2\sigma^2))`. Each bit enters a sampled
+            observable with probability :math:`(1-\exp(-1/(2\sigma^2)))/2`. If a sequence
+            is provided, the loss is evaluated for each value and then averaged, unless
             ``return_per_bandwidth=True``.
         n_ops (int): Number of sampled observables per bandwidth. Larger
             values reduce estimator variance.
