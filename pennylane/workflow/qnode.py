@@ -583,6 +583,7 @@ class QNode:
         self._shots: Shots = device.shots if shots == "unset" else Shots(shots)
         self._shots_override_device: bool = shots != "unset"
         self._compile_pipeline = CompilePipeline()
+        self._post_device_pipeline = CompilePipeline()
         functools.update_wrapper(self, func)
 
     def __copy__(self) -> QNode:
@@ -638,6 +639,17 @@ class QNode:
     def compile_pipeline(self) -> CompilePipeline:
         """The compile pipeline used by the QNode."""
         return self._compile_pipeline
+
+    @property
+    def post_device_pipeline(self) -> CompilePipeline:
+        """The post-device compile pipeline used by the QNode.
+
+        .. note::
+            When `qjit` is used to compile the QNode, device-specific transformations are applied after the compile pipeline.
+            The transformations belonging to the `QNode` that need to be **applied after** the device-specific transformations
+            should be added to the post-device compile pipeline.
+        """
+        return self._post_device_pipeline
 
     def update(self, **kwargs) -> QNode:
         """Returns a new QNode instance but with updated settings (e.g., a different `diff_method`). Any settings not specified will retain their original value.
@@ -743,6 +755,33 @@ class QNode:
         # Update the shots attribute directly
         # pylint: disable=protected-access
         updated_qn._set_shots(shots)
+
+        return updated_qn
+
+    def update_pipelines(
+        self,
+        compile_pipeline: CompilePipeline,
+        post_device_pipeline: CompilePipeline | None = None,
+    ) -> QNode:
+        """Update the compile and post-device compile pipelines used by the QNode.
+
+        Args:
+            compile_pipeline (CompilePipeline): The new compile pipeline to use.
+            post_device_pipeline (CompilePipeline): The new post-device compile pipeline to use.
+
+        Returns:
+            qnode (QNode): new QNode with updated compile and post-device compile pipelines
+        """
+
+        if post_device_pipeline is None:
+            post_device_pipeline = CompilePipeline()
+
+        # Create a copy of the current QNode
+        updated_qn = copy.copy(self)
+
+        # Update the compile and post-device compile pipelines
+        updated_qn._compile_pipeline = compile_pipeline
+        updated_qn._post_device_pipeline = post_device_pipeline
 
         return updated_qn
 
