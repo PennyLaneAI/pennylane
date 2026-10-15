@@ -1025,11 +1025,11 @@ def _controlled_phase_shift_mcx_decomp(base, control_wires, *_, **__):
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
 add_decomps("Adjoint(PhaseShift)", adjoint_rotation2)
 add_decomps("Pow(PhaseShift)", pow_rotation2)
-add_decomps(
-    "C(PhaseShift)",
-    flip_zero_control2(_controlled_phase_shift_decomp),
-    flip_zero_control2(_controlled_phase_shift_mcx_decomp),
-)
+# add_decomps(
+#   "C(PhaseShift)",
+# flip_zero_control2(_controlled_phase_shift_decomp),
+#  flip_zero_control2(_controlled_phase_shift_mcx_decomp),
+# )
 
 
 class Rot(Operator2):
