@@ -100,7 +100,7 @@ class TemporaryAND(Operator2):
 
         qp.decomposition.enable_graph()
 
-        @qp.decompose(gate_set={qp.Toffoli, qp.X})
+        @qp.transforms._tape_decompose(gate_set={qp.Toffoli, qp.X})
         def circuit():
             qp.TemporaryAND((0, 1, 2))
             return qp.expval(qp.Z(2))
@@ -267,9 +267,9 @@ def _temporary_and_to_toffoli(wires: WiresLike, control_values: Sequence[bool]):
 def _temporary_and_ppr_resources(*_, **__):
     return {
         ops.X: _number_xs,
-        ops.PPR(8, "ZZY", Wire[3]): 1,
-        ops.PPR(-8, "ZY", Wire[2]): 2,
-        ops.PPR(8, "Y", Wire[1]): 1,
+        ops.PPR_8(1, "ZZY", Wire[3]): 1,
+        ops.PPR_8(-1, "ZY", Wire[2]): 2,
+        ops.PPR_8(1, "Y", Wire[1]): 1,
     }
 
 
@@ -277,10 +277,10 @@ def _temporary_and_ppr_resources(*_, **__):
 def _temporary_and_ppr(wires: WiresLike, control_values: Sequence[bool]):
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
-    ops.PPR(8, "ZZY", wires)
-    ops.PPR(-8, "ZY", wires[1:])
-    ops.PPR(-8, "ZY", wires[::2])
-    ops.PPR(8, "Y", wires[2:])
+    ops.PPR_8(1, "ZZY", wires)
+    ops.PPR_8(-1, "ZY", wires[1:])
+    ops.PPR_8(-1, "ZY", wires[::2])
+    ops.PPR_8(1, "Y", wires[2:])
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
 

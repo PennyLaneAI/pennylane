@@ -39,11 +39,29 @@ jnp = pytest.importorskip("jax.numpy")
 NUM_SAMPLES = 10000
 
 
+def _dense_generators(gates, n_qudits):
+    """Expand the sparse ``gates`` dict into dense generator rows plus a parameter map.
+
+    Test-only reference: deliberately does not reuse the estimator's gate parser.
+    Powers are summed per qudit and not reduced mod ``d``; the reference's cosines are
+    periodic in the power, so reduction and dropped identity gates make no difference.
+    """
+    rows, param_map = [], []
+    for param_idx in sorted(gates):
+        for gate in gates[param_idx]:
+            row = np.zeros(n_qudits, dtype=int)
+            for qudit, power in gate.items():
+                row[qudit] += power
+            rows.append(row)
+            param_map.append(param_idx)
+    return np.array(rows, dtype=int).reshape(-1, n_qudits), np.array(param_map, dtype=int)
+
+
 def _build_qudit_expval_func_exact(config):
     """Build a brute-force reference evaluator by summing over all basis states."""
     dims = _dims_to_numpy(config.dims, config.n_qudits)  # (n_qudits,)
     dims_f = jnp.asarray(dims, dtype=jnp.float32)  # (n_qudits,)
-    generators, param_map = _gates_to_dense_generators(config.gates, config.n_qudits, dims)
+    generators, param_map = _dense_generators(config.gates, config.n_qudits)
     generators, param_map = jnp.array(generators), jnp.array(param_map)
 
     all_states = jnp.array(
@@ -343,8 +361,6 @@ class TestQuditExpvalVsPennyLane:
         ({0: [{0: 4, 1: 3}]}, 2, 3, {1: ([[0]], [[1]], [0])}),
         # identity gate (all powers vanish mod d) is dropped entirely
         ({0: [{0: 3}], 1: [{1: 1}]}, 2, 3, {1: ([[1]], [[1]], [1])}),
-        # negative qudit indices count from the end
-        ({0: [{-1: 1, 0: 1}]}, 3, 2, {2: ([[0, 2]], [[1, 1]], [0])}),
         # per-qudit dimensions
         ({0: [{0: 1, 1: 5}]}, 2, [2, 5], {1: ([[0]], [[1]], [0])}),
     ],
@@ -364,30 +380,6 @@ def test_parse_qudit_gate_dict(circuit_def, n_qudits, dims, expected_groups):
         np.testing.assert_array_equal(group.supports, np.array(exp_supports))
         np.testing.assert_array_equal(group.powers, np.array(exp_powers))
         np.testing.assert_array_equal(group.param_indices, np.array(exp_pidx))
-
-
-@pytest.mark.parametrize(
-    "circuit_def, n_qudits, dims, expected_generators, expected_param_map",
-    [
-        ({0: [{0: 1, 2: 2}]}, 3, 3, [[1, 0, 2]], [0]),
-        ({0: [{0: 1}], 1: [{1: 2}, {0: 1, 1: 1}]}, 2, 3, [[1, 0], [0, 2], [1, 1]], [0, 1, 1]),
-        ({}, 2, 3, np.zeros((0, 2), dtype=int), []),
-        ({3: [{1: 1}], 0: [{0: 2}]}, 2, 3, [[2, 0], [0, 1]], [0, 3]),
-        # identity gates are kept so param_map stays aligned with the input
-        ({0: [{0: 3}], 1: [{1: 1}]}, 2, 3, [[0, 0], [0, 1]], [0, 1]),
-    ],
-)
-def test_gates_to_dense_generators(
-    circuit_def, n_qudits, dims, expected_generators, expected_param_map
-):
-    """The dense expansion used by brute-force references must match the sparse input."""
-    generators, param_map = _gates_to_dense_generators(
-        circuit_def, n_qudits, _dims_to_numpy(dims, n_qudits)
-    )
-    expected_generators = np.array(expected_generators)
-    assert generators.shape == expected_generators.shape
-    np.testing.assert_array_equal(generators, expected_generators)
-    np.testing.assert_array_equal(param_map, np.array(expected_param_map))
 
 
 def test_parse_qudit_gate_dict_rejects_dense_vectors():

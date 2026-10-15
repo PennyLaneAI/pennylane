@@ -26,7 +26,6 @@ from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
     WorkWireSpec,
-    _decompositions_private,
     _fix_decomp,
     _unroll_change_op_basis,
     _verify_is_abstract_and_fixed,
@@ -256,12 +255,11 @@ class TestDecompositionRule:
             qp.RX(theta, wires=wires[0])
             qp.RZ(theta, wires=wires[1])
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps("Adjoint(NonParametricOp)", my_adjoint_custom_op)
-            assert qp.decomposition.has_decomp("Adjoint(NonParametricOp)")
-            assert list(qp.list_decomps("Adjoint(NonParametricOp)")) == [my_adjoint_custom_op]
-            assert qp.decomposition.has_decomp(qp.adjoint(NonParametricOp(wires=[0, 1])))
-            assert list(qp.list_decomps("Adjoint(NonParametricOp)")) == [my_adjoint_custom_op]
+        qp.add_decomps("Adjoint(NonParametricOp)", my_adjoint_custom_op)
+        assert qp.decomposition.has_decomp("Adjoint(NonParametricOp)")
+        assert list(qp.list_decomps("Adjoint(NonParametricOp)")) == [my_adjoint_custom_op]
+        assert qp.decomposition.has_decomp(qp.adjoint(NonParametricOp(wires=[0, 1])))
+        assert list(qp.list_decomps("Adjoint(NonParametricOp)")) == [my_adjoint_custom_op]
 
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
@@ -522,8 +520,6 @@ class TestDecompDictionary:
         with pytest.raises(TypeError, match="decomposition rule must be a qfunc with a resource"):
             qp.add_decomps(SomeOtherOp, custom_decomp4)
 
-        _decompositions_private.pop("SomeOtherOp")  # cleanup
-
     def test_add_decomp_duplicate_names(self):
         """Tests that you cannot add decomposition rules with duplicate names."""
 
@@ -547,8 +543,6 @@ class TestDecompDictionary:
 
         with pytest.raises(ValueError, match="name: custom_decomp already exists"):
             qp.add_decomps(AnotherOp, some_decomp)
-
-        _decompositions_private.pop("AnotherOp")  # cleanup
 
     def test_add_decomp_exact_alias(self):
         """Tests that adding exactly the same decomp rule twice does not error out."""
@@ -626,13 +620,12 @@ class TestDecompDictionary:
         def custom_rule2(theta, wires):
             raise NotImplementedError
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps("Adjoint(DynOp)", _adjoint_rule)
-            qp.add_decomps(DynOp, custom_rule)
-            qp.add_decomps(DynOp, custom_rule2)
+        qp.add_decomps("Adjoint(DynOp)", _adjoint_rule)
+        qp.add_decomps(DynOp, custom_rule)
+        qp.add_decomps(DynOp, custom_rule2)
 
-            rule_names = {rule.name for rule in qp.list_decomps(Adjoint2(DynOp(Float, Wire[1])))}
-            assert rule_names == {"_adjoint_rule", "adjoint(custom_rule)", "adjoint(custom_rule2)"}
+        rule_names = {rule.name for rule in qp.list_decomps(Adjoint2(DynOp(Float, Wire[1])))}
+        assert rule_names == {"_adjoint_rule", "adjoint(custom_rule)", "adjoint(custom_rule2)"}
 
         op = qp.adjoint(qp.adjoint(NonParametricOp(wires=[0, 1])))
         assert [rule.name for rule in qp.list_decomps(op)] == ["cancel_adjoint"]
@@ -652,37 +645,36 @@ class TestDecompDictionary:
         def custom_rule2(theta, wires):
             raise NotImplementedError
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps("Controlled(DynOp)", _controlled_rule)
-            qp.add_decomps(DynOp, custom_rule)
-            qp.add_decomps(DynOp, custom_rule2)
+        qp.add_decomps("Controlled(DynOp)", _controlled_rule)
+        qp.add_decomps(DynOp, custom_rule)
+        qp.add_decomps(DynOp, custom_rule2)
 
-            op = qp.ctrl(qp.adjoint(DynOp(Float, Wire[1])), control=Wire[1])
-            rule_names = {rule.name for rule in qp.list_decomps(op)}
-            assert rule_names == {"flip_control_adjoint"}
+        op = qp.ctrl(qp.adjoint(DynOp(Float, Wire[1])), control=Wire[1])
+        rule_names = {rule.name for rule in qp.list_decomps(op)}
+        assert rule_names == {"flip_control_adjoint"}
 
-            op = qp.ctrl(DynOp(Float, Wire[1]), control=Wire[1])
-            rule_names = {rule.name for rule in qp.list_decomps(op)}
-            assert rule_names == {
-                "_controlled_rule",
-                "controlled(custom_rule)",
-                "controlled(custom_rule2)",
-            }
+        op = qp.ctrl(DynOp(Float, Wire[1]), control=Wire[1])
+        rule_names = {rule.name for rule in qp.list_decomps(op)}
+        assert rule_names == {
+            "_controlled_rule",
+            "controlled(custom_rule)",
+            "controlled(custom_rule2)",
+        }
 
-            class AnotherOp(DynOp):  # pylint: disable=too-few-public-methods
-                has_matrix = True
-                name = "DynOp"
+        class AnotherOp(DynOp):  # pylint: disable=too-few-public-methods
+            has_matrix = True
+            name = "DynOp"
 
-            op = qp.ctrl(AnotherOp(Float, Wire[1]), control=Wire[4])
-            rule_names = {rule.name for rule in qp.list_decomps(op)}
-            assert rule_names == {
-                "_controlled_rule",
-                "controlled(custom_rule)",
-                "controlled(custom_rule2)",
-                "ctrl_many_zeroed_work_wires",
-                "ctrl_single_work_wire",
-                "to_controlled_unitary",
-            }
+        op = qp.ctrl(AnotherOp(Float, Wire[1]), control=Wire[4])
+        rule_names = {rule.name for rule in qp.list_decomps(op)}
+        assert rule_names == {
+            "_controlled_rule",
+            "controlled(custom_rule)",
+            "controlled(custom_rule2)",
+            "ctrl_many_zeroed_work_wires",
+            "ctrl_single_work_wire",
+            "to_controlled_unitary",
+        }
 
     def test_list_pow_decomps2(self):
         """Tests the rules listed by _list_pow_decomps for a Pow2, covering all branches."""
@@ -730,11 +722,10 @@ class TestDecompDictionary:
         def custom_rule2(theta, wires, **__):
             raise NotImplementedError
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(DynOp, custom_rule)
-            qp.add_decomps(DynOp, custom_rule2)
+        qp.add_decomps(DynOp, custom_rule)
+        qp.add_decomps(DynOp, custom_rule2)
 
-            assert list(qp.list_decomps(Adjoint2(DynOp(Float, Wire[1])))) == []
+        assert list(qp.list_decomps(Adjoint2(DynOp(Float, Wire[1])))) == []
 
     def test_mcm_rules_skipped_for_controlled2(self):
         """Tests that rules containing MCMs are skipped for controlled."""
@@ -743,11 +734,10 @@ class TestDecompDictionary:
         def custom_rule(theta, wires):
             raise NotImplementedError
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(DynOp, custom_rule)
-            # Single control wire so general multi-control rules are not listed.
-            op = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[1])
-            assert list(qp.list_decomps(op)) == []
+        qp.add_decomps(DynOp, custom_rule)
+        # Single control wire so general multi-control rules are not listed.
+        op = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[1])
+        assert list(qp.list_decomps(op)) == []
 
 
 class TestDecompCollection:
@@ -1201,9 +1191,8 @@ class TestInspectDecomps:
         def invalid_rule(*_, **__):
             raise NotImplementedError
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(CustomOp, invalid_rule)
-            result = qp.inspect_decomps(CustomOp(0.5, wires=[0, 1]), show_not_applicable=False)
+        qp.add_decomps(CustomOp, invalid_rule)
+        result = qp.inspect_decomps(CustomOp(0.5, wires=[0, 1]), show_not_applicable=False)
 
         assert (
             str(result) == "No applicable decomposition rules (non-applicable rules are excluded)."

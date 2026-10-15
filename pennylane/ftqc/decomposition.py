@@ -42,7 +42,8 @@ from pennylane.ops import (
     cond,
     measure,
 )
-from pennylane.transforms import decompose, transform
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import transform
 
 from .conditional_measure import cond_measure
 from .graph_state_preparation import make_graph_state

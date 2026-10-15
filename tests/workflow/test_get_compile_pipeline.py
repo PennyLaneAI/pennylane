@@ -394,7 +394,7 @@ def test_level_is_slice_qjit(level_slice):
     """Tests level is slice when using qjit."""
 
     user_pipeline = CompilePipeline(
-        qp.decompose,
+        qp.decompose(gate_set={"PauliX", "PauliZ"}),
         qp.transforms.cancel_inverses,
         qp.transforms.merge_rotations,
     )

@@ -212,12 +212,6 @@ def create_random_qudit_gates(
 ) -> dict[int, list[dict[int, int]]]:
     r"""Generate a sparse qudit gate dictionary with randomly chosen supports and powers.
 
-    This is the qudit analogue of :func:`~pennylane.labs.tcdq.create_random_gates`.
-    Each gate acts on a uniformly random subset of qudits whose size (the gate
-    *weight*) is drawn uniformly from ``[min_weight, max_weight]``. On every
-    active qudit :math:`j` the power of :math:`Z` is drawn uniformly from
-    :math:`\{1, \ldots, d_j - 1\}`, so each gate has exactly the drawn weight.
-
     Args:
         n_gates (int): Number of gates (and trainable parameters) to generate.
         dims (Sequence[int]): Local dimension :math:`d_j \geq 2` of each qudit. The
@@ -260,8 +254,7 @@ def create_random_qudit_gates(
     rng = np.random.default_rng(seed)
     gates_dict = {}
 
-    from tqdm import tqdm
-    for i in tqdm(range(n_gates)):
+    for i in range(n_gates):
         weight = int(rng.integers(min_weight, max_weight + 1))
         support = sorted(int(q) for q in rng.choice(n_qudits, size=weight, replace=False))
         gates_dict[i] = [{q: int(rng.integers(1, dims[q])) for q in support}]
