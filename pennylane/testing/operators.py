@@ -461,7 +461,7 @@ def _check_pickle(op):
 @singledispatch
 def _check_bind_new_parameters(op: Operator):
     """Check that bind new parameters can create a new op with different bound arguments."""
-    raise NotImplementedError
+    raise NotImplementedError  # pragma: no cover
 
 
 @_check_bind_new_parameters.register
@@ -545,7 +545,7 @@ def _check_wires(op, skip_wire_mapping):
 @singledispatch
 def _check_properties(op: Operator):
     """Check the properties of an operator."""
-    raise NotImplementedError
+    raise NotImplementedError  # pragma: no cover
 
 
 @_check_properties.register

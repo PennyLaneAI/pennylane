@@ -446,6 +446,18 @@ def test_bad_eigenvalues_order():
         assert_valid(BadEigenDecomp(0), skip_pickle=True)
 
 
+def test_mismatched_diagonalizing_gates():
+    """Test that an error is raised if ``diagonalizing_gates`` and ``compute_diagonalizing_gates`` disagree."""
+
+    class MismatchedDiag(qp.PauliX):
+        def diagonalizing_gates(self):
+            return [qp.I(self.wires)]
+
+    expected_message = r"diagonalizing_gates and compute_diagonalizing_gates must match"
+    with pytest.raises(AssertionError, match=expected_message):
+        assert_valid(MismatchedDiag(0), skip_pickle=True)
+
+
 def test_eigendecomposition_with_different_wire_order():
     """A valid eigendecomposition is compared using the operator's wire order."""
 
@@ -576,6 +588,18 @@ class TestPytree:
             AssertionError, match=r"jax.tree_util.tree_unflatten must be able to reproduce"
         ):
             assert_valid(op, skip_pickle=True)
+
+    @pytest.mark.jax
+    def test_bad_pytree_pennylane_unflatten(self, mocker):
+        """An operator that jax can unflatten but ``qp.pytrees`` cannot still fails validation."""
+
+        class GoodPytree(Operator):
+            pass
+
+        op = GoodPytree(wires=0)
+        mocker.patch("pennylane.testing.operators.pytrees.unflatten", return_value=GoodPytree(1))
+        with pytest.raises(AssertionError, match=r"qp.pytrees.unflatten must be able to reproduce"):
+            _check_pytree(op)
 
     @pytest.mark.jax
     def test_bad_leaves_ordering(self):
