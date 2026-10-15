@@ -39,12 +39,16 @@ _GET_SESSION = f"{_PREFIX}get_session"
 _STAGE_PAYLOAD = f"{_PREFIX}stage_payload"
 _POST = f"{_PREFIX}post"
 _COLLECT = f"{_PREFIX}collect"
+_CHECK = f"{_PREFIX}check"
+_CHECK_SESSION = f"{_PREFIX}check_session"
 
 
 _SIG_GET_SESSION = "(i32, str) -> ptr"  # role, key
 _SIG_STAGE_PAYLOAD = "(ptr, buf, u64, u32) -> i32"  # session, src, bytes, decoder_id
 _SIG_POST = "(ptr, u32) -> i32"  # session, work_item_idx
 _SIG_COLLECT = "(ptr, out, u64) -> i32"  # session, reply(out), reply_bytes
+_SIG_CHECK = "(i32, str)"  # status, the call it came from
+_SIG_CHECK_SESSION = "(ptr, str)"  # session, the call it came from
 
 # Mirrors catalyst::transport::Role.
 ROLE_CONTROLLER = 0
@@ -288,9 +292,12 @@ def decode(  # pylint: disable=too-many-arguments
     session = runtime_call(
         _GET_SESSION, ROLE_CONTROLLER, key, signature=_SIG_GET_SESSION, library=library
     )
+    runtime_call(
+        _CHECK_SESSION, session, "get_session", signature=_SIG_CHECK_SESSION, library=library
+    )
 
     # Copy `nbytes` into the outbound slot and stamp `decoder_id`, then start the round trip.
-    _ = runtime_call(
+    _checked(
         _STAGE_PAYLOAD,
         session,
         syndrome,
@@ -301,10 +308,10 @@ def decode(  # pylint: disable=too-many-arguments
     )
 
     # Start the round trip
-    _ = runtime_call(_POST, session, work_item_idx, signature=_SIG_POST, library=library)
+    _checked(_POST, session, work_item_idx, signature=_SIG_POST, library=library)
 
     # Wait for the reply
-    _, correction = runtime_call(
+    _, correction = _checked(
         _COLLECT,
         session,
         reply_bytes,
@@ -313,3 +320,13 @@ def decode(  # pylint: disable=too-many-arguments
         library=library,
     )
     return _unpack(correction) if bitpack else correction
+
+
+def _checked(symbol, *args, signature, library, **kwargs):
+    """Call a transport function that returns a status, then stop the program if it failed."""
+    result = runtime_call(symbol, *args, signature=signature, library=library, **kwargs)
+    status = result[0] if isinstance(result, tuple) else result
+    runtime_call(
+        _CHECK, status, symbol.removeprefix(_PREFIX), signature=_SIG_CHECK, library=library
+    )
+    return result

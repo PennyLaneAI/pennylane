@@ -31,7 +31,6 @@ from pennylane.backline.decode import (
     _validate_packed,
     decode,
 )
-from pennylane.backline.runtime import operands
 
 TRANSPORT_CALLS = [
     "__catalyst__transport__get_session",
@@ -39,6 +38,8 @@ TRANSPORT_CALLS = [
     "__catalyst__transport__post",
     "__catalyst__transport__collect",
 ]
+
+CHECKS = ("__catalyst__transport__check", "__catalyst__transport__check_session")
 
 
 @pytest.fixture(name="x64")
@@ -74,8 +75,7 @@ class TestDecodeBitpack:
         assert [tuple(a.shape) for a in avals] == [(64,)]
         assert [a.dtype for a in avals] == [np.dtype(bool)]
 
-        calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
-        assert calls[-1].params["out_bytes"] == (8,)
+        assert calls_of(jaxpr)[-1].params["out_bytes"] == (8,)
 
     def test_bitpack_decode_rejects_non_vector_input(self):
         """It should require a 1D syndrome bit vector in packed mode."""
@@ -139,9 +139,28 @@ def a_round(jax, dev, syndrome=None, **kwargs):
         return jax.make_jaxpr(lambda s: decode(s, **kwargs))(syndrome)
 
 
+def runtime_calls_of(jaxpr):
+    """Every runtime call, checks included, in order."""
+    return [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+
+
 def calls_of(jaxpr):
     """The transport calls."""
-    return [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+    return [eqn for eqn in runtime_calls_of(jaxpr) if eqn.params["symbol"] not in CHECKS]
+
+
+def sources_of(jaxpr, var):
+    """Every variable it is computed from."""
+    producers = {out: eqn for eqn in jaxpr.eqns for out in eqn.outvars}
+    seen, pending = set(), [var]
+    while pending:
+        current = pending.pop()
+        if current in seen or not hasattr(current, "aval") or hasattr(current, "val"):
+            continue
+        seen.add(current)
+        if current in producers and str(producers[current].primitive) != "runtime_call":
+            pending.extend(producers[current].invars)
+    return seen
 
 
 def scalars_of(jaxpr, call):
@@ -300,6 +319,18 @@ class TestRecordedRound:
         """The calls are in order."""
         jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor(name="decoder-0")]))
         assert [call.params["symbol"] for call in calls_of(jaxpr)] == TRANSPORT_CALLS
+
+    def test_every_call_is_checked(self, x64):
+        """Each call is followed by a check of what it returned."""
+        jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor(name="decoder-0")]))
+        calls = runtime_calls_of(jaxpr)
+        assert len(calls) == 2 * len(TRANSPORT_CALLS)
+        for call, check in zip(calls[::2], calls[1::2]):
+            name = call.params["symbol"].removeprefix("__catalyst__transport__")
+            expected = CHECKS[1] if name == "get_session" else CHECKS[0]
+            assert check.params["symbol"] == expected
+            assert sources_of(jaxpr, check.invars[0]) & set(call.outvars), f"{name} is unchecked"
+            assert check.params["local_constants"] == (name.encode() + b"\0",)
 
     def test_every_call_is_local(self, x64):
         """The round is driven from the controller's own process."""
