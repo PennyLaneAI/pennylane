@@ -37,6 +37,7 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.combine_global_phases
     ~transforms.commute_controlled
     ~transforms.decompose
+    ~transforms._tape_decompose
     ~transforms.disentangle_cnot
     ~transforms.disentangle_swap
     ~transforms.merge_amplitude_embedding
@@ -470,7 +471,7 @@ from .zx import (
     from_zx,
 )
 from .broadcast_expand import broadcast_expand
-from .decompose import decompose
+from .decompose import _tape_decompose, decompose  # pylint: disable=protected-access
 from .intermediate_reps import (
     parity_matrix,
     phase_polynomial,

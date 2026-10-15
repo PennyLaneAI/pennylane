@@ -15,16 +15,19 @@ r"""
 Contains the PhaseGradientStatePrep template.
 """
 
+from collections import Counter
+
 import numpy as np
 
 import pennylane as qp
-from pennylane import capture, compiler, math
-from pennylane.control_flow import for_loop
+from pennylane import math
 from pennylane.core.operator import StatePrepBase2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.exceptions import WireError
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires, WiresLike
+
+from .phase_gradient_decomp_data import GLOBAL_PHASES, INITIAL_PPRS, PI_OVER_8_PPRS
 
 
 class PhaseGradientStatePrep(StatePrepBase2):
@@ -47,7 +50,7 @@ class PhaseGradientStatePrep(StatePrepBase2):
         Compiling :class:`~.RZ` gates to phase-gradient operations with
         :func:`~.transforms.rz_phase_gradient`.
 
-        Approximate Clifford+T preparation of this state via
+        Preparation of this state with Clifford gates, adders, and mid-circuit measurements via
         `Jones distillation <https://arxiv.org/abs/1303.3066>`__ with
         :func:`~.transforms.decompositions.make_phase_gradient_distillation_decomp`.
 
@@ -76,17 +79,12 @@ class PhaseGradientStatePrep(StatePrepBase2):
     >>> np.allclose(circuit(), np.exp(-2j * np.pi * np.arange(B) / B) / np.sqrt(B))
     True
 
-    The decomposition consists of :class:`~.Hadamard` gates and phase gates (:class:`~.PhaseShift`):
+    The decomposition is supported on up to 30 wires and consists of :class:`~.PPR_8` gates,
+    at most one :class:`~.PPR_2` or :class:`~.PPR_4` gate per wire, and a :class:`~.GlobalPhase`.
 
-    >>> print(qp.draw(qp.PhaseGradientStatePrep(wires=range(5)).decomposition)())
-    0: ──H──Z─────────┤
-    1: ──H──S†────────┤
-    2: ──H──T†────────┤
-    3: ──H──Rϕ(-0.39)─┤
-    4: ──H──Rϕ(-0.20)─┤
-
-    For an approximate Clifford+T preparation, construct the Jones distillation rule and
-    pass it to ``fixed_decomps``:
+    Alternatively, the Jones distillation rule uses Clifford gates, :class:`~.SemiAdder`, and
+    mid-circuit measurements and supports any number of wires. Construct it and pass it to
+    ``fixed_decomps``:
 
     >>> qp.decomposition.enable_graph()
     >>> registers = qp.registers({"grad": 5, "aux": 5, "work": 4})
@@ -139,44 +137,51 @@ class PhaseGradientStatePrep(StatePrepBase2):
         return ket
 
 
-def _phase_gradient_state_prep_resources(wires: AbstractWires):
-    num_wires = len(wires)
-    resources = {qp.Hadamard: num_wires}
-    if num_wires > 0:
-        resources[qp.Z] = 1
-    if num_wires > 1:
-        resources[qp.adjoint(qp.S(Wire[1]))] = 1
-    if num_wires > 2:
-        resources[qp.adjoint(qp.T(Wire[1]))] = 1
-    if num_wires > 3:
-        resources[qp.PhaseShift] = num_wires - 3
+def _ppr_counts(num_wires):
+    counts = Counter()
+    for init, pprs in zip(INITIAL_PPRS[:num_wires], PI_OVER_8_PPRS[:num_wires], strict=True):
+        if init is not None:
+            counts[init] += 1
+        counts.update((8 if p.isupper() else -8, p.upper()) for p in pprs)
+    return counts
+
+
+def _ppr(denominator, pauli_word, wires):
+    op_class = {2: qp.PPR_2, 4: qp.PPR_4, 8: qp.PPR_8}[abs(denominator)]
+    return op_class(1 if denominator > 0 else -1, pauli_word, wires=wires)
+
+
+def _phase_gradient_state_prep_ppr_resources(wires: AbstractWires):
+    resources = {
+        _ppr(denominator, pauli, wires=Wire[1]): count
+        for (denominator, pauli), count in _ppr_counts(len(wires)).items()
+    }
+    resources[qp.GlobalPhase] = 1
     return resources
 
 
-@register_resources(_phase_gradient_state_prep_resources)
-def _phase_gradient_state_prep_decomposition(wires: WiresLike):
+@register_condition(lambda wires: len(wires) <= len(PI_OVER_8_PPRS))
+@register_resources(_phase_gradient_state_prep_ppr_resources)
+def _phase_gradient_state_prep_ppr_decomposition(wires: WiresLike):
+    # Wire j is prepared in the state (|0> + exp(-i pi / 2**j)|1>) / sqrt(2) by the PPR
+    # ``INITIAL_PPRS[j]`` (angle denominator, Pauli word; no gate if ``None``), followed by the π/8
+    # PPRs in ``PI_OVER_8_PPRS[j]``, where upper (lower) case letters denote PPRs with angle π/8
+    # (-π/8). Together with the global phase given by summing ``GLOBAL_PHASES`` over the wires,
+    # the state prepared on 30 wires deviates from the phase gradient state by
+    # less than 1e-12 in the 2-norm.
+
     num_wires = len(wires)
-    if compiler.active() or capture.enabled():
-        wires = math.array(wires, like="jax")
-
-    @for_loop(num_wires)
-    def hadamard_loop(i):
-        qp.Hadamard(wires[i])
-
-    hadamard_loop()  # pylint: disable=no-value-for-parameter
-
-    if num_wires > 0:
-        qp.Z(wires[0])
-    if num_wires > 1:
-        qp.adjoint(qp.S(wires[1]))
-    if num_wires > 2:
-        qp.adjoint(qp.T(wires[2]))
-
-    @for_loop(3, num_wires)
-    def phase_shift_loop(i):
-        qp.PhaseShift(-np.pi * 2.0**-i, wires[i])
-
-    phase_shift_loop()  # pylint: disable=no-value-for-parameter
+    for wire, init, pprs in zip(
+        wires, INITIAL_PPRS[:num_wires], PI_OVER_8_PPRS[:num_wires], strict=True
+    ):
+        if init is not None:
+            _ppr(*init, wires=wire)
+        for p in pprs:
+            qp.PPR_8(1 if p.isupper() else -1, p.upper(), wires=wire)
+    qp.GlobalPhase(sum(GLOBAL_PHASES[: len(wires)]))
 
 
-add_decomps(PhaseGradientStatePrep, _phase_gradient_state_prep_decomposition)
+add_decomps(
+    PhaseGradientStatePrep,
+    _phase_gradient_state_prep_ppr_decomposition,
+)

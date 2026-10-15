@@ -445,7 +445,8 @@ class TestDecomposition:
         """A single-control C(MultiX) fans out to one controlled-X per set bit (a CNOT for a
         control on |1>), lowering to the requested gate set."""
 
-        @qp.transforms.decompose(gate_set=gate_set)
+        # pylint: disable-next=protected-access
+        @qp.transforms._tape_decompose(gate_set=gate_set)
         @qp.qnode(qp.device("null.qubit", wires=4))
         def circuit():
             qp.ctrl(
@@ -497,7 +498,8 @@ class TestDecomposition:
         control = [0, 1, 2, 3]
         targets = [4, 5, 6, 7]
 
-        @qp.transforms.decompose(
+        # pylint: disable-next=protected-access
+        @qp.transforms._tape_decompose(
             # PauliX is required for solvability (flip_zero_control's declared resources), even
             # though this concrete, all-1-control circuit never emits one.
             gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", "CNOT", "PauliX"},

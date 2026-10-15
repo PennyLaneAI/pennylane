@@ -68,22 +68,18 @@
   :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`.
   It is a catalytic state for (generalized) rotation gates.
   :func:`~.transforms.decompositions.make_phase_gradient_distillation_decomp` can be used to
-  create a decomposition rule based on Jones' repeat-until-success construction, which avoids the
-  arbitrary-angle phase shifts of the default decomposition.
+  create a decomposition rule based on Jones' repeat-until-success construction, which uses only
+  Clifford gates, adders, and mid-circuit measurements and supports any number of wires.
   See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
   [(#10227)](https://github.com/PennyLaneAI/pennylane/pull/10227)
   [(#10245)](https://github.com/PennyLaneAI/pennylane/pull/10245)
+  [(#10264)](https://github.com/PennyLaneAI/pennylane/pull/10264)
 
-  ```pycon
-  import pennylane as qp
-  >>> print(qp.draw(qp.PhaseGradientStatePrep(wires=range(5)).decomposition)())
-  0: ──H──Z─────────┤
-  1: ──H──S†────────┤
-  2: ──H──T†────────┤
-  3: ──H──Rϕ(-0.39)─┤
-  4: ──H──Rϕ(-0.20)─┤
-
-  ```
+  The operation has a gridsynth-based decomposition into Pauli product rotations on up to
+  30 wires, consisting of :class:`~.PPR_8` operators, at most one :class:`~.PPR_2` or
+  :class:`~.PPR_4` operator per wire, and a
+  :class:`~.GlobalPhase`. It approximates the phase gradient state on 30 wires to 
+  precision :math:`10^{-12}` (in 2-norm).
 
 * Added a `qp.math.floor_log2` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
   in analogy to the existing `qp.math.ceil_log2`.
@@ -983,7 +979,7 @@
   With this upgrade, it decomposes into a ``TemporaryAND`` ladder and individual ``CNOT`` gates when work wires are available:
 
   ```python
-  @qp.transforms.decompose(
+  @qp.transforms._tape_decompose(
       gate_set={"TemporaryAND":4, "Adjoint(TemporaryAND)":1, "MultiControlledX":7, "CNOT":1}
   )
   @qp.qnode(qp.device("default.qubit"))
@@ -1094,11 +1090,6 @@
   [(#10293)](https://github.com/PennyLaneAI/pennylane/pull/10293)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
-
-* Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
-  an unsigned-integer register with a signed-integer register into an unsigned-integer register.
-  This specific setup is useful for a vibronic dynamics workflow.
-  [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
 
 * The Phox module has been renamed to `tcdq` (Train Classical, Deploy Quantum) and now supports qudit systems of arbitrary dimension.
   [(#9745)](https://github.com/PennyLaneAI/pennylane/pull/9745)
@@ -1223,6 +1214,11 @@
   [(#10246)](https://github.com/PennyLaneAI/pennylane/pull/10246)
 
 <h3>Breaking changes 💔</h3>
+
+* :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's
+  ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
+  available as :func:`~.transforms._tape_decompose`.
+  [(#10304)](https://github.com/PennyLaneAI/pennylane/pull/10304)
 
 * Controlling a :class:`~.GlobalPhase` now returns a different operator. When all control values are
   ``1``, ``qp.ctrl(qp.GlobalPhase(phi), control=...)`` is lowered in python to a :class:`~.PhaseShift`
@@ -1604,6 +1600,7 @@
   [(#10178)](https://github.com/PennyLaneAI/pennylane/pull/10178)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
+  [(#10189)](https://github.com/PennyLaneAI/pennylane/pull/10189)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
   [(#9924)](https://github.com/PennyLaneAI/pennylane/pull/9924)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
@@ -1714,6 +1711,7 @@
   [(#9926)](https://github.com/PennyLaneAI/pennylane/pull/9926)
   [(#10077)](https://github.com/PennyLaneAI/pennylane/pull/10077)
   [(#10150)](https://github.com/PennyLaneAI/pennylane/pull/10150)
+  [(#10298)](https://github.com/PennyLaneAI/pennylane/pull/10298)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
