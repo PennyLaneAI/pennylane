@@ -357,8 +357,6 @@ class TestQuditExpvalVsPennyLane:
         ({0: [{0: 4, 1: 3}]}, 2, 3, {1: ([[0]], [[1]], [0])}),
         # identity gate (all powers vanish mod d) is dropped entirely
         ({0: [{0: 3}], 1: [{1: 1}]}, 2, 3, {1: ([[1]], [[1]], [1])}),
-        # negative qudit indices count from the end
-        ({0: [{-1: 1, 0: 1}]}, 3, 2, {2: ([[0, 2]], [[1, 1]], [0])}),
         # per-qudit dimensions
         ({0: [{0: 1, 1: 5}]}, 2, [2, 5], {1: ([[0]], [[1]], [0])}),
     ],

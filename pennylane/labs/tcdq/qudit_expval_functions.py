@@ -199,14 +199,13 @@ def _normalize_sparse_gate(
     if not isinstance(gate, dict):
         raise TypeError(
             "Each qudit gate must be a dict mapping qudit index to Z power, e.g. {0: 1, 2: 2}; "
-            f"got {type(gate).__name__}. Dense length-n_qudits generator vectors are not accepted."
         )
 
     support: list[int] = []
     powers: list[int] = []
     for qudit, power in gate.items():
         q = int(qudit)
-        if q < -n_qudits or q >= n_qudits:
+        if q >= n_qudits or q < 0:
             raise IndexError(f"Qudit index {q} out of range for a {n_qudits}-qudit circuit.")
         q = q % n_qudits
         p = int(power) % int(dims[q])
@@ -241,6 +240,17 @@ def _parse_qudit_gate_dict(
     buckets: dict[int, tuple[list[np.ndarray], list[np.ndarray], list[int]]] = {}
 
     for param_idx in sorted(circuit_def.keys()):
+
+        print(param_idx)
+
+        if not isinstance(param_idx, int):
+            raise TypeError(f"Qudit indices must be type int, got type {type(param_idx)} instead.")
+
+        if param_idx < 0:
+            raise ValueError(
+                f"Qudit indices must be non-negative integers, got index {param_idx} instead."
+            )
+
         for gate in circuit_def[param_idx]:
             support, powers = _normalize_sparse_gate(gate, n_qudits, dims)
             omega = support.size
