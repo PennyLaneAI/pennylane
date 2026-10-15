@@ -311,16 +311,15 @@ def _adjoint_temporary_and(base):
     ops.cond(math.logical_not(cvals[1]), ops.X)(base.wires[1])
 
 
-def _adjoint_temporary_and_ppm_resources(*_, **__):
-    return {
+@register_resources(
+    {
         ops.PauliMeasure("X", Wire[1]): 1,
         ops.PauliMeasure("Z", Wire[1]): 1,
         ops.CZ: 1,
         ops.X: _number_xs + 1,
-    }
-
-
-@register_resources(_adjoint_temporary_and_ppm_resources, exact=False)
+    },
+    exact=False,
+)
 def _adjoint_temporary_and_ppm(base):
     r"""The implementation of adjoint TemporaryAND by Pauli product measurements + Pauli/Clifford
     corrections, similar to _adjoint_temporary_and above from https://arxiv.org/abs/1805.03662."""
