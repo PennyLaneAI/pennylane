@@ -209,6 +209,19 @@ class TestUpdate:
         assert new_circuit.diff_method == "parameter-shift"
         assert circuit.compile_pipeline == new_circuit.compile_pipeline
 
+    def test_update_pipelines(self):
+        """Test that QNode compile pipelines can be updated via update_pipelines."""
+        dev = qp.device("default.qubit", wires=1)
+        qn = qp.QNode(dummyfunc, dev)
+
+        new_compile = qp.CompilePipeline(qp.transforms.cancel_inverses)
+        new_post_device = qp.CompilePipeline(qp.transforms.merge_rotations)
+        updated = qn.update_pipelines(new_compile, new_post_device)
+
+        assert updated is not qn
+        assert updated.compile_pipeline is new_compile
+        assert updated.post_device_pipeline is new_post_device
+
 
 class TestInitialization:
     """Testing the initialization of the qnode."""
