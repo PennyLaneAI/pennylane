@@ -70,7 +70,7 @@ class TestAnalyze:
             measurement_processes={"ExpectationMP": [], "SampleMP": [], "CountsMP": []},
         )
 
-        @qp.qjit(capture=True)(capture="global")
+        @qp.qjit(capture=True)
         @qp.transforms.merge_rotations
         @qp.marker("cancelled")
         @qp.transforms.cancel_inverses
