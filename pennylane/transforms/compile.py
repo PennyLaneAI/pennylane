@@ -200,7 +200,10 @@ def compile(
                 return True
             if not obj.has_decomposition:
                 return True
-            return obj.name in basis_set and (not getattr(obj, "only_visual", False))
+            in_basis = obj.name in basis_set or (
+                isinstance(obj, qp.ops.Adjoint) and obj.base.name in basis_set
+            )
+            return in_basis and (not getattr(obj, "only_visual", False))
 
         [expanded_tape], _ = qp.devices.preprocess.decompose(
             tape,
