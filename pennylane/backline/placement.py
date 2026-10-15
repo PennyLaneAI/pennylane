@@ -434,7 +434,8 @@ class Placement:
             :class:`coprocessing accelerators <.Coprocessor>`. Defaults to ``()``.
         transport (str | Transport): Which transport carries data between nodes, as a
             :class:`~.Transport` or its registry name (e.g. ``"rdma"``). A name is resolved on
-            construction, so this reads back as a :class:`~.Transport`.
+            construction, so this reads back as a :class:`~.Transport`. ``"none"`` places the
+            controller alone and cannot be used with coprocessors.
         qec_code (str | None): The quantum error-correcting code the circuit is encoded for.
             Defaults to ``None``, which leaves the circuit unencoded.
 

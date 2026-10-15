@@ -32,6 +32,13 @@ class Transport:
     :attr:`~pennylane.Backline.transport`. The compiler combines the transport with each node's
     hardware to select a concrete runtime backend.
 
+    The registered transports are:
+
+    * ``"rdma"``: messages travel over RDMA, so every coprocessor needs an :class:`~.Endpoint`.
+    * ``"memcpy"``: messages are copied in memory, with no network endpoint.
+    * ``"none"``: no messages move. The placement is a :class:`~.Controller` alone, and passing
+      any coprocessor raises an error.
+
     .. warning::
 
         :mod:`Backline <.backline>` is experimental and only usable through the Catalyst
