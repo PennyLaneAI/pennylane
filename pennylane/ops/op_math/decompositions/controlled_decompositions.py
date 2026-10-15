@@ -634,13 +634,21 @@ def _mcx_two_workers_resource(wires, control_values, work_wires, work_wire_type=
 
     num_control_wires = len(wires) - 1
     is_small_mcx = num_control_wires < 6
+    # Under program capture, the gates of each adjoint ladder lower with the adjoint modifier
+    # instead of being simplified to their self-inverse bases.
+    n_adjoint_ladder = num_control_wires - 4 + is_small_mcx
+    adjoint_toffoli = qp.adjoint(ops.Toffoli(Wire[3]))
+    adjoint_x = qp.adjoint(ops.X(Wire[1]))
 
     if work_wire_type == "zeroed":
         n_ccx = 2 * num_control_wires - 3
         n_temporary_ccx_pairs = 2 - is_small_mcx
+        n_x = (n_ccx - 3 if is_small_mcx else n_ccx - 5) + num_control_wires
         return {
-            ops.Toffoli: n_ccx - 2 * n_temporary_ccx_pairs,
-            ops.X: (n_ccx - 3 if is_small_mcx else n_ccx - 5) + num_control_wires,
+            ops.Toffoli: n_ccx - 2 * n_temporary_ccx_pairs - n_adjoint_ladder,
+            adjoint_toffoli: n_adjoint_ladder,
+            ops.X: n_x - n_adjoint_ladder,
+            adjoint_x: n_adjoint_ladder,
             qp.TemporaryAND: n_temporary_ccx_pairs,
             qp.adjoint(qp.TemporaryAND(Wire[3])): n_temporary_ccx_pairs,
         }
@@ -648,7 +656,12 @@ def _mcx_two_workers_resource(wires, control_values, work_wires, work_wire_type=
     # Otherwise, we assume the work wires are borrowed
     n_ccx = 4 * num_control_wires - 8
     n_x = (n_ccx - 4 if is_small_mcx else n_ccx - 8) + num_control_wires
-    return {ops.Toffoli: n_ccx, ops.X: n_x}
+    return {
+        ops.Toffoli: n_ccx - 2 * n_adjoint_ladder,
+        adjoint_toffoli: 2 * n_adjoint_ladder,
+        ops.X: n_x - 2 * n_adjoint_ladder,
+        adjoint_x: 2 * n_adjoint_ladder,
+    }
 
 
 @register_condition(_mcx_two_workers_condition)
@@ -734,17 +747,29 @@ def _mcx_one_worker_condition(wires, control_values, work_wires, **_):
 # pylint: disable-next=unused-argument
 def _mcx_one_worker_resource(wires, control_values, work_wires, work_wire_type="borrowed"):
     num_control_wires = len(wires) - 1
+    # Under program capture, the gates of each adjoint ladder lower with the adjoint modifier
+    # instead of being simplified to their self-inverse bases.
+    n_adjoint_ladder = num_control_wires - 3
+    adjoint_toffoli = qp.adjoint(ops.Toffoli(Wire[3]))
+    adjoint_x = qp.adjoint(ops.X(Wire[1]))
     if work_wire_type == "zeroed":
         n_ccx = 2 * num_control_wires - 5
         return {
-            ops.Toffoli: n_ccx,
+            ops.Toffoli: n_ccx - n_adjoint_ladder,
+            adjoint_toffoli: n_adjoint_ladder,
             qp.TemporaryAND: 1,
             qp.adjoint(qp.TemporaryAND(Wire[3])): 1,
-            ops.X: n_ccx - 1 + num_control_wires,
+            ops.X: n_ccx - 1 + num_control_wires - n_adjoint_ladder,
+            adjoint_x: n_adjoint_ladder,
         }
     # Otherwise, we assume the work wire is borrowed
     n_ccx = 4 * num_control_wires - 8
-    return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4 + num_control_wires}
+    return {
+        ops.Toffoli: n_ccx - 2 * n_adjoint_ladder,
+        adjoint_toffoli: 2 * n_adjoint_ladder,
+        ops.X: n_ccx - 4 + num_control_wires - 2 * n_adjoint_ladder,
+        adjoint_x: 2 * n_adjoint_ladder,
+    }
 
 
 def _mcx_one_worker_no_flips(wires, work_wires, work_wire_type, _skip_toggle_detection=False):

@@ -344,8 +344,30 @@ class TestSelectTHCOperator:
             work,
         )
 
-        assert_valid(op, skip_differentiation=True)
+        # Under capture, the resources follow Catalyst, which lowers the uncompute as an adjoint
+        # region, while the decomposition without qjit still takes each op's own adjoint.
+        assert_valid(op, skip_differentiation=True, skip_new_decomp=qp.capture.enabled())
         assert op.wires == qp.wires.Wires(system + index + flags + gradient + work)
+
+    @pytest.mark.parametrize("lazy_unbasis", [False, True])
+    def test_lazy_unbasis(self, lazy_unbasis):
+        """Test that ``lazy_unbasis`` wraps every op of the uncompute in an adjoint."""
+        system, index, flags, gradient, work, _ = _layout(2, 4, 1)
+        half = _select_half(
+            ((1.0, 1.0), (1.0, -1.0)),
+            ((1.0, 0.0), (0.0, 1.0)),
+            1,
+            system,
+            index[:2],
+            flags[:3],
+            gradient,
+            work,
+            lazy_unbasis=lazy_unbasis,
+        )
+
+        names = [op.name for op in half.uncompute_op.operands]
+        assert ("C(MultiX)" in names) is not lazy_unbasis
+        assert all(name.startswith("Adjoint(") for name in names) is lazy_unbasis
 
     def test_abstract_wires_keep_static_data(self):
         """Test that abstract construction stores compilable data as given."""
