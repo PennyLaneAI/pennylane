@@ -653,12 +653,10 @@ class TestControlledOp2:
         def _custom_decomp(wires):
             qp.RX(np.pi / 2, wires=wires)
 
-        with qp.decomposition.local_decomps():
-
-            qp.add_decomps(NonParametricOp, _custom_decomp)
-            op = qp.ctrl(NonParametricOp(0), control=1)
-            assert op.has_decomposition
-            assert op.decomposition() == [qp.CRX(np.pi / 2, wires=[1, 0])]
+        qp.add_decomps(NonParametricOp, _custom_decomp)
+        op = qp.ctrl(NonParametricOp(0), control=1)
+        assert op.has_decomposition
+        assert op.decomposition() == [qp.CRX(np.pi / 2, wires=[1, 0])]
 
 
 @pytest.mark.catalyst

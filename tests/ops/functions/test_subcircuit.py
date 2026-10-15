@@ -252,37 +252,35 @@ class TestAdditionalDecompositionRules:
     def test_register_additional_rule(self):
         """Test that an additional (and valid) decomposition rule can be registered for the
         operator itself."""
-        with qp.decomposition.local_decomps():
 
-            # An alternative but equivalent decomposition of ``H`` followed by ``RZ(phi)``.
-            @qp.register_resources({qp.H: 1, qp.PhaseShift: 1, qp.GlobalPhase: 1})
-            def alt_fixed(phi, wires):
-                qp.H(wires)
-                qp.PhaseShift(phi, wires)
-                qp.GlobalPhase(phi / 2)
+        # An alternative but equivalent decomposition of ``H`` followed by ``RZ(phi)``.
+        @qp.register_resources({qp.H: 1, qp.PhaseShift: 1, qp.GlobalPhase: 1})
+        def alt_fixed(phi, wires):
+            qp.H(wires)
+            qp.PhaseShift(phi, wires)
+            qp.GlobalPhase(phi / 2)
 
-            qp.add_decomps(FixedOp, alt_fixed)
+        qp.add_decomps(FixedOp, alt_fixed)
 
-            assert {rule.name for rule in qp.list_decomps(FixedOp)} == {
-                "FixedOp_decomp",
-                "alt_fixed",
-            }
-            assert_valid(FixedOp(1.5, wires=0))
+        assert {rule.name for rule in qp.list_decomps(FixedOp)} == {
+            "FixedOp_decomp",
+            "alt_fixed",
+        }
+        assert_valid(FixedOp(1.5, wires=0))
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_register_adjoint_rule(self):
         """Test that a valid adjoint decomposition rule can be registered for the operator."""
-        with qp.decomposition.local_decomps():
 
-            @qp.register_resources({qp.RZ: 1, qp.H: 1})
-            def adjoint_fixed(base):
-                qp.RZ(-base.phi, base.wires)
-                qp.H(base.wires)
+        @qp.register_resources({qp.RZ: 1, qp.H: 1})
+        def adjoint_fixed(base):
+            qp.RZ(-base.phi, base.wires)
+            qp.H(base.wires)
 
-            qp.add_decomps("Adjoint(FixedOp)", adjoint_fixed)
+        qp.add_decomps("Adjoint(FixedOp)", adjoint_fixed)
 
-            assert [rule.name for rule in qp.list_decomps("Adjoint(FixedOp)")] == ["adjoint_fixed"]
-            assert_valid(qp.adjoint(FixedOp(1.5, wires=0)))
+        assert [rule.name for rule in qp.list_decomps("Adjoint(FixedOp)")] == ["adjoint_fixed"]
+        assert_valid(qp.adjoint(FixedOp(1.5, wires=0)))
 
     # We test only with capture because when capture is disabled, testing the decompositions of the
     # operator fails because assert_valid parametrizes the validation over the number of control wires,
@@ -291,50 +289,49 @@ class TestAdditionalDecompositionRules:
     @pytest.mark.usefixtures("enable_capture")
     def test_register_controlled_rule(self):
         """Test that a valid controlled decomposition rule can be registered for the operator."""
-        with qp.decomposition.local_decomps():
 
-            def _ctrl_resources(
-                base, control_wires, control_values, work_wires, work_wire_type
-            ):  # pylint: disable=unused-argument
-                resources = {}
-                resources[
-                    qp.ctrl(
-                        qp.H(Wire[1]),
-                        Wire[len(control_wires)],
-                        Bool[len(control_values)],
-                        Wire[(len(work_wires))],
-                        work_wire_type,
-                    )
-                ] = 1
-                resources[
-                    qp.ctrl(
-                        qp.RZ(Float, Wire[1]),
-                        Wire[len(control_wires)],
-                        Bool[len(control_values)],
-                        Wire[(len(work_wires))],
-                        work_wire_type,
-                    )
-                ] = 1
-                return resources
-
-            @qp.register_resources(_ctrl_resources, exact=False)
-            def controlled_fixed(base, control_wires, control_values, work_wires, work_wire_type):
+        def _ctrl_resources(
+            base, control_wires, control_values, work_wires, work_wire_type
+        ):  # pylint: disable=unused-argument
+            resources = {}
+            resources[
                 qp.ctrl(
-                    qp.H(base.wires),
-                    control_wires,
-                    control_values=control_values,
-                    work_wires=work_wires,
-                    work_wire_type=work_wire_type,
+                    qp.H(Wire[1]),
+                    Wire[len(control_wires)],
+                    Bool[len(control_values)],
+                    Wire[(len(work_wires))],
+                    work_wire_type,
                 )
+            ] = 1
+            resources[
                 qp.ctrl(
-                    qp.RZ(base.phi, base.wires),
-                    control_wires,
-                    control_values=control_values,
-                    work_wires=work_wires,
-                    work_wire_type=work_wire_type,
+                    qp.RZ(Float, Wire[1]),
+                    Wire[len(control_wires)],
+                    Bool[len(control_values)],
+                    Wire[(len(work_wires))],
+                    work_wire_type,
                 )
+            ] = 1
+            return resources
 
-            qp.add_decomps("C(FixedOp)", controlled_fixed)
+        @qp.register_resources(_ctrl_resources, exact=False)
+        def controlled_fixed(base, control_wires, control_values, work_wires, work_wire_type):
+            qp.ctrl(
+                qp.H(base.wires),
+                control_wires,
+                control_values=control_values,
+                work_wires=work_wires,
+                work_wire_type=work_wire_type,
+            )
+            qp.ctrl(
+                qp.RZ(base.phi, base.wires),
+                control_wires,
+                control_values=control_values,
+                work_wires=work_wires,
+                work_wire_type=work_wire_type,
+            )
 
-            assert [rule.name for rule in qp.list_decomps("C(FixedOp)")] == ["controlled_fixed"]
-            assert_valid(qp.ctrl(FixedOp(1.5, wires=0), control=[1, 2, 3]))
+        qp.add_decomps("C(FixedOp)", controlled_fixed)
+
+        assert [rule.name for rule in qp.list_decomps("C(FixedOp)")] == ["controlled_fixed"]
+        assert_valid(qp.ctrl(FixedOp(1.5, wires=0), control=[1, 2, 3]))
