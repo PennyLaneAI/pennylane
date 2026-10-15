@@ -200,7 +200,8 @@ class TestTemporaryAND:
 
         @qp.set_shots(1)
         @qp.qnode(qp.device("default.qubit", wires=wires), interface=None)
-        @qp.transforms.decompose(
+        # pylint: disable-next=protected-access
+        @qp.transforms._tape_decompose(
             gate_set=gate_set,
             fixed_decomps={
                 qp.Select: qp.templates.subroutines.select._select_decomp_unary,  # pylint: disable=protected-access

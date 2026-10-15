@@ -23,7 +23,7 @@ from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
+from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
@@ -764,7 +764,7 @@ class SumOfSlatersPrep(Operator2):
         first_free_wire = max(wires)+1
 
         @qp.transforms.resolve_dynamic_wires(min_int=first_free_wire)
-        @qp.decompose(gate_set=gate_set, num_work_wires=14)
+        @qp.transforms._tape_decompose(gate_set=gate_set, num_work_wires=14)
         @qp.qnode(qp.device("lightning.qubit", wires=21))
         def circuit():
             qp.SumOfSlatersPrep(coefficients, wires, indices)
@@ -852,7 +852,7 @@ class SumOfSlatersPrep(Operator2):
             first_free_wire = max(wires)+1
 
             @qp.transforms.resolve_dynamic_wires(min_int=first_free_wire)
-            @qp.decompose(gate_set=gate_set, num_work_wires=11)
+            @qp.transforms._tape_decompose(gate_set=gate_set, num_work_wires=11)
             @qp.qnode(qp.device("lightning.qubit", wires=16))
             def circuit():
                 qp.SumOfSlatersPrep(coefficients, wires, indices)
@@ -1159,7 +1159,7 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     # Step 2 in paper (p.7)
     resources[
         qp.QROM(
-            bitstrings=Int[num_entries, num_wires],
+            bitstrings=Bool[num_entries, num_wires],
             control_wires=Wire[d],
             target_wires=Wire[num_wires],
             work_wires=Wire[d - 1],

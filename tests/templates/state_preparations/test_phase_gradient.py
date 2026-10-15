@@ -75,14 +75,12 @@ class TestDecomposition:
             return qp.state()
 
         if use_qjit:
-            import catalyst
-
-            # TODO: Use `decompose` for this branch as well once graph_decomposition is integrated
-            circuit = catalyst.passes.graph_decomposition(circuit, gate_set=gate_set)
+            circuit = qp.decompose(circuit, gate_set=gate_set)
             circuit = qp.qjit(circuit, capture=True)
 
         else:
-            circuit = qp.transforms.decompose(circuit, gate_set=gate_set)
+            # pylint: disable-next=protected-access
+            circuit = qp.transforms._tape_decompose(circuit, gate_set=gate_set)
             tape = qp.workflow.construct_tape(circuit)()
             assert all(op.name in gate_set for op in tape.operations)
         assert np.allclose(circuit(), _expected_state(num_wires))
