@@ -26,7 +26,6 @@ from pennylane.labs.tcdq.qudit_expval_functions import (
     _BYTES_PER_GB,
     QuditCircuitConfig,
     _dims_to_numpy,
-    _gates_to_dense_generators,
     _parse_qudit_gate_dict,
     _qudit_phase_block_size,
     _qudit_phase_bytes_per_gate,

@@ -31,7 +31,6 @@ from pennylane.labs.tcdq.mmd_loss_hw import (
 from pennylane.labs.tcdq.qudit_expval_functions import (
     QuditCircuitConfig,
     _dims_to_numpy,
-    _gates_to_dense_generators,
     build_qudit_expval_func,
 )
 
