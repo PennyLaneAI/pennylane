@@ -1,4 +1,4 @@
-:og:description: PennyLane is an open-source quantum software platform for quantum computing, quantum machine learning, and quantum chemistry. Create meaningful quantum algorithms, from inspiration to implementation.
+:og:description: PennyLane2 is an open-source quantum software platform for quantum applications. Create meaningful FTQC algorithms, from inspiration to implementation.
 
 PennyLane Documentation
 =======================
@@ -201,7 +201,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/measurements
    introduction/subroutines
    introduction/compiling_circuits
-   introduction/chemistry
+   introduction/applications
    introduction/data
 
 .. toctree::

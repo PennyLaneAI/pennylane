@@ -1,292 +1,134 @@
-TODO: turn into QML and QChem
-
 .. role:: html(raw)
    :format: html
 
 .. _intro_ref_chm:
 
-Quantum Chemistry
-=================
+Applications
+============
 
-PennyLane provides the :mod:`~.qchem` module to perform quantum chemistry simulations. It
-contains a differentiable Hartree-Fock solver and the functionality to construct a
-fully-differentiable molecular Hamiltonian that can be used as input to quantum algorithms
-such as the variational quantum eigensolver (VQE) algorithm. The :mod:`~.qchem` module
-also provides tools for building other observables such as molecular dipole moment, spin
-and particle number observables. The theoretical foundation of the quantum chemistry functionality
-in PennyLane is explained in our `white paper <https://arxiv.org/abs/2111.09967>`_.
+PennyLane2 and :func:`~pennylane.qjit` let you go from a problem description to a compiled,
+fault-tolerant algorithm in one program, and estimate what that algorithm costs at a scale
+far beyond simulation. Below are two application areas: quantum chemistry and quantum machine
+learning.
 
-Building the electronic Hamiltonian
------------------------------------
+Quantum chemistry
+-----------------
 
-The :mod:`~.qchem` module provides access to a driver function :func:`~.molecular_hamiltonian`
-to generate the electronic Hamiltonian in a single call. For example,
+The :mod:`~pennylane.qchem` module computes molecular integrals and factorizes them into
+compact representations, such as the compressed double factorization (CDF) of
+:class:`~pennylane.CDFHamiltonian`, which feed directly into fault-tolerant algorithms like
+:class:`~pennylane.TrotterCDF` and :class:`~pennylane.QuantumPhaseEstimation`.
 
 .. code-block:: python
 
+    import numpy as np
     import pennylane as qp
-    from pennylane import numpy as np
 
-    symbols = ["H", "H"]
-    geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
-    molecule = qp.qchem.Molecule(symbols, geometry)
-    hamiltonian, qubits = qp.qchem.molecular_hamiltonian(molecule)
+    mol = qp.qchem.Molecule(["H", "H"], np.array([[0.0, 0.0, -0.7], [0.0, 0.0, 0.7]]))
+    core, one, two = qp.qchem.electron_integrals(mol)()
 
-where:
+    # one-body term: diagonalize; two-body term: compressed double factorization
+    two = np.swapaxes(two, 1, 3)
+    eps, U = np.linalg.eigh(one - 0.5 * np.einsum("pqrr->pq", two))
+    _, cores, leaves = qp.qchem.factorize(two, compressed=True, num_factors=2)
 
-* ``hamiltonian`` is the qubit Hamiltonian of the molecule represented as a PennyLane Hamiltonian and
-
-* ``qubits`` is the number of qubits needed to perform the quantum simulation.
-
-The :func:`~.molecular_hamiltonian` function can also be used to construct the molecular Hamiltonian
-with external backends that use the
-`OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin or the
-electronic structure package `PySCF <https://github.com/pyscf/pyscf>`_, which requires separate
-installation. These backends are non-differentiable and can be selected by setting
-``method='openfermion'`` or ``method='pyscf'`` in ``molecular_hamiltonian``.
-
-Furthermore, the net charge,
-the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_, the
-`atomic basis functions <https://www.basissetexchange.org/>`_, the mapping method and the active
-space can also be specified for each backend.
-
-.. code-block:: python
-
-    molecule = qp.qchem.Molecule(
-        symbols,
-        geometry,
-        charge=0,
-        mult=1,
-        basis_name='sto-3g')
-    hamiltonian, qubits = qp.qchem.molecular_hamiltonian(
-        molecule,
-        mapping='jordan_wigner',
-        active_electrons=2,
-        active_orbitals=2
+    H = qp.CDFHamiltonian(
+        core_tensors=np.concatenate([np.diag(eps)[None], cores]),
+        leaf_tensors=np.concatenate([U[None], leaves]),
+        nuc_constant=float(core[0]),
     )
 
-Importing the Hamiltonian and ansatz state
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    system, estimation = range(4), range(4, 8)
 
-If the electronic Hamiltonian is built independently using
-`OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools, it can be readily converted
-to a PennyLane observable using the :func:`~.pennylane.import_operator` function. There is also
-capability to import wavefunctions (states) that have been pre-computed by traditional quantum chemistry methods
-from `PySCF <https://github.com/pyscf/pyscf>`_, which could be used to for example provide a better
-starting point to a quantum algorithm. State import can be accomplished using the :func:`~pennylane.qchem.import_state`
-utility function.
+    @qp.qjit(capture=True)
+    @qp.decompose(gate_set={"RZ", "IsingZZ", "CNOT", "Hadamard", "PhaseShift", "GlobalPhase"})
+    @qp.qnode(qp.device("lightning.qubit", wires=8))
+    def phase_estimation():
+        qp.BasisState(np.array([1, 1, 0, 0]), wires=system)
+        U_t = qp.TrotterCDF(evolution_time=1.0, num_trotter_steps=4, hamiltonian=H, wires=system)
+        qp.QuantumPhaseEstimation(U_t, estimation_wires=estimation)
+        return qp.probs(wires=estimation)
 
+The same algorithm can be costed for industrially relevant molecules with the
+:mod:`~pennylane.estimator` module, without building the Hamiltonian or the circuit:
 
-Importing molecular structure data
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>>> import pennylane.estimator as qre
+>>> H = qre.CDFHamiltonian(num_orbitals=76, num_fragments=150)
+>>> print(qre.estimate(qre.TrotterCDF(H, num_steps=1000, order=2)))
+--- Resources: ---
+ Total wires: 152
+   algorithmic wires: 152
+   allocated wires: 0
+     zero state: 0
+     any state: 0
+ Total gates : 4.170E+11
+  'T': 3.830E+11,
+  'CNOT': 1.021E+10,
+  'Z': 6.794E+9,
+  'S': 1.019E+10,
+  'Hadamard': 6.794E+9
 
-The atomic structure of a molecule can be either defined as an array or imported from an external
-file using the :func:`~.read_structure` function:
+Quantum machine learning
+------------------------
+
+Instantaneous quantum polynomial (IQP) circuits are believed to be hard to sample from
+classically, yet their expectation values can be approximated efficiently. This allows a
+generative model to be *trained classically* and *deployed on quantum hardware* for sampling
+with :class:`~pennylane.IQP`:
 
 .. code-block:: python
 
-    symbols, geometry = qp.qchem.read_structure('h2.xyz')
+    pattern = [[[0]], [[1]], [[2]], [[3]], [[0, 1]], [[1, 2]], [[2, 3]]]
+    weights = np.linspace(0.1, 0.7, len(pattern))  # classically trained parameters
 
+    @qp.qjit(capture=True, seed=42)
+    @qp.set_shots(shots=5)
+    @qp.decompose(gate_set={"RX", "IsingXX", "MultiRZ", "Hadamard", "CNOT"})
+    @qp.qnode(qp.device("lightning.qubit", wires=4))
+    def generate(weights):
+        qp.IQP(weights, wires=range(4), pattern=pattern)
+        return qp.sample()
 
-VQE simulations
----------------
+>>> generate(weights)
+Array([[0, 0, 0, 0],
+       [0, 0, 0, 1],
+       [0, 0, 1, 1],
+       [0, 1, 0, 1],
+       [0, 1, 0, 1]], dtype=int64)
 
-The Variational Quantum Eigensolver (VQE) is a hybrid quantum-classical computational scheme,
-where a quantum computer is used to prepare the trial wave function of a molecule and to measure
-the expectation value of the *electronic Hamiltonian*, while a classical optimizer is used to
-find its ground state.
+Deploying such a model on a thousand qubits can be costed ahead of time:
 
-PennyLane supports treating Hamiltonians just like any other observable, and the
-expectation value of a Hamiltonian can be calculated using ``qp.expval``:
+>>> pattern = [[[i]] for i in range(1000)] + [[[i, i + 1]] for i in range(999)]
+>>> print(qre.estimate(qre.IQP(num_wires=1000, pattern=pattern)))
+--- Resources: ---
+ Total wires: 1000
+   algorithmic wires: 1000
+   allocated wires: 0
+     zero state: 0
+     any state: 0
+ Total gates : 9.195E+4
+  'T': 8.796E+4,
+  'CNOT': 1.998E+3,
+  'Hadamard': 2.000E+3
 
-.. code-block:: python
-
-    dev = qp.device('default.qubit', wires=4)
-
-    symbols = ["H", "H"]
-    geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
-    molecule = qp.qchem.Molecule(symbols, geometry)
-    hamiltonian, qubits = qp.qchem.molecular_hamiltonian(molecule)
-
-    @qp.qnode(dev)
-    def circuit(params):
-        qp.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
-        qp.DoubleExcitation(params, wires=[0, 1, 2, 3])
-        return qp.expval(hamiltonian)
-
-    params = np.array(0.20885146442480412, requires_grad=True)
-    circuit(params)
-
-.. code-block:: text
-
-    tensor(-1.13618912, requires_grad=True)
-
-The circuit parameter can be optimized using the interface of choice.
-
-.. note::
-
-    For more details on VQE and the quantum chemistry functionality available in
-    :mod:`~pennylane.qchem`, check out the PennyLane `quantum chemistry tutorials <https://pennylane.ai/search/?contentType=DEMO&categories=quantum%20chemistry>`_.
-
-
-Quantum chemistry functions and classes
----------------------------------------
-
-PennyLane supports the following quantum chemistry functions and classes.
-
-Molecular integrals and matrices
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Key functions and classes
+-------------------------
 
 :html:`<div class="summary-table">`
 
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.qchem.attraction_integral
-    ~pennylane.qchem.attraction_matrix
-    ~pennylane.qchem.contracted_norm
-    ~pennylane.qchem.core_matrix
-    ~pennylane.qchem.dipole_integrals
-    ~pennylane.qchem.electron_integrals
-    ~pennylane.qchem.electron_repulsion
-    ~pennylane.qchem.expansion
-    ~pennylane.qchem.gaussian_kinetic
-    ~pennylane.qchem.gaussian_moment
-    ~pennylane.qchem.gaussian_overlap
-    ~pennylane.qchem.hermite_moment
-    ~pennylane.qchem.kinetic_integral
-    ~pennylane.qchem.kinetic_matrix
-    ~pennylane.qchem.mol_density_matrix
-    ~pennylane.qchem.moment_integral
-    ~pennylane.qchem.moment_matrix
-    ~pennylane.qchem.nuclear_attraction
-    ~pennylane.qchem.overlap_integral
-    ~pennylane.qchem.overlap_matrix
-    ~pennylane.qchem.primitive_norm
-    ~pennylane.qchem.repulsion_integral
-    ~pennylane.qchem.repulsion_tensor
-
-:html:`</div>`
-
-
-Differentiable Hartree-Fock
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.qchem.hf_energy
-    ~pennylane.qchem.nuclear_energy
-    ~pennylane.qchem.scf
-
-:html:`</div>`
-
-
-Hartree-Fock with external packages
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.qchem.decompose
-    ~pennylane.qchem.meanfield
-    ~pennylane.qchem.one_particle
-    ~pennylane.qchem.two_particle
-
-:html:`</div>`
-
-
-Differentiable observables
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.qchem.diff_hamiltonian
-    ~pennylane.qchem.dipole_moment
-    ~pennylane.qchem.fermionic_dipole
-    ~pennylane.qchem.fermionic_hamiltonian
-    ~pennylane.qchem.fermionic_observable
-    ~pennylane.jordan_wigner
-    ~pennylane.qchem.molecular_hamiltonian
-    ~pennylane.qchem.qubit_observable
-
-:html:`</div>`
-
-
-Other observables
-^^^^^^^^^^^^^^^^^
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.qchem.dipole_of
-    ~pennylane.qchem.observable
-    ~pennylane.qchem.particle_number
-    ~pennylane.qchem.spin2
-    ~pennylane.qchem.spinz
-
-:html:`</div>`
-
-
-Qubit tapering
-^^^^^^^^^^^^^^
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.qchem.clifford
-    ~pennylane.qchem.optimal_sector
-    ~pennylane.paulix_ops
-    ~pennylane.symmetry_generators
-    ~pennylane.taper
-    ~pennylane.qchem.taper_hf
-    ~pennylane.qchem.taper_operation
-
-:html:`</div>`
-
-Utility functions
-^^^^^^^^^^^^^^^^^
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.qchem.active_space
-    ~pennylane.qchem.excitations
-    ~pennylane.qchem.excitations_to_wires
-    ~pennylane.qchem.factorize
-    ~pennylane.math.decomposition.givens_decomposition
-    ~pennylane.qchem.hf_state
-    ~pennylane.import_operator
-    ~pennylane.qchem.import_state
-    ~pennylane.qchem.mol_data
-    ~pennylane.qchem.read_structure
-
-:html:`</div>`
-
-Molecule class and basis functions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.qchem.atom_basis_data
-    ~pennylane.qchem.BasisFunction
     ~pennylane.qchem.Molecule
-    ~pennylane.qchem.mol_basis_data
+    ~pennylane.qchem.electron_integrals
+    ~pennylane.qchem.factorize
+    ~pennylane.CDFHamiltonian
+    ~pennylane.TrotterCDF
+    ~pennylane.QuantumPhaseEstimation
+    ~pennylane.IQP
+    ~pennylane.estimator.estimate
 
 :html:`</div>`
+
+See :mod:`~pennylane.qchem` and :mod:`~pennylane.estimator` for the full set of quantum
+chemistry and resource estimation tools.

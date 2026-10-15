@@ -6,6 +6,25 @@
 Quantum just-in-time compilation
 ================================
 
+PennyLane2 is built ontop of the
+`Catalyst compiler <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`_,
+which enables just-in-time compilation of PennyLane2 programs via the
+:func:`@qjit <~pennylane.qjit>` decorator.
+
+https://docs.jax.dev/en/latest/201/jit.html
+
+* Compile an entire quantum-classical workflow, including any optimization loops.
+
+* Significant performance and scalability improvements over standard Python execution.
+
+* Advanced control flow that supports both quantum and classical instructions.
+
+* Infrastructure for both quantum and classical compilation, allowing you to compile quantum circuits that contain control flow.
+
+* Support for PennyLane-Lightning high performance simulators, and Amazon Braket devices. Additional hardware support, including QPUs, to come.
+
+
+
 PennyLane offers multiple tools for compiling circuits. We use the term "compilation"
 here in a loose sense as the process of transforming one circuit into one or more
 differing circuits. A circuit could be either a quantum function or a sequence of
