@@ -207,6 +207,10 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
                 gate_set.add(f"Adjoint({op})")
         return gate_set
 
+    def supports_all_gates_in_device_gateset(self) -> bool:
+        """Checks if the device supports all gates in the device's gateset."""
+        return not bool(self.operations)
+
     def supports_operation(self, operation: str | Operator) -> bool:
         """Checks if the given operation is supported by name."""
         operation_name = operation if isinstance(operation, str) else operation.name

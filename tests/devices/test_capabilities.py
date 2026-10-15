@@ -756,6 +756,24 @@ class TestDeviceCapabilities:
             "C(T)",
         }
 
+        assert capabilities.supports_all_gates_in_device_gateset() is False
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize(
+        "create_temporary_toml_file",
+        ["""
+            schema = 3
+
+            [operators.gates]
+
+            """],
+        indirect=True,
+    )
+    def test_supports_all_gates_in_device_gateset(self, request):
+        """Tests that the supports_all_gates_in_device_gateset method returns True when the device's gateset is empty."""
+
+        capabilities = DeviceCapabilities.from_toml_file(request.node.toml_file)
+        assert capabilities.supports_all_gates_in_device_gateset() is True
 
 def test_observable_stopping_condition_factory():
     """Tests the observable stopping condition factory."""
