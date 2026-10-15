@@ -61,7 +61,7 @@ class TestDecomposition:
             return qp.state()
 
         if use_qjit:
-            circuit = qp.decompose(circuit, gate_set=gate_set)
+            circuit = qp.transforms.to_ppr(qp.decompose(circuit, gate_set=gate_set))
             circuit = qp.qjit(circuit, capture=True)
 
         else:
