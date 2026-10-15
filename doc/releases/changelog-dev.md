@@ -1106,10 +1106,13 @@
   
 * A new :mod:`pennylane.testing` module collects utilities for testing code built with PennyLane.
   - ``qp.ops.functions.assert_valid`` is now available as :func:`qp.testing.assert_valid <pennylane.testing.assert_valid>`.
+  - The private ``_test_decomposition_rule`` is now available as :func:`qp.testing.assert_valid_decomp_rule <pennylane.testing.assert_valid_decomp_rule>`.
+  - A new :func:`qp.testing.assert_decomposable <pennylane.testing.assert_decomposable>` is added.
 
   [(#10293)](https://github.com/PennyLaneAI/pennylane/pull/10293)
   [(#10306)](https://github.com/PennyLaneAI/pennylane/pull/10306)
   [(#10335)](https://github.com/PennyLaneAI/pennylane/pull/10335)
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 

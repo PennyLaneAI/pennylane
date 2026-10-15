@@ -105,7 +105,7 @@ def test_valid_decomp(p):
     work_wires = list(range(first_free + 2 * p, first_free + 3 * p - 1))
 
     custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
-    _test_decomposition_rule(qp.RZ(phi, 0), custom_decomp, skip_decomp_matrix_check=True)
+    _test_decomposition_rule(qp.RZ(phi, 0), custom_decomp, check_matrix=False)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
