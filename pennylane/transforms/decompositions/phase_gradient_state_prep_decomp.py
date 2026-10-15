@@ -76,7 +76,8 @@ def _jones_success_probabilities(register_sizes):
 
 
 def _jones_seed(wires):
-    """Prepare the negative-phase Clifford seed from Jones, Eq. (4)."""
+    """Prepare the Clifford seed from Jones, Eq. (4), conjugated to the negative-phase convention,
+    i.e., with S replaced by S†."""
     for wire in wires:
         qp.Hadamard(wire)
     if wires:
@@ -86,9 +87,9 @@ def _jones_seed(wires):
 
 
 def _reset(wires):
-    """Measure and reset a register."""
+    """Reset a register with Z Pauli measurements and X corrections."""
     for wire in wires:
-        qp.measure(wire, reset=True)
+        qp.cond(qp.pauli_measure("Z", wire), qp.X)(wire)
 
 
 def _distillation_attempt(
@@ -124,19 +125,21 @@ def _distillation_attempt(
 
     qp.SemiAdder(source_wires, output_wires, work_wires)
 
-    measurements = []
-    for wire in source_wires:
-        qp.Hadamard(wire)
-        measurements.append(
-            qp.measure(wire, reset=True, postselect=0 if mode == "postselect" else None)
-        )
-
     if mode == "postselect":
+        # Catalyst does not honour postselection on pauli_measure yet, and default.qubit cannot
+        # execute pauli_measure, so the postselected branch uses standard mid-circuit measurements
+        for wire in source_wires:
+            qp.Hadamard(wire)
+            qp.measure(wire, reset=True, postselect=0)
         return True
 
+    measurements = [qp.pauli_measure("X", wire) for wire in source_wires]
+    _reset(source_wires)
     success = qp.math.sum(qp.math.array(measurements, like="jax")) == 0
+    success_probability = _jones_success_probabilities(register_sizes)[level - 1]
 
     @qp.cond(qp.math.logical_not(success))
+    @qp.hint({"branch-prob": 1 - success_probability})
     def reset_output():
         _reset(output_wires)
 
@@ -196,13 +199,16 @@ def _distillation_resources(num_wires, mode):
         num_nodes = 2 ** (len(register_sizes) - level - 1)
         adder = qp.SemiAdder(Wire[output_size], Wire[output_size], Wire[output_size - 1])
         resources[adder] += num_nodes
-        resources[qp.Hadamard] += num_nodes * (2 * (output_size - child_size) + output_size)
-        mid_measure = qp.ops.MidMeasure(
-            Wire[1], reset=True, postselect=0 if mode == "postselect" else None
-        )
-        resources[mid_measure] += num_nodes * output_size
-        if mode == "repeat-until-success":
-            resources[qp.ops.MidMeasure(Wire[1], reset=True)] += num_nodes * output_size
+        resources[qp.Hadamard] += num_nodes * 2 * (output_size - child_size)
+        if mode == "postselect":
+            resources[qp.Hadamard] += num_nodes * output_size
+            mid_measure = qp.ops.MidMeasure(Wire[1], reset=True, postselect=0)
+            resources[mid_measure] += num_nodes * output_size
+        else:
+            # source measurements, then source and output resets
+            resources[qp.ops.PauliMeasure("X", Wire[1])] += num_nodes * output_size
+            resources[qp.ops.PauliMeasure("Z", Wire[1])] += 2 * num_nodes * output_size
+            resources[qp.X] += 2 * num_nodes * output_size
 
     return resources
 
@@ -212,9 +218,9 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
 
     The rule implements the Fourier-state distillation protocol from
     `Jones (2013) <https://arxiv.org/abs/1303.3066>`__ and uses only Clifford gates,
-    :class:`~.SemiAdder`, mid-circuit measurements, and classical control. The prepared state is
-    approximate: the number of distillation rounds grows as :math:`\mathcal{O}(\log n)` for an
-    :math:`n`-qubit register and targets an infidelity of at most :math:`\sin^2(\pi/2^n)`.
+    :class:`~.SemiAdder`, (Pauli) mid-circuit measurements, and classical control. The prepared
+    state is approximate: the number of distillation rounds grows as :math:`\mathcal{O}(\log n)`
+    for an :math:`n`-qubit register and targets an infidelity of at most :math:`\sin^2(\pi/2^n)`.
 
     The output, auxiliary, and work registers require :math:`n`, :math:`n`, and :math:`n-1`
     wires, respectively. All wires must be distinct and start in :math:`|0\rangle`. The
@@ -243,7 +249,10 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
         rule = qp.transforms.decompositions.make_phase_gradient_distillation_decomp(
             registers["aux"], registers["work"]
         )
-        gate_set = {"Hadamard", "S", "Adjoint(S)", "T", "Adjoint(T)", "CNOT", "X", "Z", "measure"}
+        gate_set = {
+            "Hadamard", "S", "Adjoint(S)", "T", "Adjoint(T)", "CNOT", "X", "Z",
+            "measure", "PauliMeasure",
+        }
 
         @qp.qjit(capture=True)
         @qp.decompose(gate_set=gate_set, fixed_decomps={qp.PhaseGradientStatePrep: rule})
@@ -252,11 +261,11 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
             qp.PhaseGradientStatePrep(registers["grad"])
             return qp.state()
 
-    The auxiliary register is returned to :math:`|0\rangle`, and only Clifford+T gates and
-    mid-circuit measurements remain:
+    Only Clifford+T gates and (Pauli) mid-circuit measurements remain:
 
     >>> sorted(qp.analyze(circuit)().resources.quantum_operations)
-    ['Adjoint(S)', 'Adjoint(T)', 'CNOT', 'Hadamard', 'MidCircuitMeasure', 'PauliX', 'PauliZ', 'T']
+    ['Adjoint(S)', 'Adjoint(T)', 'CNOT', 'Hadamard', 'MidCircuitMeasure', 'PPM-w1', 'PauliX',
+     'PauliZ', 'T']
     """
 
     # ``mode="repeat-until-success"`` implements local retries with nested
