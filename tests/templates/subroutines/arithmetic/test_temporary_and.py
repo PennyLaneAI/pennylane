@@ -173,7 +173,7 @@ class TestTemporaryAND:
     def test_adjoint_temporary_and_decomposition(self, control_values, rule, seed):
         """Validate various decompositions of Adjoint(TemporaryAND), excluding the PPM-based rule,
         which is tested in test_adjoint_temporary_and_ppm_decomposition below."""
-        if rule.name == "_adjoint_temporary_and_ppm":
+        if rule == _adjoint_temporary_and_ppm:
             pytest.skip(
                 reason=(
                     "The PPM-based decomposition requires special handling and is tested separately "
@@ -205,8 +205,7 @@ class TestTemporaryAND:
     def test_adjoint_temporary_and_ppm_decomposition(self, control_values, seed):
         """Validate the PPM-based decomposition of Adjoint(TemporaryAND)."""
         sys_wires = [0, 1, 2]
-        work_wires = [3]  # auxiliary qubit for deferred measure
-        dev = qp.device("lightning.qubit", wires=sys_wires + work_wires, seed=seed)
+        dev = qp.device("lightning.qubit", wires=sys_wires, seed=seed)
 
         gate_set = {"Toffoli", "CNOT", "RX", "RY", "RZ", "PauliMeasure", "X", "CZ", "GlobalPhase"}
 

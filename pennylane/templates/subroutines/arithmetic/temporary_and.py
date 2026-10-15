@@ -24,7 +24,6 @@ from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
-from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import AbstractArray, Bool, Wire
 from pennylane.wires import WiresLike
@@ -314,8 +313,8 @@ def _adjoint_temporary_and(base):
 
 def _adjoint_temporary_and_ppm_resources(*_, **__):
     return {
-        PauliMeasure("X", Wire[1]): 1,
-        PauliMeasure("Z", Wire[1]): 1,
+        ops.PauliMeasure("X", Wire[1]): 1,
+        ops.PauliMeasure("Z", Wire[1]): 1,
         ops.CZ: 1,
         ops.X: _number_xs + 1,
     }
@@ -329,11 +328,11 @@ def _adjoint_temporary_and_ppm(base):
     ops.cond(math.logical_not(cvals[0]), ops.X)(base.wires[0])
     ops.cond(math.logical_not(cvals[1]), ops.X)(base.wires[1])
 
-    m_0 = pauli_measure("X", base.wires[2])
+    m_0 = ops.pauli_measure("X", base.wires[2])
     ops.cond(m_0, ops.CZ)(wires=base.wires[:2])
 
     # Reset aux qubit to |0>
-    m_1 = pauli_measure("Z", base.wires[2])
+    m_1 = ops.pauli_measure("Z", base.wires[2])
     ops.cond(m_1, ops.X)(base.wires[2])
 
     ops.cond(math.logical_not(cvals[0]), ops.X)(base.wires[0])
