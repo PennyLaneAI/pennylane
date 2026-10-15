@@ -1091,11 +1091,6 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
-  an unsigned-integer register with a signed-integer register into an unsigned-integer register.
-  This specific setup is useful for a vibronic dynamics workflow.
-  [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
-
 * The Phox module has been renamed to `tcdq` (Train Classical, Deploy Quantum) and now supports qudit systems of arbitrary dimension.
   [(#9745)](https://github.com/PennyLaneAI/pennylane/pull/9745)
 
