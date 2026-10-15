@@ -889,7 +889,7 @@ def _qrom_unary_iteration_resources(
     }
 
 
-def _load_block_flips(block, address_wires, target_wires, flag=None):
+def _load_block(block, address_wires, target_wires, flag=None):
     num_address = len(address_wires)
     controls = list(address_wires) if flag is None else [flag, *address_wires]
     address_start = 0 if flag is None else (1 << num_address)
