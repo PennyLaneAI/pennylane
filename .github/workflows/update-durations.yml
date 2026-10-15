@@ -44,6 +44,29 @@ jobs:
           jq -s 'add' durations-core-*/*.json > durations/core_tests_durations.json
           jq -s 'add' durations-jax-*/*.json > durations/jax_tests_durations.json
 
+      - name: Checkout repo for anomaly detection
+        uses: actions/checkout@v4
+        with:
+          path: repo
+
+      - name: Detect duration anomalies
+        id: anomaly_check
+        run: >
+          python3 repo/.github/scripts/detect_duration_anomalies.py
+            --old-dir repo/.github/durations
+            --new-dir durations
+            --report anomaly_report.md
+
+      - name: Print anomaly report
+        if: always()
+        run: cat anomaly_report.md
+
+      - name: Handle anomaly detection failure
+        if: failure() && steps.anomaly_check.outcome == 'failure'
+        run: |
+          echo "::error::Duration anomalies detected — likely CI contention. Review the anomaly report above before updating durations."
+          cat anomaly_report.md >> $GITHUB_STEP_SUMMARY
+
       - name: Upload combined durations artifacts
         uses: actions/upload-artifact@v6
         with:
