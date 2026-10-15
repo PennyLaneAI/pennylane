@@ -822,6 +822,13 @@ def _decompose_mcx_no_worker_resource(wires, *_, **__):
     } | mcx_reps
 
 
+def _mcx_no_worker_condition(wires, control_values, work_wires=(), *_, **__):
+    # With one or more work wires, the one-worker / two-worker rules always apply
+    # and are cheaper.
+    return len(wires) > 3 and len(work_wires) == 0
+
+
+@register_condition(_mcx_no_worker_condition)
 @register_condition(lambda wires, *_, **__: len(wires) > 3)
 @register_resources(_decompose_mcx_no_worker_resource, exact=False)
 def decompose_mcx_with_no_worker(wires, control_values, *_, **__):
