@@ -69,17 +69,13 @@
   It is a catalytic state for (generalized) rotation gates.
   See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
   [(#10227)](https://github.com/PennyLaneAI/pennylane/pull/10227)
+  [(#10264)](https://github.com/PennyLaneAI/pennylane/pull/10264)
 
-  ```pycon
-  import pennylane as qp
-  >>> print(qp.draw(qp.PhaseGradientStatePrep(wires=range(5)).decomposition)())
-  0: ──H──Z─────────┤
-  1: ──H──S†────────┤
-  2: ──H──T†────────┤
-  3: ──H──Rϕ(-0.39)─┤
-  4: ──H──Rϕ(-0.20)─┤
-
-  ```
+  The operation has a gridsynth-based decomposition into Pauli product rotations on up to
+  30 wires, consisting of :class:`~.PPR_8` operators, at most one :class:`~.PPR_2` or
+  :class:`~.PPR_4` operator per wire, and a
+  :class:`~.GlobalPhase`. It approximates the phase gradient state on 30 wires to 
+  precision :math:`10^{-12}` (in 2-norm).
 
 * Added a `qp.math.floor_log2` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
   in analogy to the existing `qp.math.ceil_log2`.
@@ -1092,11 +1088,6 @@
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
-* Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
-  an unsigned-integer register with a signed-integer register into an unsigned-integer register.
-  This specific setup is useful for a vibronic dynamics workflow.
-  [(#9721)](https://github.com/PennyLaneAI/pennylane/pull/9721)
-
 * The Phox module has been renamed to `tcdq` (Train Classical, Deploy Quantum) and now supports qudit systems of arbitrary dimension.
   [(#9745)](https://github.com/PennyLaneAI/pennylane/pull/9745)
 
@@ -1493,6 +1484,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added an autouse fixture that undoes any changes a test makes to the registry of decomposition
+  rules, and removed the `qp.decomposition.local_decomps` blocks that only served as cleanup.
+  [(#10333)](https://github.com/PennyLaneAI/pennylane/pull/10333)
+
 * Updated the `cond` branch-probability tests of `qp.specs` and `qp.analyze`, since Catalyst now
   reports fractional resource counts that are rounded up once at the end.
   [(#10313)](https://github.com/PennyLaneAI/pennylane/pull/10313)
@@ -1717,6 +1712,7 @@
   [(#9926)](https://github.com/PennyLaneAI/pennylane/pull/9926)
   [(#10077)](https://github.com/PennyLaneAI/pennylane/pull/10077)
   [(#10150)](https://github.com/PennyLaneAI/pennylane/pull/10150)
+  [(#10298)](https://github.com/PennyLaneAI/pennylane/pull/10298)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:

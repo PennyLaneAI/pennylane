@@ -392,9 +392,8 @@ class TestDecomposeGraphEnabled:
 
         tape = qp.tape.QuantumScript([CustomOp1([0, 1])])
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(CustomOp1, _decomp)
-            [decomp], _ = _tape_decompose(tape, gate_set=qp.gate_sets.CLIFFORD_T, strict=False)
+        qp.add_decomps(CustomOp1, _decomp)
+        [decomp], _ = _tape_decompose(tape, gate_set=qp.gate_sets.CLIFFORD_T, strict=False)
 
         assert decomp.operations == [AnotherOp([0, 1])]
         assert not recwarn
@@ -416,9 +415,8 @@ class TestDecomposeGraphEnabled:
 
         tape = qp.tape.QuantumScript([AnotherOp([0, 1]), CustomOp1([0, 1])])
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(CustomOp1, _decomp, _decomp2)
-            [decomp], _ = _tape_decompose(tape, gate_set=qp.gate_sets.CLIFFORD_T, strict=False)
+        qp.add_decomps(CustomOp1, _decomp, _decomp2)
+        [decomp], _ = _tape_decompose(tape, gate_set=qp.gate_sets.CLIFFORD_T, strict=False)
 
         assert decomp.operations == [AnotherOp([0, 1]), qp.H(1), qp.CNOT([0, 1]), qp.H(1)]
         assert not recwarn
@@ -773,12 +771,10 @@ class TestDecomposeGraphEnabled:
             OneWireDynOp(0.25, 1),
         ]
 
-        with qp.decomposition.local_decomps():
+        qp.add_decomps(CustomOp1, _custom_decomp)
+        qp.add_decomps(DynOp, _dynop_decomp)
 
-            qp.add_decomps(CustomOp1, _custom_decomp)
-            qp.add_decomps(DynOp, _dynop_decomp)
-
-            [result], _ = _tape_decompose([tape], gate_set={qp.CNOT, qp.H, OneWireDynOp})
+        [result], _ = _tape_decompose([tape], gate_set={qp.CNOT, qp.H, OneWireDynOp})
 
         assert result.operations == expected
 

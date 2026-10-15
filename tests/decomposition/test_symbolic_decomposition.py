@@ -206,15 +206,14 @@ class TestAdjointDecompositionRules:
             qp.T(wires)
             OneWireDynOp(phi, wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(DynOp, custom_rule)
+        qp.add_decomps(DynOp, custom_rule)
 
-            op = qp.adjoint(DynOp(0.5, wires=0))
-            [rule] = qp.list_decomps(op)
+        op = qp.adjoint(DynOp(0.5, wires=0))
+        [rule] = qp.list_decomps(op)
 
-            op2 = qp.adjoint(DynOp(0.5, wires=[0, 1]))
-            [rule2] = qp.list_decomps(op2)
-            assert not rule2.is_applicable(**op2.arguments)
+        op2 = qp.adjoint(DynOp(0.5, wires=[0, 1]))
+        [rule2] = qp.list_decomps(op2)
+        assert not rule2.is_applicable(**op2.arguments)
 
         assert rule.compute_resources(**op.arguments) == to_resources(
             {
