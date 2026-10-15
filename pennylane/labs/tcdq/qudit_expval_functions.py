@@ -207,7 +207,7 @@ def _normalize_sparse_gate(
         q = int(qudit)
         if q >= n_qudits or q < 0:
             raise IndexError(f"Qudit index {q} out of range for a {n_qudits}-qudit circuit.")
-        q = q % n_qudits
+        #q = q % n_qudits
         p = int(power) % int(dims[q])
         if p == 0:
             continue
