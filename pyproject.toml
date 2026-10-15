@@ -70,6 +70,9 @@ dev = [
     "isort~=7.0.0",
     "black==26.3.1",
     "matplotlib",
+    "mypy==2.4.0",
+    "scipy-stubs",
+    "types-networkx",
 ]
 upload-reports = [
     "pydantic==2.10.6",
@@ -203,3 +206,43 @@ exclude_dirs = ["tests", "pennylane/labs/tests"]
 skips = [
     "B101", # We are okay with using asserts in source code as we do not compile optimized bytecode of pennylane
 ]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["pennylane"]
+exclude = ["pennylane/labs/tests"]
+
+# Untyped / optional third-party modules (category 4). scipy and networkx use
+# scipy-stubs and types-networkx instead of ignore_missing_imports.
+[[tool.mypy.overrides]]
+module = [
+    "autograd",
+    "autograd.*",
+    "autoray",
+    "autoray.*",
+    "malt",
+    "malt.*",
+    "flaky",
+    "flaky.*",
+    "triton",
+    "triton.*",
+    "qualtran",
+    "qualtran.*",
+    "pyzx",
+    "pyzx.*",
+    "pyscf",
+    "pyscf.*",
+    "optax",
+    "optax.*",
+    "sklearn",
+    "sklearn.*",
+    "openfermion",
+    "openfermion.*",
+    "openfermionpyscf",
+    "openfermionpyscf.*",
+    "mpi4py",
+    "mpi4py.*",
+    "quimb",
+    "quimb.*",
+]
+ignore_missing_imports = true
