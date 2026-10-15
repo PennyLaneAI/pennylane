@@ -144,6 +144,30 @@ def test_givens_decomposition(shape, seed):
     assert np.allclose(matrix, decomposed_matrix), f"\n{matrix}\n{decomposed_matrix}"
 
 
+@pytest.mark.parametrize(
+    "matrix",
+    [
+        onp.eye(4, dtype=complex),
+        onp.diag(onp.exp(1j * onp.array([0.3, -1.2, 2.5, 0.7]))),
+        onp.eye(4, dtype=complex)[[1, 0, 3, 2]],
+        onp.kron(onp.eye(2), unitary_group.rvs(2, random_state=12)),
+    ],
+)
+def test_givens_decomposition_exact_zeros(matrix):
+    r"""Test that `givens_decomposition` is correct and finite for complex unitaries with exact
+    zeros, for which some Givens rotations have a vanishing sine or cosine."""
+
+    phase_mat, ordered_rotations = givens_decomposition(matrix)
+    decomposed_matrix = onp.diag(phase_mat)
+    for grot_mat, (i, _) in ordered_rotations:
+        rotation_matrix = onp.eye(len(matrix), dtype=complex)
+        rotation_matrix[i : i + 2, i : i + 2] = grot_mat
+        decomposed_matrix = decomposed_matrix @ rotation_matrix
+
+    assert onp.all(onp.isfinite(decomposed_matrix))
+    assert onp.allclose(matrix, decomposed_matrix)
+
+
 @pytest.mark.parametrize("shape", [2, 3, 7])
 @pytest.mark.parametrize(
     "compiler",

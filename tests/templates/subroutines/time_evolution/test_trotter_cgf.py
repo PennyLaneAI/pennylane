@@ -506,8 +506,7 @@ class TestDecomposition:
         columns of the one-body leaf and the rows of the two-body leaves). The template
         normalizes leaf determinants internally, so the circuit is invariant under this flip
         even when it yields mixed determinants (as an ``eigh`` one-body leaf with ``det = -1``
-        next to ``expm`` two-body leaves would). Without the normalization ``BasisRotation``'s
-        real-orthogonal sign gauge would realize a different Hamiltonian."""
+        next to ``expm`` two-body leaves would)."""
         rng = np.random.default_rng(seed)
         num_modes, n_states, L = 2, 3, 2
         core = rng.normal(size=(L + 1, num_modes, num_modes, n_states, n_states)) * 0.4

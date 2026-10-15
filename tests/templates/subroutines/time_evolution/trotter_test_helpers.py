@@ -29,6 +29,7 @@ TROTTER_GATE_SET = {
     "CNOT",
     "GlobalPhase",
     "PhaseShift",
+    "SingleExcitation",
     "StatePrep",
 }
 
@@ -36,7 +37,15 @@ TROTTER_GATE_SET = {
 # compiles the controlled evolution into (controlled) PhaseShift/RZ rotations, while the
 # double-phase variant keeps bare IsingZZ rotations sandwiched by CNOTs.
 CATALYST_GATE_SET_GENUINE = {"Hadamard", "BasisRotation", "RZ", "CNOT", "PhaseShift", "ForLoop"}
-CATALYST_GATE_SET_DOUBLE_PHASE = {"Hadamard", "BasisRotation", "RZ", "CNOT", "IsingZZ", "ForLoop"}
+CATALYST_GATE_SET_DOUBLE_PHASE = {
+    "Hadamard",
+    "BasisRotation",
+    "SingleExcitation",
+    "RZ",
+    "CNOT",
+    "IsingZZ",
+    "ForLoop",
+}
 
 
 def random_orthogonal(n, rng):
