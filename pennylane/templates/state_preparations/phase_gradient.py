@@ -73,8 +73,8 @@ class PhaseGradientStatePrep(StatePrepBase2):
     >>> np.allclose(circuit(), np.exp(-2j * np.pi * np.arange(B) / B) / np.sqrt(B))
     True
 
-    The decomposition is supported on up to 30 wires and consists of :class:`~.PPR` gates (and
-    a :class:`~.GlobalPhase`).
+    The decomposition is supported on up to 30 wires and consists of :class:`~.PPR_8` gates,
+    at most one :class:`~.PPR_2` or :class:`~.PPR_4` gate per wire, and a :class:`~.GlobalPhase`.
 
     """
 
@@ -123,9 +123,14 @@ def _ppr_counts(num_wires):
     return counts
 
 
+def _ppr(denominator, pauli_word, wires):
+    op_class = {2: qp.PPR_2, 4: qp.PPR_4, 8: qp.PPR_8}[abs(denominator)]
+    return op_class(1 if denominator > 0 else -1, pauli_word, wires=wires)
+
+
 def _phase_gradient_state_prep_ppr_resources(wires: AbstractWires):
     resources = {
-        qp.PPR(denominator, pauli, wires=Wire[1]): count
+        _ppr(denominator, pauli, wires=Wire[1]): count
         for (denominator, pauli), count in _ppr_counts(len(wires)).items()
     }
     resources[qp.GlobalPhase] = 1
@@ -147,9 +152,9 @@ def _phase_gradient_state_prep_ppr_decomposition(wires: WiresLike):
         wires, INITIAL_PPRS[:num_wires], PI_OVER_8_PPRS[:num_wires], strict=True
     ):
         if init is not None:
-            qp.PPR(*init, wires=wire)
+            _ppr(*init, wires=wire)
         for p in pprs:
-            qp.PPR(8 if p.isupper() else -8, p.upper(), wires=wire)
+            qp.PPR_8(1 if p.isupper() else -1, p.upper(), wires=wire)
     qp.GlobalPhase(sum(GLOBAL_PHASES[: len(wires)]))
 
 

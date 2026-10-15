@@ -53,7 +53,7 @@ class TestDecomposition:
     def test_decomposition_prepares_state(self, num_wires, use_qjit):
         """Test that executing the decomposition prepares the phase gradient state."""
 
-        gate_set = {"PPR", "GlobalPhase"}
+        gate_set = {"PPR_2", "PPR_4", "PPR_8", "GlobalPhase"}
 
         @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
         def circuit():
@@ -95,14 +95,17 @@ class TestPPRDecomposition:
     def test_prepares_state(self, num_wires):
         """Test that decomposing into PPRs prepares the phase gradient state."""
 
-        @qp.transforms.decompose(gate_set={"PPR", "GlobalPhase"})
+        # pylint: disable-next=protected-access
+        @qp.transforms._tape_decompose(gate_set={"PPR_2", "PPR_4", "PPR_8", "GlobalPhase"})
         @qp.qnode(qp.device("default.qubit", wires=num_wires))
         def circuit():
             qp.PhaseGradientStatePrep(wires=range(num_wires))
             return qp.state()
 
         tape = qp.workflow.construct_tape(circuit)()
-        assert all(isinstance(op, (qp.PPR, qp.GlobalPhase)) for op in tape.operations)
+        assert all(
+            isinstance(op, (qp.PPR_2, qp.PPR_4, qp.PPR_8, qp.GlobalPhase)) for op in tape.operations
+        )
         assert np.allclose(circuit(), _expected_state(num_wires), atol=1e-12, rtol=0)
 
     def test_precision_on_30_wires(self):
@@ -132,11 +135,11 @@ class TestPPRDecomposition:
         with qp.queuing.AnnotatedQueue() as q:
             _phase_gradient_state_prep_ppr_decomposition(wires=range(num_wires))
 
-        assert all(isinstance(op, qp.PPR) for op in q.queue[:-1])
+        assert all(isinstance(op, (qp.PPR_2, qp.PPR_4, qp.PPR_8)) for op in q.queue[:-1])
         assert isinstance(q.queue[-1], qp.GlobalPhase)
         for wire in range(num_wires):
-            denominators = [abs(op.angle_denominator) for op in q.queue if op.wires == [wire]]
-            assert sum(d != 8 for d in denominators) <= 1
+            wire_ops = [op for op in q.queue if op.wires == [wire]]
+            assert sum(not isinstance(op, qp.PPR_8) for op in wire_ops) <= 1
 
     def test_condition(self):
         """Test that the decomposition is only applicable to up to 30 wires."""

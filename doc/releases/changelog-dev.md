@@ -71,8 +71,9 @@
   [(#10227)](https://github.com/PennyLaneAI/pennylane/pull/10227)
   [(#10264)](https://github.com/PennyLaneAI/pennylane/pull/10264)
 
-  The operation has a gridsynth-based decomposition into :class:`~.PPR` operators on up to
-  30 wires, consisting of :math:`\pm\pi/8` PPRs, at most one Clifford PPR per wire, and a
+  The operation has a gridsynth-based decomposition into Pauli product rotations on up to
+  30 wires, consisting of :class:`~.PPR_8` operators, at most one :class:`~.PPR_2` or
+  :class:`~.PPR_4` operator per wire, and a
   :class:`~.GlobalPhase`. It approximates the phase gradient state on 30 wires to 
   precision :math:`10^{-12}` (in 2-norm).
 
