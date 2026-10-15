@@ -1492,6 +1492,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Adds mypy to the list of developer dependencies and adds mypy configuration
+  to the package toml file.
+
 * Updated the `cond` branch-probability tests of `qp.specs` and `qp.analyze`, since Catalyst now
   reports fractional resource counts that are rounded up once at the end.
   [(#10313)](https://github.com/PennyLaneAI/pennylane/pull/10313)
