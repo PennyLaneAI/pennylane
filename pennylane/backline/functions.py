@@ -52,6 +52,12 @@ class CoprocessorFunction:
             ``"memcpy"`` transport. On a CPU coprocessor every function is called per message.
         message_bytes (tuple[int, int] or None): The ``(in_bytes, out_bytes)`` message sizes the
             function expects, or ``None`` to declare none.
+        files (Sequence[str]): The keys of ``config`` whose values are paths to files on this
+            machine, such as a model the function loads. A coprocessor on another machine gets
+            each file deployed beside it, with the key's value naming the file there.
+        extra_files (Sequence[str]): Further paths to files on this machine that a coprocessor on
+            another machine gets deployed beside ``files``, without a config key naming them, such
+            as libraries a declared library loads from its own directory.
 
     .. seealso:: :class:`~.Coprocessor`, :func:`~.css_bp_decoder`, :func:`~.onnx_decoder`,
         :func:`~.triton_decoder`
@@ -96,6 +102,15 @@ class CoprocessorFunction:
     not declare them. A :class:`~.Placement` takes the controller's unset sizes from it, and
     rejects a controller size that differs."""
 
+    files: tuple[str, ...] = field(default=(), repr=False)
+    """The keys of :attr:`config` whose values are paths to files on this machine. A coprocessor on
+    another machine gets each file deployed beside it, with the key's value naming the file
+    there."""
+
+    extra_files: tuple[str, ...] = field(default=(), repr=False)
+    """Further paths to files on this machine that a coprocessor on another machine gets deployed
+    beside :attr:`files`, without a config key naming them."""
+
     def __post_init__(self):
         if self.message_bytes is not None:
             object.__setattr__(self, "message_bytes", tuple(self.message_bytes))
@@ -103,6 +118,8 @@ class CoprocessorFunction:
                 raise ValueError(
                     f"message_bytes must be an (in_bytes, out_bytes) pair, got {self.message_bytes}"
                 )
+        object.__setattr__(self, "files", tuple(self.files))
+        object.__setattr__(self, "extra_files", tuple(str(f) for f in self.extra_files))
 
     @property
     def symbol_name(self) -> str:
