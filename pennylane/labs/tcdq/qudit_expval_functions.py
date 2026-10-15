@@ -241,8 +241,6 @@ def _parse_qudit_gate_dict(
 
     for param_idx in sorted(circuit_def.keys()):
 
-        print(param_idx)
-
         if not isinstance(param_idx, int):
             raise TypeError(f"Qudit indices must be type int, got type {type(param_idx)} instead.")
 
