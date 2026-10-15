@@ -34,7 +34,7 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import ControlledOp2
-from pennylane.transforms import decompose
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp
@@ -2036,9 +2036,8 @@ class TestTapeExpansionWithControlled:
             qp.RY(theta, wires=wires)
             qp.RZ(omega, wires=wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(_Rot, _rot_to_rz_ry_rz)
-            [tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+        qp.add_decomps(_Rot, _rot_to_rz_ry_rz)
+        [tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
 
         assert tape.circuit == [
             qp.ctrl(qp.RZ(0.1, 0), control=[3, 7]),
@@ -2057,20 +2056,18 @@ class TestTapeExpansionWithControlled:
         def stopping_condition(o):
             return not isinstance(o, Controlled)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(_Rot, _rot_to_rz_ry_rz)
-            [actual], _ = decompose(
-                tape,
-                max_expansion=10,
-                stopping_condition=stopping_condition,
-                gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
-            )
-            [expected], _ = decompose(
-                tape_expected,
-                max_expansion=10,
-                stopping_condition=stopping_condition,
-                gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
-            )
+        [actual], _ = decompose(
+            tape,
+            max_expansion=10,
+            stopping_condition=stopping_condition,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+        )
+        [expected], _ = decompose(
+            tape_expected,
+            max_expansion=10,
+            stopping_condition=stopping_condition,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+        )
 
         actual_mat = qp.matrix(actual, wire_order=[3, 7, 0])
         expected_mat = qp.matrix(expected, wire_order=[3, 7, 0])
