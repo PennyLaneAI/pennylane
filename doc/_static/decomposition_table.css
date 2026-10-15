@@ -1,0 +1,142 @@
+/* Styles for the ``decomposition-table`` directive (doc/_ext/decomposition_table.py) */
+
+ul.decomp-table-caption {
+  margin-bottom: 0.5rem;
+  color: #555;
+}
+
+table.decomposition-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  border: none;
+  box-shadow: none;
+  margin: 0 0 2rem;
+}
+
+table.decomposition-table thead th {
+  background: transparent;
+  border: none !important;
+  border-bottom: 2px solid #222 !important;
+  padding: 8px 16px 8px 0;
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #555;
+}
+
+/* each rule spans two rows: the access expression, then its circuit and resources */
+table.decomposition-table tbody tr {
+  background: transparent !important;
+}
+
+table.decomposition-table tbody tr.decomp-body-row {
+  border-bottom: 1px solid #e5e5e5;
+}
+
+table.decomposition-table td {
+  vertical-align: top;
+  padding: 16px 16px 16px 0;
+  border: none !important;
+}
+
+table.decomposition-table td p {
+  margin: 0;
+}
+
+table.decomposition-table tr.decomp-access-row td {
+  padding: 20px 0 10px;
+}
+
+table.decomposition-table tr.decomp-body-row td {
+  padding-top: 0;
+}
+
+table.decomposition-table tr.decomp-access-row code {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #f0eeef;
+  font-size: 0.85rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+table.decomposition-table code .decomp-access-op {
+  color: #777;
+}
+
+table.decomposition-table code .decomp-access-name {
+  font-weight: 700;
+  color: #c756b2;
+}
+
+/* applicability condition, above the resources */
+table.decomposition-table p.decomp-requires {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #fff8e5;
+  border: 1px solid #ffd36a;
+  font-size: 0.8rem;
+}
+
+/* circuit diagram, below the rule name */
+table.decomposition-table td.decomp-circuit img {
+  display: block;
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 21 / 9;
+  object-fit: contain;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+}
+
+/* resources: a two-column list of gates and their counts */
+table.decomposition-table .decomp-resources {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 4px;
+  align-items: baseline;
+  font-size: 0.9rem;
+}
+
+table.decomposition-table p.decomp-count {
+  overflow-wrap: anywhere;
+}
+
+table.decomposition-table p.decomp-where {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+/* On narrow screens, stack the resources below the circuit */
+@media (max-width: 700px) {
+  table.decomposition-table thead {
+    display: none;
+  }
+
+  table.decomposition-table,
+  table.decomposition-table tbody,
+  table.decomposition-table tr,
+  table.decomposition-table td {
+    display: block;
+    width: 100% !important;
+  }
+
+  table.decomposition-table td {
+    padding: 6px 0;
+  }
+
+  table.decomposition-table tbody tr {
+    padding: 10px 0;
+  }
+}
