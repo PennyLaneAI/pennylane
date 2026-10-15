@@ -15,6 +15,7 @@
 
 from functools import partial
 
+from pennylane import math
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.math import is_abstract
@@ -44,11 +45,28 @@ def _check_equality(items1: TensorLike | Wires, items2: TensorLike | Wires) -> b
     return True
 
 
+def _data_equal(data1: TensorLike, data2: TensorLike) -> bool:
+    """Checks if two operator data tuples are exactly equal, considering abstractness.
+
+    Entries may be tensors (e.g. a unitary matrix or a broadcast angle), for which ``!=`` has
+    no single truth value, so they are compared by shape and element-wise.
+    """
+
+    for d1, d2 in zip(data1, data2, strict=True):
+        if is_abstract(d1) or is_abstract(d2):
+            if d1 is not d2:
+                return False
+        elif math.shape(d1) != math.shape(d2) or not math.allclose(d1, d2, rtol=0, atol=0):
+            return False
+
+    return True
+
+
 def _ops_equal(op1: Operator, op2: Operator) -> bool:
     """Checks if two operators are equal up to class, data, hyperparameters, and wires"""
     return (
         op1.__class__ is op2.__class__
-        and _check_equality(op1.data, op2.data)
+        and _data_equal(op1.data, op2.data)
         and (op1.hyperparameters == op2.hyperparameters)
     )
 
