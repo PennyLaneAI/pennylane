@@ -786,7 +786,13 @@ def exclude_decomps(op: type[Operator] | Operator | str, *names: str) -> _Decomp
     Args:
         op (type or Operator or str): the operator type to exclude decomposition rules for.
             For symbolic operators, use strings like ``"Adjoint(RY)"``, ``"C(RX)"``, etc.
-        *names (str): the names of the decomposition rules to exclude.
+        *names (str): the names of the decomposition rules to exclude. Each name must be one of
+            the rules listed by :func:`~pennylane.list_decomps` for ``op``. To exclude rules that
+            are generated for specific operator instances, pass an instance as ``op``.
+
+    Raises:
+        TypeError: if a name is not a string, e.g., a ``DecompositionRule`` instance.
+        ValueError: if no decomposition rule with a given name exists for ``op``.
 
     .. seealso:: :func:`~pennylane.list_decomps` and :func:`~pennylane.decomposition.local_decomps`
 
@@ -819,6 +825,19 @@ def exclude_decomps(op: type[Operator] | Operator | str, *names: str) -> _Decomp
 
     """
     op_name = to_name(op)
+
+    if invalid := [name for name in names if not isinstance(name, str)]:
+        raise TypeError(
+            "Decomposition rules must be excluded by name, e.g. rule.name for a "
+            f"DecompositionRule, got {invalid[0]!r}."
+        )
+    available = [rule.name for rule in _list_decomps(op)]
+    if missing := [name for name in names if name not in available]:
+        raise ValueError(
+            f"Cannot find a decomposition rule named '{missing[0]}' for {op_name}. "
+            f"Available decomposition rules: {available}."
+        )
+
     all_excluded = _excluded_decomps_var.get()
     already_excluded = all_excluded.get(op_name, frozenset())
     all_excluded[op_name] = already_excluded | frozenset(names)
