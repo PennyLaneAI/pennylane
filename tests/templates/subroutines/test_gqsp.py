@@ -36,12 +36,13 @@ class TestGQSP:
             qp.prod(qp.RX(0.3, 1), qp.RZ(0.6, 1)),
         ),
     )
-    def test_standard_validity(self, unitary):
+    @pytest.mark.parametrize("shift", [0, -2, -6, np.int64(3)])
+    def test_standard_validity(self, unitary, shift):
         """Test standard validity criteria with assert_valid."""
 
         angles = np.ones([3, 5])
 
-        op = qp.GQSP(unitary, angles, control=(0,))
+        op = qp.GQSP(unitary, angles, control=(0,), shift=shift)
         qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_bind_new_parameters=True)
 
     @pytest.mark.parametrize(
@@ -68,11 +69,12 @@ class TestGQSP:
         # the unitary hybrid argument
         assert op.wires == qp.wires.Wires(c_wires + u_wires)
 
-    def test_default_work_wires(self):
-        """Test that omitting work_wires leaves the register empty."""
+    def test_default_arguments(self):
+        """Test the default values of work_wires, work_wire_type and shift."""
         op = qp.GQSP(qp.Z(1), angles=np.ones([3, 2]), control=0)
         assert op.work_wires == qp.wires.Wires(())
         assert op.work_wire_type == "borrowed"
+        assert op.shift == 0
 
     @pytest.mark.parametrize("work_wire_type", ["borrowed", "zeroed"])
     def test_work_wires_are_forwarded_to_controlled_unitary(self, work_wire_type):
@@ -104,10 +106,14 @@ class TestGQSP:
             (qp.RX(0.3, wires=1), [0.3, -0.2j, 0.1]),
             (qp.RZ(1.3, wires=1), [-0.3j, -0.2j, 0, 0, 0.2]),
             (qp.RY(0.2, wires=1), [0.4, -0, 0.2, 0, 0.2]),
+            (qp.prod(qp.RX(0.3, 1), qp.RZ(0.6, 1)), [0.1, 0.2j, 0.3]),
+            (qp.CNOT(wires=[1, 2]), [0.1, 0.2j, 0.3]),
         ],
     )
-    def test_correct_algorithm(self, unitary, poly):
-        """Test that poly_to_angles and GQSP produce the correct solution"""
+    @pytest.mark.parametrize("shift", [-5, -2, -1, 0, 1, 3])
+    def test_correct_algorithm(self, unitary, poly, shift):
+        """Test that poly_to_angles and GQSP produce the correct solution U^shift poly(U),
+        including shifts larger than the degree of the polynomial."""
 
         angles = qp.poly_to_angles(poly, "GQSP")
 
@@ -115,16 +121,17 @@ class TestGQSP:
 
         @qp.qnode(dev)
         def circuit(angles):
-            qp.GQSP(unitary, angles, control=0)
+            qp.GQSP(unitary, angles, control=0, shift=shift)
             return qp.expval(qp.Z(0))
 
+        dim = 2 ** len(unitary.wires)
         unitary_matrix = qp.matrix(unitary)
         expected_output = sum(
-            [coeff * matrix_power(unitary_matrix, i) for i, coeff in enumerate(poly)]
+            [coeff * matrix_power(unitary_matrix, i + shift) for i, coeff in enumerate(poly)]
         )
-        generated_output = qp.matrix(circuit, wire_order=[0, 1])(angles)[:2, :2]
+        generated_output = qp.matrix(circuit, wire_order=[0] + list(unitary.wires))(angles)
 
-        assert np.allclose(expected_output, generated_output)
+        assert np.allclose(expected_output, generated_output[:dim, :dim])
 
     @pytest.mark.parametrize(
         ("unitary"),
@@ -191,37 +198,70 @@ class TestGQSP:
         # Check that the original op is not mutated
         qp.assert_equal(op, compare_op)
 
-    def test_decomposition(self):
+    @pytest.mark.parametrize(
+        ("shift", "power", "num_shifted_ctrl"),
+        [
+            (0, None, 0),
+            # a negative shift smaller than the degree only modifies the first controlled ops
+            (-1, None, 1),
+            # the powers that do not fit in the controlled ops are applied at the start
+            (-3, qp.pow(qp.adjoint(qp.Z(1)), 1), 2),
+            (2, qp.pow(qp.Z(1), 2), 0),
+        ],
+    )
+    def test_decomposition(self, shift, power, num_shifted_ctrl):
+        """Test the decomposition, where a negative shift replaces the first controlled
+        unitaries by the adjoint unitary controlled on |1>."""
 
-        angles = np.array([[1, 2], [3, 4], [5, 6]])
+        angles = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
-        qp.GQSP(qp.Z(1), angles, control=0)
+        decomposition = qp.GQSP(qp.Z(1), angles, control=0, shift=shift).decomposition()
 
-        decomposition = qp.GQSP(qp.Z(1), angles, control=0).decomposition()
+        def rotation(i):
+            return [
+                qp.PauliX(wires=0),
+                qp.U3(2 * angles[0, i], angles[1, i], angles[2, i], wires=0),
+                qp.PauliX(wires=0),
+                qp.PauliZ(wires=0),
+            ]
 
-        expected = [
-            qp.PauliX(wires=0),
-            qp.U3(2 * angles[0, 0], angles[1, 0], angles[2, 0], wires=0),
-            qp.PauliX(wires=0),
-            qp.PauliZ(wires=0),
-            qp.ctrl(qp.PauliZ(wires=1), control=0, control_values=[0]),
-            qp.PauliX(wires=0),
-            qp.U3(2 * angles[0, 1], angles[1, 1], angles[2, 1], wires=0),
-            qp.PauliX(wires=0),
-            qp.PauliZ(wires=0),
-        ]
+        expected = ([power] if power is not None else []) + rotation(0)
+        for i in range(1, 3):
+            if i <= num_shifted_ctrl:
+                expected.append(qp.ctrl(qp.adjoint(qp.Z(1)), control=0, control_values=[1]))
+            else:
+                expected.append(qp.ctrl(qp.Z(1), control=0, control_values=[0]))
+            expected += rotation(i)
 
+        assert len(decomposition) == len(expected)
         for op1, op2 in zip(decomposition, expected):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_decomposition_new(self):
+    @pytest.mark.parametrize("shift", [0, -1, -2, -4, 3])
+    @pytest.mark.parametrize(
+        ("work_wires", "work_wire_type"), [(None, "borrowed"), ([2], "borrowed"), ([2], "zeroed")]
+    )
+    def test_decomposition_new(self, shift, work_wires, work_wire_type):
         """Tests the decomposition rule implemented with the new system."""
-        angles = np.array([[1, 2], [3, 4], [5, 6]])
-        op = qp.GQSP(qp.Z(1), angles, control=0)
+        angles = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+        op = qp.GQSP(
+            qp.Z(1),
+            angles,
+            control=0,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+            shift=shift,
+        )
 
         for rule in qp.list_decomps(qp.GQSP):
             _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize("shift", [1.5, True, "1", None])
+    def test_invalid_shift_raises(self, shift):
+        """Test that a non-integer shift raises an error."""
+        with pytest.raises(TypeError, match="shift must be an integer"):
+            qp.GQSP(qp.RX(0.3, 1), np.ones([3, 3]), control=0, shift=shift)
 
     @pytest.mark.jax
     def test_gqsp_jax(self):
@@ -266,8 +306,9 @@ class TestGQSP:
         assert qp.math.get_interface(generated_output) == "torch"
 
     @pytest.mark.jax
-    def test_gqsp_jax_jit(self):
-        """Test that GQSP works with jax"""
+    @pytest.mark.parametrize("shift", [0, -3, -1, 2])
+    def test_gqsp_jax_jit(self, shift):
+        """Test that GQSP works with jax.jit"""
 
         import jax
         import jax.numpy as jnp
@@ -278,7 +319,7 @@ class TestGQSP:
 
         @qp.qnode(dev)
         def circuit(angles):
-            qp.GQSP(qp.RX(0.3, wires=1), angles, control=0)
+            qp.GQSP(qp.RX(0.3, wires=1), angles, control=0, shift=shift)
             return qp.expval(qp.Z(0) @ qp.Z(1))
 
         expected_output = circuit(angles)
