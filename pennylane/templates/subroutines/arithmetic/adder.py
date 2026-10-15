@@ -17,19 +17,19 @@ Contains the Adder template.
 
 from collections import defaultdict
 
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
-from pennylane.ops import CNOT, MultiControlledX, PauliX
+from pennylane.ops import CNOT, MultiControlledX, X
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint import adjoint
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
 
 from .phase_adder import PhaseAdder
 
@@ -47,7 +47,7 @@ def _increment(wires, control=()):
     for i in range(n):
         controls = wires[i + 1 :] + control
         if len(controls) == 0:
-            PauliX(wires[i])
+            X(wires[i])
         else:
             MultiControlledX(
                 wires=controls + wires[i : i + 1],
@@ -71,7 +71,7 @@ def _add_constant(k, wires, control=()):
             _increment(wires[: n - j], control)
 
 
-class Adder(Operation):
+class Adder(Operator2):
     r"""Performs the in-place modular addition operation.
 
     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the
@@ -104,10 +104,11 @@ class Adder(Operation):
         x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough
             for encoding `x` in the computational basis. The number of wires also limits the
             maximum value for `mod`.
-        mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
+        mod (int): the modulo for performing the addition. If not provided, it will be set to its
+            maximum value, :math:`2^{\text{len(x_wires)}}`.
         work_wires (Sequence[int]): the auxiliary wires to use for the addition. The
-            work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
-            should be provided. Defaults to empty tuple.
+            work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise at least
+            two work wires should be provided. Defaults to empty tuple.
 
     **Example**
 
@@ -157,14 +158,11 @@ class Adder(Operation):
         the modulo :math:`mod` to a large enough value to ensure that :math:`x+k < mod`.
     """
 
-    grad_method = None
+    compilable_argnames = ("k", "mod")
+    wire_argnames = ("x_wires", "work_wires")
+    arg_specs = {"x_wires": Wire[-1], "work_wires": Wire[-1]}
 
-    resource_keys = {"num_x_wires", "mod"}
-
-    def __init__(
-        self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
-
+    def __init__(self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = ()):
         x_wires = Wires(x_wires)
         work_wires = Wires(() if work_wires is None else work_wires)
 
@@ -172,67 +170,32 @@ class Adder(Operation):
 
         if mod is None:
             mod = 2 ** len(x_wires)
-        elif mod != 2 ** len(x_wires) and num_works_wires != 2:
-            raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided")
+        elif mod != 2 ** len(x_wires) and num_works_wires < 2:
+            raise ValueError(
+                f"If mod is not 2^{len(x_wires)}, at least two work wires should be provided"
+            )
         if not isinstance(k, int) or not isinstance(mod, int):
             raise ValueError("Both k and mod must be integers")
-        if num_works_wires != 0:
-            if any(wire in work_wires for wire in x_wires):
-                raise ValueError("None of the wires in work_wires should be included in x_wires.")
         if mod > 2 ** len(x_wires):
             raise ValueError(
                 "Adder must have enough x_wires to represent mod. The maximum mod "
                 f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
             )
+        validate_no_wire_overlaps({"x_wires": x_wires, "work_wires": work_wires})
 
-        all_wires = x_wires + work_wires
-
-        self.hyperparameters["k"] = k
-        self.hyperparameters["mod"] = mod
-        self.hyperparameters["work_wires"] = work_wires
-        self.hyperparameters["x_wires"] = x_wires
-
-        super().__init__(wires=all_wires)
+        super().__init__(k, x_wires, mod, work_wires)
 
     @property
-    def resource_params(self) -> dict:
-        return {
-            "num_x_wires": len(self.hyperparameters["x_wires"]),
-            "mod": self.hyperparameters["mod"],
-        }
-
-    @property
-    def num_params(self):
-        return 0
-
-    def _flatten(self):
-        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
-        return tuple(), metadata
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        hyperparams_dict = dict(metadata)
-        return cls(**hyperparams_dict)
-
-    def map_wires(self, wire_map: dict):
-        new_dict = {
-            key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
-            for key in ["x_wires", "work_wires"]
-        }
-
-        return Adder(
-            self.hyperparameters["k"],
-            new_dict["x_wires"],
-            self.hyperparameters["mod"],
-            new_dict["work_wires"],
-        )
-
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
+    def wires(self):
+        """All wires involved in the operation."""
+        return self.x_wires + self.work_wires
 
 
-def _adder_decomposition_resources(num_x_wires, mod) -> dict:
+def _adder_decomposition_resources(
+    k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike
+) -> dict:
+    # pylint: disable=unused-argument
+    num_x_wires = len(x_wires)
     num_qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
     _compute_op = QFT(Wire[num_qft_wires])
     resources = {
@@ -246,30 +209,28 @@ def _adder_decomposition_resources(num_x_wires, mod) -> dict:
 
 
 @register_resources(_adder_decomposition_resources)
-def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
+def _adder_decomposition(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike):
     if mod == 2 ** len(x_wires):
-        qft_wires = x_wires
-        work_wire = ()
-    else:
-        qft_wires = work_wires[:1] + x_wires
-        work_wire = work_wires[1:]
+        change_op_basis(QFT(x_wires), PhaseAdder(k, x_wires, mod))
+        return
 
-    change_op_basis(QFT(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))
+    qft_wires = concatenate_wires(work_wires[:1], x_wires)
+    change_op_basis(QFT(qft_wires), PhaseAdder(k, qft_wires, mod, work_wires[1:2]))
 
 
-def _increment_resources(num_wires, num_control=0):
+def _increment_resources(num_wires: int, num_control: int = 0) -> dict:
     """Gate counts for :func:`_increment` acting on ``num_wires`` wires."""
     counts = defaultdict(int)
     for i in range(num_wires):
         num_controls = (num_wires - 1 - i) + num_control
         if num_controls == 0:
-            counts[PauliX] += 1
+            counts[X] += 1
         else:
             counts[MultiControlledX(Wire[num_controls + 1], work_wires=Wire[i])] += 1
-    return counts
+    return dict(counts)
 
 
-def _add_constant_resources(num_wires, num_control=0):
+def _add_constant_resources(num_wires: int, num_control: int = 0) -> dict:
     """Upper-bound gate counts for an ``_add_constant`` on ``num_wires`` wires.
 
     The estimate is taken at the worst case where every bit is set, so it is independent of the
@@ -279,10 +240,14 @@ def _add_constant_resources(num_wires, num_control=0):
     for size in range(1, num_wires + 1):
         for rep, count in _increment_resources(size, num_control).items():
             counts[rep] += count
-    return counts
+    return dict(counts)
 
 
-def _adder_arithmetic_resources(num_x_wires, mod, **__) -> dict:
+def _adder_arithmetic_resources(
+    k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike
+) -> dict:
+    # pylint: disable=unused-argument
+    num_x_wires = len(x_wires)
     counts = defaultdict(int)
     if mod == 2**num_x_wires:
         return dict(_add_constant_resources(num_x_wires))
@@ -296,12 +261,12 @@ def _adder_arithmetic_resources(num_x_wires, mod, **__) -> dict:
     for rep, count in _add_constant_resources(aug, num_control=1).items():
         counts[rep] += count
     counts[CNOT] += 2
-    counts[PauliX] += 2
+    counts[X] += 2
     return dict(counts)
 
 
 @register_resources(_adder_arithmetic_resources, exact=False)
-def _adder_arithmetic_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
+def _adder_arithmetic_decomposition(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike):
     x_wires = Wires(x_wires)
     work_wires = Wires(work_wires)
     n = len(x_wires)
@@ -324,9 +289,9 @@ def _adder_arithmetic_decomposition(k, x_wires: WiresLike, mod, work_wires: Wire
     CNOT(wires=msb + flag)  # flag = 1 iff x + k < mod
     _add_constant(mod, aug, control=flag)  # add mod back when flag is set
     _add_constant(-k, aug)  # re-expose the branch in msb ...
-    PauliX(msb[0])
+    X(msb[0])
     CNOT(wires=msb + flag)  # ... to reset flag to 0
-    PauliX(msb[0])
+    X(msb[0])
     _add_constant(k, aug)  # aug <- (x + k) mod mod, work wires restored
 
 
