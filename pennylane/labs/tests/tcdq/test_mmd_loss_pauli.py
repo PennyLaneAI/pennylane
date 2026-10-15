@@ -491,7 +491,7 @@ class TestMMDLossStatistical:
         gates = {i: [w] for i, w in enumerate(generators)}
         batch = min(80, n_data)
 
-        mmd_cfg = MMDConfig(bandwidth=sigma, n_ops=self.N_OPS)
+        mmd_cfg = MMDConfig(bandwidth=sigma, n_ops=self.N_OPS, bootstrap_target_data=False)
 
         params_jnp = jnp.array(params)
         X_jnp = jnp.array(X)
@@ -527,6 +527,97 @@ class TestMMDLossStatistical:
         assert (
             z < self.Z_THRESHOLD
         ), f"Z-test FAILED: z={z:.2f}, exact={exact:.6f}, mean={mean_est:.6f}, se={se:.6f}"
+
+    @pytest.mark.parametrize(
+        "generators, params, biases, n_data",
+        [
+            # 3-qubit, 3-gate circuit, moderate data bias
+            (
+                [[0], [1], [0, 1, 2]],
+                [0.37, 0.95, 0.73],
+                [0.3, 0.7, 0.5],
+                200,
+            ),
+            # 3-qubit, 2-gate circuit, skewed data
+            (
+                [[0, 1], [1, 2]],
+                [0.5, 0.3],
+                [0.1, 0.9, 0.5],
+                150,
+            ),
+            # 2-qubit, 3-gate circuit
+            (
+                [[0], [1], [0, 1]],
+                [0.2, 0.8, 0.4],
+                [0.4, 0.6],
+                100,
+            ),
+            (
+                [[0], [1], [0, 1, 2]],
+                [0.37, 0.95, 0.73],
+                [0.5, 0.5, 0.5],
+                10,
+            ),
+        ],
+    )
+    def test_unbiased_with_bootstrap_z_test(self, generators, params, biases, n_data):
+        """Mean of bootstrapped tcdq estimates should be consistent with the bootstrap-adjusted
+        exact MMD^2."""
+
+        n_qubits = len(biases)
+
+        probs_p = _iqp_probs_pennylane(generators, params, n_qubits)
+
+        rng = np.random.default_rng(42)
+        X = np.stack([rng.binomial(1, b, n_data) for b in biases], axis=1)
+
+        sigma = float(median_heuristic(X))
+        exact = _exact_mmd2_kernel(probs_p, X, sigma, n_qubits)
+
+        gates = {i: [w] for i, w in enumerate(generators)}
+        batch = min(80, n_data)
+
+        K_qq = _gaussian_kernel_matrix(X, X, sigma)
+        u_stat = (np.sum(K_qq) - np.trace(K_qq)) / (n_data * (n_data - 1))
+        exact_boot = exact + (1.0 - u_stat) / batch
+
+        mmd_cfg = MMDConfig(bandwidth=sigma, n_ops=self.N_OPS, bootstrap_target_data=True)
+
+        params_jnp = jnp.array(params)
+        X_jnp = jnp.array(X)
+
+        config = CircuitConfig(
+            gates=gates,
+            n_samples=self.N_SAMPLES,
+            key=jax.random.PRNGKey(0),
+            n_qubits=n_qubits,
+        )
+
+        def evaluate_single_trial(key):
+            loss_key, sample_key = jax.random.split(key)
+
+            idx = jax.random.choice(sample_key, n_data, shape=(batch,), replace=False)
+            expval_fn = build_expval_func(config)
+            loss_fn = build_mmd_loss_pauli(expval_fn, n_qubits, mmd_cfg)
+
+            return loss_fn(params_jnp, X_jnp[idx], key=loss_key)
+
+        vmapped_eval = jax.vmap(evaluate_single_trial)
+
+        master_key = jax.random.PRNGKey(42)
+        trial_keys = jax.random.split(master_key, self.N_TRIALS)
+
+        estimates_jnp = vmapped_eval(trial_keys)
+
+        estimates = np.array(estimates_jnp)
+        mean_est = np.mean(estimates)
+        se = np.std(estimates, ddof=1) / np.sqrt(self.N_TRIALS)
+
+        z = abs(exact_boot - mean_est) / se if se > 1e-15 else 0.0
+        assert z < self.Z_THRESHOLD, (
+            f"Z-test FAILED: z={z:.2f}, exact_boot={exact_boot:.6f}, exact={exact:.6f}, "
+            f"mean={mean_est:.6f}, se={se:.6f}"
+        )
 
     def test_wires_subset_executes(self):
         """Loss function with a ``wires`` subset should run without error."""

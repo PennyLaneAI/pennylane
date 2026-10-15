@@ -303,7 +303,7 @@ def select_thc_wires(M, N, beth, num_batches=1):
             \sum_{k=0}^{2^{\mathrm{beth}+1} - 1}
             e^{-2 \pi i k / 2^{\mathrm{beth}+1}} \lvert k \rangle ,
 
-        a product state that ``beth + 1`` ``Hadamard`` and ``beth + 1`` ``PhaseShift`` gates prepare.
+        which can be done with :class:`~.PhaseGradientStatePrep`.
         The ``SELECT`` oracle leaves it unchanged, so it is
         deliberately not allocated internally: one register is prepared once and shared by
         ``PREPARE`` and ``SELECT``.
@@ -596,10 +596,7 @@ class SelectTHC(Operator2):
             qp.X(wires["flag_wires"][0])              # success flag
             for w in wires["flag_wires"][3:]:              # the two spin flags
                 qp.Hadamard(w)
-            grad = wires["gradient_wires"]
-            for j, w in enumerate(grad):     # phase gradient state
-                qp.Hadamard(w)
-                qp.PhaseShift(-2 * np.pi * 2 ** (len(grad) - 1 - j) / 2**len(grad), wires=w)
+            qp.PhaseGradientStatePrep(wires["gradient_wires"])
             qp.SelectTHC(
                 chi, t_eigenvectors, beth, wires["system_wires"], wires["index_wires"],
                 wires["flag_wires"], wires["gradient_wires"], wires["work_wires"],

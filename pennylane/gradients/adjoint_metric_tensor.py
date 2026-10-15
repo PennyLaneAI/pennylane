@@ -28,7 +28,7 @@ from pennylane.exceptions import TermsUndefinedError
 from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
 from pennylane.ops import StatePrep, adjoint
 from pennylane.ops.functions import generator, map_wires
-from pennylane.transforms import decompose
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 

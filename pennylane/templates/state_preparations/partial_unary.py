@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, math
 from pennylane.core.operator import Operator2
-from pennylane.typing import AbstractWires, Bool, Complex, Int, TensorLike, Wire
+from pennylane.typing import AbstractWires, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 _U64 = np.uint64
@@ -340,7 +340,7 @@ class PUIsometryFinder:
 
         # Batch size can never exceed the number of states that actually need mapping, so cap
         # it here. This matters when there are many more (unused) remainder wires than states.
-        self.m = min(1 << int(math.floor(math.log2(self.n_r))), num_entries)
+        self.m = min(1 << math.floor_log2(self.n_r), num_entries)
 
         # Frequently used word constants, precomputed in the packing type to avoid any casts
         # inside the hot loop.
@@ -739,7 +739,7 @@ class PartialUnaryStatePreparation(Operator2):
 
     The preparation circuit looks like this:
 
-    >>> print(qp.draw(qp.decompose(circuit, max_expansion=1), max_length=200, show_matrices=False)())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=1), max_length=200, show_matrices=False)())
     0: ─╭MultiplexerStatePreparation(M0)─╭MultiX(M1)─╭◑────────╭MultiX(M1)─╭MultiX(M3)─╭MultiX(M4)─╭MultiX(M5)─╭◑────────╭MultiX(M5)─╭MultiX(M6)─╭MultiX(M7)─╭MultiX(M8)─╭◑────────╭MultiX(M8) ···
     1: ─├MultiplexerStatePreparation(M0)─├MultiX(M1)─├◑────────├MultiX(M1)─├MultiX(M3)─├MultiX(M4)─├MultiX(M5)─├◑────────├MultiX(M5)─├MultiX(M6)─├MultiX(M7)─├MultiX(M8)─├◑────────├MultiX(M8) ···
     2: ─├MultiplexerStatePreparation(M0)─├MultiX(M1)─├◑────────├MultiX(M1)─├MultiX(M3)─├MultiX(M4)─├MultiX(M5)─├◑────────├MultiX(M5)─├MultiX(M6)─├MultiX(M7)─├MultiX(M8)─├◑────────├MultiX(M8) ···
@@ -780,7 +780,7 @@ class PartialUnaryStatePreparation(Operator2):
         num_work_wires = qp.math.ceil_log2(num_entries) - 1
         work_wires = list(range(15, 15 + num_work_wires))
 
-    >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
+    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
     Quantum operations:
     - Total: 6,046
       - MultiplexerStatePreparation: 1
@@ -799,7 +799,7 @@ class PartialUnaryStatePreparation(Operator2):
 
     >>> new_num_work_wires = 3*num_work_wires
     >>> work_wires = list(range(15, 15 + new_num_work_wires))
-    >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
+    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
     Quantum operations:
     - Total: 3,068
       - MultiplexerStatePreparation: 1
@@ -821,7 +821,9 @@ class PartialUnaryStatePreparation(Operator2):
     dynamic_argnames = ("coefficients",)
     wire_argnames = ("wires", "work_wires")
     compilable_argnames = ("indices",)
-    arg_specs = {"coefficients": Complex[-1], "wires": Wire[-1]}
+    # NOTE: 'coefficients' is deliberately left out of the 'arg_specs' as real-valued
+    # coefficients lead to a cheaper MultiplexerStatePreparation than complex-valued ones.
+    arg_specs = {"wires": Wire[-1]}
 
     def __init__(
         self,
@@ -876,7 +878,10 @@ def _partial_unary_state_prep_resources(coefficients, wires, indices, work_wires
     # QROM needs n_subspace - 1 work wires, while Toffoli needs one zeroed work wire.
     needed_work_wires = max(n_subspace - 1, 1)
     effective_num_wires = num_wires + max(len(work_wires) - needed_work_wires, 0)
-    resources[qp.MultiplexerStatePreparation(Complex[2**n_subspace], wires=Wire[n_subspace])] += 1
+    state_type, _ = math.get_abstract_and_cast_dtype(coefficients)
+    resources[
+        qp.MultiplexerStatePreparation(state_type[2**n_subspace], wires=Wire[n_subspace])
+    ] += 1
 
     if is_affine:
         resources[qp.X] += effective_num_wires
@@ -888,11 +893,11 @@ def _partial_unary_state_prep_resources(coefficients, wires, indices, work_wires
     # Cap by num_entries: the isometry finder (PUIsometryFinder) can never actually produce a
     # batch larger than the number of states being mapped, regardless of how many remainder
     # wires are available.
-    main_pui_batch_size = min(1 << int(math.floor(math.log2(max(R, 1)))), num_entries)
+    main_pui_batch_size = min(1 << math.floor_log2(max(R, 1)), num_entries)
 
     qrom_reps = {
         p: qp.QROM(
-            bitstrings=Int[p, p],
+            bitstrings=Bool[p, p],
             control_wires=Wire[n_subspace],
             target_wires=Wire[p],
             work_wires=Wire[n_subspace - 1],
@@ -973,9 +978,11 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
 
     # Step 1: Dense state preparation
     ids = np.array([bijection[i] for i in range(num_entries)])
-    dense_size = 2**n_subspace
-    dense_state = math.scatter(ids, coefficients, dense_size, like=math.get_interface(coefficients))
-    qp.MultiplexerStatePreparation(dense_state, subspace_wires)
+    dense_state = math.scatter(
+        ids, coefficients, 2**n_subspace, like=math.get_interface(coefficients)
+    )
+    _, cast_dtype = math.get_abstract_and_cast_dtype(coefficients)
+    qp.MultiplexerStatePreparation(math.cast(dense_state, cast_dtype), subspace_wires)
 
     if not circuit:
         return

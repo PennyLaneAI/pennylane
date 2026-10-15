@@ -24,6 +24,7 @@ from scipy.linalg import cossin
 
 from pennylane import capture, compiler, math, ops, templates
 from pennylane.core import queuing
+from pennylane.core.apply import apply
 from pennylane.decomposition.decomposition_rule import register_condition, register_resources
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.math.decomposition import (
@@ -103,7 +104,7 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op)
+            apply(op)
 
     return q.queue
 
@@ -238,7 +239,7 @@ def two_qubit_decomposition(U, wires):
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op)
+            apply(op)
 
     return q.queue
 
@@ -278,7 +279,7 @@ def multi_qubit_decomposition(U, wires):
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op)
+            apply(op)
 
     return q.queue
 
@@ -508,8 +509,6 @@ def multi_qubit_decomp_rule(U, wires, **__):
 #   other cases, it cannot autodifferentiate through the linalg.eigvals function.
 # - In Torch, it is not currently possible to autodiff through linalg.det for
 #   complex values.
-# - In Tensorflow, it sometimes works in limited cases (0, sometimes 1 CNOT), but
-#   for others it fails without output making it hard to pinpoint the cause.
 # - In JAX, we receive the TypeError:
 #       Can't differentiate w.r.t. type <class 'jaxlib.xla_extension.Array'>
 #

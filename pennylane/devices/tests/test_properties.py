@@ -25,14 +25,6 @@ from pennylane.exceptions import QuantumFunctionError
 from .conftest import get_legacy_capabilities
 
 try:
-    import tensorflow as tf
-
-    TF_SUPPORT = True
-
-except ImportError:
-    TF_SUPPORT = False
-
-try:
     import torch
 
     TORCH_SUPPORT = True
@@ -121,15 +113,6 @@ class TestCapabilities:
         # assert that we can do a simple gradient computation in the passthru interface
         # without raising an error
 
-        if interface == "tf":
-            if TF_SUPPORT:
-                x = tf.Variable(0.1)
-                with tf.GradientTape() as tape:
-                    res = qnode(x)
-                    tape.gradient(res, [x])
-            else:
-                pytest.skip("Cannot import tensorflow.")
-
         if interface == "autograd":
             x = pnp.array(0.1, requires_grad=True)
             g = qp.grad(qnode)
@@ -162,11 +145,8 @@ class TestCapabilities:
 
         @qp.qnode(dev, shots=shots)
         def circuit():
-            """Model agnostic quantum function with tensor observable"""
-            if cap["model"] == "qubit":
-                qp.X(0)
-            else:
-                qp.QuadX(wires=0)
+            """Quantum function with tensor observable"""
+            qp.X(0)
             return qp.expval(qp.Identity(wires=0) @ qp.Identity(wires=1))
 
         if cap["supports_tensor_observables"]:
@@ -225,10 +205,7 @@ class TestCapabilities:
 
         @qp.qnode(dev, shots=shots)
         def circuit():
-            if cap["model"] == "qubit":
-                qp.X(0)
-            else:
-                qp.QuadX(wires=0)
+            qp.X(0)
             return qp.probs(wires=0)
 
         if cap["returns_probs"]:
@@ -251,10 +228,7 @@ class TestCapabilities:
 
         @qp.qnode(dev, shots=shots)
         def circuit(x):
-            if cap["model"] == "qubit":
-                qp.RX(x, wires=0)
-            else:
-                qp.Rotation(x, wires=0)
+            qp.RX(x, wires=0)
             return qp.probs(wires=0)
 
         spy = mocker.spy(qp.transforms, "broadcast_expand")

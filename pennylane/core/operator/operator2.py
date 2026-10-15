@@ -17,7 +17,7 @@ TODO: [sc-120453] Fill docstring
 """
 
 from abc import abstractmethod
-from collections.abc import Callable, Hashable, Iterable, Sequence
+from collections.abc import Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from enum import Enum, StrEnum, auto
 from functools import partial
@@ -35,7 +35,8 @@ from pennylane import math
 from pennylane._class_property import classproperty
 from pennylane.capture import enabled, pause, symbolic_array
 from pennylane.capture.custom_primitives import QpPrimitive
-from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
+from pennylane.core.apply import apply
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -1371,10 +1372,8 @@ class Operator2(metaclass=OperatorMeta):
 
     __radd__ = __add__
 
-    def __mul__(self, other: Callable | TensorLike) -> Operator:
+    def __mul__(self, other: TensorLike) -> Operator:
         """The scalar multiplication between scalars and Operators."""
-        if callable(other):
-            return qp.pulse.ParametrizedHamiltonian([other], [self])
         if isinstance(other, TensorLike):
             return qp.s_prod(scalar=other, operator=self, lazy=False)
         return NotImplemented
@@ -1518,7 +1517,7 @@ class Operator2(metaclass=OperatorMeta):
         if any(len(math.shape(arg)) >= 1 and math.shape(arg)[0] is None for arg in dynamic_args):
             # if the batch dimension is unknown, then skip the validation
             # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
-            # typically during compilation of a function decorated with jax.jit or tf.function
+            # typically during compilation of a function decorated with jax.jit
             return  # pragma: no cover
 
         self._ndim_params = ndims
@@ -1680,15 +1679,10 @@ def _init_wires(op: Operator2):
         ops = filter(_is_op, leaves)
         all_algorithmic_wires.extend(op.wires for op in ops)
 
-    abstract_wires = [w for w in all_algorithmic_wires if isinstance(w, AbstractWires)]
-    if abstract_wires:
-        if any(not aw.shape_fixed for aw in abstract_wires):
-            raise ValueError("Operator2 instances must be constructed with wires of fixed length.")
+    if any(isinstance(w, AbstractWires) and not w.shape_fixed for w in all_algorithmic_wires):
+        raise ValueError("Operator2 instances must be constructed with wires of fixed length.")
 
-        total_wires = sum(len(w) for w in all_algorithmic_wires)
-        op._wires = AbstractWires(total_wires)
-    else:
-        op._wires = Wires.all_wires(all_algorithmic_wires)
+    op._wires = Wires.all_wires(all_algorithmic_wires)
 
 
 def _init_arg_types(op: Operator2) -> None:
@@ -1994,25 +1988,51 @@ def _op_aval(*_, **__):
 def pop_op_eqns(ops: Iterable):
     """Delete the jaxpr equations for operators that have been used as data.
 
-    These equations must be deleted because operators used as data are treated as
-    pytrees wrapping dynamic data rather than instructions. Thus, the equation that
-    corresponds to the operator as an instruction should be removed.
+    When quantum operators are passed or manipulated as data structures (e.g., in a pytree),
+    their operations must not execute as side-effecting quantum instructions during tracing.
+    This function removes their corresponding equations from the active JAX tracing frames.
+
+    All 'ops' are removed in one backward pass per frame, so the cost of removal is set
+    by the deepest target and does not depend on the order of 'ops'.
     """
     old_eqns = []
 
+    # Maps frame ID -> (frame_obj, set_of_target_equation_ids)
+    # This allows us to sweep each frame's equation list only once.
+    targets_by_frame = {}
+
+    # Phase 1: Collect equation targets and group them by their frame
     for op in ops:
         if op.tracer is not None:
             # pylint: disable=protected-access
             frame = op.tracer._trace.frame
             assert frame.auto_dce is False  # eqns are stored differently if this is enabled
 
-            # for some reason the frame now wraps equations in lambdas
+            # NOTE: JAX frame equation lists wrap equations in zero argument callables
             eqn = op.tracer.parent
             old_eqns.append(eqn)
-            frame.tracing_eqns = [r for r in frame.tracing_eqns if r() is not eqn]
 
-            # delete reference to tracer after its equation has been deleted
+            # Store ID of equation in the target set
+            targets_by_frame.setdefault(id(frame), (frame, set()))[1].add(id(eqn))
+
+            # Detach tracer from op to make a pure data object
             op.tracer = None
+
+    # Phase 2: Sweep each frame's equation list backwards and perform batch deletion
+    for frame, targets in targets_by_frame.values():
+        eqns = frame.tracing_eqns
+
+        # NOTE: Iterate backwards, target equations are almost always near the tail
+        for i in reversed(range(len(eqns))):
+            key = id(eqns[i]())
+
+            if key in targets:
+                targets.discard(key)
+                del eqns[i]
+
+                # All targets for this frame have been pruned, can terminate early
+                if not targets:
+                    break
 
     return old_eqns
 

@@ -428,6 +428,10 @@ class TestMapToResourceOp:
                 ),
             ),
             (
+                qtemps.PhaseGradientStatePrep(wires=[0, 1, 2, 3, 4]),
+                re_temps.PhaseGradient(num_wires=5, wires=[0, 1, 2, 3, 4]),
+            ),
+            (
                 qtemps.GQSP(qp.RX(0.3, 0), qp.poly_to_angles([0.1, 0.2j, 0.3], "GQSP"), control=1),
                 qp.estimator.GQSP(qp.estimator.RX(), d_plus=2, wires=(0, 1)),
             ),
