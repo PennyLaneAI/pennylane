@@ -743,6 +743,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `decompose_mcx_with_no_worker` decomposition rule for :class:`~.MultiControlledX` now only
+  applies when no work wires are provided, matching `MultiControlledX.compute_decomposition`.
+  This removes controlled `GlobalPhase` and `PhaseShift` rules from the decomposition graph and
+  greatly reduces `qp.qjit(capture=True)` compile time for multi-controlled X gates with work wires.
+  [(#10338)](https://github.com/PennyLaneAI/pennylane/pull/10338)
+
 * The decompositions of :class:`~.QROM` (unary iteration), :class:`~.QFT`, :class:`~.AQFT` and
   :class:`~.FFFT` now provide `num-iters` hints for loops with dynamic bounds, avoiding symbolic
   resource counts when compiling them with Catalyst.
