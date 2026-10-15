@@ -771,9 +771,8 @@ class _DecompExclusion:
 
     def __exit__(self, *_) -> None:
         all_excluded = _excluded_decomps_var.get()
-        all_excluded[self._op_name] -= self._names
-        if not all_excluded[self._op_name]:
-            all_excluded.pop(self._op_name)
+        remaining = all_excluded.get(self._op_name, frozenset()) - self._names
+        _excluded_decomps_var.set(all_excluded | {self._op_name: remaining})
 
 
 def exclude_decomps(op: type[Operator] | Operator | str, *names: str) -> _DecompExclusion:
@@ -781,7 +780,7 @@ def exclude_decomps(op: type[Operator] | Operator | str, *names: str) -> _Decomp
 
     Excluded rules are not removed from the registry. They are hidden from :func:`~pennylane.list_decomps`,
     and are therefore not considered by the graph-based decomposition system. When used as a
-    context manager, the rules are excluded only within the context.
+    context manager, the rules are excluded only within the context. This function is thread-safe.
 
     Args:
         op (type or Operator or str): the operator type to exclude decomposition rules for.
@@ -840,7 +839,7 @@ def exclude_decomps(op: type[Operator] | Operator | str, *names: str) -> _Decomp
 
     all_excluded = _excluded_decomps_var.get()
     already_excluded = all_excluded.get(op_name, frozenset())
-    all_excluded[op_name] = already_excluded | frozenset(names)
+    _excluded_decomps_var.set(all_excluded | {op_name: already_excluded | frozenset(names)})
     return _DecompExclusion(op_name, frozenset(names) - already_excluded)
 
 
