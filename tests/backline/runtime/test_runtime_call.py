@@ -25,6 +25,8 @@ import pytest
 
 import pennylane as qp
 from pennylane.backline.runtime import CSignature, CType, operands
+from pennylane.backline.runtime.runtime_call import get_runtime_call_prim
+from pennylane.testing import find_eqns
 
 
 @pytest.fixture(name="x64")
@@ -213,7 +215,7 @@ class TestRecordedCalls:
         jaxpr = x64.make_jaxpr(lambda h: qp.runtime_call("run_rounds", h, 4, address="h:1"))(
             np.uint64(7)
         )
-        calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+        calls = find_eqns(jaxpr, get_runtime_call_prim())
         assert len(calls) == 1
         assert calls[0].params["symbol"] == "run_rounds"
         assert calls[0].params["dispatch"] == "h:1"
@@ -254,7 +256,7 @@ class TestRecordedCalls:
         jaxpr = x64.make_jaxpr(
             lambda: qp.runtime_call("board_kernel", 1, library="/on/the/board/libx.so")
         )()
-        call = [e for e in jaxpr.eqns if str(e.primitive) == "runtime_call"][0]
+        call = find_eqns(jaxpr, get_runtime_call_prim())[0]
         assert call.params["library"] == "/on/the/board/libx.so"
 
     def test_out_bytes_cannot_be_traced(self, x64):
@@ -319,7 +321,7 @@ class TestLocalCalls:
         jaxpr = x64.make_jaxpr(lambda d: qp.runtime_call("local_xor", d, 4))(
             np.arange(4, dtype=np.uint8)
         )
-        calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+        calls = find_eqns(jaxpr, get_runtime_call_prim())
         assert len(calls) == 1
         assert calls[0].params["dispatch"] is None
         assert calls[0].params["library"] == "/opt/libx.so"
@@ -330,7 +332,7 @@ class TestLocalCalls:
         jaxpr = x64.make_jaxpr(
             lambda d: qp.runtime_call("local_override", d, 4, library="/opt/called.so")
         )(np.arange(4, dtype=np.uint8))
-        calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+        calls = find_eqns(jaxpr, get_runtime_call_prim())
         assert calls[0].params["library"] == "/opt/called.so"
 
     def test_a_local_void_call_is_allowed(self, x64):
@@ -342,7 +344,7 @@ class TestLocalCalls:
             return np.int32(0)
 
         jaxpr = x64.make_jaxpr(program)()
-        calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+        calls = find_eqns(jaxpr, get_runtime_call_prim())
         assert len(calls) == 1
         assert calls[0].params["dispatch"] is None
 
@@ -355,7 +357,7 @@ class TestResolveSignature:
         """Passing the signature as the target is enough to record the call."""
         signature = CSignature.parse("resolved_by_target", "(u64) -> i32")
         jaxpr = x64.make_jaxpr(lambda: qp.runtime_call(signature, 1, address="h:1"))()
-        calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+        calls = find_eqns(jaxpr, get_runtime_call_prim())
         assert calls[0].params["symbol"] == "resolved_by_target"
 
     def test_both_target_and_signature_is_refused(self):
@@ -373,7 +375,7 @@ class TestResolveSignature:
             return qp.runtime_call("resolved_by_kwarg", 1, signature=signature, address="h:1")
 
         jaxpr = x64.make_jaxpr(program)()
-        calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+        calls = find_eqns(jaxpr, get_runtime_call_prim())
         assert calls[0].params["signature"] is signature
 
     def test_a_signature_spec_string_is_declared_on_first_call(self, x64):

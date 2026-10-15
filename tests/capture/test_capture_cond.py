@@ -34,7 +34,7 @@ jax = pytest.importorskip("jax")
 # must be below jax importorskip
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import cond_prim
-from pennylane.testing import assert_eqn_matches_op, extract_all_primitives
+from pennylane.testing import assert_eqn_matches_op, extract_all_primitives, find_eqns
 
 
 @pytest.fixture
@@ -1072,7 +1072,7 @@ class TestDynamicShapes:
 
         jaxpr = jax.make_jaxpr(w)(True, 3)
 
-        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
         true_branch, false_branch = cond_eqn.params["jaxpr_branches"][:2]
 
         assert_eqn_matches_op(true_branch.eqns[-1], qp.RX)
@@ -1097,7 +1097,7 @@ class TestCondBranchProbHintsCapture:
             return qp.cond(pred, true_fn, false_fn)()
 
         jaxpr = jax.make_jaxpr(f)(True)
-        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
         assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.4, 0.6))
 
     def test_integer_branch_probs(self):
@@ -1115,7 +1115,7 @@ class TestCondBranchProbHintsCapture:
             return qp.cond(pred, true_fn, false_fn)()
 
         jaxpr = jax.make_jaxpr(f)(True)
-        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
         assert cond_eqn.params["estimated_probabilities"] == pytest.approx((1.0, 0.0))
 
     @pytest.mark.parametrize(
@@ -1143,7 +1143,7 @@ class TestCondBranchProbHintsCapture:
             return qp.cond(pred, true_fn, false_fn)()
 
         jaxpr = jax.make_jaxpr(f)(True)
-        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
         assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.3, 0.7))
 
     def test_unknown_hint_is_ignored(self):
@@ -1161,7 +1161,7 @@ class TestCondBranchProbHintsCapture:
             return qp.cond(pred, true_fn, false_fn)()
 
         jaxpr = jax.make_jaxpr(f)(True)
-        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
         assert cond_eqn.params["estimated_probabilities"] is None
 
     def test_without_hint_has_none_estimated_probabilities(self):
@@ -1171,7 +1171,7 @@ class TestCondBranchProbHintsCapture:
             return qp.cond(pred, lambda: 1, lambda: 2)()
 
         jaxpr = jax.make_jaxpr(f)(True)
-        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
         assert cond_eqn.params["estimated_probabilities"] is None
 
     def test_partial_hints_fill_remaining_probability(self):
@@ -1192,7 +1192,7 @@ class TestCondBranchProbHintsCapture:
             return qp.cond(pred, true_fn, false_fn, elifs=((elif_pred, elif_fn),))()
 
         jaxpr = jax.make_jaxpr(f)(True, False)
-        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
         assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.4, 0.2, 0.4))
 
     def test_multiple_unhinted_branches_share_remainder(self):
@@ -1220,7 +1220,7 @@ class TestCondBranchProbHintsCapture:
             )()
 
         jaxpr = jax.make_jaxpr(f)(True, False, False)
-        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
         # remaining 0.6 split across three unhinted branches
         assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.4, 0.2, 0.2, 0.2))
 
@@ -1242,7 +1242,7 @@ class TestCondBranchProbHintsCapture:
             return qp.cond(pred, true_fn, false_fn, elifs=((elif_pred, elif_fn),))()
 
         jaxpr = jax.make_jaxpr(f)(True, False)
-        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
         # order is (true, elif, false); remaining mass is clamped at 0
         assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.7, 0.0, 0.7))
 
@@ -1263,7 +1263,7 @@ class TestCondBranchProbHintsCapture:
             return qp.cond(pred, true_fn, false_fn, elifs=((elif_pred, elif_fn),))()
 
         jaxpr = jax.make_jaxpr(f)(True, False)
-        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
         # order is (true, elif, false); remaining 1.0 split across two unhinted branches
         assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.0, 0.5, 0.5))
 
@@ -1289,5 +1289,5 @@ class TestCondBranchProbHintsCapture:
             return true_fn()
 
         jaxpr = jax.make_jaxpr(f)(True, False)
-        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
         assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.5, 0.25, 0.25))

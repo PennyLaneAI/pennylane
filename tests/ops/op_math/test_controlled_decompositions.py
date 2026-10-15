@@ -23,7 +23,6 @@ import pennylane as qp
 from pennylane import math
 from pennylane.decomposition.decomposition_rule import _fix_decomp
 from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     _bisect_compute_a,
     _bisect_compute_b,
@@ -34,6 +33,7 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     decompose_mcx_two_workers,
     decompose_mcx_with_no_worker,
 )
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.wires import Wires
 
 cw5 = tuple(list(range(1, 1 + n)) for n in range(2, 6))

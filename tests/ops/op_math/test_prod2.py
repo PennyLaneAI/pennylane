@@ -24,10 +24,10 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
 import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import prod
 from pennylane.ops.op_math.prod import Prod
 from pennylane.ops.op_math.prod2 import Prod2
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import NonParametricOp
 
@@ -408,9 +408,9 @@ class TestValidity:  # pylint: disable=too-few-public-methods
         """Test that ``Prod2`` is defined correctly."""
         # TODO: [sc-129513] Update bind_new_parameters to work with CompositeOp2 so that
         # we no longer need to skip differentiation-related validation
-        qp.ops.functions.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(1)]), skip_differentiation=True)
+        qp.testing.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(1)]), skip_differentiation=True)
         # Also assert validity with overlapping wires
-        qp.ops.functions.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(0)]), skip_differentiation=True)
+        qp.testing.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(0)]), skip_differentiation=True)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("control_values", [[1, 1, 1], [0, 1, 0], [1, 0, 1], [0, 0, 0]])

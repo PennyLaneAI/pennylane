@@ -32,6 +32,8 @@ from pennylane.backline.decode import (
     decode,
 )
 from pennylane.backline.runtime import operands
+from pennylane.backline.runtime.runtime_call import get_runtime_call_prim
+from pennylane.testing import find_eqns
 
 TRANSPORT_CALLS = [
     "__catalyst__transport__get_session__call",
@@ -74,7 +76,7 @@ class TestDecodeBitpack:
         assert [tuple(a.shape) for a in avals] == [(64,)]
         assert [a.dtype for a in avals] == [np.dtype(bool)]
 
-        calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+        calls = calls_of(jaxpr)
         assert calls[-1].params["out_bytes"] == (8,)
 
     def test_bitpack_decode_rejects_non_vector_input(self):
@@ -141,7 +143,7 @@ def a_round(jax, dev, syndrome=None, **kwargs):
 
 def calls_of(jaxpr):
     """The transport calls."""
-    return [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+    return find_eqns(jaxpr, get_runtime_call_prim())
 
 
 def scalars_of(jaxpr, call):

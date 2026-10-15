@@ -42,7 +42,7 @@ def test_standard_validity():
 
     op = qp.MottonenStatePreparation(state_vector=state, wires=range(3))
 
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def compute_theta_reference(alpha):

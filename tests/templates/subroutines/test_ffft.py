@@ -20,9 +20,9 @@ import pytest
 import pennylane as qp
 from pennylane import FermionicSWAP, PauliZ, device, list_decomps, qnode
 from pennylane.measurements import state
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.ffft import FFFT, TwoWireFFT, _permute_and_apply_parallel
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.wires import Wires
 
 dev = device("default.qubit")

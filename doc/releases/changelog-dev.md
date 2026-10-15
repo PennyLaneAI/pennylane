@@ -1091,6 +1091,7 @@
 * A new :mod:`pennylane.testing` module collects utilities for testing code built with PennyLane.
   [(#10293)](https://github.com/PennyLaneAI/pennylane/pull/10293)
   [(#10306)](https://github.com/PennyLaneAI/pennylane/pull/10306)
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 

@@ -135,7 +135,7 @@ class TestStandardValidityBasisState:
         # pylint: disable=import-outside-toplevel
         wires = [0, 1]
         op = qp.BasisState(input_state, wires=wires)
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     @staticmethod
     def make_abstract_check(state_traced, wires_traced, closure_state, closure_wires):
