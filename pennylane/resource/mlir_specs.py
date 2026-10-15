@@ -159,8 +159,8 @@ def resources_from_analysis_pass(
                 fname_to_level[fname] = i
                 level_to_name[i] = level_name
                 if is_estimate:
-                    new_compile_pipeline[-1].kwargs['output_json'] = True
-                    new_compile_pipeline[-1].kwargs['output_fname'] = fname
+                    new_compile_pipeline[-1].kwargs["output_json"] = True
+                    new_compile_pipeline[-1].kwargs["output_fname"] = fname
                 else:
                     new_compile_pipeline += transform(pass_name="resource-analysis")(
                         output_json=True, output_fname=fname

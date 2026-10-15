@@ -57,7 +57,7 @@ def _estimate_qjit(qjit, level, target, *args, **kwargs) -> CircuitSpecs:
     estimate_qnode = copy.copy(original_qnode)
     decompose_args = decompose(gate_set=target)
     resource_analysis_transform = transform(pass_name="resource-analysis")(**decompose_args.kwargs)
-    estimate_qnode._compile_pipeline = CompilePipeline(resource_analysis_transform)    
+    estimate_qnode._compile_pipeline = CompilePipeline(resource_analysis_transform)
     resources = resources_from_analysis_pass(qjit, estimate_qnode, 1, {}, {}, True, *args, **kwargs)
 
     return build_circuit_specs(original_qnode, next(iter(resources.values())), level)
