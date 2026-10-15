@@ -130,9 +130,7 @@ def c_string_bytes(
                 f"{symbol}: argument {position} contains bytes that are not valid UTF-8"
             ) from exc
     else:
-        raise TypeError(
-            f"{symbol}: argument {position} is a {ctype}, got {type(value).__name__}"
-        )
+        raise TypeError(f"{symbol}: argument {position} is a {ctype}, got {type(value).__name__}")
     if b"\x00" in raw:
         raise ValueError(f"{symbol}: argument {position} contains an embedded NUL byte")
     if max_bytes is not None and len(raw) >= max_bytes:
@@ -165,9 +163,7 @@ def operand_for(ctype: CType, value, symbol: str, position: int):
     return jnp.asarray(value, dtype=ctype.dtype).reshape(SCALAR_SHAPE)
 
 
-def operands_for(
-    signature, args, *, dispatched: bool = False
-) -> tuple[list, tuple[bytes, ...]]:
+def operands_for(signature, args, *, dispatched: bool = False) -> tuple[list, tuple[bytes, ...]]:
     """Build every operand a recorded call passes.
 
     Args:
@@ -186,9 +182,7 @@ def operands_for(
 
     dynamic = []
     strings = []
-    for position, (ctype, value) in enumerate(
-        zip(signature.caller_params, args, strict=True)
-    ):
+    for position, (ctype, value) in enumerate(zip(signature.caller_params, args, strict=True)):
         if ctype is CType.BUF and dispatched:
             raise TypeError(
                 f"{signature.symbol}: argument {position} is a {ctype}, which cannot be read "

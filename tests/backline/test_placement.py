@@ -120,7 +120,7 @@ def test_none_transport_without_coprocessors():
 
 def test_none_transport_with_coprocessors():
     """A coprocessor is rejected when using the none transport"""
-    with pytest.raises(ValueError, match="Cannot use transport=\"none\" with coprocessors"):
+    with pytest.raises(ValueError, match='Cannot use transport="none" with coprocessors'):
         qp.Backline(
             controller=qp.Controller(),
             coprocessors=[qp.Coprocessor(coprocessor_fn="decoder")],

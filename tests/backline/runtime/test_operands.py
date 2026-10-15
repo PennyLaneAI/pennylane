@@ -65,9 +65,7 @@ class TestDispatchedStringField:
     def test_wrong_type_is_refused(self):
         """A non-string, non-bytes value is refused rather than coerced."""
         with pytest.raises(TypeError, match=r"argument 0 is a str, got int"):
-            operands.c_string_bytes(
-                CType.STR, 42, "sym", 0, max_bytes=operands.STR_OPERAND_BYTES
-            )
+            operands.c_string_bytes(CType.STR, 42, "sym", 0, max_bytes=operands.STR_OPERAND_BYTES)
 
     def test_a_string_that_does_not_fit_is_refused(self):
         """A payload the full width of the field leaves no NUL terminator."""
@@ -82,9 +80,7 @@ class TestDispatchedStringField:
 
     def test_a_local_string_has_no_width_limit(self):
         """A local ``str`` becomes a plain C string, so no field has to hold it."""
-        raw = operands.c_string_bytes(
-            CType.STR, "x" * operands.STR_OPERAND_BYTES, "sym", 0
-        )
+        raw = operands.c_string_bytes(CType.STR, "x" * operands.STR_OPERAND_BYTES, "sym", 0)
         assert len(raw) == operands.STR_OPERAND_BYTES + 1
 
 

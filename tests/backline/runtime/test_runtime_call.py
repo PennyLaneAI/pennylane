@@ -114,9 +114,7 @@ class TestDeclare:
 
     def test_declare_records_the_library(self):
         """A local symbol's backing library is carried on its signature."""
-        signature = qp.runtime_declare(
-            "xor_reduce", "(buf, u64) -> i32", library="/opt/libx.so"
-        )
+        signature = qp.runtime_declare("xor_reduce", "(buf, u64) -> i32", library="/opt/libx.so")
         assert signature.library == "/opt/libx.so"
 
     def test_declare_without_a_library(self):
@@ -127,9 +125,7 @@ class TestDeclare:
         """Two declarations putting the same symbol in different libraries disagree."""
         qp.runtime_declare("clashing_library", "(buf, u64) -> i32", library="/opt/a.so")
         with pytest.raises(ValueError, match="already declared"):
-            qp.runtime_declare(
-                "clashing_library", "(buf, u64) -> i32", library="/opt/b.so"
-            )
+            qp.runtime_declare("clashing_library", "(buf, u64) -> i32", library="/opt/b.so")
 
     def test_conflicting_signatures_are_refused(self):
         """Two call sites disagreeing on an ABI is a bug, so it is refused."""
@@ -176,9 +172,7 @@ class TestRecordedCalls:
         """A buf cannot be passed to a dispatched call."""
         signature = CSignature.parse("write_bytes", "(ptr, buf, u64) -> i32")
         with pytest.raises(TypeError, match="cannot be read out of the flat buffer"):
-            operands.operands_for(
-                signature, (0, np.arange(4, dtype=np.uint8), 4), dispatched=True
-            )
+            operands.operands_for(signature, (0, np.arange(4, dtype=np.uint8), 4), dispatched=True)
 
     @pytest.mark.usefixtures("x64")
     def test_an_out_buffer_comes_back_as_a_result(self):
@@ -284,9 +278,7 @@ class TestLocalCalls:
     def test_scalars_are_dynamic_and_strings_are_static(self):
         """Scalars and strings are treated differently."""
         signature = CSignature.parse("connect", "(ptr, str, u16) -> i32")
-        dynamic, constants = operands.operands_for(
-            signature, (0x1234, "host", 9000)
-        )
+        dynamic, constants = operands.operands_for(signature, (0x1234, "host", 9000))
 
         assert [tuple(value.shape) for value in dynamic] == [(1,), (1,)]
         assert [str(value.dtype) for value in dynamic] == ["uint64", "uint16"]
@@ -296,9 +288,7 @@ class TestLocalCalls:
     def test_a_local_buf_is_preserved_for_pointer_extraction(self):
         """A JAX buffer remains an array until lowering can pass its data pointer."""
         signature = CSignature.parse("sum_bytes", "(buf, u64) -> i32")
-        dynamic, constants = operands.operands_for(
-            signature, (np.arange(4, dtype=np.uint8), 4)
-        )
+        dynamic, constants = operands.operands_for(signature, (np.arange(4, dtype=np.uint8), 4))
         assert constants == ()
         assert [tuple(value.shape) for value in dynamic] == [(4,), (1,)]
 
@@ -314,9 +304,7 @@ class TestLocalCalls:
     def test_a_local_call_is_not_dispatched(self, x64):
         """With no address the recorded call carries dispatch=None and the declared library."""
         qp.runtime_declare("local_xor", "(ptr, u64) -> i32", library="/opt/libx.so")
-        jaxpr = x64.make_jaxpr(lambda p: qp.runtime_call("local_xor", p, 4))(
-            np.uint64(0)
-        )
+        jaxpr = x64.make_jaxpr(lambda p: qp.runtime_call("local_xor", p, 4))(np.uint64(0))
         calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
         assert len(calls) == 1
         assert calls[0].params["dispatch"] is None
