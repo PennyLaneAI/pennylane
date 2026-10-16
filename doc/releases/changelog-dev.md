@@ -64,11 +64,15 @@
   The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
 
 * A new state preparation routine called :class:`~.PhaseGradientStatePrep` has been added, which
-  prepares the phase gradient state 
+  prepares the phase gradient state
   :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`.
   It is a catalytic state for (generalized) rotation gates.
+  :func:`~.transforms.decompositions.make_phase_gradient_distillation_decomp` can be used to
+  create a decomposition rule based on Jones' repeat-until-success construction, which uses only
+  Clifford gates, adders, and mid-circuit measurements and supports any number of wires.
   See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
   [(#10227)](https://github.com/PennyLaneAI/pennylane/pull/10227)
+  [(#10245)](https://github.com/PennyLaneAI/pennylane/pull/10245)
   [(#10264)](https://github.com/PennyLaneAI/pennylane/pull/10264)
 
   The operation has a gridsynth-based decomposition into Pauli product rotations on up to
