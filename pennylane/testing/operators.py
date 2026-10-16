@@ -141,7 +141,11 @@ def _check_decomposition_legacy(op, skip_wire_mapping):
 
     assert op not in decomp_output, "an operator should not be included in its own decomposition"
 
+    failure_comment = "decomposition must contain operators"
+    assert all(isinstance(o, Operator) for o in decomp_output), failure_comment
+
     if compute_decomp_output is not None:
+        assert all(isinstance(o, Operator) for o in compute_decomp_output), failure_comment
         try:
             _assert_equal_ops(decomp_output, compute_decomp_output)
         except AssertionError as e:
@@ -340,16 +344,19 @@ def _check_generator(op):
     assert math.allclose(matrix, expected)
 
 
+def _assert_copy_equal(op, copied):
+    try:
+        op_funcs.assert_equal(copied, op)
+    except AssertionError as e:
+        raise AssertionError("copied op must be equal to the original.") from e
+    assert copied is not op, "copied op must not be an alias of the original op"
+
+
 def _check_copy(op, skip_deepcopy):
     """Check that copies and deep copies give identical objects."""
-
-    copied_op = copy.copy(op)
-    assert op_funcs.equal(copied_op, op), "copied op must be equal with equal"
-    assert copied_op == op, "copied op must be equivalent to original operation"
-    assert copied_op is not op, "copied op must be a separate instance from original operation"
-
+    _assert_copy_equal(copy.copy(op), op)
     if not skip_deepcopy:
-        op_funcs.assert_equal(copy.deepcopy(op), op)
+        _assert_copy_equal(copy.deepcopy(op), op)
 
 
 # pylint: disable=import-outside-toplevel, protected-access
@@ -482,8 +489,7 @@ def _check_bind_new_parameters_op2(op: Operator2):
     new_data_op = op_funcs.bind_new_parameters(op, tuple(new_dyn_args.values()))
     failure_comment = "bind_new_parameters must be able to update the operator2 with new arguments."
     for name, val in new_dyn_args.items():
-        op_to_check = new_data_op.base if isinstance(new_data_op, SymbolicOp2) else new_data_op
-        assert math.allclose(op_to_check.arguments[name], val), failure_comment
+        assert math.allclose(new_data_op.arguments[name], val), failure_comment
 
 
 @_check_bind_new_parameters.register

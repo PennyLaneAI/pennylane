@@ -177,6 +177,28 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="if op.has_decomposition is False"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
+    def test_decomposition_must_contain_operators(self):
+        """A non-operator in ``decomposition`` or ``compute_decomposition`` raises AssertionError."""
+
+        class BadDecomp(Operator):
+            @staticmethod
+            def compute_decomposition(wires):
+                return ["RX"]
+
+        with pytest.raises(AssertionError, match="decomposition must contain operators"):
+            assert_valid(BadDecomp(wires=0), skip_pickle=True)
+
+        class BadComputeDecomp(Operator):
+            @staticmethod
+            def compute_decomposition(wires):
+                return ["RX"]
+
+            def decomposition(self):
+                return [qp.X(self.wires[0])]
+
+        with pytest.raises(AssertionError, match="decomposition must contain operators"):
+            assert_valid(BadComputeDecomp(wires=0), skip_pickle=True)
+
     def test_decomposition_must_not_contain_op(self):
         """Test that an error is raised if the decomposition of an operator includes
         the operator itself"""
@@ -399,27 +421,41 @@ class TestBadMatrix:
 
 
 class TestBadCopyComparison:
-    """Check errors invovling copy, deepcopy, and comparison."""
+    """Check errors involving copy, deepcopy, and comparison."""
 
-    def test_bad_copy(self):
-        """Test an operator that cannot be compared with its copy."""
+    def test_copy_must_not_be_alias(self):
+        """A copy or deepcopy that returns the original instance fails validation."""
 
-        class BadComparison(Operator):
+        class BadCopy(Operator):
             def __copy__(self):
                 return self
 
-        with pytest.raises(AssertionError, match=r"copied op must be a separate instance"):
-            assert_valid(BadComparison(0), skip_pickle=True)
+        with pytest.raises(AssertionError, match=r"copied op must not be an alias"):
+            assert_valid(BadCopy(0), skip_pickle=True)
 
-    def test_bad_deepcopy(self):
-        """Test an operator that cannot be compared with its deepcopy."""
-
-        class BadDeepComparison(Operator):
+        class BadDeepCopy(Operator):
             def __deepcopy__(self, memo):
-                return BadDeepComparison(1)
+                return self
 
-        with pytest.raises(AssertionError, match=r"op1 and op2 have different wires"):
-            assert_valid(BadDeepComparison(0), skip_pickle=True)
+        with pytest.raises(AssertionError, match=r"copied op must not be an alias"):
+            assert_valid(BadDeepCopy(0), skip_pickle=True)
+
+    def test_copy_must_equal_original(self):
+        """A copy or deepcopy that is not equal to the original fails validation."""
+
+        class BadCopy(Operator):
+            def __copy__(self):
+                return BadCopy(1)
+
+        with pytest.raises(AssertionError, match=r"copied op must be equal to the original"):
+            assert_valid(BadCopy(0), skip_pickle=True)
+
+        class BadDeepCopy(Operator):
+            def __deepcopy__(self, memo):
+                return BadDeepCopy(1)
+
+        with pytest.raises(AssertionError, match=r"copied op must be equal to the original"):
+            assert_valid(BadDeepCopy(0), skip_pickle=True)
 
 
 def test_mismatched_mat_decomp():
@@ -902,7 +938,7 @@ class TestOperator2AssertValid:
             def __init__(self, phi, wires, ops):
                 super().__init__(phi, wires=wires, ops=ops)
 
-        with pytest.raises(AssertionError, match=r"copied op must be a separate instance"):
+        with pytest.raises(AssertionError, match=r"copied op must not be an alias"):
             assert_valid(
                 HybridOp(np.pi, wires=0, ops=[0.2, NoCopyOp(0.25, 1), SingleRZ(0.5, 0)]),
                 skip_pickle=True,
