@@ -30,21 +30,21 @@ to circuit optimization, TCDQ circuits can be trained using classical hardware a
 training of quantum circuits with thousands of qubits and millions of parameters on a laptop or
 GPU. Although training can be done classically, deploying the trained circuit on quantum hardware
 for sampling or downstream quantum algorithms can lead to advantages over purely classical
-algorithms. For example, sampling from IQP distributions is known to be hard for classical
+algorithms. For example, sampling from Instantaneous Quantum Polynomial (IQP) circuit distributions is known to be hard for classical
 algorithms in general; see
-`Bremner et al. (2016) <https://arxiv.org/abs/1504.07999>`_).
+`Bremner et al. (2016) <https://arxiv.org/abs/1504.07999>`_.
 
 
 This module implements the features needed to classically train TCDQ circuits and uses
 `JAX <https://docs.jax.dev>`_. Currently, the supported circuits consist of
-:ref:`qubit instantaneous quantum polynomial (IQP) circuits <tcdq-qubit-circuits>` and
+:ref:`qubit IQP circuits <tcdq-qubit-circuits>` and
 :ref:`their generalization to qudits <tcdq-qudit-circuits>`.
 
 
 .. _tcdq-qubit-circuits:
 
 Creating an IQP circuit
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
 
 A qubit IQP circuit can be created by specifying the generators of the diagonal gates.
 That description is a dictionary mapping a parameter index to a list of gates, where each gate is
@@ -56,49 +56,46 @@ to create gates: :func:`~create_local_gates`, :func:`~create_lattice_gates`, or
 
 .. code-block:: python
 
-    import jax
-    import jax.numpy as jnp
-
-    from pennylane.labs.tcdq import CircuitConfig, create_local_gates
+    from pennylane.labs.tcdq import create_local_gates
 
     n_qubits = 5
 
     # All one- and two-qubit gates
     gates = create_local_gates(n_qubits, max_weight=2)
 
-    config = CircuitConfig(
-        gates=gates,
-        n_qubits=n_qubits,
-        n_samples=1000,  # Monte Carlo samples used by the estimator
-        key=jax.random.PRNGKey(0)
-    )
-
-
-``n_samples`` sets the accuracy of every estimate produced from this configuration: the standard
-error of each expectation value falls off as :math:`1/\sqrt{N}`, where :math:`N` is
-``n_samples``.
-
-TCDQ allows for fully flexible diagonal layers beyond those constructed by Pauli-:math:`Z`
+TCDQ also allows for user-defined diagonal layers beyond those constructed by Pauli-:math:`Z`
 generators. This is achieved by defining a phase function in JAX that maps a bitstring to a real
 phase defining the entries of the diagonal unitary.
 
 .. code-block:: python
+
+    import jax
+    import jax.numpy as jnp
 
     # A one-hidden-layer network mapping a bitstring to a real phase
     def phase_fn(phase_fn_params, z):
         weights, readout = phase_fn_params
         return jnp.dot(readout, jnp.tanh(weights @ z))
 
-    phase_config = CircuitConfig(
+We then create a :class:`~CircuitConfig` object to store the circuit structure. This is used to build expectation value
+estimators below.
+
+.. code-block:: python
+
+    from pennylane.labs.tcdq import CircuitConfig
+
+    config = CircuitConfig(
         gates=gates,
         n_qubits=n_qubits,
         n_samples=1000,
         key=jax.random.PRNGKey(0),
-        phase_fn=phase_fn,
+        phase_fn=phase_fn # None if no phase layer is used
     )
 
 The phase layer is applied in addition to the layers defined by the gates. The order is irrelevant,
-as all gates in the diagonal layer commute.
+as all gates in the diagonal layer commute. ``n_samples`` sets the accuracy of every estimate produced from this configuration: the standard
+error of each expectation value falls off as :math:`1/\sqrt{N}`, where :math:`N` is
+``n_samples``.
 
 
 Estimating expectation values
@@ -128,7 +125,7 @@ gate parameters.
         ]
     )
 
-    expval_fn = jax.jit(build_expval_func(phase_config))
+    expval_fn = jax.jit(build_expval_func(config))
     gates_params = jax.random.uniform(jax.random.PRNGKey(2), shape=(len(gates),))
 
     w_key, r_key = jax.random.split(jax.random.PRNGKey(1))
@@ -147,6 +144,7 @@ gate parameters.
 
 Input states
 ^^^^^^^^^^^^
+
 By default the circuit starts from :math:`|0\rangle^{\otimes n}`. Any state that is sparse in the
 computational basis can be used instead, by listing its non-zero amplitudes: ``init_state_elems``
 is an ``(N, n_qubits)`` binary array of basis states, and ``init_state_amps`` the matching
@@ -225,9 +223,12 @@ function in this way.
     trained_params = result.final_params
 
 TCDQ contains a dedicated loss function for training quantum generative models. For distributions
-of bitstrings, :func:`~build_mmd_loss_pauli` can be used to train the circuit, as described in
-`Train on classical, deploy on quantum: scaling generative quantum machine learning to a thousand
-qubits <https://arxiv.org/abs/2503.02934>`_.
+of bitstrings, :func:`~build_mmd_loss_pauli` can be used to construct the maximum mean discrepancy loss function that trains the
+circuit to match a target distribution, as described in `Recio-Armengol et al. (2025) <https://arxiv.org/abs/2503.02934>`_.
+The :func:`~build_mmd_loss_pauli` constructor requires a callable with arguments ``params``, ``observables`` and ``key`` (where ``params`` is any
+pytree of trainable parameters) which returns estimates of Z-type Pauli observables specified by ``observables``. This design is
+intentionally modular in order to be compatible with other circuits and estimators beyond those here.
+
 
 .. code-block:: python
 
@@ -237,8 +238,8 @@ qubits <https://arxiv.org/abs/2503.02934>`_.
     target_data = jax.random.binomial(key, 1, p=0.5, shape=(500, n_qubits))
     mmd_config = MMDConfig(bandwidth=median_heuristic(target_data), n_ops=100)
 
-    def expval_fn_train(params, observables, init_state_elems, key):
-        amps = params["amps"] / jnp.linalg.norm(params["amps"])
+    def expval_fn_train(params, observables, key, init_state_elems):
+        amps = params["amps"] / jnp.linalg.norm(params["amps"]) # normalize the amplitudes
         result = expval_fn(
             gates_params=params["gates"],
             phase_fn_params=params["phase_fn"],
