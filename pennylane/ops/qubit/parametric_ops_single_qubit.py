@@ -32,6 +32,7 @@ import pennylane as qp
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
+    register_condition,
     register_resources,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -945,10 +946,78 @@ def _controlled_phase_shift_decomp(base, control_wires, *_, **__):
     qp.GlobalPhase(-base.phi / 2**n)
 
 
+def _mc_phase_shift_counts(num_controls):
+    """Gate counts of ``_mc_phase_shift`` for ``num_controls >= 1`` control wires."""
+    counts = {qp.ControlledPhaseShift: 2 * (num_controls - 1) + 1}
+    if num_controls >= 2:
+        counts[qp.CNOT] = 2
+    for m in range(2, num_controls):
+        counts[
+            qp.MultiControlledX(
+                wires=Wire[m + 1],
+                work_wires=Wire[1],
+            )
+        ] = 2
+    return counts
+
+
+def _mc_phase_shift(phi, controls, target):
+    """Decomposes a multi-controlled PhaseShift into polynomial gate count.
+
+    Uses the identity A * b = (A + b - (A ^ b)) / 2, where 'b' is the last
+    control and 'A' is the AND of all preceding controls.
+
+    This reduces C^k P(phi) down to:
+      1. ControlledPhaseShift(phi / 2) on [last_ctrl, target]
+      2. MCX on last_ctrl conditioned on rest (using target as borrowed ancilla)
+      3. ControlledPhaseShift(-phi / 2) on [last_ctrl, target]
+      4. MCX on last_ctrl conditioned on rest (uncomputes step 2)
+      5. Recurses on the remaining controls with phi / 2
+
+    Emits only ControlledPhaseShift, CNOT, and MultiControlledX gates.
+    """
+    controls = list(controls)
+    while len(controls) > 1:
+        *rest, last = controls
+        qp.ControlledPhaseShift(phi / 2, wires=[last, target])
+        _mcx_borrowing(rest + [last], target)
+        qp.ControlledPhaseShift(-phi / 2, wires=[last, target])
+        _mcx_borrowing(rest + [last], target)
+        controls, phi = rest, phi / 2
+    qp.ControlledPhaseShift(phi, wires=[controls[0], target])
+
+
+def _mcx_borrowing(wires, work_wire):
+    if len(wires) == 2:
+        qp.CNOT(wires=wires)
+    else:
+        qp.MultiControlledX(wires=wires, work_wires=[work_wire], work_wire_type="borrowed")
+
+
+def _controlled_phase_shift_mcx_resource(base, control_wires, *_, **__):
+    return _mc_phase_shift_counts(len(control_wires))
+
+
+def _controlled_phase_shift_mcx_condition(control_wires, **_):
+    return len(control_wires) > 1
+
+
+@register_condition(_controlled_phase_shift_mcx_condition)
+@register_resources(_controlled_phase_shift_mcx_resource)
+def _controlled_phase_shift_mcx_decomp(base, control_wires, *_, **__):
+    """Polynomial-size decomposition of a multi-controlled PhaseShift using MCX gates."""
+    target = base.wires[0]
+    _mc_phase_shift(base.phi, list(control_wires), target)
+
+
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
 add_decomps("Adjoint(PhaseShift)", adjoint_rotation2)
 add_decomps("Pow(PhaseShift)", pow_rotation2)
-add_decomps("C(PhaseShift)", flip_zero_control2(_controlled_phase_shift_decomp))
+add_decomps(
+    "C(PhaseShift)",
+    flip_zero_control2(_controlled_phase_shift_decomp),
+    flip_zero_control2(_controlled_phase_shift_mcx_decomp),
+)
 
 
 class Rot(Operator2):
