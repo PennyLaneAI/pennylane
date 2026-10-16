@@ -1105,7 +1105,10 @@
   [(#10305)](https://github.com/PennyLaneAI/pennylane/pull/10305)
   
 * A new :mod:`pennylane.testing` module collects utilities for testing code built with PennyLane.
+  - ``qp.ops.functions.assert_valid`` is now available as :func:`qp.testing.assert_valid <pennylane.testing.assert_valid>`.
+
   [(#10293)](https://github.com/PennyLaneAI/pennylane/pull/10293)
+  [(#10306)](https://github.com/PennyLaneAI/pennylane/pull/10306)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -1758,7 +1761,7 @@
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
     [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
     [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
-  - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
+  - :func:`qp.testing.assert_valid <pennylane.testing.assert_valid>` can verify that an :class:`~.Operator2` is defined properly.
     [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
     [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
     [(#9898)](https://github.com/PennyLaneAI/pennylane/pull/9898)
