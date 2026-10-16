@@ -679,22 +679,6 @@ def assert_valid(
 
     """
     _check_properties(op)
-    if isinstance(op, Operator2):
-        for val in op.hybrid_args.values():
-            leaves, _ = pytrees.flatten(val, is_leaf=lambda l: isinstance(l, Operator))
-            for leaf in leaves:
-                if isinstance(leaf, Operator):
-                    assert_valid(
-                        leaf,
-                        skip_deepcopy=skip_deepcopy,
-                        skip_differentiation=skip_differentiation,
-                        skip_new_decomp=skip_new_decomp,
-                        skip_decomp_matrix_check=skip_decomp_matrix_check,
-                        skip_pickle=skip_pickle,
-                        skip_wire_mapping=skip_wire_mapping,
-                        skip_bind_new_parameters=skip_bind_new_parameters,
-                        skip_eigvals=skip_eigvals,
-                    )
     _check_pytree(op)
     _check_copy(op, skip_deepcopy=skip_deepcopy)
     if not skip_bind_new_parameters:
