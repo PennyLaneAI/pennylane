@@ -311,12 +311,44 @@ def _adjoint_temporary_and(base):
     ops.cond(math.logical_not(cvals[1]), ops.X)(base.wires[1])
 
 
+@register_resources(
+    {
+        ops.PauliMeasure("X", Wire[1]): 1,
+        ops.PauliMeasure("Z", Wire[1]): 1,
+        ops.CZ: 1,
+        ops.X: _number_xs + 1,
+    },
+    exact=False,
+)
+def _adjoint_temporary_and_ppm(base):
+    r"""The implementation of adjoint TemporaryAND by Pauli product measurements + Pauli/Clifford
+    corrections, similar to _adjoint_temporary_and above from https://arxiv.org/abs/1805.03662."""
+    cvals = base.control_values
+    ops.cond(math.logical_not(cvals[0]), ops.X)(base.wires[0])
+    ops.cond(math.logical_not(cvals[1]), ops.X)(base.wires[1])
+
+    m_0 = ops.pauli_measure("X", base.wires[2])
+    ops.cond(m_0, ops.CZ)(wires=base.wires[:2])
+
+    # Reset aux qubit to |0>
+    m_1 = ops.pauli_measure("Z", base.wires[2])
+    ops.cond(m_1, ops.X)(base.wires[2])
+
+    ops.cond(math.logical_not(cvals[0]), ops.X)(base.wires[0])
+    ops.cond(math.logical_not(cvals[1]), ops.X)(base.wires[1])
+
+
 @register_resources({ops.Toffoli: 1, ops.X: _number_xs}, exact=False)
 def _adjoint_temporary_and_to_toffoli(base):
     _toffoli_with_cvals(base.wires, base.control_values)
 
 
-add_decomps("Adjoint(TemporaryAND)", _adjoint_temporary_and_to_toffoli, _adjoint_temporary_and)
+add_decomps(
+    "Adjoint(TemporaryAND)",
+    _adjoint_temporary_and_to_toffoli,
+    _adjoint_temporary_and_ppm,
+    _adjoint_temporary_and,
+)
 
 Elbow = TemporaryAND
 r"""Elbow(wire, control_values)

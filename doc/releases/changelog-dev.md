@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Added a decomposition of ``Adjoint(TemporaryAND)`` to PPMs (:func:`~.pauli_measure`)
+  and a :class:`~.CZ` gate, as an alternative to the existing decomposition using
+  :func:`qp.measure` with an explicit basis change.
+  [(#10310)](https://github.com/PennyLaneAI/pennylane/pull/10310)
+
 * A new function called :func:`~pennylane.backline.onnx_decoder` has been added, which runs an
   ONNX model on a Backline :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or
   on the CPU. See :func:`~pennylane.backline.onnx_decoder` for the supported providers and usage
