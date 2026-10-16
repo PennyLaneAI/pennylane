@@ -17,9 +17,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import assert_valid
 from pennylane.templates.subroutines.alias_sampling import _build_alias_tables
 from pennylane.templates.subroutines.alias_sampling_thc import _build_thc_pairs, _lcu_signs
+from pennylane.testing import assert_valid
 
 
 @pytest.mark.parametrize(

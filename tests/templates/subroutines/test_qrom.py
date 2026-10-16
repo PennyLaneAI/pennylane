@@ -24,7 +24,6 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.templates.subroutines.qrom import (
@@ -36,6 +35,7 @@ from pennylane.templates.subroutines.qrom import (
     _qrom_unary_iteration,
     _select_swap,
 )
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import Bool, Wire
 
 has_jax = True
@@ -60,7 +60,7 @@ def test_assert_valid_qrom():
     )
 
     op = qp.QROM(bitstrings, control_wires=[0, 1, 2], target_wires=[3, 4, 5], work_wires=[6, 7, 8])
-    qp.ops.functions.assert_valid(op, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_differentiation=True)
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -72,7 +72,7 @@ def test_falsy_zero_as_work_wire():
         target_wires=[3],
         work_wires=0,
     )
-    qp.ops.functions.assert_valid(op, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_differentiation=True)
 
 
 class TestQROM:

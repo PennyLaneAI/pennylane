@@ -237,7 +237,7 @@ class TestControlledInit:
     def test_standard_validity_composite_base(self, base):
         """``assert_valid`` should pass for ``Controlled`` wrapping a CompositeOp."""
         op = Controlled(base, control_wires=[3, 4, 5], work_wires=[6, 7, 8])
-        qp.ops.functions.assert_valid(op)
+        qp.testing.assert_valid(op)
 
 
 # pylint: disable=too-few-public-methods
