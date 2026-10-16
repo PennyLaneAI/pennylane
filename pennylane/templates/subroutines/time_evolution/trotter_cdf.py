@@ -14,20 +14,24 @@
 """Contains the ``TrotterCDF`` template for Compressed Double Factorization Hamiltonians."""
 
 from collections import defaultdict
+from functools import partial
 
 import numpy as np
 
 from pennylane import math
+from pennylane.allocation import allocate
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.numeric_hamiltonians import CDFHamiltonian
-from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ, PhaseShift
-from pennylane.ops.op_math import ctrl
+from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, MultiRZ, PhaseShift
+from pennylane.ops.op_math import adjoint, ctrl
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
+from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
 from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
-from pennylane.wires import WiresLike
+from pennylane.wires import Wires, WiresLike
 
 from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
 
@@ -68,6 +72,10 @@ class TrotterCDF(Operator2):
             :math:`\text{diag}(1, U)` where :math:`U = e^{-iHt}` is the Trotter evolution.
             If ``True``, it produces a cheaper :math:`\text{diag}(U, U^\dagger)` instead, leading to the
             double phase trick for Hadamard test circuits (see `Fig. 6 <https://arxiv.org/abs/2506.15784>`__ and Usage Details below).
+        work_wires (Wires): Optional zeroed work wires for the spin-symmetric decomposition rule
+            (see Usage Details below), which needs one work wire (two for a genuine controlled
+            evolution). Missing work wires are allocated dynamically with
+            :func:`~pennylane.allocate`. Work wires are not part of ``op.wires``.
 
     **Example**
 
@@ -139,6 +147,35 @@ class TrotterCDF(Operator2):
         This is not a true controlled operation, but can be used to reduce the cost in Hadamard test circuits instead of the controlled evolution.
         The two circuits above are not equal as unitaries; only the relative phase between the
         control-0 and control-1 branches -- which is what the Hadamard test reads out -- agrees.
+
+        Two decomposition rules are registered for the double-phase circuit. The first one shares
+        a single ``CNOT`` sandwich across all two-body ``IsingZZ`` rotations of a given wire (as
+        drawn above). The second one, ``_controlled_trotter_cdf_multirz_decomp``, absorbs the
+        sandwich into the rotations, ``CNOT(c, w0) IsingZZ(w0, w1) CNOT(c, w0) = MultiRZ(c, w0, w1)``,
+        so that every two-body term is a single three-wire :class:`~.MultiRZ` and no ``CNOT`` is
+        emitted. The latter is cheaper whenever a rotation's cost does not depend on its weight,
+        e.g. in Pauli-based compilation where :class:`~.MultiRZ` is realized with Pauli product
+        measurements; the graph-based decomposition system
+        (:func:`~pennylane.decomposition.enable_graph`) chooses between the two by cost, and
+        either rule can be pinned with ``fixed_decomps``.
+
+        **Spin-symmetric two-body layer.** Both spin-orbitals of an orbital share its leaf, so
+        the four wire pairs of two orbitals :math:`p \neq q` carry the same coupling
+        :math:`\lambda_{pq}` and their two-body terms combine to
+        :math:`e^{-i \lambda_{pq} \tau (Z_{p\alpha} + Z_{p\beta})(Z_{q\alpha} + Z_{q\beta}) / 4}`. After
+        ``CNOT(pα, pβ)`` on every orbital, :math:`Z_{p\alpha} + Z_{p\beta}` becomes
+        :math:`2 Z_{p\alpha} |0\rangle\langle 0|_{p\beta}`, so the four rotations of a pair are a single
+        :class:`~.CRZ` with angle :math:`2\lambda_{pq}\tau` on the parity :math:`Z_{p\alpha}Z_{q\alpha}`,
+        controlled on the logical AND of the two :math:`\beta` parity bits, which a
+        :class:`~.TemporaryAND` computes into a zeroed work wire. The diagonal terms
+        :math:`p = q` are an ``RZ`` on the :math:`\beta` wire. A fragment therefore needs
+        :math:`N(N+1)/2` arbitrary-angle rotations instead of :math:`N(2N-1)`, plus
+        :math:`N(N-1)/2` ``TemporaryAND`` pairs and :math:`N(N+1)` ``CNOT`` gates. This is realized
+        by the additional rules ``_trotter_cdf_spin_symmetric_decomposition`` (base operator) and
+        ``_controlled_trotter_cdf_spin_symmetric_decomp`` (single control, both double-phase and
+        genuine control, the latter folding the control into a second ``TemporaryAND``). It pays
+        off whenever a controlled rotation is about as expensive as an uncontrolled one, as for
+        phase-gradient synthesis, and uses the ``work_wires`` argument when given.
 
     .. details ::
         :title: Implementation Details
@@ -277,6 +314,7 @@ class TrotterCDF(Operator2):
 
     dynamic_argnames = ("evolution_time",)
     hybrid_argnames = ("hamiltonian",)
+    wire_argnames = ("wires", "work_wires")
     # `hybrid_argnames` and `compilable_argnames` cannot both be non-empty on the same
     # operator, so `num_trotter_steps` (a plain Python int that drives Python-level
     # control flow) is treated as `static_argnames` instead.
@@ -292,6 +330,7 @@ class TrotterCDF(Operator2):
         hamiltonian: CDFHamiltonian,
         wires: WiresLike | AbstractWires,
         double_phase=False,
+        work_wires: WiresLike | AbstractWires | None = None,
     ):
         # ``hamiltonian`` is a hybrid argument: its array-like leaves must be arrays (or scalars)
         # to be captured and lowered correctly. Cast only list/tuple inputs, leaving array inputs
@@ -313,7 +352,15 @@ class TrotterCDF(Operator2):
                 f"leaf_tensors.ndim == 3. Got core_tensors.ndim={Z.ndim}, "
                 f"leaf_tensors.ndim={U.ndim}. For vibrational (CGF) Hamiltonians, use TrotterCGF."
             )
-        super().__init__(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase)
+        work_wires = Wires([] if work_wires is None else work_wires)
+        super().__init__(
+            evolution_time,
+            num_trotter_steps,
+            hamiltonian,
+            wires,
+            double_phase,
+            work_wires=work_wires,
+        )
 
 
 def _apply_system_basis_rotation(U, wires):
@@ -333,7 +380,9 @@ def _transpose_leaf(U):
     return U.conj().T
 
 
-def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, double_phase):
+def _apply_two_body_diagonal(
+    Z, wires, first_order_time_step, control_wires, double_phase, merge_control=False
+):
     r"""Apply the two-body ``IsingZZ`` layer (base / double-phase / genuine controlled).
 
     Genuine control and double-phase are mutually exclusive constructions for a controlled
@@ -341,6 +390,13 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
     ``ctrl(IsingZZ(...))`` on each term; double-phase instead shares *one* ``CNOT`` sandwich
     across every term touching a given ``wire_idx0``, which is cheaper since ``IsingZZ`` itself
     stays uncontrolled either way.
+
+    With ``merge_control=True`` (double-phase only), the ``CNOT`` sandwich is absorbed into the
+    rotations: ``CNOT(c, w0) IsingZZ(w0, w1) CNOT(c, w0) = MultiRZ(c, w0, w1)``, so every term
+    becomes a single three-wire ``MultiRZ`` (a weight-three Pauli product rotation) and no
+    ``CNOT`` is emitted at all. This trades two ``CNOT`` gates per ``wire_idx0`` for a heavier
+    rotation on every term, which pays off whenever a rotation's cost does not grow with its
+    weight, e.g. for Pauli-based compilation.
     """
     num_cas = Z.shape[0]
 
@@ -357,7 +413,17 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
         return 0.5 * Z[wire_idx0 // 2, wire_idx1 // 2] * first_order_time_step
 
     def zz_rotations(wire_idx0):
-        if double_phase:
+        if double_phase and merge_control:
+
+            @for_loop(wire_idx0 + 1, 2 * num_cas)
+            def _zzz_rotations(wire_idx1):
+                MultiRZ(
+                    _angle(wire_idx0, wire_idx1),
+                    [control_wires[0], wires[wire_idx0], wires[wire_idx1]],
+                )
+
+            _zzz_rotations()
+        elif double_phase:
 
             @for_loop(wire_idx0 + 1, 2 * num_cas)
             def _zz_rotations(wire_idx1):
@@ -381,6 +447,66 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
 
     for wire_idx0 in range(2 * num_cas - 1):
         zz_rotations(wire_idx0)
+
+
+def _apply_two_body_diagonal_spin_symmetric(
+    Z, wires, first_order_time_step, control_wires, double_phase, work_wires
+):
+    r"""Spin-symmetric two-body layer (base / double-phase / genuine controlled).
+
+    Exploits that the two spin-orbitals of an orbital share the coupling: for orbitals
+    :math:`p < q` with wires ``a, b = 2p, 2p + 1`` and ``c, d = 2q, 2q + 1``, the four ``IsingZZ``
+    terms are :math:`e^{-i \lambda\tau (Z_a + Z_b)(Z_c + Z_d)/4}`. In the parity frame
+    ``CNOT(a, b)``, ``CNOT(c, d)`` this is :math:`e^{-i \lambda\tau Z_a Z_c n_e}` with
+    :math:`n_e = |0\rangle\langle 0|_b |0\rangle\langle 0|_d` the AND of the two (flipped) parity bits,
+    computed by a ``TemporaryAND`` into ``work_wires[0]``. With ``CNOT(a, c)`` putting the parity
+    of ``a, c`` on ``c``, the whole term is one ``CRZ(2 lambda tau)`` controlled on the work wire.
+    The diagonal terms :math:`p = q` reduce to a single ``RZ`` on the :math:`\beta` wire.
+
+    The double-phase control sandwiches the ``CRZ`` target with ``CNOT``\ s from the control
+    wire, the genuine control is folded into a second ``TemporaryAND`` on ``work_wires[1]``.
+    """
+    num_cas = Z.shape[0]
+    genuine_control = len(control_wires) > 0 and not double_phase
+    aux = work_wires[0]
+
+    @for_loop(num_cas)
+    def _parity_frame(orb_idx):
+        CNOT([wires[2 * orb_idx], wires[2 * orb_idx + 1]])
+
+    @for_loop(num_cas)
+    def _diagonal_terms(orb_idx):
+        # exp(-i lambda_pp tau/4 Z_a Z_b) = RZ(lambda_pp tau / 2) on the parity wire b, i.e. the
+        # same angle as the IsingZZ(a, b) it replaces (see ``_angle`` in _apply_two_body_diagonal).
+        angle = 0.5 * Z[orb_idx, orb_idx] * first_order_time_step
+        _emit_one_body_rz(angle, wires[2 * orb_idx + 1], control_wires, double_phase)
+
+    def _pair_rotation(orb_idx0, orb_idx1):
+        a, b = wires[2 * orb_idx0], wires[2 * orb_idx0 + 1]
+        c, d = wires[2 * orb_idx1], wires[2 * orb_idx1 + 1]
+        # CRZ(phi) = exp(-i phi/2 Z_target n_control) with phi/2 = lambda tau, i.e. four times
+        # the IsingZZ angle 0.5 * lambda * tau of the terms it replaces.
+        phi = 2.0 * Z[orb_idx0, orb_idx1] * first_order_time_step
+        TemporaryAND([b, d, aux], control_values=(0, 0))
+        CNOT([a, c])
+        if genuine_control:
+            TemporaryAND([aux, control_wires[0], work_wires[1]])
+            CRZ(phi, [work_wires[1], c])
+            adjoint(TemporaryAND([aux, control_wires[0], work_wires[1]]))
+        elif double_phase:
+            CNOT([control_wires[0], c])
+            CRZ(phi, [aux, c])
+            CNOT([control_wires[0], c])
+        else:
+            CRZ(phi, [aux, c])
+        CNOT([a, c])
+        adjoint(TemporaryAND([b, d, aux], control_values=(0, 0)))
+
+    _parity_frame()
+    _diagonal_terms()
+    for orb_idx0 in range(num_cas - 1):
+        for_loop(orb_idx0 + 1, num_cas)(partial(_pair_rotation, orb_idx0))()
+    _parity_frame()
 
 
 def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_wires, double_phase):
@@ -435,8 +561,43 @@ _CDF_HELPERS = {
     "transpose_leaf": _transpose_leaf,
 }
 
+# Double-phase variant that merges the control-wire CNOT sandwich into three-wire MultiRZ gates.
+_CDF_HELPERS_MULTIRZ = {
+    **_CDF_HELPERS,
+    "apply_two_body_diagonal": partial(_apply_two_body_diagonal, merge_control=True),
+}
 
-def _cdf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_phase=False):
+
+def _cdf_helpers_spin_symmetric(work_wires):
+    """Helpers with the spin-symmetric two-body layer using the given zeroed work wires."""
+    return {
+        **_CDF_HELPERS,
+        "apply_two_body_diagonal": partial(
+            _apply_two_body_diagonal_spin_symmetric, work_wires=work_wires
+        ),
+    }
+
+
+def _num_spin_symmetric_work_wires(has_control, double_phase):
+    """Zeroed work wires of the spin-symmetric layer: the AND of two parity bits, plus its AND
+    with the control wire for a genuine controlled evolution."""
+    return 2 if has_control and not double_phase else 1
+
+
+def _with_zeroed_work_wires(num_needed, work_wires, body):
+    """Run ``body(work_wires)`` with at least ``num_needed`` zeroed work wires, allocating the
+    missing ones."""
+    num_missing = num_needed - len(work_wires)
+    if num_missing <= 0:
+        body(work_wires)
+        return
+    with allocate(num_missing, state="zero", restored=True) as extra_wires:
+        body(list(work_wires) + list(extra_wires))
+
+
+def _cdf_resource_counts(
+    num_trotter_steps, hamiltonian, has_control, double_phase=False, merge_control=False
+):
     """Shared (upper-bound) gate counts for the base and controlled CDF circuits.
 
     The exact gate count can be lower at runtime because fragments whose basis rotation
@@ -466,6 +627,13 @@ def _cdf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
         resources[IsingZZ] += num_twobody_rotations
         resources[RZ] += num_onebody_rotations
         resources[GlobalPhase] += 1
+    elif double_phase and merge_control:
+        # Double-phase with the CNOT sandwich merged into the rotations: every two-body term is a
+        # three-wire ``MultiRZ`` (control, w0, w1), the one-body terms stay ``IsingZZ`` (control,
+        # w), plus an RZ on the control wire for the global phase. No CNOT is emitted.
+        resources[MultiRZ(Float, wires=Wire[3])] += num_twobody_rotations
+        resources[IsingZZ] += num_onebody_rotations
+        resources[RZ] += 1
     elif double_phase:
         # Double-phase (Fig. 6 in https://arxiv.org/abs/2506.15784): ``IsingZZ`` on every diagonal
         # term (one- and two-body), plus one CNOT pair around each *two-body* block, plus an RZ on
@@ -483,12 +651,64 @@ def _cdf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
     return dict(resources)
 
 
-def _trotter_cdf_resources(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
+def _cdf_spin_symmetric_resource_counts(
+    num_trotter_steps, hamiltonian, has_control, double_phase=False
+):
+    """Shared (upper-bound) gate counts of the spin-symmetric rules, see ``_cdf_resource_counts``
+    for the conventions. Per two-body block: ``2N`` parity-frame ``CNOT``s, ``N`` diagonal
+    rotations and, for each of the ``N(N-1)/2`` orbital pairs, a ``TemporaryAND`` pair, two
+    parity ``CNOT``s and one ``CRZ`` (plus two ``CNOT``s for double-phase, or a second
+    ``TemporaryAND`` pair for genuine control)."""
+    if num_trotter_steps <= 0:
+        return {}
+
+    leaf_tensors = hamiltonian.leaf_tensors
+    num_two_body_fragments = leaf_tensors.shape[0] - 1
+    num_cas = leaf_tensors.shape[-1]
+    num_pairs = num_cas * (num_cas - 1) // 2
+
+    resources = defaultdict(int)
+    num_sysrot_calls = 2 * num_two_body_fragments * num_trotter_steps + 2
+    num_twobody_blocks = (2 * num_two_body_fragments - 1) * num_trotter_steps + 1
+    num_diagonal_rotations = num_twobody_blocks * num_cas + num_trotter_steps * 2 * num_cas
+
+    dtype_leaf, _ = math.get_abstract_and_cast_dtype(leaf_tensors)
+    sysrot_key = BasisRotation(dtype_leaf[num_cas, num_cas], wires=Wire[num_cas])
+    resources[sysrot_key] += 2 * num_sysrot_calls
+
+    resources[CNOT] += num_twobody_blocks * (2 * num_cas + 2 * num_pairs)
+    resources[TemporaryAND] += num_twobody_blocks * num_pairs
+    resources[_adjoint_abstract(TemporaryAND)] += num_twobody_blocks * num_pairs
+    resources[CRZ] += num_twobody_blocks * num_pairs
+
+    if not has_control:
+        resources[RZ] += num_diagonal_rotations
+        resources[GlobalPhase] += 1
+    elif double_phase:
+        resources[CNOT] += num_twobody_blocks * 2 * num_pairs
+        resources[IsingZZ] += num_diagonal_rotations
+        resources[RZ] += 1
+    else:
+        resources[TemporaryAND] += num_twobody_blocks * num_pairs
+        resources[_adjoint_abstract(TemporaryAND)] += num_twobody_blocks * num_pairs
+        # ``ctrl(RZ)`` on a single control dispatches to ``CRZ``, the same key as the pair rotations
+        resources[CRZ] += num_diagonal_rotations
+        resources[PhaseShift] += 1
+
+    return dict(resources)
+
+
+# pylint: disable=unused-argument
+def _trotter_cdf_resources(
+    evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, work_wires=()
+):
     return _cdf_resource_counts(num_trotter_steps, hamiltonian, has_control=False)
 
 
 @register_resources(_trotter_cdf_resources, exact=False)
-def _trotter_cdf_decomposition(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
+def _trotter_cdf_decomposition(
+    evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, work_wires=()
+):
     # ``double_phase`` only affects the controlled decomposition; the base operator is
     # always the plain (uncontrolled) e^{-iHt} circuit.
     if num_trotter_steps > 0:
@@ -504,7 +724,49 @@ def _trotter_cdf_decomposition(evolution_time, num_trotter_steps, hamiltonian, w
         GlobalPhase(phi)
 
 
-add_decomps(TrotterCDF, _trotter_cdf_decomposition)
+# pylint: disable=unused-argument
+def _trotter_cdf_spin_symmetric_resources(
+    evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, work_wires=()
+):
+    return _cdf_spin_symmetric_resource_counts(num_trotter_steps, hamiltonian, has_control=False)
+
+
+# pylint: disable=unused-argument
+def _trotter_cdf_spin_symmetric_work_wires(
+    evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, work_wires=()
+):
+    return {"zeroed": max(_num_spin_symmetric_work_wires(False, double_phase) - len(work_wires), 0)}
+
+
+@register_resources(
+    _trotter_cdf_spin_symmetric_resources,
+    work_wires=_trotter_cdf_spin_symmetric_work_wires,
+    exact=False,
+)
+def _trotter_cdf_spin_symmetric_decomposition(
+    evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, work_wires=()
+):
+    """The base circuit with the spin-symmetric two-body layer, see
+    ``_apply_two_body_diagonal_spin_symmetric``."""
+    if num_trotter_steps <= 0:
+        return
+
+    def _body(zeroed_work_wires):
+        _run_trotter_steps(
+            evolution_time,
+            num_trotter_steps,
+            hamiltonian.normalize_leaf_determinant(),
+            wires,
+            (),
+            **_cdf_helpers_spin_symmetric(zeroed_work_wires),
+        )
+
+    _with_zeroed_work_wires(_num_spin_symmetric_work_wires(False, double_phase), work_wires, _body)
+    phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
+    GlobalPhase(phi)
+
+
+add_decomps(TrotterCDF, _trotter_cdf_decomposition, _trotter_cdf_spin_symmetric_decomposition)
 
 
 def _controlled_trotter_cdf_resource(
@@ -518,9 +780,8 @@ def _controlled_trotter_cdf_resource(
     )
 
 
-@register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
-@register_resources(_controlled_trotter_cdf_resource, exact=False)
-def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_trotter_cdf_body(base, control_wires, helpers):
+    """Emit the single-control ``C(TrotterCDF)`` circuit with the given scheme helpers."""
     evolution_time = base.arguments["evolution_time"]
     num_trotter_steps = base.arguments["num_trotter_steps"]
     hamiltonian = base.arguments["hamiltonian"]
@@ -547,7 +808,7 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
             wires,
             control_wires,
             True,
-            **_CDF_HELPERS,
+            **helpers,
         )
         RZ(2 * phi, control_wires)
         return
@@ -562,9 +823,93 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
         wires,
         control_wires,
         False,
-        **_CDF_HELPERS,
+        **helpers,
     )
     PhaseShift(-phi, control_wires)
 
 
-add_decomps("C(TrotterCDF)", flip_zero_control2(_controlled_trotter_cdf_decomp))
+@register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
+@register_resources(_controlled_trotter_cdf_resource, exact=False)
+def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+    """Genuine control, or the double-phase circuit with a ``CNOT`` sandwich per two-body row."""
+    _controlled_trotter_cdf_body(base, control_wires, _CDF_HELPERS)
+
+
+def _controlled_trotter_cdf_multirz_resource(
+    base, control_wires, control_values, work_wires, work_wire_type
+):
+    return _cdf_resource_counts(
+        base.arguments["num_trotter_steps"],
+        base.arguments["hamiltonian"],
+        has_control=True,
+        double_phase=True,
+        merge_control=True,
+    )
+
+
+@register_condition(
+    lambda base, control_wires, *_, **__: len(control_wires) == 1 and base.arguments["double_phase"]
+)
+@register_resources(_controlled_trotter_cdf_multirz_resource, exact=False)
+def _controlled_trotter_cdf_multirz_decomp(
+    base, control_wires, control_values, work_wires, work_wire_type
+):
+    """Double-phase circuit with the ``CNOT`` sandwich merged into three-wire ``MultiRZ`` gates.
+
+    ``CNOT(c, w0) IsingZZ(w0, w1) CNOT(c, w0) = MultiRZ(c, w0, w1)``, so the two-body layer is a
+    product of weight-three Pauli product rotations and contains no ``CNOT``. This is the cheaper
+    variant whenever rotations cost the same regardless of their weight, as in Pauli-based
+    compilation, and the more expensive one for ``CNOT``-counting gate sets; the graph-based
+    decomposition system picks between the two rules by cost.
+    """
+    _controlled_trotter_cdf_body(base, control_wires, _CDF_HELPERS_MULTIRZ)
+
+
+def _controlled_trotter_cdf_spin_symmetric_resource(
+    base, control_wires, control_values, work_wires, work_wire_type
+):
+    return _cdf_spin_symmetric_resource_counts(
+        base.arguments["num_trotter_steps"],
+        base.arguments["hamiltonian"],
+        has_control=True,
+        double_phase=base.arguments["double_phase"],
+    )
+
+
+def _controlled_trotter_cdf_spin_symmetric_work_wires(
+    base, control_wires, control_values, work_wires, work_wire_type
+):
+    num_needed = _num_spin_symmetric_work_wires(True, base.arguments["double_phase"])
+    return {"zeroed": max(num_needed - len(base.arguments["work_wires"]), 0)}
+
+
+@register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
+@register_resources(
+    _controlled_trotter_cdf_spin_symmetric_resource,
+    work_wires=_controlled_trotter_cdf_spin_symmetric_work_wires,
+    exact=False,
+)
+def _controlled_trotter_cdf_spin_symmetric_decomp(
+    base, control_wires, control_values, work_wires, work_wire_type
+):
+    """Genuine control or double-phase circuit with the spin-symmetric two-body layer, see
+    ``_apply_two_body_diagonal_spin_symmetric``. Uses the operator's own ``work_wires`` and
+    allocates the missing zeroed work wires."""
+    if base.arguments["num_trotter_steps"] == 0:
+        return
+
+    def _body(zeroed_work_wires):
+        _controlled_trotter_cdf_body(
+            base, control_wires, _cdf_helpers_spin_symmetric(zeroed_work_wires)
+        )
+
+    num_needed = _num_spin_symmetric_work_wires(True, base.arguments["double_phase"])
+    _with_zeroed_work_wires(num_needed, base.arguments["work_wires"], _body)
+
+
+add_decomps(
+    "C(TrotterCDF)",
+    flip_zero_control2(_controlled_trotter_cdf_decomp),
+    flip_zero_control2(_controlled_trotter_cdf_multirz_decomp),
+    flip_zero_control2(_controlled_trotter_cdf_spin_symmetric_decomp),
+)
