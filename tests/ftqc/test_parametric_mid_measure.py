@@ -945,7 +945,6 @@ class TestWorkflows:
             array_fn = np.array
 
         if mcm_method == "tree-traversal" and use_jit:
-            # https://docs.pennylane.ai/en/stable/introduction/dynamic_quantum_circuits.html#tree-traversal-algorithm
             pytest.skip("TT & jax.jit are incompatible")
 
         dev = qp.device("default.qubit")

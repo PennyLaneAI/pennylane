@@ -450,16 +450,16 @@ i.e., compatibility with ``qp.qjit``. For more details, see `Custom Devices <htt
 Mid Circuit Measurements
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-PennyLane supports :ref:`mid-circuit measurements <mid_circuit_measurements>`, i.e., measurements
+PennyLane supports mid-circuit measurements (see :func:`~.measure`), i.e., measurements
 in the middle of a quantum circuit used to shape the structure of the circuit dynamically, and to
 gather information about the quantum state during the circuit execution. This might not be natively
 supported by all devices.
 
-If your device does not support mid-circuit measurements, the :ref:`deferred measurements <deferred_measurements>`
+If your device does not support mid-circuit measurements, the :func:`deferred measurements <~.defer_measurements>`
 method will be applied. On the other hand, if your device is able to evaluate dynamic circuits by
 executing them one shot at a time, sampling a dynamic execution path for each shot, you should
 include ``"one-shot"`` as one of the ``supported_mcm_methods`` in your configuration file. When the
-``"one-shot"`` method is requested on the ``QNode``, the :ref:`dynamic one-shot <one_shot_transform>`
+``"one-shot"`` method is requested on the ``QNode``, the :func:`dynamic one-shot <~.dynamic_one_shot>`
 method will be applied.
 
 Both methods mentioned above involve compile pipelines to be applied on the circuits that prepare

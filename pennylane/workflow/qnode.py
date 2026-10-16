@@ -284,8 +284,7 @@ class QNode:
         postselect_mode (str | None): Configuration for handling shots with mid-circuit measurement postselection. If
             ``"hw-like"``, invalid shots will be discarded and only results for valid shots will be returned.
             If ``"fill-shots"``, results corresponding to the original number of shots will be returned. The
-            default is ``None``, in which case the device will automatically choose the best configuration. For
-            usage details, please refer to the :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
+            default is ``None``, in which case the device will automatically choose the best configuration.
         mcm_method (str | None): The strategy for applying mid-circuit measurements.
             Available methods include ``"deferred"`` (to use the deferred
             measurement principle), ``"one-shot"`` (to execute the circuit
@@ -293,7 +292,6 @@ class QNode:
             ``"tree-traversal"`` (visits the tree of possible MCM sequences,
             only supported on ``default.qubit`` and ``lightning.qubit``).
             If not provided, the device will select the method automatically.
-            For usage details, refer to the :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
         gradient_kwargs (dict): A dictionary of keyword arguments that are passed to the differentiation
             method. Please refer to the :mod:`qp.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
