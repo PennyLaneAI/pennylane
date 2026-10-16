@@ -20,7 +20,6 @@ This module contains functions that act on operators and tapes.
     :toctree: api
 
     ~ops.functions.bind_new_parameters
-    ~ops.functions.assert_valid
     ~dot
     ~eigvals
     ~equal
