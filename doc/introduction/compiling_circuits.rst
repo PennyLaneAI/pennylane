@@ -24,14 +24,24 @@ PennyLane2 includes a variety of quantum circuit transforms:
 
     ~pennylane.decompose
     ~pennylane.transforms.gridsynth
-    ~pennylane.transforms.merge_amplitude_embedding
+    ~pennylane.transforms.clifford_t_decomposition
+    ~pennylane.transforms.parity_synth
+
+
     ~pennylane.transforms.merge_rotations
-    ~pennylane.transforms.pattern_matching
-    ~pennylane.transforms.remove_barrier
-    ~pennylane.transforms.single_qubit_fusion
-    ~pennylane.transforms.undo_swaps
-    ~pennylane.transforms.decompose
+    ~pennylane.transforms.cancel_inverses
     ~pennylane.transforms.combine_global_phases
+    ~pennylane.transforms.disentangle_cnot
+    ~pennylane.transforms.disentangle_swap
+    ~pennylane.transforms.combine_global_phases
+
+    ~transforms.to_ppr
+    ~transforms.ppm_compilation
+    ~transforms.ppr_to_ppm
+    ~transforms.merge_ppr_ppm
+    ~transforms.reduce_t_depth
+    ~transforms.commute_ppr
+    ~transforms.decompose_arbitrary_ppr
 
 :html:`</div>`
 
