@@ -17,7 +17,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import assert_valid
 from pennylane.templates.subroutines import SelectTHC, select_thc_wires
 from pennylane.templates.subroutines.select_thc import (
     _angle_batches,
@@ -26,6 +25,7 @@ from pennylane.templates.subroutines.select_thc import (
     _cascade_angles,
     _select_half,
 )
+from pennylane.testing import assert_valid
 from pennylane.typing import AbstractWires
 
 

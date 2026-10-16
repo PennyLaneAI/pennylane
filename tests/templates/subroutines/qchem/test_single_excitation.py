@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -28,7 +28,7 @@ def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
     weight = np.pi / 3
     op = qp.FermionicSingleExcitation(weight, wires=[0, 1, 2])
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestDecomposition:
