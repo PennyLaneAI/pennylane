@@ -22,7 +22,7 @@ import pytest
 from numpy.linalg import matrix_power
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 class TestGQSP:
@@ -43,7 +43,7 @@ class TestGQSP:
         angles = np.ones([3, 5])
 
         op = qp.GQSP(unitary, angles, control=(0,), shift=shift)
-        qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_bind_new_parameters=True)
+        qp.testing.assert_valid(op, skip_differentiation=True, skip_bind_new_parameters=True)
 
     @pytest.mark.parametrize(
         "angles",

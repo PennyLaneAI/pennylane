@@ -77,7 +77,7 @@ class TestAllocateOp:
     def test_valid_operation(self):
         """Test that Allocate is a valid Operator."""
         op = Allocate.from_num_wires(3)
-        qp.ops.functions.assert_valid(op)
+        qp.testing.assert_valid(op)
 
     def test_allocate_from_num_wires(self):
         """Test that the op can be instantiated with from_num_wires"""
@@ -126,7 +126,7 @@ def test_Deallocate_validity():
     wires = [DynamicWire(), DynamicWire()]
     op = Deallocate(wires)
     assert op.wires == qp.wires.Wires(wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_error_bad_state():
