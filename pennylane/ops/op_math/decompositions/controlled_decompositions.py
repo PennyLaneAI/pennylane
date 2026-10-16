@@ -822,14 +822,16 @@ def _decompose_mcx_no_worker_resource(wires, *_, **__):
     } | mcx_reps
 
 
-def _mcx_no_worker_condition(wires, control_values, work_wires=(), *_, **__):
-    # With one or more work wires, the one-worker / two-worker rules always apply
-    # and are cheaper.
+# pylint: disable-next=unused-argument
+def _mcx_no_worker_condition(wires, control_values, work_wires, **_):
+    # With work wires present, one of the one-, two- or many-worker rules always applies, which
+    # matches ``MultiControlledX.compute_decomposition``. Offering this rule as well pulls
+    # ``C(GlobalPhase)`` and ``C(PhaseShift)`` with every number of controls into the
+    # decomposition graph, and ``qjit(capture=True)`` traces and compiles all of them.
     return len(wires) > 3 and len(work_wires) == 0
 
 
 @register_condition(_mcx_no_worker_condition)
-@register_condition(lambda wires, *_, **__: len(wires) > 3)
 @register_resources(_decompose_mcx_no_worker_resource, exact=False)
 def decompose_mcx_with_no_worker(wires, control_values, *_, **__):
     """Use ctrl_decomp_bisect_md to decompose a multi-controlled X gate with no work wires."""

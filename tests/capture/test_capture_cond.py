@@ -24,6 +24,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import Operator
 from pennylane.exceptions import ConditionalTransformError
 from pennylane.ops.op_math.condition import CondCallable
 
@@ -524,6 +525,219 @@ class TestCondReturns:
         false_fn = jaxpr.eqns[0].params["jaxpr_branches"][-1]
         assert len(false_fn.eqns) == 0
         assert len(false_fn.outvars) == 0
+
+
+class TestCondOperatorInstances:
+    """Tests for passing Operator instances as qp.cond branches under capture."""
+
+    def test_true_and_false_operator_instances(self):
+        """Test that Operator2 instances can be used as true and false branches."""
+
+        def f(pred):
+            qp.cond(pred, qp.X(0), qp.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(True)
+        assert len(jaxpr.eqns) == 1
+        assert jaxpr.eqns[0].primitive == cond_prim
+        assert jaxpr.eqns[0].outvars == []
+
+        true_branch, false_branch = jaxpr.eqns[0].params["jaxpr_branches"]
+        assert_eqn_matches_op(true_branch.eqns[0], qp.X)
+        assert_eqn_matches_op(false_branch.eqns[0], qp.Z)
+        assert true_branch.outvars == []
+        assert false_branch.outvars == []
+
+    def test_true_operator_instance_no_false_fn(self):
+        """Test a true Operator2 branch with no false branch."""
+
+        def f(pred):
+            qp.cond(pred, qp.X(0))
+
+        jaxpr = jax.make_jaxpr(f)(True)
+        assert jaxpr.eqns[0].primitive == cond_prim
+
+        true_branch, false_branch = jaxpr.eqns[0].params["jaxpr_branches"]
+        assert_eqn_matches_op(true_branch.eqns[0], qp.X)
+        assert len(false_branch.eqns) == 0
+        assert false_branch.outvars == []
+
+    @pytest.mark.parametrize(
+        "elifs_factory",
+        [
+            lambda p2: (p2, qp.Y(0)),
+            lambda p2: ((p2, qp.Y(0)),),
+        ],
+        ids=["flat", "nested"],
+    )
+    def test_elif_operator_instances(self, elifs_factory):
+        """Test Operator2 instances in elif branches (flat and nested elifs forms)."""
+
+        def f(pred, pred2):
+            qp.cond(pred, qp.X(0), qp.Z(0), elifs=elifs_factory(pred2))
+
+        jaxpr = jax.make_jaxpr(f)(True, False)
+        assert jaxpr.eqns[0].primitive == cond_prim
+
+        true_branch, elif_branch, false_branch = jaxpr.eqns[0].params["jaxpr_branches"]
+        assert_eqn_matches_op(true_branch.eqns[0], qp.X)
+        assert_eqn_matches_op(elif_branch.eqns[0], qp.Y)
+        assert_eqn_matches_op(false_branch.eqns[0], qp.Z)
+
+    def test_parametric_operator_instances(self):
+        """Test parametric Operator2 instances as cond branches."""
+
+        def f(pred, x):
+            qp.cond(pred, qp.RX(x, 0), qp.RY(x, 0))
+
+        jaxpr = jax.make_jaxpr(f)(True, 0.5)
+        assert jaxpr.eqns[0].primitive == cond_prim
+
+        true_branch, false_branch = jaxpr.eqns[0].params["jaxpr_branches"]
+        assert_eqn_matches_op(true_branch.eqns[0], qp.RX)
+        assert_eqn_matches_op(false_branch.eqns[0], qp.RY)
+
+    def test_mixed_operator_and_callable_raises(self):
+        """Test that mixing Operator2 branches with callables raises."""
+
+        def f(pred):
+            qp.cond(pred, qp.X(0), lambda: qp.Z(0))
+
+        with pytest.raises(ValueError, match="all other branches must be Operator2 or None"):
+            jax.make_jaxpr(f)(True)
+
+    def test_operator1_instance_raises(self):
+        """Test that Operator1 instances are rejected as cond branches."""
+
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+            """Legacy Operator1-style operator."""
+
+        old_op = OldOp(wires=0)
+
+        def f(pred):
+            qp.cond(pred, old_op, qp.Z(0))
+
+        with pytest.raises(ValueError, match="Got Operator1 input"):
+            jax.make_jaxpr(f)(True)
+
+    def test_operator1_false_fn_created_during_tracing_raises(self):
+        """Test that Operator1 instances created during tracing are rejected."""
+
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+            """Legacy Operator1-style operator."""
+
+        def f(pred):
+            # true_fn must be Operator2 so we enter operator-input handling;
+            # OldOp becomes an AbstractOperator tracer under capture.
+            qp.cond(pred, qp.X(0), OldOp(wires=0))
+
+        with pytest.raises(ValueError, match="Got Operator1 AbstractOperator"):
+            jax.make_jaxpr(f)(True)
+
+    def test_operator1_true_fn_created_during_tracing_raises(self):
+        """Test that an Operator1 true_fn created during tracing is rejected."""
+
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+            """Legacy Operator1-style operator."""
+
+        def f(pred):
+            qp.cond(pred, OldOp(wires=0), lambda: None)
+
+        with pytest.raises(ValueError, match="Operator1 instances cannot be provided as true_fn"):
+            jax.make_jaxpr(f)(True)
+
+    def test_callable_true_fn_with_operator_false_fn_raises(self):
+        """Test that an Operator false_fn is rejected with a callable true_fn."""
+
+        def f(pred):
+            qp.cond(pred, lambda: None, qp.Z(0))
+
+        with pytest.raises(
+            ValueError,
+            match="Cannot provide an Operator as false_fn if true_fn is a callable",
+        ):
+            jax.make_jaxpr(f)(True)
+
+    def test_callable_true_fn_with_operator_elif_raises(self):
+        """Test that an Operator elif is rejected with a callable true_fn."""
+
+        def f(pred):
+            qp.cond(pred, lambda: None, lambda: None, elifs=((False, qp.Y(0)),))
+
+        with pytest.raises(
+            ValueError,
+            match="Cannot provide an Operator as elif_fn if true_fn is a callable",
+        ):
+            jax.make_jaxpr(f)(True)
+
+    def test_callable_true_fn_with_operator1_false_fn_tracer_raises(self):
+        """Test that an Operator1 false_fn created during tracing is rejected."""
+
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+            """Legacy Operator1-style operator."""
+
+        def f(pred):
+            qp.cond(pred, lambda: None, OldOp(wires=0))
+
+        with pytest.raises(
+            ValueError,
+            match="Cannot provide an Operator as false_fn if true_fn is a callable",
+        ):
+            jax.make_jaxpr(f)(True)
+
+    def test_callable_true_fn_with_operator1_elif_tracer_raises(self):
+        """Test that an Operator1 elif created during tracing is rejected."""
+
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+            """Legacy Operator1-style operator."""
+
+        def f(pred):
+            qp.cond(pred, lambda: None, lambda: None, elifs=((False, OldOp(wires=0)),))
+
+        with pytest.raises(
+            ValueError,
+            match="Cannot provide an Operator as elif_fn if true_fn is a callable",
+        ):
+            jax.make_jaxpr(f)(True)
+
+    @pytest.mark.parametrize(
+        "elif_branch",
+        [lambda: None, "nope", 1],
+        ids=["callable", "str", "int"],
+    )
+    def test_unsupported_elif_raises(self, elif_branch):
+        """Test that non-Operator2/None elif branches are rejected."""
+
+        def f(pred):
+            qp.cond(pred, qp.X(0), qp.Z(0), elifs=((False, elif_branch),))
+
+        with pytest.raises(ValueError, match="all other branches must be Operator2 or None"):
+            jax.make_jaxpr(f)(True)
+
+    def test_operator1_elif_raises(self):
+        """Test that Operator1 instances are rejected as elif branches."""
+
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+            """Legacy Operator1-style operator."""
+
+        old_op = OldOp(wires=0)
+
+        def f(pred):
+            qp.cond(pred, qp.X(0), qp.Z(0), elifs=((False, old_op),))
+
+        with pytest.raises(ValueError, match="Got Operator1 input"):
+            jax.make_jaxpr(f)(True)
+
+    def test_operator1_elif_created_during_tracing_raises(self):
+        """Test that Operator1 elifs created during tracing are rejected."""
+
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+            """Legacy Operator1-style operator."""
+
+        def f(pred):
+            qp.cond(pred, qp.X(0), qp.Z(0), elifs=((False, OldOp(wires=0)),))
+
+        with pytest.raises(ValueError, match="Got Operator1 AbstractOperator"):
+            jax.make_jaxpr(f)(True)
 
 
 dev = qp.device("default.qubit", wires=3)
