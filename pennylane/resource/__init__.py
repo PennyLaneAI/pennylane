@@ -25,6 +25,7 @@ Circuit Resource Profiling
     :toctree: api
 
     ~analyze
+    ~estimate
     ~specs
     ~track
 
@@ -54,6 +55,7 @@ from .resource import (
 )
 from .expression import Expression
 from .analyze import analyze
+from .estimate import estimate
 from .specs import specs
 from .track import track
 
@@ -65,6 +67,7 @@ __all__ = [
     "resources_from_tape",
     "Expression",
     "analyze",
+    "estimate",
     "specs",
     "track",
 ]
