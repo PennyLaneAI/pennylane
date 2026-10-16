@@ -753,6 +753,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* :func:`~.estimate` and :func:`~.analyze` are now faster on qjit-compiled workflows. They use
+  Catalyst's new ``user-transform-stage`` pipeline, which stops compiling right after the user
+  transforms are applied.
+  [(#10343)](https://github.com/PennyLaneAI/pennylane/pull/10343)
+
 * The `decompose_mcx_with_no_worker` decomposition rule for :class:`~.MultiControlledX` now only
   applies when no work wires are provided, matching `MultiControlledX.compute_decomposition`.
   This removes controlled `GlobalPhase` and `PhaseShift` rules from the decomposition graph and
