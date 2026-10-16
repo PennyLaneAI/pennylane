@@ -1511,6 +1511,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Moved ``pop_op_eqns`` into ``pennylane.capture``, since it only deletes captured jaxpr equations.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Added an autouse fixture that undoes any changes a test makes to the registry of decomposition
   rules, and removed the `qp.decomposition.local_decomps` blocks that only served as cleanup.
   [(#10333)](https://github.com/PennyLaneAI/pennylane/pull/10333)

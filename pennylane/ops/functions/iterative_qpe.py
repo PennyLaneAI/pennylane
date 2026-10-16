@@ -19,7 +19,7 @@ import numpy as np
 
 from pennylane import capture
 from pennylane import ops as pl_ops
-from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.wires import Wires
 
 

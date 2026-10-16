@@ -29,11 +29,11 @@ from pennylane.capture.autograph import wraps
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.capture.hint import process_hints
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.compiler import compiler
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator, Operator1, Operator2
 from pennylane.core.operator.base import AbstractOperator  # tach-ignore
-from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.exceptions import ConditionalTransformError
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
