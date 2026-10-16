@@ -931,18 +931,6 @@ def _controlled_phase_shift_resource(base, control_wires, *_, **__):
     return resources
 
 
-# The phase-polynomial decomposition below creates 2^(n+1) - 1 PauliRot gates for n control wires.
-# It is only offered up to ``_MAX_PHASE_POLYNOMIAL_CONTROL_WIRES`` control wires; beyond that the
-# graph prefers other rules anyway, and consumers that trace every candidate rule (such as ``qjit``
-# with program capture) would otherwise build millions of useless terms.
-_MAX_PHASE_POLYNOMIAL_CONTROL_WIRES = 9
-
-
-def _controlled_phase_shift_condition(control_wires, **_):
-    return len(control_wires) <= _MAX_PHASE_POLYNOMIAL_CONTROL_WIRES
-
-
-@register_condition(_controlled_phase_shift_condition)
 @register_resources(_controlled_phase_shift_resource)
 def _controlled_phase_shift_decomp(base, control_wires, *_, **__):
     wires = concatenate_wires(control_wires, base.wires)
@@ -1027,7 +1015,7 @@ add_decomps("Adjoint(PhaseShift)", adjoint_rotation2)
 add_decomps("Pow(PhaseShift)", pow_rotation2)
 add_decomps(
     "C(PhaseShift)",
-    # flip_zero_control2(_controlled_phase_shift_decomp),
+    flip_zero_control2(_controlled_phase_shift_decomp),
     flip_zero_control2(_controlled_phase_shift_mcx_decomp),
 )
 
