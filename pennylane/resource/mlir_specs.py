@@ -84,6 +84,7 @@ def resources_from_analysis_pass(
     level_to_markers: dict[int, list[str]],
     level_to_name: dict[int, str],
     *args,
+    is_estimate: bool = False,
     **kwargs,
 ) -> dict[str, SpecsResources | list[SpecsResources]]:
     """
@@ -157,9 +158,13 @@ def resources_from_analysis_pass(
                 level_name = make_level_name_unique(level_name, frozenset(level_to_name.values()))
                 fname_to_level[fname] = i
                 level_to_name[i] = level_name
-                new_compile_pipeline += transform(pass_name="resource-analysis")(
-                    output_json=True, output_fname=fname
-                )
+                if is_estimate:
+                    new_compile_pipeline[-1].kwargs["output_json"] = True
+                    new_compile_pipeline[-1].kwargs["output_fname"] = fname
+                else:
+                    new_compile_pipeline += transform(pass_name="resource-analysis")(
+                        output_json=True, output_fname=fname
+                    )
 
         new_qnode = copy.copy(original_qnode)
         new_qnode._compile_pipeline = new_compile_pipeline
