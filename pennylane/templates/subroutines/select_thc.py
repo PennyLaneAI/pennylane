@@ -353,6 +353,7 @@ def _select_half(
     num_batches=1,
     one_body_table=False,
     skip_one_body=False,
+    lazy_unbasis=False,
 ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
     r"""Apply one :math:`V = U^\dagger Z_1 U` sandwich of the THC ``SELECT`` oracle.
 
@@ -385,6 +386,8 @@ def _select_half(
             a second control, the open circle on the :math:`\lvert \nu = M \rangle`
             wire of the second sandwich in Fig. 5, so the reflection is switched off on the
             one-body block and this half acts as the identity there.
+        lazy_unbasis (bool): if ``True``, the uncompute wraps every op of the basis change in
+            an adjoint, as Catalyst lowers it, instead of taking each op's own adjoint
 
     Raises:
         ValueError: if a register has the wrong size, or if ``t_eigenvectors`` has the
@@ -469,7 +472,7 @@ def _select_half(
         # ``lazy=False``: the QROM in ``_basis`` uncomputes through measurement-based elbow
         # uncompute, which cannot be reversed, so the adjoint has to be pushed onto the
         # individual ops instead of wrapping the body in a region that is reversed later.
-        adjoint(_basis, lazy=False)()
+        adjoint(_basis, lazy=lazy_unbasis)()
 
     return change_op_basis(_basis, _reflect, _unbasis)
 
@@ -703,6 +706,9 @@ def _select_thc_resources(
     mu_wires = list(index[:n])
     nu_wires = list(index[n:])
     succ, edge, _, spin1, spin2 = flags
+    # Catalyst lowers the eager adjoint of the uncompute as an adjoint region, so its
+    # self-inverse ops keep the adjoint modifier.
+    lazy_unbasis = capture.enabled()
 
     # `_select_half` returns change_op_basis. Under capture that unrolls eagerly
     # (binds inner gates into the jaxpr and returns None), so pause while we
@@ -720,6 +726,7 @@ def _select_thc_resources(
             work,
             num_batches=num_batches,
             one_body_table=True,
+            lazy_unbasis=lazy_unbasis,
         )
         second_half = _select_half(
             chi,
@@ -732,6 +739,7 @@ def _select_thc_resources(
             work,
             num_batches=num_batches,
             skip_one_body=True,
+            lazy_unbasis=lazy_unbasis,
         )
         swaps = _index_swaps(mu_wires, nu_wires, edge, spin1, spin2, work)
 
