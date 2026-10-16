@@ -748,6 +748,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* The decomposition of :class:`~.TrotterCDF` and its double-phase controlled decomposition
+  implement the one-body evolution, together with the basis rotations around it, as a single
+  Givens network. This replaces two basis rotations and the one-body ``RZ`` layer per Trotter step
+  and spin channel by :math:`N(N-1)/2` ``SingleExcitation`` and :math:`N(N+1)/2` phase gates.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * The decompositions of :class:`~.QROM` (unary iteration), :class:`~.QFT`, :class:`~.AQFT` and
   :class:`~.FFFT` now provide `num-iters` hints for loops with dynamic bounds, avoiding symbolic
   resource counts when compiling them with Catalyst.
@@ -1926,6 +1932,17 @@
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
+
+* :class:`~.BasisRotation` now implements the same operator for real-valued (orthogonal) matrices
+  as for complex-valued ones, matching its documentation. Previously, the real-valued
+  decomposition implemented the rotation for :math:`S u S` instead of :math:`u`, with
+  :math:`S=\operatorname{diag}((-1)^p)`, and handled matrices with determinant :math:`-1`
+  inconsistently. Circuits using ``BasisRotation`` with real-valued matrices therefore change.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
+* :func:`~.math.decomposition.givens_decomposition` and :class:`~.BasisRotation` no longer produce
+  ``nan`` values for complex-valued unitaries with exact zeros, such as diagonal matrices.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
 * Fixed captured transforms dropping keyword arguments to the transformed function,
   including when calling transformed QNodes with `qp.qjit(capture=True)`.
