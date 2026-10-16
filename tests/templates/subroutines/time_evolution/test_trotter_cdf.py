@@ -36,15 +36,19 @@ from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import CaptureWarning
 from pennylane.numeric_hamiltonians import CDFHamiltonian
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
     _apply_system_basis_rotation,
     _cdf_resource_counts,
+    _cdf_spin_symmetric_resource_counts,
     _controlled_trotter_cdf_decomp,
+    _controlled_trotter_cdf_multirz_decomp,
+    _controlled_trotter_cdf_spin_symmetric_decomp,
     _energy_shift,
     _merge_leaves,
     _trotter_cdf_decomposition,
+    _trotter_cdf_spin_symmetric_decomposition,
 )
-from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.templates.subroutines.time_evolution.fermi_tools import (  # pylint: disable=no-name-in-module
@@ -54,6 +58,7 @@ from tests.templates.subroutines.time_evolution.fermi_tools import (  # pylint: 
 from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  # pylint: disable=no-name-in-module
     CATALYST_GATE_SET_DOUBLE_PHASE,
     CATALYST_GATE_SET_GENUINE,
+    TROTTER_GATE_SET,
     _single_z,
     assert_merged_trotter_matches,
     assert_resource_counts_match,
@@ -234,6 +239,15 @@ class TestInitialization:
             qp.TrotterCDF(0.3, 5, ham, wires, double_phase=True).arguments["double_phase"] is True
         )
 
+    def test_work_wires(self, toy_hamiltonian_cdf_concrete):
+        """Work wires are stored, default to none, and are not part of ``op.wires``."""
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
+        wires = list(range(2 * num_orbitals))
+        assert qp.TrotterCDF(0.3, 5, ham, wires).arguments["work_wires"] == Wires([])
+        op = qp.TrotterCDF(0.3, 5, ham, wires, work_wires=["aux"])
+        assert op.arguments["work_wires"] == Wires(["aux"])
+        assert op.wires == Wires(wires)
+
     def test_abstractify(self, toy_hamiltonian_cdf_abstract):
         """Test that an abstract instance (e.g. for resource-rep purposes) can be built."""
 
@@ -255,12 +269,12 @@ class TestInitialization:
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid(toy_hamiltonian_cdf_concrete):
-    """Run qp.testing.assert_valid on a concrete CDF instance."""
+    """Run qp.ops.functions.assert_valid on a concrete CDF instance."""
     ham, num_orbitals = toy_hamiltonian_cdf_concrete
     wires = list(range(2 * num_orbitals))
     op = qp.TrotterCDF(0.1, 3, ham, wires)
     # Differentiating through the (non-trainable) hamiltonian dict is not supported.
-    qp.testing.assert_valid(op, skip_differentiation=True)
+    qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestCDFScheme:
@@ -320,20 +334,26 @@ class TestResourceRule:
     @pytest.mark.parametrize("num_steps", [1, 4])
     @pytest.mark.parametrize("num_fragments", [1, 3])
     @pytest.mark.parametrize(
-        ("has_control", "double_phase"), [(False, False), (True, False), (True, True)]
+        ("has_control", "double_phase", "merge_control"),
+        [(False, False, False), (True, False, False), (True, True, False), (True, True, True)],
     )
     @pytest.mark.capture
     def test_merged_resource_counts_match_traced_decomposition(
-        self, num_steps, num_fragments, has_control, double_phase
+        self, num_steps, num_fragments, has_control, double_phase, merge_control
     ):
         """Resource counts match the traced decomposition after merging H1 half blocks."""
         num_orbitals = 2
         core = np.zeros((num_fragments + 1, num_orbitals, num_orbitals))
         leaf = np.stack([np.eye(num_orbitals)] * (num_fragments + 1))
         ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.0)
-        resources = _cdf_resource_counts(num_steps, ham, has_control, double_phase)
+        resources = _cdf_resource_counts(num_steps, ham, has_control, double_phase, merge_control)
         num_system_wires = 2 * num_orbitals
         trace_wires = tuple(range(num_system_wires + int(has_control)))
+        controlled_rule = (
+            _controlled_trotter_cdf_multirz_decomp
+            if merge_control
+            else _controlled_trotter_cdf_decomp
+        )
 
         def circuit(t, *wires):
             system_wires = list(wires[:num_system_wires])
@@ -342,8 +362,53 @@ class TestResourceRule:
                 return
             with qp.capture.pause():
                 base = qp.TrotterCDF(t, num_steps, ham, system_wires, double_phase=double_phase)
-            _controlled_trotter_cdf_decomp(
-                base, list(wires[num_system_wires:]), [1], [], "borrowed"
+            controlled_rule(base, list(wires[num_system_wires:]), [1], [], "borrowed")
+
+        args = (jax.numpy.array(0.4), *trace_wires)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", CaptureWarning)
+            jaxpr = jax.make_jaxpr(circuit)(*args)
+        operations = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *args).operations
+        assert_resource_counts_match(resources, operations)
+
+    @pytest.mark.parametrize("num_steps", [1, 3])
+    @pytest.mark.parametrize("num_orbitals", [2, 3])
+    @pytest.mark.parametrize(
+        ("has_control", "double_phase"), [(False, False), (True, False), (True, True)]
+    )
+    @pytest.mark.capture
+    def test_spin_symmetric_resource_counts_match_traced_decomposition(
+        self, num_steps, num_orbitals, has_control, double_phase
+    ):
+        """Resource counts of the spin-symmetric rules match their traced decomposition."""
+        num_fragments = 2
+        core = np.zeros((num_fragments + 1, num_orbitals, num_orbitals))
+        leaf = np.stack([np.eye(num_orbitals)] * (num_fragments + 1))
+        ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.0)
+        resources = _cdf_spin_symmetric_resource_counts(num_steps, ham, has_control, double_phase)
+        num_system_wires = 2 * num_orbitals
+        num_work_wires = 2 if has_control and not double_phase else 1
+        trace_wires = tuple(range(num_system_wires + int(has_control) + num_work_wires))
+
+        def circuit(t, *wires):
+            system_wires = list(wires[:num_system_wires])
+            work_wires = list(wires[num_system_wires + int(has_control) :])
+            if not has_control:
+                _trotter_cdf_spin_symmetric_decomposition(
+                    t, num_steps, ham, system_wires, False, work_wires
+                )
+                return
+            with qp.capture.pause():
+                base = qp.TrotterCDF(
+                    t,
+                    num_steps,
+                    ham,
+                    system_wires,
+                    double_phase=double_phase,
+                    work_wires=work_wires,
+                )
+            _controlled_trotter_cdf_spin_symmetric_decomp(
+                base, [wires[num_system_wires]], [1], [], "borrowed"
             )
 
         args = (jax.numpy.array(0.4), *trace_wires)
@@ -352,6 +417,24 @@ class TestResourceRule:
             jaxpr = jax.make_jaxpr(circuit)(*args)
         operations = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *args).operations
         assert_resource_counts_match(resources, operations)
+
+
+SPIN_SYMMETRIC_GATE_SET = TROTTER_GATE_SET | {"CRZ", "TemporaryAND", "Adjoint(TemporaryAND)"}
+
+
+def _rule_matrix(rule_call, wire_order, gate_set):
+    """Matrix of a decomposition rule call, decomposed into ``gate_set``."""
+    with qp.queuing.AnnotatedQueue() as q:
+        rule_call()
+    tape = qp.tape.QuantumScript.from_queue(q)
+    [tape], _ = qp.transforms._tape_decompose([tape], gate_set=gate_set)
+    return qp.matrix(tape, wire_order=wire_order), tape
+
+
+def _project_work_wires(matrix, num_main_wires, num_work_wires):
+    """Block of ``matrix`` with all work wires (the trailing wires) in |0> before and after."""
+    proj = np.kron(np.eye(2**num_main_wires), np.diag(np.eye(2**num_work_wires)[0]))
+    return (proj @ matrix @ proj)[:: 2**num_work_wires, :: 2**num_work_wires]
 
 
 class TestDecomposition:
@@ -583,6 +666,63 @@ class TestDecomposition:
         assert diffs[0] > diffs[1] > diffs[2]
         assert diffs[1] / diffs[2] > 3.0
 
+    def test_spin_symmetric_matches_expm(self, diagonal_hamiltonian_cdf):
+        """The spin-symmetric base rule is exact for an identity-leaf Hamiltonian, with its work
+        wire returned to |0>."""
+        ham, num_orbitals = diagonal_hamiltonian_cdf
+        sys_wires = list(range(2 * num_orbitals))
+        aux = [2 * num_orbitals]
+        t, steps = 0.9, 3
+        rule = qp.list_decomps(qp.TrotterCDF)["_trotter_cdf_spin_symmetric_decomposition"]
+        matrix, tape = _rule_matrix(
+            lambda: rule(t, steps, ham, sys_wires, False, aux),
+            sys_wires + aux,
+            SPIN_SYMMETRIC_GATE_SET,
+        )
+        block = _project_work_wires(matrix, len(sys_wires), 1)
+        assert np.allclose(block, expm(-1j * cdf_reference_hamiltonian(ham) * t), atol=1e-9)
+
+        names = [op.name for op in tape.operations]
+        num_blocks = (2 * (ham.leaf_tensors.shape[0] - 1) - 1) * steps + 1
+        num_pairs = num_orbitals * (num_orbitals - 1) // 2
+        assert names.count("CRZ") == num_blocks * num_pairs
+        assert names.count("TemporaryAND") == num_blocks * num_pairs
+        assert names.count("Adjoint(TemporaryAND)") == num_blocks * num_pairs
+        assert names.count("RZ") == num_blocks * num_orbitals + steps * 2 * num_orbitals
+        assert "IsingZZ" not in names
+
+    def test_spin_symmetric_matches_original_rule(self, seed):
+        """For generic leaves, the spin-symmetric base rule equals the original rule."""
+        rng = np.random.default_rng(seed)
+        num_orbitals, num_fragments = 2, 2
+        core = rng.standard_normal((num_fragments + 1, num_orbitals, num_orbitals))
+        core = (core + np.swapaxes(core, 1, 2)) / 2
+        leaf = np.stack([random_orthogonal(num_orbitals, rng) for _ in range(num_fragments + 1)])
+        ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
+        sys_wires = list(range(2 * num_orbitals))
+        aux = [2 * num_orbitals]
+        t, steps = 0.7, 2
+        original, spin_symmetric = qp.list_decomps(qp.TrotterCDF)
+        expected, _ = _rule_matrix(
+            lambda: original(t, steps, ham, sys_wires, False), sys_wires, TROTTER_GATE_SET
+        )
+        matrix, _ = _rule_matrix(
+            lambda: spin_symmetric(t, steps, ham, sys_wires, False, aux),
+            sys_wires + aux,
+            SPIN_SYMMETRIC_GATE_SET,
+        )
+        assert np.allclose(_project_work_wires(matrix, len(sys_wires), 1), expected, atol=1e-9)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_spin_symmetric_rule_self_consistent(self, toy_hamiltonian_cdf_concrete):
+        """The spin-symmetric base rule is consistent with its resources, with and without
+        explicit work wires (allocating the missing one)."""
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
+        wires = list(range(2 * num_orbitals))
+        rule = qp.list_decomps(qp.TrotterCDF)["_trotter_cdf_spin_symmetric_decomposition"]
+        _test_decomposition_rule(qp.TrotterCDF(0.4, 2, ham, wires), rule)
+        _test_decomposition_rule(qp.TrotterCDF(0.4, 2, ham, wires, work_wires=[99]), rule)
+
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestControlledDecomposition:
@@ -658,22 +798,50 @@ class TestDoublePhaseControlledDecomposition:
         for rule in qp.list_decomps("C(TrotterCDF)"):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.parametrize(
+        ("rule_idx", "expected_names"),
+        [
+            (0, {"BasisRotation", "CNOT", "RZ", "IsingZZ"}),
+            (1, {"BasisRotation", "RZ", "IsingZZ", "MultiRZ"}),
+            (
+                2,
+                {
+                    "BasisRotation",
+                    "CNOT",
+                    "RZ",
+                    "IsingZZ",
+                    "CRZ",
+                    "TemporaryAND",
+                    "Adjoint(TemporaryAND)",
+                },
+            ),
+        ],
+    )
     @pytest.mark.capture
-    def test_controlled_decomposition_capture(self, toy_hamiltonian_cdf_concrete):
-        """The double-phase C(TrotterCDF) rule captures cleanly. Operators can't be passed as
+    def test_controlled_decomposition_capture(
+        self, toy_hamiltonian_cdf_concrete, rule_idx, expected_names
+    ):
+        """The double-phase C(TrotterCDF) rules capture cleanly. Operators can't be passed as
         capture inputs yet - they surface as ``ArgInfo`` wires (the "ArgInfo issue" tracked by
         ``test_Controlled`` in ``tests/capture/test_operators.py``) - so the base is built inside
         the traced function; once resolved this can use ``_test_decomposition_rule`` directly."""
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
         n = 2 * num_orbitals
-        rule = qp.list_decomps("C(TrotterCDF)")[0]
+        rule = qp.list_decomps("C(TrotterCDF)")[rule_idx]
 
         def circuit(t, *wires):
             with qp.capture.pause():  # the base itself should not be captured
-                base = qp.TrotterCDF(t, 2, ham, wires=list(wires[:n]), double_phase=True)
+                base = qp.TrotterCDF(
+                    t,
+                    2,
+                    ham,
+                    wires=list(wires[:n]),
+                    double_phase=True,
+                    work_wires=list(wires[n + 1 :]),
+                )
             rule(
                 base=base,
-                control_wires=list(wires[n:]),
+                control_wires=[wires[n]],
                 control_values=[1],
                 work_wires=[],
                 work_wire_type="borrowed",
@@ -681,10 +849,88 @@ class TestDoublePhaseControlledDecomposition:
 
         with warnings.catch_warnings():  # no fall back to an unrolled Python loop
             warnings.simplefilter("error", CaptureWarning)
-            jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
+            jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 2))
 
-        ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
-        assert {type(op).__name__ for op in ops} == {"BasisRotation", "CNOT", "RZ", "IsingZZ"}
+        ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 2)).operations
+        assert {op.name for op in ops} == expected_names
+
+    @pytest.mark.parametrize("double_phase", [True, False])
+    def test_spin_symmetric_controlled_matches_original_rule(self, double_phase, seed):
+        """The spin-symmetric controlled rule equals the original controlled rule for generic
+        leaves, in both the double-phase and the genuine controlled construction."""
+        rng = np.random.default_rng(seed)
+        num_orbitals, num_fragments = 2, 2
+        core = rng.standard_normal((num_fragments + 1, num_orbitals, num_orbitals))
+        core = (core + np.swapaxes(core, 1, 2)) / 2
+        leaf = np.stack([random_orthogonal(num_orbitals, rng) for _ in range(num_fragments + 1)])
+        ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
+        sys_wires = list(range(2 * num_orbitals))
+        anc = 2 * num_orbitals
+        aux = [anc + 1, anc + 2]
+        t, steps = 0.7, 2
+        rules = qp.list_decomps("C(TrotterCDF)")
+        assert (
+            rules[2].name == "flip_zero_ctrl_values(_controlled_trotter_cdf_spin_symmetric_decomp)"
+        )
+        base = qp.TrotterCDF(
+            t, steps, ham, wires=sys_wires, double_phase=double_phase, work_wires=aux
+        )
+
+        def call(rule):
+            return rule(
+                base=base,
+                control_wires=[anc],
+                control_values=[1],
+                work_wires=[],
+                work_wire_type="borrowed",
+            )
+
+        expected, _ = _rule_matrix(lambda: call(rules[0]), [anc] + sys_wires, TROTTER_GATE_SET)
+        matrix, tape = _rule_matrix(
+            lambda: call(rules[2]), [anc] + sys_wires + aux, SPIN_SYMMETRIC_GATE_SET
+        )
+        assert np.allclose(_project_work_wires(matrix, len(sys_wires) + 1, 2), expected, atol=1e-9)
+        names = [op.name for op in tape.operations]
+        num_blocks = (2 * num_fragments - 1) * steps + 1
+        num_pairs = num_orbitals * (num_orbitals - 1) // 2
+        # genuine control folds the control wire into a second TemporaryAND per pair
+        assert names.count("TemporaryAND") == num_blocks * num_pairs * (1 if double_phase else 2)
+        assert "MultiRZ" not in names
+
+    def test_double_phase_multirz_rule_matches_expm(self, diagonal_hamiltonian_cdf):
+        """The merged double-phase rule realizes the same diag(U, U^dagger) as the CNOT-sandwich
+        rule, with every two-body term a three-wire MultiRZ and no CNOT."""
+        ham, num_orbitals = diagonal_hamiltonian_cdf
+        sys_wires = list(range(2 * num_orbitals))
+        anc = max(sys_wires) + 1
+        t, steps = 0.9, 3
+        rule = qp.list_decomps("C(TrotterCDF)")[1]
+        assert rule.name == "flip_zero_ctrl_values(_controlled_trotter_cdf_multirz_decomp)"
+        base = qp.TrotterCDF(t, steps, ham, wires=sys_wires, double_phase=True)
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(
+                base=base,
+                control_wires=[anc],
+                control_values=[1],
+                work_wires=[],
+                work_wire_type="borrowed",
+            )
+        tape = qp.tape.QuantumScript.from_queue(q)
+        [tape], _ = qp.transforms._tape_decompose([tape], gate_set=TROTTER_GATE_SET | {"MultiRZ"})
+
+        names = [op.name for op in tape.operations]
+        num_two_body_fragments = ham.leaf_tensors.shape[0] - 1
+        num_twobody_blocks = (2 * num_two_body_fragments - 1) * steps + 1
+        assert "CNOT" not in names
+        assert names.count("MultiRZ") == num_twobody_blocks * num_orbitals * (2 * num_orbitals - 1)
+        assert all(len(op.wires) == 3 for op in tape.operations if op.name == "MultiRZ")
+
+        matrix = qp.matrix(tape, wire_order=[anc] + sys_wires)
+        dim = 2 ** len(sys_wires)
+        u = expm(-1j * cdf_reference_hamiltonian(ham) * t)
+        assert np.allclose(matrix[:dim, :dim], u, atol=1e-9)
+        assert np.allclose(matrix[dim:, dim:], u.conj().T, atol=1e-9)
 
     def test_double_phase_controlled_matches_expm(self, diagonal_hamiltonian_cdf):
         """With double_phase=True, ctrl(TrotterCDF) realizes diag(U, U^dagger): for an

@@ -31,10 +31,11 @@ from pennylane.capture.autograph import disable_autograph
 
 # pylint: disable=arguments-differ
 from pennylane.core.operator import Operation, Operator, Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -67,6 +68,11 @@ class MultiRZ(Operator2):
 
         If the ``MultiRZ`` gate is not supported on the targeted device, PennyLane
         will decompose the gate using :class:`~.RZ` and :class:`~.CNOT` gates.
+        With the graph-based decomposition system, an alternative decomposition into
+        Pauli product measurements (one :math:`Z^{\otimes n}\otimes Z` measurement
+        against a work wire, a single-qubit :class:`~.RZ` on the work wire, and an
+        :math:`X` measurement, see Fig. 13(d) of `arXiv:2211.15465
+        <https://arxiv.org/abs/2211.15465>`__) is available as well.
 
     Args:
         theta (TensorLike): rotation angle :math:`\theta`
@@ -221,7 +227,72 @@ def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike):
     )
 
 
-add_decomps(MultiRZ, _multi_rz_decomposition)
+_PAULI_GATES = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
+
+
+def _pauli_rot_ppm_resources(pauli_word: str):
+    """Resources of ``_apply_pauli_rot_ppm`` for an identity-free Pauli word."""
+    resources = Counter(_PAULI_GATES[pauli] for pauli in pauli_word)
+    resources[PauliMeasure("X", wires=Wire[1])] += 2
+    resources[PauliMeasure(pauli_word + "Z", wires=Wire[len(pauli_word) + 1])] += 1
+    resources[PauliX] += 1
+    resources[RZ] += 1
+    resources[qp.GlobalPhase] += 1
+    return dict(resources)
+
+
+def _apply_pauli_rot_ppm(theta: TensorLike, pauli_word: str, wires):
+    r"""Realize :math:`\exp(-i\theta P/2)` with Pauli product measurements (PPMs) and a single
+    :class:`~.RZ` on a work wire, following Fig. 13(d) of `arXiv:2211.15465
+    <https://arxiv.org/abs/2211.15465>`__ (see also Fig. 4 of `arXiv:1808.02892
+    <https://arxiv.org/abs/1808.02892>`__).
+
+    The work wire starts in :math:`|0\rangle` and is brought to an :math:`X` eigenstate with a
+    known sign by an :math:`X` measurement, which replaces the :math:`|+\rangle` preparation of
+    the reference circuit. A joint :math:`P\otimes Z` measurement then correlates the
+    :math:`P=\pm 1` sectors of the data register with the :math:`Z` basis of the work wire (an
+    :math:`X` correction fixes the random outcome), so that ``RZ(theta)`` on the work wire applies
+    the phases :math:`e^{\mp i\theta/2}` to the two sectors. A final :math:`X` measurement
+    disentangles the work wire; if its outcome differs from the preparation sign, the
+    :math:`P=-1` sector picked up the wrong sign and is corrected by applying :math:`P`. The only
+    remaining measurement-dependent effect is a global phase of :math:`-1` when both the
+    preparation sign and the :math:`P\otimes Z` outcome are one, which is accounted for by a
+    conditional ``GlobalPhase``.
+
+    The work wire is left in a (known) :math:`X` eigenstate, i.e., it is "burnable".
+
+    ``pauli_word`` must not contain identities; ``wires`` are the corresponding data wires.
+    """
+    with qp.allocate(1, state="zero", restored=False) as work_wires:
+        aux = work_wires[0]
+        sign = pauli_measure("X", [aux])
+        parity = pauli_measure(pauli_word + "Z", [*wires, aux])
+        qp.cond(parity, PauliX)(aux)
+        RZ(theta, wires=aux)
+        outcome = pauli_measure("X", [aux])
+
+        def _pauli_correction():
+            for wire, pauli in zip(wires, pauli_word, strict=True):
+                _PAULI_GATES[pauli](wire)
+
+        qp.cond(outcome != sign, _pauli_correction)()
+        qp.cond(sign & parity, qp.GlobalPhase)(np.pi)
+
+
+# pylint: disable=unused-argument
+def _multi_rz_to_ppm_resources(theta: TensorLike, wires: WiresLike):
+    return _pauli_rot_ppm_resources("Z" * len(wires))
+
+
+# a single-wire MultiRZ is an RZ, which needs no work wire
+@register_condition(lambda theta, wires: len(wires) > 1)
+@register_resources(_multi_rz_to_ppm_resources, work_wires={"burnable": 1})
+def _multi_rz_to_ppm(theta: TensorLike, wires: WiresLike):
+    """A ``Z^n Z`` PPM against a work wire, an ``RZ`` on the work wire and an ``X`` PPM."""
+    _apply_pauli_rot_ppm(theta, "Z" * len(wires), wires)
+
+
+add_decomps(MultiRZ, _multi_rz_decomposition, _multi_rz_to_ppm)
 add_decomps("Adjoint(MultiRZ)", adjoint_rotation2)
 add_decomps("Pow(MultiRZ)", pow_rotation2)
 
@@ -544,7 +615,30 @@ def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLik
     )
 
 
-add_decomps(PauliRot, _pauli_rot_decomposition)
+# pylint: disable=unused-argument
+def _pauli_rot_to_ppm_condition(theta: TensorLike, pauli_word: str, wires: WiresLike):
+    # the identity is a GlobalPhase and a single Z is an RZ; neither needs a work wire
+    return pauli_word.replace("I", "") not in ("", "Z")
+
+
+# pylint: disable=unused-argument
+def _pauli_rot_to_ppm_resources(theta: TensorLike, pauli_word: str, wires: WiresLike):
+    return _pauli_rot_ppm_resources(pauli_word.replace("I", ""))
+
+
+@register_condition(_pauli_rot_to_ppm_condition)
+@register_resources(_pauli_rot_to_ppm_resources, work_wires={"burnable": 1})
+@disable_autograph
+def _pauli_rot_to_ppm(theta: TensorLike, pauli_word: str, wires: WiresLike):
+    """A ``P Z`` PPM against a work wire, an ``RZ`` on the work wire and an ``X`` PPM."""
+    active_wires, active_gates = zip(
+        *[(wire, gate) for wire, gate in zip(wires, pauli_word, strict=True) if gate != "I"],
+        strict=True,
+    )
+    _apply_pauli_rot_ppm(theta, "".join(active_gates), list(active_wires))
+
+
+add_decomps(PauliRot, _pauli_rot_decomposition, _pauli_rot_to_ppm)
 add_decomps("Adjoint(PauliRot)", adjoint_rotation2)
 add_decomps("Pow(PauliRot)", pow_rotation2)
 

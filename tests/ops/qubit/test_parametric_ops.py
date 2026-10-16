@@ -29,9 +29,10 @@ from pennylane import numpy as npp
 # pylint: disable=too-few-public-methods,too-many-public-methods
 from pennylane.core.operator import Operator1, Operator2
 from pennylane.gradients import parameter_frequencies
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
@@ -171,7 +172,7 @@ class TestOperations:
         kwargs = SKIP_ASSERT_VALID.get(type(op), {})
         if kwargs is True:
             pytest.skip()
-        qp.testing.assert_valid(op, **kwargs)
+        qp.ops.functions.assert_valid(op, **kwargs)
 
     @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
     def test_parametrized_op_copy(self, op, tol):
@@ -2515,10 +2516,10 @@ class TestPauliRot:
         """Tests that a PauliRot is valid"""
 
         op = qp.PauliRot(0.5, "XYZI", wires=[0, 1, 2, 3])
-        qp.testing.assert_valid(op)
+        qp.ops.functions.assert_valid(op)
 
         op2 = qp.PauliRot(0.5, "III", wires=[0, 1, 2])
-        qp.testing.assert_valid(op2)
+        qp.ops.functions.assert_valid(op2)
 
     def test_paulirot_repr(self):
         op = qp.PauliRot(1.234, "XYX", wires=(0, 1, 2))
@@ -2655,6 +2656,55 @@ class TestPauliRot:
         op_matrices = op.matrix()
         decomp_op_matrices = decomp_op.matrix(wire_order=[0, 1])
         assert qp.math.allclose(op_matrices, decomp_op_matrices)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_PauliRot_ppm_decomposition_rule(self):
+        """The PPM rule of PauliRot is consistent with its resources, drops identities from the
+        measured Pauli word and leaves the identity and a single Z to other rules."""
+        rule = qp.list_decomps(qp.PauliRot)["_pauli_rot_to_ppm"]
+        _test_decomposition_rule(qp.PauliRot(0.4, "XIYZ", wires=[0, 1, 2, 3]), rule)
+
+        assert not rule.is_applicable(theta=0.4, pauli_word="III", wires=Wire[3])
+        assert not rule.is_applicable(theta=0.4, pauli_word="IZI", wires=Wire[3])
+        assert rule.is_applicable(theta=0.4, pauli_word="X", wires=Wire[1])
+        assert rule.get_work_wire_spec(theta=0.4, pauli_word="XIYZ", wires=Wire[4]).burnable == 1
+
+        counts = rule.compute_resources(theta=0.4, pauli_word="XIYZ", wires=Wire[4]).gate_counts
+        assert counts[qp.ops.PauliMeasure("XYZZ", wires=Wire[4])] == 1
+        assert counts[qp.ops.PauliMeasure("X", wires=Wire[1])] == 2
+        by_name = {}
+        for op, count in counts.items():
+            by_name[op.name] = by_name.get(op.name, 0) + count
+        assert by_name == {
+            "PauliMeasure": 3,
+            "RZ": 1,
+            "PauliX": 2,
+            "PauliY": 1,
+            "PauliZ": 1,
+            "GlobalPhase": 1,
+        }
+
+    @pytest.mark.catalyst
+    def test_PauliRot_ppm_decomposition_qjit(self, seed):
+        """The PPM rule of PauliRot reproduces the gate, including the global phase, for the
+        measurement outcomes sampled when compiled with program capture."""
+        rule = qp.list_decomps(qp.PauliRot)["_pauli_rot_to_ppm"]
+        pauli_word, theta = "XIYZ", 0.8362
+        n = len(pauli_word)
+        rng = np.random.default_rng(seed)
+        init_state = rng.random(2**n) + 1j * rng.random(2**n)
+        init_state /= np.linalg.norm(init_state)
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("lightning.qubit", wires=n))
+        def circuit():
+            qp.StatePrep(init_state, wires=range(n))
+            rule(theta, pauli_word, list(range(n)))
+            qp.adjoint(qp.PauliRot(theta, pauli_word, wires=range(n)))
+            return qp.state()
+
+        for _ in range(4):  # different random measurement outcomes
+            assert np.allclose(circuit(), init_state)
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_PauliRot_decomposition_ZZ(self, theta):
@@ -2995,7 +3045,7 @@ class TestMultiRZ:
         """Tests that MultiRZ is valid."""
 
         op = qp.MultiRZ(0.123, wires=[0, 1, 2, 3])
-        qp.testing.assert_valid(op)
+        qp.ops.functions.assert_valid(op)
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("n", [1, 2, 3, 4])
@@ -3006,6 +3056,10 @@ class TestMultiRZ:
         theta = 0.8362
         exp_state = np.diag(qp.MultiRZ.compute_matrix(theta, wires)) / 2 ** (n / 2)
         for rule in qp.list_decomps(qp.MultiRZ):
+            if rule.name == "_multi_rz_to_ppm":
+                # allocates a work wire and measures, which needs program capture; see
+                # test_MultiRZ_ppm_decomposition_qjit
+                continue
 
             @partial(qp.qjit, static_argnums=[1])
             @qp.qnode(qp.device("lightning.qubit", wires=n))
@@ -3016,6 +3070,73 @@ class TestMultiRZ:
 
             state = node(theta, rule)
             assert np.allclose(state, exp_state)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_MultiRZ_ppm_decomposition_rule(self):
+        """The PPM rule of MultiRZ is consistent with its resources and needs one burnable work
+        wire; a single-wire MultiRZ is an RZ and is not handled by it."""
+        rule = qp.list_decomps(qp.MultiRZ)["_multi_rz_to_ppm"]
+        _test_decomposition_rule(qp.MultiRZ(0.4, wires=[0, 1, 2]), rule)
+
+        assert not rule.is_applicable(theta=0.4, wires=Wire[1])
+        assert rule.get_work_wire_spec(theta=0.4, wires=Wire[3]).burnable == 1
+
+        counts = rule.compute_resources(theta=0.4, wires=Wire[3]).gate_counts
+        assert counts[qp.ops.PauliMeasure("ZZZZ", wires=Wire[4])] == 1
+        assert counts[qp.ops.PauliMeasure("X", wires=Wire[1])] == 2
+        by_name = {}
+        for op, count in counts.items():
+            by_name[op.name] = by_name.get(op.name, 0) + count
+        assert by_name == {
+            "PauliMeasure": 3,
+            "RZ": 1,
+            "PauliX": 1,
+            "PauliZ": 3,
+            "GlobalPhase": 1,
+        }
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_MultiRZ_ppm_decomposition_graph(self):
+        """With a PPM-flavoured gate set and a work wire available, the graph-based system
+        realizes MultiRZ with three PPMs and a single RZ instead of a CNOT ladder."""
+        gate_set = {"RZ", "PauliMeasure", "PauliX", "PauliZ", "GlobalPhase"}
+
+        @qp.transforms._tape_decompose(gate_set=gate_set, num_work_wires=1)
+        @qp.qnode(qp.device("default.qubit", wires=3))
+        def circuit():
+            qp.MultiRZ(0.3, wires=[0, 1, 2])
+            return qp.expval(qp.Z(0))
+
+        tape = qp.workflow.construct_tape(circuit)()
+        ops = [op.base if isinstance(op, qp.ops.Conditional) else op for op in tape.operations]
+        names = [op.name for op in ops]
+        assert names.count("PauliMeasure") == 3
+        assert names.count("RZ") == 1
+        assert "CNOT" not in names
+        ppm_words = [op.pauli_word for op in ops if op.name == "PauliMeasure"]
+        assert sorted(ppm_words) == ["X", "X", "ZZZZ"]
+
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize("n", [2, 3])
+    def test_MultiRZ_ppm_decomposition_qjit(self, n, seed):
+        """The PPM rule of MultiRZ reproduces the gate, including the global phase, for the
+        measurement outcomes sampled when compiled with program capture."""
+        rule = qp.list_decomps(qp.MultiRZ)["_multi_rz_to_ppm"]
+        theta = 0.8362
+        rng = np.random.default_rng(seed)
+        init_state = rng.random(2**n) + 1j * rng.random(2**n)
+        init_state /= np.linalg.norm(init_state)
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("lightning.qubit", wires=n))
+        def circuit():
+            qp.StatePrep(init_state, wires=range(n))
+            rule(theta, list(range(n)))
+            qp.adjoint(qp.MultiRZ(theta, wires=range(n)))
+            return qp.state()
+
+        for _ in range(4):  # different random measurement outcomes
+            assert np.allclose(circuit(), init_state)
 
     @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     def test_differentiability(self, angle, tol):
