@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains unit tests for ``qp.ops.functions.assert_valid``.
+This module contains unit tests for ``qp.testing.assert_valid``.
 """
 
 # pylint: disable=too-few-public-methods,unused-argument
@@ -27,12 +27,12 @@ import scipy.sparse
 import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.core.operator import Operator
-from pennylane.ops.functions import assert_valid
-from pennylane.ops.functions.assert_valid import (
-    _check_bind_new_parameters_op2,
+from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing.operators import (
+    _check_bind_new_parameters,
     _check_eigendecomposition,
     _check_pytree,
-    _test_decomposition_rule,
+    assert_valid,
 )
 from pennylane.typing import Wire
 from pennylane.wires import Wires
@@ -50,7 +50,7 @@ class TestDecompositionErrors:
             def compute_decomposition(wires):
                 qp.RX(1.2, wires=0)
 
-        with pytest.raises(AssertionError, match=r"decomposition must be a list"):
+        with pytest.raises(AssertionError, match=r"op.decomposition must return a list"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
     def test_bad_decomposition_lengths(self):
@@ -74,7 +74,7 @@ class TestDecompositionErrors:
                 qp.X(wires[0])
                 return [qp.Y(wires[1])]
 
-        with pytest.raises(AssertionError, match="decomposition must match queued operations"):
+        with pytest.raises(AssertionError, match="decomposition must match queued operators"):
             assert_valid(BadDecompQueueLength(wires=[0, 1]), skip_pickle=True)
 
     def test_bad_decomposition_queuing(self):
@@ -88,7 +88,7 @@ class TestDecompositionErrors:
                     other_op = qp.RY(2.3, 0)
                 return [other_op]
 
-        with pytest.raises(AssertionError, match="decomposition must match queued operations"):
+        with pytest.raises(AssertionError, match="decomposition must match queued operators"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
     def test_bad_decomposition_with_mcm(self):
@@ -120,7 +120,7 @@ class TestDecompositionErrors:
                     meas2 = qp.ops.MidMeasure(wires[0], meas_uid=253)
                 return [meas0, meas2]
 
-        with pytest.raises(AssertionError, match="decomposition must match queued operations"):
+        with pytest.raises(AssertionError, match="decomposition must match queued operators"):
             assert_valid(BadDecompQueue(wires=[0, 1]), skip_pickle=True)
 
     @pytest.mark.jax
@@ -140,6 +140,24 @@ class TestDecompositionErrors:
             assert_valid(BadDecompositionWireMap(wires=0), skip_pickle=True)
         assert_valid(BadDecompositionWireMap(wires=0), skip_pickle=True, skip_wire_mapping=True)
 
+    def test_mapped_op_without_decomposition(self):
+        """Test that the wire-mapped decompositions are not compared if ``map_wires`` returns
+        an operator that has no decomposition."""
+
+        class NoDecompOp(Operator):
+            pass
+
+        class MapsToNoDecompOp(Operator):
+
+            @staticmethod
+            def compute_decomposition(wires):
+                return [qp.X(wires[0])]
+
+            def map_wires(self, wire_map):
+                return NoDecompOp(wires=[wire_map.get(w, w) for w in self.wires])
+
+        assert_valid(MapsToNoDecompOp(wires=0), skip_pickle=True)
+
     def test_error_has_decomposition_but_claims_not_to(self):
         """Test that an error is raised if has_decomposition is False but a decomposition is
         defined."""
@@ -151,8 +169,30 @@ class TestDecompositionErrors:
 
             has_decomposition = False
 
-        with pytest.raises(AssertionError, match="If has_decomposition is False"):
+        with pytest.raises(AssertionError, match="if op.has_decomposition is False"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
+
+    def test_decomposition_must_contain_operators(self):
+        """A non-operator in ``decomposition`` or ``compute_decomposition`` raises AssertionError."""
+
+        class BadDecomp(Operator):
+            @staticmethod
+            def compute_decomposition(wires):
+                return ["RX"]
+
+        with pytest.raises(AssertionError, match="decomposition must contain operators"):
+            assert_valid(BadDecomp(wires=0), skip_pickle=True)
+
+        class BadComputeDecomp(Operator):
+            @staticmethod
+            def compute_decomposition(wires):
+                return ["RX"]
+
+            def decomposition(self):
+                return [qp.X(self.wires[0])]
+
+        with pytest.raises(AssertionError, match="decomposition must contain operators"):
+            assert_valid(BadComputeDecomp(wires=0), skip_pickle=True)
 
     def test_decomposition_must_not_contain_op(self):
         """Test that an error is raised if the decomposition of an operator includes
@@ -177,6 +217,18 @@ class TestDecompositionErrors:
                 return mcm.measurements
 
         assert_valid(ValidMCMDecomp(wires=0), skip_pickle=True)
+
+    @pytest.mark.jax
+    def test_pauli_measures_can_be_compared(self):
+        """Tests that decompositions with Pauli measurements can be compared correctly."""
+
+        class ValidPauliMeasureDecomp(Operator):
+            @staticmethod
+            def compute_decomposition(wires):
+                mcm = qp.pauli_measure("XY", wires=wires)
+                return mcm.measurements
+
+        assert_valid(ValidPauliMeasureDecomp(wires=[0, 1]), skip_pickle=True)
 
     def test_rule_with_non_int_counts(self):
         """Test that a rule with non-int counts raises an error."""
@@ -285,7 +337,7 @@ class TestDecompositionErrors:
 
         rule = qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1})(mcm_rule)
 
-        spy = mocker.spy(qp, "matrix")
+        spy = mocker.spy(qp.ops.functions, "matrix")
         _test_decomposition_rule(op, rule)
         spy.assert_not_called()
 
@@ -334,7 +386,7 @@ class TestBadMatrix:
                 return np.eye(2)
 
         with pytest.raises(
-            AssertionError, match="If has_matrix is False, the matrix method must raise"
+            AssertionError, match="MatrixUndefinedError expected if op.has_matrix is False"
         ):
             assert_valid(BadMat(wires=0), skip_pickle=True)
 
@@ -364,27 +416,41 @@ class TestBadMatrix:
 
 
 class TestBadCopyComparison:
-    """Check errors invovling copy, deepcopy, and comparison."""
+    """Check errors involving copy, deepcopy, and comparison."""
 
-    def test_bad_copy(self):
-        """Test an operator that cannot be compared with its copy."""
+    def test_copy_must_not_be_alias(self):
+        """A copy or deepcopy that returns the original instance fails validation."""
 
-        class BadComparison(Operator):
+        class BadCopy(Operator):
             def __copy__(self):
                 return self
 
-        with pytest.raises(AssertionError, match=r"copied op must be a separate instance"):
-            assert_valid(BadComparison(0), skip_pickle=True)
+        with pytest.raises(AssertionError, match=r"copied op must not be an alias"):
+            assert_valid(BadCopy(0), skip_pickle=True)
 
-    def test_bad_deepcopy(self):
-        """Test an operator that cannot be compared with its deepcopy."""
-
-        class BadDeepComparison(Operator):
+        class BadDeepCopy(Operator):
             def __deepcopy__(self, memo):
-                return BadDeepComparison(1)
+                return self
 
-        with pytest.raises(AssertionError, match=r"deep copied op must also be equal"):
-            assert_valid(BadDeepComparison(0), skip_pickle=True)
+        with pytest.raises(AssertionError, match=r"copied op must not be an alias"):
+            assert_valid(BadDeepCopy(0), skip_pickle=True)
+
+    def test_copy_must_equal_original(self):
+        """A copy or deepcopy that is not equal to the original fails validation."""
+
+        class BadCopy(Operator):
+            def __copy__(self):
+                return BadCopy(1)
+
+        with pytest.raises(AssertionError, match=r"copied op must be equal to the original"):
+            assert_valid(BadCopy(0), skip_pickle=True)
+
+        class BadDeepCopy(Operator):
+            def __deepcopy__(self, memo):
+                return BadDeepCopy(1)
+
+        with pytest.raises(AssertionError, match=r"copied op must be equal to the original"):
+            assert_valid(BadDeepCopy(0), skip_pickle=True)
 
 
 def test_mismatched_mat_decomp():
@@ -398,7 +464,7 @@ def test_mismatched_mat_decomp():
         def decomposition(self):
             return [qp.PauliX(self.wires)]
 
-    with pytest.raises(AssertionError, match=r"matrix and matrix from decomposition must match"):
+    with pytest.raises(AssertionError, match=r"The decomposition does not match op.matrix"):
         assert_valid(MisMatchedMatDecomp(0), skip_pickle=True)
 
 
@@ -414,6 +480,18 @@ def test_bad_eigenvalues_order():
         AssertionError, match=r"eigenvalues and diagonalizing gates must be able to"
     ):
         assert_valid(BadEigenDecomp(0), skip_pickle=True)
+
+
+def test_mismatched_diagonalizing_gates():
+    """Test that an error is raised if ``diagonalizing_gates`` and ``compute_diagonalizing_gates`` disagree."""
+
+    class MismatchedDiag(qp.PauliX):
+        def diagonalizing_gates(self):
+            return [qp.I(self.wires)]
+
+    expected_message = r"diagonalizing_gates and compute_diagonalizing_gates must match"
+    with pytest.raises(AssertionError, match=expected_message):
+        assert_valid(MismatchedDiag(0), skip_pickle=True)
 
 
 def test_eigendecomposition_with_different_wire_order():
@@ -525,7 +603,7 @@ class TestPytree:
         op = BadPytree(wires=0, val="b")
         with pytest.raises(
             AssertionError,
-            match=r"metadata and data must be able to reproduce the original operation",
+            match=r"BadPytree._unflatten must be able to reproduce the original operator",
         ):
             assert_valid(op, skip_pickle=True)
 
@@ -542,8 +620,22 @@ class TestPytree:
                 self.hyperparameters["val"] = val
 
         op = qp.adjoint(BadPytree(wires=0, val="b"))
-        with pytest.raises(AssertionError, match=r"op must be a valid pytree."):
+        with pytest.raises(
+            AssertionError, match=r"jax.tree_util.tree_unflatten must be able to reproduce"
+        ):
             assert_valid(op, skip_pickle=True)
+
+    @pytest.mark.jax
+    def test_bad_pytree_pennylane_unflatten(self, mocker):
+        """An operator that jax can unflatten but ``qp.pytrees`` cannot still fails validation."""
+
+        class GoodPytree(Operator):
+            pass
+
+        op = GoodPytree(wires=0)
+        mocker.patch("pennylane.testing.operators.pytrees.unflatten", return_value=GoodPytree(1))
+        with pytest.raises(AssertionError, match=r"qp.pytrees.unflatten must be able to reproduce"):
+            _check_pytree(op)
 
     @pytest.mark.jax
     def test_bad_leaves_ordering(self):
@@ -679,7 +771,7 @@ class TestOperator2AssertValid:
             def compute_decomposition(phi, wires):
                 qp.RX(phi, wires=wires[0])  # queues but returns ``None``
 
-        with pytest.raises(AssertionError, match=r"decomposition must be a list"):
+        with pytest.raises(AssertionError, match=r"op.decomposition must return a list"):
             assert_valid(BadDecomp(1.2, wires=0), skip_pickle=True)
 
     def test_check_matrix(self):
@@ -722,9 +814,7 @@ class TestOperator2AssertValid:
             def compute_decomposition(wires, phi):
                 return [qp.RX(phi, wires[0])]
 
-        with pytest.raises(
-            AssertionError, match=r"matrix and matrix from decomposition must match"
-        ):
+        with pytest.raises(AssertionError, match=r"The decomposition does not match op.matrix"):
             assert_valid(MatDecompMismatch(wires=0, phi=1.0), skip_pickle=True)
 
     def test_check_sparse_matrix(self):
@@ -820,34 +910,7 @@ class TestOperator2AssertValid:
 
         op = IgnoresParams(0.5, wires=0)
         with pytest.raises(AssertionError, match=r"bind_new_parameters must be able to update"):
-            _check_bind_new_parameters_op2(op)
-
-    def test_hybrid_ops_arg(self):
-        """``assert_valid`` fails if a hybrid op arg is invalid."""
-
-        class NoCopyOp(Operator2):
-            dynamic_argnames = ("gamma",)
-            wire_argnames = ("wires",)
-
-            def __copy__(self):
-                return self
-
-            def __init__(self, gamma, wires):
-                super().__init__(gamma, wires=wires)
-
-        class HybridOp(Operator2):
-            dynamic_argnames = ("phi",)
-            wire_argnames = ("wires",)
-            hybrid_argnames = ("ops",)
-
-            def __init__(self, phi, wires, ops):
-                super().__init__(phi, wires=wires, ops=ops)
-
-        with pytest.raises(AssertionError, match=r"copied op must be a separate instance"):
-            assert_valid(
-                HybridOp(np.pi, wires=0, ops=[0.2, NoCopyOp(0.25, 1), SingleRZ(0.5, 0)]),
-                skip_pickle=True,
-            )
+            _check_bind_new_parameters(op)
 
     def test_cant_handle_abstract_inputs(self):
         """Test an Operator that can't handle AbstractArray inputs."""
