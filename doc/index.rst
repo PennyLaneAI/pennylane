@@ -200,6 +200,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/operations
    introduction/measurements
    introduction/subroutines
+   introduction/qjit
    introduction/compiling_circuits
    introduction/applications
    introduction/data

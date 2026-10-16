@@ -149,6 +149,8 @@ These functions create valid quantum circuit operations from other operators.
     ~pennylane.prod
     ~pennylane.evolve
 
+For example,
+
 .. code-block:: python
 
     import pennylane as qp
@@ -199,6 +201,8 @@ and more.
     ~pennylane.is_hermitian
     ~pennylane.is_unitary
     ~pennylane.pauli_decompose
+
+For example,
 
 >>> qp.dot([0.5, 0.3], [qp.X(0), qp.Z(0) @ qp.Z(1)])
 0.5 * X(0) + 0.3 * (Z(0) @ Z(1))

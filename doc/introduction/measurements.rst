@@ -88,8 +88,8 @@ measurement function.
      - ✓
      - ✗
 
-Analytic mode and finite-shots
-------------------------------
+Analytic and finite-shots
+-------------------------
 
 If ``shots`` is not specified in a workflow anywhere, the workflow will run
 analytically by default (analytic mode). A finite-shot simulation will be
@@ -112,5 +112,58 @@ directly applied to a QNode.
     # execute the QNode using 10 shots
     result = circuit(0.54, 0.1)
 
-    # execute the QNode again, now using 1 shot
-    result = qp.set_shots(circuit, shots=1)(0.54, 0.1)
+Mid-circuit measurements
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+A wire can also be measured in the middle of a circuit with
+:func:`~pennylane.measure` (a mid-circuit measurement, MCM), and subsequent
+operations can be conditioned on the outcome with :func:`~pennylane.cond`.
+Two MCM methods are supported with ``qp.qjit(capture=True)``:
+
+* ``"one-shot"`` (default): the circuit is executed once per shot, each shot
+  sampling its own outcomes, and the results are combined. It requires
+  finite-shots, and it supports returning statistics of MCM outcomes, such as
+  ``qp.probs(op=m)``.
+
+* ``"single-branch-statistics"``: each execution samples a single outcome per
+  MCM and follows that one branch *only*. It works in analytic and finite-shots
+  mode. This is typically useful in repeat-until-success circuits or real-time
+  feedback, where one shot is typically all that is needed.
+
+The MCM method is specified in the QNode via the ``mcm_method`` argument.
+
+or example, with 1000 shots, ``"one-shot"`` averages over both outcomes of the
+MCM:
+
+.. code-block:: python
+
+    dev = qp.device("lightning.qubit", wires=2)
+
+    @qp.qjit(capture=True, seed=37)
+    @qp.set_shots(shots=1000)
+    @qp.qnode(dev, mcm_method="one-shot")
+    def circuit(x):
+        qp.RY(x, wires=0)
+        m = qp.measure(0)
+        qp.cond(m, qp.X)(wires=1)
+        return qp.expval(qp.Z(1)), qp.probs(op=m)
+
+>>> circuit(1.2)
+(Array(0.386, dtype=float64), Array([0.693, 0.307], dtype=float64))
+
+With ``mcm_method="single-branch-statistics"``, all 1000 shots instead follow
+the single branch sampled for ``m``:
+
+.. code-block:: python
+
+    @qp.qjit(capture=True, seed=37)
+    @qp.set_shots(shots=1000)
+    @qp.qnode(dev, mcm_method="single-branch-statistics")
+    def single_branch(x):
+        qp.RY(x, wires=0)
+        m = qp.measure(0)
+        qp.cond(m, qp.X)(wires=1)
+        return qp.expval(qp.Z(1))
+
+>>> single_branch(1.2)
+Array(1., dtype=float64)

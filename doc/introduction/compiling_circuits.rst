@@ -3,58 +3,27 @@
 
 .. _intro_ref_compile_circuits:
 
-Quantum just-in-time compilation
-================================
+Compiling circuits
+==================
 
-PennyLane2 is built ontop of the
-`Catalyst compiler <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`_,
-which enables just-in-time compilation of PennyLane2 programs via the
-:func:`@qjit <~pennylane.qjit>` decorator.
+The :doc:`doc/introduction/qjit.rst` page provides an overview of quantum
+just-in-time compilation with :func:`~pennylane.qjit`. "Compilation" in that
+context refers to the traditional use of the word: the translation of
+human-readable code into machine code that a processing unit can directly
+execute.
 
-https://docs.jax.dev/en/latest/201/jit.html
+Here, means *quantum circuit transformations*, which can include pattern
+matching, gate cancellations, gate decomposition, and more.
 
-* Compile an entire quantum-classical workflow, including any optimization loops.
-
-* Significant performance and scalability improvements over standard Python execution.
-
-* Advanced control flow that supports both quantum and classical instructions.
-
-* Infrastructure for both quantum and classical compilation, allowing you to compile quantum circuits that contain control flow.
-
-* Support for PennyLane-Lightning high performance simulators, and Amazon Braket devices. Additional hardware support, including QPUs, to come.
-
-
-
-PennyLane offers multiple tools for compiling circuits. We use the term "compilation"
-here in a loose sense as the process of transforming one circuit into one or more
-differing circuits. A circuit could be either a quantum function or a sequence of
-operators. For example, such a transformation could replace a gate type with another,
-fuse gates, exploit mathematical relations that simplify an observable, or replace a
-large circuit by a number of smaller circuits.
-
-Compilation functionality is mostly designed as **transforms**; see the :doc:`transforms documentation <../code/qp_transforms>`
-for more details, as well as information on how to write your own custom transforms.
-
-In addition to quantum circuit transforms, PennyLane also supports experimental
-just-in-time compilation, via the :func:`~.qjit` decorator and `Catalyst <https://github.com/pennylaneai/catalyst>`__.
-This is more general, and supports full hybrid compilation --- compiling both the
-classical and quantum components of your workflow into a binary that can be run
-close to the accelerators that you are using.
-
-Compilation transforms for circuit optimization
------------------------------------------------
-
-PennyLane includes multiple transforms that can act on ``QNode``'s, quantum functions,
-and multiple other PennyLane objects. See the :ref:`transforms library <transform_library>`
-for a complete list.
+PennyLane2 includes a variety of quantum circuit transforms:
 
 :html:`<div class="summary-table">`
 
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.transforms.cancel_inverses
-    ~pennylane.transforms.commute_controlled
+    ~pennylane.decompose
+    ~pennylane.transforms.gridsynth
     ~pennylane.transforms.merge_amplitude_embedding
     ~pennylane.transforms.merge_rotations
     ~pennylane.transforms.pattern_matching
