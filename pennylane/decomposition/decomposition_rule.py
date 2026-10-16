@@ -611,6 +611,49 @@ _excluded_decomps_private = {}
 _excluded_decomps_var = ContextVar("_excluded_decomps", default=_excluded_decomps_private)
 
 
+def _canonicalize_signature(op_type, rule):
+    """Wraps a decomposition rule in an interface that accepts positionally passed arguments."""
+
+    # pylint: disable=protected-access
+
+    if not (isinstance(op_type, type) and issubclass(op_type, Operator2)):
+        return rule
+
+    def _get_arguments(*args, **kwargs):
+        bound_args = op_type._sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        return bound_args.arguments
+
+    def _get_work_wire_spec():
+
+        if isinstance(rule._work_wire_spec, dict):
+            return rule._work_wire_spec
+
+        def _wrapper(*args, **kwargs):
+            return rule._work_wire_spec(**_get_arguments(*args, **kwargs))
+
+        return _wrapper
+
+    def _resource_fn(*args, **kwargs):
+        return rule._compute_resources(**_get_arguments(*args, **kwargs))
+
+    def _condition_fn(*args, **kwargs):
+        return rule.is_applicable(**_get_arguments(*args, **kwargs))
+
+    @register_condition(_condition_fn)
+    @register_resources(
+        _resource_fn,
+        work_wires=_get_work_wire_spec(),
+        exact=rule.exact_resources,
+        name=rule.name,
+    )
+    def _impl(*args, **kwargs):
+        rule._impl(**_get_arguments(*args, **kwargs))
+
+    _impl._source = rule._source
+    return _impl
+
+
 def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
@@ -671,8 +714,8 @@ def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: Decompositi
     .. code-block:: python
 
         @register_resources({qp.RY: 1})
-        def adjoint_ry(phi, wires, **_):
-            qp.RY(-phi, wires=wires)
+        def adjoint_ry(base):
+            qp.RY(-base.phi, wires=wires)
 
         qp.add_decomps("Adjoint(RY)", adjoint_ry)
 
@@ -684,6 +727,7 @@ def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: Decompositi
             "A decomposition rule must be a qfunc with a resource estimate "
             "registered using qp.register_resources"
         )
+    decomps = tuple(_canonicalize_signature(op_type, rule) for rule in decomps)
     _decompositions_var.get()[to_name(op_type)].extend(decomps)
 
 
