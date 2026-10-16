@@ -99,7 +99,6 @@
 
           qp.cond(m, true_fn=true_fn, false_fn=false_fn)()
 
-
       loop_hinted()
 
       return qp.expval(qp.X(0))
