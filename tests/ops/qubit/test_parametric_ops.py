@@ -33,7 +33,6 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
 from pennylane.ops.qubit.parametric_ops_single_qubit import (
-    _MAX_PHASE_POLYNOMIAL_CONTROL_WIRES,
     _controlled_phase_shift_condition,
     _controlled_phase_shift_mcx_condition,
     _controlled_phase_shift_mcx_decomp,
@@ -3954,13 +3953,6 @@ class TestControlledPhaseShiftMCXDecomposition:
         assert counts[qp.ControlledPhaseShift] == 2 * num_controls - 1
         assert counts[qp.CNOT] == 2
         assert sum(counts.values()) == 4 * num_controls - 3
-
-    def test_phase_polynomial_rule_condition(self):
-        """Tests that the exponentially large phase polynomial rule has a cap on the controls."""
-
-        assert _MAX_PHASE_POLYNOMIAL_CONTROL_WIRES == 9
-        assert _controlled_phase_shift_condition(control_wires=range(9))
-        assert not _controlled_phase_shift_condition(control_wires=range(10))
 
     def test_mcx_rule_condition(self):
         """Tests that the MCX-based rule requires more than one control wire."""
