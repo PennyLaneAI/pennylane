@@ -296,5 +296,7 @@ class TestAssertDecomposable:
         """Test that an error is raised if an applicable rule is invalid."""
         with qp.decomposition.local_decomps():
             qp.add_decomps(MyOneWireOp, _to_x, _to_x_bad_resources)
-            with pytest.raises(AssertionError, match="do not match the resource estimate"):
+            expected_message = "_to_x_bad_resources for MyOneWireOp fails"
+            with pytest.raises(AssertionError, match=expected_message) as exc_info:
                 assert_decomposable(MyOneWireOp(0))
+            assert "do not match the resource estimate" in str(exc_info.value.__cause__)

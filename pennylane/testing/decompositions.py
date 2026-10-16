@@ -274,4 +274,9 @@ def assert_decomposable(op: Operator, check_matrix: bool = True) -> None:
     assert applicable_rules, f"None of the decomposition rules registered for {op} are applicable."
 
     for rule in applicable_rules:
-        assert_valid_decomp_rule(op, rule, check_matrix=check_matrix)
+        try:
+            assert_valid_decomp_rule(op, rule, check_matrix=check_matrix)
+        except AssertionError as e:
+            raise AssertionError(
+                f"Decomposition rule {rule.name} for {op.name} fails the validity check."
+            ) from e
