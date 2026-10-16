@@ -1938,8 +1938,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Controlled decompositions that previously used ``qp.ctrl(GlobalPhase(...))`` now construct
-  :class:`~.ops.op_math.ControlledOp2` of :class:`~.GlobalPhase` directly, so that
+* Controlled decompositions now construct :class:`~.ops.op_math.ControlledOp2` of :class:`~.GlobalPhase` directly, so that
   ``C(GlobalPhase)`` is not rewritten to :class:`~.PhaseShift` and existing decomposition
   rules remain selectable. :class:`~.TrotterVibronic` wire argument order was also updated
   for consistent hashing with Catalyst.

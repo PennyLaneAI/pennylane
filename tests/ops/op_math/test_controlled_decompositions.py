@@ -213,7 +213,7 @@ class TestControlledDecompositionZYZ:
                     qp.RZ(-2 * np.pi, wires=0),
                     qp.CNOT(wires=[1, 0]),
                     qp.RZ(3 * np.pi / 2, wires=0),
-                    qp.ctrl(qp.GlobalPhase(phi=-np.pi / 2), control=1),
+                    qp.ops.ControlledOp2(qp.GlobalPhase(phi=-np.pi / 2), [1]),
                 ],
             ),
         ],
