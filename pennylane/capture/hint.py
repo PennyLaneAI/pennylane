@@ -154,27 +154,30 @@ def hint(f_or_hints, hints: dict[str, Any] | None = None):
 
     **Available Hints:**
 
-    * :func:`~.for_loop` and :func:`~.while_loop` support `"num-iters"` to indicate a heuristic
-      number of loop iterations for the purposes of resource estimation with
-      :func:`~.analyze`. See Usage Details for more information.
-    * The branches to :func:`~.cond` support ``"branch-prob"`` to indicate the probability
-      that a branch will be hit.
+    * ``"num-iters": val`` — Both :func:`~.for_loop` and :func:`~.while_loop` support
+      ``"num-iters"`` to indicate a heuristic number of loop iterations for the purposes of resource
+      estimation with :func:`~.specs`. See Usage Details for more information.
+    * ``"branch-prob"`` — The branches to :func:`~.cond` support ``"branch-prob"`` to indicate the
+      probability that a branch will be selected.
 
     .. warning::
 
         By definition, the :func:`~.qjit` compiler may decide to completely ignore any instances of
-        `hint` in a program; a compiler hint is something that does not affect program correctness,
-        meaning that the compiler _can_ safely ignore them and still provide correct results.
+        ``hint`` in a program; a compiler hint is something that does not affect program
+        correctness, meaning that the compiler can safely ignore them and still provide correct
+        results.
 
-        While close mispellings may be accepted (e.g., `"num-iter"`), spellings sufficiently far away
-        from the target will be ignored.
+        While close mispellings may be accepted (e.g., ``"num-iter"``), spellings sufficiently far
+        away from the target will be ignored.
 
     .. details::
         :title: Usage Details
 
+        **``"num-iters"`` with ``for`` and ``while`` loops**
+
         By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
-        with :func:`~.analyze` can heuristically specify the number of iterations, leading to concrete
-        resource counts (no symbolic expressions).
+        with :func:`~.analyze` can heuristically specify the number of iterations, leading to
+        concrete resource counts (no symbolic expressions).
 
         .. code-block:: python
 
@@ -208,7 +211,8 @@ def hint(f_or_hints, hints: dict[str, Any] | None = None):
         Total wires: 10
         Circuit Depth: Not computed
 
-        The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
+        The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the
+        unhinted loop.
 
         The same annotation can be applied directly instead of as a decorator:
 
@@ -220,7 +224,71 @@ def hint(f_or_hints, hints: dict[str, Any] | None = None):
 
             hinted_loop = qp.hint(hinted_loop, {"num-iters": 10})
 
-        Note that hints can be overwritten. The following will use ``20`` as the number of iterations:
+        **``"branch-prob"`` with ``cond``**
+
+        By hinting :func:`~.cond` branches with ``"branch-prob"``, profiling with :func:`~.analyze`
+        can heuristically specify the probabilities for each branch being selected, leading to a
+        weighted average of resources from each branch.
+
+        By default (with no ``hint``s), :func:`~.analyze` takes the maximum union of all gate types
+        in every :func:`~.cond` branch. The difference in behaviour with and without ``hint`` is
+        evident in the example below.
+
+        .. code-block:: python
+
+            import pennylane as qp
+
+            @qp.qjit(capture=True)
+            @qp.qnode(qp.device("lightning.qubit", wires=2))
+            def circuit():
+                qp.H(0)
+                qp.H(1)
+
+                @qp.for_loop(0, 10)
+                def loop_hinted(_):
+                    m = qp.measure(0)
+
+                    @qp.hint({"branch-prob": 0.8})
+                    def true_fn():
+                        qp.CNOT((0, 1))
+
+                    @qp.hint({"branch-prob": 0.2})
+                    def false_fn():
+                        qp.CZ((1, 0))
+
+                    qp.cond(m, true_fn=true_fn, false_fn=false_fn)()
+
+                @qp.for_loop(0, 10)
+                def loop_unhinted(_):
+                    m = qp.measure(0)
+
+                    def true_fn():
+                        qp.CRZ(0.1, (0, 1))
+
+                    def false_fn():
+                        qp.CRY(0.1, (1, 0))
+
+                    qp.cond(m, true_fn=true_fn, false_fn=false_fn)()
+
+                loop_hinted()
+                loop_unhinted()
+
+                return qp.expval(qp.X(0))
+
+        >>> print(qp.analyze(circuit)().resources.quantum_operations)
+        {'CNOT': 8, 'CRY': 10, 'CRZ': 10, 'CZ': 2, 'Hadamard': 2, 'MidCircuitMeasure': 20}
+
+        With the hinted conditional branches in ``loop_hinted``, :func:`~.analyze` takes the
+        weighted sum of each branch's resources
+        (:math:`10 \text{iterations} \times (0.8 \times \text{CNOT} + 0.2 \times \text{CZ}) = 8 \times \text{CNOT} + 2 \times \text{CZ}`).
+        In contrast, with the unhinted conditional branches in ``loop_unhinted``, :func:`~.analyze`
+        takes the max union of all gate types across every branch, which accumulates to
+        :math:`10 \times \text{CRZ} + 10 \times \text{CRY})`.
+
+        **General notes on using ``hint``**
+
+        Note that hints can be overwritten. The following will use ``20`` as the number of
+        iterations:
 
         .. code-block:: python
 
@@ -238,8 +306,8 @@ def hint(f_or_hints, hints: dict[str, Any] | None = None):
                 loop(0)
                 return qp.expval(qp.Z(0))
 
-        Compiler hints will also be discarded without warning if they do not match the expected type of hint.
-        The next example would run without warning:
+        Compiler hints will also be discarded without warning if they do not match the expected type
+        of hint. The next example would run without warning:
 
         .. code-block:: python
 
