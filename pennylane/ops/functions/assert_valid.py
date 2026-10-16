@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 Former location of :func:`~.testing.assert_valid`, kept as an alias of
-:mod:`pennylane.testing` until Catalyst and Lightning use the new location.
+:mod:`pennylane.testing` until remaining in-repo call sites are migrated.
 """
 
 from pennylane.testing.decompositions import _test_decomposition_rule
