@@ -44,8 +44,9 @@ class Backline(Device):
     Keyword Args:
         controller (Controller): The :class:`~.Controller` that drives the QPU and runs the QNode.
         coprocessors (Sequence[Coprocessor]): Zero or more :class:`~.Coprocessor` accelerators.
-        transport (str, Transport): The transfer protocol between nodes, by registry name (e.g.,
-            ``"rdma"`` or ``"memcpy"``) or a :class:`~.Transport`.
+        transport (str, Transport): The transfer protocol between nodes, by registry name
+            (``"rdma"``, ``"memcpy"`` or ``"none"``) or a :class:`~.Transport`. ``"none"`` runs the
+            controller alone and cannot be used with coprocessors.
         qec_code (str, None): The quantum error-correcting code to implicitly encode the circuit.
             Currently the only supported option is ``"steane"``. Defaults to ``None``, leaving the
             circuit unencoded.

@@ -27,6 +27,7 @@ from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
     _decomp_contains_mcm,
+    _list_decomps,
     get_fixed_decomp,
     list_decomps,
     register_condition,
@@ -192,7 +193,7 @@ class Adjoint2(SymbolicOp2):
             self.tracer = res
 
 
-@list_decomps.register
+@_list_decomps.register
 def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
 
     abs_op = abstractify(op)
@@ -206,7 +207,7 @@ def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
         return DecompCollection([cancel_adjoint])
 
     # Custom decomposition rules registered specifically to the adjoint operator
-    custom_rules = list_decomps.dispatch(object)(abs_op)
+    custom_rules = _list_decomps.dispatch(object)(abs_op)
 
     # Shortcut that ignores general rules if an operator is self-adjoint
     if self_adjoint in custom_rules:
