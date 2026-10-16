@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core import Operator2
-from pennylane.ops.functions import assert_valid
+from pennylane.testing import assert_valid
 from pennylane.typing import Bool, Float, Wire
 
 

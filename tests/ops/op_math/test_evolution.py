@@ -28,7 +28,7 @@ def test_basic_validity():
     """Assert the basic validity of an evolution op."""
     base = qp.prod(qp.PauliX(0), qp.PauliY(1))
     op = Evolution(base, 5.2)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestEvolution:  # pylint: disable=too-many-public-methods

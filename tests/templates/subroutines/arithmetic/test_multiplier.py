@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -30,7 +30,7 @@ def test_standard_validity_Multiplier():
     x_wires = [0, 1, 2, 3]
     work_wires = [4, 5, 6, 7, 8, 9]
     op = qp.Multiplier(k, x_wires=x_wires, mod=mod, work_wires=work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.system

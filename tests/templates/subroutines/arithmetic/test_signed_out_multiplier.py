@@ -27,7 +27,6 @@ from pennylane.core.operator import abstractify
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import sample, state
 from pennylane.ops import CNOT, ctrl
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.arithmetic.incrementer import Incrementer
 from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier
@@ -37,6 +36,8 @@ from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import (
     _twos_complement_helper,
     _zeroed_signed_out_multiplier_resources,
 )
+from pennylane.testing import assert_valid
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import Wire
 
 

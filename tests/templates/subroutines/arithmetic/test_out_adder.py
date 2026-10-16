@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -31,7 +31,7 @@ def test_standard_validity_OutAdder():
     mod = 7
     work_wires = [6, 7]
     op = qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestOutAdder:
