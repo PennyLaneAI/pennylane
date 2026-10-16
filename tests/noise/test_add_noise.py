@@ -23,6 +23,7 @@ import pennylane as qp
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.transforms import BoundTransform, CompilePipeline
 from pennylane.noise.add_noise import _get_transform_program, add_noise
+from pennylane.workflow import get_compile_pipeline
 
 # pylint:disable = no-member
 
@@ -466,6 +467,45 @@ class TestAddNoiseLevels:
         assert len(transform_level1) == len(transform_level2) - 1
         assert transform_level2[4].tape_transform == qp.metric_tensor.tape_transform
         assert transform_level2[5].tape_transform == add_noise.tape_transform
+
+    def test_add_noise_device_level_does_not_duplicate_the_device_program(self):
+        """Test that ``level="device"`` applies the device program only once.
+
+        Inserting the transform at the end of the device preprocessing requires the
+        device program to be part of the pipeline the transform builds. Appending it
+        again when the pipeline is resolved would apply it a second time.
+        """
+        dev = qp.device("default.mixed", wires=2)
+
+        @qp.transforms.undo_swaps
+        @qp.transforms.merge_rotations
+        @qp.transforms.cancel_inverses
+        @qp.qnode(dev, diff_method="parameter-shift")
+        def f(w, x, y, z):
+            qp.RX(w, wires=0)
+            qp.RY(x, wires=1)
+            qp.CNOT(wires=[0, 1])
+            qp.RY(y, wires=0)
+            qp.RX(z, wires=1)
+            return qp.expval(qp.Z(0) @ qp.Z(1))
+
+        fcond = qp.noise.op_eq(qp.RX)
+        fcall = qp.noise.partial_wires(qp.PhaseDamping, 0.4)
+        noise_model = qp.NoiseModel({fcond: fcall})
+
+        noisy_qnode = add_noise(f, noise_model=noise_model, level="device")
+
+        user_program = noisy_qnode.compile_pipeline
+        resolved_program = get_compile_pipeline(noisy_qnode, level="device")(1.0, 2.0, 3.0, 4.0)
+
+        # The device preprocessing and the gradient expansion are already in the
+        # pipeline built by ``add_noise``, so resolving the device level must return
+        # that pipeline unchanged instead of appending them a second time.
+        assert resolved_program == user_program
+
+        names = [transform.tape_transform.__name__ for transform in resolved_program]
+        assert len(names) == len(set(names))
+        assert names.count(add_noise.tape_transform.__name__) == 1
 
 
 class TestGetTransformProgramHelper:

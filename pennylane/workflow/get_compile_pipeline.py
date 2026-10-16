@@ -266,7 +266,7 @@ def get_compile_pipeline(
             resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
             if not qnode.compile_pipeline.is_informative:
                 outer_pipeline, inner_pipeline = _setup_transform_program(
-                    qnode.device, resolved_config
+                    qnode.device, resolved_config, user_program=qnode.compile_pipeline
                 )
                 full_compile_pipeline += outer_pipeline + inner_pipeline
 

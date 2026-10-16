@@ -277,6 +277,7 @@ def construct_batch(
             execution_config,
             cache=qnode.execute_kwargs["cache"],
             cachesize=qnode.execute_kwargs["cachesize"],
+            user_program=user_program,
         )
         full_transform_program = outer_transform_program + inner_transform_program
 
