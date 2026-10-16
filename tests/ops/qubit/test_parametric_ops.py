@@ -33,7 +33,6 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
 from pennylane.ops.qubit.parametric_ops_single_qubit import (
-    _controlled_phase_shift_condition,
     _controlled_phase_shift_mcx_condition,
     _controlled_phase_shift_mcx_decomp,
     _mc_phase_shift,
