@@ -83,8 +83,8 @@ def resources_from_analysis_pass(
     level: int | tuple[int] | list[int],
     level_to_markers: dict[int, list[str]],
     level_to_name: dict[int, str],
-    is_estimate: bool = False,
     *args,
+    is_estimate: bool = False,
     **kwargs,
 ) -> dict[str, SpecsResources | list[SpecsResources]]:
     """
