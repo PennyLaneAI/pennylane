@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import Wire
 
 
@@ -30,7 +30,7 @@ def test_standard_validity():
     features = (0.0, 1.0, 2.0)
 
     op = qp.IQPEmbedding(features, wires=(0, 1, 2))
-    qp.ops.functions.assert_valid(op, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_differentiation=True)
 
 
 class TestDecomposition:

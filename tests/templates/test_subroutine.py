@@ -258,7 +258,7 @@ class TestSubroutineOp:
     @pytest.mark.usefixtures("disable_capture")
     def test_basic_validity(self):
         """Test that subroutine op passes basic validity checks."""
-        qp.ops.functions.assert_valid(self.op1, skip_pickle=True)
+        qp.testing.assert_valid(self.op1, skip_pickle=True)
 
     def test_repr(self):
         """Test that SubroutineOp has a clean repr."""
@@ -1060,7 +1060,7 @@ class TestGraphDecomposition:
             qp.X(wires)
 
         op = f.operator(0)
-        qp.ops.functions.assert_valid(op, skip_pickle=True)
+        qp.testing.assert_valid(op, skip_pickle=True)
 
     def test_compute_resources_fallback(self):
         """Test that the compute_resources fallback allows integration with decomps by default."""
