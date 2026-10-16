@@ -1512,7 +1512,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Moved ``pop_op_eqns`` into ``pennylane.capture``.
+* Moved `pop_op_eqns` into `pennylane.capture`.
   [(#10345)](https://github.com/PennyLaneAI/pennylane/pull/10345)
 
 * Added an autouse fixture that undoes any changes a test makes to the registry of decomposition
