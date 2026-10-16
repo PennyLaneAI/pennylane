@@ -16,7 +16,7 @@
   ... )
   ```
 
-* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
+* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function
   can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
   [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
   [(#10297)](https://github.com/PennyLaneAI/pennylane/pull/10297)
@@ -60,11 +60,11 @@
   Circuit Depth: Not computed
 
   ```
-  
+
   The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
 
 * A new state preparation routine called :class:`~.PhaseGradientStatePrep` has been added, which
-  prepares the phase gradient state 
+  prepares the phase gradient state
   :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`.
   It is a catalytic state for (generalized) rotation gates.
   See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
@@ -1082,7 +1082,7 @@
 * ``Wires.all_wires`` can now handle a list with mixed ``Wires`` and ``AbstractWires`` instances.
   [(#10223)](https://github.com/PennyLaneAI/pennylane/pull/10223)
 
-* ``qp.add_decomps`` no longer raises an error when the new decomposition rule is the exact same 
+* ``qp.add_decomps`` no longer raises an error when the new decomposition rule is the exact same
   object as an existing one. An error is still raised if the new rule has the same name as an
   existing rule, but is a different object to the rule with that name.
   [(#10282)](https://github.com/PennyLaneAI/pennylane/pull/10282)
@@ -1225,6 +1225,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The ``pennylane.qnn`` module has been removed, including ``TorchLayer``.
+  ``pennylane.qnn.iqp_expval`` has been moved to :func:`pennylane.math.iqp_expval`.
+  [(#10247)](https://github.com/PennyLaneAI/pennylane/pull/10247)
+
 * :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's
   ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
   available as :func:`~.transforms._tape_decompose`.
@@ -1248,7 +1252,7 @@
   [(#10238)](https://github.com/PennyLaneAI/pennylane/pull/10238)
 
 * :class:`~.IQPEmbedding`'s ``pattern`` argument now lists pairs of *indices into* ``wires``,
-  rather than wire labels. This matches the ``pattern`` argument of :class:`~.IQP`. 
+  rather than wire labels. This matches the ``pattern`` argument of :class:`~.IQP`.
   It is a dynamic ``(K, 2)`` integer
   tensor. The default all-pairs pattern is unchanged.
   To entangle the first and third of ``wires=["z", "a", "k"]``, pass ``pattern=[[0, 2]]``
@@ -1268,7 +1272,7 @@
   ```
 
   [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
-  
+
 * The ``pennylane.qaoa`` module has been removed. This includes the mixer Hamiltonians
   (``x_mixer``, ``xy_mixer``, ``bit_flip_mixer``), the cost Hamiltonians (``maxcut``,
   ``max_independent_set``, ``min_vertex_cover``, ``max_clique``, ``max_weight_cycle``,
@@ -1942,9 +1946,9 @@
   very minor increases.
   [(#10270)](https://github.com/PennyLaneAI/pennylane/pull/10270)
 
-* Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the 
+* Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the
   output matrix was with respect to a wrong wire ordering. The bug occurred in products where
-  groups of factors with overlapping wires caused a partial matrix with permuted wires, 
+  groups of factors with overlapping wires caused a partial matrix with permuted wires,
   e.g. ``H(1) @ H(0) @ CNOT([2, 1]) @ CNOT([1, 0])``.
   [(#10274)](https://github.com/PennyLaneAI/pennylane/pull/10274)
 
