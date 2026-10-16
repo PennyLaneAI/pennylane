@@ -1673,9 +1673,10 @@
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
   - Miscelleneous operators are ported:
-    - :class:`~.PauliMeasure`, :class:`~.ops.MidMeasure`
+    - :class:`~.PauliMeasure`, :class:`~.ops.MidMeasure`, :class:`~.Barrier`
   [(#10005)](https://github.com/PennyLaneAI/pennylane/pull/10005)
   [(#10115)](https://github.com/PennyLaneAI/pennylane/pull/10115)
+  [(#10328)](https://github.com/PennyLaneAI/pennylane/pull/10328)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
