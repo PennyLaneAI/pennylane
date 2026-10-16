@@ -99,27 +99,15 @@
 
           qp.cond(m, true_fn=true_fn, false_fn=false_fn)()
 
-      @qp.for_loop(0, 10)
-      def loop_unhinted(_):
-          m = qp.measure(0)
-
-          def true_fn():
-              qp.CRZ(0.1, (0, 1))
-
-          def false_fn():
-              qp.CRY(0.1, (1, 0))
-
-          qp.cond(m, true_fn=true_fn, false_fn=false_fn)()
 
       loop_hinted()
-      loop_unhinted()
 
       return qp.expval(qp.X(0))
   ```
 
   ```pycon
   >>> print(qp.analyze(circuit)().resources.quantum_operations)
-  {'CNOT': 8, 'CRY': 10, 'CRZ': 10, 'CZ': 2, 'Hadamard': 2, 'MidCircuitMeasure': 20}
+  {'CNOT': 8, 'CZ': 2, 'Hadamard': 2, 'MidCircuitMeasure': 10}
   ```
 
   With the hinted conditional branches in ``loop_hinted``, :func:`~.analyze` takes the
