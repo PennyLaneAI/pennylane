@@ -31,7 +31,7 @@ from pennylane.core.operator import Operator1, Operator2
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
@@ -803,8 +803,7 @@ class TestDecompositions:
         """Tests the PCPhase decomposition rules."""
 
         op = qp.PCPhase(np.random.random(), dim, wires=wires)
-        for rule in qp.list_decomps(qp.PCPhase):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.integration
     @pytest.mark.usefixtures("enable_graph_decomposition")

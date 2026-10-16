@@ -37,11 +37,6 @@ from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp
 
 
-def test_assert_valid_alias():
-    """The old import path still points at :func:`~.testing.assert_valid`."""
-    assert qp.ops.functions.assert_valid is qp.testing.assert_valid
-
-
 class TestDecompositionErrors:
     """Test assertions involving decompositions."""
 

@@ -29,8 +29,7 @@ from pennylane.templates.state_preparations.partial_unary import (
     _partial_unary_state_prep_core,
     _partial_unary_state_prep_resources,
 )
-from pennylane.testing import assert_valid
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_valid, assert_valid_decomp_rule
 from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires
 
@@ -506,7 +505,7 @@ class TestPartialUnaryStatePreparation:
         [rule] = list_decomps(PartialUnaryStatePreparation)
         resources = rule.compute_resources(**op.arguments).gate_counts
         assert qp.MultiplexerStatePreparation(state_type[8], wires=Wire[3]) in resources
-        _test_decomposition_rule(op, rule)
+        assert_valid_decomp_rule(op, rule)
 
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")

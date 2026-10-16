@@ -40,15 +40,6 @@ def _assert_ops_equal(ops, expected):
         qp.assert_equal(op, exp, check_interface=False)
 
 
-def test_test_decomposition_rule_alias():
-    """The old private name is an alias of ``assert_valid_decomp_rule``."""
-    # pylint: disable=import-outside-toplevel
-    from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-
-    assert _test_decomposition_rule is assert_valid_decomp_rule
-    assert qp.testing.assert_valid_decomp_rule is assert_valid_decomp_rule
-
-
 class TestDecompRuleToTape:
     """Tests for decomp_rule_to_tape."""
 

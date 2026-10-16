@@ -20,7 +20,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.templates.subroutines.arithmetic.phase_adder import _add_k_fourier
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.xfail_if_capture(reason="Come back to this when we port it to Op2 [sc-130164]")
@@ -286,8 +286,7 @@ class TestPhaseAdder:
         x_wires = [1, 2, 3]
         work_wire = [0]
         op = qp.PhaseAdder(k, x_wires, mod, work_wire)
-        for rule in qp.list_decomps(qp.PhaseAdder):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""

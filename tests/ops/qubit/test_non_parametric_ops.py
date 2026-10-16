@@ -48,7 +48,7 @@ from scipy.stats import unitary_group
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.utils import _get_decomp_args
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 # pylint: disable=too-few-public-methods
@@ -878,8 +878,7 @@ class TestMultiControlledX:
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
-        for rule in qp.list_decomps(op):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_custom_dispatch(self):
         """Tests that qp.ctrl() of MCX dispatches to another MCX."""

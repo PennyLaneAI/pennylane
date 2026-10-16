@@ -275,6 +275,3 @@ def assert_decomposable(op: Operator, check_matrix: bool = True) -> None:
 
     for rule in applicable_rules:
         assert_valid_decomp_rule(op, rule, check_matrix=check_matrix)
-
-
-_test_decomposition_rule = assert_valid_decomp_rule
