@@ -222,6 +222,11 @@ class TestUpdate:
         assert updated.compile_pipeline is new_compile
         assert updated.post_device_pipeline is new_post_device
 
+        empty_post_device = qn.update_pipelines(new_compile)
+        assert empty_post_device is not qn
+        assert empty_post_device.compile_pipeline is new_compile
+        assert empty_post_device.post_device_pipeline == qp.CompilePipeline()
+
 
 class TestInitialization:
     """Testing the initialization of the qnode."""
