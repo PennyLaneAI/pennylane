@@ -22,6 +22,7 @@ import numpy as np
 
 from pennylane import capture, compiler, math
 from pennylane import ops as qp_ops
+from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
@@ -32,7 +33,7 @@ from pennylane.decomposition import (
 from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
+from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic import TemporaryAND
@@ -201,7 +202,7 @@ class QROM(Operator2):
     compilable_argnames = ("clean",)
 
     arg_specs = {
-        "bitstrings": Int[-1, -1],
+        "bitstrings": Bool[-1, -1],
         "control_wires": Wire[-1],
         "target_wires": Wire[-1],
         "work_wires": Wire[-1],
@@ -225,10 +226,10 @@ class QROM(Operator2):
                 bitstrings = [[int(bit) for bit in bitstring] for bitstring in bitstrings]
 
             if isinstance(bitstrings, (list, tuple)):
-                bitstrings = math.array(bitstrings, dtype=int)
+                bitstrings = math.array(bitstrings, dtype=bool)
 
             else:
-                bitstrings = bitstrings.astype(int)
+                bitstrings = bitstrings.astype(bool)
 
         wire_args = {
             "control_wires": control_wires,
@@ -343,7 +344,7 @@ def _select_swap_resources(
     # Select block (implemented as a nested QROM over concatenated columns)
     num_targets_select = depth * num_targets
     bigger_qrom = QROM(
-        Int[num_columns, num_targets_select],
+        Bool[num_columns, num_targets_select],
         Wire[num_control_wires_select],
         Wire[num_targets_select],
         Wire[num_work_wires_select],
@@ -957,18 +958,23 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
     for i in range(1, len(triples)):
         TemporaryAND(triples[i], (1, 0))
 
-    # [dwierichs] todo: Once resource hints are merged, use those estimates:
-    # [sc-129626] [sc-129627]
+    # [dwierichs] todo: Once resource hints for cond are merged, use those estimates:
+    # [sc-129627]
     # quarter_prob = int(num_blocks > (1 << (c - 2))) / (num_blocks - 1)
     # mid_prob = int(num_blocks > (1 << (c - 1))) / (num_blocks - 1)
-    # est_ladder_len = float(
-    # np.mean([math.bitwise_count(math.bitwise_xor(k, k + 1)) - 1 for k in range(num_blocks - 1)])
-    # )
 
     # Loop over all blocks but the last one. Skip entirely when there is only one block:
     # ``blocks`` then has shape ``(0, ...)``, and Catalyst's ``for_loop(0)`` still traces the
     # body, which would index into that empty axis.
     if num_blocks > 1:
+        # Average length of the elbow ladders below, which is min(t, c - 2) for t trailing ones in k
+        # ladder_lens = [min((k ^ (k + 1)).bit_count() - 1, c - 2) for k in range(num_blocks - 1)]
+        # est_ladder_len = sum(ladder_lens) / (num_blocks - 1)
+        # Compute total elbow count, subtract the leading ones outside of `loop`, and divide by
+        # outer iteration count.
+        more_than_half = int(num_blocks > 2 ** (c - 1))
+        num_elbows = c + num_blocks - 2 - (num_blocks - 1).bit_count() - more_than_half
+        average_ladder_len = (num_elbows - len(triples)) / (num_blocks - 1)
 
         def loop(k):
             # 1. load the k-th block, controlled on the flag circuit
@@ -981,9 +987,8 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
             # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
             lower_bound = math.max(math.array([a, 1], like=a))
 
+            @hint({"num-iters": average_ladder_len})
             @for_loop(c - 2, lower_bound - 1, -1)
-            # Once resource hints are merged, use those estimates:
-            # @for_loop(c - 2, max(a - 1, 0), -1, estimated_iterations=est_ladder_len)
             def uncompute(i):
                 qp_ops.adjoint(TemporaryAND)(wires=triples[i])
 
@@ -996,9 +1001,8 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
             flip_iteration_bit(a, triples, top_not_flipped)
 
             # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
-            # Once resource hints are merged, use those estimates:
+            @hint({"num-iters": average_ladder_len})
             @for_loop(lower_bound, c - 1)
-            # @for_loop(max(a, 1), c - 1, estimated_iterations=est_ladder_len)
             def recompute(i):
                 TemporaryAND(triples[i], (1, 0))
 

@@ -35,6 +35,7 @@ from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
     _decomp_contains_mcm,
+    _list_decomps,
     get_fixed_decomp,
     list_decomps,
     register_condition,
@@ -624,7 +625,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
             self.tracer = res
 
 
-@list_decomps.register
+@_list_decomps.register
 def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     """Get all the decomposition rules applicable to this operator."""
 
@@ -641,7 +642,7 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
         return DecompCollection([flip_control_adjoint])
 
     # Get custom rules registered for this controlled operator.
-    custom_rules = list_decomps.dispatch(object)(op)
+    custom_rules = _list_decomps.dispatch(object)(op)
 
     # The specialized ChangeOpBasis rule leaves the compute and uncompute operations
     # uncontrolled, so it must always take precedence over general controlled fallbacks.

@@ -431,44 +431,41 @@ class TestQNode:
                     qp.PhaseShift(phi + lam, wires=wires),
                 ]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        def _decomp(theta, phi, delta, wires):
+            qp.Rot(delta, theta, -delta, wires)
+            qp.PhaseShift(phi + delta, wires)
 
-            @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
-            def _decomp(theta, phi, delta, wires):
-                qp.Rot(delta, theta, -delta, wires)
-                qp.PhaseShift(phi + delta, wires)
+        qp.add_decomps(MyU3, _decomp)
 
-            qp.add_decomps(MyU3, _decomp)
+        a = np.array(0.1, requires_grad=False)
+        p = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
-            a = np.array(0.1, requires_grad=False)
-            p = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
+        def circuit(a, p):
+            qp.RX(a, wires=0)
+            MyU3(p[0], p[1], p[2], wires=0)
+            return qp.expval(qp.PauliX(0))
 
-            @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
-            def circuit(a, p):
-                qp.RX(a, wires=0)
-                MyU3(p[0], p[1], p[2], wires=0)
-                return qp.expval(qp.PauliX(0))
+        res = circuit(a, p)
+        expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
+            np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-            res = circuit(a, p)
-            expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
-                np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
-            )
-            assert np.allclose(res, expected, atol=tol, rtol=0)
+        res = qp.grad(circuit)(a, p)
 
-            res = qp.grad(circuit)(a, p)
-
-            expected = np.array(
-                [
-                    np.cos(p[1])
-                    * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
-                    np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
-                    - np.sin(p[1])
-                    * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
-                    np.sin(a)
-                    * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
-                ]
-            )
-            assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = np.array(
+            [
+                np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
+                np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
+                - np.sin(p[1])
+                * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
+                np.sin(a)
+                * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
 class TestShotsIntegration:
