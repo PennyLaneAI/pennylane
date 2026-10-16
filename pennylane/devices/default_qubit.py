@@ -27,6 +27,12 @@ import numpy as np
 
 from pennylane import math, ops
 from pennylane.core.measurements import MeasurementProcess, SampleMeasurement, StateMeasurement
+
+try:
+    from autograd.numpy.numpy_boxes import ArrayBox
+except ImportError:  # pragma: no cover
+    ArrayBox = ()
+
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.core.transforms import CompilePipeline, transform
 from pennylane.decomposition.gate_set import GateSet
@@ -177,6 +183,13 @@ def observable_accepts_analytic(obs: Operator, is_expval=False) -> bool:
         return True
 
     return obs.has_diagonalizing_gates
+
+
+def _safe_in_backprop(tensor) -> bool:
+    try:
+        return math.in_backprop(tensor)
+    except (ValueError, TypeError, AttributeError):
+        return False
 
 
 def accepted_sample_measurement(m: MeasurementProcess) -> bool:
@@ -721,12 +734,19 @@ class DefaultQubit(Device):
             if option not in updated_values["device_options"]:
                 updated_values["device_options"][option] = getattr(self, f"_{option}")
 
-        mcm_config = self._setup_mcm_config(config.mcm_config, circuit)
+        mcm_config = self._setup_mcm_config(
+            config.mcm_config, circuit, execution_config=replace(config, **updated_values)
+        )
 
         updated_values["mcm_config"] = mcm_config
         return replace(config, **updated_values)
 
-    def _setup_mcm_config(self, mcm_config: MCMConfig, tape: QuantumScript) -> MCMConfig:
+    def _setup_mcm_config(
+        self,
+        mcm_config: MCMConfig,
+        tape: QuantumScript | None = None,
+        execution_config: ExecutionConfig | None = None,
+    ) -> MCMConfig:
 
         final_mcm_method = mcm_config.mcm_method
         if mcm_config.mcm_method is None:
@@ -745,6 +765,38 @@ class DefaultQubit(Device):
             raise DeviceError(
                 "Using postselect_mode='fill-shots' is only supported with mcm_method='deferred'."
             )
+
+        if final_mcm_method == "tree-traversal":
+            shots = getattr(tape, "shots", None)
+            is_analytic = shots is None or (
+                hasattr(shots, "total_shots") and shots.total_shots is None
+            )
+            if is_analytic:
+                gradient_method = (
+                    getattr(execution_config, "gradient_method", None)
+                    if execution_config is not None
+                    else None
+                )
+                if tape is None and gradient_method == "backprop":
+                    raise DeviceError(
+                        "Differentiating circuits with mid-circuit measurements using "
+                        "mcm_method='tree-traversal' and shots=None is not supported with "
+                        "backpropagation on default.qubit. Please use diff_method='finite-diff' "
+                        "or diff_method='parameter-shift', or use mcm_method='deferred'."
+                    )
+                if tape is not None and any(isinstance(op, MidMeasure) for op in tape.operations):
+                    params_in_backprop = any(
+                        isinstance(p, ArrayBox)
+                        or (hasattr(math, "in_backprop") and _safe_in_backprop(p))
+                        for p in tape.get_parameters()
+                    )
+                    if gradient_method == "backprop" and params_in_backprop:
+                        raise DeviceError(
+                            "Differentiating circuits with mid-circuit measurements using "
+                            "mcm_method='tree-traversal' and shots=None is not supported with "
+                            "backpropagation on default.qubit. Please use diff_method='finite-diff' "
+                            "or diff_method='parameter-shift', or use mcm_method='deferred'."
+                        )
 
         return replace(mcm_config, mcm_method=final_mcm_method)
 
