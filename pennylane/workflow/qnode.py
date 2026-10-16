@@ -780,6 +780,7 @@ class QNode:
         updated_qn = copy.copy(self)
 
         # Update the compile and post-device compile pipelines
+        # pylint: disable=protected-access
         updated_qn._compile_pipeline = compile_pipeline
         updated_qn._post_device_pipeline = post_device_pipeline
 
