@@ -22,12 +22,12 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arbitrary_unitary import (
     _all_pauli_words_but_identity,
     _n_k_gray_code,
     _tuple_to_word,
 )
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -36,7 +36,7 @@ def test_standard_validity():
     shape = (3,)
     weights = np.arange(np.prod(shape), dtype=float).reshape(shape)
     op = qp.ArbitraryUnitary(weights, wires=[0])
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 # fmt: off

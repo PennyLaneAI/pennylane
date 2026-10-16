@@ -22,12 +22,12 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.signed_out_square import (
     OutSquare,
     SignedOutSquare,
     _signed_out_square_resources,
 )
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import Wire
 
 
@@ -39,7 +39,7 @@ def test_standard_validity_signed_out_square(output_wires_zeroed):
     output_wires = [4, 5, 6, 7, 8, 9, 10]
     work_wires = [11, 12, 13, 14, 15, 16, 17, 18, 19]
     op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.parametrize("output_wires_zeroed", [False, True])
