@@ -1124,9 +1124,9 @@ class TestControlledMethod:
         qp.assert_equal(out, qp.CZ(("a", 0)))
 
     def test_Barrier(self):
-        """Tests the _controlled behavior of Barrier."""
+        """Tests the control behavior of Barrier."""
         original = qp.Barrier((0, 1, 2), only_visual=True)
-        out = original._controlled("a")
+        out = qp.ctrl(original, "a")
         qp.assert_equal(original, out)
 
     def test_CZ(self):
