@@ -495,13 +495,13 @@ def _pauli_rot_resources(theta, pauli_word, wires):  # pylint: disable=unused-ar
         # a pure-Z word needs no basis change, so there is nothing to conjugate
         return {qp.MultiRZ(Float, Wire[num_active_wires]): 1}
 
-    # A Y is an X rotation by ``±π/2``, i.e. ``PPR(±4, "X")``; an X uses a Hadamard.
-    # Hadamard is required here: a ``PPR`` on Y decomposes back into ``PauliRot``, which
+    # A Y is an X rotation by ``±π/2``, i.e. ``PPR_4(±1, "X")``; an X uses a Hadamard.
+    # Hadamard is required here: a ``PPR_4`` on Y decomposes back into ``PauliRot``, which
     # would cycle with the Y basis change. The compute and uncompute bases differ only
     # in the sign of the Y rotation.
-    def _basis(denominator):
+    def _basis(sign):
         gates = tuple(
-            qp.Hadamard(wires=Wire[1]) if gate == "X" else qp.PPR(denominator, "X", wires=Wire[1])
+            qp.Hadamard(wires=Wire[1]) if gate == "X" else qp.PPR_4(sign, "X", wires=Wire[1])
             for gate in basis_word
         )
         # a single-gate basis change is not wrapped in a product
@@ -509,7 +509,7 @@ def _pauli_rot_resources(theta, pauli_word, wires):  # pylint: disable=unused-ar
 
     return {
         _change_op_basis_abstract(
-            _basis(4), qp.MultiRZ(Float, Wire[num_active_wires]), _basis(-4)
+            _basis(1), qp.MultiRZ(Float, Wire[num_active_wires]), _basis(-1)
         ): 1
     }
 
@@ -530,17 +530,17 @@ def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLik
         qp.MultiRZ(theta, wires=list(active_wires))
         return
 
-    def _apply_basis_change(denominator):
+    def _apply_basis_change(sign):
         for wire, gate in zip(active_wires, active_gates, strict=True):
             if gate == "X":
                 qp.Hadamard(wires=[wire])
             elif gate == "Y":
-                qp.PPR(denominator, "X", wires=[wire])
+                qp.PPR_4(sign, "X", wires=[wire])
 
     qp.change_op_basis(
-        functools.partial(_apply_basis_change, 4),
+        functools.partial(_apply_basis_change, 1),
         qp.MultiRZ(theta, wires=list(active_wires)),
-        functools.partial(_apply_basis_change, -4),
+        functools.partial(_apply_basis_change, -1),
     )
 
 
@@ -1810,8 +1810,8 @@ def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__)
 
 def _pswap_to_ppr_resources():
     return {
-        qp.PPR(-4, pauli_word="XX", wires=Wire[2]): 1,
-        qp.PPR(-4, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PPR_4(-1, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PPR_4(-1, pauli_word="YY", wires=Wire[2]): 1,
         PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
         qp.GlobalPhase: 1,
     }
@@ -1819,8 +1819,8 @@ def _pswap_to_ppr_resources():
 
 @register_resources(_pswap_to_ppr_resources)
 def _pswap_to_ppr(phi: TensorLike, wires: WiresLike, **__):
-    qp.PPR(-4, pauli_word="YY", wires=wires)
-    qp.PPR(-4, pauli_word="XX", wires=wires)
+    qp.PPR_4(-1, pauli_word="YY", wires=wires)
+    qp.PPR_4(-1, pauli_word="XX", wires=wires)
     PauliRot(phi - np.pi / 2, pauli_word="ZZ", wires=wires)
     qp.GlobalPhase(np.pi / 4 - phi / 2)
 

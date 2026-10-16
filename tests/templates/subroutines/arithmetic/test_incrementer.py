@@ -18,12 +18,13 @@ Tests for the Incrementer template.
 import numpy as np
 import pytest
 
-from pennylane import Incrementer, ctrl, decompose, device, qnode
+from pennylane import Incrementer, ctrl, device, qnode
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import state
 from pennylane.ops import CNOT, PauliX
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding, TemporaryAND
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

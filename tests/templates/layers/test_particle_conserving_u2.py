@@ -132,7 +132,7 @@ def _get_queue(op, system):
     try:
         f = partial(qp.list_decomps(qp.ParticleConservingU2)[0], **op.hyperparameters)
         jaxpr = jax.make_jaxpr(f)(*op.data, op.wires)
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *op.data, *op.wires)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *op.data, *op.wires)
         return tape.circuit
     finally:
         qp.capture.disable()
