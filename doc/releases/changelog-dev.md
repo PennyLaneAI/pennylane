@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* A new :func:`~.decomposition.exclude_decomps` function excludes decomposition rules of an operator by name, so
+  that they are hidden from :func:`~.decomposition.list_decomps` and the graph-based decomposition system without
+  being removed. When used as a context manager, the rules are excluded only within the context.
+  [(#10329)](https://github.com/PennyLaneAI/pennylane/pull/10329)
+
 * A new function called :func:`~pennylane.backline.onnx_decoder` has been added, which runs an
   ONNX model on a Backline :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or
   on the CPU. See :func:`~pennylane.backline.onnx_decoder` for the supported providers and usage
@@ -563,6 +568,7 @@
 
 * The ability for a compiled program to call a runtime entry point directly via its C symbol name has been added. A symbol's signature is declared once with `qp.runtime_declare` and called with `qp.runtime_call` from inside a `qjit` program.
   [(#9970)](https://github.com/PennyLaneAI/pennylane/pull/9970)
+  [(#10182)](https://github.com/PennyLaneAI/pennylane/pull/10182)
 
   ```python
   import pennylane as qp
@@ -573,8 +579,10 @@
       return qp.runtime_call("example_local_rounds", session, 100000)
   ```
 
-  Passing `address="host:port"` dispatches the call to the executor on the remote side, which invokes the
-  symbol on the machine the runtime lives on; without it the call is local. Meanwhile, `qp.backline.runtime.CType` lists what can cross the boundary.
+  Passing `address="host:port"` dispatches the call to the executor on the remote side, which invokes the symbol on the machine the runtime lives on. Without it the call lowers directly to a native
+  `llvm.call`: scalar values are passed by value and `ptr`/`str` use native pointers.
+  Local `buf`/`out` values are bufferized only to obtain their data pointers.
+  Meanwhile, `qp.backline.runtime.CType` lists what can cross each boundary.
 
   A symbol that fills a buffer declares it as an `out` parameter: the caller asks for `out_bytes=`
   and gets the filled buffer back alongside the result.
@@ -583,7 +591,9 @@
   qp.runtime_declare("example_collect", "(ptr, out, u64) -> i32")
 
   def collect(session):
-      status, reply = qp.runtime_call("example_collect", session, 64, out_bytes=64)
+      status, reply = qp.runtime_call(
+          "example_collect", session, 64, out_bytes=64, address="board:9000"
+      )
       return reply
   ```
 
@@ -742,6 +752,12 @@
   ```
 
 <h3>Improvements 🛠</h3>
+
+* The `decompose_mcx_with_no_worker` decomposition rule for :class:`~.MultiControlledX` now only
+  applies when no work wires are provided, matching `MultiControlledX.compute_decomposition`.
+  This removes controlled `GlobalPhase` and `PhaseShift` rules from the decomposition graph and
+  greatly reduces `qp.qjit(capture=True)` compile time for multi-controlled X gates with work wires.
+  [(#10338)](https://github.com/PennyLaneAI/pennylane/pull/10338)
 
 * The decompositions of :class:`~.QROM` (unary iteration), :class:`~.QFT`, :class:`~.AQFT` and
   :class:`~.FFFT` now provide `num-iters` hints for loops with dynamic bounds, avoiding symbolic
@@ -1921,6 +1937,11 @@
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qp.cond` can now handle `Operator2` instances being provided instead of branch functions.
+  While this syntax was supported with tape-based PennyLane, it had never been
+  properly supported with program capture and Catalyst.
+  [(#10324)](https://github.com/PennyLaneAI/pennylane/pull/10324)
 
 * Fixed captured transforms dropping keyword arguments to the transformed function,
   including when calling transformed QNodes with `qp.qjit(capture=True)`.
