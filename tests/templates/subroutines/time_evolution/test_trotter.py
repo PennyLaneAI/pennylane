@@ -30,7 +30,7 @@ from pennylane.templates.subroutines.time_evolution.trotter import (
     _recursive_qfunc,
     _scalar,
 )
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 test_hamiltonians = (
     qp.dot([1.0, 1.0, 1.0], [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(1)]),
@@ -534,8 +534,7 @@ class TestDecomposition:
     ):  # pylint: disable=unused-argument
         """Tests the decomposition rule implemented with the new system."""
         op = qp.TrotterProduct(hamiltonian, 4.2, order=order)
-        for rule in qp.list_decomps(qp.TrotterProduct):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize("order", (1, 2))
     @pytest.mark.parametrize("num_steps", (1, 2, 3))

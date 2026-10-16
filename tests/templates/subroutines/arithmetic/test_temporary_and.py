@@ -25,7 +25,7 @@ from pennylane.templates.subroutines.arithmetic.temporary_and import (
     _adjoint_temporary_and_to_toffoli,
     _temporary_and_to_toffoli,
 )
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_valid_decomp_rule
 from pennylane.typing import Bool, Wire
 
 
@@ -161,7 +161,7 @@ class TestTemporaryAND:
         op = qp.TemporaryAND(wires, control_values=cvals)
         for rule in qp.list_decomps(qp.TemporaryAND):
             assert rule.is_applicable(**op.arguments)
-            _test_decomposition_rule(op, rule, skip_decomp_matrix_check=True)
+            assert_valid_decomp_rule(op, rule, check_matrix=False)
             with qp.capture.pause():
                 matrix = qp.matrix(rule, wire_order=wires)(wires, control_values=cvals)
             self.compare_to_toffoli_on_zero(matrix, "input", cvals)

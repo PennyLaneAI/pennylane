@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.xfail_if_capture(reason="come back to this as we port it to Op2 [sc-128406]")
@@ -76,8 +76,7 @@ class TestDecomposition:
     def test_decomposition_new(self, weights, wires, hf_state, singles, doubles):
         """Test the decomposition of the AllSinglesDoubles template."""
         op = qp.AllSinglesDoubles(weights, wires, hf_state, singles=singles, doubles=doubles)
-        for rule in qp.list_decomps(qp.AllSinglesDoubles):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize(
         ("singles", "doubles", "weights", "ref_gates"),
