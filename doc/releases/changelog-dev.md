@@ -1246,10 +1246,7 @@
 * ``qp.ops.functions.assert_valid`` has been removed. Use :func:`~.testing.assert_valid` instead.
   The private ``_test_decomposition_rule`` has been removed; use
   :func:`~.testing.assert_valid_decomp_rule`.
-  [(#10293)](https://github.com/PennyLaneAI/pennylane/pull/10293)
-  [(#10306)](https://github.com/PennyLaneAI/pennylane/pull/10306)
-  [(#10335)](https://github.com/PennyLaneAI/pennylane/pull/10335)
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10342)](https://github.com/PennyLaneAI/pennylane/pull/10342)
 
 * :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's
   ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
