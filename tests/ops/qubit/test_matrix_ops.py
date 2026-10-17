@@ -226,6 +226,16 @@ class TestQubitUnitaryCSR:
 class TestQubitUnitary:
     """Tests for the QubitUnitary class."""
 
+    def test_qubit_unitary_one_by_one_matrix_no_wires(self):
+        """Test that a 1x1 unitary can act on no wires."""
+        phi = 0.3
+        U = np.array([[np.exp(-1j * phi)]])
+
+        op = qp.QubitUnitary(U, wires=[])
+
+        assert op.wires == Wires([])
+        assert qp.math.allclose(op.matrix(), qp.matrix(qp.GlobalPhase(phi)))
+
     def test_qubit_unitary_noninteger_pow(self):
         """Test QubitUnitary raised to a non-integer power raises an error."""
 
