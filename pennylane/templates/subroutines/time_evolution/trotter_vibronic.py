@@ -352,11 +352,11 @@ class TrotterVibronic(Operator2):
     dynamic_argnames = ("evolution_time",)
     hybrid_argnames = ("hamiltonian",)
     wire_argnames = (
-        "electronic_wires",
-        "vib_wires",
-        "coefficient_wires",
-        "phase_gradient_wires",
         "cache_wires",
+        "coefficient_wires",
+        "electronic_wires",
+        "phase_gradient_wires",
+        "vib_wires",
         "work_wires",
     )
     # Static rather than dynamic: sets the resource-function gate counts, and can't be
@@ -379,11 +379,12 @@ class TrotterVibronic(Operator2):
         evolution_time,
         num_trotter_steps,
         hamiltonian: VibronicHamiltonian,
-        electronic_wires: WiresLike,
-        vib_wires: WiresLike,
-        phase_gradient_wires: WiresLike,
-        coefficient_wires: WiresLike = (),
+        *,
         cache_wires: WiresLike = (),
+        coefficient_wires: WiresLike = (),
+        electronic_wires: WiresLike,
+        phase_gradient_wires: WiresLike,
+        vib_wires: WiresLike,
         work_wires: WiresLike = (),
         aqft_order=None,
     ):
@@ -423,13 +424,13 @@ class TrotterVibronic(Operator2):
             evolution_time,
             num_trotter_steps,
             hamiltonian,
-            electronic_wires,
-            vib_wires,
-            phase_gradient_wires,
-            coefficient_wires,
-            cache_wires,
-            work_wires,
-            aqft_order,
+            cache_wires=cache_wires,
+            coefficient_wires=coefficient_wires,
+            electronic_wires=electronic_wires,
+            phase_gradient_wires=phase_gradient_wires,
+            vib_wires=vib_wires,
+            work_wires=work_wires,
+            aqft_order=aqft_order,
         )
 
 

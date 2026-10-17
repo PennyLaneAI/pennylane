@@ -1240,6 +1240,12 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Controlled decompositions now construct :class:`~.ops.op_math.ControlledOp2` of :class:`~.GlobalPhase` directly, so that
+  ``C(GlobalPhase)`` is not rewritten to :class:`~.PhaseShift` and existing decomposition
+  rules remain selectable. :class:`~.TrotterVibronic` wire argument order was also updated
+  for consistent hashing with Catalyst.
+  [(#10340)](https://github.com/PennyLaneAI/pennylane/pull/10340)
+
 * :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's
   ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
   available as :func:`~.transforms._tape_decompose`.

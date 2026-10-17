@@ -58,12 +58,12 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
     >>> from pennylane.ops.op_math import ctrl_decomp_bisect
     >>> op = qp.T(0) # uses OD algorithm
     >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
-    0: ─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†───┤
-    1: ─├●────────│──────────├●────────│──╭●────────┤
-    2: ─├●────────│──────────├●────────│──├●────────┤
-    3: ─╰●────────│──────────╰●────────│──├●────────┤
-    4: ───────────├●───────────────────├●─├●────────┤
-    5: ───────────╰●───────────────────╰●─╰Rϕ(0.39)─┤
+    0: ─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†─╭GlobalPhase(-0.39)─┤
+    1: ─├●────────│──────────├●────────│──────────├●──────────────────┤
+    2: ─├●────────│──────────├●────────│──────────├●──────────────────┤
+    3: ─╰●────────│──────────╰●────────│──────────├●──────────────────┤
+    4: ───────────├●───────────────────├●─────────├●──────────────────┤
+    5: ───────────╰●───────────────────╰●─────────╰●──────────────────┤
     >>> op = qp.QubitUnitary([[0,1j],[1j,0]], 0) # uses MD algorithm
     >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
     0: ──H─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†──H─┤
@@ -74,12 +74,19 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
     5: ──────────────╰●───────────────────╰●────────────┤
     >>> op = qp.Hadamard(0) # uses general algorithm
     >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
-    0: ──U(M0)─╭X──U(M1)†──U(M2)─╭X──U(M2)†─╭X──U(M2)─╭X──U(M2)†─╭X──U(M1)─╭X──U(M0)†───┤
-    1: ────────│─────────────────│──────────├●────────│──────────├●────────│──╭●────────┤
-    2: ────────│─────────────────│──────────├●────────│──────────├●────────│──├●────────┤
-    3: ────────│─────────────────│──────────╰●────────│──────────╰●────────│──├●────────┤
-    4: ────────├●────────────────├●───────────────────├●───────────────────├●─├●────────┤
-    5: ────────╰●────────────────╰●───────────────────╰●───────────────────╰●─╰Rϕ(1.57)─┤
+    0: ──U(M0)─╭X──U(M1)†──U(M2)─╭X──U(M2)†─╭X──U(M2)─╭X──U(M2)†─╭X──U(M1)─╭X──U(M0)† ···
+    1: ────────│─────────────────│──────────├●────────│──────────├●────────│───────── ···
+    2: ────────│─────────────────│──────────├●────────│──────────├●────────│───────── ···
+    3: ────────│─────────────────│──────────╰●────────│──────────╰●────────│───────── ···
+    4: ────────├●────────────────├●───────────────────├●───────────────────├●──────── ···
+    5: ────────╰●────────────────╰●───────────────────╰●───────────────────╰●──────── ···
+    <BLANKLINE>
+    0: ··· ─╭GlobalPhase(-1.57)─┤
+    1: ··· ─├●──────────────────┤
+    2: ··· ─├●──────────────────┤
+    3: ··· ─├●──────────────────┤
+    4: ··· ─├●──────────────────┤
+    5: ··· ─╰●──────────────────┤
 
     """
     if len(target_operation.wires) > 1:
@@ -222,7 +229,7 @@ def _ctrl_decomp_bisect_resources(U, wires, control_values, *_, **__):
         # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md),
         # but it still needs to be accounted for.
         ops.Hadamard: 2,
-        ops.ctrl(ops.GlobalPhase(Float), Wire[num_ctrl_wires], work_wires=Wire[1]): 1,
+        ops.ControlledOp2(ops.GlobalPhase(Float), Wire[num_ctrl_wires], work_wires=Wire[1]): 1,
         qp.X: num_ctrl_wires,  # assume half the control values are 0s
     } | mcx_reps
 
@@ -273,7 +280,7 @@ def _single_ctrl_decomp_zyz_resources(U, wires, **_):
         ops.RZ: 3,
         ops.RY: 2,
         ops.CNOT: 2,
-        ops.ctrl(ops.GlobalPhase(Float), Wire[1]): 1,
+        ops.ControlledOp2(ops.GlobalPhase(Float), Wire[1]): 1,
         ops.X: len(wires) - 1,
     }
 
@@ -321,7 +328,7 @@ def _multi_ctrl_decomp_zyz_resources(U, wires, control_values, work_wires, work_
             work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 2,
-        ops.ctrl(ops.GlobalPhase(Float), Wire[num_ctrl_wires], work_wires=Wire[1]): 1,
+        ops.ControlledOp2(ops.GlobalPhase(Float), Wire[num_ctrl_wires], work_wires=Wire[1]): 1,
         ops.X: num_ctrl_wires,
     }
 
@@ -817,7 +824,7 @@ def _decompose_mcx_no_worker_resource(wires, *_, **__):
         ops.Hadamard: 2,
         ops.QubitUnitary(Complex[2, 2], wires=Wire[1]): 2,
         qp.adjoint(ops.QubitUnitary(Complex[2, 2], wires=Wire[1])): 2,
-        ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires]): 1,
+        ops.ControlledOp2(ops.GlobalPhase(Float), Wire[num_control_wires]): 1,
         ops.X: num_control_wires,
     } | mcx_reps
 
@@ -848,7 +855,7 @@ def decompose_mcx_with_no_worker(wires, control_values, *_, **__):
 
     _x_flips()  # pylint: disable=no-value-for-parameter
     _ctrl_decomp_bisect_md(U, wires)
-    ops.ctrl(ops.GlobalPhase(-np.pi / 2), control=wires[:-1])
+    ops.ControlledOp2(ops.GlobalPhase(-np.pi / 2), wires[:-1])
     _x_flips()  # pylint: disable=no-value-for-parameter
 
 
@@ -1118,9 +1125,9 @@ def _ctrl_global_phase(
     work_wires=None,
     work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
 ):
-    ops.ctrl(
+    ops.ControlledOp2(
         ops.GlobalPhase(-phase),
-        control=control_wires,
+        control_wires,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
