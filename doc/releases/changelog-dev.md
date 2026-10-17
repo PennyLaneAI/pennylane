@@ -1944,6 +1944,10 @@
 * Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits.
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
+* The docstring of :class:`~.TrotterProduct` now documents the `check_hermitian` argument, including when to set it to `False` for
+  runtime-dependent coefficients under :func:`~pennylane.qjit`.
+  [(#10326)](https://github.com/PennyLaneAI/pennylane/pull/10326)
+
 <h3>Bug fixes 🐛</h3>
 
 * `qp.cond` can now handle `Operator2` instances being provided instead of branch functions.
@@ -2184,7 +2188,6 @@
 * Fixed a bug in the TCDQ module that caused incorrect results for states with complex coefficients.
   [(#10215)](https://github.com/PennyLaneAI/pennylane/pull/10215)
 
-
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -2204,6 +2207,7 @@ Marcus Edwards,
 Sümeyye Nur Esin,
 Thomas C. Fraser,
 Connor Gambla,
+Vellala Gowthami,
 Sengthai Heng,
 Austin Huang,
 Harshal Janjani,
