@@ -2361,7 +2361,7 @@
 
 * Fixed a bug where :func:`~pennylane.math.relative_entropy` returned ``inf`` or ``nan`` for
   rank-deficient states that are not diagonal in the computational basis, such as pure states.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10348)](https://github.com/PennyLaneAI/pennylane/pull/10348)
 
 
 <h3>Contributors ✍️</h3>
