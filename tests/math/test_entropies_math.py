@@ -219,6 +219,10 @@ class TestRelativeEntropy:
     bases = [None, 2]
     check_states = [True, False]
 
+    # pure state that is not diagonal in the computational basis
+    psi = np.kron([np.cos(0.2), np.sin(0.2)], [np.cos(0.3), 1j * np.sin(0.3)])
+    pure = np.outer(psi, np.conj(psi))
+
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize(
         "state0, state1, expected",
@@ -227,6 +231,8 @@ class TestRelativeEntropy:
             ([[1, 0], [0, 0]], np.ones((2, 2)) / 2, np.inf),
             ([[0, 0], [0, 1]], [[0, 0], [0, 1]], 0),
             ([[1, 0], [0, 0]], np.eye(2) / 2, np.log(2)),
+            (pure, pure, 0),
+            (pure, pure / 2 + np.eye(4) / 8, np.log(1.6)),
         ],
     )
     @pytest.mark.parametrize("base", bases)
