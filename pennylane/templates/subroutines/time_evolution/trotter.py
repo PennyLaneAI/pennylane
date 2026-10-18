@@ -101,15 +101,14 @@ class TrotterProduct(Operation):
         n (int): An integer representing the number of Trotter steps to perform
         order (int): An integer (:math:`m`) representing the order of the approximation (must be 1 or even)
         check_hermitian (bool): Whether to check if the Hamiltonian terms are
-            verified to be Hermitian. Defaults to ``True``. Set to ``False``
-            to skip this validation when the Hamiltonian is known to be
-            Hermitian but its terms cannot be verified, for example when
-            using runtime-dependent coefficients under tracing or compilation
-            with Catalyst's ``@qjit`` decorator, where the check may raise a
-            ``TracerBoolConversionError``. Setting this option to ``False``
-            skips the validation step without changing the generated
+            verified to be Hermitian. Defaults to ``True``. The check relies on
+            ``is_verified_hermitian``, which is conservative and may reject
+            Hamiltonian terms that are actually Hermitian. Setting this option
+            to ``False`` skips the validation without changing the generated
             time-evolution operation. Users are responsible for ensuring that
-            the Hamiltonian is Hermitian.
+            the Hamiltonian is Hermitian when this option is ``False``. The
+            more exhaustive ``qp.is_hermitian`` check can be used to verify
+            Hermiticity manually.
 
     Raises:
         TypeError: The ``hamiltonian`` is not of type :class:`~.Sum`.

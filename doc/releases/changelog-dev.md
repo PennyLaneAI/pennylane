@@ -1908,9 +1908,7 @@
 
 * Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits.
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
-
-* The docstring of :class:`~.TrotterProduct` now documents the `check_hermitian` argument, including when to set it to `False` for
-  runtime-dependent coefficients under :func:`~pennylane.qjit`.
+* Clarified the documentation of the ``check_hermitian`` argument of :class:`~.TrotterProduct`.
   [(#10326)](https://github.com/PennyLaneAI/pennylane/pull/10326)
 
 <h3>Bug fixes 🐛</h3>
