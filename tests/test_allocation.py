@@ -289,17 +289,18 @@ class TestCaptureIntegration:
 
         def f():
             if use_context:
-                with allocate(2, state="zero", restored=True) as wires:
-                    qp.H(wires[0])
-                    qp.Z(wires[1])
+                with allocate(2, state="zero", restored=True) as reg:
+                    qp.H(reg[0])
+                    qp.Z(reg[1])
             else:
-                w, w2 = allocate(2, state="zero", restored=True)
-                qp.H(w)
-                qp.Z(w2)
-                deallocate((w, w2))
+                reg = allocate(2, state="zero", restored=True)
+                qp.H(reg[0])
+                qp.Z(reg[1])
+                deallocate(reg)
 
         jaxpr = jax.make_jaxpr(f)()
-        assert len(jaxpr.eqns) == 4
+
+        # allocate produces a single register
         assert jaxpr.eqns[0].primitive == allocate_prim
         assert len(jaxpr.eqns[0].invars) == 0
         assert jaxpr.eqns[0].params == {
@@ -307,15 +308,19 @@ class TestCaptureIntegration:
             "state": AllocateState.ZERO,
             "restored": True,
         }
-        assert len(jaxpr.eqns[0].outvars) == 2
-        assert all(isinstance(v.aval, qp.allocation.AbstractQubit) for v in jaxpr.eqns[0].outvars)
+        assert len(jaxpr.eqns[0].outvars) == 1
+        register_var = jaxpr.eqns[0].outvars[0]
+        assert isinstance(register_var.aval, qp.allocation.AbstractRegister)
 
-        assert jaxpr.eqns[1].invars[0] is jaxpr.eqns[0].outvars[0]
-        assert jaxpr.eqns[2].invars[0] is jaxpr.eqns[0].outvars[1]
+        # each index into the register is an ``extract`` that produces an abstract qubit
+        extract_eqns = [e for e in jaxpr.eqns if e.primitive == qp.allocation.extract_prim]
+        assert len(extract_eqns) == 2
+        assert all(e.invars[1] is register_var for e in extract_eqns)
+        assert all(isinstance(e.outvars[0].aval, qp.allocation.AbstractQubit) for e in extract_eqns)
 
-        assert jaxpr.eqns[3].primitive == deallocate_prim
-        assert jaxpr.eqns[3].params == {}
-        assert jaxpr.eqns[3].invars == jaxpr.eqns[0].outvars
+        # deallocate consumes the register
+        assert jaxpr.eqns[-1].primitive == deallocate_prim
+        assert jaxpr.eqns[-1].invars[0] is register_var
 
         with pytest.raises(NotImplementedError):
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
@@ -328,30 +333,29 @@ class TestCaptureIntegration:
 
         def f():
             if use_context:
-                with allocate(1, state=state) as wires:
-                    qp.H(wires)
+                with allocate(1, state=state) as reg:
+                    qp.H(reg[0])
             else:
-                [w] = allocate(1, state=state)
-                qp.H(w)
-                deallocate(w)
+                reg = allocate(1, state=state)
+                qp.H(reg[0])
+                deallocate(reg)
 
         jaxpr = jax.make_jaxpr(f)()
         assert jaxpr.eqns[0].primitive == allocate_prim
         assert jaxpr.eqns[0].params["state"] == state
 
     def test_deallocate_single_wire(self):
-        """Test deallocate can accept a single wire."""
+        """Test a single-wire register can be deallocated."""
 
         import jax
 
         def f():
-            [w] = allocate(1)
-            qp.X(w)
-            deallocate(w)
+            reg = allocate(1)
+            qp.X(reg[0])
+            deallocate(reg)
 
         jaxpr = jax.make_jaxpr(f)()
 
-        assert len(jaxpr.eqns) == 3
         assert jaxpr.eqns[0].primitive == allocate_prim
         assert len(jaxpr.eqns[0].invars) == 0
         assert jaxpr.eqns[0].params == {
@@ -360,13 +364,11 @@ class TestCaptureIntegration:
             "restored": False,
         }
         assert len(jaxpr.eqns[0].outvars) == 1
-        assert all(isinstance(v.aval, qp.allocation.AbstractQubit) for v in jaxpr.eqns[0].outvars)
+        register_var = jaxpr.eqns[0].outvars[0]
+        assert isinstance(register_var.aval, qp.allocation.AbstractRegister)
 
-        assert jaxpr.eqns[1].invars[0] is jaxpr.eqns[0].outvars[0]
-
-        assert jaxpr.eqns[2].primitive == deallocate_prim
-        assert jaxpr.eqns[2].params == {}
-        assert jaxpr.eqns[2].invars == jaxpr.eqns[0].outvars
+        assert jaxpr.eqns[-1].primitive == deallocate_prim
+        assert jaxpr.eqns[-1].invars[0] is register_var
 
     def test_no_implementation(self):
         """Test that (de)allocation has no concrete implementation."""
@@ -378,7 +380,7 @@ class TestCaptureIntegration:
                 qp.X(wires)
 
         with pytest.raises(NotImplementedError):
-            deallocate(2)
+            deallocate_prim.bind(0)
 
     def test_allocate_zero_wires(self):
         """Test that allocating zero wires binds neither allocate nor deallocate."""
