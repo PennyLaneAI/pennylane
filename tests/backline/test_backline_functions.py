@@ -18,6 +18,7 @@
 
 import importlib
 import sys
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -69,6 +70,20 @@ class TestCoprocessorFunction:
     def test_per_message_defaults_to_false(self):
         """A CoprocessorFunction built by hand is launched once, not called per message."""
         assert not CoprocessorFunction("fn").per_message
+
+    def test_a_function_declares_no_files_by_default(self):
+        """A CoprocessorFunction built by hand names no local files in its config."""
+        assert CoprocessorFunction("fn").files == ()
+
+    def test_files_given_as_a_list_are_stored_as_a_tuple(self):
+        """The declared file keys are kept as a tuple, like the other sequence fields."""
+        assert CoprocessorFunction("fn", config="table=t.cfg", files=["table"]).files == ("table",)
+
+    def test_extra_files_are_stored_as_a_tuple_of_paths(self):
+        """Extra files default to none, and are kept as a tuple of path strings."""
+        assert CoprocessorFunction("fn").extra_files == ()
+        extra = CoprocessorFunction("fn", extra_files=[Path("/opt/a.so")]).extra_files
+        assert extra == ("/opt/a.so",)
 
 
 class TestTritonDecoder:
