@@ -1908,6 +1908,7 @@
 
 * Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits.
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
+
 * Clarified the documentation of the ``check_hermitian`` argument of :class:`~.TrotterProduct`.
   [(#10326)](https://github.com/PennyLaneAI/pennylane/pull/10326)
 
@@ -2145,6 +2146,7 @@
 
 * Fixed a bug in the TCDQ module that caused incorrect results for states with complex coefficients.
   [(#10215)](https://github.com/PennyLaneAI/pennylane/pull/10215)
+
 
 <h3>Contributors ✍️</h3>
 
