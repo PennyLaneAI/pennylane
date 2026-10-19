@@ -19,6 +19,7 @@ import math
 from functools import partial
 
 import hint_helpers
+import jax
 import numpy
 import pytest
 
@@ -37,12 +38,6 @@ from pennylane.templates.subroutines.qrom import (
 )
 from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import Bool, Wire
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except ImportError:
-    has_jax = False
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -190,12 +185,12 @@ class TestQROM:
         """Test the correctness of the QROM template output."""
         dev = qp.device("default.qubit")
 
-        if has_jax and not isinstance(bitstrings, numpy.ndarray):
+        if not isinstance(bitstrings, numpy.ndarray):
             bitstrings, control_wires, target_wires, work_wires = (
-                jnp.array(bitstrings),
-                jnp.array(control_wires),
-                jnp.array(target_wires),
-                jnp.array(work_wires),
+                qp.math.array(bitstrings, like="jax"),
+                qp.math.array(control_wires, like="jax"),
+                qp.math.array(target_wires, like="jax"),
+                qp.math.array(work_wires, like="jax"),
             )
 
         @qp.set_shots(1)
@@ -384,8 +379,6 @@ class TestQROM:
         """Test that QROM construction and decomposition do not raise TracerBoolConversionError
         when wires are JAX tracers."""
 
-        import jax
-
         jax.config.update("jax_enable_x64", True)
 
         def build_and_decompose(bitstrings, control_wires, target_wires, work_wires):
@@ -394,10 +387,10 @@ class TestQROM:
             return True
 
         n, m, w = 2, 2, 1
-        bitstrings = jnp.array([[1, 0], [0, 1], [1, 1], [0, 0]])
-        control_wires = jnp.arange(0, n)
-        target_wires = jnp.arange(n, n + m)
-        work_wires = jnp.arange(n + m, n + m + w)
+        bitstrings = qp.math.array([[1, 0], [0, 1], [1, 1], [0, 0]], like="jax")
+        control_wires = qp.math.arange(0, n, like="jax")
+        target_wires = qp.math.arange(n, n + m, like="jax")
+        work_wires = qp.math.arange(n + m, n + m + w, like="jax")
 
         jax.make_jaxpr(build_and_decompose)(bitstrings, control_wires, target_wires, work_wires)
 
@@ -411,8 +404,6 @@ class TestQROM:
     )
     def test_decomposition_rule_capture_dynamic_wires(self, wire_lens, clean):
         """Test that the QROM decomposition rule can be captured with dynamic wires."""
-        import jax
-
         registers = qp.registers(wire_lens)
         kwargs = {
             "bitstrings": qp.math.zeros(
@@ -439,8 +430,6 @@ class TestQROM:
     def test_unary_iteration_num_iters_hints(self, num_bitstrings, num_controls, seed):
         """Test that the elbow ladder loops of the unary iteration carry ``num-iters`` hints that
         reproduce the number of elbows applied within the main loop."""
-        import jax
-
         rng = np.random.default_rng(seed)
         bitstrings = rng.integers(0, 2, size=(num_bitstrings, 2))
         control_wires = list(range(num_controls))
@@ -469,6 +458,62 @@ class TestQROM:
             pytest.approx(expected_right),
             pytest.approx(expected_left),
             None,
+        ]
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        ("num_bitstrings", "num_controls"),
+        [
+            # Cases with 2^(c-2) < num_blocks <= 2^(c-1): these are the only ones that
+            # distinguish the quarter-X threshold 2^(c-2) from the mid-CNOT threshold 2^(c-1).
+            (2, 2),
+            (3, 3),
+            (4, 3),
+            (7, 4),
+            (13, 5),
+            (3, 2),
+            (4, 2),
+            (5, 3),
+            (6, 3),
+            (8, 3),
+            (11, 4),
+            (16, 4),
+            (21, 5),
+            (3, 4),
+        ],
+    )
+    def test_unary_iteration_branch_prob_hints(self, num_bitstrings, num_controls, seed):
+        """Test that the conditionals for flipping the iteration bit in the unary iteration carry
+        ``branch-prob`` hints that reproduce the number of gates applied within the main loop."""
+        rng = np.random.default_rng(seed)
+        bitstrings = rng.integers(0, 2, size=(num_bitstrings, 2))
+        control_wires = list(range(num_controls))
+        target_wires = [num_controls, num_controls + 1]
+        work_wires = list(range(num_controls + 2, 2 * num_controls + 1))
+
+        plxpr = jax.make_jaxpr(
+            lambda: _qrom_unary_iteration(
+                bitstrings, control_wires, target_wires, work_wires, clean=True
+            )
+        )()
+        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        num_x = sum(isinstance(op, qp.X) for op in ops)
+        num_cnots = sum(isinstance(op, qp.CNOT) for op in ops)
+        num_main_loop_iterations = num_bitstrings - 1
+        # The X is applied twice in a single iteration, if at all
+        quarter_prob = num_x / 2 / num_main_loop_iterations
+        # One CNOT is applied in each iteration, and a second one in a single iteration, if at all
+        mid_prob = (num_cnots - num_main_loop_iterations) / num_main_loop_iterations
+
+        quarter_hint = pytest.approx((quarter_prob, 1 - quarter_prob))
+        mid_hint = pytest.approx((mid_prob, 1 - mid_prob))
+        non_mid_hint = pytest.approx((1 - mid_prob, mid_prob))
+        assert hint_helpers.cond_hints(plxpr.jaxpr) == [
+            quarter_hint,
+            non_mid_hint,
+            quarter_hint,
+            mid_hint,
+            mid_hint,
         ]
 
 
