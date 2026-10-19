@@ -1277,6 +1277,7 @@ def _unroll_change_op_basis(gate_counts):
 
 def _unroll_change_op_basis_resource(op_rep):
     """Expand a single resource key that is (or wraps) a ChangeOpBasis.
+    Recursively expands nested ChangeOpBasis resource keys.
 
     Keys that do not involve a ChangeOpBasis are returned unchanged as ``{op_rep: 1}``.
     """
