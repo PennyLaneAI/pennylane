@@ -118,7 +118,7 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
         o1wires = o1.wires.labels if wires is None else wires.indices(o1.wires)
         o2wires = o2.wires.labels if wires is None else wires.indices(o2.wires)
-        shared_wires = set(o1wires + o2wires)
+        shared_wires = list(o1wires) + list(o2wires)
 
         l1 = math.cast(o1.eigvals(), dtype=float64)
         l2 = math.cast(o2.eigvals(), dtype=float64)
@@ -148,7 +148,7 @@ def marginal_prob(prob, axis):
         prob (tensor_like): 1D tensor of probabilities. This tensor should of size
             ``(2**N,)`` for some integer value ``N``.
         axis (list[int]): the axis for which to calculate the marginal
-            probability distribution
+            probability distribution. The returned distribution follows the order of ``axis``.
 
     Returns:
         tensor_like: the marginal probabilities, of
@@ -164,13 +164,18 @@ def marginal_prob(prob, axis):
     """
     prob = np.flatten(prob)
     num_wires = int(np.log2(len(prob)))
+    axis = list(axis)
 
-    if num_wires == len(axis):
+    if axis == list(range(num_wires)):
         return prob
 
-    inactive_wires = tuple(set(range(num_wires)) - set(axis))
     prob = np.reshape(prob, [2] * num_wires)
-    prob = np.sum(prob, axis=inactive_wires)
+    inactive_wires = tuple(set(range(num_wires)) - set(axis))
+    if inactive_wires:
+        prob = np.sum(prob, axis=inactive_wires)
+
+    sorted_axis = sorted(axis)
+    prob = np.transpose(prob, [sorted_axis.index(a) for a in axis])
     return np.flatten(prob)
 
 
