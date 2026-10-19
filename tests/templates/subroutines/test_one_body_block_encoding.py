@@ -18,8 +18,8 @@ import pytest
 
 import pennylane as qp
 from pennylane.fermi import FermiSentence, FermiWord, jordan_wigner
-from pennylane.ops.functions.assert_valid import assert_valid
 from pennylane.templates.subroutines.alias_sampling import _build_alias_tables
+from pennylane.testing import assert_valid
 from pennylane.typing import AbstractWires
 
 

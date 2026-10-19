@@ -1,4 +1,4 @@
-# Copyright 2018-2026 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,16 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains templates, which are pre-coded routines that can be used in a quantum node.
+This module contains utilities for testing PennyLane objects, such as operators,
+decomposition rules, and captured programs.
 
-.. currentmodule:: pennylane.labs.templates
+Operators
+^^^^^^^^^
+
+.. currentmodule:: pennylane.testing
 
 .. autosummary::
     :toctree: api
 
-    ~half_signed_out_multiplier
-    ~SumOfSlatersPrep2
+    ~assert_valid
+
+Program capture
+^^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.testing
+
+.. autosummary::
+    :toctree: api
+
+    ~plxpr_to_tape
+    ~assert_eqn_matches_op
+    ~extract_all_primitives
+    ~find_eqns
+
 """
 
-from .half_signed_out_multiplier import half_signed_out_multiplier
-from .sum_of_slaters2 import SumOfSlatersPrep2
+from .capture import assert_eqn_matches_op, extract_all_primitives, find_eqns, plxpr_to_tape
+from .operators import assert_valid

@@ -25,7 +25,6 @@ from numpy.polynomial.chebyshev import Chebyshev
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.queuing import AnnotatedQueue
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
@@ -36,7 +35,8 @@ from pennylane.templates.subroutines.qsvt import (
     _W_of_x,
     _z_rotation,
 )
-from pennylane.transforms import decompose
+from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 
 def qfunc(A):
@@ -95,7 +95,7 @@ class TestQSVTBasics:
     def test_standard_validity(self, UA, projectors):
         """Test standard validity criteria with assert_valid."""
         op = qp.QSVT(UA, projectors)
-        qp.ops.functions.assert_valid(op)
+        qp.testing.assert_valid(op)
 
     def test_init_error(self):
         """Test that an error is raised if a non-operation object is passed
@@ -166,7 +166,7 @@ class TestQSVTBasics:
                 rule(UA=UA, projectors=projectors)  # pylint: disable=cell-var-from-loop
 
             jaxpr = qp.capture.make_plxpr(circuit)()
-            tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+            tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
             # NOTE: Need to flatten COB before comparing.
             flat_expected = []

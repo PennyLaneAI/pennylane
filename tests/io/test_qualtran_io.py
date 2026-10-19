@@ -112,7 +112,7 @@ class TestFromBloq:
 
         op = qp.FromBloq(cbloq, wires=range(24))
 
-        qp.ops.functions.assert_valid(op, skip_deepcopy=True, skip_pickle=True)
+        qp.testing.assert_valid(op, skip_deepcopy=True, skip_pickle=True)
 
     def test_wrong_wires_error(self):
         """Tests that FromBloq validates the length of wires as intended"""

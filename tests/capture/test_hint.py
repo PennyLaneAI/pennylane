@@ -15,12 +15,18 @@
 Tests for compiler hint utilities.
 """
 
+from functools import partial
+
 import pytest
 
 import pennylane as qp
-from pennylane.capture.hint import HintedCallable, apply_hint, process_hints
+from pennylane.capture.hint import HintedCallable, apply_hint, get_hints, process_hints
 
 _SUPPORTED = frozenset({"num-iters"})
+
+
+def _f(x, y=0):
+    return x + y
 
 
 class TestProcessHints:
@@ -60,8 +66,47 @@ class TestProcessHints:
         assert process_hints({}, _SUPPORTED) == {}
 
 
+class TestApplyHint:
+    """Unit tests for :func:`~pennylane.capture.hint.apply_hint`."""
+
+    def test_wraps_callable(self):
+        """A plain callable should become a ``HintedCallable``."""
+
+        def f(x):
+            return x + 1
+
+        hinted = apply_hint(f, {"identity": True})
+        assert isinstance(hinted, HintedCallable)
+        assert hinted.hints == {"identity": True}
+        assert hinted.f is f
+        assert hinted(3) == 4
+
+    def test_unsupported_type(self):
+        """Unsupported types should raise ``NotImplementedError``."""
+        with pytest.raises(NotImplementedError, match="No registered way to apply compiler hints"):
+            apply_hint(3, {"num-iters": 1})
+
+
+@pytest.mark.parametrize(
+    "f, expected",
+    (
+        (_f, {}),
+        (partial(_f, y=2), {}),
+        (qp.hint(_f, {"a": 1}), {"a": 1}),
+        (qp.hint(_f, {"a": 1, "identity": True}), {"a": 1}),
+        (partial(qp.hint(_f, {"a": 1}), y=2), {"a": 1}),
+        (qp.hint(partial(qp.hint(_f, {"a": 1, "bb": 1}), y=2), {"bb": 2}), {"a": 1, "bb": 2}),
+        (qp.hint(partial(qp.hint(_f, {"b_b": 1}), y=2), {"bb": 2}), {"bb": 2}),
+    ),
+)
+def test_get_hints_through_wrappers(f, expected):
+    """Test that ``get_hints`` finds hints through partials, with outer hints taking precedence,
+    and remaps them onto the supported keys."""
+    assert get_hints(f, {"a", "bb"}) == expected
+
+
 class TestHintAPI:
-    """Tests for :func:`~.hint`, :class:`~HintedCallable`, and :func:`~apply_hint`."""
+    """Tests for :func:`~.hint` and :class:`~HintedCallable`."""
 
     def test_hint_wraps_callable(self):
         """``qp.hint`` should wrap a plain callable in ``HintedCallable``."""
@@ -70,6 +115,18 @@ class TestHintAPI:
             return x + 1
 
         hinted = qp.hint({"identity": True})(f)
+        assert isinstance(hinted, HintedCallable)
+        assert hinted.hints == {"identity": True}
+        assert hinted.f is f
+        assert hinted(3) == 4
+
+    def test_hint_direct_form(self):
+        """``qp.hint(f, hints)`` should apply hints directly."""
+
+        def f(x):
+            return x + 1
+
+        hinted = qp.hint(f, {"identity": True})
         assert isinstance(hinted, HintedCallable)
         assert hinted.hints == {"identity": True}
         assert hinted.f is f
@@ -95,6 +152,15 @@ class TestHintAPI:
 
         assert f.hints == {"a": 1, "b": 2}
 
+    def test_hint_decorator_form_requires_dict(self):
+        """Passing a non-dict as the sole argument should raise ``TypeError``."""
+
+        def f(x):
+            return x
+
+        with pytest.raises(TypeError, match="decorator form expects a dict"):
+            qp.hint(f)
+
     def test_repr(self):
         """``HintedCallable`` should expose the wrapped function and hints."""
 
@@ -105,8 +171,3 @@ class TestHintAPI:
         text = repr(hinted)
         assert "HintedCallable" in text
         assert "num-iters" in text
-
-    def test_apply_hint_unsupported_type(self):
-        """Unsupported types should raise ``NotImplementedError``."""
-        with pytest.raises(NotImplementedError, match="No registered way to apply compiler hints"):
-            apply_hint(3, {"num-iters": 1})

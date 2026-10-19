@@ -35,7 +35,9 @@ from pennylane import math
 from pennylane._class_property import classproperty
 from pennylane.capture import enabled, pause, symbolic_array
 from pennylane.capture.custom_primitives import QpPrimitive
-from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
+from pennylane.capture.op_eqns import pop_op_eqns
+from pennylane.core.apply import apply
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -1982,32 +1984,6 @@ def _op_impl(
 @operator_p.def_abstract_eval
 def _op_aval(*_, **__):
     return AbstractOperator()
-
-
-def pop_op_eqns(ops: Iterable):
-    """Delete the jaxpr equations for operators that have been used as data.
-
-    These equations must be deleted because operators used as data are treated as
-    pytrees wrapping dynamic data rather than instructions. Thus, the equation that
-    corresponds to the operator as an instruction should be removed.
-    """
-    old_eqns = []
-
-    for op in ops:
-        if op.tracer is not None:
-            # pylint: disable=protected-access
-            frame = op.tracer._trace.frame
-            assert frame.auto_dce is False  # eqns are stored differently if this is enabled
-
-            # for some reason the frame now wraps equations in lambdas
-            eqn = op.tracer.parent
-            old_eqns.append(eqn)
-            frame.tracing_eqns = [r for r in frame.tracing_eqns if r() is not eqn]
-
-            # delete reference to tracer after its equation has been deleted
-            op.tracer = None
-
-    return old_eqns
 
 
 def _is_pytree_placeholder(obj) -> bool:

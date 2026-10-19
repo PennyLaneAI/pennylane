@@ -110,6 +110,24 @@ def test_memcpy_coprocessor_allows_missing_endpoint():
     assert dev.placement.coprocessors[0].endpoint is None
 
 
+def test_none_transport_without_coprocessors():
+    """Only the controller is used"""
+    dev = qp.Backline(controller=qp.Controller(), coprocessors=[], transport="none")
+
+    assert dev.placement.transport.name == "none"
+    assert dev.placement.coprocessors == ()
+
+
+def test_none_transport_with_coprocessors():
+    """A coprocessor is rejected when using the none transport"""
+    with pytest.raises(ValueError, match='Cannot use transport="none" with coprocessors'):
+        qp.Backline(
+            controller=qp.Controller(),
+            coprocessors=[qp.Coprocessor(coprocessor_fn="decoder")],
+            transport="none",
+        )
+
+
 def test_rdma_coprocessor_requires_endpoint():
     """RDMA placements require every coprocessor to expose a connection endpoint."""
     controller = qp.Controller()
