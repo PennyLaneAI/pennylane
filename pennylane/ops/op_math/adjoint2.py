@@ -20,8 +20,9 @@ from typing import override
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
+from pennylane.core.operator.operator2 import operator_p  # tach-ignore
 from pennylane.core.queuing import remove_from_program
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,

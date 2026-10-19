@@ -28,12 +28,12 @@ from pennylane.capture import enabled as capture_enabled
 from pennylane.capture.autograph import wraps
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
-from pennylane.capture.hint import process_hints
+from pennylane.capture.hint import get_hints
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.compiler import compiler
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator, Operator1, Operator2
 from pennylane.core.operator.base import AbstractOperator  # tach-ignore
-from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.exceptions import ConditionalTransformError
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
@@ -86,6 +86,10 @@ def _add_abstract_shapes(f):
 
 
 def _is_operator_type(fn):
+    """Determine whether ``fn`` is a subclass of ``Operator``, or a (possibly nested) hinted
+    or ``partial`` wrapper of an ``Operator`` subclass."""
+    while isinstance(fn, (HintedCallable, functools.partial)):
+        fn = fn.f if isinstance(fn, HintedCallable) else fn.func
     return isinstance(fn, type) and issubclass(fn, Operator)
 
 
@@ -93,7 +97,7 @@ def _format_and_validate_branch_fn(fn):
     """Normalizes conditional branches to prevent quantum operators from being returned."""
 
     # Format directly returned operators as a function with no return
-    if _is_operator_type(fn) or (isinstance(fn, functools.partial) and _is_operator_type(fn.func)):
+    if _is_operator_type(fn):
 
         def fn_with_no_return(*args, **kwargs):
             fn(*args, **kwargs)
@@ -114,15 +118,18 @@ def _format_and_validate_branch_fn(fn):
     return wrapped_fn
 
 
+def _drop_operator_return(fn):
+    """Wrap operator types so that they do not return the created operator. Other branch
+    functions are returned unchanged."""
+    return _format_and_validate_branch_fn(fn) if _is_operator_type(fn) else fn
+
+
 def _empty_return_fn(*_, **__):
     return None
 
 
 def _get_hint(branch_fn):
-    if not isinstance(branch_fn, HintedCallable):
-        return None
-    hints = process_hints(branch_fn.hints, {"branch-prob"})
-    p = hints.get("branch-prob")
+    p = get_hints(branch_fn, {"branch-prob"}).get("branch-prob")
     return float(p) if p is not None else p
 
 
@@ -828,15 +835,15 @@ def cond(
         if true_fn is None:
             return ops_loader.cond(condition)
 
-        cond_func = ops_loader.cond(condition)(true_fn)
+        cond_func = ops_loader.cond(condition)(_drop_operator_return(true_fn))
 
         # Optional 'elif' branches
         for cond_val, elif_fn in elifs:
-            cond_func.else_if(cond_val)(elif_fn)
+            cond_func.else_if(cond_val)(_drop_operator_return(elif_fn))
 
         # Optional 'else' branch
         if false_fn:
-            cond_func.otherwise(false_fn)
+            cond_func.otherwise(_drop_operator_return(false_fn))
 
         return cond_func
 

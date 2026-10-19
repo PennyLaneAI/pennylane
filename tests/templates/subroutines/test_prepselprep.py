@@ -54,7 +54,7 @@ def test_standard_checks(lcu, control, skip_diff):
 
     op = qp.PrepSelPrep(lcu, control)
     # Skip differentiation for test cases that raise NaNs in gradients (known limitation of ``MottonenStatePreparation``).
-    qp.ops.functions.assert_valid(op, skip_differentiation=skip_diff)
+    qp.testing.assert_valid(op, skip_differentiation=skip_diff)
 
 
 def test_repr():

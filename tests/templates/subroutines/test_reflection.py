@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 @qp.prod
@@ -32,7 +32,7 @@ def hadamards(wires):
 def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
     op = qp.Reflection(qp.Hadamard(wires=0), 0.5, reflection_wires=[0])
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.parametrize(

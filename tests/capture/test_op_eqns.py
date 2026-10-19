@@ -20,7 +20,7 @@ import pytest
 from jax._src.interpreters.partial_eval import JaxprStackFrame
 
 import pennylane as qp
-from pennylane.core.operator.operator2 import pop_op_eqns
+from pennylane.capture.op_eqns import pop_op_eqns
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture, pytest.mark.usefixtures("enable_capture")]
 

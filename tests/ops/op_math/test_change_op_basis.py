@@ -28,11 +28,11 @@ import pennylane.numpy as qnp
 from pennylane.core.operator import abstractify
 from pennylane.core.operator.base import Operator, Operator1
 from pennylane.exceptions import DeviceError
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.ops.op_math.change_op_basis import _convert_to_prod, _validate_callable
 from pennylane.templates import Subroutine
 from pennylane.testing import assert_eqn_matches_op
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import NonParametricOp
@@ -93,7 +93,7 @@ def test_basic_validity():
     op2 = DummyOp(0)
     op3 = qp.PauliZ(0)
     op = qp.change_op_basis(op1, op2, op3)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_change_op_basis_callables():

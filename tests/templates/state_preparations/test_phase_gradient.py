@@ -35,7 +35,7 @@ def _expected_state(num_wires):
 def test_standard_validity(num_wires):
     """Check the operation using the assert_valid function."""
     op = qp.PhaseGradientStatePrep(wires=range(num_wires))
-    qp.ops.functions.assert_valid(op, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_differentiation=True)
 
 
 def test_label():
