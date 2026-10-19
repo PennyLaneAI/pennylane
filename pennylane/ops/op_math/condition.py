@@ -24,12 +24,16 @@ import jax
 import pennylane as qp
 from pennylane import QueuingManager, math
 from pennylane.capture import FlatFn, HintedCallable
+from pennylane.capture import enabled as capture_enabled
 from pennylane.capture.autograph import wraps
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.capture.hint import get_hints
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.compiler import compiler
-from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.apply import apply
+from pennylane.core.operator import Operation, Operator, Operator1, Operator2
+from pennylane.core.operator.base import AbstractOperator  # tach-ignore
 from pennylane.exceptions import ConditionalTransformError
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
@@ -140,6 +144,38 @@ def _setup_probs(branch_fns) -> None | tuple[float, ...]:
     total = sum(s for s in branch_probs if s is not None)
     guess = max(1 - total, 0) / (len(branch_fns) - n_encountered)
     return tuple[float](guess if p is None else p for p in branch_probs)
+
+
+def _handle_op(fn, branch_name: str):
+    if fn is None:
+        return fn
+
+    if math.is_abstract(fn) and isinstance(fn.aval, AbstractOperator):
+        raise ValueError(
+            f"Got Operator1 AbstractOperator as input to cond {branch_name}. Only Operator2 is supported."
+        )
+    if isinstance(fn, Operator1):
+        raise ValueError(
+            f"Got Operator1 input {fn} to cond {branch_name}. Only Operator2 is supported."
+        )
+    if isinstance(fn, Operator2):
+        pop_op_eqns((fn,))
+
+        def new_fn():
+            apply(fn)
+
+        return new_fn
+    raise ValueError(
+        f"If true_fn is an Operator2, all other branches must be Operator2 or None. Got {fn} for {branch_name}."
+    )
+
+
+def _handle_op_inputs(condition, true_fn, false_fn, elifs):
+    new_true_fn = _handle_op(true_fn, "true_fn")
+    new_false_fn = _handle_op(false_fn, "false_fn")
+    new_elifs = tuple((c, _handle_op(fn, "elif")) for c, fn in elifs)
+
+    return CondCallable(condition, new_true_fn, new_false_fn, new_elifs)()
 
 
 class Conditional(SymbolicOp, Operation):
@@ -254,13 +290,6 @@ class CondCallable:
         self.branch_fns = [true_fn]
         self.otherwise_fn = false_fn
 
-        if (
-            len(elifs) == 2
-            and not isinstance(elifs[0], (tuple, list))
-            and isinstance(elifs[1], Callable)
-        ):
-            # elifs = (elif_condition, elif_function)
-            elifs = (elifs,)
         if elifs:
             elif_preds, elif_fns = list(zip(*elifs, strict=True))
             self.preds.extend(elif_preds)
@@ -392,10 +421,45 @@ class CondCallable:
         return jax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
 
     def __call__(self, *args, **kwargs):
-        if qp.capture.enabled() and any(math.is_abstract(p) for p in self.preds):
+        if capture_enabled() and any(math.is_abstract(p) for p in self.preds):
             return self.__call_capture_enabled(*args, **kwargs)
 
         return self.__call_capture_disabled(*args, **kwargs)
+
+
+def _is_operator(op):
+    return isinstance(op, Operator) or (
+        math.is_abstract(op) and isinstance(op.aval, AbstractOperator)
+    )
+
+
+def _capture_dispatch(condition, true_fn, false_fn, elifs):
+    if (
+        len(elifs) == 2
+        and not isinstance(elifs[0], (tuple, list))
+        and isinstance(elifs[1], (Callable, Operator))
+    ):
+        # elifs = (elif_condition, elif_function)
+        elifs = (elifs,)
+
+    if isinstance(true_fn, Operator):
+        return _handle_op_inputs(condition, true_fn, false_fn, elifs)
+
+    if math.is_abstract(true_fn) and isinstance(true_fn.aval, AbstractOperator):
+        raise ValueError("Operator1 instances cannot be provided as true_fn to pennylane.cond.")
+
+    if _is_operator(false_fn):
+        raise ValueError(
+            f"Cannot provide an Operator as false_fn if true_fn is a callable. Got {false_fn}"
+        )
+
+    for _, elif_fn in elifs:
+        if _is_operator(elif_fn):
+            raise ValueError(
+                f"Cannot provide an Operator as elif_fn if true_fn is a callable. Got {elif_fn}"
+            )
+
+    return CondCallable(condition, true_fn, false_fn, elifs)
 
 
 def cond(
@@ -789,7 +853,7 @@ def cond(
         if true_fn is None:
             return lambda fn: CondCallable(condition, fn)
 
-        return CondCallable(condition, true_fn, false_fn, elifs)
+        return _capture_dispatch(condition, true_fn, false_fn, elifs)
 
     if true_fn is None:
         raise TypeError(

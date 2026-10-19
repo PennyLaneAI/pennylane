@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import math
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.wires import Wires
 
 
@@ -28,7 +28,7 @@ from pennylane.wires import Wires
 def test_standard_checks(work_wires):
     """Run standard checks with the assert_valid function."""
     op = qp.FlipSign([0, 1], wires=(0, 1), work_wires=work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_repr():

@@ -30,7 +30,7 @@ from pennylane.wires import Wires
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestInitialization:
