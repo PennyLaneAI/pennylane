@@ -822,7 +822,7 @@
 * Added decompositions of :class:`~.PauliX`, :class:`~.PauliY` and :class:`~.PauliZ` to
   :class:`~.PPR_2`, of :class:`~.S` to :class:`~.PPR_4`, of :class:`~.T` to :class:`~.PPR_8`
   (each with a global phase), and of :class:`~.MultiRZ` to :class:`~.PauliRot`.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10350)](https://github.com/PennyLaneAI/pennylane/pull/10350)
 
 * :class:`~.FlipSign` now accepts `work_wires`, which are forwarded to the multi-controlled
   :class:`~.Z` gate in its decomposition. Providing work wires substantially reduces the gate count.
