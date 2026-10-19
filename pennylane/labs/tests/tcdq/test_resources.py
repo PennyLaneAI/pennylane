@@ -105,6 +105,14 @@ class TestQubitConfig:
         assert op.resource_params["select_swap_depth"] == 4
         assert op.resource_params["precision"] == 1e-6
 
+    def test_params(self):
+        """The trained parameters reach the shot as the merged angle of every support."""
+        gates = {0: [[0, 1]], 1: [[1, 0], [2]], 2: [[3]]}
+        params = jax.numpy.array([1e-5, 2e-5, 0.3])
+        op = shot_resources(_qubit_config(4, gates), params=params)
+        assert op.resource_params["gates_params"] == pytest.approx((2e-5, 3e-5, 0.3))
+        assert shot_resources(_qubit_config(4, gates)).resource_params["gates_params"] is None
+
 
 class TestQuditConfig:
     """QuditCircuitConfig is priced as a QuditSamplingShot."""
@@ -135,6 +143,15 @@ class TestQuditConfig:
         assert op.resource_params["num_init_states"] == 20
         assert op.resource_params["init_state"] == "uniform_real"
         assert op.resource_params["num_bits"] == len(select_sos_rows(bits)[0])
+
+    def test_params(self):
+        """The trained parameters reach the shot as the merged Walsh angles."""
+        dims = [3, 4, 5, 4]
+        gates = {0: [[1, 0, 0, 0]], 1: [[0, 2, 3, 0]], 2: [[2, 0, 0, 1]], 3: [[1, 0, 0, 0]]}
+        params = np.array([1e-5, -2e-5, 0.3, 4e-5])
+        op = shot_resources(_qudit_config(dims, 4, gates), params=params)
+        angles = qre.qudit_parities_from_gates(gates, dims, params).values()
+        assert op.resource_params["gates_params"] == tuple(sorted(angles))
 
 
 class TestPhaseFn:

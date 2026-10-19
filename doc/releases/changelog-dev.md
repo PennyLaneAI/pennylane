@@ -861,6 +861,9 @@
   :class:`~.labs.estimator_beta.templates.QuditFourierTransform`. A trainable phase layer is
   priced through the ``phase_op`` argument, e.g. with the new
   :class:`~.labs.estimator_beta.templates.SumPhaseLayer` for phase functions of the digit sum.
+  Passing the trained parameters (``params`` of ``shot_resources``, or ``gates_params`` of the
+  shot operators) prices small rotation angles with the angle-dependent Clifford+T synthesis of
+  [arXiv:2605.31544](https://arxiv.org/abs/2605.31544).
   [(#10330)](https://github.com/PennyLaneAI/pennylane/pull/10330)
 
 <h3>Breaking changes 💔</h3>

@@ -78,6 +78,27 @@ class TestParityHelpers:
         gates = {0: [[0, 1]], 1: [[1, 0]], 2: [[2], [0, 1]], 3: [[3, 3]]}
         assert qre.iqp_parity_weights_from_gates(gates) == ((1, 2), (2, 1))
 
+    def test_merged_angles(self):
+        """Merged supports add their angles, and a shared parameter enters every support."""
+        gates = {0: [[0, 1]], 1: [[1, 0]], 2: [[2], [0, 1]], 3: [[3, 3]]}
+        angles = qre.iqp_parities_from_gates(gates, np.array([0.1, 0.2, 0.4, 0.8]))
+        assert angles == pytest.approx({(0, 1): 0.7, (2,): 0.4, (3,): 0.8})
+        assert qre.iqp_parities_from_gates(gates) == {(0, 1): 3.0, (2,): 1.0, (3,): 1.0}
+
+    def test_qudit_merged_angles_are_linear(self):
+        """The merged Walsh coefficients are the parameter-weighted sum of the per-gate ones,
+        with one coefficient per parity of the histogram."""
+        dims = [3, 4, 5]
+        gates = _random_qudit_gates(dims, 6, 2, np.random.default_rng(0))
+        params = np.random.default_rng(1).normal(size=len(gates))
+        expected = {}
+        for k, gate_list in gates.items():
+            for key, c in qre.qudit_parities_from_gates({0: gate_list}, dims).items():
+                expected[key] = expected.get(key, 0.0) + params[k] * c
+        merged = qre.qudit_parities_from_gates(gates, dims, params)
+        assert merged == pytest.approx(expected)
+        assert len(merged) == sum(c for _, c in qre.qudit_parity_weights_from_gates(gates, dims))
+
     @pytest.mark.parametrize("seed", range(5))
     @pytest.mark.parametrize("n, m, w", [(6, 10, 2), (8, 40, 3), (5, 31, 5)])
     def test_arbitrary_bound_dominates_random_gates(self, seed, n, m, w):
@@ -142,6 +163,50 @@ class TestParityHelpers:
         assert sum(c for _, c in pw) == 95 * 3 + math.comb(95, 2) * 9 == 40470
 
 
+def _layer_t_count(angles, precision=None):
+    """T count of a layer of single-qubit rotations by ``angles``."""
+    layer = qre.ParityPhaseLayer(1, ((1, len(angles)),), precision, gates_params=angles)
+    return _counts(layer)[1].get("T", 0)
+
+
+class TestMixedSynthesis:
+    """Expected T count per rotation with the mixed synthesis of Bothe et al., read off layers
+    of 1000 equal rotations (the layer rounds the sum up once)."""
+
+    @pytest.mark.parametrize(
+        "theta, precision, expected",
+        [
+            (1e-5, 1e-9, 9.066),
+            (1e-6, 1e-9, 0.0892),
+            (1e-3, 1e-6, 26.41),
+            (1e-4, 1e-6, 0.6586),
+            (1e-2, 1e-3, 3.244),
+        ],
+    )
+    def test_paper_values(self, theta, precision, expected):
+        """Values quoted in arXiv:2605.31544, for both signs of the angle."""
+        t_count = _layer_t_count([theta, -theta] * 500, precision)
+        assert t_count == pytest.approx(1000 * expected, rel=1e-3, abs=1)
+
+    @pytest.mark.parametrize("precision", [1e-12, 1e-9, 1e-6, 1e-3])
+    def test_limits(self, precision):
+        """Free below about precision/2, never dearer than the angle-independent cost, and
+        periodic under the Clifford rotations by pi/4."""
+        assert _layer_t_count([0.4 * precision] * 1000, precision) == 0
+        theta = np.random.default_rng(0).uniform(-4, 4, size=1000)
+        t_count = _layer_t_count(theta, precision)
+        assert t_count <= 1000 * _counts(qre.RZ(precision=precision))[1]["T"]
+        assert _layer_t_count(theta + np.pi / 4, precision) == t_count
+
+    @pytest.mark.parametrize("theta, precision", [(np.pi / 8, 1e-9), (0.385, 1e-2)])
+    def test_staircase_t_gate(self, theta, precision):
+        """Close to pi/8 the T gate over-rotation is used whenever theta <= phi = pi/8, with
+        expected T count sqrt(2) sin(2 theta); tan(0.385) > pi/8, where the paper's script
+        falls back to the asymptotic formula."""
+        t_count = _layer_t_count([theta] * 1000, precision)
+        assert t_count == pytest.approx(1000 * np.sqrt(2) * np.sin(2 * theta), abs=1)
+
+
 class TestParityPhaseLayer:
     """Tests for ParityPhaseLayer."""
 
@@ -150,7 +215,12 @@ class TestParityPhaseLayer:
     def test_resource_params_and_rep(self):
         """Resource params, resource_rep and the dispatching class."""
         op = qre.ParityPhaseLayer(4, {2: 6, 1: 4})
-        assert op.resource_params == {"num_wires": 4, "parity_weights": self.pw, "precision": None}
+        assert op.resource_params == {
+            "num_wires": 4,
+            "parity_weights": self.pw,
+            "precision": None,
+            "gates_params": None,
+        }
         rep = qre.ParityPhaseLayer.resource_rep(4, self.pw)
         assert rep.op_type is qre.ParityPhaseLayer
         assert rep == op.resource_rep_from_op()
@@ -202,6 +272,67 @@ class TestParityPhaseLayer:
         half = qp.matrix(qp.MultiRZ(-theta, wires=[1, 2, 3]), wire_order=range(n + 1))
         both = qp.matrix(qp.MultiRZ(theta, wires=[0, 1, 2, 3]), wire_order=range(n + 1))
         assert np.allclose(target, half @ both)
+
+    def test_gates_params_canonical(self):
+        """The angles are stored as a sorted tuple, so their order and container do not matter."""
+        angles = [0.3, -1e-5, 0.0, 1e-3, 2.0, 0.1, 0.2, 0.4, 0.5, 0.6]
+        op = qre.ParityPhaseLayer(4, self.pw, gates_params=np.array(angles))
+        assert op.resource_params["gates_params"] == tuple(sorted(angles))
+        rep = qre.ParityPhaseLayer.resource_rep(4, self.pw, gates_params=angles[::-1])
+        assert rep == op.resource_rep_from_op()
+
+    def test_gates_params_wrong_length(self):
+        """One angle per rotation is required."""
+        with pytest.raises(ValueError, match="gates_params has 9 angles"):
+            qre.ParityPhaseLayer(4, self.pw, gates_params=[0.1] * 9)
+
+    def test_small_angles(self):
+        """Ten rotations by 1e-5 at 1e-9 cost 10 x 9.066 expected T gates (Bothe et al. Sec. III),
+        rounded up once, and keep their CNOT ladders."""
+        counts = _counts(qre.ParityPhaseLayer(4, self.pw, gates_params=[1e-5] * 10))[1]
+        assert counts == {"CNOT": 12, "T": 91}
+
+    def test_large_angles_cost_rz(self):
+        """At 1e-9 a generic angle is cheaper with RZ, so the layer costs as without angles."""
+        angles = np.random.default_rng(0).uniform(0.1, 0.3, size=10)
+        with_angles = _counts(qre.ParityPhaseLayer(4, self.pw, gates_params=angles))
+        without = _counts(qre.ParityPhaseLayer(4, self.pw))
+        assert with_angles[1] == without[1]
+        assert with_angles[0].algo_wires == without[0].algo_wires
+
+    def test_clifford_t_angles(self):
+        """Multiples of pi/4 are Cliffords and odd multiples of pi/8 are one T gate each."""
+        cliffords = [0.0, np.pi / 4, -np.pi / 2, 3 * np.pi / 4]
+        t_gates = [np.pi / 8, -np.pi / 8, 3 * np.pi / 8, 9 * np.pi / 8]
+        layer = qre.ParityPhaseLayer(2, ((1, 2), (2, 6)), gates_params=cliffords + t_gates)
+        assert _counts(layer)[1] == {"CNOT": 12, "T": 4}
+
+    def test_explicit_precision(self):
+        """At precision 1e-3 the angle-independent mixed synthesis is cheaper than RZ, so every
+        rotation is priced by its expected T count (3.244 for 1e-2, Bothe et al. Sec. III)."""
+        layer = qre.ParityPhaseLayer(1, ((1, 1),), precision=1e-3, gates_params=[1e-2])
+        assert _counts(layer)[1] == {"T": 4}
+        rz_t = _counts(qre.RZ(precision=1e-3))[1]["T"]
+        large = qre.ParityPhaseLayer(1, ((1, 1),), precision=1e-3, gates_params=[0.3])
+        assert _counts(large)[1]["T"] < rz_t
+
+    def test_adjoint_and_pow_with_angles(self):
+        """The adjoint costs the same; a power multiplies every angle."""
+        layer = qre.ParityPhaseLayer(4, self.pw, gates_params=[1e-5] * 10)
+        assert _counts(qre.Adjoint(layer))[1] == _counts(layer)[1]
+        tripled = qre.ParityPhaseLayer(4, self.pw, gates_params=[3e-5] * 10)
+        assert _counts(qre.Pow(layer, 3))[1] == _counts(tripled)[1]
+        t_layer = qre.ParityPhaseLayer(1, ((1, 2),), gates_params=[np.pi / 8] * 2)
+        assert "T" not in _counts(qre.Pow(t_layer, 2))[1]  # T^2 = S
+
+    def test_controlled_with_angles(self):
+        """A controlled rotation by c is two rotations by c/2: a controlled S is two T gates."""
+        layer = qre.ParityPhaseLayer(3, ((1, 3),), gates_params=[np.pi / 4] * 3)
+        assert _counts(qre.Controlled(layer, 1, 0))[1] == {"CNOT": 6, "T": 6}
+        res, counts = _counts(qre.Controlled(layer, 2, 1))
+        assert counts["T"] == 6
+        assert counts["Toffoli"] == 2 * _counts(qre.MultiControlledX(2, 1))[1]["Toffoli"]
+        assert res.algo_wires == 5
 
 
 class TestQuditFourierTransform:
@@ -350,6 +481,25 @@ class TestIQPSamplingShot:
             res = qre.estimate(op)
             assert res.algo_wires >= base.algo_wires
 
+    def test_gates_params(self):
+        """The angles reach the phase layer, and small angles make the layer cheaper."""
+        angles = np.random.default_rng(0).normal(scale=1e-5, size=210)
+        shot = qre.IQPSamplingShot(20, self.pw, 1, "arbitrary", gates_params=angles)
+        assert shot.resource_params["gates_params"] == tuple(sorted(angles))
+        decomp = qre.IQPSamplingShot.resource_decomp(**shot.resource_params)
+        assert decomp[-1] == GateCount(
+            qre.ParityPhaseLayer.resource_rep(20, self.pw, gates_params=angles)
+        )
+        res, counts = _counts(shot)
+        assert counts["T"] < 44 * 210 / 5
+        assert counts["CNOT"] == 2 * 190
+        assert res.algo_wires == 20
+
+    def test_gates_params_wrong_length(self):
+        """One angle per rotation is required."""
+        with pytest.raises(ValueError, match="gates_params has 3 angles"):
+            qre.IQPSamplingShot(20, self.pw, 1, "arbitrary", gates_params=[0.1] * 3)
+
     @pytest.mark.parametrize(
         "kwargs, match",
         [
@@ -417,6 +567,30 @@ class TestQuditSamplingShot:
             GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": ft4}), 1),
             GateCount(qre.ParityPhaseLayer.resource_rep(6, pw)),
         ]
+
+    def test_gates_params_d2_equals_qubit_shot(self):
+        """With angles, a d = 2 qudit shot is still the qubit shot."""
+        pw = ts.qudit_parity_weights_all_gates(2, 2, num_qudits=12)
+        angles = np.random.default_rng(0).normal(scale=1e-4, size=78)
+        q = _counts(
+            qre.QuditSamplingShot(2, pw, 50, "arbitrary", gates_params=angles, num_qudits=12)
+        )
+        b = _counts(qre.IQPSamplingShot(12, pw, 50, "arbitrary", gates_params=angles))
+        assert q[1] == b[1]
+        assert q[1]["T"] < _counts(qre.IQPSamplingShot(12, pw, 50, "arbitrary"))[1]["T"]
+
+    def test_gates_params_reach_layer(self):
+        """The angles of the Walsh-expanded layer reach the phase layer."""
+        pw = ((2, 3),)
+        angles = (1e-4, -2e-4, 0.3)
+        decomp = qre.QuditSamplingShot.resource_decomp(
+            ((3, 2), (4, 1)), pw, 1, "arbitrary", gates_params=angles
+        )
+        assert decomp[-1] == GateCount(
+            qre.ParityPhaseLayer.resource_rep(6, pw, gates_params=angles)
+        )
+        with pytest.raises(ValueError, match="gates_params has 2 angles"):
+            qre.QuditSamplingShot(((3, 2), (4, 1)), pw, 1, "arbitrary", gates_params=angles[:2])
 
 
 def _rotations(s, degree):
@@ -596,11 +770,7 @@ class TestCompiledCircuits:
         amps = rng.normal(size=3) + 1j * rng.normal(size=3)
         amps /= np.linalg.norm(amps)
 
-        angles = {}
-        for j, gate_list in gates.items():
-            for g in gate_list:
-                key = tuple(sorted(set(g)))
-                angles[key] = angles.get(key, 0.0) + theta[j]
+        angles = qre.iqp_parities_from_gates(gates, theta)
         assert len(angles) == sum(c for _, c in qre.iqp_parity_weights_from_gates(gates))
 
         dev = qp.device("default.qubit", wires=n)
@@ -650,12 +820,9 @@ class TestCompiledCircuits:
         x0[0] = 1.0
         ref = np.abs(f.conj().T @ (np.exp(1j * omega) * (f @ x0))) ** 2
 
-        # compiled circuit; per-gate angles theta_j times the merged Walsh coefficients
-        parities = {}
-        for j, gate_list in gates.items():
-            for key, c in ts.qudit_parities_from_gates({0: gate_list}, dims).items():
-                parities[key] = parities.get(key, 0.0) + theta[j] * c
-        assert len(parities) <= sum(c for _, c in qre.qudit_parity_weights_from_gates(gates, dims))
+        # compiled circuit, with the merged rotation angles that gates_params receives
+        parities = qre.qudit_parities_from_gates(gates, dims, theta)
+        assert len(parities) == sum(c for _, c in qre.qudit_parity_weights_from_gates(gates, dims))
 
         def ft_block(d, b):
             full = np.eye(2**b, dtype=complex)

@@ -69,7 +69,18 @@ Conventions
   full ``2k - 1`` identification qubits (non-identity encoding), matching the data-independent
   upper bound of :class:`~.pennylane.SumOfSlatersPrep`.
 * **Rotation precision**: per rotation, ``precision`` if given, otherwise the config value
-  (``1e-9`` for ``RZ`` in ``LabsResourceConfig``). No error budget is split here.
+  (``1e-9`` for ``RZ`` in ``LabsResourceConfig``; always ``1e-9`` when ``gates_params`` is given).
+  No error budget is split here.
+* **Rotation angles**: without ``gates_params`` every rotation costs one ``RZ``, whatever its
+  angle. With ``gates_params`` (the angle :math:`\theta` of every rotation
+  :math:`\exp(i\theta Z_P)`), each rotation is priced with the cheaper of the default ``RZ`` and
+  the mixed Clifford+T synthesis of
+  `Bothe et al., arXiv:2605.31544 <https://arxiv.org/abs/2605.31544>`__ (Eq. 12: the staircase
+  of optimal over-rotations and the small-angle formula Eqs. 10-11, capped at Eq. 9). After reducing
+  :math:`\theta` modulo :math:`\pi/4` with Cliffords, its expected T count is zero for
+  :math:`|\theta| \lesssim \delta/2`, grows as :math:`\tilde{O}(\theta^2/\delta)` and saturates
+  near :math:`|\theta| \approx \sqrt{\delta}`. A mixture is sampled per shot, so the T count is
+  the expected T count of one shot.
 * **Gate metric**: ``T`` and ``Toffoli`` are reported separately; a combined figure, where
   quoted, is ``T + 4 Toffoli``.
 
@@ -96,12 +107,22 @@ Faithful to the circuits above and to Fomichev et al. Sec. III A, except:
 * The two label permutations of the Good-Thomas factorisation are priced as ``d - 1``
   transpositions, each one ``MultiControlledX`` on ``b - 1`` controls plus ``2(b - 1)`` CNOT and
   ``X`` gates (an upper bound; the labels ``z >= d`` are free).
+* Rotations with known angles (Bothe et al.): every rotation gets the same ``precision``
+  :math:`\delta` (the equal split of Eq. 94, not the angle-weighted split of Eq. 98). The
+  diamond-norm :math:`\delta` of the mixture and the ``RZ`` precision are compared at the same
+  value. The expected T count of the layer is rounded up once. The ``CNOT`` ladders are counted
+  for every parity, also when the mixture samples the identity, and synthesis Cliffords are not
+  counted. A staircase over-rotation with angle :math:`\varphi` is used when
+  :math:`\theta \le \varphi` (footnote 4 of the paper); the paper's script tests
+  :math:`\tan\theta \le \varphi`, which skips the T gate for :math:`\theta` close to
+  :math:`\pi/8`. Only the ancilla-free diagonal synthesis is used, not the fallback synthesis.
 """
 
 import math
 from collections import Counter
 
 import pennylane.labs.estimator_beta as qre
+from pennylane import math as pl_math
 from pennylane.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -191,6 +212,38 @@ def iqp_parity_weights_arbitrary_gates(
     return _as_histogram(hist)
 
 
+def iqp_parities_from_gates(gates: dict, params=None) -> dict[tuple[int, ...], float]:
+    r"""Merged rotation angles of a qubit ``gates`` dictionary in the format of
+    :class:`~pennylane.labs.tcdq.CircuitConfig`.
+
+    Repeated qubits within a gate count once, and gates with identical supports merge into one
+    rotation whose angle is the sum of their parameters (all gates commute).
+
+    Args:
+        gates (dict[int, list[list[int]]]): map from parameter index to a list of supports
+        params (TensorLike | None): gate parameters; ``params[k]`` is the angle :math:`\theta` of
+            :math:`\exp(i\theta Z_S)` for every support ``S`` in ``gates[k]``. ``None`` uses unit
+            angles.
+
+    Returns:
+        dict[tuple[int, ...], float]: merged angle of every distinct support (sorted qubits)
+
+    **Example**
+
+    >>> iqp_parities_from_gates({0: [[0, 1]], 1: [[2]], 2: [[1, 0]]}, [0.1, 0.2, 0.3])
+    {(0, 1): 0.4, (2,): 0.2}
+    """
+    params = None if params is None else pl_math.to_numpy(params).tolist()
+    angles = {}
+    for k, gate_list in gates.items():
+        theta = 1.0 if params is None else params[k]
+        for g in gate_list:
+            if g:
+                key = tuple(sorted(set(g)))
+                angles[key] = angles.get(key, 0.0) + theta
+    return angles
+
+
 def iqp_parity_weights_from_gates(gates: dict) -> tuple[tuple[int, int], ...]:
     r"""Exact parity-weight histogram of a qubit ``gates`` dictionary in the format of
     :class:`~pennylane.labs.tcdq.CircuitConfig`.
@@ -209,8 +262,7 @@ def iqp_parity_weights_from_gates(gates: dict) -> tuple[tuple[int, int], ...]:
     >>> iqp_parity_weights_from_gates({0: [[0, 1]], 1: [[2]], 2: [[1, 0]]})
     ((1, 1), (2, 1))
     """
-    supports = {frozenset(g) for gate_list in gates.values() for g in gate_list if g}
-    return _as_histogram(Counter(len(s) for s in supports))
+    return _as_histogram(Counter(len(s) for s in iqp_parities_from_gates(gates)))
 
 
 def qudit_site_spectrum(dim: int, power: int) -> dict[int, float]:
@@ -265,40 +317,46 @@ def _dims_list(dims, num_qudits=None):
     return list(dims)
 
 
-def qudit_parities_from_gates(gates: dict, dims) -> dict[tuple, float]:
-    r"""Merged parity expansion of a qudit gate set at unit angles.
+def qudit_parities_from_gates(gates: dict, dims, params=None) -> dict[tuple, float]:
+    r"""Merged parity expansion of a qudit gate set.
 
-    Each generator :math:`Q_g` is the tensor product of its site spectra; the products of all gates are summed per parity. The returned coefficients are those
-    of :math:`\sum_j Q_{g_j}`; the parity set (keys) is what fixes the cost.
+    Each generator :math:`Q_g` is the tensor product of its site spectra; the products of all
+    gates are summed per parity. The returned coefficients are those of
+    :math:`\sum_j \theta_j Q_{g_j}`, i.e. the angles of the rotations :math:`\exp(i c_P Z_P)`
+    that implement :math:`D(\theta)`. The parity set (keys) fixes the rotation count.
 
     Args:
         gates (dict[int, list[list[int]]]): map from parameter index to a list of generator
             vectors, in the format of :class:`~pennylane.labs.tcdq.QuditCircuitConfig`
         dims (int | list[int]): local dimensions; an ``int`` applies to every site
+        params (TensorLike | None): gate parameters; ``params[k]`` is the angle of every
+            generator in ``gates[k]``. ``None`` uses unit angles.
 
     Returns:
         dict[tuple[tuple[int, int]], float]: parity ``((site, mask), ...) -> coefficient``
     """
-    flat = [list(g) for gate_list in gates.values() for g in gate_list]
-    n = len(flat[0]) if flat else 0
+    params = None if params is None else pl_math.to_numpy(params).tolist()
+    n = next((len(g) for gate_list in gates.values() for g in gate_list), 0)
     dims = _dims_list(dims, n)
     total = {}
-    for g in flat:
-        terms = {(): 1.0}
-        for q, v in enumerate(g):
-            v = int(v) % dims[q]
-            if v == 0:
-                continue
-            spec = qudit_site_spectrum(dims[q], v)
-            new = {}
+    for k, gate_list in gates.items():
+        theta = 1.0 if params is None else params[k]
+        for g in gate_list:
+            terms = {(): theta}
+            for q, v in enumerate(g):
+                v = int(v) % dims[q]
+                if v == 0:
+                    continue
+                spec = qudit_site_spectrum(dims[q], v)
+                new = {}
+                for key, c in terms.items():
+                    for mask, a in spec.items():
+                        k2 = key + ((q, mask),) if mask else key
+                        new[k2] = new.get(k2, 0.0) + c * a
+                terms = new
             for key, c in terms.items():
-                for mask, a in spec.items():
-                    k2 = key + ((q, mask),) if mask else key
-                    new[k2] = new.get(k2, 0.0) + c * a
-            terms = new
-        for key, c in terms.items():
-            if key:  # the all-identity term is a global phase
-                total[key] = total.get(key, 0.0) + c
+                if key:  # the all-identity term is a global phase
+                    total[key] = total.get(key, 0.0) + c
     return total
 
 
@@ -412,6 +470,109 @@ def qudit_parity_weights_arbitrary_gates(
 
 
 # ---------------------------------------------------------------------------------------------
+# Angle-dependent rotation synthesis (Bothe et al., arXiv:2605.31544)
+# ---------------------------------------------------------------------------------------------
+
+_DEFAULT_PRECISION = 1e-9  # the RZ precision of ResourceConfig
+
+# Staircase of optimal over-rotations (Table 1 and Appendix C, exhaustive search up to 35 T),
+# copied from the paper's ancillary script small_angle_costing.py in its order (decreasing
+# tan(alpha)): tan(alpha), the average T count divided by sin(2 theta), and the over-rotation
+# angle phi.
+# fmt: off
+_STAIRCASE_TANALPHA = pl_math.array([
+    1.000000000000000000, 0.414213562373095090, 0.350834874673672581, 0.312876580442609076, 0.212012989773690319,
+    0.199053696635809713, 0.137553374901583453, 0.114743436552311937, 0.110968924780318418, 0.106108155871760396,
+    0.095599761041589515, 0.093857467246492854, 0.089772198956584240, 0.081007642852468559, 0.080059368825502769,
+    0.071823156445232433, 0.068074811618681924, 0.063557891353411389, 0.056565932310567113, 0.054687766545393701,
+    0.043853474353372793, 0.043184230632607387, 0.041757558494795996, 0.035525578867165862, 0.026620221579097662,
+    0.023740068332829375, 0.023219765631210493, 0.023041225970146049, 0.021820124509931472, 0.021584661590176659,
+    0.021095252610628751, 0.020170619047074331, 0.016419959844448571, 0.013250840260523361, 0.013201874372092005,
+    0.011678064337090286, 0.011610273857837769, 0.010123357001352220, 0.009178937379670129, 0.008939807749050285,
+    0.008911641286055169, 0.008891831473781506, 0.008223547022012874, 0.008134840314959944, 0.005676564243201448,
+    0.005490790602226593, 0.005438659165343685, 0.005011421293695884, 0.004445849949711543, 0.003802274290667123,
+    0.003414481239748043, 0.003400465772733619, 0.003362918351896612, 0.002623446891891916, 0.002421456525235684,
+    0.001942671784383428,
+][::-1])
+
+_STAIRCASE_AVG_T = pl_math.array([
+    0.000000000000000000, 1.414213562373094923, 8.358523998839725522, 14.90836057126281666, 18.66666666666666430,
+    35.41820150062702055, 36.69143914061946532, 45.81060988897981900, 59.62423066692823426, 79.37357444754127300,
+    82.26631789232057201, 91.53596103867951683, 100.1969478876198707, 103.3309855545793710, 114.8865692342005786,
+    129.9467535443398845, 130.1425954431041134, 137.7083130201563108, 162.2185949989647042, 177.3704252435253466,
+    190.7728291979915696, 234.8268288886290804, 253.6524018919697312, 274.1441976350207597, 277.6535538936209377,
+    337.6541634661525109, 418.3216273097789895, 546.1909215474321400, 569.3392538941667453, 610.1284182110173333,
+    621.5720973965859457, 648.8713606032779353, 670.4052913138149279, 869.0702760915087310, 1061.190329568459902,
+    1126.943755563780542, 1206.586675638444831, 1334.124470449861747, 1395.777866999348362, 1472.699658090156618,
+    1580.987320181555106, 1690.149558553591305, 1831.306963333395743, 1910.882476918264274, 2018.310491944398791,
+    2324.117154310660226, 2486.215289670361472, 3293.182410105669078, 3605.545686445599586, 4083.705682496006830,
+    4431.716899082452983, 4707.761035937885026, 5205.974979638611330, 6671.197660262269892, 7123.787980357737979,
+    8537.336639973320416,
+][::-1])
+
+_STAIRCASE_PHI = pl_math.array([
+    0.785398163397448168, 0.392699081698724195, 0.255495373648521762, 0.284924126622062401, 0.192835807949161497,
+    0.173552440720655482, 0.124107795648728134, 0.110082423147095237, 0.109906358777430102, 0.101528462773912573,
+    0.091710893591349804, 0.093403544968404958, 0.070187845172285837, 0.077752676679104127, 0.078669855732249924,
+    0.069493297706496718, 0.057791644573391976, 0.061888637249731267, 0.055597998797776847, 0.053665989739915342,
+    0.041987261143899557, 0.042637172618535335, 0.041443167083348088, 0.034682096952168145, 0.019816715253174161,
+    0.022220137471257971, 0.022717871336363209, 0.022893844150929561, 0.021083637492522535, 0.021313565565117158,
+    0.020116119052836046, 0.020040204171539192, 0.016410933443297120, 0.013234079689553997, 0.013194264811155256,
+    0.011536666869366122, 0.011604021540317999, 0.010119687083072504, 0.008597823205676720, 0.008827793348440431,
+    0.008855693342139597, 0.008875421608560755, 0.008191240044674157, 0.008111792864880870, 0.005202477715701859,
+    0.005378493332280404, 0.005430047050166927, 0.005010434945759594, 0.004437666869261012, 0.003795608808731670,
+    0.003384718928535352, 0.003398669385652424, 0.003361547449303978, 0.002623229168641762, 0.002386380112804906,
+    0.001932691904085085,
+][::-1])
+# fmt: on
+
+_K_ASYMPTOTIC = (2 * math.sqrt(2 * math.e**3) / 3) ** (2 / 3)
+
+
+def _mixed_synthesis_t_counts(angles, precision):
+    r"""Expected T count of every rotation :math:`\exp(i\theta Z)` synthesised to diamond-norm
+    error ``precision`` with the ancilla-free mixed synthesis of Bothe et al. (Eq. 12): the
+    over-rotation staircase where it applies, the small-angle formula (Eqs. 10-11) otherwise,
+    capped at the angle-independent cost (Eq. 9). A vectorised port of the paper's ancillary
+    script, except that a staircase row needs ``theta <= phi`` (footnote 4) where the script
+    compares ``tan(theta)`` with the angle ``phi``."""
+    # rotations by multiples of pi/4 are Cliffords, so only |theta| reduced to [0, pi/8] costs T
+    theta = pl_math.abs((pl_math.to_numpy(angles) + math.pi / 8) % (math.pi / 4) - math.pi / 8)
+    t_counts = pl_math.zeros_like(theta)
+    live = theta > 0
+    theta = theta[live]
+    sin2, tan1 = pl_math.sin(2 * theta), pl_math.tan(theta)
+    row = pl_math.searchsorted(_STAIRCASE_TANALPHA, precision / sin2 + tan1, side="right") - 1
+    row_or_0 = pl_math.clip(row, 0, None)
+    stair = (row >= 0) & (theta <= _STAIRCASE_PHI[row_or_0])
+    live_counts = _STAIRCASE_AVG_T[row_or_0] * sin2
+    # off the staircase precision < sin(2 theta), so alpha < 1 + pi/8 < K and all terms are finite
+    th = theta[~stair]
+    alpha = precision / (2 * th) + th
+    phi0 = pl_math.maximum(alpha - alpha / pl_math.log(_K_ASYMPTOTIC / alpha), th)
+    live_counts[~stair] = (3 * th / (alpha + 2 * phi0)) * pl_math.log2(
+        12 / ((alpha - phi0) ** 2 * (alpha + 2 * phi0))
+    )
+    worst = 1.52 * math.log2(1 / precision) - 0.01
+    t_counts[live] = pl_math.maximum(pl_math.minimum(live_counts, worst), 0.0)
+    return t_counts
+
+
+def _canonical_params(gates_params, parity_weights):
+    """Sorted tuple of the rotation angles, one per parity of ``parity_weights``."""
+    if gates_params is None:
+        return None
+    angles = tuple(sorted(pl_math.to_numpy(gates_params).astype(float).ravel().tolist()))
+    num_rotations = sum(c for _, c in parity_weights)
+    if len(angles) != num_rotations:
+        raise ValueError(
+            f"gates_params has {len(angles)} angles, but parity_weights has {num_rotations} "
+            "rotations; give one angle per rotation."
+        )
+    return angles
+
+
+# ---------------------------------------------------------------------------------------------
 # Resource operators
 # ---------------------------------------------------------------------------------------------
 
@@ -429,12 +590,20 @@ class ParityPhaseLayer(ResourceOperator):
             distinct parities of each Pauli weight. An architecture-independent description of
             the gate set, produced by the ``*_parity_weights_*`` helpers of this module.
         precision (float | None): synthesis precision per rotation. ``None`` uses the
-            configured ``MultiRZ``/``RZ`` precision. Architecture knob.
+            configured ``MultiRZ``/``RZ`` precision, or ``1e-9`` when ``gates_params`` is given.
+            Architecture knob.
+        gates_params (Sequence[float] | None): the angles :math:`c_P`, one per parity counted in
+            ``parity_weights``, in any order. ``None`` prices every rotation independently of its
+            angle.
         wires (WiresLike | None): the wires the operation acts on
 
     Resources:
-        One ``MultiRZ(weight)`` per parity. The adjoint and powers negate or scale the angles and
-        cost the same. One control is absorbed into the rotations,
+        One ``MultiRZ(weight)`` per parity. With ``gates_params``, every rotation keeps the
+        ``2(|P| - 1)`` CNOTs of its ``MultiRZ`` but its ``RZ`` is replaced by the mixed Clifford+T
+        synthesis of `Bothe et al., arXiv:2605.31544 <https://arxiv.org/abs/2605.31544>`__
+        (Eq. 12) whenever its expected T count, which depends on :math:`|c_P|`, is below that of
+        the ``RZ``. The adjoint and powers negate or scale the angles. One control is absorbed into
+        the rotations,
         :math:`C[\exp(i c Z_P)] = \exp(i \tfrac{c}{2} Z_P)\exp(-i \tfrac{c}{2} Z_c Z_P)`; more
         controls are first reduced to one with a ``MultiControlledX`` into a clean auxiliary qubit.
 
@@ -444,20 +613,28 @@ class ParityPhaseLayer(ResourceOperator):
     >>> layer = qre.ParityPhaseLayer(4, ((1, 4), (2, 6)))
     >>> print(dict(qre.estimate(layer).gate_counts))
     {'CNOT': 12, 'T': 440}
+
+    Rotations with small angles are cheaper:
+
+    >>> layer = qre.ParityPhaseLayer(4, ((1, 4), (2, 6)), gates_params=[1e-5] * 10)
+    >>> print(dict(qre.estimate(layer).gate_counts))
+    {'CNOT': 12, 'T': 91}
     """
 
-    resource_keys = {"num_wires", "parity_weights", "precision"}
+    resource_keys = {"num_wires", "parity_weights", "precision", "gates_params"}
 
     def __init__(
         self,
         num_wires: int,
         parity_weights,
         precision: float | None = None,
+        gates_params=None,
         wires: WiresLike | None = None,
     ):
         self.num_wires = num_wires
         self.parity_weights = _validate_histogram(parity_weights, num_wires)
         self.precision = precision
+        self.gates_params = _canonical_params(gates_params, self.parity_weights)
         super().__init__(wires=wires)
 
     @property
@@ -469,16 +646,18 @@ class ParityPhaseLayer(ResourceOperator):
                 * num_wires (int): number of wires of the layer
                 * parity_weights (tuple[tuple[int, int]]): number of parities per Pauli weight
                 * precision (float | None): synthesis precision per rotation
+                * gates_params (tuple[float] | None): sorted rotation angles
         """
         return {
             "num_wires": self.num_wires,
             "parity_weights": self.parity_weights,
             "precision": self.precision,
+            "gates_params": self.gates_params,
         }
 
     @classmethod
     def resource_rep(
-        cls, num_wires: int, parity_weights, precision: float | None = None
+        cls, num_wires: int, parity_weights, precision: float | None = None, gates_params=None
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -486,30 +665,51 @@ class ParityPhaseLayer(ResourceOperator):
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
+        parity_weights = _validate_histogram(parity_weights, num_wires)
         params = {
             "num_wires": num_wires,
-            "parity_weights": _validate_histogram(parity_weights, num_wires),
+            "parity_weights": parity_weights,
             "precision": precision,
+            "gates_params": _canonical_params(gates_params, parity_weights),
         }
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, num_wires: int, parity_weights, precision: float | None = None):
-        r"""Returns a list of ``GateCount`` objects: one ``MultiRZ`` per parity.
+    def resource_decomp(
+        cls, num_wires: int, parity_weights, precision: float | None = None, gates_params=None
+    ):
+        r"""Returns a list of ``GateCount`` objects: one ``MultiRZ`` per parity, or with
+        ``gates_params`` the ``CNOT`` ladders, the ``RZ`` rotations and the ``T`` gates of the
+        rotations synthesised with the angle-dependent method.
 
         Args:
             num_wires (int): number of wires of the layer
             parity_weights (tuple[tuple[int, int]]): number of parities per Pauli weight
             precision (float | None): synthesis precision per rotation
+            gates_params (tuple[float] | None): rotation angles
 
         Returns:
             list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: the decomposition
         """
         del num_wires
-        return [
-            GateCount(resource_rep(qre.MultiRZ, {"num_wires": w, "precision": precision}), c)
-            for w, c in parity_weights
-        ]
+        if gates_params is None:
+            return [
+                GateCount(resource_rep(qre.MultiRZ, {"num_wires": w, "precision": precision}), c)
+                for w, c in parity_weights
+            ]
+        precision = _DEFAULT_PRECISION if precision is None else precision
+        rz = resource_rep(qre.RZ, {"precision": precision})
+        rz_t = sum(
+            g.count for g in qre.RZ.resource_decomp(precision=precision) if g.gate.name == "T"
+        )
+        t_counts = _mixed_synthesis_t_counts(gates_params, precision)
+        mixed = t_counts < rz_t
+        num_cnots = sum(2 * (w - 1) * c for w, c in parity_weights)
+        num_rz = len(gates_params) - int(pl_math.sum(mixed))
+        # tolerance absorbs float error on exact staircase entries, e.g. one T for c = pi/8
+        num_t = math.ceil(float(pl_math.sum(t_counts[mixed])) - 1e-6)
+        counts = ((resource_rep(qre.CNOT), num_cnots), (rz, num_rz), (resource_rep(qre.T), num_t))
+        return [GateCount(op, n) for op, n in counts if n > 0]
 
     @classmethod
     def adjoint_resource_decomp(cls, target_resource_params: dict | None = None):
@@ -525,7 +725,8 @@ class ParityPhaseLayer(ResourceOperator):
 
     @classmethod
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict | None = None):
-        r"""A power scales every angle and costs the same as the layer (identity for ``z = 0``).
+        r"""A power scales every angle (identity for ``z = 0``); without ``gates_params`` it costs
+        the same as the layer.
 
         Args:
             pow_z (int): the exponent
@@ -536,7 +737,10 @@ class ParityPhaseLayer(ResourceOperator):
         """
         if pow_z == 0:
             return [GateCount(resource_rep(qre.Identity))]
-        return [GateCount(cls.resource_rep(**target_resource_params))]
+        params = dict(target_resource_params)
+        if params["gates_params"] is not None:
+            params["gates_params"] = [pow_z * c for c in params["gates_params"]]
+        return [GateCount(cls.resource_rep(**params))]
 
     @classmethod
     def controlled_resource_decomp(
@@ -553,12 +757,16 @@ class ParityPhaseLayer(ResourceOperator):
         Returns:
             list: the decomposition
         """
-        precision = target_resource_params["precision"]
-        gates = []
-        for w, c in target_resource_params["parity_weights"]:
-            for ww in (w, w + 1):
-                rz = resource_rep(qre.MultiRZ, {"num_wires": ww, "precision": precision})
-                gates.append(GateCount(rz, c))
+        params = target_resource_params
+        weights = Counter()
+        for w, c in params["parity_weights"]:
+            weights[w] += c
+            weights[w + 1] += c
+        angles = params["gates_params"]
+        if angles is not None:
+            angles = [s * c / 2 for c in angles for s in (1, -1)]
+        layer = cls.resource_rep(params["num_wires"] + 1, weights, params["precision"], angles)
+        gates = [GateCount(layer)]
         if num_ctrl_wires == 1:
             if num_zero_ctrl:
                 gates.append(GateCount(resource_rep(qre.X), 2))
@@ -915,6 +1123,12 @@ class IQPSamplingShot(ResourceOperator):
         precision (float | None): synthesis precision per phase-layer rotation. Architecture knob.
         phase_op (ResourceOperator | None): the trainable phase layer :math:`D'(\xi)`, e.g. a
             :class:`~.SumPhaseLayer`. ``None`` prices the circuit without it. Physics input.
+        gates_params (Sequence[float] | None): the parameters of the phase gates: the angle
+            :math:`\theta` of every rotation :math:`\exp(i\theta Z_S)` of :math:`D(\theta)`, one per
+            distinct support counted in ``parity_weights``, in any order. These are the trained
+            :math:`\theta_j` when all supports differ; gates on a common support merge into one
+            rotation whose angle is the sum of theirs (:func:`iqp_parities_from_gates`). ``None``
+            prices every rotation independently of its angle. Physics input.
         wires (WiresLike | None): the wires the operation acts on
 
     Resources:
@@ -922,7 +1136,9 @@ class IQPSamplingShot(ResourceOperator):
         ``Hadamard`` gates, and a :class:`~.ParityPhaseLayer` with one ``MultiRZ`` per gate
         support, plus ``phase_op`` if given. The measurement is free. ``parity_weights`` from
         :func:`iqp_parity_weights_arbitrary_gates` is an upper bound; the other two helpers are
-        exact.
+        exact. With ``gates_params``, rotations with small angles are synthesised with the mixed
+        Clifford+T synthesis of `Bothe et al., arXiv:2605.31544
+        <https://arxiv.org/abs/2605.31544>`__ (see :class:`~.ParityPhaseLayer`).
 
     .. seealso:: :func:`~pennylane.labs.tcdq.shot_resources` to build the shot from a
         :class:`~pennylane.labs.tcdq.CircuitConfig`, :class:`~.QuditSamplingShot`
@@ -935,6 +1151,14 @@ class IQPSamplingShot(ResourceOperator):
     >>> res = qre.estimate(shot)
     >>> res.algo_wires, res.gate_counts["T"]
     (20, 9240)
+
+    With the trained parameters, small angles cost fewer T gates:
+
+    >>> import numpy as np
+    >>> params = np.random.default_rng(0).normal(scale=1e-5, size=210)
+    >>> shot = qre.IQPSamplingShot(20, pw, 64, "uniform_real", gates_params=params)
+    >>> qre.estimate(shot).gate_counts["T"]
+    1499
     """
 
     resource_keys = {
@@ -946,6 +1170,7 @@ class IQPSamplingShot(ResourceOperator):
         "select_swap_depth",
         "precision",
         "phase_cmpr_op",
+        "gates_params",
     }
 
     def __init__(
@@ -958,6 +1183,7 @@ class IQPSamplingShot(ResourceOperator):
         select_swap_depth: int | None = None,
         precision: float | None = None,
         phase_op: ResourceOperator | None = None,
+        gates_params=None,
         wires: WiresLike | None = None,
     ):
         _validate_state(num_wires, num_init_states, init_state, num_bits)
@@ -971,6 +1197,7 @@ class IQPSamplingShot(ResourceOperator):
         if phase_op is not None:
             _dequeue(phase_op)
         self.phase_cmpr_op = phase_op.resource_rep_from_op() if phase_op is not None else None
+        self.gates_params = _canonical_params(gates_params, self.parity_weights)
         super().__init__(wires=wires)
 
     @property
@@ -980,7 +1207,8 @@ class IQPSamplingShot(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters ``num_wires``,
             ``parity_weights``, ``num_init_states``, ``init_state``, ``num_bits``,
-            ``select_swap_depth``, ``precision`` and ``phase_cmpr_op`` (see the class docstring).
+            ``select_swap_depth``, ``precision``, ``phase_cmpr_op`` and ``gates_params`` (see the
+            class docstring).
         """
         return {k: getattr(self, k) for k in self.resource_keys}
 
@@ -995,6 +1223,7 @@ class IQPSamplingShot(ResourceOperator):
         select_swap_depth: int | None = None,
         precision: float | None = None,
         phase_cmpr_op: CompressedResourceOp | None = None,
+        gates_params=None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -1003,15 +1232,17 @@ class IQPSamplingShot(ResourceOperator):
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
         """
         _validate_state(num_wires, num_init_states, init_state, num_bits)
+        parity_weights = _validate_histogram(parity_weights, num_wires)
         params = {
             "num_wires": num_wires,
-            "parity_weights": _validate_histogram(parity_weights, num_wires),
+            "parity_weights": parity_weights,
             "num_init_states": num_init_states,
             "init_state": init_state,
             "num_bits": num_bits,
             "select_swap_depth": select_swap_depth,
             "precision": precision,
             "phase_cmpr_op": phase_cmpr_op,
+            "gates_params": _canonical_params(gates_params, parity_weights),
         }
         return CompressedResourceOp(cls, num_wires, params)
 
@@ -1026,6 +1257,7 @@ class IQPSamplingShot(ResourceOperator):
         select_swap_depth: int | None = None,
         precision: float | None = None,
         phase_cmpr_op: CompressedResourceOp | None = None,
+        gates_params=None,
     ):
         r"""Returns a list of ``GateCount`` objects for one shot.
 
@@ -1038,7 +1270,7 @@ class IQPSamplingShot(ResourceOperator):
         gates = _input_state_decomp(
             num_wires, num_init_states, init_state, num_bits, select_swap_depth
         )
-        layer = ParityPhaseLayer.resource_rep(num_wires, parity_weights, precision)
+        layer = ParityPhaseLayer.resource_rep(num_wires, parity_weights, precision, gates_params)
         gates.append(GateCount(resource_rep(qre.Hadamard), 2 * num_wires))
         gates.append(GateCount(layer))
         if phase_cmpr_op is not None:
@@ -1073,6 +1305,11 @@ class QuditSamplingShot(ResourceOperator):
         precision (float | None): synthesis precision per phase-layer rotation. Architecture knob.
         phase_op (ResourceOperator | None): the trainable phase layer :math:`D'(\xi)`, e.g. a
             :class:`~.SumPhaseLayer`. ``None`` prices the circuit without it. Physics input.
+        gates_params (Sequence[float] | None): the parameters of the phase gates after the Walsh
+            expansion: the angle :math:`c_P` of every rotation :math:`\exp(i c_P Z_P)`, one per
+            parity counted in ``parity_weights``, in any order. Computed from the gates and their
+            trained :math:`\theta_j` by :func:`qudit_parities_from_gates`. ``None`` prices every
+            rotation independently of its angle. Physics input.
         num_qudits (int | None): number of sites when ``qudit_dims`` is an ``int``
         wires (WiresLike | None): the wires the operation acts on
 
@@ -1080,7 +1317,10 @@ class QuditSamplingShot(ResourceOperator):
         :class:`~.LabsSumOfSlatersPrep` on the ``sum_q ceil(log2 d_q)`` encoding qubits, one
         :class:`~.QuditFourierTransform` and one adjoint per site, and a
         :class:`~.ParityPhaseLayer` for the Walsh-expanded diagonal layer, plus ``phase_op`` if
-        given. The measurement is free.
+        given. The measurement is free. With ``gates_params``, rotations with small angles are
+        synthesised with the mixed Clifford+T synthesis of `Bothe et al., arXiv:2605.31544
+        <https://arxiv.org/abs/2605.31544>`__ (see :class:`~.ParityPhaseLayer`). The rotations
+        inside :class:`~.QuditFourierTransform` have fixed angles and keep their cost.
 
     .. seealso:: :func:`~pennylane.labs.tcdq.shot_resources` to build the shot from a
         :class:`~pennylane.labs.tcdq.QuditCircuitConfig`, :class:`~.IQPSamplingShot`
@@ -1103,6 +1343,7 @@ class QuditSamplingShot(ResourceOperator):
         "select_swap_depth",
         "precision",
         "phase_cmpr_op",
+        "gates_params",
     }
 
     def __init__(
@@ -1115,6 +1356,7 @@ class QuditSamplingShot(ResourceOperator):
         select_swap_depth: int | None = None,
         precision: float | None = None,
         phase_op: ResourceOperator | None = None,
+        gates_params=None,
         num_qudits: int | None = None,
         wires: WiresLike | None = None,
     ):
@@ -1129,6 +1371,7 @@ class QuditSamplingShot(ResourceOperator):
         if phase_op is not None:
             _dequeue(phase_op)
         self.phase_cmpr_op = phase_op.resource_rep_from_op() if phase_op is not None else None
+        self.gates_params = _canonical_params(gates_params, self.parity_weights)
         super().__init__(wires=wires)
 
     @property
@@ -1147,7 +1390,8 @@ class QuditSamplingShot(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters ``qudit_dims``,
             ``parity_weights``, ``num_init_states``, ``init_state``, ``num_bits``,
-            ``select_swap_depth``, ``precision`` and ``phase_cmpr_op`` (see the class docstring).
+            ``select_swap_depth``, ``precision``, ``phase_cmpr_op`` and ``gates_params`` (see the
+            class docstring).
         """
         return {k: getattr(self, k) for k in self.resource_keys}
 
@@ -1162,6 +1406,7 @@ class QuditSamplingShot(ResourceOperator):
         select_swap_depth: int | None = None,
         precision: float | None = None,
         phase_cmpr_op: CompressedResourceOp | None = None,
+        gates_params=None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -1172,15 +1417,17 @@ class QuditSamplingShot(ResourceOperator):
         qudit_dims = _canonical_dims(qudit_dims)
         num_wires = cls._num_qubits(qudit_dims)
         _validate_state(num_wires, num_init_states, init_state, num_bits)
+        parity_weights = _validate_histogram(parity_weights, num_wires)
         params = {
             "qudit_dims": qudit_dims,
-            "parity_weights": _validate_histogram(parity_weights, num_wires),
+            "parity_weights": parity_weights,
             "num_init_states": num_init_states,
             "init_state": init_state,
             "num_bits": num_bits,
             "select_swap_depth": select_swap_depth,
             "precision": precision,
             "phase_cmpr_op": phase_cmpr_op,
+            "gates_params": _canonical_params(gates_params, parity_weights),
         }
         return CompressedResourceOp(cls, num_wires, params)
 
@@ -1195,6 +1442,7 @@ class QuditSamplingShot(ResourceOperator):
         select_swap_depth: int | None = None,
         precision: float | None = None,
         phase_cmpr_op: CompressedResourceOp | None = None,
+        gates_params=None,
     ):
         r"""Returns a list of ``GateCount`` objects for one shot.
 
@@ -1212,7 +1460,8 @@ class QuditSamplingShot(ResourceOperator):
             ft = QuditFourierTransform.resource_rep(d)
             gates.append(GateCount(ft, count))
             gates.append(GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": ft}), count))
-        gates.append(GateCount(ParityPhaseLayer.resource_rep(num_wires, parity_weights, precision)))
+        layer = ParityPhaseLayer.resource_rep(num_wires, parity_weights, precision, gates_params)
+        gates.append(GateCount(layer))
         if phase_cmpr_op is not None:
             gates.append(GateCount(phase_cmpr_op))
         return gates
@@ -1224,6 +1473,7 @@ __all__ = [
     "SumPhaseLayer",
     "IQPSamplingShot",
     "QuditSamplingShot",
+    "iqp_parities_from_gates",
     "iqp_parity_weights_all_gates",
     "iqp_parity_weights_arbitrary_gates",
     "iqp_parity_weights_from_gates",

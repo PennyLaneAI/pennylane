@@ -74,7 +74,9 @@ TCDQ Sampling
     ~ParityPhaseLayer
     ~QuditFourierTransform
     ~SumPhaseLayer
+    ~iqp_parities_from_gates
     ~iqp_parity_weights_from_gates
+    ~qudit_parities_from_gates
     ~qudit_parity_weights_from_gates
 
 Alternate Decompositions
@@ -151,7 +153,9 @@ from .templates import (
     QuditFourierTransform,
     QuditSamplingShot,
     SumPhaseLayer,
+    iqp_parities_from_gates,
     iqp_parity_weights_from_gates,
+    qudit_parities_from_gates,
     qudit_parity_weights_from_gates,
 )
 

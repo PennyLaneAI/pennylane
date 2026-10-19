@@ -37,6 +37,7 @@ def shot_resources(
     phase_op=None,
     select_swap_depth: int | None = None,
     precision: float | None = None,
+    params=None,
 ):
     r"""Resource operator for one computational-basis shot of the circuit described by ``config``.
 
@@ -56,6 +57,11 @@ def shot_resources(
             preparation
         precision (float | None): synthesis precision per rotation of the diagonal layer.
             ``None`` uses the configured ``MultiRZ``/``RZ`` precision.
+        params (TensorLike | None): the trained parameters, as passed to the expectation-value
+            functions: ``params[k]`` is the angle of every gate in ``config.gates[k]``. If given,
+            the merged angle of every rotation of the diagonal layer is passed to the shot as
+            ``gates_params``, and rotations with small angles are priced with the angle-dependent
+            synthesis of `Bothe et al., arXiv:2605.31544 <https://arxiv.org/abs/2605.31544>`__.
 
     Returns:
         ResourceOperator: an :class:`~pennylane.labs.estimator_beta.IQPSamplingShot` for a
@@ -84,6 +90,12 @@ def shot_resources(
     >>> res = qre.estimate(shot_resources(config))
     >>> res.algo_wires, res.gate_counts["T"]
     (20, 9240)
+
+    Trained parameters close to zero make the circuit cheaper:
+
+    >>> params = jax.random.normal(jax.random.PRNGKey(1), (210,)) * 1e-5
+    >>> qre.estimate(shot_resources(config, params=params)).gate_counts["T"]
+    1718
     """
     if not isinstance(config, (CircuitConfig, QuditCircuitConfig)):
         raise TypeError(
@@ -111,6 +123,9 @@ def shot_resources(
                 ]
             )
         num_init_states, init_state, num_bits = _input_state(elems, config.init_state_amps, bits)
+        gates_params = None
+        if params is not None:
+            gates_params = list(qre.qudit_parities_from_gates(config.gates, dims, params).values())
         return qre.QuditSamplingShot(
             dims,
             qre.qudit_parity_weights_from_gates(config.gates, dims),
@@ -120,10 +135,14 @@ def shot_resources(
             select_swap_depth=select_swap_depth,
             precision=precision,
             phase_op=phase_op,
+            gates_params=gates_params,
         )
 
     bits = None if elems is None else math.to_numpy(elems).astype(int).T
     num_init_states, init_state, num_bits = _input_state(elems, config.init_state_amps, bits)
+    gates_params = None
+    if params is not None:
+        gates_params = list(qre.iqp_parities_from_gates(config.gates, params).values())
     return qre.IQPSamplingShot(
         config.n_qubits,
         qre.iqp_parity_weights_from_gates(config.gates),
@@ -133,4 +152,5 @@ def shot_resources(
         select_swap_depth=select_swap_depth,
         precision=precision,
         phase_op=phase_op,
+        gates_params=gates_params,
     )
