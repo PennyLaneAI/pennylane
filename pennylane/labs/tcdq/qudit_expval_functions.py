@@ -704,30 +704,73 @@ def _check_integer_array(name: str, x: jnp.ndarray) -> None:
         raise TypeError(f"{name} must be an integer array, got dtype {x.dtype}.")
 
 
-@partial(jax.jit, static_argnums=(3,))
-def _analyse_gate_arrays(
-    supports: jnp.ndarray, powers: jnp.ndarray, dims_j: jnp.ndarray, n_qudits: int
-) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    """Validate gate arrays and detect the canonical layout in one fused pass.
+_ANALYSE_CHUNK = 2**22  # rows per step of the validation pass (bounds its temporaries)
 
-    Returns ``(index_ok, canonical, counts)`` where ``counts[w]`` is the number of gates of
-    weight ``w`` (after reducing the powers modulo the local dimensions).
+
+def _analyse_rows(sup, pw, dims_j, n_qudits, carry):
+    """Fold the validation statistics of a row block into ``carry``.
+
+    ``carry = (index_ok, layout_ok, counts, prev_weight)``; ``prev_weight`` is the weight of the
+    last row seen so far, so that weight ordering is also checked across block boundaries.
     """
-    w_max = supports.shape[1]
-    sup = supports.astype(_INDEX_DTYPE)
-    pw = powers.astype(_INDEX_DTYPE)
+    index_ok, layout_ok, counts, prev_weight = carry
+    sup = sup.astype(_INDEX_DTYPE)
+    pw = pw.astype(_INDEX_DTYPE)
     in_range = (sup >= -n_qudits) & (sup < n_qudits)
     sup_mod = jnp.where(in_range, sup % n_qudits, 0)
     p = pw % jnp.take(dims_j, sup_mod)
     active = p != 0
-    index_ok = jnp.all(in_range | ~active)
     weight = jnp.sum(active, axis=1).astype(_INDEX_DTYPE)
-    counts = jnp.bincount(weight, length=w_max + 1)
-    prefix_ok = jnp.all(active[:, 1:] <= active[:, :-1])
-    sorted_ok = jnp.all(~active[:, 1:] | (sup_mod[:, 1:] > sup_mod[:, :-1]))
-    reduced_ok = jnp.all(p == pw) & jnp.all(~active | (sup == sup_mod))
-    weight_sorted = jnp.all(weight[1:] >= weight[:-1])
-    canonical = prefix_ok & sorted_ok & reduced_ok & weight_sorted
+    index_ok = index_ok & jnp.all(in_range | ~active)
+    counts = counts + jnp.bincount(weight, length=counts.shape[0]).astype(counts.dtype)
+    layout_ok = (
+        layout_ok
+        & jnp.all(active[:, 1:] <= active[:, :-1])  # active columns form a prefix
+        & jnp.all(~active[:, 1:] | (sup_mod[:, 1:] > sup_mod[:, :-1]))  # strictly increasing
+        & jnp.all(p == pw)  # powers already reduced
+        & jnp.all(~active | (sup == sup_mod))  # no negative indices
+        & jnp.all(weight[1:] >= weight[:-1])  # rows sorted by weight within the block ...
+        & (weight[0] >= prev_weight)  # ... and across the block boundary
+    )
+    return index_ok, layout_ok, counts, weight[-1]
+
+
+@partial(jax.jit, static_argnums=(3, 4))
+def _analyse_gate_arrays(
+    supports: jnp.ndarray,
+    powers: jnp.ndarray,
+    dims_j: jnp.ndarray,
+    n_qudits: int,
+    chunk: int = _ANALYSE_CHUNK,
+) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+    """Validate gate arrays and detect the canonical layout in one streaming pass.
+
+    Returns ``(index_ok, canonical, counts)`` where ``counts[w]`` is the number of gates of
+    weight ``w`` (after reducing the powers modulo the local dimensions). Rows are processed in
+    blocks of ``chunk``, so the temporaries are independent of the number of gates.
+    """
+    n_gates, w_max = supports.shape
+    carry = (
+        jnp.array(True),
+        jnp.array(True),
+        jnp.zeros(w_max + 1, dtype=jnp.int64 if jax.config.jax_enable_x64 else jnp.int32),
+        jnp.zeros((), dtype=_INDEX_DTYPE),
+    )
+    n_full = n_gates // chunk
+
+    def body(i, carry):
+        start = (jnp.asarray(i, dtype=_INDEX_DTYPE) * chunk).astype(_INDEX_DTYPE)
+        zero = jnp.zeros((), dtype=_INDEX_DTYPE)
+        sup = jax.lax.dynamic_slice(supports, (start, zero), (chunk, w_max))
+        pw = jax.lax.dynamic_slice(powers, (start, zero), (chunk, w_max))
+        return _analyse_rows(sup, pw, dims_j, n_qudits, carry)
+
+    if n_full:
+        carry = jax.lax.fori_loop(0, n_full, body, carry)
+    if n_gates > n_full * chunk:
+        tail = slice(n_full * chunk, n_gates)
+        carry = _analyse_rows(supports[tail], powers[tail], dims_j, n_qudits, carry)
+    index_ok, canonical, counts, _ = carry
     return index_ok, canonical, counts
 
 
@@ -1317,6 +1360,7 @@ def _group_blocked_phase_diffs(  # pylint: disable=too-many-arguments,too-many-p
 
 
 def _group_blocked_phase_diffs_vjp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    dtheta: jnp.ndarray,
     g_delta: jnp.ndarray,
     operands: tuple[jnp.ndarray, jnp.ndarray],
     group: _GroupStatic,
@@ -1324,27 +1368,36 @@ def _group_blocked_phase_diffs_vjp(  # pylint: disable=too-many-arguments,too-ma
     tables: _LookupTables,
     block_size: int,
 ) -> jnp.ndarray:
-    """Per-gate gradient ``(n_gates,)`` of one weight group, recomputing the factors block by block."""
+    """Add the gradient of one weight group to ``dtheta``, recomputing the factors block by block.
+
+    Every block is accumulated into ``dtheta`` directly (``dtheta`` is a loop carry updated in
+    place), so no per-gate gradient array of the group's size is ever materialised.
+    """
     n_modes = group.signs.shape[0]
 
-    def block_grad(start, size):
+    def add_block(dtheta, start, size):
         coefs, modes = _block_factors(operands, group, arrays, tables, start, size)
         d_v = coefs.T @ g_delta  # (2 B n_modes, n_samples)
         d_theta_modes = jnp.sum(d_v * modes, axis=1)
-        return jnp.sum(d_theta_modes.reshape(2, size, n_modes), axis=(0, 2))
+        grad = jnp.sum(d_theta_modes.reshape(2, size, n_modes), axis=(0, 2))
+        start = jnp.asarray(start, dtype=_INDEX_DTYPE)
+        if arrays.param_indices is None:  # gate in row r is controlled by parameter r
+            current = jax.lax.dynamic_slice(dtheta, (start,), (size,))
+            return jax.lax.dynamic_update_slice(dtheta, current + grad, (start,))
+        pidx = jax.lax.dynamic_slice(arrays.param_indices, (start,), (size,))
+        return dtheta.at[pidx.astype(_INDEX_DTYPE)].add(grad)
 
     n_full, remainder = _for_each_block(group, block_size)
-    parts = []
     if n_full:
-
-        def body(_, i):
-            return None, block_grad(group.row_offset + i * block_size, block_size)
-
-        _, stacked = jax.lax.scan(body, None, jnp.arange(n_full, dtype=_INDEX_DTYPE))
-        parts.append(stacked.reshape(-1))
+        dtheta = jax.lax.fori_loop(
+            0,
+            n_full,
+            lambda i, dt: add_block(dt, group.row_offset + i * block_size, block_size),
+            dtheta,
+        )
     if remainder:
-        parts.append(block_grad(group.row_offset + n_full * block_size, remainder))
-    return jnp.concatenate(parts)
+        dtheta = add_block(dtheta, group.row_offset + n_full * block_size, remainder)
+    return dtheta
 
 
 def _blocked_phase_diffs(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -1392,10 +1445,9 @@ def _blocked_phase_diffs_vjp(  # pylint: disable=too-many-arguments,too-many-pos
         dtheta = _w1_phase_diffs_vjp(g_delta, ctx, structure, gate_arrays, dtheta)
     for group, arrays in zip(structure.heavy, gate_arrays.heavy):
         block_size = _qudit_phase_block_size(max_memory_bytes, group.omega, n_samples, n_obs)
-        d_gates = _group_blocked_phase_diffs_vjp(
-            g_delta, operands, group, arrays, tables, block_size
+        dtheta = _group_blocked_phase_diffs_vjp(
+            dtheta, g_delta, operands, group, arrays, tables, block_size
         )
-        dtheta = _accumulate_group_grad(dtheta, d_gates, group, arrays.param_indices)
     return dtheta
 
 

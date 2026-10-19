@@ -326,6 +326,38 @@ def _random_fixed_weight_gates(
     )
 
 
+@partial(jax.jit, static_argnums=(4, 5, 6, 7, 8), donate_argnums=(0, 1))
+def _fill_fixed_weight_gates(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    sup_buf, pow_buf, key_weight, offset, n_weight: int, chunk_size: int, dims, weight, max_weight
+):
+    """Write ``n_weight`` random gates of one weight into rows ``offset:offset + n_weight``.
+
+    The buffers are donated and updated in place chunk by chunk, so the peak memory is the
+    output plus one chunk of temporaries (no concatenation copy). Chunk ``c`` is drawn with
+    ``fold_in(key_weight, c)``.
+    """
+    idx = offset.dtype
+    zero = jnp.zeros((), dtype=idx)
+    n_full = n_weight // chunk_size
+
+    def write(bufs, c, size):
+        sup, pw = _random_fixed_weight_gates(
+            jax.random.fold_in(key_weight, c), size, dims, weight, max_weight
+        )
+        start = (offset + jnp.asarray(c, dtype=idx) * chunk_size).astype(idx)
+        return (
+            jax.lax.dynamic_update_slice(bufs[0], sup, (start, zero)),
+            jax.lax.dynamic_update_slice(bufs[1], pw, (start, zero)),
+        )
+
+    bufs = (sup_buf, pow_buf)
+    if n_full:
+        bufs = jax.lax.fori_loop(0, n_full, lambda c, b: write(b, c, chunk_size), bufs)
+    if n_weight > n_full * chunk_size:
+        bufs = write(bufs, n_full, n_weight - n_full * chunk_size)
+    return bufs
+
+
 def create_random_qudit_gates_jax(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     key,
     n_gates: int,
@@ -347,10 +379,12 @@ def create_random_qudit_gates_jax(  # pylint: disable=too-many-arguments,too-man
     canonical layout (rows grouped by weight, sorted active prefix, smallest sufficient integer
     dtypes) that :class:`~pennylane.labs.tcdq.QuditCircuitConfig` consumes without copying. A
     two-qudit gate on fewer than 32768 qudits of dimension below 128 costs 6 bytes, so
-    :math:`10^9` gates occupy 6 GB. Generation is done in chunks of ``chunk_size`` gates so that
-    the temporaries never exceed a few hundred megabytes; chunks are drawn with keys derived from
-    ``key`` via :func:`jax.random.fold_in`, so the result is reproducible and independent of the
-    chunk size only up to the chunk boundaries (fix ``chunk_size`` to reproduce a circuit).
+    :math:`10^9` gates occupy 6 GB (9 GB for three-qudit gates). The output buffers are
+    allocated once and filled in place, ``chunk_size`` gates per step, so the peak memory is the
+    output plus temporaries proportional to ``chunk_size`` (about 2.7 GB for three-qudit gates
+    at the default ``2**24``; lower ``chunk_size`` to reduce it). Chunks are drawn with keys
+    derived from ``key`` via :func:`jax.random.fold_in`, so the result is reproducible but
+    depends on ``chunk_size`` (fix ``chunk_size`` to reproduce a circuit).
 
     Args:
         key (ArrayLike): JAX PRNG key.
@@ -413,20 +447,24 @@ def create_random_qudit_gates_jax(  # pylint: disable=too-many-arguments,too-man
             )
         )
 
-    support_parts, power_parts = [], []
+    # Fill preallocated output buffers in place, one weight group after the other.
+    idx_dtype = jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
+    supports = jnp.zeros((n_gates, max_weight), dtype=support_dtype)
+    powers = jnp.zeros((n_gates, max_weight), dtype=power_dtype)
+    offset = 0
     for weight in range(min_weight, max_weight + 1):
         n_weight = int(counts[weight])
-        key_weight = jax.random.fold_in(key_gates, weight)
-        for chunk, start in enumerate(range(0, n_weight, chunk_size)):
-            size = min(chunk_size, n_weight - start)
-            supports, powers = _random_fixed_weight_gates(
-                jax.random.fold_in(key_weight, chunk), size, dims, weight, max_weight
+        if n_weight:
+            supports, powers = _fill_fixed_weight_gates(
+                supports,
+                powers,
+                jax.random.fold_in(key_gates, weight),
+                jnp.asarray(offset, dtype=idx_dtype),
+                n_weight,
+                min(chunk_size, n_weight),
+                dims,
+                weight,
+                max_weight,
             )
-            support_parts.append(supports)
-            power_parts.append(powers)
-
-    if len(support_parts) == 1:
-        return QuditGateArrays(support_parts[0], power_parts[0], None)
-    return QuditGateArrays(
-        jnp.concatenate(support_parts, axis=0), jnp.concatenate(power_parts, axis=0), None
-    )
+        offset += n_weight
+    return QuditGateArrays(supports, powers, None)
