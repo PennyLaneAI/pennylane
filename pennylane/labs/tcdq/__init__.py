@@ -269,8 +269,10 @@ Qudit circuits
 ~~~~~~~~~~~~~~
 
 The workflow above extends to qudit circuits, where the gate generators are powers of the
-generalized Pauli-:math:`Z` operator. Observables are Heisenberg–Weyl operators specified by a pair
-``(l_vecs, m_vecs)`` of integer vectors. See
+generalized Pauli-:math:`Z` operator. Each gate is a sparse ``dict`` mapping a qudit index to the
+power of :math:`Z` applied on that qudit, with entries in :math:`\{1, \ldots, d-1\}`. For instance,
+``{1: 3, 2: 1}`` applies :math:`Z^3` on qudit 1 and :math:`Z` on qudit 2. Observables are
+Heisenberg–Weyl operators specified by a pair ``(l_vecs, m_vecs)`` of integer vectors. See
 `Huang et al. (2026) <https://arxiv.org/abs/2607.06675>`_ for details.
 
 .. code-block:: python
@@ -280,13 +282,13 @@ generalized Pauli-:math:`Z` operator. Observables are Heisenberg–Weyl operator
     n_qudits = 4
     dims = 4  # Local dimension of the qudits
     qudit_gates = {
-        0: [[1, 0, 0, 0]],
-        1: [[0, 1, 0, 0]],
-        2: [[0, 0, 3, 0]],
-        3: [[0, 0, 0, 1]],
-        4: [[1, 2, 0, 0]],
-        5: [[0, 3, 1, 0]],
-        6: [[0, 0, 1, 1]],
+        0: [{0: 1}],
+        1: [{1: 1}],
+        2: [{2: 3}],
+        3: [{3: 1}],
+        4: [{0: 1, 1: 2}],
+        5: [{1: 3, 2: 1}],
+        6: [{2: 1, 3: 1}],
     }
 
     qudit_config = QuditCircuitConfig(
