@@ -1245,14 +1245,6 @@ def _preprocess(v_bits, wires):
     return selected_wires, SoSData(u_bits, b_bits, d, r, m)
 
 
-def _apply_cnot(wires):
-    qp.CNOT(wires)
-
-
-def _apply_x(wires):
-    qp.X(wires)
-
-
 def _pad_and_cast_coeffs(coefficients, enumeration_wires):
     missing_dim = 2 ** len(enumeration_wires) - len(coefficients)
     _, cast_dtype = math.get_abstract_and_cast_dtype(coefficients)
@@ -1318,7 +1310,7 @@ def _sos_state_prep_with_wires(
         # register. Note that we skip this step if identity_encoding=True, because the encoding
         # is trivial in this case. This is an additional optimization compared to the paper.
         # Across all iterations, one CNOT is applied per set bit in u_bits.
-        encoding_cnot = qp.hint(_apply_cnot, {"branch-prob": np.mean(data.u_bits)})
+        encoding_cnot = qp.hint(qp.CNOT, {"branch-prob": np.mean(data.u_bits)})
 
         @for_loop(data.m)
         def encoding(i):
@@ -1338,7 +1330,7 @@ def _sos_state_prep_with_wires(
 
     # Across all k > 0, one CNOT is applied per set bit in k.
     enumeration_cnot = qp.hint(
-        _apply_cnot,
+        qp.CNOT,
         {"branch-prob": np.mean(qp.math.int_to_binary(np.arange(1, num_entries), data.d))},
     )
 
@@ -1355,7 +1347,7 @@ def _sos_state_prep_with_wires(
     # Across all k > 0, the flipped bits are data.b_bits[:, k] ^ prev_bits, where prev_bits
     # is data.b_bits[:, k - 1], or all ones for k = 1.
     prev_bits = np.concatenate([np.ones((data.m, 1), dtype=int), data.b_bits[:, 1:-1]], axis=1)
-    flip_x = qp.hint(_apply_x, {"branch-prob": np.mean(data.b_bits[:, 1:] ^ prev_bits)})
+    flip_x = qp.hint(qp.X, {"branch-prob": np.mean(data.b_bits[:, 1:] ^ prev_bits)})
 
     @for_loop(data.m)
     def flip(i, bits_to_flip):
@@ -1376,7 +1368,7 @@ def _sos_state_prep_with_wires(
 
     last_bits = uncompute_enumeration(np.ones(data.m, dtype=int))
 
-    last_flip_x = qp.hint(_apply_x, {"branch-prob": np.mean(1 - data.b_bits[:, -1])})
+    last_flip_x = qp.hint(qp.X, {"branch-prob": np.mean(1 - data.b_bits[:, -1])})
 
     @for_loop(data.m)
     def last_flip(i):

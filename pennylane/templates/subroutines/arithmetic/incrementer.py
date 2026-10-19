@@ -244,14 +244,10 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         num_ladder_cnots = num_ladder_iters - max(num_controls - 2, 0)
         cnot_prob = num_ladder_cnots / num_ladder_iters if num_ladder_iters > 0 else 0.0
 
-        @hint({"branch-prob": cnot_prob})
-        def apply_cnot(wires):
-            CNOT(wires)
-
         # Backward ladder
         @for_loop(len(wires) - 3, -1, -1)
         def backward_adder(k):
-            cond(k >= num_controls - 2, apply_cnot)(
+            cond(k >= num_controls - 2, hint(CNOT, {"branch-prob": cnot_prob}))(
                 [interleaved[2 * k + 2], interleaved[2 * k + 3]]
             )
             adjoint(TemporaryAND)(triples[k])

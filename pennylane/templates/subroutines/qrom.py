@@ -925,15 +925,9 @@ def flip_iteration_bit(a, triples, top_not_flipped, quarter_prob, mid_prob):
     """
     flip_first_control = math.logical_and(a == 1, top_not_flipped)
 
-    def apply_x(wires):
-        X(wires)
-
-    def apply_cnot(wires):
-        CNOT(wires)
-
-    quarter_x = hint(apply_x, {"branch-prob": quarter_prob})
-    mid_cnot = hint(apply_cnot, {"branch-prob": mid_prob})
-    non_mid_cnot = hint(apply_cnot, {"branch-prob": 1 - mid_prob})
+    quarter_x = hint(X, {"branch-prob": quarter_prob})
+    mid_cnot = hint(CNOT, {"branch-prob": mid_prob})
+    non_mid_cnot = hint(CNOT, {"branch-prob": 1 - mid_prob})
 
     cond(flip_first_control, quarter_x)(triples[0][0])
     cond(a > 0, non_mid_cnot)(triples[a - 1][::2])
