@@ -1251,6 +1251,10 @@
 * TCDQ qudit workflows now accept gates in a sparse representation.
   [(#10317)](https://github.com/PennyLaneAI/pennylane/pull/10317)
 
+* Added optional parameter ``max_memory`` to ``QuditCircuitConfig`` which allows users to control
+  the peak memory usage during the phase difference computation.
+  [(#10337)](https://github.com/PennyLaneAI/pennylane/pull/10337)
+
 <h3>Breaking changes 💔</h3>
 
 * :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's
