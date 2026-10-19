@@ -2166,6 +2166,62 @@ class TestCovMatrix:
         expected = self.expected_grad(weights)
         assert jnp.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "obs_list",
+        [
+            [qp.Projector([1], wires=2) @ qp.PauliZ(0), qp.Projector([0], wires=1)],
+            [qp.Projector([0], wires=1), qp.Projector([1], wires=2) @ qp.PauliZ(0)],
+        ],
+    )
+    def test_unsorted_wires(self, obs_list, tol):
+        """Test that the covariance matrix is correct for observables whose wires are not
+        in ascending order and whose eigenvalues are not symmetric under wire permutations."""
+        dev = qp.device("default.qubit", wires=3)
+        o1, o2 = obs_list
+
+        def ansatz(weights):
+            self.ansatz(weights, wires=[0, 1, 2])
+            qp.RY(0.4, wires=1)
+
+        @qp.qnode(dev)
+        def circuit(weights):
+            ansatz(weights)
+            return qp.probs(wires=[0, 1, 2])
+
+        @qp.qnode(dev)
+        def reference(weights):
+            ansatz(weights)
+            return qp.var(o1), qp.var(o2), qp.expval(o1 @ o2), qp.expval(o1), qp.expval(o2)
+
+        weights = np.array([0.1, 0.2, 0.3])
+        var1, var2, e12, e1, e2 = reference(weights)
+        cov12 = e12 - e1 * e2
+        expected = np.array([[var1, cov12], [cov12, var2]])
+
+        res = fn.cov_matrix(circuit(weights), obs_list)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize(
+    "prob",
+    [
+        onp.arange(8) / 28,
+        np.arange(8, requires_grad=True) / 28,
+        torch.arange(8, dtype=torch.float64) / 28,
+        jnp.arange(8) / 28,
+    ],
+)
+@pytest.mark.parametrize(
+    "axis, subscripts",
+    [([0, 1, 2], "ijk->ijk"), ([2, 0, 1], "ijk->kij"), ([0, 2], "ijk->ik"), ([2, 0], "ijk->ki")],
+)
+def test_marginal_prob_axis_order(prob, axis, subscripts):
+    """Test that marginal_prob returns the marginal distribution in the order of ``axis``."""
+    expected = onp.einsum(subscripts, onp.arange(8).reshape(2, 2, 2) / 28).flatten()
+    res = fn.marginal_prob(prob, axis)
+    assert fn.get_interface(res) == fn.get_interface(prob)
+    assert onp.allclose(fn.to_numpy(res), expected)
+
 
 block_diag_data = [
     [onp.array([[1, 2], [3, 4]]), torch.tensor([[1, 2], [-1, -6]]), torch.tensor([[5]])],

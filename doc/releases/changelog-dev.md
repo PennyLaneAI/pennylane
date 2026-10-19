@@ -1973,6 +1973,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* :func:`~.math.marginal_prob` now returns the marginal distribution in the order of the requested
+  axes. Previously the order was ignored, which made :func:`~.math.cov_matrix` and the
+  ``"block-diag"`` and ``"diag"`` approximations of :func:`~.metric_tensor` return incorrect results
+  for observables with unsorted wires, such as the generator of ``qp.CRY(x, wires=[0, 1])``.
+  [(#10349)](https://github.com/PennyLaneAI/pennylane/pull/10349)
+
 * `qp.cond` can now handle `Operator2` instances being provided instead of branch functions.
   While this syntax was supported with tape-based PennyLane, it had never been
   properly supported with program capture and Catalyst.

@@ -719,6 +719,29 @@ class TestMetricTensor:
         assert [[type(op) for op in tape.operations] for tape in tapes] == expected_ops
 
     @pytest.mark.autograd
+    @pytest.mark.parametrize("approx", ["block-diag", "diag"])
+    @pytest.mark.parametrize("ctrl_wires", [[0, 1], [1, 0], [2, 0]])
+    def test_controlled_rotation_wire_order(self, approx, ctrl_wires, tol):
+        """Test that the metric tensor of a controlled rotation is correct regardless of the
+        order of its wires, which determines the wire order of its generator."""
+        dev = qp.device("default.qubit", wires=3)
+
+        @qp.qnode(dev)
+        def circuit(x, y):
+            qp.RY(0.7, wires=0)
+            qp.RY(1.3, wires=1)
+            qp.RY(-0.4, wires=2)
+            qp.CRY(x, wires=ctrl_wires)
+            qp.CRX(y, wires=[2, 1])
+            return qp.expval(qp.Z(0))
+
+        x = np.array(0.5, requires_grad=True)
+        y = np.array(-0.2, requires_grad=True)
+        res = qp.metric_tensor(circuit, approx=approx)(x, y)
+        expected = qp.math.diag(qp.math.diag(qp.adjoint_metric_tensor(circuit)(x, y)))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.autograd
     @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
     def test_no_trainable_params_qnode_autograd(self, interface):
