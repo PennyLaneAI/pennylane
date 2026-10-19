@@ -574,13 +574,15 @@ class TestPartialUnaryStatePreparation:
             ]
         )
         batch_counts = Counter(len(op.target_wires) for op in qroms)
-        expected_batch_probs = sorted(count / len(qroms) for count in batch_counts.values())
+        # Branches are registered in ascending batch-size order; keep that pairing so a swap
+        # of probabilities between sizes fails the test.
+        expected_batch_probs = tuple(batch_counts[b] / len(qroms) for b in sorted(batch_counts))
 
         hints = hint_helpers.cond_hints(plxpr.jaxpr)
         assert len(hints) == 2
         assert hints[0] == pytest.approx((*(type_counts / np.sum(type_counts)), 0.0))
-        # The order of batch sizes is not fixed, and the last branch is the empty otherwise branch
-        assert sorted(hints[1][:-1]) == pytest.approx(expected_batch_probs)
+        # Last entry is the empty otherwise branch
+        assert hints[1][:-1] == pytest.approx(expected_batch_probs)
         assert hints[1][-1] == 0.0
 
     @pytest.mark.catalyst

@@ -714,6 +714,20 @@ def _diagonalization_support(key, n_wires):
     return int(support[0]), [int(k) for k in support[1:]]
 
 
+def _diagonalize_probs(num_fragments, n):
+    """Compute the probabilities for the outer loop and the CNOT loop in
+    ``_diagonalize_vibronic_circuit``."""
+    # at least a Hadamard is applied for all but the first fragment
+    apply_anything_prob = (num_fragments - 1) / num_fragments
+    # CNOTs are applied whenever more than one bit is set in the fragment index, overall we compute
+    # all set bits and subtract `num_fragments-1`, the number of "first set bits":
+    num_cnots = np.sum(np.bitwise_count(np.arange(num_fragments))) - (num_fragments - 1)
+    # For the probability we have to normalize by the inner loop size (n) and the effective outer
+    # loop size (num_fragments - 1)
+    cnot_prob = num_cnots / (n * (num_fragments - 1))
+    return apply_anything_prob, cnot_prob
+
+
 def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
     r"""Diagonalize position fragment ``fragment_idx`` by applying Clifford operations on the
     electronic register, following the ``key = (0, fragment_idx)`` convention (see
@@ -739,20 +753,13 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
         # Only have fragment_idx 0, which does not need a circuit.
         return
     n = len(wires)
+
+    # Compute resource hints probabilities
+    apply_anything_prob, cnot_prob = _diagonalize_probs(num_fragments, n)
+
     # ``key = (0, fragment_idx)``, so the bits that differ between ``key[0]`` and ``key[1]``
     # (see ``_diagonalization_support``) are exactly the bits of ``fragment_idx`` itself.
     shifts = np.arange(n - 1, -1, -1)
-
-    # Compute resource hints probabilities
-    # at least a Hadamard is applied for all but the first fragment
-    apply_anything_prob = (num_fragments - 1) / num_fragments
-    # CNOTs are applied whenever more than one bit is set in the fragment index, overall we compute
-    # all set bits and subtract `num_fragments-1`, the number of "first set bits":
-    num_cnots = np.sum(np.bitwise_count(np.arange(num_fragments))) - (num_fragments - 1)
-    # For the probability we have to normalize by the inner loop size (n) and the effective outer
-    # loop size (num_fragments - 1)
-    cnot_prob = num_cnots / (n * (num_fragments - 1))
-
     if compiler.active() or capture.enabled():
         wires_arr = math.array(list(wires), like="jax")
         shifts = math.array(shifts, like="jax")

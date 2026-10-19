@@ -908,7 +908,7 @@ def _load_block(block, address_wires, target_wires, flag=None):
     ctrl_sequence()  # pylint: disable=no-value-for-parameter
 
 
-def flip_iteration_bit(a, triples, top_not_flipped, quarter_prob, mid_prob):
+def _flip_iteration_bit(a, triples, top_not_flipped, quarter_prob, mid_prob):
     """Update the unary iteration tree by flipping the most significant bit that differs between
     subsequent addresses (the central remains of merging a temporary AND uncomputation
     ladder and the next temporary AND computation ladder).
@@ -997,7 +997,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
             # Whether we are in the first half of the iteration, so that the top bit
             # has not been flipped yet
             top_not_flipped = k < (1 << (c - 1))
-            flip_iteration_bit(a, triples, top_not_flipped, quarter_prob, mid_prob)
+            _flip_iteration_bit(a, triples, top_not_flipped, quarter_prob, mid_prob)
 
             # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
             @hint({"num-iters": average_ladder_len})

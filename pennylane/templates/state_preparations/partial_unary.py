@@ -952,12 +952,18 @@ def _apply_affine_isometry(circuit, wires):
 
 
 def _branch_probs(circuit):
-    """Compute the relative frequencies of the operation types in an isometry circuit, and of the
-    batch sizes among its partial unary iterators (type ``0``)."""
+    """Compute the relative frequencies of the operation types in the isometry circuit of
+    ``PartialUnaryStatePreparation``, see the ``PUIsometryFinder.circuit`` structure:
+     - type ``0``: QROM/partial unary iterator
+     - type ``1``: Fanout
+     - type ``2``: SWAP
+     - type ``3``: Toffoli
+    Also compute the relative frequencies of the batch sizes in the partial unary iterators."""
     type_counts = Counter(_type for _type, *_ in circuit)
     batch_counts = Counter(data[1] - data[0] for _type, *data in circuit if _type == 0)
     type_probs = [type_counts[_type] / len(circuit) for _type in range(4)]
-    batch_probs = {b: count / type_counts[0] for b, count in batch_counts.items()}
+    # Sort by batch size so cond branch order (and thus hint order) is deterministic.
+    batch_probs = {b: batch_counts[b] / type_counts[0] for b in sorted(batch_counts)}
     return type_probs, batch_probs
 
 

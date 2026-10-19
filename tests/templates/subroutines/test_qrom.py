@@ -463,7 +463,24 @@ class TestQROM:
     @pytest.mark.capture
     @pytest.mark.parametrize(
         ("num_bitstrings", "num_controls"),
-        [(3, 2), (4, 2), (5, 3), (6, 3), (8, 3), (11, 4), (16, 4), (21, 5), (3, 4)],
+        [
+            # Cases with 2^(c-2) < num_blocks <= 2^(c-1): these are the only ones that
+            # distinguish the quarter-X threshold 2^(c-2) from the mid-CNOT threshold 2^(c-1).
+            (2, 2),
+            (3, 3),
+            (4, 3),
+            (7, 4),
+            (13, 5),
+            (3, 2),
+            (4, 2),
+            (5, 3),
+            (6, 3),
+            (8, 3),
+            (11, 4),
+            (16, 4),
+            (21, 5),
+            (3, 4),
+        ],
     )
     def test_unary_iteration_branch_prob_hints(self, num_bitstrings, num_controls, seed):
         """Test that the conditionals for flipping the iteration bit in the unary iteration carry
