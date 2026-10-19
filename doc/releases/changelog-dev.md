@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Added a decomposition of ``Adjoint(TemporaryAND)`` to PPMs (:func:`~.pauli_measure`)
+  and a :class:`~.CZ` gate, as an alternative to the existing decomposition using
+  :func:`qp.measure` with an explicit basis change.
+  [(#10310)](https://github.com/PennyLaneAI/pennylane/pull/10310)
+
 * A new :func:`~.decomposition.exclude_decomps` function excludes decomposition rules of an operator by name, so
   that they are hidden from :func:`~.decomposition.list_decomps` and the graph-based decomposition system without
   being removed. When used as a context manager, the rules are excluded only within the context.
