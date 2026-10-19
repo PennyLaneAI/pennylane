@@ -193,6 +193,19 @@ class TestBarrier:
         with pytest.raises(qp.operation.MatrixUndefinedError):
             op.matrix()
 
+    @pytest.mark.parametrize(
+        "op, expected",
+        [
+            (qp.Barrier(wires=[]), "Barrier(wires=[])"),
+            (qp.Barrier(wires=0), "Barrier(wires=[0])"),
+            (qp.Barrier(wires=(0, 1, 2)), "Barrier(wires=[0, 1, 2])"),
+            (qp.Barrier(wires=(0, 1), only_visual=True), "Barrier(wires=[0, 1])"),
+        ],
+    )
+    def test_repr(self, op, expected):
+        """Test that the repr hides ``only_visual`` and only reports the wires."""
+        assert repr(op) == expected
+
 
 class TestSnapshot:
     """Unit tests for the snapshot class."""

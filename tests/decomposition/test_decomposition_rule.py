@@ -740,6 +740,69 @@ class TestDecompDictionary:
         assert list(qp.list_decomps(op)) == []
 
 
+class TestExcludeDecomps:
+    """Tests the exclude_decomps function."""
+
+    def test_exclude_without_context(self):
+        """Tests that rules stay excluded without a context, but are not removed."""
+
+        all_names = [rule.name for rule in qp.list_decomps(qp.CRX)]
+
+        with qp.decomposition.local_decomps():
+            qp.exclude_decomps(qp.CRX, "_crx_to_ppr", "_crx_to_h_crz")
+            assert "_crx_to_ppr" not in qp.list_decomps(qp.CRX)
+            assert "_crx_to_h_crz" not in qp.list_decomps(qp.CRX)
+
+        assert [rule.name for rule in qp.list_decomps(qp.CRX)] == all_names
+
+    def test_exclude_as_context_manager(self):
+        """Tests that the rules are restored when the context exits."""
+
+        all_names = [rule.name for rule in qp.list_decomps(qp.CRX)]
+
+        with qp.exclude_decomps(qp.CRX, "_crx_to_ppr"):
+            assert "_crx_to_ppr" not in qp.list_decomps(qp.CRX)
+
+        assert [rule.name for rule in qp.list_decomps(qp.CRX)] == all_names
+
+    def test_previous_exclusions_preserved(self):
+        """Tests that rules excluded before a context remain excluded after it exits."""
+
+        with qp.decomposition.local_decomps():
+            qp.exclude_decomps(qp.CRX, "_crx_to_ppr")
+            with qp.exclude_decomps(qp.CRX, "_crx_to_ppr", "_crx_to_h_crz"):
+                assert "_crx_to_h_crz" not in qp.list_decomps(qp.CRX)
+            assert "_crx_to_h_crz" in qp.list_decomps(qp.CRX)
+            assert "_crx_to_ppr" not in qp.list_decomps(qp.CRX)
+
+    def test_rule_instance_raises_error(self):
+        """Tests that passing a DecompositionRule instead of its name raises an error."""
+
+        rule = qp.list_decomps(qp.CRX)[0]
+        with pytest.raises(TypeError, match="must be excluded by name"):
+            qp.exclude_decomps(qp.CRX, rule)
+        assert rule in qp.list_decomps(qp.CRX)
+
+    def test_unknown_name_raises_error(self):
+        """Tests that excluding a rule that does not exist raises an error."""
+
+        all_names = [rule.name for rule in qp.list_decomps(qp.CRX)]
+        with pytest.raises(ValueError, match="Cannot find a decomposition rule named '_crx_typo'"):
+            qp.exclude_decomps(qp.CRX, "_crx_to_ppr", "_crx_typo")
+        assert [rule.name for rule in qp.list_decomps(qp.CRX)] == all_names
+
+        with pytest.raises(ValueError, match="Cannot find a decomposition rule named"):
+            qp.exclude_decomps("Pow(DynOp)", repeat_pow_base.name)
+
+    def test_excluded_rules_can_be_excluded_again(self):
+        """Tests that an already excluded rule is still recognized as an existing rule."""
+
+        with qp.decomposition.local_decomps():
+            qp.exclude_decomps(qp.CRX, "_crx_to_ppr")
+            qp.exclude_decomps(qp.CRX, "_crx_to_ppr")
+            assert "_crx_to_ppr" not in qp.list_decomps(qp.CRX)
+
+
 class TestDecompCollection:
     """Tests the DecompCollection class."""
 

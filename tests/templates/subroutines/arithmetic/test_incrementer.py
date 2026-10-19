@@ -22,8 +22,9 @@ from pennylane import Incrementer, ctrl, device, qnode
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import state
 from pennylane.ops import CNOT, PauliX
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding, TemporaryAND
+from pennylane.testing import assert_valid
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 

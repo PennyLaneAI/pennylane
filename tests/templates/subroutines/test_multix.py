@@ -18,7 +18,7 @@ import pytest
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Float, Int, Wire
 from pennylane.wires import Wires
 
@@ -86,7 +86,7 @@ class TestValidation:
     def test_standard_checks(self):
         """Runs the standard Operator2 validity checks for MultiX."""
         op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.parametrize(
         ("bitstring", "wires", "error_match"),
@@ -315,6 +315,7 @@ class TestDecomposition:
         from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
             for_loop_prim,
         )
+        from pennylane.testing import find_eqns  # pylint: disable=import-outside-toplevel
 
         bitstring = jax.numpy.array([1, 0, 1])
         wires = (0, 1, 2)
@@ -325,8 +326,7 @@ class TestDecomposition:
         jaxpr = jax.make_jaxpr(lambda bits: decomposition(bits, wires))(bitstring)
 
         # Ensures exactly one for loop primitive appears in the jaxpr
-        loop_eqns = [eqn for eqn in jaxpr.eqns if eqn.primitive == for_loop_prim]
-        assert len(loop_eqns) == 1
+        assert len(find_eqns(jaxpr, for_loop_prim)) == 1
 
         # Check that the only constants are the wires
         assert len(jaxpr.consts) == 1
