@@ -22,10 +22,10 @@ from collections.abc import Callable
 from functools import reduce
 
 from pennylane import capture, math
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core import queuing
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import (
     DiagGatesUndefinedError,

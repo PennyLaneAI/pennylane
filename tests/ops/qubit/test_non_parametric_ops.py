@@ -48,7 +48,7 @@ from scipy.stats import unitary_group
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.utils import _get_decomp_args
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 # pylint: disable=too-few-public-methods
@@ -1124,9 +1124,9 @@ class TestControlledMethod:
         qp.assert_equal(out, qp.CZ(("a", 0)))
 
     def test_Barrier(self):
-        """Tests the _controlled behavior of Barrier."""
+        """Tests the control behavior of Barrier."""
         original = qp.Barrier((0, 1, 2), only_visual=True)
-        out = original._controlled("a")
+        out = qp.ctrl(original, "a")
         qp.assert_equal(original, out)
 
     def test_CZ(self):
@@ -1415,7 +1415,7 @@ class TestPPR:
     def test_standard_validity(self, op_cls, sign, pauli_word):
         """Run the standard operator validity checks."""
         wires = list(range(len(pauli_word)))
-        qp.ops.functions.assert_valid(op_cls(sign, pauli_word, wires=wires))
+        qp.testing.assert_valid(op_cls(sign, pauli_word, wires=wires))
 
     @pytest.mark.parametrize("sign", [0, 2, -2, 0.5, "1"])
     def test_invalid_sign_raises(self, op_cls, sign):

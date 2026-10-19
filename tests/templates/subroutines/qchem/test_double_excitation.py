@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -30,7 +30,7 @@ def test_standard_validity():
     wires1 = qp.wires.Wires((0, 1))
     wires2 = qp.wires.Wires((2, 3, 4))
     op = qp.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestDecomposition:

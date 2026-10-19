@@ -19,8 +19,8 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.phase_adder import _add_k_fourier
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 @pytest.mark.xfail_if_capture(reason="Come back to this when we port it to Op2 [sc-130164]")
@@ -32,7 +32,7 @@ def test_standard_validity_Phase_Adder():
     x_wires = [0, 1, 2, 3]
     work_wire = [4]
     op = qp.PhaseAdder(k, x_wires=x_wires, mod=mod, work_wire=work_wire)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.xfail_if_capture(reason="Come back to this when we port it to Op2 [sc-130164]")
@@ -44,7 +44,7 @@ def test_falsy_zero_as_work_wire():
     x_wires = [1, 2, 3, 4]
     work_wire = 0
     op = qp.PhaseAdder(k, x_wires=x_wires, mod=mod, work_wire=work_wire)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_add_k_fourier():

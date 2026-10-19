@@ -359,6 +359,7 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.testing"
+layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 ## UNSORTED module(s)
