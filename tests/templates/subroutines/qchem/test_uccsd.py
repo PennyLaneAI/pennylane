@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 test_data_decomposition = [
     (
@@ -221,7 +221,7 @@ def test_standard_validity(s_wires, d_wires, weights, n_repeats, _):
         init_state=ref_state,
         n_repeats=n_repeats,
     )
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestDecomposition:

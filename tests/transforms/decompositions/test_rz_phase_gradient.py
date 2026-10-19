@@ -21,8 +21,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.composite2 import CompositeOp2
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.transforms.decompositions import (
     make_rz_to_phase_gradient_decomp,
     validate_phase_gradient_wires,
@@ -129,7 +129,8 @@ def test_as_fixed_decomps(phi, p):
     custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
     gate_set = {"SemiAdder", "CNOT", "PauliX", "GlobalPhase"}
 
-    @qp.transforms.decompose(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
     @qp.qnode(qp.device("null.qubit"))
     def circuit():
         qp.RZ(phi, 0)
@@ -159,7 +160,8 @@ def test_as_alt_decomps(phi, p):
     custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
     gate_set = {"SemiAdder", "CNOT", "PauliX", "GlobalPhase"}
 
-    @qp.transforms.decompose(gate_set=gate_set, alt_decomps={qp.RZ: [custom_decomp]})
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(gate_set=gate_set, alt_decomps={qp.RZ: [custom_decomp]})
     @qp.qnode(qp.device("null.qubit"))
     def circuit():
         qp.RZ(phi, 0)
@@ -190,7 +192,8 @@ def test_integration_multi_wire(seed):
 
     custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
 
-    @qp.transforms.decompose(
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(
         gate_set={
             "StatePrep",
             "PhaseGradientStatePrep",
@@ -360,7 +363,8 @@ def test_precision_stats_integration(bits, precision_stats, width, seed):
         angle_wires, phase_grad_wires, work_wires, precision_stats=precision_stats
     )
 
-    @qp.transforms.decompose(
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(
         gate_set={
             "StatePrep",
             "PhaseGradientStatePrep",

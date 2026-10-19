@@ -83,7 +83,7 @@ def make_crz_to_phase_gradient_decomp(
             angle_wires, phase_grad_wires, work_wires
         )
 
-        @qp.transforms.decompose(
+        @qp.transforms._tape_decompose(
             gate_set={"CNOT", "SemiAdder", "PauliX"},
             fixed_decomps={qp.CRZ: custom_decomp}
         )

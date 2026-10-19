@@ -13,7 +13,7 @@
 # limitations under the License.
 r"""Contains the PartialUnaryStatePreparation template."""
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from numbers import Integral
 
 import numpy as np
@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, math
 from pennylane.core.operator import Operator2
-from pennylane.typing import AbstractWires, Bool, Int, TensorLike, Wire
+from pennylane.typing import AbstractWires, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 _U64 = np.uint64
@@ -739,7 +739,7 @@ class PartialUnaryStatePreparation(Operator2):
 
     The preparation circuit looks like this:
 
-    >>> print(qp.draw(qp.decompose(circuit, max_expansion=1), max_length=200, show_matrices=False)())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=1), max_length=200, show_matrices=False)())
     0: ─╭MultiplexerStatePreparation(M0)─╭MultiX(M1)─╭◑────────╭MultiX(M1)─╭MultiX(M3)─╭MultiX(M4)─╭MultiX(M5)─╭◑────────╭MultiX(M5)─╭MultiX(M6)─╭MultiX(M7)─╭MultiX(M8)─╭◑────────╭MultiX(M8) ···
     1: ─├MultiplexerStatePreparation(M0)─├MultiX(M1)─├◑────────├MultiX(M1)─├MultiX(M3)─├MultiX(M4)─├MultiX(M5)─├◑────────├MultiX(M5)─├MultiX(M6)─├MultiX(M7)─├MultiX(M8)─├◑────────├MultiX(M8) ···
     2: ─├MultiplexerStatePreparation(M0)─├MultiX(M1)─├◑────────├MultiX(M1)─├MultiX(M3)─├MultiX(M4)─├MultiX(M5)─├◑────────├MultiX(M5)─├MultiX(M6)─├MultiX(M7)─├MultiX(M8)─├◑────────├MultiX(M8) ···
@@ -780,7 +780,7 @@ class PartialUnaryStatePreparation(Operator2):
         num_work_wires = qp.math.ceil_log2(num_entries) - 1
         work_wires = list(range(15, 15 + num_work_wires))
 
-    >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
+    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
     Quantum operations:
     - Total: 6,046
       - MultiplexerStatePreparation: 1
@@ -799,7 +799,7 @@ class PartialUnaryStatePreparation(Operator2):
 
     >>> new_num_work_wires = 3*num_work_wires
     >>> work_wires = list(range(15, 15 + new_num_work_wires))
-    >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
+    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
     Quantum operations:
     - Total: 3,068
       - MultiplexerStatePreparation: 1
@@ -897,7 +897,7 @@ def _partial_unary_state_prep_resources(coefficients, wires, indices, work_wires
 
     qrom_reps = {
         p: qp.QROM(
-            bitstrings=Int[p, p],
+            bitstrings=Bool[p, p],
             control_wires=Wire[n_subspace],
             target_wires=Wire[p],
             work_wires=Wire[n_subspace - 1],
@@ -951,6 +951,22 @@ def _apply_affine_isometry(circuit, wires):
             qp.SWAP([wires[idx] for idx in data[0]])
 
 
+def _branch_probs(circuit):
+    """Compute the relative frequencies of the operation types in the isometry circuit of
+    ``PartialUnaryStatePreparation``, see the ``PUIsometryFinder.circuit`` structure:
+     - type ``0``: QROM/partial unary iterator
+     - type ``1``: Fanout
+     - type ``2``: SWAP
+     - type ``3``: Toffoli
+    Also compute the relative frequencies of the batch sizes in the partial unary iterators."""
+    type_counts = Counter(_type for _type, *_ in circuit)
+    batch_counts = Counter(data[1] - data[0] for _type, *data in circuit if _type == 0)
+    type_probs = [type_counts[_type] / len(circuit) for _type in range(4)]
+    # Sort by batch size so cond branch order (and thus hint order) is deterministic.
+    batch_probs = {b: batch_counts[b] / type_counts[0] for b in sorted(batch_counts)}
+    return type_probs, batch_probs
+
+
 def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
     """Compute the decomposition of the partial unary iteration state preparation technique.
     This core method is used by the two rules below, which only differ by the work
@@ -991,7 +1007,8 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
         _apply_affine_isometry(circuit, wires)
         return
 
-    batch_sizes = list({data[1] - data[0] for _type, *data in circuit if _type == 0})
+    # The keys of batch_probs are the occurring batch sizes
+    type_probs, batch_probs = _branch_probs(circuit)
 
     if qp.compiler.active() or qp.capture.enabled():
         fanout_bits = qp.math.array(fanout_bits, like="jax")
@@ -1031,6 +1048,7 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
         _type, *data = circuit[i]
 
         @qp.cond(_type == 0)
+        @qp.hint({"branch-prob": type_probs[0]})
         def branches():
             """The first branch calls a partial unary iterator, in form of a ``QROM`` of a given
             size. In order to avoid dynamic shapes, we define an inner conditional function
@@ -1042,18 +1060,20 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
             b = k - k_start
             _work_wires = work_wires[: n_subspace - 1]
 
-            first_case_b = batch_sizes[0]
+            first_case_b, *other_case_bs = batch_probs
 
             @qp.cond(b == first_case_b)
+            @qp.hint({"branch-prob": batch_probs[first_case_b]})
             def qrom_branches():
                 target_wires = nonsubspace_wires[:first_case_b]
                 qp.QROM(np.eye(first_case_b, dtype=int), subspace_wires, target_wires, _work_wires)
 
-            for case_b in batch_sizes[1:]:
+            for case_b in other_case_bs:
                 # Register an additional branch to ``qrom_branches`` for each occurring batch size.
                 # Passing a default argument makes sure that we don't use an outdated closure
                 # variable `case_b` when calling the function.
                 @qrom_branches.else_if(b == case_b)
+                @qp.hint({"branch-prob": batch_probs[case_b]})
                 def _(case_b=case_b):
                     target_wires = nonsubspace_wires[:case_b]
                     qp.QROM(np.eye(case_b, dtype=int), subspace_wires, target_wires, _work_wires)
@@ -1065,6 +1085,7 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
             qp.MultiX(k_start_bits, subspace_wires)
 
         @branches.else_if(_type == 1)
+        @qp.hint({"branch-prob": type_probs[1]})
         def fanout():
             """The second branch calls a fan-out, in form of a controlled ``MultiX``,
             controlled by one of the (first ``iso_finder.m``) remainder qubits and targeting
@@ -1075,12 +1096,14 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
             qp.ctrl(qp.MultiX(fanout_bits[fanout_bit_pointer], target_wires), wires[control])
 
         @branches.else_if(_type == 2)
+        @qp.hint({"branch-prob": type_probs[2]})
         def swap():
             """The third branch is a simple SWAP gate."""
             _wires = [wires[idx] for idx in data[:2]]
             qp.SWAP(_wires)
 
         @branches.else_if(_type == 3)
+        @qp.hint({"branch-prob": type_probs[3]})
         def toffoli():
             """The fourth branch is a simple Toffoli gate. We manually realize the control values
             in order to avoid dynamic control values in MultiControlledX. We don't use ``Toffoli``

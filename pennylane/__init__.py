@@ -44,6 +44,7 @@ from pennylane.decomposition import (
     register_condition,
     add_decomps,
     list_decomps,
+    exclude_decomps,
     inspect_decomps,
     resource_rep,
 )
