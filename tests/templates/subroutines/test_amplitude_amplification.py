@@ -19,8 +19,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.amplitude_amplification import _get_fixed_point_angles
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 @qp.prod
@@ -75,7 +75,7 @@ class TestInitialization:
         U = generator(wires=range(3))
         O = oracle([0, 2], wires=range(3))
         op = qp.AmplitudeAmplification(U, O, iters=3, fixed_point=False)
-        qp.ops.functions.assert_valid(op)
+        qp.testing.assert_valid(op)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")

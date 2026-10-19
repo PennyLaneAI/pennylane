@@ -443,6 +443,63 @@ class TestMapToResourceOp:
         assert mapped_op == expected_res_op
         assert mapped_op.wires == expected_res_op.wires
 
+    @staticmethod
+    def _gqsp_all_adjoint(num_ctrl_ops):
+        """Explicit resources of a GQSP whose controlled unitaries are all adjoints."""
+        factors = [(re_ops.Rot(), num_ctrl_ops + 1)]
+        if num_ctrl_ops > 0:
+            ctrl_adj = re_ops.Controlled(
+                re_ops.Adjoint(re_ops.RX()), num_ctrl_wires=1, num_zero_ctrl=0
+            )
+            factors.append((ctrl_adj, num_ctrl_ops))
+        return re_ops.Prod(factors, wires=(0, 1))
+
+    @pytest.mark.parametrize(
+        ("num_ctrl_ops", "shift", "expected"),
+        [
+            # the degree is read from the number of angle columns
+            (5, 0, lambda: re_temps.GQSP(re_ops.RX(), d_plus=5, wires=(0, 1))),
+            # a negative shift is absorbed into the controlled unitaries
+            (2, -1, lambda: re_temps.GQSP(re_ops.RX(), d_plus=1, d_minus=1, wires=(0, 1))),
+            # a positive shift adds a power of the unitary
+            (
+                2,
+                3,
+                lambda: re_ops.Prod(
+                    (re_temps.GQSP(re_ops.RX(), d_plus=2), re_ops.Pow(re_ops.RX(), 3)),
+                    wires=(0, 1),
+                ),
+            ),
+            # all controlled unitaries are adjoints
+            (2, -2, lambda: TestMapToResourceOp._gqsp_all_adjoint(2)),
+            # the powers that cannot be absorbed are applied as a power of the adjoint
+            (
+                2,
+                -5,
+                lambda: re_ops.Prod(
+                    (
+                        TestMapToResourceOp._gqsp_all_adjoint(2),
+                        re_ops.Pow(re_ops.Adjoint(re_ops.RX()), 3),
+                    ),
+                    wires=(0, 1),
+                ),
+            ),
+            # no controlled unitaries
+            (0, 0, lambda: TestMapToResourceOp._gqsp_all_adjoint(0)),
+        ],
+    )
+    def test_map_to_resource_op_gqsp_shift(self, num_ctrl_ops, shift, expected):
+        """Test that GQSP maps to the right resources for different degrees and shifts."""
+        angles = np.ones([3, num_ctrl_ops + 1])
+        op = qtemps.GQSP(qp.RX(0.3, 0), angles, control=1, shift=shift)
+
+        mapped_op = _map_to_resource_op(op)
+        expected_res_op = expected()
+
+        # compare the compressed representations, which also compare the factors of a Prod
+        assert mapped_op.resource_rep_from_op() == expected_res_op.resource_rep_from_op()
+        assert mapped_op.wires == expected_res_op.wires
+
     def test_map_to_resource_op_trotter_vibronic(self):
         """Test mapping ``TrotterVibronic`` to its resource operator."""
         n_states, n_modes, k, b = 4, 2, 3, 2

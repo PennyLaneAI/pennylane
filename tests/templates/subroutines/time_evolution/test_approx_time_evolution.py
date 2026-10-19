@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -29,7 +29,7 @@ def test_standard_validity():
     H = 2.0 * qp.PauliX(0) + 3.0 * qp.PauliY(0)
     t = 0.1
     op = qp.ApproxTimeEvolution(H, t, n=20)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 # pylint: disable=protected-access

@@ -22,8 +22,8 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.superposition import order_states
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 PROBS_BASES = [
     (
@@ -121,7 +121,7 @@ def test_standard_validity():
     bases = np.array([[0, 0, 0, 0, 0], [0, 1, 0, 1, 1], [0, 0, 0, 1, 0], [1, 1, 0, 1, 1]])
 
     op = qp.Superposition(coeffs, bases=bases, wires=range(5), work_wire=5)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestSuperposition:

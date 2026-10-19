@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 class TestFable:
@@ -43,7 +43,7 @@ class TestFable:
     def test_standard_validity(self, input_matrix):
         """Check the operation using the assert_valid function."""
         op = qp.FABLE(input_matrix, wires=range(5), tol=0.01)
-        qp.ops.functions.assert_valid(op)
+        qp.testing.assert_valid(op)
 
     @pytest.mark.parametrize(
         ("input", "wires"),

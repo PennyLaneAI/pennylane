@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.transforms.decompositions import (
     make_selectpaulirot_to_phase_gradient_decomp,
 )
@@ -129,7 +129,8 @@ def test_as_fixed_decomps(prec, num_controls):
         angle_wires, phase_grad_wires, work_wires
     )
 
-    @qp.transforms.decompose(
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(
         gate_set={
             "QROM",
             "SemiAdder",
@@ -204,7 +205,8 @@ def test_integration_multi_wire(rot_axis, seed):
     if rot_axis in ("X", "Y"):
         gs |= {"Hadamard"}
 
-    @qp.decompose(
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(
         gate_set=gs,
         fixed_decomps={qp.SelectPauliRot: custom_decomp},
     )
