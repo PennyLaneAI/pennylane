@@ -761,7 +761,7 @@
 
 * A Backline placement accepts any transport that a backend in Catalyst's transport backend
   registry implements, so a backend package can add a transport without a PennyLane change.
-  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
+  [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
 
 * The `decompose_mcx_with_no_worker` decomposition rule for :class:`~.MultiControlledX` now only
   applies when no work wires are provided, matching `MultiControlledX.compute_decomposition`.
@@ -1258,7 +1258,7 @@
 <h3>Breaking changes 💔</h3>
 
 * The `qp.Backline.backline` alias of `qp.Backline.placement` has been removed. Use `placement`.
-  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
+  [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
 
 * :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's
   ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
