@@ -19,8 +19,10 @@ import math
 from functools import partial
 
 import hint_helpers
+import jax
 import numpy
 import pytest
+from jax import numpy as jnp
 
 import pennylane as qp
 from pennylane import numpy as np
@@ -37,12 +39,6 @@ from pennylane.templates.subroutines.qrom import (
 )
 from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import Bool, Wire
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except ImportError:
-    has_jax = False
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -190,12 +186,12 @@ class TestQROM:
         """Test the correctness of the QROM template output."""
         dev = qp.device("default.qubit")
 
-        if has_jax and not isinstance(bitstrings, numpy.ndarray):
+        if not isinstance(bitstrings, numpy.ndarray):
             bitstrings, control_wires, target_wires, work_wires = (
-                jnp.array(bitstrings),
-                jnp.array(control_wires),
-                jnp.array(target_wires),
-                jnp.array(work_wires),
+                qp.math.array(bitstrings, like="jax"),
+                qp.math.array(control_wires, like="jax"),
+                qp.math.array(target_wires, like="jax"),
+                qp.math.array(work_wires, like="jax"),
             )
 
         @qp.set_shots(1)
@@ -384,8 +380,6 @@ class TestQROM:
         """Test that QROM construction and decomposition do not raise TracerBoolConversionError
         when wires are JAX tracers."""
 
-        import jax
-
         jax.config.update("jax_enable_x64", True)
 
         def build_and_decompose(bitstrings, control_wires, target_wires, work_wires):
@@ -411,8 +405,6 @@ class TestQROM:
     )
     def test_decomposition_rule_capture_dynamic_wires(self, wire_lens, clean):
         """Test that the QROM decomposition rule can be captured with dynamic wires."""
-        import jax
-
         registers = qp.registers(wire_lens)
         kwargs = {
             "bitstrings": qp.math.zeros(
@@ -439,8 +431,6 @@ class TestQROM:
     def test_unary_iteration_num_iters_hints(self, num_bitstrings, num_controls, seed):
         """Test that the elbow ladder loops of the unary iteration carry ``num-iters`` hints that
         reproduce the number of elbows applied within the main loop."""
-        import jax
-
         rng = np.random.default_rng(seed)
         bitstrings = rng.integers(0, 2, size=(num_bitstrings, 2))
         control_wires = list(range(num_controls))
@@ -479,8 +469,6 @@ class TestQROM:
     def test_unary_iteration_branch_prob_hints(self, num_bitstrings, num_controls, seed):
         """Test that the conditionals for flipping the iteration bit in the unary iteration carry
         ``branch-prob`` hints that reproduce the number of gates applied within the main loop."""
-        import jax
-
         rng = np.random.default_rng(seed)
         bitstrings = rng.integers(0, 2, size=(num_bitstrings, 2))
         control_wires = list(range(num_controls))

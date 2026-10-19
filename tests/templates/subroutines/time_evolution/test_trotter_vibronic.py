@@ -17,6 +17,7 @@ from dataclasses import replace
 from functools import partial
 
 import hint_helpers
+import jax
 import numpy as np
 import pytest
 
@@ -175,9 +176,6 @@ def count_allocations(op):
     jaxpr's top-level equations instead of in the (executed) queue.
     """
     if qp.capture.enabled():
-        # pylint: disable=import-outside-toplevel
-        import jax
-
         from pennylane.allocation import allocate_prim, deallocate_prim
 
         decomposition = qp.list_decomps(qp.TrotterVibronic)[0]
@@ -236,8 +234,6 @@ class TestDiagonalization:
     def test_branch_prob_hints(self, n, num_fragments):
         """Test that the conditionals carry ``branch-prob`` hints that reproduce the number of
         gates applied across all fragments."""
-        import jax  # pylint: disable=import-outside-toplevel
-
         wires = list(range(n))
         plxpr = jax.make_jaxpr(
             partial(_diagonalize_vibronic_circuit, wires=wires, num_fragments=num_fragments)
@@ -487,7 +483,6 @@ class TestConstruction:
 
         Uses an invalid ``vib_wires`` size to confirm the check is genuinely skipped.
         """
-        jax = pytest.importorskip("jax")
         hamiltonian = build_hamiltonian(fragment_list())
         wires = make_wires(2, 2)
 
@@ -510,7 +505,6 @@ class TestConstruction:
 
     def test_init_accepts_traced_hamiltonian(self):
         """Test that a traced Hamiltonian is accepted and uses the ``(0, j)`` blocks structure."""
-        jax = pytest.importorskip("jax")
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=1))
         wires = make_wires(2, 1)
 
@@ -686,7 +680,6 @@ class TestDecomposition:
         """Test that the position-fragment loop is a traced ``for_loop`` under capture, rather
         than unrolled by the fragment count: the number of traced ``for_loop`` primitives is the
         same regardless of the number of position fragments."""
-        import jax  # pylint: disable=import-outside-toplevel
         from jax._src.core import ClosedJaxpr, Jaxpr  # pylint: disable=import-outside-toplevel
 
         from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel

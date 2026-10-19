@@ -18,6 +18,7 @@ Unit tests for the PartialUnaryStatePreparation template.
 from collections import Counter
 
 import hint_helpers
+import jax
 import numpy as np
 import pytest
 
@@ -552,7 +553,6 @@ class TestPartialUnaryStatePreparation:
         """Test that the conditionals in the isometry loop carry ``branch-prob`` hints that
         reproduce the number of operations of each type, and of partial unary iterators of each
         batch size."""
-        import jax  # pylint: disable=import-outside-toplevel
 
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed)
         num_work_wires = max(ceil_log2(num_entries) - 1, 1)

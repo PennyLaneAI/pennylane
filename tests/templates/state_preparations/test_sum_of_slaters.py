@@ -19,8 +19,10 @@ import copy
 from itertools import combinations, product
 
 import hint_helpers
+import jax
 import numpy as np
 import pytest
+from jax import numpy as jnp
 
 import pennylane as qp
 from pennylane import math
@@ -831,9 +833,6 @@ class TestSumOfSlatersPrep:
     @pytest.mark.capture
     def test_subroutine_with_dynamic_wires(self):
         """Test that the SumOfSlatersPrep subroutine supports dynamic wire arguments."""
-        jax = pytest.importorskip("jax")
-        jnp = jax.numpy
-
         indices = (0, 1, 2, 4, 8, 16, 32, 64)
         num_wires = 7
         coefficients = np.zeros(len(indices), dtype=complex)
@@ -865,8 +864,6 @@ class TestSumOfSlatersPrep:
     def test_branch_prob_hints(self, num_wires, num_entries, force_non_id_encoding, seed):
         """Test that the conditionals in the encoding and uncomputation loops carry
         ``branch-prob`` hints that reproduce the number of applied gates."""
-        import jax  # pylint: disable=import-outside-toplevel
-
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
         if force_non_id_encoding:
             indices = self.force_powers_of_two(indices, num_wires)

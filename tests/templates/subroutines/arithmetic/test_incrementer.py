@@ -16,6 +16,7 @@ Tests for the Incrementer template.
 """
 
 import hint_helpers
+import jax
 import numpy as np
 import pytest
 
@@ -298,8 +299,6 @@ def test_controlled_decomposition_new(wires, work_wires, controls, control_value
 def test_backward_ladder_branch_prob_hint(num_wires, num_controls):
     """Test that the conditional CNOT in the backward ladder carries a ``branch-prob`` hint that
     reproduces the number of applied CNOTs."""
-    import jax  # pylint: disable=import-outside-toplevel
-
     num_all_wires = num_wires + num_controls
     wires = jax.numpy.arange(num_wires)
     work_wires = jax.numpy.arange(num_all_wires, 2 * num_all_wires - 1)
