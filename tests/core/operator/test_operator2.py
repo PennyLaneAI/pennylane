@@ -2352,17 +2352,15 @@ class TestGraphDecomposition:
             def compute_decomposition(phi, wires):
                 return [qp.RZ(phi, wires=wires[0])]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RX: 1})
+        def use_rx(phi, wires, **__):
+            qp.RX(phi, wires=wires[0])
 
-            @qp.register_resources({qp.RX: 1})
-            def use_rx(phi, wires, **__):
-                qp.RX(phi, wires=wires[0])
+        qp.add_decomps(Op, use_rx)
 
-            qp.add_decomps(Op, use_rx)
-
-            decomp = Op(0.5, wires=0).decomposition()
-            assert len(decomp) == 1
-            assert qp.equal(decomp[0], qp.RZ(0.5, wires=0))
+        decomp = Op(0.5, wires=0).decomposition()
+        assert len(decomp) == 1
+        assert qp.equal(decomp[0], qp.RZ(0.5, wires=0))
 
     def test_registered_rule_used_as_fallback(self):
         """Without an overridden ``compute_decomposition``, a registered rule is used."""
@@ -2373,21 +2371,19 @@ class TestGraphDecomposition:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RX: 1})
+        def use_rx(phi, wires, **__):
+            qp.RX(phi, wires=wires)
 
-            @qp.register_resources({qp.RX: 1})
-            def use_rx(phi, wires, **__):
-                qp.RX(phi, wires=wires)
+        qp.add_decomps(Op, use_rx)
 
-            qp.add_decomps(Op, use_rx)
+        decomp = Op(0.5, wires=0).decomposition()
+        assert len(decomp) == 1
+        assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
 
-            decomp = Op(0.5, wires=0).decomposition()
-            assert len(decomp) == 1
-            assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
-
-            decomp2 = Op.compute_decomposition(0.5, wires=0)
-            assert len(decomp2) == 1
-            assert qp.equal(decomp2[0], qp.RX(0.5, wires=0))
+        decomp2 = Op.compute_decomposition(0.5, wires=0)
+        assert len(decomp2) == 1
+        assert qp.equal(decomp2[0], qp.RX(0.5, wires=0))
 
     def test_rule_receives_full_argument_model(self):
         """The rule is invoked with ``**op.arguments`` (dynamic, static, and wires)."""
@@ -2400,19 +2396,17 @@ class TestGraphDecomposition:
             def __init__(self, phi, label, wires):
                 super().__init__(phi, label, wires=wires)
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RX: 1, qp.RY: 1})
+        def rule(phi, label, wires, **__):
+            captured["phi"] = phi
+            captured["label"] = label
+            captured["wires"] = wires
+            qp.RX(phi, wires=wires[0])
+            qp.RY(phi, wires=wires[0])
 
-            @qp.register_resources({qp.RX: 1, qp.RY: 1})
-            def rule(phi, label, wires, **__):
-                captured["phi"] = phi
-                captured["label"] = label
-                captured["wires"] = wires
-                qp.RX(phi, wires=wires[0])
-                qp.RY(phi, wires=wires[0])
+        qp.add_decomps(Op, rule)
 
-            qp.add_decomps(Op, rule)
-
-            decomp = Op(0.6, "spin", wires=2).decomposition()
+        decomp = Op(0.6, "spin", wires=2).decomposition()
 
         assert captured["phi"] == 0.6
         assert captured["label"] == "spin"
@@ -2443,18 +2437,16 @@ class TestGraphDecomposition:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RX: 1, qp.RY: 1})
+        def rule(phi, wires, **__):
+            qp.RX(phi, wires=wires[0])
+            qp.RY(phi, wires=wires[0])
 
-            @qp.register_resources({qp.RX: 1, qp.RY: 1})
-            def rule(phi, wires, **__):
-                qp.RX(phi, wires=wires[0])
-                qp.RY(phi, wires=wires[0])
+        qp.add_decomps(Op, rule)
 
-            qp.add_decomps(Op, rule)
-
-            op = Op(0.5, wires=0)
-            with AnnotatedQueue() as q:
-                decomp = op.decomposition()
+        op = Op(0.5, wires=0)
+        with AnnotatedQueue() as q:
+            decomp = op.decomposition()
 
         assert q.queue == decomp
         assert [type(o).__name__ for o in q.queue] == ["RX", "RY"]
@@ -2468,16 +2460,14 @@ class TestGraphDecomposition:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RX: 1})
+        def rule(phi, wires, **__):
+            qp.RX(phi, wires=wires[0])
 
-            @qp.register_resources({qp.RX: 1})
-            def rule(phi, wires, **__):
-                qp.RX(phi, wires=wires[0])
+        qp.add_decomps(Op, rule)
 
-            qp.add_decomps(Op, rule)
-
-            op = Op(0.5, wires=0)
-            decomp = op.decomposition()
+        op = Op(0.5, wires=0)
+        decomp = op.decomposition()
 
         assert len(decomp) == 1
         assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
@@ -2496,16 +2486,14 @@ class TestGraphDecomposition:
         assert Op.has_decomposition is False
         assert Op(0.5, wires=0).has_decomposition is False
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RX: 1})
+        def rule(phi, wires, **__):
+            qp.RX(phi, wires=wires[0])
 
-            @qp.register_resources({qp.RX: 1})
-            def rule(phi, wires, **__):
-                qp.RX(phi, wires=wires[0])
+        qp.add_decomps(Op, rule)
 
-            qp.add_decomps(Op, rule)
-
-            assert Op.has_decomposition is True
-            assert Op(0.5, wires=0).has_decomposition is True
+        assert Op.has_decomposition is True
+        assert Op(0.5, wires=0).has_decomposition is True
 
 
 class TestStatePrepBase:

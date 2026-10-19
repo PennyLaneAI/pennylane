@@ -22,15 +22,15 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition import gate_sets
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.transforms import decompose
+from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qp.Permute([0, 1, 2, 3], wires=(3, 2, 1, 0))
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_repr():

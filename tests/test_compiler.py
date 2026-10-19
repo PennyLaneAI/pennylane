@@ -16,6 +16,7 @@ Unit tests for the compiler subpackage.
 """
 
 # pylint: disable=import-outside-toplevel
+from functools import partial
 from unittest.mock import patch
 
 import mcm_utils
@@ -578,6 +579,26 @@ class TestCatalystControlFlow:
             return qp.expval(qp.PauliZ(0))
 
         assert jnp.allclose(circuit(1.5), 1.0)
+        assert jnp.allclose(circuit(jnp.pi), -1.0)
+
+    def test_cond_with_hinted_operator_types(self):
+        """Test condition with hinted operator classes and partials of them as branches"""
+        dev = qp.device("lightning.qubit", wires=1)
+
+        @qp.qjit
+        @qp.qnode(dev)
+        def circuit(x):
+            qp.cond(
+                x > 2.7,
+                qp.hint(qp.RX, {"branch-prob": 0.2}),
+                partial(qp.hint(qp.RY, {"branch-prob": 0.5}), wires=0),
+                ((x > 1.4, qp.hint(partial(qp.RZ, wires=0), {"branch-prob": 0.3})),),
+            )(x, wires=0)
+
+            return qp.expval(qp.PauliZ(0))
+
+        assert jnp.allclose(circuit(1.2), np.cos(1.2))
+        assert jnp.allclose(circuit(2.0), 1.0)
         assert jnp.allclose(circuit(jnp.pi), -1.0)
 
     def test_cond_with_elif_interpreted(self):

@@ -20,12 +20,12 @@ import pytest
 
 import pennylane as qp
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.state_prep_mps import (
     _mps_prep_decomposition,
     _validate_mps_shape,
     right_canonicalize_mps,
 )
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 class TestMPSPrep:
@@ -53,7 +53,7 @@ class TestMPSPrep:
         ]
 
         op = qp.MPSPrep(mps, wires=[0, 1, 2, 3], work_wires=[4, 5])
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     def test_access_to_param(self):
         """Tests that the template parameters are accessible."""

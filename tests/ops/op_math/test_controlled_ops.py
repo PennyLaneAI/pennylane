@@ -78,7 +78,7 @@ class TestControlledQubitUnitary:
     )
     def test_standard_validity(self, op):
         """Test that the operation is valid."""
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     def test_noniterable_base(self):
         """Test that an error is raised if the user provides a non-iterable base operator"""

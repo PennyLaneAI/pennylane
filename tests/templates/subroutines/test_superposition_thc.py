@@ -19,8 +19,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import assert_valid
 from pennylane.templates.subroutines.superposition_thc import SuperpositionTHC
+from pennylane.testing import assert_valid
 
 
 def _wire_layout(n):

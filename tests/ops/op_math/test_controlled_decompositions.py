@@ -23,7 +23,6 @@ import pennylane as qp
 from pennylane import math
 from pennylane.decomposition.decomposition_rule import _fix_decomp
 from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     _bisect_compute_a,
     _bisect_compute_b,
@@ -34,6 +33,7 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     decompose_mcx_two_workers,
     decompose_mcx_with_no_worker,
 )
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.wires import Wires
 
 cw5 = tuple(list(range(1, 1 + n)) for n in range(2, 6))
@@ -781,9 +781,8 @@ class TestMCXDecomposition:
         """Tests that a fixed decomposition rule is used instead of the stock ones."""
 
         mcx = qp.MultiControlledX(wires=[0, 1, 2, 3])
-        with qp.decomposition.local_decomps():
-            _fix_decomp(qp.MultiControlledX, decompose_mcx_with_no_worker)
-            assert list(qp.list_decomps(mcx)) == [decompose_mcx_with_no_worker]
+        _fix_decomp(qp.MultiControlledX, decompose_mcx_with_no_worker)
+        assert list(qp.list_decomps(mcx)) == [decompose_mcx_with_no_worker]
 
     @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -832,3 +831,22 @@ class TestMCXDecomposition:
 
         result = circuit(wires, work_wires, cvals)
         assert result is not None
+
+    @pytest.mark.parametrize(
+        "n_ctrl, n_work, expected",
+        [
+            (2, 0, False),
+            (3, 0, True),
+            (6, 0, True),
+            (3, 1, False),
+            (5, 1, False),
+            (5, 2, False),
+            (8, 6, False),
+        ],
+    )
+    def test_mcx_no_worker_condition(self, n_ctrl, n_work, expected):
+        """The no-worker rule only applies to an MCX without work wires."""
+        wires = list(range(n_ctrl + 1))
+        work_wires = list(range(n_ctrl + 1, n_ctrl + 1 + n_work))
+        op = qp.MultiControlledX(wires=wires, work_wires=work_wires)
+        assert decompose_mcx_with_no_worker.is_applicable(**op.arguments) is expected
