@@ -1358,12 +1358,16 @@ class TestCOBUnroll:  # pylint: disable=too-few-public-methods
     def test_unroll_nested_change_op_basis_resources(self):
         """ChangeOpBasis resource keys nested in another ChangeOpBasis are recursively expanded."""
 
-        x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
+        x_rep, y_rep, z_rep, h_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z, qp.H))
         inner_cob = _change_op_basis_abstract(x_rep, y_rep, x_rep)
         outer_cob = _change_op_basis_abstract(z_rep, inner_cob, z_rep)
 
         result = _unroll_change_op_basis({outer_cob: 3})
         assert result == {z_rep: 6, x_rep: 6, y_rep: 3}
+
+        level_three_cob = _change_op_basis_abstract(h_rep, outer_cob, h_rep)
+        result = _unroll_change_op_basis({level_three_cob: 3})
+        assert result == {h_rep: 6, z_rep: 6, x_rep: 6, y_rep: 3}
 
     def test_unroll_change_op_basis_nested_in_prod_resources(self):
         """ChangeOpBasis resource keys inside a Prod operand of a ChangeOpBasis are expanded."""
