@@ -26,8 +26,6 @@ import pennylane as qp
 from pennylane import math
 from pennylane.decomposition import list_decomps
 from pennylane.math import binary_matrix_rank, ceil_log2
-from pennylane.ops.functions import assert_valid
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.sum_of_slaters import (
     SumOfSlatersPrep,
     _columns_differ,
@@ -40,6 +38,8 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     compute_sos_encoding,
     select_sos_rows,
 )
+from pennylane.testing import assert_valid
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import Complex, Float, Int, Wire
 from pennylane.wires import Wires
 

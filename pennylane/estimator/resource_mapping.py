@@ -640,16 +640,40 @@ def _(op: qtemps.Reflection):
 
 @_map_to_resource_op.register
 def _(op: qtemps.GQSP):
-    be_op = op.unitary
-    mapped_be_op = _map_to_resource_op(be_op)
+    mapped_be_op = _map_to_resource_op(op.unitary)
+    total_wires = mapped_be_op.wires + Wires(op.control)
 
-    ctrl_wire = op.control
-    target_wires = mapped_be_op.wires
-    total_wires = target_wires + Wires(ctrl_wire)
+    # ``angles`` has shape ``(3, d + 1)``, where ``d`` is the number of controlled unitaries
+    num_ctrl_ops = pl_math.shape(op.angles)[1] - 1
 
-    d_plus = len(op.parameters[0]) - 1
+    # A negative shift turns the first ``min(|shift|, d)`` controlled unitaries into controlled
+    # adjoint unitaries (``d_minus``). Any power that cannot be absorbed is applied separately.
+    shift = op.shift
+    d_minus = min(-shift, num_ctrl_ops) if shift < 0 else 0
+    d_plus = num_ctrl_ops - d_minus
+    remaining = shift + d_minus
 
-    return re_temps.GQSP(mapped_be_op, d_plus, wires=total_wires)
+    if d_plus > 0:
+        gqsp = re_temps.GQSP(mapped_be_op, d_plus, d_minus, wires=total_wires)
+    else:
+        # All controlled unitaries are adjoints (or there are none). The estimator ``GQSP``
+        # requires ``d_plus > 0``, so the same gates are listed explicitly.
+        factors = [(re_ops.Rot(), num_ctrl_ops + 1)]
+        if num_ctrl_ops > 0:
+            ctrl_adj = re_ops.Controlled(
+                re_ops.Adjoint(_map_to_resource_op(op.unitary)), num_ctrl_wires=1, num_zero_ctrl=0
+            )
+            factors.append((ctrl_adj, num_ctrl_ops))
+        gqsp = re_ops.Prod(factors, wires=total_wires)
+
+    if remaining == 0:
+        return gqsp
+
+    base = _map_to_resource_op(op.unitary)
+    if remaining < 0:
+        base = re_ops.Adjoint(base)
+    power = re_ops.Pow(base, pow_z=abs(remaining))
+    return re_ops.Prod((gqsp, power), wires=total_wires)
 
 
 # Symbolic Ops:

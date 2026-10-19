@@ -615,7 +615,7 @@ class TestDecomposition:
         """Test that ``TrotterVibronic`` passes ``assert_valid``."""
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=1))
         op = make_op(hamiltonian, make_wires(2, 2), evolution_time=0.5)
-        qp.ops.functions.assert_valid(
+        qp.testing.assert_valid(
             op, skip_differentiation=True, skip_decomp_matrix_check=True, skip_wire_mapping=True
         )
 
@@ -642,7 +642,7 @@ class TestDecomposition:
         assert num_allocate == 1
         assert num_deallocate == 1
 
-        qp.ops.functions.assert_valid(
+        qp.testing.assert_valid(
             op, skip_differentiation=True, skip_decomp_matrix_check=True, skip_wire_mapping=True
         )
 
@@ -670,7 +670,7 @@ class TestDecomposition:
         assert num_allocate == 1
         assert num_deallocate == 1
 
-        qp.ops.functions.assert_valid(
+        qp.testing.assert_valid(
             op, skip_differentiation=True, skip_decomp_matrix_check=True, skip_wire_mapping=True
         )
 

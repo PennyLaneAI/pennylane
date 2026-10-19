@@ -52,6 +52,7 @@ Symbolic Classes
     ~Exp
     ~LinearCombination
     ~Pow
+    ~Pow2
     ~Prod
     ~Prod2
     ~Sum
@@ -157,6 +158,7 @@ from .evolution import Evolution
 from .exp import Exp, exp
 from .linear_combination import LinearCombination
 from .pow import Pow, pow
+from .pow2 import Pow2
 from .prod import Prod, prod
 from .prod2 import Prod2
 from .change_op_basis import ChangeOpBasis, change_op_basis

@@ -62,25 +62,21 @@ def _call_qudit_mmd_loss(
     return _build_loss(circuit_config, mmd_config)(params, target_data, key)
 
 
-def _qudit_phi_g_z(gen, z, d):
-    """Reference implementation of the per-gate eigenvalue factor."""
-    n = len(z)
-    dims = _dims_to_numpy(d, n)
+def _qudit_phi_g_z(gate, z, dims):
+    """Reference per-gate eigenvalue factor for a sparse gate ``{qudit: power}``.
+
+    Qudits absent from ``gate`` contribute ``sqrt(2) cos(pi/4) = 1``, so only the
+    support is iterated.
+    """
     val = 1.0
-    for j in range(n):
-        val *= np.sqrt(2.0) * np.cos(2.0 * np.pi * z[j] * gen[j] / dims[j] + np.pi / 4.0)
+    for q, p in gate.items():
+        val *= np.sqrt(2.0) * np.cos(2.0 * np.pi * z[q] * p / dims[q] + np.pi / 4.0)
     return val
 
 
-def _flatten_gates(gates, n_qudits):
-    """Flatten the gate dictionary into generators plus parameter indices."""
-    flat_gens, flat_pidx = [], []
-    for pidx in sorted(gates.keys()):
-        for g in gates[pidx]:
-            assert len(g) == n_qudits
-            flat_gens.append(np.array(g, dtype=int))
-            flat_pidx.append(pidx)
-    return flat_gens, flat_pidx
+def _flatten_gates(gates):
+    """Flatten the sparse gate dictionary into ``(gate, param_idx)`` pairs."""
+    return [(gate, int(pidx)) for pidx in sorted(gates) for gate in gates[pidx]]
 
 
 def _qudit_circuit_probs(gates, params, n_qudits, d, phase_fn=None, phase_params=None):
@@ -91,8 +87,8 @@ def _qudit_circuit_probs(gates, params, n_qudits, d, phase_fn=None, phase_params
     gate layer, matching ``QuditCircuitConfig.phase_fn``.
     """
     params = np.asarray(params, dtype=float)
-    flat_gens, flat_pidx = _flatten_gates(gates, n_qudits)
     dims = _dims_to_numpy(d, n_qudits)
+    flat_gates = _flatten_gates(gates)
     omega = np.exp(2j * np.pi / dims)  # per-qudit roots of unity, shape (n_qudits,)
     all_states = list(itertools.product(*(range(int(d_j)) for d_j in dims)))
     n_states = int(np.prod(dims))
@@ -100,9 +96,7 @@ def _qudit_circuit_probs(gates, params, n_qudits, d, phase_fn=None, phase_params
     gammas = np.zeros(n_states, dtype=complex)
     for k, z in enumerate(all_states):
         z_arr = np.array(z)
-        phase = sum(
-            params[pidx] * _qudit_phi_g_z(g, z_arr, dims) for g, pidx in zip(flat_gens, flat_pidx)
-        )
+        phase = sum(params[pidx] * _qudit_phi_g_z(g, z_arr, dims) for g, pidx in flat_gates)
         if phase_fn is not None:
             phase += float(phase_fn(phase_params, jnp.array(z_arr)))
         gammas[k] = np.exp(1j * phase)
@@ -123,8 +117,8 @@ def _qudit_circuit_probs(gates, params, n_qudits, d, phase_fn=None, phase_params
 def _qudit_expval_exact(gates, params, l_vec, n_qudits, d):
     """Return one exact observable moment by summing over all basis states."""
     params = np.asarray(params, dtype=float)
-    flat_gens, flat_pidx = _flatten_gates(gates, n_qudits)
     dims = _dims_to_numpy(d, n_qudits)
+    flat_gates = _flatten_gates(gates)
     all_states = list(itertools.product(*(range(int(d_j)) for d_j in dims)))
     n_states = int(np.prod(dims))
     l_arr = np.array(l_vec)
@@ -135,7 +129,7 @@ def _qudit_expval_exact(gates, params, l_vec, n_qudits, d):
         z_minus_l = (z - l_arr) % dims
         delta = sum(
             params[pidx] * (_qudit_phi_g_z(g, z, dims) - _qudit_phi_g_z(g, z_minus_l, dims))
-            for g, pidx in zip(flat_gens, flat_pidx)
+            for g, pidx in flat_gates
         )
         total += np.exp(1j * delta)
     return total / n_states
@@ -381,21 +375,21 @@ class TestExactQuditMMDConsistency:
         "gates, params, n_qudits, d, graph_type",
         [
             (
-                {0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]},
+                {0: [{0: 1}], 1: [{1: 1}], 2: [{0: 1, 1: 1}]},
                 [0.3, 0.5, 0.2],
                 2,
                 3,
                 "cycle",
             ),
             (
-                {0: [[1, 0]], 1: [[0, 2]]},
+                {0: [{0: 1}], 1: [{1: 2}]},
                 [0.4, 0.7],
                 2,
                 3,
                 "complete",
             ),
             (
-                {0: [[1, 0]], 1: [[0, 1]], 2: [[2, 1]]},
+                {0: [{0: 1}], 1: [{1: 1}], 2: [{0: 2, 1: 1}]},
                 [0.1, 0.6, 0.9],
                 2,
                 4,
@@ -403,7 +397,7 @@ class TestExactQuditMMDConsistency:
             ),
             # Non-uniform: qubit x qutrit, cycle
             (
-                {0: [[1, 0]], 1: [[0, 2]], 2: [[1, 1]]},
+                {0: [{0: 1}], 1: [{1: 2}], 2: [{0: 1, 1: 1}]},
                 [0.3, 0.5, 0.2],
                 2,
                 [2, 3],
@@ -411,7 +405,7 @@ class TestExactQuditMMDConsistency:
             ),
             # Non-uniform: qutrit x ququart, complete
             (
-                {0: [[1, 0]], 1: [[0, 3]]},
+                {0: [{0: 1}], 1: [{1: 3}]},
                 [0.4, 0.7],
                 2,
                 [3, 4],
@@ -441,7 +435,7 @@ class TestQuditMMDLossAPI:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]]},
+            gates={0: [{0: 1}]},
             n_samples=100,
             key=jax.random.PRNGKey(0),
         )
@@ -454,7 +448,7 @@ class TestQuditMMDLossAPI:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]]},
+            gates={0: [{0: 1}]},
             n_samples=100,
             key=jax.random.PRNGKey(0),
         )
@@ -467,7 +461,7 @@ class TestQuditMMDLossAPI:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]]},
+            gates={0: [{0: 1}]},
             n_samples=100,
             key=jax.random.PRNGKey(0),
         )
@@ -480,7 +474,7 @@ class TestQuditMMDLossAPI:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]]},
+            gates={0: [{0: 1}]},
             n_samples=100,
             key=jax.random.PRNGKey(0),
         )
@@ -493,7 +487,7 @@ class TestQuditMMDLossAPI:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=3,
-            gates={0: [[1, 0, 0]]},
+            gates={0: [{0: 1}]},
             n_samples=100,
             key=jax.random.PRNGKey(0),
         )
@@ -506,7 +500,7 @@ class TestQuditMMDLossAPI:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]]},
+            gates={0: [{0: 1}]},
             n_samples=100,
             key=jax.random.PRNGKey(0),
         )
@@ -519,7 +513,7 @@ class TestQuditMMDLossAPI:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=3,
-            gates={0: [[1, 0, 0]]},
+            gates={0: [{0: 1}]},
             n_samples=100,
             key=jax.random.PRNGKey(0),
         )
@@ -533,7 +527,7 @@ class TestQuditMMDLossAPI:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]], 1: [[0, 1]]},
+            gates={0: [{0: 1}], 1: [{1: 1}]},
             n_samples=100,
             key=jax.random.PRNGKey(0),
         )
@@ -547,7 +541,7 @@ class TestQuditMMDLossAPI:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]], 1: [[0, 1]]},
+            gates={0: [{0: 1}], 1: [{1: 1}]},
             n_samples=200,
             key=jax.random.PRNGKey(42),
         )
@@ -575,7 +569,7 @@ class TestQuditMMDLossAPI:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]]},
+            gates={0: [{0: 1}]},
             n_samples=100,
             key=jax.random.PRNGKey(0),
         )
@@ -589,7 +583,7 @@ class TestQuditMMDLossAPI:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]},
+            gates={0: [{0: 1}], 1: [{1: 1}], 2: [{0: 1, 1: 1}]},
             n_samples=100,
             key=jax.random.PRNGKey(99),
         )
@@ -606,7 +600,7 @@ class TestQuditMMDLossAPI:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]], 1: [[0, 1]]},
+            gates={0: [{0: 1}], 1: [{1: 1}]},
             n_samples=100,
             key=jax.random.PRNGKey(0),
         )
@@ -627,7 +621,7 @@ class TestQuditMMDLossAPI:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 1]]},
+            gates={0: [{0: 1, 1: 1}]},
             n_samples=100,
             key=jax.random.PRNGKey(42),
             init_state_elems=state_elems,
@@ -658,7 +652,7 @@ class TestQuditMMDLossStatistical:
         [
             # 2-qutrit, 3 gates, cycle
             (
-                {0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]},
+                {0: [{0: 1}], 1: [{1: 1}], 2: [{0: 1, 1: 1}]},
                 [0.37, 0.95, 0.73],
                 2,
                 3,
@@ -667,7 +661,7 @@ class TestQuditMMDLossStatistical:
             ),
             # 2-qutrit, 2 gates, complete
             (
-                {0: [[1, 0]], 1: [[0, 2]]},
+                {0: [{0: 1}], 1: [{1: 2}]},
                 [0.5, 0.3],
                 2,
                 3,
@@ -676,7 +670,7 @@ class TestQuditMMDLossStatistical:
             ),
             # 2-qudit d=4, 3 gates, cycle
             (
-                {0: [[1, 0]], 1: [[0, 1]], 2: [[2, 1]]},
+                {0: [{0: 1}], 1: [{1: 1}], 2: [{0: 2, 1: 1}]},
                 [0.2, 0.8, 0.4],
                 2,
                 4,
@@ -685,7 +679,7 @@ class TestQuditMMDLossStatistical:
             ),
             # Non-uniform: qubit x qutrit, cycle
             (
-                {0: [[1, 0]], 1: [[0, 2]], 2: [[1, 1]]},
+                {0: [{0: 1}], 1: [{1: 2}], 2: [{0: 1, 1: 1}]},
                 [0.37, 0.95, 0.73],
                 2,
                 [2, 3],
@@ -694,7 +688,7 @@ class TestQuditMMDLossStatistical:
             ),
             # Non-uniform: qutrit x ququart, complete
             (
-                {0: [[1, 0]], 1: [[0, 3]]},
+                {0: [{0: 1}], 1: [{1: 3}]},
                 [0.5, 0.3],
                 2,
                 [3, 4],
@@ -754,7 +748,7 @@ class TestQuditMMDLossStatistical:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=3,
-            gates={0: [[1, 0, 0]], 1: [[0, 1, 0]], 2: [[0, 0, 1]]},
+            gates={0: [{0: 1}], 1: [{1: 1}], 2: [{2: 1}]},
             n_samples=100,
             key=jax.random.PRNGKey(0),
         )
@@ -769,7 +763,7 @@ class TestQuditMMDLossStatistical:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]], 1: [[0, 1]]},
+            gates={0: [{0: 1}], 1: [{1: 1}]},
             n_samples=100,
             key=jax.random.PRNGKey(77),
         )
@@ -784,7 +778,7 @@ class TestQuditMMDLossStatistical:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]], 1: [[0, 1]]},
+            gates={0: [{0: 1}], 1: [{1: 1}]},
             n_samples=100,
             key=jax.random.PRNGKey(0),
         )
@@ -804,7 +798,7 @@ class TestQuditMMDLossStatistical:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]], 1: [[0, 1]]},
+            gates={0: [{0: 1}], 1: [{1: 1}]},
             n_samples=200,
             key=jax.random.PRNGKey(0),
         )
@@ -818,7 +812,7 @@ class TestQuditMMDLossStatistical:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]], 1: [[0, 1]]},
+            gates={0: [{0: 1}], 1: [{1: 1}]},
             n_samples=200,
             key=jax.random.PRNGKey(0),
         )
@@ -838,7 +832,7 @@ class TestBuildQuditMMDLoss:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]},
+            gates={0: [{0: 1}], 1: [{1: 1}], 2: [{0: 1, 1: 1}]},
             n_samples=200,
             key=jax.random.PRNGKey(42),
         )
@@ -907,7 +901,7 @@ class TestBuildQuditMMDLoss:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 1]]},
+            gates={0: [{0: 1, 1: 1}]},
             n_samples=100,
             key=jax.random.PRNGKey(42),
             init_state_elems=state_elems,
@@ -926,7 +920,7 @@ class TestBuildQuditMMDLoss:
         config = QuditCircuitConfig(
             dims=[2, 3],
             n_qudits=2,
-            gates={0: [[1, 0]], 1: [[0, 2]], 2: [[1, 1]]},
+            gates={0: [{0: 1}], 1: [{1: 2}], 2: [{0: 1, 1: 1}]},
             n_samples=200,
             key=jax.random.PRNGKey(42),
         )
@@ -947,7 +941,7 @@ class TestBuildQuditMMDLoss:
         config = QuditCircuitConfig(
             dims=[2, 3, 4],
             n_qudits=3,
-            gates={0: [[1, 0, 0]], 1: [[0, 1, 0]], 2: [[0, 0, 1]]},
+            gates={0: [{0: 1}], 1: [{1: 1}], 2: [{2: 1}]},
             n_samples=200,
             key=jax.random.PRNGKey(0),
         )
@@ -982,7 +976,7 @@ class TestQuditMMDLossPhaseLayer:
         return QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]},
+            gates={0: [{0: 1}], 1: [{1: 1}], 2: [{0: 1, 1: 1}]},
             n_samples=200,
             key=jax.random.PRNGKey(42),
             phase_fn=phase_fn,
@@ -1010,7 +1004,7 @@ class TestQuditMMDLossPhaseLayer:
 
     def test_phase_layer_matches_exact_mmd(self):
         """The estimator with a phase layer must be unbiased w.r.t. exact MMD^2."""
-        gates = {0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]}
+        gates = {0: [{0: 1}], 1: [{1: 1}], 2: [{0: 1, 1: 1}]}
         params = [0.37, 0.95, 0.73]
         n_qudits, d, bandwidth, graph_type = 2, 3, 0.5, "cycle"
 
@@ -1120,7 +1114,7 @@ class TestArbitraryExpvalCallable:
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
-            gates={0: [[1, 0]], 1: [[0, 1]]},
+            gates={0: [{0: 1}], 1: [{1: 1}]},
             n_samples=200,
             key=jax.random.PRNGKey(0),
             phase_fn=phase_fn,

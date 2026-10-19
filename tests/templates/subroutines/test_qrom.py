@@ -24,7 +24,6 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.templates.subroutines.qrom import (
@@ -36,25 +35,14 @@ from pennylane.templates.subroutines.qrom import (
     _qrom_unary_iteration,
     _select_swap,
 )
-from pennylane.typing import AbstractArray, Bool, Int, Wire
+from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.typing import Bool, Wire
 
 has_jax = True
 try:
     from jax import numpy as jnp
 except ImportError:
     has_jax = False
-
-
-def test_abstract_data():
-    """Tests that the abstract init handles Sequence[str] data and more."""
-    control_wires = Wire[3]
-    target_wires = Wire[3]
-    work_wires = Wire[3]
-
-    data = AbstractArray(shape=(5, 3), dtype=np.int64)
-    op = qp.QROM(data, control_wires, target_wires, work_wires)
-
-    assert op.arguments["bitstrings"] == data
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -72,7 +60,7 @@ def test_assert_valid_qrom():
     )
 
     op = qp.QROM(bitstrings, control_wires=[0, 1, 2], target_wires=[3, 4, 5], work_wires=[6, 7, 8])
-    qp.ops.functions.assert_valid(op, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_differentiation=True)
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -84,7 +72,7 @@ def test_falsy_zero_as_work_wire():
         target_wires=[3],
         work_wires=0,
     )
-    qp.ops.functions.assert_valid(op, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_differentiation=True)
 
 
 class TestQROM:
@@ -696,17 +684,17 @@ class TestMeasurementQROM:
     def test_resources_small_cases(self):
         """Test resource estimates for the L <= 1 and L == 2 edge cases."""
         res_zero = _qrom_measurement_resources(
-            bitstrings=Int[1, 3], control_wires=Wire[0], target_wires=Wire[3], work_wires=Wire[1]
+            bitstrings=Bool[1, 3], control_wires=Wire[0], target_wires=Wire[3], work_wires=Wire[1]
         )
         assert res_zero[qp.MultiX(Bool[3], Wire[3])] == 1
 
         res_one = _qrom_measurement_resources(
-            bitstrings=Int[1, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
+            bitstrings=Bool[1, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
         )
         assert res_one[qp.MultiX(Bool[3], Wire[3])] == 1
 
         res_two = _qrom_measurement_resources(
-            bitstrings=Int[2, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
+            bitstrings=Bool[2, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
         )
         assert res_two[qp.MultiX(Bool[3], Wire[3])] == 1
         assert res_two[qp.ctrl(qp.MultiX(Bool[3], Wire[3]), Wire[1])] == 1
@@ -715,7 +703,7 @@ class TestMeasurementQROM:
         """Test that the general resource estimate contains the expected gate types."""
         # Only bitstrings and target_wires are relevant
         res = _qrom_measurement_resources(
-            bitstrings=Int[8, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
+            bitstrings=Bool[8, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
         )
 
         ppm_counts = sum(v for k, v in res.items() if isinstance(k, PauliMeasure))
@@ -726,11 +714,11 @@ class TestMeasurementQROM:
         """Test that resources are extracted from ``base`` (Adjoint path)."""
         # Only bitstrings and target_wires are relevant
         res_direct = _qrom_measurement_resources(
-            bitstrings=Int[8, 3], control_wires=Wire[3], target_wires=Wire[3], work_wires=Wire[1]
+            bitstrings=Bool[8, 3], control_wires=Wire[3], target_wires=Wire[3], work_wires=Wire[1]
         )
 
         base = qp.QROM(
-            bitstrings=Int[8, 3], control_wires=Wire[3], target_wires=Wire[3], work_wires=Wire[1]
+            bitstrings=Bool[8, 3], control_wires=Wire[3], target_wires=Wire[3], work_wires=Wire[1]
         )
         res_base = _qrom_measurement_resources(base=base)
         assert res_base == res_direct
@@ -745,7 +733,7 @@ class TestMeasurementQROM:
         """
         n_active = 2  # ceil_log2(4)
         res_extra = _qrom_measurement_resources(
-            bitstrings=Int[4, 2],
+            bitstrings=Bool[4, 2],
             control_wires=Wire[n_active + n_extra],
             target_wires=Wire[2],
             work_wires=Wire[1],
@@ -753,7 +741,7 @@ class TestMeasurementQROM:
         # A single extra wire builds the flag with X gates (no ANDs from folding), so its
         # TemporaryAND count is exactly the gated inner-iterator core; use it as the baseline.
         res_one = _qrom_measurement_resources(
-            bitstrings=Int[4, 2],
+            bitstrings=Bool[4, 2],
             control_wires=Wire[n_active + 1],
             target_wires=Wire[2],
             work_wires=Wire[1],
@@ -764,23 +752,23 @@ class TestMeasurementQROM:
 
     def test_condition_without_compiler(self):
         """Test that the measurement decomposition is disabled without an active compiler."""
-        assert _qrom_measurement_condition(Int[8, 3], Wire[2], Wire[3], Wire[3]) is False
+        assert _qrom_measurement_condition(Bool[8, 3], Wire[2], Wire[3], Wire[3]) is False
 
     def test_condition_with_compiler(self, mocker):
         """Test the condition logic when a compiler is active."""
         mocker.patch("pennylane.templates.subroutines.qrom.compiler.active", return_value=True)
 
         # Small tables (<= 2 bitstrings) are always applicable.
-        assert _qrom_measurement_condition(Int[2, 1], Wire[1], Wire[1], Wire[0]) is True
+        assert _qrom_measurement_condition(Bool[2, 1], Wire[1], Wire[1], Wire[0]) is True
         # Enough work wires: applicable.
-        assert _qrom_measurement_condition(Int[8, 2], Wire[3], Wire[2], Wire[2]) is True
+        assert _qrom_measurement_condition(Bool[8, 2], Wire[3], Wire[2], Wire[2]) is True
         # Too few work wires: not applicable.
-        assert _qrom_measurement_condition(Int[8, 3], Wire[3], Wire[3], Wire[0]) is False
+        assert _qrom_measurement_condition(Bool[8, 3], Wire[3], Wire[3], Wire[0]) is False
         # Parameters extracted from ``base`` (Adjoint path).
         assert (
             _qrom_measurement_condition(
                 base=qp.QROM(
-                    bitstrings=Int[8, 3],
+                    bitstrings=Bool[8, 3],
                     work_wires=Wire[2],
                     control_wires=Wire[3],
                     target_wires=Wire[3],

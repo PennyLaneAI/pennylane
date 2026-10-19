@@ -20,12 +20,12 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.temporary_and import (
     _adjoint_temporary_and,
     _adjoint_temporary_and_to_toffoli,
     _temporary_and_to_toffoli,
 )
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import Bool, Wire
 
 
@@ -98,7 +98,7 @@ class TestTemporaryAND:
         # Skip matrix check because the decomposition to Toffoli,and the adjoint decomposition
         # to mcm + cond(CZ) do not reproduce the matrix of the op. Skip bind_new_parameters
         # now that control_values is part of dynamic data
-        qp.ops.functions.assert_valid(
+        qp.testing.assert_valid(
             op,
             skip_decomp_matrix_check=True,
             skip_bind_new_parameters=True,
@@ -200,7 +200,8 @@ class TestTemporaryAND:
 
         @qp.set_shots(1)
         @qp.qnode(qp.device("default.qubit", wires=wires), interface=None)
-        @qp.transforms.decompose(
+        # pylint: disable-next=protected-access
+        @qp.transforms._tape_decompose(
             gate_set=gate_set,
             fixed_decomps={
                 qp.Select: qp.templates.subroutines.select._select_decomp_unary,  # pylint: disable=protected-access
