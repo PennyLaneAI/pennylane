@@ -80,10 +80,10 @@ def abstractify(val) -> AbstractArray | AbstractWires | Operator | CompressedRes
     """
 
     # pylint: disable-next=import-outside-toplevel
-    from .operator2 import Operator2
+    from .base import Operator
 
-    # NOTE: Don't flatten Operator2 instances as they can be handled by their custom dispatch.
-    leaves, tree = flatten(val, is_leaf=lambda x: isinstance(x, (Wires, Operator2)))
+    # NOTE: Don't flatten Operator instances as they can be handled by their custom dispatch.
+    leaves, tree = flatten(val, is_leaf=lambda x: isinstance(x, (Wires, Operator)))
     if tree != leaf:
         abstract_leaves = tuple(abstractify(l) for l in leaves)
         return unflatten(abstract_leaves, tree)

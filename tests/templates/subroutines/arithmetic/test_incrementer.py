@@ -15,18 +15,24 @@
 Tests for the Incrementer template.
 """
 
+import hint_helpers
+import jax
 import numpy as np
 import pytest
 
-from pennylane import Incrementer, ctrl, decompose, device, qnode
+from pennylane import Incrementer, ctrl, device, qnode
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import state
 from pennylane.ops import CNOT, PauliX
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding, TemporaryAND
+from pennylane.templates.subroutines.arithmetic.incrementer import _decompose_mcxs
+from pennylane.testing import assert_valid
+from pennylane.testing.capture import plxpr_to_tape
+from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize(
     "wires, work_wires",
     [
@@ -49,7 +55,7 @@ def test_assert_valid(wires, work_wires):
         ((0, 1, 2), []),  # no work wires
     ],
 )
-def test_decomposition_rules_with_capture(wires, work_wires):
+def test_decomposition_rules(wires, work_wires):
     """Test that the decomposition rules are consistent with the operator, with program
     capture enabled and disabled."""
     op = Incrementer(wires, work_wires)
@@ -284,3 +290,23 @@ def test_controlled_decomposition_new(wires, work_wires, controls, control_value
     )
     for rule in list_decomps("C(Incrementer)"):
         _test_decomposition_rule(op, rule)
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize(
+    "num_wires, num_controls", [(3, 0), (5, 0), (2, 1), (4, 1), (2, 2), (4, 2), (3, 3), (4, 5)]
+)
+def test_backward_ladder_branch_prob_hint(num_wires, num_controls):
+    """Test that the conditional CNOT in the backward ladder carries a ``branch-prob`` hint that
+    reproduces the number of applied CNOTs."""
+    num_all_wires = num_wires + num_controls
+    wires = jax.numpy.arange(num_wires)
+    work_wires = jax.numpy.arange(num_all_wires, 2 * num_all_wires - 1)
+    control_wires = jax.numpy.arange(num_wires, num_all_wires) if num_controls else None
+
+    plxpr = jax.make_jaxpr(lambda: _decompose_mcxs(wires, work_wires, control_wires))()
+    ops = plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+    # The trailing CNOT outside of the backward ladder is only applied for at most one control
+    num_ladder_cnots = sum(isinstance(op, CNOT) for op in ops) - (num_controls <= 1)
+    cnot_prob = num_ladder_cnots / (num_all_wires - 2)
+    assert hint_helpers.cond_hints(plxpr.jaxpr) == [pytest.approx((cnot_prob, 1 - cnot_prob))]

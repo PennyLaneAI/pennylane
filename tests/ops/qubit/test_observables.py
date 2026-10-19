@@ -537,7 +537,7 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
 class TestProjector:
     """Tests for the projector observable."""
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_basisstate_projector(self):
         """Tests that we obtain a _BasisStateProjector when input is a basis state."""
         basis_state = [0, 1, 1, 0]
@@ -548,9 +548,9 @@ class TestProjector:
         second_projector = qp.Projector(basis_state, wires)
         qp.assert_equal(second_projector, basis_state_projector)
 
-        qp.ops.functions.assert_valid(basis_state_projector, skip_differentiation=True)
+        qp.testing.assert_valid(basis_state_projector, skip_differentiation=True)
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_statevector_projector(self):
         """Test that we obtain a _StateVectorProjector when input is a state vector."""
         state_vector = np.array([1, 1, 1, 1]) / 2
@@ -561,7 +561,7 @@ class TestProjector:
         second_projector = qp.Projector(state_vector, wires)
         qp.assert_equal(second_projector, state_vector_projector)
 
-        qp.ops.functions.assert_valid(state_vector_projector, skip_differentiation=True)
+        qp.testing.assert_valid(state_vector_projector, skip_differentiation=True)
 
     def test_pow_zero(self):
         """Assert that the projector raised to zero is an empty list."""

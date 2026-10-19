@@ -22,9 +22,10 @@ from collections.abc import Callable
 from functools import reduce
 
 from pennylane import capture, math
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core import queuing
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
@@ -32,11 +33,10 @@ from pennylane.exceptions import (
     MatrixUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops.op_math import Prod, adjoint, ctrl, prod
+from pennylane.ops.op_math import adjoint, ctrl, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import Wire
 
@@ -80,7 +80,7 @@ def _apply_op_or_func(op_or_func):
             # pylint: disable-next=protected-access
             op_or_func._bind_primitive()
     elif isinstance(op_or_func, Operator):
-        queuing.apply(op_or_func)
+        apply(op_or_func)
     elif _is_abstract_operator(op_or_func):
         pass
     else:
@@ -92,12 +92,7 @@ def _apply_op_or_func(op_or_func):
 def _convert_to_prod(op_or_func):
     if callable(op_or_func):
         _validate_callable(op_or_func)
-        op = prod(op_or_func)()
-        # TODO: remove this branch once qp.prod dispatches properly to Prod2
-        if isinstance(op, Prod) and all(isinstance(operand, Operator2) for operand in op.operands):
-            queuing.remove_from_program(op)
-            return Prod2(op.operands)
-        return op
+        return prod(op_or_func)()
     if isinstance(op_or_func, Operator):
         return op_or_func
     raise TypeError(
@@ -150,7 +145,7 @@ def change_op_basis(
             )
             return qp.state()
 
-        circuit2 = qp.decompose(circuit, max_expansion=1)
+        circuit2 = qp.transforms._tape_decompose(circuit, max_expansion=1)
 
     When this circuit is decomposed, the ``compute_op`` and ``uncompute_op`` are not controlled,
     resulting in a much more resource-efficient decomposition:
@@ -185,7 +180,7 @@ def change_op_basis(
             qp.change_op_basis(compute, target)
             return qp.state()
 
-        circuit3 = qp.decompose(circuit, max_expansion=1)
+        circuit3 = qp.transforms._tape_decompose(circuit, max_expansion=1)
 
     >>> print(qp.draw(circuit3)())
     0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤ ╭State
@@ -364,7 +359,7 @@ class ChangeOpBasis(CompositeOp):
     def decomposition(self):
         r"""Decomposition of the product operator is given by each of compute_op, target_op, compute_op† applied in succession."""
         if queuing.QueuingManager.recording():
-            _ = [queuing.apply(op) for op in reversed(self)]
+            _ = [apply(op) for op in reversed(self)]
         return list(self[::-1])
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -404,9 +399,9 @@ def _adjoint_change_op_basis_resources(base_params, **_):
 # pylint: disable=protected-access
 @register_resources(_adjoint_change_op_basis_resources)
 def _adjoint_change_op_basis_decomp(*_, base, **__):
-    queuing.apply(base.operands[2])
-    adjoint(queuing.apply(base.operands[1]))
-    queuing.apply(base.operands[0])
+    apply(base.operands[2])
+    adjoint(apply(base.operands[1]))
+    apply(base.operands[0])
 
 
 add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
@@ -447,22 +442,22 @@ def _controlled_change_op_basis_decomposition(
     base,
     **__,
 ):
-    queuing.apply(base.operands[2])
+    apply(base.operands[2])
     ctrl(
-        queuing.apply(base.operands[1]),
+        apply(base.operands[1]),
         control=control_wires,
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    queuing.apply(base.operands[0])
+    apply(base.operands[0])
 
 
 # pylint: disable=unused-argument
 @register_resources(_change_op_basis_resources)
 def _change_op_basis_decomp(*_, wires=None, operands, **__):
     for op in operands[::-1]:
-        queuing.apply(op)
+        apply(op)
 
 
 add_decomps(ChangeOpBasis, _change_op_basis_decomp)

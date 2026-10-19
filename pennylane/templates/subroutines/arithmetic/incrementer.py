@@ -14,7 +14,7 @@
 """Contains the implementation of the Incrementer template."""
 
 from pennylane import compiler, math
-from pennylane.capture import enabled
+from pennylane.capture import enabled, hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
@@ -24,13 +24,8 @@ from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_con
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit
 
+from ..qrom import _interleave_controls
 from .temporary_and import TemporaryAND
-
-has_jax = True
-try:
-    from jax import lax
-except (ModuleNotFoundError, ImportError):  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class Incrementer(Operator2):
@@ -231,33 +226,31 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
 
     def _increment():
         # Construct the wires on which the ladder will act.
-        zipped = sum(zip(wires[1:], work_wires), start=tuple())
+        interleaved = _interleave_controls(wires, work_wires)
+        triples = [interleaved[2 * i : 2 * i + 3] for i in range(len(wires) - 2)]
         if compiler.active() or enabled():
-            zipped = math.array(zipped, like="jax")
-            all_wires = math.concatenate([wires[:1], zipped], like="jax")
-        else:
-            all_wires = wires[:1] + zipped
+            interleaved = math.array(interleaved, like="jax")
+            triples = math.array(triples, like="jax")
 
         # Forward ladder
         @for_loop(len(wires) - 2)
         def forward_ladder(k):
-            if math.is_abstract(k):
-                _slice = lax.dynamic_slice(all_wires, (2 * k,), (3,))
-            else:
-                _slice = all_wires[2 * k : 2 * k + 3]
-            TemporaryAND(_slice)
+            TemporaryAND(triples[k])
 
         forward_ladder()  # pylint: disable=no-value-for-parameter
+
+        # The backward ladder applies a CNOT in all iterations except for k < num_controls - 2
+        num_ladder_iters = len(wires) - 2
+        num_ladder_cnots = num_ladder_iters - max(num_controls - 2, 0)
+        cnot_prob = num_ladder_cnots / num_ladder_iters if num_ladder_iters > 0 else 0.0
 
         # Backward ladder
         @for_loop(len(wires) - 3, -1, -1)
         def backward_adder(k):
-            cond(k >= num_controls - 2, CNOT)([all_wires[2 * k + 2], all_wires[2 * k + 3]])
-            if math.is_abstract(k):
-                _slice = lax.dynamic_slice(all_wires, (2 * k,), (3,))
-            else:
-                _slice = all_wires[2 * k : 2 * k + 3]
-            adjoint(TemporaryAND)(_slice)
+            cond(k >= num_controls - 2, hint(CNOT, {"branch-prob": cnot_prob}))(
+                [interleaved[2 * k + 2], interleaved[2 * k + 3]]
+            )
+            adjoint(TemporaryAND)(triples[k])
 
         backward_adder()  # pylint: disable=no-value-for-parameter
 

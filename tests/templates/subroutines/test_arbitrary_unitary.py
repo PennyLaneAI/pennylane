@@ -22,21 +22,21 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arbitrary_unitary import (
     _all_pauli_words_but_identity,
     _n_k_gray_code,
     _tuple_to_word,
 )
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard tests of operation validity."""
     shape = (3,)
     weights = np.arange(np.prod(shape), dtype=float).reshape(shape)
     op = qp.ArbitraryUnitary(weights, wires=[0])
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 # fmt: off
@@ -209,7 +209,7 @@ class TestDecomposition:
         (np.random.random(size=(63,)), range(3)),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("weights", "wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, weights, wires):
         op = qp.ArbitraryUnitary(weights, wires=wires)
@@ -360,32 +360,6 @@ class TestInterfaces:
         grads2 = grad_fn2(weights)
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        weights = tf.Variable(np.random.random(size=(15,)))
-        dev = qp.device("default.qubit", wires=2)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(weights)
-        grads = tape.gradient(res, [weights])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(weights)
-        grads2 = tape2.gradient(res2, [weights])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):

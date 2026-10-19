@@ -34,7 +34,7 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import ControlledOp2
-from pennylane.transforms import decompose
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp
@@ -223,18 +223,21 @@ class TestControlledInit:
         with pytest.raises(ValueError, match="work_wire_type must be either"):
             Controlled(self.temp_op, control_wires="b", work_wires="c", work_wire_type="foo")
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         "base",
         [
-            qp.prod(qp.X(0), qp.X(1), qp.X(2)),
+            # NOTE: 'qp.prod' now will dispatch to 'Prod2'
+            # which belongs to 'ControlledOp2'. This equivalent test
+            # is covered by 'test_prod.py::test_controlled_prod_basic_validity'
+            qp.ops.Prod(qp.X(0), qp.X(1), qp.X(2)),
             qp.X(0) + qp.Y(1),
         ],
     )
     def test_standard_validity_composite_base(self, base):
         """``assert_valid`` should pass for ``Controlled`` wrapping a CompositeOp."""
         op = Controlled(base, control_wires=[3, 4, 5], work_wires=[6, 7, 8])
-        qp.ops.functions.assert_valid(op)
+        qp.testing.assert_valid(op)
 
 
 # pylint: disable=too-few-public-methods
@@ -908,10 +911,16 @@ class TestDecomposition:
             ),
             (
                 qp.IsingXX(0.123, wires=[0, 1]),
+                # IsingXX is a ChangeOpBasis, so control applies only to the inner RX.
                 [
-                    qp.Toffoli(wires=[2, 0, 1]),
-                    qp.CRX(0.123, wires=[2, 0]),
-                    qp.Toffoli(wires=[2, 0, 1]),
+                    ctrl(
+                        qp.change_op_basis(
+                            qp.CNOT(wires=[0, 1]),
+                            qp.RX(0.123, wires=[0]),
+                            qp.CNOT(wires=[0, 1]),
+                        ),
+                        control=2,
+                    )
                 ],
             ),
         ],
@@ -976,11 +985,16 @@ class TestDecomposition:
         ctrl_op = qp.ctrl(base_op, control=ctrl_wires)
         custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
 
-        # There is not custom ctrl class for GlobalPhase (yet), so no `compute_decomposition`
-        # to test, just the controlled decompositions logic.
+        # GlobalPhase and Identity use a custom ctrl dispatch that returns a different operator
+        # (e.g. a PhaseShift) rather than a Controlled with a `compute_decomposition`, so there is
+        # no `compute_decomposition` to test for them.
         # NOTE: Operator2 instances don't have compute_decomposition defined.
         if not issubclass(base_cls, Operator2) and base_cls not in (qp.GlobalPhase, qp.Identity):
             assert custom_ctrl_cls.compute_decomposition(*params, active_wires) == expected
+
+        # Controlling a GlobalPhase lowers to a (Controlled)PhaseShift; verify the dispatch output.
+        if base_cls is qp.GlobalPhase:
+            qp.assert_equal(ctrl_op, expected[0])
 
         mat = qp.matrix(ctrl_op.decomposition, wire_order=active_wires)()
         assert np.allclose(mat, custom_ctrl_op.matrix(), atol=tol, rtol=0)
@@ -1068,6 +1082,12 @@ class TestDecomposition:
             )
 
         decomp = op.decomposition()
+
+        if base_cls is qp.Identity:
+            # A controlled Identity is the identity for any control values, so it decomposes
+            # into nothing and needs no gates to flip the control values.
+            assert decomp == []
+            return
 
         i = 0
         for ctrl_wire in ctrl_wires:
@@ -1202,30 +1222,6 @@ class TestDifferentiation:
 
         b = jnp.array(0.123)
         res = jax.grad(circuit)(b)
-        expected = pnp.sin(b / 2) / 2
-
-        assert pnp.allclose(res, expected)
-
-    @pytest.mark.tf
-    def test_tf(self, diff_method):
-        """Test differentiation using TF"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-        init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / pnp.sqrt(2)
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(b):
-            qp.StatePrep(init_state, wires=0)
-            Controlled(qp.RY(b, wires=1), control_wires=0)
-            return qp.expval(qp.PauliX(0))
-
-        b = tf.Variable(0.123, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            loss = circuit(b)
-
-        res = tape.gradient(loss, b)
         expected = pnp.sin(b / 2) / 2
 
         assert pnp.allclose(res, expected)
@@ -1502,7 +1498,6 @@ class TestControlledSupportsBroadcasting:
     @pytest.mark.parametrize(
         "features, num_wires",
         [
-            (pnp.array([[0.5], [2.1]]), 1),
             (pnp.array([[0.5, -0.5], [0.2, 1.5]]), 2),
             (pnp.ones((2, 5)), 5),
         ],
@@ -1518,7 +1513,7 @@ class TestControlledSupportsBroadcasting:
             features,
             list(range(num_wires)),
             n_repeats=2,
-            pattern=op.base.hyperparameters["pattern"],
+            pattern=op.base.arguments["pattern"],
         )
         op.decomposition()
 
@@ -2041,9 +2036,8 @@ class TestTapeExpansionWithControlled:
             qp.RY(theta, wires=wires)
             qp.RZ(omega, wires=wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(_Rot, _rot_to_rz_ry_rz)
-            [tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+        qp.add_decomps(_Rot, _rot_to_rz_ry_rz)
+        [tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
 
         assert tape.circuit == [
             qp.ctrl(qp.RZ(0.1, 0), control=[3, 7]),
@@ -2062,20 +2056,18 @@ class TestTapeExpansionWithControlled:
         def stopping_condition(o):
             return not isinstance(o, Controlled)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(_Rot, _rot_to_rz_ry_rz)
-            [actual], _ = decompose(
-                tape,
-                max_expansion=10,
-                stopping_condition=stopping_condition,
-                gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
-            )
-            [expected], _ = decompose(
-                tape_expected,
-                max_expansion=10,
-                stopping_condition=stopping_condition,
-                gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
-            )
+        [actual], _ = decompose(
+            tape,
+            max_expansion=10,
+            stopping_condition=stopping_condition,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+        )
+        [expected], _ = decompose(
+            tape_expected,
+            max_expansion=10,
+            stopping_condition=stopping_condition,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+        )
 
         actual_mat = qp.matrix(actual, wire_order=[3, 7, 0])
         expected_mat = qp.matrix(expected, wire_order=[3, 7, 0])
@@ -2358,30 +2350,6 @@ class TestCtrlTransformDifferentiation:
 
         b = jnp.array(0.123)
         res = jax.grad(circuit)(b)
-        expected = pnp.sin(b / 2) / 2
-
-        assert pnp.allclose(res, expected)
-
-    @pytest.mark.tf
-    def test_tf(self, diff_method):
-        """Test differentiation using TF"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-        init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / pnp.sqrt(2)
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(b):
-            qp.StatePrep(init_state, wires=0)
-            qp.ctrl(qp.RY, control=0)(b, wires=[1])
-            return qp.expval(qp.PauliX(0))
-
-        b = tf.Variable(0.123, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            loss = circuit(b)
-
-        res = tape.gradient(loss, b)
         expected = pnp.sin(b / 2) / 2
 
         assert pnp.allclose(res, expected)

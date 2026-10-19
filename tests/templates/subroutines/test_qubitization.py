@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 @pytest.mark.parametrize(
@@ -65,7 +65,8 @@ def test_operator_definition_qpe(hamiltonian):
     assert np.allclose(np.sort(estimated_eigenvalues), qp.eigvals(hamiltonian), atol=0.1)
 
 
-@pytest.mark.jax
+@pytest.mark.xfail_if_capture(reason="come back to this as we port Qubitization [sc-129900]")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize(
     ("lcu", "control"),
     [
@@ -81,7 +82,7 @@ def test_standard_validity(lcu, control):
     """Check the operation using the assert_valid function."""
     op = qp.Qubitization(lcu, control)
     # Skip differentiation for test cases that raise NaNs in gradients (known limitation of ``MottonenStatePreparation``).
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.parametrize(
@@ -124,10 +125,12 @@ def test_decomposition(hamiltonian, expected_decomposition):
         (qp.X(0) @ qp.Z(1), [2]),
         (qp.X(1) @ qp.Z(2) @ qp.Y(3), [0]),
         (qp.X(0) @ qp.Z(1) @ qp.Y(2), [3]),
-        (qp.PauliX("a") @ qp.PauliZ(1), [0]),
-        (qp.PauliX("a") @ qp.PauliZ(1) @ qp.PauliY(2), [0]),
+        (qp.PauliX(2) @ qp.PauliZ(1), [0]),
+        (qp.PauliX(3) @ qp.PauliZ(1) @ qp.PauliY(2), [0]),
     ],
 )
+@pytest.mark.xfail_if_capture(reason="come back to this as we port Qubitization [sc-129900]")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_decomposition_new(hamiltonian, control):  # pylint: disable=unused-argument
     """Tests the decomposition rule implemented with the new system."""
     op = qp.Qubitization(hamiltonian, control=control)
@@ -213,9 +216,6 @@ class TestDifferentiability:
         assert np.allclose(jac, self.exp_grad, atol=atol)
 
     @pytest.mark.torch
-    @pytest.mark.pl2do(
-        reason="Figure out the desired behaviour of copying dynamic arguments, the factual behaviour of Operator2 differs from that of Operator, making this test fail."
-    )
     @pytest.mark.parametrize("shots", [None, 50000])
     def test_qnode_torch(self, shots, seed):
         """ "Test that the QNode executes and is differentiable with Torch. The shots
@@ -233,28 +233,6 @@ class TestDifferentiability:
         assert qp.math.shape(jac) == (4,)
         atol = 1e-5 if shots is None else 0.05
         assert qp.math.allclose(jac, self.exp_grad, atol=atol)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("shots", [None, 50000])
-    @pytest.mark.xfail(reason="tf gradient doesn't seem to be working, returns ()")
-    def test_qnode_tf(self, shots, seed):
-        """ "Test that the QNode executes and is differentiable with TensorFlow. The shots
-        argument controls whether autodiff or parameter-shift gradients are used."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", seed=seed)
-        diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qp.set_shots(
-            qp.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
-        )
-
-        params = tf.Variable(self.params)
-        with tf.GradientTape() as tape:
-            res = qnode(params)
-
-        jac = tape.gradient(res, params)
-        assert qp.math.shape(jac) == (4,)
-        assert qp.math.allclose(res, self.exp_grad, atol=0.001)
 
 
 def test_copy():

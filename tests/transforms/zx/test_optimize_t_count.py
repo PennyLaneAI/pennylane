@@ -220,3 +220,23 @@ class TestOptimizeTCount:
         prod = u1 @ np.conj(u2.T)
         glob_phase = prod[0, 0]
         assert np.allclose(prod, glob_phase * np.eye(2**num_wires))
+
+    @pytest.mark.parametrize("wires", ((0, 2, 1, 3), (2, 5), ("a", "c", "b")))
+    def test_preserves_wire_labels(self, wires):
+        """Test that noncanonical wire labels are restored after the ZX round trip."""
+        ops = [qp.H(wires[0]), qp.CNOT([wires[0], wires[1]]), qp.T(wires[1])]
+        for wire in wires[2:]:
+            ops.extend([qp.H(wire), qp.CNOT([wires[1], wire]), qp.T(wire)])
+
+        tape = QuantumScript(ops)
+        assert tuple(tape.wires) == wires
+
+        (transformed_tape,), _ = qp.transforms.zx.optimize_t_count(tape)
+
+        assert set(transformed_tape.wires).issubset(wires)
+
+        expected = qp.matrix(tape, wire_order=wires)
+        actual = qp.matrix(transformed_tape, wire_order=wires)
+        product = expected @ np.conj(actual.T)
+        global_phase = product[0, 0]
+        assert np.allclose(product, global_phase * np.eye(2 ** len(wires)))

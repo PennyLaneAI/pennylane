@@ -17,6 +17,7 @@ This module contains the commands for allocating and deallocating wires dynamica
 
 from collections.abc import Sequence
 from enum import StrEnum
+from numbers import Integral
 from typing import Literal
 
 from pennylane.capture import enabled as capture_enabled
@@ -128,7 +129,7 @@ class Deallocate(Operator):
         super().__init__(wires=wires)
 
 
-def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate:
+def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate | None:
     """Deallocates wires that have previously been allocated with :func:`~.allocate`.
     Upon deallocating, those wires is available to be allocated thereafter.
 
@@ -180,6 +181,8 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     1: ────╰X─╰X─╭SWAP─┤
     2: ──────────╰SWAP─┤
     """
+    if isinstance(wires, Sequence) and len(wires) == 0:
+        return None
     if capture_enabled():
         if not isinstance(wires, Sequence):
             wires = (wires,)
@@ -379,6 +382,9 @@ def allocate(
             "restored=True is not supported for magic state allocations "
             f"(state={state!r}). Magic states cannot be restored to their initial state."
         )
+    # Allocating nothing is a no-op: do not queue or bind ``Allocate``/``Deallocate``.
+    if isinstance(num_wires, Integral) and not isinstance(num_wires, bool) and num_wires == 0:
+        return DynamicRegister(())
     if capture_enabled():
         if is_abstract(num_wires):
             raise NotImplementedError(

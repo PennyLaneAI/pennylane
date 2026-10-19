@@ -216,7 +216,7 @@ class TestVar:
         expected = qp.math.cast(expected, "float64")
         var = qp.var(qp.I(0)).process_density_matrix(dm, wires)
         var = qp.math.cast(var, "float64")
-        atol = 1.0e-7 if (interface in ("torch", "tensorflow")) else 1.0e-8
+        atol = 1.0e-7 if interface == "torch" else 1.0e-8
         assert qp.math.allclose(var, expected, atol=atol), f"Expected {expected}, got {var}"
 
     @pytest.mark.all_interfaces

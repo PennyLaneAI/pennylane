@@ -21,9 +21,9 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import AbstractArray, Bool, Complex, Int, TensorLike, Wire
+from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
@@ -35,8 +35,35 @@ Args:
     d (int): Number of enumeration qubits, given by :math:`\lceil \log_2(D)\rceil` where :math:`D`
         is the number of Slater determinants populated in the state to be prepared.
     r (int): Number of bits required after reducing the state ``indices`` with ``select_sos_rows``.
-    m (int): Number of encoding qubits. Equals :math:`\min(2d-1, r)`.
+    m (int): Number of encoding qubits. Equals either :math:`2d-1` when compression is used or
+        :math:`r` when the identity encoding is used.
 """
+
+
+_COMPRESSION_PAIRWISE_ENTRY_LIMIT = 2**25
+"""
+Put a limit on the amount of work done by the compression optimization's pre-processing.
+This limit corresponds roughly to ~1GB peak memory usage:
+   2**25 (pairwise scalar entries) * 8 (size of int64) * 4 (overhead)
+
+The limit bounds the pairwise-difference arrays constructed by ``_find_single_w`` and
+``_find_ell``. The latter may perform the pairwise work repeatedly, so this limits peak memory
+but does not strictly bound total runtime.
+"""
+
+
+def _sos_encoding_size(r: int, D: int) -> int:
+    """Choose the encoding width, falling back to identity above the pairwise-entry limit."""
+    compressed_size = 2 * math.ceil_log2(D) - 1
+    if r <= compressed_size:
+        return r
+
+    # _find_single_w constructs one r-component difference vector for each unordered pair of
+    # bitstrings. This also upper-bounds the size of the pairwise constructions in _find_ell.
+    num_pairwise_entries = r * (D * (D - 1) // 2)
+    if num_pairwise_entries > _COMPRESSION_PAIRWISE_ENTRY_LIMIT:
+        return r
+    return compressed_size
 
 
 def _columns_differ(bits: np.ndarray) -> bool:
@@ -172,7 +199,7 @@ def select_sos_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
 
 def _find_ell(bits_basis: np.ndarray, set_M: np.ndarray, set_N: np.ndarray) -> np.ndarray:
     r"""Find replacement vector :math:`\ell` to construct lower-rank set of bit strings during
-    recursive computation of kernel space :math:`\mathcal{W}` in ``_get_w_vectors``.
+    iterative computation of kernel space :math:`\mathcal{W}` in ``_find_w``.
 
     In more general terms, we get as input a basis ``bits_basis``,
     a set ``set_M`` of bitstrings that are spanned by all but the last bitstring in that basis
@@ -292,7 +319,9 @@ def _find_single_w(bits):
 
 
 def _step_3_in_find_w(bits_basis, other_bits):
-    """Step 3 of _find_w, which is triggered when t=1 in the recursion but initially we had t>1."""
+    """Step 3 of _find_w, which finds the single remaining vector w_1 once all other basis
+    vectors have been peeled off iteratively (i.e. the reduced problem has t=1). Returns the
+    vector with shape ``(r,)``."""
     r = bits_basis.shape[0]
     all_bits = np.concatenate([bits_basis, other_bits], axis=1)
     # Compute set(V) ∪ (set(V) - set(V)). We will skip 0 by starting our search at 1 below
@@ -309,47 +338,62 @@ def _step_3_in_find_w(bits_basis, other_bits):
         w_bits_in_basis = math.int_to_binary(i, width=bits_basis.shape[1] - 1)
         w = (bits_basis[:, :-1] @ w_bits_in_basis) % 2
         if not np.any(np.all(w[:, None] == all_bitstrings_to_avoid, axis=0)):
-            return w[:, None]
+            return w
 
     raise ValueError("Unexpected exception: There should always be a w found.")  # pragma: no cover
 
 
 def _find_w(bits_basis, other_bits, t):
-    """Compute the kernel space W from the original bit strings, including a basis for their
+    r"""Compute the kernel space W from the original bit strings, including a basis for their
     column space. See the documentation of ``compute_sos_encoding`` for details.
+
+    The vectors :math:`\{w_k\}` are constructed iteratively: in each iteration we peel off the
+    last basis vector, reducing the problem from ``t`` to ``t-1``, and record one replacement
+    vector ``w_t``. This continues until a single vector ``w_1`` remains, which is found by brute
+    force in ``_step_3_in_find_w``. The recorded vectors are then assembled into ``W`` with
+    columns ordered as ``[w_1, w_2, ..., w_t]``.
     """
-    if t == 1:
-        # Step 3: brute-force search of a single vector w_1
-        return _step_3_in_find_w(bits_basis, other_bits)
+    # Vectors w_t, w_{t-1}, ..., w_1 collected in the order they are found, i.e. with decreasing
+    # index. They are reversed and stacked into W after the loop.
+    w_vectors = []
 
-    v_r = bits_basis[:, -1]
-    bits_without_v_r = np.concatenate([bits_basis[:, :-1], other_bits], axis=1)
+    # We peel off one basis vector per iteration, reducing the problem from t to t-1, until a
+    # single vector w_1 remains.
+    for _ in range(t - 1):
+        v_r = bits_basis[:, -1]
+        bits_without_v_r = np.concatenate([bits_basis[:, :-1], other_bits], axis=1)
 
-    # Step 4: Split the set of bitstrings into three sets:
-    #  - set_M <> \mathcal{M}
-    #  - v_r <> \{v_l\}
-    #  - set_N <> \mathcal{N}
-    indep_of_reduced_basis = np.array(
-        [math.binary_is_independent(vec, bits_basis[:, :-1]) for vec in bits_without_v_r.T]
-    )
+        # Step 4: Split the set of bitstrings into three sets:
+        #  - set_M <> \mathcal{M}
+        #  - v_r <> \{v_l\}
+        #  - set_N <> \mathcal{N}
+        indep_of_reduced_basis = math.binary_is_independent(bits_without_v_r, bits_basis[:, :-1])
 
-    # Note that the first t-1 columns of set_M are guaranteed to match bits_basis[:, :-1]
-    set_M = bits_without_v_r[:, np.where(~indep_of_reduced_basis)[0]]
-    set_N = bits_without_v_r[:, np.where(indep_of_reduced_basis)[0]]
+        # Note that the first columns of set_M are guaranteed to match bits_basis[:, :-1]
+        set_M = bits_without_v_r[:, ~indep_of_reduced_basis]
+        set_N = bits_without_v_r[:, indep_of_reduced_basis]
 
-    # Step 6: Brute-force search bitstring ell to replace v_l. Step 5 is included in _find_ell
-    ell = _find_ell(bits_basis, set_M, set_N)
+        # Step 6: Brute-force search bitstring ell to replace v_l. Step 5 is included in _find_ell
+        ell = _find_ell(bits_basis, set_M, set_N)
 
-    # Step 7: Compute new set sub_bits <> \mathcal{V}' of bitstrings in span of bits_basis[:, :-1]
-    #         and call _find_w recursively on the sub_bits to compute sub_W <> \mathcal{W}'
-    w_t = (v_r + ell) % 2
-    _set_N = (set_N + w_t[:, None]) % 2
-    sub_bits = np.concatenate([set_M, ell[:, None], _set_N], axis=1)
-    sub_W = _find_w(bits_basis[:, :-1], sub_bits[:, bits_basis.shape[1] - 1 :], t - 1)
+        # Step 7: Compute new set sub_bits <> \mathcal{V}' of bitstrings in span of
+        #         bits_basis[:, :-1], which is processed in the next iteration to find the next
+        #         replacement vector.
+        w_t = (v_r + ell) % 2
+        w_vectors.append(w_t)
+        _set_N = (set_N + w_t[:, None]) % 2
+        sub_bits = np.concatenate([set_M, ell[:, None], _set_N], axis=1)
 
-    # Step 8: Append the replacement vector w_t to sub_W
-    W = np.concatenate([sub_W, w_t[:, None]], axis=1)
-    return W
+        # Peel off the last basis vector and continue with the reduced problem.
+        other_bits = sub_bits[:, bits_basis.shape[1] - 1 :]
+        bits_basis = bits_basis[:, :-1]
+
+    # Step 3: brute-force search of the single remaining vector w_1
+    w_vectors.append(_step_3_in_find_w(bits_basis, other_bits))
+
+    # Step 8: Reverse back into increasing index order and stack the vectors as the columns of W,
+    #         i.e. ordered as [w_1, w_2, ..., w_t].
+    return np.stack(w_vectors[::-1], axis=1)
 
 
 def _find_U_from_W(W):
@@ -372,9 +416,11 @@ def _find_U_from_W(W):
 
 def compute_sos_encoding(bits):
     r"""Map :math:`D` different bitstrings of length :math:`r` to :math:`D` different
-    bitstrings :math:`b` of length :math:`m = \min(r, 2d-1)` where
-    :math:`d=\lceil\log_2(D)\rceil`. The function computes both the mapping :math:`U` and the
-    output bitstrings :math:`b`.
+    bitstrings :math:`b`. The encoding length is :math:`m = \min(r, 2d-1)` where
+    :math:`d=\lceil\log_2(D)\rceil`, unless the pairwise-difference construction would result
+    in an unreasonable runtime and/or memory requirement, in which case the identity encoding with
+    :math:`m=r` is used. The function computes both the mapping :math:`U` and the output
+    bitstrings :math:`b`.
     This algorithm forms the constructive proof of Lemma 1 in
     `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
     It is the main classical coprocessing step required for the sparse state preparation
@@ -387,9 +433,8 @@ def compute_sos_encoding(bits):
 
     Returns:
         tuple[np.ndarray]: Two bit arrays. The first is :math:`U`, which maps the input ``bits``
-        to :math:`D` distinct bitstrings :math:`\{b_i\}` of length :math:`\min(r, m)`, where
-        :math:`m=2\lceil \log_2(D)\rceil-1`. The second array are the bitstrings
-        :math:`\{b_i\}` themselves, stored as columns.
+        to :math:`D` distinct bitstrings :math:`\{b_i\}` of length :math:`m`. The second array
+        are the bitstrings :math:`\{b_i\}` themselves, stored as columns.
 
     .. warning::
 
@@ -397,6 +442,13 @@ def compute_sos_encoding(bits):
         work with a reduced input here.
         Furthermore, this function assumes that the bitstrings are not overly redundant, so
         that it might error out if ``select_sos_rows`` is not used.
+
+    .. note::
+
+        Compression constructs collections of pairwise differences with quadratic scaling in
+        the number of bitstrings. If they contain more than ~32 million scalar entries, a
+        conservative proxy for approximately 1 GiB of peak memory, this function returns the
+        identity encoding instead.
 
     .. seealso:: :func:`~.select_sos_rows`
 
@@ -558,7 +610,7 @@ def compute_sos_encoding(bits):
 
         **Case 2b:** :math:`t>1`
 
-        If :math:`t>1`, we recursively construct the :math:`\{w_k\}`, which is implemented in
+        If :math:`t>1`, we iteratively construct the :math:`\{w_k\}`, which is implemented in
         ``_find_w``.
         We proceed in the following steps, thinking of ordered sets whenever we speak of sets.
 
@@ -568,8 +620,8 @@ def compute_sos_encoding(bits):
            the indices :math:`\{1,\dots, r\}`, i.e. the basis is :math:`\mathcal{B}=\{v_1,\dots,v_r\}`.
            This is implemented in ``qp.math.binary_select_basis``, which returns the basis and
            the remaining columns separately. This step will only ever be executed once.
-        2. If :math:`t=1` (which can happen despite :math:`t>1` initially, because we will use
-           recursion), go to step 3. Else go to step 4.
+        2. If :math:`t=1` (which can happen despite :math:`t>1` initially, because we reduce
+           :math:`t` by one in each iteration), go to step 3. Else go to step 4.
         3. Brute-force search a linear combination :math:`w_1` of the basis vectors
            :math:`\mathcal{B}` that is not contained in the set
            :math:`\mathcal{V}\cup(\mathcal{V}-\mathcal{V})\cup \{0\}`, where the set difference
@@ -608,10 +660,10 @@ def compute_sos_encoding(bits):
         as rows. The same is true for case 2b), where we only had to compute a single :math:`w_1`.
     """
     r, D = bits.shape
-    d = math.ceil_log2(D)
-    m = 2 * d - 1
-    if r <= m:
-        # Case 1: We can use the identity mapping
+    m = _sos_encoding_size(r, D)
+    if r == m:
+        # Case 1: We can use the identity mapping, either because compression is unnecessary or
+        # because it would require unreasonable classical processing by the brute force impl below.
         U = np.eye(r, dtype=int)
         return U, bits
 
@@ -670,8 +722,8 @@ class SumOfSlatersPrep(Operator2):
             the enumeration register with multicontrolled bit flips.
             The required number of qubits depends on the particular ``indices`` of the sparse state,
             but it is at most :math:`2d-2` for :math:`d` entries in the state.
-        indices (tuple[int]): Indices of the sparse state to prepare. The ordering should match
-            that in ``coefficients``.
+        indices (tuple[int] | None): Indices of the sparse state to prepare. The ordering should match
+            that in ``coefficients``. ``None`` indicates unknown indices for the purposes of resource estimation.
 
     The sizes for the numerous optional work wire registers can be computed with
     ``SumOfSlatersPrep.required_register_sizes(indices, wires)``.
@@ -712,7 +764,7 @@ class SumOfSlatersPrep(Operator2):
         first_free_wire = max(wires)+1
 
         @qp.transforms.resolve_dynamic_wires(min_int=first_free_wire)
-        @qp.decompose(gate_set=gate_set, num_work_wires=14)
+        @qp.transforms._tape_decompose(gate_set=gate_set, num_work_wires=14)
         @qp.qnode(qp.device("lightning.qubit", wires=21))
         def circuit():
             qp.SumOfSlatersPrep(coefficients, wires, indices)
@@ -800,7 +852,7 @@ class SumOfSlatersPrep(Operator2):
             first_free_wire = max(wires)+1
 
             @qp.transforms.resolve_dynamic_wires(min_int=first_free_wire)
-            @qp.decompose(gate_set=gate_set, num_work_wires=11)
+            @qp.transforms._tape_decompose(gate_set=gate_set, num_work_wires=11)
             @qp.qnode(qp.device("lightning.qubit", wires=16))
             def circuit():
                 qp.SumOfSlatersPrep(coefficients, wires, indices)
@@ -905,24 +957,26 @@ class SumOfSlatersPrep(Operator2):
         "mcx_cache_wires",
     )
     compilable_argnames = ("indices",)
-    arg_specs = {"coefficients": Complex[-1], "wires": Wire[-1]}
+    # NOTE: 'coefficients' is deliberately left out of the 'arg_specs' as real-valued
+    # coefficients lead to a cheaper MultiplexerStatePreparation than complex-valued ones.
+    arg_specs = {"wires": Wire[-1]}
 
     # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         coefficients: TensorLike,
         wires: WiresLike,
-        indices: tuple,
+        indices: tuple | None,
         enumeration_wires: WiresLike = (),
         identification_wires: WiresLike = (),
         qrom_work_wires: WiresLike = (),
         mcx_cache_wires: WiresLike = (),
     ):
         n = 1 if isinstance(wires, int) else len(wires)
-        num_entries = len(indices)
-        v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
+        num_entries = coefficients.shape[0]
 
-        if num_entries != 1:
+        if num_entries != 1 and indices is not None:
+            v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
             _, data = _preprocess(v_bits, wires)
 
             # pylint: disable-next=protected-access
@@ -1026,7 +1080,7 @@ class SumOfSlatersPrep(Operator2):
             }
 
         d = math.ceil_log2(num_entries)
-        m = min(num_bits, 2 * d - 1)
+        m = _sos_encoding_size(num_bits, num_entries)
         if num_bits <= m:
             # Identity encoding. We do not need the identification register but can use the
             # (subselection of) system wires directly
@@ -1047,13 +1101,32 @@ class SumOfSlatersPrep(Operator2):
     def _required_register_sizes_abstract(num_entries: int, num_wires: int) -> dict:
         """Compute the upper bound of the required register sizes, if only the number of
         basis states, but not the concrete states to be prepared, is known."""
+        if num_entries == 1:
+            return {
+                "wires": num_wires,
+                "enumeration_wires": 0,
+                "identification_wires": 0,
+                "qrom_work_wires": 0,
+                "mcx_cache_wires": 0,
+            }
+
         d = math.ceil_log2(num_entries)
+        compressed_size = 2 * d - 1
+        # The reduced encoding width r is unknown, but is at most the smaller of the number of
+        # target wires and entries. Evaluate both register bounds across that full range.
+        max_num_bits = min(num_wires, num_entries)
+        max_encoding_size = _sos_encoding_size(max_num_bits, num_entries)
+        min_compressible_size = compressed_size + 1
+        compression_possible = (
+            max_num_bits >= min_compressible_size
+            and _sos_encoding_size(min_compressible_size, num_entries) == compressed_size
+        )
         return {
             "wires": num_wires,
             "enumeration_wires": d,
-            "identification_wires": 2 * d - 1,
+            "identification_wires": compressed_size if compression_possible else 0,
             "qrom_work_wires": d - 1,
-            "mcx_cache_wires": 2 * d - 2,
+            "mcx_cache_wires": max_encoding_size - 1,
         }
 
 
@@ -1073,19 +1146,20 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     if num_entries == 1:
         return {qp.BasisState(Bool[num_wires], Wire[num_wires]): 1}
     d = math.ceil_log2(num_entries)
-    m = min(num_bits, 2 * d - 1)
+    m = _sos_encoding_size(num_bits, num_entries)
 
     identity_encoding = num_bits == m
 
     resources = defaultdict(int)
 
     # Step 1 in paper (p.7)
-    resources[qp.MultiplexerStatePreparation(Complex[2**d], wires=Wire[d])] += 1
+    state_type, _ = math.get_abstract_and_cast_dtype(coefficients)
+    resources[qp.MultiplexerStatePreparation(state_type[2**d], wires=Wire[d])] += 1
 
     # Step 2 in paper (p.7)
     resources[
         qp.QROM(
-            bitstrings=Int[num_entries, num_wires],
+            bitstrings=Bool[num_entries, num_wires],
             control_wires=Wire[d],
             target_wires=Wire[num_wires],
             work_wires=Wire[d - 1],
@@ -1129,6 +1203,9 @@ def _sos_state_prep_work_wires(
     **_,
 ):
     """See SumOfSlatersPrep.required_register_sizes for details."""
+    if indices is None:
+        # invalid rule, just return so we dont get an error
+        return {}
     # pylint: disable-next=protected-access
     n = 1 if isinstance(wires, int) else len(wires)
     v_bits = math.int_to_binary(np.array(indices), n).T
@@ -1156,16 +1233,29 @@ def _preprocess(v_bits, wires):
     # if selector_ids has length r, vtilde_bits has shape (r, num_entries)
     selector_ids, vtilde_bits = select_sos_rows(v_bits)
     selected_wires = [wires[idx] for idx in selector_ids]
-    # u_bits has shape (2d-1, r), b_bits has shape (2d-1, num_entries)
+    # u_bits has shape (m, r), b_bits has shape (m, num_entries)
     u_bits, b_bits = compute_sos_encoding(vtilde_bits)
 
     r = len(vtilde_bits)
     d = math.ceil_log2(num_entries)
-    m = min(r, 2 * d - 1)
+    m = u_bits.shape[0]
     assert u_bits.shape == (m, r), f"{u_bits.shape=}, {(m, r)=}"
     assert b_bits.shape == (m, num_entries)
 
     return selected_wires, SoSData(u_bits, b_bits, d, r, m)
+
+
+def _pad_and_cast_coeffs(coefficients, enumeration_wires):
+    """Pad coefficients into a vector of sizes ``2**len(enumeration_wires)``, because
+    ``MultiplexerStatePreparation`` expects a full-dimensional input vector.
+    Also casts to the dtype consistent with the input dtype of coefficients and the reported
+    dtype in the resource function."""
+    missing_dim = 2 ** len(enumeration_wires) - len(coefficients)
+    _, cast_dtype = math.get_abstract_and_cast_dtype(coefficients)
+    zeros = qp.math.cast_like(qp.math.zeros(missing_dim), coefficients)
+    interface = qp.math.get_interface(coefficients)
+    coefficients = qp.math.concatenate([coefficients, zeros], like=interface)
+    return qp.math.cast(coefficients, cast_dtype)
 
 
 def _sos_state_prep_with_wires(
@@ -1185,12 +1275,8 @@ def _sos_state_prep_with_wires(
     num_entries = v_bits.shape[1]
 
     # Step 1: Dense state preparation in enumeration register
-    missing_dim = 2 ** len(enumeration_wires) - len(coefficients)
-    coefficients = qp.math.concatenate(
-        [coefficients, qp.math.cast_like(qp.math.zeros(missing_dim), coefficients)],
-        like=qp.math.get_interface(coefficients),
-    )
-    qp.MultiplexerStatePreparation(coefficients, wires=enumeration_wires)
+    padded_coefficients = _pad_and_cast_coeffs(coefficients, enumeration_wires)
+    qp.MultiplexerStatePreparation(padded_coefficients, wires=enumeration_wires)
 
     # Step 2 in paper (p.7): QROM to load v_bits into system register
     qp.QROM(
@@ -1226,13 +1312,16 @@ def _sos_state_prep_with_wires(
         # Step 3-4) in paper (p.7): Encode the b_bits from Lemma 1 in the identification
         # register. Note that we skip this step if identity_encoding=True, because the encoding
         # is trivial in this case. This is an additional optimization compared to the paper.
+        # Across all iterations, one CNOT is applied per set bit in u_bits.
+        encoding_cnot = qp.hint(qp.CNOT, {"branch-prob": np.mean(data.u_bits)})
+
         @for_loop(data.m)
         def encoding(i):
             u = u_bits[i]
 
             @for_loop(data.r)
             def inner_loop(j):
-                qp.cond(u[j], qp.CNOT)([selected_wires[j], identification_wires[i]])
+                qp.cond(u[j], encoding_cnot)([selected_wires[j], identification_wires[i]])
 
             inner_loop()
 
@@ -1242,19 +1331,30 @@ def _sos_state_prep_with_wires(
     def left_elbow_ladder(i):
         qp.TemporaryAND(elbow_triples[i])
 
+    # Across all k > 0, one CNOT is applied per set bit in k.
+    enumeration_cnot = qp.hint(
+        qp.CNOT,
+        {"branch-prob": np.mean(qp.math.int_to_binary(np.arange(1, num_entries), data.d))},
+    )
+
     @for_loop(data.d)
     def cnot_loop(j, k):
         bit_is_set = (k >> (data.d - 1 - j)) & 1
-        qp.cond(bit_is_set, qp.CNOT)([cnot_control_wire, enumeration_wires[j]])
+        qp.cond(bit_is_set, enumeration_cnot)([cnot_control_wire, enumeration_wires[j]])
         return k
 
     @for_loop(data.m - 2, -1, -1)
     def right_elbow_ladder(i):
         qp.adjoint(qp.TemporaryAND(elbow_triples[i]))
 
+    # Across all k > 0, the flipped bits are data.b_bits[:, k] ^ prev_bits, where prev_bits
+    # is data.b_bits[:, k - 1], or all ones for k = 1.
+    prev_bits = np.concatenate([np.ones((data.m, 1), dtype=int), data.b_bits[:, 1:-1]], axis=1)
+    flip_x = qp.hint(qp.X, {"branch-prob": np.mean(data.b_bits[:, 1:] ^ prev_bits)})
+
     @for_loop(data.m)
     def flip(i, bits_to_flip):
-        qp.cond(bits_to_flip[i], qp.X)(mcx_ctrl_wires[i])
+        qp.cond(bits_to_flip[i], flip_x)(mcx_ctrl_wires[i])
         return bits_to_flip
 
     # Start the for loop at 1 because we don't need to do anything for 0 anyway
@@ -1271,9 +1371,11 @@ def _sos_state_prep_with_wires(
 
     last_bits = uncompute_enumeration(np.ones(data.m, dtype=int))
 
+    last_flip_x = qp.hint(qp.X, {"branch-prob": np.mean(1 - data.b_bits[:, -1])})
+
     @for_loop(data.m)
     def last_flip(i):
-        qp.cond(1 - last_bits[i], qp.X)(mcx_ctrl_wires[i])
+        qp.cond(1 - last_bits[i], last_flip_x)(mcx_ctrl_wires[i])
 
     last_flip()
 
@@ -1282,6 +1384,9 @@ def _sos_state_prep_with_wires(
         encoding()
 
 
+@register_condition(
+    lambda coefficients, wires, indices, *_, **__: indices is not None
+)  # indices must be known
 @register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
 # pylint: disable-next=too-many-arguments
 def _sos_state_prep(
@@ -1314,41 +1419,30 @@ def _sos_state_prep(
     sizes = SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, data.r, n)
     all_allocate_wires = sum(sizes.values()) - n - num_enum - num_id - num_qrom - num_mcx
 
-    if all_allocate_wires > 0:
-        with allocate(all_allocate_wires, state="zero", restored=True) as allocated:
-            start = 0
-            # There is no implementation of QROM with allocate yet, so we allocate its work wires here
-            all_wires = {}
+    with allocate(all_allocate_wires, state="zero", restored=True) as allocated:
+        start = 0
+        # There is no implementation of QROM with allocate yet, so we allocate its work wires here.
+        # ``allocate(0)`` records nothing when every register was already provided.
+        all_wires = {}
 
-            def _allocate_conditionally(wires_arg, name, start):
-                if sizes[name] == 0:
-                    all_wires[name] = []
-                if len(wires_arg) > 0:
-                    all_wires[name] = wires_arg
-                else:
-                    all_wires[name] = allocated[start : (start := start + sizes[name])]
-                return start
+        def _allocate_conditionally(wires_arg, name, start):
+            if sizes[name] == 0:
+                all_wires[name] = []
+            if len(wires_arg) > 0:
+                all_wires[name] = wires_arg
+            else:
+                all_wires[name] = allocated[start : (start := start + sizes[name])]
+            return start
 
-            start = _allocate_conditionally(enumeration_wires, "enumeration_wires", start)
-            start = _allocate_conditionally(identification_wires, "identification_wires", start)
-            start = _allocate_conditionally(qrom_work_wires, "qrom_work_wires", start)
-            start = _allocate_conditionally(mcx_cache_wires, "mcx_cache_wires", start)
+        start = _allocate_conditionally(enumeration_wires, "enumeration_wires", start)
+        start = _allocate_conditionally(identification_wires, "identification_wires", start)
+        start = _allocate_conditionally(qrom_work_wires, "qrom_work_wires", start)
+        start = _allocate_conditionally(mcx_cache_wires, "mcx_cache_wires", start)
 
-            all_wires["wires"] = wires
-            all_wires["selected_wires"] = selected_wires
-            data = (coefficients, v_bits, data)
-            _sos_state_prep_with_wires(data, **all_wires)  # pylint: disable=missing-kwoa
-    else:
-        all_wires = {
-            "enumeration_wires": enumeration_wires,
-            "identification_wires": identification_wires,
-            "qrom_work_wires": qrom_work_wires,
-            "mcx_cache_wires": mcx_cache_wires,
-            "wires": wires,
-            "selected_wires": selected_wires,
-        }
+        all_wires["wires"] = wires
+        all_wires["selected_wires"] = selected_wires
         data = (coefficients, v_bits, data)
-        _sos_state_prep_with_wires(data, **all_wires)
+        _sos_state_prep_with_wires(data, **all_wires)  # pylint: disable=missing-kwoa
 
 
 add_decomps(SumOfSlatersPrep, _sos_state_prep)

@@ -19,10 +19,10 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_OutAdder():
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1]
@@ -31,7 +31,7 @@ def test_standard_validity_OutAdder():
     mod = 7
     work_wires = [6, 7]
     op = qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestOutAdder:
@@ -218,6 +218,8 @@ class TestOutAdder:
         for op1, op2 in zip(adder_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
+    @pytest.mark.xfail_if_capture(reason="Needs PhaseAdder to be Op2 [sc-130164]", strict=False)
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("mod", [7, 8])
     def test_decomposition_new(self, mod):
         """Tests the decomposition rule implemented with the new system."""

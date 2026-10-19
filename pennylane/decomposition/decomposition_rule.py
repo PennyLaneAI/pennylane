@@ -22,7 +22,7 @@ from collections.abc import Callable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
-from functools import singledispatch
+from functools import partial, singledispatch, update_wrapper
 from textwrap import dedent
 from typing import overload
 
@@ -213,7 +213,7 @@ def register_resources(
             qp.CZ(wires=wires)
             qp.H(wires=wires[1])
 
-        @qp.decompose(gate_set={qp.CZ, qp.H}, fixed_decomps={qp.CNOT: my_cnot})
+        @qp.transforms._tape_decompose(gate_set={qp.CZ, qp.H}, fixed_decomps={qp.CNOT: my_cnot})
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.CNOT(wires=[0, 1])
@@ -317,7 +317,7 @@ def register_resources(
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
 
-          @qp.decompose(fixed_decomps=decomps, num_work_wires=1)
+          @qp.transforms._tape_decompose(fixed_decomps=decomps, num_work_wires=1)
           @qp.qnode(qp.device("default.qubit"))
           def circuit():
               qp.ctrl(qp.Rot(0.1, 0.2, 0.3, wires=3), control=[0, 1, 2])
@@ -363,6 +363,7 @@ class DecompositionRule:
         name: str = "",
     ):
 
+        update_wrapper(self, func)
         self._impl = func
 
         try:
@@ -417,7 +418,16 @@ class DecompositionRule:
             _verify_is_abstract_and_fixed(op)
             if count > 0:
                 gate_counter.update({op: count})
-        return Resources(dict(gate_counter))
+
+        gate_counter = dict(gate_counter)
+        if qp.capture.enabled():
+            # When capture is enabled, ChangeOpBasis is unrolled. The resource functions are
+            # typically not aware of that, and still produce resource reps of ChangeOpBasis.
+            # Therefore, we unroll the ChangeOpBasis in the resources manually so that it will
+            # match what the decomposition rule actually produces.
+            gate_counter = _unroll_change_op_basis(gate_counter)
+
+        return Resources(gate_counter)
 
     def is_applicable(self, *args, **kwargs) -> bool:
         """Checks whether this decomposition rule is applicable."""
@@ -563,14 +573,14 @@ class DecompCollection:
 
     def append(self, rule: DecompositionRule):
         """Add a decomposition rule to the collection."""
-        if rule.name in self._decomps:
+        if rule.name in self._decomps and rule is not self._decomps[rule.name]:
             raise ValueError(f"A decomposition of the name: {rule.name} already exists!")
         self._decomps[rule.name] = rule
 
     def extend(self, rules: DecompCollection | Sequence[DecompositionRule]):
         """Add a sequence of decomposition rules to the collection."""
-        if dup_name := next((rule.name for rule in rules if rule.name in self), None):
-            raise ValueError(f"A decomposition of the name: {dup_name} already exists!")
+        if dup := next((r.name for r in rules if r.name in self and r is not self[r.name]), None):
+            raise ValueError(f"A decomposition of the name: {dup} already exists!")
         decomps = rules if isinstance(rules, DecompCollection) else DecompCollection(rules)
         self._decomps |= decomps._decomps  # pylint: disable=protected-access
 
@@ -594,6 +604,11 @@ _fixed_decomps_private = {}
 """dict[str, DecompositionRule]: A dictionary mapping operators a unique decomposition rule."""
 
 _fixed_decomps_var = ContextVar("_fixed_decomps", default=_fixed_decomps_private)
+
+_excluded_decomps_private = {}
+"""dict[str, frozenset[str]]: A dictionary mapping operator names to excluded rule names."""
+
+_excluded_decomps_var = ContextVar("_excluded_decomps", default=_excluded_decomps_private)
 
 
 def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
@@ -673,6 +688,13 @@ def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: Decompositi
 
 
 @singledispatch
+def _list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
+    """Returns the full list of decomposition rules before being filtered."""
+    if fixed_rule := get_fixed_decomp(op):
+        return DecompCollection([fixed_rule])
+    return _decompositions_var.get()[to_name(op)].copy()
+
+
 def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     """Lists all stored decomposition rules for an operator class.
 
@@ -730,9 +752,95 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
-    if fixed_rule := get_fixed_decomp(op):
-        return DecompCollection([fixed_rule])
-    return _decompositions_var.get()[to_name(op)].copy()
+    decomps = _list_decomps(op)
+    excluded_rules = _excluded_decomps_var.get()
+    if excluded := excluded_rules.get(to_name(op)):
+        return DecompCollection([rule for rule in decomps if rule.name not in excluded])
+    return decomps
+
+
+class _DecompExclusion:
+    """The exclusion of decomposition rules, which is undone when used as a context manager."""
+
+    def __init__(self, op_name: str, names: frozenset[str]) -> None:
+        self._op_name = op_name
+        self._names = names
+
+    def __enter__(self) -> None:
+        pass
+
+    def __exit__(self, *_) -> None:
+        all_excluded = _excluded_decomps_var.get()
+        remaining = all_excluded.get(self._op_name, frozenset()) - self._names
+        _excluded_decomps_var.set(all_excluded | {self._op_name: remaining})
+
+
+def exclude_decomps(op: type[Operator] | Operator | str, *names: str) -> _DecompExclusion:
+    """Excludes decomposition rules of an operator by name.
+
+    Excluded rules are not removed from the registry. They are hidden from :func:`~pennylane.list_decomps`,
+    and are therefore not considered by the graph-based decomposition system. When used as a
+    context manager, the rules are excluded only within the context. This function is thread-safe.
+
+    Args:
+        op (type or Operator or str): the operator type to exclude decomposition rules for.
+            For symbolic operators, use strings like ``"Adjoint(RY)"``, ``"C(RX)"``, etc.
+        *names (str): the names of the decomposition rules to exclude. Each name must be one of
+            the rules listed by :func:`~pennylane.list_decomps` for ``op``. To exclude rules that
+            are generated for specific operator instances, pass an instance as ``op``.
+
+    Raises:
+        TypeError: if a name is not a string, e.g., a ``DecompositionRule`` instance.
+        ValueError: if no decomposition rule with a given name exists for ``op``.
+
+    .. seealso:: :func:`~pennylane.list_decomps` and :func:`~pennylane.decomposition.local_decomps`
+
+    **Example**
+
+    When used as a context manager, the rules are excluded only within the context:
+
+    >>> with qp.exclude_decomps(qp.CRX, "_crx_to_ppr", "_crx_to_h_crz"):
+    ...     print(qp.list_decomps(qp.CRX))
+    Available Decomposition Rules:
+    0: _crx_to_rx_cz
+    1: _crx_to_rz_ry
+    >>> print(qp.list_decomps(qp.CRX))
+    Available Decomposition Rules:
+    0: _crx_to_rx_cz
+    1: _crx_to_rz_ry
+    2: _crx_to_h_crz
+    3: _crx_to_ppr
+
+    Otherwise, the rules remain excluded for the rest of the session, or until the enclosing
+    :func:`~pennylane.decomposition.local_decomps` context exits:
+
+    .. code-block:: python
+
+        with qp.decomposition.local_decomps():
+            qp.exclude_decomps(qp.CRX, "_crx_to_ppr")
+            assert "_crx_to_ppr" not in qp.list_decomps(qp.CRX)
+
+        assert "_crx_to_ppr" in qp.list_decomps(qp.CRX)
+
+    """
+    op_name = to_name(op)
+
+    if invalid := [name for name in names if not isinstance(name, str)]:
+        raise TypeError(
+            "Decomposition rules must be excluded by name, e.g. rule.name for a "
+            f"DecompositionRule, got {invalid[0]!r}."
+        )
+    available = [rule.name for rule in _list_decomps(op)]
+    if missing := [name for name in names if name not in available]:
+        raise ValueError(
+            f"Cannot find a decomposition rule named '{missing[0]}' for {op_name}. "
+            f"Available decomposition rules: {available}."
+        )
+
+    all_excluded = _excluded_decomps_var.get()
+    already_excluded = all_excluded.get(op_name, frozenset())
+    _excluded_decomps_var.set(all_excluded | {op_name: already_excluded | frozenset(names)})
+    return _DecompExclusion(op_name, frozenset(names) - already_excluded)
 
 
 def has_decomp(op: type[Operator] | Operator | str) -> bool:
@@ -774,11 +882,15 @@ def local_decomps():
     _new_fixed_decomps = _fixed_decomps_var.get().copy()
     token_fixed_decomps = _fixed_decomps_var.set(_new_fixed_decomps)
 
+    # Handle the registry of excluded decomposition rules.
+    token_excluded_decomps = _excluded_decomps_var.set(_excluded_decomps_var.get().copy())
+
     try:
         yield
     finally:
         _decompositions_var.reset(token_all_decomps)
         _fixed_decomps_var.reset(token_fixed_decomps)
+        _excluded_decomps_var.reset(token_excluded_decomps)
 
 
 def _fix_decomp(op: type[Operator] | Operator | str, rule: DecompositionRule):
@@ -1090,7 +1202,7 @@ def null_decomp(*_, **__):
 
         qp.decomposition.enable_graph()
 
-        @qp.decompose(
+        @qp.transforms._tape_decompose(
             gate_set={qp.RZ},
             fixed_decomps={qp.GlobalPhase: null_decomp}
         )
@@ -1109,6 +1221,9 @@ def _is_abstract_and_fixed(val, is_leaf=False):
     """Checks whether `val` is (or only contains) abstract data of fixed shapes."""
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val.shape_fixed
+    if isinstance(val, CompressedResourceOp):
+        # Legacy resource representations are valid, fully-abstract resource leaves.
+        return True
     if is_leaf:
         # This branch is added as a precaution to avoid infinite recursion, but this should
         # never actually happen, because we always call `abstractify` first to fully abstractify
@@ -1144,3 +1259,96 @@ def _decomp_contains_mcm(rule, params):
         return False
     resources = rule.compute_resources(**params).gate_counts
     return any(_is_measurement(resource_op) for resource_op in resources)
+
+
+def _unroll_change_op_basis(gate_counts):
+    """Unroll ChangeOpBasis resource keys, including those inside symbolic operators.
+
+    ``ChangeOpBasis`` is unrolled into its compute/target/uncompute operands when program
+    capture is enabled. Resource functions call this on their returned gate-count dict so that
+    the estimate matches the captured decomposition.
+    """
+    new_gate_counts = defaultdict(int)
+    for op_rep, count in gate_counts.items():
+        for unrolled_rep, inner_count in _unroll_change_op_basis_resource(op_rep).items():
+            new_gate_counts[unrolled_rep] += count * inner_count
+    return new_gate_counts
+
+
+def _unroll_change_op_basis_resource(op_rep):
+    """Expand a single resource key that is (or wraps) a ChangeOpBasis.
+
+    Keys that do not involve a ChangeOpBasis are returned unchanged as ``{op_rep: 1}``.
+    """
+    operands = _change_op_basis_operands(op_rep)
+    if operands is not None:
+        gate_counts = defaultdict(int)
+        for operand in operands:
+            for inner_op, count in _unroll_prod_operand(operand).items():
+                gate_counts[inner_op] += count
+        return gate_counts
+
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+    from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+
+    if isinstance(op_rep, qp.ops.Adjoint2):
+        return _unroll_symbolic_change_op_basis(op_rep, _adjoint_abstract)
+
+    if isinstance(op_rep, qp.ops.ControlledOp2):
+        wrapper = partial(
+            _ctrl_abstract,
+            control_wires=op_rep.control_wires,
+            work_wires=op_rep.work_wires,
+            work_wire_type=op_rep.work_wire_type,
+        )
+        return _unroll_symbolic_change_op_basis(op_rep, wrapper)
+
+    return {op_rep: 1}
+
+
+def _change_op_basis_operands(op_rep):
+    """Return ``(compute_op, target_op, uncompute_op)`` for a ChangeOpBasis resource key.
+
+    Handles both a native :class:`~.ChangeOpBasis2` and a legacy ``CompressedResourceOp``
+    wrapping :class:`~.ChangeOpBasis`. Returns ``None`` for any other resource key.
+    """
+    if isinstance(op_rep, qp.ops.ChangeOpBasis2):
+        return op_rep.compute_op, op_rep.target_op, op_rep.uncompute_op
+    if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.ChangeOpBasis:
+        params = op_rep.params
+        return params["compute_op"], params["target_op"], params["uncompute_op"]
+    return None
+
+
+def _unroll_prod_operand(operand):
+    """Expand a Prod-like ChangeOpBasis operand into its inner resource keys with counts."""
+
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+
+    if isinstance(operand, qp.ops.Prod2):
+        counts = defaultdict(int)
+        for inner_op in operand.operands:
+            counts[inner_op] += 1
+        return dict(counts)
+    if isinstance(operand, qp.ops.Adjoint):
+        counts = defaultdict(int)
+        for inner_op, inner_count in _unroll_prod_operand(operand.base).items():
+            counts[_adjoint_abstract(inner_op)] += inner_count
+        return dict(counts)
+    if isinstance(operand, CompressedResourceOp) and operand.op_type is qp.ops.Prod:
+        return dict(operand.params["resources"])
+    return {operand: 1}
+
+
+def _unroll_symbolic_change_op_basis(op_rep, wrapper):
+    """Unroll a ChangeOpBasis nested in a single symbolic resource key and reapply its wrapper."""
+    unrolled_base = _unroll_change_op_basis_resource(op_rep.base)
+    if unrolled_base == {op_rep.base: 1}:
+        return {op_rep: 1}
+
+    gate_counts = defaultdict(int)
+    for base_rep, count in unrolled_base.items():
+        gate_counts[wrapper(base_rep)] += count
+    return gate_counts

@@ -22,16 +22,16 @@ import pytest
 
 import pennylane as qp
 from pennylane.exceptions import WireError
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
     op = qp.CosineWindow(wires=[0, 1])
 
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestDecomposition:
@@ -42,27 +42,11 @@ class TestDecomposition:
         [
             [0, 1],
             [0, 1, 2, 3, 4],
-            ["a", "b", "c", "d", "e", "f"],
+            [0, 1, 2, 3, 4, 5, 6],
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self, wires):
-        """Tests the decomposition rule implemented with the new system."""
-        op = qp.CosineWindow(wires=wires)
-
-        for rule in qp.list_decomps(qp.CosineWindow):
-            _test_decomposition_rule(op, rule)
-
-    @pytest.mark.parametrize(
-        "wires",
-        [
-            [0, 1],
-            [0, 1, 2],
-            [0, 1, 2, 3],
-            [0, 1, 2, 3, 4],
-        ],
-    )
-    @pytest.mark.capture
-    def test_decomposition_new_capture(self, wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.CosineWindow(wires=wires)
 

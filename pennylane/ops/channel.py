@@ -346,11 +346,6 @@ class DepolarizingChannel(Channel):
         if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
-        if (
-            np.get_interface(p) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = np.cast_like(p, 1j)
-
         K0 = np.sqrt(1 - p + _SQRT_STABILITY_EPS) * np.convert_like(np.eye(2, dtype=complex), p)
         K1 = np.sqrt(p / 3 + _SQRT_STABILITY_EPS) * np.convert_like(
             np.array([[0, 1], [1, 0]], dtype=complex), p
@@ -659,7 +654,7 @@ class PauliError(Channel):
         )
 
         interface = np.get_interface(p)
-        if interface == "tensorflow" or "Y" in operators:
+        if "Y" in operators:
             if interface == "numpy":
                 p = (1 + 0j) * p
             else:
@@ -822,16 +817,14 @@ class QubitChannel(Channel):
         return list(kraus_matrices)
 
 
-# The primitive will be None if jax is not installed in the environment
-# If defined, we need to update the implementation to repack matrices
-# See capture module for more information
-if QubitChannel._primitive is not None:  # pylint: disable=protected-access
+# Update the implementation to repack matrices. See capture module for more information.
 
-    @QubitChannel._primitive.def_impl  # pylint: disable=protected-access
-    def _(*args, n_wires):
-        K_list = args[:-n_wires]
-        wires = args[-n_wires:]
-        return type.__call__(QubitChannel, K_list, wires=wires)
+
+@QubitChannel._primitive.def_impl  # pylint: disable=protected-access
+def _(*args, n_wires):
+    K_list = args[:-n_wires]
+    wires = args[-n_wires:]
+    return type.__call__(QubitChannel, K_list, wires=wires)
 
 
 class ThermalRelaxationError(Channel):

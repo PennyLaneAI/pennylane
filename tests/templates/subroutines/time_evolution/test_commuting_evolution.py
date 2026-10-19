@@ -21,10 +21,10 @@ from scipy.linalg import expm
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard tests of operation validity."""
     H = 2.0 * qp.PauliX(0) @ qp.PauliY(1) + 3.0 * qp.PauliY(0) @ qp.PauliZ(1)
@@ -32,7 +32,7 @@ def test_standard_validity():
     frequencies = (2, 4)
     shifts = (1, 0.5)
     op = qp.CommutingEvolution(H, time, frequencies=frequencies, shifts=shifts)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_adjoint():
@@ -109,7 +109,7 @@ DECOMP_PARAMS = [
 ]
 
 
-@pytest.mark.capture
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize(("hamiltonian", "time"), DECOMP_PARAMS)
 def test_decomposition_new(hamiltonian, time):
     """Capture produces only the resource-declared ``ApproxTimeEvolution`` operation."""
@@ -130,7 +130,7 @@ def test_captured_decomposition_does_not_add_hamiltonian_to_tape():
 
     time = 0.5
     plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(time)
-    tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, time)
+    tape = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, time)
 
     expected = qp.ApproxTimeEvolution(hamiltonian, time, 1)
 

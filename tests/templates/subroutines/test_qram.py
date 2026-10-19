@@ -25,9 +25,10 @@ from pennylane.decomposition import list_decomps
 from pennylane.math import int_to_binary
 from pennylane.measurements import probs, state
 from pennylane.ops import CH, CNOT, CSWAP, CZ, SWAP, Controlled, MultiControlledX, Toffoli, X
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM, FFQRAM, HybridQRAM, SelectOnlyQRAM
+from pennylane.testing import assert_valid
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 has_jax = True
 try:
@@ -249,6 +250,8 @@ def test_raises(params, error, match):
         ),
     ],
 )
+@pytest.mark.xfail_if_capture(reason="Come back to this when we port BBQRAM [sc-129953]")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_bbqram_decomposition_new(
     bitstrings,
     control_wires,
@@ -581,6 +584,8 @@ def test_hybrid_quantum(
         ),
     ],
 )
+@pytest.mark.xfail_if_capture(reason="Come back to this when we port HybridQRAM [sc-129954]")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_hybrid_decomposition_new(
     bitstrings,
     control_wires,
@@ -1185,6 +1190,8 @@ def test_select_only_raises(params, error, match):
         ),
     ],
 )
+@pytest.mark.xfail_if_capture(reason="Come back to this when we port SelectOnlyQRAM [sc-129956]")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_select_decomposition_new(
     bitstrings, control_wires, target_wires, select_wires, select_value
 ):  # pylint: disable=too-many-arguments
@@ -1200,7 +1207,7 @@ def test_select_decomposition_new(
         _test_decomposition_rule(op, rule)
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_ffqram_standard_validity():
     """Check the operation using the assert_valid function."""
     op = FFQRAM([np.sqrt(0.3), np.sqrt(0.7)], wires=[0, 1, 2, 3], address=["000", "001"])
@@ -1376,7 +1383,7 @@ class TestFFQRAMDecomposition:
 
         assert np.allclose(circuit(), expected_state)
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self):
         """Tests the decomposition rule implemented with the new system."""
         op = FFQRAM([np.sqrt(0.3), np.sqrt(0.7)], wires=[0, 1, 2, 3], address=["000", "001"])

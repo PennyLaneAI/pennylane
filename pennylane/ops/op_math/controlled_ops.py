@@ -31,7 +31,11 @@ from pennylane import math
 from pennylane.allocation import allocate
 from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition.decomposition_rule import DecompCollection, list_decomps
+from pennylane.decomposition.decomposition_rule import (
+    DecompCollection,
+    _list_decomps,
+    get_fixed_decomp,
+)
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.ops.identity import GlobalPhase
@@ -49,7 +53,7 @@ from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.qubit import X, Y, Z
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Float, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
 
 from .adjoint2 import _adjoint_abstract
 from .controlled import (
@@ -73,9 +77,9 @@ from .decompositions.controlled_decompositions import (
 )
 from .pow2 import pow_involutory as pow_involutory2
 
-INV_SQRT2 = 1 / qp.math.sqrt(2)
+INV_SQRT2 = 1 / math.sqrt(2)
 
-stack_last = partial(qp.math.stack, axis=-1)
+stack_last = partial(math.stack, axis=-1)
 
 
 class ControlledQubitUnitary(Controlled2):
@@ -168,7 +172,7 @@ class ControlledQubitUnitary(Controlled2):
 
         work_wires = Wires(() if work_wires is None else work_wires)
 
-        num_base_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
+        num_base_wires = int(math.log2(qp.math.shape(U)[-1]))
         target_wires = wires[-num_base_wires:]
         control_wires = wires[:-num_base_wires]
 
@@ -210,7 +214,7 @@ def _ctrl_c_qu(base: ControlledQubitUnitary, control, control_values, work_wires
 
 
 def _to_general_c_qu_resource(U, wires, control_values, work_wires, work_wire_type, **_):
-    num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
+    num_target_wires = int(math.log2(qp.math.shape(U)[-1]))
     num_control_wires = len(wires) - num_target_wires
     num_work_wires = len(work_wires)
     u_size = 2**num_target_wires
@@ -225,7 +229,7 @@ def _to_general_c_qu_resource(U, wires, control_values, work_wires, work_wire_ty
     }
 
 
-@qp.register_condition(lambda U, *_, **__: qp.math.ceil_log2(qp.math.shape(U)[0]) > 2)
+@qp.register_condition(lambda U, *_, **__: math.ceil_log2(qp.math.shape(U)[0]) > 2)
 @qp.register_resources(_to_general_c_qu_resource)
 # pylint: disable=too-many-arguments
 def _to_general_c_qu(U, wires, control_values, work_wires, work_wire_type, **_):
@@ -432,9 +436,9 @@ def _pauli_ctrl_pauli_ppr_resources(wires: AbstractWires, pauli0, pauli1):
     """Resources for _pauli_ctrl_pauli_ppr."""
     resources = defaultdict(int)
     p0, p1 = pauli0.__name__[-1], pauli1.__name__[-1]
-    resources[qp.PauliRot(Float, pauli_word=p0, wires=Wire[len(p0)])] += 1
-    resources[qp.PauliRot(Float, pauli_word=p1, wires=Wire[len(p1)])] += 1
-    resources[qp.PauliRot(Float, pauli_word=p0 + p1, wires=Wire[len(p0 + p1)])] += 1
+    resources[qp.PPR_4(-1, pauli_word=p0, wires=Wire[len(p0)])] += 1
+    resources[qp.PPR_4(-1, pauli_word=p1, wires=Wire[len(p1)])] += 1
+    resources[qp.PPR_4(1, pauli_word=p0 + p1, wires=Wire[len(p0 + p1)])] += 1
     resources[qp.GlobalPhase] += 1
     return dict(resources)
 
@@ -442,9 +446,9 @@ def _pauli_ctrl_pauli_ppr_resources(wires: AbstractWires, pauli0, pauli1):
 def _pauli_ctrl_pauli_ppr(wires: AbstractWires, pauli0, pauli1):
     """Generalized two-qubit Pauli-controlled Pauli gate decomposition to PPRs."""
     p0, p1 = pauli0.__name__[-1], pauli1.__name__[-1]
-    qp.PauliRot(-np.pi / 2, p0, wires=wires[0])
-    qp.PauliRot(-np.pi / 2, p1, wires=wires[1])
-    qp.PauliRot(np.pi / 2, p0 + p1, wires=wires)
+    qp.PPR_4(-1, p0, wires=wires[0])
+    qp.PPR_4(-1, p1, wires=wires[1])
+    qp.PPR_4(1, p0 + p1, wires=wires)
     qp.GlobalPhase(np.pi / 4)
 
 
@@ -707,26 +711,26 @@ def _cswap(wires: WiresLike, **__):
 
 def _cswap_to_ppr_resource(wires: WiresLike = None):
     return {
-        qp.PauliRot(Float, pauli_word="ZZZ", wires=Wire[3]): 1,
-        qp.PauliRot(Float, pauli_word="ZYY", wires=Wire[3]): 1,
-        qp.PauliRot(Float, pauli_word="ZXX", wires=Wire[3]): 1,
-        qp.PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
-        qp.PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1,
-        qp.PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1,
-        qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1,
+        qp.PPR_8(-1, pauli_word="ZZZ", wires=Wire[3]): 1,
+        qp.PPR_8(-1, pauli_word="ZYY", wires=Wire[3]): 1,
+        qp.PPR_8(-1, pauli_word="ZXX", wires=Wire[3]): 1,
+        qp.PPR_8(1, pauli_word="ZZ", wires=Wire[2]): 1,
+        qp.PPR_8(1, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PPR_8(1, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PPR_8(1, pauli_word="Z", wires=Wire[1]): 1,
         qp.GlobalPhase: 1,
     }
 
 
 @register_resources(_cswap_to_ppr_resource)
 def _cswap_to_ppr(wires: WiresLike, **_):
-    qp.PauliRot(-np.pi / 4, "ZZZ", wires=wires)
-    qp.PauliRot(-np.pi / 4, "ZYY", wires=wires)
-    qp.PauliRot(-np.pi / 4, "ZXX", wires=wires)
-    qp.PauliRot(np.pi / 4, "ZZ", wires=wires[1:])
-    qp.PauliRot(np.pi / 4, "YY", wires=wires[1:])
-    qp.PauliRot(np.pi / 4, "XX", wires=wires[1:])
-    qp.PauliRot(np.pi / 4, "Z", wires=wires[0])
+    qp.PPR_8(-1, "ZZZ", wires=wires)
+    qp.PPR_8(-1, "ZYY", wires=wires)
+    qp.PPR_8(-1, "ZXX", wires=wires)
+    qp.PPR_8(1, "ZZ", wires=wires[1:])
+    qp.PPR_8(1, "YY", wires=wires[1:])
+    qp.PPR_8(1, "XX", wires=wires[1:])
+    qp.PPR_8(1, "Z", wires=wires[0])
     qp.GlobalPhase(-np.pi / 8)
 
 
@@ -1031,6 +1035,32 @@ add_decomps("Adjoint(CNOT)", self_adjoint)
 add_decomps("Pow(CNOT)", pow_involutory2)
 
 
+def _ctrl_cnot_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    ctrl_values = _resolve_ctrl_values(control_values, [True], len(control_wires))
+    return {
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 2],
+            control_values=ctrl_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        ): 1
+    }
+
+
+@qp.register_resources(_ctrl_cnot_resource)
+def _ctrl_cnot_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
+    ctrl_values = _resolve_ctrl_values(control_values, [True], len(control_wires))
+    qp.MultiControlledX(
+        concatenate_wires(control_wires, base.wires),
+        control_values=ctrl_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+
+add_decomps("C(CNOT)", _ctrl_cnot_to_mcx)
+
+
 class Toffoli(Controlled2):
     r"""Toffoli(wires)
     Toffoli (controlled-controlled-X) gate.
@@ -1185,24 +1215,24 @@ def _toffoli(wires: WiresLike):
 
 def _toffoli_to_ppr_resource(wires: WiresLike):
     return {
-        qp.PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
-        qp.PauliRot(Float, pauli_word="ZX", wires=Wire[2]): 2,
-        qp.PauliRot(Float, pauli_word="ZZX", wires=Wire[3]): 1,
-        qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1,
-        qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 2,
+        qp.PPR_8(-1, pauli_word="ZZ", wires=Wire[2]): 1,
+        qp.PPR_8(-1, pauli_word="ZX", wires=Wire[2]): 2,
+        qp.PPR_8(1, pauli_word="ZZX", wires=Wire[3]): 1,
+        qp.PPR_8(1, pauli_word="X", wires=Wire[1]): 1,
+        qp.PPR_8(1, pauli_word="Z", wires=Wire[1]): 2,
         qp.GlobalPhase: 1,
     }
 
 
 @register_resources(_toffoli_to_ppr_resource)
 def _toffoli_to_ppr(wires: WiresLike):
-    qp.PauliRot(-np.pi / 4, "ZZ", wires=wires[:2])
-    qp.PauliRot(-np.pi / 4, "ZX", wires=[wires[0], wires[2]])
-    qp.PauliRot(-np.pi / 4, "ZX", wires=wires[1:])
-    qp.PauliRot(np.pi / 4, "ZZX", wires=wires)
-    qp.PauliRot(np.pi / 4, "X", wires=wires[2])
-    qp.PauliRot(np.pi / 4, "Z", wires=wires[1])
-    qp.PauliRot(np.pi / 4, "Z", wires=wires[0])
+    qp.PPR_8(-1, "ZZ", wires=wires[:2])
+    qp.PPR_8(-1, "ZX", wires=[wires[0], wires[2]])
+    qp.PPR_8(-1, "ZX", wires=wires[1:])
+    qp.PPR_8(1, "ZZX", wires=wires)
+    qp.PPR_8(1, "X", wires=wires[2])
+    qp.PPR_8(1, "Z", wires=wires[1])
+    qp.PPR_8(1, "Z", wires=wires[0])
     qp.GlobalPhase(-np.pi / 8)
 
 
@@ -1222,6 +1252,32 @@ def _toffoli_elbow(wires: WiresLike):
 add_decomps(Toffoli, _toffoli, _toffoli_to_ppr, _toffoli_elbow)
 add_decomps("Adjoint(Toffoli)", self_adjoint)
 add_decomps("Pow(Toffoli)", pow_involutory2)
+
+
+def _ctrl_toffoli_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    ctrl_values = _resolve_ctrl_values(control_values, [True, True], len(control_wires))
+    return {
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 3],
+            control_values=ctrl_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        ): 1
+    }
+
+
+@qp.register_resources(_ctrl_toffoli_resource)
+def _ctrl_toffoli_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
+    ctrl_values = _resolve_ctrl_values(control_values, [True, True], len(control_wires))
+    qp.MultiControlledX(
+        concatenate_wires(control_wires, base.wires),
+        control_values=ctrl_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+
+add_decomps("C(Toffoli)", _ctrl_toffoli_to_mcx)
 
 
 class MultiControlledX(Controlled2):
@@ -1305,10 +1361,15 @@ class MultiControlledX(Controlled2):
     def __repr__(self):
         params = [f"wires={self.wires}"]
         ctrl_values = self.control_values
+        # Same convention as ``Controlled2.__repr__``: trivial (all-``True``) control values and
+        # the absence of work wires are not shown.
         if isinstance(ctrl_values, AbstractArray) or math.is_abstract(ctrl_values):
             params.append(f"control_values={ctrl_values}")
         elif not all(ctrl_values):
             params.append(f"control_values={ctrl_values.tolist()}")
+        if self.work_wires:
+            params.append(f"work_wires={self.work_wires}")
+            params.append(f"work_wire_type={self.work_wire_type}")
         return f"MultiControlledX({", ".join(params)})"
 
     @override
@@ -1365,6 +1426,20 @@ class MultiControlledX(Controlled2):
         return _to_op_list(decompose_mcx_with_no_worker)(**arguments)
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_mcx(base: MultiControlledX, control, control_values, work_wires, work_wire_type):
+    ctrl_values = _resolve_ctrl_values(control_values, base.control_values, len(control))
+    work_wire_type = resolve_work_wire_type(
+        base.work_wires,
+        base.work_wire_type,
+        work_wires,
+        work_wire_type,
+    )
+    wires = control + base.wires
+    work_wires = work_wires + base.work_wires
+    return qp.MultiControlledX(wires, ctrl_values, work_wires, work_wire_type)
+
+
 def _setup_inputs_mcx(
     wires: WiresLike,
     control_values: int | bool | Sequence[int | bool] | None = None,
@@ -1408,8 +1483,11 @@ def _to_op_list(rule):
     return _inner
 
 
-@list_decomps.register
+@_list_decomps.register
 def _list_mcx_decomps(op: MultiControlledX):
+    # fixed_decomps should override everything
+    if fixed_rule := get_fixed_decomp(op):
+        return DecompCollection([fixed_rule])
     if not op.work_wires:
         return DecompCollection(_list_mcx_no_work_wire_decomps(op))
     if len(op.wires) == 2:
@@ -1460,8 +1538,61 @@ def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
     ] + capture_compatible_rules
 
 
+add_decomps(
+    "MultiControlledX",
+    mcx_to_cnot_or_toffoli,
+    decompose_mcx_two_controls_elbows,
+    decompose_mcx_many_workers,
+    decompose_mcx_two_workers,
+    decompose_mcx_one_worker,
+    decompose_mcx_with_no_worker,
+    _wrap_mcx_rule_w_alloc(decompose_mcx_two_controls_elbows, 1, "zeroed"),
+    _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "zeroed", "two_zeroed_workers"),
+    _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "borrowed", "two_borrowed_workers"),
+    _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "zeroed", "one_zeroed_worker"),
+    _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "borrowed", "one_borrowed_worker"),
+    # TODO: include the allocation-wrapped versions of decompose_mcx_many_workers
+    # after we support tracer indexing into allocated wires. [sc-129521]
+)
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
 add_decomps("Pow(MultiControlledX)", pow_involutory2)
+
+
+def _ctrl_mcx_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    work_wire_type = resolve_work_wire_type(
+        base.work_wires,
+        base.work_wire_type,
+        work_wires,
+        work_wire_type,
+    )
+    return {
+        qp.MultiControlledX(
+            control_wires + base.wires,
+            control_values=Bool[len(control_values) + len(base.control_values)],
+            work_wires=work_wires + base.work_wires,
+            work_wire_type=work_wire_type,
+        ): 1
+    }
+
+
+@qp.register_resources(_ctrl_mcx_resource)
+def _ctrl_mcx_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
+    n_ctrl_wires = len(control_wires)
+    work_wire_type = resolve_work_wire_type(
+        base.work_wires,
+        base.work_wire_type,
+        work_wires,
+        work_wire_type,
+    )
+    qp.MultiControlledX(
+        concatenate_wires(control_wires, base.wires),
+        control_values=_resolve_ctrl_values(control_values, base.control_values, n_ctrl_wires),
+        work_wires=concatenate_wires(work_wires, base.work_wires),
+        work_wire_type=work_wire_type,
+    )
+
+
+add_decomps("C(MultiControlledX)", _ctrl_mcx_to_mcx)
 
 
 class CRX(Controlled2):
@@ -1548,22 +1679,14 @@ class CRX(Controlled2):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000-0.2474j, 0.9689+0.0000j]])
         """
 
-        interface = qp.math.get_interface(phi)
-
         c = qp.math.cos(phi / 2)
         s = qp.math.sin(phi / 2)
-
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = qp.math.cast_like(c, 1j)
-            s = qp.math.cast_like(s, 1j)
 
         # The following avoids casting an imaginary quantity to reals when back propagating
         c = (1 + 0j) * c
         js = -1j * s
-        ones = qp.math.ones_like(js)
-        zeros = qp.math.zeros_like(js)
+        ones = math.ones_like(js)
+        zeros = math.zeros_like(js)
         matrix = [
             [ones, zeros, zeros, zeros],
             [zeros, ones, zeros, zeros],
@@ -1571,7 +1694,7 @@ class CRX(Controlled2):
             [zeros, zeros, js, c],
         ]
 
-        return qp.math.stack([stack_last(row) for row in matrix], axis=-2)
+        return math.stack([stack_last(row) for row in matrix], axis=-2)
 
 
 def _crx_to_rz_ry_resources(phi, wires):  # pylint: disable=unused-argument
@@ -1713,22 +1836,14 @@ class CRY(Controlled2):
                 [ 0.0000+0.j,  0.0000+0.j,  0.9689+0.j, -0.2474-0.j],
                 [ 0.0000+0.j,  0.0000+0.j,  0.2474+0.j,  0.9689+0.j]])
         """
-        interface = qp.math.get_interface(phi)
-
         c = qp.math.cos(phi / 2)
         s = qp.math.sin(phi / 2)
-
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = qp.math.cast_like(c, 1j)
-            s = qp.math.cast_like(s, 1j)
 
         # The following avoids casting an imaginary quantity to reals when back propagating
         c = (1 + 0j) * c
         s = (1 + 0j) * s
-        ones = qp.math.ones_like(s)
-        zeros = qp.math.zeros_like(s)
+        ones = math.ones_like(s)
+        zeros = math.zeros_like(s)
         matrix = [
             [ones, zeros, zeros, zeros],
             [zeros, ones, zeros, zeros],
@@ -1736,7 +1851,7 @@ class CRY(Controlled2):
             [zeros, zeros, s, c],
         ]
 
-        return qp.math.stack([stack_last(row) for row in matrix], axis=-2)
+        return math.stack([stack_last(row) for row in matrix], axis=-2)
 
 
 def _cry_resources(phi, wires):  # pylint: disable=unused-argument
@@ -1857,25 +1972,14 @@ class CRZ(Controlled2):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9689-0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j]])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = qp.math.exp(-0.5j * qp.math.cast_like(phi, 1j))
-            if qp.math.ndim(p) == 0:
-                return qp.math.diag([1, 1, p, qp.math.conj(p)])
-
-            ones = qp.math.ones_like(p)
-            diags = stack_last([ones, ones, p, qp.math.conj(p)])
-            return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
-
         signs = qp.math.array([0, 0, 1, -1], like=phi)
         arg = -0.5j * phi
 
-        if qp.math.ndim(arg) == 0:
-            return qp.math.diag(qp.math.exp(arg * signs))
+        if math.ndim(arg) == 0:
+            return math.diag(qp.math.exp(arg * signs))
 
-        diags = qp.math.exp(qp.math.outer(arg, signs))
-        return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
+        diags = math.exp(qp.math.outer(arg, signs))
+        return diags[:, :, np.newaxis] * math.cast_like(qp.math.eye(4, like=diags), diags)
 
     @staticmethod
     # pylint: disable=unused-argument, arguments-differ
@@ -1905,19 +2009,12 @@ class CRZ(Controlled2):
         >>> qp.CRZ.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.9689-0.2474j, 0.9689+0.2474j])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = qp.math.exp(-0.5j * qp.math.cast_like(phi, 1j))
-            ones = qp.math.ones_like(phase)
-            return stack_last([ones, ones, phase, qp.math.conj(phase)])
-
         prefactors = qp.math.array([0, 0, -0.5j, 0.5j], like=phi)
         if qp.math.ndim(phi) == 0:
             product = phi * prefactors
         else:
-            product = qp.math.outer(phi, prefactors)
-        return qp.math.exp(product)
+            product = math.outer(phi, prefactors)
+        return math.exp(product)
 
     def eigvals(self):
         return self.compute_eigvals(*self.parameters)
@@ -2039,48 +2136,34 @@ class CRot(Controlled2):
                 [ 0.0000+0.0000j,  0.0000+0.0000j,  0.9752-0.1977j, -0.0993+0.0100j],
                 [ 0.0000+0.0000j,  0.0000+0.0000j,  0.0993+0.0100j,  0.9752+0.1977j]])
         """
-        # It might be that they are in different interfaces, e.g.,
-        # CRot(0.2, 0.3, tf.Variable(0.5), wires=[0, 1])
-        # So we need to make sure the matrix comes out having the right type
-        interface = qp.math.get_interface(phi, theta, omega)
-
         c = qp.math.cos(theta / 2)
         s = qp.math.sin(theta / 2)
 
-        # If anything is not tensorflow, it has to be casted
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = qp.math.cast_like(qp.math.asarray(phi, like=interface), 1j)
-            omega = qp.math.cast_like(qp.math.asarray(omega, like=interface), 1j)
-            c = qp.math.cast_like(qp.math.asarray(c, like=interface), 1j)
-            s = qp.math.cast_like(qp.math.asarray(s, like=interface), 1j)
-
         # The following variable is used to assert the all terms to be stacked have same shape
-        one = qp.math.ones_like(phi) * qp.math.ones_like(omega)
+        one = math.ones_like(phi) * qp.math.ones_like(omega)
         c = c * one
         s = s * one
 
-        o = qp.math.ones_like(c)
-        z = qp.math.zeros_like(c)
+        o = math.ones_like(c)
+        z = math.zeros_like(c)
         mat = [
             [o, z, z, z],
             [z, o, z, z],
             [
                 z,
                 z,
-                qp.math.exp(-0.5j * (phi + omega)) * c,
-                -qp.math.exp(0.5j * (phi - omega)) * s,
+                math.exp(-0.5j * (phi + omega)) * c,
+                -math.exp(0.5j * (phi - omega)) * s,
             ],
             [
                 z,
                 z,
-                qp.math.exp(-0.5j * (phi - omega)) * s,
-                qp.math.exp(0.5j * (phi + omega)) * c,
+                math.exp(-0.5j * (phi - omega)) * s,
+                math.exp(0.5j * (phi + omega)) * c,
             ],
         ]
 
-        return qp.math.stack([stack_last(row) for row in mat], axis=-2)
+        return math.stack([stack_last(row) for row in mat], axis=-2)
 
 
 def _crot_resources(*_, **__):
@@ -2181,25 +2264,14 @@ class ControlledPhaseShift(Controlled2):
                 [0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.8776+0.4794j]])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = qp.math.exp(1j * qp.math.cast_like(phi, 1j))
-            if qp.math.ndim(p) == 0:
-                return qp.math.diag([1, 1, 1, p])
-
-            ones = qp.math.ones_like(p)
-            diags = stack_last([ones, ones, ones, p])
-            return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
-
         signs = qp.math.array([0, 0, 0, 1], like=phi)
         arg = 1j * phi
 
-        if qp.math.ndim(arg) == 0:
-            return qp.math.diag(qp.math.exp(arg * signs))
+        if math.ndim(arg) == 0:
+            return math.diag(qp.math.exp(arg * signs))
 
-        diags = qp.math.exp(qp.math.outer(arg, signs))
-        return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
+        diags = math.exp(qp.math.outer(arg, signs))
+        return diags[:, :, np.newaxis] * math.cast_like(qp.math.eye(4, like=diags), diags)
 
     @staticmethod
     # pylint: disable=arguments-differ,unused-argument
@@ -2229,19 +2301,12 @@ class ControlledPhaseShift(Controlled2):
         >>> qp.ControlledPhaseShift.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = qp.math.exp(1j * qp.math.cast_like(phi, 1j))
-            ones = qp.math.ones_like(phase)
-            return stack_last([ones, ones, ones, phase])
-
         prefactors = qp.math.array([0, 0, 0, 1j], like=phi)
         if qp.math.ndim(phi) == 0:
             product = phi * prefactors
         else:
-            product = qp.math.outer(phi, prefactors)
-        return qp.math.exp(product)
+            product = math.outer(phi, prefactors)
+        return math.exp(product)
 
 
 def _cphase_rz_resource(phi, wires):  # pylint: disable=unused-argument

@@ -19,11 +19,11 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.out_poly import (
     _get_polynomial,
     _mobius_inversion_of_zeta_transform,
 )
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 def test_get_polynomial():
@@ -59,7 +59,7 @@ def f_test(x, y, z):
     return x**2 + y * x * z**5 - z**3 + 3
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_OutPoly():
     """Check the operation using the assert_valid function."""
     wires = qp.registers({"x": 3, "y": 3, "z": 3, "output": 3, "aux": 2})
@@ -70,7 +70,7 @@ def test_standard_validity_OutPoly():
         output_wires=wires["output"],
     )
 
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestOutPoly:
@@ -198,6 +198,7 @@ class TestOutPoly:
             (lambda x, y: x * y, [[0, 1], [2]], [3]),
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self, polynomial_function, input_registers, output_wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.OutPoly(polynomial_function, input_registers, output_wires)

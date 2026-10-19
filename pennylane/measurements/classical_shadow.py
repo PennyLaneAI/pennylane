@@ -186,7 +186,7 @@ class ClassicalShadowMP(MeasurementTransform):
             [
                 Hadamard.compute_matrix(),
                 Hadamard.compute_matrix() @ RZ.compute_matrix(-np.pi / 2),
-                I.compute_matrix(),
+                I.compute_matrix(wires=[0]),
             ]
         )
         obs = obs_list[recipes]
@@ -473,9 +473,6 @@ class ShadowExpvalMP(MeasurementTransform):
             return op
 
         H = _get_tracer(H)
-        if cls._obs_primitive is None:  # pragma: no cover
-            return type.__call__(cls, H=H, seed=seed, k=k, **kwargs)  # pragma: no cover
-
         return cls._obs_primitive.bind(H, seed=seed, k=k, **kwargs)
 
     def process(self, tape, device):
@@ -790,7 +787,7 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
 
         .. code-block:: python
 
-            dev = qp.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2, seed=0)
 
             ops = [qp.Hadamard(wires=0), qp.CNOT(wires=(0,1))]
             measurements = [qp.classical_shadow(wires=(0,1))]
@@ -808,7 +805,7 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
 
         .. code-block:: python
 
-            dev = qp.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2, seed=0)
 
             measurements1 = [qp.classical_shadow(wires=(0,1), seed=10)]
             tape1 = qp.tape.QuantumTape(ops, measurements1, shots=5)
@@ -828,8 +825,6 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
     return ClassicalShadowMP(wires=wires, seed=seed)
 
 
-if ShadowExpvalMP._obs_primitive is not None:  # pylint: disable=protected-access
-
-    @ShadowExpvalMP._obs_primitive.def_impl  # pylint: disable=protected-access
-    def _(H, **kwargs):
-        return type.__call__(ShadowExpvalMP, H, **kwargs)
+@ShadowExpvalMP._obs_primitive.def_impl  # pylint: disable=protected-access
+def _(H, **kwargs):
+    return type.__call__(ShadowExpvalMP, H, **kwargs)

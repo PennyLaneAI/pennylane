@@ -44,7 +44,6 @@ ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 
 
@@ -435,7 +434,7 @@ class TestApplyMultiControlledX:
         self, num_wires, expected_method, interface, mocker, random_mixed_state
     ):
         """Test that the correct dispatch method is used based on the number of wires
-        for torch, tensorflow, and jax."""
+        for torch and jax."""
         state = random_mixed_state(num_wires)
         # Convert to interface
         state = math.asarray(state, like=interface)

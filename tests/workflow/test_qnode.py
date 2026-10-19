@@ -932,57 +932,6 @@ class TestIntegration:
         r2 = conditional_ry_qnode_deferred(first_par)
         assert np.allclose(r1, r2)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_conditional_ops_tensorflow(self, interface):
-        """Test conditional operations with TensorFlow."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=3)
-
-        @qp.qnode(dev, interface=interface, diff_method="parameter-shift")
-        def cry_qnode(x):
-            """QNode where we apply a controlled Y-rotation."""
-            qp.Hadamard(1)
-            qp.RY(1.234, wires=0)
-            qp.CRY(x, wires=[0, 1])
-            return qp.expval(qp.PauliZ(1))
-
-        @qp.qnode(dev, interface=interface, diff_method="parameter-shift")
-        def conditional_ry_qnode(x):
-            """QNode where the defer measurements transform is applied by
-            default under the hood."""
-            qp.Hadamard(1)
-            qp.RY(1.234, wires=0)
-            m_0 = qp.measure(0)
-            qp.cond(m_0, qp.RY)(x, wires=1)
-            return qp.expval(qp.PauliZ(1))
-
-        dm_conditional_ry_qnode = qp.defer_measurements(conditional_ry_qnode)
-
-        x_ = -0.654
-        x1 = tf.Variable(x_, dtype=tf.float64)
-        x2 = tf.Variable(x_, dtype=tf.float64)
-        x3 = tf.Variable(x_, dtype=tf.float64)
-
-        with tf.GradientTape() as tape1:
-            r1 = cry_qnode(x1)
-
-        with tf.GradientTape() as tape2:
-            r2 = conditional_ry_qnode(x2)
-
-        with tf.GradientTape() as tape3:
-            r3 = dm_conditional_ry_qnode(x3)
-
-        assert np.allclose(r1, r2)
-        assert np.allclose(r1, r3)
-
-        grad1 = tape1.gradient(r1, x1)
-        grad2 = tape2.gradient(r2, x2)
-        grad3 = tape3.gradient(r3, x3)
-        assert np.allclose(grad1, grad2)
-        assert np.allclose(grad1, grad3)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["torch", "auto"])
     def test_conditional_ops_torch(self, interface):
@@ -1123,12 +1072,11 @@ class TestIntegration:
             def decomposition(self) -> list:
                 return []
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(DummyCustomGraphOp, null_decomp)
-            graph = nx.complete_graph(3)
-            tape = qp.tape.QuantumScript([DummyCustomGraphOp(graph)], [qp.expval(qp.PauliZ(0))])
-            res = qp.execute([tape], dev)
-            assert qp.math.get_interface(res) == "numpy"
+        qp.add_decomps(DummyCustomGraphOp, null_decomp)
+        graph = nx.complete_graph(3)
+        tape = qp.tape.QuantumScript([DummyCustomGraphOp(graph)], [qp.expval(qp.PauliZ(0))])
+        res = qp.execute([tape], dev)
+        assert qp.math.get_interface(res) == "numpy"
 
     def test_error_device_vjp_unsuppoprted(self):
         """Test that an error is raised in the device_vjp is unsupported."""
@@ -1156,7 +1104,6 @@ class TestIntegration:
             pytest.param("autograd", marks=pytest.mark.autograd),
             pytest.param("jax", marks=pytest.mark.jax),
             pytest.param("torch", marks=pytest.mark.torch),
-            pytest.param("tensorflow", marks=pytest.mark.tf),
         ),
     )
     def test_error_if_differentiate_diff_method_None(self, interface):
@@ -1798,10 +1745,9 @@ class TestTapeExpansion:
         else:
             spy = mocker.spy(circuit.device, "execute")
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(UnsupportedOp, _decomp)
-            x = pnp.array(0.5)
-            circuit(x)
+        qp.add_decomps(UnsupportedOp, _decomp)
+        x = pnp.array(0.5)
+        circuit(x)
 
         tape = spy.call_args[0][0][0]
         assert len(tape.operations) == 1
@@ -1827,24 +1773,22 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qp.RX(3 * self.data[0], wires=self.wires)]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RX: 1})
+        def _decomp(data, wires):
+            qp.RX(3 * data, wires)
 
-            @qp.register_resources({qp.RX: 1})
-            def _decomp(data, wires):
-                qp.RX(3 * data, wires)
+        qp.add_decomps(UnsupportedOp, _decomp)
 
-            qp.add_decomps(UnsupportedOp, _decomp)
+        @qnode(dev, interface="autograd", diff_method="parameter-shift", max_diff=2)
+        def circuit(x):
+            UnsupportedOp(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
-            @qnode(dev, interface="autograd", diff_method="parameter-shift", max_diff=2)
-            def circuit(x):
-                UnsupportedOp(x, wires=0)
-                return qp.expval(qp.PauliZ(0))
+        x = pnp.array(0.5, requires_grad=True)
+        qp.grad(circuit)(x)
 
-            x = pnp.array(0.5, requires_grad=True)
-            qp.grad(circuit)(x)
-
-            # check second derivative
-            assert np.allclose(qp.grad(qp.grad(circuit))(x), -9 * np.cos(3 * x))
+        # check second derivative
+        assert np.allclose(qp.grad(qp.grad(circuit))(x), -9 * np.cos(3 * x))
 
     @pytest.mark.autograd
     def test_gradient_expansion(self, mocker):
@@ -1862,30 +1806,28 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qp.RY(3 * self.data[0], wires=self.wires)]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RY: 1})
+        def custom_decomposition(param, wires):
+            qp.RY(3 * param, wires=wires)
 
-            @qp.register_resources({qp.RY: 1})
-            def custom_decomposition(param, wires):
-                qp.RY(3 * param, wires=wires)
+        qp.add_decomps(PhaseShift, custom_decomposition)
 
-            qp.add_decomps(PhaseShift, custom_decomposition)
+        @qnode(dev, diff_method="parameter-shift", max_diff=2)
+        def circuit(x):
+            qp.Hadamard(wires=0)
+            PhaseShift(x, wires=0)
+            return qp.expval(qp.PauliX(0))
 
-            @qnode(dev, diff_method="parameter-shift", max_diff=2)
-            def circuit(x):
-                qp.Hadamard(wires=0)
-                PhaseShift(x, wires=0)
-                return qp.expval(qp.PauliX(0))
+        x = pnp.array(0.5, requires_grad=True)
+        circuit(x)
 
-            x = pnp.array(0.5, requires_grad=True)
-            circuit(x)
+        res = qp.grad(circuit)(x)
 
-            res = qp.grad(circuit)(x)
+        assert np.allclose(res, -3 * np.sin(3 * x))
 
-            assert np.allclose(res, -3 * np.sin(3 * x))
-
-            # test second order derivatives
-            res = qp.grad(qp.grad(circuit))(x)
-            assert np.allclose(res, -9 * np.cos(3 * x))
+        # test second order derivatives
+        res = qp.grad(qp.grad(circuit))(x)
+        assert np.allclose(res, -9 * np.cos(3 * x))
 
     def test_hamiltonian_expansion_analytic(self):
         """Test result if there are non-commuting groups and the number of shots is None"""

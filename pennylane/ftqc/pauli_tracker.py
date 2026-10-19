@@ -383,7 +383,7 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_v
 
     **Example:**
 
-        .. code-block:: python
+        .. code-block:: python3
 
             from pennylane.ftqc import diagonalize_mcms, generate_lattice, measure_x, measure_y
             from pennylane.ftqc import GraphStatePrep

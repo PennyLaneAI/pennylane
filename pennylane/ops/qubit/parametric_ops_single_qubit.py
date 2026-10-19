@@ -33,7 +33,6 @@ from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
-    resource_rep,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.identity import I
@@ -43,8 +42,9 @@ from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
+from pennylane.ops.op_math.prod import prod
 from pennylane.typing import Float, TensorLike, Wire
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike, concatenate_wires
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 
@@ -136,12 +136,6 @@ class RX(Operator2):
         """
         c = qp.math.cos(phi / 2)
         s = qp.math.sin(phi / 2)
-
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = qp.math.cast_like(c, 1j)
-            s = qp.math.cast_like(s, 1j)
 
         # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
@@ -256,7 +250,7 @@ def _controlled_rx_resource(base, control_wires, control_values, work_wires, wor
 @register_resources(_controlled_rx_resource)
 # pylint: disable-next=unused-argument
 def _controlled_rx_decomp(base, control_wires, control_values, work_wires, work_wire_type):
-    wires = control_wires + base.wires
+    wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
         qp.CRX(base.phi, wires=wires)
         return
@@ -351,11 +345,6 @@ class RY(Operator2):
 
         c = qp.math.cos(phi / 2)
         s = qp.math.sin(phi / 2)
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = qp.math.cast_like(c, 1j)
-            s = qp.math.cast_like(s, 1j)
         # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         s = (1 + 0j) * s
@@ -430,27 +419,26 @@ def _ry_to_rx_cliff(phi, wires: WiresLike):
 def _ry_to_rz_cliff_resources(*_, **__):
     resources = {
         _change_op_basis_abstract(
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
-            ),
+            prod(qp.H(Wire[1]), qp.adjoint(qp.S(Wire[1]))),
             qp.RZ,
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
-            ),
+            prod(qp.S(Wire[1]), qp.H(Wire[1])),
         ): 1
     }
     return resources
 
 
 @register_resources(_ry_to_rz_cliff_resources)
-def _ry_to_rz_cliff(phi, wires: WiresLike):
-    qp.change_op_basis(
-        qp.Hadamard(wires) @ qp.adjoint(qp.S(wires)),
-        qp.RZ(phi, wires),
-        qp.S(wires) @ qp.Hadamard(wires),
-    )
+def _ry_to_rz_cliff(phi, wires: WiresLike, **__):
+
+    def _compute():
+        qp.adjoint(qp.S(wires))
+        qp.Hadamard(wires)
+
+    def _uncompute():
+        qp.Hadamard(wires)
+        qp.S(wires)
+
+    qp.change_op_basis(_compute, qp.RZ(phi, wires), _uncompute)
 
 
 def _ry_to_ppr_resources(*_, **__):
@@ -484,7 +472,7 @@ def _controlled_ry_resource(base, control_wires, control_values, work_wires, wor
 @register_resources(_controlled_ry_resource)
 # pylint: disable-next=unused-argument
 def _controlled_ry_decomp(base, control_wires, control_values, work_wires, work_wire_type):
-    wires = control_wires + base.wires
+    wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
         qp.CRY(base.phi, wires=wires)
         return
@@ -569,14 +557,6 @@ class RZ(Operator2):
         tensor([[0.9689-0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9689+0.2474j]])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = qp.math.exp(-0.5j * qp.math.cast_like(phi, 1j))
-            z = qp.math.zeros_like(p)
-
-            return qp.math.stack([stack_last([p, z]), stack_last([z, qp.math.conj(p)])], axis=-2)
-
         signs = qp.math.array([-1, 1], like=phi)
         arg = 0.5j * phi
 
@@ -623,12 +603,6 @@ class RZ(Operator2):
         >>> qp.RZ.compute_eigvals(torch.tensor(0.5))
         tensor([0.9689-0.2474j, 0.9689+0.2474j])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = qp.math.exp(-0.5j * qp.math.cast_like(phi, 1j))
-            return qp.math.stack([phase, qp.math.conj(phase)], axis=-1)
-
         prefactors = qp.math.array([-0.5j, 0.5j], like=phi)
         if qp.math.ndim(phi) == 0:
             product = phi * prefactors
@@ -706,15 +680,9 @@ def _rz_to_rx_cliff(phi, wires: WiresLike):
 def _rz_to_ry_cliff_resources(phi, wires):
     resources = {
         _change_op_basis_abstract(
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
-            ),
+            prod(qp.S(Wire[1]), qp.H(Wire[1])),
             qp.RY,
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
-            ),
+            prod(qp.H(Wire[1]), qp.adjoint(qp.S(Wire[1]))),
         ): 1
     }
     return resources
@@ -722,11 +690,16 @@ def _rz_to_ry_cliff_resources(phi, wires):
 
 @register_resources(_rz_to_ry_cliff_resources)
 def _rz_to_ry_cliff(phi, wires: WiresLike):
-    qp.change_op_basis(
-        qp.S(wires) @ qp.Hadamard(wires),
-        qp.RY(phi, wires),
-        qp.Hadamard(wires) @ qp.adjoint(qp.S(wires)),
-    )
+
+    def _compute():
+        qp.H(wires)
+        qp.S(wires)
+
+    def _uncompute():
+        qp.adjoint(qp.S(wires))
+        qp.H(wires)
+
+    qp.change_op_basis(_compute, qp.RY(phi, wires), _uncompute)
 
 
 def _rz_to_ppr_resources(phi, wires):
@@ -761,7 +734,7 @@ def _controlled_rz_resource(base, control_wires, control_values, work_wires, wor
 def _controlled_rz_decomp(base, control_wires, control_values, work_wires, work_wire_type):
 
     if len(control_wires) == 1:
-        qp.CRZ(base.phi, wires=control_wires + base.wires)
+        qp.CRZ(base.phi, wires=concatenate_wires(control_wires, base.wires))
         return
 
     qp.RZ(base.phi / 2, wires=base.wires)
@@ -863,15 +836,6 @@ class PhaseShift(Operator2):
         tensor([[1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.8776+0.4794j]])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = qp.math.exp(1j * qp.math.cast_like(phi, 1j))
-            ones = qp.math.ones_like(p)
-            zeros = qp.math.zeros_like(p)
-
-            return qp.math.stack([stack_last([ones, zeros]), stack_last([zeros, p])], axis=-2)
-
         signs = qp.math.array([0, 1], like=phi)
         arg = 1j * phi
 
@@ -909,12 +873,6 @@ class PhaseShift(Operator2):
         >>> qp.PhaseShift.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 0.8776+0.4794j])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = qp.math.exp(1j * qp.math.cast_like(phi, 1j))
-            return stack_last([qp.math.ones_like(phase), phase])
-
         prefactors = qp.math.array([0, 1j], like=phi)
         if qp.math.ndim(phi) == 0:
             product = phi * prefactors
@@ -974,7 +932,7 @@ def _controlled_phase_shift_resource(base, control_wires, *_, **__):
 
 @register_resources(_controlled_phase_shift_resource)
 def _controlled_phase_shift_decomp(base, control_wires, *_, **__):
-    wires = control_wires + base.wires
+    wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
         qp.ControlledPhaseShift(base.phi, wires=wires)
         return
@@ -1066,22 +1024,8 @@ class Rot(Operator2):
                 [ 0.0993+0.0100j,  0.9752+0.1977j]])
 
         """
-        # It might be that they are in different interfaces, e.g.,
-        # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
-        # So we need to make sure the matrix comes out having the right type
-        interface = qp.math.get_interface(phi, theta, omega)
-
         c = qp.math.cos(theta / 2)
         s = qp.math.sin(theta / 2)
-
-        # If anything is not tensorflow, it has to be casted and then
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = qp.math.cast_like(qp.math.asarray(phi, like=interface), 1j)
-            omega = qp.math.cast_like(qp.math.asarray(omega, like=interface), 1j)
-            c = qp.math.cast_like(qp.math.asarray(c, like=interface), 1j)
-            s = qp.math.cast_like(qp.math.asarray(s, like=interface), 1j)
 
         # The following variable is used to assert the all terms to be stacked have same shape
         one = qp.math.ones_like(phi) * qp.math.ones_like(omega)
@@ -1179,7 +1123,7 @@ def _controlled_rot_resource(base, control_wires, control_values, work_wires, wo
 def _controlled_rot_decomp(base, control_wires, control_values, work_wires, work_wire_type):
 
     phi, theta, omega = base.phi, base.theta, base.omega
-    wires = control_wires + base.wires
+    wires = concatenate_wires(control_wires, base.wires)
 
     if len(control_wires) == 1:
         qp.CRot(phi, theta, omega, wires=wires)
@@ -1262,13 +1206,7 @@ class U1(Operator2):
         tensor([[1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.8776+0.4794j]])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = qp.math.cast_like(phi, 1j)
-            fac = qp.math.cast_like([0, 1], 1j)
-        else:
-            fac = np.array([0, 1])
+        fac = np.array([0, 1])
 
         fac = qp.math.convert_like(fac, phi)
 
@@ -1389,15 +1327,6 @@ class U2(Operator2):
         tensor([[ 0.7071+0.0000j, -0.6930-0.1405j],
                 [ 0.7036+0.0706j,  0.6755+0.2090j]])
         """
-        interface = qp.math.get_interface(phi, delta)
-
-        # If anything is not tensorflow, it has to be casted and then
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = qp.math.cast_like(qp.math.asarray(phi, like=interface), 1j)
-            delta = qp.math.cast_like(qp.math.asarray(delta, like=interface), 1j)
-
         one = qp.math.ones_like(phi) * qp.math.ones_like(delta)
         mat = [
             [one, -qp.math.exp(1j * delta) * one],
@@ -1538,22 +1467,8 @@ class U3(Operator2):
                 [ 0.0490+0.0099j,  0.8765+0.4788j]])
 
         """
-        # It might be that they are in different interfaces, e.g.,
-        # U3(0.2, 0.3, tf.Variable(0.5), wires=0)
-        # So we need to make sure the matrix comes out having the right type
-        interface = qp.math.get_interface(theta, phi, delta)
-
         c = qp.math.cos(theta / 2)
         s = qp.math.sin(theta / 2)
-
-        # If anything is not tensorflow, it has to be casted and then
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = qp.math.cast_like(qp.math.asarray(phi, like=interface), 1j)
-            delta = qp.math.cast_like(qp.math.asarray(delta, like=interface), 1j)
-            c = qp.math.cast_like(qp.math.asarray(c, like=interface), 1j)
-            s = qp.math.cast_like(qp.math.asarray(s, like=interface), 1j)
 
         # The following variable is used to assert the all terms to be stacked have same shape
         one = qp.math.ones_like(phi) * qp.math.ones_like(delta)

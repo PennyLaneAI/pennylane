@@ -23,11 +23,14 @@ from copy import copy
 from typing import Literal
 
 import pennylane as qp
-from pennylane.core.operator import Operation
-from pennylane.wires import Wires, WiresLike
+from pennylane.core.operator import Operation, Operator2
+from pennylane.decomposition.decomposition_rule import add_decomps, null_decomp
+from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
+from pennylane.typing import Wire
+from pennylane.wires import WiresLike
 
 
-class Barrier(Operation):
+class Barrier(Operator2):
     r"""Barrier(wires)
     The Barrier operator, used to separate the compilation process into blocks or as a visual tool.
 
@@ -44,49 +47,26 @@ class Barrier(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, wires: WiresLike = (), only_visual=False):
-        wires = Wires(wires)
-        self.only_visual = only_visual
-        self.hyperparameters["only_visual"] = only_visual
-        super().__init__(wires=wires)
+    num_wires = None
+    """Any number of wires."""
 
-    @staticmethod
-    def compute_decomposition(wires, only_visual=False):  # pylint: disable=unused-argument
-        r"""Representation of the operator as a product of other operators (static method).
+    compilable_argnames = ("only_visual",)
+    arg_specs = {"wires": Wire[-1]}
 
-        .. math:: O = O_1 O_2 \dots O_n.
+    def __init__(self, wires: WiresLike = (), only_visual: bool = False):
+        super().__init__(wires=wires, only_visual=only_visual)
 
-
-        .. seealso:: :meth:`~.Barrier.decomposition`.
-
-        ``Barrier`` decomposes into an empty list for all arguments.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-            only_visual (Bool): True if we do not want it to have an impact on the compilation process. Default is False.
-
-        Returns:
-            list: decomposition of the operator
-
-        **Example:**
-
-        >>> print(qp.Barrier.compute_decomposition(0))
-        []
-
-        """
-        return []
+    def __repr__(self):
+        return f"Barrier(wires={self.wires.tolist()})"
 
     def label(self, decimals=None, base_label=None, cache=None):
         return "||"
 
-    def _controlled(self, _):
-        return copy(self).queue()
-
     def adjoint(self):
-        return copy(self)
+        return Barrier(wires=self.wires, only_visual=self.only_visual)
 
     def pow(self, z):
-        return [copy(self)]
+        return [Barrier(wires=self.wires, only_visual=self.only_visual)]
 
     def simplify(self):
         if self.only_visual:
@@ -96,63 +76,15 @@ class Barrier(Operation):
         return self
 
 
-class WireCut(Operation):
-    r"""WireCut(wires)
-    The wire cut operation, used to manually mark locations for wire cuts.
+@custom_ctrl_dispatch.register
+def _ctrl_barrier(base: Barrier, control, control_values, *_):  # pylint: disable=unused-argument
+    """Controlling a ``Barrier`` has no effect, so the ``Barrier`` itself is returned."""
+    if qp.QueuingManager.recording():
+        qp.QueuingManager.append(base)
+    return base
 
-    .. note::
 
-        This operation is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
-
-    **Details:**
-
-    * Number of wires: AnyWires
-    * Number of parameters: 0
-
-    Args:
-        wires (Sequence[int] or int): the wires the operation acts on
-    """
-
-    num_params = 0
-    grad_method = None
-
-    def __init__(self, wires: WiresLike = ()):
-        wires = Wires(wires)
-        super().__init__(wires=wires)
-        if not self._wires:
-            raise ValueError(
-                f"{self.name}: wrong number of wires. At least one wire has to be provided."
-            )
-
-    @staticmethod
-    def compute_decomposition(wires: WiresLike):
-        r"""Representation of the operator as a product of other operators (static method).
-
-        Since this operator is a placeholder inside a circuit, it decomposes into an empty list.
-
-        Args:
-            wires (Any, Wires): Wire that the operator acts on.
-
-        Returns:
-            list[Operator]: decomposition of the operator
-
-        **Example:**
-
-        >>> print(qp.WireCut.compute_decomposition(0))
-        []
-
-        """
-        return []
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return "//"
-
-    def adjoint(self):
-        return WireCut(wires=self.wires)
-
-    def pow(self, z):
-        return [copy(self)]
+add_decomps(Barrier, null_decomp)
 
 
 class Snapshot(Operation):
@@ -298,8 +230,8 @@ class Snapshot(Operation):
 # Since measurements are captured as variables in plxpr with the capture module,
 # the measurement is treated as a traceable argument.
 # This step is mandatory for fixing the order of arguments overwritten by ``Snapshot._primitive_bind_call``.
-if Snapshot._primitive:  # pylint: disable=protected-access
 
-    @Snapshot._primitive.def_impl  # pylint: disable=protected-access
-    def _(measurement, tag=None, shots="workflow"):
-        return type.__call__(Snapshot, tag=tag, measurement=measurement, shots=shots)
+
+@Snapshot._primitive.def_impl  # pylint: disable=protected-access
+def _(measurement, tag=None, shots="workflow"):
+    return type.__call__(Snapshot, tag=tag, measurement=measurement, shots=shots)

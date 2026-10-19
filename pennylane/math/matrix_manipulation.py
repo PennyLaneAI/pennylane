@@ -322,7 +322,7 @@ def reduce_matrices(
 def get_batch_size(tensor, expected_shape, expected_size):
     """
     Determine whether a tensor has an additional batch dimension for broadcasting,
-    compared to an expected_shape. Has support for abstract TF tensors.
+    compared to an expected_shape.
 
     Args:
         tensor (TensorLike): A tensor to inspect for batching
@@ -332,16 +332,10 @@ def get_batch_size(tensor, expected_shape, expected_size):
     Returns:
         Optional[int]: The batch size of the tensor if there is one, otherwise None
     """
-    try:
-        size = math.size(tensor)
-        ndim = math.ndim(tensor)
-        if ndim > len(expected_shape) or size > expected_size:
-            return size // expected_size
-
-    except Exception as err:  # pragma: no cover, pylint:disable=broad-except
-        # This except clause covers the usage of tf.function
-        if not math.is_abstract(tensor):
-            raise err
+    size = math.size(tensor)
+    ndim = math.ndim(tensor)
+    if ndim > len(expected_shape) or size > expected_size:
+        return size // expected_size
 
     return None
 

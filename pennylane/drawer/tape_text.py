@@ -485,6 +485,8 @@ def tape_text(
 
     # Recursively handle nested tapes #
     tape_totals = "\n".join(totals.finished_lines + totals.wire_totals + totals.bit_totals)
+    # Rows that hold no content in the last columns are padded to the full width above
+    tape_totals = "\n".join(line.rstrip() for line in tape_totals.split("\n"))
     current_tape_offset = cache["tape_offset"]
     cache["tape_offset"] += len(tape_cache)
     for i, nested_tape in enumerate(tape_cache):

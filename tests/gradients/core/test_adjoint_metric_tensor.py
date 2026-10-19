@@ -341,38 +341,6 @@ class TestAdjointMetricTensorTape:
         expected = qp.math.reshape(expected, qp.math.shape(met_tens))
         assert qp.math.allclose(met_tens.detach().numpy(), expected)
 
-    interfaces = ["auto", "tf"]
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_correct_output_tape_tf(self, ansatz, params, interface):
-        """Test that the output is correct when using TensorFlow and
-        calling the adjoint metric tensor directly on a tape."""
-
-        import tensorflow as tf
-
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
-        t_params = tuple(tf.Variable(p) for p in params)
-        dev = qp.device("default.qubit", wires=self.num_wires)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(*params):
-            """Circuit with dummy output to create a QNode."""
-            ansatz(*params, dev.wires)
-            return qp.expval(qp.PauliZ(0))
-
-        with tf.GradientTape():
-            circuit(*t_params)
-            tape = qp.workflow.construct_tape(circuit)(*t_params)
-            mt = qp.adjoint_metric_tensor(tape)
-
-        with tf.GradientTape():
-            mt = qp.adjoint_metric_tensor(circuit)(*t_params)
-        assert qp.math.allclose(mt, expected)
-
-        expected = qp.math.reshape(expected, qp.math.shape(mt))
-        assert qp.math.allclose(mt, expected)
-
 
 class TestAdjointMetricTensorQNode:
     """Test the adjoint method for the metric tensor when calling it on
@@ -453,35 +421,6 @@ class TestAdjointMetricTensorQNode:
             return qp.expval(qp.PauliZ(0))
 
         mt = qp.adjoint_metric_tensor(circuit)(*t_params)
-
-        if isinstance(mt, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
-        else:
-            assert qp.math.allclose(mt, expected)
-
-    interfaces = ["auto", "tf"]
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_correct_output_qnode_tf(self, ansatz, params, interface):
-        """Test that the output is correct when using TensorFlow and
-        calling the adjoint metric tensor on a QNode."""
-
-        import tensorflow as tf
-
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
-        t_params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
-        dev = qp.device("default.qubit", wires=self.num_wires)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(*params):
-            """Circuit with dummy output to create a QNode."""
-            ansatz(*params, dev.wires)
-            return qp.expval(qp.PauliZ(0))
-
-        with tf.GradientTape():
-            mt = qp.adjoint_metric_tensor(circuit)(*t_params)
 
         if isinstance(mt, tuple):
             assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
@@ -581,34 +520,6 @@ class TestAdjointMetricTensorDifferentiability:
         mt_jac = torch.autograd.functional.jacobian(mt_fn, *t_params)
 
         if isinstance(mt_jac, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))
-        else:
-            assert qp.math.allclose(mt_jac, expected)
-
-    @pytest.mark.tf
-    def test_correct_output_qnode_tf(self, ansatz, params):
-        """Test that the derivative is correct when using TensorFlow and
-        calling the adjoint metric tensor on a QNode."""
-
-        import tensorflow as tf
-
-        expected = qp.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*params)
-        t_params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
-        dev = qp.device("default.qubit", wires=self.num_wires)
-
-        @qp.qnode(dev, interface="tf")
-        def circuit(*params):
-            """Circuit with dummy output to create a QNode."""
-            ansatz(*params, dev.wires)
-            return qp.expval(qp.PauliZ(0))
-
-        with tf.GradientTape() as t:
-            mt = qp.adjoint_metric_tensor(circuit)(*t_params)
-
-        mt_jac = t.jacobian(mt, t_params)
-        if isinstance(mt_jac, tuple):
-            if not isinstance(expected, tuple) and len(mt_jac) == 1:
-                expected = (expected,)
             assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))
         else:
             assert qp.math.allclose(mt_jac, expected)

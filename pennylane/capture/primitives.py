@@ -18,41 +18,27 @@ created in pennylane.
 It has a jax dependency and should be located in a standard import path.
 """
 
-from pennylane._grad.grad import _get_jacobian_prim
-from pennylane._grad.jvp import _get_jvp_prim
-from pennylane._grad.value_and_grad import _get_value_and_grad_prim
-from pennylane._grad.vjp import _get_vjp_prim
-from pennylane.control_flow.for_loop import _get_for_loop_qfunc_prim
-from pennylane.control_flow.while_loop import _get_while_loop_qfunc_prim
-from pennylane.core._capture_measurements import _get_abstract_measurement  # tach-ignore
-from pennylane.core.operator.base import _get_abstract_operator  # tach-ignore
+from pennylane._grad.grad import jacobian_prim
+from pennylane._grad.jvp import jvp_prim
+from pennylane._grad.value_and_grad import value_and_grad_prim
+from pennylane._grad.vjp import vjp_prim
+from pennylane.control_flow.for_loop import for_loop_prim
+from pennylane.control_flow.while_loop import while_loop_prim
+from pennylane.core._capture_measurements import AbstractMeasurement  # tach-ignore
+from pennylane.core.operator.base import AbstractOperator  # tach-ignore
 from pennylane.core.operator.operator2 import operator_p  # tach-ignore
-from pennylane.core.transforms.transform import _create_transform_primitive  # tach-ignore
-from pennylane.ops.mid_measure.mid_measure import _create_mid_measure_primitive
-from pennylane.ops.mid_measure.pauli_measure import _create_pauli_measure_primitive
-from pennylane.ops.op_math.adjoint import _get_adjoint_qfunc_prim
-from pennylane.ops.op_math.condition import _get_cond_qfunc_prim
-from pennylane.ops.op_math.controlled import _get_ctrl_qfunc_prim
+from pennylane.core.transforms.transform import transform_prim  # tach-ignore
+from pennylane.ops.mid_measure.mid_measure import measure_prim
+from pennylane.ops.mid_measure.pauli_measure import pauli_measure_prim
+from pennylane.ops.op_math.adjoint import adjoint_transform_prim
+from pennylane.ops.op_math.condition import cond_prim
+from pennylane.ops.op_math.controlled import ctrl_transform_prim
 from pennylane.workflow._capture_qnode import qnode_prim
 
 from .subroutine import quantum_subroutine_prim
-from .symbolic_array import _symbolic_array_primitive
+from .symbolic_array import symbolic_array_p
 
-AbstractOperator = _get_abstract_operator()
-AbstractMeasurement = _get_abstract_measurement()
-adjoint_transform_prim = _get_adjoint_qfunc_prim()
-ctrl_transform_prim = _get_ctrl_qfunc_prim()
-jacobian_prim = _get_jacobian_prim()
-vjp_prim = _get_vjp_prim()
-jvp_prim = _get_jvp_prim()
-value_and_grad_prim = _get_value_and_grad_prim()
-cond_prim = _get_cond_qfunc_prim()
-for_loop_prim = _get_for_loop_qfunc_prim()
-while_loop_prim = _get_while_loop_qfunc_prim()
-measure_prim = _create_mid_measure_primitive()
-pauli_measure_prim = _create_pauli_measure_primitive()
-transform_prim = _create_transform_primitive()
-symbolic_array_prim = _symbolic_array_primitive()
+symbolic_array_prim = symbolic_array_p
 
 __all__ = [
     "AbstractOperator",

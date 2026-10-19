@@ -18,6 +18,8 @@ import warnings
 from datetime import datetime
 from functools import partial
 
+import jax
+import jax.numpy as jnp
 import numpy as np
 
 import pennylane as qp
@@ -26,14 +28,12 @@ from pennylane.liealg import adjvec_to_op, op_to_adjvec
 from pennylane.pauli import PauliSentence
 
 try:
-    import jax
-    import jax.numpy as jnp
     import optax
 
     jax.config.update("jax_enable_x64", True)
-    has_jax = True
+    has_optax = True
 except ImportError:
-    has_jax = False
+    has_optax = False
 
 try:
     import matplotlib.pyplot as plt
@@ -221,9 +221,9 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     """
 
-    if not has_jax:  # pragma: no cover
+    if not has_optax:  # pragma: no cover
         raise ImportError(
-            "jax and optax are required for variational_kak_adj. You can install them with pip install jax optax."
+            "optax is required for variational_kak_adj. You can install it with pip install optax."
         )  # pragma: no cover
     if verbose >= 1 and not has_plt:  # pragma: no cover
         print(
@@ -390,7 +390,7 @@ def run_opt(
 
     """
 
-    if not has_jax:  # pragma: no cover
+    if not has_optax:  # pragma: no cover
         raise ImportError(
             "jax and optax are required for run_opt. You can install them with pip install jax optax."
         )  # pragma: no cover

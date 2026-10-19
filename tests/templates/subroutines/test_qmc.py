@@ -21,7 +21,6 @@ from scipy.stats import norm
 
 import pennylane as qp
 from pennylane.decomposition import gate_sets
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qmc import (
     QuantumMonteCarlo,
     _make_V,
@@ -30,6 +29,7 @@ from pennylane.templates.subroutines.qmc import (
     make_Q,
     probs_to_unitary,
 )
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.wires import Wires
 
 
@@ -261,22 +261,21 @@ class TestQuantumMonteCarlo:
     def func(i):
         return np.sin(i) ** 2
 
-    @pytest.mark.jax
+    @pytest.mark.xfail_if_capture(reason="the _unflatten of QMC is not compatible with capture")
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Test standard validity criteria with assert_valid."""
         p = np.ones(4) / 4
         target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
-
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-        # Skip capture test because the _unflatten method of QMC is not compatible with capture
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     DECOMP_PARAMS = [
         (np.ones(4) / 4, Wires(range(3)), Wires(range(3, 5))),
         (np.ones(2) / 2, Wires(range(2)), Wires(range(2, 4))),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("p", "target_wires", "estimation_wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, p, target_wires, estimation_wires):
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
@@ -320,7 +319,8 @@ class TestQuantumMonteCarlo:
         queue_before_qpe = tape.operations[:2]
 
         # Build a new tape from all operations following the two QubitUnitary ops and expand it
-        [tape], _ = qp.transforms.decompose(
+        # pylint: disable-next=protected-access
+        [tape], _ = qp.transforms._tape_decompose(
             qp.tape.QuantumScript(tape.operations[2:]),
             gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
             max_expansion=2,
@@ -341,10 +341,11 @@ class TestQuantumMonteCarlo:
         Q = make_Q(A, R)
 
         with qp.queuing.AnnotatedQueue() as q_qpe_tape:
-            qp.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
+            qp.QuantumPhaseEstimation(qp.QubitUnitary(Q, wires=target_wires), estimation_wires)
 
         qpe_tape = qp.tape.QuantumScript.from_queue(q_qpe_tape)
-        [qpe_tape], _ = qp.transforms.decompose(
+        # pylint: disable-next=protected-access
+        [qpe_tape], _ = qp.transforms._tape_decompose(
             qpe_tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=2
         )
 

@@ -31,14 +31,15 @@ from pennylane.backline.decode import (
     _validate_packed,
     decode,
 )
-from pennylane.backline.runtime import operands
 
 TRANSPORT_CALLS = [
-    "__catalyst__transport__get_session__call",
-    "__catalyst__transport__stage_payload__call",
-    "__catalyst__transport__post__call",
-    "__catalyst__transport__collect__call",
+    "__catalyst__transport__get_session",
+    "__catalyst__transport__stage_payload",
+    "__catalyst__transport__post",
+    "__catalyst__transport__collect",
 ]
+
+CHECKS = ("__catalyst__transport__check", "__catalyst__transport__check_session")
 
 
 @pytest.fixture(name="x64")
@@ -74,8 +75,7 @@ class TestDecodeBitpack:
         assert [tuple(a.shape) for a in avals] == [(64,)]
         assert [a.dtype for a in avals] == [np.dtype(bool)]
 
-        calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
-        assert calls[-1].params["out_bytes"] == (8,)
+        assert calls_of(jaxpr)[-1].params["out_bytes"] == (8,)
 
     def test_bitpack_decode_rejects_non_vector_input(self):
         """It should require a 1D syndrome bit vector in packed mode."""
@@ -139,9 +139,28 @@ def a_round(jax, dev, syndrome=None, **kwargs):
         return jax.make_jaxpr(lambda s: decode(s, **kwargs))(syndrome)
 
 
+def runtime_calls_of(jaxpr):
+    """Every runtime call, checks included, in order."""
+    return [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+
+
 def calls_of(jaxpr):
     """The transport calls."""
-    return [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+    return [eqn for eqn in runtime_calls_of(jaxpr) if eqn.params["symbol"] not in CHECKS]
+
+
+def sources_of(jaxpr, var):
+    """Every variable it is computed from."""
+    producers = {out: eqn for eqn in jaxpr.eqns for out in eqn.outvars}
+    seen, pending = set(), [var]
+    while pending:
+        current = pending.pop()
+        if current in seen or not hasattr(current, "aval") or hasattr(current, "val"):
+            continue
+        seen.add(current)
+        if current in producers and str(producers[current].primitive) != "runtime_call":
+            pending.extend(producers[current].invars)
+    return seen
 
 
 def scalars_of(jaxpr, call):
@@ -156,13 +175,9 @@ def scalars_of(jaxpr, call):
 
 def session_key_of(jaxpr):
     """The session key."""
-    fields = [
-        np.asarray(const)
-        for const in jaxpr.consts
-        if np.asarray(const).shape == (operands.STR_OPERAND_BYTES,)
-    ]
-    assert len(fields) == 1, "expected exactly one str operand"
-    return bytes(fields[0]).rstrip(b"\x00").decode()
+    get_session = calls_of(jaxpr)[0]
+    # local_constants is the ordered list of compile-time C strings for the call.
+    return get_session.params["local_constants"][0].removesuffix(b"\x00").decode()
 
 
 class TestSessionKey:
@@ -231,16 +246,21 @@ class TestOutBytes:
     def test_an_explicit_size_wins(self):
         """The call site's override wins."""
         controller = qp.Controller()
-        assert _resolve_out_bytes(controller, 16) == 16
+        assert _resolve_out_bytes(None, controller, 16) == 16
 
-    def test_the_committed_size_is_the_default(self):
-        """The committed size is the default."""
-        assert _resolve_out_bytes(qp.Controller(), None) == 8
+    def test_the_placement_size_is_the_default(self):
+        """The reply size the placement commits is the default."""
+        dev = qp.Backline(controller=qp.Controller(out_bytes=121), transport="memcpy")
+        assert _resolve_out_bytes(dev.placement, dev.placement.controller, None) == 121
+
+    def test_without_a_placement_the_controller_size_is_the_default(self):
+        """With no placement, the controller's own size is used."""
+        assert _resolve_out_bytes(None, qp.Controller(out_bytes=16), None) == 16
 
     @pytest.mark.parametrize("controller", [qp.Controller(), object()])
     def test_the_transport_default_is_eight_bytes(self, controller):
         """An unconfigured reply uses the transport's default message size."""
-        assert _resolve_out_bytes(controller, None) == 8
+        assert _resolve_out_bytes(None, controller, None) == 8
 
 
 @pytest.mark.jax
@@ -300,6 +320,18 @@ class TestRecordedRound:
         jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor(name="decoder-0")]))
         assert [call.params["symbol"] for call in calls_of(jaxpr)] == TRANSPORT_CALLS
 
+    def test_every_call_is_checked(self, x64):
+        """Each call is followed by a check of what it returned."""
+        jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor(name="decoder-0")]))
+        calls = runtime_calls_of(jaxpr)
+        assert len(calls) == 2 * len(TRANSPORT_CALLS)
+        for call, check in zip(calls[::2], calls[1::2]):
+            name = call.params["symbol"].removeprefix("__catalyst__transport__")
+            expected = CHECKS[1] if name == "get_session" else CHECKS[0]
+            assert check.params["symbol"] == expected
+            assert sources_of(jaxpr, check.invars[0]) & set(call.outvars), f"{name} is unchecked"
+            assert check.params["local_constants"] == (name.encode() + b"\0",)
+
     def test_every_call_is_local(self, x64):
         """The round is driven from the controller's own process."""
         jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor()]))
@@ -308,7 +340,7 @@ class TestRecordedRound:
     def test_the_session_is_claimed_as_the_controller(self, x64):
         """The controller is the data initiator."""
         jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor(name="decoder-0")]))
-        role, _key = scalars_of(jaxpr, calls_of(jaxpr)[0])
+        (role,) = scalars_of(jaxpr, calls_of(jaxpr)[0])
 
         assert role == ROLE_CONTROLLER
         assert session_key_of(jaxpr) == "decoder-0"
@@ -371,6 +403,19 @@ class TestRecordedRound:
         (correction,) = jaxpr.jaxpr.outvars
         assert correction.aval.shape == (8,)
         assert str(correction.aval.dtype) == "uint8"
+
+    def test_the_correction_is_the_controllers_size(self, x64):
+        """A controller's non-default reply size sets the bytes collected and the result's shape."""
+        dev = qp.Backline(
+            controller=qp.Controller(device=qp.device("null.qubit", wires=2), out_bytes=121),
+            coprocessors=[a_coprocessor()],
+            transport="memcpy",
+        )
+        jaxpr = a_round(x64, dev)
+
+        assert calls_of(jaxpr)[3].params["out_bytes"] == (121,)
+        (correction,) = jaxpr.jaxpr.outvars
+        assert correction.aval.shape == (121,)
 
     def test_an_unconfigured_correction_uses_the_transport_default(self, x64):
         """The Python return shape agrees with the transport dialect's 8-byte default."""

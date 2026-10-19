@@ -21,17 +21,10 @@ import pennylane as qp
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 
 
-def prepare_phase_gradient(wires):
-    ops = []
-    for i, w in enumerate(wires):
-        ops.append(qp.H(w))
-        ops.append(qp.PhaseShift(-np.pi / 2**i, w))
-    return ops
-
-
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_units_rz_phase_gradient(p):
-    """Test the outputs of _rz_phase_gradient"""
+    """Test the outputs of ``_rz_phase_gradient``. The fanout is a ``MultiX`` (one ``X`` per set bit
+    on the angle wires) controlled by the RZ target wire, over the full angle width."""
 
     phi = (1 / 2 + 1 / 4 + 1 / 8 + 1 / 16 + 1 / 32) * 2 * np.pi
 
@@ -48,20 +41,22 @@ def test_units_rz_phase_gradient(p):
         work_wires=work_wires,
     )
 
-    assert isinstance(op, qp.ops.op_math.ChangeOpBasis2)
+    expected_bits = qp.math.binary_decimals(phi, p, unit=2 * np.pi)
+    expected_targets = {angle_wires[i] for i, b in enumerate(expected_bits) if int(b)}
 
+    assert isinstance(op, qp.ops.op_math.ChangeOpBasis2)
     operands = op.operands
 
-    assert isinstance(operands[0], qp.ops.op_math.controlled.ControlledOp)
-    assert np.allclose(operands[0].base.parameters, [0] * p)
-    assert operands[0].base.wires == angle_wires
+    # operands[0] and operands[2] are the (self-inverse) compute / uncompute controlled-MultiX fanouts.
+    for fanout in (operands[0], operands[2]):
+        assert isinstance(fanout.base, qp.MultiX)
+        assert fanout.control_wires == qp.wires.Wires(wire)  # controlled by the RZ target wire
+        assert fanout.base.wires == angle_wires
+        flipped = {angle_wires[i] for i, b in enumerate(fanout.base.bitstring) if int(b)}
+        assert flipped == expected_targets
 
     assert isinstance(operands[1], qp.SemiAdder)
     assert operands[1].wires == angle_wires + phase_grad_wires + work_wires
-
-    assert isinstance(operands[2], qp.ops.op_math.controlled.ControlledOp)
-    assert np.allclose(operands[2].base.parameters, [0] * p)
-    assert operands[2].base.wires == angle_wires
 
 
 def test_global_phases():
@@ -130,9 +125,9 @@ def test_integration_rz_phase_gradient(phi):
     rz_circ = qp.tape.QuantumScript(
         [
             qp.Hadamard(wire),  # prepare |+>
-            *prepare_phase_gradient(phase_grad_wires),
+            qp.PhaseGradientStatePrep(phase_grad_wires),
             qp.RZ(phi, wire),
-            *[qp.adjoint(op) for op in prepare_phase_gradient(phase_grad_wires)[::-1]],
+            qp.adjoint(qp.PhaseGradientStatePrep(phase_grad_wires)),
             qp.Hadamard(wire),  # unprepare |+>
         ]
     )

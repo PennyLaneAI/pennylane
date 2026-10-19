@@ -21,15 +21,15 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
 from pennylane import capture, math
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core import Operator
+from pennylane.core.apply import apply
 from pennylane.core.operator import abstractify
-from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
-from pennylane.core.queuing import apply
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
+    _list_decomps,
     get_fixed_decomp,
-    list_decomps,
     register_condition,
     register_resources,
 )
@@ -39,6 +39,7 @@ from pennylane.decomposition.resources import (
     pow_resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import is_integer
+from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -239,11 +240,12 @@ class Pow2(SymbolicOp2):
         """
         return base.diagonalizing_gates()
 
-    @staticmethod
     @override
-    def compute_eigvals(base, z):
-        base_eigvals = base.eigvals()
-        return [math.cast(value, dtype="complex128") ** z for value in base_eigvals]
+    def eigvals(self):
+        base_eigvals = self.base.eigvals()
+        is_single_precision = math.get_dtype_name(base_eigvals) in ("float32", "complex64")
+        complex_dtype = "complex64" if is_single_precision else "complex128"
+        return math.cast(base_eigvals, complex_dtype) ** self.z
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -408,7 +410,7 @@ def pow_rotation(base, z):
     qp.ops.functions.bind_new_parameters(base, (angle * z,))
 
 
-@list_decomps.register
+@_list_decomps.register
 def _list_pow_decomps(op: Pow2) -> DecompCollection:
     abs_op = abstractify(op)
 
@@ -425,6 +427,11 @@ def _list_pow_decomps(op: Pow2) -> DecompCollection:
         return DecompCollection([flip_pow_adjoint])
 
     # Custom decomposition rules registered specifically to the pow operator
-    custom_rules = list_decomps.dispatch(object)(abs_op)
+    custom_rules = _list_decomps.dispatch(object)(abs_op)
 
     return custom_rules + [repeat_pow_base] if is_integer(op.z) else custom_rules
+
+
+@to_name.register
+def _pow2_to_name(op: Pow2):
+    return f"Pow({to_name(op.base)})"

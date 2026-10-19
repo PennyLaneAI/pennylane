@@ -22,8 +22,11 @@ import functools
 import operator
 from collections.abc import Callable, Iterator
 from numbers import Number
-from typing import Any, SupportsIndex, Union
+from typing import Any, SupportsIndex
 
+import jax
+import jax.numpy as jnp
+from jax.interpreters.partial_eval import DynamicJaxprTracer
 from malt.core import config as ag_config
 from malt.impl import api as ag_api
 from malt.impl.api import converted_call as ag_converted_call
@@ -32,15 +35,6 @@ from malt.operators.variables import Undefined
 
 import pennylane as qp
 from pennylane.exceptions import AutoGraphError
-
-has_jax = True
-try:
-    import jax
-    import jax.numpy as jnp
-    from jax.interpreters.partial_eval import DynamicJaxprTracer
-except ImportError:  # pragma: no cover
-    has_jax = False
-
 
 __all__ = [
     "if_stmt",
@@ -56,9 +50,9 @@ __all__ = [
 
 
 def set_item(
-    target: Union["DynamicJaxprTracer", list],
-    index: Union[int, "DynamicJaxprTracer"],
-    x: Union[Number, "DynamicJaxprTracer"],
+    target: DynamicJaxprTracer | list,
+    index: int | DynamicJaxprTracer,
+    x: Number | DynamicJaxprTracer,
 ):
     """An implementation of the AutoGraph 'set_item' function."""
 
@@ -71,9 +65,9 @@ def set_item(
 
 
 def update_item_with_op(
-    target: Union["DynamicJaxprTracer", list],
-    index: Union[int, "DynamicJaxprTracer"],
-    x: Union[Number, "DynamicJaxprTracer"],
+    target: DynamicJaxprTracer | list,
+    index: int | DynamicJaxprTracer,
+    x: Number | DynamicJaxprTracer,
     op: str,
 ):
     """An implementation of the AutoGraph 'update_item_with_op' function."""
@@ -162,9 +156,6 @@ def _assert_iteration_inputs(inputs, symbol_names):
         inputs (Tuple): The loop carried values
         symbol_names (Tuple[str]): The names of the loop carried values.
     """
-
-    if not has_jax:  # pragma: no cover
-        raise ImportError("autograph capture requires JAX to be installed.")
 
     for i, inp in enumerate(inputs):
         if isinstance(inp, Undefined):

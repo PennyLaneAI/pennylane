@@ -20,7 +20,7 @@ from collections.abc import Sequence
 from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import X, Z, ctrl
+from pennylane.ops import CZ, X, Z, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import AbstractArray, Wire
 from pennylane.wires import Wires, WiresLike
@@ -41,6 +41,9 @@ class FlipSign(Operator2):
         state (tuple[int] or list[int] or int): integer or binary sequence representing
             the basis state whose sign is to be flipped
         wires (WiresLike): wires that the template acts on
+        work_wires (WiresLike): optional auxiliary wires that can be used in the decomposition
+            of the multi-controlled :class:`~.Z` gate. They are assumed to be in the state
+            :math:`|0\rangle` and are restored to it.
 
     **Example**
 
@@ -69,8 +72,8 @@ class FlipSign(Operator2):
     """
 
     compilable_argnames = ("state",)
-    arg_specs = {"wires": Wire[-1]}
-    wire_sizes = (None,)
+    wire_argnames = ("wires", "work_wires")
+    arg_specs = {"wires": Wire[-1], "work_wires": Wire[-1]}
 
     @staticmethod
     def _canonicalize_state(
@@ -94,37 +97,62 @@ class FlipSign(Operator2):
 
         return state if isinstance(state, AbstractArray) else tuple(state)
 
-    def __init__(self, state: int | list[int] | tuple[int], wires: WiresLike):
+    def __init__(
+        self,
+        state: int | list[int] | tuple[int],
+        wires: WiresLike,
+        work_wires: WiresLike = None,
+    ):
         wires = Wires(wires)
         num_wires = len(wires)
         if num_wires == 0:
             raise ValueError("At least one wire is required.")
         state = self._canonicalize_state(state, num_wires)
-        super().__init__(state, wires)
+        work_wires = () if work_wires is None else work_wires
+        super().__init__(state, wires, work_wires)
 
 
-def _flip_sign_resources(state: tuple[int], wires: WiresLike):
+def _flip_sign_resources(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
     num_wires = len(wires)
     num_ctrl_wires = num_wires - 1
     if num_ctrl_wires == 0:
         res = {Z: 1}
+    elif num_ctrl_wires == 1 and state[0]:
+        res = {CZ: 1}
     else:
         num_zeros = num_ctrl_wires - sum(state[:-1])
-        res = {_ctrl_abstract(Z, Wire[num_ctrl_wires], num_zero_control_values=num_zeros): 1}
+        res = {
+            _ctrl_abstract(
+                Z,
+                Wire[num_ctrl_wires],
+                num_zero_control_values=num_zeros,
+                work_wires=Wire[len(work_wires)],
+                work_wire_type="zeroed",
+            ): 1
+        }
+
     if state[-1] == 0:
         res[X] = 2
     return res
 
 
 @register_resources(_flip_sign_resources)
-def _flip_sign_decomposition(state: tuple[int], wires: WiresLike):
+def _flip_sign_decomposition(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
     if state[-1] == 0:
         X(wires[-1])
 
     if len(wires) == 1:
-        Z(wires[-1])
+        Z(wires)
+    elif len(wires) == 2 and state[0]:
+        CZ(wires)
     else:
-        ctrl(Z(wires[-1]), control=wires[:-1], control_values=state[:-1])
+        ctrl(
+            Z(wires[-1]),
+            control=wires[:-1],
+            work_wire_type="zeroed",
+            work_wires=work_wires,
+            control_values=state[:-1],
+        )
 
     if state[-1] == 0:
         X(wires[-1])
