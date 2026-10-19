@@ -107,7 +107,7 @@ class TrotterProduct(Operation):
             to ``False`` skips the validation without changing the generated
             time-evolution operation. Users are responsible for ensuring that
             the Hamiltonian is Hermitian when this option is ``False``. The
-            more exhaustive ``qp.is_hermitian`` check can be used to verify
+            more exhaustive :func:`~.is_hermitian` check can be used to verify
             Hermiticity manually.
 
     Raises:
