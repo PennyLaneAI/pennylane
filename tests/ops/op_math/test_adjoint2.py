@@ -157,12 +157,10 @@ def test_old_decomp_integartion():
     def _sx_to_rx(wires):
         qp.RX(np.pi / 2, wires=wires)
 
-    with qp.decomposition.local_decomps():
-
-        qp.add_decomps(SX2, _sx_to_rx)
-        op = qp.adjoint(SX2(0))
-        assert op.has_decomposition
-        assert op.decomposition() == [qp.adjoint(qp.RX(np.pi / 2, wires=[0]))]
+    qp.add_decomps(SX2, _sx_to_rx)
+    op = qp.adjoint(SX2(0))
+    assert op.has_decomposition
+    assert op.decomposition() == [qp.adjoint(qp.RX(np.pi / 2, wires=[0]))]
 
 
 def test_parameter_frequencies():

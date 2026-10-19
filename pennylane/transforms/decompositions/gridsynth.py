@@ -34,13 +34,14 @@ def gridsynth_setup_inputs(
             diamond norm error of at most :math:`2\epsilon` per rotation.
         ppr_basis (bool): If True, decompose into the PPR basis. If False, decompose into the Clifford+T basis. Defaults to ``False``.
         method (str): The synthesis method. ``"deterministic"`` (default) uses the standard
-            gridsynth discretization. ``"mixed"`` uses the mixed diagonal approximation
+            Ross-Selinger discretization. ``"mixed"`` uses the mixed diagonal approximation
             (`arXiv:2203.10064 <https://arxiv.org/abs/2203.10064>`__ Section 3.4). It randomly
-            applies either an under- or an over-rotated sequence. This roughly halves the T-count
-            at the same accuracy. ``"mixed-fallback"`` uses the mixed fallback approximation
-            (Section 3.5). It randomly applies one of two projective rotations on an ancilla
-            qubit, followed by a mixed diagonal fallback if measuring the ancilla signals
-            failure. This roughly halves the T-count of ``"mixed"`` again.
+            applies either an under- or an over-rotated sequence, additionally twirled over the
+            group :math:`\{I, S, Z, S^\dagger\}`. This roughly halves the T-count at the same
+            accuracy. ``"mixed-fallback"`` uses the mixed fallback approximation (Section 3.5).
+            It randomly applies one of two projective rotations on an ancilla qubit, followed by
+            a mixed diagonal fallback if measuring the ancilla signals failure. This roughly
+            halves the T-count of ``"mixed"`` again.
 
     .. note::
 
@@ -77,12 +78,9 @@ def gridsynth_setup_inputs(
 
     .. code-block:: python
 
-        qp.decomposition.enable_graph()
-
         def t_count(method):
             @qp.qjit(capture=True, target="mlir")
             @qp.transforms.gridsynth(epsilon=1e-6, method=method)
-            @qp.transforms.decompose(gate_set={"RZ", "Hadamard"})
             @qp.qnode(qp.device("null.qubit", wires=1))
             def circuit(x: float):
                 qp.RZ(x, 0)

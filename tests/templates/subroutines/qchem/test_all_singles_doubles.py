@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 @pytest.mark.xfail_if_capture(reason="come back to this as we port it to Op2 [sc-128406]")
@@ -41,7 +41,7 @@ def test_standard_validity(singles, doubles):
         singles=singles,
         doubles=doubles,
     )
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestDecomposition:
