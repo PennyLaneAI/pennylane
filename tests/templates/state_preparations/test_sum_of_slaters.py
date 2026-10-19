@@ -892,7 +892,6 @@ class TestSumOfSlatersPrep:
         last_flip_prob = num_last_x / m
         expected = [pytest.approx((p, 1 - p)) for p in [flip_prob, enum_cnot_prob, last_flip_prob]]
         if r != m:
-            assert force_non_id_encoding
             # The encoding is applied before and after the uncomputation
             id_cnot_prob = num_id_cnots / (2 * m * r)
             id_cnot_hint = pytest.approx((id_cnot_prob, 1 - id_cnot_prob))

@@ -22,7 +22,6 @@ import hint_helpers
 import jax
 import numpy
 import pytest
-from jax import numpy as jnp
 
 import pennylane as qp
 from pennylane import numpy as np
@@ -388,10 +387,10 @@ class TestQROM:
             return True
 
         n, m, w = 2, 2, 1
-        bitstrings = jnp.array([[1, 0], [0, 1], [1, 1], [0, 0]])
-        control_wires = jnp.arange(0, n)
-        target_wires = jnp.arange(n, n + m)
-        work_wires = jnp.arange(n + m, n + m + w)
+        bitstrings = qp.math.array([[1, 0], [0, 1], [1, 1], [0, 0]], like="jax")
+        control_wires = qp.math.arange(0, n, like="jax")
+        target_wires = qp.math.arange(n, n + m, like="jax")
+        work_wires = qp.math.arange(n + m, n + m + w, like="jax")
 
         jax.make_jaxpr(build_and_decompose)(bitstrings, control_wires, target_wires, work_wires)
 

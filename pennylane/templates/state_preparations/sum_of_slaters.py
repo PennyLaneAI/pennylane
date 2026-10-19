@@ -1246,12 +1246,15 @@ def _preprocess(v_bits, wires):
 
 
 def _pad_and_cast_coeffs(coefficients, enumeration_wires):
+    """Pad coefficients into a vector of sizes ``2**len(enumeration_wires)``, because
+    ``MultiplexerStatePreparation`` expects a full-dimensional input vector.
+    Also casts to the dtype consistent with the input dtype of coefficients and the reported
+    dtype in the resource function."""
     missing_dim = 2 ** len(enumeration_wires) - len(coefficients)
     _, cast_dtype = math.get_abstract_and_cast_dtype(coefficients)
-    coefficients = qp.math.concatenate(
-        [coefficients, qp.math.cast_like(qp.math.zeros(missing_dim), coefficients)],
-        like=qp.math.get_interface(coefficients),
-    )
+    zeros = qp.math.cast_like(qp.math.zeros(missing_dim), coefficients)
+    interface = qp.math.get_interface(coefficients)
+    coefficients = qp.math.concatenate([coefficients, zeros], like=interface)
     return qp.math.cast(coefficients, cast_dtype)
 
 

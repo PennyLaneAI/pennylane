@@ -253,8 +253,7 @@ class TestDiagonalization:
 
         # Hints for the Hadamard (with nested CNOT loop) and for each CNOT in the loop
         assert hints[0][0] == pytest.approx(num_hadamards / num_fragments)
-        if num_hadamards:
-            assert hints[1][0] == pytest.approx(num_cnots / (num_hadamards * n))
+        assert hints[1][0] == pytest.approx(num_cnots / (num_hadamards * n))
 
     def test_matrix_is_orthogonal(self):
         """Test that the diagonalization matrix is orthogonal."""
