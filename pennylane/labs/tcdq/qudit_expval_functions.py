@@ -29,6 +29,7 @@ of the technical notes.
 """
 
 import itertools
+import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import NamedTuple
@@ -102,11 +103,9 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
             :math:`D'(\mathbf{\xi})` is given by a ``Callable`` with signature ``(params: ArrayLike, z: ArrayLike) -> scalar``
             where ``z`` is a dit-string of shape ``(n_qudits, )`` with entries in :math:`\{0, \dots, d-1\}` and
             ``params`` has shape matching :math:`\mathbf{\xi}`.
-        max_memory (float): Upper bound, in gigabytes (1 GB = 1024**3 bytes), on the temporary
-            memory used by the phase-difference computation. Within each weight group the gates
-            are processed in blocks whose size is derived from this budget together with the
-            gate weight, the number of samples and the number of observables, so peak memory no
-            longer grows with the number of gates. Defaults to ``1.0``.
+        max_memory (float | None): Upper bound, in gigabytes (1 GB = 1024**3 bytes), on the
+            temporary memory used by the phase-difference computation. If ``None`` (default),
+            memory is unbounded.
 
     **Example**
 
@@ -144,8 +143,8 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     init_state_amps: ArrayLike | None = None
     #: Learnable phase layer
     phase_fn: Callable | None = None
-    #: Memory budget in GB for the blocked phase-difference computation.
-    max_memory: float = 1.0
+    #: Memory budget in GB for the blocked phase-difference computation, or ``None`` for unbounded.
+    max_memory: float | None = None
 
 
 def _dims_to_numpy(dims: int | Sequence[int], n_qudits: int) -> np.ndarray:
@@ -290,8 +289,21 @@ _BYTES_PER_GB = 1024**3
 _FLOAT_BYTES = 4
 
 
-def _memory_budget_bytes(max_memory: float) -> int:
+def _memory_budget_bytes(max_memory: float | None) -> int | None:
     """Convert a ``max_memory`` budget in GB to an integer number of bytes."""
+    if max_memory is None:
+        return None
+
+    if (
+        isinstance(max_memory, bool)
+        or not isinstance(max_memory, (int, float, np.integer, np.floating))
+        or not math.isfinite(max_memory)
+        or max_memory <= 0
+    ):
+        raise ValueError(
+            "QuditCircuitConfig.max_memory must be None or a positive, finite number of "
+            f"gigabytes, got {max_memory!r}."
+        )
     return int(max_memory * _BYTES_PER_GB)
 
 
@@ -454,7 +466,7 @@ def _accumulate_phase_diffs(
     samples: jnp.ndarray,
     l_vecs: jnp.ndarray,
     dims: ArrayLike,
-    max_memory_bytes: int,
+    max_memory_bytes: int | None,
     vmapped_phase_func: Callable | None,
     phase_fn_params: ArrayLike | None,
 ) -> jnp.ndarray:
@@ -469,10 +481,21 @@ def _accumulate_phase_diffs(
 
     accumulated = jnp.zeros((n_obs, n_samples))
     for group in gate_groups:
-        block_size = _qudit_phase_block_size(max_memory_bytes, group.omega, n_samples, n_obs)
-        accumulated = accumulated + _group_phase_diffs(
-            theta_ext, samples_t, l_t, dims_f, group, block_size
-        )
+        if max_memory_bytes is None:
+            accumulated = accumulated + _group_block_contribution(
+                theta_ext,
+                samples_t,
+                l_t,
+                dims_f,
+                jnp.asarray(group.supports, dtype=jnp.int32),
+                jnp.asarray(group.powers, dtype=jnp.int32),
+                jnp.asarray(group.param_indices, dtype=jnp.int32),
+            )
+        else:
+            block_size = _qudit_phase_block_size(max_memory_bytes, group.omega, n_samples, n_obs)
+            accumulated = accumulated + _group_phase_diffs(
+                theta_ext, samples_t, l_t, dims_f, group, block_size
+            )
 
     if vmapped_phase_func is not None:
         accumulated += vmapped_phase_func(phase_fn_params, samples, l_vecs)
