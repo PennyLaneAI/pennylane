@@ -19,6 +19,8 @@ Tests for capturing for loops into jaxpr.
 # pylint: disable=too-many-positional-arguments, too-many-arguments
 # pylint: disable=unbalanced-tuple-unpacking
 
+from functools import partial
+
 import numpy as np
 import pytest
 
@@ -893,4 +895,14 @@ class TestForLoopHintsCapture:
 
         double_hinted = qp.hint({"num-iters": 10})(hinted)
         jaxpr = jax.make_jaxpr(double_hinted)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 10
+
+    def test_hint_under_partial(self):
+        """``num-iters`` should be found when the hinted body is wrapped in a partial."""
+
+        def body(i, x, step):  # pylint: disable=unused-argument
+            return x + step
+
+        loop = qp.for_loop(0, 5, 1)(partial(qp.hint(body, {"num-iters": 10}), step=1))
+        jaxpr = jax.make_jaxpr(loop)(0)
         assert jaxpr.eqns[0].params["estimated_iterations"] == 10

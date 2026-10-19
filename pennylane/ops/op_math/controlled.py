@@ -35,10 +35,10 @@ from pennylane._class_property import classproperty
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.capture.autograph import wraps
 from pennylane.capture.custom_primitives import QpPrimitive
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.compiler import compiler
 from pennylane.core import Operator2
 from pennylane.core.operator import Operation, Operator
-from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.exceptions import (
     GeneratorUndefinedError,

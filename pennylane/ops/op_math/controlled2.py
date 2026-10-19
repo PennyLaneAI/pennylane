@@ -24,12 +24,9 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import allocation, capture, compiler, math
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core.operator import Operator, abstractify
-from pennylane.core.operator.operator2 import (  # tach-ignore
-    _to_symbolic_array,
-    operator_p,
-    pop_op_eqns,
-)
+from pennylane.core.operator.operator2 import _to_symbolic_array, operator_p  # tach-ignore
 from pennylane.core.queuing import remove_from_program
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
