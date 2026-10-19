@@ -45,13 +45,13 @@ def pow_using_dunder_method(base, z):
 def test_basic_validity():
     """Run basic operator validity checks."""
     op = qp.pow(qp.RX(1.2, wires=0), 3)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
     op = qp.pow(qp.PauliX(0), 2.5)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
     op = qp.pow(qp.Hermitian(np.eye(2), 0), 2)
-    qp.ops.functions.assert_valid(op, skip_new_decomp=True, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_new_decomp=True, skip_differentiation=True)
 
 
 class TestConstructor:
