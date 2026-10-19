@@ -907,7 +907,7 @@ def _load_block(block, address_wires, target_wires, flag=None):
     ctrl_sequence()  # pylint: disable=no-value-for-parameter
 
 
-def flip_iteration_bit(a, triples, top_not_flipped):
+def _flip_iteration_bit(a, triples, top_not_flipped, quarter_prob, mid_prob):
     """Update the unary iteration tree by flipping the most significant bit that differs between
     subsequent addresses (the central remains of merging a temporary AND uncomputation
     ladder and the next temporary AND computation ladder).
@@ -918,21 +918,21 @@ def flip_iteration_bit(a, triples, top_not_flipped):
             control and auxiliary wires.
         top_not_flipped (bool): whether the last loaded address is in the first half of
             the total capacity given by the number of control wires.
+        quarter_prob (float): probability for ``a == 1`` and ``top_not_flipped`` to be true
+        mid_prob (float): probability for ``a == 0`` to be true
 
     """
     flip_first_control = math.logical_and(a == 1, top_not_flipped)
 
-    # Once resource hints are merged, use those estimates:
-    # cond(flip_first_control, X, estimated_probability=quarter_prob)(triples[0][0])
-    # cond(a > 0, CNOT, estimated_probability=1 - mid_prob)(triples[a - 1][::2])
-    # cond(flip_first_control, X, estimated_probability=quarter_prob)(triples[0][0])
-    # cond(a == 0, CNOT, estimated_probability=mid_prob)(triples[0][::2])
-    # cond(a == 0, CNOT, estimated_probability=mid_prob)(triples[0][1:])
-    cond(flip_first_control, X)(triples[0][0])
-    cond(a > 0, CNOT)(triples[a - 1][::2])
-    cond(flip_first_control, X)(triples[0][0])
-    cond(a == 0, CNOT)(triples[0][::2])
-    cond(a == 0, CNOT)(triples[0][1:])
+    quarter_x = hint(X, {"branch-prob": quarter_prob})
+    mid_cnot = hint(CNOT, {"branch-prob": mid_prob})
+    non_mid_cnot = hint(CNOT, {"branch-prob": 1 - mid_prob})
+
+    cond(flip_first_control, quarter_x)(triples[0][0])
+    cond(a > 0, non_mid_cnot)(triples[a - 1][::2])
+    cond(flip_first_control, quarter_x)(triples[0][0])
+    cond(a == 0, mid_cnot)(triples[0][::2])
+    cond(a == 0, mid_cnot)(triples[0][1:])
 
 
 def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control_wires):
@@ -957,11 +957,6 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
     for i in range(1, len(triples)):
         TemporaryAND(triples[i], (1, 0))
 
-    # [dwierichs] todo: Once resource hints for cond are merged, use those estimates:
-    # [sc-129627]
-    # quarter_prob = int(num_blocks > (1 << (c - 2))) / (num_blocks - 1)
-    # mid_prob = int(num_blocks > (1 << (c - 1))) / (num_blocks - 1)
-
     # Loop over all blocks but the last one. Skip entirely when there is only one block:
     # ``blocks`` then has shape ``(0, ...)``, and Catalyst's ``for_loop(0)`` still traces the
     # body, which would index into that empty axis.
@@ -974,6 +969,10 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
         more_than_half = int(num_blocks > 2 ** (c - 1))
         num_elbows = c + num_blocks - 2 - (num_blocks - 1).bit_count() - more_than_half
         average_ladder_len = (num_elbows - len(triples)) / (num_blocks - 1)
+        # Out of all k, a single one leads to a == 1 within the first half, if it is reached, and
+        # a single one leads to a == 0, if the second half is reached.
+        quarter_prob = int(num_blocks > 2 ** (c - 2)) / (num_blocks - 1)
+        mid_prob = more_than_half / (num_blocks - 1)
 
         def loop(k):
             # 1. load the k-th block, controlled on the flag circuit
@@ -997,7 +996,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
             # Whether we are in the first half of the iteration, so that the top bit
             # has not been flipped yet
             top_not_flipped = k < (1 << (c - 1))
-            flip_iteration_bit(a, triples, top_not_flipped)
+            _flip_iteration_bit(a, triples, top_not_flipped, quarter_prob, mid_prob)
 
             # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
             @hint({"num-iters": average_ladder_len})

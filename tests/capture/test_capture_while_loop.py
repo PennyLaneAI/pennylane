@@ -17,6 +17,8 @@ Tests for capturing for while loops into jaxpr.
 
 # pylint: disable=unbalanced-tuple-unpacking
 
+from functools import partial
+
 import numpy as np
 import pytest
 
@@ -604,3 +606,13 @@ class TestWhileLoopHintsCapture:
         hinted = qp.hint({"num-iters": 4})(loop)
         jaxpr = jax.make_jaxpr(hinted)(0)
         assert jaxpr.eqns[0].params["estimated_iterations"] == 4
+
+    def test_hint_under_partial(self):
+        """``num-iters`` should be found when the hinted body is wrapped in a partial."""
+
+        def body(i, step):
+            return i + step
+
+        loop = qp.while_loop(lambda i: i < 3)(partial(qp.hint(body, {"num-iters": 7}), step=1))
+        jaxpr = jax.make_jaxpr(loop)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 7
