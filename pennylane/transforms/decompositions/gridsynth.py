@@ -29,9 +29,11 @@ def gridsynth_setup_inputs(
 
     Args:
         tape (QNode): A quantum circuit.
-        epsilon (float): The maximum permissible operator norm error per rotation gate. Defaults
-            to ``1e-4``. All methods give the same accuracy guarantee for a given ``epsilon``: a
-            diamond norm error of at most :math:`2\epsilon` per rotation.
+        epsilon (float): The accuracy per rotation gate. Defaults to ``1e-4``. With
+            ``"deterministic"``, each rotation has operator norm error at most ``epsilon``, and
+            therefore diamond norm error at most :math:`2\epsilon`. With ``"mixed"`` and
+            ``"mixed-fallback"``, the channel averaged over samples has diamond norm error at most
+            :math:`2\epsilon`.
         ppr_basis (bool): If True, decompose into the PPR basis. If False, decompose into the Clifford+T basis. Defaults to ``False``.
         method (str): The synthesis method. ``"deterministic"`` (default) uses the standard
             Ross-Selinger discretization. ``"mixed"`` uses the mixed diagonal approximation
@@ -48,7 +50,13 @@ def gridsynth_setup_inputs(
         With ``method="mixed"`` or ``method="mixed-fallback"``, the gate sequence of each
         rotation is sampled at execution time from the runtime random number generator, which is
         seeded by the ``seed`` argument of :func:`~.qjit`. The accuracy guarantee holds for the
-        channel averaged over these samples.
+        channel averaged over these samples, while each sampled sequence has an error of order
+        :math:`\sqrt{\epsilon}`. By default, and with ``mcm_method="single-branch-statistics"``,
+        a call samples one sequence per rotation, shared by all its shots. With
+        ``mcm_method="one-shot"``, every shot samples its own.
+
+        With ``method="mixed-fallback"``, each rotation uses a temporary ancilla qubit and a
+        mid-circuit measurement.
 
         Resource estimates from :func:`~.specs` report the expected gate counts, since the actual
         sequences are only known at execution time. With ``method="mixed-fallback"``, they also
@@ -89,7 +97,7 @@ def gridsynth_setup_inputs(
             return qp.specs(circuit, level="user")(1.1).resources.quantum_operations["T"]
 
     >>> t_count("deterministic"), t_count("mixed"), t_count("mixed-fallback") # doctest: +SKIP
-    (63, 33, 16)
+    (63, 31, 16)
     """
     if not isinstance(ppr_basis, bool):
         raise ValueError(f"ppr_basis must be of type bool. Got {ppr_basis}")
