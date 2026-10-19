@@ -56,6 +56,14 @@ samples, observable-side factors, the initial-state correction) are computed
 once per PRNG key and observable batch and reused between the loss and its
 gradient; the gradient uses a hand-written vector-Jacobian product so that only
 the small backward program has to be compiled.
+
+Gates may be described either by the sparse dictionary of
+:class:`QuditCircuitConfig` or by :class:`QuditGateArrays`, a struct-of-arrays
+description that costs a few bytes per gate. Gate arrays are passed to the compiled
+programs as arguments (never embedded as constants) and, when the precomputed factor
+matrices do not fit into ``max_memory``, both the forward pass and the hand-written
+backward pass stream over them in memory-bounded blocks, so that neither the host nor
+the device memory grows beyond the gate arrays themselves.
 """
 
 import itertools
@@ -75,6 +83,81 @@ _INDEX_DTYPE = jnp.int32
 
 # sqrt(2) * exp(+- i pi / 4) = 1 +- 1j: coefficient of the single mode of a weight-one gate
 _W1_COEF = 1.0 + 1.0j
+
+
+@dataclass(frozen=True)
+class QuditGateArrays:
+    r"""Array description of a set of sparse qudit gates for :class:`QuditCircuitConfig`.
+
+    This is the memory-efficient alternative to the ``gates`` dictionary. The dictionary costs
+    several hundred bytes per gate and is parsed in a Python loop, whereas this container costs
+    a few bytes per gate (for example ``int16`` supports and ``int8`` powers: 6 bytes per
+    two-qudit gate) and is processed by vectorised JAX operations only, so circuits with
+    :math:`10^8` gates and more can be held in device memory.
+
+    Gate ``g`` acts on the qudits ``supports[g, j]`` with the powers ``powers[g, j]`` of
+    :math:`Z` for every column ``j`` whose power is non-zero. A zero power marks an unused
+    (padding) column, so gates of different weights share the ``(n_gates, max_weight)`` layout.
+
+    Args:
+        supports (ArrayLike): Integer array of shape ``(n_gates, max_weight)`` with qudit
+            indices. Entries in columns whose power is zero are ignored; negative indices
+            count from the end.
+        powers (ArrayLike): Integer array of shape ``(n_gates, max_weight)`` with the power of
+            :math:`Z` applied on each supported qudit. Powers are reduced modulo the local
+            dimension; a power that reduces to zero means the qudit is not acted on.
+        param_indices (ArrayLike | None): Integer array of shape ``(n_gates,)`` with the index
+            of the trainable parameter controlling each gate (several gates may share one
+            parameter). ``None`` means gate ``g`` is controlled by parameter ``g``.
+
+    The arrays may be NumPy arrays or JAX arrays on any device; JAX arrays are used in place
+    and never copied to the host. The most economical layout is *canonical*: rows sorted by
+    non-decreasing weight, active columns forming a prefix with strictly increasing qudit
+    index, powers already in :math:`\{1, \ldots, d_j - 1\}` and ``param_indices=None``.
+    Canonical arrays, as produced by :func:`~pennylane.labs.tcdq.create_random_qudit_gates_jax`,
+    are consumed without any copy; other layouts are normalised by a vectorised pass that needs
+    a few temporaries of the input size.
+
+    **Example**
+
+    >>> import jax.numpy as jnp
+    >>> from pennylane.labs.tcdq import QuditGateArrays
+    >>> # Z on qudit 0, Z on qudit 2, and Z^1 (x) Z^2 on qudits (0, 1) of a qutrit register
+    >>> gates = QuditGateArrays(
+    ...     supports=jnp.array([[0, 0], [2, 0], [0, 1]], dtype=jnp.int16),
+    ...     powers=jnp.array([[1, 0], [1, 0], [1, 2]], dtype=jnp.int8),
+    ... )
+    >>> gates.supports.shape
+    (3, 2)
+    >>> len(gates)  # number of trainable parameters, as for the gates dictionary
+    3
+    """
+
+    #: Qudit indices, shape ``(n_gates, max_weight)``.
+    supports: ArrayLike
+    #: Powers of ``Z`` on the supported qudits, shape ``(n_gates, max_weight)``; zero = unused column.
+    powers: ArrayLike
+    #: Parameter index of each gate, shape ``(n_gates,)``, or ``None`` for the identity map.
+    param_indices: ArrayLike | None = None
+
+    @property
+    def n_params(self) -> int:
+        """Number of trainable parameters: ``n_gates`` if ``param_indices`` is ``None``,
+        otherwise ``max(param_indices) + 1``."""
+        if self.param_indices is None:
+            return int(np.shape(self.supports)[0])
+        if np.size(self.param_indices) == 0:
+            return 0
+        return int(jax.device_get(jnp.max(jnp.asarray(self.param_indices)))) + 1
+
+    def __len__(self) -> int:
+        """Number of trainable parameters, so ``len(gates)`` sizes the parameter vector exactly
+        as for the ``gates`` dictionary."""
+        return self.n_params
+
+    def __iter__(self):
+        """Iterate over ``(supports, powers, param_indices)`` to allow tuple unpacking."""
+        return iter((self.supports, self.powers, self.param_indices))
 
 
 @dataclass
@@ -109,18 +192,22 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
             every qudit, or a sequence of length ``n_qudits`` giving a distinct
             dimension :math:`d_j` per qudit.
         n_qudits (int): Number of qudits in the circuit.
-        gates (dict[int, list[dict[int, int]]]): Circuit structure mapping each
-            trainable-parameter index to a list of gates. Each gate is a sparse
-            generator given as a ``dict`` mapping a qudit index to the power of
-            :math:`Z` applied on that qudit; qudits that are not listed are
-            acted on trivially. Powers are reduced modulo the local dimension
+        gates (dict[int, list[dict[int, int]]] | QuditGateArrays): Circuit structure. Either
+            a dictionary mapping each trainable-parameter index to a list of gates, or a
+            :class:`QuditGateArrays` instance holding the same information as integer arrays.
+            In the dictionary form each gate is a sparse generator given as a ``dict`` mapping
+            a qudit index to the power of :math:`Z` applied on that qudit; qudits that are not
+            listed are acted on trivially. Powers are reduced modulo the local dimension
             :math:`d_j`, and entries that reduce to zero are dropped. For
             example, with ``dims=3`` and ``n_qudits=2``,
             ``{0: [{0: 1}], 1: [{1: 1}], 2: [{0: 1, 1: 1}]}`` defines three
             gates: :math:`Z^1` on qudit 0, :math:`Z^1` on qudit 1, and
             :math:`Z^1 \otimes Z^1` on both. Only the active qudits of each
             gate are stored, so the cost of describing a :math:`k`-local
-            circuit scales with :math:`k` rather than with ``n_qudits``.
+            circuit scales with :math:`k` rather than with ``n_qudits``. The array form is
+            the one to use for very large circuits (:math:`10^8` gates and beyond): it costs
+            a few bytes per gate instead of several hundred, is parsed without Python loops
+            and is streamed through the compiled programs without ever being copied.
         n_samples (int): Number of random dit-strings drawn for the
             estimation.
         key (ArrayLike): JAX PRNG key for random dit-string generation.
@@ -172,8 +259,8 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     dims: int | Sequence[int] = None
     #: Number of qudits in the circuit.
     n_qudits: int = None
-    #: Circuit structure mapping parameter indices to sparse gates ``{qudit: power}``.
-    gates: dict[int, list[dict[int, int]]] = None
+    #: Circuit structure: a dict of sparse gates ``{qudit: power}`` or a :class:`QuditGateArrays`.
+    gates: dict[int, list[dict[int, int]]] | QuditGateArrays = None
     #: Number of random dit-strings drawn for the estimation.
     n_samples: int = None
     #: JAX PRNG key for random dit-string generation.
@@ -583,6 +670,219 @@ def _compute_mc_statistics(
 
 
 # ---------------------------------------------------------------------------
+# Array-based gate description
+# ---------------------------------------------------------------------------
+
+
+class _GroupArrays(NamedTuple):
+    """Per-gate arrays of one weight group (a pytree that is passed to the compiled programs).
+
+    The group occupies rows ``[row_offset, row_offset + n_gates)`` and columns ``[0, omega)`` of
+    ``supports`` / ``powers`` (see :class:`_GroupStatic`), so canonical user arrays can be shared
+    by all groups without copying them.
+    """
+
+    #: Qudit indices, shape ``(N, W)`` with ``N >= row_offset + n_gates`` and ``W >= omega``.
+    supports: jnp.ndarray
+    #: Powers of ``Z``, same shape as ``supports``.
+    powers: jnp.ndarray
+    #: Parameter index of each row, shape ``(N,)``; ``None`` means parameter index == row index.
+    param_indices: jnp.ndarray | None
+
+
+class _GateGroup(NamedTuple):
+    """One weight group in array form: the static layout plus the per-gate arrays."""
+
+    omega: int
+    n_gates: int
+    row_offset: int
+    arrays: _GroupArrays
+
+
+def _check_integer_array(name: str, x: jnp.ndarray) -> None:
+    if not jnp.issubdtype(x.dtype, jnp.integer):
+        raise TypeError(f"{name} must be an integer array, got dtype {x.dtype}.")
+
+
+@partial(jax.jit, static_argnums=(3,))
+def _analyse_gate_arrays(
+    supports: jnp.ndarray, powers: jnp.ndarray, dims_j: jnp.ndarray, n_qudits: int
+) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+    """Validate gate arrays and detect the canonical layout in one fused pass.
+
+    Returns ``(index_ok, canonical, counts)`` where ``counts[w]`` is the number of gates of
+    weight ``w`` (after reducing the powers modulo the local dimensions).
+    """
+    w_max = supports.shape[1]
+    sup = supports.astype(_INDEX_DTYPE)
+    pw = powers.astype(_INDEX_DTYPE)
+    in_range = (sup >= -n_qudits) & (sup < n_qudits)
+    sup_mod = jnp.where(in_range, sup % n_qudits, 0)
+    p = pw % jnp.take(dims_j, sup_mod)
+    active = p != 0
+    index_ok = jnp.all(in_range | ~active)
+    weight = jnp.sum(active, axis=1).astype(_INDEX_DTYPE)
+    counts = jnp.bincount(weight, length=w_max + 1)
+    prefix_ok = jnp.all(active[:, 1:] <= active[:, :-1])
+    sorted_ok = jnp.all(~active[:, 1:] | (sup_mod[:, 1:] > sup_mod[:, :-1]))
+    reduced_ok = jnp.all(p == pw) & jnp.all(~active | (sup == sup_mod))
+    weight_sorted = jnp.all(weight[1:] >= weight[:-1])
+    canonical = prefix_ok & sorted_ok & reduced_ok & weight_sorted
+    return index_ok, canonical, counts
+
+
+@partial(jax.jit, static_argnums=(3,))
+def _normalize_gate_arrays(
+    supports: jnp.ndarray, powers: jnp.ndarray, dims_j: jnp.ndarray, n_qudits: int
+) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+    """Reduce powers, drop inactive columns to the end and sort each row by qudit index.
+
+    Returns ``(supports, powers, weight, has_duplicates)`` with the active entries of every row
+    stored as a sorted prefix.
+    """
+    sup = supports.astype(_INDEX_DTYPE) % n_qudits
+    p = powers.astype(_INDEX_DTYPE) % jnp.take(dims_j, sup)
+    active = p != 0
+    order = jnp.argsort(jnp.where(active, sup, n_qudits), axis=1)
+    sup_c = jnp.take_along_axis(sup, order, axis=1)
+    p_c = jnp.take_along_axis(p, order, axis=1)
+    active_c = p_c != 0
+    has_duplicates = jnp.any(active_c[:, 1:] & (sup_c[:, 1:] == sup_c[:, :-1]))
+    weight = jnp.sum(active_c, axis=1).astype(_INDEX_DTYPE)
+    return sup_c, p_c, weight, has_duplicates
+
+
+def _parse_qudit_gate_arrays(  # pylint: disable=too-many-branches
+    gates: QuditGateArrays, n_qudits: int, dims: ArrayLike
+) -> tuple[list[_GateGroup], int]:
+    """Convert a :class:`QuditGateArrays` description into weight groups without host loops.
+
+    Canonical inputs (rows sorted by weight, sorted active prefix, reduced powers) are used in
+    place: every group is a contiguous row range of the user's arrays. Other inputs are
+    normalised and regrouped with vectorised JAX operations, which needs a few temporaries of
+    the input size and materialises explicit parameter indices.
+
+    Returns:
+        tuple[list[_GateGroup], int]: The groups sorted by weight (identity gates dropped) and
+        the number of parameters.
+
+    Raises:
+        TypeError: If the arrays are not integer typed.
+        ValueError: If the shapes are inconsistent, a qudit appears twice in one gate, or a
+            parameter index is negative.
+        IndexError: If an active qudit index is outside ``[-n_qudits, n_qudits)``.
+    """
+    supports = jnp.asarray(gates.supports)
+    powers = jnp.asarray(gates.powers)
+    _check_integer_array("supports", supports)
+    _check_integer_array("powers", powers)
+    if supports.ndim != 2:
+        raise ValueError(f"supports must have shape (n_gates, max_weight), got {supports.shape}.")
+    if powers.shape != supports.shape:
+        raise ValueError(
+            f"powers must have the same shape as supports, got {powers.shape} != {supports.shape}."
+        )
+    n_gates, w_max = supports.shape
+    if w_max > n_qudits:
+        raise ValueError(f"max_weight={w_max} exceeds the number of qudits {n_qudits}.")
+
+    pidx = None
+    if gates.param_indices is not None:
+        pidx = jnp.asarray(gates.param_indices)
+        _check_integer_array("param_indices", pidx)
+        if pidx.shape != (n_gates,):
+            raise ValueError(f"param_indices must have shape ({n_gates},), got {pidx.shape}.")
+
+    if n_gates == 0 or w_max == 0:
+        return [], 0
+
+    if pidx is None:
+        n_params = n_gates
+    else:
+        pidx_min, pidx_max = (int(v) for v in jax.device_get((jnp.min(pidx), jnp.max(pidx))))
+        if pidx_min < 0:
+            raise ValueError(f"param_indices must be non-negative, got {pidx_min}.")
+        n_params = pidx_max + 1
+        pidx = pidx.astype(_INDEX_DTYPE)
+
+    dims_j = jnp.asarray(np.asarray(dims, dtype=int), dtype=_INDEX_DTYPE)
+    index_ok, canonical, counts = jax.device_get(
+        _analyse_gate_arrays(supports, powers, dims_j, n_qudits)
+    )
+    if not bool(index_ok):
+        raise IndexError(f"Qudit index out of range for a {n_qudits}-qudit circuit.")
+    counts = [int(c) for c in counts]
+
+    groups: list[_GateGroup] = []
+    if bool(canonical):
+        offset = counts[0]  # identity gates (weight zero) sort first and are skipped
+        shared = _GroupArrays(supports=supports, powers=powers, param_indices=pidx)
+        for omega in range(1, w_max + 1):
+            if counts[omega]:
+                groups.append(_GateGroup(omega, counts[omega], offset, shared))
+            offset += counts[omega]
+        return groups, n_params
+
+    sup_c, p_c, weight, has_duplicates = _normalize_gate_arrays(supports, powers, dims_j, n_qudits)
+    if bool(has_duplicates):
+        raise ValueError("A qudit index appears more than once in a single gate.")
+    for omega in range(1, w_max + 1):
+        if not counts[omega]:
+            continue
+        rows = jnp.flatnonzero(weight == omega, size=counts[omega])
+        arrays = _GroupArrays(
+            supports=sup_c[rows, :omega],
+            powers=p_c[rows, :omega],
+            param_indices=rows.astype(_INDEX_DTYPE) if pidx is None else pidx[rows],
+        )
+        groups.append(_GateGroup(omega, counts[omega], 0, arrays))
+    return groups, n_params
+
+
+def _groups_from_sparse(gate_groups: list[SparseGateGroup]) -> list[_GateGroup]:
+    """Wrap the NumPy groups of :func:`_parse_qudit_gate_dict` into device arrays."""
+    return [
+        _GateGroup(
+            omega=g.omega,
+            n_gates=int(g.supports.shape[0]),
+            row_offset=0,
+            arrays=_GroupArrays(
+                supports=jnp.asarray(g.supports, dtype=_INDEX_DTYPE),
+                powers=jnp.asarray(g.powers, dtype=_INDEX_DTYPE),
+                param_indices=jnp.asarray(g.param_indices, dtype=_INDEX_DTYPE),
+            ),
+        )
+        for g in gate_groups
+    ]
+
+
+def _gate_arrays_to_dict(
+    gates: QuditGateArrays, n_qudits: int, dims: ArrayLike
+) -> dict[int, list[dict[int, int]]]:
+    """Expand a :class:`QuditGateArrays` description into the dictionary format (host loop).
+
+    Intended for tests and small circuits only; identity gates become empty dictionaries so
+    that the parameter count is preserved.
+    """
+    dims = np.asarray(dims, dtype=int)
+    supports = np.asarray(gates.supports).astype(int)
+    powers = np.asarray(gates.powers).astype(int)
+    n_gates = supports.shape[0]
+    pidx = np.arange(n_gates) if gates.param_indices is None else np.asarray(gates.param_indices)
+    n_params = (int(pidx.max()) + 1) if n_gates else 0
+    out: dict[int, list[dict[int, int]]] = {i: [] for i in range(n_params)}
+    for g in range(n_gates):
+        gate = {}
+        for q, p in zip(supports[g], powers[g]):
+            q = int(q) % n_qudits
+            p = int(p) % int(dims[q])
+            if p:
+                gate[q] = p
+        out[int(pidx[g])].append(gate)
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Fourier-mode expansion of the gates
 # ---------------------------------------------------------------------------
 
@@ -596,6 +896,7 @@ class _LookupTables(NamedTuple):
     d_values: tuple[int, ...]
     d_max: int
     dsel: np.ndarray  # (n_qudits,) index of each qudit's dimension in ``d_values``
+    dsel_j: jnp.ndarray | None  # device copy of ``dsel``; ``None`` when all dimensions agree
     table: jnp.ndarray  # flat complex64 array
     index_dtype: Any  # integer dtype used for sample / observable values in gathers
 
@@ -612,36 +913,53 @@ def _build_lookup_tables(dims: np.ndarray) -> _LookupTables:
         v = np.arange(d)[None, :]
         table[i, :d, :d] = np.exp(2j * np.pi * ((k * v) % d) / d)
     index_dtype = jnp.int8 if d_max <= 127 else _INDEX_DTYPE
-    return _LookupTables(d_values, d_max, dsel, jnp.asarray(table.reshape(-1)), index_dtype)
+    dsel_j = None if len(d_values) <= 1 else jnp.asarray(dsel, dtype=_INDEX_DTYPE)
+    return _LookupTables(d_values, d_max, dsel, dsel_j, jnp.asarray(table.reshape(-1)), index_dtype)
 
 
-class _ModeGroup(NamedTuple):
-    """Fourier-mode data of all gates of one weight ``omega`` (static NumPy arrays)."""
+class _GroupStatic(NamedTuple):
+    """Static (host-side) data of all gates of one weight ``omega``."""
 
     omega: int
     n_gates: int
-    supports: np.ndarray  # (n_gates, omega) int32
-    base_idx: np.ndarray  # (n_gates, omega) int32: dsel * d_max**2 + power * d_max
-    param_indices: np.ndarray  # (n_gates,) int32
+    row_offset: int  # first row of the group in its ``_GroupArrays``
     signs: np.ndarray  # (n_modes, omega) int8, first column is +1
     coef: np.ndarray  # (n_modes,) complex64
 
 
 class _ModeStructure(NamedTuple):
-    """All static data derived from the gate dictionary."""
+    """All static data derived from the gate description."""
 
     n_params: int
     n_slots: int
     slot_base_idx: np.ndarray  # (n_slots,) int32: dsel * d_max**2 + k * d_max of each slot
     slot_qudit: np.ndarray  # (n_slots,) int32
-    w1: _ModeGroup | None  # weight-one gates
-    w1_slot_ab: np.ndarray | None  # (n_w1,) slot index, offset by n_slots for the conjugate mode
-    heavy: list[_ModeGroup]  # weight >= 2 groups
+    w1: _GroupStatic | None  # weight-one gates
+    heavy: list[_GroupStatic]  # weight >= 2 groups
+
+
+class _GateArrays(NamedTuple):
+    """Per-gate device arrays (a pytree passed as an argument to every compiled program)."""
+
+    w1_pidx: jnp.ndarray | None  # (n_w1,) parameter index of each weight-one gate, or identity
+    w1_slot_ab: jnp.ndarray | None  # (n_w1,) slot index, offset by n_slots for the conjugate mode
+    heavy: tuple[_GroupArrays, ...]  # one entry per weight >= 2 group
+
+
+@partial(jax.jit, static_argnums=(4,))
+def _w1_slot_indices(sup, pw, dims_j, slot_offset_j, n_slots: int) -> jnp.ndarray:
+    """Slot of each weight-one gate: canonical ``k = min(p, d - p)``; ``p > d - p`` uses the conjugate."""
+    sup = sup.astype(_INDEX_DTYPE)
+    pw = pw.astype(_INDEX_DTYPE)
+    d_sup = jnp.take(dims_j, sup)
+    kc = jnp.minimum(pw, d_sup - pw)
+    slot = jnp.take(slot_offset_j, sup) + kc - 1
+    return (slot + n_slots * (pw != kc)).astype(_INDEX_DTYPE)
 
 
 def _build_mode_structure(
-    gate_groups: list[SparseGateGroup], dims: np.ndarray, n_params: int, tables: _LookupTables
-) -> _ModeStructure:
+    groups: list[_GateGroup], dims: np.ndarray, n_params: int, tables: _LookupTables
+) -> tuple[_ModeStructure, _GateArrays]:
     """Precompute the mode expansion and slot bookkeeping for all gates."""
     dims = np.asarray(dims, dtype=int)
     n_qudits = dims.size
@@ -660,71 +978,80 @@ def _build_mode_structure(
     )
 
     w1 = None
+    w1_pidx = None
     w1_slot_ab = None
-    heavy: list[_ModeGroup] = []
-    for group in gate_groups:
-        omega = group.omega
-        sup = np.asarray(group.supports, dtype=np.int64)
-        pw = np.asarray(group.powers, dtype=np.int64)
-        d_sup = dims[sup]
-        pidx = np.asarray(group.param_indices, dtype=np.int32)
-        n_g = sup.shape[0]
-
+    heavy: list[_GroupStatic] = []
+    heavy_arrays: list[_GroupArrays] = []
+    for group in groups:
+        omega, n_g, off = group.omega, group.n_gates, group.row_offset
         signs = np.asarray(
             [(1,) + rest for rest in itertools.product([1, -1], repeat=omega - 1)], dtype=np.int8
         )  # (n_modes, omega)
         coef = (2.0 ** (1.0 - omega / 2.0) * np.exp(1j * np.pi / 4.0 * signs.sum(axis=1))).astype(
             np.complex64
         )
-
-        base_idx = (tables.dsel[sup].astype(np.int64) * d_max**2 + pw * d_max).astype(np.int32)
-        mode_group = _ModeGroup(
-            omega=omega,
-            n_gates=n_g,
-            supports=sup.astype(np.int32),
-            base_idx=base_idx,
-            param_indices=pidx,
-            signs=signs,
-            coef=coef,
-        )
+        static = _GroupStatic(omega=omega, n_gates=n_g, row_offset=off, signs=signs, coef=coef)
         if omega == 1:
-            w1 = mode_group
-            # canonical k = min(p, d - p); gates with p > d - p enter through the conjugate mode
-            kc = np.minimum(pw[:, 0], d_sup[:, 0] - pw[:, 0])
-            slot = slot_offset[sup[:, 0]] + kc - 1
-            is_beta = (pw[:, 0] != kc).astype(np.int64)
-            w1_slot_ab = (slot + n_slots * is_beta).astype(np.int32)
+            w1 = static
+            w1_slot_ab = _w1_slot_indices(
+                group.arrays.supports[off : off + n_g, 0],
+                group.arrays.powers[off : off + n_g, 0],
+                jnp.asarray(dims, dtype=_INDEX_DTYPE),
+                jnp.asarray(slot_offset, dtype=_INDEX_DTYPE),
+                n_slots,
+            )
+            if group.arrays.param_indices is not None:
+                w1_pidx = group.arrays.param_indices[off : off + n_g].astype(_INDEX_DTYPE)
         else:
-            heavy.append(mode_group)
+            heavy.append(static)
+            heavy_arrays.append(group.arrays)
 
-    return _ModeStructure(
+    structure = _ModeStructure(
         n_params=int(n_params),
         n_slots=n_slots,
         slot_base_idx=slot_base_idx,
         slot_qudit=slot_qudit,
         w1=w1,
-        w1_slot_ab=w1_slot_ab,
         heavy=heavy,
     )
+    return structure, _GateArrays(w1_pidx=w1_pidx, w1_slot_ab=w1_slot_ab, heavy=tuple(heavy_arrays))
+
+
+def _group_rows(group: _GroupStatic, arrays: _GroupArrays) -> tuple[jnp.ndarray, jnp.ndarray]:
+    """Static ``(supports, powers)`` slices of one group, shape ``(n_gates, omega)``."""
+    rows = slice(group.row_offset, group.row_offset + group.n_gates)
+    return arrays.supports[rows, : group.omega], arrays.powers[rows, : group.omega]
+
+
+def _group_param_indices(group: _GroupStatic, arrays: _GroupArrays) -> jnp.ndarray:
+    """Parameter index of every gate of the group, shape ``(n_gates,)``."""
+    rows = slice(group.row_offset, group.row_offset + group.n_gates)
+    if arrays.param_indices is None:
+        return jnp.arange(rows.start, rows.stop, dtype=_INDEX_DTYPE)
+    return arrays.param_indices[rows].astype(_INDEX_DTYPE)
 
 
 def _support_factors(
-    x_t: jnp.ndarray, supports: ArrayLike, base_idx: ArrayLike, table: jnp.ndarray
+    x_t: jnp.ndarray, supports: jnp.ndarray, powers: jnp.ndarray, tables: _LookupTables
 ) -> jnp.ndarray:
     """Per-position roots of unity ``F[g, j, :] = exp(2 pi i p_gj x[q_gj, :] / d_q)``.
 
     Args:
         x_t: Integer array of shape ``(n_qudits, N)`` (transposed samples or observables).
         supports: ``(B, omega)`` qudit indices.
-        base_idx: ``(B, omega)`` flat table offsets ``dsel * d_max**2 + power * d_max``.
-        table: Flat lookup table from :func:`_build_lookup_tables`.
+        powers: ``(B, omega)`` powers of ``Z``.
+        tables: Roots-of-unity lookup tables.
 
     Returns:
         Complex array of shape ``(B, omega, N)``.
     """
-    vals = jnp.take(x_t, jnp.asarray(supports), axis=0).astype(_INDEX_DTYPE)  # (B, omega, N)
-    idx = jnp.asarray(base_idx, dtype=_INDEX_DTYPE)[:, :, jnp.newaxis] + vals
-    return jnp.take(table, idx)
+    sup = jnp.asarray(supports).astype(_INDEX_DTYPE)
+    pw = jnp.asarray(powers).astype(_INDEX_DTYPE)
+    base = pw * tables.d_max
+    if tables.dsel_j is not None:
+        base = base + jnp.take(tables.dsel_j, sup) * tables.d_max**2
+    vals = jnp.take(x_t, sup, axis=0).astype(_INDEX_DTYPE)  # (B, omega, N)
+    return jnp.take(tables.table, base[:, :, jnp.newaxis] + vals)
 
 
 def _mode_products(factors: jnp.ndarray, signs: np.ndarray) -> jnp.ndarray:
@@ -743,8 +1070,8 @@ def _mode_products(factors: jnp.ndarray, signs: np.ndarray) -> jnp.ndarray:
     return jnp.stack(prods, axis=1)
 
 
-def _heavy_obs_coefficients(
-    group: _ModeGroup, l_t: jnp.ndarray, table: jnp.ndarray, supports, base_idx
+def _heavy_obs_coefficients(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    group: _GroupStatic, l_t: jnp.ndarray, tables: _LookupTables, supports, powers
 ) -> jnp.ndarray:
     """Observable-side coefficients ``1 - conj(Omega_s(l))`` of a block of weight >= 2 gates.
 
@@ -755,22 +1082,22 @@ def _heavy_obs_coefficients(
     its product with the sample-side ``[Re V; Im V]`` yields ``Re(coef * V)``.
     """
     n_obs = l_t.shape[1]
-    factors = _support_factors(l_t, supports, base_idx, table)
+    factors = _support_factors(l_t, supports, powers, tables)
     prods = _mode_products(factors, group.signs)  # (B, n_modes, n_obs)
     coefs = 1.0 - jnp.conj(prods)
     coefs_t = coefs.reshape(-1, n_obs).T
     return jnp.concatenate([jnp.real(coefs_t), -jnp.imag(coefs_t)], axis=1)
 
 
-def _heavy_sample_modes(
-    group: _ModeGroup, samples_t: jnp.ndarray, table: jnp.ndarray, supports, base_idx
+def _heavy_sample_modes(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    group: _GroupStatic, samples_t: jnp.ndarray, tables: _LookupTables, supports, powers
 ) -> jnp.ndarray:
     """Sample-side mode vectors ``c_s Omega_s(z)`` of a block of gates, as ``[Re; Im]`` rows.
 
     Returns a real array ``(2 * B * n_modes, n_samples)``.
     """
     n_samples = samples_t.shape[1]
-    factors = _support_factors(samples_t, supports, base_idx, table)
+    factors = _support_factors(samples_t, supports, powers, tables)
     modes_c = _mode_products(factors, group.signs) * jnp.asarray(group.coef)[None, :, None]
     return jnp.concatenate(
         [jnp.real(modes_c).reshape(-1, n_samples), jnp.imag(modes_c).reshape(-1, n_samples)],
@@ -779,25 +1106,87 @@ def _heavy_sample_modes(
 
 
 # ---------------------------------------------------------------------------
-# Phase differences from precomputed factor matrices (memory permitting)
+# Weight-one gates: per-qudit slot tables (size independent of the number of gates)
 # ---------------------------------------------------------------------------
 
 
-class _FactorIndices(NamedTuple):
-    """Gather indices linking parameters to the rows of the precomputed factor matrices."""
+def _slot_factors(
+    samples_t: jnp.ndarray, l_t: jnp.ndarray, structure: _ModeStructure, tables: _LookupTables
+) -> tuple[jnp.ndarray, jnp.ndarray]:
+    """Observable- and sample-side factors of every slot, ``(n_obs, 2 n_slots)`` and ``(n_slots, n_samples)``."""
+    base = jnp.asarray(structure.slot_base_idx, dtype=_INDEX_DTYPE)[:, jnp.newaxis]
+    qudits = jnp.asarray(structure.slot_qudit, dtype=_INDEX_DTYPE)
+    t_l = jnp.take(tables.table, base + jnp.take(l_t, qudits, axis=0).astype(_INDEX_DTYPE))
+    # Dr = [1 - Re T_l, -Im T_l] so that Dr @ [Re A; Im A] = -Re(delta_slot(l) A(z))
+    slot_obs = jnp.concatenate([1.0 - jnp.real(t_l), -jnp.imag(t_l)], axis=0).T
+    slot_samples = jnp.take(
+        tables.table, base + jnp.take(samples_t, qudits, axis=0).astype(_INDEX_DTYPE)
+    )
+    return slot_obs, slot_samples
 
-    modes_pidx: np.ndarray | None  # (n_modes_real,) parameter index of each mode row
+
+def _w1_params(theta: jnp.ndarray, structure: _ModeStructure, gate_arrays: _GateArrays):
+    """Parameter value of every weight-one gate, shape ``(n_w1,)``."""
+    if gate_arrays.w1_pidx is not None:
+        return theta[gate_arrays.w1_pidx]
+    off = structure.w1.row_offset
+    return theta[off : off + structure.w1.n_gates]
 
 
-def _build_factor_indices(structure: _ModeStructure) -> _FactorIndices:
-    """Concatenate the per-group bookkeeping in the order used by the factor matrices."""
-    if not structure.heavy:
-        return _FactorIndices(None)
-    modes_pidx = []
-    for group in structure.heavy:
-        pidx_modes = np.repeat(group.param_indices, group.signs.shape[0])
-        modes_pidx.append(np.concatenate([pidx_modes, pidx_modes]))
-    return _FactorIndices(modes_pidx=np.concatenate(modes_pidx).astype(np.int32))
+def _linear_weights_w1(
+    theta: jnp.ndarray, structure: _ModeStructure, gate_arrays: _GateArrays
+) -> jnp.ndarray:
+    """Complex per-slot weight of the weight-one gates: ``sqrt(2) (alpha e^{i pi/4} + beta e^{-i pi/4})``."""
+    w = jax.ops.segment_sum(
+        _w1_params(theta, structure, gate_arrays),
+        gate_arrays.w1_slot_ab,
+        num_segments=2 * structure.n_slots,
+    )
+    alpha, beta = w[: structure.n_slots], w[structure.n_slots :]
+    return (alpha + beta) + 1j * (alpha - beta)
+
+
+def _w1_phase_diffs(
+    theta: jnp.ndarray, ctx: dict, structure: _ModeStructure, gate_arrays: _GateArrays
+) -> jnp.ndarray:
+    """Phase differences ``(n_obs, n_samples)`` of all weight-one gates through the slot tables."""
+    w_c = _linear_weights_w1(theta, structure, gate_arrays)
+    ar = w_c[:, jnp.newaxis] * ctx["slot_samples"]  # (n_slots, n_samples) complex
+    return ctx["slot_obs"] @ jnp.concatenate([jnp.real(ar), jnp.imag(ar)], axis=0)
+
+
+def _w1_phase_diffs_vjp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    g_delta: jnp.ndarray,
+    ctx: dict,
+    structure: _ModeStructure,
+    gate_arrays: _GateArrays,
+    dtheta: jnp.ndarray,
+) -> jnp.ndarray:
+    """Accumulate the transpose of :func:`_w1_phase_diffs` into ``dtheta``."""
+    n_slots = structure.n_slots
+    d_ar = ctx["slot_obs"].T @ g_delta  # (2 n_slots, n_samples)
+    base = ctx["slot_samples"]
+    # ar = w_c * base with w_c = (alpha + beta) + i (alpha - beta)
+    d_re = jnp.sum(d_ar[:n_slots] * jnp.real(base) + d_ar[n_slots:] * jnp.imag(base), axis=1)
+    d_im = jnp.sum(-d_ar[:n_slots] * jnp.imag(base) + d_ar[n_slots:] * jnp.real(base), axis=1)
+    d_ab = jnp.concatenate([d_re + d_im, d_re - d_im])
+    d_gates = d_ab[gate_arrays.w1_slot_ab]
+    return _accumulate_group_grad(dtheta, d_gates, structure.w1, gate_arrays.w1_pidx)
+
+
+def _accumulate_group_grad(
+    dtheta: jnp.ndarray, d_gates: jnp.ndarray, group: _GroupStatic, param_indices
+) -> jnp.ndarray:
+    """Add per-gate gradients ``(n_gates,)`` of one group to the parameter gradient."""
+    if param_indices is None:
+        off = group.row_offset
+        return dtheta.at[off : off + group.n_gates].add(d_gates)
+    return dtheta.at[param_indices].add(d_gates)
+
+
+# ---------------------------------------------------------------------------
+# Phase differences from precomputed factor matrices (memory permitting)
+# ---------------------------------------------------------------------------
 
 
 def _full_context_bytes(structure: _ModeStructure, n_obs: int, n_samples: int) -> int:
@@ -810,19 +1199,17 @@ def _full_context_bytes(structure: _ModeStructure, n_obs: int, n_samples: int) -
     return 2 * stored
 
 
-def _linear_weights_w1(theta_ext: jnp.ndarray, structure: _ModeStructure) -> jnp.ndarray:
-    """Complex per-slot weight of the weight-one gates: ``sqrt(2) (alpha e^{i pi/4} + beta e^{-i pi/4})``."""
-    w = jax.ops.segment_sum(
-        theta_ext[structure.w1.param_indices],
-        structure.w1_slot_ab,
-        num_segments=2 * structure.n_slots,
-    )
-    alpha, beta = w[: structure.n_slots], w[structure.n_slots :]
-    return (alpha + beta) + 1j * (alpha - beta)
+def _modes_param_indices(structure: _ModeStructure, gate_arrays: _GateArrays) -> jnp.ndarray:
+    """Parameter index of every row of the precomputed mode matrix (``Re`` rows then ``Im`` rows per group)."""
+    parts = []
+    for group, arrays in zip(structure.heavy, gate_arrays.heavy):
+        pidx_modes = jnp.repeat(_group_param_indices(group, arrays), group.signs.shape[0])
+        parts.append(jnp.concatenate([pidx_modes, pidx_modes]))
+    return jnp.concatenate(parts)
 
 
 def _phase_diffs_from_factors(
-    theta_ext: jnp.ndarray, ctx: dict, structure: _ModeStructure, indices: _FactorIndices
+    theta: jnp.ndarray, ctx: dict, structure: _ModeStructure, gate_arrays: _GateArrays
 ) -> jnp.ndarray | None:
     """Accumulated phase differences ``(n_obs, n_samples)`` from the precomputed factors.
 
@@ -832,122 +1219,184 @@ def _phase_diffs_from_factors(
     """
     delta = None
     if structure.w1 is not None:
-        w_c = _linear_weights_w1(theta_ext, structure)
-        ar = w_c[:, jnp.newaxis] * ctx["slot_samples"]  # (n_slots, n_samples) complex
-        delta = ctx["slot_obs"] @ jnp.concatenate([jnp.real(ar), jnp.imag(ar)], axis=0)
-    if indices.modes_pidx is not None:
-        v = theta_ext[indices.modes_pidx][:, jnp.newaxis] * ctx["modes"]
+        delta = _w1_phase_diffs(theta, ctx, structure, gate_arrays)
+    if structure.heavy:
+        v = theta[ctx["modes_pidx"]][:, jnp.newaxis] * ctx["modes"]
         heavy = ctx["coef_obs"] @ v
         delta = heavy if delta is None else delta + heavy
     return delta
 
 
 def _phase_diffs_vjp_from_factors(
-    g_delta: jnp.ndarray, ctx: dict, structure: _ModeStructure, indices: _FactorIndices
+    g_delta: jnp.ndarray, ctx: dict, structure: _ModeStructure, gate_arrays: _GateArrays
 ) -> jnp.ndarray:
-    """Hand-written transpose of :func:`_phase_diffs_from_factors` with respect to ``theta_ext``."""
-    dtheta = jnp.zeros((structure.n_params + 1,), dtype=_REAL_DTYPE)
+    """Hand-written transpose of :func:`_phase_diffs_from_factors` with respect to ``theta``."""
+    dtheta = jnp.zeros((structure.n_params,), dtype=_REAL_DTYPE)
     if structure.w1 is not None:
-        n_slots = structure.n_slots
-        d_ar = ctx["slot_obs"].T @ g_delta  # (2 n_slots, n_samples)
-        base = ctx["slot_samples"]
-        # ar = w_c * base with w_c = (alpha + beta) + i (alpha - beta)
-        d_re = jnp.sum(d_ar[:n_slots] * jnp.real(base) + d_ar[n_slots:] * jnp.imag(base), axis=1)
-        d_im = jnp.sum(-d_ar[:n_slots] * jnp.imag(base) + d_ar[n_slots:] * jnp.real(base), axis=1)
-        d_ab = jnp.concatenate([d_re + d_im, d_re - d_im])
-        dtheta = dtheta.at[structure.w1.param_indices].add(d_ab[structure.w1_slot_ab])
-    if indices.modes_pidx is not None:
+        dtheta = _w1_phase_diffs_vjp(g_delta, ctx, structure, gate_arrays, dtheta)
+    if structure.heavy:
         d_v = ctx["coef_obs"].T @ g_delta  # (n_modes_real, n_samples)
-        dtheta = dtheta.at[indices.modes_pidx].add(jnp.sum(d_v * ctx["modes"], axis=1))
+        dtheta = dtheta.at[ctx["modes_pidx"]].add(jnp.sum(d_v * ctx["modes"], axis=1))
     return dtheta
 
 
 # ---------------------------------------------------------------------------
-# Memory-bounded blocked phase differences (fallback)
+# Memory-bounded blocked phase differences (streams over the gate arrays)
 # ---------------------------------------------------------------------------
 
 
-def _group_blocked_phase_diffs(
-    theta_ext: jnp.ndarray,
+def _block_params(theta: jnp.ndarray, param_indices, start, size: int) -> jnp.ndarray:
+    """Parameters of the ``size`` gates starting at row ``start``."""
+    start = jnp.asarray(start, dtype=_INDEX_DTYPE)
+    if param_indices is None:
+        return jax.lax.dynamic_slice(theta, (start,), (size,))
+    pidx = jax.lax.dynamic_slice(param_indices, (start,), (size,))
+    return theta[pidx.astype(_INDEX_DTYPE)]
+
+
+def _block_factors(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     operands: tuple[jnp.ndarray, jnp.ndarray],
-    group: _ModeGroup,
+    group: _GroupStatic,
+    arrays: _GroupArrays,
+    tables: _LookupTables,
+    start,
+    size: int,
+) -> tuple[jnp.ndarray, jnp.ndarray]:
+    """Observable coefficients and sample modes of the ``size`` gates starting at row ``start``.
+
+    Only the rows of the block are read from the (possibly very large) gate arrays, so the
+    peak memory is set by ``size`` and not by the number of gates.
+    """
+    samples_t, l_t = operands
+    # dynamic_slice needs start indices of one dtype (the loop index may be int64 under x64)
+    start = jnp.asarray(start, dtype=_INDEX_DTYPE)
+    zero = jnp.zeros((), dtype=_INDEX_DTYPE)
+    sup = jax.lax.dynamic_slice(arrays.supports, (start, zero), (size, group.omega))
+    pw = jax.lax.dynamic_slice(arrays.powers, (start, zero), (size, group.omega))
+    coefs = _heavy_obs_coefficients(group, l_t, tables, sup, pw)  # (n_obs, 2 B n_modes)
+    modes = _heavy_sample_modes(group, samples_t, tables, sup, pw)  # (2 B n_modes, n_samples)
+    return coefs, modes
+
+
+def _for_each_block(group: _GroupStatic, block_size: int):
+    """Split the rows of a group into ``(n_full, remainder)`` blocks of ``block_size`` rows."""
+    n_full, remainder = divmod(group.n_gates, block_size)
+    return n_full, remainder
+
+
+def _group_blocked_phase_diffs(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    theta: jnp.ndarray,
+    operands: tuple[jnp.ndarray, jnp.ndarray],
+    group: _GroupStatic,
+    arrays: _GroupArrays,
     tables: _LookupTables,
     block_size: int,
 ) -> jnp.ndarray:
-    """Phase differences of one weight group, processed in memory-bounded blocks.
-
-    Each block is wrapped in :func:`jax.checkpoint` so that reverse-mode differentiation
-    recomputes the block's factors instead of storing them.
-
-    Args:
-        theta_ext: Gate parameters with a trailing zero appended, shape ``(n_params + 1,)``.
-        operands: Transposed integer samples ``(n_qudits, n_samples)`` and transposed observable
-            ``l`` vectors ``(n_qudits, n_obs)``.
-        group: Mode data of the gates in this weight group.
-        tables: Roots-of-unity lookup tables.
-        block_size: Number of gates per block.
-    """
+    """Phase differences ``(n_obs, n_samples)`` of one weight group, block by block."""
     samples_t, l_t = operands
     n_samples, n_obs = samples_t.shape[1], l_t.shape[1]
-    n_g, omega = group.supports.shape
     n_modes = group.signs.shape[0]
 
-    def block_fn(sup, base, pidx):
-        coefs = _heavy_obs_coefficients(group, l_t, tables.table, sup, base)
-        modes = _heavy_sample_modes(group, samples_t, tables.table, sup, base)
-        theta_modes = jnp.tile(jnp.repeat(theta_ext[pidx], n_modes), 2)
+    def block(start, size):
+        coefs, modes = _block_factors(operands, group, arrays, tables, start, size)
+        th = _block_params(theta, arrays.param_indices, start, size)
+        theta_modes = jnp.tile(jnp.repeat(th, n_modes), 2)
         return coefs @ (theta_modes[:, jnp.newaxis] * modes)
 
-    block_fn = jax.checkpoint(block_fn)
-    supports = jnp.asarray(group.supports, dtype=_INDEX_DTYPE)
-    base_idx = jnp.asarray(group.base_idx, dtype=_INDEX_DTYPE)
-    pidx = jnp.asarray(group.param_indices, dtype=_INDEX_DTYPE)
+    n_full, remainder = _for_each_block(group, block_size)
+    total = jnp.zeros((n_obs, n_samples), dtype=_REAL_DTYPE)
+    if n_full:
 
-    if n_g <= block_size:
-        return block_fn(supports, base_idx, pidx)
+        def body(i, acc):
+            return acc + block(group.row_offset + i * block_size, block_size)
 
-    n_blocks = -(-n_g // block_size)
-    n_pad = n_blocks * block_size - n_g
-    if n_pad:
-        pad_index = theta_ext.shape[0] - 1  # points at the appended zero parameter
-        pad_base = int(tables.dsel[0]) * tables.d_max**2 + 1 * tables.d_max
-        supports = jnp.concatenate([supports, jnp.zeros((n_pad, omega), supports.dtype)])
-        base_idx = jnp.concatenate([base_idx, jnp.full((n_pad, omega), pad_base, base_idx.dtype)])
-        pidx = jnp.concatenate([pidx, jnp.full((n_pad,), pad_index, pidx.dtype)])
-
-    def accumulate(acc, block):
-        return acc + block_fn(*block), None
-
-    zero = jnp.zeros((n_obs, n_samples), dtype=_REAL_DTYPE)
-    total, _ = jax.lax.scan(
-        accumulate,
-        zero,
-        (
-            supports.reshape(n_blocks, block_size, omega),
-            base_idx.reshape(n_blocks, block_size, omega),
-            pidx.reshape(n_blocks, block_size),
-        ),
-    )
+        total = jax.lax.fori_loop(0, n_full, body, total)
+    if remainder:
+        total = total + block(group.row_offset + n_full * block_size, remainder)
     return total
 
 
-def _blocked_phase_diffs(
-    theta_ext: jnp.ndarray,
+def _group_blocked_phase_diffs_vjp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    g_delta: jnp.ndarray,
     operands: tuple[jnp.ndarray, jnp.ndarray],
+    group: _GroupStatic,
+    arrays: _GroupArrays,
+    tables: _LookupTables,
+    block_size: int,
+) -> jnp.ndarray:
+    """Per-gate gradient ``(n_gates,)`` of one weight group, recomputing the factors block by block."""
+    n_modes = group.signs.shape[0]
+
+    def block_grad(start, size):
+        coefs, modes = _block_factors(operands, group, arrays, tables, start, size)
+        d_v = coefs.T @ g_delta  # (2 B n_modes, n_samples)
+        d_theta_modes = jnp.sum(d_v * modes, axis=1)
+        return jnp.sum(d_theta_modes.reshape(2, size, n_modes), axis=(0, 2))
+
+    n_full, remainder = _for_each_block(group, block_size)
+    parts = []
+    if n_full:
+
+        def body(_, i):
+            return None, block_grad(group.row_offset + i * block_size, block_size)
+
+        _, stacked = jax.lax.scan(body, None, jnp.arange(n_full, dtype=_INDEX_DTYPE))
+        parts.append(stacked.reshape(-1))
+    if remainder:
+        parts.append(block_grad(group.row_offset + n_full * block_size, remainder))
+    return jnp.concatenate(parts)
+
+
+def _blocked_phase_diffs(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    theta: jnp.ndarray,
+    operands: tuple[jnp.ndarray, jnp.ndarray],
+    ctx: dict,
     structure: _ModeStructure,
+    gate_arrays: _GateArrays,
     tables: _LookupTables,
     max_memory_bytes: int,
 ) -> jnp.ndarray | None:
-    """Phase differences of all gates computed block by block without stored factor matrices."""
+    """Phase differences of all gates without stored factor matrices.
+
+    Weight-one gates still use the slot tables (whose size does not depend on the number of
+    gates); heavier groups are streamed in memory-bounded blocks.
+    """
     samples_t, l_t = operands
     n_samples, n_obs = samples_t.shape[1], l_t.shape[1]
-    groups = ([structure.w1] if structure.w1 is not None else []) + list(structure.heavy)
     total = None
-    for group in groups:
+    if structure.w1 is not None:
+        total = _w1_phase_diffs(theta, ctx, structure, gate_arrays)
+    for group, arrays in zip(structure.heavy, gate_arrays.heavy):
         block_size = _qudit_phase_block_size(max_memory_bytes, group.omega, n_samples, n_obs)
-        contribution = _group_blocked_phase_diffs(theta_ext, operands, group, tables, block_size)
+        contribution = _group_blocked_phase_diffs(
+            theta, operands, group, arrays, tables, block_size
+        )
         total = contribution if total is None else total + contribution
     return total
+
+
+def _blocked_phase_diffs_vjp(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    g_delta: jnp.ndarray,
+    operands: tuple[jnp.ndarray, jnp.ndarray],
+    ctx: dict,
+    structure: _ModeStructure,
+    gate_arrays: _GateArrays,
+    tables: _LookupTables,
+    max_memory_bytes: int,
+) -> jnp.ndarray:
+    """Hand-written transpose of :func:`_blocked_phase_diffs` with respect to ``theta``."""
+    samples_t, l_t = operands
+    n_samples, n_obs = samples_t.shape[1], l_t.shape[1]
+    dtheta = jnp.zeros((structure.n_params,), dtype=_REAL_DTYPE)
+    if structure.w1 is not None:
+        dtheta = _w1_phase_diffs_vjp(g_delta, ctx, structure, gate_arrays, dtheta)
+    for group, arrays in zip(structure.heavy, gate_arrays.heavy):
+        block_size = _qudit_phase_block_size(max_memory_bytes, group.omega, n_samples, n_obs)
+        d_gates = _group_blocked_phase_diffs_vjp(
+            g_delta, operands, group, arrays, tables, block_size
+        )
+        dtheta = _accumulate_group_grad(dtheta, d_gates, group, arrays.param_indices)
+    return dtheta
 
 
 # ---------------------------------------------------------------------------
@@ -976,6 +1425,24 @@ def _key_token(key: Any) -> Any:
     return ("key", np.asarray(key).tobytes())
 
 
+def _parse_gates(gates, n_qudits: int, dims: np.ndarray) -> tuple[list[_GateGroup], int]:
+    """Dispatch on the gate description type and return ``(groups, n_params)``."""
+    if gates is None:
+        return [], 0
+    if isinstance(gates, QuditGateArrays):
+        return _parse_qudit_gate_arrays(gates, n_qudits, dims)
+    if isinstance(gates, tuple):
+        return _parse_qudit_gate_arrays(QuditGateArrays(*gates), n_qudits, dims)
+    if isinstance(gates, dict):
+        groups = _groups_from_sparse(_parse_qudit_gate_dict(gates, n_qudits, dims))
+        n_params = (max(int(k) for k in gates.keys()) + 1) if gates else 0
+        return groups, n_params
+    raise TypeError(
+        "gates must be a dict mapping parameter indices to lists of sparse gates or a "
+        f"QuditGateArrays instance, got {type(gates).__name__}."
+    )
+
+
 def build_qudit_expval_func(  # pylint: disable=too-many-statements,too-many-locals
     config: QuditCircuitConfig,
 ) -> Callable:
@@ -992,6 +1459,13 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements,too-many-loc
     factors, the initial-state correction) is computed once per PRNG key and
     observable batch and reused by subsequent evaluations and gradients with
     the same key and observables.
+
+    The gate description may be the sparse dictionary or a :class:`QuditGateArrays`
+    instance. Gate arrays are passed to the compiled programs as arguments (never
+    embedded as constants) and, when the precomputed factor matrices would exceed
+    ``config.max_memory``, are streamed block by block in both the forward and the
+    hand-written backward pass, so the peak memory does not grow with the number of
+    gates.
 
     Args:
         config (QuditCircuitConfig): Full circuit description including gate
@@ -1051,12 +1525,10 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements,too-many-loc
     """
     n = config.n_qudits
     dims = _dims_to_numpy(config.dims, n)
-    gate_groups = _parse_qudit_gate_dict(config.gates, n, dims)
-    n_params = (max(int(k) for k in config.gates.keys()) + 1) if config.gates else 0
+    groups, n_params = _parse_gates(config.gates, n, dims)
     max_memory_bytes = _memory_budget_bytes(config.max_memory)
     tables = _build_lookup_tables(dims)
-    structure = _build_mode_structure(gate_groups, dims, n_params, tables)
-    indices = _build_factor_indices(structure)
+    structure, gate_arrays = _build_mode_structure(groups, dims, n_params, tables)
     has_gates = structure.w1 is not None or bool(structure.heavy)
 
     vmapped_phase_func = None
@@ -1106,47 +1578,42 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements,too-many-loc
             jh = h if jh is None else jh * h
         return jh
 
+    def _operands(samples, l_vecs):
+        return samples.T.astype(tables.index_dtype), l_vecs.T.astype(tables.index_dtype)
+
     @jax.jit
-    def prepare_full(samples, l_vecs, m_vecs, state_elems, state_amps):
+    def prepare_full(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        samples, l_vecs, m_vecs, state_elems, state_amps, gate_arrays
+    ):
         """Precompute every parameter-independent factor matrix."""
-        samples_t = samples.T.astype(tables.index_dtype)
-        l_t = l_vecs.T.astype(tables.index_dtype)
+        samples_t, l_t = _operands(samples, l_vecs)
         ctx = {"samples": samples, "l_vecs": l_vecs}
         if structure.w1 is not None:
-            base = jnp.asarray(structure.slot_base_idx, dtype=_INDEX_DTYPE)[:, jnp.newaxis]
-            qudits = jnp.asarray(structure.slot_qudit, dtype=_INDEX_DTYPE)
-            t_l = jnp.take(tables.table, base + jnp.take(l_t, qudits, axis=0).astype(_INDEX_DTYPE))
-            # Dr = [1 - Re T_l, -Im T_l] so that Dr @ [Re A; Im A] = -Re(delta_slot(l) A(z))
-            ctx["slot_obs"] = jnp.concatenate([1.0 - jnp.real(t_l), -jnp.imag(t_l)], axis=0).T
-            ctx["slot_samples"] = jnp.take(
-                tables.table, base + jnp.take(samples_t, qudits, axis=0).astype(_INDEX_DTYPE)
-            )
+            ctx["slot_obs"], ctx["slot_samples"] = _slot_factors(samples_t, l_t, structure, tables)
         if structure.heavy:
             modes, coefs = [], []
-            for group in structure.heavy:
-                modes.append(
-                    _heavy_sample_modes(
-                        group, samples_t, tables.table, group.supports, group.base_idx
-                    )
-                )
-                coefs.append(
-                    _heavy_obs_coefficients(
-                        group, l_t, tables.table, group.supports, group.base_idx
-                    )
-                )
+            for group, arrays in zip(structure.heavy, gate_arrays.heavy):
+                sup, pw = _group_rows(group, arrays)
+                modes.append(_heavy_sample_modes(group, samples_t, tables, sup, pw))
+                coefs.append(_heavy_obs_coefficients(group, l_t, tables, sup, pw))
             ctx["modes"] = jnp.concatenate(modes, axis=0)
             ctx["coef_obs"] = jnp.concatenate(coefs, axis=1)
+            ctx["modes_pidx"] = _modes_param_indices(structure, gate_arrays)
         ctx["jh"] = _obs_state_product(samples, l_vecs, m_vecs, state_elems, state_amps)
         return ctx
 
     @jax.jit
-    def prepare_lite(samples, l_vecs, m_vecs, state_elems, state_amps):
-        """Context for the memory-bounded path: only the sample / observable products."""
-        return {
-            "samples": samples,
-            "l_vecs": l_vecs,
-            "jh": _obs_state_product(samples, l_vecs, m_vecs, state_elems, state_amps),
-        }
+    def prepare_lite(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        samples, l_vecs, m_vecs, state_elems, state_amps, gate_arrays
+    ):
+        """Context for the memory-bounded path: slot tables and the sample / observable products."""
+        del gate_arrays  # the heavy gates are streamed from the arrays at evaluation time
+        ctx = {"samples": samples, "l_vecs": l_vecs}
+        if structure.w1 is not None:
+            samples_t, l_t = _operands(samples, l_vecs)
+            ctx["slot_obs"], ctx["slot_samples"] = _slot_factors(samples_t, l_t, structure, tables)
+        ctx["jh"] = _obs_state_product(samples, l_vecs, m_vecs, state_elems, state_amps)
+        return ctx
 
     def _tail(delta, jh, n_samples, n_obs):
         """Integrand and Monte Carlo statistics from the accumulated phase differences."""
@@ -1158,38 +1625,75 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements,too-many-loc
                 integrand = integrand * jh
         return _compute_mc_statistics(integrand, n_samples)
 
-    def _theta_ext(gates_params):
-        theta = jnp.asarray(gates_params).astype(_REAL_DTYPE).reshape(-1)
-        return jnp.concatenate([theta, jnp.zeros((1,), dtype=_REAL_DTYPE)])
+    def _theta_flat(gates_params):
+        return jnp.asarray(gates_params).astype(_REAL_DTYPE).reshape(-1)
 
-    # ---- full path: precomputed factors, hand-written VJP ----------------------------
-    @jax.jit
-    def core_full_fwd(gates_params, phase_params, ctx):
-        theta_ext = _theta_ext(gates_params)
-        n_samples, n_obs = ctx["samples"].shape[0], ctx["l_vecs"].shape[0]
-        delta = _phase_diffs_from_factors(theta_ext, ctx, structure, indices)
+    def _finish_grad(gates_params, dtheta):
+        gp = jnp.asarray(gates_params)
+        return dtheta.reshape(gp.shape).astype(gp.dtype)
+
+    # ---- forward / backward programs of the two evaluation paths ----------------------
+    def _fwd_impl(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        gates_params, phase_params, ctx, gate_arrays, use_full
+    ):
+        theta = _theta_flat(gates_params)
+        samples, l_vecs = ctx["samples"], ctx["l_vecs"]
+        n_samples, n_obs = samples.shape[0], l_vecs.shape[0]
+        delta = None
+        if has_gates:
+            if use_full:
+                delta = _phase_diffs_from_factors(theta, ctx, structure, gate_arrays)
+            else:
+                delta = _blocked_phase_diffs(
+                    theta,
+                    _operands(samples, l_vecs),
+                    ctx,
+                    structure,
+                    gate_arrays,
+                    tables,
+                    max_memory_bytes,
+                )
         if vmapped_phase_func is not None:
-            layer = _phase_layer(phase_params, ctx["samples"], ctx["l_vecs"])
+            layer = _phase_layer(phase_params, samples, l_vecs)
             delta = layer if delta is None else delta + layer
         return _tail(delta, ctx["jh"], n_samples, n_obs), delta
 
-    @jax.jit
-    def core_full_bwd(gates_params, phase_params, ctx, delta, ct):
-        n_samples, n_obs = ctx["samples"].shape[0], ctx["l_vecs"].shape[0]
-        dtheta_ext = jnp.zeros((n_params + 1,), dtype=_REAL_DTYPE)
+    def _bwd_impl(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        gates_params, phase_params, ctx, gate_arrays, delta, ct, use_full
+    ):
+        samples, l_vecs = ctx["samples"], ctx["l_vecs"]
+        n_samples, n_obs = samples.shape[0], l_vecs.shape[0]
+        dtheta = jnp.zeros((n_params,), dtype=_REAL_DTYPE)
         dphase = None
         if delta is not None:
             _, tail_vjp = jax.vjp(lambda d: _tail(d, ctx["jh"], n_samples, n_obs), delta)
             (g_delta,) = tail_vjp(ct)
-            dtheta_ext = _phase_diffs_vjp_from_factors(g_delta, ctx, structure, indices)
+            if has_gates:
+                if use_full:
+                    dtheta = _phase_diffs_vjp_from_factors(g_delta, ctx, structure, gate_arrays)
+                else:
+                    dtheta = _blocked_phase_diffs_vjp(
+                        g_delta,
+                        _operands(samples, l_vecs),
+                        ctx,
+                        structure,
+                        gate_arrays,
+                        tables,
+                        max_memory_bytes,
+                    )
             if vmapped_phase_func is not None and phase_params is not None:
-                _, layer_vjp = jax.vjp(
-                    lambda p: _phase_layer(p, ctx["samples"], ctx["l_vecs"]), phase_params
-                )
+                _, layer_vjp = jax.vjp(lambda p: _phase_layer(p, samples, l_vecs), phase_params)
                 (dphase,) = layer_vjp(g_delta)
-        gp = jnp.asarray(gates_params)
-        dtheta = dtheta_ext[:n_params].reshape(gp.shape).astype(gp.dtype)
-        return dtheta, dphase
+        return _finish_grad(gates_params, dtheta), dphase
+
+    core_fwd = {
+        True: jax.jit(partial(_fwd_impl, use_full=True)),
+        False: jax.jit(partial(_fwd_impl, use_full=False)),
+    }
+    core_bwd = {
+        True: jax.jit(partial(_bwd_impl, use_full=True)),
+        False: jax.jit(partial(_bwd_impl, use_full=False)),
+    }
 
     # The backward program is compiled ahead of time during the first (forward-only) evaluation:
     # its input signature is fully determined by the forward outputs, and a training loss is
@@ -1200,73 +1704,69 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements,too-many-loc
         leaves, treedef = jax.tree.flatten(args)
         return treedef, tuple((tuple(leaf.shape), str(leaf.dtype)) for leaf in leaves)
 
-    def _warm_backward(gates_params, phase_params, ctx, delta, out):
-        if any(_is_tracer(x) for x in jax.tree.leaves((gates_params, phase_params, delta, out))):
+    def _warm_backward(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        use_full, gates_params, phase_params, ctx, gate_arrays, delta, out
+    ):
+        if any(
+            _is_tracer(x)
+            for x in jax.tree.leaves((gates_params, phase_params, ctx, gate_arrays, delta, out))
+        ):
             return
         ct_abstract = jax.tree.map(lambda x: jax.ShapeDtypeStruct(x.shape, x.dtype), out)
-        args = (gates_params, phase_params, ctx, delta, ct_abstract)
-        key = _bwd_signature(*args)
+        args = (gates_params, phase_params, ctx, gate_arrays, delta, ct_abstract)
+        key = (use_full, _bwd_signature(*args))
         if key not in compiled_bwd:
-            compiled_bwd[key] = core_full_bwd.lower(*args).compile()
+            compiled_bwd[key] = core_bwd[use_full].lower(*args).compile()
 
     # The most recent forward evaluation is memoized on the identity of its (immutable) inputs,
     # so that a gradient evaluated right after the loss at the same parameters reuses the
     # forward pass instead of recomputing it.
     forward_memo: dict[str, Any] = {}
 
-    def _forward(gates_params, phase_params, ctx):
+    def _forward(use_full, gates_params, phase_params, ctx, gate_arrays):
         params_leaves = jax.tree.leaves((gates_params, phase_params))
-        if any(_is_tracer(x) for x in params_leaves):
-            return core_full_fwd(gates_params, phase_params, ctx)
+        static_leaves = jax.tree.leaves((ctx, gate_arrays))
+        if any(_is_tracer(x) for x in params_leaves + static_leaves):
+            return core_fwd[use_full](gates_params, phase_params, ctx, gate_arrays)
         # ``jax.custom_vjp`` re-creates the ``ctx`` container on every call; its array leaves are
         # the cached objects, so they (not the dict) identify the context.
         token = (
+            use_full,
             tuple(_array_token(x) for x in params_leaves),
             jax.tree.structure((gates_params, phase_params)),
-            tuple(id(leaf) for leaf in jax.tree.leaves(ctx)),
+            tuple(id(leaf) for leaf in static_leaves),
         )
         entry = forward_memo.get("entry")
         if entry is not None and entry[0] == token:
             return entry[2]
-        result = core_full_fwd(gates_params, phase_params, ctx)
-        forward_memo["entry"] = (token, (gates_params, phase_params, ctx), result)
+        result = core_fwd[use_full](gates_params, phase_params, ctx, gate_arrays)
+        forward_memo["entry"] = (token, (gates_params, phase_params, ctx, gate_arrays), result)
         return result
 
-    @jax.custom_vjp
-    def core_full(gates_params, phase_params, ctx):
-        out, delta = _forward(gates_params, phase_params, ctx)
-        _warm_backward(gates_params, phase_params, ctx, delta, out)
-        return out
+    def _make_core(use_full):
+        @jax.custom_vjp
+        def core(gates_params, phase_params, ctx, gate_arrays):
+            out, delta = _forward(use_full, gates_params, phase_params, ctx, gate_arrays)
+            _warm_backward(use_full, gates_params, phase_params, ctx, gate_arrays, delta, out)
+            return out
 
-    def core_full_fwd_rule(gates_params, phase_params, ctx):
-        out, delta = _forward(gates_params, phase_params, ctx)
-        return out, (gates_params, phase_params, ctx, delta)
+        def fwd_rule(gates_params, phase_params, ctx, gate_arrays):
+            out, delta = _forward(use_full, gates_params, phase_params, ctx, gate_arrays)
+            return out, (gates_params, phase_params, ctx, gate_arrays, delta)
 
-    def core_full_bwd_rule(res, ct):
-        gates_params, phase_params, ctx, delta = res
-        args = (gates_params, phase_params, ctx, delta, ct)
-        compiled = None
-        if not any(_is_tracer(x) for x in jax.tree.leaves(args)):
-            compiled = compiled_bwd.get(_bwd_signature(*args))
-        dtheta, dphase = (compiled or core_full_bwd)(*args)
-        return dtheta, dphase, None
+        def bwd_rule(res, ct):
+            gates_params, phase_params, ctx, gate_arrays, delta = res
+            args = (gates_params, phase_params, ctx, gate_arrays, delta, ct)
+            compiled = None
+            if not any(_is_tracer(x) for x in jax.tree.leaves(args)):
+                compiled = compiled_bwd.get((use_full, _bwd_signature(*args)))
+            dtheta, dphase = (compiled or core_bwd[use_full])(*args)
+            return dtheta, dphase, None, None
 
-    core_full.defvjp(core_full_fwd_rule, core_full_bwd_rule)
+        core.defvjp(fwd_rule, bwd_rule)
+        return core
 
-    # ---- blocked path: memory-bounded, plain autodiff ----------------------------------
-    @jax.jit
-    def core_blocked(gates_params, phase_params, ctx):
-        theta_ext = _theta_ext(gates_params)
-        samples, l_vecs = ctx["samples"], ctx["l_vecs"]
-        n_samples, n_obs = samples.shape[0], l_vecs.shape[0]
-        delta = None
-        if has_gates:
-            operands = (samples.T.astype(tables.index_dtype), l_vecs.T.astype(tables.index_dtype))
-            delta = _blocked_phase_diffs(theta_ext, operands, structure, tables, max_memory_bytes)
-        if vmapped_phase_func is not None:
-            layer = _phase_layer(phase_params, samples, l_vecs)
-            delta = layer if delta is None else delta + layer
-        return _tail(delta, ctx["jh"], n_samples, n_obs)
+    cores = {True: _make_core(True), False: _make_core(False)}
 
     context_cache: dict[str, Any] = {}
 
@@ -1320,7 +1820,7 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements,too-many-loc
         m_np = np.asarray(m_raw)
         return jnp.asarray(m_np, dtype=_INDEX_DTYPE) if m_np.any() else None
 
-    def qudit_expval_batched(  # pylint: disable=too-many-arguments,too-many-locals
+    def qudit_expval_batched(  # pylint: disable=too-many-arguments,too-many-locals,too-many-positional-arguments
         gates_params: ArrayLike,
         phase_fn_params: ArrayLike | None = None,
         key: ArrayLike | None = None,
@@ -1354,7 +1854,17 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements,too-many-loc
             ``expvals`` are the estimated complex expectation values, shape
             ``(n_obs,)``, and ``cov`` stores the real-imaginary covariance matrices
             of the mean estimator, shape ``(n_obs, 2, 2)``.
+
+        Raises:
+            ValueError: If ``gates_params`` does not hold exactly one entry per trainable
+                parameter of ``config.gates``.
         """
+        n_given = int(np.prod(jnp.shape(gates_params)))
+        if n_given != n_params:
+            raise ValueError(
+                f"gates_params has {n_given} entries but the circuit has {n_params} trainable "
+                "parameters (len(config.gates))."
+            )
         l_raw, m_raw, obs_token = _resolve_observables(observables)
         state_elems, state_amps, state_token = _resolve_state(init_state_elems, init_state_amps)
         _n = int(n_samples) if n_samples is not None else config.n_samples
@@ -1371,7 +1881,7 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements,too-many-loc
             samples = (
                 default_samples() if _key is None else _compute_qudit_samples(_key, _n, n, dims)
             )
-            return prepare(samples, l_vecs, m_vecs, state_elems, state_amps)
+            return prepare(samples, l_vecs, m_vecs, state_elems, state_amps, gate_arrays)
 
         concrete = not any(_is_tracer(x) for x in (key, l_raw, m_raw, state_elems, state_amps))
         if concrete:
@@ -1379,22 +1889,22 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements,too-many-loc
             tokens = (sample_token, obs_token, state_token, use_full)
             ctx = _cached_context(tokens, (l_raw, m_raw, state_elems, state_amps), build_context)
             if ctx is not None:
-                core = core_full if use_full else core_blocked
-                return core(gates_params, phase_fn_params, ctx)
+                return cores[use_full](gates_params, phase_fn_params, ctx, gate_arrays)
 
         ctx = build_context()
-        if use_full:
-            return core_full_fwd(gates_params, phase_fn_params, ctx)[0]
-        return core_blocked(gates_params, phase_fn_params, ctx)
+        return cores[use_full](gates_params, phase_fn_params, ctx, gate_arrays)
 
     # Internal programs, exposed for diagnostics and benchmarking (not part of the public API).
     qudit_expval_batched.internals = {
         "prepare_full": prepare_full,
         "prepare_lite": prepare_lite,
-        "core_full_fwd": core_full_fwd,
-        "core_full_bwd": core_full_bwd,
-        "core_blocked": core_blocked,
+        "core_full_fwd": core_fwd[True],
+        "core_full_bwd": core_bwd[True],
+        "core_blocked_fwd": core_fwd[False],
+        "core_blocked_bwd": core_bwd[False],
         "context_cache": context_cache,
         "forward_memo": forward_memo,
+        "structure": structure,
+        "gate_arrays": gate_arrays,
     }
     return qudit_expval_batched

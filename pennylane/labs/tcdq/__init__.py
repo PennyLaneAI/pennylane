@@ -32,6 +32,7 @@ Core classes and functions
 
     ~CircuitConfig
     ~QuditCircuitConfig
+    ~QuditGateArrays
     ~MMDConfig
     ~QuditMMDConfig
     ~build_expval_func
@@ -55,6 +56,8 @@ Circuit construction utilities
     ~create_lattice_gates
     ~create_local_gates
     ~create_random_gates
+    ~create_random_qudit_gates
+    ~create_random_qudit_gates_jax
     ~generate_pauli_observables
 
 Workflows
@@ -238,6 +241,50 @@ costs :math:`O(k)` to describe regardless of ``n_qudits``.
    expvals, cov = expval_fn(params)
 
 
+Large qudit circuits from gate arrays
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The gate dictionary costs several hundred bytes per gate and is parsed in a Python
+loop, which limits it to roughly :math:`10^7` gates. For larger circuits describe the
+gates with :class:`~QuditGateArrays`: two integer arrays of shape
+``(n_gates, max_weight)`` holding the supported qudits and the powers of :math:`Z`
+(a zero power marks an unused column). :func:`~create_random_qudit_gates_jax` draws
+such arrays directly on the device, in chunks, from the same distribution as
+:func:`~create_random_qudit_gates`. The estimator consumes the arrays without copying
+them; when the precomputed factor matrices would exceed ``max_memory`` it streams over
+the arrays in memory-bounded blocks in both the forward and the backward pass.
+
+.. code-block:: python
+
+   import jax
+   import jax.numpy as jnp
+
+   from pennylane.labs.tcdq import (
+       QuditCircuitConfig,
+       build_qudit_expval_func,
+       create_random_qudit_gates_jax,
+   )
+
+   n_qudits, d = 64, 3
+   gates = create_random_qudit_gates_jax(
+       jax.random.PRNGKey(0), n_gates=10_000_000, dims=[d] * n_qudits, max_weight=2
+   )
+
+   config = QuditCircuitConfig(
+       dims=d,
+       n_qudits=n_qudits,
+       gates=gates,
+       n_samples=2000,
+       key=jax.random.PRNGKey(1),
+       max_memory=1.0,  # GB of temporaries per block
+   )
+   expval_fn = build_qudit_expval_func(config)
+
+   l_vecs = jnp.eye(n_qudits, dtype=jnp.int32)[:8]
+   params = jnp.zeros(gates.supports.shape[0])
+   expvals, cov = expval_fn(params, observables=(l_vecs, jnp.zeros_like(l_vecs)))
+
+
 Training qudit circuits with MMD loss
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -321,6 +368,7 @@ from .expval_functions import (
 )
 from .qudit_expval_functions import (
     QuditCircuitConfig,
+    QuditGateArrays,
     build_qudit_expval_func,
 )
 from .mmd_loss_pauli import MMDConfig, build_mmd_loss_pauli, median_heuristic
@@ -331,12 +379,14 @@ from .utils import (
     create_local_gates,
     create_random_gates,
     create_random_qudit_gates,
+    create_random_qudit_gates_jax,
     generate_pauli_observables,
 )
 
 __all__ = [
     "CircuitConfig",
     "QuditCircuitConfig",
+    "QuditGateArrays",
     "MMDConfig",
     "QuditMMDConfig",
     "build_expval_func",
@@ -353,5 +403,6 @@ __all__ = [
     "create_local_gates",
     "create_random_gates",
     "create_random_qudit_gates",
+    "create_random_qudit_gates_jax",
     "generate_pauli_observables",
 ]
