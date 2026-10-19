@@ -20,7 +20,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.transforms import decompose, parity_matrix
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import parity_matrix
 
 circ1 = qp.tape.QuantumScript(
     [

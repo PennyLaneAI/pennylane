@@ -118,6 +118,8 @@ def track(
         :class:`~.resource.CircuitSpecs` object containing the ``qnode`` specifications,
         including gate and measurement data, total wires, device information, shots, and more.
 
+    .. seealso:: :func:`~.analyze`, which estimates the
+        resources at a given compilation level without executing the circuit.
 
     .. note::
 
@@ -181,10 +183,10 @@ def track(
     >>> circuit_specs.resources.quantum_operations
     {'CNOT': 1, 'Hadamard': 3}
 
-    In contrast, the compile-time analysis reports the number of loop iterations
-    symbolically, since it does not depend on the runtime value of ``n``:
+    In contrast, :func:`~.analyze` does not execute the circuit, so it reports the number of
+    loop iterations symbolically:
 
-    >>> qp.specs(circuit, level=0)(3).resources.quantum_operations
+    >>> qp.analyze(circuit, level=0)(3).resources.quantum_operations
     {'CNOT': 1, 'Hadamard': Expression({('a',): 1})}
     """
     qnode, partial_args, partial_kwargs = unwrap_partial(qnode)

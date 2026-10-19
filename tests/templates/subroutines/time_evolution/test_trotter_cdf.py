@@ -36,7 +36,6 @@ from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import CaptureWarning
 from pennylane.numeric_hamiltonians import CDFHamiltonian
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
     _apply_system_basis_rotation,
     _cdf_resource_counts,
@@ -45,6 +44,7 @@ from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
     _merge_leaves,
     _trotter_cdf_decomposition,
 )
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.templates.subroutines.time_evolution.fermi_tools import (  # pylint: disable=no-name-in-module
@@ -255,12 +255,12 @@ class TestInitialization:
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid(toy_hamiltonian_cdf_concrete):
-    """Run qp.ops.functions.assert_valid on a concrete CDF instance."""
+    """Run qp.testing.assert_valid on a concrete CDF instance."""
     ham, num_orbitals = toy_hamiltonian_cdf_concrete
     wires = list(range(2 * num_orbitals))
     op = qp.TrotterCDF(0.1, 3, ham, wires)
     # Differentiating through the (non-trainable) hamiltonian dict is not supported.
-    qp.ops.functions.assert_valid(op, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_differentiation=True)
 
 
 class TestCDFScheme:
@@ -350,7 +350,7 @@ class TestResourceRule:
         with warnings.catch_warnings():
             warnings.simplefilter("error", CaptureWarning)
             jaxpr = jax.make_jaxpr(circuit)(*args)
-        operations = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *args).operations
+        operations = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *args).operations
         assert_resource_counts_match(resources, operations)
 
 
@@ -622,7 +622,7 @@ class TestControlledDecomposition:
             warnings.simplefilter("error", CaptureWarning)
             jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
 
-        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
+        ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
         # One-body terms emit ``CRZ`` (PennyLane's single-control shortcut for ``ctrl(RZ)``);
         # two-body terms emit ``ControlledOp2`` wrapping ``IsingZZ``.
         assert {type(op).__name__ for op in ops} == {
@@ -683,7 +683,7 @@ class TestDoublePhaseControlledDecomposition:
             warnings.simplefilter("error", CaptureWarning)
             jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
 
-        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
+        ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
         assert {type(op).__name__ for op in ops} == {"BasisRotation", "CNOT", "RZ", "IsingZZ"}
 
     def test_double_phase_controlled_matches_expm(self, diagonal_hamiltonian_cdf):
@@ -751,7 +751,8 @@ class TestIntegration:
         registers = qp.registers({"hadamard": 1, "system": 2 * N})
 
         @qp.qjit
-        @qp.transforms.decompose(gate_set=target_gates)
+        # pylint: disable-next=protected-access
+        @qp.transforms._tape_decompose(gate_set=target_gates)
         @qp.qnode(qp.device("lightning.qubit"))
         def trotter_circuit():
             qp.H(registers["hadamard"])

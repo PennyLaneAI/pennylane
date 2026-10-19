@@ -24,8 +24,8 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import Prod
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import AbstractWires, Float
 
 
@@ -77,7 +77,7 @@ class TestSelectPauliRot:
             rot_axis="X",
         )
 
-        qp.ops.functions.assert_valid(op)
+        qp.testing.assert_valid(op)
 
     @pytest.mark.parametrize(
         ("angles", "control_wires", "target_wire", "rot_axis", "expected_error"),

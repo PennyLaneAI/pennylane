@@ -29,8 +29,9 @@ from jax import jacobian, jit, vmap
 from numpy.polynomial import Polynomial, chebyshev
 
 from pennylane import math, ops
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import CompressedResourceOp, add_decomps, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -390,7 +391,7 @@ class QSVT(Operator2):
     To see the implementation details, we can expand the circuit via :func:`qp.decompose <.transforms.decompose>`:
 
     >>> q_script = qp.tape.QuantumScript(ops=[qp.QSVT(block_encoding, phase_shifts)])
-    >>> q_scripts, func = qp.decompose(q_script, gate_set=qp.decomposition.gate_sets.ALL_QUBIT_OPS)
+    >>> q_scripts, func = qp.transforms._tape_decompose(q_script, gate_set=qp.decomposition.gate_sets.ALL_QUBIT_OPS)
     >>> q_script = func(q_scripts)
     >>> print(q_script.draw(decimals=2))
     0: ──RZ(-2.46)──H──RZ(1.00)──H──RZ(-8.00)─┤

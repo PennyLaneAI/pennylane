@@ -15,19 +15,20 @@
 Unit tests for the qft template.
 """
 
+import hint_helpers
 import numpy as np
 import pytest
 from gate_data import QFT
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qp.QFT(wires=(0, 1, 2))
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestQFT:
@@ -66,6 +67,20 @@ class TestQFT:
         op = qp.QFT(wires=wires)
         for rule in qp.list_decomps(op):
             _test_decomposition_rule(op, rule)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("n_wires", [2, 3, 6])
+    def test_num_iters_hint(self, n_wires):
+        """Test that the loop over controlled phase shifts carries a ``num-iters`` hint that
+        reproduces the number of ``ControlledPhaseShift`` gates."""
+        import jax
+
+        rule = qp.list_decomps(qp.QFT)[0]
+        plxpr = jax.make_jaxpr(lambda: rule(wires=list(range(n_wires))))()
+        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        num_cps = sum(isinstance(op, qp.ControlledPhaseShift) for op in ops)
+
+        assert hint_helpers.loop_hints(plxpr.jaxpr) == [None, num_cps / n_wires, None]
 
     @pytest.mark.parametrize("n_qubits", range(2, 10))
     def test_QFT_adjoint_identity(self, n_qubits, tol):

@@ -21,15 +21,15 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
 from pennylane import capture, math
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core import Operator
+from pennylane.core.apply import apply
 from pennylane.core.operator import abstractify
-from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
-from pennylane.core.queuing import apply
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
+    _list_decomps,
     get_fixed_decomp,
-    list_decomps,
     register_condition,
     register_resources,
 )
@@ -410,7 +410,7 @@ def pow_rotation(base, z):
     qp.ops.functions.bind_new_parameters(base, (angle * z,))
 
 
-@list_decomps.register
+@_list_decomps.register
 def _list_pow_decomps(op: Pow2) -> DecompCollection:
     abs_op = abstractify(op)
 
@@ -427,7 +427,7 @@ def _list_pow_decomps(op: Pow2) -> DecompCollection:
         return DecompCollection([flip_pow_adjoint])
 
     # Custom decomposition rules registered specifically to the pow operator
-    custom_rules = list_decomps.dispatch(object)(abs_op)
+    custom_rules = _list_decomps.dispatch(object)(abs_op)
 
     return custom_rules + [repeat_pow_base] if is_integer(op.z) else custom_rules
 

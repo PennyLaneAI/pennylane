@@ -71,7 +71,7 @@ def test_preprocess_levels(level, output, expect_warnings, example_pipeline):
     if expect_warnings:
         with pytest.warns(
             UserWarning,
-            match="The 'level' argument to qp.specs for QJIT'd QNodes has been sorted to be in ascending "
+            match="The 'level' argument for QJIT'd QNodes has been sorted to be in ascending "
             "order with no duplicate levels.",
         ):
             assert preprocess_level_input(level, example_pipeline) == output
@@ -118,7 +118,7 @@ def test_preprocess_levels_tape_transforms():
 
     with pytest.raises(
         ValueError,
-        match=r"Specs encountered the following tape transforms: .*dummy_transform.*\. Tape transforms are no longer supported by specs.",
+        match=r"Encountered the following tape transforms: .*dummy_transform.*\. Tape transforms are no longer supported.",
     ):
         preprocess_level_input("all", pipeline)
 

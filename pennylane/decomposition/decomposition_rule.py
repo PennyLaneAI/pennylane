@@ -213,7 +213,7 @@ def register_resources(
             qp.CZ(wires=wires)
             qp.H(wires=wires[1])
 
-        @qp.decompose(gate_set={qp.CZ, qp.H}, fixed_decomps={qp.CNOT: my_cnot})
+        @qp.transforms._tape_decompose(gate_set={qp.CZ, qp.H}, fixed_decomps={qp.CNOT: my_cnot})
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.CNOT(wires=[0, 1])
@@ -317,7 +317,7 @@ def register_resources(
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
 
-          @qp.decompose(fixed_decomps=decomps, num_work_wires=1)
+          @qp.transforms._tape_decompose(fixed_decomps=decomps, num_work_wires=1)
           @qp.qnode(qp.device("default.qubit"))
           def circuit():
               qp.ctrl(qp.Rot(0.1, 0.2, 0.3, wires=3), control=[0, 1, 2])
@@ -573,14 +573,14 @@ class DecompCollection:
 
     def append(self, rule: DecompositionRule):
         """Add a decomposition rule to the collection."""
-        if rule.name in self._decomps:
+        if rule.name in self._decomps and rule is not self._decomps[rule.name]:
             raise ValueError(f"A decomposition of the name: {rule.name} already exists!")
         self._decomps[rule.name] = rule
 
     def extend(self, rules: DecompCollection | Sequence[DecompositionRule]):
         """Add a sequence of decomposition rules to the collection."""
-        if dup_name := next((rule.name for rule in rules if rule.name in self), None):
-            raise ValueError(f"A decomposition of the name: {dup_name} already exists!")
+        if dup := next((r.name for r in rules if r.name in self and r is not self[r.name]), None):
+            raise ValueError(f"A decomposition of the name: {dup} already exists!")
         decomps = rules if isinstance(rules, DecompCollection) else DecompCollection(rules)
         self._decomps |= decomps._decomps  # pylint: disable=protected-access
 
@@ -604,6 +604,11 @@ _fixed_decomps_private = {}
 """dict[str, DecompositionRule]: A dictionary mapping operators a unique decomposition rule."""
 
 _fixed_decomps_var = ContextVar("_fixed_decomps", default=_fixed_decomps_private)
+
+_excluded_decomps_private = {}
+"""dict[str, frozenset[str]]: A dictionary mapping operator names to excluded rule names."""
+
+_excluded_decomps_var = ContextVar("_excluded_decomps", default=_excluded_decomps_private)
 
 
 def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
@@ -683,6 +688,13 @@ def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: Decompositi
 
 
 @singledispatch
+def _list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
+    """Returns the full list of decomposition rules before being filtered."""
+    if fixed_rule := get_fixed_decomp(op):
+        return DecompCollection([fixed_rule])
+    return _decompositions_var.get()[to_name(op)].copy()
+
+
 def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     """Lists all stored decomposition rules for an operator class.
 
@@ -740,9 +752,95 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
-    if fixed_rule := get_fixed_decomp(op):
-        return DecompCollection([fixed_rule])
-    return _decompositions_var.get()[to_name(op)].copy()
+    decomps = _list_decomps(op)
+    excluded_rules = _excluded_decomps_var.get()
+    if excluded := excluded_rules.get(to_name(op)):
+        return DecompCollection([rule for rule in decomps if rule.name not in excluded])
+    return decomps
+
+
+class _DecompExclusion:
+    """The exclusion of decomposition rules, which is undone when used as a context manager."""
+
+    def __init__(self, op_name: str, names: frozenset[str]) -> None:
+        self._op_name = op_name
+        self._names = names
+
+    def __enter__(self) -> None:
+        pass
+
+    def __exit__(self, *_) -> None:
+        all_excluded = _excluded_decomps_var.get()
+        remaining = all_excluded.get(self._op_name, frozenset()) - self._names
+        _excluded_decomps_var.set(all_excluded | {self._op_name: remaining})
+
+
+def exclude_decomps(op: type[Operator] | Operator | str, *names: str) -> _DecompExclusion:
+    """Excludes decomposition rules of an operator by name.
+
+    Excluded rules are not removed from the registry. They are hidden from :func:`~pennylane.list_decomps`,
+    and are therefore not considered by the graph-based decomposition system. When used as a
+    context manager, the rules are excluded only within the context. This function is thread-safe.
+
+    Args:
+        op (type or Operator or str): the operator type to exclude decomposition rules for.
+            For symbolic operators, use strings like ``"Adjoint(RY)"``, ``"C(RX)"``, etc.
+        *names (str): the names of the decomposition rules to exclude. Each name must be one of
+            the rules listed by :func:`~pennylane.list_decomps` for ``op``. To exclude rules that
+            are generated for specific operator instances, pass an instance as ``op``.
+
+    Raises:
+        TypeError: if a name is not a string, e.g., a ``DecompositionRule`` instance.
+        ValueError: if no decomposition rule with a given name exists for ``op``.
+
+    .. seealso:: :func:`~pennylane.list_decomps` and :func:`~pennylane.decomposition.local_decomps`
+
+    **Example**
+
+    When used as a context manager, the rules are excluded only within the context:
+
+    >>> with qp.exclude_decomps(qp.CRX, "_crx_to_ppr", "_crx_to_h_crz"):
+    ...     print(qp.list_decomps(qp.CRX))
+    Available Decomposition Rules:
+    0: _crx_to_rx_cz
+    1: _crx_to_rz_ry
+    >>> print(qp.list_decomps(qp.CRX))
+    Available Decomposition Rules:
+    0: _crx_to_rx_cz
+    1: _crx_to_rz_ry
+    2: _crx_to_h_crz
+    3: _crx_to_ppr
+
+    Otherwise, the rules remain excluded for the rest of the session, or until the enclosing
+    :func:`~pennylane.decomposition.local_decomps` context exits:
+
+    .. code-block:: python
+
+        with qp.decomposition.local_decomps():
+            qp.exclude_decomps(qp.CRX, "_crx_to_ppr")
+            assert "_crx_to_ppr" not in qp.list_decomps(qp.CRX)
+
+        assert "_crx_to_ppr" in qp.list_decomps(qp.CRX)
+
+    """
+    op_name = to_name(op)
+
+    if invalid := [name for name in names if not isinstance(name, str)]:
+        raise TypeError(
+            "Decomposition rules must be excluded by name, e.g. rule.name for a "
+            f"DecompositionRule, got {invalid[0]!r}."
+        )
+    available = [rule.name for rule in _list_decomps(op)]
+    if missing := [name for name in names if name not in available]:
+        raise ValueError(
+            f"Cannot find a decomposition rule named '{missing[0]}' for {op_name}. "
+            f"Available decomposition rules: {available}."
+        )
+
+    all_excluded = _excluded_decomps_var.get()
+    already_excluded = all_excluded.get(op_name, frozenset())
+    _excluded_decomps_var.set(all_excluded | {op_name: already_excluded | frozenset(names)})
+    return _DecompExclusion(op_name, frozenset(names) - already_excluded)
 
 
 def has_decomp(op: type[Operator] | Operator | str) -> bool:
@@ -784,11 +882,15 @@ def local_decomps():
     _new_fixed_decomps = _fixed_decomps_var.get().copy()
     token_fixed_decomps = _fixed_decomps_var.set(_new_fixed_decomps)
 
+    # Handle the registry of excluded decomposition rules.
+    token_excluded_decomps = _excluded_decomps_var.set(_excluded_decomps_var.get().copy())
+
     try:
         yield
     finally:
         _decompositions_var.reset(token_all_decomps)
         _fixed_decomps_var.reset(token_fixed_decomps)
+        _excluded_decomps_var.reset(token_excluded_decomps)
 
 
 def _fix_decomp(op: type[Operator] | Operator | str, rule: DecompositionRule):
@@ -1100,7 +1202,7 @@ def null_decomp(*_, **__):
 
         qp.decomposition.enable_graph()
 
-        @qp.decompose(
+        @qp.transforms._tape_decompose(
             gate_set={qp.RZ},
             fixed_decomps={qp.GlobalPhase: null_decomp}
         )
