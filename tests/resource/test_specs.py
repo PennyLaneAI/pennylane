@@ -163,7 +163,7 @@ class TestDeviceLevelSpecs:
             ),
         )
 
-    @pytest.mark.xfail("xfailed until work_wire_spec is added in Catalyst.")
+    @pytest.mark.xfail(reason="xfailed until work_wire_spec is added in Catalyst.")
     def test_complex(self):
         """Test a complex case of qp.specs() against PennyLane"""
 
