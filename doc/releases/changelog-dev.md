@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Added a decomposition of ``Adjoint(TemporaryAND)`` to PPMs (:func:`~.pauli_measure`)
+  and a :class:`~.CZ` gate, as an alternative to the existing decomposition using
+  :func:`qp.measure` with an explicit basis change.
+  [(#10310)](https://github.com/PennyLaneAI/pennylane/pull/10310)
+
 * A new :func:`~.decomposition.exclude_decomps` function excludes decomposition rules of an operator by name, so
   that they are hidden from :func:`~.decomposition.list_decomps` and the graph-based decomposition system without
   being removed. When used as a context manager, the rules are excluded only within the context.
@@ -21,11 +26,12 @@
   ... )
   ```
 
-* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
+* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function
   can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
   [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
   [(#10297)](https://github.com/PennyLaneAI/pennylane/pull/10297)
   [(#10251)](https://github.com/PennyLaneAI/pennylane/pull/10251)
+  [(#10325)](https://github.com/PennyLaneAI/pennylane/pull/10325)
 
   By hinting control flow like :func:`~.for_loop`, :func:`~.while_loop`, and :func:`~.cond` profiling
   with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
@@ -65,11 +71,11 @@
   Circuit Depth: Not computed
 
   ```
-  
+
   The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
 
 * A new state preparation routine called :class:`~.PhaseGradientStatePrep` has been added, which
-  prepares the phase gradient state 
+  prepares the phase gradient state
   :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`.
   It is a catalytic state for (generalized) rotation gates.
   See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
@@ -764,6 +770,13 @@
   resource counts when compiling them with Catalyst.
   [(#10241)](https://github.com/PennyLaneAI/pennylane/pull/10241)
 
+* The decompositions of :class:`~.QROM` (unary iteration), :class:`~.Incrementer`,
+  :class:`~.PartialUnaryStatePreparation`, :class:`~.SumOfSlatersPrep` and
+  :class:`~.TrotterVibronic` now provide `branch-prob` hints for conditionals whose trigger
+  frequency is known from the surrounding loops, replacing the worst-case resource counts of
+  unhinted conditionals by the exact average counts when compiling them with Catalyst.
+  [(#10311)](https://github.com/PennyLaneAI/pennylane/pull/10311)
+
 * The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
   but instead expresses the Select block as another ``QROM`` with fewer controls and more target
   qubits. This allows for scalable compilation of this decomposition rule.
@@ -1289,7 +1302,7 @@
   ```
 
   [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
-  
+
 * The ``pennylane.qaoa`` module has been removed. This includes the mixer Hamiltonians
   (``x_mixer``, ``xy_mixer``, ``bit_flip_mixer``), the cost Hamiltonians (``maxcut``,
   ``max_independent_set``, ``min_vertex_cover``, ``max_clique``, ``max_weight_cycle``,
@@ -1517,6 +1530,9 @@
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
 
 <h3>Internal changes ⚙️</h3>
+
+* Moved `pop_op_eqns` into `pennylane.capture`.
+  [(#10345)](https://github.com/PennyLaneAI/pennylane/pull/10345)
 
 * Added an autouse fixture that undoes any changes a test makes to the registry of decomposition
   rules, and removed the `qp.decomposition.local_decomps` blocks that only served as cleanup.
@@ -1947,6 +1963,12 @@
 * Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits.
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
+* The :attr:`~.Node.executor_options` documentation now describes ``"sudo_password_env"``, the name
+  of an environment variable holding a remote node's sudo password, in place of the
+  ``"sudo_password"`` string, so the password stays out of source, config files and the node's
+  repr.
+  [(#10284)](https://github.com/PennyLaneAI/pennylane/pull/10284)
+
 <h3>Bug fixes 🐛</h3>
 
 * `qp.cond` can now handle `Operator2` instances being provided instead of branch functions.
@@ -1971,7 +1993,7 @@
 
 * Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the 
   output matrix was with respect to a wrong wire ordering. The bug occurred in products where
-  groups of factors with overlapping wires caused a partial matrix with permuted wires, 
+  groups of factors with overlapping wires caused a partial matrix with permuted wires,
   e.g. ``H(1) @ H(0) @ CNOT([2, 1]) @ CNOT([1, 0])``.
   [(#10274)](https://github.com/PennyLaneAI/pennylane/pull/10274)
 
