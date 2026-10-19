@@ -45,6 +45,9 @@ class TestGridsynth:
         bound_t = gridsynth(1e-6, True, "mixed")
         assert bound_t.kwargs == {"epsilon": 1e-6, "ppr_basis": True, "method": "mixed"}
 
+        bound_t = gridsynth(1e-6, False, "mixed-fallback")
+        assert bound_t.kwargs == {"epsilon": 1e-6, "ppr_basis": False, "method": "mixed-fallback"}
+
     def test_bad_inputs(self):
         """Test that bad inputs raise errors."""
 
@@ -54,8 +57,23 @@ class TestGridsynth:
         with pytest.raises(ValueError, match="epsilon must be of type float."):
             gridsynth(epsilon="a")
 
-        with pytest.raises(ValueError, match="method must be 'deterministic' or 'mixed'"):
+        with pytest.raises(ValueError, match="method must be 'deterministic', 'mixed' or"):
             gridsynth(method="rus")
+
+
+def _specs_t_count(method):
+    """T-count that specs reports for one rotation synthesized with ``method``."""
+
+    @qp.qjit(capture=True, target="mlir")
+    @qp.transforms.gridsynth(epsilon=1e-6, method=method)
+    @qp.qnode(qp.device("null.qubit", wires=1))
+    def circuit(x: float):
+        qp.RZ(x, 0)
+        return qp.expval(qp.Z(0))
+
+    resources = qp.specs(circuit, level="user")(1.1).resources.quantum_operations
+    assert "RZ" not in resources
+    return resources["T"]
 
 
 @pytest.mark.catalyst
@@ -64,16 +82,13 @@ def test_mixed_method_halves_t_count_in_specs():
     epsilon, using the resource hints of the gridsynth pass."""
     pytest.importorskip("catalyst")
 
-    def t_count(method):
-        @qp.qjit(capture=True, target="mlir")
-        @qp.transforms.gridsynth(epsilon=1e-6, method=method)
-        @qp.qnode(qp.device("null.qubit", wires=1))
-        def circuit(x: float):
-            qp.RZ(x, 0)
-            return qp.expval(qp.Z(0))
+    assert _specs_t_count("mixed") < 0.6 * _specs_t_count("deterministic")
 
-        resources = qp.specs(circuit, level="user")(1.1).resources.quantum_operations
-        assert "RZ" not in resources
-        return resources["T"]
 
-    assert t_count("mixed") < 0.6 * t_count("deterministic")
+@pytest.mark.catalyst
+def test_mixed_fallback_method_reduces_t_count_in_specs():
+    """Test that specs reports roughly half the T gates for the mixed fallback method compared
+    to the mixed method at the same epsilon."""
+    pytest.importorskip("catalyst")
+
+    assert _specs_t_count("mixed-fallback") < 0.6 * _specs_t_count("mixed")

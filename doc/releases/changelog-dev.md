@@ -24,6 +24,13 @@
   33
   ```
 
+* :func:`~.transforms.gridsynth` supports ``method="mixed-fallback"``, implementing the mixed
+  fallback approximation of [arXiv:2203.10064](https://arxiv.org/abs/2203.10064) (Section 3.5):
+  each rotation randomly applies one of two projective rotations on an ancilla qubit, followed by
+  a mixed diagonal fallback if measuring the ancilla signals failure. This roughly halves the
+  T-count of ``method="mixed"`` again, at the cost of one temporary ancilla per rotation.
+  [(#10315)](https://github.com/PennyLaneAI/pennylane/pull/10315)
+
 * Added a decomposition of ``Adjoint(TemporaryAND)`` to PPMs (:func:`~.pauli_measure`)
   and a :class:`~.CZ` gate, as an alternative to the existing decomposition using
   :func:`qp.measure` with an explicit basis change.

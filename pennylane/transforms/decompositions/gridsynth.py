@@ -30,7 +30,7 @@ def gridsynth_setup_inputs(
     Args:
         tape (QNode): A quantum circuit.
         epsilon (float): The maximum permissible operator norm error per rotation gate. Defaults
-            to ``1e-4``. Both methods give the same accuracy guarantee for a given ``epsilon``: a
+            to ``1e-4``. All methods give the same accuracy guarantee for a given ``epsilon``: a
             diamond norm error of at most :math:`2\epsilon` per rotation.
         ppr_basis (bool): If True, decompose into the PPR basis. If False, decompose into the Clifford+T basis. Defaults to ``False``.
         method (str): The synthesis method. ``"deterministic"`` (default) uses the standard
@@ -38,16 +38,21 @@ def gridsynth_setup_inputs(
             (`arXiv:2203.10064 <https://arxiv.org/abs/2203.10064>`__ Section 3.4). It randomly
             applies either an under- or an over-rotated sequence, additionally twirled over the
             group :math:`\{I, S, Z, S^\dagger\}`. This roughly halves the T-count at the same
-            accuracy.
+            accuracy. ``"mixed-fallback"`` uses the mixed fallback approximation (Section 3.5).
+            It randomly applies one of two projective rotations on an ancilla qubit, followed by
+            a mixed diagonal fallback if measuring the ancilla signals failure. This roughly
+            halves the T-count of ``"mixed"`` again.
 
     .. note::
 
-        With ``method="mixed"``, the gate sequence of each rotation is sampled at execution time
-        from the runtime random number generator, which is seeded by the ``seed`` argument of
-        :func:`~.qjit`. The accuracy guarantee holds for the channel averaged over these samples.
+        With ``method="mixed"`` or ``method="mixed-fallback"``, the gate sequence of each
+        rotation is sampled at execution time from the runtime random number generator, which is
+        seeded by the ``seed`` argument of :func:`~.qjit`. The accuracy guarantee holds for the
+        channel averaged over these samples.
 
         Resource estimates from :func:`~.specs` report the expected gate counts, since the actual
-        sequences are only known at execution time.
+        sequences are only known at execution time. With ``method="mixed-fallback"``, they also
+        report one additional wire per rotation for its temporary ancilla.
 
     **Example**
 
@@ -68,7 +73,8 @@ def gridsynth_setup_inputs(
     >>> qjitted_circuit(1.1) # doctest: +SKIP
     [0.6028324 -0.3695921j  0.50763281+0.49224355j]
 
-    Mixed synthesis reaches the same accuracy with roughly half the T gates:
+    Mixed synthesis reaches the same accuracy with roughly half the T gates, and mixed fallback
+    synthesis with roughly half of that:
 
     .. code-block:: python
 
@@ -82,15 +88,17 @@ def gridsynth_setup_inputs(
 
             return qp.specs(circuit, level="user")(1.1).resources.quantum_operations["T"]
 
-    >>> t_count("deterministic"), t_count("mixed") # doctest: +SKIP
-    (63, 33)
+    >>> t_count("deterministic"), t_count("mixed"), t_count("mixed-fallback") # doctest: +SKIP
+    (63, 33, 16)
     """
     if not isinstance(ppr_basis, bool):
         raise ValueError(f"ppr_basis must be of type bool. Got {ppr_basis}")
     if not isinstance(epsilon, float):
         raise ValueError(f"epsilon must be of type float. Got {epsilon}.")
-    if method not in ("deterministic", "mixed"):
-        raise ValueError(f"method must be 'deterministic' or 'mixed'. Got {method!r}.")
+    if method not in ("deterministic", "mixed", "mixed-fallback"):
+        raise ValueError(
+            f"method must be 'deterministic', 'mixed' or 'mixed-fallback'. Got {method!r}."
+        )
     return (), {"epsilon": epsilon, "ppr_basis": ppr_basis, "method": method}
 
 
