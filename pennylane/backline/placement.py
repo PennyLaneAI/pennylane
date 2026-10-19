@@ -167,8 +167,9 @@ class Node:
     * ``"env"`` (dict[str, str]) - environment variables for the executor process.
     * ``"sudo"`` (bool) - run it as root, for a target whose devices are not world-accessible.
       Defaults to ``False``.
-    * ``"sudo_password"`` (str) - password piped to ``sudo -S``; unnecessary with passwordless
-      sudo.
+    * ``"sudo_password_env"`` (str) - name of the environment variable holding the password to
+      pipe to ``sudo -S``, e.g. ``"MY_HOST_SUDO_PW"``. If unset and sudo is required, a prompt will
+      launch for the password; unnecessary with passwordless sudo.
     * ``"ready_timeout"`` (float) - seconds to wait for the executor to report that it bound its
       port. Defaults to ``60.0``.
     * ``"verbose"`` (int) - how much the launcher logs: ``0`` quiet, ``1`` normal, ``2``
