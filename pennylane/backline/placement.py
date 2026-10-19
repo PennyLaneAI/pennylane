@@ -142,8 +142,7 @@ class Node:
     * ``"address"`` (str) - ``"host:port"`` of an executor whose lifetime is managed elsewhere.
       Attach to it rather than launching one.
     * ``"port"`` (int) - the port the executor binds on the target, and the local end of the ssh
-      tunnel reaching it. Omit it for a local executor and a free port is chosen at launch, so the
-      address is only known afterwards.
+      tunnel reaching it. Omit it for a local executor and the compiler picks a free port.
     * ``"user"`` (str) - the ssh account on the remote host. Defaults to the local username.
 
     Naming neither ``"host"`` nor ``"address"`` runs the executor as a subprocess on this machine.
