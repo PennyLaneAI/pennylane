@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -33,7 +33,7 @@ def test_standard_validity_ModExp():
     op = qp.ModExp(
         x_wires=x_wires, output_wires=output_wires, base=base, mod=mod, work_wires=work_wires
     )
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestModExp:

@@ -32,7 +32,7 @@ jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
 # pylint: disable=wrong-import-position,no-name-in-module
-from pennylane.testing import assert_eqn_matches_op, plxpr_to_tape
+from pennylane.testing import assert_eqn_matches_op, find_eqns, plxpr_to_tape
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qp.operation.Operator._primitive_bind_call.__code__
@@ -412,13 +412,7 @@ class TestModifiedTemplates:
 
         jaxpr = jax.make_jaxpr(f)()
 
-        relevant_eqns = [
-            eqn for eqn in jaxpr.eqns if eqn.primitive == qp.AmplitudeEmbedding._primitive
-        ]
-
-        # Should be only one eqn for AmplitudeEmbedding
-        assert len(relevant_eqns) == 1
-        eqn = relevant_eqns[0]
+        [eqn] = find_eqns(jaxpr, qp.AmplitudeEmbedding._primitive)
 
         # Check kwargs
         expected_wires = kwargs["wires"] if isinstance(kwargs["wires"], list) else [kwargs["wires"]]
