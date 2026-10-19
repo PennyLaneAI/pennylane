@@ -221,7 +221,17 @@ def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike):
     )
 
 
-add_decomps(MultiRZ, _multi_rz_decomposition)
+def _multi_rz_to_ppr_resources(theta: TensorLike, wires: WiresLike):
+    num_wires = len(wires)
+    return {qp.PauliRot(Float, pauli_word="Z" * num_wires, wires=Wire[num_wires]): 1}
+
+
+@register_resources(_multi_rz_to_ppr_resources)
+def _multi_rz_to_ppr(theta: TensorLike, wires: WiresLike):
+    qp.PauliRot(theta, "Z" * len(wires), wires=wires)
+
+
+add_decomps(MultiRZ, _multi_rz_decomposition, _multi_rz_to_ppr)
 add_decomps("Adjoint(MultiRZ)", adjoint_rotation2)
 add_decomps("Pow(MultiRZ)", pow_rotation2)
 
