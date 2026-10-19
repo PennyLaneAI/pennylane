@@ -29,9 +29,9 @@ from pennylane import numpy as npp
 # pylint: disable=too-few-public-methods,too-many-public-methods
 from pennylane.core.operator import Operator1, Operator2
 from pennylane.gradients import parameter_frequencies
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
@@ -171,7 +171,7 @@ class TestOperations:
         kwargs = SKIP_ASSERT_VALID.get(type(op), {})
         if kwargs is True:
             pytest.skip()
-        qp.ops.functions.assert_valid(op, **kwargs)
+        qp.testing.assert_valid(op, **kwargs)
 
     @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
     def test_parametrized_op_copy(self, op, tol):
@@ -2515,10 +2515,10 @@ class TestPauliRot:
         """Tests that a PauliRot is valid"""
 
         op = qp.PauliRot(0.5, "XYZI", wires=[0, 1, 2, 3])
-        qp.ops.functions.assert_valid(op)
+        qp.testing.assert_valid(op)
 
         op2 = qp.PauliRot(0.5, "III", wires=[0, 1, 2])
-        qp.ops.functions.assert_valid(op2)
+        qp.testing.assert_valid(op2)
 
     def test_paulirot_repr(self):
         op = qp.PauliRot(1.234, "XYX", wires=(0, 1, 2))
@@ -2995,7 +2995,7 @@ class TestMultiRZ:
         """Tests that MultiRZ is valid."""
 
         op = qp.MultiRZ(0.123, wires=[0, 1, 2, 3])
-        qp.ops.functions.assert_valid(op)
+        qp.testing.assert_valid(op)
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("n", [1, 2, 3, 4])

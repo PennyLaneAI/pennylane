@@ -2,6 +2,16 @@
 
 <h3>New features since last release</h3>
 
+* Added a decomposition of ``Adjoint(TemporaryAND)`` to PPMs (:func:`~.pauli_measure`)
+  and a :class:`~.CZ` gate, as an alternative to the existing decomposition using
+  :func:`qp.measure` with an explicit basis change.
+  [(#10310)](https://github.com/PennyLaneAI/pennylane/pull/10310)
+
+* A new :func:`~.decomposition.exclude_decomps` function excludes decomposition rules of an operator by name, so
+  that they are hidden from :func:`~.decomposition.list_decomps` and the graph-based decomposition system without
+  being removed. When used as a context manager, the rules are excluded only within the context.
+  [(#10329)](https://github.com/PennyLaneAI/pennylane/pull/10329)
+
 * A new function called :func:`~pennylane.backline.onnx_decoder` has been added, which runs an
   ONNX model on a Backline :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or
   on the CPU. See :func:`~pennylane.backline.onnx_decoder` for the supported providers and usage
@@ -21,6 +31,7 @@
   [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
   [(#10297)](https://github.com/PennyLaneAI/pennylane/pull/10297)
   [(#10251)](https://github.com/PennyLaneAI/pennylane/pull/10251)
+  [(#10325)](https://github.com/PennyLaneAI/pennylane/pull/10325)
 
   By hinting control flow like :func:`~.for_loop`, :func:`~.while_loop`, and :func:`~.cond` profiling
   with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
@@ -563,6 +574,7 @@
 
 * The ability for a compiled program to call a runtime entry point directly via its C symbol name has been added. A symbol's signature is declared once with `qp.runtime_declare` and called with `qp.runtime_call` from inside a `qjit` program.
   [(#9970)](https://github.com/PennyLaneAI/pennylane/pull/9970)
+  [(#10182)](https://github.com/PennyLaneAI/pennylane/pull/10182)
 
   ```python
   import pennylane as qp
@@ -573,8 +585,10 @@
       return qp.runtime_call("example_local_rounds", session, 100000)
   ```
 
-  Passing `address="host:port"` dispatches the call to the executor on the remote side, which invokes the
-  symbol on the machine the runtime lives on; without it the call is local. Meanwhile, `qp.backline.runtime.CType` lists what can cross the boundary.
+  Passing `address="host:port"` dispatches the call to the executor on the remote side, which invokes the symbol on the machine the runtime lives on. Without it the call lowers directly to a native
+  `llvm.call`: scalar values are passed by value and `ptr`/`str` use native pointers.
+  Local `buf`/`out` values are bufferized only to obtain their data pointers.
+  Meanwhile, `qp.backline.runtime.CType` lists what can cross each boundary.
 
   A symbol that fills a buffer declares it as an `out` parameter: the caller asks for `out_bytes=`
   and gets the filled buffer back alongside the result.
@@ -583,7 +597,9 @@
   qp.runtime_declare("example_collect", "(ptr, out, u64) -> i32")
 
   def collect(session):
-      status, reply = qp.runtime_call("example_collect", session, 64, out_bytes=64)
+      status, reply = qp.runtime_call(
+          "example_collect", session, 64, out_bytes=64, address="board:9000"
+      )
       return reply
   ```
 
@@ -743,10 +759,23 @@
 
 <h3>Improvements 🛠</h3>
 
+* The `decompose_mcx_with_no_worker` decomposition rule for :class:`~.MultiControlledX` now only
+  applies when no work wires are provided, matching `MultiControlledX.compute_decomposition`.
+  This removes controlled `GlobalPhase` and `PhaseShift` rules from the decomposition graph and
+  greatly reduces `qp.qjit(capture=True)` compile time for multi-controlled X gates with work wires.
+  [(#10338)](https://github.com/PennyLaneAI/pennylane/pull/10338)
+
 * The decompositions of :class:`~.QROM` (unary iteration), :class:`~.QFT`, :class:`~.AQFT` and
   :class:`~.FFFT` now provide `num-iters` hints for loops with dynamic bounds, avoiding symbolic
   resource counts when compiling them with Catalyst.
   [(#10241)](https://github.com/PennyLaneAI/pennylane/pull/10241)
+
+* The decompositions of :class:`~.QROM` (unary iteration), :class:`~.Incrementer`,
+  :class:`~.PartialUnaryStatePreparation`, :class:`~.SumOfSlatersPrep` and
+  :class:`~.TrotterVibronic` now provide `branch-prob` hints for conditionals whose trigger
+  frequency is known from the surrounding loops, replacing the worst-case resource counts of
+  unhinted conditionals by the exact average counts when compiling them with Catalyst.
+  [(#10311)](https://github.com/PennyLaneAI/pennylane/pull/10311)
 
 * The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
   but instead expresses the Select block as another ``QROM`` with fewer controls and more target
@@ -1089,7 +1118,11 @@
   [(#10305)](https://github.com/PennyLaneAI/pennylane/pull/10305)
   
 * A new :mod:`pennylane.testing` module collects utilities for testing code built with PennyLane.
+  - ``qp.ops.functions.assert_valid`` is now available as :func:`qp.testing.assert_valid <pennylane.testing.assert_valid>`.
+
   [(#10293)](https://github.com/PennyLaneAI/pennylane/pull/10293)
+  [(#10306)](https://github.com/PennyLaneAI/pennylane/pull/10306)
+  [(#10335)](https://github.com/PennyLaneAI/pennylane/pull/10335)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -1492,6 +1525,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Moved `pop_op_eqns` into `pennylane.capture`.
+  [(#10345)](https://github.com/PennyLaneAI/pennylane/pull/10345)
+
 * Added an autouse fixture that undoes any changes a test makes to the registry of decomposition
   rules, and removed the `qp.decomposition.local_decomps` blocks that only served as cleanup.
   [(#10333)](https://github.com/PennyLaneAI/pennylane/pull/10333)
@@ -1645,9 +1681,10 @@
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
   - Miscelleneous operators are ported:
-    - :class:`~.PauliMeasure`, :class:`~.ops.MidMeasure`
+    - :class:`~.PauliMeasure`, :class:`~.ops.MidMeasure`, :class:`~.Barrier`
   [(#10005)](https://github.com/PennyLaneAI/pennylane/pull/10005)
   [(#10115)](https://github.com/PennyLaneAI/pennylane/pull/10115)
+  [(#10328)](https://github.com/PennyLaneAI/pennylane/pull/10328)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
@@ -1742,7 +1779,7 @@
   - :func:`qp.equal` can check equality between two :class:`~.Operator2` instances.
     [(#9529)](https://github.com/PennyLaneAI/pennylane/pull/9529)
     [(#9702)](https://github.com/PennyLaneAI/pennylane/pull/9702)
-  - :func:`qp.ops.functions.assert_valid` can verify that an :class:`~.Operator2` is defined properly.
+  - :func:`qp.testing.assert_valid <pennylane.testing.assert_valid>` can verify that an :class:`~.Operator2` is defined properly.
     [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
     [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
     [(#9898)](https://github.com/PennyLaneAI/pennylane/pull/9898)
@@ -1921,6 +1958,11 @@
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qp.cond` can now handle `Operator2` instances being provided instead of branch functions.
+  While this syntax was supported with tape-based PennyLane, it had never been
+  properly supported with program capture and Catalyst.
+  [(#10324)](https://github.com/PennyLaneAI/pennylane/pull/10324)
 
 * Fixed captured transforms dropping keyword arguments to the transformed function,
   including when calling transformed QNodes with `qp.qjit(capture=True)`.

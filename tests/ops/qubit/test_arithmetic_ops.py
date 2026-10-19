@@ -24,7 +24,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition import gate_sets
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 from pennylane.wires import Wires
 
