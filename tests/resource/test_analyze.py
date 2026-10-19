@@ -219,6 +219,24 @@ class TestAnalyze:
 class TestAnalyzeHintIntegration:
     """Test integration of hints with qp.analyze."""
 
+    def test_for_loop_unhinted(self):
+        """Test for_loop unhinted."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def c(n):
+            @qp.for_loop(n)
+            def loop(i):
+                qp.X(i)
+                qp.X(i)
+
+            loop()
+
+            return qp.probs(wires=0)
+
+        r = qp.analyze(c)(2)
+        assert str(r.resources.quantum_operations["PauliX"]) == "2*a"
+
     def test_for_loop_hint_outside(self):
         """Test for_loop hints."""
 
@@ -256,6 +274,24 @@ class TestAnalyzeHintIntegration:
 
         r = qp.analyze(c)(2)
         assert r.resources.quantum_operations["PauliY"] == 4
+
+    def test_while_loop_unhinted(self):
+        """Test while_loop unhinted."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def c(n):
+            @qp.while_loop(lambda i: i < n)
+            def loop(i):
+                qp.X(i)
+                return i + 1
+
+            loop(0)
+
+            return qp.probs(wires=0)
+
+        r = qp.analyze(c)(2)
+        assert str(r.resources.quantum_operations["PauliX"]) == "2*a"
 
     def test_while_loop_hint_outside(self):
         """Test while_loop hints."""
