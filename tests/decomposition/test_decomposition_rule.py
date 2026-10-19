@@ -39,6 +39,7 @@ from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2, _change_op_ba
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow2 import flip_pow_adjoint, merge_powers, repeat_pow_base
 from pennylane.ops.op_math.prod2 import Prod2
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import Float, Int, Wire
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp, ParametrizedHybridOp
 
@@ -1392,3 +1393,23 @@ class TestCOBUnroll:  # pylint: disable=too-few-public-methods
             qp.adjoint(qp.X(Wire[1])): 1,
             qp.adjoint(qp.Y(Wire[1])): 1,
         }
+
+    @pytest.mark.capture
+    def test_nested_change_op_basis_rule_is_valid(self):
+        """Tests that a rule with nested COBs in both its body and its resources is valid."""
+
+        def resources(**_):
+            inner_cob = _change_op_basis_abstract(qp.H, qp.Z(Wire[1]), qp.H)
+            return {_change_op_basis_abstract(qp.X, inner_cob, qp.X): 1}
+
+        @register_resources(resources)
+        def rule(wires, **_):
+            def inner_cob():
+                qp.change_op_basis(qp.H(wires), qp.Z(wires), qp.H(wires))
+
+            def outer_compute():
+                qp.X(wires)
+
+            qp.change_op_basis(outer_compute, inner_cob, outer_compute)
+
+        _test_decomposition_rule(qp.X(0), rule)
