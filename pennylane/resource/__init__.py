@@ -24,10 +24,10 @@ Circuit Resource Profiling
 .. autosummary::
     :toctree: api
 
-    ~analyze
     ~estimate
-    ~specs
+    ~analyze
     ~track
+    ~specs
 
 Circuit Specification Classes and Utilities
 -------------------------------------------

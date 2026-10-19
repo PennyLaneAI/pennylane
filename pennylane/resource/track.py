@@ -33,7 +33,7 @@ _RESOURCE_TRACKING_PREFIX = "pennylane_track_resources"
 
 
 def _run_with_resource_tracking(
-    qjit, original_qnode, *args, compute_depth: bool, **kwargs
+    func, original_qnode, *args, compute_depth: bool, **kwargs
 ) -> tuple[Any, SpecsResources]:
     """Execute a qjit'd QNode on ``null.qubit`` with resource tracking enabled.
 
@@ -63,7 +63,7 @@ def _run_with_resource_tracking(
         )
 
         new_qnode = original_qnode.update(device=spoofed_dev)
-        new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
+        new_qjit = QJIT(new_qnode, copy.deepcopy(func.compile_options))
 
         # Execute on null.qubit with resource tracking
         results = new_qjit(*args, **kwargs)
@@ -79,15 +79,15 @@ def _run_with_resource_tracking(
         )
 
 
-def _track_qjit(qjit, level, *args, **kwargs) -> tuple[Any, CircuitSpecs]:
+def _track_qjit(func, level, *args, **kwargs) -> tuple[Any, CircuitSpecs]:
     """Execute a qjit'd QNode on ``null.qubit`` and return its result along with its specs."""
-    original_qnode = unwrap_qjit_qnode(qjit, fn_name="qp.track")
+    original_qnode = unwrap_qjit_qnode(func, fn_name="qp.track")
 
     if level != "device":
         raise NotImplementedError(f"qp.track only supports level='device', instead got: {level!r}.")
 
     results, resources = _run_with_resource_tracking(
-        qjit, original_qnode, *args, compute_depth=True, **kwargs
+        func, original_qnode, *args, compute_depth=True, **kwargs
     )
 
     return results, build_circuit_specs(original_qnode, resources, level)
@@ -118,9 +118,7 @@ def track(
         :class:`~.resource.CircuitSpecs` object containing the ``qnode`` specifications,
         including gate and measurement data, total wires, device information, shots, and more.
 
-    .. seealso:: :func:`~.analyze`, which estimates the resources at a given compilation level
-        without executing the circuit, and :func:`~pennylane.estimate`, which provides fast resource
-        estimates by analyzing decomposition pathways to a target gate set.
+    .. seealso:: :func:`~.estimate`, :func:`~.analyze`
 
     .. note::
 

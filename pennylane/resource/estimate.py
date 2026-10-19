@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import copy
+import re
 from collections.abc import Callable, Iterable
 from functools import partial
 
@@ -23,19 +24,40 @@ from pennylane import capture
 from pennylane.core.transforms import CompilePipeline
 from pennylane.transforms import decompose
 
-from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial, unwrap_qjit_qnode
+from ._utils import (
+    apply_partial_args,
+    build_circuit_specs,
+    preprocess_level_input,
+    unwrap_partial,
+    unwrap_qjit_qnode,
+)
 from .mlir_specs import resources_from_analysis_pass
 from .resource import CircuitSpecs
 
 
-def _estimate_qjit(qjit, level, target, *args, **kwargs) -> CircuitSpecs:
-    """Decompose a qjit'd QNode at ``level`` into the ``target`` gate set and return its specs."""
-    # pylint: disable=protected-access,no-value-for-parameter
-    original_qnode = unwrap_qjit_qnode(qjit, fn_name="qp.estimate")
+def _decomps_from_pipeline(pipeline: CompilePipeline) -> dict:
+    """Collect the ``fixed_decomps`` and ``alt_decomps`` of the ``decompose`` transforms in
+    ``pipeline``. If more than one fixes a rule for the same operator, the last one is used."""
+    # pylint: disable=protected-access
+    fixed_decomps, alt_decomps = {}, {}
+    for bound_transform in pipeline:
+        if bound_transform._transform is decompose:
+            fixed_decomps |= bound_transform.kwargs.get("fixed_decomps", {})
+            for op, rules in bound_transform.kwargs.get("alt_decomps", {}).items():
+                alt_decomps.setdefault(op, []).extend(rules)
+    return {"fixed_decomps": fixed_decomps or None, "alt_decomps": alt_decomps or None}
 
-    if level == 0 and not isinstance(level, bool):
-        level = "top"
-    if level != "top":
+
+def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
+    """Decompose a qjit'd QNode at ``level`` into the ``target`` gate set and return its specs."""
+    # pylint: disable=import-outside-toplevel,protected-access,no-value-for-parameter
+    original_qnode = unwrap_qjit_qnode(func, fn_name="qp.estimate")
+    from catalyst.utils.exceptions import CompileError
+
+    if level == "device":
+        raise NotImplementedError("qp.estimate does not support level='device' yet.")
+    levels = preprocess_level_input(level, original_qnode.compile_pipeline)
+    if levels != [0] or not isinstance(level, (int, str)) or level == "all":
         raise NotImplementedError(
             f"qp.estimate only supports level='top' or level=0, instead got: {level!r}."
         )
@@ -45,7 +67,7 @@ def _estimate_qjit(qjit, level, target, *args, **kwargs) -> CircuitSpecs:
             f"qp.estimate does not support target={target!r} yet. Provide a gate set instead."
         )
 
-    uses_capture = qjit.compile_options.capture
+    uses_capture = func.compile_options.capture
     if uses_capture == "global":
         uses_capture = capture.enabled()
     if not uses_capture:
@@ -55,18 +77,30 @@ def _estimate_qjit(qjit, level, target, *args, **kwargs) -> CircuitSpecs:
 
     # At level="top", the user transforms are skipped and only the decomposition is applied
     estimate_qnode = copy.copy(original_qnode)
-    estimate_qnode._compile_pipeline = CompilePipeline(decompose(gate_set=target))
+    estimate_qnode._compile_pipeline = CompilePipeline(
+        decompose(gate_set=target, **_decomps_from_pipeline(original_qnode.compile_pipeline))
+    )
 
-    resources = resources_from_analysis_pass(qjit, estimate_qnode, 1, {}, {}, *args, **kwargs)
+    try:
+        resources = resources_from_analysis_pass(func, estimate_qnode, 1, {}, {}, *args, **kwargs)
+    except CompileError as exc:
+        missing_rule = re.search(r"Decomposition rule not found for operator '([^'{]+)", str(exc))
+        if missing_rule is None:
+            raise
+        op = missing_rule.group(1)
+        raise ValueError(
+            f"Decomposition rule not found for operator {op}: it cannot be decomposed into the "
+            f"target gate set. Add {op} to the target, or use a gate set it can be decomposed into."
+        ) from None
 
-    return build_circuit_specs(original_qnode, next(iter(resources.values())), level)
+    return build_circuit_specs(original_qnode, next(iter(resources.values())), "top")
 
 
 def estimate(
     qnode,
     level: str | int = "top",
     *,
-    target: str | Iterable[type | str] | dict[type | str, float] = "device",
+    target: str | Iterable[type | str] | dict[type | str, float],
 ) -> Callable[..., CircuitSpecs]:
     r"""Provides fast resource estimates of a quantum circuit by analyzing decomposition pathways
     with respect to a specified level of compilation.
@@ -81,20 +115,18 @@ def estimate(
         qnode (:class:`~catalyst.jit.QJIT`): the qjit'd QNode for which to estimate resources.
         level (str | int): The level of compilation from which to project the resources onto the
             ``target``. Only ``"top"`` or ``0``, the original circuit before any compilation
-            passes have been applied, is currently supported. Defaults to ``"top"``.
+            passes have been applied, or the name of a marker placed before every pass, is
+            currently supported. Defaults to ``"top"``.
         target (str | Iterable[type | str] | dict[type | str, float]): The gate set to project
             the resources onto, in any form accepted by the ``gate_set`` argument of
-            :func:`~.decompose`. Defaults to ``"device"``, the gate set of the QNode's device,
-            which is not supported yet; a gate set must currently be provided explicitly.
+            :func:`~.decompose`.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
         :class:`~.resource.CircuitSpecs` object containing the projected resources, including
         gate and measurement data, wire allocations, device information, shots, and more.
 
-    .. seealso:: :func:`~.analyze`, which provides the resources of the circuit at a given
-        compilation level without decomposing it, and :func:`~.track`, which counts the resources
-        used after full compilation by executing the circuit.
+    .. seealso:: :func:`~.analyze`, :func:`~.track`
 
     **Example**
 
@@ -139,11 +171,42 @@ def estimate(
     is decomposed into ``Hadamard`` and ``CNOT`` gates.
 
     .. details::
+        :title: Custom decomposition rules
+
+        To reach the ``target`` gate set, ``estimate`` uses the ``fixed_decomps`` and
+        ``alt_decomps`` of the :func:`~.decompose` transforms in the compile pipeline.
+
+        For example, the following circuit fixes a decomposition rule for ``CZ`` that uses
+        ``PauliZ`` and ``RY`` gates instead of ``Hadamard`` gates:
+
+        .. code-block:: python
+
+            @qp.register_resources({qp.Z: 2, qp.RY: 2, qp.CNOT: 1})
+            def cz_with_ry(wires, **_):
+                qp.Z(wires[1])
+                qp.RY(np.pi / 2, wires[1])
+                qp.CNOT(wires)
+                qp.Z(wires[1])
+                qp.RY(np.pi / 2, wires[1])
+
+            @qp.qjit(capture=True)
+            @qp.decompose(gate_set={"CNOT", "PauliZ", "RY"}, fixed_decomps={qp.CZ: cz_with_ry})
+            @qp.qnode(qp.device("null.qubit", wires=2))
+            def circuit():
+                qp.CZ([0, 1])
+                return qp.probs()
+
+        The ``CZ`` gate is decomposed with this rule:
+
+        >>> qp.estimate(circuit, target={"CNOT", "PauliZ", "RY"})().resources.quantum_operations
+        {'CNOT': 1, 'PauliZ': 2, 'RY': 2}
+
+    .. details::
         :title: Symbolic resource counts
 
         Since the circuit is not executed, the projected resources are subject to the same
-        compile-time constraints as :func:`~.analyze`. In particular, operations inside a loop whose number of iterations depends on
-        runtime values are counted symbolically.
+        compile-time constraints as :func:`~.analyze`. In particular, operations inside a loop
+        whose number of iterations depends on runtime values are counted symbolically.
 
         For example, the number of ``CZ`` gates in the following circuit, and therefore the number
         of gates they decompose into, depends on the value of ``n``:

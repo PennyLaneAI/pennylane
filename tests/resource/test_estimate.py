@@ -13,8 +13,10 @@
 # limitations under the License.
 """Unit tests for the estimate transform"""
 
+import importlib
 from functools import partial
 
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -28,16 +30,31 @@ pytestmark = pytest.mark.catalyst
 TARGET = {"Hadamard", "CNOT", "RX"}
 
 
+@qp.register_resources({qp.Z: 2, qp.RY: 2, qp.CNOT: 1})
+def cz_with_ry(wires, **_):
+    """Decomposition rule for CZ that writes each Hadamard as Z followed by RY(pi/2)."""
+    qp.Z(wires[1])
+    qp.RY(np.pi / 2, wires[1])
+    qp.CNOT(wires)
+    qp.Z(wires[1])
+    qp.RY(np.pi / 2, wires[1])
+
+
+@qp.register_resources({qp.RY: 1, qp.X: 1})
+def h_with_x(wires, **_):
+    """Decomposition rule for Hadamard as RY(pi/2) followed by X."""
+    qp.RY(np.pi / 2, wires)
+    qp.X(wires)
+
+
 @pytest.mark.capture
-class TestEstimate:
+class TestEstimate:  # pylint: disable=too-many-public-methods
     """Test qp.estimate()"""
 
     @pytest.fixture
-    def circuit(self):
-        """Fixture for a qjit'd circuit with a user transform."""
+    def qnode(self):
+        """Fixture for a QNode with gates that cancel and a gate outside the target gate set."""
 
-        @qp.qjit
-        @qp.transforms.cancel_inverses
         @qp.qnode(qp.device("lightning.qubit", wires=2))
         def circuit(x):
             qp.Hadamard(0)
@@ -47,6 +64,11 @@ class TestEstimate:
             return qp.probs()
 
         return circuit
+
+    @pytest.fixture
+    def circuit(self, qnode):
+        """Fixture for the qjit'd QNode with a user transform."""
+        return qp.qjit(qp.transforms.cancel_inverses(qnode))
 
     def test_specs(self, circuit):
         """Test that estimate ignores the user transforms and decomposes the circuit into the
@@ -94,6 +116,81 @@ class TestEstimate:
         specs = qp.estimate(circuit, target={"Hadamard", "CZ", "RX"})(0.5)
 
         assert specs.resources.quantum_operations == {"Hadamard": 2, "CZ": 1, "RX": 1}
+
+    def test_fixed_decomps(self, qnode):
+        """Test that the fixed_decomps of a decompose transform in the pipeline replace the
+        existing decomposition rules."""
+
+        target = TARGET | {"RY", "PauliZ"}
+        circuit = qp.transforms.decompose(qnode, gate_set=target, fixed_decomps={qp.CZ: cz_with_ry})
+
+        specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
+
+        assert specs.resources.quantum_operations == {
+            "Hadamard": 2,
+            "PauliZ": 2,
+            "RY": 2,
+            "CNOT": 1,
+            "RX": 1,
+        }
+
+    def test_alt_decomps(self, qnode):
+        """Test that the alt_decomps of a decompose transform in the pipeline are used if they
+        lead to a cheaper decomposition."""
+
+        target = {"Hadamard": 10, "CNOT": 1, "RX": 1, "RY": 1, "PauliZ": 1}
+        circuit = qp.transforms.decompose(qnode, gate_set=target, alt_decomps={qp.CZ: [cz_with_ry]})
+
+        specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
+
+        assert specs.resources.quantum_operations == {
+            "Hadamard": 2,
+            "PauliZ": 2,
+            "RY": 2,
+            "CNOT": 1,
+            "RX": 1,
+        }
+
+    def test_decomps_from_several_decompose_transforms(self, qnode):
+        """Test that the rules of every decompose transform in the pipeline are used."""
+
+        target = {"CNOT", "RX", "RY", "PauliX", "PauliZ"}
+        circuit = qp.transforms.decompose(
+            qnode, gate_set=target | {"Hadamard"}, fixed_decomps={qp.CZ: cz_with_ry}
+        )
+        circuit = qp.transforms.decompose(
+            circuit, gate_set=target, fixed_decomps={qp.Hadamard: h_with_x}
+        )
+
+        specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
+
+        assert specs.resources.quantum_operations == {
+            "PauliX": 2,
+            "PauliZ": 2,
+            "RY": 4,
+            "CNOT": 1,
+            "RX": 1,
+        }
+
+    def test_unreachable_target(self, circuit):
+        """Test that a short error naming the operator is raised if the circuit cannot be
+        decomposed into the target gate set."""
+
+        with pytest.raises(ValueError, match="Decomposition rule not found for operator RX"):
+            qp.estimate(circuit, target={"Hadamard", "CNOT"})(0.5)
+
+    def test_other_compile_errors(self, circuit, monkeypatch):
+        """Test that compile errors unrelated to a missing decomposition rule are raised as they
+        are."""
+
+        def fail(*_, **__):
+            raise catalyst.utils.exceptions.CompileError("some other compile error")
+
+        estimate_module = importlib.import_module("pennylane.resource.estimate")
+        monkeypatch.setattr(estimate_module, "resources_from_analysis_pass", fail)
+
+        with pytest.raises(catalyst.utils.exceptions.CompileError, match="some other"):
+            qp.estimate(circuit, target=TARGET)(0.5)
 
     def test_original_circuit_unchanged(self, circuit):
         """Test that estimate does not remove the user transforms from the original circuit."""
@@ -154,11 +251,38 @@ class TestEstimate:
 
         assert specs == qp.estimate(circuit, level="top", target=TARGET)(0.5)
 
-    @pytest.mark.parametrize("level", [1, False, "user", "device", "all"])
+    def test_marker_levels(self, qnode):
+        """Test that a marker before every pass is the same as level="top", and that a marker
+        after a pass is not supported."""
+
+        circuit = qp.marker(qnode, "start")
+        circuit = qp.transforms.cancel_inverses(circuit)
+        circuit = qp.qjit(qp.marker(circuit, "end"))
+
+        specs = qp.estimate(circuit, level="start", target=TARGET)(0.5)
+        assert specs == qp.estimate(circuit, level="top", target=TARGET)(0.5)
+
+        with pytest.raises(NotImplementedError, match="qp.estimate only supports level='top'"):
+            qp.estimate(circuit, level="end", target=TARGET)(0.5)
+
+    @pytest.mark.parametrize("level", [1, "user", "all", [0]])
     def test_unsupported_level(self, circuit, level):
         """Test that an error is raised for levels other than "top"."""
 
         with pytest.raises(NotImplementedError, match="qp.estimate only supports level='top'"):
+            qp.estimate(circuit, level=level, target=TARGET)(0.5)
+
+    def test_device_level(self, circuit):
+        """Test that an error is raised for level="device"."""
+
+        with pytest.raises(NotImplementedError, match="does not support level='device' yet"):
+            qp.estimate(circuit, level="device", target=TARGET)(0.5)
+
+    @pytest.mark.parametrize("level", [0.0, False])
+    def test_invalid_level(self, circuit, level):
+        """Test that levels that are neither int nor str are rejected."""
+
+        with pytest.raises(ValueError, match="Invalid level"):
             qp.estimate(circuit, level=level, target=TARGET)(0.5)
 
     @pytest.mark.parametrize("target", ["device", "user"])
@@ -169,14 +293,6 @@ class TestEstimate:
             NotImplementedError, match=f"qp.estimate does not support target='{target}'"
         ):
             qp.estimate(circuit, target=target)(0.5)
-
-    def test_default_target_is_device(self, circuit):
-        """Test that the default target is "device", which is not supported yet."""
-
-        with pytest.raises(
-            NotImplementedError, match="qp.estimate does not support target='device'"
-        ):
-            qp.estimate(circuit)(0.5)
 
     def test_error_with_non_qjit(self):
         """Test that an error is raised if the QNode is not qjit'd."""
