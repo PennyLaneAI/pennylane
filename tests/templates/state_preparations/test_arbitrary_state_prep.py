@@ -22,10 +22,10 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.arbitrary_state_preparation import (
     _state_preparation_pauli_words,
 )
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 class TestHelpers:
@@ -92,7 +92,7 @@ def test_standard_validity():
 
     op = qp.ArbitraryStatePreparation(weights, wires=[0])
 
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestDecomposition:

@@ -27,8 +27,8 @@ import pennylane.numpy as qnp
 from pennylane import math
 from pennylane.core.operator import Operator, abstractify
 from pennylane.exceptions import DeviceError, MatrixUndefinedError
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
@@ -99,7 +99,7 @@ def test_basic_validity():
     op2 = qp.Rot(1.2, 2.3, 3.4, wires=0)
     op3 = qp.IsingZZ(4.32, wires=(1, 2))
     op = Prod(op1, op2, op3)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def compare_and_expand_mat(mat1, mat2):
@@ -1680,7 +1680,7 @@ class TestDecomposition:
             control=[4, 5, 6],
             work_wires=[7, 8, 9],
         )
-        qp.ops.functions.assert_valid(op, skip_decomp_matrix_check=True)
+        qp.testing.assert_valid(op, skip_decomp_matrix_check=True)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("control_values", [[1, 1, 1], [0, 1, 0], [1, 0, 1], [0, 0, 0]])

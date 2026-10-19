@@ -1390,7 +1390,8 @@ class TestQubitUnitaryDecompositionGraph:
 
         op = qp.QubitUnitary(U, wires=[0])
         tape = qp.tape.QuantumScript([op])
-        [decomp], _ = qp.transforms.decompose([tape], gate_set=gate_set)
+        # pylint: disable-next=protected-access
+        [decomp], _ = qp.transforms._tape_decompose([tape], gate_set=gate_set)
 
         matrix = qp.matrix(decomp)
         assert qp.math.allclose(matrix, U, atol=1e-7)
@@ -1410,7 +1411,8 @@ class TestQubitUnitaryDecompositionGraph:
 
         op = qp.QubitUnitary(U, wires=[0, 1])
         tape = qp.tape.QuantumScript([op])
-        [decomp], _ = qp.transforms.decompose([tape], gate_set=gate_set)
+        # pylint: disable-next=protected-access
+        [decomp], _ = qp.transforms._tape_decompose([tape], gate_set=gate_set)
 
         matrix = qp.matrix(decomp, wire_order=[0, 1])
         assert qp.math.allclose(matrix, U, atol=1e-7)
@@ -1440,7 +1442,8 @@ class TestQubitUnitaryDecompositionGraph:
 
         op = qp.QubitUnitary(U, wires=list(range(n_wires)))
         tape = qp.tape.QuantumScript([op])
-        [decomp], _ = qp.transforms.decompose([tape], gate_set=gate_set)
+        # pylint: disable-next=protected-access
+        [decomp], _ = qp.transforms._tape_decompose([tape], gate_set=gate_set)
 
         matrix = qp.matrix(decomp, wire_order=list(range(n_wires)))
         assert qp.math.allclose(matrix, op.matrix(wire_order=list(range(n_wires))), atol=1e-7)

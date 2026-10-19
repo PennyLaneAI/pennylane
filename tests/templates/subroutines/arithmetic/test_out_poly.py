@@ -19,11 +19,11 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.out_poly import (
     _get_polynomial,
     _mobius_inversion_of_zeta_transform,
 )
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 def test_get_polynomial():
@@ -70,7 +70,7 @@ def test_standard_validity_OutPoly():
         output_wires=wires["output"],
     )
 
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestOutPoly:

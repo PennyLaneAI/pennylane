@@ -24,9 +24,9 @@ import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.operation import abstractify
-from pennylane.ops.functions.assert_valid import _check_eigendecomposition
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2, _make_controlled_decomp
+from pennylane.testing.operators import _check_eigendecomposition
 from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import CompilableOp, DynOp, NonParametricOp, OneWireDynOp
@@ -653,12 +653,10 @@ class TestControlledOp2:
         def _custom_decomp(wires):
             qp.RX(np.pi / 2, wires=wires)
 
-        with qp.decomposition.local_decomps():
-
-            qp.add_decomps(NonParametricOp, _custom_decomp)
-            op = qp.ctrl(NonParametricOp(0), control=1)
-            assert op.has_decomposition
-            assert op.decomposition() == [qp.CRX(np.pi / 2, wires=[1, 0])]
+        qp.add_decomps(NonParametricOp, _custom_decomp)
+        op = qp.ctrl(NonParametricOp(0), control=1)
+        assert op.has_decomposition
+        assert op.decomposition() == [qp.CRX(np.pi / 2, wires=[1, 0])]
 
 
 @pytest.mark.catalyst
