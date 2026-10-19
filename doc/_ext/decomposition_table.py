@@ -13,24 +13,25 @@
 # limitations under the License.
 """
 Sphinx extension adding the ``decomposition-table`` directive: a table listing the decomposition
-rules of an operator. Each rule is headed by the expression accessing it by name, followed by its
-circuit diagram and its resources.
+rules of an operator. Each rule is headed by its name, followed by an example circuit diagram and
+its general resources.
 
 .. code-block:: rst
 
     .. decomposition-table:: qp.Select
         :symbols: :math:`K` operators, :math:`c` control wires
+        :example: :math:`K=4`, :math:`c=2`
 
         .. decomposition-rule:: _select_decomp_unary
             :image: /_static/decomposition_thumbnails/select_unary.svg
             :requires: :math:`c - 1` work wires
             :where: :math:`N = c + K - 2`
 
-            :class:`~.TemporaryAND` | :math:`N`
-            :class:`~.CNOT` | :math:`K - 1`
+            :class:`~.TemporaryAND` | :math:`N` | 1
+            :class:`~.CNOT` | :math:`K - 1` | 3
 
-Each content line of a rule is a gate and its count, both inline reStructuredText, separated by
-`` | ``.
+Each content line of a rule is a gate, its count, and optionally its count in the example circuit,
+all inline reStructuredText, separated by `` | ``.
 """
 
 from docutils import nodes
@@ -72,18 +73,21 @@ class DecompositionRule(SphinxDirective):
             messages += msgs
         node["requires"] = requires
 
-        resources = nodes.container(classes=["decomp-resources"])
-        for line in self.content:
-            if not line.strip():
-                continue
-            gate, count = (part.strip() for part in line.split(" | ", maxsplit=1))
-            gate_par, msgs = self._inline(gate)
-            gate_par["classes"].append("decomp-gate")
-            messages += msgs
-            count_par, msgs = self._inline(count)
-            count_par["classes"].append("decomp-count")
-            messages += msgs
-            resources += [gate_par, count_par]
+        rows = [
+            [part.strip() for part in line.split(" | ")] for line in self.content if line.strip()
+        ]
+        # an optional third column gives the counts for the example circuit
+        titles = ["Gate", "Count", "Example"][: max(len(row) for row in rows)]
+        classes = ["decomp-gate", "decomp-count", "decomp-example-count"]
+        resources = nodes.container(classes=["decomp-resources", f"decomp-cols-{len(titles)}"])
+        for title in titles:
+            resources += nodes.paragraph(text=title, classes=["decomp-resources-head"])
+        for row in rows:
+            for cell, cls in zip(row + [""] * (len(titles) - len(row)), classes):
+                par, msgs = self._inline(cell)
+                par["classes"].append(cls)
+                resources += par
+                messages += msgs
         if "where" in self.options:
             par, msgs = self._inline("where " + self.options["where"])
             par["classes"].append("decomp-where")
@@ -99,7 +103,7 @@ class DecompositionTable(SphinxDirective):
 
     required_arguments = 1
     has_content = True
-    option_spec = {"symbols": directives.unchanged}
+    option_spec = {"symbols": directives.unchanged, "example": directives.unchanged}
 
     def run(self):
         op = self.arguments[0]
@@ -108,18 +112,17 @@ class DecompositionTable(SphinxDirective):
         rules = [child for child in content.children if isinstance(child, decomposition_rule)]
         others = [child for child in content.children if not isinstance(child, decomposition_rule)]
 
-        name = op.rsplit(".", maxsplit=1)[-1]
         # the "<" is escaped, so that it is not read as the start of the link target
         access = f'qp.list_decomps({op})["\\<name>"]'
-        intro = [
-            f"The following decomposition rules for ``{name}`` can be accessed directly via "
-            f":func:`{access} <pennylane.list_decomps>`."
-        ]
+        intro = []
         if "symbols" in self.options:
-            intro.append("Resources are given for " + self.options["symbols"] + ".")
+            intro.append(
+                "Resources are general, for " + self.options["symbols"] + ". "
+                "Each circuit shows one example of the rule."
+            )
         intro.append(
-            f"Use :func:`qp.decompose(gate_set=..., fixed_decomps={{{op}: {access}}}) "
-            "<pennylane.decompose>` to specifically access a given rule when decomposing."
+            f'Use a rule when decomposing with :func:`qp.decompose(gate_set=..., fixed_decomps={{{op}: "\\<name>"}}) '
+            f"<pennylane.decompose>`, or inspect it with :func:`{access} <pennylane.list_decomps>`."
         )
 
         # inline_text only parses inline markup, so the list itself is built from nodes
@@ -133,31 +136,26 @@ class DecompositionTable(SphinxDirective):
         table = nodes.table(classes=["decomposition-table", "colwidths-given"])
         group = nodes.tgroup(cols=2)
         table += group
-        for width in (45, 55):
+        for width in (40, 60):
             group += nodes.colspec(colwidth=width)
-
-        head = nodes.thead()
-        head_row = nodes.row()
-        for title in ("Decomposition rule", "Resources"):
-            head_row += nodes.entry("", nodes.paragraph(text=title))
-        head += head_row
-        group += head
 
         body = nodes.tbody()
         for rule in rules:
-            # the full expression accessing the rule, spanning both columns
-            access = nodes.literal(
-                "",
-                "",
-                nodes.inline(text=f"name=", classes=["decomp-access-op"]),
-                nodes.inline(text=f'"{rule["name"]}"', classes=["decomp-access-name"]),
-            )
+            # the name of the rule, spanning both columns
+            access = nodes.literal(rule["name"], rule["name"], classes=["decomp-access-name"])
             access_row = nodes.row(classes=["decomp-access-row"])
             access_row += nodes.entry("", nodes.paragraph("", "", access), morecols=1)
             body += access_row
 
             row = nodes.row(classes=["decomp-body-row"])
-            row += nodes.entry("", rule["image"], classes=["decomp-circuit"])
+            circuit = nodes.entry("", rule["image"], classes=["decomp-circuit"])
+            if "example" in self.options:
+                children, msgs = self.state.inline_text(
+                    "Example: " + self.options["example"], self.lineno
+                )
+                circuit += nodes.paragraph("", "", *children, classes=["decomp-example"])
+                messages += msgs
+            row += circuit
             resources = nodes.entry("")
             if rule["requires"] is not None:
                 resources += rule["requires"]

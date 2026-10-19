@@ -14,19 +14,6 @@ table.decomposition-table {
   margin: 0 0 2rem;
 }
 
-table.decomposition-table thead th {
-  background: transparent;
-  border: none !important;
-  border-bottom: 2px solid #222 !important;
-  padding: 8px 16px 8px 0;
-  text-align: left;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #555;
-}
-
 /* each rule spans two rows: the access expression, then its circuit and resources */
 table.decomposition-table tbody tr {
   background: transparent !important;
@@ -54,7 +41,7 @@ table.decomposition-table tr.decomp-body-row td {
   padding-top: 0;
 }
 
-table.decomposition-table tr.decomp-access-row code {
+table.decomposition-table tr.decomp-access-row code.decomp-access-name {
   display: inline-block;
   padding: 4px 10px;
   border-radius: 6px;
@@ -64,11 +51,7 @@ table.decomposition-table tr.decomp-access-row code {
   overflow-wrap: anywhere;
 }
 
-table.decomposition-table code .decomp-access-op {
-  color: #777;
-}
-
-table.decomposition-table code .decomp-access-name {
+table.decomposition-table code.decomp-access-name {
   font-weight: 700;
   color: #c756b2;
 }
@@ -97,7 +80,14 @@ table.decomposition-table td.decomp-circuit img {
   border-radius: 6px;
 }
 
-/* resources: a two-column list of gates and their counts */
+/* which instance of the rule the circuit shows */
+table.decomposition-table p.decomp-example {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+/* resources: a small table of gates and their counts, with a header row */
 table.decomposition-table .decomp-resources {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
@@ -107,8 +97,39 @@ table.decomposition-table .decomp-resources {
   font-size: 0.9rem;
 }
 
+table.decomposition-table .decomp-resources.decomp-cols-3 {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) max-content;
+}
+
+table.decomposition-table p.decomp-example-count {
+  text-align: center;
+}
+
+table.decomposition-table p.decomp-resources-head {
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e5e5e5;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #555;
+}
+
+/* cells may shrink below their content width; long formulas then wrap between their terms or,
+   failing that, scroll within the cell instead of spilling into the next column */
+table.decomposition-table .decomp-resources > p {
+  min-width: 0;
+}
+
 table.decomposition-table p.decomp-count {
+  overflow-x: auto;
   overflow-wrap: anywhere;
+}
+
+table.decomposition-table p.decomp-count .math,
+table.decomposition-table p.decomp-count mjx-container {
+  display: inline-block;
+  max-width: 100%;
 }
 
 table.decomposition-table p.decomp-where {
@@ -120,10 +141,6 @@ table.decomposition-table p.decomp-where {
 
 /* On narrow screens, stack the resources below the circuit */
 @media (max-width: 700px) {
-  table.decomposition-table thead {
-    display: none;
-  }
-
   table.decomposition-table,
   table.decomposition-table tbody,
   table.decomposition-table tr,
