@@ -300,7 +300,7 @@ def create_controlled_op(op, control, control_values, work_wires, work_wire_type
     if isinstance(control_values, (int, bool)):
         control_values = [bool(control_values)]
     elif isinstance(control_values, tuple):
-        control_values = [bool(v) for v in control_values]
+        control_values = [v if math.is_abstract(v) else bool(v) for v in control_values]
 
     qp.QueuingManager.remove(op)
 
@@ -453,14 +453,20 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
         )
         flat_args = jax.tree_util.tree_leaves(args)
         control_wires = qp.wires.Wires(control)  # make sure is iterable
+        dynamic_control_values = ()
+        if any(math.is_abstract(value) for value in control_values):
+            dynamic_control_values = tuple(math.cast(value, dtype=bool) for value in control_values)
+
+        # None marks control-value operands immediately before the control wires.
         ctrl_transform_prim.bind(
             *jaxpr.consts,
             *abstract_shapes,
             *flat_args,
+            *dynamic_control_values,
             *control_wires,
             jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),
-            control_values=control_values,
+            control_values=None if dynamic_control_values else control_values,
             work_wires=qp.wires.Wires(work_wires) if work_wires is not None else work_wires,
             n_consts=len(jaxpr.consts),
         )

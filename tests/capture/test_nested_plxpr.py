@@ -387,6 +387,27 @@ class TestCtrlQfunc:
         assert plxpr.eqns[0].params["control_values"] == (False, True)
         assert plxpr.eqns[0].params["n_control"] == 2
 
+    @pytest.mark.parametrize("container, static_first", ((tuple, False), (list, True)))
+    def test_mixed_control_values(self, container, static_first):
+        """Capture supplies runtime control-value operands for qjit lowering."""
+
+        def circuit(x, val):
+            values = (True, val) if static_first else (val, True)
+            qp.ctrl(qp.RX, (0, 1), container(values))(x, 2)
+
+        with jax.checking_leaks():
+            plxpr = jax.make_jaxpr(circuit)(0.5, False)
+
+        assert len(plxpr.eqns) == 1
+        ctrl_eqn = plxpr.eqns[0]
+        assert ctrl_eqn.primitive == ctrl_transform_prim
+        assert ctrl_eqn.params["control_values"] is None
+        assert ctrl_eqn.params["n_control"] == 2
+        value_args = ctrl_eqn.invars[-4:-2]
+        assert value_args[int(static_first)] == plxpr.jaxpr.invars[1]
+        assert value_args[1 - int(static_first)].val
+        assert [wire.val for wire in ctrl_eqn.invars[-2:]] == [0, 1]
+
     def test_nested_control(self):
         """Test that control can be nested."""
 

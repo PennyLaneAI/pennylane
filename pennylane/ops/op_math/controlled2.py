@@ -67,7 +67,9 @@ def _setup_control_values(control_values, num_control_wires):
         raise ValueError("control_values should be the same length as control_wires")
 
     if isinstance(control_values, (list, tuple)):
-        control_values = qp.math.asarray(control_values, like=control_values[0])
+        control_values = qp.math.asarray(
+            control_values, like=qp.math.get_interface(*control_values)
+        )
 
     if not isinstance(control_values, AbstractArray):
         control_values = qp.math.cast(control_values, dtype=bool)
