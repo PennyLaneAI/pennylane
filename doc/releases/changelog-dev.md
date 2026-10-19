@@ -26,15 +26,18 @@
   ... )
   ```
 
-* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
-  can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
+* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. With
+  this release, the :func:`~.hint` function can be used on :func:`~.for_loop` and
+  :func:`~.while_loop` to specify a heuristic number of times the loop will iterate, and on
+  :func:`~.cond` to specify heuristic branch probabilities. This provides more concrete and accurate
+  resource estimates with :func:`~.analyze`.
   [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
   [(#10297)](https://github.com/PennyLaneAI/pennylane/pull/10297)
   [(#10251)](https://github.com/PennyLaneAI/pennylane/pull/10251)
   [(#10325)](https://github.com/PennyLaneAI/pennylane/pull/10325)
 
-  By hinting control flow like :func:`~.for_loop`, :func:`~.while_loop`, and :func:`~.cond` profiling
-  with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
+  By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, reosurce profiling with
+  :func:`~.analyze` can heuristically specify the number of iterations, leading to concrete
   resource counts (no symbolic expressions).
 
   ```python
@@ -59,7 +62,7 @@
   ```
 
   ```pycon
-  >>> print(qp.specs(c, level=0)(5).resources)
+  >>> print(qp.analyze(c, level=0)(5).resources)
   Symbolic Variables: a
   Quantum operations:
   - Total: a + 10
@@ -71,11 +74,56 @@
   Circuit Depth: Not computed
 
   ```
-  
-  The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
+
+  The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the
+  unhinted loop.
+
+  A :func:`~.hint` can also be used on :func:`~.cond` branches, which :func:`~.analyze` uses to
+  provide a weighted average of resources as opposed to the max union of all unique gate types
+  in each branch.
+
+  ```python
+  import pennylane as qp
+
+  @qp.qjit(capture=True)
+  @qp.qnode(qp.device("lightning.qubit", wires=2))
+  def circuit():
+      qp.H(0)
+      qp.H(1)
+
+      @qp.for_loop(0, 10)
+      def loop_hinted(_):
+          m = qp.measure(0)
+
+          @qp.hint({"branch-prob": 0.8})
+          def true_fn():
+              qp.CNOT((0, 1))
+
+          @qp.hint({"branch-prob": 0.2})
+          def false_fn():
+              qp.CZ((1, 0))
+
+          qp.cond(m, true_fn=true_fn, false_fn=false_fn)()
+
+      loop_hinted()
+
+      return qp.expval(qp.X(0))
+  ```
+
+  ```pycon
+  >>> print(qp.analyze(circuit)().resources.quantum_operations)
+  {'CNOT': 8, 'CZ': 2, 'Hadamard': 2, 'MidCircuitMeasure': 10}
+  ```
+
+  With the hinted conditional branches in ``loop_hinted``, :func:`~.analyze` takes the
+  weighted sum of each branch's resources
+  (:math:`10 \text{iterations} \times (0.8 \times \text{CNOT} + 0.2 \times \text{CZ}) = 8 \times \text{CNOT} + 2 \times \text{CZ}`).
+  In contrast, with the unhinted conditional branches in ``loop_unhinted``, :func:`~.analyze`
+  takes the max union of all gate types across every branch, which accumulates to
+  :math:`10 \times \text{CRZ} + 10 \times \text{CRY})`.
 
 * A new state preparation routine called :class:`~.PhaseGradientStatePrep` has been added, which
-  prepares the phase gradient state 
+  prepares the phase gradient state
   :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`.
   It is a catalytic state for (generalized) rotation gates.
   See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
@@ -85,7 +133,7 @@
   The operation has a gridsynth-based decomposition into Pauli product rotations on up to
   30 wires, consisting of :class:`~.PPR_8` operators, at most one :class:`~.PPR_2` or
   :class:`~.PPR_4` operator per wire, and a
-  :class:`~.GlobalPhase`. It approximates the phase gradient state on 30 wires to 
+  :class:`~.GlobalPhase`. It approximates the phase gradient state on 30 wires to
   precision :math:`10^{-12}` (in 2-norm).
 
 * Added a `qp.math.floor_log2` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
@@ -1106,7 +1154,7 @@
 * ``Wires.all_wires`` can now handle a list with mixed ``Wires`` and ``AbstractWires`` instances.
   [(#10223)](https://github.com/PennyLaneAI/pennylane/pull/10223)
 
-* ``qp.add_decomps`` no longer raises an error when the new decomposition rule is the exact same 
+* ``qp.add_decomps`` no longer raises an error when the new decomposition rule is the exact same
   object as an existing one. An error is still raised if the new rule has the same name as an
   existing rule, but is a different object to the rule with that name.
   [(#10282)](https://github.com/PennyLaneAI/pennylane/pull/10282)
@@ -1116,7 +1164,7 @@
   controlled unitaries at no extra cost, by replacing ``ctrl(U, control_values=[0])`` with
   ``ctrl(adjoint(U), control_values=[1])``.
   [(#10305)](https://github.com/PennyLaneAI/pennylane/pull/10305)
-  
+
 * A new :mod:`pennylane.testing` module collects utilities for testing code built with PennyLane.
   - ``qp.ops.functions.assert_valid`` is now available as :func:`qp.testing.assert_valid <pennylane.testing.assert_valid>`.
 
@@ -1276,7 +1324,7 @@
   [(#10238)](https://github.com/PennyLaneAI/pennylane/pull/10238)
 
 * :class:`~.IQPEmbedding`'s ``pattern`` argument now lists pairs of *indices into* ``wires``,
-  rather than wire labels. This matches the ``pattern`` argument of :class:`~.IQP`. 
+  rather than wire labels. This matches the ``pattern`` argument of :class:`~.IQP`.
   It is a dynamic ``(K, 2)`` integer
   tensor. The default all-pairs pattern is unchanged.
   To entangle the first and third of ``wires=["z", "a", "k"]``, pass ``pattern=[[0, 2]]``
@@ -1296,7 +1344,7 @@
   ```
 
   [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
-  
+
 * The ``pennylane.qaoa`` module has been removed. This includes the mixer Hamiltonians
   (``x_mixer``, ``xy_mixer``, ``bit_flip_mixer``), the cost Hamiltonians (``maxcut``,
   ``max_independent_set``, ``min_vertex_cover``, ``max_clique``, ``max_weight_cycle``,
@@ -1979,9 +2027,9 @@
   very minor increases.
   [(#10270)](https://github.com/PennyLaneAI/pennylane/pull/10270)
 
-* Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the 
+* Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the
   output matrix was with respect to a wrong wire ordering. The bug occurred in products where
-  groups of factors with overlapping wires caused a partial matrix with permuted wires, 
+  groups of factors with overlapping wires caused a partial matrix with permuted wires,
   e.g. ``H(1) @ H(0) @ CNOT([2, 1]) @ CNOT([1, 0])``.
   [(#10274)](https://github.com/PennyLaneAI/pennylane/pull/10274)
 
