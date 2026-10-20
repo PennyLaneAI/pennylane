@@ -64,11 +64,8 @@ class TensorLikeMeta(type):
         return isinstance(other, _TENSORLIKE_PYTHON_TYPES) or _is_jax(other) or _is_torch(other)
 
     def __subclasscheck__(cls, other):
-        try:
-            if issubclass(other, _TENSORLIKE_PYTHON_TYPES):
-                return True
-        except TypeError:
-            pass
+        if issubclass(other, _TENSORLIKE_PYTHON_TYPES):
+            return True
         return _is_jax(other, subclass=True) or _is_torch(other, subclass=True)
 
 
