@@ -163,6 +163,17 @@ class TestDeviceLevelSpecs:
             ),
         )
 
+    @pytest.mark.xfail(
+        strict=True,
+        raises=pytest.RaisesExc(
+            TypeError,
+            match=(
+                r"^handle_ctrl_transform\(\) missing 1 required keyword-only "
+                r"argument: 'control_values'"
+            ),
+        ),
+        reason="Requires Catalyst control-value operand support (sc-133997).",
+    )
     def test_complex(self):
         """Test a complex case of qp.specs() against PennyLane"""
 
