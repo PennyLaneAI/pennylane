@@ -88,3 +88,21 @@ def test_operator2_scalar_arithmetic_under_capture(name):
     build = SCALAR_CASES[name]
     jaxpr = _assert_eval_matches(build, wire_order=range(2))
     assert "Identity" in _op_names(jaxpr)
+
+
+@pytest.mark.usefixtures("enable_capture")
+@pytest.mark.parametrize(
+    "build",
+    [
+        pytest.param(lambda: 3 * qp.X(0) + 2, id="op_tracer + scalar"),
+        pytest.param(lambda: 2 + 3 * qp.X(0), id="scalar + op_tracer"),
+        pytest.param(lambda: 3 * qp.X(0) - 2, id="op_tracer - scalar"),
+        pytest.param(lambda: 2 - 3 * qp.X(0), id="scalar - op_tracer"),
+        pytest.param(lambda: (qp.Y(0) @ qp.X(1)) * (3 * qp.X(2)), id="op2 * op_tracer"),
+        pytest.param(lambda: (3 * qp.X(2)) * (3 * qp.X(1)), id="op_tracer * op_tracer"),
+    ],
+)
+def test_unsupported_operator_tracer_arithmetic_raises(build):
+    """Unsupported operands fail at trace time with Python's standard TypeError."""
+    with pytest.raises(TypeError, match="unsupported operand"):
+        jax.make_jaxpr(build)()
