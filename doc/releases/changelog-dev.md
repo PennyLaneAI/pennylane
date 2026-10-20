@@ -759,6 +759,14 @@
 
 <h3>Improvements 🛠</h3>
 
+* :class:`~.SingleExcitation` has a new decomposition rule, ``_single_excitation_ppr_crz``, that
+  realizes the Givens rotation with a single arbitrary-angle rotation: the two ``RZ`` gates of the
+  existing PPR-based rule, :math:`RZ(\phi/2)_i RZ(-\phi/2)_j`, become one :class:`~.CRZ` in the
+  parity frame ``CNOT(i, j)``. This halves the number of arbitrary-angle rotations of
+  :class:`~.BasisRotation` whenever a controlled rotation costs about as much as an uncontrolled
+  one, as for phase-gradient synthesis.
+  [(#10346)](https://github.com/PennyLaneAI/pennylane/pull/10346)
+
 * The `decompose_mcx_with_no_worker` decomposition rule for :class:`~.MultiControlledX` now only
   applies when no work wires are provided, matching `MultiControlledX.compute_decomposition`.
   This removes controlled `GlobalPhase` and `PhaseShift` rules from the decomposition graph and
