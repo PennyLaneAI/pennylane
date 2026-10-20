@@ -31,7 +31,7 @@ training of quantum circuits with thousands of qubits and millions of parameters
 GPU. Although training can be done classically, deploying the trained circuit on quantum hardware
 for sampling or downstream quantum algorithms can lead to advantages over purely classical
 algorithms. For example, sampling from Instantaneous Quantum Polynomial (IQP) circuit distributions is known to be hard for classical
-algorithms in general; see
+algorithms in general (up to complexity theoretic assumptions); see
 `Bremner et al. (2016) <https://arxiv.org/abs/1504.07999>`_.
 
 
@@ -269,9 +269,10 @@ Qudit circuits
 ~~~~~~~~~~~~~~
 
 The workflow above extends to qudit circuits, where the gate generators are powers of the
-generalized Pauli-:math:`Z` operator. Each gate is a sparse ``dict`` mapping a qudit index to the
-power of :math:`Z` applied on that qudit, with entries in :math:`\{1, \ldots, d-1\}`. For instance,
-``{1: 3, 2: 1}`` applies :math:`Z^3` on qudit 1 and :math:`Z` on qudit 2. Observables are
+generalized Pauli-:math:`Z` operator. Here the gate dictionary maps parameters to a list of gates, 
+and each gate is represented by a 
+dictionary mapping qudits to exponents of :math:`Z` , with entries in :math:`\{1, \ldots, d-1\}`. 
+For instance, ``{1: 3, 2: 1}`` applies :math:`Z^3` on qudit 1 and :math:`Z` on qudit 2. Observables are
 Heisenberg–Weyl operators specified by a pair ``(l_vecs, m_vecs)`` of integer vectors. See
 `Huang et al. (2026) <https://arxiv.org/abs/2607.06675>`_ for details.
 
