@@ -269,9 +269,9 @@ Qudit circuits
 ~~~~~~~~~~~~~~
 
 The workflow above extends to qudit circuits, where the gate generators are powers of the
-generalized Pauli-:math:`Z` operator. Here the gate dictionary maps parameters to a list of gates, 
-and each gate is represented by a 
-dictionary mapping qudits to exponents of :math:`Z` , with entries in :math:`\{1, \ldots, d-1\}`. 
+generalized Pauli-:math:`Z` operator. Here the gate dictionary maps parameters to a list of gates,
+and each gate is represented by a
+dictionary mapping qudits to exponents of :math:`Z` , with entries in :math:`\{1, \ldots, d-1\}`.
 For instance, ``{1: 3, 2: 1}`` applies :math:`Z^3` on qudit 1 and :math:`Z` on qudit 2. Observables are
 Heisenberg–Weyl operators specified by a pair ``(l_vecs, m_vecs)`` of integer vectors. See
 `Huang et al. (2026) <https://arxiv.org/abs/2607.06675>`_ for details.
