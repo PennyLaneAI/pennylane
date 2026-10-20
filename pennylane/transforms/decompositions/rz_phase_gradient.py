@@ -15,6 +15,7 @@ r"""
 Decomposition rule for RZ in terms of `phase gradient states <https://pennylane.ai/compilation/phase-gradient/b-rotations>`__
 """
 
+from collections import Counter
 from functools import partial
 
 import numpy as np
@@ -52,52 +53,80 @@ def validate_phase_gradient_wires(angle_wires, phase_grad_wires, work_wires):
     return angle_wires, phase_grad_wires, work_wires
 
 
-def _precisions_to_support(precision_stats, max_precision):
-    """Validate ``precision_stats`` and return the non-zero precisions that a decomposition rule
-    may use, always including the full precision ``max_precision``."""
-    if not precision_stats:
-        return {max_precision}
-    if any(not 0 <= p <= max_precision for p in precision_stats):
-        raise ValueError(
-            f"precision_stats keys must be between 0 and {max_precision}, but got "
-            f"{sorted(precision_stats)}."
-        )
-    return {max_precision} | {p for p in precision_stats if p > 0}
+def _required_precision(binary_int):
+    """Position of the last set bit across all binary representations in ``binary_int``, with
+    the precision along the last axis. This is the number of bits required to represent all of
+    them exactly."""
+    return qp.math.max(binary_int * qp.math.arange(1, qp.math.shape(binary_int)[-1] + 1))
 
 
-def _dispatch_precision(binary_int, precision_stats, branch_fn):
-    """Apply ``branch_fn(p)`` for the smallest precision ``p`` in ``precision_stats`` that can
-    represent ``binary_int`` without its trailing zeros. If there is no such ``p``, the full
-    precision is used. The branches are hinted with the probabilities given by
-    ``precision_stats``.
+def _precision_stats(angles, precision, unit):
+    """Compute ``precision_stats`` for a phase gradient decomposition rule from the angles of the
+    operators that it will decompose.
 
     Args:
-        binary_int (TensorLike): binary representation(s) of the angle(s), with the precision
-            along the last axis. May be traced.
-        precision_stats (dict[int, int]): number of rotations for each precision.
-        branch_fn (Callable): function that applies the operations for a given precision.
+        angles (Sequence[TensorLike]): angle(s) of each operator. For operators with multiple
+            angles, the required precision is the maximum over all of them.
+        precision (int): full precision, i.e., the number of angle wires.
+        unit (float): unit of the angles, see :func:`~.math.binary_decimals`.
+
+    Returns:
+        dict[int, int]: number of operators for each required precision.
     """
-    max_precision = qp.math.shape(binary_int)[-1]
-    # Position of the last set bit across all angles, i.e. the required precision
-    required = qp.math.max(binary_int * qp.math.arange(1, max_precision + 1))
+    required = (
+        int(_required_precision(qp.math.binary_decimals(a, precision, unit=unit))) for a in angles
+    )
+    return dict(Counter(required))
 
-    precisions = sorted(precision_stats)
+
+def _precision_dispatcher(precision_stats, precision, unit):
+    """Validate ``precision_stats`` and create a function that applies a phase gradient circuit
+    at the smallest precision in ``precision_stats`` that suffices for the given angle(s).
+
+    Args:
+        precision_stats (dict[int, int] | None): number of rotations for each required precision.
+            ``None`` or an empty dictionary always applies the full ``precision``.
+        precision (int): full precision, i.e., the number of angle wires.
+        unit (float): unit of the angles, see :func:`~.math.binary_decimals`.
+
+    Returns:
+        tuple[set[int], Callable]: The non-zero precisions that may be applied, including the
+        full ``precision``, and a function ``dispatch(angles, apply_fn)``, where
+        ``apply_fn(p)`` applies the full-precision circuit to the leading ``p`` angle and phase
+        gradient wires. ``angles`` may be traced if program capture is enabled.
+    """
+    precision_stats = precision_stats or {precision: 1}
+    if any(not 0 <= p <= precision for p in precision_stats):
+        raise ValueError(
+            f"precision_stats keys must be between 0 and {precision}, but got "
+            f"{sorted(precision_stats)}."
+        )
     total = sum(precision_stats.values())
-    branches = [
-        qp.hint(partial(branch_fn, p), {"branch-prob": precision_stats[p] / total})
-        for p in precisions
-    ]
-    preds = [required <= p for p in precisions]
-    if precisions[-1] == max_precision:
-        preds.pop()
-        otherwise = branches.pop()
-    else:
-        otherwise = partial(branch_fn, max_precision)
+    probs = {p: precision_stats[p] / total for p in sorted(precision_stats)}
 
-    if not branches:
-        otherwise()
-        return
-    qp.cond(preds[0], branches[0], otherwise, elifs=list(zip(preds[1:], branches[1:])))()
+    def dispatch(angles, apply_fn):
+        def _branch(p):
+            if p:
+                apply_fn(p)
+
+        if probs.keys() == {precision}:
+            _branch(precision)
+            return
+
+        # The circuit at precision p reproduces the bits of the angles exactly if p >= required,
+        # because the bits beyond p are zero, so that rounding at precision p yields the same
+        # bits as rounding at the full precision.
+        required = _required_precision(qp.math.binary_decimals(angles, precision, unit=unit))
+        branches = [
+            (required <= p, qp.hint(partial(_branch, p), {"branch-prob": prob}))
+            for p, prob in probs.items()
+        ]
+        # Without full precision in ``precision_stats``, the fallback is unhinted (probability 0)
+        otherwise = branches.pop()[1] if precision in probs else partial(_branch, precision)
+        (pred, true_fn), *elifs = branches
+        qp.cond(pred, true_fn, otherwise, elifs=elifs)()
+
+    return {precision, *probs} - {0}, dispatch
 
 
 def make_rz_to_phase_gradient_decomp(
@@ -117,7 +146,9 @@ def make_rz_to_phase_gradient_decomp(
         work_wires (Wires): additional work wires for :class:`~.SemiAdder` decomposition
         precision_stats (dict[int, int] | None): Optional statistics of the number of bits
             required by the rotation angles, mapping a number of bits to the number of rotations
-            requiring that many bits (i.e., the precision without trailing zeros). If provided,
+            requiring that many bits. The bits required by an angle :math:`\phi` are the
+            position of the last set bit in ``qp.math.binary_decimals(phi, len(angle_wires),
+            unit=2 * np.pi)``, i.e., the precision without trailing zeros. If provided,
             the data loading and the :class:`~.SemiAdder` are truncated to the smallest number of
             bits in ``precision_stats`` that suffices for a given angle, using :func:`~.cond`
             branches that are hinted with the corresponding probabilities via :func:`~.hint`.
@@ -134,9 +165,9 @@ def make_rz_to_phase_gradient_decomp(
 
         When using ``precision_stats``, keep the following in mind:
 
-        * ``precision_stats`` is only expected to work with program capture enabled
-          (``qp.capture.enable()``). Without program capture, the angles must be concrete;
-          traced angles, e.g., under ``qp.qjit(capture=False)``, raise an error.
+        * With program capture enabled (``qp.capture.enable()``), the angles may be traced.
+          Without program capture, the angles must be concrete; traced angles, e.g., under
+          ``qp.qjit(capture=False)``, raise an error.
         * The resource function of the rule adds up the cost of all supported precisions, so
           that the graph-based decomposition system accounts for the operators in all
           conditional branches. This over-reports the cost of the rule, so that the
@@ -197,12 +228,11 @@ def make_rz_to_phase_gradient_decomp(
     angle_wires, phase_grad_wires, work_wires = validate_phase_gradient_wires(
         angle_wires, phase_grad_wires, work_wires
     )
-    precision = len(angle_wires)
-    precisions = _precisions_to_support(precision_stats, precision)
+    precisions, dispatch = _precision_dispatcher(precision_stats, len(angle_wires), 2 * np.pi)
 
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
         # rz decomposition costs, using information about angle_wires etc from the outer scope.
-        # With precision_stats, each supported precision is counted once.
+        # Each precision that may be applied is counted once.
         resources = {qp.GlobalPhase: 1}
         for p in precisions:
             target_op = qp.SemiAdder(Wire[p], Wire[p], Wire[len(work_wires)])
@@ -215,23 +245,11 @@ def make_rz_to_phase_gradient_decomp(
     @qp.register_resources(_resource_fn, exact=False)
     def _rz_phase_gradient_decomp(phi, wires):
         qp.GlobalPhase(phi / 2)
-        if not precision_stats:
-            _rz_phase_gradient(phi, wires, angle_wires, phase_grad_wires, work_wires)
-            return
-
-        binary_int = qp.math.binary_decimals(phi, precision, unit=2 * np.pi)
-        control_wire = Wires(wires)[0]
-
-        def _branch(p):
-            if p == 0:
-                return
-
-            def compute_fn():
-                qp.ctrl(qp.MultiX(binary_int[:p], angle_wires[:p]), control=control_wire)
-
-            target_fn = partial(qp.SemiAdder, angle_wires[:p], phase_grad_wires[:p], work_wires)
-            qp.change_op_basis(compute_fn, target_fn, compute_fn)
-
-        _dispatch_precision(binary_int, precision_stats, _branch)
+        dispatch(
+            phi,
+            lambda p: _rz_phase_gradient(
+                phi, wires, angle_wires[:p], phase_grad_wires[:p], work_wires
+            ),
+        )
 
     return _rz_phase_gradient_decomp

@@ -22,11 +22,26 @@ import pennylane as qp
 from pennylane.ops.op_math import ChangeOpBasis2, prod
 from pennylane.typing import Bool, Wire
 
-from .rz_phase_gradient import (
-    _dispatch_precision,
-    _precisions_to_support,
-    validate_phase_gradient_wires,
-)
+from .rz_phase_gradient import _precision_dispatcher, validate_phase_gradient_wires
+
+
+def _crz_phase_gradient(phi, wires, angle_wires, phase_grad_wires, work_wires):
+    """Apply the phase gradient circuit for CRZ. The precision is implicitly defined by the
+    length of ``angle_wires``."""
+    binary_int = qp.math.binary_decimals(phi, len(angle_wires), unit=4 * np.pi)
+    control_wire, target_wire = wires[0], wires[1]
+
+    def _compute_fn():
+        qp.ctrl(qp.MultiX(binary_int, angle_wires), control=control_wire)
+        # Flip the phase-gradient wires when the target wire is |0> (double-phase trick).
+        qp.ctrl(
+            qp.MultiX([1] * len(phase_grad_wires), phase_grad_wires),
+            control=target_wire,
+            control_values=[0],
+        )
+
+    target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
+    qp.change_op_basis(_compute_fn, target_op, _compute_fn)
 
 
 def make_crz_to_phase_gradient_decomp(
@@ -50,8 +65,11 @@ def make_crz_to_phase_gradient_decomp(
         work_wires (Wires): additional work wires for :class:`~.SemiAdder` decomposition.
             At least ``len(angle_wires)-1`` work wires are required.
         precision_stats (dict[int, int] | None): Optional statistics of the number of bits
-            required by the rotation angles. See :func:`~.make_rz_to_phase_gradient_decomp` for
-            details and caveats, in particular regarding program capture. Defaults to ``None``.
+            required by the rotation angles. In contrast to :class:`~.RZ`, the bits required by
+            an angle :math:`\phi` are computed from ``qp.math.binary_decimals(phi,
+            len(angle_wires), unit=4 * np.pi)``. See :func:`~.make_rz_to_phase_gradient_decomp`
+            for details and caveats, in particular regarding program capture.
+            Defaults to ``None``.
 
     Returns:
         func: decomposition rule to be used within :func:`~.pennylane.decompose`.
@@ -117,11 +135,10 @@ def make_crz_to_phase_gradient_decomp(
     angle_wires, phase_grad_wires, work_wires = validate_phase_gradient_wires(
         angle_wires, phase_grad_wires, work_wires
     )
-    precision = len(angle_wires)
-    precisions = _precisions_to_support(precision_stats, precision)
+    precisions, dispatch = _precision_dispatcher(precision_stats, len(angle_wires), 4 * np.pi)
 
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
-        # Cost from the wires in the outer scope, counting each precision in ``precisions`` once.
+        # Cost from the wires in the outer scope, counting each precision that may be applied once.
         # The angle-load fanout emits one gate per *set* bit of the (concrete) angle, so this is an
         # upper bound (exact=False below).
         resources = {}
@@ -136,28 +153,11 @@ def make_crz_to_phase_gradient_decomp(
 
     @qp.register_resources(_resource_fn, exact=False)
     def _crz_phase_gradient_decomp(phi, wires):
-        binary_int = qp.math.binary_decimals(phi, precision, unit=4 * np.pi)
-        control_wire, target_wire = wires[0], wires[1]
-
-        def _branch(p):
-            if p == 0:
-                return
-
-            def _compute_fn():
-                qp.ctrl(qp.MultiX(binary_int[:p], angle_wires[:p]), control=control_wire)
-                # Flip the phase-gradient wires when the target wire is |0> (double-phase trick).
-                qp.ctrl(
-                    qp.MultiX([1] * p, phase_grad_wires[:p]),
-                    control=target_wire,
-                    control_values=[0],
-                )
-
-            target_op = qp.SemiAdder(angle_wires[:p], phase_grad_wires[:p], work_wires=work_wires)
-            qp.change_op_basis(_compute_fn, target_op, _compute_fn)
-
-        if not precision_stats:
-            _branch(precision)
-        else:
-            _dispatch_precision(binary_int, precision_stats, _branch)
+        dispatch(
+            phi,
+            lambda p: _crz_phase_gradient(
+                phi, wires, angle_wires[:p], phase_grad_wires[:p], work_wires
+            ),
+        )
 
     return _crz_phase_gradient_decomp

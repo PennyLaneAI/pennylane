@@ -18,15 +18,16 @@
 
 import hint_helpers
 import numpy as np
+import phase_gradient_helpers
 import pytest
 
 import pennylane as qp
-from pennylane.ops.op_math.composite2 import CompositeOp2
 from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.transforms.decompositions import (
     make_rz_to_phase_gradient_decomp,
     validate_phase_gradient_wires,
 )
+from pennylane.transforms.decompositions.rz_phase_gradient import _precision_stats
 from pennylane.wires import WireError
 
 
@@ -229,31 +230,14 @@ def test_integration_multi_wire(seed):
     assert np.allclose(out_state, out_state_expected)
 
 
-def _leaf_ops(ops):
-    """Recursively unpack composite operators (change of basis, products)."""
-    for op in ops:
-        if isinstance(op, CompositeOp2):
-            yield from _leaf_ops(op.decomposition())
-        else:
-            yield op
-
-
 # Cases for a 4-bit angle register: (binary angle, precision_stats, expected truncated width)
 PRECISION_STATS_CASES = [
-    ([1, 0, 1, 0], {3: 5}, 3),
-    ([1, 0, 1, 0], {1: 2, 3: 5, 4: 1}, 3),
-    ([1, 0, 1, 0], {2: 1, 4: 1}, 4),
-    ([1, 0, 1, 0], {1: 1, 2: 1}, 4),
-    ([1, 0, 0, 0], {2: 1}, 2),
-    ([0, 0, 0, 0], {0: 1, 3: 1}, 0),
-    ([0, 0, 0, 0], {2: 1}, 2),
-    ([1, 0, 1, 0], {4: 3}, 4),
-    ([1, 0, 1, 0], {}, 4),
+    ([1, 0, 1, 0], {1: 2, 3: 5, 4: 1}, 3),  # smallest sufficient precision
+    ([1, 0, 0, 0], {2: 1}, 2),  # larger precision than required
+    ([1, 0, 1, 0], {1: 1, 2: 1}, 4),  # unhinted fallback to full precision
+    ([0, 0, 0, 0], {0: 1, 3: 1}, 0),  # no rotation required
+    ([1, 0, 1, 0], {}, 4),  # treated like None
 ]
-
-
-def _bits_to_angle(bits, unit):
-    return sum(b * 2.0 ** -(i + 1) for i, b in enumerate(bits)) * unit
 
 
 @pytest.mark.parametrize("key", [-1, 5])
@@ -265,131 +249,82 @@ def test_precision_stats_invalid_key(key):
         )
 
 
-@pytest.mark.parametrize("bits, precision_stats, width", PRECISION_STATS_CASES)
-def test_precision_stats_truncates(bits, precision_stats, width):
-    """Test that the data loading and the SemiAdder are truncated to the smallest precision in
-    ``precision_stats`` that suffices for the angle, or to full precision otherwise."""
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(4)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(4)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(3)])
+def test_precision_stats_from_angles():
+    """Test that ``_precision_stats`` counts the bits required by each operator, rounding at the
+    full precision and maximizing over the angles of multi-angle operators."""
+    bits = [
+        [1, 0, 1, 0],  # 3 bits
+        [0, 1, 0, 0],  # 2 bits
+        [0, 0, 0, 0],  # 0 bits
+        [0, 0, 1, 1, 1],  # rounds to 0100, i.e., 2 bits
+        [1, 1, 1, 1, 1],  # rounds to 10000, i.e., 0 bits
+        [[1, 0, 0, 0], [0, 0, 1, 0]],  # 3 bits for the second angle
+    ]
+    angles = [phase_gradient_helpers.bits_to_angles(b, 2 * np.pi) for b in bits]
+    assert _precision_stats(angles, 4, 2 * np.pi) == {3: 2, 2: 2, 0: 2}
+
+
+def test_precision_stats_from_angles_dispatches_exactly():
+    """Test that each angle is applied at exactly its required precision if ``precision_stats``
+    is computed from the angles with ``_precision_stats``."""
+    bits = [[1, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0], [1, 1, 1, 1], [1, 0, 0, 0]]
+    angles = phase_gradient_helpers.bits_to_angles(bits, 2 * np.pi)
     rule = make_rz_to_phase_gradient_decomp(
-        angle_wires, phase_grad_wires, work_wires, precision_stats=precision_stats
+        [1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11], _precision_stats(angles, 4, 2 * np.pi)
     )
-
-    with qp.queuing.AnnotatedQueue() as q:
-        rule(_bits_to_angle(bits, 2 * np.pi), wires=[0])
-    ops = list(_leaf_ops(q.queue))
-
-    assert isinstance(ops[0], qp.GlobalPhase)
-    adders = [op for op in ops if isinstance(op, qp.SemiAdder)]
-    fanouts = [op for op in ops if isinstance(op, qp.ops.Controlled)]
-    if width == 0:
-        assert len(ops) == 1
-        return
-    assert len(adders) == 1 and len(fanouts) == 2
-    assert adders[0].x_wires == angle_wires[:width]
-    assert adders[0].y_wires == phase_grad_wires[:width]
-    for fanout in fanouts:
-        assert isinstance(fanout.base, qp.MultiX)
-        assert fanout.base.wires == angle_wires[:width]
-        assert list(fanout.base.bitstring) == bits[:width]
+    for b, phi in zip(bits, angles):
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(phi, wires=[0])
+        ops = phase_gradient_helpers.leaf_ops(q.queue)
+        widths = [len(o.x_wires) for o in ops if isinstance(o, qp.SemiAdder)]
+        required = max((i + 1 for i, bit in enumerate(b) if bit), default=0)
+        assert widths == ([required] if required else [])
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("bits, precision_stats, width", PRECISION_STATS_CASES)
-def test_precision_stats_valid_decomp(bits, precision_stats, width):
-    """Test that the rule with ``precision_stats`` yields a valid decomposition."""
-    # pylint: disable=unused-argument
+def test_precision_stats_decomp(bits, precision_stats, width, seed):
+    """Test that the rule with ``precision_stats`` truncates the SemiAdder to the smallest
+    precision in ``precision_stats`` that suffices for the angle (or to full precision otherwise),
+    accounts for all gates in its resources, and realizes RZ."""
+    angle_wires, phase_grad_wires = qp.wires.Wires([1, 2, 3, 4]), qp.wires.Wires([5, 6, 7, 8])
     rule = make_rz_to_phase_gradient_decomp(
-        [1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11], precision_stats=precision_stats
+        angle_wires, phase_grad_wires, [9, 10, 11], precision_stats=precision_stats
     )
-    op = qp.RZ(_bits_to_angle(bits, 2 * np.pi), 0)
+    op = qp.RZ(phase_gradient_helpers.bits_to_angles(bits, 2 * np.pi), 0)
     _test_decomposition_rule(op, rule, skip_decomp_matrix_check=True)
+
+    tape = phase_gradient_helpers.decomp_to_tape(op, rule)
+    adders = [
+        o for o in phase_gradient_helpers.leaf_ops(tape.operations) if isinstance(o, qp.SemiAdder)
+    ]
+    assert [(a.x_wires, a.y_wires) for a in adders] == (
+        [(angle_wires[:width], phase_grad_wires[:width])] if width else []
+    )
+    phase_gradient_helpers.assert_decomp_realizes_op(op, tape, phase_grad_wires, seed)
 
 
 @pytest.mark.capture
 @pytest.mark.parametrize(
     "precision_stats, expected",
     [
-        ({1: 1, 3: 3}, (0.25, 0.75, 0.0)),
-        ({2: 1, 4: 3}, (0.25, 0.75)),
-        ({0: 2, 4: 2}, (0.5, 0.5)),
-        ({3: 7}, (1.0, 0.0)),
+        ({1: 1, 3: 3}, [(0.25, 0.75, 0.0)]),
+        ({2: 1, 4: 3}, [(0.25, 0.75)]),
+        ({0: 2, 4: 2}, [(0.5, 0.5)]),
+        ({3: 7}, [(1.0, 0.0)]),
+        ({4: 3}, []),
+        (None, []),
     ],
 )
 def test_precision_stats_hints(precision_stats, expected):
     """Test that the conditional branches are hinted with the probabilities derived from
-    ``precision_stats``, and that an unhinted full-precision fallback is only added if the full
-    precision is not part of ``precision_stats``."""
+    ``precision_stats``, that an unhinted full-precision fallback is only added if the full
+    precision is not part of ``precision_stats``, and that no conditional is used if only the
+    full precision is required."""
     import jax
 
     rule = make_rz_to_phase_gradient_decomp(
         [1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11], precision_stats=precision_stats
     )
     jaxpr = jax.make_jaxpr(lambda phi: rule(phi, wires=[0]))(0.4)
-    assert hint_helpers.cond_hints(jaxpr.jaxpr) == [pytest.approx(expected)]
-
-
-@pytest.mark.capture
-def test_precision_stats_full_precision_only_has_no_cond():
-    """Test that no conditional is used if ``precision_stats`` only contains the full precision,
-    in which case the full precision is applied directly."""
-    import jax
-
-    rule = make_rz_to_phase_gradient_decomp(
-        [1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11], precision_stats={4: 3}
-    )
-    jaxpr = jax.make_jaxpr(lambda phi: rule(phi, wires=[0]))(0.4)
-    assert not hint_helpers.cond_hints(jaxpr.jaxpr)
-
-    ops = list(_leaf_ops(qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4).operations))
-    adders = [op for op in ops if isinstance(op, qp.SemiAdder)]
-    assert len(adders) == 1 and adders[0].x_wires == qp.wires.Wires([1, 2, 3, 4])
-
-
-@pytest.mark.usefixtures("enable_graph_decomposition")
-@pytest.mark.parametrize("bits, precision_stats, width", PRECISION_STATS_CASES)
-def test_precision_stats_integration(bits, precision_stats, width, seed):
-    """Test that the decomposition with ``precision_stats`` realizes RZ."""
-    # pylint: disable=unused-argument
-    phi = _bits_to_angle(bits, 2 * np.pi)
-    wires = [0]
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(4)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(4)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(3)])
-    all_wires = angle_wires + phase_grad_wires + work_wires + wires
-
-    custom_decomp = make_rz_to_phase_gradient_decomp(
-        angle_wires, phase_grad_wires, work_wires, precision_stats=precision_stats
-    )
-
-    # pylint: disable-next=protected-access
-    @qp.transforms._tape_decompose(
-        gate_set={
-            "StatePrep",
-            "PhaseGradientStatePrep",
-            "Adjoint(PhaseGradientStatePrep)",
-            "SemiAdder",
-            "CNOT",
-            "PauliX",
-            "GlobalPhase",
-        },
-        fixed_decomps={qp.RZ: custom_decomp},
-    )
-    @qp.qnode(qp.device("default.qubit", wires=all_wires))
-    def circuit(phi, in_state):
-        qp.StatePrep(in_state, wires=wires)
-        qp.PhaseGradientStatePrep(phase_grad_wires)
-        qp.RZ(phi, wires)
-        qp.adjoint(qp.PhaseGradientStatePrep(phase_grad_wires))
-        return qp.state()
-
-    rng = np.random.default_rng(seed=seed)
-    in_state = rng.random(2) + 1j * rng.random(2)
-    in_state /= np.linalg.norm(in_state)
-
-    out_state = circuit(phi, in_state)
-
-    zeros = np.eye(2 ** (len(all_wires) - 1), 1)[:, 0]
-    out_state_expected = np.kron(zeros, qp.matrix(qp.RZ(phi, wires)) @ in_state)
-    assert np.allclose(out_state, out_state_expected)
+    assert hint_helpers.cond_hints(jaxpr.jaxpr) == [pytest.approx(e) for e in expected]

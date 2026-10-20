@@ -27,11 +27,7 @@ from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Bool, Wire
 from pennylane.wires import WireError, Wires
 
-from .rz_phase_gradient import (
-    _dispatch_precision,
-    _precisions_to_support,
-    validate_phase_gradient_wires,
-)
+from .rz_phase_gradient import _precision_dispatcher, validate_phase_gradient_wires
 
 
 # pylint: disable=too-many-arguments
@@ -50,36 +46,19 @@ def _select_pauli_rot_phase_gradient(
 
     precision = len(angle_wires)
     binary_int = qp.math.binary_decimals(phis, precision, unit=4 * np.pi)
-    return _truncated_select_pauli_rot_phase_gradient(
-        binary_int,
-        precision,
-        rot_axis,
-        control_wires,
-        target_wire,
-        angle_wires,
-        phase_grad_wires,
-        work_wires,
-    )
-
-
-def _truncated_select_pauli_rot_phase_gradient(
-    binary_int, p, rot_axis, control_wires, target_wire, angle_wires, phase_grad_wires, work_wires
-) -> Operator:
-    """Phase gradient circuit for SelectPauliRot that only loads and adds the leading ``p``
-    bits of ``binary_int``. This is exact if all other bits are zero."""
 
     def compute_fn():
         qp.QROM(
-            binary_int[:, :p],
+            binary_int,
             control_wires,
-            angle_wires[:p],
+            angle_wires,
             work_wires=work_wires[: len(control_wires) - 1],  # This forces Λ=1 in Select-Swap
         )
-        for wire in phase_grad_wires[:p]:
+        for wire in phase_grad_wires:
             qp.ctrl(qp.X(wire), control=target_wire, control_values=[0])
 
     def target_fn():
-        qp.SemiAdder(angle_wires[:p], phase_grad_wires[:p], work_wires=work_wires)
+        qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
 
     def inner_cob():
         # uncompute=compute is only valid for Λ=1, because QROM creates complex phases otherwise.
@@ -128,8 +107,10 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         precision_stats (dict[int, int] | None): Optional statistics of the number of bits
             required by the ``SelectPauliRot`` operators, mapping a number of bits to the number
             of operators requiring that many bits. The bits required by an operator are the
-            maximum over all of its angles. See :func:`~.make_rz_to_phase_gradient_decomp` for
-            details and caveats, in particular regarding program capture. Defaults to ``None``.
+            maximum over all of its angles, where the bits required by an angle :math:`\phi` are
+            computed from ``qp.math.binary_decimals(phi, len(angle_wires), unit=4 * np.pi)``.
+            See :func:`~.make_rz_to_phase_gradient_decomp` for details and caveats, in
+            particular regarding program capture. Defaults to ``None``.
 
     Returns:
         func: decomposition rule to be used within :func:`~.pennylane.decompose`.
@@ -197,22 +178,16 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         angle_wires, phase_grad_wires, work_wires
     )
     precision = len(angle_wires)
-    precisions = _precisions_to_support(precision_stats, precision)
+    precisions, dispatch = _precision_dispatcher(precision_stats, precision, 4 * np.pi)
 
     # pylint: disable=unused-argument
     def _resource_fn(angles, control_wires, target_wire, rot_axis):
         # decomposition costs, using information about angle_wires etc from the outer scope.
-        # With precision_stats, each supported precision is counted once.
+        # Each precision that may be applied is counted once.
 
         num_control_wires = len(control_wires)
         if num_control_wires == 0:
-            match rot_axis:
-                case "X":
-                    return {qp.RX: 1}
-                case "Y":
-                    return {qp.RY: 1}
-                case "Z":
-                    return {qp.RZ: 1}
+            return {{"X": qp.RX, "Y": qp.RY, "Z": qp.RZ}[rot_axis]: 1}
 
         return {_resource_rep(num_control_wires, rot_axis, p): 1 for p in precisions}
 
@@ -251,7 +226,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(
                 change_basis_rep_basis_adapted = _change_op_basis_abstract(
                     qp.Hadamard,
                     change_basis_rep,
-                    _adjoint_abstract(qp.Hadamard),
+                    qp.Hadamard,
                 )
             case "Y":
                 comp_rep = qp.ops.prod(abstractify(qp.Hadamard), _adjoint_abstract(qp.S))
@@ -265,53 +240,32 @@ def make_selectpaulirot_to_phase_gradient_decomp(
 
         return change_basis_rep_basis_adapted
 
-    @qp.register_resources(_resource_fn, exact=not precision_stats)
+    # The resources are inexact if conditional branches are used
+    @qp.register_resources(_resource_fn, exact=set(precision_stats or [precision]) == {precision})
     def _select_pauli_rot_phase_gradient_decomp(angles, control_wires, target_wire, rot_axis, **_):
         if len(control_wires) == 0:
-            match rot_axis:
-                case "X":
-                    qp.RX(angles[0], target_wire)
-                case "Y":
-                    qp.RY(angles[0], target_wire)
-                case "Z":
-                    qp.RZ(angles[0], target_wire)
+            rot_class = {"X": qp.RX, "Y": qp.RY, "Z": qp.RZ}[rot_axis]
+            rot_class(angles[0], target_wire)
             return
 
         # Validate length of work wires for QROM
         if len(work_wires) < len(control_wires) - 1:
             raise WireError(
                 "work_wires need to be at least of size len(control_wires) - 1, "
-                "received {len(work_wires)} but require {len(control_wires) - 1}"
+                f"received {len(work_wires)} but require {len(control_wires) - 1}"
             )
 
-        if not precision_stats:
-            _select_pauli_rot_phase_gradient(
+        dispatch(
+            angles,
+            lambda p: _select_pauli_rot_phase_gradient(
                 angles,
-                rot_axis,
-                control_wires=control_wires,
-                target_wire=target_wire,
-                angle_wires=angle_wires,
-                phase_grad_wires=phase_grad_wires,
-                work_wires=work_wires,
-            )
-            return
-
-        binary_int = qp.math.binary_decimals(angles, precision, unit=4 * np.pi)
-
-        def _branch(p):
-            if p == 0:
-                return
-            _truncated_select_pauli_rot_phase_gradient(
-                binary_int,
-                p,
                 rot_axis,
                 control_wires,
                 target_wire,
-                angle_wires,
-                phase_grad_wires,
+                angle_wires[:p],
+                phase_grad_wires[:p],
                 work_wires,
-            )
-
-        _dispatch_precision(binary_int, precision_stats, _branch)
+            ),
+        )
 
     return _select_pauli_rot_phase_gradient_decomp
