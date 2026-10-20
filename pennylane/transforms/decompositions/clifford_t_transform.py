@@ -495,6 +495,40 @@ def clifford_t_decomposition(
 
     **Example**
 
+    Consider a circuit containing a phase shift of :math:`\pi/4`:
+
+    .. code-block:: python
+
+        from math import pi
+
+        import pennylane as qp
+
+        @qp.qnode(qp.device("default.qubit", wires=2))
+        def exact_circuit():
+            qp.Hadamard(0)
+            qp.CNOT([0, 1])
+            qp.PhaseShift(pi / 4, 0)
+            return qp.expval(qp.X(0) @ qp.X(1))
+
+    Before applying the transform, the circuit contains a :class:`~.PhaseShift` gate:
+
+    >>> print(qp.draw(exact_circuit, level="user")())
+    0: ──H─╭●──Rϕ(0.79)─┤ ╭<X@X>
+    1: ────╰X───────────┤ ╰<X@X>
+
+    Apply the transform and draw the resulting circuit:
+
+    >>> exact_decomposition = qp.transforms.clifford_t_decomposition(exact_circuit)
+    >>> print(qp.draw(exact_decomposition, level="user")())
+    0: ──H─╭●──T─┤ ╭<X@X>
+    1: ────╰X────┤ ╰<X@X>
+
+    The phase shift is replaced by a :class:`~.T` gate with the same matrix, so this
+    conversion is exact. The Hadamard and CNOT gates are already in the Clifford+T basis.
+
+    For general rotation angles, the decomposition is approximate. We can compare the
+    original and decomposed circuits numerically:
+
     .. code-block:: python
 
         @qp.qnode(qp.device("default.qubit"))
