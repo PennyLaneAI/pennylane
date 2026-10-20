@@ -32,6 +32,7 @@ import itertools
 import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from functools import partial
 from typing import NamedTuple
 
 import jax
@@ -395,7 +396,7 @@ def _group_block_contribution(
     return accumulated
 
 
-@jax.jit
+@partial(jax.jit, static_argnames=("block_size",))
 def _group_phase_diffs(
     theta_ext: jnp.ndarray,
     samples_t: jnp.ndarray,
