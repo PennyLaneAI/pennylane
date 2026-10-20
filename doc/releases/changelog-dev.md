@@ -765,7 +765,7 @@
   parity frame ``CNOT(i, j)``. This halves the number of arbitrary-angle rotations of
   :class:`~.BasisRotation` whenever a controlled rotation costs about as much as an uncontrolled
   one, as for phase-gradient synthesis.
-  [(#10346)](https://github.com/PennyLaneAI/pennylane/pull/10346)
+  [(#10358)](https://github.com/PennyLaneAI/pennylane/pull/10358)
 
 * The `decompose_mcx_with_no_worker` decomposition rule for :class:`~.MultiControlledX` now only
   applies when no work wires are provided, matching `MultiControlledX.compute_decomposition`.
