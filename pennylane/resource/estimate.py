@@ -102,21 +102,21 @@ def estimate(
     *,
     target: str | Iterable[type | str] | dict[type | str, float],
 ) -> Callable[..., CircuitSpecs]:
-    r"""Provides fast resource estimates of a quantum circuit by analyzing decomposition pathways
-    with respect to a specified level of compilation.
+    r"""Provides a resource estimate of a quantum circuit with respect to the provided compilation target,
+    via rapid analysis of decomposition pathways.
 
     .. note::
 
         Only QNodes which have been decorated with :func:`@qp.qjit(capture=True) <~pennylane.qjit>` are supported.
 
-    The ``estimate`` function never executes the circuit. It only provides fast resource estimates.
+    The ``estimate`` function never executes the circuit. It only provides resource estimates.
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the qjit'd QNode for which to estimate resources.
-        level (str | int): The level of compilation from which to project the resources onto the
-            ``target``. Only ``"top"`` or ``0``, the original circuit before any compilation
-            passes have been applied, or the name of a marker placed before every pass, is
-            currently supported. Defaults to ``"top"``.
+        level (str | int): The level to compile to before projecting the resources onto the
+            ``target``. Only ``"top"``, ``0``, or the name of a marker placed before all passes,
+            are currently supported, indicating the original circuit before any compilation
+            passes have been applied. Defaults to ``"top"``.
         target (str | Iterable[type | str] | dict[type | str, float]): The gate set to project
             the resources onto, in any form accepted by the ``gate_set`` argument of
             :func:`~.decompose`.
@@ -146,9 +146,9 @@ def estimate(
             qp.RX(x, wires=1)
             return qp.probs()
 
-    By calling ``estimate`` on this circuit with ``level=0/"top"``, the :func:`~.cancel_inverses`
+    By calling ``estimate`` on this circuit with ``level="top"``, the :func:`~.cancel_inverses`
     pass is ignored. Subsequently, the operations in the original circuit will have their
-    resources projected into the ``target`` gate set by analyzing possible decomposition pathways.
+    resources projected into the ``target`` gate set by analyzing decomposition pathways.
 
     >>> print(qp.estimate(circuit, target={"PauliX", "Hadamard", "CNOT", "RX"})(1.23))
     Device: null.qubit
