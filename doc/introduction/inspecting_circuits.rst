@@ -135,6 +135,41 @@ Measurement processes:
 Total wires: 4
 Circuit Depth: Not computed
 
+The :func:`~pennylane.estimate` function provides fast resource estimates of a quantum circuit by
+analyzing decomposition pathways to a target gate set with respect to the specified level of
+compilation. In the following example, circuit compilation via the specified pipeline (just a
+single :func:`~.cancel_inverses`) is bypassed with ``level=0``, and specifying a ``target`` gate
+set will analyze decomposition pathways to that gate set on the uncompiled circuit.
+
+.. code-block:: python
+
+    @qp.qjit(capture=True)
+    @qp.transforms.cancel_inverses
+    @qp.qnode(dev)
+    def circuit(x):
+        qp.RX(x, wires=0)
+        qp.X(0)
+        qp.X(0)
+        qp.CZ([0, 1])
+        return qp.expval(qp.Z(0))
+
+>>> target = {"RX", "PauliX", "Hadamard", "CNOT"}
+>>> print(qp.estimate(circuit, level=0, target=target)(0.1).resources)
+Quantum operations:
+- Total: 6
+  - CNOT: 1
+  - Hadamard: 2
+  - PauliX: 2
+  - RX: 1
+Measurement processes:
+- expval(PauliZ): 1
+Total wires: 4
+Circuit Depth: Not computed
+
+Note that both ``PauliX`` gates are counted (:func:`~.cancel_inverses` is ignored with
+``level=0``) and the ``CZ`` gate's decomposition pathway to ``CNOT`` and ``Hadamard`` is shown in
+the final resource estimate.
+
 
 Circuit drawing
 ---------------
