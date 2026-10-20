@@ -418,14 +418,17 @@ ctrl_transform_prim.prim_type = "higher_order"
 
 
 @ctrl_transform_prim.def_impl
-def _ctrl_transform_impl(*args, n_control, jaxpr, control_values, work_wires, n_consts):
+def _ctrl_transform_impl(*args, n_control, jaxpr, work_wires, n_consts):
     from pennylane.tape.plxpr_conversion import (  # pylint: disable=import-outside-toplevel
         CollectOpsandMeas,
     )
 
+    values_start = len(args) - n_control
+    controls_start = values_start - n_control
     consts = args[:n_consts]
-    control_wires = args[-n_control:]
-    args = args[n_consts:-n_control]
+    control_wires = args[controls_start:values_start]
+    control_values = args[values_start:]
+    args = args[n_consts:controls_start]
 
     collector = CollectOpsandMeas()
     with qp.QueuingManager.stop_recording():
@@ -453,20 +456,14 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
         )
         flat_args = jax.tree_util.tree_leaves(args)
         control_wires = qp.wires.Wires(control)  # make sure is iterable
-        dynamic_control_values = ()
-        if any(math.is_abstract(value) for value in control_values):
-            dynamic_control_values = tuple(math.cast(value, dtype=bool) for value in control_values)
-
-        # None marks control-value operands immediately before the control wires.
         ctrl_transform_prim.bind(
             *jaxpr.consts,
             *abstract_shapes,
             *flat_args,
-            *dynamic_control_values,
             *control_wires,
+            *(math.cast(value, dtype=bool) for value in control_values),
             jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),
-            control_values=None if dynamic_control_values else control_values,
             work_wires=qp.wires.Wires(work_wires) if work_wires is not None else work_wires,
             n_consts=len(jaxpr.consts),
         )

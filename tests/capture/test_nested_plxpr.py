@@ -324,7 +324,7 @@ class TestCtrlQfunc:
         qp.assert_equal(q.queue[0], expected)
 
         assert plxpr.eqns[0].primitive == ctrl_transform_prim
-        assert plxpr.eqns[0].params["control_values"] == (True,)
+        assert plxpr.eqns[0].invars[-1].val
         assert plxpr.eqns[0].params["n_control"] == 1
         assert plxpr.eqns[0].params["work_wires"] is None
         assert plxpr.eqns[0].params["n_consts"] == 0
@@ -346,7 +346,7 @@ class TestCtrlQfunc:
         assert len(q) == 1
 
         assert plxpr.eqns[0].primitive == ctrl_transform_prim
-        assert plxpr.eqns[0].params["control_values"] == (True, True)
+        assert [value.val for value in plxpr.eqns[0].invars[-2:]] == [True, True]
         assert plxpr.eqns[0].params["n_control"] == 2
         assert plxpr.eqns[0].params["work_wires"] is None
 
@@ -384,7 +384,7 @@ class TestCtrlQfunc:
         qp.assert_equal(q.queue[0], expected)
         assert len(q) == 1
 
-        assert plxpr.eqns[0].params["control_values"] == (False, True)
+        assert [value.val for value in plxpr.eqns[0].invars[-2:]] == [False, True]
         assert plxpr.eqns[0].params["n_control"] == 2
 
     @pytest.mark.parametrize("container, static_first", ((tuple, False), (list, True)))
@@ -401,12 +401,17 @@ class TestCtrlQfunc:
         assert len(plxpr.eqns) == 1
         ctrl_eqn = plxpr.eqns[0]
         assert ctrl_eqn.primitive == ctrl_transform_prim
-        assert ctrl_eqn.params["control_values"] is None
+        assert "control_values" not in ctrl_eqn.params
         assert ctrl_eqn.params["n_control"] == 2
-        value_args = ctrl_eqn.invars[-4:-2]
+        value_args = ctrl_eqn.invars[-2:]
         assert value_args[int(static_first)] == plxpr.jaxpr.invars[1]
         assert value_args[1 - int(static_first)].val
-        assert [wire.val for wire in ctrl_eqn.invars[-2:]] == [0, 1]
+        assert [wire.val for wire in ctrl_eqn.invars[-4:-2]] == [0, 1]
+
+        with qp.queuing.AnnotatedQueue() as queue:
+            jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2, False)
+        expected_values = [True, False] if static_first else [False, True]
+        qp.assert_equal(queue.queue[0], qp.ctrl(qp.RX(1.2, 2), (0, 1), expected_values))
 
     def test_nested_control(self):
         """Test that control can be nested."""
@@ -423,8 +428,8 @@ class TestCtrlQfunc:
             plxpr.eqns[1].invars[0] is plxpr.jaxpr.invars[1]
         )  # first input is first control wire, const
         assert plxpr.eqns[1].invars[1] is plxpr.jaxpr.invars[0]  # second input is x, first arg
-        assert plxpr.eqns[1].invars[-1] is plxpr.jaxpr.invars[2]  # second control wire
-        assert len(plxpr.eqns[1].invars) == 6  # one const, 4 args, one control wire
+        assert plxpr.eqns[1].invars[-2] is plxpr.jaxpr.invars[2]  # second control wire
+        assert len(plxpr.eqns[1].invars) == 7  # one const, 4 args, one control wire and value
 
         with qp.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2, 3, 4)
@@ -460,7 +465,7 @@ class TestCtrlQfunc:
             qp.assert_equal(q.queue[2], qp.ctrl(qp.S(2), 0))
 
         eqn = jaxpr.eqns[0]
-        assert eqn.params["control_values"] == (True,)
+        assert eqn.invars[-1].val
         assert eqn.params["n_consts"] == 0
         assert eqn.params["n_control"] == 1
         assert eqn.params["work_wires"] is None

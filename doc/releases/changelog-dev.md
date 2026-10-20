@@ -1332,6 +1332,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `ctrl_transform` capture primitive now receives Boolean control values as operands
+  after the control wires. Its `control_values` parameter has been removed, so consuming
+  interpreters, including Catalyst, must support the new operand layout.
+  [(#10356)](https://github.com/PennyLaneAI/pennylane/pull/10356)
+
 * :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's
   ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
   available as :func:`~.transforms._tape_decompose`.
