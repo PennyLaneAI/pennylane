@@ -67,9 +67,10 @@ def make_crz_to_phase_gradient_decomp(
         precision_stats (dict[int, int] | None): Optional statistics of the number of bits
             required by the rotation angles. In contrast to :class:`~.RZ`, the bits required by
             an angle :math:`\phi` are computed from ``qp.math.binary_decimals(phi,
-            len(angle_wires), unit=4 * np.pi)``. See :func:`~.make_rz_to_phase_gradient_decomp`
-            for details and caveats, in particular regarding program capture.
-            Defaults to ``None``.
+            len(angle_wires), unit=4 * np.pi)``. Use :func:`~.phase_gradient_precision_stats` to
+            compute the statistics from the angles. See
+            :func:`~.make_rz_to_phase_gradient_decomp` for details and caveats, in particular
+            regarding program capture. Defaults to ``None``.
 
     Returns:
         func: decomposition rule to be used within :func:`~.pennylane.decompose`.
@@ -135,7 +136,7 @@ def make_crz_to_phase_gradient_decomp(
     angle_wires, phase_grad_wires, work_wires = validate_phase_gradient_wires(
         angle_wires, phase_grad_wires, work_wires
     )
-    precisions, dispatch = _precision_dispatcher(precision_stats, len(angle_wires), 4 * np.pi)
+    precisions, dispatch = _precision_dispatcher(precision_stats, len(angle_wires), "CRZ")
 
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
         # Cost from the wires in the outer scope, counting each precision that may be applied once.

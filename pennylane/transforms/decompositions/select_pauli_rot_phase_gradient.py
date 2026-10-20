@@ -109,7 +109,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(
             of operators requiring that many bits. The bits required by an operator are the
             maximum over all of its angles, where the bits required by an angle :math:`\phi` are
             computed from ``qp.math.binary_decimals(phi, len(angle_wires), unit=4 * np.pi)``.
-            See :func:`~.make_rz_to_phase_gradient_decomp` for details and caveats, in
+            Use :func:`~.phase_gradient_precision_stats` to compute the statistics from the
+            angles. See :func:`~.make_rz_to_phase_gradient_decomp` for details and caveats, in
             particular regarding program capture. Defaults to ``None``.
 
     Returns:
@@ -178,7 +179,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         angle_wires, phase_grad_wires, work_wires
     )
     precision = len(angle_wires)
-    precisions, dispatch = _precision_dispatcher(precision_stats, precision, 4 * np.pi)
+    precisions, dispatch = _precision_dispatcher(precision_stats, precision, "SelectPauliRot")
 
     # pylint: disable=unused-argument
     def _resource_fn(angles, control_wires, target_wire, rot_axis):

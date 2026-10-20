@@ -1129,6 +1129,8 @@
   :func:`~.make_selectpaulirot_to_phase_gradient_decomp` accept an optional ``precision_stats``
   argument. If provided, the data loading and the :class:`~.SemiAdder` are truncated to the
   number of bits required by the angle(s), dispatching with hinted :func:`~.cond` branches.
+  The new function :func:`~.transforms.decompositions.phase_gradient_precision_stats` computes
+  ``precision_stats`` from the rotation angles.
   [(#10312)](https://github.com/PennyLaneAI/pennylane/pull/10312)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>

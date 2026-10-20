@@ -25,9 +25,9 @@ import pennylane as qp
 from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.transforms.decompositions import (
     make_rz_to_phase_gradient_decomp,
+    phase_gradient_precision_stats,
     validate_phase_gradient_wires,
 )
-from pennylane.transforms.decompositions.rz_phase_gradient import _precision_stats
 from pennylane.wires import WireError
 
 
@@ -250,8 +250,8 @@ def test_precision_stats_invalid_key(key):
 
 
 def test_precision_stats_from_angles():
-    """Test that ``_precision_stats`` counts the bits required by each operator, rounding at the
-    full precision and maximizing over the angles of multi-angle operators."""
+    """Test that ``phase_gradient_precision_stats`` counts the bits required by each operator,
+    rounding at the full precision and maximizing over the angles of multi-angle operators."""
     bits = [
         [1, 0, 1, 0],  # 3 bits
         [0, 1, 0, 0],  # 2 bits
@@ -261,16 +261,31 @@ def test_precision_stats_from_angles():
         [[1, 0, 0, 0], [0, 0, 1, 0]],  # 3 bits for the second angle
     ]
     angles = [phase_gradient_helpers.bits_to_angles(b, 2 * np.pi) for b in bits]
-    assert _precision_stats(angles, 4, 2 * np.pi) == {3: 2, 2: 2, 0: 2}
+    assert phase_gradient_precision_stats(angles, 4, qp.RZ) == {3: 2, 2: 2, 0: 2}
+
+
+def test_precision_stats_from_angles_op_type():
+    """Test that ``phase_gradient_precision_stats`` infers the unit of the angles from the
+    operator type, given as class or name, and raises an error for unsupported types."""
+    angles = [np.pi / 2, np.pi]  # (0.0100)_2 and (0.1000)_2 in units of 2 pi
+    assert phase_gradient_precision_stats(angles, 4, "RZ") == {1: 1, 2: 1}
+    # In units of 4 pi, the angles are (0.0010)_2 and (0.0100)_2
+    for op_type in (qp.CRZ, "CRZ", qp.SelectPauliRot, "SelectPauliRot"):
+        assert phase_gradient_precision_stats(angles, 4, op_type) == {2: 1, 3: 1}
+    with pytest.raises(ValueError, match="op_type must be one of"):
+        phase_gradient_precision_stats(angles, 4, qp.RX)
 
 
 def test_precision_stats_from_angles_dispatches_exactly():
     """Test that each angle is applied at exactly its required precision if ``precision_stats``
-    is computed from the angles with ``_precision_stats``."""
+    is computed from the angles with ``phase_gradient_precision_stats``."""
     bits = [[1, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0], [1, 1, 1, 1], [1, 0, 0, 0]]
     angles = phase_gradient_helpers.bits_to_angles(bits, 2 * np.pi)
     rule = make_rz_to_phase_gradient_decomp(
-        [1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11], _precision_stats(angles, 4, 2 * np.pi)
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+        [9, 10, 11],
+        phase_gradient_precision_stats(angles, 4, qp.RZ),
     )
     for b, phi in zip(bits, angles):
         with qp.queuing.AnnotatedQueue() as q:

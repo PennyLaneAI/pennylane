@@ -53,6 +53,23 @@ def validate_phase_gradient_wires(angle_wires, phase_grad_wires, work_wires):
     return angle_wires, phase_grad_wires, work_wires
 
 
+# Units of the angles in the phase gradient decomposition of each operator type,
+# see ``qp.math.binary_decimals``
+_ANGLE_UNITS = {"RZ": 2 * np.pi, "CRZ": 4 * np.pi, "SelectPauliRot": 4 * np.pi}
+
+
+def _angle_unit(op_type):
+    """Unit of the angles in the phase gradient decomposition of ``op_type``, which may be an
+    operator class or its name."""
+    name = getattr(op_type, "__name__", op_type)
+    if name not in _ANGLE_UNITS:
+        raise ValueError(
+            f"op_type must be one of {list(_ANGLE_UNITS)} or the corresponding class, but got "
+            f"{op_type}."
+        )
+    return _ANGLE_UNITS[name]
+
+
 def _required_precision(binary_int):
     """Position of the last set bit across all binary representations in ``binary_int``, with
     the precision along the last axis. This is the number of bits required to represent all of
@@ -60,26 +77,107 @@ def _required_precision(binary_int):
     return qp.math.max(binary_int * qp.math.arange(1, qp.math.shape(binary_int)[-1] + 1))
 
 
-def _precision_stats(angles, precision, unit):
-    """Compute ``precision_stats`` for a phase gradient decomposition rule from the angles of the
-    operators that it will decompose.
+def phase_gradient_precision_stats(angles, precision, op_type):
+    r"""Compute the ``precision_stats`` argument of the phase gradient decomposition rule
+    factories from the rotation angles of the operators that a rule will decompose.
+
+    A phase gradient decomposition with ``precision`` angle wires represents an angle
+    :math:`\phi` by the ``precision`` leading binary decimals of :math:`\phi/u` (rounded to
+    nearest), where the unit is :math:`u=2\pi` for :class:`~.RZ` and :math:`u=4\pi` for
+    :class:`~.CRZ` and :class:`~.SelectPauliRot`. If the trailing decimals are zero, the rotation
+    can be realized with fewer bits, i.e., with a smaller :class:`~.SemiAdder` and less data
+    loading.
+    This function counts how many operators require each number of bits. Passing the result as
+    ``precision_stats`` to :func:`~.make_rz_to_phase_gradient_decomp`,
+    :func:`~.make_crz_to_phase_gradient_decomp` or
+    :func:`~.make_selectpaulirot_to_phase_gradient_decomp` makes the produced rule apply each of
+    these operators at exactly the number of bits it requires, and hints the conditional
+    branches with the observed frequencies.
 
     Args:
-        angles (Sequence[TensorLike]): angle(s) of each operator. For operators with multiple
-            angles, the required precision is the maximum over all of them.
-        precision (int): full precision, i.e., the number of angle wires.
-        unit (float): unit of the angles, see :func:`~.math.binary_decimals`.
+        angles (Sequence[TensorLike]): The angle(s) of each operator. For operators with
+            multiple angles, such as :class:`~.SelectPauliRot`, the bits required by the operator
+            are the maximum over all of its angles. The angles must be concrete.
+        precision (int): The full precision of the decomposition rule, i.e., the number of angle
+            wires.
+        op_type (type | str): The type of the operators, i.e., :class:`~.RZ`, :class:`~.CRZ`
+            or :class:`~.SelectPauliRot`, or its name. It determines the unit of the angles in
+            the respective decomposition rule.
 
     Returns:
-        dict[int, int]: number of operators for each required precision.
+        dict[int, int]: The number of operators requiring each number of bits, sorted by the
+        number of bits.
+
+    .. seealso:: :func:`~.make_rz_to_phase_gradient_decomp`,
+        :func:`~.make_crz_to_phase_gradient_decomp`,
+        :func:`~.make_selectpaulirot_to_phase_gradient_decomp`
+
+    **Example**
+
+    Consider four :class:`~.RZ` rotations that we want to decompose with four angle wires. The
+    first angle, :math:`\tfrac{1}{2}\cdot 2\pi`, has the binary representation :math:`(0.1000)_2`
+    and thus only requires one bit, whereas :math:`0.1 \cdot 2\pi` is rounded to
+    :math:`(0.0010)_2`, requiring three bits:
+
+    >>> from pennylane.transforms.decompositions import phase_gradient_precision_stats
+    >>> angles = np.array([1 / 2, 1 / 4, 3 / 8, 0.1]) * 2 * np.pi
+    >>> precision_stats = phase_gradient_precision_stats(angles, precision=4, op_type=qp.RZ)
+    >>> precision_stats
+    {1: 1, 2: 1, 3: 2}
+
+    We use these statistics to create a decomposition rule for :class:`~.RZ`:
+
+    .. code-block:: python
+
+        from pennylane.transforms.decompositions import make_rz_to_phase_gradient_decomp
+
+        qp.decomposition.enable_graph()
+
+        angle_wires = [f"aux_{i}" for i in range(4)]
+        phase_grad_wires = [f"qft_{i}" for i in range(4)]
+        work_wires = [f"work_{i}" for i in range(3)]
+        rule = make_rz_to_phase_gradient_decomp(
+            angle_wires, phase_grad_wires, work_wires, precision_stats=precision_stats
+        )
+
+        @qp.transforms._tape_decompose(
+            gate_set={"CNOT", "SemiAdder", "GlobalPhase", "PauliX"}, fixed_decomps={qp.RZ: rule}
+        )
+        @qp.qnode(qp.device("null.qubit"))
+        def circuit(phi):
+            qp.RZ(phi, 0)
+            return qp.state()
+
+    The rotation by the first angle only uses a single angle wire and phase gradient wire:
+
+    >>> wire_order = [0] + angle_wires + phase_grad_wires + work_wires
+    >>> print(qp.draw(circuit, wire_order=wire_order)(angles[0]))
+         0: ─╭GlobalPhase(1.57)─╭●────────────╭●─┤ ╭State
+     aux_0: ─├GlobalPhase(1.57)─╰X─╭SemiAdder─╰X─┤ ├State
+     qft_0: ─├GlobalPhase(1.57)────├SemiAdder────┤ ├State
+    work_0: ─├GlobalPhase(1.57)────├SemiAdder────┤ ├State
+    work_1: ─├GlobalPhase(1.57)────├SemiAdder────┤ ├State
+    work_2: ─╰GlobalPhase(1.57)────╰SemiAdder────┤ ╰State
+
+    For :class:`~.SelectPauliRot`, we pass the angles of each operator. The operator type may
+    also be specified by its name:
+
+    >>> ops = [
+    ...     qp.SelectPauliRot(np.array([1 / 2, 1 / 4]) * 4 * np.pi, control_wires=[0], target_wire=1),
+    ...     qp.SelectPauliRot(np.array([1 / 2, 0]) * 4 * np.pi, control_wires=[0], target_wire=1),
+    ... ]
+    >>> angles = [op.data[0] for op in ops]
+    >>> phase_gradient_precision_stats(angles, precision=4, op_type="SelectPauliRot")
+    {1: 1, 2: 1}
     """
+    unit = _angle_unit(op_type)
     required = (
         int(_required_precision(qp.math.binary_decimals(a, precision, unit=unit))) for a in angles
     )
-    return dict(Counter(required))
+    return dict(sorted(Counter(required).items()))
 
 
-def _precision_dispatcher(precision_stats, precision, unit):
+def _precision_dispatcher(precision_stats, precision, op_type):
     """Validate ``precision_stats`` and create a function that applies a phase gradient circuit
     at the smallest precision in ``precision_stats`` that suffices for the given angle(s).
 
@@ -87,7 +185,7 @@ def _precision_dispatcher(precision_stats, precision, unit):
         precision_stats (dict[int, int] | None): number of rotations for each required precision.
             ``None`` or an empty dictionary always applies the full ``precision``.
         precision (int): full precision, i.e., the number of angle wires.
-        unit (float): unit of the angles, see :func:`~.math.binary_decimals`.
+        op_type (type | str): type of the decomposed operators, determining the angle unit.
 
     Returns:
         tuple[set[int], Callable]: The non-zero precisions that may be applied, including the
@@ -103,6 +201,7 @@ def _precision_dispatcher(precision_stats, precision, unit):
         )
     total = sum(precision_stats.values())
     probs = {p: precision_stats[p] / total for p in sorted(precision_stats)}
+    unit = _angle_unit(op_type)
 
     def dispatch(angles, apply_fn):
         def _branch(p):
@@ -154,12 +253,14 @@ def make_rz_to_phase_gradient_decomp(
             branches that are hinted with the corresponding probabilities via :func:`~.hint`.
             If no number of bits in ``precision_stats`` suffices, the full precision is used.
             Keys must lie between ``0`` and ``len(angle_wires)``. An empty dictionary is treated
-            like ``None``. See the note below for caveats. Defaults to ``None``.
+            like ``None``. Use :func:`~.phase_gradient_precision_stats` to compute the statistics
+            from the angles. See the note below for caveats. Defaults to ``None``.
 
     Returns:
         qp.decomposition.DecompositionRule: decomposition rule to be used within :func:`~.pennylane.decompose`.
 
-    .. seealso:: :func:`~.make_selectpaulirot_to_phase_gradient_decomp`
+    .. seealso:: :func:`~.make_selectpaulirot_to_phase_gradient_decomp`,
+        :func:`~.phase_gradient_precision_stats`
 
     .. note::
 
@@ -228,7 +329,7 @@ def make_rz_to_phase_gradient_decomp(
     angle_wires, phase_grad_wires, work_wires = validate_phase_gradient_wires(
         angle_wires, phase_grad_wires, work_wires
     )
-    precisions, dispatch = _precision_dispatcher(precision_stats, len(angle_wires), 2 * np.pi)
+    precisions, dispatch = _precision_dispatcher(precision_stats, len(angle_wires), "RZ")
 
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
         # rz decomposition costs, using information about angle_wires etc from the outer scope.
