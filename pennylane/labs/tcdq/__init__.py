@@ -107,7 +107,7 @@ Pauli words are encoded as integer rows of length ``n_qubits`` using
 A whole batch of observables is estimated at once: stack one row per Pauli word into an array of
 shape ``(n_observables, n_qubits)``, and a single call returns an estimate for every row.
 
-:func:`~build_expval_func` turns a configuration into a pure function that returns the estimated
+The function :func:`~build_expval_func` turns a configuration into a pure function that returns the estimated
 expectation values and their variance as a function of the trainable parameters. Once built,
 it can be JIT-compiled for faster evaluation. If the configuration defines a phase function, its
 parameters are passed as the second argument, and gradients flow to them just as they do to the
