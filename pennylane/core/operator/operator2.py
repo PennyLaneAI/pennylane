@@ -72,8 +72,8 @@ def _is_operator_tracer(obj) -> bool:
     """Whether ``obj`` is an operator captured into plxpr (a tracer with an ``AbstractOperator`` aval).
 
     Under program capture, legacy operators such as ``SProd`` (e.g. from ``3 * qp.X(0)``) are
-    tracers rather than ``Operator`` instances. Tracers are also ``TensorLike``, so the arithmetic
-    dunders below must explicitly defer to them instead of treating them as scalars.
+    tracers rather than ``Operator`` instances. Tracers are also ``TensorLike``, so ``__add__`` /
+    ``__sub__`` must treat them as operators instead of scalars.
     """
     return isinstance(getattr(obj, "aval", None), AbstractOperator)
 
@@ -1367,10 +1367,7 @@ class Operator2(metaclass=OperatorMeta):
 
     def __add__(self, other: Operator | TensorLike) -> Operator:
         """The addition operation of Operator-Operator objects and Operator-scalar."""
-        if _is_operator_tracer(other):
-            # defer to AbstractOperator arithmetic on the tracer
-            return NotImplemented
-        if isinstance(other, Operator):
+        if isinstance(other, Operator) or _is_operator_tracer(other):
             return qp.sum(self, other, lazy=False)
         if isinstance(other, TensorLike):
             if not qp.math.is_abstract(other) and qp.math.allequal(other, 0):
@@ -1386,18 +1383,12 @@ class Operator2(metaclass=OperatorMeta):
 
     def __mul__(self, other: TensorLike) -> Operator:
         """The scalar multiplication between scalars and Operators."""
-        if _is_operator_tracer(other):
-            # defer to AbstractOperator arithmetic on the tracer
-            return NotImplemented
         if isinstance(other, TensorLike):
             return qp.s_prod(scalar=other, operator=self, lazy=False)
         return NotImplemented
 
     def __truediv__(self, other: TensorLike):
         """The division between an Operator and a number."""
-        if _is_operator_tracer(other):
-            # defer to AbstractOperator arithmetic on the tracer
-            return NotImplemented
         if isinstance(other, TensorLike):
             return self.__mul__(1 / other)
         return NotImplemented
@@ -1410,10 +1401,7 @@ class Operator2(metaclass=OperatorMeta):
 
     def __sub__(self, other: Operator | TensorLike) -> Operator:
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
-        if _is_operator_tracer(other):
-            # defer to AbstractOperator arithmetic on the tracer
-            return NotImplemented
-        if isinstance(other, Operator):
+        if isinstance(other, Operator) or _is_operator_tracer(other):
             return self + qp.s_prod(-1, other, lazy=False)
         if isinstance(other, TensorLike):
             return self + (qp.math.multiply(-1, other))
@@ -1429,9 +1417,6 @@ class Operator2(metaclass=OperatorMeta):
 
     def __pow__(self, other: TensorLike) -> Operator:
         r"""The power operation of an Operator object."""
-        if _is_operator_tracer(other):
-            # defer to AbstractOperator arithmetic on the tracer
-            return NotImplemented
         if isinstance(other, TensorLike):
             return qp.pow(self, z=other)
         return NotImplemented

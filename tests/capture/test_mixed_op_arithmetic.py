@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Regression tests for sc-130866: arithmetic between Operator2 instances and
-operator-valued tracers (AbstractOperator) under program capture."""
+operator-valued tracers (AbstractOperator) under program capture.
+
+Operator2 ``__add__`` / ``__sub__`` treat AbstractOperator tracers as operators
+(not as TensorLike scalars). Scalar ``+/-`` still uses the Identity embedding.
+"""
 
 # pylint: disable=unnecessary-lambda
 import pytest
@@ -23,7 +27,8 @@ jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
-CASES = {
+# Mixed Operator2 / operator-tracer: the tracer must not be mistaken for a scalar.
+MIXED_CASES = {
     "op2 + tracer": (lambda: (qp.Y(0) @ qp.X(1)) + 3 * qp.X(2)),
     "tracer + op2": (lambda: 3 * qp.X(2) + (qp.Y(0) @ qp.X(1))),
     "op2 - tracer": (lambda: (qp.Y(0) @ qp.X(1)) - 3 * qp.X(2)),
@@ -33,22 +38,23 @@ CASES = {
     "tracer @ op2": (lambda: (3 * qp.X(2)) @ (qp.Y(0) @ qp.X(1))),
 }
 
+# Scalar arithmetic under capture must still go through the TensorLike path.
+SCALAR_CASES = {
+    "op2 + scalar": (lambda: (qp.Y(0) @ qp.X(1)) + 2),
+    "op2 - scalar": (lambda: (qp.Y(0) @ qp.X(1)) - 2),
+}
 
-@pytest.mark.usefixtures("enable_capture")
-@pytest.mark.parametrize("name", CASES)
-def test_mixed_operator_arithmetic(name):
-    """Mixed Operator2 / operator-tracer arithmetic must not treat the tracer as a scalar
-    (no stray Identity), and the captured jaxpr must re-evaluate to the correct operator."""
-    build = CASES[name]
 
-    jaxpr = jax.make_jaxpr(build)()
-    op_names = [
+def _op_names(jaxpr):
+    return [
         eqn.params["op_cls"].__name__ if "op_cls" in eqn.params else eqn.primitive.name
         for eqn in jaxpr.eqns
     ]
-    assert "Identity" not in op_names
 
-    # re-evaluating the plxpr is what e.g. Catalyst's from_plxpr does
+
+def _assert_eval_matches(build, wire_order):
+    """Captured jaxpr must re-evaluate to the same operator as outside capture."""
+    jaxpr = jax.make_jaxpr(build)()
     with qp.queuing.AnnotatedQueue():
         (res,) = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
@@ -56,7 +62,28 @@ def test_mixed_operator_arithmetic(name):
     try:
         expected = build()
         assert qp.math.allclose(
-            qp.matrix(res, wire_order=range(3)), qp.matrix(expected, wire_order=range(3))
+            qp.matrix(res, wire_order=wire_order),
+            qp.matrix(expected, wire_order=wire_order),
         )
     finally:
         qp.capture.enable()
+
+    return jaxpr
+
+
+@pytest.mark.usefixtures("enable_capture")
+@pytest.mark.parametrize("name", MIXED_CASES)
+def test_mixed_operator_arithmetic(name):
+    """Operator tracers must not be treated as scalars (no stray Identity)."""
+    build = MIXED_CASES[name]
+    jaxpr = _assert_eval_matches(build, wire_order=range(3))
+    assert "Identity" not in _op_names(jaxpr)
+
+
+@pytest.mark.usefixtures("enable_capture")
+@pytest.mark.parametrize("name", SCALAR_CASES)
+def test_operator2_scalar_arithmetic_under_capture(name):
+    """Scalar +/- under capture still embeds via Identity and re-evaluates correctly."""
+    build = SCALAR_CASES[name]
+    jaxpr = _assert_eval_matches(build, wire_order=range(2))
+    assert "Identity" in _op_names(jaxpr)
