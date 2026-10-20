@@ -277,11 +277,12 @@ def _single_excitation_ppr_rz(phi: TensorLike, wires: WiresLike):
 
 # pylint: disable=unused-argument
 def _single_excitation_ppr_crz_resource(phi, wires):
+    compute = Prod2((qp.CNOT(Wire[2]), qp.PPR_4(1, "XX", wires=Wire[2])))
     return {
         _change_op_basis_abstract(
-            qp.PPR_4(1, "XX", wires=Wire[2]),
-            Prod2((qp.CNOT(Wire[2]), qp.CRZ(Float, wires=Wire[2]), qp.CNOT(Wire[2]))),
-            qp.PPR_4(-1, "XX", wires=Wire[2]),
+            compute,
+            qp.CRZ(Float, wires=Wire[2]),
+            qp.adjoint(compute),
         ): 1
     }
 
@@ -298,12 +299,14 @@ def _single_excitation_ppr_crz(phi: TensorLike, wires: WiresLike):
     about as expensive as an uncontrolled one, as for phase-gradient synthesis.
     """
 
-    def _rotation():
-        qp.CNOT(wires)
-        qp.CRZ(phi, wires=[wires[1], wires[0]])
+    def _compute():
+        qp.PPR_4(1, "XX", wires=wires)
         qp.CNOT(wires)
 
-    qp.change_op_basis(qp.PPR_4(1, "XX", wires=wires), _rotation, qp.PPR_4(-1, "XX", wires=wires))
+    def _rotation():
+        qp.CRZ(phi, wires=[wires[1], wires[0]])
+
+    qp.change_op_basis(_compute, _rotation)
 
 
 add_decomps(

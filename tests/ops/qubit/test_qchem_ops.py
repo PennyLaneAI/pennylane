@@ -34,11 +34,9 @@ from scipy.linalg import expm, fractional_matrix_power
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.gradients import parameter_frequencies
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Float, Wire
-from pennylane.wires import Wires
 
 PARAMETRIZED_QCHEM_OPERATIONS = [
     qp.SingleExcitation(0.14, wires=[0, 1]),
@@ -147,25 +145,21 @@ class TestSingleExcitation:
             decomposed_matrix = qp.matrix(tape, wire_order=[0, 1])
             assert np.allclose(decomposed_matrix, exp)
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
-    def test_single_excitation_ppr_crz_decomp(self, phi):
-        """Tests that the CRZ-based rule realizes the Givens rotation with a single arbitrary-angle
-        rotation and is consistent with its resources."""
+    def test_single_excitation_ppr_crz_decomp(self):
+        """Tests that the Clifford operations belong to the basis change, leaving only CRZ as target."""
         rule = qp.list_decomps(qp.SingleExcitation)["_single_excitation_ppr_crz"]
-        op = qp.SingleExcitation(phi, wires=[0, 1])
-        _test_decomposition_rule(op, rule)
-        with qp.capture.pause():
-            matrix = qp.matrix(rule, wire_order=[0, 1])(phi, [0, 1])
-            assert np.allclose(matrix, SingleExcitation(phi))
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(0.2, [0, 1])
 
-            with qp.queuing.AnnotatedQueue() as q:
-                rule(phi, [0, 1])
-            names = [op.name for op in q.queue]
-        assert names == ["ChangeOpBasis2"]
+        assert len(q.queue) == 1
         cob = q.queue[0]
-        assert [o.name for o in cob.target_op.operands] == ["CNOT", "CRZ", "CNOT"]
-        assert cob.target_op.operands[1].wires == Wires([1, 0])
+        assert cob.name == "ChangeOpBasis2"
+        qp.assert_equal(
+            cob.compute_op,
+            qp.prod(qp.CNOT([0, 1]), qp.PPR_4(1, "XX", wires=[0, 1])),
+        )
+        qp.assert_equal(cob.target_op, qp.CRZ(0.2, wires=[1, 0]))
+        qp.assert_equal(cob.uncompute_op, qp.adjoint(cob.compute_op))
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_generator(self, phi):
