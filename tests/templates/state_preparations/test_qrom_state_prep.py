@@ -58,7 +58,7 @@ class TestQROMStatePreparation:
             precision_wires=wires["precision_wires"],
             work_wires=wires["work_wires"],
         )
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.parametrize(
         ("state", "msg_match"),
@@ -139,7 +139,7 @@ class TestQROMStatePreparation:
         )
 
         for gate in decomposition:
-            assert gate.name in ["QROM", "Adjoint(QROM)", "CRY", "C(GlobalPhase)"]
+            assert gate.name in ["QROM", "Adjoint(QROM)", "CRY", "PhaseShift"]
 
     @pytest.mark.jax
     def test_interface_jax(self):

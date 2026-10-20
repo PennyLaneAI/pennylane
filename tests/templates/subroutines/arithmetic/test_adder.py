@@ -19,8 +19,8 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.adder import _adder_arithmetic_decomposition
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -31,7 +31,7 @@ def test_standard_validity_Adder():
     x_wires = [0, 1, 2, 3]
     work_wires = [4, 5]
     op = qp.Adder(k, x_wires=x_wires, mod=mod, work_wires=work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestAdder:

@@ -23,7 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.ops import Hadamard, MultiControlledX, PauliZ
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 def test_repr():
@@ -44,7 +44,7 @@ def test_standard_validity():
     """Test the standard criteria for a valid operation."""
     work_wires = qp.wires.Wires((3, 4))
     op = qp.GroverOperator(wires=(0, 1, 2), work_wires=work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_work_wires():

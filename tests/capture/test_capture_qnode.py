@@ -38,26 +38,7 @@ from pennylane.capture.primitives import (
     while_loop_prim,
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from tests.capture.capture_utils import assert_eqn_matches_op, extract_all_primitives
-
-
-def get_qnode_output_eqns(jaxpr):
-    """Extracts equations related to QNode outputs in the given JAX expression (jaxpr).
-
-    Parameters:
-        jaxpr: A JAX expression with equations, containing QNode-related operations.
-
-    Returns:
-        List of equations containing QNode outputs.
-    """
-
-    qnode_output_eqns = []
-
-    for eqn in jaxpr.eqns:
-        if eqn.primitive.name == "qnode":
-            qnode_output_eqns.append(eqn)
-
-    return qnode_output_eqns
+from pennylane.testing import assert_eqn_matches_op, extract_all_primitives, find_eqns
 
 
 @pytest.mark.capture
@@ -857,7 +838,7 @@ class TestQNodeVmapIntegration:
 
         jaxpr = jax.make_jaxpr(workflow)(x)
 
-        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        qnode_output_eqns = find_eqns(jaxpr, qnode_prim)
         assert len(qnode_output_eqns) == 3
         for eqn in qnode_output_eqns:
             assert len(eqn.outvars) == 1
@@ -888,7 +869,7 @@ class TestQNodeVmapIntegration:
 
         jaxpr = jax.make_jaxpr(workflow)(x)
 
-        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        qnode_output_eqns = find_eqns(jaxpr, qnode_prim)
         assert len(qnode_output_eqns) == 2
         for eqn in qnode_output_eqns:
             assert len(eqn.outvars) == 1
@@ -920,7 +901,7 @@ class TestQNodeVmapIntegration:
 
         jaxpr = jax.make_jaxpr(workflow)(y, x)
 
-        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        qnode_output_eqns = find_eqns(jaxpr, qnode_prim)
         assert len(qnode_output_eqns) == 2
         for eqn in qnode_output_eqns:
             assert len(eqn.outvars) == 1
@@ -962,7 +943,7 @@ class TestQNodeVmapIntegration:
 
         jaxpr = jax.make_jaxpr(workflow)(x, y, 1)
 
-        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        qnode_output_eqns = find_eqns(jaxpr, qnode_prim)
         assert len(qnode_output_eqns) == 3
         for eqn in qnode_output_eqns:
             assert len(eqn.outvars) == 1
@@ -1008,7 +989,7 @@ class TestQNodeVmapIntegration:
 
         jaxpr = jax.make_jaxpr(workflow)(x, y, 1)
 
-        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        qnode_output_eqns = find_eqns(jaxpr, qnode_prim)
         assert len(qnode_output_eqns) == 4
         for eqn in qnode_output_eqns:
             assert len(eqn.outvars) == 1
@@ -1033,7 +1014,7 @@ class TestQNodeVmapIntegration:
 
         jaxpr = jax.make_jaxpr(workflow)(x)
 
-        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        qnode_output_eqns = find_eqns(jaxpr, qnode_prim)
         assert len(qnode_output_eqns) == 2
         for eqn in qnode_output_eqns:
             assert len(eqn.outvars) == 1
@@ -1080,7 +1061,7 @@ class TestQNodeVmapIntegration:
 
         jaxpr = jax.make_jaxpr(workflow)(x)
 
-        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        qnode_output_eqns = find_eqns(jaxpr, qnode_prim)
         assert len(qnode_output_eqns) == 2
         for eqn in qnode_output_eqns:
             assert len(eqn.outvars) == 2

@@ -27,8 +27,9 @@ from scipy.sparse import kron as sparse_kron
 import pennylane as qp
 from pennylane import math
 from pennylane.capture.autograph import wraps
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.core.queuing import QueuingManager, apply, remove_from_program
+from pennylane.core.queuing import QueuingManager, remove_from_program
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires
@@ -149,8 +150,7 @@ def prod(*ops, lazy=True):
                 op.operands if isinstance(op, Prod2) else (op,) for op in ops
             )
         )
-        for op in ops:
-            remove_from_program(op)
+        remove_from_program(*ops)
 
         return Prod2(operands)
 
