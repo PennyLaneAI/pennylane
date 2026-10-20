@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from math import prod
 from numbers import Number
 from types import EllipsisType
-from typing import Any, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -49,9 +49,9 @@ _TENSORLIKE_PYTHON_TYPES = (
 )
 
 
-# Once Python 3.12 support is dropped, this tuple and TensorLikeMeta can be replaced
-# by a Union with an interface helper that delegates instance checks to _is_jax/_is_torch.
-# Keep the aval check in _is_jax when making that change.
+# Once Python 3.12 support is dropped, the separate runtime class and this tuple
+# can be replaced by a Union with an interface helper for _is_jax/_is_torch checks.
+# Keep the aval check; including Array/Tracer directly would accept operator tracers.
 class TensorLikeMeta(type):
     """Runtime ``isinstance`` / ``issubclass`` for :class:`TensorLike`.
 
@@ -72,30 +72,50 @@ class TensorLikeMeta(type):
         return _is_jax(other, subclass=True) or _is_torch(other, subclass=True)
 
 
-class TensorLike(metaclass=TensorLikeMeta):
-    """A type for all tensor-like data.
+if TYPE_CHECKING:
+    from torch import Tensor as TorchTensor
 
-    TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor,
-    including lists and tuples. Any argument accepted by ``qp.numpy.array`` is tensor-like.
+    TensorLike = Union[
+        int,
+        float,
+        bool,
+        complex,
+        bytes,
+        list,
+        tuple,
+        np.ndarray,
+        np.generic,
+        ArrayBox,
+        Array,
+        Tracer,
+        TorchTensor,
+    ]
+else:
 
-    JAX tracers are tensor-like only when array-valued; operator, measurement and qubit
-    tracers created under program capture are not.
+    class TensorLike(metaclass=TensorLikeMeta):
+        """A type for all tensor-like data.
 
-    **Examples**
+        TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor,
+        including lists and tuples. Any argument accepted by ``qp.numpy.array`` is tensor-like.
 
-    >>> from pennylane.typing import TensorLike
-    >>> isinstance(4, TensorLike)
-    True
-    >>> isinstance([2, 6, 8], TensorLike)
-    True
-    >>> isinstance(torch.tensor([1, 2, 3]), TensorLike)
-    True
-    >>> issubclass(list, TensorLike)
-    True
-    >>> issubclass(jax.Array, TensorLike)
-    True
+        JAX tracers are tensor-like only when array-valued; operator, measurement and qubit
+        tracers created under program capture are not.
 
-    """
+        **Examples**
+
+        >>> from pennylane.typing import TensorLike
+        >>> isinstance(4, TensorLike)
+        True
+        >>> isinstance([2, 6, 8], TensorLike)
+        True
+        >>> isinstance(torch.tensor([1, 2, 3]), TensorLike)
+        True
+        >>> issubclass(list, TensorLike)
+        True
+        >>> issubclass(jax.Array, TensorLike)
+        True
+
+        """
 
 
 def _is_jax(other, subclass=False):
