@@ -1350,6 +1350,8 @@
   ``Adjoint(H(0))`` and ``qp.ctrl(qp.H(0), control=1)`` produces
   ``Controlled(H(0), control_wires=[1])``. Use explicit operators such as ``qp.H``
   or ``qp.CH``, or simplify an adjoint explicitly, when a specialized inverse is needed.
+  Affected decomposition rules now declare symbolic resources or construct known
+  inverse sequences explicitly.
   [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
 * :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's

@@ -219,13 +219,17 @@ class TestDiagonalization:
         assert np.allclose(_diagonalization_matrix((0, 0), 2), np.eye(4))
 
     @pytest.mark.parametrize("n, fragment_idx", [(1, 1), (2, 3), (3, 7)])
-    def test_matrix_matches_circuit(self, n, fragment_idx):
-        """Test that the dense diagonalization matrix matches the circuit unitary."""
+    @pytest.mark.parametrize("inverse", (False, True))
+    def test_matrix_matches_circuit(self, n, fragment_idx, inverse):
+        """Test the diagonalization and its explicit inverse against their matrices."""
         wires = list(range(n))
         circuit_matrix = qp.matrix(_diagonalize_vibronic_circuit, wires)(
-            fragment_idx=fragment_idx, wires=wires, num_fragments=2**n
+            fragment_idx=fragment_idx, wires=wires, num_fragments=2**n, inverse=inverse
         )
-        assert np.allclose(_diagonalization_matrix((0, fragment_idx), n), circuit_matrix)
+        expected = _diagonalization_matrix((0, fragment_idx), n)
+        if inverse:
+            expected = expected.conj().T
+        assert np.allclose(expected, circuit_matrix)
 
     @pytest.mark.capture
     @pytest.mark.parametrize(
@@ -594,13 +598,16 @@ class TestDecomposition:
         queue = decomposition_queue(make_op(hamiltonian, make_wires(2, 3), evolution_time=0.1))
         assert count_ops(queue, SignedOutMultiplier) > 0
 
-    def test_resource_function_is_graph_compatible(self):
-        """Test that ``compute_resources`` succeeds with abstractifiable operator keys."""
-        hamiltonian = build_hamiltonian(fragment_list(seed=1))
-        op = make_op(hamiltonian, make_wires(2, 2))
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("n_states", (2, 4))
+    def test_resource_function_is_graph_compatible(self, n_states):
+        """The resource estimate includes every operator emitted by the decomposition."""
+        hamiltonian = build_hamiltonian(fragment_list(n_states=n_states, n_modes=1, seed=1))
+        op = make_op(hamiltonian, make_wires(n_states, 1))
         rule = qp.list_decomps(qp.TrotterVibronic)[0]
         resources = rule.compute_resources(**op.arguments)
         assert resources.num_gates > 0
+        qp.testing.assert_valid_decomp_rule(op, rule, check_matrix=False)
 
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp", "enable_and_disable_capture")

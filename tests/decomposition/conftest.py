@@ -30,8 +30,19 @@ from pennylane.decomposition.symbolic_decomposition import (
 )
 from pennylane.ops.identity import _controlled_g_phase_decomp
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.ops.op_math.controlled2 import flip_zero_control
+from pennylane.ops.op_math.decompositions.controlled_decompositions import mcx_to_cnot_or_toffoli
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
-from pennylane.ops.qubit.non_parametric_ops import _controlled_hadamard
+from pennylane.ops.qubit.non_parametric_ops import (
+    _controlled_hadamard,
+    _controlled_z_decomp,
+    _ctrl_x_to_mcx,
+)
+from pennylane.ops.qubit.parametric_ops_single_qubit import (
+    _controlled_phase_shift_decomp,
+    _controlled_rot_decomp,
+    _controlled_rx_decomp,
+)
 
 _decompositions = defaultdict(DecompCollection)
 decompositions = ContextVar("_test_decompositions", default=_decompositions)
@@ -169,3 +180,11 @@ decompositions.get()["Pow(RX)"].append(pow_rotation)
 decompositions.get()["Adjoint(CNOT)"].append(self_adjoint)
 decompositions.get()["Adjoint(PhaseShift)"].append(adjoint_rotation2)
 decompositions.get()["Adjoint(ControlledPhaseShift)"].append(adjoint_rotation2)
+
+# Symbolic controls reach specialized gates through decomposition, not construction.
+decompositions.get()["C(PauliX)"].append(_ctrl_x_to_mcx)
+decompositions.get()["C(PauliZ)"].append(flip_zero_control(_controlled_z_decomp))
+decompositions.get()["C(RX)"].append(flip_zero_control(_controlled_rx_decomp))
+decompositions.get()["C(PhaseShift)"].append(flip_zero_control(_controlled_phase_shift_decomp))
+decompositions.get()["C(Rot)"].append(flip_zero_control(_controlled_rot_decomp))
+decompositions.get()["MultiControlledX"].append(mcx_to_cnot_or_toffoli)

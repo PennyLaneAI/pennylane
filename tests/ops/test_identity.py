@@ -18,8 +18,9 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator.utils import abstractify
-from pennylane.ops.identity import GlobalPhase, Identity
+from pennylane.ops.identity import GlobalPhase, Identity, _controlled_g_phase_decomp
 from pennylane.testing import assert_valid
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import Float, Wire
 
 op_wires = [[], [0], ["a"], [0, 1], ["a", "b", "c"], [100, "xasd", 12]]
@@ -83,6 +84,18 @@ class TestControlledGlobalPhase:
         index = -1 if control_value else 0
         expected[index, index] = np.exp(-1j * phi)
         assert np.allclose(op.matrix(), expected)
+
+    @pytest.mark.parametrize("num_controls", (1, 2, 3))
+    @pytest.mark.parametrize("work_wire_type", ("borrowed", "zeroed"))
+    def test_decomposition_resources(self, num_controls, work_wire_type):
+        """The rule declares the symbolic controlled PhaseShift it produces."""
+        op = qp.ctrl(
+            GlobalPhase(0.123),
+            control=range(num_controls),
+            work_wires=[3, 4],
+            work_wire_type=work_wire_type,
+        )
+        _test_decomposition_rule(op, _controlled_g_phase_decomp)
 
 
 def test_is_verified_hermitian():

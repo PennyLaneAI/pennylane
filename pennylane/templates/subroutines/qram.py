@@ -21,7 +21,7 @@ from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import CNOT, CSWAP, RY, SWAP, Hadamard, PauliX, PauliZ, adjoint, cond, ctrl
+from pennylane.ops import CSWAP, RY, SWAP, Hadamard, PauliX, PauliZ, adjoint, cond, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.qubit import BasisState
 from pennylane.typing import Bool, TensorLike, Wire
@@ -267,10 +267,15 @@ def _bucket_brigade_qram_resources(num_controls, num_target_wires):
     """
     n_k = num_controls
     _ctrl_swap = _ctrl_abstract(SWAP, Wire[1], num_zero_control_values=1)
+    loading_swaps = (1 << n_k) - 1 + n_k
+    routing_swaps = ((1 << n_k) - 1) * num_target_wires + (1 << n_k) - 1 - n_k
     return {
-        SWAP: ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2,
-        CSWAP: ((1 << n_k) - 1) * num_target_wires * 2 + (((1 << n_k) - 1 - n_k) * 2),
-        _ctrl_swap: ((1 << n_k) - 1) * num_target_wires * 2 + (((1 << n_k) - 1 - n_k) * 2),
+        SWAP: loading_swaps + num_target_wires * 2,
+        adjoint(SWAP(Wire[2])): loading_swaps,
+        CSWAP: routing_swaps,
+        adjoint(CSWAP(Wire[3])): routing_swaps,
+        _ctrl_swap: routing_swaps,
+        adjoint(_ctrl_swap): routing_swaps,
         Hadamard: num_target_wires * 2,
         PauliZ: (1 << n_k) * num_target_wires,
     }
@@ -346,11 +351,11 @@ def _bucket_brigade_qram_decomposition(
         SWAP(wires=[tw, bus_wire[0]])
         _route_bus_down_first_k_levels(wire_manager, len(control_wires))
         _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j)
-        adjoint(_route_bus_down_first_k_levels, lazy=False)(wire_manager, len(control_wires))
+        adjoint(_route_bus_down_first_k_levels)(wire_manager, len(control_wires))
         SWAP(wires=[tw, bus_wire[0]])
         Hadamard(wires=[tw])
     # 3) address unloading
-    adjoint(_mark_routers_via_bus, lazy=False)(wire_manager, n_k)
+    adjoint(_mark_routers_via_bus)(wire_manager, n_k)
 
 
 add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
@@ -571,22 +576,20 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
 
     resources[PauliX] += (num_select_wires <= 0) * num_blocks * 2
 
-    resources[_ctrl_abstract(SWAP, Wire[1], num_zero_control_values=0)] += (
-        (num_tree_control_wires + (1 << num_tree_control_wires) - 1) * 2 + 2 * num_target_wires
-    ) * num_blocks
+    ctrl_swap = _ctrl_abstract(SWAP, Wire[1])
+    loading_swaps = (num_tree_control_wires + (1 << num_tree_control_wires) - 1) * num_blocks
+    resources[ctrl_swap] += loading_swaps + 2 * num_target_wires * num_blocks
+    resources[adjoint(ctrl_swap)] += loading_swaps
 
     ccswap_count = (
-        (
-            ((1 << num_tree_control_wires) - 1 - num_tree_control_wires)
-            + ((1 << num_tree_control_wires) - 1) * num_target_wires
-        )
-        * num_blocks
-        * 2
-    )
+        ((1 << num_tree_control_wires) - 1 - num_tree_control_wires)
+        + ((1 << num_tree_control_wires) - 1) * num_target_wires
+    ) * num_blocks
 
-    resources[_ctrl_abstract(SWAP, Wire[2])] += ccswap_count
-
-    resources[_ctrl_abstract(SWAP, Wire[2], num_zero_control_values=1)] += ccswap_count
+    for num_zero_controls in (0, 1):
+        ccswap = _ctrl_abstract(SWAP, Wire[2], num_zero_control_values=num_zero_controls)
+        resources[ccswap] += ccswap_count
+        resources[adjoint(ccswap)] += ccswap_count
 
     resources[_ctrl_abstract(Hadamard, Wire[1])] += num_target_wires * num_blocks * 2
 
@@ -594,14 +597,12 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
         zero_control_values = [
             (block_index >> (num_select_wires - 1 - i)) & 1 for i in range(num_select_wires)
         ].count(0)
-        if zero_control_values == 0:
-            resources[CNOT] += (num_select_wires > 0) * 2
-        else:
+        if num_select_wires > 0:
             resources[
                 _ctrl_abstract(
                     PauliX, Wire[num_select_wires], num_zero_control_values=zero_control_values
                 )
-            ] += (num_select_wires > 0) * 2
+            ] += 2
 
         resources[_ctrl_abstract(PauliZ, Wire[1])] += (
             1 << num_tree_control_wires
@@ -721,9 +722,7 @@ def _block_tree_query_ops(
         )
 
         # Route back up
-        adjoint(_tree_route_bus_down_first_k_levels_ctrl, lazy=False)(
-            n_tree, tree_wire_manager, signal
-        )
+        adjoint(_tree_route_bus_down_first_k_levels_ctrl)(n_tree, tree_wire_manager, signal)
 
         # Swap back bus -> target
         ctrl(SWAP(wires=[tw, tree_wire_manager.bus_wire[0]]), control=[signal], control_values=[1])
@@ -732,7 +731,7 @@ def _block_tree_query_ops(
         ctrl(Hadamard(wires=[tw]), control=[signal], control_values=[1])
 
     # 3) address unloading for the tree (controlled on signal)
-    adjoint(_tree_mark_routers_via_bus_ctrl, lazy=False)(tree_wire_manager, n_tree, k, signal)
+    adjoint(_tree_mark_routers_via_bus_ctrl)(tree_wire_manager, n_tree, k, signal)
 
 
 @register_resources(_hybrid_qram_resources, exact=False)

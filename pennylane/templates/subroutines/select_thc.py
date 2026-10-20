@@ -466,10 +466,7 @@ def _select_half(
         )
 
     def _unbasis():
-        # ``lazy=False``: the QROM in ``_basis`` uncomputes through measurement-based elbow
-        # uncompute, which cannot be reversed, so the adjoint has to be pushed onto the
-        # individual ops instead of wrapping the body in a region that is reversed later.
-        adjoint(_basis, lazy=False)()
+        adjoint(_basis)()
 
     return change_op_basis(_basis, _reflect, _unbasis)
 
@@ -708,6 +705,8 @@ def _select_thc_resources(
     # (binds inner gates into the jaxpr and returns None), so pause while we
     # build the resource keys. compute_resources already stops queuing but does
     # not pause capture. See #10162.
+    # The helpers use symbolic controls and adjoints so pausing capture
+    # does not change the operators used as resource keys.
     with capture.pause():
         first_half = _select_half(
             chi,

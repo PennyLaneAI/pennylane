@@ -65,7 +65,7 @@ def _select_ops(
     )
 
 
-def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires):
+def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires, reverse=False):
     num_targets = len(target_wires)
 
     if capture.enabled() or compiler.active():
@@ -80,7 +80,10 @@ def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires):
             swap_wires[i * num_targets : (i + 1) * num_targets] for i in range(num_columns)
         ]
 
-    @for_loop(len(swap_control_wires) - 1, -1, -1)
+    # Each layer consists of commuting, self-inverse controlled swaps.
+    bounds = (0, len(swap_control_wires), 1) if reverse else (len(swap_control_wires) - 1, -1, -1)
+
+    @for_loop(*bounds)
     def outer(i):
 
         @for_loop(2**i - 1, -1, -1)
@@ -412,7 +415,7 @@ def _select_swap(
 
         cswaps = partial(_swap_ops, swap_control_wires, swap_wires, target_wires, cswap_work_wires)
 
-        qp_ops.adjoint(cswaps, lazy=False)()
+        cswaps(reverse=True)
         _select_ops(
             bitstrings, depth, target_wires, swap_wires, select_control_wires, select_work_wires
         )

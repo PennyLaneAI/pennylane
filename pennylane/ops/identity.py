@@ -399,15 +399,12 @@ def _controlled_g_phase_resource(
     # NOTE: Take average case scenario for number of X required for zero control values
     resources[qp.X] = num_control_wires
 
-    if num_control_wires == 2:
-        resources[qp.ControlledPhaseShift] = 1
-        return resources
-
     resources[
         qp.ctrl(
             abstractify(qp.PhaseShift),
             control=Wire[num_control_wires - 1],
             work_wires=Wire[num_work_wires],
+            work_wire_type=work_wire_type,
         )
     ] = 1
 

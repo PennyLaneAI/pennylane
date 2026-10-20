@@ -728,7 +728,7 @@ def _diagonalize_probs(num_fragments, n):
     return apply_anything_prob, cnot_prob
 
 
-def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
+def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments, inverse=False):
     r"""Diagonalize position fragment ``fragment_idx`` by applying Clifford operations on the
     electronic register, following the ``key = (0, fragment_idx)`` convention (see
     :func:`_diagonalization_matrix`).
@@ -748,6 +748,7 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
         num_fragments (int): total number of position fragments. The conditionals carry branch
             probability hints that assume ``fragment_idx`` to be uniformly distributed over
             ``range(num_fragments)``.
+        inverse (bool): reverse the self-inverse Clifford gates to undo the diagonalization.
     """
     if num_fragments == 1:
         # Only have fragment_idx 0, which does not need a circuit.
@@ -775,9 +776,12 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
     @cond(any_diff)
     @hint({"branch-prob": apply_anything_prob})
     def _apply():
-        Hadamard(wires=[control_wire])
+        if not inverse:
+            Hadamard(wires=[control_wire])
 
-        @for_loop(n - 1, -1, -1)
+        bounds = (0, n, 1) if inverse else (n - 1, -1, -1)
+
+        @for_loop(*bounds)
         def _cnots(w):
             @cond((diff[w] > 0) & (w != control_pos))
             @hint({"branch-prob": cnot_prob})
@@ -787,6 +791,9 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
             _maybe_cnot()
 
         _cnots()  # pylint: disable=no-value-for-parameter
+
+        if inverse:
+            Hadamard(wires=[control_wire])
 
     _apply()
 
@@ -1107,8 +1114,11 @@ def _trotter_step_second_order(
         quadratic_coeffs = all_quadratic[i]
         bilinear_coeffs = all_bilinear[i]
 
-        adjoint(_diagonalize_vibronic_circuit, lazy=False)(
-            fragment_idx=i, wires=registers["electronic"], num_fragments=num_position_fragments
+        _diagonalize_vibronic_circuit(
+            fragment_idx=i,
+            wires=registers["electronic"],
+            num_fragments=num_position_fragments,
+            inverse=True,
         )
 
         def constant_term(prev_bitstrings):
