@@ -573,13 +573,13 @@ class DecompCollection:
 
     def append(self, rule: DecompositionRule):
         """Add a decomposition rule to the collection."""
-        if rule.name in self._decomps and rule is not self._decomps[rule.name]:
+        if rule.name in self._decomps and rule != self._decomps[rule.name]:
             raise ValueError(f"A decomposition of the name: {rule.name} already exists!")
         self._decomps[rule.name] = rule
 
     def extend(self, rules: DecompCollection | Sequence[DecompositionRule]):
         """Add a sequence of decomposition rules to the collection."""
-        if dup := next((r.name for r in rules if r.name in self and r is not self[r.name]), None):
+        if dup := next((r.name for r in rules if r.name in self and r != self[r.name]), None):
             raise ValueError(f"A decomposition of the name: {dup} already exists!")
         decomps = rules if isinstance(rules, DecompCollection) else DecompCollection(rules)
         self._decomps |= decomps._decomps  # pylint: disable=protected-access
@@ -606,47 +606,67 @@ _fixed_decomps_private = {}
 _fixed_decomps_var = ContextVar("_fixed_decomps", default=_fixed_decomps_private)
 
 
+class _CanonicalSignatureRule(DecompositionRule):
+    """Wraps a decomposition rule in an interface that accepts positionally passed arguments.
+
+    The wrapper compares equal to the rule that it wraps.
+
+    """
+
+    def __init__(self, op_type: type[Operator2], rule: DecompositionRule):
+        # pylint: disable=protected-access
+
+        def _get_arguments(*args, **kwargs):
+            bound_args = op_type._sig.bind(*args, **kwargs)
+            bound_args.apply_defaults()
+            return bound_args.arguments
+
+        def _get_work_wire_spec():
+
+            if isinstance(rule._work_wire_spec, dict):
+                return rule._work_wire_spec
+
+            def _wrapper(*args, **kwargs):
+                return rule._work_wire_spec(**_get_arguments(*args, **kwargs))
+
+            return _wrapper
+
+        def _resource_fn(*args, **kwargs):
+            return rule._compute_resources(**_get_arguments(*args, **kwargs))
+
+        def _condition_fn(*args, **kwargs):
+            return rule.is_applicable(**_get_arguments(*args, **kwargs))
+
+        def _impl(*args, **kwargs):
+            rule._impl(**_get_arguments(*args, **kwargs))
+
+        super().__init__(
+            _impl,
+            resources=_resource_fn,
+            work_wires=_get_work_wire_spec(),
+            exact_resources=rule.exact_resources,
+            name=rule.name,
+        )
+        self.add_condition(_condition_fn)
+        self._source = rule._source
+        self._rule = rule
+
+    def __eq__(self, other):
+        if isinstance(other, _CanonicalSignatureRule):
+            other = other._rule
+        return self._rule == other
+
+    def __hash__(self):
+        return hash(self._rule)
+
+
 def _canonicalize_signature(op_type, rule):
     """Wraps a decomposition rule in an interface that accepts positionally passed arguments."""
-
-    # pylint: disable=protected-access
 
     if not (isinstance(op_type, type) and issubclass(op_type, Operator2)):
         return rule
 
-    def _get_arguments(*args, **kwargs):
-        bound_args = op_type._sig.bind(*args, **kwargs)
-        bound_args.apply_defaults()
-        return bound_args.arguments
-
-    def _get_work_wire_spec():
-
-        if isinstance(rule._work_wire_spec, dict):
-            return rule._work_wire_spec
-
-        def _wrapper(*args, **kwargs):
-            return rule._work_wire_spec(**_get_arguments(*args, **kwargs))
-
-        return _wrapper
-
-    def _resource_fn(*args, **kwargs):
-        return rule._compute_resources(**_get_arguments(*args, **kwargs))
-
-    def _condition_fn(*args, **kwargs):
-        return rule.is_applicable(**_get_arguments(*args, **kwargs))
-
-    @register_condition(_condition_fn)
-    @register_resources(
-        _resource_fn,
-        work_wires=_get_work_wire_spec(),
-        exact=rule.exact_resources,
-        name=rule.name,
-    )
-    def _impl(*args, **kwargs):
-        rule._impl(**_get_arguments(*args, **kwargs))
-
-    _impl._source = rule._source
-    return _impl
+    return _CanonicalSignatureRule(op_type, rule)
 
 
 def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:

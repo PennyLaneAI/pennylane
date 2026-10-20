@@ -562,12 +562,33 @@ class TestDecompDictionary:
             qp.CNOT(wires=[wires[0], wires[1]])
             qp.RZ(theta, wires=wires[0])
 
-        qp.add_decomps(AnotherOp, custom_decomp)
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(AnotherOp, custom_decomp)
 
-        # this shouldn't error out
-        qp.add_decomps(AnotherOp, custom_decomp)
+            # this shouldn't error out
+            qp.add_decomps(AnotherOp, custom_decomp)
 
-        assert list(qp.list_decomps(AnotherOp)) == [custom_decomp]
+            assert list(qp.list_decomps(AnotherOp)) == [custom_decomp]
+
+    def test_add_decomp_exact_alias_operator2(self):
+        """Tests that adding the same decomp rule twice to an Operator2 does not error out,
+        and that the registered rule compares equal to the original rule."""
+
+        @register_resources({qp.RX: 2, qp.CZ: 2})
+        def custom_decomp(phi, wires, **_):
+            qp.RX(phi / 2, wires=wires[1])
+            qp.CZ(wires=wires)
+            qp.RX(-phi / 2, wires=wires[1])
+            qp.CZ(wires=wires)
+
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(qp.CRX, custom_decomp)
+            qp.add_decomps(qp.CRX, custom_decomp)
+
+            decomps = qp.list_decomps(qp.CRX)
+            assert decomps["custom_decomp"] == custom_decomp
+            assert custom_decomp in decomps
+            assert len([rule for rule in decomps if rule.name == "custom_decomp"]) == 1
 
     def test_local_decomp_context(self):
         """Tests the local context manager for decompositions."""
