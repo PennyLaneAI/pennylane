@@ -163,6 +163,8 @@ def resources_from_analysis_pass(
                     output_json=True, output_fname=fname
                 )
 
+        compile_options = copy.deepcopy(qjit.compile_options)
+
         # The Max Legal Level is the device level
         if max_legal_level in level:
             fname = f"{fname_prefix}device.json"
@@ -171,11 +173,14 @@ def resources_from_analysis_pass(
             new_post_device_pipeline += transform(pass_name="resource-analysis")(
                 output_json=True, output_fname=fname
             )
+        else:
+            # If device level not requested, skip device preprocessing
+            compile_options.skip_preprocess = True
 
         new_qnode = original_qnode.update_pipelines(
             new_compile_pipeline, post_device_pipeline=new_post_device_pipeline
         )
-        compile_options = copy.deepcopy(qjit.compile_options)
+
         compile_options.target = "mlir"
         compile_options.lower_to_llvm = False
         if compile_options.pipelines is None:
