@@ -70,16 +70,6 @@ if TYPE_CHECKING:
 ArgSpecType: TypeAlias = type[Number] | AbstractArray | AbstractWires
 
 
-def _is_operator_tracer(obj) -> bool:
-    """Whether ``obj`` is an operator captured into plxpr (a tracer with an ``AbstractOperator`` aval).
-
-    Under program capture, legacy operators such as ``SProd`` (e.g. from ``3 * qp.X(0)``) are
-    tracers rather than ``Operator`` instances. Tracers are also ``TensorLike``, so ``__add__`` /
-    ``__sub__`` must treat them as operators instead of scalars.
-    """
-    return isinstance(getattr(obj, "aval", None), AbstractOperator)
-
-
 class GradMethod(StrEnum):
     """Supported gradient methods."""
 
@@ -1369,7 +1359,7 @@ class Operator2(metaclass=OperatorMeta):
 
     def __add__(self, other: Operator | TensorLike) -> Operator:
         """The addition operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, Operator) or _is_operator_tracer(other):
+        if isinstance(other, Operator):
             return qp.sum(self, other, lazy=False)
         if isinstance(other, TensorLike):
             if not qp.math.is_abstract(other) and qp.math.allequal(other, 0):
@@ -1403,7 +1393,7 @@ class Operator2(metaclass=OperatorMeta):
 
     def __sub__(self, other: Operator | TensorLike) -> Operator:
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, Operator) or _is_operator_tracer(other):
+        if isinstance(other, Operator):
             return self + qp.s_prod(-1, other, lazy=False)
         if isinstance(other, TensorLike):
             return self + (qp.math.multiply(-1, other))

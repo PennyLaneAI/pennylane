@@ -58,6 +58,30 @@ class TestTensorLike:
         tensor = jax.numpy.array(1)
         assert isinstance(tensor, TensorLike)
 
+    @pytest.mark.jax
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_capture")
+    def test_abstract_operator_tracer_is_not_tensor_like(self):
+        """Captured operators are tracers, but not tensor-like numeric data."""
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        import pennylane as qp
+        from pennylane.core.operator.base import AbstractOperator
+
+        tracer = None
+
+        def grab():
+            nonlocal tracer
+            tracer = 3 * qp.X(0)
+            return tracer
+
+        jax.make_jaxpr(grab)()
+        assert isinstance(tracer.aval, AbstractOperator)
+        # JAX may also report the tracer as Array; TensorLike must still reject it.
+        assert isinstance(tracer, jax.Array)
+        assert not isinstance(tracer, TensorLike)
+
     @pytest.mark.torch
     def test_isinstance_torch_tensor_is_tensor_like(self):
         """Tests that a torch Tensor is a Tensor"""
