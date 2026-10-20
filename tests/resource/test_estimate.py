@@ -69,7 +69,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
     def circuit(self, qnode):
         """Fixture for the qjit'd QNode with a user transform."""
         return qp.qjit(qp.transforms.cancel_inverses(qnode))
-        
+
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_decomposition_clifford_t(self):
         """Test the resources of a circuit with many Clifford and T-based operators and several
