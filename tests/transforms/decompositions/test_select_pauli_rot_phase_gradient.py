@@ -71,9 +71,10 @@ def test_decomp_has_a_name():
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("rot_axis", ["X", "Y", "Z"])
 @pytest.mark.parametrize("prec", [2, 3, 5])
 @pytest.mark.parametrize("num_controls", [1, 2])
-def test_valid_decomp(prec, num_controls):
+def test_valid_decomp(prec, num_controls, rot_axis):
     """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as expected
     as a fixed decomposition and yields the correct resources"""
 
@@ -102,7 +103,9 @@ def test_valid_decomp(prec, num_controls):
 
     control_wires = qp.wires.Wires([wire_idx + i for i in range(num_controls)])
     wire_idx += len(control_wires)
-    op = qp.SelectPauliRot(angles, control_wires=control_wires, target_wire=wire_idx)
+    op = qp.SelectPauliRot(
+        angles, control_wires=control_wires, target_wire=wire_idx, rot_axis=rot_axis
+    )
     _test_decomposition_rule(op, custom_decomp)
 
 
