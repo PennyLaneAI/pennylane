@@ -2008,7 +2008,7 @@
 
 * Added before-and-after circuit drawings to the :func:`~.transforms.clifford_t_decomposition`
   example to show an exact conversion to the Clifford+T basis.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10359)](https://github.com/PennyLaneAI/pennylane/pull/10359)
 
 * The dependency versions in the developer installation guide now match `pyproject.toml`, and a rendering issue in the list of optional dependencies was fixed.
   [(#10232)](https://github.com/PennyLaneAI/pennylane/pull/10232)
