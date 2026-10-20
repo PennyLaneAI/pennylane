@@ -121,8 +121,8 @@ def make_crz_to_phase_gradient_decomp(
     precisions = _precisions_to_support(precision_stats, precision)
 
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
-        # Cost from the wires in the outer scope, counting each supported precision once. The
-        # angle-load fanout emits one gate per *set* bit of the (concrete) angle, so this is an
+        # Cost from the wires in the outer scope, counting each precision in ``precisions`` once.
+        # The angle-load fanout emits one gate per *set* bit of the (concrete) angle, so this is an
         # upper bound (exact=False below).
         resources = {}
         for p in precisions:

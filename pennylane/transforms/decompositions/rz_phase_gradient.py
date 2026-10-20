@@ -81,13 +81,13 @@ def _dispatch_precision(binary_int, precision_stats, branch_fn):
     # Position of the last set bit across all angles, i.e. the required precision
     required = qp.math.max(binary_int * qp.math.arange(1, max_precision + 1))
 
-    total = sum(precision_stats.values())
     precisions = sorted(precision_stats)
-    preds = [required <= p for p in precisions]
+    total = sum(precision_stats.values())
     branches = [
         qp.hint(partial(branch_fn, p), {"branch-prob": precision_stats[p] / total})
         for p in precisions
     ]
+    preds = [required <= p for p in precisions]
     if precisions[-1] == max_precision:
         preds.pop()
         otherwise = branches.pop()
@@ -211,6 +211,7 @@ def make_rz_to_phase_gradient_decomp(
         return resources
 
     # MultiX only emits a gate per set bit, so the gate count depends on the concrete angle.
+    # Thus we need to set ``exact=False``
     @qp.register_resources(_resource_fn, exact=False)
     def _rz_phase_gradient_decomp(phi, wires):
         qp.GlobalPhase(phi / 2)
