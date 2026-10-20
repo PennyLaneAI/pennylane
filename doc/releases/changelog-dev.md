@@ -1353,7 +1353,7 @@
 
 * ``qp.tape.plxpr_to_tape`` and ``qp.tape.plxpr_conversion.plxpr_to_tape`` have been removed.
   Use :func:`~.testing.plxpr_to_tape` instead.
-  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
+  [(#10360)](https://github.com/PennyLaneAI/pennylane/pull/10360)
 
 * :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's
   ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
