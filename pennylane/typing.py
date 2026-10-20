@@ -72,7 +72,9 @@ class TensorLikeMeta(type):
         return _is_jax(other, subclass=True) or _is_torch(other, subclass=True)
 
 
+# Type checkers need a union: they do not use metaclass instance checks for assignability.
 if TYPE_CHECKING:
+    # Keep the optional torch import out of runtime module initialization.
     from torch import Tensor as TorchTensor
 
     TensorLike = Union[
@@ -91,6 +93,7 @@ if TYPE_CHECKING:
         TorchTensor,
     ]
 else:
+    # Runtime checks must inspect each tracer, including on Python 3.12.
 
     class TensorLike(metaclass=TensorLikeMeta):
         """A type for all tensor-like data.
@@ -122,7 +125,9 @@ def _is_jax(other, subclass=False):
     """Check if other is an instance or a subclass of a jax tensor."""
     JaxTensor = ndarray | Array | Tracer
     if subclass:
+        # A tracer class alone cannot tell us whether its instances represent arrays.
         return issubclass(other, JaxTensor)
+    # Check tracers first: even operator-valued tracers can satisfy isinstance(other, Array).
     if isinstance(other, Tracer):
         # Only array-valued tracers (ShapedArray / DShapedArray) are tensor-like;
         # operator, measurement and qubit avals are not.
