@@ -121,43 +121,11 @@ def phase_gradient_precision_stats(angles, precision, op_type):
 
     >>> from pennylane.transforms.decompositions import phase_gradient_precision_stats
     >>> angles = np.array([1 / 2, 1 / 4, 3 / 8, 0.1]) * 2 * np.pi
-    >>> precision_stats = phase_gradient_precision_stats(angles, precision=4, op_type=qp.RZ)
-    >>> precision_stats
+    >>> phase_gradient_precision_stats(angles, precision=4, op_type=qp.RZ)
     {1: 1, 2: 1, 3: 2}
 
-    We use these statistics to create a decomposition rule for :class:`~.RZ`:
-
-    .. code-block:: python
-
-        from pennylane.transforms.decompositions import make_rz_to_phase_gradient_decomp
-
-        qp.decomposition.enable_graph()
-
-        angle_wires = [f"aux_{i}" for i in range(4)]
-        phase_grad_wires = [f"qft_{i}" for i in range(4)]
-        work_wires = [f"work_{i}" for i in range(3)]
-        rule = make_rz_to_phase_gradient_decomp(
-            angle_wires, phase_grad_wires, work_wires, precision_stats=precision_stats
-        )
-
-        @qp.transforms._tape_decompose(
-            gate_set={"CNOT", "SemiAdder", "GlobalPhase", "PauliX"}, fixed_decomps={qp.RZ: rule}
-        )
-        @qp.qnode(qp.device("null.qubit"))
-        def circuit(phi):
-            qp.RZ(phi, 0)
-            return qp.state()
-
-    The rotation by the first angle only uses a single angle wire and phase gradient wire:
-
-    >>> wire_order = [0] + angle_wires + phase_grad_wires + work_wires
-    >>> print(qp.draw(circuit, wire_order=wire_order)(angles[0]))
-         0: ─╭GlobalPhase(1.57)─╭●────────────╭●─┤ ╭State
-     aux_0: ─├GlobalPhase(1.57)─╰X─╭SemiAdder─╰X─┤ ├State
-     qft_0: ─├GlobalPhase(1.57)────├SemiAdder────┤ ├State
-    work_0: ─├GlobalPhase(1.57)────├SemiAdder────┤ ├State
-    work_1: ─├GlobalPhase(1.57)────├SemiAdder────┤ ├State
-    work_2: ─╰GlobalPhase(1.57)────╰SemiAdder────┤ ╰State
+    See :func:`~.make_rz_to_phase_gradient_decomp` for an example that uses these statistics
+    in a decomposition rule.
 
     For :class:`~.SelectPauliRot`, we pass the angles of each operator. The operator type may
     also be specified by its name:
@@ -169,6 +137,15 @@ def phase_gradient_precision_stats(angles, precision, op_type):
     >>> angles = [op.data[0] for op in ops]
     >>> phase_gradient_precision_stats(angles, precision=4, op_type="SelectPauliRot")
     {1: 1, 2: 1}
+
+    .. note::
+
+        A :class:`~.SelectPauliRot` without control wires is decomposed into a plain
+        :class:`~.RX`, :class:`~.RY` or :class:`~.RZ` rotation by
+        :func:`~.make_selectpaulirot_to_phase_gradient_decomp`. If the resulting :class:`~.RZ`
+        rotations are decomposed by a rule from :func:`~.make_rz_to_phase_gradient_decomp`,
+        include their angles in the statistics for ``op_type=qp.RZ``, which uses the unit
+        :math:`2\pi` instead of :math:`4\pi`.
     """
     unit = _angle_unit(op_type)
     required = (
@@ -183,17 +160,19 @@ def _precision_dispatcher(precision_stats, precision, op_type):
 
     Args:
         precision_stats (dict[int, int] | None): number of rotations for each required precision.
-            ``None`` or an empty dictionary always applies the full ``precision``.
+            Zero counts are ignored. Without non-zero counts, the full ``precision`` is always
+            applied.
         precision (int): full precision, i.e., the number of angle wires.
         op_type (type | str): type of the decomposed operators, determining the angle unit.
 
     Returns:
-        tuple[set[int], Callable]: The non-zero precisions that may be applied, including the
-        full ``precision``, and a function ``dispatch(angles, apply_fn)``, where
-        ``apply_fn(p)`` applies the full-precision circuit to the leading ``p`` angle and phase
-        gradient wires. ``angles`` may be traced if program capture is enabled.
+        tuple[set[int], Callable]: The precisions that may be applied, including the full
+        ``precision``, and a function ``dispatch(angles, apply_fn)``, where ``apply_fn(p)``
+        applies the full-precision circuit to the leading ``p`` angle and phase gradient wires.
+        No conditional is used if the full ``precision`` is the only precision. ``angles`` may
+        be traced if program capture is enabled.
     """
-    precision_stats = precision_stats or {precision: 1}
+    precision_stats = {p: c for p, c in (precision_stats or {}).items() if c} or {precision: 1}
     if any(not 0 <= p <= precision for p in precision_stats):
         raise ValueError(
             f"precision_stats keys must be between 0 and {precision}, but got "
@@ -201,6 +180,7 @@ def _precision_dispatcher(precision_stats, precision, op_type):
         )
     total = sum(precision_stats.values())
     probs = {p: precision_stats[p] / total for p in sorted(precision_stats)}
+    precisions = {precision, *probs}
     unit = _angle_unit(op_type)
 
     def dispatch(angles, apply_fn):
@@ -208,7 +188,7 @@ def _precision_dispatcher(precision_stats, precision, op_type):
             if p:
                 apply_fn(p)
 
-        if probs.keys() == {precision}:
+        if precisions == {precision}:
             _branch(precision)
             return
 
@@ -225,7 +205,7 @@ def _precision_dispatcher(precision_stats, precision, op_type):
         (pred, true_fn), *elifs = branches
         qp.cond(pred, true_fn, otherwise, elifs=elifs)()
 
-    return {precision, *probs} - {0}, dispatch
+    return precisions, dispatch
 
 
 def make_rz_to_phase_gradient_decomp(
@@ -252,9 +232,10 @@ def make_rz_to_phase_gradient_decomp(
             bits in ``precision_stats`` that suffices for a given angle, using :func:`~.cond`
             branches that are hinted with the corresponding probabilities via :func:`~.hint`.
             If no number of bits in ``precision_stats`` suffices, the full precision is used.
-            Keys must lie between ``0`` and ``len(angle_wires)``. An empty dictionary is treated
-            like ``None``. Use :func:`~.phase_gradient_precision_stats` to compute the statistics
-            from the angles. See the note below for caveats. Defaults to ``None``.
+            Keys must lie between ``0`` and ``len(angle_wires)``. Zero counts are ignored, and
+            a dictionary without non-zero counts is treated like ``None``. Use
+            :func:`~.phase_gradient_precision_stats` to compute the statistics from the angles.
+            See the example and the note below. Defaults to ``None``.
 
     Returns:
         qp.decomposition.DecompositionRule: decomposition rule to be used within :func:`~.pennylane.decompose`.
@@ -325,6 +306,41 @@ def make_rz_to_phase_gradient_decomp(
     work_0: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤ ├State
     work_1: ─╰GlobalPhase(2.75)──────────╰SemiAdder──────────┤ ╰State
 
+    If the rotation angles are known in advance, we can pass their ``precision_stats`` to
+    truncate the circuit for angles that require fewer bits:
+
+    .. code-block:: python
+
+        from pennylane.transforms.decompositions import phase_gradient_precision_stats
+
+        angles = np.array([1/2, 1/4 + 1/8, 1/2 + 1/4 + 1/8]) * 2 * np.pi # (100), (011), (111)
+        precision_stats = phase_gradient_precision_stats(angles, prec, qp.RZ)
+
+        truncating_decomp = make_rz_to_phase_gradient_decomp(
+            angle_wires, phase_grad_wires, work_wires, precision_stats=precision_stats
+        )
+
+        @qp.transforms._tape_decompose(
+            gate_set=gate_set, fixed_decomps={qp.RZ: truncating_decomp}
+        )
+        @qp.qnode(qp.device("null.qubit"))
+        def truncated_circuit(phi):
+            qp.RZ(phi, 0)
+            return qp.state()
+
+    One rotation requires a single bit and two rotations require all three bits. The branches
+    of the rule are hinted with these frequencies, and the rotation by the first angle only uses
+    a single angle wire and phase gradient wire:
+
+    >>> precision_stats
+    {1: 1, 3: 2}
+    >>> wire_order = [0] + angle_wires + phase_grad_wires + work_wires
+    >>> print(qp.draw(truncated_circuit, wire_order=wire_order)(angles[0]))
+         0: ─╭GlobalPhase(1.57)─╭●────────────╭●─┤ ╭State
+     aux_0: ─├GlobalPhase(1.57)─╰X─╭SemiAdder─╰X─┤ ├State
+     qft_0: ─├GlobalPhase(1.57)────├SemiAdder────┤ ├State
+    work_0: ─├GlobalPhase(1.57)────├SemiAdder────┤ ├State
+    work_1: ─╰GlobalPhase(1.57)────╰SemiAdder────┤ ╰State
     """
     angle_wires, phase_grad_wires, work_wires = validate_phase_gradient_wires(
         angle_wires, phase_grad_wires, work_wires
@@ -333,9 +349,9 @@ def make_rz_to_phase_gradient_decomp(
 
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
         # rz decomposition costs, using information about angle_wires etc from the outer scope.
-        # Each precision that may be applied is counted once.
+        # Each non-zero precision that may be applied is counted once.
         resources = {qp.GlobalPhase: 1}
-        for p in precisions:
+        for p in precisions - {0}:
             target_op = qp.SemiAdder(Wire[p], Wire[p], Wire[len(work_wires)])
             fanout = qp.ctrl(qp.MultiX(Bool[p], Wire[p]), control=Wire[1])
             resources[ChangeOpBasis2(fanout, target_op, fanout)] = 1

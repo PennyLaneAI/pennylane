@@ -322,6 +322,18 @@ def test_rot_axis_zero_controls(rot_axis, expected_op):
     assert isinstance(q.queue[0], expected_op)
 
 
+@pytest.mark.parametrize(
+    "precision_stats, exact",
+    [(None, True), ({2: 0, 4: 3}, True), ({0: 1, 4: 1}, False), ({2: 1}, False)],
+)
+def test_precision_stats_exact_resources(precision_stats, exact):
+    """Test that the resources of the rule are only marked as exact if no conditional is used."""
+    rule = make_selectpaulirot_to_phase_gradient_decomp(
+        [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10], precision_stats=precision_stats
+    )
+    assert rule.exact_resources is exact
+
+
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize(
     "bits, precision_stats, width, rot_axis",

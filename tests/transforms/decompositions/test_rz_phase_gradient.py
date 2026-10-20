@@ -16,6 +16,8 @@
 
 # pylint: disable=no-value-for-parameter,disable=too-many-arguments
 
+from collections import Counter
+
 import hint_helpers
 import numpy as np
 import phase_gradient_helpers
@@ -237,6 +239,7 @@ PRECISION_STATS_CASES = [
     ([1, 0, 1, 0], {1: 1, 2: 1}, 4),  # unhinted fallback to full precision
     ([0, 0, 0, 0], {0: 1, 3: 1}, 0),  # no rotation required
     ([1, 0, 1, 0], {}, 4),  # treated like None
+    ([1, 0, 1, 0], {2: 0, 4: 0}, 4),  # zero counts are ignored, so treated like None
 ]
 
 
@@ -327,6 +330,7 @@ def test_precision_stats_decomp(bits, precision_stats, width, seed):
         ({2: 1, 4: 3}, [(0.25, 0.75)]),
         ({0: 2, 4: 2}, [(0.5, 0.5)]),
         ({3: 7}, [(1.0, 0.0)]),
+        ({1: 0, 3: 2, 4: 0}, [(1.0, 0.0)]),
         ({4: 3}, []),
         (None, []),
     ],
@@ -334,8 +338,8 @@ def test_precision_stats_decomp(bits, precision_stats, width, seed):
 def test_precision_stats_hints(precision_stats, expected):
     """Test that the conditional branches are hinted with the probabilities derived from
     ``precision_stats``, that an unhinted full-precision fallback is only added if the full
-    precision is not part of ``precision_stats``, and that no conditional is used if only the
-    full precision is required."""
+    precision is not part of ``precision_stats``, that no conditional is used if only the full
+    precision is required, and that zero counts are ignored."""
     import jax
 
     rule = make_rz_to_phase_gradient_decomp(
@@ -343,3 +347,32 @@ def test_precision_stats_hints(precision_stats, expected):
     )
     jaxpr = jax.make_jaxpr(lambda phi: rule(phi, wires=[0]))(0.4)
     assert hint_helpers.cond_hints(jaxpr.jaxpr) == [pytest.approx(e) for e in expected]
+
+
+@pytest.mark.catalyst
+def test_precision_stats_hint_weighted_resources():
+    """Test that the resources estimated from the hinted branches for a batch of rotations match
+    the decompositions of the individual rotations if ``precision_stats`` is computed from the
+    angles."""
+    pytest.importorskip("catalyst")
+    bits = [[0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 0, 0], [1, 0, 1, 1]]
+    angles = phase_gradient_helpers.bits_to_angles(bits, 2 * np.pi)
+    rule = make_rz_to_phase_gradient_decomp(
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+        [9, 10, 11],
+        phase_gradient_precision_stats(angles, 4, qp.RZ),
+    )
+
+    @qp.qjit(capture=True)
+    @qp.qnode(qp.device("null.qubit", wires=12))
+    def circuit(angles):
+        qp.for_loop(len(angles))(lambda i: rule(angles[i], wires=[0]))()
+        return qp.expval(qp.Z(0))
+
+    expected = Counter()
+    for phi in angles:
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(phi, wires=[0])
+        expected.update(op.name for op in phase_gradient_helpers.leaf_ops(q.queue))
+    assert qp.specs(circuit, level=0)(angles).resources.counts == expected

@@ -132,6 +132,43 @@ def make_crz_to_phase_gradient_decomp(
      qft_2: ───────────────────╰X─├SemiAdder───────────────────╰X────┤ ├State
     work_0: ──────────────────────├SemiAdder─────────────────────────┤ ├State
     work_1: ──────────────────────╰SemiAdder─────────────────────────┤ ╰State
+
+    If the rotation angles are known in advance, we can pass their ``precision_stats`` to
+    truncate the circuit for angles that require fewer bits:
+
+    .. code-block:: python
+
+        from pennylane.transforms.decompositions import phase_gradient_precision_stats
+
+        angles = np.array([1/4, 1/2 + 1/8]) * 4 * np.pi # (010) and (101)
+        precision_stats = phase_gradient_precision_stats(angles, prec, qp.CRZ)
+
+        truncating_decomp = make_crz_to_phase_gradient_decomp(
+            angle_wires, phase_grad_wires, work_wires, precision_stats=precision_stats
+        )
+
+        @qp.transforms._tape_decompose(
+            gate_set={"CNOT", "SemiAdder", "PauliX"},
+            fixed_decomps={qp.CRZ: truncating_decomp}
+        )
+        @qp.qnode(qp.device("null.qubit"))
+        def truncated_circuit(phi):
+            qp.CRZ(phi, [0, 1])
+            return qp.state()
+
+    The rotation by the first angle only uses two angle wires and phase gradient wires:
+
+    >>> precision_stats
+    {2: 1, 3: 1}
+    >>> print(qp.draw(truncated_circuit, wire_order=wire_order)(angles[0]))
+         0: ─╭●─────────────────────╭●─────────────┤ ╭State
+         1: ─│───X─╭●─╭●──X─────────│───X─╭●─╭●──X─┤ ├State
+     aux_0: ─│─────│──│──╭SemiAdder─│─────│──│─────┤ ├State
+     aux_1: ─╰X────│──│──├SemiAdder─╰X────│──│─────┤ ├State
+     qft_0: ───────╰X─│──├SemiAdder───────╰X─│─────┤ ├State
+     qft_1: ──────────╰X─├SemiAdder──────────╰X────┤ ├State
+    work_0: ─────────────├SemiAdder────────────────┤ ├State
+    work_1: ─────────────╰SemiAdder────────────────┤ ╰State
     """
     angle_wires, phase_grad_wires, work_wires = validate_phase_gradient_wires(
         angle_wires, phase_grad_wires, work_wires
@@ -139,11 +176,11 @@ def make_crz_to_phase_gradient_decomp(
     precisions, dispatch = _precision_dispatcher(precision_stats, len(angle_wires), "CRZ")
 
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
-        # Cost from the wires in the outer scope, counting each precision that may be applied once.
-        # The angle-load fanout emits one gate per *set* bit of the (concrete) angle, so this is an
-        # upper bound (exact=False below).
+        # Cost from the wires in the outer scope, counting each non-zero precision that may be
+        # applied once. The angle-load fanout emits one gate per *set* bit of the (concrete) angle,
+        # so this is an upper bound (exact=False below).
         resources = {}
-        for p in precisions:
+        for p in precisions - {0}:
             target_op = qp.SemiAdder(Wire[p], Wire[p], Wire[len(work_wires)])
             # angle-load and phase-flip fanouts abstractify to the same op (control_values aren't
             # part of the abstract representation), hence the repeated ``fanout`` below.
