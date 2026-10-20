@@ -1175,12 +1175,9 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
         decomps = qp.list_decomps(f"Pow({op.name})")
         for rule in decomps:
             if rule.is_applicable(**pow_op.arguments):
-                with qp.queuing.AnnotatedQueue() as q:
-                    rule(**pow_op.arguments)
-
                 # It's fine to test matrix equivalence here because ISWAP and SISWAP
                 # have very specific power decompositions.
-                tape = qp.tape.QuantumScript.from_queue(q)
+                tape = qp.testing.decomp_rule_to_tape(pow_op, rule)
                 assert qp.math.allclose(qp.matrix(tape, wire_order=[0, 1]), qp.matrix(pow_op))
 
 
@@ -1513,11 +1510,10 @@ class TestPPR:
         adj_op = qp.adjoint(op_cls(1, "XY", wires=[0, 1]))
         rule = qp.list_decomps(f"Adjoint(PPR_{denominator})")["_adjoint_ppr_flip_sign"]
 
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(**adj_op.arguments)
+        tape = qp.testing.decomp_rule_to_tape(adj_op, rule)
 
         expected = [op_cls(-1, "XY", wires=[0, 1])]
-        for actual, exp in zip(q.queue, expected, strict=True):
+        for actual, exp in zip(tape.operations, expected, strict=True):
             qp.assert_equal(actual, exp)
 
     def test_adjoint_decomp_resources(self, op_cls):

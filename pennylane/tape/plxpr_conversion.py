@@ -289,12 +289,3 @@ def _and(self, lhs, rhs):
     if isinstance(lhs, MeasurementValue) or isinstance(rhs, MeasurementValue):
         return lhs & rhs
     return jax.lax.and_p.bind(lhs, rhs)
-
-
-# pylint: disable=import-outside-toplevel
-def __getattr__(key):
-    if key == "plxpr_to_tape":
-        from pennylane.testing.capture import plxpr_to_tape
-
-        return plxpr_to_tape
-    raise AttributeError(f"module {__name__!r} has no attribute {key!r}")

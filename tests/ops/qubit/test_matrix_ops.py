@@ -202,10 +202,7 @@ class TestQubitUnitaryCSR:
         U = csr_matrix(unitary_group.rvs(2))
         op = qp.QubitUnitary(U, wires=[0])
         rule = qp.list_decomps(qp.QubitUnitary)[0]
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
-
-        tape = qp.tape.QuantumScript.from_queue(q)
+        tape = qp.testing.decomp_rule_to_tape(op, rule)
         actual_mat = qp.matrix(tape)
         assert qp.math.allclose(actual_mat, U.todense())
 
@@ -215,10 +212,7 @@ class TestQubitUnitaryCSR:
         U = csr_matrix(unitary_group.rvs(2))
         op = qp.pow(qp.QubitUnitary(U, wires=[0]), 2)
         rule = qp.list_decomps("Pow(QubitUnitary)")[0]
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(**op.arguments)
-
-        tape = qp.tape.QuantumScript.from_queue(q)
+        tape = qp.testing.decomp_rule_to_tape(op, rule)
         actual_mat = qp.matrix(tape)
         assert qp.math.allclose(actual_mat, (U @ U).todense())
 

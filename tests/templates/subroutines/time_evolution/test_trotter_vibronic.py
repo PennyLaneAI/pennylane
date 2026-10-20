@@ -247,7 +247,7 @@ class TestDiagonalization:
 
         num_hadamards = num_cnots = 0
         for fragment_idx in range(num_fragments):
-            ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, fragment_idx).operations
+            ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, fragment_idx).operations
             num_hadamards += sum(isinstance(op, qp.Hadamard) for op in ops)
             num_cnots += sum(isinstance(op, qp.CNOT) for op in ops)
 

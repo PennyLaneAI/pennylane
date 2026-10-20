@@ -1200,11 +1200,18 @@
   - :func:`qp.testing.assert_valid <pennylane.testing.assert_valid>` replaces ``qp.ops.functions.assert_valid``.
   - :func:`qp.testing.assert_valid_decomp_rule <pennylane.testing.assert_valid_decomp_rule>` replaces the private ``_test_decomposition_rule``.
   - A new :func:`qp.testing.assert_decomposable <pennylane.testing.assert_decomposable>` is added.
+  - A new :func:`qp.testing.decomp_rule_to_tape <pennylane.testing.decomp_rule_to_tape>` records the
+    operations produced by a decomposition rule as a tape.
+  - :func:`qp.testing.plxpr_to_tape <pennylane.testing.plxpr_to_tape>` replaces ``qp.tape.plxpr_to_tape``.
+  - New :func:`qp.testing.assert_eqn_matches_op <pennylane.testing.assert_eqn_matches_op>`,
+    :func:`qp.testing.extract_all_primitives <pennylane.testing.extract_all_primitives>`, and
+    :func:`qp.testing.find_eqns <pennylane.testing.find_eqns>` help inspect captured programs.
 
   [(#10293)](https://github.com/PennyLaneAI/pennylane/pull/10293)
   [(#10306)](https://github.com/PennyLaneAI/pennylane/pull/10306)
   [(#10335)](https://github.com/PennyLaneAI/pennylane/pull/10335)
   [(#10342)](https://github.com/PennyLaneAI/pennylane/pull/10342)
+  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -1343,6 +1350,10 @@
   The private ``_test_decomposition_rule`` has been removed; use
   :func:`~.testing.assert_valid_decomp_rule`.
   [(#10342)](https://github.com/PennyLaneAI/pennylane/pull/10342)
+
+* ``qp.tape.plxpr_to_tape`` and ``qp.tape.plxpr_conversion.plxpr_to_tape`` have been removed.
+  Use :func:`~.testing.plxpr_to_tape` instead.
+  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
 
 * :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's
   ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
