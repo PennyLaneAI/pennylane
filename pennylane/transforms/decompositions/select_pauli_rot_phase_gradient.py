@@ -110,8 +110,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(
             maximum over all of its angles, where the bits required by an angle :math:`\phi` are
             computed from ``qp.math.binary_decimals(phi, len(angle_wires), unit=4 * np.pi)``.
             Use :func:`~.phase_gradient_precision_stats` to compute the statistics from the
-            angles. See :func:`~.make_rz_to_phase_gradient_decomp` for details and caveats, in
-            particular regarding program capture, and the note below. Defaults to ``None``.
+            angles. See :func:`~.make_rz_to_phase_gradient_decomp` for details and caveats,
+            as well as the note below. Defaults to ``None``.
 
     Returns:
         func: decomposition rule to be used within :func:`~.pennylane.decompose`.

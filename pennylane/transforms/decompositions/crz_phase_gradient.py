@@ -69,8 +69,8 @@ def make_crz_to_phase_gradient_decomp(
             an angle :math:`\phi` are computed from ``qp.math.binary_decimals(phi,
             len(angle_wires), unit=4 * np.pi)``. Use :func:`~.phase_gradient_precision_stats` to
             compute the statistics from the angles. See
-            :func:`~.make_rz_to_phase_gradient_decomp` for details and caveats, in particular
-            regarding program capture. Defaults to ``None``.
+            :func:`~.make_rz_to_phase_gradient_decomp` for details and caveats. Defaults to ``None``.
+
 
     Returns:
         func: decomposition rule to be used within :func:`~.pennylane.decompose`.

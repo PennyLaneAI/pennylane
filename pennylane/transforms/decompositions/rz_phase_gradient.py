@@ -214,10 +214,13 @@ def make_rz_to_phase_gradient_decomp(
     r"""
     Create a custom decomposition rule for :class:`~.RZ` gates.
 
-    This is a temporary workaround before moving to `capture` as default frontend, which unlocks dynamic wire allocation.
-    Here, we explicitly provide the necessary wires for the `phase gradient decomposition of RZ <https://pennylane.ai/compilation/phase-gradient/b-rotations>`__.
-    This way, this function can be used in a workflow context that explicitly uses those wires to generate this decomposition rule, which can then be used
-    as ``alt_decomps`` or ``fixed_decomp`` within :func:`~.pennylane.decompose` (when using the graph-based decomposition system).
+    This is a temporary workaround before moving to `capture` as default frontend, which unlocks
+    dynamic wire allocation. Here, we explicitly provide the necessary wires for the
+    `phase gradient decomposition of RZ <https://pennylane.ai/compilation/phase-gradient/b-rotations>`__.
+    This way, this function can be used in a workflow context that explicitly uses those wires
+    to generate this decomposition rule, which can then be used as ``alt_decomps`` or
+    ``fixed_decomp`` within :func:`~.pennylane.decompose` (when using the graph-based
+    decomposition system).
 
     Parameters:
         angle_wires (Wires): wires that encode the binary representation of the rotation angle
@@ -247,9 +250,6 @@ def make_rz_to_phase_gradient_decomp(
 
         When using ``precision_stats``, keep the following in mind:
 
-        * With program capture enabled (``qp.capture.enable()``), the angles may be traced.
-          Without program capture, the angles must be concrete; traced angles, e.g., under
-          ``qp.qjit(capture=False)``, raise an error.
         * The resource function of the rule adds up the cost of all supported precisions, so
           that the graph-based decomposition system accounts for the operators in all
           conditional branches. This over-reports the cost of the rule, so that the
