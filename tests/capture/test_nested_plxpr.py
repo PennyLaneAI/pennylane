@@ -369,10 +369,10 @@ class TestCtrlQfunc:
         assert plxpr.eqns[0].params["work_wires"] == qp.wires.Wires(["aux"])
 
     def test_control_values(self):
-        """Test that control values can be provided."""
+        """Test that integer tuple control values are captured as Booleans."""
 
         def f(z):
-            return qp.ctrl(qp.RZ, (3, 4), [False, True])(z, 0)
+            return qp.ctrl(qp.RZ, (3, 4), (0, 1))(z, 0)
 
         plxpr = jax.make_jaxpr(f)(0.5)
 
@@ -385,6 +385,7 @@ class TestCtrlQfunc:
         assert len(q) == 1
 
         assert [value.val for value in plxpr.eqns[0].invars[-2:]] == [False, True]
+        assert all(value.aval.dtype == bool for value in plxpr.eqns[0].invars[-2:])
         assert plxpr.eqns[0].params["n_control"] == 2
 
     @pytest.mark.parametrize("container, static_first", ((tuple, False), (list, True)))
