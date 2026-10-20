@@ -1243,6 +1243,21 @@
   resource operators from their quantum functions.
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
+* Added :func:`~.labs.tcdq.shot_resources`, which returns a resource operator for one
+  computational-basis shot of the circuit described by a :class:`~.labs.tcdq.CircuitConfig` or
+  :class:`~.labs.tcdq.QuditCircuitConfig`, to be priced with
+  :func:`~.labs.estimator_beta.estimate`. It is built from the new resource operators
+  :class:`~.labs.estimator_beta.templates.IQPSamplingShot`,
+  :class:`~.labs.estimator_beta.templates.QuditSamplingShot`,
+  :class:`~.labs.estimator_beta.templates.ParityPhaseLayer` and
+  :class:`~.labs.estimator_beta.templates.QuditFourierTransform`. A trainable phase layer is
+  priced through the ``phase_op`` argument, e.g. with the new
+  :class:`~.labs.estimator_beta.templates.SumPhaseLayer` for phase functions of the digit sum.
+  Passing the trained parameters (``params`` of ``shot_resources``, or ``gates_params`` of the
+  shot operators) prices small rotation angles with the angle-dependent Clifford+T synthesis of
+  [arXiv:2605.31544](https://arxiv.org/abs/2605.31544).
+  [(#10330)](https://github.com/PennyLaneAI/pennylane/pull/10330)
+
 * Performance gains for qubit workflows in the TCDQ module. The new
   `CircuitConfig.max_memory_gb` option bounds the temporary memory (in GB) used by the
   phase computation; gates are processed in blocks sized from this budget.
@@ -1250,6 +1265,7 @@
 
 * TCDQ qudit workflows now accept gates in a sparse representation.
   [(#10317)](https://github.com/PennyLaneAI/pennylane/pull/10317)
+
 
 <h3>Breaking changes 💔</h3>
 
