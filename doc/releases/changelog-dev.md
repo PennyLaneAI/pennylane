@@ -1335,6 +1335,10 @@
 * TCDQ qudit workflows now accept gates in a sparse representation.
   [(#10317)](https://github.com/PennyLaneAI/pennylane/pull/10317)
 
+* Added optional parameter ``max_memory`` to ``QuditCircuitConfig`` which allows users to control
+  the peak memory usage during the phase difference computation.
+  [(#10337)](https://github.com/PennyLaneAI/pennylane/pull/10337)
+
 <h3>Breaking changes 💔</h3>
 
 * The `qp.Backline.backline` alias of `qp.Backline.placement` has been removed. Use `placement`.
@@ -1896,6 +1900,7 @@
     [(#10027)](https://github.com/PennyLaneAI/pennylane/pull/10027)
     [(#10047)](https://github.com/PennyLaneAI/pennylane/pull/10047)
     [(#10113)](https://github.com/PennyLaneAI/pennylane/pull/10113)
+    [(#10156)](https://github.com/PennyLaneAI/pennylane/pull/10156)
     [(#9999)](https://github.com/PennyLaneAI/pennylane/pull/9999)
     [(#10125)](https://github.com/PennyLaneAI/pennylane/pull/10125)
     [(#10124)](https://github.com/PennyLaneAI/pennylane/pull/10124)
