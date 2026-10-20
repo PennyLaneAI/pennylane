@@ -287,8 +287,6 @@ def _compute_qudit_samples(
     """Generates uniformly random dit-strings from the product Z_{d_1} x ... x Z_{d_n}."""
 
     maxval = jnp.asarray(dims, dtype=_INDEX_DTYPE)[jnp.newaxis, :]  # (1, n_qudits)
-    # Draw with JAX's default integer dtype so the random stream for a given key is unchanged,
-    # then narrow to 32-bit for the downstream computation.
     samples = jax.random.randint(key, shape=(num_samples, n_qudits), minval=0, maxval=maxval)
     return samples.astype(_INDEX_DTYPE)
 
