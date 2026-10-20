@@ -29,6 +29,7 @@
   ```pycon
   >>> qp.specs(circuit, level="user")(1.1).resources.quantum_operations["T"]
   31
+
   ```
 
 * Added a decomposition of ``Adjoint(TemporaryAND)`` to PPMs (:func:`~.pauli_measure`)
