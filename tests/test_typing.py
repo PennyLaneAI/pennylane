@@ -13,10 +13,13 @@
 # limitations under the License.
 """Unit tests for the ``typing.py`` file."""
 
+import jax
 import numpy as np
 import pytest
 
+import pennylane as qp
 import pennylane.numpy as pnp
+from pennylane.core.operator.base import AbstractOperator
 from pennylane.typing import (
     AbstractArray,
     AbstractWires,
@@ -30,6 +33,11 @@ from pennylane.typing import (
     _AbstractWireTypeFactory,
 )
 from pennylane.wires import Wires
+
+try:
+    import torch
+except ImportError:
+    torch = None
 
 
 class TestTensorLike:
@@ -53,7 +61,6 @@ class TestTensorLike:
     @pytest.mark.jax
     def test_isinstance_jax_array_is_tensor_like(self):
         """Tests that a jax DeviceArray is a Tensor"""
-        import jax
 
         tensor = jax.numpy.array(1)
         assert isinstance(tensor, TensorLike)
@@ -63,11 +70,6 @@ class TestTensorLike:
     @pytest.mark.usefixtures("enable_capture")
     def test_abstract_operator_tracer_is_not_tensor_like(self):
         """Captured operators are tracers, but not tensor-like numeric data."""
-        # pylint: disable=import-outside-toplevel
-        import jax
-
-        import pennylane as qp
-        from pennylane.core.operator.base import AbstractOperator
 
         tracer = None
 
@@ -86,7 +88,6 @@ class TestTensorLike:
     @pytest.mark.parametrize("value", [1.0, np.array([1.0, 2.0])])
     def test_array_tracer_is_tensor_like(self, value):
         """Both scalar and array tracers remain tensor-like."""
-        import jax
 
         def check(tensor):
             assert isinstance(tensor, jax.core.Tracer)
@@ -100,9 +101,6 @@ class TestTensorLike:
     @pytest.mark.usefixtures("enable_capture")
     def test_measurement_tracer_is_not_tensor_like(self):
         """Captured measurements are not tensor-like numeric data."""
-        import jax
-
-        import pennylane as qp
 
         def check():
             measurement = qp.expval(qp.X(0))
@@ -115,7 +113,6 @@ class TestTensorLike:
     @pytest.mark.torch
     def test_isinstance_torch_tensor_is_tensor_like(self):
         """Tests that a torch Tensor is a Tensor"""
-        import torch
 
         tensor = torch.Tensor(1)
         assert isinstance(tensor, TensorLike)
@@ -140,14 +137,12 @@ class TestTensorLike:
     @pytest.mark.jax
     def test_subclass_jax_array_is_tensor_like(self):
         """Tests that a jax DeviceArray is a Tensor"""
-        import jax
 
         assert issubclass(jax.numpy.ndarray, TensorLike)
 
     @pytest.mark.torch
     def test_subclass_torch_tensor_is_tensor_like(self):
         """Tests that a torch Tensor is a Tensor"""
-        import torch
 
         assert issubclass(torch.Tensor, TensorLike)
 
@@ -175,8 +170,6 @@ class TestAbstractArray:
     @pytest.mark.torch
     def test_provide_torch_dtype(self):
         """Test that a torch dtype is converted to a numpy dtype."""
-
-        import torch
 
         a = AbstractArray((2,), torch.int32)
 
@@ -511,7 +504,6 @@ class TestAbstractArray:
     @pytest.mark.torch
     def test_is_compatible_with_torch_tensor(self):
         """Test compatibility checks against torch tensors."""
-        import torch
 
         aa = AbstractArray((2,), torch.float32)
         assert aa.is_compatible_with(torch.ones(2, dtype=torch.float32))
