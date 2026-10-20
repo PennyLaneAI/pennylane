@@ -30,11 +30,38 @@ if TYPE_CHECKING:
     from pennylane.devices.execution_config import ExecutionConfig
 
 
+def _contains_subprogram(program: CompilePipeline, subprogram: CompilePipeline) -> bool:
+    """Whether ``subprogram`` occurs as a contiguous block inside ``program``.
+
+    This is used to detect transforms that a QNode-level transform has already baked
+    into the user pipeline, most notably :func:`~.noise.add_noise` with
+    ``level="device"``, which places the gradient expansion and the device
+    preprocessing ahead of itself in the user pipeline.
+
+    Args:
+        program (CompilePipeline): the program to search in
+        subprogram (CompilePipeline): the block to look for
+
+    Returns:
+        bool: whether the block is present
+    """
+
+    num_transforms, num_subtransforms = len(program), len(subprogram)
+    if num_subtransforms == 0 or num_subtransforms > num_transforms:
+        return False
+
+    return any(
+        program[start : start + num_subtransforms] == subprogram
+        for start in range(num_transforms - num_subtransforms + 1)
+    )
+
+
 def _setup_transform_program(
     device: Device,
     resolved_execution_config: ExecutionConfig,
     cache: Cache | dict | Literal["auto"] | bool | None = None,
     cachesize: int = 10000,
+    user_program: CompilePipeline | None = None,
 ) -> tuple[CompilePipeline, CompilePipeline]:
     """Sets-up the outer and inner transform programs for execution.
 
@@ -46,6 +73,10 @@ def _setup_transform_program(
         cache (None, bool, dict, Cache): Whether to cache evaluations. This can result in
         a significant reduction in quantum evaluations during gradient computations. Defaults to ``None``.
         cachesize (int): The size of the cache. Defaults to 10000.
+        user_program (CompilePipeline or None): The pipeline of transforms applied to the QNode
+            by the user. Transforms of this pipeline that are already part of the gradient
+            expansion or of the device preprocessing are not appended again, so that they are
+            not applied twice. Defaults to ``None``.
 
     Returns:
         tuple[CompilePipeline, CompilePipeline]: tuple containing the outer and inner transform programs.
@@ -54,16 +85,28 @@ def _setup_transform_program(
     outer_transform_program = CompilePipeline()
     inner_transform_program = CompilePipeline()
 
+    # A QNode-level transform can bake the gradient expansion and the device preprocessing
+    # into the user pipeline so that it can run after them, e.g.
+    # ``qp.noise.add_noise(..., level="device")``. Adding them here as well would apply
+    # them a second time, so only append whichever of these is not already present.
+    def _is_missing_from_user_program(program: CompilePipeline) -> bool:
+        return user_program is None or not _contains_subprogram(user_program, program)
+
     # Add the gradient expand to the program if necessary
     if expand_transform := getattr(
         resolved_execution_config.gradient_method, "expand_transform", False
     ):
-        outer_transform_program.add_transform(
+        gradient_expand_program = CompilePipeline()
+        gradient_expand_program.add_transform(
             transform(expand_transform),
             **resolved_execution_config.gradient_keyword_arguments,
         )
+        if _is_missing_from_user_program(gradient_expand_program):
+            outer_transform_program += gradient_expand_program
 
     device_transform_program = device.preprocess_transforms(resolved_execution_config)
+    if not _is_missing_from_user_program(device_transform_program):
+        device_transform_program = CompilePipeline()
     if resolved_execution_config.use_device_gradient:
         outer_transform_program += device_transform_program
     else:

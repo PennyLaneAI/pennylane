@@ -1973,6 +1973,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed `qp.noise.add_noise` with `level="device"` appending the gradient expansion and the
+  device preprocessing a second time, which duplicated the device program of resolved
+  pipelines and applied it twice during execution.
+  [(#10308)](https://github.com/PennyLaneAI/pennylane/pull/10308)
 * `qp.cond` can now handle `Operator2` instances being provided instead of branch functions.
   While this syntax was supported with tape-based PennyLane, it had never been
   properly supported with program capture and Catalyst.
@@ -2221,6 +2225,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+akashy0162,
 Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,
