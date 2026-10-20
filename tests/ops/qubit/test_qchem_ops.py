@@ -150,7 +150,7 @@ class TestSingleExcitation:
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_ppr_crz_decomp(self, phi):
-        """The CRZ-based rule realizes the Givens rotation with a single arbitrary-angle
+        """Tests that the CRZ-based rule realizes the Givens rotation with a single arbitrary-angle
         rotation and is consistent with its resources."""
         rule = qp.list_decomps(qp.SingleExcitation)["_single_excitation_ppr_crz"]
         op = qp.SingleExcitation(phi, wires=[0, 1])
