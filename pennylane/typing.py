@@ -35,26 +35,6 @@ from jax.numpy import ndarray
 FlatPytree = tuple[Sequence[Any], Hashable]
 
 
-class InterfaceTensorMeta(type):
-    """defines dunder methods for the ``isinstance`` and ``issubclass`` checks.
-
-    .. note:: These special dunder methods can only be defined inside a metaclass.
-
-    """
-
-    def __instancecheck__(cls, other):
-        """Dunder method used to check if an object is a `InterfaceTensor` instance."""
-        return _is_jax(other) or _is_torch(other)  # pragma: no cover
-
-    def __subclasscheck__(cls, other):
-        """Dunder method that checks if a class is a subclass of ``InterfaceTensor``."""
-        return _is_jax(other, subclass=True) or _is_torch(other, subclass=True)
-
-
-class InterfaceTensor(metaclass=InterfaceTensorMeta):
-    """Adds support for runtime instance checking of interface-specific tensor-like data"""
-
-
 _TENSORLIKE_PYTHON_TYPES = (
     int,
     float,
