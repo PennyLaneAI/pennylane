@@ -289,6 +289,30 @@ class TestAnalyze:
         with pytest.raises(ValueError, match="qp.analyze can only be applied to a qjit'd QNode"):
             qp.analyze(circuit, level=0)()
 
+    def test_user_level_skips_device_preprocessing(self):
+        """Non-device analyze levels set skip_preprocess so device transforms are skipped.
+
+        Note: this test's effectiveness assumes graph-decomposition to the device target
+        gateset is added by default during device preprocessing.
+
+        TODO: remove the note above when
+        https://github.com/PennyLaneAI/catalyst/pull/3275 is merged.
+        """
+
+        class DummyOp(qp.core.Operator2):
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def circuit():
+            DummyOp(wires=0)
+            return qp.expval(qp.Z(0))
+
+        # Must not raise catalyst.utils.exceptions.CompileError
+        specs = qp.analyze(circuit, level="user")()
+        assert specs.resources.counts == {"DummyOp": 1}
+
 
 @pytest.mark.catalyst
 class TestAnalyzeHintIntegration:
