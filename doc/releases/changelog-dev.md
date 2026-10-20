@@ -1338,6 +1338,7 @@
 
 * Moved phase gradient decomposition rules for `RZ`, `CRZ` and `SelectPauliRot` from `labs` to `pennylane/transforms/decompositions`.
   [(#9928)](https://github.com/PennyLaneAI/pennylane/pull/9928)
+  [(#10351)](https://github.com/PennyLaneAI/pennylane/pull/10351)
 
 * All functionality related to qutrits/qudits has been removed. Qudit functionality in :mod:`pennylane.labs`
   still remains.
@@ -1920,6 +1921,10 @@
 * Improved coverage of testing operators and their decomposition rules with capture enabled.
   [(#10019)](https://github.com/PennyLaneAI/pennylane/pull/10019)
 
+* Added `post_device_pipeline` to `QNode`to be a pipeline representing user passes that are intended to run after
+  device specific transformations, if `qjit`-ed. `update_pipelines` added to cleanly update `QNode` with input compile and post-device pipeline.
+  [(#10285)](https://github.com/PennyLaneAI/pennylane/pull/10285)
+
 <h3>Documentation 📝</h3>
 
 * The dependency versions in the developer installation guide now match `pyproject.toml`, and a rendering issue in the list of optional dependencies was fixed.
@@ -1957,6 +1962,9 @@
 * Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits.
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
+* Clarified the documentation of the ``check_hermitian`` argument of :class:`~.TrotterProduct`.
+  [(#10326)](https://github.com/PennyLaneAI/pennylane/pull/10326)
+  
 * The :attr:`~.Node.executor_options` documentation now describes ``"sudo_password_env"``, the name
   of an environment variable holding a remote node's sudo password, in place of the
   ``"sudo_password"`` string, so the password stays out of source, config files and the node's
@@ -2203,6 +2211,11 @@
 * Fixed a bug in the TCDQ module that caused incorrect results for states with complex coefficients.
   [(#10215)](https://github.com/PennyLaneAI/pennylane/pull/10215)
 
+* With program capture enabled, resource estimates of decomposition rules now recursively unroll
+  :class:`~.ChangeOpBasis` operators that are nested in other ``ChangeOpBasis`` operators, matching
+  the gates produced by the captured decomposition.
+  [(#10351)](https://github.com/PennyLaneAI/pennylane/pull/10351)
+
 
 <h3>Contributors ✍️</h3>
 
@@ -2223,6 +2236,7 @@ Marcus Edwards,
 Sümeyye Nur Esin,
 Thomas C. Fraser,
 Connor Gambla,
+Vellala Gowthami,
 Sengthai Heng,
 Austin Huang,
 Harshal Janjani,
