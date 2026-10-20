@@ -292,6 +292,7 @@ def _compute_qudit_samples(
     samples = jax.random.randint(key, shape=(num_samples, n_qudits), minval=0, maxval=maxval)
     return samples.astype(_INDEX_DTYPE)
 
+
 _BYTES_PER_GB = 1024**3
 _FLOAT_BYTES = 4
 
@@ -472,10 +473,21 @@ def _accumulate_phase_diffs(
 
     accumulated = jnp.zeros((n_obs, n_samples), dtype=_REAL_DTYPE)
     for group in gate_groups:
-        block_size = _qudit_phase_block_size(max_memory_bytes, group.omega, n_samples, n_obs)
-        accumulated = accumulated + _group_phase_diffs(
-            theta_ext, samples_t, l_t, dims_f, group, block_size
-        )
+        if max_memory_bytes is None:
+            accumulated = accumulated + _group_block_contribution(
+                theta_ext,
+                samples_t,
+                l_t,
+                dims_f,
+                jnp.asarray(group.supports, dtype=_INDEX_DTYPE),
+                jnp.asarray(group.powers, dtype=_INDEX_DTYPE),
+                jnp.asarray(group.param_indices, dtype=_INDEX_DTYPE),
+            )
+        else:
+            block_size = _qudit_phase_block_size(max_memory_bytes, group.omega, n_samples, n_obs)
+            accumulated = accumulated + _group_phase_diffs(
+                theta_ext, samples_t, l_t, dims_f, group, block_size
+            )
 
     if vmapped_phase_func is not None:
         accumulated += vmapped_phase_func(phase_fn_params, samples, l_vecs).astype(_REAL_DTYPE)
