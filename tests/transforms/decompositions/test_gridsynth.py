@@ -80,8 +80,6 @@ def _specs_t_count(method):
 def test_mixed_method_halves_t_count_in_specs():
     """Test that specs reports roughly half the T gates for the mixed method at the same
     epsilon, using the resource hints of the gridsynth pass."""
-    pytest.importorskip("catalyst")
-
     assert _specs_t_count("mixed") < 0.6 * _specs_t_count("deterministic")
 
 
@@ -89,6 +87,4 @@ def test_mixed_method_halves_t_count_in_specs():
 def test_mixed_fallback_method_reduces_t_count_in_specs():
     """Test that specs reports roughly half the T gates for the mixed fallback method compared
     to the mixed method at the same epsilon."""
-    pytest.importorskip("catalyst")
-
     assert _specs_t_count("mixed-fallback") < 0.6 * _specs_t_count("mixed")

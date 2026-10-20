@@ -76,10 +76,10 @@ def gridsynth_setup_inputs(
         gridsynth_circuit = qp.transforms.gridsynth(circuit, epsilon=1e-4)
         qjitted_circuit = qp.qjit(gridsynth_circuit)
 
-    >>> circuit(1.1) # doctest: +SKIP
-    [0.60282587-0.36959568j 0.5076395 +0.49224195j]
-    >>> qjitted_circuit(1.1) # doctest: +SKIP
-    [0.6028324 -0.3695921j  0.50763281+0.49224355j]
+    >>> circuit(1.1)
+    array([0.60282587-0.36959568j, 0.5076395 +0.49224195j])
+    >>> qjitted_circuit(1.1)
+    Array([0.60282699-0.36962758j, 0.50758458+0.49227326j], dtype=complex128)
 
     Mixed synthesis reaches the same accuracy with roughly half the T gates, and mixed fallback
     synthesis with roughly half of that:
@@ -96,7 +96,7 @@ def gridsynth_setup_inputs(
 
             return qp.specs(circuit, level="user")(1.1).resources.quantum_operations["T"]
 
-    >>> t_count("deterministic"), t_count("mixed"), t_count("mixed-fallback") # doctest: +SKIP
+    >>> t_count("deterministic"), t_count("mixed"), t_count("mixed-fallback")
     (63, 31, 16)
     """
     if not isinstance(ppr_basis, bool):
