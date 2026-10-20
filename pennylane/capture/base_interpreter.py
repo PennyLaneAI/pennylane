@@ -487,7 +487,15 @@ def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
 
 # pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(ctrl_transform_prim)
-def handle_ctrl_transform(self, *invals, n_control, jaxpr, work_wires, n_consts):
+def handle_ctrl_transform(
+    self,
+    *invals,
+    n_control,
+    jaxpr,
+    work_wires,
+    n_consts,
+    work_wire_type="borrowed",
+):
     """Interpret a ctrl transform primitive."""
     controls_start = len(invals) - 2 * n_control
     consts = invals[:n_consts]
@@ -501,6 +509,7 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, work_wires, n_consts)
         n_control=n_control,
         jaxpr=jaxpr.jaxpr,
         work_wires=work_wires,
+        work_wire_type=work_wire_type,
         n_consts=len(jaxpr.consts),
     )
 
