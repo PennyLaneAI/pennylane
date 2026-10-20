@@ -90,6 +90,15 @@ class AbstractOperator(jax.core.AbstractValue):  # pragma: no cover
         return hash("AbstractOperator")
 
     @staticmethod
+    def _is_op(x):
+        """True for Operator instances and operator-valued tracers.
+
+        ``+``/``-`` between an operator tracer and a scalar return ``NotImplemented`` (a clear
+        ``TypeError``) rather than building a ``Sum`` with a non-operator operand.
+        """
+        return isinstance(x, Operator) or isinstance(getattr(x, "aval", None), AbstractOperator)
+
+    @staticmethod
     def _matmul(*args):
         return qp.prod(*args)
 
@@ -100,29 +109,27 @@ class AbstractOperator(jax.core.AbstractValue):  # pragma: no cover
 
     @staticmethod
     def _mul(a, b):
-        return qp.s_prod(b, a)
+        return qp.s_prod(b, a) if isinstance(b, TensorLike) else NotImplemented
 
-    @staticmethod
-    def _rmul(a, b):
-        return qp.s_prod(b, a)
+    _rmul = _mul
 
     @staticmethod
     def _add(a, b):
-        return qp.sum(a, b)
+        return qp.sum(a, b) if AbstractOperator._is_op(b) else NotImplemented
 
     @staticmethod
     def _radd(a, b):
         """Preserve operand order when ``+`` falls back to the captured right operand."""
-        return qp.sum(b, a)
+        return qp.sum(b, a) if AbstractOperator._is_op(b) else NotImplemented
 
     @staticmethod
     def _sub(a, b):
-        return qp.sum(a, qp.s_prod(-1, b))
+        return qp.sum(a, qp.s_prod(-1, b)) if AbstractOperator._is_op(b) else NotImplemented
 
     @staticmethod
     def _rsub(a, b):
         """Preserve operand order when ``-`` falls back to the captured right operand."""
-        return qp.sum(b, qp.s_prod(-1, a))
+        return qp.sum(b, qp.s_prod(-1, a)) if AbstractOperator._is_op(b) else NotImplemented
 
     @staticmethod
     def _neg(a):

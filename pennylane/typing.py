@@ -24,12 +24,12 @@ from dataclasses import dataclass, field
 from math import prod
 from numbers import Number
 from types import EllipsisType
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
 from jax import Array
-from jax.core import Tracer
+from jax.core import Tracer, UnshapedArray
 from jax.numpy import ndarray
 
 FlatPytree = tuple[Sequence[Any], Hashable]
@@ -55,36 +55,78 @@ class InterfaceTensor(metaclass=InterfaceTensorMeta):
     """Adds support for runtime instance checking of interface-specific tensor-like data"""
 
 
-TensorLike = Union[
-    int, float, bool, complex, bytes, list, tuple, np.ndarray, np.generic, ArrayBox, InterfaceTensor
-]
-"""A type for all tensor-like data.
+_TENSORLIKE_PYTHON_TYPES = (
+    int,
+    float,
+    bool,
+    complex,
+    bytes,
+    list,
+    tuple,
+    np.ndarray,
+    np.generic,
+    ArrayBox,
+)
 
-TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor,
-including lists and tuples. Any argument accepted by ``qp.numpy.array`` is tensor-like.
 
-**Examples**
+# Once Python 3.12 support is dropped, remove this tuple and TensorLikeMeta,
+# and restore TensorLike = Union[... , InterfaceTensor]. Keep the aval check in _is_jax.
+class TensorLikeMeta(type):
+    """Runtime ``isinstance`` / ``issubclass`` for :class:`TensorLike`.
 
->>> from pennylane.typing import TensorLike
->>> isinstance(4, TensorLike)
-True
->>> isinstance([2, 6, 8], TensorLike)
-True
->>> isinstance(torch.tensor([1, 2, 3]), TensorLike)
-True
->>> issubclass(list, TensorLike)
-True
->>> issubclass(jax.Array, TensorLike)
-True
+    Must not be a ``typing.Union``: on Python ≤3.12, ``isinstance(x, Union[...])``
+    reduces to ``issubclass(type(x), ...)``, which cannot inspect a JAX tracer's
+    ``aval`` and would still treat :class:`~.AbstractOperator` tracers as tensors.
+    """
 
-"""
+    def __instancecheck__(cls, other):
+        return isinstance(other, _TENSORLIKE_PYTHON_TYPES) or _is_jax(other) or _is_torch(other)
+
+    def __subclasscheck__(cls, other):
+        try:
+            if issubclass(other, _TENSORLIKE_PYTHON_TYPES):
+                return True
+        except TypeError:
+            pass
+        return _is_jax(other, subclass=True) or _is_torch(other, subclass=True)
+
+
+class TensorLike(metaclass=TensorLikeMeta):
+    """A type for all tensor-like data.
+
+    TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor,
+    including lists and tuples. Any argument accepted by ``qp.numpy.array`` is tensor-like.
+
+    JAX tracers are tensor-like only when array-valued; operator, measurement and qubit
+    tracers created under program capture are not.
+
+    **Examples**
+
+    >>> from pennylane.typing import TensorLike
+    >>> isinstance(4, TensorLike)
+    True
+    >>> isinstance([2, 6, 8], TensorLike)
+    True
+    >>> isinstance(torch.tensor([1, 2, 3]), TensorLike)
+    True
+    >>> issubclass(list, TensorLike)
+    True
+    >>> issubclass(jax.Array, TensorLike)
+    True
+
+    """
 
 
 def _is_jax(other, subclass=False):
     """Check if other is an instance or a subclass of a jax tensor."""
     JaxTensor = ndarray | Array | Tracer
-    check = issubclass if subclass else isinstance
-    return check(other, JaxTensor)
+    if subclass:
+        return issubclass(other, JaxTensor)
+    if isinstance(other, Tracer):
+        # Only array-valued tracers (ShapedArray / DShapedArray) are tensor-like;
+        # operator, measurement and qubit avals are not.
+        return isinstance(other.aval, UnshapedArray)
+    return isinstance(other, JaxTensor)
 
 
 def _is_torch(other, subclass=False):

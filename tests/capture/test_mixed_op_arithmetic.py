@@ -14,8 +14,9 @@
 """Regression tests for sc-130866: arithmetic between Operator2 instances and
 operator-valued tracers (AbstractOperator) under program capture.
 
-Operator2 ``__add__`` / ``__sub__`` treat AbstractOperator tracers as operators
-(not as TensorLike scalars). Scalar ``+/-`` still uses the Identity embedding.
+AbstractOperator tracers are not ``TensorLike``, so Operator2 ``+/-`` defer to
+AbstractOperator arithmetic instead of the scalar/Identity branch. Scalar
+``+/-`` still uses the Identity embedding.
 """
 
 # pylint: disable=unnecessary-lambda

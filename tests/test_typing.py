@@ -58,6 +58,60 @@ class TestTensorLike:
         tensor = jax.numpy.array(1)
         assert isinstance(tensor, TensorLike)
 
+    @pytest.mark.jax
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_capture")
+    def test_abstract_operator_tracer_is_not_tensor_like(self):
+        """Captured operators are tracers, but not tensor-like numeric data."""
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        import pennylane as qp
+        from pennylane.core.operator.base import AbstractOperator
+
+        tracer = None
+
+        def grab():
+            nonlocal tracer
+            tracer = 3 * qp.X(0)
+            return tracer
+
+        jax.make_jaxpr(grab)()
+        assert isinstance(tracer.aval, AbstractOperator)
+        # JAX may also report the tracer as Array; TensorLike must still reject it.
+        assert isinstance(tracer, jax.Array)
+        assert not isinstance(tracer, TensorLike)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("value", [1.0, np.array([1.0, 2.0])])
+    def test_array_tracer_is_tensor_like(self, value):
+        """Both scalar and array tracers remain tensor-like."""
+        import jax
+
+        def check(tensor):
+            assert isinstance(tensor, jax.core.Tracer)
+            assert isinstance(tensor, TensorLike)
+            return tensor
+
+        jax.make_jaxpr(check)(value)
+
+    @pytest.mark.jax
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_capture")
+    def test_measurement_tracer_is_not_tensor_like(self):
+        """Captured measurements are not tensor-like numeric data."""
+        import jax
+
+        import pennylane as qp
+
+        def check():
+            measurement = qp.expval(qp.X(0))
+            assert isinstance(measurement, jax.core.Tracer)
+            assert not isinstance(measurement, TensorLike)
+            return measurement
+
+        jax.make_jaxpr(check)()
+
     @pytest.mark.torch
     def test_isinstance_torch_tensor_is_tensor_like(self):
         """Tests that a torch Tensor is a Tensor"""
