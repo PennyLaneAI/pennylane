@@ -100,12 +100,10 @@ def custom_decomps():
     def custom_rule_isingxx(data, wires):
         qp.IsingXX(data, wires)
 
-    with qp.decomposition.local_decomps():
-        qp.add_decomps(NoMatOp, custom_rule_no_mat_op)
-        qp.add_decomps(MatOp, custom_rule_mat_op)
-        qp.add_decomps(MyTemplate, custom_rule_template)
-        qp.add_decomps(CustomIsingXX, custom_rule_isingxx)
-        yield
+    qp.add_decomps(NoMatOp, custom_rule_no_mat_op)
+    qp.add_decomps(MatOp, custom_rule_mat_op)
+    qp.add_decomps(MyTemplate, custom_rule_template)
+    qp.add_decomps(CustomIsingXX, custom_rule_isingxx)
 
 
 # pylint: disable=too-few-public-methods
@@ -467,10 +465,9 @@ class TestPreprocessing:
         def custom_decomp(data, wires):
             qp.RX(data, wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(CustomOpWithGenerator, custom_decomp)
-            tape4 = qp.tape.QuantumScript([CustomOpWithGenerator(qp.numpy.array(1.2), wires=0)])
-            batch, _ = program((tape4,))
+        qp.add_decomps(CustomOpWithGenerator, custom_decomp)
+        tape4 = qp.tape.QuantumScript([CustomOpWithGenerator(qp.numpy.array(1.2), wires=0)])
+        batch, _ = program((tape4,))
 
         assert batch[0].circuit == tape4.circuit
 
@@ -1173,14 +1170,12 @@ class TestDefaultQubitGraphModeExclusive:
         def decomp_with_work_wire(wires):
             qp.X(wires)
 
-        with qp.decomposition.local_decomps():
+        qp.add_decomps(MyDefaultQubitOp, decomp_fallback, decomp_with_work_wire)
 
-            qp.add_decomps(MyDefaultQubitOp, decomp_fallback, decomp_with_work_wire)
-
-            tape = qp.tape.QuantumScript([MyDefaultQubitOp(0)])
-            dev = qp.device("default.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
-            program = dev.preprocess_transforms()
-            (out_tape,), _ = program([tape])
+        tape = qp.tape.QuantumScript([MyDefaultQubitOp(0)])
+        dev = qp.device("default.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
+        program = dev.preprocess_transforms()
+        (out_tape,), _ = program([tape])
 
         assert len(out_tape.operations) == 2
         assert out_tape.operations[0].name == "Hadamard"

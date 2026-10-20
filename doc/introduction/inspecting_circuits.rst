@@ -87,6 +87,54 @@ returns the result of executing the circuit:
 Resources are tracked by mock-executing the circuit on ``null.qubit``, so ``result`` has the
 shape and dtype of the real result, but not its values.
 
+The :func:`~pennylane.analyze` transform instead estimates the resources without executing the
+circuit, by analyzing the compiled program at a given stage of compilation (``level``).
+This makes it possible to see how each transform changes the circuit:
+
+.. code-block:: python
+
+    @qp.qjit
+    @qp.transforms.cancel_inverses
+    @qp.qnode(dev)
+    def optimized_circuit(x):
+        qp.RX(x, wires=0)
+        qp.X(0)
+        qp.X(0)
+        return qp.expval(qp.Z(0))
+
+>>> qp.analyze(optimized_circuit, level=0)(0.1).resources.quantum_operations
+{'PauliX': 2, 'RX': 1}
+>>> qp.analyze(optimized_circuit, level="user")(0.1).resources.quantum_operations
+{'RX': 1}
+
+Since :func:`~pennylane.analyze` does not execute the circuit, it does not unroll control flow
+either. A loop whose number of iterations depends on an argument is counted symbolically,
+whereas :func:`~pennylane.track` counts the iterations that were executed:
+
+.. code-block:: python
+
+    @qp.qjit(autograph=True)
+    @qp.qnode(dev)
+    def loop_circuit(n):
+        for _ in range(n):
+            qp.Hadamard(wires=0)
+        qp.CNOT(wires=(0, 1))
+        return qp.expval(qp.Z(0))
+
+>>> _, circuit_specs = qp.track(loop_circuit)(3)
+>>> circuit_specs.resources.quantum_operations
+{'CNOT': 1, 'Hadamard': 3}
+>>> print(qp.analyze(loop_circuit, level=0)(3).resources)
+Symbolic Variables: a
+Quantum operations:
+- Total: a + 1
+  - CNOT: 1
+  - Hadamard: a
+Measurement processes:
+- expval(PauliZ): 1
+Total wires: 4
+Circuit Depth: Not computed
+
 
 Circuit drawing
 ---------------

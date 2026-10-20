@@ -21,7 +21,6 @@ from scipy.stats import norm
 
 import pennylane as qp
 from pennylane.decomposition import gate_sets
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qmc import (
     QuantumMonteCarlo,
     _make_V,
@@ -30,6 +29,7 @@ from pennylane.templates.subroutines.qmc import (
     make_Q,
     probs_to_unitary,
 )
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.wires import Wires
 
 
@@ -268,7 +268,7 @@ class TestQuantumMonteCarlo:
         p = np.ones(4) / 4
         target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     DECOMP_PARAMS = [
         (np.ones(4) / 4, Wires(range(3)), Wires(range(3, 5))),
@@ -319,7 +319,8 @@ class TestQuantumMonteCarlo:
         queue_before_qpe = tape.operations[:2]
 
         # Build a new tape from all operations following the two QubitUnitary ops and expand it
-        [tape], _ = qp.transforms.decompose(
+        # pylint: disable-next=protected-access
+        [tape], _ = qp.transforms._tape_decompose(
             qp.tape.QuantumScript(tape.operations[2:]),
             gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
             max_expansion=2,
@@ -343,7 +344,8 @@ class TestQuantumMonteCarlo:
             qp.QuantumPhaseEstimation(qp.QubitUnitary(Q, wires=target_wires), estimation_wires)
 
         qpe_tape = qp.tape.QuantumScript.from_queue(q_qpe_tape)
-        [qpe_tape], _ = qp.transforms.decompose(
+        # pylint: disable-next=protected-access
+        [qpe_tape], _ = qp.transforms._tape_decompose(
             qpe_tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=2
         )
 

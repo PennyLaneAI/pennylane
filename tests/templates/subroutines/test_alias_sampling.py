@@ -18,8 +18,9 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition import list_decomps
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates.subroutines.alias_sampling import _build_alias_tables
+from pennylane.testing import assert_valid
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import AbstractWires
 
 
