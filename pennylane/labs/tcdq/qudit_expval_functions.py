@@ -395,6 +395,7 @@ def _group_block_contribution(
     return accumulated
 
 
+@jax.jit
 def _group_phase_diffs(
     theta_ext: jnp.ndarray,
     samples_t: jnp.ndarray,
