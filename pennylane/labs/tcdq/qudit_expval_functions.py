@@ -308,12 +308,7 @@ def _memory_budget_bytes(max_memory: float | None) -> int | None:
 
 
 def _qudit_phase_bytes_per_gate(omega: int, n_samples: int, n_obs: int) -> int:
-    """Approximate temporary bytes needed per gate of weight ``omega`` inside one block.
-
-    For every active position the block holds the angle, cosine and sine arrays on both
-    the sample side (``n_samples`` columns) and the observable side (``n_obs`` columns),
-    plus the :math:`2^\\omega` angle-addition products on each side.
-    """
+    """Approximate temporary bytes needed per gate of weight ``omega`` inside one block."""
     per_column = _FLOAT_BYTES * (3 * omega + 2**omega)
     return per_column * (n_samples + n_obs)
 
@@ -359,12 +354,6 @@ def _group_block_contribution(
     param_indices: jnp.ndarray,
 ) -> jnp.ndarray:
     """Phase-difference contribution of one block of equal-weight gates.
-
-    For every gate :math:`g` in the block the eigenvalue factor
-    :math:`\\phi_g(z) = \\prod_k \\sqrt{2}\\cos(2\\pi g_k z_k / d_k + \\pi/4)` is expanded with the
-    angle-addition formula into :math:`2^\\omega` products of sample-side and
-    observable-side factors, so that :math:`\\sum_g \\theta_g [\\phi_g(z) - \\phi_g(z - l)]` is
-    assembled from matrix products of shape ``(n_obs, block) @ (block, n_samples)``.
 
     Args:
         theta_ext (jnp.ndarray): Gate parameters with a trailing zero appended, shape
