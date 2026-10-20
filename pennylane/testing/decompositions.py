@@ -236,7 +236,7 @@ def assert_valid_decomp_rule(
 def assert_decomposable(op: Operator, check_matrix: bool = True) -> None:
     """Check that an operator can be decomposed with its registered decomposition rules.
 
-    At least one rule registered for ``op`` with :func:`~.add_decomps` must be applicable to
+    At least one rule registered for ``op`` with :func:`~.decomposition.add_decomps` must be applicable to
     ``op``, and every applicable rule is checked with :func:`~.testing.assert_valid_decomp_rule`.
 
     Args:
