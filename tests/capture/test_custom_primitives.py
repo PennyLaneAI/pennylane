@@ -22,7 +22,7 @@ jax = pytest.importorskip("jax")
 
 import pennylane as qp
 from pennylane.capture.custom_primitives import PrimitiveType, QpPrimitive
-from tests.capture.capture_utils import assert_eqn_matches_op
+from pennylane.testing import assert_eqn_matches_op
 
 pytestmark = pytest.mark.jax
 

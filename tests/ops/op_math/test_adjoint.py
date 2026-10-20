@@ -36,7 +36,7 @@ class PlainOperator(qp.operation.Operator):
 def test_basic_validity(target):
     """Run basic operator validity fucntions."""
     op = qp.adjoint(target)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestInheritanceMixins:

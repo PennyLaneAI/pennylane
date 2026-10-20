@@ -22,8 +22,8 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition import gate_sets
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.transforms import decompose
+from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 # pylint: disable=expression-not-assigned
 
@@ -38,7 +38,7 @@ def test_flatten_unflatten_standard_checks(op_type):
     V = (qp.RZ(0.1, wires=0), qp.RZ(0.2, wires=1))
 
     op = op_type(V, U)
-    qp.ops.functions.assert_valid(op, skip_wire_mapping=True, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_wire_mapping=True, skip_differentiation=True)
 
     data, metadata = op._flatten()
     assert data == (V, U)

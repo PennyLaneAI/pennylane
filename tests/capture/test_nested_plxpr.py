@@ -27,7 +27,7 @@ jax = pytest.importorskip("jax")
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, operator_p
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from tests.capture.capture_utils import assert_eqn_matches_op
+from pennylane.testing import assert_eqn_matches_op
 
 
 class TestAdjointQfunc:
@@ -215,7 +215,7 @@ class TestAdjointDynamicShapes:
 
         jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(4))
 
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
         expected = qp.adjoint(qp.RX(jax.numpy.arange(2), 0))
         qp.assert_equal(tape[0], expected)
 
@@ -253,7 +253,7 @@ class TestAdjointDynamicShapes:
 
         abstracted_axes = ({"a": x_a_axes}, y_axes)
         jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(x, y)
-        tape = qp.tape.plxpr_to_tape(
+        tape = qp.testing.plxpr_to_tape(
             jaxpr.jaxpr, jaxpr.consts, 3, 4, jax.numpy.arange(3), jax.numpy.arange(4)
         )
 
@@ -272,7 +272,7 @@ class TestAdjointDynamicShapes:
             return qp.adjoint(f)(i, jax.numpy.arange(i))
 
         jaxpr = jax.make_jaxpr(workflow)(3)
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
         assert len(tape) == 1
         op1 = qp.adjoint(qp.RX(jax.numpy.arange(4), wires=4))
         qp.assert_equal(op1, tape[0])
@@ -284,7 +284,7 @@ class TestAdjointDynamicShapes:
             return qp.adjoint(qp.RX)(jax.numpy.arange(i), i)
 
         jaxpr = jax.make_jaxpr(workflow)(3)
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
         assert len(tape) == 1
         op1 = qp.adjoint(qp.RX(jax.numpy.arange(4), wires=4))
         qp.assert_equal(op1, tape[0])
@@ -493,7 +493,7 @@ class TestCtrlQfunc:
             qp.ctrl(g, [1])(x)
 
         jaxpr = jax.make_jaxpr(f)({"a": 0.5, "wire": 0})
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.5, 0)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.5, 0)
         assert len(tape) == 1
         expected = qp.ctrl(qp.RX(0.5, 0), [1])
         qp.assert_equal(tape[0], expected)
@@ -510,7 +510,7 @@ class TestCtrlDynamicShapeInput:
 
         jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jax.numpy.arange(4))
 
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 2, jax.numpy.arange(2))
         expected = qp.ctrl(qp.RX(jax.numpy.arange(2), 0), (2, 3))
         qp.assert_equal(tape[0], expected)
 
@@ -541,7 +541,7 @@ class TestCtrlDynamicShapeInput:
             return qp.ctrl(f, 2)(i, jax.numpy.arange(i))
 
         jaxpr = jax.make_jaxpr(workflow)(3)
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
         assert len(tape) == 1
         op1 = qp.ctrl(qp.RX(jax.numpy.arange(4), wires=4), 2)
         qp.assert_equal(op1, tape[0])
@@ -553,7 +553,7 @@ class TestCtrlDynamicShapeInput:
             return qp.ctrl(qp.RX, 6)(jax.numpy.arange(i), i)
 
         jaxpr = jax.make_jaxpr(workflow)(3)
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
         assert len(tape) == 1
         op1 = qp.ctrl(qp.RX(jax.numpy.arange(4), wires=4), 6)
         qp.assert_equal(op1, tape[0])

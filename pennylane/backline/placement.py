@@ -167,8 +167,9 @@ class Node:
     * ``"env"`` (dict[str, str]) - environment variables for the executor process.
     * ``"sudo"`` (bool) - run it as root, for a target whose devices are not world-accessible.
       Defaults to ``False``.
-    * ``"sudo_password"`` (str) - password piped to ``sudo -S``; unnecessary with passwordless
-      sudo.
+    * ``"sudo_password_env"`` (str) - name of the environment variable holding the password to
+      pipe to ``sudo -S``, e.g. ``"MY_HOST_SUDO_PW"``. If unset and sudo is required, a prompt will
+      launch for the password; unnecessary with passwordless sudo.
     * ``"ready_timeout"`` (float) - seconds to wait for the executor to report that it bound its
       port. Defaults to ``60.0``.
     * ``"verbose"`` (int) - how much the launcher logs: ``0`` quiet, ``1`` normal, ``2``
@@ -434,7 +435,8 @@ class Placement:
             :class:`coprocessing accelerators <.Coprocessor>`. Defaults to ``()``.
         transport (str | Transport): Which transport carries data between nodes, as a
             :class:`~.Transport` or its registry name (e.g. ``"rdma"``). A name is resolved on
-            construction, so this reads back as a :class:`~.Transport`.
+            construction, so this reads back as a :class:`~.Transport`. ``"none"`` places the
+            controller alone and cannot be used with coprocessors.
         qec_code (str | None): The quantum error-correcting code the circuit is encoded for.
             Defaults to ``None``, which leaves the circuit unencoded.
 
@@ -495,6 +497,9 @@ class Placement:
         if isinstance(self.transport, str):
             object.__setattr__(self, "transport", get_transport(self.transport))
         self._resolve_message_sizes()
+
+        if self.transport.name == "none" and self.coprocessors:
+            raise ValueError('Cannot use transport="none" with coprocessors')
 
         if self.transport.name == "rdma":
             for coprocessor in self.coprocessors:

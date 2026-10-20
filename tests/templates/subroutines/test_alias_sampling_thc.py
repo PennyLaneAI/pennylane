@@ -17,7 +17,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import assert_valid
 from pennylane.templates.subroutines.alias_sampling_thc import (
     _build_alias_tables,
     _build_qrom_data,
@@ -26,6 +25,7 @@ from pennylane.templates.subroutines.alias_sampling_thc import (
     _cswap_pair,
     _symmetrize,
 )
+from pennylane.testing import assert_valid
 from pennylane.typing import AbstractWires
 
 

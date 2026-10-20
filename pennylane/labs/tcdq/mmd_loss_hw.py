@@ -150,10 +150,6 @@ def _sample_fourier_indices(  # pylint: disable=too-many-arguments,too-many-loca
         Integer array of shape ``(n_ops, n_qudits)``; column ``i`` has entries
         in :math:`\\{0, \\ldots, d_i-1\\}`.
     """
-    # Group the visible wires by local dimension so that every group is sampled with a
-    # single ``jax.random.choice`` and written with a single scatter. Looping over wires
-    # instead would trace one choice and one full-width scatter per qudit, making the
-    # jitted graph (and its compile time and memory) grow with ``n_qudits``.
     wires_by_dim: dict[int, list[int]] = {}
     for wire in wire_tuple:
         wires_by_dim.setdefault(int(dims[wire]), []).append(int(wire))

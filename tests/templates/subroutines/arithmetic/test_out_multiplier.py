@@ -21,7 +21,6 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
 from pennylane.ops import adjoint
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.out_multiplier import (
     OutMultiplier,
     _add_plus_one,
@@ -30,6 +29,7 @@ from pennylane.templates.subroutines.arithmetic.out_multiplier import (
     _out_multiplier_with_qft,
 )
 from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import Wire
 
 
@@ -100,7 +100,8 @@ class TestBuildingBlocks:
         if not decompose_right_elbow:
             gate_set.add("Adjoint(TemporaryAND)")
 
-        @qp.decompose(gate_set=gate_set)
+        # pylint: disable-next=protected-access
+        @qp.transforms._tape_decompose(gate_set=gate_set)
         @qp.qnode(qp.device("default.qubit"))
         def node(x_state, y_state, transformed_state):
             qp.StatePrep(x_state, x_wires)
@@ -184,7 +185,7 @@ def test_standard_validity_out_multiplier_capture():
     output_wires = [6, 7, 8, 9]
     work_wires = [5, 10]
     op = OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_wires_property():
