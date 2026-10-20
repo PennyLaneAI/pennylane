@@ -107,7 +107,23 @@ def analyze(
         qnode (:class:`~catalyst.jit.QJIT`): the (qjit'd) QNode for which to estimate resources.
             ``functools.partial`` wrappers around supported callables are also accepted.
         level (str | int | Iterable[int | str]): The level of compilation at which to estimate
-            resources. Defaults to ``"user"``. See the note below for the accepted values.
+            resources. Defaults to ``"user"``.
+
+            The available options for ``level`` are:
+
+            * ``"top"`` or ``0``: The original circuit before any transforms have been applied.
+            * ``int``: The circuit after the specified number of user-specified transforms have
+            been applied.
+            * ``"user"``: The circuit after all user-specified transforms have been applied.
+            * Marker name (str): The circuit after the transforms that precede the given
+            :func:`qp.marker <pennylane.marker>` have been applied.
+            * iterable: A ``list``, ``tuple``, or similar containing ints and/or marker names.
+            Should be sorted in ascending transform order with no duplicates. The output will
+            provide resource information for each level.
+            * ``"device"``: The circuit after the device preprocessing transforms have been applied.
+            * ``"all-user"``: To provide information at each stage of compilation with respect to user-specified transforms.
+            * ``"all"``: To provide information at each stage of compilation with respect
+            to user-specified and device-specific transforms.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
@@ -116,24 +132,6 @@ def analyze(
         more.
 
     .. seealso:: :func:`~.estimate`, :func:`~.track`
-
-    .. note::
-
-        The available options for ``level`` are:
-
-        * ``"top"`` or ``0``: The original circuit before any transforms have been applied.
-        * An ``int``: The circuit after the specified number of user-specified transforms have
-          been applied.
-        * ``"user"``: The circuit after all user-specified transforms have been applied.
-        * A marker name (str): The circuit after the transforms that precede the given
-          :func:`qp.marker <pennylane.marker>` have been applied.
-        * An iterable: A ``list``, ``tuple``, or similar containing ints and/or marker names.
-          Should be sorted in ascending transform order with no duplicates. The output will
-          provide resource information for each level.
-        * The string ``"device"``: The circuit after the device preprocessing transforms have been applied.
-        * The string ``"all-user"``: To provide information at each stage of compilation with respect to user-specified transforms.
-        * The string ``"all"``: To provide information at each stage of compilation with respect
-          to user-specified and device-specific transforms.
 
     **Example**
 
