@@ -2,6 +2,36 @@
 
 <h3>New features since last release</h3>
 
+* :func:`~.transforms.gridsynth` has a new ``method`` keyword argument with two randomized
+  synthesis methods from [arXiv:2203.10064](https://arxiv.org/abs/2203.10064), which reduce the
+  T-count at the same accuracy of the channel averaged over executions.
+  [(#10290)](https://github.com/PennyLaneAI/pennylane/pull/10290)
+
+  - ``method="mixed"`` implements the mixed diagonal approximation (Section 3.4): each rotation
+    randomly applies one of eight Clifford+T sequences, an under- or an over-rotation twirled over
+    `{I, S, Z, S†}`, whose coherent errors cancel on average. This roughly halves the T-count of
+    the default ``method="deterministic"``.
+  - ``method="mixed-fallback"`` implements the mixed fallback approximation (Section 3.5): each
+    rotation randomly applies one of two projective rotations on an ancilla qubit, followed by a
+    mixed diagonal fallback if measuring the ancilla signals failure. This roughly halves the
+    T-count of ``method="mixed"`` again, at the cost of one temporary ancilla qubit and a
+    mid-circuit measurement per rotation.
+
+  ```python
+  @qp.qjit(capture=True, target="mlir")
+  @qp.transforms.gridsynth(epsilon=1e-6, method="mixed")
+  @qp.qnode(qp.device("null.qubit", wires=1))
+  def circuit(x: float):
+      qp.RZ(x, 0)
+      return qp.expval(qp.Z(0))
+  ```
+
+  ```pycon
+  >>> qp.specs(circuit, level="user")(1.1).resources.quantum_operations["T"]
+  31
+
+  ```
+
 * Added a decomposition of ``Adjoint(TemporaryAND)`` to PPMs (:func:`~.pauli_measure`)
   and a :class:`~.CZ` gate, as an alternative to the existing decomposition using
   :func:`qp.measure` with an explicit basis change.
@@ -26,7 +56,7 @@
   ... )
   ```
 
-* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
+* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function
   can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
   [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
   [(#10297)](https://github.com/PennyLaneAI/pennylane/pull/10297)
@@ -71,11 +101,11 @@
   Circuit Depth: Not computed
 
   ```
-  
+
   The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
 
 * A new state preparation routine called :class:`~.PhaseGradientStatePrep` has been added, which
-  prepares the phase gradient state 
+  prepares the phase gradient state
   :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`.
   It is a catalytic state for (generalized) rotation gates.
   See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
@@ -448,6 +478,55 @@
   {'CNOT': 1, 'PauliX': 2, 'RX': 2}
   >>> qp.analyze(circuit, level="user")(1.23).resources.quantum_operations
   {'CNOT': 1, 'RX': 1}
+
+  ```
+
+* A new function called :func:`~pennylane.estimate` is available, which provides a quick projection of the
+  resources of a ``qjit``-compiled QNode onto a target gate set, without executing the circuit.
+  Before any specified compilation passes, the original circuit's operations and their possible
+  decomposition pathways to the ``target`` gate set are analyzed and the resulting operations are
+  counted. Note that :func:`~pennylane.estimate` is only supported with ``qp.qjit(capture=True)``.
+  [(#10296)](https://github.com/PennyLaneAI/pennylane/pull/10296)
+
+  Consider the following circuit.
+
+  ```python
+  dev = qp.device("null.qubit", wires=2)
+
+  @qp.qjit(capture=True)
+  @qp.qnode(dev)
+  def circuit(x):
+      qp.CZ([0, 1])
+      qp.RX(x, wires=1)
+      return qp.probs()
+  ```
+
+  ```pycon
+  >>> print(qp.estimate(circuit, target={"Hadamard", "CNOT", "RX"})(1.23).resources)
+  Quantum operations:
+  - Total: 4
+    - CNOT: 1
+    - Hadamard: 2
+    - RX: 1
+  Measurement processes:
+  - probs(all wires): 1
+  Total wires: 2
+  Circuit Depth: Not computed
+
+  ```
+
+  Gates that are already in the ``target`` gate set are kept:
+
+  ```pycon
+  >>> print(qp.estimate(circuit, target={"CZ", "RX"})(1.23).resources)
+  Quantum operations:
+  - Total: 2
+    - CZ: 1
+    - RX: 1
+  Measurement processes:
+  - probs(all wires): 1
+  Total wires: 2
+  Circuit Depth: Not computed
 
   ```
 
@@ -1301,7 +1380,7 @@
   ```
 
   [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
-  
+
 * The ``pennylane.qaoa`` module has been removed. This includes the mixer Hamiltonians
   (``x_mixer``, ``xy_mixer``, ``bit_flip_mixer``), the cost Hamiltonians (``maxcut``,
   ``max_independent_set``, ``min_vertex_cover``, ``max_clique``, ``max_weight_cycle``,
@@ -1343,6 +1422,7 @@
 
 * Moved phase gradient decomposition rules for `RZ`, `CRZ` and `SelectPauliRot` from `labs` to `pennylane/transforms/decompositions`.
   [(#9928)](https://github.com/PennyLaneAI/pennylane/pull/9928)
+  [(#10351)](https://github.com/PennyLaneAI/pennylane/pull/10351)
 
 * All functionality related to qutrits/qudits has been removed. Qudit functionality in :mod:`pennylane.labs`
   still remains.
@@ -1925,6 +2005,10 @@
 * Improved coverage of testing operators and their decomposition rules with capture enabled.
   [(#10019)](https://github.com/PennyLaneAI/pennylane/pull/10019)
 
+* Added `post_device_pipeline` to `QNode`to be a pipeline representing user passes that are intended to run after
+  device specific transformations, if `qjit`-ed. `update_pipelines` added to cleanly update `QNode` with input compile and post-device pipeline.
+  [(#10285)](https://github.com/PennyLaneAI/pennylane/pull/10285)
+
 <h3>Documentation 📝</h3>
 
 * The dependency versions in the developer installation guide now match `pyproject.toml`, and a rendering issue in the list of optional dependencies was fixed.
@@ -1962,6 +2046,15 @@
 * Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits.
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
+* Clarified the documentation of the ``check_hermitian`` argument of :class:`~.TrotterProduct`.
+  [(#10326)](https://github.com/PennyLaneAI/pennylane/pull/10326)
+  
+* The :attr:`~.Node.executor_options` documentation now describes ``"sudo_password_env"``, the name
+  of an environment variable holding a remote node's sudo password, in place of the
+  ``"sudo_password"`` string, so the password stays out of source, config files and the node's
+  repr.
+  [(#10284)](https://github.com/PennyLaneAI/pennylane/pull/10284)
+
 <h3>Bug fixes 🐛</h3>
 
 * `qp.cond` can now handle `Operator2` instances being provided instead of branch functions.
@@ -1986,7 +2079,7 @@
 
 * Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the 
   output matrix was with respect to a wrong wire ordering. The bug occurred in products where
-  groups of factors with overlapping wires caused a partial matrix with permuted wires, 
+  groups of factors with overlapping wires caused a partial matrix with permuted wires,
   e.g. ``H(1) @ H(0) @ CNOT([2, 1]) @ CNOT([1, 0])``.
   [(#10274)](https://github.com/PennyLaneAI/pennylane/pull/10274)
 
@@ -2199,8 +2292,16 @@
   unbiasedness of the estimator
   [(#10128)](https://github.com/PennyLaneAI/pennylane/pull/10128)
 
+* TCDQ user guide (labs/tcdq/__init__.py) updated
+  [(#10134)](https://github.com/PennyLaneAI/pennylane/pull/10134)
+  
 * Fixed a bug in the TCDQ module that caused incorrect results for states with complex coefficients.
   [(#10215)](https://github.com/PennyLaneAI/pennylane/pull/10215)
+
+* With program capture enabled, resource estimates of decomposition rules now recursively unroll
+  :class:`~.ChangeOpBasis` operators that are nested in other ``ChangeOpBasis`` operators, matching
+  the gates produced by the captured decomposition.
+  [(#10351)](https://github.com/PennyLaneAI/pennylane/pull/10351)
 
 
 <h3>Contributors ✍️</h3>
@@ -2222,6 +2323,7 @@ Marcus Edwards,
 Sümeyye Nur Esin,
 Thomas C. Fraser,
 Connor Gambla,
+Vellala Gowthami,
 Sengthai Heng,
 Austin Huang,
 Harshal Janjani,
