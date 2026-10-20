@@ -881,7 +881,7 @@ class TestMultiControlledX:
         for rule in qp.list_decomps(op):
             _test_decomposition_rule(op, rule)
 
-    def test_custom_dispatch(self):
+    def test_nested_symbolic_control(self):
         """Tests that qp.ctrl() of MCX dispatches to another MCX."""
 
         op = qp.MultiControlledX(
@@ -899,8 +899,9 @@ class TestMultiControlledX:
         )
         qp.assert_equal(
             new_op,
-            qp.MultiControlledX(
-                [4, 5, 0, 1, 2],
+            qp.ops.ControlledOp2(
+                qp.X(2),
+                control_wires=[4, 5, 0, 1],
                 control_values=[1, 0, 0, 1],
                 work_wires=[6, 3],
                 work_wire_type="borrowed",
@@ -1114,25 +1115,25 @@ class TestPowMethod:
 
 
 class TestControlledMethod:
-    """Tests for the _controlled method of non-parametric operations."""
+    """Tests for controlling non-parametric operations."""
 
     # pylint: disable=protected-access
 
     def test_PauliZ(self):
-        """A positive control on ``PauliZ`` should dispatch to ``CZ``."""
+        """A positive control on PauliZ remains symbolic."""
         out = qp.ctrl(qp.PauliZ(0), "a")
-        qp.assert_equal(out, qp.CZ(("a", 0)))
+        qp.assert_equal(out, qp.ops.ControlledOp2(qp.Z(0), control_wires=["a"]))
 
     def test_Barrier(self):
         """Tests the control behavior of Barrier."""
         original = qp.Barrier((0, 1, 2), only_visual=True)
         out = qp.ctrl(original, "a")
-        qp.assert_equal(original, out)
+        qp.assert_equal(qp.ops.ControlledOp2(original, control_wires=["a"]), out)
 
     def test_CZ(self):
-        """Test the CZ ctrl dispatch produces CCZ."""
+        """Test that controlling CZ merges its controls."""
         out = qp.ctrl(qp.CZ(wires=[0, 1]), control="a")
-        qp.assert_equal(out, qp.CCZ(("a", 0, 1)))
+        qp.assert_equal(out, qp.ops.ControlledOp2(qp.Z(1), control_wires=["a", 0]))
 
 
 class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods

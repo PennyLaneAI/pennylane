@@ -199,8 +199,7 @@ class TestCollectOpsandMeas:
         obj = CollectOpsandMeas()
         obj(f)(x)
 
-    @pytest.mark.parametrize("lazy", (True, False))
-    def test_adjoint_transform(self, lazy):
+    def test_adjoint_transform(self):
         """Test capture the adjoint of a qfunc."""
 
         def qfunc(x):
@@ -209,16 +208,16 @@ class TestCollectOpsandMeas:
             qp.X(2)
 
         def f(x):
-            qp.adjoint(qfunc, lazy=lazy)(x)
+            qp.adjoint(qfunc)(x)
 
         obj = CollectOpsandMeas()
         x = jax.numpy.array(2.1)
         obj(f)(x)
 
         assert len(obj.state["ops"]) == 3
-        qp.assert_equal(obj.state["ops"][0], qp.adjoint(qp.X(2), lazy=lazy))
-        qp.assert_equal(obj.state["ops"][1], qp.adjoint(qp.RY(2 * x, 0), lazy=lazy))
-        qp.assert_equal(obj.state["ops"][2], qp.adjoint(qp.RX(x, 0), lazy=lazy))
+        qp.assert_equal(obj.state["ops"][0], qp.adjoint(qp.X(2)))
+        qp.assert_equal(obj.state["ops"][1], qp.adjoint(qp.RY(2 * x, 0)))
+        qp.assert_equal(obj.state["ops"][2], qp.adjoint(qp.RX(x, 0)))
 
     def test_control_transform(self):
         """Test collecting the control of a qfunc."""
@@ -237,7 +236,7 @@ class TestCollectOpsandMeas:
         assert len(obj.state["ops"]) == 2
         expected0 = qp.ctrl(qp.RX(x, 0), [1, 2], control_values=[False, False])
         qp.assert_equal(obj.state["ops"][0], expected0)
-        expected1 = qp.ctrl(qp.X(0), [1, 2], control_values=[False, False])
+        expected1 = qp.ctrl(qp.X(0), control=[1, 2], control_values=[False, False])
         qp.assert_equal(obj.state["ops"][1], expected1)
 
     def test_hybrid_cond_error(self):

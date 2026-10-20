@@ -62,19 +62,17 @@ class TestAdjointQfunc:
         assert nested_jaxpr.eqns[0].params["op_cls"] is qp.PauliRot
         assert nested_jaxpr.eqns[0].params["pauli_word"][0] == ("XY",)
 
-        assert plxpr.eqns[0].params["lazy"] is True
-
         with qp.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2)
 
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.adjoint(qp.PauliRot(1.2, "XY", wires=(0, 1))))
 
-    def test_adjoint_qfunc_eager(self):
-        """Test eager execution can be captured by the qfunc transform."""
+    def test_adjoint_qfunc_rot(self):
+        """Test that a rotation callable produces a symbolic adjoint."""
 
         def workflow(x, y, z):
-            qp.adjoint(qp.Rot, lazy=False)(x, y, z, 0)
+            qp.adjoint(qp.Rot)(x, y, z, 0)
 
         plxpr = jax.make_jaxpr(workflow)(0.5, 0.7, 0.8)
 
@@ -84,13 +82,11 @@ class TestAdjointQfunc:
         nested_jaxpr = plxpr.eqns[0].params["jaxpr"]
         assert_eqn_matches_op(nested_jaxpr.eqns[0], qp.Rot)
 
-        assert plxpr.eqns[0].params["lazy"] is False
-
         with qp.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, -1.0, -2.0, -3.0)
 
         assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.Rot(3.0, 2.0, 1.0, 0))
+        qp.assert_equal(q.queue[0], qp.adjoint(qp.Rot(-1.0, -2.0, -3.0, 0)))
 
     @pytest.mark.parametrize("eqn_out", (None, 2))
     def test_multiple_ops_and_classical_processing(self, eqn_out):
@@ -123,7 +119,6 @@ class TestAdjointQfunc:
         assert len(q.queue) == 2
 
         assert plxpr.eqns[0].primitive == adjoint_transform_prim
-        assert plxpr.eqns[0].params["lazy"] is True
 
         inner_plxpr = plxpr.eqns[0].params["jaxpr"]
         assert len(inner_plxpr.eqns) == 5
@@ -341,7 +336,7 @@ class TestCtrlQfunc:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1, 2, 3)
 
         assert out == []
-        expected = qp.Toffoli(wires=(2, 3, 1))
+        expected = qp.ctrl(qp.X(1), control=(2, 3))
         qp.assert_equal(q.queue[0], expected)
         assert len(q) == 1
 
@@ -513,7 +508,7 @@ class TestCtrlQfunc:
         jaxpr = jax.make_jaxpr(f)({"a": 0.5, "wire": 0})
         tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.5, 0)
         assert len(tape) == 1
-        expected = qp.ctrl(qp.RX(0.5, 0), [1])
+        expected = qp.ctrl(qp.RX(0.5, 0), control=[1])
         qp.assert_equal(tape[0], expected)
 
 
@@ -546,7 +541,7 @@ class TestCtrlDynamicShapeInput:
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 3)
 
-        expected = qp.ctrl(qp.RX(jax.numpy.arange(3), 3), 4)
+        expected = qp.ctrl(qp.RX(jax.numpy.arange(3), wires=3), control=[4])
         qp.assert_equal(expected, collector.state["ops"][0])
 
     def test_dynamic_shape_matches_arg(self):
@@ -561,7 +556,7 @@ class TestCtrlDynamicShapeInput:
         jaxpr = jax.make_jaxpr(workflow)(3)
         tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
         assert len(tape) == 1
-        op1 = qp.ctrl(qp.RX(jax.numpy.arange(4), wires=4), 2)
+        op1 = qp.ctrl(qp.RX(jax.numpy.arange(4), wires=4), control=[2])
         qp.assert_equal(op1, tape[0])
 
     def test_dynamic_shape_before_matching_arg(self):
@@ -573,5 +568,5 @@ class TestCtrlDynamicShapeInput:
         jaxpr = jax.make_jaxpr(workflow)(3)
         tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 4)
         assert len(tape) == 1
-        op1 = qp.ctrl(qp.RX(jax.numpy.arange(4), wires=4), 6)
+        op1 = qp.ctrl(qp.RX(jax.numpy.arange(4), wires=4), control=[6])
         qp.assert_equal(op1, tape[0])

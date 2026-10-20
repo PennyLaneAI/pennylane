@@ -236,8 +236,7 @@ class TestPlxprToTape:
         for i in range(2, 5):
             assert isinstance(tape.operations[i], Conditional)
 
-    @pytest.mark.parametrize("lazy", (True, False))
-    def test_adjoint_transform(self, lazy):
+    def test_adjoint_transform(self):
         """Test capture the adjoint of a qfunc."""
 
         def qfunc(x):
@@ -246,16 +245,16 @@ class TestPlxprToTape:
             qp.X(2)
 
         def f(x):
-            qp.adjoint(qfunc, lazy=lazy)(x)
+            qp.adjoint(qfunc)(x)
 
         x = jax.numpy.array(2.1)
         jaxpr = jax.make_jaxpr(f)(0.6)
         tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(tape.operations) == 3
-        qp.assert_equal(tape.operations[0], qp.adjoint(qp.X(2), lazy=lazy))
-        qp.assert_equal(tape.operations[1], qp.adjoint(qp.RY(2 * x, 0), lazy=lazy))
-        qp.assert_equal(tape.operations[2], qp.adjoint(qp.RX(x, 0), lazy=lazy))
+        qp.assert_equal(tape.operations[0], qp.adjoint(qp.X(2)))
+        qp.assert_equal(tape.operations[1], qp.adjoint(qp.RY(2 * x, 0)))
+        qp.assert_equal(tape.operations[2], qp.adjoint(qp.RX(x, 0)))
 
     def test_control_transform(self):
         """Test collecting the control of a qfunc."""

@@ -972,7 +972,7 @@ def test_adjoint():
     assert adj_qs.measurements == qs.measurements
     assert adj_qs.shots is qs.shots
 
-    # assumes lazy=False
+    # Script inversion uses each operation's known adjoint when available.
     expected_ops = [qp.adjoint(qp.T(1)), qp.CNOT((0, 1)), qp.adjoint(qp.S(0)), qp.RX(-1.2, 0)]
     for op, expected in zip(adj_qs.operations[1:], expected_ops):
         # update this one qp.equal works with adjoint

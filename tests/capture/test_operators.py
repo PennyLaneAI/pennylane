@@ -361,14 +361,30 @@ class TestTemplates:
 class TestOpmath:
     """Tests for capturing operator arithmetic."""
 
-    def test_adjoint(self):
-        """Test the adjoint on an op can be captured."""
+    @pytest.mark.parametrize("base", (qp.H(0), qp.RX(0.5, wires=0)))
+    def test_adjoint(self, base):
+        """Captured adjoints retain their base operator."""
 
-        jaxpr = jax.make_jaxpr(qp.adjoint)(qp.X(0))
+        jaxpr = jax.make_jaxpr(qp.adjoint)(base)
 
         assert len(jaxpr.eqns) == 1
-        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
+        assert_eqn_matches_op(jaxpr.eqns[0], type(base))
         assert jaxpr.eqns[0].params["adjoint"] is True
+
+    @pytest.mark.parametrize("op_cls, params", ((qp.H, ()), (qp.X, ()), (qp.RX, (0.5,))))
+    def test_controlled_without_custom_dispatch(self, op_cls, params):
+        """Captured controls retain the base operator and its control metadata."""
+
+        def circuit(wire, control):
+            qp.ctrl(op_cls(*params, wires=wire), control=[control])
+
+        jaxpr = jax.make_jaxpr(circuit)(0, 1)
+
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, op_cls)
+        assert eqn.params["n_ctrls"] == 1
+        assert eqn.params["adjoint"] is False
 
     def test_adjoint_op_outside_qfunc(self):
         """Test that an op can be constructed outside a function and still be adjointed."""

@@ -29,7 +29,6 @@ from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.compiler import compiler
 from pennylane.core.operator import Operation, Operator, Operator2
-from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import conj, moveaxis, transpose
 
@@ -38,10 +37,10 @@ from .symbolicop import SymbolicOp
 
 
 @overload
-def adjoint(fn: Operator, lazy: bool = True) -> Operator: ...
+def adjoint(fn: Operator) -> Operator: ...
 @overload
-def adjoint(fn: Callable, lazy: bool = True) -> Callable: ...
-def adjoint(fn, lazy=True):
+def adjoint(fn: Callable) -> Callable: ...
+def adjoint(fn):
     """Create the adjoint of an Operator or a function that applies the adjoint of the provided function.
     :func:`~.qjit` compatible.
 
@@ -49,15 +48,16 @@ def adjoint(fn, lazy=True):
         fn (function or :class:`~.operation.Operator`): A single operator or a quantum function that
             applies quantum operations.
 
-    Keyword Args:
-        lazy=True (bool): If the transform is behaving lazily, all operations are wrapped in a ``Adjoint`` class
-            and handled later. If ``lazy=False``, operation-specific adjoint decompositions are first attempted.
-            Setting ``lazy=False`` is not supported when used with :func:`~.qjit`.
-
     Returns:
         (function or :class:`~.operation.Operator`): If an Operator is provided, returns an Operator that is the adjoint.
         If a function is provided, returns a function with the same call signature that returns the Adjoint of the
         provided function.
+
+    Operators are wrapped symbolically in :class:`~.ops.op_math.Adjoint`. Use
+    :func:`~.simplify` explicitly to simplify an adjoint.
+
+    >>> qp.adjoint(qp.H(0))
+    Adjoint(H(0))
 
     .. note::
 
@@ -159,37 +159,20 @@ def adjoint(fn, lazy=True):
         The Catalyst adjoint function does not support performing the adjoint
         of quantum functions that contain mid-circuit measurements.
 
-    .. details::
-        :title: Lazy Evaluation
-
-        When ``lazy=False``, the function first attempts operation-specific decomposition of the
-        adjoint via the :meth:`.Operator.adjoint` method. Only if an Operator doesn't have
-        an :meth:`.Operator.adjoint` method is the object wrapped with the :class:`~.ops.op_math.Adjoint`
-        wrapper class.
-
-        >>> qp.adjoint(qp.Z(0), lazy=False)
-        Z(0)
-        >>> qp.adjoint(qp.RX, lazy=False)(1.0, wires=0)
-        RX(-1.0, wires=[0])
-        >>> qp.adjoint(qp.S, lazy=False)(0)
-        Adjoint(S(0))
-
     """
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.adjoint(fn, lazy=lazy)
-    return create_adjoint_op(fn, lazy)
+        return ops_loader.adjoint(fn)
+    return create_adjoint_op(fn)
 
 
-def create_adjoint_op(fn, lazy):
+def create_adjoint_op(fn):
     """Main logic for qp.adjoint, but allows bypassing the compiler dispatch if needed."""
-    if qp.math.is_abstract(fn):
+    if qp.math.is_abstract(fn) or isinstance(fn, Operator):
         return _make_adjoint_op(fn)
-    if isinstance(fn, Operator):
-        return _make_adjoint_op(fn) if lazy else _single_op_eager(fn, update_queue=True)
     if callable(fn):
-        return _adjoint_transform(fn, lazy=lazy)
+        return _adjoint_transform(fn)
     if fn is None:
         raise ValueError(
             "None is not callable. "
@@ -210,7 +193,7 @@ adjoint_transform_prim.prim_type = "higher_order"
 
 
 @adjoint_transform_prim.def_impl
-def _adjoint_transform_impl(*args, jaxpr, lazy, n_consts):
+def _adjoint_transform_impl(*args, jaxpr, n_consts):
     from pennylane.tape.plxpr_conversion import (  # pylint: disable=import-outside-toplevel
         CollectOpsandMeas,
     )
@@ -220,7 +203,7 @@ def _adjoint_transform_impl(*args, jaxpr, lazy, n_consts):
     collector = CollectOpsandMeas()
     collector.eval(jaxpr, consts, *args)
     for op in reversed(collector.state["ops"]):
-        adjoint(op, lazy=lazy)
+        adjoint(op)
     return []
 
 
@@ -229,7 +212,7 @@ def _adjoint_transform_abstract_eval(*_, **__):
     return []
 
 
-def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
+def _capture_adjoint_transform(qfunc: Callable) -> Callable:
     """Capture compatible way of performing an adjoint transform."""
     # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
 
@@ -243,43 +226,29 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
             *abstract_shapes,
             *flat_args,
             jaxpr=jaxpr.jaxpr,
-            lazy=lazy,
             n_consts=len(jaxpr.consts),
         )
 
     return new_qfunc
 
 
-def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
+def _adjoint_transform(qfunc: Callable) -> Callable:
     """Default adjoint transform when capture is not enabled."""
 
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
         if qp.capture.enabled():
-            return _capture_adjoint_transform(qfunc, lazy=lazy)(*args, **kwargs)
+            return _capture_adjoint_transform(qfunc)(*args, **kwargs)
 
         qscript = qp.tape.make_qscript(qfunc)(*args, **kwargs)
         leaves, _ = qp.pytrees.flatten((args, kwargs), lambda op: isinstance(op, Operator))
         _ = [qp.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
 
-        adjoint_fn = _make_adjoint_op if lazy else _single_op_eager
-        adjoint_ops = [adjoint_fn(op) for op in reversed(qscript.operations)]
+        adjoint_ops = [_make_adjoint_op(op) for op in reversed(qscript.operations)]
 
         return adjoint_ops[0] if len(adjoint_ops) == 1 else adjoint_ops
 
     return wrapper
-
-
-def _single_op_eager(op: Operator, update_queue: bool = False) -> Operator:
-    if op.has_adjoint:
-        adj = op.adjoint()
-        if update_queue:
-            if isinstance(op, Operator2):
-                _ = pop_op_eqns((op,))
-            QueuingManager.remove(op)
-            QueuingManager.append(adj)
-        return adj
-    return _make_adjoint_op(op)
 
 
 class Adjoint(SymbolicOp):

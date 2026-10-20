@@ -1344,19 +1344,19 @@
 * The `qp.Backline.backline` alias of `qp.Backline.placement` has been removed. Use `placement`.
   [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
 
+* The ``lazy`` argument of :func:`~.adjoint` and the ``custom_ctrl_dispatch`` registry
+  have been removed. Adjoint and controlled operators are now constructed symbolically
+  with and without program capture. For example, ``qp.adjoint(qp.H(0))`` produces
+  ``Adjoint(H(0))`` and ``qp.ctrl(qp.H(0), control=1)`` produces
+  ``Controlled(H(0), control_wires=[1])``. Use explicit operators such as ``qp.H``
+  or ``qp.CH``, or simplify an adjoint explicitly, when a specialized inverse is needed.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's
   ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
   available as :func:`~.transforms._tape_decompose`.
   [(#10304)](https://github.com/PennyLaneAI/pennylane/pull/10304)
 
-* Controlling a :class:`~.GlobalPhase` now returns a different operator. When all control values are
-  ``1``, ``qp.ctrl(qp.GlobalPhase(phi), control=...)`` is lowered in python to a :class:`~.PhaseShift`
-  (single control) or a controlled :class:`~.PhaseShift` (multiple controls), acting on a smaller
-  subspace. The result is therefore no longer a ``Controlled`` instance with a ``GlobalPhase`` base,
-  so attributes such as ``.base`` and ``.control_wires`` and the ``C(GlobalPhase)`` name no longer
-  apply in that case. A genuine controlled global phase is still produced when some control values
-  are ``0``.
-  [(#10279)](https://github.com/PennyLaneAI/pennylane/pull/10279)
 
 * Tensorflow and tensorflow-autograph interfaces are removed.
   [(#10229)](https://github.com/PennyLaneAI/pennylane/pull/10229)
@@ -2001,10 +2001,6 @@
   [(#9400)](https://github.com/PennyLaneAI/pennylane/pull/9400)
   [(#9541)](https://github.com/PennyLaneAI/pennylane/pull/9541)
 
-* The custom dispatch logic from general controlled operators to equivalent bespoke operators (e.g.,
-  from `qp.ctrl(qp.X(0), control=[1, 2])` to `Toffoli(wires=[1, 2, 0])`) is re-written to use a
-  singledispatch function `custom_ctrl_dispatch` as opposed to relying on hard-coded logic.
-  [(#9798)](https://github.com/PennyLaneAI/pennylane/pull/9798)
 
 * `capture.enable()`, `capture.disable()` are updated to use `ContextVar` for thread safety. A `capture.toggle_ctx`
   context manager that temporarily enables or disables capture is added.

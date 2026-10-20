@@ -292,7 +292,9 @@ def pattern_matching_optimization(
                             inst = qp.map_wires(
                                 inst, wire_map=dict(zip(inst.wires, wires, strict=True))
                             )
-                            adjoint(qp.apply, lazy=False)(inst)
+                            with qp.QueuingManager.stop_recording():
+                                inverse = inst.adjoint() if inst.has_adjoint else adjoint(inst)
+                            qp.apply(inverse)
 
                     # Add the unmatched gates.
                     for node_id in substitution.unmatched_list:

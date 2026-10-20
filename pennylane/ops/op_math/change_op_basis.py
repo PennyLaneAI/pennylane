@@ -368,7 +368,9 @@ class ChangeOpBasis(CompositeOp):
         return True
 
     def adjoint(self):
-        return ChangeOpBasis(*(adjoint(factor, lazy=False) for factor in self))
+        return ChangeOpBasis(
+            *(factor.adjoint() if factor.has_adjoint else adjoint(factor) for factor in self)
+        )
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""

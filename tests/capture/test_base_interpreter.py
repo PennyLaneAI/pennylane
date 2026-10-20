@@ -347,8 +347,7 @@ def handle_add_3(self, x):  # pylint: disable=unused-argument
 
 #  pylint: disable=too-many-public-methods
 class TestHigherOrderPrimitiveRegistrations:
-    @pytest.mark.parametrize("lazy", (True, False))
-    def test_adjoint_transform(self, lazy):
+    def test_adjoint_transform(self):
         """Test the higher order adjoint transform."""
 
         @SimplifyInterpreter()
@@ -356,19 +355,17 @@ class TestHigherOrderPrimitiveRegistrations:
             def g(y):
                 _ = qp.RX(y, 0) ** 3
 
-            qp.adjoint(g, lazy=lazy)(x)
+            qp.adjoint(g)(x)
 
         jaxpr = jax.make_jaxpr(f)(0.5)
 
-        assert jaxpr.eqns[0].params["lazy"] == lazy
         assert jaxpr.eqns[0].primitive == adjoint_transform_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         # first eqn mul, second RX
         assert_eqn_matches_op(inner_jaxpr.eqns[1], qp.RX)
         assert len(inner_jaxpr.eqns) == 2
 
-    @pytest.mark.parametrize("lazy", (True, False))
-    def test_adjoint_consts(self, lazy):
+    def test_adjoint_consts(self):
         """Test that consts propagate correctly when interpreting the adjoint primitive."""
 
         def f(x):
@@ -377,7 +374,7 @@ class TestHigherOrderPrimitiveRegistrations:
                 theta = add_3.bind(0)
                 qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
 
-            qp.adjoint(g, lazy=lazy)(x)
+            qp.adjoint(g)(x)
 
         jaxpr = jax.make_jaxpr(f)(0.5)
         assert len(jaxpr.consts) == 0

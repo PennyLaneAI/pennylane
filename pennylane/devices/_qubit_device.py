@@ -290,7 +290,12 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
             if is_lightning and diagonalizing_gates:  # pragma: no cover
                 # pylint: disable=bad-reversed-sequence
-                self.apply([adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
+                self.apply(
+                    [
+                        g.adjoint() if g.has_adjoint else adjoint(g)
+                        for g in reversed(diagonalizing_gates)
+                    ]
+                )
 
         # compute the required statistics
         if has_mcm:
@@ -667,7 +672,12 @@ class QubitDevice(Device):
                 result = self.probability(wires=m.wires, shot_range=shot_range, bin_size=bin_size)
                 if is_lightning and diagonalizing_gates:  # pragma: no cover
                     # pylint: disable=bad-reversed-sequence
-                    self.apply([adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
+                    self.apply(
+                        [
+                            g.adjoint() if g.has_adjoint else adjoint(g)
+                            for g in reversed(diagonalizing_gates)
+                        ]
+                    )
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
                     raise QuantumFunctionError(

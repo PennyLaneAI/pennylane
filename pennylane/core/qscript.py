@@ -897,7 +897,7 @@ class QuantumScript:
         ops = self.operations[self.num_preps :]
         prep = self.operations[: self.num_preps]
         with QueuingManager.stop_recording():
-            ops_adj = [adjoint(op, lazy=False) for op in reversed(ops)]
+            ops_adj = [op.adjoint() if op.has_adjoint else adjoint(op) for op in reversed(ops)]
         return self.__class__(ops=prep + ops_adj, measurements=self.measurements, shots=self.shots)
 
     # ========================================================

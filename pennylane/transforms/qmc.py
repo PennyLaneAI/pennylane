@@ -387,6 +387,6 @@ def quantum_monte_carlo(
             for _ in range(n_reps):
                 updated_operations.extend(tape_q.operations)
 
-        updated_operations.append(adjoint(QFT(wires=estimation_wires), lazy=False))
+        updated_operations.append(adjoint(QFT(wires=estimation_wires)))
     updated_tape = tape.copy(operations=updated_operations)
     return [updated_tape], lambda x: x[0]

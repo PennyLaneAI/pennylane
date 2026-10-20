@@ -71,7 +71,7 @@ class TestRotXZX:
         phi, theta, omega = np.pi / 4, 1.23, -0.5
 
         op = RotXZX(phi, theta, omega, wires=0)
-        adj_op = qp.adjoint(op, lazy=False)
+        adj_op = op.adjoint()
 
         assert isinstance(adj_op, RotXZX)
         assert adj_op.data == (-omega, -theta, -phi)

@@ -123,7 +123,7 @@ class ChangeOpBasis2(CompositeOp2):
     def adjoint(self):
         return ChangeOpBasis2(
             self.compute_op,
-            adjoint(self.target_op, lazy=False),
+            self.target_op.adjoint() if self.target_op.has_adjoint else adjoint(self.target_op),
             self.uncompute_op,
         )
 

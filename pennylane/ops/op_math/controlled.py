@@ -82,6 +82,12 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
 
+    .. note::
+
+        Controlled operators are represented symbolically. For example,
+        ``qp.ctrl(qp.H(0), control=1)`` returns a controlled Hadamard.
+        Use :class:`~.CH` directly when that specific operator is needed.
+
     Args:
         op (function or :class:`~.operation.Operator`): A single operator or a function that applies pennylane operators.
         control (Wires): The control wire(s).
@@ -209,17 +215,6 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
     qp.QueuingManager.remove(op)
     _ = pop_op_eqns((op,))
 
-    if (
-        custom_op := custom_ctrl_dispatch(
-            op,
-            control_wires,
-            control_values,
-            work_wires,
-            work_wire_type,
-        )
-    ) is not NotImplemented:
-        return custom_op
-
     if isinstance(op, Controlled2):
         work_wire_type = resolve_work_wire_type(
             op.work_wires,
@@ -253,45 +248,6 @@ def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
     return math.array(math.concatenate([control_values, base_ctrl_values]), dtype=bool)
 
 
-def _is_empty_or_all_true(control_values):
-    """Checks whether a control values argument is empty or all True."""
-    return control_values is None or (
-        not math.is_abstract(control_values)
-        and not isinstance(control_values, AbstractArray)
-        and all(control_values)
-    )
-
-
-# pylint: disable=unused-argument
-@functools.singledispatch
-def custom_ctrl_dispatch(base, control, control_values, work_wires, work_wire_type) -> Operator:
-    """Dispatch a ``qp.ctrl`` call to return a custom operator.
-
-    This is a single-dispatch function to be registered for operators that produce
-    custom operators when controlled.
-
-    **Examples**
-
-    For example, a ``PauliY`` controlled on a single wire is a ``CY``:
-
-    .. code-block:: python
-
-        from pennylane.ops.op_math import custom_ctrl_dispatch
-        from pennylane.ops.op_math.controlled import _is_empty_or_all_true
-
-        @custom_ctrl_dispatch.register
-        def _ctrl_y(base: qp.PauliY, control, control_values, *_):
-            if len(control) == 1 and _is_empty_or_all_true(control_values):
-                return qp.CY(control + base.wires)
-            return NotImplemented
-
-    >>> qp.ctrl(qp.Y(0), control=1)
-    CY(wires=[1, 0])
-
-    """
-    return NotImplemented
-
-
 def create_controlled_op(op, control, control_values, work_wires, work_wire_type):
     """Default ``qp.ctrl`` implementation, allowing other implementations to call it when needed."""
 
@@ -312,17 +268,6 @@ def create_controlled_op(op, control, control_values, work_wires, work_wire_type
             qp.QueuingManager.remove(op)
             qp.QueuingManager.append(op)  # requeue in proper place
         return op
-
-    if (
-        custom_op := custom_ctrl_dispatch(
-            op,
-            control,
-            control_values,
-            work_wires,
-            work_wire_type,
-        )
-    ) is not NotImplemented:
-        return custom_op
 
     one_controlled = False
     if control_values is None:

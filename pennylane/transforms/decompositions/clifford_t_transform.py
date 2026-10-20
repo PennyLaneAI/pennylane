@@ -425,7 +425,7 @@ class _CachedCallable:
             if f_adj:
                 return seq
 
-            adj = [qp.adjoint(s, lazy=False) for s in reversed(seq)]
+            adj = [qp.adjoint(s).simplify() for s in reversed(seq)]
             return adj[1:] + adj[:1]
 
         return self.decompose_fn(op)

@@ -37,7 +37,6 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
@@ -182,13 +181,6 @@ class Hadamard(Operator2):
     @override
     def pow(self, z: int | float):
         return super().pow(z % 2)
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_h(base: Hadamard, control, control_values, *_):
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CH(control + base.wires)
-    return NotImplemented
 
 
 H = Hadamard
@@ -467,18 +459,6 @@ class PauliX(Operator2):
         return super().pow(z_mod2)
 
 
-@custom_ctrl_dispatch.register
-def _ctrl_x(base: PauliX, control, control_values, work_wires, work_wire_type):
-    wires = control + base.wires
-    if not _is_empty_or_all_true(control_values):
-        return qp.MultiControlledX(wires, control_values, work_wires, work_wire_type)
-    if len(control) == 1:
-        return qp.CNOT(wires)
-    if len(control) == 2 and not work_wires:
-        return qp.Toffoli(wires)
-    return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
-
-
 X = PauliX
 r"""The Pauli X operator
 
@@ -698,13 +678,6 @@ class PauliY(Operator2):
 
     def pow(self, z: float | int) -> list[qp.operation.Operator]:
         return super().pow(z % 2)
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_y(base: PauliY, control, control_values, *_):
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CY(control + base.wires)
-    return NotImplemented
 
 
 Y = PauliY
@@ -940,18 +913,6 @@ class PauliZ(Operator2):
             return [T(wires=self.wires)]
 
         return [qp.PhaseShift(np.pi * z_mod2, wires=self.wires)]
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_z(base: PauliZ, control, control_values, work_wires, work_wire_type):
-    if not _is_empty_or_all_true(control_values):
-        return NotImplemented
-    is_abstract = isinstance(control, AbstractWires) or isinstance(base.wires, AbstractWires)
-    if len(control) == 1:
-        return qp.CZ(Wire[2]) if is_abstract else qp.CZ(control + base.wires)
-    if len(control) == 2:
-        return qp.CCZ(Wire[3]) if is_abstract else qp.CCZ(control + base.wires)
-    return NotImplemented
 
 
 Z = PauliZ
@@ -1555,13 +1516,6 @@ class SWAP(Operator2):
     @override
     def adjoint(self) -> "SWAP":
         return SWAP(wires=self.wires)
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_swap(base: SWAP, control, control_values, *_):
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CSWAP(control + base.wires)
-    return NotImplemented
 
 
 def _swap_to_cnot_resources(wires: WiresLike):

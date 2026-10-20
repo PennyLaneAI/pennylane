@@ -39,7 +39,6 @@ from pennylane.ops.identity import I
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.op_math.prod import prod
@@ -169,13 +168,6 @@ class RX(Operator2):
             return qp.Identity(wires=self.wires)
 
         return RX(phi, wires=self.wires)
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_rx(base: RX, control, control_values, *_):
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CRX(base.phi, wires=control + base.wires)
-    return NotImplemented
 
 
 def _rx_to_rot_resources(*_, **__):
@@ -377,13 +369,6 @@ class RY(Operator2):
             return qp.Identity(wires=self.wires)
 
         return RY(theta, wires=self.wires)
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_ry(base: RY, control, control_values, *_):
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CRY(base.phi, wires=control + base.wires)
-    return NotImplemented
 
 
 def _ry_to_rot_resources(*_, **__):
@@ -623,13 +608,6 @@ class RZ(Operator2):
             return I(wires=self.wires)
 
         return RZ(phi, wires=self.wires)
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_rz(base: RZ, control, control_values, *_):
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CRZ(base.phi, wires=control + base.wires)
-    return NotImplemented
 
 
 # pylint: disable=unused-argument
@@ -895,13 +873,6 @@ class PhaseShift(Operator2):
         return PhaseShift(phi, wires=self.wires)
 
 
-@custom_ctrl_dispatch.register
-def _ctrl_ps(base: PhaseShift, control, control_values, *_):
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.ControlledPhaseShift(base.phi, wires=control + base.wires)
-    return NotImplemented
-
-
 def _phaseshift_to_rz_gp_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.RZ: 1, qp.GlobalPhase: 1}
 
@@ -1075,13 +1046,6 @@ class Rot(Operator2):
         return Rot(p0, p1, p2, wires=self.wires)
 
 
-@custom_ctrl_dispatch.register
-def _ctrl_rot(base: Rot, control, control_values, *_):
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CRot(*base.data, wires=control + base.wires)
-    return NotImplemented
-
-
 # pylint: disable-next=unused-argument
 def _rot_to_rz_ry_rz_resources(phi, theta, omega, wires):
     return {qp.RZ: 2, qp.RY: 1}
@@ -1245,13 +1209,6 @@ def _u1_phaseshift(phi, wires):
 add_decomps(U1, _u1_phaseshift)
 add_decomps("Adjoint(U1)", adjoint_rotation2)
 add_decomps("Pow(U1)", pow_rotation2)
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_u1(base: U1, control, control_values, *_):
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.ControlledPhaseShift(base.phi, wires=control + base.wires)
-    return NotImplemented
 
 
 class U2(Operator2):
