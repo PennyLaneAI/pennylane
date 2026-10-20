@@ -414,12 +414,7 @@ def _group_phase_diffs(
     group: SparseGateGroup,
     block_size: int,
 ) -> jnp.ndarray:
-    """Phase differences of one weight group, processed in memory-bounded blocks.
-
-    Each block is wrapped in :func:`jax.checkpoint` so that reverse-mode
-    differentiation recomputes the block's trigonometric factors instead of
-    storing them, keeping gradient memory bounded as well.
-    """
+    """Phase differences of one weight group, processed in memory-bounded blocks."""
     n_gates, omega = group.supports.shape
     supports = jnp.asarray(group.supports, dtype=jnp.int32)
     powers = jnp.asarray(group.powers, dtype=jnp.int32)
