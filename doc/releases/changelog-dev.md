@@ -839,7 +839,8 @@
 <h3>Improvements 🛠</h3>
 
 * A Backline placement accepts any transport that a backend in Catalyst's transport backend
-  registry implements, so a backend package can add a transport without a PennyLane change.
+  registry implements, so a backend package can add a transport without a PennyLane change. A
+  :class:`~.Controller` or :class:`~.Coprocessor` names the backend to run on with ``backend=``.
   [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
 
 * The `decompose_mcx_with_no_worker` decomposition rule for :class:`~.MultiControlledX` now only

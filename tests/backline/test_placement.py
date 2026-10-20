@@ -496,6 +496,12 @@ class TestPlacement:
             == "example"
         )
 
+    def test_a_node_names_its_backend(self):
+        """``backend`` defaults to letting the compiler choose, and keeps a name it is given."""
+        assert qp.Controller().backend is None
+        assert qp.Controller(backend="fpga_verbs").backend == "fpga_verbs"
+        assert qp.Coprocessor(coprocessor_fn="decoder", backend="example").backend == "example"
+
     def test_not_exported_at_top_level(self):
         """Placement is reached via pennylane.backline, not the top-level namespace."""
         assert not hasattr(qp, "Placement")
