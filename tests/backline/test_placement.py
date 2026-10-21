@@ -471,11 +471,36 @@ class TestPlacement:
         placement = Placement(controller=ctrl, coprocessors=[cop], transport="rdma")
         assert isinstance(placement.coprocessors, tuple)
 
-    def test_unknown_transport_raises(self):
-        """An unregistered transport name is rejected at construction."""
+    def test_unknown_transport_raises(self, monkeypatch):
+        """A transport neither built in nor known to Catalyst's registry is rejected."""
+        monkeypatch.setattr("pennylane.backline.transports._catalyst_transports", set)
         ctrl = qp.Controller(name="fpga")
         with pytest.raises(ValueError, match="unknown transport"):
             Placement(controller=ctrl, transport="does-not-exist")
+
+    def test_a_transport_from_catalysts_registry_is_accepted(self, monkeypatch):
+        """A backend package's transport needs no PennyLane change."""
+        monkeypatch.setattr(
+            "pennylane.backline.transports._catalyst_transports", lambda: {"example"}
+        )
+        assert (
+            Placement(controller=qp.Controller(name="c"), transport="example").transport.name
+            == "example"
+        )
+
+    def test_without_catalyst_any_transport_is_left_to_the_compiler(self, monkeypatch):
+        """With no registry to ask, the name is checked when the program is compiled."""
+        monkeypatch.setattr("pennylane.backline.transports._catalyst_transports", lambda: None)
+        assert (
+            Placement(controller=qp.Controller(name="c"), transport="example").transport.name
+            == "example"
+        )
+
+    def test_a_node_names_its_backend(self):
+        """``backend`` defaults to letting the compiler choose, and keeps a name it is given."""
+        assert qp.Controller().backend is None
+        assert qp.Controller(backend="fpga_verbs").backend == "fpga_verbs"
+        assert qp.Coprocessor(coprocessor_fn="decoder", backend="example").backend == "example"
 
     def test_not_exported_at_top_level(self):
         """Placement is reached via pennylane.backline, not the top-level namespace."""
