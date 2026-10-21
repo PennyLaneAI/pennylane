@@ -386,11 +386,12 @@ class TestCtrlQfunc:
         assert q.queue[0].work_wire_type == work_wire_type
         assert plxpr.eqns[0].params["work_wire_type"] == work_wire_type
 
-    def test_control_values(self):
-        """Test that integer tuple control values are captured as Booleans."""
+    @pytest.mark.parametrize("container", (list, tuple))
+    def test_control_values(self, container):
+        """Test that integer control values are captured as Booleans."""
 
         def f(z):
-            return qp.ctrl(qp.RZ, (3, 4), (0, 1))(z, 0)
+            return qp.ctrl(qp.RZ, (3, 4), container((0, 1)))(z, 0)
 
         plxpr = jax.make_jaxpr(f)(0.5)
 
