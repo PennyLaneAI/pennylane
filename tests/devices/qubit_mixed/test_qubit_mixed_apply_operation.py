@@ -830,6 +830,28 @@ class TestSnapshot:
             assert all(isinstance(k, str) for k in snapshot_result.keys())
             assert sum(snapshot_result.values()) == 1000
 
+    def test_snapshot_with_shot_vector(self, ml_framework, state, shape, request):
+        """Test that a shot vector gives one snapshot result per shot partition."""
+        state = request.getfixturevalue(state)
+        initial_state = math.asarray(state, like=ml_framework)
+        is_state_batched = len(shape) != 2
+
+        debugger = Debugger()
+        apply_operation(
+            qp.Snapshot("tag", measurement=qp.sample(wires=[0, 1])),
+            initial_state,
+            debugger=debugger,
+            is_state_batched=is_state_batched,
+            tape_shots=qp.measurements.Shots((2, 3)),
+        )
+
+        snapshot = debugger.snapshots["tag"]
+        assert isinstance(snapshot, tuple)
+        assert len(snapshot) == 2
+        batch = (2,) if is_state_batched else ()
+        assert snapshot[0].shape == batch + (2, 2)
+        assert snapshot[1].shape == batch + (3, 2)
+
 
 def get_valid_density_matrix(num_wires):
     """Helper function to create a valid density matrix"""

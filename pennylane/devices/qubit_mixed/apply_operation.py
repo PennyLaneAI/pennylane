@@ -642,7 +642,13 @@ def apply_snapshot(
                 is_state_batched,
                 execution_kwargs.get("rng"),
                 execution_kwargs.get("prng_key"),
-            )[0]
+            )
+            # With a shot vector, the outer level is the shot partitions, each holding
+            # the results of the (single) requested measurement.
+            if shots.has_partitioned_shots:
+                snapshot = tuple(res[0] for res in snapshot)
+            else:
+                snapshot = snapshot[0]
 
         # Store snapshot with optional tag
         if op.tag:

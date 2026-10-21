@@ -2057,6 +2057,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qp.snapshots` now returns one result per shot partition when a shot vector is used on
+  `default.qubit` and `default.mixed`. Previously, only the first partition was kept and the
+  rest were silently dropped.
+  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
+
 * :func:`~.ctrl` of a quantum function now forwards ``work_wire_type`` to each inner operator,
   both with and without program capture.
   [(#10355)](https://github.com/PennyLaneAI/pennylane/pull/10355)

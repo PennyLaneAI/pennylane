@@ -340,6 +340,29 @@ class TestSnapshotSupportedQNode:
 
         _compare_numpy_dicts(result, expected)
 
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("workflow_shots, snapshot_shots", [((2, 3), "workflow"), (5, (2, 3))])
+    def test_shot_vector(self, dev_name, workflow_shots, snapshot_shots, seed):
+        """Test that snapshots keep every shot-vector partition, whether the shot vector
+        comes from the workflow or is set on the snapshot itself."""
+        dev = qp.device(dev_name, wires=1, seed=seed)
+
+        @qp.set_shots(shots=workflow_shots)
+        @qp.qnode(dev)
+        def circuit():
+            qp.RX(1.2, wires=0)
+            qp.Snapshot("probs", measurement=qp.probs(wires=0), shots=snapshot_shots)
+            qp.Snapshot("sample", measurement=qp.sample(wires=0), shots=snapshot_shots)
+            return qp.expval(qp.Z(0))
+
+        result = qp.snapshots(circuit)()
+
+        assert len(result["probs"]) == 2
+        assert all(p.shape == (2,) for p in result["probs"])
+        assert [s.shape for s in result["sample"]] == [(2, 1), (3, 1)]
+        # the second partition has 3 shots, so its probabilities are multiples of 1/3
+        assert qp.math.allclose(np.round(result["probs"][1] * 3), result["probs"][1] * 3)
+
     @pytest.mark.parametrize(
         "m,expected_result",
         [
