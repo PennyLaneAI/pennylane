@@ -299,8 +299,8 @@ def create_controlled_op(op, control, control_values, work_wires, work_wire_type
         control = Wires(control)
     if isinstance(control_values, (int, bool)):
         control_values = [bool(control_values)]
-    elif isinstance(control_values, tuple):
-        control_values = [bool(v) for v in control_values]
+    elif isinstance(control_values, (tuple, list)):
+        control_values = [math.cast(v, dtype=bool) for v in control_values]
 
     qp.QueuingManager.remove(op)
 
@@ -436,7 +436,6 @@ def _ctrl_transform_impl(
     *args,
     n_control,
     jaxpr,
-    control_values,
     work_wires,
     n_consts,
     work_wire_type="borrowed",
@@ -444,9 +443,12 @@ def _ctrl_transform_impl(
     # pylint: disable=import-outside-toplevel
     from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
+    values_start = len(args) - n_control
+    controls_start = values_start - n_control
     consts = args[:n_consts]
-    control_wires = args[-n_control:]
-    args = args[n_consts:-n_control]
+    control_wires = args[controls_start:values_start]
+    control_values = args[values_start:]
+    args = args[n_consts:controls_start]
 
     collector = CollectOpsandMeas()
     with qp.QueuingManager.stop_recording():
@@ -486,9 +488,9 @@ def _capture_ctrl_transform(
             *abstract_shapes,
             *flat_args,
             *control_wires,
+            *(math.cast(value, dtype=bool) for value in control_values),
             jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),
-            control_values=control_values,
             work_wires=qp.wires.Wires(work_wires) if work_wires is not None else work_wires,
             work_wire_type=work_wire_type,
             n_consts=len(jaxpr.consts),
