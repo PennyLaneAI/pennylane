@@ -2067,7 +2067,7 @@
 
 * Terminal measurements now accept fixed-size ``qp.typing.Wire[n]`` registers during
   program capture, allowing abstract-wire workloads to use ``qp.estimate``.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10364)](https://github.com/PennyLaneAI/pennylane/pull/10364)
 
 * :func:`~.ctrl` of a quantum function now forwards ``work_wire_type`` to each inner operator,
   both with and without program capture.
