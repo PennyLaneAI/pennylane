@@ -841,6 +841,10 @@
 * Added a new decomposition rule, ``_single_excitation_ppr_crz``, to :class:`~.SingleExcitation`, that
   realizes the Givens rotation with a single arbitrary-angle ``CRZ`` gate and four Clifford operations.
   [(#10358)](https://github.com/PennyLaneAI/pennylane/pull/10358)
+* A Backline placement accepts any transport that a backend in Catalyst's transport backend
+  registry implements, so a backend package can add a transport without a PennyLane change. A
+  :class:`~.Controller` or :class:`~.Coprocessor` names the backend to run on with ``backend=``.
+  [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
 
 * The `decompose_mcx_with_no_worker` decomposition rule for :class:`~.MultiControlledX` now only
   applies when no work wires are provided, matching `MultiControlledX.compute_decomposition`.
@@ -1339,6 +1343,9 @@
   [(#10337)](https://github.com/PennyLaneAI/pennylane/pull/10337)
 
 <h3>Breaking changes 💔</h3>
+
+* The `qp.Backline.backline` alias of `qp.Backline.placement` has been removed. Use `placement`.
+  [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
 
 * :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's
   ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
@@ -1896,6 +1903,7 @@
     [(#10027)](https://github.com/PennyLaneAI/pennylane/pull/10027)
     [(#10047)](https://github.com/PennyLaneAI/pennylane/pull/10047)
     [(#10113)](https://github.com/PennyLaneAI/pennylane/pull/10113)
+    [(#10156)](https://github.com/PennyLaneAI/pennylane/pull/10156)
     [(#9999)](https://github.com/PennyLaneAI/pennylane/pull/9999)
     [(#10125)](https://github.com/PennyLaneAI/pennylane/pull/10125)
     [(#10124)](https://github.com/PennyLaneAI/pennylane/pull/10124)
@@ -2059,6 +2067,10 @@
   [(#10284)](https://github.com/PennyLaneAI/pennylane/pull/10284)
 
 <h3>Bug fixes 🐛</h3>
+
+* :func:`~.ctrl` of a quantum function now forwards ``work_wire_type`` to each inner operator,
+  both with and without program capture.
+  [(#10355)](https://github.com/PennyLaneAI/pennylane/pull/10355)
 
 * `qp.cond` can now handle `Operator2` instances being provided instead of branch functions.
   While this syntax was supported with tape-based PennyLane, it had never been
