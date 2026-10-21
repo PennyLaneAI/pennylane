@@ -45,6 +45,7 @@ datasets/*
 *.DS_Store
 .idea
 .cursor
+.codex
 /.vscode/*
 
 # Logs and temporary files
