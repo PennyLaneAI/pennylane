@@ -1344,15 +1344,14 @@
 * The `qp.Backline.backline` alias of `qp.Backline.placement` has been removed. Use `placement`.
   [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
 
-* The ``lazy`` argument of :func:`~.adjoint` and the ``custom_ctrl_dispatch`` registry
-  have been removed. Adjoint and controlled operators are now constructed symbolically
-  with and without program capture. For example, ``qp.adjoint(qp.H(0))`` produces
-  ``Adjoint(H(0))`` and ``qp.ctrl(qp.H(0), control=1)`` produces
-  ``Controlled(H(0), control_wires=[1])``. Use explicit operators such as ``qp.H``
-  or ``qp.CH``, or simplify an adjoint explicitly, when a specialized inverse is needed.
-  Affected decomposition rules now declare symbolic resources or construct known
-  inverse sequences explicitly.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+* The ``lazy`` keyword of :func:`~.adjoint` is removed. ``qp.adjoint`` will always produce a 
+  symbolic ``Adjoint`` operator.
+  [(#10365)](https://github.com/PennyLaneAI/pennylane/pull/10365)
+
+* The custom dispatch behaviour of :func:`~.ctrl` is removed, ``qp.ctrl`` will always produce
+  a symbolic ``Controlled`` operator. Custom controlled operators such as ``CH`` and ``Toffoli``
+  can no longer be produced when applying ``qp.ctrl`` on ``qp.H`` or ``qp.X``.
+  [(#10365)](https://github.com/PennyLaneAI/pennylane/pull/10365)
 
 * :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's
   ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
