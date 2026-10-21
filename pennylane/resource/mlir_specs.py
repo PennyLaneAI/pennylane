@@ -169,7 +169,9 @@ def resources_from_analysis_pass(
         if max_legal_level in level:
             fname = f"{fname_prefix}device.json"
             fname_to_level[fname] = max_legal_level
-            level_to_name[max_legal_level] = "Device Preprocessing"
+            level_to_name[max_legal_level] = make_level_name_unique(
+                "Device Preprocessing", frozenset(level_to_name.values())
+            )
             new_post_device_pipeline += transform(pass_name="resource-analysis")(
                 output_json=True, output_fname=fname
             )
