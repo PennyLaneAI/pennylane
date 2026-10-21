@@ -80,10 +80,6 @@ def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires, ad
             swap_wires[i * num_targets : (i + 1) * num_targets] for i in range(num_columns)
         ]
 
-    # Each layer consists of commuting, self-inverse controlled swaps.
-    bounds = (0, len(swap_control_wires), 1) if adjoint else (len(swap_control_wires) - 1, -1, -1)
-
-    @for_loop(*bounds)
     def outer(i):
 
         @for_loop(2**i - 1, -1, -1)
@@ -102,7 +98,12 @@ def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires, ad
 
         inner()  # pylint: disable=no-value-for-parameter
 
-    outer()  # pylint: disable=no-value-for-parameter
+    n_ctrls = len(swap_control_wires)
+    loop_wrapper = for_loop(0, n_ctrls) if adjoint else for_loop(n_ctrls - 1, -1, -1)
+
+    # Each layer consists of commuting, self-inverse controlled swaps, so reversing
+    # the outer loop alone is sufficient.
+    loop_wrapper(outer)()  # pylint: disable=no-value-for-parameter
 
 
 class QROM(Operator2):
