@@ -19,16 +19,13 @@ from functools import reduce
 
 import numpy as np
 
-from pennylane import capture, compiler, math
+from pennylane import capture, compiler, math, ops
 from pennylane.allocation import allocate
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.numeric_hamiltonians import VibronicHamiltonian
-from pennylane.ops import CNOT, Hadamard
-from pennylane.ops import adjoint as adjoint_op
-from pennylane.ops import cond, ctrl
 from pennylane.typing import AbstractWires, Float, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -526,23 +523,23 @@ def _trotter_vibronic_resources(
 
     # The compute/uncompute pairs are emitted as ``adjoint(...)`` wrappers in the decomposition, so
     # they must be declared as such (not as their bare base ops) for the graph to find a path.
-    adj_signed_square = adjoint_op(signed_square)
-    adj_signed_out_mult = adjoint_op(signed_out_mult)
-    adj_aqft = adjoint_op(aqft)
+    adj_signed_square = ops.adjoint(signed_square)
+    adj_signed_out_mult = ops.adjoint(signed_out_mult)
+    adj_aqft = ops.adjoint(aqft)
 
     # The sign-bit-controlled two's complement (compute + uncompute) acts on the ``k``-wire mode
     # register (linear terms) and the ``2k``-wire cache register (bilinear terms).
-    ctrl_incrementer_linear = ctrl(Incrementer(Wire[k], Wire[max(n_work - 1, 0)]), Wire[1])
-    ctrl_incrementer_bilinear = ctrl(Incrementer(Wire[2 * k], Wire[max(n_work - 1, 0)]), Wire[1])
+    c_incrementer_linear = ops.ctrl(Incrementer(Wire[k], Wire[max(n_work - 1, 0)]), Wire[1])
+    c_incrementer_bilinear = ops.ctrl(Incrementer(Wire[2 * k], Wire[max(n_work - 1, 0)]), Wire[1])
 
     resources = defaultdict(int)
 
     # -- Electronic diagonalization (forward + adjoint per visit) --
-    resources[Hadamard(wires=Wire[1])] += 2 * position_visits
+    resources[ops.Hadamard(wires=Wire[1])] += 2 * position_visits
 
     # -- CNOTs: electronic diagonalization plus the half-signed multipliers, which cache the sign
     #    bit, invert the register for the two's complement, and apply the controlled output flips --
-    resources[CNOT(wires=Wire[2])] += (
+    resources[ops.CNOT(wires=Wire[2])] += (
         2 * position_visits * max(n_elec - 1, 0)
         + position_visits * n_modes * (2 + 2 * k + 2 * n_pg)
         + position_visits * num_pairs * (2 + 4 * k + 2 * n_pg)
@@ -554,7 +551,7 @@ def _trotter_vibronic_resources(
 
     # -- Linear terms: one half-signed multiplier each --
     resources[out_mult_linear] += position_visits * n_modes
-    resources[ctrl_incrementer_linear] += position_visits * n_modes * 2
+    resources[c_incrementer_linear] += position_visits * n_modes * 2
 
     # -- Quadratic terms: two SignedOutSquares (compute + uncompute) and one OutMultiplier --
     resources[signed_square] += position_visits * n_modes
@@ -566,7 +563,7 @@ def _trotter_vibronic_resources(
     resources[signed_out_mult] += position_visits * num_pairs
     resources[adj_signed_out_mult] += position_visits * num_pairs
     resources[out_mult_bilinear] += position_visits * num_pairs
-    resources[ctrl_incrementer_bilinear] += position_visits * num_pairs * 2
+    resources[c_incrementer_bilinear] += position_visits * num_pairs * 2
 
     # -- Kinetic fragment (once per Trotter step): per mode, load the momentum coefficients as a
     #    basis state (``MultiX``), then AQFT + SignedOutSquare + OutMultiplier and their
@@ -776,29 +773,26 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments, adjoint=Fa
     control_wire = wires_arr[control_pos]
 
     def _cnots(w):
-        @cond((diff[w] > 0) & (w != control_pos))
+        @ops.cond((diff[w] > 0) & (w != control_pos))
         @hint({"branch-prob": cnot_prob})
         def _maybe_cnot():
-            CNOT(wires=[control_wire, wires_arr[w]])
+            ops.CNOT(wires=[control_wire, wires_arr[w]])
 
         _maybe_cnot()
 
-    @cond(any_diff)
+    @ops.cond(any_diff)
     @hint({"branch-prob": apply_anything_prob})
     def _apply():
-        Hadamard(wires=[control_wire])
+        ops.Hadamard(wires=[control_wire])
         for_loop(n - 1, -1, -1)(_cnots)()
 
-    @cond(any_diff)
+    @ops.cond(any_diff)
     @hint({"branch-prob": apply_anything_prob})
     def _adjoint_apply():
         for_loop(n)(_cnots)()
-        Hadamard(wires=[control_wire])
+        ops.Hadamard(wires=[control_wire])
 
-    if adjoint:
-        _adjoint_apply()
-    else:
-        _apply()
+    _adjoint_apply() if adjoint else _apply()
 
 
 def _diagonalization_matrix(key, n_wires):
@@ -868,13 +862,13 @@ def _half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
         # CNOT from the cached sign bit onto every output wire.
         @for_loop(len(output_wires))
         def _flip(w):
-            CNOT([y_aux, output_arr[w]])
+            ops.CNOT([y_aux, output_arr[w]])
 
         # pylint: disable-next=no-value-for-parameter
         _flip()
 
     # Cache the sign bit of ``y`` on the auxiliary wire.
-    CNOT([y_wires[0], y_aux])
+    ops.CNOT([y_wires[0], y_aux])
 
     # Take the two's complement of ``y`` controlled on the cached sign bit.
     _twos_complement_helper(y_wires, y_aux, work_wires)
@@ -887,7 +881,7 @@ def _half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
 
     # Uncompute the two's complement and the cached sign bit.
     _twos_complement_helper(y_wires, y_aux, work_wires)
-    CNOT([y_wires[0], y_aux])
+    ops.CNOT([y_wires[0], y_aux])
 
 
 # ---------------------------------------------------------------------------
@@ -1135,7 +1129,7 @@ def _trotter_step_second_order(
                 SemiAdder(**_extract_registers(registers, mode_registers, "constant"))
                 return new_bitstrings
 
-            return cond(math.allclose(const_coeffs, 0.0), skip_fn, actual_fn)()
+            return ops.cond(math.allclose(const_coeffs, 0.0), skip_fn, actual_fn)()
 
         @for_loop(n_modes)
         def linear_terms(k, prev_bitstrings):
@@ -1151,7 +1145,7 @@ def _trotter_step_second_order(
                 )
                 return new_bitstrings
 
-            return cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
+            return ops.cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
         @for_loop(n_modes)
         def quadratic_terms(k, prev_bitstrings):
@@ -1167,10 +1161,10 @@ def _trotter_step_second_order(
                 )
                 SignedOutSquare(**square_wires, output_wires_zeroed=True)
                 OutMultiplier(**mult_wires)
-                adjoint_op(SignedOutSquare(**square_wires, output_wires_zeroed=True))
+                ops.adjoint(SignedOutSquare(**square_wires, output_wires_zeroed=True))
                 return new_bitstrings
 
-            return cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
+            return ops.cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
         @for_loop(bilinear_indices.shape[1])
         def bilinear_terms(k, prev_bitstrings):
@@ -1187,10 +1181,10 @@ def _trotter_step_second_order(
                 new_bitstrings = _load_coefficients(_coeffs, precision, prev_bitstrings, qrom_wires)
                 SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True)
                 _half_signed_out_multiplier(**coeff_mult_wires)
-                adjoint_op(SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True))
+                ops.adjoint(SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True))
                 return new_bitstrings
 
-            return cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
+            return ops.cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
         prev_bitstrings = np.zeros((n_states, precision), dtype=int)
         prev_bitstrings = constant_term(prev_bitstrings)
@@ -1233,12 +1227,12 @@ def _trotter_step_second_order(
                 _aqft(order=aqft_order, wires=mode_registers[k])
                 SignedOutSquare(**square_wires, output_wires_zeroed=True)
                 OutMultiplier(**mult_wires)
-                adjoint_op(SignedOutSquare(**square_wires, output_wires_zeroed=True))
-                adjoint_op(_aqft(order=aqft_order, wires=mode_registers[k]))
+                ops.adjoint(SignedOutSquare(**square_wires, output_wires_zeroed=True))
+                ops.adjoint(_aqft(order=aqft_order, wires=mode_registers[k]))
                 # ``MultiX`` is self-adjoint, so the unload is the same call.
                 MultiX(bitstring, registers["coefficients"])
 
-            cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
+            ops.cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
         # pylint: disable-next=no-value-for-parameter
         kinetic_terms()
