@@ -597,7 +597,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         5: ────│──╰●────│─────╰●─│──╰●────│─────╰●─┤
         6: ────│────────├X───────│────────├X───────┤
              ├─╰X───────╰●───────╰X───────╰●──┤
-        Estimated First-Level Expansion Gates: {PauliX: 8, Toffoli: 8}
+        Estimated First-Level Expansion Gates: {Adjoint(PauliX): 2, Adjoint(Toffoli): 2, PauliX: 6, Toffoli: 6}
         Actual First-Level Expansion Gates: {PauliX: 4, Toffoli: 8}
         Wire Allocations: {'any': 1}
         Full Expansion Gates: {CNOT: 48, GlobalPhase: 80, RX: 8, RY: 16, RZ: 72}
@@ -610,7 +610,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         5: ───────│──╰●────│─────╰●───│────┤
         6: ───────│────────├X─────────│────┤
              |0>├─╰⊕───────╰●────────⊕╯──┤
-        Estimated First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, PauliX: 6, TemporaryAND: 1, Toffoli: 3}
+        Estimated First-Level Expansion Gates: {Adjoint(PauliX): 1, Adjoint(TemporaryAND): 1, Adjoint(Toffoli): 1, PauliX: 5, TemporaryAND: 1, Toffoli: 2}
         Actual First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, PauliX: 2, TemporaryAND: 1, Toffoli: 3}
         Wire Allocations: {'zero': 1}
         Full Expansion Gates: {CNOT: 23, GlobalPhase: 52, MidMeasure: 1, RX: 10, RY: 9, RZ: 38}
@@ -624,7 +624,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         6: ────│────────├X───────│────────├X───────┤
              ├─╰X───────╰●───────╰X───────╰●──┤
              ├────────────────────────────────┤
-        Estimated First-Level Expansion Gates: {PauliX: 8, Toffoli: 8}
+        Estimated First-Level Expansion Gates: {Adjoint(PauliX): 2, Adjoint(Toffoli): 2, PauliX: 6, Toffoli: 6}
         Actual First-Level Expansion Gates: {PauliX: 4, Toffoli: 8}
         Wire Allocations: {'any': 2}
         Full Expansion Gates: {CNOT: 48, GlobalPhase: 80, RX: 8, RY: 16, RZ: 72}
@@ -638,7 +638,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         6: ───────│────────├X─────────│────┤
              |0>├─╰⊕───────╰●────────⊕╯──┤
              |0>├────────────────────────┤
-        Estimated First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, PauliX: 6, TemporaryAND: 1, Toffoli: 3}
+        Estimated First-Level Expansion Gates: {Adjoint(PauliX): 1, Adjoint(TemporaryAND): 1, Adjoint(Toffoli): 1, PauliX: 5, TemporaryAND: 1, Toffoli: 2}
         Actual First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, PauliX: 2, TemporaryAND: 1, Toffoli: 3}
         Wire Allocations: {'zero': 2}
         Full Expansion Gates: {CNOT: 23, GlobalPhase: 52, MidMeasure: 1, RX: 10, RY: 9, RZ: 38}
@@ -703,7 +703,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         5: ────│──╰●────│─────╰●─│──╰●────│─────╰●─┤
         6: ────│────────├X───────│────────├X───────┤
              ├─╰X───────╰●───────╰X───────╰●──┤
-        Estimated First-Level Expansion Gates: {PauliX: 8, Toffoli: 8}
+        Estimated First-Level Expansion Gates: {Adjoint(PauliX): 2, Adjoint(Toffoli): 2, PauliX: 6, Toffoli: 6}
         Actual First-Level Expansion Gates: {PauliX: 4, Toffoli: 8}
         Wire Allocations: {'any': 1}
         Full Expansion Gates: {CNOT: 48, GlobalPhase: 80, RX: 8, RY: 16, RZ: 72}
@@ -716,7 +716,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         5: ───────│──╰●────│─────╰●───│────┤
         6: ───────│────────├X─────────│────┤
              |0>├─╰⊕───────╰●────────⊕╯──┤
-        Estimated First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, PauliX: 6, TemporaryAND: 1, Toffoli: 3}
+        Estimated First-Level Expansion Gates: {Adjoint(PauliX): 1, Adjoint(TemporaryAND): 1, Adjoint(Toffoli): 1, PauliX: 5, TemporaryAND: 1, Toffoli: 2}
         Actual First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, PauliX: 2, TemporaryAND: 1, Toffoli: 3}
         Wire Allocations: {'zero': 1}
         Full Expansion Gates: {CNOT: 23, GlobalPhase: 52, MidMeasure: 1, RX: 10, RY: 9, RZ: 38}
