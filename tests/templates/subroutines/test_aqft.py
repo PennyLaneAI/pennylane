@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -93,8 +93,7 @@ class TestAQFT:
         """Tests the decomposition rule implemented with the new system."""
         op = qp.AQFT(order=order, wires=range(wires))
 
-        for rule in qp.list_decomps(qp.AQFT):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.capture
     @pytest.mark.parametrize("order,n_wires", [(0, 4), (1, 4), (2, 5), (3, 6), (5, 6)])

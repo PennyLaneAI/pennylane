@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 FEATURES = [
     np.array([0, 1, 0, 0]),
@@ -184,8 +184,7 @@ class TestDecomposition:
     def test_decomposition_new(self, features, wires, pad_with, normalize):
         """Test the decomposition of the AmplitudeEmbedding template."""
         op = qp.AmplitudeEmbedding(features, wires, pad_with=pad_with, normalize=normalize)
-        for rule in qp.list_decomps(qp.AmplitudeEmbedding):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 class TestInputs:
