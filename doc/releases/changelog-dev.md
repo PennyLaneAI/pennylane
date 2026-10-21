@@ -838,6 +838,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Terminal measurements now accept fixed-size `qp.typing.Wire[n]` registers during
+  program capture.
+  [(#10364)](https://github.com/PennyLaneAI/pennylane/pull/10364)
+
 * A Backline placement accepts any transport that a backend in Catalyst's transport backend
   registry implements, so a backend package can add a transport without a PennyLane change. A
   :class:`~.Controller` or :class:`~.Coprocessor` names the backend to run on with ``backend=``.
@@ -2065,10 +2069,6 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Terminal measurements now accept fixed-size `qp.typing.Wire[n]` registers during
-  program capture.
-  [(#10364)](https://github.com/PennyLaneAI/pennylane/pull/10364)
-  
 * :func:`~.ctrl` now supports mixed static and dynamic control values under
   `qp.qjit(capture=True)`, for both operator instances and callables.
   [(#10356)](https://github.com/PennyLaneAI/pennylane/pull/10356)
