@@ -1572,6 +1572,12 @@ custom_ctrl_ops = [
 ]
 
 
+def test_ctrl_non_boolean_control_values():
+    """Test that qp.ctrl converts control values using Python truth values."""
+    op = qp.ctrl(TempOperator("a"), (0, 1, 2), control_values=["", None, 5])
+    assert op.control_values == [False, False, True]
+
+
 class TestCtrl:
     """Tests for the ctrl transform."""
 

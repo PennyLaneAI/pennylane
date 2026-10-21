@@ -3003,6 +3003,19 @@ class TestMultiRZ:
         op = qp.MultiRZ(0.123, wires=[0, 1, 2, 3])
         qp.testing.assert_valid(op)
 
+    @pytest.mark.parametrize("wires", [[0], [0, 2], [3, 1, 0]])
+    def test_MultiRZ_to_ppr(self, wires):
+        """Test that MultiRZ decomposes into a PauliRot on a pure-Z Pauli word."""
+        op = qp.MultiRZ(0.123, wires=wires)
+        rule = qp.list_decomps(qp.MultiRZ)["_multi_rz_to_ppr"]
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(**op.arguments)
+
+        (actual,) = q.queue
+        qp.assert_equal(actual, qp.PauliRot(0.123, "Z" * len(wires), wires=wires))
+        _test_decomposition_rule(op, rule)
+
     @pytest.mark.catalyst
     @pytest.mark.parametrize("n", [1, 2, 3, 4])
     def test_MultiRZ_decomposition_qjit_new(self, n):
