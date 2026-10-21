@@ -843,6 +843,11 @@
   :class:`~.Controller` or :class:`~.Coprocessor` names the backend to run on with ``backend=``.
   [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
 
+* A Backline placement over `transport="rdma"` no longer limits messages to 8 bytes. Which sizes
+  are supported depends on the transport backend Catalyst selects, and Catalyst reports a size no
+  backend carries when the program is compiled.
+  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
+
 * The `decompose_mcx_with_no_worker` decomposition rule for :class:`~.MultiControlledX` now only
   applies when no work wires are provided, matching `MultiControlledX.compute_decomposition`.
   This removes controlled `GlobalPhase` and `PhaseShift` rules from the decomposition graph and
