@@ -710,10 +710,15 @@ class TestMeasurementQROM:
         )
         assert res_zero[qp.MultiX(Bool[3], Wire[3])] == 1
 
+        # The unused control wire gates the load on a flag.
         res_one = _qrom_measurement_resources(
             bitstrings=Bool[1, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
         )
-        assert res_one[qp.MultiX(Bool[3], Wire[3])] == 1
+        assert res_one == {
+            qp.ctrl(qp.MultiX(Bool[3], Wire[3]), Wire[1]): 1,
+            qp.X: 1,
+            qp.adjoint(qp.X(Wire[1])): 1,
+        }
 
         res_two = _qrom_measurement_resources(
             bitstrings=Bool[2, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
@@ -771,6 +776,39 @@ class TestMeasurementQROM:
         # The ladder is symmetric: as many forward ANDs as adjoints.
         assert res_extra[qp.adjoint(TemporaryAND(Wire[3]))] == n_extra - 1
         assert res_extra[TemporaryAND] == res_one[TemporaryAND] + (n_extra - 1)
+
+    @pytest.mark.parametrize("n_targets", [1, 3, 6])
+    @pytest.mark.parametrize("n_extra", [0, 1, 2, 3])
+    @pytest.mark.parametrize("L", [1, 2, 3, 4, 5, 8, 16])
+    def test_resources_bound_decomposition(self, L, n_extra, n_targets, seed):
+        """Test that the resource estimate declares every gate type queued by the decomposition
+        and upper-bounds its count."""
+        rng = np.random.default_rng(seed)
+        bitstrings = rng.integers(0, 2, size=(L, n_targets))
+        n_control = math.ceil(math.log2(L)) + n_extra
+        wires = qp.registers(
+            {"control_wires": n_control, "work_wires": n_control, "target_wires": n_targets}
+        )
+
+        estimate = _qrom_measurement_decomposition.compute_resources(
+            bitstrings=bitstrings, **wires, clean=True
+        ).gate_counts
+        with qp.queuing.AnnotatedQueue() as q:
+            _qrom_measurement_decomposition(bitstrings=bitstrings, **wires, clean=True)
+        actual = Counter(
+            abstractify(op.base if isinstance(op, qp.ops.Conditional) else op) for op in q.queue
+        )
+
+        # The width of the X-type joint measurements depends on the bitstring data, which the
+        # resource function does not see, so only their total number is bounded.
+        def is_x_measure(op):
+            return isinstance(op, PauliMeasure) and op.pauli_word[0] == "X"
+
+        num_x_measure = sum(c for op, c in actual.items() if is_x_measure(op))
+        assert num_x_measure <= sum(c for op, c in estimate.items() if is_x_measure(op))
+        for op, count in actual.items():
+            if not is_x_measure(op):
+                assert count <= estimate.get(op, 0), f"{op}: {count} > {estimate.get(op, 0)}"
 
     def test_condition_without_compiler(self):
         """Test that the measurement decomposition is disabled without an active compiler."""
