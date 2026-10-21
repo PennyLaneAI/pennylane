@@ -846,7 +846,7 @@
 * A Backline placement over `transport="rdma"` no longer limits messages to 8 bytes. Which sizes
   are supported depends on the transport backend Catalyst selects, and Catalyst reports a size no
   backend carries when the program is compiled.
-  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
+  [(#10369)](https://github.com/PennyLaneAI/pennylane/pull/10369)
 
 * The `decompose_mcx_with_no_worker` decomposition rule for :class:`~.MultiControlledX` now only
   applies when no work wires are provided, matching `MultiControlledX.compute_decomposition`.
