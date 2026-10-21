@@ -479,15 +479,15 @@ def _commute_phases_u(left_givens, right_givens, phases):
     nleft_givens = []
     for grot_mat, (i, j) in reversed(left_givens):
         # Manually compute new Givens matrix and new phase when commuting a phase through.
-        # ``grot_mat`` has the form [[p c, s], [-p s, c]] with real c, s >= 0 and a phase p.
-        # conj(p) is read off the larger of |p c| and |p s|, so that c = 0 or s = 0 (exact zeros
-        # in the decomposed matrix) do not cause a division by zero.
-        c, s = math.real(grot_mat[1, 1]), math.real(grot_mat[0, 1])
-        conj_p = math.where(s > c, -math.conj(grot_mat[1, 0]), math.conj(grot_mat[0, 0]))
-        conj_p = conj_p / math.abs(conj_p)
-        rel_phase = phases[j, j] * math.conj(phases[i, i])
-        givens_mat = math.array([[rel_phase * c, -s], [rel_phase * s, c]], like=interface)
-        nphase_diag = [conj_p * phases[j, j], phases[j, j]]
+        abs_c, abs_s = math.abs(grot_mat[:, 0])
+        first_col = phases[j, j] * math.conj(phases[i, i]) * grot_mat[1, 1] * grot_mat[0, 1]
+        givens_mat = math.array(
+            [[first_col / abs_s, -abs_s], [first_col / abs_c, abs_c]], like=interface
+        )
+        nphase_diag = [
+            -math.conj(grot_mat[1, 0]) / abs_s * phases[j, j],
+            grot_mat[1, 1] / abs_c * phases[j, j],
+        ]
         for diag_idx, diag_val in zip([(i, i), (j, j)], nphase_diag, strict=True):
             phases = _set_unitary_matrix(
                 phases, diag_idx, diag_val, like=interface, real_valued=False

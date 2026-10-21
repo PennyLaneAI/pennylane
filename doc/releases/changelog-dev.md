@@ -843,13 +843,7 @@
   measures the target wires in the :math:`X` basis and fixes up the resulting phases with a lookup
   of size :math:`\lceil L/k\rceil` targeting a one-hot register of size :math:`k`, reducing the
   Toffoli cost to roughly :math:`2\sqrt{L}` for :math:`L` bitstrings.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
-
-* Updated the decomposition of :class:`~.TrotterCDF` and its double-phase controlled decomposition
-  to implement the one-body evolution, together with the basis rotations around it, as a single
-  Givens network. This replaces two basis rotations and the one-body ``RZ`` layer per Trotter step
-  and spin channel by :math:`N(N-1)/2` ``SingleExcitation`` and :math:`N(N+1)/2` phase gates.
-  [(#10331)](https://github.com/PennyLaneAI/pennylane/pull/10331)
+  [(#10363)](https://github.com/PennyLaneAI/pennylane/pull/10363)
 
 * A Backline placement accepts any transport that a backend in Catalyst's transport backend
   registry implements, so a backend package can add a transport without a PennyLane change. A
@@ -2077,17 +2071,6 @@
   [(#10284)](https://github.com/PennyLaneAI/pennylane/pull/10284)
 
 <h3>Bug fixes 🐛</h3>
-
-* Fixed a bug where :class:`~.BasisRotation` for real-valued matrices :math:`u` implemented the 
-  rotation for :math:`S u S` instead of :math:`u`, with :math:`S=\operatorname{diag}((-1)^p)`, 
-  and handled matrices with determinant :math:`-1` inconsistently. The operator now implements 
-  the same operator for real-valued (orthogonal) matrices as for complex-valued ones, matching 
-  its documentation. Circuits using ``BasisRotation`` with real-valued matrices change due to this.
-  [(#10331)](https://github.com/PennyLaneAI/pennylane/pull/10331)
-
-* Fixed a bug where :func:`~.math.decomposition.givens_decomposition` and :class:`~.BasisRotation`
-  produced ``nan`` values for complex-valued unitaries with exact zeros, such as diagonal matrices.
-  [(#10331)](https://github.com/PennyLaneAI/pennylane/pull/10331)
 
 * :func:`~.ctrl` of a quantum function now forwards ``work_wire_type`` to each inner operator,
   both with and without program capture.
