@@ -15,8 +15,11 @@
 Tests for the QROM template.
 """
 
+import itertools
 import math
+from collections import Counter
 from functools import partial
+from unittest import mock
 
 import hint_helpers
 import jax
@@ -25,9 +28,13 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.operator import abstractify
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.templates.subroutines import qrom
 from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.templates.subroutines.qrom import (
+    _adjoint_qrom_measurement,
+    _adjoint_qrom_one_hot_size,
     _calculate_select_swap_sizes,
     _count_tempAND_in_measurement_qrom,
     _qrom_measurement_condition,
@@ -36,7 +43,11 @@ from pennylane.templates.subroutines.qrom import (
     _qrom_unary_iteration,
     _select_swap,
 )
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing.decompositions import (
+    _assert_counts_match,
+    _resolve_dynamic_wires,
+    _test_decomposition_rule,
+)
 from pennylane.typing import Bool, Wire
 
 
@@ -1046,3 +1057,120 @@ class TestMeasurementQROM:
             assert np.allclose(
                 work_samples, 0
             ), f"L={L}, n_extra={n_extra}, j={j}: work wires not clean, got {work_samples}"
+
+
+def _adjoint_qrom_setup(L, n_target, n_extra, n_work):
+    rng = numpy.random.default_rng(7 * L + n_target + 13 * n_extra)
+    n_control = max(1, math.ceil(math.log2(L))) + n_extra
+    wires = qp.registers({"control": n_control, "target": n_target, "work": n_work})
+    bitstrings = rng.integers(0, 2, size=(L, n_target))
+    return qp.QROM(bitstrings, wires["control"], wires["target"], wires["work"]), rng
+
+
+# (num_bitstrings, num_targets, num_extra_control_wires, num_work_wires)
+ADJOINT_QROM_CASES = [
+    (1, 2, 0, 0),
+    (1, 2, 2, 1),
+    (2, 2, 0, 0),
+    (3, 2, 0, 1),
+    (4, 3, 0, 1),
+    (5, 2, 0, 2),
+    (7, 3, 0, 2),
+    (8, 2, 0, 0),
+    (11, 2, 0, 3),
+    (16, 2, 0, 1),
+    (20, 2, 0, 4),
+    (4, 2, 1, 2),
+    (5, 2, 2, 3),
+]
+
+
+class TestAdjointQROMMeasurement:
+    """Tests for the measurement-based uncomputation of QROM from Appendix C of
+    arXiv:1902.02134."""
+
+    @pytest.mark.parametrize(
+        ("num_bitstrings", "num_control_wires", "expected"),
+        [(1, 1, 0), (2, 1, 0), (4, 2, 1), (8, 3, 1), (16, 4, 2), (20, 5, 2), (64, 6, 3), (5, 1, 1)],
+    )
+    def test_one_hot_size(self, num_bitstrings, num_control_wires, expected):
+        """Test that the one-hot register size minimizes ceil(L/k) + k."""
+        assert _adjoint_qrom_one_hot_size(num_bitstrings, num_control_wires) == expected
+
+    def test_condition(self):
+        """Test that the rule requires program capture and at least one control wire."""
+        op = qp.adjoint(qp.QROM(Bool[4, 2], Wire[2], Wire[2], Wire[1]))
+        assert not _adjoint_qrom_measurement.is_applicable(base=op.base)
+        with qp.capture.toggle_ctx(True):
+            assert _adjoint_qrom_measurement.is_applicable(base=op.base)
+            op = qp.adjoint(qp.QROM(Bool[1, 2], Wire[0], Wire[2], Wire[1]))
+            assert not _adjoint_qrom_measurement.is_applicable(base=op.base)
+
+    @pytest.mark.parametrize("case", ADJOINT_QROM_CASES)
+    def test_resources(self, case):
+        """Test that the resource function matches the decomposition when all measurement
+        outcomes are 1, so that all conditional corrections are applied."""
+        op, _ = _adjoint_qrom_setup(*case)
+
+        def measure(pauli_word, wire):
+            qp.pauli_measure(pauli_word, wire)
+            return 1
+
+        with mock.patch.object(qrom, "pauli_measure", measure):
+            with qp.queuing.AnnotatedQueue() as q:
+                _adjoint_qrom_measurement(base=op)
+
+        num_one_hot = 2 ** _adjoint_qrom_one_hot_size(case[0], len(op.control_wires))
+        tape = _resolve_dynamic_wires(qp.tape.QuantumScript.from_queue(q), num_one_hot)
+        actual = Counter(
+            abstractify(o.base if isinstance(o, qp.ops.Conditional) else o) for o in tape.operations
+        )
+        expected = _adjoint_qrom_measurement.compute_resources(base=op).gate_counts
+        _assert_counts_match({k: v for k, v in expected.items() if v > 0}, actual)
+
+    @pytest.mark.parametrize("case", ADJOINT_QROM_CASES)
+    def test_correctness(self, case):
+        """Test that applying QROM followed by the measurement-based uncomputation acts as the
+        identity on a random address state, for every outcome of the X-basis measurements.
+
+        The measurements are replaced by postselected X-basis measurements, so that the
+        measurement-dependent fixup table can be computed from concrete outcomes without capture.
+        """
+        op, rng = _adjoint_qrom_setup(*case)
+        control_wires = list(op.control_wires)
+        all_wires = control_wires + list(op.target_wires) + list(op.work_wires)
+        state = rng.random(2 ** len(control_wires)) + 1j * rng.random(2 ** len(control_wires))
+        state /= numpy.linalg.norm(state)
+
+        @qp.qnode(qp.device("default.qubit"), mcm_method="deferred")
+        def circuit():
+            qp.StatePrep(state, wires=control_wires)
+            _qrom_unary_iteration(**op.dynamic_args, **op.wire_args, clean=True)
+            _adjoint_qrom_measurement(base=op)
+            qp.adjoint(qp.StatePrep(state, wires=control_wires))
+            return qp.probs(wires=all_wires)
+
+        def postselected_measure(outcome_iter, pauli_word, wire):
+            assert pauli_word == "X"
+            outcome = next(outcome_iter)
+            qp.H(wire)
+            qp.measure(wire, postselect=outcome)
+            qp.H(wire)
+            return outcome
+
+        for outcomes in itertools.product([0, 1], repeat=len(op.target_wires)):
+            measure = partial(postselected_measure, iter(outcomes))
+            with mock.patch.object(qrom, "pauli_measure", measure):
+                probs = circuit()
+            assert np.isclose(probs[0] / np.sum(probs), 1.0), f"outcomes={outcomes}"
+
+    @pytest.mark.usefixtures("enable_capture")
+    @pytest.mark.parametrize("case", ADJOINT_QROM_CASES[::3])
+    def test_capture(self, case):
+        """Test that the decomposition can be captured, with one X-basis measurement per target
+        wire whose outcomes feed into the fixup table."""
+        op, _ = _adjoint_qrom_setup(*case)
+        jaxpr = jax.make_jaxpr(partial(_adjoint_qrom_measurement, base=op))()
+        measurements = [eqn for eqn in jaxpr.eqns if eqn.primitive.name == "pauli_measure"]
+        assert len(measurements) == len(op.target_wires)
+        assert all(eqn.params["pauli_word"] == "X" for eqn in measurements)

@@ -838,6 +838,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* ``Adjoint(QROM)`` has a new decomposition based on measurement-based uncomputation from Appendix C
+  of [arXiv:1902.02134](https://arxiv.org/abs/1902.02134), available with program capture. It
+  measures the target wires in the :math:`X` basis and fixes up the resulting phases with a lookup
+  of size :math:`\lceil L/k\rceil` targeting a one-hot register of size :math:`k`, reducing the
+  Toffoli cost to roughly :math:`2\sqrt{L}` for :math:`L` bitstrings.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Updated the decomposition of :class:`~.TrotterCDF` and its double-phase controlled decomposition
   to implement the one-body evolution, together with the basis rotations around it, as a single
   Givens network. This replaces two basis rotations and the one-body ``RZ`` layer per Trotter step
