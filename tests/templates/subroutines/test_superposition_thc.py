@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.templates.subroutines.superposition_thc import SuperpositionTHC
+from pennylane.templates.subroutines.superposition_thc import SuperpositionTHC, _superposition_thc
 from pennylane.testing import assert_valid
 
 
@@ -115,6 +115,28 @@ def test_standard_validity(M, N, n):
 
 class TestSuperpositionTHC:
     """Test the SuperpositionTHC template."""
+
+    @pytest.mark.capture
+    def test_uncompute_keeps_comparators_symbolic(self):
+        """Adjoint comparator rules are selected before measurement-based uncomputation."""
+        mu_wires, nu_wires, work_wires = _wire_layout(2)
+
+        def circuit():
+            _superposition_thc(3, 4, mu_wires, nu_wires, work_wires)
+
+        plxpr = qp.capture.make_plxpr(circuit)()
+        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        comparator_types = (qp.LeftClassicalComparator, qp.LeftQuantumComparator)
+        forward = [op for op in ops if isinstance(op, comparator_types)]
+        uncompute = [
+            op.base
+            for op in ops
+            if isinstance(op, qp.ops.Adjoint) and isinstance(op.base, comparator_types)
+        ]
+        assert len(forward) == len(uncompute) == 6
+        expected = [*reversed(forward[:3]), *reversed(forward[3:])]
+        for op, expected_op in zip(uncompute, expected, strict=True):
+            qp.assert_equal(op, expected_op)
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("qjit", [False, True])

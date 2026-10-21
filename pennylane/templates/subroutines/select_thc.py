@@ -466,6 +466,8 @@ def _select_half(
         )
 
     def _unbasis():
+        # Modifier lowering adjoints the QROM operator before its decomposition can
+        # introduce measurement-based uncomputation.
         adjoint(_basis)()
 
     return change_op_basis(_basis, _reflect, _unbasis)

@@ -605,6 +605,38 @@ class TestPhaseGradientRotation:  # pylint: disable=too-few-public-methods
 class TestSelectTHCInvariants:
     """Properties that hold for any chi, checkable without knowing the target operator."""
 
+    @pytest.mark.capture
+    @pytest.mark.parametrize("num_batches", [1, 2])
+    def test_uncompute_keeps_qrom_symbolic(self, num_batches):
+        """QROMs are adjointed before decomposing their measurement-based uncomputation."""
+        M, N, beth = 4, 6, 1
+        system, index, flags, gradient, work, _ = _layout(M, N, beth, num_batches=num_batches)
+        chi = _static_matrix(np.ones((M, N // 2)))
+        tev = _static_matrix(np.eye(N // 2))
+
+        def circuit():
+            _select_half(
+                chi,
+                tev,
+                beth,
+                system,
+                index[: len(index) // 2],
+                flags[:3],
+                gradient,
+                work,
+                num_batches=num_batches,
+            )
+
+        plxpr = qp.capture.make_plxpr(circuit)()
+        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        qroms = [op for op in ops if isinstance(op, qp.QROM)]
+        adjoint_qroms = [
+            op.base for op in ops if isinstance(op, qp.ops.Adjoint) and isinstance(op.base, qp.QROM)
+        ]
+        assert len(qroms) == len(adjoint_qroms) == num_batches
+        for forward, uncompute in zip(reversed(qroms), adjoint_qroms, strict=True):
+            qp.assert_equal(forward, uncompute)
+
     @pytest.mark.parametrize("M, N, beth", [(2, 4, 2), (1, 2, 2)])
     def test_self_inverse(self, M, N, beth):
         """Test that Select is self-inverse."""

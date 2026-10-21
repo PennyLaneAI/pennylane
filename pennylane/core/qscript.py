@@ -885,9 +885,8 @@ class QuantumScript:
         Returns:
             ~.QuantumScript: the adjointed script
         """
-        from pennylane.ops.op_math.adjoint import (  # pylint: disable=import-outside-toplevel # tach-ignore
-            _eager_adjoint,
-        )
+        # pylint: disable=import-outside-toplevel
+        from pennylane.ops.op_math.adjoint import _eager_adjoint  # tach-ignore
 
         warnings.warn(
             "Using QuantumScript.adjoint is deprecated "

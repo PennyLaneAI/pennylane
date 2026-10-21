@@ -82,12 +82,6 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
         page for an overview of the differences between Catalyst and PennyLane.
 
-    .. note::
-
-        Controlled operators are represented symbolically. For example,
-        ``qp.ctrl(qp.H(0), control=1)`` returns a controlled Hadamard.
-        Use :class:`~.CH` directly when that specific operator is needed.
-
     Args:
         op (function or :class:`~.operation.Operator`): A single operator or a function that applies pennylane operators.
         control (Wires): The control wire(s).

@@ -388,6 +388,8 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     # 4. Uncompute the flags and the amplitude-marking rotation. The closure keeps ``M``
     # and ``N`` concrete; passing them as traced arguments breaks the comparators, whose
     # classical operands must be compile-time constants.
+    # Modifier lowering adjoints the comparator operators before their decompositions
+    # can introduce measurement-based TemporaryAND uncomputation.
     adjoint(lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires))()
     RY(-angle, wires=work_wires[0])
 

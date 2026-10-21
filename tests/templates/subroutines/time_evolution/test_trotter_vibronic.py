@@ -38,6 +38,7 @@ from pennylane.templates.subroutines.time_evolution.trotter_vibronic import (
     _validate_registers,
     _wires_are_concrete,
 )
+from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.typing import AbstractWires
 
 # ---------------------------------------------------------------------------
@@ -219,28 +220,34 @@ class TestDiagonalization:
         assert np.allclose(_diagonalization_matrix((0, 0), 2), np.eye(4))
 
     @pytest.mark.parametrize("n, fragment_idx", [(1, 1), (2, 3), (3, 7)])
-    @pytest.mark.parametrize("inverse", (False, True))
-    def test_matrix_matches_circuit(self, n, fragment_idx, inverse):
+    @pytest.mark.parametrize("adjoint", (False, True))
+    def test_matrix_matches_circuit(self, n, fragment_idx, adjoint):
         """Test the diagonalization and its explicit inverse against their matrices."""
         wires = list(range(n))
         circuit_matrix = qp.matrix(_diagonalize_vibronic_circuit, wires)(
-            fragment_idx=fragment_idx, wires=wires, num_fragments=2**n, inverse=inverse
+            fragment_idx=fragment_idx, wires=wires, num_fragments=2**n, adjoint=adjoint
         )
         expected = _diagonalization_matrix((0, fragment_idx), n)
-        if inverse:
+        if adjoint:
             expected = expected.conj().T
         assert np.allclose(expected, circuit_matrix)
 
     @pytest.mark.capture
+    @pytest.mark.parametrize("adjoint", [False, True])
     @pytest.mark.parametrize(
         "n, num_fragments", [(1, 1), (1, 2), (2, 3), (2, 4), (3, 1), (3, 6), (3, 8)]
     )
-    def test_branch_prob_hints(self, n, num_fragments):
+    def test_branch_prob_hints(self, n, num_fragments, adjoint):
         """Test that the conditionals carry ``branch-prob`` hints that reproduce the number of
         gates applied across all fragments."""
         wires = list(range(n))
         plxpr = jax.make_jaxpr(
-            partial(_diagonalize_vibronic_circuit, wires=wires, num_fragments=num_fragments)
+            partial(
+                _diagonalize_vibronic_circuit,
+                wires=wires,
+                num_fragments=num_fragments,
+                adjoint=adjoint,
+            )
         )(0)
         hints = hint_helpers.cond_hints(plxpr.jaxpr)
         if num_fragments == 1:
@@ -607,7 +614,7 @@ class TestDecomposition:
         rule = qp.list_decomps(qp.TrotterVibronic)[0]
         resources = rule.compute_resources(**op.arguments)
         assert resources.num_gates > 0
-        qp.testing.assert_valid_decomp_rule(op, rule, check_matrix=False)
+        _test_decomposition_rule(op, rule, skip_decomp_matrix_check=True)
 
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp", "enable_and_disable_capture")

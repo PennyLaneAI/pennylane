@@ -923,11 +923,10 @@ def _ctrl_abstract(
             work_wire_type=work_wire_type,
         )
 
-    empty_cvals = num_zero_control_values == 0
     op = qp.ctrl(
         op,
         control=control_wires,
-        control_values=None if empty_cvals else Bool[len(control_wires)],
+        control_values=Bool[len(control_wires)],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )

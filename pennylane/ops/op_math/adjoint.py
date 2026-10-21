@@ -53,12 +53,6 @@ def adjoint(fn):
         If a function is provided, returns a function with the same call signature that returns the Adjoint of the
         provided function.
 
-    Operators are wrapped symbolically in :class:`~.ops.op_math.Adjoint`. Use
-    :func:`~.simplify` explicitly to simplify an adjoint.
-
-    >>> qp.adjoint(qp.H(0))
-    Adjoint(H(0))
-
     .. note::
 
         The adjoint and inverse are identical for unitary gates, but not in general. For example, quantum channels and

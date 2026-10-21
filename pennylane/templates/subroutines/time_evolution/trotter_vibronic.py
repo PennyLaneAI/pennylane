@@ -26,7 +26,9 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.numeric_hamiltonians import VibronicHamiltonian
-from pennylane.ops import CNOT, Hadamard, adjoint, cond, ctrl
+from pennylane.ops import CNOT, Hadamard
+from pennylane.ops import adjoint as adjoint_op
+from pennylane.ops import cond, ctrl
 from pennylane.typing import AbstractWires, Float, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -524,9 +526,9 @@ def _trotter_vibronic_resources(
 
     # The compute/uncompute pairs are emitted as ``adjoint(...)`` wrappers in the decomposition, so
     # they must be declared as such (not as their bare base ops) for the graph to find a path.
-    adj_signed_square = adjoint(signed_square)
-    adj_signed_out_mult = adjoint(signed_out_mult)
-    adj_aqft = adjoint(aqft)
+    adj_signed_square = adjoint_op(signed_square)
+    adj_signed_out_mult = adjoint_op(signed_out_mult)
+    adj_aqft = adjoint_op(aqft)
 
     # The sign-bit-controlled two's complement (compute + uncompute) acts on the ``k``-wire mode
     # register (linear terms) and the ``2k``-wire cache register (bilinear terms).
@@ -728,7 +730,7 @@ def _diagonalize_probs(num_fragments, n):
     return apply_anything_prob, cnot_prob
 
 
-def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments, inverse=False):
+def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments, adjoint=False):
     r"""Diagonalize position fragment ``fragment_idx`` by applying Clifford operations on the
     electronic register, following the ``key = (0, fragment_idx)`` convention (see
     :func:`_diagonalization_matrix`).
@@ -748,7 +750,7 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments, inverse=Fa
         num_fragments (int): total number of position fragments. The conditionals carry branch
             probability hints that assume ``fragment_idx`` to be uniformly distributed over
             ``range(num_fragments)``.
-        inverse (bool): reverse the self-inverse Clifford gates to undo the diagonalization.
+        adjoint (bool): reverse the self-inverse Clifford gates to undo the diagonalization.
     """
     if num_fragments == 1:
         # Only have fragment_idx 0, which does not need a circuit.
@@ -773,29 +775,30 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments, inverse=Fa
     control_pos = math.max(math.where(diff > 0, math.arange(n), -1))
     control_wire = wires_arr[control_pos]
 
+    def _cnots(w):
+        @cond((diff[w] > 0) & (w != control_pos))
+        @hint({"branch-prob": cnot_prob})
+        def _maybe_cnot():
+            CNOT(wires=[control_wire, wires_arr[w]])
+
+        _maybe_cnot()
+
     @cond(any_diff)
     @hint({"branch-prob": apply_anything_prob})
     def _apply():
-        if not inverse:
-            Hadamard(wires=[control_wire])
+        Hadamard(wires=[control_wire])
+        for_loop(n - 1, -1, -1)(_cnots)()
 
-        bounds = (0, n, 1) if inverse else (n - 1, -1, -1)
+    @cond(any_diff)
+    @hint({"branch-prob": apply_anything_prob})
+    def _adjoint_apply():
+        for_loop(n)(_cnots)()
+        Hadamard(wires=[control_wire])
 
-        @for_loop(*bounds)
-        def _cnots(w):
-            @cond((diff[w] > 0) & (w != control_pos))
-            @hint({"branch-prob": cnot_prob})
-            def _maybe_cnot():
-                CNOT(wires=[control_wire, wires_arr[w]])
-
-            _maybe_cnot()
-
-        _cnots()  # pylint: disable=no-value-for-parameter
-
-        if inverse:
-            Hadamard(wires=[control_wire])
-
-    _apply()
+    if adjoint:
+        _adjoint_apply()
+    else:
+        _apply()
 
 
 def _diagonalization_matrix(key, n_wires):
@@ -1118,7 +1121,7 @@ def _trotter_step_second_order(
             fragment_idx=i,
             wires=registers["electronic"],
             num_fragments=num_position_fragments,
-            inverse=True,
+            adjoint=True,
         )
 
         def constant_term(prev_bitstrings):
@@ -1164,7 +1167,7 @@ def _trotter_step_second_order(
                 )
                 SignedOutSquare(**square_wires, output_wires_zeroed=True)
                 OutMultiplier(**mult_wires)
-                adjoint(SignedOutSquare(**square_wires, output_wires_zeroed=True))
+                adjoint_op(SignedOutSquare(**square_wires, output_wires_zeroed=True))
                 return new_bitstrings
 
             return cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
@@ -1184,7 +1187,7 @@ def _trotter_step_second_order(
                 new_bitstrings = _load_coefficients(_coeffs, precision, prev_bitstrings, qrom_wires)
                 SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True)
                 _half_signed_out_multiplier(**coeff_mult_wires)
-                adjoint(SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True))
+                adjoint_op(SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True))
                 return new_bitstrings
 
             return cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
@@ -1230,8 +1233,8 @@ def _trotter_step_second_order(
                 _aqft(order=aqft_order, wires=mode_registers[k])
                 SignedOutSquare(**square_wires, output_wires_zeroed=True)
                 OutMultiplier(**mult_wires)
-                adjoint(SignedOutSquare(**square_wires, output_wires_zeroed=True))
-                adjoint(_aqft(order=aqft_order, wires=mode_registers[k]))
+                adjoint_op(SignedOutSquare(**square_wires, output_wires_zeroed=True))
+                adjoint_op(_aqft(order=aqft_order, wires=mode_registers[k]))
                 # ``MultiX`` is self-adjoint, so the unload is the same call.
                 MultiX(bitstring, registers["coefficients"])
 
