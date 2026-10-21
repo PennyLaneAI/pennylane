@@ -299,7 +299,7 @@ def create_controlled_op(op, control, control_values, work_wires, work_wire_type
         control = Wires(control)
     if isinstance(control_values, (int, bool)):
         control_values = [bool(control_values)]
-    elif isinstance(control_values, tuple):
+    elif isinstance(control_values, (tuple, list)):
         control_values = [math.cast(v, dtype=bool) for v in control_values]
 
     qp.QueuingManager.remove(op)
