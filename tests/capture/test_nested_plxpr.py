@@ -407,6 +407,18 @@ class TestCtrlQfunc:
         assert all(value.aval.dtype == bool for value in plxpr.eqns[0].invars[-2:])
         assert plxpr.eqns[0].params["n_control"] == 2
 
+    def test_non_boolean_control_values(self):
+        """Concrete control values retain Python truth-value conversion during capture."""
+
+        def circuit(x):
+            qp.ctrl(qp.RX, (0, 1, 2), control_values=["", None, 5])(x, 3)
+
+        plxpr = jax.make_jaxpr(circuit)(0.5)
+        ctrl_eqn = plxpr.eqns[0]
+        assert ctrl_eqn.primitive == ctrl_transform_prim
+        assert [value.val for value in ctrl_eqn.invars[-3:]] == [False, False, True]
+        assert all(value.aval.dtype == bool for value in ctrl_eqn.invars[-3:])
+
     @pytest.mark.parametrize("container, static_first", ((tuple, False), (list, True)))
     def test_mixed_control_values(self, container, static_first):
         """Capture supplies runtime control-value operands for qjit lowering."""
