@@ -90,8 +90,8 @@ class TestDecompRuleToTape:
 class TestAssertValidDecompositionRule:
     """Tests for assert_valid_decomp_rule."""
 
-    @pytest.mark.parametrize("capture", [False, pytest.param(True, marks=pytest.mark.capture)])
-    def test_valid_rule(self, capture):
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_valid_rule(self):
         """Test that a correct rule passes in both capture modes."""
         assert_valid_decomp_rule(qp.CNOT([0, 1]), _cnot_to_cz)
 
@@ -172,7 +172,7 @@ class TestAssertValidDecompositionRule:
 
     def test_bad_new_decomposition_rule_inexact(self):
         """Test that an informative error is raised if the
-        decomposition contains an operator type that is not accounted for in 
+        decomposition contains an operator type that is not accounted for in
         the resource function even when exact=False."""
 
         class MyOp(Operator):
