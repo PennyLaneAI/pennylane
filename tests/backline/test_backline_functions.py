@@ -206,3 +206,37 @@ class TestTritonSubmoduleImportGuards:
         monkeypatch.delitem(sys.modules, module_name, raising=False)
         with pytest.raises(ImportError, match="Triton decoders require installed"):
             importlib.import_module(module_name)
+
+
+class TestCatalystLauncherCheck:
+    """Triton kernels are refused with a Catalyst that expects an older reply layout."""
+
+    @staticmethod
+    def _catalyst(monkeypatch, **attrs):
+        catalyst = type(sys)("catalyst")
+        backline = type(sys)("catalyst.backline")
+        backline.__dict__.update(attrs)
+        catalyst.backline = backline
+        monkeypatch.setitem(sys.modules, "catalyst", catalyst)
+        monkeypatch.setitem(sys.modules, "catalyst.backline", backline)
+
+    def test_an_older_catalyst_is_refused(self, monkeypatch):
+        """A Catalyst without the launcher version predates the reply layout the kernels write."""
+        from pennylane.backline.functions import _check_catalyst_runs_triton_kernels
+
+        self._catalyst(monkeypatch)
+        with pytest.raises(ImportError, match="need a newer Catalyst"):
+            _check_catalyst_runs_triton_kernels()
+
+    def test_a_matching_catalyst_passes(self, monkeypatch):
+        from pennylane.backline.functions import _check_catalyst_runs_triton_kernels
+
+        self._catalyst(monkeypatch, COPROCESSOR_LAUNCHER_ABI_VERSION=2)
+        _check_catalyst_runs_triton_kernels()
+
+    def test_no_catalyst_passes(self, monkeypatch):
+        """Without Catalyst there is nothing to check; compiling the program reports it."""
+        from pennylane.backline.functions import _check_catalyst_runs_triton_kernels
+
+        monkeypatch.setitem(sys.modules, "catalyst", None)
+        _check_catalyst_runs_triton_kernels()

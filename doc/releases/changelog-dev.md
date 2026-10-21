@@ -848,6 +848,12 @@
   backend carries when the program is compiled.
   [(#10369)](https://github.com/PennyLaneAI/pennylane/pull/10369)
 
+* Backline Triton decoders write their replies in Catalyst's frame layout, carrying the request's
+  decoder id, and find each ring slot from the slot size Catalyst passes. They need a Catalyst whose
+  GPU coprocessors use that layout, and `triton_decoder` and `css_bp_decoder` say so when the
+  installed Catalyst is older.
+  [(#10369)](https://github.com/PennyLaneAI/pennylane/pull/10369)
+
 * The `decompose_mcx_with_no_worker` decomposition rule for :class:`~.MultiControlledX` now only
   applies when no work wires are provided, matching `MultiControlledX.compute_decomposition`.
   This removes controlled `GlobalPhase` and `PhaseShift` rules from the decomposition graph and
