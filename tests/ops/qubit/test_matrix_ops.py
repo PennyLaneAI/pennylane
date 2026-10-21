@@ -196,6 +196,14 @@ class TestQubitUnitaryCSR:
         mat2 = qp.matrix(op.decomposition, wire_order=[0])()
         assert qp.math.allclose(mat2, mat.todense())
 
+    def test_abstractify_csr_matrix(self):
+        """Tests that a QubitUnitary with a csr_matrix can be abstractified."""
+
+        U = csr_matrix(unitary_group.rvs(4))
+        abstract_op = abstractify(qp.QubitUnitary(U, wires=[0, 1]))
+        assert abstract_op.U == AbstractArray((4, 4), U.dtype)
+        assert abstract_op.wires == AbstractWires(2)
+
     def test_csr_matrix_decomposition_new(self):
         """Tests that the QubitUnitary's decomposition works with csr_matrix."""
 
