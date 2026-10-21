@@ -27,7 +27,7 @@ from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math import prod
 from pennylane.ops.op_math.prod import Prod
 from pennylane.ops.op_math.prod2 import Prod2
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import NonParametricOp
 
@@ -430,16 +430,7 @@ class TestValidity:  # pylint: disable=too-few-public-methods
             work_wires=work_wires,
             work_wire_type="zeroed",
         )
-        rules = qp.list_decomps("C(Prod2)")
-        assert rules, "no decomp rules registered for C(Prod2)"
-
-        # ``_test_decomposition_rule`` is a no-op for rules that are not applicable, so check
-        # explicitly that when the work_wire_type is "zeroed", at least one rule is applicable
-        applicable = [rule for rule in rules if rule.is_applicable(**op.arguments)]
-        assert applicable
-
-        for rule in rules:
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 class TestAbstractOperands:

@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_valid_decomp_rule
 from pennylane.transforms.decompositions import (
     make_selectpaulirot_to_phase_gradient_decomp,
 )
@@ -104,7 +104,7 @@ def test_valid_decomp(prec, num_controls, rot_axis):
     op = qp.SelectPauliRot(
         angles, control_wires=control_wires, target_wire=wire_idx, rot_axis=rot_axis
     )
-    _test_decomposition_rule(op, custom_decomp)
+    assert_valid_decomp_rule(op, custom_decomp)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -287,7 +287,7 @@ def test_capture_compatibility():
     )
 
     op = qp.SelectPauliRot(angles, control_wires=control_wires, target_wire=target_wire)
-    _test_decomposition_rule(op, custom_decomp)
+    assert_valid_decomp_rule(op, custom_decomp)
 
 
 @pytest.mark.parametrize(
@@ -312,7 +312,7 @@ def test_rot_axis_zero_controls(rot_axis, expected_op):
     angles = np.array([1.23])
     op = qp.SelectPauliRot(angles, control_wires=[], target_wire=0, rot_axis=rot_axis)
 
-    _test_decomposition_rule(op, custom_decomp)
+    assert_valid_decomp_rule(op, custom_decomp)
 
     with qp.queuing.AnnotatedQueue() as q:
         custom_decomp(angles, [], 0, rot_axis=rot_axis)

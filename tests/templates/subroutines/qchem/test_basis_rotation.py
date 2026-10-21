@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.parametrize(
@@ -189,8 +189,7 @@ class TestDecomposition:
         operator for complex (unitary) inputs, with and without program capture enabled."""
 
         op = qp.BasisRotation(wires=range(num_wires), unitary_matrix=unitary_matrix)
-        for rule in qp.list_decomps(qp.BasisRotation):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
@@ -201,8 +200,7 @@ class TestDecomposition:
         operator for real (orthogonal) inputs, with and without program capture enabled."""
 
         op = qp.BasisRotation(wires=range(num_wires), unitary_matrix=ortho_matrix)
-        for rule in qp.list_decomps(qp.BasisRotation):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize(
         ("num_wires", "ortho_matrix"),
@@ -227,8 +225,7 @@ class TestDecomposition:
         op = qp.BasisRotation(wires=range(num_wires), unitary_matrix=ortho_matrix)
 
         # Tests the decomposition rule defined with the new system
-        for rule in qp.list_decomps(qp.BasisRotation):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_custom_wire_labels(self, tol):
         """Test that BasisRotation template can deal with non-numeric, nonconsecutive wire labels."""

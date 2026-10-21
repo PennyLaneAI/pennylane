@@ -31,7 +31,8 @@ from pennylane.core.operator import Operator1, Operator2
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
+from pennylane.testing.decompositions import assert_valid_decomp_rule, decomp_rule_to_tape
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
@@ -803,8 +804,7 @@ class TestDecompositions:
         """Tests the PCPhase decomposition rules."""
 
         op = qp.PCPhase(np.random.random(), dim, wires=wires)
-        for rule in qp.list_decomps(qp.PCPhase):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.integration
     @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -3000,15 +3000,13 @@ class TestMultiRZ:
     @pytest.mark.parametrize("wires", [[0], [0, 2], [3, 1, 0]])
     def test_MultiRZ_to_ppr(self, wires):
         """Test that MultiRZ decomposes into a PauliRot on a pure-Z Pauli word."""
+
         op = qp.MultiRZ(0.123, wires=wires)
         rule = qp.list_decomps(qp.MultiRZ)["_multi_rz_to_ppr"]
-
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(**op.arguments)
-
-        (actual,) = q.queue
+        tape = decomp_rule_to_tape(op, rule)
+        (actual,) = tape.operations
         qp.assert_equal(actual, qp.PauliRot(0.123, "Z" * len(wires), wires=wires))
-        _test_decomposition_rule(op, rule)
+        assert_valid_decomp_rule(op, rule)
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("n", [1, 2, 3, 4])
