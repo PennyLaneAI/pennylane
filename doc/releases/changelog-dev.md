@@ -2065,7 +2065,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Terminal measurements now accept fixed-size ``qp.typing.Wire[n]`` registers during
+* Terminal measurements now accept fixed-size `qp.typing.Wire[n]` registers during
   program capture, allowing abstract-wire workloads to use ``qp.estimate``.
   [(#10364)](https://github.com/PennyLaneAI/pennylane/pull/10364)
   
