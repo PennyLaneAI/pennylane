@@ -838,6 +838,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* Updated the decomposition of :class:`~.TrotterCDF` and its double-phase controlled decomposition
+  to implement the one-body evolution, together with the basis rotations around it, as a single
+  Givens network. This replaces two basis rotations and the one-body ``RZ`` layer per Trotter step
+  and spin channel by :math:`N(N-1)/2` ``SingleExcitation`` and :math:`N(N+1)/2` phase gates.
+  [(#10331)](https://github.com/PennyLaneAI/pennylane/pull/10331)
+
 * A Backline placement accepts any transport that a backend in Catalyst's transport backend
   registry implements, so a backend package can add a transport without a PennyLane change. A
   :class:`~.Controller` or :class:`~.Coprocessor` names the backend to run on with ``backend=``.
