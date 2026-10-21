@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -212,8 +212,7 @@ class TestDecomposition:
     @pytest.mark.parametrize(("hamiltonian", "time", "steps"), DECOMP_PARAMS)
     def test_decomposition_new(self, hamiltonian, time, steps):
         op = qp.ApproxTimeEvolution(hamiltonian, time, steps)
-        for rule in qp.list_decomps(qp.ApproxTimeEvolution):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 class TestInputs:

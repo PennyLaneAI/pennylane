@@ -45,7 +45,7 @@ from pennylane.templates.subroutines.time_evolution.trotter_cgf import (
     _merge_leaves,
     _trotter_cgf_decomposition,
 )
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  # pylint: disable=no-name-in-module
@@ -390,8 +390,7 @@ class TestDecomposition:
         ham, num_modes, n_states = toy_hamiltonian_cgf_concrete
         wires = list(range(num_modes * n_states))
         op = qp.TrotterCGF(0.4, 2, ham, wires)
-        for rule in qp.list_decomps(qp.TrotterCGF):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_base_matches_expm(self, diagonal_hamiltonian_cgf):
         """For an identity-leaf (Trotter-exact) Hamiltonian, matrix(TrotterCGF) equals the
@@ -600,15 +599,14 @@ class TestControlledDecomposition:
         ham, num_modes, n_states = toy_hamiltonian_cgf_concrete
         wires = list(range(num_modes * n_states))
         op = qp.ctrl(qp.TrotterCGF(0.4, 2, ham, wires), control=[99])
-        for rule in qp.list_decomps("C(TrotterCGF)"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.capture
     def test_controlled_decomposition_capture(self, toy_hamiltonian_cgf_concrete):
         """The C(TrotterCGF) rule captures cleanly. Operators can't be passed as capture inputs
         yet - they surface as ``ArgInfo`` wires (the "ArgInfo issue" tracked by ``test_Controlled``
         in ``tests/capture/test_operators.py``) - so the base is built inside the traced function.
-        Once that is resolved this can use ``_test_decomposition_rule`` under capture directly."""
+        Once that is resolved this can use ``assert_valid_decomp_rule`` under capture directly."""
         ham, num_modes, n_states = toy_hamiltonian_cgf_concrete
         n = num_modes * n_states
         rule = qp.list_decomps("C(TrotterCGF)")[0]
@@ -661,15 +659,14 @@ class TestDoublePhaseControlledDecomposition:
         ham, num_modes, n_states = toy_hamiltonian_cgf_concrete
         wires = list(range(num_modes * n_states))
         op = qp.ctrl(qp.TrotterCGF(0.4, 2, ham, wires, double_phase=True), control=[99])
-        for rule in qp.list_decomps("C(TrotterCGF)"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.capture
     def test_controlled_decomposition_capture(self, toy_hamiltonian_cgf_concrete):
         """The double-phase C(TrotterCGF) rule captures cleanly. Operators can't be passed as
         capture inputs yet - they surface as ``ArgInfo`` wires (the "ArgInfo issue" tracked by
         ``test_Controlled`` in ``tests/capture/test_operators.py``) - so the base is built inside
-        the traced function; once resolved this can use ``_test_decomposition_rule`` directly."""
+        the traced function; once resolved this can use ``assert_valid_decomp_rule`` directly."""
         ham, num_modes, n_states = toy_hamiltonian_cgf_concrete
         n = num_modes * n_states
         rule = qp.list_decomps("C(TrotterCGF)")[0]
