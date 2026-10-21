@@ -122,11 +122,6 @@ class Backline(Device):
         return self._placement
 
     @property
-    def backline(self):
-        """Placement: Alias of :attr:`placement` for Catalyst."""
-        return self._placement
-
-    @property
     def transport(self):
         """Transport: The :class:`~.Transport` carrying data between nodes."""
         return self._placement.transport

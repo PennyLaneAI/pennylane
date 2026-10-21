@@ -227,12 +227,12 @@ class TestCollectOpsandMeas:
             qp.RX(x, wire)
             qp.X(wire)
 
-        def f(x):
-            qp.ctrl(qfunc, control=[1, 2], control_values=[False, False])(x, 0)
+        def f(x, val):
+            qp.ctrl(qfunc, control=[1, 2], control_values=[False, val])(x, 0)
 
         obj = CollectOpsandMeas()
         x = jax.numpy.array(-0.98)
-        obj(f)(x)
+        obj(f)(x, False)
 
         assert len(obj.state["ops"]) == 2
         expected0 = qp.ctrl(qp.RX(x, 0), [1, 2], control_values=[False, False])

@@ -114,7 +114,17 @@ class TestInspectDecompGraph:
             Decomposition 1 (name: ctrl_many_zeroed_work_wires)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
-            CHOSEN: Decomposition 2 (name: controlled(_multi_rz_decomposition))
+            Decomposition 2 (name: controlled(_multi_rz_to_ppr))
+            0: ─╭RZZ(0.50)─┤
+            1: ─├RZZ(0.50)─┤
+            3: ─├●─────────┤
+            4: ─├●─────────┤
+            5: ─╰●─────────┤
+            Estimated First-Level Expansion Gates: {Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
+            Actual First-Level Expansion Gates: {Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
+            Missing Ops: {Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool))}
+
+            CHOSEN: Decomposition 3 (name: controlled(_multi_rz_decomposition))
             0: ─╭(X)@RZ(0.50)@(X)─┤
             1: ─├(X)@RZ(0.50)@(X)─┤
             3: ─├●────────────────┤
@@ -139,7 +149,30 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### **CHOSEN:** Decomposition 2 (name: controlled(_multi_rz_decomposition))
+            #### Decomposition 2 (name: controlled(_multi_rz_to_ppr))
+
+            ```
+            0: ─╭RZZ(0.50)─┤
+            1: ─├RZZ(0.50)─┤
+            3: ─├●─────────┤
+            4: ─├●─────────┤
+            5: ─╰●─────────┤
+            ```
+            <details><summary>Gate Counts and Wire Allocations</summary>
+
+            | First-Level Expansion | Estimated | Actual |
+            | :--- | :--- | :--- |
+            | Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)) | 1 | 1 |
+            | PauliX | 3 | 0 |
+            </details>
+
+            | Missing Ops |
+            | :--- |
+            | Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)) |
+
+            ---
+
+            #### **CHOSEN:** Decomposition 3 (name: controlled(_multi_rz_decomposition))
 
             ```
             0: ─╭(X)@RZ(0.50)@(X)─┤
@@ -199,7 +232,18 @@ class TestInspectDecompGraph:
             Decomposition 1 (name: ctrl_many_zeroed_work_wires)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
-            CHOSEN: Decomposition 2 (name: controlled(_multi_rz_decomposition))
+            Decomposition 2 (name: controlled(_multi_rz_to_ppr))
+            0: ─╭RZZ(0.50)─┤
+            1: ─├RZZ(0.50)─┤
+            3: ─├●─────────┤
+            4: ─├●─────────┤
+            5: ─╰●─────────┤
+            Estimated First-Level Expansion Gates: {Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
+            Actual First-Level Expansion Gates: {Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
+            Full Expansion Gates: {CNOT: 26, GlobalPhase: 71, MidMeasure: 2, RX: 23, RY: 10, RZ: 42}
+            Weighted Cost: 3778.0
+
+            CHOSEN: Decomposition 3 (name: controlled(_multi_rz_decomposition))
             0: ─╭(X)@RZ(0.50)@(X)─┤
             1: ─├(X)@RZ(0.50)@(X)─┤
             3: ─├●────────────────┤
@@ -253,7 +297,36 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### **CHOSEN:** Decomposition 2 (name: controlled(_multi_rz_decomposition))
+            #### Decomposition 2 (name: controlled(_multi_rz_to_ppr))
+
+            ```
+            0: ─╭RZZ(0.50)─┤
+            1: ─├RZZ(0.50)─┤
+            3: ─├●─────────┤
+            4: ─├●─────────┤
+            5: ─╰●─────────┤
+            ```
+            <details><summary>Gate Counts and Wire Allocations</summary>
+
+            | First-Level Expansion | Estimated | Actual |
+            | :--- | :--- | :--- |
+            | Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)) | 1 | 1 |
+            | PauliX | 3 | 0 |
+
+            | Full Expansion | Count |
+            | :--- | :--- |
+            | CNOT | 26 |
+            | GlobalPhase | 71 |
+            | MidMeasure | 2 |
+            | RX | 23 |
+            | RY | 10 |
+            | RZ | 42 |
+            | **Weighted Cost** | 3778.0 |
+            </details>
+
+            ---
+
+            #### **CHOSEN:** Decomposition 3 (name: controlled(_multi_rz_decomposition))
 
             ```
             0: ─╭(X)@RZ(0.50)@(X)─┤
@@ -291,7 +364,7 @@ class TestInspectDecompGraph:
              [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
             Estimated First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, CNOT: 2, Controlled(PhaseShift, control_wires=AbstractWires(2), control_values=AbstractArray((2,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool), work_wires=AbstractWires(1), work_wire_type=borrowed): 2, PauliX: 3, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
             Actual First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, CNOT: 2, Controlled(PhaseShift, control_wires=AbstractWires(2), control_values=AbstractArray((2,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool), work_wires=AbstractWires(1), work_wire_type=borrowed): 2, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
-            Full Expansion Gates: {CNOT: 24, GlobalPhase: 42, RX: 11, RY: 8, RZ: 35}
+            Full Expansion Gates: {CNOT: 24, GlobalPhase: 34, RX: 15, RY: 8, RZ: 31}
             Weighted Cost: 2724.0
 
             Decomposition 1 (name: one_borrowed_worker)
