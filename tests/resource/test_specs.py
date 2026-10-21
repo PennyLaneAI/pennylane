@@ -163,6 +163,12 @@ class TestDeviceLevelSpecs:
             ),
         )
 
+    @pytest.mark.xfail(
+        reason=(
+            "Requires Catalyst support for control-value operands (sc-133997) "
+            "and work_wire_spec."
+        ),
+    )
     def test_complex(self):
         """Test a complex case of qp.specs() against PennyLane"""
 

@@ -31,7 +31,7 @@ from .mlir_specs import resources_from_analysis_pass
 from .resource import CircuitSpecs, SpecsResources
 
 
-def _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs) -> tuple[
+def _run_resource_analysis(func, original_qnode, level, *args, **kwargs) -> tuple[
     SpecsResources | list[SpecsResources] | dict[str, SpecsResources | list[SpecsResources]],
     str | dict[int, str],
 ]:
@@ -57,7 +57,7 @@ def _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs) -> tupl
 
     # Handle MLIR passes
     resources = resources_from_analysis_pass(
-        qjit,
+        func,
         original_qnode,
         level,
         level_to_markers,
@@ -74,14 +74,14 @@ def _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs) -> tupl
     return resources, level_to_name
 
 
-def _analyze_qjit(qjit, level, *args, **kwargs) -> CircuitSpecs:
+def _analyze_qjit(func, level, *args, **kwargs) -> CircuitSpecs:
     """Compile a qjit'd QNode up to the given level and return the specs found by analyzing it."""
-    original_qnode = unwrap_qjit_qnode(qjit, fn_name="qp.analyze")
+    original_qnode = unwrap_qjit_qnode(func, fn_name="qp.analyze")
 
     if level == "device":
         raise NotImplementedError("qp.analyze does not support level='device' yet.")
 
-    resources, level = _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs)
+    resources, level = _run_resource_analysis(func, original_qnode, level, *args, **kwargs)
 
     return build_circuit_specs(original_qnode, resources, level)
 
@@ -109,8 +109,7 @@ def analyze(
         including gate and measurement data, wire allocations, device information, shots, and
         more.
 
-    .. seealso:: :func:`~.specs`, which provides the same analysis, and :func:`~.track`, which
-        counts the resources used after device preprocessing by mock-executing the circuit.
+    .. seealso:: :func:`~.estimate`, :func:`~.track`
 
     .. note::
 

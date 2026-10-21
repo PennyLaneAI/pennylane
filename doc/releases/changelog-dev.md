@@ -2,6 +2,36 @@
 
 <h3>New features since last release</h3>
 
+* :func:`~.transforms.gridsynth` has a new ``method`` keyword argument with two randomized
+  synthesis methods from [arXiv:2203.10064](https://arxiv.org/abs/2203.10064), which reduce the
+  T-count at the same accuracy of the channel averaged over executions.
+  [(#10290)](https://github.com/PennyLaneAI/pennylane/pull/10290)
+
+  - ``method="mixed"`` implements the mixed diagonal approximation (Section 3.4): each rotation
+    randomly applies one of eight Clifford+T sequences, an under- or an over-rotation twirled over
+    `{I, S, Z, S†}`, whose coherent errors cancel on average. This roughly halves the T-count of
+    the default ``method="deterministic"``.
+  - ``method="mixed-fallback"`` implements the mixed fallback approximation (Section 3.5): each
+    rotation randomly applies one of two projective rotations on an ancilla qubit, followed by a
+    mixed diagonal fallback if measuring the ancilla signals failure. This roughly halves the
+    T-count of ``method="mixed"`` again, at the cost of one temporary ancilla qubit and a
+    mid-circuit measurement per rotation.
+
+  ```python
+  @qp.qjit(capture=True, target="mlir")
+  @qp.transforms.gridsynth(epsilon=1e-6, method="mixed")
+  @qp.qnode(qp.device("null.qubit", wires=1))
+  def circuit(x: float):
+      qp.RZ(x, 0)
+      return qp.expval(qp.Z(0))
+  ```
+
+  ```pycon
+  >>> qp.specs(circuit, level="user")(1.1).resources.quantum_operations["T"]
+  31
+
+  ```
+
 * Added a decomposition of ``Adjoint(TemporaryAND)`` to PPMs (:func:`~.pauli_measure`)
   and a :class:`~.CZ` gate, as an alternative to the existing decomposition using
   :func:`qp.measure` with an explicit basis change.
@@ -451,6 +481,55 @@
 
   ```
 
+* A new function called :func:`~pennylane.estimate` is available, which provides a quick projection of the
+  resources of a ``qjit``-compiled QNode onto a target gate set, without executing the circuit.
+  Before any specified compilation passes, the original circuit's operations and their possible
+  decomposition pathways to the ``target`` gate set are analyzed and the resulting operations are
+  counted. Note that :func:`~pennylane.estimate` is only supported with ``qp.qjit(capture=True)``.
+  [(#10296)](https://github.com/PennyLaneAI/pennylane/pull/10296)
+
+  Consider the following circuit.
+
+  ```python
+  dev = qp.device("null.qubit", wires=2)
+
+  @qp.qjit(capture=True)
+  @qp.qnode(dev)
+  def circuit(x):
+      qp.CZ([0, 1])
+      qp.RX(x, wires=1)
+      return qp.probs()
+  ```
+
+  ```pycon
+  >>> print(qp.estimate(circuit, target={"Hadamard", "CNOT", "RX"})(1.23).resources)
+  Quantum operations:
+  - Total: 4
+    - CNOT: 1
+    - Hadamard: 2
+    - RX: 1
+  Measurement processes:
+  - probs(all wires): 1
+  Total wires: 2
+  Circuit Depth: Not computed
+
+  ```
+
+  Gates that are already in the ``target`` gate set are kept:
+
+  ```pycon
+  >>> print(qp.estimate(circuit, target={"CZ", "RX"})(1.23).resources)
+  Quantum operations:
+  - Total: 2
+    - CZ: 1
+    - RX: 1
+  Measurement processes:
+  - probs(all wires): 1
+  Total wires: 2
+  Circuit Depth: Not computed
+
+  ```
+
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
   In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.Expression` instances where `int` values would normally appear.
@@ -759,6 +838,15 @@
 
 <h3>Improvements 🛠</h3>
 
+* Terminal measurements now accept fixed-size `qp.typing.Wire[n]` registers during
+  program capture.
+  [(#10364)](https://github.com/PennyLaneAI/pennylane/pull/10364)
+
+* A Backline placement accepts any transport that a backend in Catalyst's transport backend
+  registry implements, so a backend package can add a transport without a PennyLane change. A
+  :class:`~.Controller` or :class:`~.Coprocessor` names the backend to run on with ``backend=``.
+  [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
+
 * The `decompose_mcx_with_no_worker` decomposition rule for :class:`~.MultiControlledX` now only
   applies when no work wires are provided, matching `MultiControlledX.compute_decomposition`.
   This removes controlled `GlobalPhase` and `PhaseShift` rules from the decomposition graph and
@@ -825,6 +913,11 @@
 * Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a
   decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
   [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
+
+* Added decompositions of :class:`~.PauliX`, :class:`~.PauliY` and :class:`~.PauliZ` to
+  :class:`~.PPR_2`, of :class:`~.S` to :class:`~.PPR_4`, of :class:`~.T` to :class:`~.PPR_8`
+  (each with a global phase), and of :class:`~.MultiRZ` to :class:`~.PauliRot`.
+  [(#10350)](https://github.com/PennyLaneAI/pennylane/pull/10350)
 
 * :class:`~.FlipSign` now accepts `work_wires`, which are forwarded to the multi-controlled
   :class:`~.Z` gate in its decomposition. Providing work wires substantially reduces the gate count.
@@ -1260,7 +1353,14 @@
 * TCDQ qudit workflows now accept gates in a sparse representation.
   [(#10317)](https://github.com/PennyLaneAI/pennylane/pull/10317)
 
+* Added optional parameter ``max_memory`` to ``QuditCircuitConfig`` which allows users to control
+  the peak memory usage during the phase difference computation.
+  [(#10337)](https://github.com/PennyLaneAI/pennylane/pull/10337)
+
 <h3>Breaking changes 💔</h3>
+
+* The `qp.Backline.backline` alias of `qp.Backline.placement` has been removed. Use `placement`.
+  [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
 
 * :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's
   ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
@@ -1818,6 +1918,7 @@
     [(#10027)](https://github.com/PennyLaneAI/pennylane/pull/10027)
     [(#10047)](https://github.com/PennyLaneAI/pennylane/pull/10047)
     [(#10113)](https://github.com/PennyLaneAI/pennylane/pull/10113)
+    [(#10156)](https://github.com/PennyLaneAI/pennylane/pull/10156)
     [(#9999)](https://github.com/PennyLaneAI/pennylane/pull/9999)
     [(#10125)](https://github.com/PennyLaneAI/pennylane/pull/10125)
     [(#10124)](https://github.com/PennyLaneAI/pennylane/pull/10124)
@@ -1981,6 +2082,15 @@
   [(#10284)](https://github.com/PennyLaneAI/pennylane/pull/10284)
 
 <h3>Bug fixes 🐛</h3>
+
+* :func:`~.ctrl` now supports mixed static and dynamic control values under
+  `qp.qjit(capture=True)`, for both operator instances and callables.
+  [(#10356)](https://github.com/PennyLaneAI/pennylane/pull/10356)
+  [(#10367)](https://github.com/PennyLaneAI/pennylane/pull/10367)
+
+* :func:`~.ctrl` of a quantum function now forwards ``work_wire_type`` to each inner operator,
+  both with and without program capture.
+  [(#10355)](https://github.com/PennyLaneAI/pennylane/pull/10355)
 
 * `qp.cond` can now handle `Operator2` instances being provided instead of branch functions.
   While this syntax was supported with tape-based PennyLane, it had never been

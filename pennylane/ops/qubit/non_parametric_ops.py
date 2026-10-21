@@ -520,7 +520,17 @@ def _pow_x_to_rx(base, z):
     qp.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
-add_decomps(PauliX, _paulix_to_rx)
+def _paulix_to_ppr_resources(wires: AbstractWires):
+    return {qp.PPR_2(1, "X", Wire[1]): 1, qp.GlobalPhase: 1}
+
+
+@register_resources(_paulix_to_ppr_resources)
+def _paulix_to_ppr(wires: WiresLike):
+    qp.PPR_2(1, "X", wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
+
+
+add_decomps(PauliX, _paulix_to_rx, _paulix_to_ppr)
 add_decomps("Adjoint(PauliX)", self_adjoint)
 add_decomps("Pow(PauliX)", pow_involutory2, _pow_x_to_rx, _pow_x_to_sx)
 
@@ -741,7 +751,17 @@ def _pow_y(base, z):
     qp.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
-add_decomps(PauliY, _pauliy_to_ry_gp)
+def _pauliy_to_ppr_resources(wires: AbstractWires):
+    return {qp.PPR_2(1, "Y", Wire[1]): 1, qp.GlobalPhase: 1}
+
+
+@register_resources(_pauliy_to_ppr_resources)
+def _pauliy_to_ppr(wires: WiresLike):
+    qp.PPR_2(1, "Y", wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
+
+
+add_decomps(PauliY, _pauliy_to_ry_gp, _pauliy_to_ppr)
 add_decomps("Adjoint(PauliY)", self_adjoint)
 add_decomps("Pow(PauliY)", pow_involutory2, _pow_y)
 
@@ -998,7 +1018,17 @@ def _pow_z(base, z):
     qp.PhaseShift(np.pi * z_mod2, wires=base.wires)
 
 
-add_decomps(PauliZ, _pauliz_to_ps)
+def _pauliz_to_ppr_resources(wires: AbstractWires):
+    return {qp.PPR_2(1, "Z", Wire[1]): 1, qp.GlobalPhase: 1}
+
+
+@register_resources(_pauliz_to_ppr_resources)
+def _pauliz_to_ppr(wires: WiresLike):
+    qp.PPR_2(1, "Z", wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
+
+
+add_decomps(PauliZ, _pauliz_to_ps, _pauliz_to_ppr)
 add_decomps("Adjoint(PauliZ)", self_adjoint)
 add_decomps("Pow(PauliZ)", pow_involutory2, _pow_z, _pow_z_to_s, _pow_z_to_t)
 
@@ -1161,7 +1191,17 @@ def _s_phaseshift(wires: WiresLike | None = None):
     qp.PhaseShift(np.pi / 2, wires=wires)
 
 
-add_decomps(S, _s_phaseshift)
+def _s_to_ppr_resources(wires: AbstractWires):
+    return {qp.PPR_4(1, "Z", Wire[1]): 1, qp.GlobalPhase: 1}
+
+
+@register_resources(_s_to_ppr_resources)
+def _s_to_ppr(wires: WiresLike):
+    qp.PPR_4(1, "Z", wires=wires)
+    qp.GlobalPhase(-np.pi / 4)
+
+
+add_decomps(S, _s_phaseshift, _s_to_ppr)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 0.5))
@@ -1301,13 +1341,23 @@ def _t_phaseshift(wires=None):
     qp.PhaseShift(np.pi / 4, wires=wires)
 
 
+def _t_to_ppr_resources(wires: AbstractWires):
+    return {qp.PPR_8(1, "Z", Wire[1]): 1, qp.GlobalPhase: 1}
+
+
+@register_resources(_t_to_ppr_resources)
+def _t_to_ppr(wires: WiresLike):
+    qp.PPR_8(1, "Z", wires=wires)
+    qp.GlobalPhase(-np.pi / 8)
+
+
 @register_resources(lambda *_, **__: {qp.PhaseShift: 1})
 def _pow_t(base, z):
     z_mod8 = qp.math.array(z) % 8
     qp.PhaseShift(np.pi * z_mod8 / 4, wires=base.wires)
 
 
-add_decomps(T, _t_phaseshift)
+add_decomps(T, _t_phaseshift, _t_to_ppr)
 add_decomps("Pow(T)", make_pow_decomp_with_period2(8), _pow_t)
 
 
