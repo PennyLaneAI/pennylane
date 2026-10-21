@@ -116,7 +116,7 @@ def cdf_reference_hamiltonian_leaves(ham):
 def cdf_second_order_trotter_matrix(ham, evolution_time, num_steps):
     """Build the unmerged second-order Trotter product from independently assembled fragments."""
     Z = np.asarray(ham.core_tensors, dtype=float)
-    U = np.asarray(ham.leaf_tensors)
+    U = np.asarray(ham.leaf_tensors, dtype=float)
     num_orbitals = Z.shape[-1]
     n_wires = 2 * num_orbitals
     dim = 2**n_wires
@@ -322,16 +322,14 @@ class TestResourceRule:
     @pytest.mark.parametrize(
         ("has_control", "double_phase"), [(False, False), (True, False), (True, True)]
     )
-    @pytest.mark.parametrize("leaf_dtype", [float, complex])
     @pytest.mark.capture
     def test_merged_resource_counts_match_traced_decomposition(
-        self, num_steps, num_fragments, has_control, double_phase, leaf_dtype
+        self, num_steps, num_fragments, has_control, double_phase
     ):
-        """Resource counts match the traced decomposition after merging H1 half blocks and
-        fusing the one-body block (which double-phase circuits only do for real leaves)."""
+        """Resource counts match the traced decomposition after merging H1 half blocks."""
         num_orbitals = 2
         core = np.zeros((num_fragments + 1, num_orbitals, num_orbitals))
-        leaf = np.stack([np.eye(num_orbitals, dtype=leaf_dtype)] * (num_fragments + 1))
+        leaf = np.stack([np.eye(num_orbitals)] * (num_fragments + 1))
         ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.0)
         resources = _cdf_resource_counts(num_steps, ham, has_control, double_phase)
         num_system_wires = 2 * num_orbitals
@@ -407,23 +405,16 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         ("has_control", "double_phase"), [(False, False), (True, False), (True, True)]
     )
-    @pytest.mark.parametrize("complex_leaves", [False, True])
     def test_matches_independent_second_order_trotter_product(
-        self, seed, num_fragments, num_steps, has_control, double_phase, complex_leaves
+        self, seed, num_fragments, num_steps, has_control, double_phase
     ):
-        """Merging boundary blocks and fusing the one-body block preserve the full matrix,
-        including global phase, for uncontrolled, genuine-controlled, and double-phase circuits,
-        with real and complex leaves."""
+        """Merging boundary blocks preserves the full matrix, including global phase,
+        for uncontrolled, genuine-controlled, and double-phase circuits."""
         rng = np.random.default_rng(seed)
         num_orbitals = 2
         core = rng.normal(size=(num_fragments + 1, num_orbitals, num_orbitals)) * 0.4
         core = 0.5 * (core + np.transpose(core, (0, 2, 1)))
         leaf = np.stack([random_orthogonal(num_orbitals, rng) for _ in range(num_fragments + 1)])
-        if complex_leaves:
-            phases = np.exp(
-                1j * rng.uniform(0, 2 * np.pi, size=(num_fragments + 1, 1, num_orbitals))
-            )
-            leaf = np.stack([random_orthogonal(num_orbitals, rng) @ u for u in leaf * phases])
         ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
         wires = list(range(2 * num_orbitals))
         evolution_time = 0.7
@@ -475,7 +466,9 @@ class TestDecomposition:
         ``|v><v|`` -- and hence the physical fragment -- unchanged. The template normalizes
         leaf determinants internally, so the circuit is invariant under this flip even when it
         yields mixed determinants (as ``qp.qchem.factorize`` does for many molecules, e.g. an
-        ``eigh`` one-body leaf with ``det = -1`` next to ``expm`` two-body leaves)."""
+        ``eigh`` one-body leaf with ``det = -1`` next to ``expm`` two-body leaves). Without the
+        normalization ``BasisRotation``'s real-orthogonal sign gauge would realize a different
+        Hamiltonian."""
         rng = np.random.default_rng(seed)
         num_orbitals, L = 3, 2
         core = rng.normal(size=(L + 1, num_orbitals, num_orbitals)) * 0.4
@@ -536,6 +529,9 @@ class TestDecomposition:
         dim = 2**n_wires
         # alpha modes 0..N-1 then beta N..2N-1, placed on interleaved wires (2p alpha, 2p+1 beta)
         mode_on_wire = [i + s * num_orbitals for i in range(num_orbitals) for s in (0, 1)]
+        # BasisRotation's real-orthogonal sign gauge is diag((-1)^k) for det = +1 leaves (all
+        # leaves here, and after the template's determinant normalization, are det = +1)
+        pi_gauge = np.diag([(-1.0) ** k for k in range(num_orbitals)])
 
         def onebody_wire_matrix(mat_orb):
             full = np.zeros((n_wires, n_wires), dtype=complex)
@@ -551,7 +547,7 @@ class TestDecomposition:
         lam_raw = rng.normal(size=(num_orbitals, num_orbitals)) * 0.5
         lam = 0.5 * (lam_raw + lam_raw.T)
         leaf2 = random_orthogonal(num_orbitals, rng)
-        vecs = [leaf2[:, p] for p in range(num_orbitals)]  # fragment orbitals
+        vecs = [pi_gauge @ leaf2[:, p] for p in range(num_orbitals)]  # realized fragment orbitals
 
         h_phys = nuc * np.eye(dim, dtype=complex) + onebody_wire_matrix(h)
         num_ops = [onebody_wire_matrix(np.outer(vecs[p], vecs[p])) for p in range(num_orbitals)]
@@ -563,7 +559,10 @@ class TestDecomposition:
         mu = lam.sum(axis=1)
         vg = np.stack(vecs, axis=1)
         h_eff = h + vg @ np.diag(mu) @ vg.T
-        eps, leaf0 = np.linalg.eigh(h_eff)
+        eps, ve = np.linalg.eigh(h_eff)
+        if np.linalg.det(pi_gauge @ ve) < 0:  # keep det(leaf_0) = +1 so its gauge is pi_gauge too
+            ve[:, 0] = -ve[:, 0]
+        leaf0 = pi_gauge @ ve
 
         ham = CDFHamiltonian(
             core_tensors=np.stack([np.diag(eps), lam]),
@@ -685,13 +684,7 @@ class TestDoublePhaseControlledDecomposition:
             jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
 
         ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
-        assert {type(op).__name__ for op in ops} == {
-            "BasisRotation",
-            "CNOT",
-            "RZ",
-            "IsingZZ",
-            "SingleExcitation",
-        }
+        assert {type(op).__name__ for op in ops} == {"BasisRotation", "CNOT", "RZ", "IsingZZ"}
 
     def test_double_phase_controlled_matches_expm(self, diagonal_hamiltonian_cdf):
         """With double_phase=True, ctrl(TrotterCDF) realizes diag(U, U^dagger): for an

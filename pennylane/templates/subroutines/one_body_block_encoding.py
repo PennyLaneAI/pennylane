@@ -110,7 +110,7 @@ def _block_encoding_data(op_matrix):
 
     Diagonalizes ``op_matrix`` as :math:`o = V \operatorname{diag}(\mu) V^T` and returns the
     PREP weights :math:`|\mu_p|`, the number of negative eigenvalues, and the orbital-rotation
-    matrix handed to :class:`~.BasisRotation`. Negating the first column if needed keeps
+    matrix handed to :class:`~.BasisRotation`. The row/column sign fixing keeps
     :math:`\operatorname{det} V = +1` so that the Givens decomposition of ``BasisRotation``
     carries no extra phase flip.
 
@@ -127,12 +127,13 @@ def _block_encoding_data(op_matrix):
         ``BasisRotation``
     """
     mat = np.asarray(op_matrix, dtype=float)
+    norbs = mat.shape[0]
 
     mu, vmat = np.linalg.eigh(mat)  # o = vmat diag(mu) vmat.T
 
-    unitary_matrix = vmat
-    if np.linalg.det(vmat) < 0:
-        unitary_matrix[:, 0] *= -1
+    dvec = np.array([(-1.0) ** i for i in range(norbs)])
+    col = dvec if np.linalg.det(vmat) > 0 else np.concatenate([-dvec[:1], dvec[1:]])
+    unitary_matrix = vmat * dvec[:, None] * col[None, :]
 
     absmu = tuple(float(value) for value in np.abs(mu))
     n_neg = int(np.sum(mu < 0))
