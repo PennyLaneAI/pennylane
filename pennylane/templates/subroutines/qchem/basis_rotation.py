@@ -47,11 +47,17 @@ def _adjust_determinant(matrix):
     det = math.linalg.det(matrix)
 
     mat = matrix
-    if math.is_abstract(det) or det < 0:
+    if math.is_abstract(det):
+        is_negative = det < 0
+        mat = math.set_index(mat, 0, math.where(is_negative, -mat[0], mat[0]))
+        angle = math.where(is_negative, math.ones_like(det) * np.pi, math.zeros_like(det))
+        return angle, mat
+
+    if det < 0:
         if math.get_interface(mat) != "jax":
             mat = math.toarray(mat).copy()
         mat = math.set_index(mat, 0, -mat[0])
-        return np.pi * (1 - math.real(det)) / 2, mat
+        return math.ones_like(det) * np.pi, mat
 
     return np.array(0.0), mat
 

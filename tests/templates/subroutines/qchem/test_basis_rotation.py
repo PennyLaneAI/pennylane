@@ -603,6 +603,57 @@ class TestInterfaces:
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("det", [1, -1])
+    @pytest.mark.jax
+    def test_jax_jit_real_matrix_state(self, det):
+        """Test that JIT compilation preserves the state for real matrices of either determinant."""
+        import jax
+        import jax.numpy as jnp
+
+        theta = 0.4
+        unitary_matrix = np.array([[np.cos(theta), np.sin(theta)], [-np.sin(theta), np.cos(theta)]])
+        if det < 0:
+            unitary_matrix[0] *= -1
+        unitary_matrix = jnp.array(unitary_matrix, dtype=jnp.float32)
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit(matrix):
+            qp.PauliX(0)
+            qp.BasisRotation(unitary_matrix=matrix, wires=range(2))
+            return qp.state()
+
+        assert qp.math.allclose(
+            jax.jit(circuit)(unitary_matrix), circuit(unitary_matrix), atol=0, rtol=0
+        )
+
+    @pytest.mark.jax
+    def test_jax_jit_float32_negative_determinant_state(self):
+        """Test exact JIT agreement when a float32 determinant is only approximately negative one."""
+        import jax
+        import jax.numpy as jnp
+
+        unitary_matrix = jnp.array(
+            [
+                [-0.9889079, -0.14836748, 0.0069464],
+                [0.08414589, -0.59816617, -0.79694206],
+                [-0.12239539, 0.7875178, -0.60401577],
+            ],
+            dtype=jnp.float32,
+        )
+        dev = qp.device("default.qubit", wires=3)
+
+        @qp.qnode(dev)
+        def circuit(matrix):
+            qp.PauliX(0)
+            qp.BasisRotation(unitary_matrix=matrix, wires=range(3))
+            return qp.state()
+
+        assert qp.math.allclose(
+            jax.jit(circuit)(unitary_matrix), circuit(unitary_matrix), atol=0, rtol=0
+        )
+
     @pytest.mark.parametrize(
         "unitary",
         [
@@ -687,3 +738,21 @@ class TestInterfaces:
         res = circuit(unitary_matrix)
         res2 = circuit2(weights)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.torch
+    def test_torch_real_matrix_negative_determinant(self):
+        """Test real Torch matrices with a negative determinant."""
+        import torch
+
+        unitary_matrix = torch.tensor([[-0.8, -0.6], [-0.6, 0.8]], dtype=torch.float64)
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit(matrix):
+            qp.PauliX(0)
+            qp.BasisRotation(unitary_matrix=matrix, wires=range(2))
+            return qp.state()
+
+        assert qp.math.allclose(
+            circuit(unitary_matrix), circuit(unitary_matrix.to(torch.complex128))
+        )

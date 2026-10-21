@@ -483,11 +483,19 @@ def _commute_phases_u(left_givens, right_givens, phases):
         # conj(p) is read off the larger of |p c| and |p s|, so that c = 0 or s = 0 (exact zeros
         # in the decomposed matrix) do not cause a division by zero.
         c, s = math.real(grot_mat[1, 1]), math.real(grot_mat[0, 1])
+        selected_cs = math.where(s > c, s, c)
         conj_p = math.where(s > c, -math.conj(grot_mat[1, 0]), math.conj(grot_mat[0, 0]))
+        abs_p = math.abs(conj_p) / selected_cs
         conj_p = conj_p / math.abs(conj_p)
         rel_phase = phases[j, j] * math.conj(phases[i, i])
-        givens_mat = math.array([[rel_phase * c, -s], [rel_phase * s, c]], like=interface)
-        nphase_diag = [conj_p * phases[j, j], phases[j, j]]
+        givens_mat = math.array(
+            [
+                [rel_phase * c / abs_p, -abs_p * s],
+                [rel_phase * s / abs_p, abs_p * c],
+            ],
+            like=interface,
+        )
+        nphase_diag = [conj_p * phases[j, j], phases[j, j] / abs_p]
         for diag_idx, diag_val in zip([(i, i), (j, j)], nphase_diag, strict=True):
             phases = _set_unitary_matrix(
                 phases, diag_idx, diag_val, like=interface, real_valued=False
