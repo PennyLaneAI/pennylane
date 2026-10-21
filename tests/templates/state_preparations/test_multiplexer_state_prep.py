@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 _REAL_STATE = np.array([-0.84223628, -0.40036496, 0.08974619, -0.34970212])
 _COMPLEX_STATE = np.array(
@@ -48,7 +48,7 @@ class TestMultiplexerStatePreparation:
 
         op = qp.MultiplexerStatePreparation(state_vector=state, wires=wires)
 
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.parametrize(
         ("state", "applicable_rule"),

@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 
 @pytest.mark.parametrize(
@@ -52,7 +52,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 def test_standard_validity(rotation):
     """Run standard tests of operation validity."""
     op = qp.BasisRotation(wires=range(len(rotation)), unitary_matrix=rotation)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 _COMPLEX_CASES = [

@@ -237,7 +237,7 @@ class TestControlledInit:
     def test_standard_validity_composite_base(self, base):
         """``assert_valid`` should pass for ``Controlled`` wrapping a CompositeOp."""
         op = Controlled(base, control_wires=[3, 4, 5], work_wires=[6, 7, 8])
-        qp.ops.functions.assert_valid(op)
+        qp.testing.assert_valid(op)
 
 
 # pylint: disable=too-few-public-methods
@@ -1894,6 +1894,22 @@ class TestCtrl:
         expected = qp.MultiControlledX(wires=[3, 2, 1, 0], control_values=[1, 0, 1])
         assert op == expected
 
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_qfunc_ctrl_forwards_work_wire_type(self, work_wire_type):
+        """``qp.ctrl`` of a qfunc must pass ``work_wire_type`` to each inner operator."""
+
+        def f():
+            qp.X(0)
+            qp.X(1)
+
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.ctrl(f, control=[2, 3], work_wires=[4], work_wire_type=work_wire_type)()
+
+        assert len(q.queue) == 2
+        for op in q.queue:
+            assert op.work_wire_type == work_wire_type
+            assert op.work_wires == Wires([4])
+
     def test_correct_queued_operators(self):
         """Test that args and kwargs do not add operators to the queue."""
 
@@ -2036,9 +2052,8 @@ class TestTapeExpansionWithControlled:
             qp.RY(theta, wires=wires)
             qp.RZ(omega, wires=wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(_Rot, _rot_to_rz_ry_rz)
-            [tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
+        qp.add_decomps(_Rot, _rot_to_rz_ry_rz)
+        [tape], _ = decompose(tape, max_expansion=1, gate_set=gate_sets.ROTATIONS_PLUS_CNOT)
 
         assert tape.circuit == [
             qp.ctrl(qp.RZ(0.1, 0), control=[3, 7]),
@@ -2057,20 +2072,18 @@ class TestTapeExpansionWithControlled:
         def stopping_condition(o):
             return not isinstance(o, Controlled)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(_Rot, _rot_to_rz_ry_rz)
-            [actual], _ = decompose(
-                tape,
-                max_expansion=10,
-                stopping_condition=stopping_condition,
-                gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
-            )
-            [expected], _ = decompose(
-                tape_expected,
-                max_expansion=10,
-                stopping_condition=stopping_condition,
-                gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
-            )
+        [actual], _ = decompose(
+            tape,
+            max_expansion=10,
+            stopping_condition=stopping_condition,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+        )
+        [expected], _ = decompose(
+            tape_expected,
+            max_expansion=10,
+            stopping_condition=stopping_condition,
+            gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
+        )
 
         actual_mat = qp.matrix(actual, wire_order=[3, 7, 0])
         expected_mat = qp.matrix(expected, wire_order=[3, 7, 0])

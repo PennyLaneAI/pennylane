@@ -123,7 +123,7 @@ def _marginal_probs(d: int, bandwidth: float, graph_type: str) -> jnp.ndarray:
     raise ValueError(f"Unknown graph_type {graph_type!r}; use 'cycle' or 'complete'.")
 
 
-def _sample_fourier_indices(  # pylint: disable=too-many-arguments
+def _sample_fourier_indices(  # pylint: disable=too-many-arguments,too-many-locals
     key: ArrayLike,
     n_ops: int,
     n_qudits: int,
@@ -146,13 +146,16 @@ def _sample_fourier_indices(  # pylint: disable=too-many-arguments
         Integer array of shape ``(n_ops, n_qudits)``; column ``i`` has entries
         in :math:`\\{0, \\ldots, d_i-1\\}`.
     """
+    wires_by_dim: dict[int, list[int]] = {}
+    for wire in wire_tuple:
+        wires_by_dim.setdefault(int(dims[wire]), []).append(int(wire))
+
     all_obs = jnp.zeros((n_ops, n_qudits), dtype=jnp.int32)
-    keys = jax.random.split(key, len(wire_tuple)) if wire_tuple else []
-    for col_key, wire in zip(keys, wire_tuple):
-        d_i = int(dims[wire])
+    keys = jax.random.split(key, len(wires_by_dim)) if wires_by_dim else []
+    for group_key, (d_i, wires) in zip(keys, sorted(wires_by_dim.items())):
         marginal = _marginal_probs(d_i, bandwidth, graph_type)
-        col = jax.random.choice(col_key, d_i, shape=(n_ops,), p=marginal)
-        all_obs = all_obs.at[:, wire].set(col.astype(jnp.int32))
+        cols = jax.random.choice(group_key, d_i, shape=(n_ops, len(wires)), p=marginal)
+        all_obs = all_obs.at[:, jnp.asarray(wires, dtype=jnp.int32)].set(cols.astype(jnp.int32))
     return all_obs
 
 
@@ -393,7 +396,7 @@ def build_mmd_loss_hw(
     >>> circuit_config = QuditCircuitConfig(
     ...     dims=3,
     ...     n_qudits=2,
-    ...     gates={0: [[1, 0]], 1: [[0, 1]]},
+    ...     gates={0: [{0: 1}], 1: [{1: 1}]},
     ...     n_samples=512,
     ...     key=jax.random.PRNGKey(0),
     ... )

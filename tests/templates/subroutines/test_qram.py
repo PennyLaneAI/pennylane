@@ -25,9 +25,10 @@ from pennylane.decomposition import list_decomps
 from pennylane.math import int_to_binary
 from pennylane.measurements import probs, state
 from pennylane.ops import CH, CNOT, CSWAP, CZ, SWAP, Controlled, MultiControlledX, Toffoli, X
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM, FFQRAM, HybridQRAM, SelectOnlyQRAM
+from pennylane.testing import assert_valid
+from pennylane.testing.decompositions import _test_decomposition_rule
 
 has_jax = True
 try:
