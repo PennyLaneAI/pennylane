@@ -2065,13 +2065,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed :func:`~.ctrl` rejecting concrete control values such as ``""`` and ``None``.
-  Python truth-value conversion is preserved while traced control values remain supported.
-  [(#10367)](https://github.com/PennyLaneAI/pennylane/pull/10367)
-
 * :func:`~.ctrl` now supports mixed static and dynamic control values under
   `qp.qjit(capture=True)`, for both operator instances and callables.
   [(#10356)](https://github.com/PennyLaneAI/pennylane/pull/10356)
+  [(#10367)](https://github.com/PennyLaneAI/pennylane/pull/10367)
 
 * :func:`~.ctrl` of a quantum function now forwards ``work_wire_type`` to each inner operator,
   both with and without program capture.
