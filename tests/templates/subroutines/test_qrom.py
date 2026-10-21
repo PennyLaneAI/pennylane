@@ -51,6 +51,12 @@ from pennylane.testing.decompositions import (
 )
 from pennylane.typing import Bool, Wire
 
+CTRL_WORK_WIRE_TYPE_XFAIL = pytest.mark.xfail(
+    reason="Controlled MultiX needs work wire support for control regions in Catalyst "
+    "(PennyLaneAI/catalyst#3366, PennyLaneAI/catalyst#3376).",
+    strict=True,
+)
+
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid_qrom():
@@ -890,11 +896,15 @@ class TestMeasurementQROM:
             ), f"L={L}, j={j}: got {target_samples}, expected {bitstrings[j]} (x{shots})"
             assert np.allclose(work_samples, 0), f"j={j}: work wires not clean, got {work_samples}"
 
-    @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
-        "L", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+        "L",
+        [
+            pytest.param(1, marks=CTRL_WORK_WIRE_TYPE_XFAIL),
+            pytest.param(2, marks=CTRL_WORK_WIRE_TYPE_XFAIL),
+            *[3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
+        ],
     )
     def test_no_phases_error(self, L):
         """Test that QROM introduces no relative phases on the control register."""
@@ -934,11 +944,17 @@ class TestMeasurementQROM:
                 clean=True,
             )
 
-            qp.adjoint(qp.StatePrep(x_state, wires=control_wires, pad_with=0.0))
-            return qp.probs(wires=control_wires), qp.probs(wires=work_wires)
+            return qp.state()
 
-        assert np.isclose(circuit()[0][0], 1.0)
-        assert np.isclose(circuit()[1][0], 1.0)
+        control_state = np.zeros(2**n_input, dtype=complex)
+        control_state[:L] = x_state
+        work_state = np.zeros(2**n_work)
+        work_state[0] = 1.0
+        target_state = np.ones(2**n_target) / np.sqrt(2**n_target)
+        expected = np.kron(np.kron(control_state, work_state), target_state)
+
+        # A _global_ phase mismatch is okay, hence the `np.abs`
+        assert np.isclose(np.abs(np.vdot(expected, circuit())), 1.0)
 
     @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
     @pytest.mark.usefixtures("enable_graph_decomposition")

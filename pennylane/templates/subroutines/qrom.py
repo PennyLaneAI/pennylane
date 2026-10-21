@@ -621,7 +621,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
         CNOT: L - 1,
         MultiX(Bool[num_targets], Wire[num_targets]): L,
         X: L + flag.get(X, 0),
-        ctrl(X(Wire[1]), control=Wire[1], control_values=Bool[1]): 1,
+        ctrl(X(Wire[1]), control=Wire[1], control_values=Bool[1]): int(num_control_wires_extra > 0),
     }
     # Merge the remaining flag-only resource types (controlled-X load, adjoint ANDs).
     for rep, count in flag.items():
