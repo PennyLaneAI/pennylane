@@ -34,6 +34,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import adjoint, ctrl, prod
+from pennylane.ops.op_math.adjoint import _adjoint_with_fallback
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -368,9 +369,7 @@ class ChangeOpBasis(CompositeOp):
         return True
 
     def adjoint(self):
-        return ChangeOpBasis(
-            *(factor.adjoint() if factor.has_adjoint else adjoint(factor) for factor in self)
-        )
+        return ChangeOpBasis(*(_adjoint_with_fallback(factor) for factor in self))
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""

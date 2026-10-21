@@ -167,6 +167,11 @@ def adjoint(fn):
     return create_adjoint_op(fn)
 
 
+def _adjoint_with_fallback(op: Operator) -> Operator:
+    """Use an operator's defined adjoint, or wrap it symbolically when unavailable."""
+    return op.adjoint() if op.has_adjoint else adjoint(op)
+
+
 def create_adjoint_op(fn):
     """Main logic for qp.adjoint, but allows bypassing the compiler dispatch if needed."""
     if qp.math.is_abstract(fn) or isinstance(fn, Operator):
