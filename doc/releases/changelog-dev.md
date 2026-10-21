@@ -838,6 +838,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* A Backline placement accepts any transport that a backend in Catalyst's transport backend
+  registry implements, so a backend package can add a transport without a PennyLane change. A
+  :class:`~.Controller` or :class:`~.Coprocessor` names the backend to run on with ``backend=``.
+  [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
+
 * The `decompose_mcx_with_no_worker` decomposition rule for :class:`~.MultiControlledX` now only
   applies when no work wires are provided, matching `MultiControlledX.compute_decomposition`.
   This removes controlled `GlobalPhase` and `PhaseShift` rules from the decomposition graph and
@@ -1342,6 +1347,9 @@
 * ``qp.ops.functions.assert_valid`` has been removed. Use :func:`~.testing.assert_valid` instead.
   The private ``_test_decomposition_rule`` has been removed; use :func:`~.testing.assert_valid_decomp_rule`.
   [(#10342)](https://github.com/PennyLaneAI/pennylane/pull/10342)
+
+* The `qp.Backline.backline` alias of `qp.Backline.placement` has been removed. Use `placement`.
+  [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
 
 * :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's
   ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
@@ -1899,6 +1907,7 @@
     [(#10027)](https://github.com/PennyLaneAI/pennylane/pull/10027)
     [(#10047)](https://github.com/PennyLaneAI/pennylane/pull/10047)
     [(#10113)](https://github.com/PennyLaneAI/pennylane/pull/10113)
+    [(#10156)](https://github.com/PennyLaneAI/pennylane/pull/10156)
     [(#9999)](https://github.com/PennyLaneAI/pennylane/pull/9999)
     [(#10125)](https://github.com/PennyLaneAI/pennylane/pull/10125)
     [(#10124)](https://github.com/PennyLaneAI/pennylane/pull/10124)
