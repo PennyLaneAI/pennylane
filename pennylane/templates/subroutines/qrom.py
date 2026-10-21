@@ -188,7 +188,7 @@ class QROM(Operator2):
         returning ``work_wires`` to their initial state. This technique can be applied when the ``work_wires`` are not
         initialized to zero.
 
-        With program capture enabled, ``qp.adjoint(QROM)`` can be decomposed with the
+        Within :func:`~.qjit` with program capture, ``qp.adjoint(QROM)`` can be decomposed with the
         measurement-based uncomputation from Appendix C of
         [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__]. This decomposition assumes that
         the ``target_wires`` hold the bitstring :math:`b_i` for each index :math:`i`, i.e., that it
@@ -1117,23 +1117,23 @@ def _adjoint_qrom_measurement_resources(base):
     k = 2**num_one_hot_address
     num_columns = -(-num_bitstrings // k)
 
-    resources = {
-        PauliMeasure("X", wires=Wire[1]): num_targets,
-        qp_ops.H: num_targets + 2 * k,
-        X: num_targets + 2,
-        TemporaryAND: k - 1,
-        qp_ops.adjoint(TemporaryAND(Wire[3])): k - 1,
-        CNOT: 2 * (k - 1),
-    }
-    fixup_resources = _qrom_unary_iteration_resources(
+    fixup_qrom = QROM(
         Bool[num_columns, k],
         Wire[num_control_wires - num_one_hot_address],
         Wire[k],
-        Wire[len(base.work_wires)],
+        Wire[min(len(base.work_wires), k - 1)],
+        True,
     )
-    for rep, count in fixup_resources.items():
-        resources[rep] = resources.get(rep, 0) + count
-    return resources
+    return {
+        PauliMeasure("X", wires=Wire[1]): num_targets,
+        PauliMeasure("Z", wires=Wire[1]): num_targets,
+        X: num_targets + 2,
+        TemporaryAND: k - 1,
+        CNOT: 2 * (k - 1),
+        qp_ops.H: 2 * k,
+        fixup_qrom: 1,
+        qp_ops.adjoint(TemporaryAND(Wire[3])): k - 1,
+    }
 
 
 def _adjoint_qrom_measurement_work_wires(base):
@@ -1141,7 +1141,9 @@ def _adjoint_qrom_measurement_work_wires(base):
     return {"zeroed": 2**num_one_hot_address}
 
 
-@register_condition(lambda base: capture.enabled() and len(base.control_wires) > 0)
+@register_condition(
+    lambda base: compiler.active() and capture.enabled() and len(base.control_wires) > 0
+)
 @register_resources(
     _adjoint_qrom_measurement_resources,
     work_wires=_adjoint_qrom_measurement_work_wires,
@@ -1172,9 +1174,9 @@ def _adjoint_qrom_measurement(base):
     outcomes = []
     for wire in target_wires:
         outcome = pauli_measure("X", wire)
-        qp_ops.H(wire)
-        cond(outcome, X)(wire)
         outcomes.append(outcome)
+        m_reset = pauli_measure("Z", wire)
+        cond(m_reset, X)(wire)
 
     fixups = math.dot(bitstrings, math.cast(math.stack(outcomes), int)) % 2
     fixups = math.concatenate(
@@ -1196,9 +1198,10 @@ def _adjoint_qrom_measurement(base):
 
         for wire in one_hot_wires:
             qp_ops.H(wire)
-        # The fixup lookup acts on wires in |+> and |->, which rules out the Select-SWAP
-        # decomposition of QROM, as it is only valid for target wires in |0>.
-        _qrom_unary_iteration(fixup_table, high_wires, one_hot_wires, base.work_wires, True)
+        # The fixup QROM acts on wires in |+> and |->, but the Select-SWAP decomposition of
+        # QROM is only valid for target wires in |0>. It is ruled out by passing fewer work
+        # wires than target wires.
+        QROM(fixup_table, high_wires, one_hot_wires, base.work_wires[: k - 1], True)
         for wire in one_hot_wires:
             qp_ops.H(wire)
 
