@@ -140,7 +140,7 @@ def analyze(
 
         dev = qp.device("null.qubit", wires=2)
 
-        @qp.qjit
+        @qp.qjit(capture=True)
         @qp.transforms.merge_rotations
         @qp.transforms.cancel_inverses
         @qp.qnode(dev)
@@ -178,17 +178,18 @@ def analyze(
     - 0: Before MLIR Passes
     - 1: cancel-inverses
     - 2: merge-rotations
+    - 3: Device Preprocessing
     <BLANKLINE>
-    ↓Metric         Level→ |  0 |  1 |  2
-    -------------------------------------
+    ↓Metric         Level→ |  0 |  1 |  2 |  3
+    ------------------------------------------
     Quantum operations:    |
-    - Total                |  5 |  3 |  2
-      - CNOT               |  1 |  1 |  1
-      - PauliX             |  2 |  0 |  0
-      - RX                 |  2 |  2 |  1
+    - Total                |  5 |  3 |  2 |  2
+      - CNOT               |  1 |  1 |  1 |  1
+      - PauliX             |  2 |  0 |  0 |  0
+      - RX                 |  2 |  2 |  1 |  1
     Measurement processes: |
-    - probs(all wires)     |  1 |  1 |  1
-    Total wires            |  2 |  2 |  2
+    - probs(all wires)     |  1 |  1 |  1 |  1
+    Total wires            |  2 |  2 |  2 |  2
 
     The resources at a given level can be accessed with the name of the corresponding transform
     or marker:
