@@ -48,7 +48,7 @@ from scipy.stats import unitary_group
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.utils import _get_decomp_args
-from pennylane.testing import assert_decomposable
+from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
 from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 # pylint: disable=too-few-public-methods
@@ -1569,7 +1569,7 @@ class TestToPPRDecompositions:
         for actual, exp in zip(q.queue, expected, strict=True):
             qp.assert_equal(actual, exp)
 
-        _test_decomposition_rule(op, rule)
+        assert_valid_decomp_rule(op, rule)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("base, ppr_cls", [(qp.S, qp.PPR_4), (qp.T, qp.PPR_8)])
