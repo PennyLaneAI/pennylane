@@ -24,7 +24,7 @@ import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.op_math import Controlled
-from pennylane.ops.op_math.adjoint import _adjoint_with_fallback
+from pennylane.ops.op_math.adjoint import _eager_adjoint
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires
 from pennylane.transforms import transform
 from pennylane.transforms.commutation_dag import commutation_dag
@@ -294,7 +294,7 @@ def pattern_matching_optimization(
                                 inst, wire_map=dict(zip(inst.wires, wires, strict=True))
                             )
                             with qp.QueuingManager.stop_recording():
-                                inverse = _adjoint_with_fallback(inst)
+                                inverse = _eager_adjoint(inst)
                             qp.apply(inverse)
 
                     # Add the unmatched gates.

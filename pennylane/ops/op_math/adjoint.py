@@ -167,7 +167,7 @@ def adjoint(fn):
     return create_adjoint_op(fn)
 
 
-def _adjoint_with_fallback(op: Operator) -> Operator:
+def _eager_adjoint(op: Operator) -> Operator:
     """Use an operator's defined adjoint, or wrap it symbolically when unavailable."""
     return op.adjoint() if op.has_adjoint else adjoint(op)
 
