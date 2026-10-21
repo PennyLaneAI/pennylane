@@ -2067,7 +2067,7 @@
 
 * Fixed :func:`~.ctrl` rejecting concrete control values such as ``""`` and ``None``.
   Python truth-value conversion is preserved while traced control values remain supported.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10367)](https://github.com/PennyLaneAI/pennylane/pull/10367)
 
 * :func:`~.ctrl` now supports mixed static and dynamic control values under
   `qp.qjit(capture=True)`, for both operator instances and callables.
