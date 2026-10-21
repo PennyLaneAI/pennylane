@@ -32,12 +32,15 @@ class Transport:
     :attr:`~pennylane.Backline.transport`. The compiler combines the transport with each node's
     hardware to select a concrete runtime backend.
 
-    The registered transports are:
+    The built-in transports are:
 
     * ``"rdma"``: messages travel over RDMA, so every coprocessor needs an :class:`~.Endpoint`.
     * ``"memcpy"``: messages are copied in memory, with no network endpoint.
     * ``"none"``: no messages move. The placement is a :class:`~.Controller` alone, and passing
       any coprocessor raises an error.
+
+    Any other transport a backend in Catalyst's transport backend registry implements is accepted
+    as well, so a backend package adds a transport without a PennyLane change.
 
     .. warning::
 
@@ -94,17 +97,31 @@ def get_transport(name):
         Transport: The :class:`~.Transport` produced by the registered factory.
 
     Raises:
-        ValueError: If ``name`` is not registered.
+        ValueError: If ``name`` is neither registered here nor implemented by a backend in
+            Catalyst's transport backend registry. Without Catalyst installed, any name is
+            accepted and checked when the program is compiled.
 
     .. seealso:: :func:`~.register_transport`, :class:`~.Transport`
     """
+    if name in _TRANSPORTS:
+        return _TRANSPORTS[name]()
+    known = _catalyst_transports()
+    if known is None or name in known:
+        return Transport(name)
+    raise ValueError(
+        f"unknown transport {name!r}; registered transports: {sorted({*_TRANSPORTS, *known})}"
+    )
+
+
+def _catalyst_transports():
+    """The transports Catalyst's backend registry implements, or ``None`` without Catalyst."""
     try:
-        factory = _TRANSPORTS[name]
-    except KeyError:
-        raise ValueError(
-            f"unknown transport {name!r}; registered transports: {sorted(_TRANSPORTS)}"
-        ) from None
-    return factory()
+        from catalyst.backline import (  # pylint: disable=import-outside-toplevel
+            backend_transports,
+        )
+    except ImportError:
+        return None
+    return backend_transports()
 
 
 @register_transport("rdma")

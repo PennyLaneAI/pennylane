@@ -368,6 +368,24 @@ class TestCtrlQfunc:
 
         assert plxpr.eqns[0].params["work_wires"] == qp.wires.Wires(["aux"])
 
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_work_wire_type(self, work_wire_type):
+        """Test that work_wire_type is forwarded to each inner operator."""
+
+        def f(w):
+            return qp.ctrl(qp.S, (1, 2), work_wires="aux", work_wire_type=work_wire_type)(w)
+
+        plxpr = jax.make_jaxpr(f)(6)
+
+        with qp.queuing.AnnotatedQueue() as q:
+            out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 5)
+
+        assert out == []
+        expected = qp.ctrl(qp.S(5), (1, 2), work_wires="aux", work_wire_type=work_wire_type)
+        qp.assert_equal(q.queue[0], expected)
+        assert q.queue[0].work_wire_type == work_wire_type
+        assert plxpr.eqns[0].params["work_wire_type"] == work_wire_type
+
     def test_control_values(self):
         """Test that control values can be provided."""
 
