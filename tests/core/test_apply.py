@@ -256,8 +256,9 @@ class TestApplyOp:
 
         assert len(cjaxpr.eqns) == 2
         info = [eqn.params["op_cls"] for eqn in cjaxpr.eqns]
-        # C(PauliX) automatically gets dispatched to CNOT
-        assert info == [qp.X, qp.CNOT]
+        assert info == [qp.X, qp.X]
+        assert cjaxpr.eqns[0].params["n_ctrls"] == 0
+        assert cjaxpr.eqns[1].params["n_ctrls"] == 1
 
     @pytest.mark.capture
     def test_apply_twice(self):

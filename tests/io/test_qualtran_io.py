@@ -929,7 +929,7 @@ class TestToBloqDecomposition:
                 qp.Select(ops=[qp.X(2), qp.QFT(wires=[2, 3, 4])], control=[0, 1]),
                 {
                     (qp.X(wires=[2]), True): 2,
-                    (qp.ctrl(qp.X(2), control=[0]), True): 1,
+                    (qp.CNOT([0, 2]), True): 1,
                     (qp.ctrl(qp.QFT(wires=[2, 3, 4]), control=[0]), True): 1,
                 },
             ),

@@ -325,18 +325,24 @@ class TestHybridQRAM:
             )
 
         tape = qp.workflow.construct_tape(circuit)()
-        resources = qp.resource.resources_from_tape(tape)
+        resources = qp.resource.resources_from_tape(
+            tape.copy(operations=[op.simplify() for op in tape.operations])
+        )
 
         def _match_controlled(name, op):
             if (
                 # pylint: disable=too-many-boolean-expressions
-                name == "MultiControlledX"
-                and op.name.startswith("C(X")
-                or name == "CH"
+                name in ("MultiControlledX", "C(X)")
+                and (op.name.startswith("C(X") or op.name in ("CNOT", "Toffoli"))
+                or name in ("CH", "C(Hadamard)")
                 and op.name.startswith("C(H")
                 or name == "C(SWAP)"  # C(C(SWAPs are now merged
-                and (op.name.startswith("C(C(SWAP") or op.name.startswith("C(CSWAP"))
-                or name == "CZ"
+                and (
+                    op.name == "CSWAP"
+                    or op.name.startswith("C(C(SWAP")
+                    or op.name.startswith("C(CSWAP")
+                )
+                or name in ("CZ", "C(Z)")
                 and op.name.startswith("C(Z")
             ):
                 return True

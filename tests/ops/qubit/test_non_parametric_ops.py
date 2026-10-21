@@ -937,6 +937,14 @@ class TestPowMethod:
         """Test that ops with a period of 2 raised to an odd power are the same as the original op."""
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
+        if isinstance(op, qp.ops.Controlled2):
+            op = qp.ctrl(
+                op.base,
+                control=op.control_wires,
+                control_values=op.control_values,
+                work_wires=op.work_wires,
+                work_wire_type=op.work_wire_type,
+            )
         qp.assert_equal(pow_ops[0], op)
 
     @pytest.mark.parametrize("op", period_two_ops)

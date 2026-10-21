@@ -61,6 +61,22 @@ class CustomControlled(Controlled2):
 class TestControlled2:
     """Unit tests for the Controlled2 interface."""
 
+    @pytest.mark.parametrize(
+        "op",
+        [
+            qp.CNOT([0, 1]),
+            qp.Toffoli([0, 1, 2]),
+            qp.ctrl(qp.X(2), control=[0, 1], control_values=[False, True]),
+        ],
+    )
+    def test_self_adjoint_preserves_operator(self, op):
+        """Explicit adjoints preserve self-inverse gates, both inside and outside a queue."""
+        qp.assert_equal(op.adjoint(), op)
+        with qp.queuing.AnnotatedQueue() as queue:
+            result = op.adjoint()
+        assert queue.queue == [result]
+        qp.assert_equal(result, op)
+
     def test_non_parametrized_custom_controlled_op(self):
         """Tests non-parametrized custom controlled op that directly inherits Controlled2"""
 
@@ -418,6 +434,13 @@ class TestControlled2:
 
 class TestControlledOp2:
     """Tests the ControlledOp2 class."""
+
+    def test_abstract_control_values_match_concrete(self):
+        """The boolean cast has the same abstract type for resource and concrete operators."""
+        resource = qp.ctrl(qp.X(Wire[1]), control=Wire[2], control_values=Bool[2])
+        concrete = abstractify(qp.ctrl(qp.X(2), control=[0, 1], control_values=[False, True]))
+        assert resource.control_values == concrete.control_values
+        assert repr(resource) == repr(concrete)
 
     def test_initialization(self):
         """Tests initializing a general controlled operator."""

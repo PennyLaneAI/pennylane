@@ -287,7 +287,7 @@ class TestQNode:
         qp.assert_equal(deferred_tape.operations[5].base, qp.PauliZ(2))
         assert deferred_tape.operations[5].control_wires == qp.wires.Wires(0)
 
-        qp.assert_equal(deferred_tape.operations[6], qp.CNOT([1, 2]))
+        qp.assert_equal(deferred_tape.operations[6], qp.ctrl(qp.X(2), control=1))
 
     def test_new_wires_after_reuse(self, mocker):
         """Test that a new wire is added for every measurement after which
@@ -370,7 +370,7 @@ class TestQNode:
         expected_circuit = [
             qp.RX(phi, 0),
             qp.Projector([1], wires=0),
-            qp.X(1) if reduce_postselected else qp.CNOT([0, 1]),
+            qp.X(1) if reduce_postselected else qp.ctrl(qp.X(1), control=0),
             qp.probs(wires=1),
         ]
 
@@ -419,7 +419,11 @@ class TestQNode:
             qp.RX(phi, 0),
             qp.RX(phi, 2),
             qp.Projector([1], wires=0),
-            qp.CNOT([2, 1]) if reduce_postselected else qp.Toffoli([0, 2, 1]),
+            (
+                qp.ctrl(qp.X(1), control=2)
+                if reduce_postselected
+                else qp.ctrl(qp.X(1), control=[0, 2])
+            ),
             qp.probs(wires=1),
         ]
 
@@ -502,7 +506,7 @@ class TestQNode:
                 qp.Projector([1], wires=2),
                 qp.CNOT([2, 5]),
                 qp.PauliX(2),
-                qp.PauliX(1) if reduce_postselected else qp.CNOT([5, 1]),
+                qp.PauliX(1) if reduce_postselected else qp.ctrl(qp.X(1), control=5),
                 qp.probs(wires=[0, 1, 2]),
             ]
         )
@@ -1489,7 +1493,7 @@ class TestQubitReuseAndReset:
             qp.Hadamard(0),
             qp.CNOT([0, 2]),
             qp.CNOT([2, 0]),
-            qp.CRX(0.123, wires=[2, 1]),
+            qp.ctrl(qp.RX(0.123, wires=1), control=2),
             qp.expval(qp.PauliZ(1)),
         ]
 
@@ -1709,7 +1713,7 @@ def test_custom_wire_labels_allowed_without_reuse():
 
     assert len(tape) == 3
     qp.assert_equal(tape[0], qp.Hadamard("a"))
-    qp.assert_equal(tape[1], qp.CNOT(["a", "b"]))
+    qp.assert_equal(tape[1], qp.ctrl(qp.X("b"), control="a"))
     qp.assert_equal(tape[2], qp.probs(wires="b"))
 
 
@@ -1731,7 +1735,7 @@ def test_integer_wire_labels_with_reset():
     qp.assert_equal(tape[0], qp.Hadamard(0))
     qp.assert_equal(tape[1], qp.CNOT([0, 2]))
     qp.assert_equal(tape[2], qp.CNOT([2, 0]))
-    qp.assert_equal(tape[3], qp.CNOT([2, 1]))
+    qp.assert_equal(tape[3], qp.ctrl(qp.X(1), control=2))
     qp.assert_equal(tape[4], qp.probs(wires=0))
 
     # Reuse example
@@ -1749,7 +1753,7 @@ def test_integer_wire_labels_with_reset():
     assert len(tape) == 5
     qp.assert_equal(tape[0], qp.Hadamard(0))
     qp.assert_equal(tape[1], qp.CNOT([0, 2]))
-    qp.assert_equal(tape[2], qp.CNOT([2, 1]))
+    qp.assert_equal(tape[2], qp.ctrl(qp.X(1), control=2))
     qp.assert_equal(tape[3], qp.Hadamard(0))
     qp.assert_equal(tape[4], qp.probs(wires=1))
 
@@ -1772,7 +1776,7 @@ def test_custom_wire_labels_with_reset():
     qp.assert_equal(tape[0], qp.Hadamard("a"))
     qp.assert_equal(tape[1], qp.CNOT(["a", 0]))
     qp.assert_equal(tape[2], qp.CNOT([0, "a"]))
-    qp.assert_equal(tape[3], qp.CNOT([0, "b"]))
+    qp.assert_equal(tape[3], qp.ctrl(qp.X("b"), control=0))
     qp.assert_equal(tape[4], qp.probs(wires="a"))
 
     # Reuse example (should be the same circuit as in previous test but with wire labels)
@@ -1790,6 +1794,6 @@ def test_custom_wire_labels_with_reset():
     assert len(tape) == 5
     qp.assert_equal(tape[0], qp.Hadamard("a"))
     qp.assert_equal(tape[1], qp.CNOT(["a", 0]))
-    qp.assert_equal(tape[2], qp.CNOT([0, "b"]))
+    qp.assert_equal(tape[2], qp.ctrl(qp.X("b"), control=0))
     qp.assert_equal(tape[3], qp.Hadamard("a"))
     qp.assert_equal(tape[4], qp.probs(wires="b"))

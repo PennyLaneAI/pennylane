@@ -907,7 +907,8 @@ class TestPreprocessingIntegration:
         [new_tape], _ = prog((tape,))
 
         expected = qp.tape.QuantumScript(
-            [qp.CNOT((0, 1)), qp.CNOT((1, 0)), qp.CY((1, 0))], [qp.probs(wires=0)]
+            [qp.CNOT((0, 1)), qp.ctrl(qp.X(0), control=1), qp.ctrl(qp.Y(0), control=1)],
+            [qp.probs(wires=0)],
         )
         qp.assert_equal(new_tape, expected)
 

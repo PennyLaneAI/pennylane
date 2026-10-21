@@ -629,13 +629,15 @@ class TestControlledDecomposition:
             jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
 
         ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
-        # One-body terms emit ``CRZ`` (PennyLane's single-control shortcut for ``ctrl(RZ)``);
-        # two-body terms emit ``ControlledOp2`` wrapping ``IsingZZ``.
+        # One-body and two-body terms retain symbolic controls around RZ and IsingZZ.
         assert {type(op).__name__ for op in ops} == {
             "BasisRotation",
-            "CRZ",
             "PhaseShift",
             "ControlledOp2",
+        }
+        assert {op.base.name for op in ops if isinstance(op, qp.ops.ControlledOp2)} == {
+            "RZ",
+            "IsingZZ",
         }
 
     def test_genuine_controlled_matches_expm(self, diagonal_hamiltonian_cgf):

@@ -150,11 +150,11 @@ class TestBarrier:
         [tape], _ = decompose(
             tape,
             gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
-            stopping_condition=lambda op: op.name in ["Barrier", "PauliX", "CNOT"],
+            stopping_condition=lambda op: op.name in ["Barrier", "C(Barrier)", "PauliX", "CNOT"],
         )
 
         assert tape.operations[1].name == "Barrier"
-        assert tape.operations[4].name == "Barrier"
+        assert sum(op.name == "C(Barrier)" for op in tape.operations) == 1
 
     def test_barrier_empty_wire_list_no_error(self):
         """Test that barrier does not raise an error when instantiated with wires=[]."""

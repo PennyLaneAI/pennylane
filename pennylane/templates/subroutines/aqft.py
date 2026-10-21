@@ -24,8 +24,7 @@ from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard, PhaseShift
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -155,7 +154,7 @@ def _AQFT_resources(order, wires):
     num_ctrl_ps = sum(min(num_wires - 1 - i, order) for i in range(num_wires))
     return {
         Hadamard: num_wires,
-        _ctrl_abstract(PhaseShift, Wire[1]): num_ctrl_ps,
+        ControlledPhaseShift: num_ctrl_ps,
         SWAP: num_wires // 2,
     }
 

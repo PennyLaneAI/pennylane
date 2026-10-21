@@ -356,8 +356,9 @@ class TestOutSquare:
             qp.TemporaryAND(wires=[2, 0, 3]),
             # First AND copied from third-least significant output bit
             qp.CNOT([4, 7]),
-            qp.MultiControlledX(
-                wires=[1, 7, 3],
+            qp.ctrl(
+                qp.X(3),
+                control=[1, 7],
                 control_values=[True, True],
                 work_wires=[8, 9, 10, 6, 5],
                 work_wire_type="zeroed",
@@ -378,14 +379,14 @@ class TestOutSquare:
 
         expected = [
             # Controlled add-subtract block (contains decomposed adder)
-            qp.MultiControlledX(wires=[1, 3], control_values=[False]),
+            qp.ctrl(qp.X(3), control=[1], control_values=[False]),
             qp.TemporaryAND(wires=[0, 3, 5]),
-            qp.MultiControlledX(wires=[1, 5], control_values=[False]),
+            qp.ctrl(qp.X(5), control=[1], control_values=[False]),
             qp.CNOT(wires=[5, 2]),
-            qp.MultiControlledX(wires=[1, 5], control_values=[False]),
+            qp.ctrl(qp.X(5), control=[1], control_values=[False]),
             Adjoint(qp.TemporaryAND(wires=[0, 3, 5])),
             qp.CNOT(wires=[0, 3]),
-            qp.MultiControlledX(wires=[1, 3], control_values=[False]),
+            qp.ctrl(qp.X(3), control=[1], control_values=[False]),
             # Sparse adder
             qp.TemporaryAND(wires=[1, 4, 6]),
             qp.TemporaryAND(wires=[6, 3, 5]),
@@ -416,15 +417,15 @@ class TestOutSquare:
         expected = [
             # Controlled add-subtract block (contains decomposed adder)
             qp.ctrl(qp.MultiX([1], [0]), control=[2], control_values=[False]),
-            qp.MultiControlledX(wires=[2, 4], control_values=[False]),
+            qp.ctrl(qp.X(4), control=[2], control_values=[False]),
             qp.TemporaryAND(wires=[1, 4, 6]),
-            qp.MultiControlledX(wires=[2, 6], control_values=[False]),
+            qp.ctrl(qp.X(6), control=[2], control_values=[False]),
             qp.CNOT(wires=[6, 3]),
             qp.CNOT(wires=[0, 3]),
-            qp.MultiControlledX(wires=[2, 6], control_values=[False]),
+            qp.ctrl(qp.X(6), control=[2], control_values=[False]),
             Adjoint(qp.TemporaryAND(wires=[1, 4, 6])),
             qp.CNOT(wires=[1, 4]),
-            qp.MultiControlledX(wires=[2, 4], control_values=[False]),
+            qp.ctrl(qp.X(4), control=[2], control_values=[False]),
             qp.ctrl(qp.MultiX([1], [0]), control=[2], control_values=[False]),
             # Sparse adder
             qp.TemporaryAND(wires=[2, 5, 7]),

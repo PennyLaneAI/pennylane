@@ -20,6 +20,7 @@ import re
 import numpy as np
 import pytest
 
+import pennylane as qp
 from pennylane import apply, device, measure, qnode, registers, workflow
 from pennylane.decomposition import list_decomps
 from pennylane.math import int_to_binary
@@ -534,7 +535,9 @@ def test_hybrid_quantum(
         k,
         address,
     )
-    assert tape.operations == expected_circuit
+    for actual, expected in zip(tape.operations, expected_circuit, strict=True):
+        # Symbolic adjoints of self-inverse controlled gates have the same canonical form.
+        qp.assert_equal(actual.simplify(), expected.simplify())
 
 
 @pytest.mark.parametrize(
@@ -1034,7 +1037,8 @@ def test_select_only_quantum(
         select_value,
         address,
     )
-    assert tape.operations == expected_circuit
+    for actual, expected in zip(tape.operations, expected_circuit, strict=True):
+        qp.assert_equal(actual.simplify(), expected.simplify())
 
 
 @pytest.mark.parametrize(

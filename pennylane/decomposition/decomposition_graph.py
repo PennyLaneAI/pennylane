@@ -494,7 +494,16 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return True
         if not (ctrl_wires_in_progress := self._num_ctrl_wires_in_progress[base]):
             return False
-        return num_control_wires >= ctrl_wires_in_progress[-1]
+        if num_control_wires > ctrl_wires_in_progress[-1]:
+            return True
+        if num_control_wires == ctrl_wires_in_progress[-1]:
+            # Moving an adjoint through a control preserves the number of controls and can
+            # expose a terminating rule. Only reject a repeat of the same symbolic form.
+            return any(
+                to_name(active) == to_name(op) and _get_base_and_n_ctrls(active) == unwrapped
+                for active in self._in_progress
+            )
+        return False
 
     def _get_decompositions(self, op: AbstractOperatorLike) -> Iterable[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
@@ -663,6 +672,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
 
 def _get_base_and_n_ctrls(op: AbstractOperatorLike) -> tuple[AbstractOperatorLike, int] | None:
+    if isinstance(op, qp.ops.Adjoint2):
+        if unwrapped := _get_base_and_n_ctrls(op.base):
+            base, num_control_wires = unwrapped
+            return abstractify(qp.adjoint(base)), num_control_wires
     if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Controlled:
         base_class, base_params = op.params["base_class"], op.params["base_params"]
         return resource_rep(base_class, **base_params), op.params["num_control_wires"]

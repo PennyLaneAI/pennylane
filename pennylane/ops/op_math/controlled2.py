@@ -69,7 +69,9 @@ def _setup_control_values(control_values, num_control_wires):
     if isinstance(control_values, (list, tuple)):
         control_values = qp.math.asarray(control_values, like=control_values[0])
 
-    if not isinstance(control_values, AbstractArray):
+    if isinstance(control_values, AbstractArray):
+        control_values = AbstractArray(control_values.shape, "bool")
+    else:
         control_values = qp.math.cast(control_values, dtype=bool)
 
     return control_values
@@ -383,6 +385,8 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @override
     def adjoint(self):
+        if self.base.is_verified_hermitian:
+            return type(self)(**self.arguments)
         return qp.ctrl(
             self.base.adjoint(),
             self.control_wires,

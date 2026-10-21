@@ -293,7 +293,7 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
             ops.CNOT,
             QFT(Wire[num_x_wires]),
         ): 1,
-        ops.ControlledPhaseShift: num_x_wires,
+        ops.ctrl(ops.PhaseShift(Float, Wire[1]), control=Wire[1]): num_x_wires,
         _change_op_basis_abstract(
             basis_op1,
             ops.CNOT,

@@ -345,18 +345,18 @@ def quantum_monte_carlo(
                      num_device_wires=12,
                      shots=Shots(total_shots=None, shot_vector=()),
                      level='device',
-                    resources=SpecsResources(counts={'6C(PauliX)': 126,
-                                                     'CNOT': 15686,
-                                                     'CZ': 126,
-                                                     'ControlledPhaseShift': 15,
-                                                     'Hadamard': 264,
-                                                     'PauliX': 252,
-                                                     'RY': 6325,
-                                                     'SWAP': 3},
-                                             measurement_processes={'probs(6 wires)': 1},
-                                             num_wires=12,
-                                             circuit_depth=21502,
-                                             total_quantum_operations=22797))
+                     resources=SpecsResources(counts={'6C(PauliX)': 126,
+                                                      'CNOT': 15686,
+                                                      'CZ': 126,
+                                                      'ControlledPhaseShift': 15,
+                                                      'Hadamard': 264,
+                                                      'PauliX': 252,
+                                                      'RY': 6578,
+                                                      'SWAP': 3},
+                                              measurement_processes={'probs(6 wires)': 1},
+                                              num_wires=12,
+                                              circuit_depth=21755,
+                                              total_quantum_operations=23050))
     """
     operations = tape.operations.copy()
     wires = Wires(wires)

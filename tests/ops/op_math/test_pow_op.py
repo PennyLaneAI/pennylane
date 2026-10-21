@@ -491,7 +491,7 @@ class TestSimplify:
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""
         pow_op = Pow(ControlledOp(base=qp.Hadamard(0), control_wires=1), z=3)
-        final_op = qp.CH([1, 0])
+        final_op = qp.ctrl(qp.H(0), control=1)
         simplified_op = pow_op.simplify()
         qp.assert_equal(simplified_op, final_op)
 

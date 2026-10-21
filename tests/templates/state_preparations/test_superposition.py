@@ -154,9 +154,9 @@ class TestSuperposition:
 
         expected = [
             qp.StatePrep(np.array([0.70710678, 0.70710678]), pad_with=0, wires=[1]),
-            qp.MultiControlledX(wires=[0, 1, 2], control_values=[0, 1]),
+            qp.ctrl(qp.X(2), control=[0, 1], control_values=[0, 1]),
             qp.CNOT(wires=[2, 0]),
-            qp.Toffoli(wires=[0, 1, 2]),
+            qp.ctrl(qp.X(2), control=[0, 1]),
         ]
 
         for op1, op2 in zip(decomposition, expected):

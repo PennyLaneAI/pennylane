@@ -393,6 +393,12 @@ class TestDecompGraphConstruction:
             alt_decomps={NonParametricOp: [_custom_rule], DynOp: [_another_rule]},
         )
 
+        _ = DecompositionGraph(
+            [qp.adjoint(qp.ctrl(NonParametricOp([0, 1]), control=[2]))],
+            gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
+            alt_decomps={NonParametricOp: [_custom_rule], DynOp: [_another_rule]},
+        )
+
 
 @pytest.mark.unit
 @patch("pennylane.decomposition.decomposition_rule._decompositions_var", decompositions)

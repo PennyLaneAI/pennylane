@@ -50,7 +50,6 @@ from pennylane.ops import (
     ControlledPhaseShift,
     MeasurementValue,
     MidMeasure,
-    MultiControlledX,
 )
 from pennylane.ops.op_math.pow import PowOperation
 from pennylane.ops.op_math.pow2 import Pow2
@@ -1257,12 +1256,12 @@ class TestGates:
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "nested-modifiers"})
         assert q.queue == [
-            Adjoint(MultiControlledX(wires=["q0", "q1"], control_values=[False])),
-            Toffoli(wires=["q2", "q1", "q0"]),
-            Adjoint(CNOT(wires=["q0", "q1"])),
-            (CNOT(wires=["q1", "q0"])) ** 2,
+            Adjoint(qp.ctrl(PauliX("q1"), control="q0", control_values=[False])),
+            qp.ctrl(PauliX("q0"), control=["q2", "q1"]),
+            Adjoint(qp.ctrl(PauliX("q1"), control="q0")),
+            qp.ctrl(PauliX("q0"), control="q1") ** 2,
             qp.pow(qp.adjoint(PauliY("q0")), 2),
-            qp.adjoint(qp.pow(CY(wires=["q0", "q1"]), 2)),
+            qp.adjoint(qp.pow(qp.ctrl(PauliY("q1"), control="q0"), 2)),
         ]
 
     def test_integer_wire_maps(self):
@@ -1481,13 +1480,13 @@ class TestGates:
         assert q.queue == [
             PauliX("q0"),
             CNOT(wires=["q0", "q1"]),
-            PhaseShift(-2.0, wires=["q0"]),
+            qp.ctrl(GlobalPhase(2.0), control="q0"),
             GlobalPhase(3.0),
             RX(0.5, wires=["q0"]),
             RY(0.2, wires=["q0"]),
             Adjoint(RX(0.5, wires=["q0"])),
             Pow2(PauliX(wires=["q0"]), 2),
-            CNOT(wires=["q1", "q0"]),
+            qp.ctrl(PauliX("q0"), control="q1"),
         ]
 
     def test_interprets_two_qubit_gates(self):

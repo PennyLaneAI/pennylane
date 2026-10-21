@@ -2062,6 +2062,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Decomposition graph exploration now detects control-growth cycles through adjoints while
+  allowing control-adjoint rewrites to reach a valid decomposition.
+  [(#10365)](https://github.com/PennyLaneAI/pennylane/pull/10365)
+
 * :func:`~.ctrl` of a quantum function now forwards ``work_wire_type`` to each inner operator,
   both with and without program capture.
   [(#10355)](https://github.com/PennyLaneAI/pennylane/pull/10355)

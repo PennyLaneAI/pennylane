@@ -129,7 +129,7 @@ class TrotterCGF(Operator2):
 
     >>> specs = qp.specs(trotter_circuit)()["resources"].quantum_operations
     >>> dict(sorted(specs.items()))
-    {'C(IsingZZ)': 99, 'CRZ': 60, 'Hadamard': 1, 'PhaseShift': 1, 'SingleExcitation': 132}
+    {'C(IsingZZ)': 99, 'C(RZ)': 60, 'Hadamard': 1, 'PhaseShift': 1, 'SingleExcitation': 132}
 
     The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing into
     :class:`~.PhaseShift` and :class:`~.SingleExcitation` on ``lightning.qubit``.
