@@ -792,7 +792,7 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments, adjoint=Fa
         for_loop(n)(_cnots)()
         ops.Hadamard(wires=[control_wire])
 
-    _adjoint_apply() if adjoint else _apply()
+    _ = _adjoint_apply() if adjoint else _apply()
 
 
 def _diagonalization_matrix(key, n_wires):
