@@ -416,10 +416,6 @@ def is_tracer(tensor, like=None):
     return False
 
 
-# Remove this compatibility alias once supported Catalyst versions use is_tracer.
-is_abstract = is_tracer
-
-
 def requires_grad(tensor, interface=None):
     """Returns True if the tensor is considered trainable.
 
