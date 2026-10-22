@@ -29,6 +29,7 @@ import jax.extend.core
 from pennylane import math
 from pennylane.capture import ABCCaptureMeta
 from pennylane.capture import enabled as capture_enabled
+from pennylane.capture import symbolic_array
 from pennylane.core.operator.base import AbstractOperator  # tach-ignore
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import (
@@ -39,7 +40,7 @@ from pennylane.exceptions import (
 )
 from pennylane.math.utils import is_abstract
 from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.typing import TensorLike
+from pennylane.typing import AbstractWires, TensorLike
 from pennylane.wires import Wires
 
 # tach-ignore
@@ -93,6 +94,8 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
         """
         if obs is None:
+            if isinstance(wires, AbstractWires):
+                wires = [symbolic_array((), int) for _ in range(len(wires))]
             wires = () if wires is None else wires
             if eigvals is None:
                 out = cls._wires_primitive.bind(*wires, **kwargs)  # wires

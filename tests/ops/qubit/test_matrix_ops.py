@@ -30,7 +30,7 @@ from pennylane.core.operator import abstractify
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_udv
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.typing import AbstractArray, AbstractWires, Complex, Wire
 from pennylane.wires import Wires
 
@@ -250,8 +250,7 @@ class TestQubitUnitary:
             ]
         )
         op = qp.pow(qp.QubitUnitary(U, wires=0), z)
-        for rule in qp.list_decomps("Pow(QubitUnitary)"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_qubit_unitary_noninteger_pow_broadcasted(self):
         """Test broadcasted QubitUnitary raised to a non-integer power raises an error."""
@@ -671,8 +670,7 @@ class TestQubitUnitaryDecompositions:
 
         U = unitary_group.rvs(2, random_state=0)
         op = qp.QubitUnitary(U, wires=[0])
-        for rule in qp.list_decomps(op):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_two_qubit_decomposition_rule(self):
@@ -680,8 +678,7 @@ class TestQubitUnitaryDecompositions:
 
         U = unitary_group.rvs(4, random_state=1)
         op = qp.QubitUnitary(U, wires=[0, 1])
-        for rule in qp.list_decomps(op):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("num_wires", [3, 4, 5])
@@ -690,8 +687,7 @@ class TestQubitUnitaryDecompositions:
 
         U = qp.QFT.compute_matrix(range(num_wires))
         op = qp.QubitUnitary(U, wires=range(num_wires))
-        for rule in qp.list_decomps(op):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 class TestWalshHadamardTransform:
@@ -920,8 +916,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("op", standard_case_ops)
     def test_decomposition_rule_new(self, op):
         """Tests the decomposition rule compatible with the graph-based interface."""
-        for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("op", standard_case_ops)
@@ -983,8 +978,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("op", edge_case_ops)
     def test_decomposition_rule_edge_cases(self, op):
         """Tests the decomposition rule for various edge cases."""
-        for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("op", edge_case_ops)
@@ -1510,8 +1504,7 @@ class TestBlockEncode:  # pylint: disable=too-many-public-methods
     def test_adjoint_decomposition_rule(self, input_matrix, wires):
         """Test the graph decomposition of Adjoint(BlockEncode)."""
         op = qp.adjoint(qp.BlockEncode(input_matrix, wires))
-        for rule in qp.list_decomps("Adjoint(BlockEncode)"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_label(self):
         """Test the label method for BlockEncode op"""

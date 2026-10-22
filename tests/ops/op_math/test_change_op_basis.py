@@ -31,8 +31,7 @@ from pennylane.exceptions import DeviceError
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.ops.op_math.change_op_basis import _convert_to_prod, _validate_callable
 from pennylane.templates import Subroutine
-from pennylane.testing import assert_eqn_matches_op
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable, assert_eqn_matches_op
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import NonParametricOp
@@ -515,8 +514,7 @@ class TestDecomposition:
         """Test the qfunc decomposition."""
         change_op_basis_op = ChangeOpBasis(*ops_lst)
 
-        for rule in qp.list_decomps(ChangeOpBasis):
-            _test_decomposition_rule(change_op_basis_op, rule)
+        assert_decomposable(change_op_basis_op)
 
     @pytest.mark.parametrize("ops_lst", ops)
     @pytest.mark.capture
@@ -541,8 +539,7 @@ class TestDecomposition:
             [1],
             work_wires=work_wires,
         )
-        for rule in qp.list_decomps("C(ChangeOpBasis)"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_on_tape(self, ops_lst):
