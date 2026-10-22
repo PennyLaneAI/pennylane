@@ -46,7 +46,6 @@ from pennylane.templates.subroutines.qrom import (
 )
 from pennylane.testing.decompositions import (
     _assert_counts_match,
-    _resolve_dynamic_wires,
     _test_decomposition_rule,
 )
 from pennylane.typing import Bool, Wire
@@ -1132,16 +1131,18 @@ def _adjoint_qrom_setup(L, n_target, n_extra, n_work):
 
 # (num_bitstrings, num_targets, num_extra_control_wires, num_work_wires)
 ADJOINT_QROM_CASES = [
-    (1, 2, 0, 0),
+    (1, 2, 0, 1),
     (1, 2, 2, 1),
-    (2, 2, 0, 0),
+    (2, 2, 0, 1),
     (3, 2, 0, 1),
     (4, 3, 0, 1),
     (5, 2, 0, 2),
     (7, 3, 0, 2),
-    (8, 2, 0, 0),
+    (8, 2, 0, 3),
     (11, 2, 0, 3),
     (16, 2, 0, 1),
+    (16, 2, 0, 5),
+    (16, 2, 0, 7),
     (20, 2, 0, 4),
     (4, 2, 1, 2),
     (5, 2, 2, 3),
@@ -1153,16 +1154,41 @@ class TestAdjointQROMMeasurement:
     arXiv:1902.02134."""
 
     @pytest.mark.parametrize(
-        ("num_bitstrings", "num_control_wires", "expected"),
-        [(1, 1, 0), (2, 1, 0), (4, 2, 1), (8, 3, 1), (16, 4, 2), (20, 5, 2), (64, 6, 3), (5, 1, 1)],
+        ("num_bitstrings", "num_control_wires", "num_work_wires", "expected"),
+        [
+            # With enough work wires, the size minimizes ceil(L/k) + k.
+            (1, 1, 8, 0),
+            (2, 1, 8, 0),
+            (4, 2, 8, 1),
+            (8, 3, 8, 1),
+            (16, 4, 8, 2),
+            (20, 5, 16, 2),
+            (64, 6, 16, 3),
+            (256, 8, 32, 4),
+            # The one-hot register can not use more control wires than there are.
+            (5, 4, 16, 2),
+            # With few work wires, the fixup QROM receives enough work wires first.
+            (64, 6, 1, 0),
+            (16, 4, 4, 1),
+            (16, 4, 5, 2),
+            (12, 4, 4, 1),
+            (64, 6, 8, 2),
+            (64, 6, 10, 3),
+            (256, 8, 16, 3),
+            (256, 8, 22, 4),
+            (100, 7, 10, 2),
+            (5, 4, 2, 1),
+        ],
     )
-    def test_one_hot_size(self, num_bitstrings, num_control_wires, expected):
-        """Test that the one-hot register size minimizes ceil(L/k) + k."""
-        assert _adjoint_qrom_one_hot_size(num_bitstrings, num_control_wires) == expected
+    def test_one_hot_size(self, num_bitstrings, num_control_wires, num_work_wires, expected):
+        """Test that the one-hot register size gives the fixup QROM enough work wires for its
+        unary iteration first, and otherwise minimizes ceil(L/k) + k."""
+        size = _adjoint_qrom_one_hot_size(num_bitstrings, num_control_wires, num_work_wires)
+        assert size == expected
 
     def test_condition(self, mocker):
-        """Test that the rule requires an active compiler with program capture, and at least one
-        control wire."""
+        """Test that the rule requires an active compiler with program capture, at least one
+        control wire, and at least one work wire."""
         op = qp.adjoint(qp.QROM(Bool[4, 2], Wire[2], Wire[2], Wire[1]))
         assert not _adjoint_qrom_measurement.is_applicable(base=op.base)
         with qp.capture.toggle_ctx(True):
@@ -1173,6 +1199,8 @@ class TestAdjointQROMMeasurement:
         with qp.capture.toggle_ctx(True):
             assert _adjoint_qrom_measurement.is_applicable(base=op.base)
             op = qp.adjoint(qp.QROM(Bool[1, 2], Wire[0], Wire[2], Wire[1]))
+            assert not _adjoint_qrom_measurement.is_applicable(base=op.base)
+            op = qp.adjoint(qp.QROM(Bool[4, 2], Wire[2], Wire[2], Wire[0]))
             assert not _adjoint_qrom_measurement.is_applicable(base=op.base)
 
     @pytest.mark.parametrize("case", ADJOINT_QROM_CASES)
@@ -1189,8 +1217,7 @@ class TestAdjointQROMMeasurement:
             with qp.queuing.AnnotatedQueue() as q:
                 _adjoint_qrom_measurement(base=op)
 
-        num_one_hot = 2 ** _adjoint_qrom_one_hot_size(case[0], len(op.control_wires))
-        tape = _resolve_dynamic_wires(qp.tape.QuantumScript.from_queue(q), num_one_hot)
+        tape = qp.tape.QuantumScript.from_queue(q)
         actual = Counter(
             abstractify(o.base if isinstance(o, qp.ops.Conditional) else o) for o in tape.operations
         )
@@ -1265,13 +1292,12 @@ class TestAdjointQROMMeasurement:
         addresses."""
         op, _ = _adjoint_qrom_setup(*case)
         control_wires = list(op.control_wires)
-        num_wires = len(op.wires) + 2 ** _adjoint_qrom_one_hot_size(case[0], len(control_wires))
         shots = 20
 
         @qp.qjit(capture=True)
         @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.set_shots(shots)
-        @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
+        @qp.qnode(qp.device("lightning.qubit", wires=len(op.wires)))
         def circuit():
             for wire in control_wires:
                 qp.H(wire)

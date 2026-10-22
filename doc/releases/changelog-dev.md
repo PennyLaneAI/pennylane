@@ -842,7 +842,8 @@
   of [arXiv:1902.02134](https://arxiv.org/abs/1902.02134), available with ``qjit(capture=True)``. It
   measures the target wires in the :math:`X` basis and fixes up the resulting phases with a lookup
   of size :math:`\lceil L/k\rceil` targeting a one-hot register of size :math:`k`. This reduces the
-  Toffoli cost to roughly :math:`2\sqrt{L}` for :math:`L` bitstrings.
+  Toffoli cost to roughly :math:`2\sqrt{L}` for :math:`L` bitstrings but requires additional
+  work wires.
   [(#10363)](https://github.com/PennyLaneAI/pennylane/pull/10363)
 
 * A Backline placement accepts any transport that a backend in Catalyst's transport backend
