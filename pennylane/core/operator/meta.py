@@ -66,12 +66,7 @@ class OperatorMeta(ABCMeta):
         bound.apply_defaults()
         arguments: dict = bound.arguments
 
-        _verify_no_abstract_compilable_args(cls, arguments)
-
-        # NOTE: Detect if static / compilable argument received a tracer
-        # indicating it is incorrectly being used as a dynamic argument.
-        if capture.enabled():
-            _verify_no_traced_static_args(cls, arguments)
+        _validate_compile_time_args(cls, arguments)
 
         # default behaviour calls __new__ and then __init__
         op = super().__call__(*args, **kwargs)
@@ -85,23 +80,19 @@ class OperatorMeta(ABCMeta):
         return op
 
 
-def _verify_no_traced_static_args(cls, arguments):
-    """Verify that no static/compilable arguments received a tracer."""
+def _validate_compile_time_args(cls, arguments):
+    """Validate abstract compilable inputs and traced static/compilable inputs."""
     for arg_name in cls.static_argnames + cls.compilable_argnames:
         leaves, _ = flatten(arguments[arg_name])
-        if any(math.is_abstract(l) for l in leaves):
-            raise ValueError(
-                f"Argument '{arg_name}' of operator '{cls.__name__}' must be a concrete, "
-                f"compile-time constant. A dynamic/traced variable was provided instead. "
+        if any(
+            (
+                arg_name in cls.compilable_argnames
+                and isinstance(value, (AbstractArray, AbstractWires))
             )
-
-
-def _verify_no_abstract_compilable_args(cls, arguments):
-    """Reject abstract descriptors before a compilable argument is canonicalized or lowered."""
-    for arg_name in cls.compilable_argnames:
-        leaves, _ = flatten(arguments[arg_name])
-        if any(isinstance(value, (AbstractArray, AbstractWires)) for value in leaves):
+            or math.is_abstract(value)
+            for value in leaves
+        ):
             raise ValueError(
                 f"Argument '{arg_name}' of operator '{cls.__name__}' must be a concrete, "
-                "compile-time constant. An abstract input was provided instead."
+                "compile-time constant. An abstract input or dynamic/traced variable was provided instead."
             )
