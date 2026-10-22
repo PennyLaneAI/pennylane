@@ -1353,7 +1353,6 @@
   [(#10337)](https://github.com/PennyLaneAI/pennylane/pull/10337)
 
 <h3>Breaking changes 💔</h3>
-  
 * ``qp.ops.functions.assert_valid`` has been removed. Use :func:`~.testing.assert_valid` instead.
   The private ``_test_decomposition_rule`` has been removed; use :func:`~.testing.assert_valid_decomp_rule`.
   [(#10342)](https://github.com/PennyLaneAI/pennylane/pull/10342)
