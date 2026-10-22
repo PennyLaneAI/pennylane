@@ -42,7 +42,6 @@ This module contains functions that act on operators and tapes.
 
 from .bind_new_parameters import bind_new_parameters
 from .equal import equal, assert_equal
-from .assert_valid import assert_valid
 from .commutator import comm, commutator
 from .dot import dot
 from .eigvals import eigvals

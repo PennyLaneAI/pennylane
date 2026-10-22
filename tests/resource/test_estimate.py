@@ -88,6 +88,29 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             ),
         )
 
+    @pytest.mark.parametrize("num_wires", [1, 3])
+    @pytest.mark.parametrize("measurement", ["probs", "sample", "counts", "expval"])
+    def test_abstract_wire_measurements(self, num_wires, measurement):
+        """Estimate supports terminal measurements on abstract registers."""
+        wires = qp.typing.Wire[num_wires]
+
+        @qp.qjit(capture=True)
+        @qp.set_shots(50 if measurement in ("sample", "counts") else None)
+        @qp.qnode(qp.device("null.qubit", wires=num_wires))
+        def circuit():
+            qp.X(wires=0)
+            if measurement == "expval":
+                return qp.expval(qp.Z(wires=wires[0]))
+            if measurement == "counts":
+                return qp.counts(wires=wires, all_outcomes=True)
+            return getattr(qp, measurement)(wires=wires)
+
+        specs = qp.estimate(circuit, target={"PauliX": 1})()
+
+        assert specs.resources.quantum_operations == {"PauliX": 1}
+        measured = "PauliZ" if measurement == "expval" else f"{num_wires} wires"
+        assert specs.resources.measurement_processes == {f"{measurement}({measured})": 1}
+
     @pytest.mark.parametrize(
         "target",
         [
