@@ -306,7 +306,7 @@ class Sum(CompositeOp):
             coeffs_list = list(self.pauli_rep.values())
             if len(coeffs_list) == 0:
                 return True
-            if not math.is_abstract(coeffs_list[0]):
+            if not math.is_tracer(coeffs_list[0]):
                 return not any(math.iscomplex(c) for c in coeffs_list)
 
         return all(s.is_verified_hermitian for s in self)

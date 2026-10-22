@@ -885,8 +885,8 @@ def _sum_terms(
     """Sum results from measurements of multiple terms in a multi-term observable."""
     if (
         coeffs
-        and not qp.math.is_abstract(coeffs[0])
-        and not qp.math.is_abstract(offset)
+        and not qp.math.is_tracer(coeffs[0])
+        and not qp.math.is_tracer(offset)
         and coeffs == [1]
         and offset == 0
     ):
