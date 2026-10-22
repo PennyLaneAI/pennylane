@@ -21,7 +21,7 @@ import pytest
 from gate_data import QFT
 
 import pennylane as qp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -65,8 +65,7 @@ class TestQFT:
     def test_QFT_decomposition_new(self, wires):
         """Tests that QFT's decomposition rules are correct."""
         op = qp.QFT(wires=wires)
-        for rule in qp.list_decomps(op):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.capture
     @pytest.mark.parametrize("n_wires", [2, 3, 6])
