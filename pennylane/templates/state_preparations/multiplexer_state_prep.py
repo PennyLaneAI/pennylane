@@ -85,7 +85,7 @@ class MultiplexerStatePreparation(Operator2):
                 f"State vector must be of length {2 ** len(wires)}; got length {n_amplitudes}."
             )
 
-        if check and not math.is_abstract(state_vector):
+        if check and not math.is_tracer(state_vector):
             norm = math.linalg.norm(state_vector)
             if not math.allclose(norm, 1.0, atol=1e-3):
                 raise ValueError(
@@ -155,7 +155,7 @@ def _complex_multiplexer_state_prep_decomposition(state_vector, wires, **_):
 
     if not is_real:
         omega = math.angle(state_vector)
-        if math.is_abstract(omega) or math.requires_grad(omega) or not math.allclose(omega, 0):
+        if math.is_tracer(omega) or math.requires_grad(omega) or not math.allclose(omega, 0):
             qp.DiagonalQubitUnitary(math.exp(1j * omega), wires=wires)
 
 

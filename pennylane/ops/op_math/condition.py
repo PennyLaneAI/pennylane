@@ -79,7 +79,7 @@ def _add_abstract_shapes(f):
         out = f(*args, **kwargs)
         shapes = []
         for x in out:
-            shapes.extend(s for s in getattr(x, "shape", ()) if math.is_abstract(s))
+            shapes.extend(s for s in getattr(x, "shape", ()) if math.is_tracer(s))
         return *shapes, *out
 
     return new_f
@@ -150,7 +150,7 @@ def _handle_op(fn, branch_name: str):
     if fn is None:
         return fn
 
-    if math.is_abstract(fn) and isinstance(fn.aval, AbstractOperator):
+    if math.is_tracer(fn) and isinstance(fn.aval, AbstractOperator):
         raise ValueError(
             f"Got Operator1 AbstractOperator as input to cond {branch_name}. Only Operator2 is supported."
         )
@@ -421,7 +421,7 @@ class CondCallable:
         return jax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
 
     def __call__(self, *args, **kwargs):
-        if capture_enabled() and any(math.is_abstract(p) for p in self.preds):
+        if capture_enabled() and any(math.is_tracer(p) for p in self.preds):
             return self.__call_capture_enabled(*args, **kwargs)
 
         return self.__call_capture_disabled(*args, **kwargs)
@@ -429,7 +429,7 @@ class CondCallable:
 
 def _is_operator(op):
     return isinstance(op, Operator) or (
-        math.is_abstract(op) and isinstance(op.aval, AbstractOperator)
+        math.is_tracer(op) and isinstance(op.aval, AbstractOperator)
     )
 
 
@@ -445,7 +445,7 @@ def _capture_dispatch(condition, true_fn, false_fn, elifs):
     if isinstance(true_fn, Operator):
         return _handle_op_inputs(condition, true_fn, false_fn, elifs)
 
-    if math.is_abstract(true_fn) and isinstance(true_fn.aval, AbstractOperator):
+    if math.is_tracer(true_fn) and isinstance(true_fn.aval, AbstractOperator):
         raise ValueError("Operator1 instances cannot be provided as true_fn to pennylane.cond.")
 
     if _is_operator(false_fn):
