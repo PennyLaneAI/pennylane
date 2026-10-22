@@ -341,6 +341,18 @@ def make_rz_to_phase_gradient_decomp(
      qft_0: ─├GlobalPhase(1.57)────├SemiAdder────┤ ├State
     work_0: ─├GlobalPhase(1.57)────├SemiAdder────┤ ├State
     work_1: ─╰GlobalPhase(1.57)────╰SemiAdder────┤ ╰State
+
+    >>> print(qp.draw(truncated_circuit, wire_order=wire_order)(angles[1]))
+         0: ─╭GlobalPhase(1.18)─╭●─╭●────────────╭●─╭●─┤ ╭State
+     aux_0: ─├GlobalPhase(1.18)─│──│──╭SemiAdder─│──│──┤ ├State
+     aux_1: ─├GlobalPhase(1.18)─╰X─│──├SemiAdder─╰X─│──┤ ├State
+     aux_2: ─├GlobalPhase(1.18)────╰X─├SemiAdder────╰X─┤ ├State
+     qft_0: ─├GlobalPhase(1.18)───────├SemiAdder───────┤ ├State
+     qft_1: ─├GlobalPhase(1.18)───────├SemiAdder───────┤ ├State
+     qft_2: ─├GlobalPhase(1.18)───────├SemiAdder───────┤ ├State
+    work_0: ─├GlobalPhase(1.18)───────├SemiAdder───────┤ ├State
+    work_1: ─╰GlobalPhase(1.18)───────╰SemiAdder───────┤ ╰State
+
     """
     angle_wires, phase_grad_wires, work_wires = validate_phase_gradient_wires(
         angle_wires, phase_grad_wires, work_wires
