@@ -56,7 +56,7 @@ def set_item(
 ):
     """An implementation of the AutoGraph 'set_item' function."""
 
-    if qp.math.is_abstract(target):
+    if qp.math.is_tracer(target):
         target = target.at[index].set(x)
     else:
         target[index] = x
@@ -83,7 +83,7 @@ def update_item_with_op(
     if op == "sub":
         x = -x
 
-    if qp.math.is_abstract(target):
+    if qp.math.is_tracer(target):
         if isinstance(index, slice):
             target = getattr(target.at[index.start : index.stop : index.step], ast_op_map[op])(x)
         else:
@@ -370,7 +370,7 @@ def _logical_op(*args, jax_fn: Callable, python_fn: Callable):
 
     values = [arg() if callable(arg) else arg for arg in args]
 
-    if any(qp.math.is_abstract(val) for val in values):
+    if any(qp.math.is_tracer(val) for val in values):
         result = jax_fn(*values)
     else:
         result = python_fn(*values)
@@ -467,7 +467,7 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
             if not args:
                 raise ValueError(f"{fn.__name__} requires at least one argument")
 
-            is_abstract_operator = qp.math.is_abstract(args[0]) and isinstance(
+            is_abstract_operator = qp.math.is_tracer(args[0]) and isinstance(
                 args[0].aval, qp.capture.primitives.AbstractOperator
             )
             # If first argument is already an operator, pass it through directly

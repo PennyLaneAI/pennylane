@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :func:`pennylane.math.is_abstract` function.
+Unit tests for the :func:`pennylane.math.is_tracer` function.
 """
 
 import functools
@@ -25,10 +25,10 @@ import pennylane as qp
 
 @pytest.mark.jax
 class TestJAX:
-    """Test that JAX integrates with is_abstract"""
+    """Test that JAX integrates with is_tracer"""
 
     def test_eager(self):
-        """Test that no tensors are abstract when in eager mode"""
+        """Test that eager tensors have concrete values"""
         import jax
         import jax.numpy as jnp
 
@@ -36,18 +36,18 @@ class TestJAX:
             y = x**2
             z = jnp.ones([2, 2])
 
-            assert not qp.math.is_abstract(w)
-            assert not qp.math.is_abstract(x)
-            assert not qp.math.is_abstract(y)
-            assert not qp.math.is_abstract(z)
+            assert not qp.math.is_tracer(w)
+            assert not qp.math.is_tracer(x)
+            assert not qp.math.is_tracer(y)
+            assert not qp.math.is_tracer(z)
 
             return jnp.sum(y)
 
         x = jnp.array([0.5, 0.1])
         w = jnp.array(0.1)
 
-        assert not qp.math.is_abstract(w)
-        assert not qp.math.is_abstract(x)
+        assert not qp.math.is_tracer(w)
+        assert not qp.math.is_tracer(x)
 
         res = cost(x, w)
         assert res == 0.26
@@ -56,30 +56,30 @@ class TestJAX:
         assert np.allclose(grad, 2 * x)
 
     def test_jit(self):
-        """Test that all tensors are abstract when in JIT mode.
+        """Test that tensors are tracers when in JIT mode.
         Note that `jax.grad` has slightly different behaviour, and will
         avoid making abstract tensors for non-differentiable arguments."""
         import jax
         import jax.numpy as jnp
 
         @functools.partial(jax.jit, static_argnums=[2])
-        def cost(x, w, w_is_abstract=True):
+        def cost(x, w, w_is_tracer=True):
             y = x**2
             z = jnp.ones([2, 2])
 
-            assert qp.math.is_abstract(w) == w_is_abstract
+            assert qp.math.is_tracer(w) == w_is_tracer
 
-            assert qp.math.is_abstract(x)
-            assert qp.math.is_abstract(y)
-            assert qp.math.is_abstract(z)
+            assert qp.math.is_tracer(x)
+            assert qp.math.is_tracer(y)
+            assert qp.math.is_tracer(z)
 
             return jnp.sum(y)
 
         x = jnp.array([0.5, 0.1])
         w = jnp.array(0.1)
 
-        assert not qp.math.is_abstract(w)
-        assert not qp.math.is_abstract(x)
+        assert not qp.math.is_tracer(w)
+        assert not qp.math.is_tracer(x)
 
         res = cost(x, w)
         assert res == 0.26
@@ -89,9 +89,9 @@ class TestJAX:
         # arguments will not be abstract.
 
         # # since we only specify argnums=0, w will not be abstract
-        # grad = jax.grad(cost, argnums=0)(x, w, w_is_abstract=False)
+        # grad = jax.grad(cost, argnums=0)(x, w, w_is_tracer=False)
         # assert np.allclose(grad, 2 * x)
 
         # Otherwise, w will be abstract
-        grad = jax.grad(cost, argnums=[0, 1])(x, w, w_is_abstract=True)
+        grad = jax.grad(cost, argnums=[0, 1])(x, w, w_is_tracer=True)
         assert np.allclose(grad[0], 2 * x)

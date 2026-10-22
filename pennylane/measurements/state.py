@@ -136,7 +136,7 @@ class DensityMatrixMP(StateMP):
         wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
-        if not math.is_abstract(state) and math.any(math.iscomplex(state)):
+        if not math.is_tracer(state) and math.any(math.iscomplex(state)):
             kwargs["c_dtype"] = state.dtype
         return math.reduce_statevector(state, **kwargs)
 
@@ -145,7 +145,7 @@ class DensityMatrixMP(StateMP):
         wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
-        if not math.is_abstract(density_matrix) and math.any(math.iscomplex(density_matrix)):
+        if not math.is_tracer(density_matrix) and math.any(math.iscomplex(density_matrix)):
             kwargs["c_dtype"] = density_matrix.dtype
         return math.reduce_dm(density_matrix, **kwargs)
 

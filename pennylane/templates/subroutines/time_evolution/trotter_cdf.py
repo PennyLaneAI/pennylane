@@ -318,7 +318,7 @@ class TrotterCDF(Operator2):
 
 def _apply_system_basis_rotation(U, wires):
     """Apply a fragment's basis rotation on the alpha and beta spin channels."""
-    if math.is_abstract(U) or not np.allclose(U, np.eye(len(U))):
+    if math.is_tracer(U) or not np.allclose(U, np.eye(len(U))):
         BasisRotation(unitary_matrix=U, wires=wires[::2])
         BasisRotation(unitary_matrix=U, wires=wires[1::2])
 
