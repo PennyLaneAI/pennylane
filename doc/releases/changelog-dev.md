@@ -2093,6 +2093,7 @@
 * :func:`~.ctrl` of a quantum function now forwards ``work_wire_type`` to each inner operator,
   both with and without program capture.
   [(#10355)](https://github.com/PennyLaneAI/pennylane/pull/10355)
+  [(#10372)](https://github.com/PennyLaneAI/pennylane/pull/10372)
 
 * `qp.cond` can now handle `Operator2` instances being provided instead of branch functions.
   While this syntax was supported with tape-based PennyLane, it had never been
