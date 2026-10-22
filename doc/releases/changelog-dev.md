@@ -2087,6 +2087,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed decomposition graph construction discarding a reachable symbolic adjoint when an
+  alternative decomposition revisits its base, which could overestimate required work wires.
+  [(#10371)](https://github.com/PennyLaneAI/pennylane/pull/10371)
+
 * :func:`~.ctrl` now supports mixed static and dynamic control values under
   `qp.qjit(capture=True)`, for both operator instances and callables.
   [(#10356)](https://github.com/PennyLaneAI/pennylane/pull/10356)

@@ -366,36 +366,30 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             self._pop_in_progress(op)
             return op_node_idx
 
-        op_reachable = False
-        work_wire_dependent = known_work_wire_dependent
         min_work_wires = -1  # use -1 to represent undetermined work wire requirement
         for decomposition in rules:
             d_node = self._add_decomp(decomposition, op_node, op_node_idx, num_used_work_wires)
             if not d_node.applicable or not d_node.reachable:
                 continue
-            # If a decomposition is reachable, the operator is also reachable
-            op_reachable = True
-            # If any of the operator's decompositions depend on work wires, this operator
-            # should also depend on work wires.
-            if d_node.work_wire_dependent:
-                work_wire_dependent = True
             if min_work_wires == -1 or d_node.min_work_wires < min_work_wires:
                 min_work_wires = d_node.min_work_wires
 
-        if op_reachable:
-            op_node = replace(op_node, reachable=True)
-            self._replace_node(op_node_idx, op_node)
-
-        # If we found that this operator depends on work wires, but it's currently recorded
-        # as independent of work wires, we must replace every record of this operator node
-        # with a new node with `work_wire_dependent` set to `True`.
-        if not known_work_wire_dependent and work_wire_dependent:
-            op_node = replace(op_node, work_wire_dependent=True, min_work_wires=min_work_wires)
-            self._replace_node(op_node_idx, op_node)
-            # Also record that this operator type depends on work wires, so in the future
-            # when we encounter other instances of the same operator type, we correctly
-            # identify it as work-wire dependent.
-            self._work_wire_dependent_ops.add(op_node.op)
+            if (
+                not op_node.reachable
+                or op_node.min_work_wires != min_work_wires
+                or (d_node.work_wire_dependent and not op_node.work_wire_dependent)
+            ):
+                # Later alternatives may revisit this operator through a symbolic wrapper.
+                # Publish changes before exploring them.
+                op_node = replace(
+                    op_node,
+                    reachable=True,
+                    work_wire_dependent=op_node.work_wire_dependent or d_node.work_wire_dependent,
+                    min_work_wires=min_work_wires,
+                )
+                self._replace_node(op_node_idx, op_node)
+                if op_node.work_wire_dependent:
+                    self._work_wire_dependent_ops.add(op_node.op)
 
         self._pop_in_progress(op)
         return op_node_idx
