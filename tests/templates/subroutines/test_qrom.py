@@ -737,6 +737,14 @@ class TestMeasurementQROM:
         assert ppm_counts > 0
         assert res[qp.CZ] > 0
 
+        # The 5 X-type measurements are spread binomially over the widths 1 to 4, rounded up.
+        x_measure_counts = {
+            k.pauli_word: v
+            for k, v in res.items()
+            if isinstance(k, PauliMeasure) and k.pauli_word[0] == "X"
+        }
+        assert x_measure_counts == {"X": 1, "XX": 2, "XXX": 2, "XXXX": 1}
+
     def test_resources_from_base(self):
         """Test that resources are extracted from ``base`` (Adjoint path)."""
         # Only bitstrings and target_wires are relevant
@@ -807,8 +815,9 @@ class TestMeasurementQROM:
         num_x_measure = sum(c for op, c in actual.items() if is_x_measure(op))
         assert num_x_measure <= sum(c for op, c in estimate.items() if is_x_measure(op))
         for op, count in actual.items():
+            assert op in estimate, f"{op} is missing from the resource estimate"
             if not is_x_measure(op):
-                assert count <= estimate.get(op, 0), f"{op}: {count} > {estimate.get(op, 0)}"
+                assert count <= estimate[op], f"{op}: {count} > {estimate[op]}"
 
     def test_condition_without_compiler(self):
         """Test that the measurement decomposition is disabled without an active compiler."""
@@ -994,7 +1003,6 @@ class TestMeasurementQROM:
         # A _global_ phase mismatch is okay, hence the `np.abs`
         assert np.isclose(np.abs(np.vdot(expected, circuit())), 1.0)
 
-    @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
@@ -1051,7 +1059,7 @@ class TestMeasurementQROM:
                 work_samples, 0
             ), f"L={L}, out-of-range j={j}: work wires not clean, got {work_samples}"
 
-    @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
+    @CTRL_WORK_WIRE_TYPE_XFAIL
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
@@ -1247,7 +1255,7 @@ class TestAdjointQROMMeasurement:
             op.target_wires
         )
 
-    @pytest.mark.pl2do("this will not work with Catalyst until the Operator2 work is complete.")
+    @CTRL_WORK_WIRE_TYPE_XFAIL
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize("case", [(4, 2, 0, 1), (8, 2, 0, 2), (11, 2, 0, 3), (4, 2, 1, 2)])

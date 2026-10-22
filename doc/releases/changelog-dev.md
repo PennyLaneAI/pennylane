@@ -2072,6 +2072,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The resource function of the measurement-based decomposition of :class:`~.QROM` now declares
+  every operator that the decomposition may apply. In particular, it includes the controlled
+  :class:`~.MultiX` and the flag uncomputation used for extra control wires, as well as the
+  X-type Pauli measurements of all widths. The widths, which depend on the bitstrings, are
+  estimated from the distribution expected for uniformly random bitstrings.
+  [(#10363)](https://github.com/PennyLaneAI/pennylane/pull/10363)
+
 * :func:`~.ctrl` of a quantum function now forwards ``work_wire_type`` to each inner operator,
   both with and without program capture.
   [(#10355)](https://github.com/PennyLaneAI/pennylane/pull/10355)

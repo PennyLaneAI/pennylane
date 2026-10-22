@@ -15,6 +15,7 @@
 This submodule contains the template for QROM.
 """
 
+import math as builtin_math
 from collections.abc import Sequence
 from functools import partial
 
@@ -575,8 +576,9 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
       - 1 CZ (phase correction conditioned on X measurement)
       - conditional X gates on work + targets
 
-    Counts that depend on the bitstring data (CNOTs, the width of the X-type measurements) use
-    the worst case, as only the shape of ``bitstrings`` is known.
+    Only the shape of ``bitstrings`` is known, so counts that depend on the bitstring data are
+    estimated: CNOTs use the worst case, and the widths of the X-type measurements follow the
+    distribution expected for uniformly random data.
     """
     # When called for Adjoint(QROM), extract params from the base parameters
     if base is not None:
@@ -615,18 +617,21 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
         resources = {load: 1, ctrl(X(Wire[1]), control=Wire[1], control_values=Bool[1]): 1}
 
     # Each of the ``num_ands`` uncomputations performs one Z measurement on the work wire and
-    # one X-type joint measurement on the work wire plus the target wires flipped by that
-    # bitstring. The joint measurement's size (``1 + len(x_wires)``) varies per bitstring, so
-    # the worst case (all ``num_targets`` flipped) is used for this approximate estimate.
+    # one X-type joint measurement on the work wire plus the ``w`` target wires flipped by the XOR
+    # of two bitstrings. For uniformly random data, ``w`` is binomially distributed, so the
+    # measurements are spread over all widths accordingly. Rounding up makes every width appear
+    # and overestimates the total number of X-type measurements by at most ``num_targets``.
     uncompute = {
         TemporaryAND: num_ands,
         PauliMeasure("Z", wires=Wire[1]): num_ands,
-        PauliMeasure("X" * (num_targets + 1), wires=Wire[num_targets + 1]): num_ands,
         CZ: num_ands,
         X: num_ands,
         load: num_ands,
         CNOT: num_cnots,
     }
+    for w in range(num_targets + 1):
+        x_measure = PauliMeasure("X" * (w + 1), wires=Wire[w + 1])
+        uncompute[x_measure] = -(-num_ands * builtin_math.comb(num_targets, w) // 2**num_targets)
     for rep, count in uncompute.items():
         if count:
             resources[rep] = resources.get(rep, 0) + count
