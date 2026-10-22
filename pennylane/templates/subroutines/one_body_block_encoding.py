@@ -130,13 +130,13 @@ def _block_encoding_data(op_matrix):
 
     mu, vmat = np.linalg.eigh(mat)  # o = vmat diag(mu) vmat.T
 
-    unitary_matrix = vmat
+    # Ensure positive determinant
     if np.linalg.det(vmat) < 0:
-        unitary_matrix[:, 0] *= -1
+        vmat[:, 0] *= -1
 
     absmu = tuple(float(value) for value in np.abs(mu))
     n_neg = int(np.sum(mu < 0))
-    return absmu, n_neg, unitary_matrix
+    return absmu, n_neg, vmat
 
 
 class OneBodyBlockEncoding(Operator2):

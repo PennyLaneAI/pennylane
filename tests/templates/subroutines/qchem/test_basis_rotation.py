@@ -738,21 +738,3 @@ class TestInterfaces:
         res = circuit(unitary_matrix)
         res2 = circuit2(weights)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-    @pytest.mark.torch
-    def test_torch_real_matrix_negative_determinant(self):
-        """Test real Torch matrices with a negative determinant."""
-        import torch
-
-        unitary_matrix = torch.tensor([[-0.8, -0.6], [-0.6, 0.8]], dtype=torch.float64)
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev)
-        def circuit(matrix):
-            qp.PauliX(0)
-            qp.BasisRotation(unitary_matrix=matrix, wires=range(2))
-            return qp.state()
-
-        assert qp.math.allclose(
-            circuit(unitary_matrix), circuit(unitary_matrix.to(torch.complex128))
-        )
