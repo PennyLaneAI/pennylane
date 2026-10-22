@@ -20,7 +20,6 @@ from collections.abc import Callable, Iterable
 from functools import partial
 
 from ..capture import enabled
-
 from ._utils import (
     apply_partial_args,
     build_circuit_specs,
@@ -114,15 +113,14 @@ def analyze(
             * ``"top"`` or ``0``: The original circuit before any transforms have been applied.
             * ``int``: The circuit after the specified number of user-specified transforms have been applied.
             * ``"user"``: The circuit after all user-specified transforms have been applied.
-            * Marker name (str): The circuit after the transforms that precede the given
-            :func:`qp.marker <pennylane.marker>` have been applied.
-            * iterable: A ``list``, ``tuple``, or similar containing ints and/or marker names.
-            Should be sorted in ascending transform order with no duplicates. The output will
-            provide resource information for each level.
+            * Marker Name (``str``): The circuit after the transforms that precede the given :func:`qp.marker <pennylane.marker>` have been applied.
+            * ``iterable``: A ``list``, ``tuple``, or similar containing ints and/or marker names.
+              Should be sorted in ascending transform order with no duplicates. The output will
+              provide resource information for each level.
             * ``"device"``: The circuit after the device preprocessing transforms have been applied.
             * ``"all-user"``: To provide information at each stage of compilation with respect to user-specified transforms.
             * ``"all"``: To provide information at each stage of compilation with respect
-            to user-specified and device-specific transforms.
+              to user-specified and device-specific transforms.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
