@@ -561,7 +561,7 @@ class TestPartialUnaryStatePreparation:
                 coefficients, range(num_wires), indices, work_wires
             )
         )()
-        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
 
         qroms = [op for op in ops if isinstance(op, qp.QROM)]
         type_counts = np.array(

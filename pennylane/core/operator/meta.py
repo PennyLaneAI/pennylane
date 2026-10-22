@@ -89,7 +89,7 @@ def _validate_compile_time_args(cls, arguments):
                 arg_name in cls.compilable_argnames
                 and isinstance(value, (AbstractArray, AbstractWires))
             )
-            or math.is_abstract(value)
+            or math.is_tracer(value)
             for value in leaves
         ):
             raise ValueError(

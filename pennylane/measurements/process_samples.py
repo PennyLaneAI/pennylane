@@ -91,7 +91,7 @@ def process_raw_samples(
         indices = math.array(indices)  # Add np.array here for Jax support.
         # This also covers statistics for mid-circuit measurements manipulated using
         # arithmetic operators
-        if math.is_abstract(indices):
+        if math.is_tracer(indices):
             samples = math.take(eigvals, indices, like=indices)
         else:
             samples = eigvals[indices]
