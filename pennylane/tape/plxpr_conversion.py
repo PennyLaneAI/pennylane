@@ -131,9 +131,12 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
     """Handle a control transform primitive by collecting the operations in the jaxpr,
     and then applying their controlled versions.
     """
+    values_start = len(invals) - n_control
+    controls_start = values_start - n_control
     consts = invals[:n_consts]
-    args = invals[n_consts:-n_control]
-    control = math.array(invals[-n_control:])
+    args = invals[n_consts:controls_start]
+    control = math.array(invals[controls_start:values_start])
+    control_values = invals[values_start:]
 
     child = CollectOpsandMeas()
     child.eval(jaxpr, consts, *args)
@@ -141,7 +144,9 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
 
     for op in child.state["ops"]:
         with pause():
-            self.state["ops"].append(ops.ctrl(op, control=control, **params))
+            self.state["ops"].append(
+                ops.ctrl(op, control=control, control_values=control_values, **params)
+            )
 
     return []
 

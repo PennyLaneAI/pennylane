@@ -391,15 +391,17 @@ class TestHigherOrderPrimitiveRegistrations:
         """Test the higher order ctrl transform."""
 
         @SimplifyInterpreter()
-        def f(x, control):
+        def f(x, control, val):
             def g(y):
                 _ = qp.RY(y, 0) ** 3
 
-            qp.ctrl(g, control)(x)
+            qp.ctrl(g, control, control_values=[val])(x)
 
-        jaxpr = jax.make_jaxpr(f)(0.5, 1)
+        jaxpr = jax.make_jaxpr(f)(0.5, 1, False)
 
         assert jaxpr.eqns[0].primitive == ctrl_transform_prim
+        assert jaxpr.eqns[0].invars[-2:] == jaxpr.jaxpr.invars[1:]
+        assert "control_values" not in jaxpr.eqns[0].params
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         # first eqn mul, second RY
         assert_eqn_matches_op(inner_jaxpr.eqns[1], qp.RY)

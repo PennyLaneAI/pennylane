@@ -838,6 +838,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Terminal measurements now accept fixed-size `qp.typing.Wire[n]` registers during
+  program capture.
+  [(#10364)](https://github.com/PennyLaneAI/pennylane/pull/10364)
+
 * A Backline placement accepts any transport that a backend in Catalyst's transport backend
   registry implements, so a backend package can add a transport without a PennyLane change. A
   :class:`~.Controller` or :class:`~.Coprocessor` names the backend to run on with ``backend=``.
@@ -909,6 +913,11 @@
 * Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a
   decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
   [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
+
+* Added decompositions of :class:`~.PauliX`, :class:`~.PauliY` and :class:`~.PauliZ` to
+  :class:`~.PPR_2`, of :class:`~.S` to :class:`~.PPR_4`, of :class:`~.T` to :class:`~.PPR_8`
+  (each with a global phase), and of :class:`~.MultiRZ` to :class:`~.PauliRot`.
+  [(#10350)](https://github.com/PennyLaneAI/pennylane/pull/10350)
 
 * :class:`~.FlipSign` now accepts `work_wires`, which are forwarded to the multi-controlled
   :class:`~.Z` gate in its decomposition. Providing work wires substantially reduces the gate count.
@@ -2083,9 +2092,16 @@
 
 <h3>Bug fixes 🐛</h3>
 
+<<<<<<< HEAD
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
   argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
   [(#10360)](https://github.com/PennyLaneAI/pennylane/pull/10360)
+=======
+* :func:`~.ctrl` now supports mixed static and dynamic control values under
+  `qp.qjit(capture=True)`, for both operator instances and callables.
+  [(#10356)](https://github.com/PennyLaneAI/pennylane/pull/10356)
+  [(#10367)](https://github.com/PennyLaneAI/pennylane/pull/10367)
+>>>>>>> 059c432d94c1b48abf03f944490c2f6fc05b61ce
 
 * :func:`~.ctrl` of a quantum function now forwards ``work_wire_type`` to each inner operator,
   both with and without program capture.
