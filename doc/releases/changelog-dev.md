@@ -2081,6 +2081,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Operators now reject abstract inputs in ``compilable_argnames`` during construction,
+  with an error identifying the operator and argument, instead of failing later during lowering.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * :func:`~.ctrl` now supports mixed static and dynamic control values under
   `qp.qjit(capture=True)`, for both operator instances and callables.
   [(#10356)](https://github.com/PennyLaneAI/pennylane/pull/10356)

@@ -23,6 +23,7 @@ from typing import ClassVar
 
 from pennylane import capture, math
 from pennylane.pytrees import flatten
+from pennylane.typing import AbstractArray, AbstractWires
 
 
 def _stop_autograph(f):
@@ -65,6 +66,8 @@ class OperatorMeta(ABCMeta):
         bound.apply_defaults()
         arguments: dict = bound.arguments
 
+        _verify_no_abstract_compilable_args(cls, arguments)
+
         # NOTE: Detect if static / compilable argument received a tracer
         # indicating it is incorrectly being used as a dynamic argument.
         if capture.enabled():
@@ -90,4 +93,15 @@ def _verify_no_traced_static_args(cls, arguments):
             raise ValueError(
                 f"Argument '{arg_name}' of operator '{cls.__name__}' must be a concrete, "
                 f"compile-time constant. A dynamic/traced variable was provided instead. "
+            )
+
+
+def _verify_no_abstract_compilable_args(cls, arguments):
+    """Reject abstract descriptors before a compilable argument is canonicalized or lowered."""
+    for arg_name in cls.compilable_argnames:
+        leaves, _ = flatten(arguments[arg_name])
+        if any(isinstance(value, (AbstractArray, AbstractWires)) for value in leaves):
+            raise ValueError(
+                f"Argument '{arg_name}' of operator '{cls.__name__}' must be a concrete, "
+                "compile-time constant. An abstract input was provided instead."
             )
