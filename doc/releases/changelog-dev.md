@@ -1357,6 +1357,12 @@
   The private ``_test_decomposition_rule`` has been removed; use :func:`~.testing.assert_valid_decomp_rule`.
   [(#10342)](https://github.com/PennyLaneAI/pennylane/pull/10342)
 
+* The ``lazy`` argument has been removed from ``qp.adjoint``. Adjoint construction is
+  always symbolic. Remove ``lazy=True``; replace ``lazy=False`` with a direct known
+  inverse (for example, ``qp.RX(-theta, wires=0)``) or explicitly simplify with
+  ``qp.simplify(qp.adjoint(op))``.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * The `qp.Backline.backline` alias of `qp.Backline.placement` has been removed. Use `placement`.
   [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
 

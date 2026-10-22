@@ -22,7 +22,6 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, CSWAP, RY, SWAP, Hadamard, PauliX, PauliZ, adjoint, cond, ctrl
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.qubit import BasisState
 from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
@@ -266,11 +265,16 @@ def _bucket_brigade_qram_resources(num_controls, num_target_wires):
     Calculates the resources, assuming the worst case where bitstrings are all ones.
     """
     n_k = num_controls
-    _ctrl_swap = _ctrl_abstract(SWAP, Wire[1], num_zero_control_values=1)
+    _ctrl_swap = ctrl(SWAP(Wire[2]), Wire[1], Bool[1])
+    n_address_swaps = (1 << n_k) - 1 + n_k
+    n_routing_swaps = ((1 << n_k) - 1) * num_target_wires + (1 << n_k) - 1 - n_k
     return {
-        SWAP: ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2,
-        CSWAP: ((1 << n_k) - 1) * num_target_wires * 2 + (((1 << n_k) - 1 - n_k) * 2),
-        _ctrl_swap: ((1 << n_k) - 1) * num_target_wires * 2 + (((1 << n_k) - 1 - n_k) * 2),
+        SWAP: n_address_swaps + num_target_wires * 2,
+        adjoint(SWAP(Wire[2])): n_address_swaps,
+        CSWAP: n_routing_swaps,
+        adjoint(CSWAP(Wire[3])): n_routing_swaps,
+        _ctrl_swap: n_routing_swaps,
+        adjoint(_ctrl_swap): n_routing_swaps,
         Hadamard: num_target_wires * 2,
         PauliZ: (1 << n_k) * num_target_wires,
     }
@@ -346,11 +350,11 @@ def _bucket_brigade_qram_decomposition(
         SWAP(wires=[tw, bus_wire[0]])
         _route_bus_down_first_k_levels(wire_manager, len(control_wires))
         _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j)
-        adjoint(_route_bus_down_first_k_levels, lazy=False)(wire_manager, len(control_wires))
+        adjoint(_route_bus_down_first_k_levels)(wire_manager, len(control_wires))
         SWAP(wires=[tw, bus_wire[0]])
         Hadamard(wires=[tw])
     # 3) address unloading
-    adjoint(_mark_routers_via_bus, lazy=False)(wire_manager, n_k)
+    adjoint(_mark_routers_via_bus)(wire_manager, n_k)
 
 
 add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
@@ -571,9 +575,10 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
 
     resources[PauliX] += (num_select_wires <= 0) * num_blocks * 2
 
-    resources[_ctrl_abstract(SWAP, Wire[1], num_zero_control_values=0)] += (
-        (num_tree_control_wires + (1 << num_tree_control_wires) - 1) * 2 + 2 * num_target_wires
-    ) * num_blocks
+    ctrl_swap = ctrl(SWAP(Wire[2]), Wire[1])
+    n_address_swaps = num_tree_control_wires + (1 << num_tree_control_wires) - 1
+    resources[ctrl_swap] += (n_address_swaps + 2 * num_target_wires) * num_blocks
+    resources[adjoint(ctrl_swap)] += n_address_swaps * num_blocks
 
     ccswap_count = (
         (
@@ -584,11 +589,13 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
         * 2
     )
 
-    resources[_ctrl_abstract(SWAP, Wire[2])] += ccswap_count
+    resources[ctrl(SWAP(Wire[2]), Wire[2])] += ccswap_count // 2
+    resources[adjoint(ctrl(SWAP(Wire[2]), Wire[2]))] += ccswap_count // 2
 
-    resources[_ctrl_abstract(SWAP, Wire[2], num_zero_control_values=1)] += ccswap_count
+    resources[ctrl(SWAP(Wire[2]), Wire[2], Bool[2])] += ccswap_count // 2
+    resources[adjoint(ctrl(SWAP(Wire[2]), Wire[2], Bool[2]))] += ccswap_count // 2
 
-    resources[_ctrl_abstract(Hadamard, Wire[1])] += num_target_wires * num_blocks * 2
+    resources[ctrl(Hadamard(Wire[1]), Wire[1])] += num_target_wires * num_blocks * 2
 
     for block_index in range(num_blocks):
         zero_control_values = [
@@ -597,15 +604,11 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
         if zero_control_values == 0:
             resources[CNOT] += (num_select_wires > 0) * 2
         else:
-            resources[
-                _ctrl_abstract(
-                    PauliX, Wire[num_select_wires], num_zero_control_values=zero_control_values
-                )
-            ] += (num_select_wires > 0) * 2
+            cx_rep = ctrl(PauliX(Wire[1]), Wire[num_select_wires], Bool[num_select_wires])
+            resources[cx_rep] += (num_select_wires > 0) * 2
 
-        resources[_ctrl_abstract(PauliZ, Wire[1])] += (
-            1 << num_tree_control_wires
-        ) * num_target_wires
+        cz_rep = ctrl(PauliZ(Wire[1]), Wire[1])
+        resources[cz_rep] += (1 << num_tree_control_wires) * num_target_wires
 
     return resources
 
@@ -721,9 +724,7 @@ def _block_tree_query_ops(
         )
 
         # Route back up
-        adjoint(_tree_route_bus_down_first_k_levels_ctrl, lazy=False)(
-            n_tree, tree_wire_manager, signal
-        )
+        adjoint(_tree_route_bus_down_first_k_levels_ctrl)(n_tree, tree_wire_manager, signal)
 
         # Swap back bus -> target
         ctrl(SWAP(wires=[tw, tree_wire_manager.bus_wire[0]]), control=[signal], control_values=[1])
@@ -732,7 +733,7 @@ def _block_tree_query_ops(
         ctrl(Hadamard(wires=[tw]), control=[signal], control_values=[1])
 
     # 3) address unloading for the tree (controlled on signal)
-    adjoint(_tree_mark_routers_via_bus_ctrl, lazy=False)(tree_wire_manager, n_tree, k, signal)
+    adjoint(_tree_mark_routers_via_bus_ctrl)(tree_wire_manager, n_tree, k, signal)
 
 
 @register_resources(_hybrid_qram_resources, exact=False)
@@ -981,7 +982,7 @@ def _select_only_qram_resources(
 
         resources[PauliX] += control_values.count(0) * 2
 
-        resources[_ctrl_abstract(PauliX, Wire[n_total])] += num_target_wires
+        resources[ctrl(PauliX(Wire[1]), Wire[n_total])] += num_target_wires
 
     return resources
 
@@ -1270,7 +1271,7 @@ def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
     return {
         Hadamard: num_address_wires,
         PauliX: 2 * num_zero_bits,
-        _ctrl_abstract(RY, Wire[num_address_wires]): num_entries,
+        ctrl(RY(Wire[1]), Wire[num_address_wires]): num_entries,
     }
 
 

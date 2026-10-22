@@ -471,7 +471,7 @@ def test_fermionic_template_ops(op, new_params, expected_op):
         (qp.Identity(wires=[1, 2]), [], qp.Identity(wires=[1, 2])),
         (qp.pow(qp.RX(0.123, 0), 2, lazy=False), [0.456], qp.RX(0.456, 0)),
         (
-            qp.adjoint(qp.RX(0.123, wires=0), lazy=False),
+            qp.RX(-0.123, wires=0),
             [0.456],
             qp.RX(0.456, wires=0),
         ),
