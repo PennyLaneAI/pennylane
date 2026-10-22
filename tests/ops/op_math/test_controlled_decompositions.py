@@ -37,7 +37,7 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     decompose_mcx_with_no_worker,
 )
 from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
-from pennylane.testing.decompositions import _capture_decomp_rule_to_tape, _decomp_rule_to_tape
+from pennylane.testing.decompositions import decomp_rule_to_tape
 from pennylane.wires import Wires
 
 cw5 = tuple(list(range(1, 1 + n)) for n in range(2, 6))
@@ -56,11 +56,7 @@ def test_mcx_forward_and_adjoint_resource_counts(num_controls, work_wire_type, r
         work_wires=range(num_controls + 1, num_controls + 1 + num_workers),
         work_wire_type=work_wire_type,
     )
-    tape = (
-        _capture_decomp_rule_to_tape(rule, op)
-        if qp.capture.enabled()
-        else _decomp_rule_to_tape(rule, (), op.arguments)
-    )
+    tape = decomp_rule_to_tape(op, rule)
     actual = Counter(abstractify(gate) for gate in tape.operations)
     estimated = dict(rule.compute_resources(**op.arguments).gate_counts)
     # These rules include an average of one X per control for zero-control flips.
