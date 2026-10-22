@@ -1559,6 +1559,12 @@ custom_ctrl_ops = [
 ]
 
 
+def test_ctrl_non_boolean_control_values():
+    """Test that qp.ctrl converts control values using Python truth values."""
+    op = qp.ctrl(TempOperator("a"), (0, 1, 2), control_values=["", None, 5])
+    assert op.control_values == [False, False, True]
+
+
 class TestCtrl:
     """Tests for the ctrl transform."""
 
@@ -1893,6 +1899,22 @@ class TestCtrl:
         )
         expected = qp.MultiControlledX(wires=[3, 2, 1, 0], control_values=[1, 0, 1])
         assert op == expected
+
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_qfunc_ctrl_forwards_work_wire_type(self, work_wire_type):
+        """``qp.ctrl`` of a qfunc must pass ``work_wire_type`` to each inner operator."""
+
+        def f():
+            qp.X(0)
+            qp.X(1)
+
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.ctrl(f, control=[2, 3], work_wires=[4], work_wire_type=work_wire_type)()
+
+        assert len(q.queue) == 2
+        for op in q.queue:
+            assert op.work_wire_type == work_wire_type
+            assert op.work_wires == Wires([4])
 
     def test_correct_queued_operators(self):
         """Test that args and kwargs do not add operators to the queue."""

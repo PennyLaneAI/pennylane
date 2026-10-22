@@ -87,7 +87,7 @@ class AmplitudeDamping(Channel):
          array([[0.        , 0.70710678],
                 [0.        , 0.        ]])]
         """
-        if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
+        if not np.is_tracer(gamma) and not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
 
         K0 = np.diag([1, np.sqrt(1 - gamma + _SQRT_STABILITY_EPS)])
@@ -170,10 +170,10 @@ class GeneralizedAmplitudeDamping(Channel):
          array([[0.64807407, 0.        ], [0.        , 0.77459667]]),
          array([[0.        , 0.        ], [0.42426407, 0.        ]])]
         """
-        if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
+        if not np.is_tracer(gamma) and not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
 
-        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
+        if not np.is_tracer(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1].")
 
         K0 = np.sqrt(1 - p + _SQRT_STABILITY_EPS) * np.diag(
@@ -250,7 +250,7 @@ class PhaseDamping(Channel):
         [array([[1.        , 0.        ], [0.        , 0.70710678]]),
          array([[0.        , 0.        ], [0.        , 0.70710678]])]
         """
-        if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
+        if not np.is_tracer(gamma) and not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
 
         K0 = np.diag([1, np.sqrt(1 - gamma + _SQRT_STABILITY_EPS)])
@@ -343,7 +343,7 @@ class DepolarizingChannel(Channel):
          array([[ 0.40824829+0.j,  0.        +0.j],
                 [ 0.        +0.j, -0.40824829+0.j]])]
         """
-        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
+        if not np.is_tracer(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
         K0 = np.sqrt(1 - p + _SQRT_STABILITY_EPS) * np.convert_like(np.eye(2, dtype=complex), p)
@@ -414,7 +414,7 @@ class BitFlip(Channel):
         [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
          array([[0.        , 0.70710678], [0.70710678, 0.        ]])]
         """
-        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
+        if not np.is_tracer(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
         K0 = np.sqrt(1 - p + _SQRT_STABILITY_EPS) * np.convert_like(np.cast_like(np.eye(2), p), p)
@@ -502,13 +502,13 @@ class ResetError(Channel):
          array([[0.        , 0.        ], [0.54772256, 0.        ]]),
          array([[0.        , 0.        ], [0.        , 0.54772256]])]
         """
-        if not np.is_abstract(p_0) and not 0.0 <= p_0 <= 1.0:
+        if not np.is_tracer(p_0) and not 0.0 <= p_0 <= 1.0:
             raise ValueError("p_0 must be in the interval [0,1]")
 
-        if not np.is_abstract(p_1) and not 0.0 <= p_1 <= 1.0:
+        if not np.is_tracer(p_1) and not 0.0 <= p_1 <= 1.0:
             raise ValueError("p_1 must be in the interval [0,1]")
 
-        if not np.is_abstract(p_0 + p_1) and not 0.0 <= p_0 + p_1 <= 1.0:
+        if not np.is_tracer(p_0 + p_1) and not 0.0 <= p_0 + p_1 <= 1.0:
             raise ValueError("p_0 + p_1 must be in the interval [0,1]")
 
         interface = np.get_interface(p_0, p_1)
@@ -594,7 +594,7 @@ class PauliError(Channel):
             raise ValueError("The specified operators need to be either of 'I', 'X', 'Y' or 'Z'.")
 
         # check if probabilities are legal
-        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
+        if not np.is_tracer(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
         # check if the number of operators matches the number of wires
@@ -730,7 +730,7 @@ class PhaseFlip(Channel):
         [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
          array([[ 0.70710678,  0.        ], [ 0.        , -0.70710678]])]
         """
-        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
+        if not np.is_tracer(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
         K0 = np.sqrt(1 - p + _SQRT_STABILITY_EPS) * np.convert_like(np.cast_like(np.eye(2), p), p)
@@ -782,7 +782,7 @@ class QubitChannel(Channel):
             )
 
         # check that the channel represents a trace-preserving map
-        if not any(np.is_abstract(K) for K in K_list):
+        if not any(np.is_tracer(K) for K in K_list):
             K_arr = np.array(K_list)
             Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
             if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
@@ -942,15 +942,15 @@ class ThermalRelaxationError(Channel):
          array([[0., 0.],
                 [0., 0.]])]
         """
-        if not np.is_abstract(pe) and not 0.0 <= pe <= 1.0:
+        if not np.is_tracer(pe) and not 0.0 <= pe <= 1.0:
             raise ValueError("pe must be between 0 and 1.")
-        if not np.is_abstract(tg) and tg < 0:
+        if not np.is_tracer(tg) and tg < 0:
             raise ValueError(f"Invalid gate_time tg ({tg} < 0)")
-        if not np.is_abstract(t1) and t1 <= 0:
+        if not np.is_tracer(t1) and t1 <= 0:
             raise ValueError("Invalid T_1 relaxation time parameter: T_1 <= 0.")
-        if not np.is_abstract(t2) and t2 <= 0:
+        if not np.is_tracer(t2) and t2 <= 0:
             raise ValueError("Invalid T_2 relaxation time parameter: T_2 <= 0.")
-        if not np.is_abstract(t2 - 2 * t1) and t2 - 2 * t1 > 0:
+        if not np.is_tracer(t2 - 2 * t1) and t2 - 2 * t1 > 0:
             raise ValueError("Invalid T_2 relaxation time parameter: T_2 greater than 2 * T_1.")
         # T1 relaxation rate
         eT1 = np.exp(-tg / t1)

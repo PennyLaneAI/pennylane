@@ -276,7 +276,7 @@ def _(*args, **kwargs):  # pylint: disable=unused-argument
     # need to convert array values into integers
     # for plxpr, all wires must be integers
     # could be abstract when using tracing evaluation in interpreter
-    wires = tuple(w if math.is_abstract(w) else int(w) for w in args[1])
+    wires = tuple(w if math.is_tracer(w) else int(w) for w in args[1])
     return type.__call__(AllSinglesDoubles, args[0], wires, args[2], args[3], args[4])
 
 

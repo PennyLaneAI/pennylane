@@ -578,7 +578,7 @@ class DiagonalQubitUnitary(Operator2):
         """
         D = math.asarray(D)
 
-        if not math.is_abstract(D) and not math.allclose(D * math.conj(D), math.ones_like(D)):
+        if not math.is_tracer(D) and not math.allclose(D * math.conj(D), math.ones_like(D)):
             raise ValueError("Operator must be unitary.")
 
         # The diagonal is supposed to have one-dimension. If it is broadcasted, it has two
@@ -616,7 +616,7 @@ class DiagonalQubitUnitary(Operator2):
         """
         D = math.asarray(D)
 
-        if not (math.is_abstract(D) or math.allclose(D * math.conj(D), math.ones_like(D))):
+        if not (math.is_tracer(D) or math.allclose(D * math.conj(D), math.ones_like(D))):
             raise ValueError("Operator must be unitary.")
 
         return D

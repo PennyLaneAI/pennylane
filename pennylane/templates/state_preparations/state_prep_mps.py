@@ -170,7 +170,7 @@ def right_canonicalize_mps(mps):
     mps[0] = mps[0].reshape((1, *mps[0].shape))
     mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
 
-    if not qp.math.is_abstract(mps[0]):
+    if not qp.math.is_tracer(mps[0]):
         is_right_canonical = True
         for tensor in mps[1:-1]:
             # Right-canonical definition

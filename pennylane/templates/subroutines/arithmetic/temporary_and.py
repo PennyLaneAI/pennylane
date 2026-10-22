@@ -172,7 +172,7 @@ class TemporaryAND(Operator2):
     def __repr__(self):
         params = [f"wires={self.wires}"]
         ctrl_values = self.control_values
-        if isinstance(ctrl_values, AbstractArray) or math.is_abstract(ctrl_values):
+        if isinstance(ctrl_values, AbstractArray) or math.is_tracer(ctrl_values):
             params.append(f"control_values={ctrl_values}")
         elif not all(ctrl_values):
             params.append(f"control_values={ctrl_values.tolist()}")

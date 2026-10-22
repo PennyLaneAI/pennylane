@@ -142,7 +142,7 @@ class MultiX(Operator2):
         if not is_bitstring_integer_or_bool:
             raise ValueError("The bitstring must be an integer or boolean array.")
 
-        is_bitstring_abstract = isinstance(bitstring, AbstractArray) or math.is_abstract(bitstring)
+        is_bitstring_abstract = isinstance(bitstring, AbstractArray) or math.is_tracer(bitstring)
         if not is_bitstring_abstract:
             is_bitstring_binary = math.all(math.logical_or(bitstring == 0, bitstring == 1))
             # is_bitstring_binary evaluates to True at least when all entries belong to (0, 1, False, True)

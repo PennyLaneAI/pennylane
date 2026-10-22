@@ -23,7 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.ops import Hadamard, MultiControlledX, PauliZ
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 def test_repr():
@@ -209,8 +209,7 @@ def test_expand(wires):
 def test_decomposition_new(wires, work_wires):
     """Tests the decomposition rule implemented with the new system."""
     op = qp.GroverOperator(wires=wires, work_wires=work_wires)
-    for rule in qp.list_decomps(qp.GroverOperator):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 @pytest.mark.parametrize("n_wires", [6, 13])
