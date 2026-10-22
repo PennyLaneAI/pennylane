@@ -119,7 +119,9 @@ external-libraries = [
     "qualtran",
     "openqasm3",
     "antlr4_python3_runtime",
-    "pennylane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master"
+    "pennylane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master",
+    # ibm-cloud-sdk-core (via qiskit-ibm-runtime) caps python-dateutil<3; dateutil 3.0.0 (2026-10-21) breaks resolution
+    "python-dateutil<3",
 ]
 qchem = [
     "openfermionpyscf",
