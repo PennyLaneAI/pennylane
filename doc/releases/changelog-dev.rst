@@ -1564,12 +1564,12 @@ Breaking changes 💔
 
 * The ``return_global_phase`` keyword argument has been removed from the following helper methods in ``qp.math``:
 
-  - :math:`~.math.decomposition.zyz_rotation_angles`
-  - :math:`~.math.decomposition.xyx_rotation_angles`
-  - :math:`~.math.decomposition.xzx_rotation_angles`
-  - :math:`~.math.decomposition.zxz_rotation_angles`
-  - :math:`~.math.convert_to_su2`
-  - :math:`~.math.convert_to_su4`
+  - :func:`~.math.decomposition.zyz_rotation_angles`
+  - :func:`~.math.decomposition.xyx_rotation_angles`
+  - :func:`~.math.decomposition.xzx_rotation_angles`
+  - :func:`~.math.decomposition.zxz_rotation_angles`
+  - :func:`~.math.convert_to_su2`
+  - :func:`~.math.convert_to_su4`
 
   These methods will now always return the additional global phase.
   `(#9496) <https://github.com/PennyLaneAI/pennylane/pull/9496>`__
