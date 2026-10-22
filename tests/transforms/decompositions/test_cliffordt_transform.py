@@ -209,7 +209,23 @@ class TestCliffordCompile:
 
     @pytest.mark.catalyst
     @pytest.mark.jax
-    @pytest.mark.parametrize("circuit", [circuit_7, circuit_8, circuit_10])
+    @pytest.mark.parametrize(
+        "circuit",
+        [
+            pytest.param(
+                circuit_7,
+                marks=pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]"),
+            ),
+            pytest.param(
+                circuit_8,
+                marks=pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]"),
+            ),
+            pytest.param(
+                circuit_10,
+                marks=pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]"),
+            ),
+        ],
+    )
     def test_decomposition_with_rs_qjit(self, circuit):
         """Test decomposition for the Clifford transform with Ross-Selinger method with QJIT enabled."""
 
@@ -224,6 +240,7 @@ class TestCliffordCompile:
         res1, res2 = decomp_cir(), qjit_cir()
         assert qp.math.isclose(res1, res2, atol=1e-2)
 
+    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.jax
     @pytest.mark.parametrize(
@@ -732,6 +749,7 @@ class TestCatalyst:
         results = circuit()
         assert results[0] and not results[1]
 
+    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.jax
     def test_decomposition_with_rs_qjit_dynamic_param(self):
@@ -759,6 +777,7 @@ class TestCatalyst:
 
         assert qp.math.allclose(default_res, qjit_res, atol=1e-2)
 
+    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     def test_decomposition_with_sk_qjit_raise(self):
         """Test decomposition for the Clifford transform with Solovay-Kitaev method

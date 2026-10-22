@@ -72,6 +72,7 @@ def test_finite_shots_adjoint():
         qp.set_shots(qp.QNode(circuit, dev, diff_method="adjoint"), shots=2)()
 
 
+@pytest.mark.xfail(reason="Requires Lightning companion PR [sc-134032]")
 @flaky(max_runs=5)
 def test_finite_shots(seed):
     """Test that shots in LQ and DQ give the same results."""

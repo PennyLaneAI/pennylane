@@ -274,6 +274,7 @@ class TestCatalyst:
 
         assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
 
+    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     def test_qjit_adjoint_operator(self):
         """Test symbolic operator adjoints through compiler dispatch."""
         dev = qp.device("lightning.qubit", wires=2)
