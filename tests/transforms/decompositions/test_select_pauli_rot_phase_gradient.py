@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_valid_decomp_rule
 from pennylane.transforms.decompositions import (
     make_selectpaulirot_to_phase_gradient_decomp,
 )
@@ -69,9 +69,10 @@ def test_decomp_has_a_name():
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("rot_axis", ["X", "Y", "Z"])
 @pytest.mark.parametrize("prec", [2, 3, 5])
 @pytest.mark.parametrize("num_controls", [1, 2])
-def test_valid_decomp(prec, num_controls):
+def test_valid_decomp(prec, num_controls, rot_axis):
     """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as expected
     as a fixed decomposition and yields the correct resources"""
 
@@ -100,8 +101,10 @@ def test_valid_decomp(prec, num_controls):
 
     control_wires = qp.wires.Wires([wire_idx + i for i in range(num_controls)])
     wire_idx += len(control_wires)
-    op = qp.SelectPauliRot(angles, control_wires=control_wires, target_wire=wire_idx)
-    _test_decomposition_rule(op, custom_decomp)
+    op = qp.SelectPauliRot(
+        angles, control_wires=control_wires, target_wire=wire_idx, rot_axis=rot_axis
+    )
+    assert_valid_decomp_rule(op, custom_decomp)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -129,7 +132,8 @@ def test_as_fixed_decomps(prec, num_controls):
         angle_wires, phase_grad_wires, work_wires
     )
 
-    @qp.transforms.decompose(
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(
         gate_set={
             "QROM",
             "SemiAdder",
@@ -204,7 +208,8 @@ def test_integration_multi_wire(rot_axis, seed):
     if rot_axis in ("X", "Y"):
         gs |= {"Hadamard"}
 
-    @qp.decompose(
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(
         gate_set=gs,
         fixed_decomps={qp.SelectPauliRot: custom_decomp},
     )
@@ -282,7 +287,7 @@ def test_capture_compatibility():
     )
 
     op = qp.SelectPauliRot(angles, control_wires=control_wires, target_wire=target_wire)
-    _test_decomposition_rule(op, custom_decomp)
+    assert_valid_decomp_rule(op, custom_decomp)
 
 
 @pytest.mark.parametrize(
@@ -307,7 +312,7 @@ def test_rot_axis_zero_controls(rot_axis, expected_op):
     angles = np.array([1.23])
     op = qp.SelectPauliRot(angles, control_wires=[], target_wire=0, rot_axis=rot_axis)
 
-    _test_decomposition_rule(op, custom_decomp)
+    assert_valid_decomp_rule(op, custom_decomp)
 
     with qp.queuing.AnnotatedQueue() as q:
         custom_decomp(angles, [], 0, rot_axis=rot_axis)

@@ -90,9 +90,7 @@ def custom_decomps():
         qp.X(wires)
         qp.Y(wires)
 
-    with qp.decomposition.local_decomps():
-        qp.add_decomps(NoMatOp, custom_rule_no_mat_op)
-        yield
+    qp.add_decomps(NoMatOp, custom_rule_no_mat_op)
 
 
 # pylint: disable=too-few-public-methods

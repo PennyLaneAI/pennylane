@@ -39,7 +39,7 @@ jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import AbstractMeasurement
-from tests.capture.capture_utils import assert_eqn_matches_op
+from pennylane.testing import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -96,6 +96,51 @@ def test_abstract_measurement():
 
     assert am == am2
     assert hash(am) == hash("AbstractMeasurement")
+
+
+@pytest.mark.parametrize("num_wires", [1, 3])
+@pytest.mark.parametrize("measurement", [qp.probs, qp.sample, qp.counts])
+def test_abstract_wire_measurements(num_wires, measurement):
+    """Abstract registers preserve the wire count and measurement output shapes."""
+    wires = qp.typing.Wire[num_wires]
+    kwargs = {"all_outcomes": True} if measurement is qp.counts else {}
+    jaxpr = jax.make_jaxpr(lambda: measurement(wires=wires, **kwargs))()
+
+    if measurement is qp.sample:
+        expected_shape, expected_dtype = (50, num_wires), int
+    else:
+        expected_shape = (2**num_wires,)
+        expected_dtype = int if measurement is qp.counts else float
+    assert len(jaxpr.out_avals) == (2 if measurement is qp.counts else 1)
+    for aval in jaxpr.out_avals:
+        assert aval.n_wires == num_wires
+        assert aval.abstract_eval(num_device_wires=5, shots=50) == (
+            expected_shape,
+            expected_dtype,
+        )
+
+
+@pytest.mark.parametrize("measurement", [ExpectationMP, VarianceMP, SampleMP])
+def test_abstract_wires_with_eigvals(measurement):
+    """Eigenvalues remain a separate operand when the wires are abstract."""
+
+    def circuit(eigvals):
+        return measurement(wires=qp.typing.Wire[2], eigvals=eigvals)
+
+    jaxpr = jax.make_jaxpr(circuit)(np.array([-1.0, -0.5, 0.5, 1.0]))
+    aval = jaxpr.out_avals[0]
+    assert aval.n_wires == 2
+    assert aval.has_eigvals
+    assert aval.abstract_eval(num_device_wires=5, shots=50) == (
+        (50,) if measurement is SampleMP else (),
+        float,
+    )
+
+
+def test_unknown_abstract_measurement_wires():
+    """An unknown register length cannot define a wire-based measurement."""
+    with pytest.raises(TypeError, match="unknown number of wires"):
+        jax.make_jaxpr(lambda: qp.probs(wires=qp.typing.Wire[-1]))()
 
 
 class TestCounts:

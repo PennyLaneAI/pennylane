@@ -15,13 +15,16 @@
 Unit tests for the PartialUnaryStatePreparation template.
 """
 
+from collections import Counter
+
+import hint_helpers
+import jax
 import numpy as np
 import pytest
 
 import pennylane as qp
 from pennylane.decomposition import list_decomps
 from pennylane.math import binary_matrix_rank, ceil_log2
-from pennylane.ops.functions import assert_valid
 from pennylane.templates.state_preparations.partial_unary import (
     PartialUnaryStatePreparation,
     PUIsometryFinder,
@@ -30,6 +33,7 @@ from pennylane.templates.state_preparations.partial_unary import (
     _partial_unary_state_prep_core,
     _partial_unary_state_prep_resources,
 )
+from pennylane.testing import assert_valid, assert_valid_decomp_rule
 from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires
 
@@ -490,6 +494,23 @@ class TestPartialUnaryStatePreparation:
         target[list(indices)] = coefficients
         assert np.allclose(circuit()[::4], target)
 
+    @pytest.mark.parametrize(
+        "coefficients, state_type",
+        [
+            (np.array([1, -1, 2, -2, 3]) / np.sqrt(19), Float),
+            (np.array([1, 1, 2, 2, 3]), Float),
+            (np.array([1, 1j, -2, -2j, 3]) / np.sqrt(19), Complex),
+        ],
+    )
+    def test_multiplexer_dtype_follows_coefficients(self, coefficients, state_type):
+        """Test that the MultiplexerStatePreparation in the decomposition is real-valued
+        for real-valued coefficients and complex-valued for complex-valued coefficients."""
+        op = PartialUnaryStatePreparation(coefficients, range(5), (0, 3, 7, 17, 25), [5, 6])
+        [rule] = list_decomps(PartialUnaryStatePreparation)
+        resources = rule.compute_resources(**op.arguments).gate_counts
+        assert qp.MultiplexerStatePreparation(state_type[8], wires=Wire[3]) in resources
+        assert_valid_decomp_rule(op, rule)
+
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("provide_work_wires", [False, True])
@@ -524,6 +545,44 @@ class TestPartialUnaryStatePreparation:
         assert len(op.wires) == 9
         assert len(op.coefficients) == 15
         assert len(op.indices) == 15
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("num_wires, num_entries", [(5, 6), (6, 11), (8, 20), (10, 137)])
+    def test_branch_prob_hints(self, num_wires, num_entries, seed):
+        """Test that the conditionals in the isometry loop carry ``branch-prob`` hints that
+        reproduce the number of operations of each type, and of partial unary iterators of each
+        batch size."""
+
+        coefficients, indices = self.make_random_data(num_wires, num_entries, seed)
+        num_work_wires = max(ceil_log2(num_entries) - 1, 1)
+        work_wires = list(range(num_wires, num_wires + num_work_wires))
+        plxpr = jax.make_jaxpr(
+            lambda: _partial_unary_state_prep_core(
+                coefficients, range(num_wires), indices, work_wires
+            )
+        )()
+        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+
+        qroms = [op for op in ops if isinstance(op, qp.QROM)]
+        type_counts = np.array(
+            [
+                len(qroms),
+                sum(isinstance(getattr(op, "base", None), qp.MultiX) for op in ops),
+                sum(isinstance(op, qp.SWAP) for op in ops),
+                sum(isinstance(op, qp.MultiControlledX) for op in ops),
+            ]
+        )
+        batch_counts = Counter(len(op.target_wires) for op in qroms)
+        # Branches are registered in ascending batch-size order; keep that pairing so a swap
+        # of probabilities between sizes fails the test.
+        expected_batch_probs = tuple(batch_counts[b] / len(qroms) for b in sorted(batch_counts))
+
+        hints = hint_helpers.cond_hints(plxpr.jaxpr)
+        assert len(hints) == 2
+        assert hints[0] == pytest.approx((*(type_counts / np.sum(type_counts)), 0.0))
+        # Last entry is the empty otherwise branch
+        assert hints[1][:-1] == pytest.approx(expected_batch_probs)
+        assert hints[1][-1] == 0.0
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize(

@@ -487,20 +487,29 @@ def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
 
 # pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(ctrl_transform_prim)
-def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
+def handle_ctrl_transform(
+    self,
+    *invals,
+    n_control,
+    jaxpr,
+    work_wires,
+    n_consts,
+    work_wire_type="borrowed",
+):
     """Interpret a ctrl transform primitive."""
+    controls_start = len(invals) - 2 * n_control
     consts = invals[:n_consts]
-    args = invals[n_consts:-n_control]
+    args = invals[n_consts:controls_start]
     jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
     return ctrl_transform_prim.bind(
         *jaxpr.consts,
         *args,
-        *invals[-n_control:],
+        *invals[controls_start:],
         n_control=n_control,
         jaxpr=jaxpr.jaxpr,
-        control_values=control_values,
         work_wires=work_wires,
+        work_wire_type=work_wire_type,
         n_consts=len(jaxpr.consts),
     )
 
@@ -546,7 +555,7 @@ def handle_for_loop(
 
 
 @PlxprInterpreter.register_primitive(cond_prim)
-def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
+def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice, estimated_probabilities):
     """Handle a cond primitive."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
     args_slice = slice(*args_slice)
@@ -575,6 +584,7 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
         jaxpr_branches=new_jaxprs,
         consts_slices=new_consts_slices,
         args_slice=new_args_slice,
+        estimated_probabilities=estimated_probabilities,
     )
 
 
@@ -765,8 +775,11 @@ def flatten_while_loop(
 FlattenedHigherOrderPrimitives[while_loop_prim] = flatten_while_loop
 
 
+# pylint: disable=unused-argument
 @FlattenedInterpreter.register_primitive(cond_prim)
-def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
+def flattened_cond(
+    self, *invals, jaxpr_branches, consts_slices, args_slice, estimated_probabilities
+):
     """Handle the cond primitive by a flattened python strategy."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
     args_slice = slice(*args_slice)

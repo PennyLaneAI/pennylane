@@ -345,7 +345,7 @@ class TestSingleExcitationDecompositions:
             rule(phi, wires=qp.wires.Wires((w0, w1)))
 
         jaxpr = jax.make_jaxpr(circuit)(phi, *wires)
-        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
+        ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
 
         # the rule queues a ChangeOpBasis with an explicit inverse basis change
         expected = [
@@ -389,7 +389,8 @@ class TestSingleExcitationDecompositions:
         tape = qp.tape.QuantumScript([op], [])
         expected_matrix = qp.matrix(tape, wire_order=[0, 1, control])
 
-        [decomp], _ = qp.transforms.decompose(
+        # pylint: disable-next=protected-access
+        [decomp], _ = qp.transforms._tape_decompose(
             tape, gate_set={qp.CNOT, qp.RY, qp.RZ, qp.Hadamard, qp.GlobalPhase, qp.PauliX}
         )
         gates = decomp.operations
@@ -433,7 +434,7 @@ class TestSingleExcitationDecompositions:
             rule(phi, wires=qp.wires.Wires((w0, w1)))
 
         jaxpr = jax.make_jaxpr(circuit)(phi, *wires)
-        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
+        ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
 
         expected = [
             qp.PauliRot(phi / 2, "YX", wires=wires),
@@ -487,7 +488,7 @@ class TestSingleExcitationDecompositions:
             rule(base=base)
 
         jaxpr = jax.make_jaxpr(circuit)(phi, *wires)
-        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
+        ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
 
         expected = [qp.SingleExcitation(-phi, wires=wires)]
         for actual, exp in zip(ops, expected, strict=True):
@@ -535,7 +536,7 @@ class TestSingleExcitationDecompositions:
             rule(base=base, z=z)
 
         jaxpr = jax.make_jaxpr(circuit)(phi, *wires)
-        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
+        ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
 
         expected = [qp.SingleExcitation(phi * z, wires=wires)]
         for actual, exp in zip(ops, expected, strict=True):

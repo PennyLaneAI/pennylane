@@ -22,8 +22,8 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition import gate_sets
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.transforms import decompose
+from pennylane.testing import assert_decomposable
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 # pylint: disable=expression-not-assigned
 
@@ -38,7 +38,7 @@ def test_flatten_unflatten_standard_checks(op_type):
     V = (qp.RZ(0.1, wires=0), qp.RZ(0.2, wires=1))
 
     op = op_type(V, U)
-    qp.ops.functions.assert_valid(op, skip_wire_mapping=True, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_wire_mapping=True, skip_differentiation=True)
 
     data, metadata = op._flatten()
     assert data == (V, U)
@@ -444,8 +444,7 @@ class TestHilbertSchmidt:
     @pytest.mark.parametrize(("U", "V"), DECOMP_PARAMS)
     def test_decomposition_new(self, U, V):
         op = qp.HilbertSchmidt(V, U)
-        for rule in qp.list_decomps(qp.HilbertSchmidt):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 class TestLocalHilbertSchmidt:
@@ -611,8 +610,7 @@ class TestLocalHilbertSchmidt:
     @pytest.mark.parametrize(("U", "V"), DECOMP_PARAMS)
     def test_local_decomposition_new(self, U, V):
         op = qp.LocalHilbertSchmidt(V, U)
-        for rule in qp.list_decomps(qp.LocalHilbertSchmidt):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_qnode_integration(self):
         """Test that the local hilbert schmidt template can be used inside a qnode."""

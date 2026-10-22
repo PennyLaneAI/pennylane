@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_valid_decomp_rule
 from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
 
 
@@ -63,7 +63,7 @@ def test_valid_decomp(p):
 
     custom_decomp = make_crz_to_phase_gradient_decomp(**kwargs)
     op = qp.CRZ(phi, [0, 1])
-    _test_decomposition_rule(op, custom_decomp, skip_decomp_matrix_check=True)
+    assert_valid_decomp_rule(op, custom_decomp, check_matrix=False)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -105,7 +105,8 @@ def test_as_fixed_decomps(phi, p):
     custom_decomp = make_crz_to_phase_gradient_decomp(**kwargs)
     gate_set = {"SemiAdder", "CNOT", "PauliX"}
 
-    @qp.transforms.decompose(gate_set=gate_set, fixed_decomps={qp.CRZ: custom_decomp})
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(gate_set=gate_set, fixed_decomps={qp.CRZ: custom_decomp})
     @qp.qnode(qp.device("null.qubit"))
     def circuit():
         qp.CRZ(phi, [0, 1])
@@ -135,7 +136,8 @@ def test_as_alt_decomps(phi, p):
     custom_decomp = make_crz_to_phase_gradient_decomp(**kwargs)
     gate_set = {"SemiAdder", "CNOT", "PauliX"}
 
-    @qp.transforms.decompose(gate_set=gate_set, alt_decomps={qp.CRZ: [custom_decomp]})
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(gate_set=gate_set, alt_decomps={qp.CRZ: [custom_decomp]})
     @qp.qnode(qp.device("null.qubit"))
     def circuit():
         qp.CRZ(phi, [0, 1])
@@ -166,7 +168,8 @@ def test_integration_multi_wire(seed):
 
     custom_decomp = make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
 
-    @qp.transforms.decompose(
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(
         gate_set={
             "StatePrep",
             "PhaseGradientStatePrep",
