@@ -23,7 +23,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.templates.state_preparations.superposition import order_states
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 PROBS_BASES = [
     (
@@ -170,8 +170,7 @@ class TestSuperposition:
         op = qp.Superposition(
             np.sqrt(probs), bases, wires=range(len(bases[0])), work_wire=len(bases[0])
         )
-        for rule in qp.list_decomps(qp.Superposition):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize(
         ("coeffs", "bases", "msg_match"),

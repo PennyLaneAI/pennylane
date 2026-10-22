@@ -17,10 +17,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition import list_decomps
 from pennylane.templates.subroutines.alias_sampling import _build_alias_tables
-from pennylane.testing import assert_valid
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable, assert_valid
 from pennylane.typing import AbstractWires
 
 
@@ -61,8 +59,7 @@ class TestUniformPrep:
         target_wires, work_wires, _ = _wire_layout(n_states)
         op = qp.UniformPrep(n_states, target_wires, work_wires)
         assert_valid(op, skip_differentiation=True)
-        for rule in list_decomps(qp.UniformPrep):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize("n_states", [3, 5, 10, 11, 20, 24])
     def test_uniform_distribution(self, n_states):
@@ -104,8 +101,7 @@ class TestUniformPrep:
         assert tape.operations[0].name == "UniformPrep"
 
         op = qp.UniformPrep(1, [], work_wires=[])
-        for rule in list_decomps(qp.UniformPrep):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_wrong_target_wire_count_raises(self):
         """Test that a target register of the wrong size raises a clear error."""
@@ -250,16 +246,14 @@ class TestAliasSampling:
         w, wires, temp, work, _ = _alias_registers(4, 3)
         op = qp.AliasSampling(_as_probs(w), 3, wires, temp, work)
         assert_valid(op, skip_differentiation=True)
-        for rule in list_decomps(qp.AliasSampling):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_adjoint_decomposition(self):
         """Test that the adjoint decomposition is capture compatible."""
         w, wires, temp, work, _ = _alias_registers(4, 3)
         op = qp.adjoint(qp.AliasSampling(_as_probs(w), 3, wires, temp, work))
-        for rule in list_decomps("Adjoint(AliasSampling)"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize("L", [2, 3, 4, 5, 6])
     def test_marginal_matches_reconstruction(self, L):
@@ -370,5 +364,4 @@ class TestAliasSampling:
     def test_single_coefficient_decomposition(self):
         """Test that the zero-target-wire decomposition is valid."""
         op = qp.AliasSampling((1.0,), 1, [], [0, 1, 2], [])
-        for rule in list_decomps(qp.AliasSampling):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)

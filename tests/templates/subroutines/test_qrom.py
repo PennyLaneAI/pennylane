@@ -44,10 +44,8 @@ from pennylane.templates.subroutines.qrom import (
     _select_swap,
     _select_swap_condition,
 )
-from pennylane.testing.decompositions import (
-    _assert_counts_match,
-    _test_decomposition_rule,
-)
+from pennylane.testing import assert_decomposable
+from pennylane.testing.decompositions import _assert_counts_match
 from pennylane.typing import Bool, Wire
 
 CTRL_WORK_WIRE_TYPE_XFAIL = pytest.mark.xfail(
@@ -361,9 +359,8 @@ class TestQROM:
             (5, [0, 1, 2, 3], [4], [], False),
         ],  # pylint: disable=too-many-arguments
     )
-    @pytest.mark.parametrize("rule", qp.list_decomps(qp.QROM))
     def test_decomposition_new(
-        self, num_bitstrings, control_wires, target_wires, work_wires, clean, rule, seed
+        self, num_bitstrings, control_wires, target_wires, work_wires, clean, seed
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
         rng = np.random.default_rng(seed)
@@ -375,7 +372,7 @@ class TestQROM:
             work_wires=work_wires,
             clean=clean,
         )
-        _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_zero_control_wires(self):
         """Test that the edge case of zero control wires works"""
