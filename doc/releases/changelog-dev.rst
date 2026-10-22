@@ -2,7 +2,7 @@ Release 0.46.0 (development release)
 ====================================
 
 New features since last release
--------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * :func:`~.transforms.gridsynth` has a new ``method`` keyword argument with two randomized
   synthesis methods from `arXiv:2203.10064 <https://arxiv.org/abs/2203.10064>`__, which reduce the
@@ -820,7 +820,7 @@ New features since last release
       True
 
 Improvements 🛠
---------------
+~~~~~~~~~~~~~~
 
 * Terminal measurements now accept fixed-size ``qp.typing.Wire[n]`` registers during
   program capture.
@@ -1205,7 +1205,7 @@ Improvements 🛠
   `(#10342) <https://github.com/PennyLaneAI/pennylane/pull/10342>`__
 
 Labs: a place for unified and rapid prototyping of research software 🧪
------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * The Phox module has been renamed to ``tcdq`` (Train Classical, Deploy Quantum) and now supports qudit systems of arbitrary dimension.
   `(#9745) <https://github.com/PennyLaneAI/pennylane/pull/9745>`__
@@ -1335,7 +1335,7 @@ Labs: a place for unified and rapid prototyping of research software 🧪
   `(#10337) <https://github.com/PennyLaneAI/pennylane/pull/10337>`__
 
 Breaking changes 💔
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 * ``qp.ops.functions.assert_valid`` has been removed. Use :func:`~.testing.assert_valid` instead.
   The private ``_test_decomposition_rule`` has been removed; use :func:`~.testing.assert_valid_decomp_rule`.
@@ -1589,7 +1589,7 @@ Breaking changes 💔
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
 Deprecations 👋
----------------
+~~~~~~~~~~~~~~~
 
 * The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
   `(#9487) <https://github.com/PennyLaneAI/pennylane/pull/9487>`__
@@ -1616,7 +1616,7 @@ Deprecations 👋
   `(#9925) <https://github.com/PennyLaneAI/pennylane/pull/9925>`__
 
 Internal changes ⚙️
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 * Moved ``pop_op_eqns`` into ``pennylane.capture``.
   `(#10345) <https://github.com/PennyLaneAI/pennylane/pull/10345>`__
@@ -2049,7 +2049,7 @@ Internal changes ⚙️
   `(#10285) <https://github.com/PennyLaneAI/pennylane/pull/10285>`__
 
 Documentation 📝
-----------------
+~~~~~~~~~~~~~~~~
 
 * The dependency versions in the developer installation guide now match ``pyproject.toml``, and a rendering issue in the list of optional dependencies was fixed.
   `(#10232) <https://github.com/PennyLaneAI/pennylane/pull/10232>`__
@@ -2096,7 +2096,7 @@ Documentation 📝
   `(#10284) <https://github.com/PennyLaneAI/pennylane/pull/10284>`__
 
 Bug fixes 🐛
-------------
+~~~~~~~~~~~~
 
 * :func:`~.ctrl` now supports mixed static and dynamic control values under
   ``qp.qjit(capture=True)``, for both operator instances and callables.
@@ -2355,7 +2355,7 @@ Bug fixes 🐛
   `(#10351) <https://github.com/PennyLaneAI/pennylane/pull/10351>`__
 
 Contributors ✍️
----------------
+~~~~~~~~~~~~~~~
 
 This release contains contributions from (in alphabetical order):
 
