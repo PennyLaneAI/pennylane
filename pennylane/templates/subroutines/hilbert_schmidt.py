@@ -29,7 +29,7 @@ from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
-from pennylane.math import is_abstract
+from pennylane.math import is_tracer
 from pennylane.ops import CNOT, Hadamard, QubitUnitary
 from pennylane.typing import Complex, TensorLike, Wire
 from pennylane.wires import Wires
@@ -115,8 +115,8 @@ class HilbertSchmidt(Operation):
     @classmethod
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
         # pylint: disable=arguments-differ
-        U = (U,) if isinstance(U, Operator) or is_abstract(U) else U
-        V = (V,) if isinstance(V, Operator) or is_abstract(V) else V
+        U = (U,) if isinstance(U, Operator) or is_tracer(U) else U
+        V = (V,) if isinstance(V, Operator) or is_tracer(V) else V
 
         def _get_tracer(op):
             if isinstance(op, Operator2):
