@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 import numpy as np
 from jax.core import ShapedArray
-from scipy.sparse import spmatrix
+from scipy.sparse import issparse, spmatrix
 
 import pennylane as qp
 from pennylane import math
@@ -2229,7 +2229,7 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
                     "specifiers found in pennylane.typing."
                 )
             # Ensure it behaves like a clean array/scalar leaf before abstractifying
-            if math.is_tracer(val):
+            if math.is_tracer(val) or issparse(val):
                 return abstractify(val)
             return abstractify(math.asarray(val))
 
