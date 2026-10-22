@@ -2067,7 +2067,7 @@
 
 * Fixed a bug where :class:`~.BasisRotation` for real-valued matrices :math:`u` implemented the
   rotation for :math:`S u S` instead of :math:`u`, with :math:`S=\operatorname{diag}((-1)^p)`,
-  and handled matrices with determinant :math:`-1` inconsistently. The operator now implements
+  and handled matrices with determinant :math:`-1` inconsistently. It now implements
   the same operator for real-valued (orthogonal) matrices as for complex-valued ones, matching
   its documentation. Circuits using ``BasisRotation`` with real-valued matrices change due to this.
   [(#10331)](https://github.com/PennyLaneAI/pennylane/pull/10331)

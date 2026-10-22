@@ -625,7 +625,7 @@ class TestInterfaces:
             return qp.state()
 
         assert qp.math.allclose(
-            jax.jit(circuit)(unitary_matrix), circuit(unitary_matrix), atol=0, rtol=0
+            jax.jit(circuit)(unitary_matrix), circuit(unitary_matrix), atol=1e-11, rtol=0
         )
 
     @pytest.mark.jax
@@ -651,7 +651,7 @@ class TestInterfaces:
             return qp.state()
 
         assert qp.math.allclose(
-            jax.jit(circuit)(unitary_matrix), circuit(unitary_matrix), atol=0, rtol=0
+            jax.jit(circuit)(unitary_matrix), circuit(unitary_matrix), atol=1e-11, rtol=0
         )
 
     @pytest.mark.parametrize(

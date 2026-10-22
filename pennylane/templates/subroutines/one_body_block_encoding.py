@@ -130,7 +130,6 @@ def _block_encoding_data(op_matrix):
 
     mu, vmat = np.linalg.eigh(mat)  # o = vmat diag(mu) vmat.T
 
-    # Ensure positive determinant
     if np.linalg.det(vmat) < 0:
         vmat[:, 0] *= -1
 
