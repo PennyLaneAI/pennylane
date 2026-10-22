@@ -1,0 +1,1 @@
+The changelog has been moved to changelog-dev.rst

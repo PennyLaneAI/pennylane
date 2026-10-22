@@ -231,7 +231,7 @@ New features since last release
   :func:`~pennylane.backline.css_bp_decoder` builds a CSS belief-propagation decoder from X- and Z-type parity-check
   matrices. In both cases, syndromes and corrections are packed into ``u64`` bitmasks.
 
-  .. code-block:: python
+  .. code-block:: python3
 
       import numpy as np
       import pennylane as qp
@@ -1403,7 +1403,7 @@ Breaking changes 💔
   ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
   To use a unitary matrix, wrap it in a :class:`~.QubitUnitary`:
 
-  .. code-block:: python
+  .. code-block:: python3
 
       # Before (no longer supported):
       # qp.QuantumPhaseEstimation(matrix, target_wires=[0], estimation_wires=[1, 2])
