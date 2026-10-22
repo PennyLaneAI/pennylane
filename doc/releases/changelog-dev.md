@@ -1361,7 +1361,7 @@
   always symbolic. Remove ``lazy=True``; replace ``lazy=False`` with a direct known
   inverse (for example, ``qp.RX(-theta, wires=0)``) or explicitly simplify with
   ``qp.simplify(qp.adjoint(op))``.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10371)](https://github.com/PennyLaneAI/pennylane/pull/10371)
 
 * The `qp.Backline.backline` alias of `qp.Backline.placement` has been removed. Use `placement`.
   [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
