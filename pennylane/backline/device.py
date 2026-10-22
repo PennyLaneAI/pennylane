@@ -50,6 +50,16 @@ class Backline(Device):
         qec_code (str, None): The quantum error-correcting code to implicitly encode the circuit.
             Currently the only supported option is ``"steane"``. Defaults to ``None``, leaving the
             circuit unencoded.
+        frame (str): The frame layout messages travel in. One of:
+
+            * ``"auto"`` (the default): the compiler picks ``"bl16"`` when every message fits in
+              8 B, else ``"blv"``.
+            * ``"bl16"``: a fixed 16 B frame carrying up to 8 B, for the lowest latency.
+            * ``"blv"``: frames sized for the placement's largest message.
+            * ``"cuqr"``: cudaq-realtime's RPC format, for talking to a cudaq-realtime (NVQLink)
+              peer over RDMA.
+
+            The compiler checks that the selected transport backends carry the layout.
         shots (int, None): Number of shots. Defaults to ``None`` (analytic); set shots on the
             QNode with :func:`~pennylane.set_shots` instead.
 
@@ -104,6 +114,7 @@ class Backline(Device):
         coprocessors: Sequence[Coprocessor] = (),
         transport: str | Transport,
         qec_code: str | None = None,
+        frame: str = "auto",
         shots: int | None = None,
     ):
         self._placement = Placement(
@@ -111,6 +122,7 @@ class Backline(Device):
             coprocessors=coprocessors,
             transport=transport,
             qec_code=qec_code,
+            frame=frame,
         )
         self._device = cast(Device, controller.device)
         super().__init__(wires=self._device.wires, shots=shots)

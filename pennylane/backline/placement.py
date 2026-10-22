@@ -493,6 +493,18 @@ class Placement:
     here lets the compiler encode the circuit, and no separate lowering step is needed. Defaults to
     ``None``, which leaves the circuit unencoded."""
 
+    frame: str = "auto"
+    """The frame layout messages travel in. One of:
+
+    * ``"auto"`` (the default): the compiler picks ``"bl16"`` when every message fits in 8 B,
+      else ``"blv"``.
+    * ``"bl16"``: a fixed 16 B frame carrying up to 8 B, for the lowest latency.
+    * ``"blv"``: frames sized for the placement's largest message.
+    * ``"cuqr"``: cudaq-realtime's RPC format, for talking to a cudaq-realtime (NVQLink) peer over
+      RDMA.
+
+    The compiler checks that the selected transport backends carry the layout."""
+
     in_bytes: int = field(init=False, repr=False)
     """The size in bytes of each message the controller sends to every coprocessor: the
     controller's :attr:`~.Controller.in_bytes` when set, else the size its coprocessors' functions

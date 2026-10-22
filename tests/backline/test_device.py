@@ -135,6 +135,12 @@ class TestPublicUsagePattern:
         assert not hasattr(qp.backline, "HeterogeneousDevice")
 
 
+def test_backline_forwards_the_frame_layout_to_its_placement():
+    """``frame=`` reaches the placement the compiler reads."""
+    dev = qp.Backline(controller=qp.Controller(), transport="none", frame="cuqr")
+    assert dev.placement.frame == "cuqr"
+
+
 class TestAccessors:
     """Tests for the controller / coprocessors accessors."""
 
