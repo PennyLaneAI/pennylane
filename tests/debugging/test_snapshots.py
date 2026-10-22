@@ -526,7 +526,6 @@ class TestSnapshotUnsupportedQNode:
     # should be revised and fixed soon
     # current failure rate: ~7%
     # FIXME: [sc-92966]
-    @pytest.mark.xfail(reason="Requires Lightning companion PR [sc-134032]")
     def test_lightning_qubit_finite_shots(self, seed):
         dev = qp.device("lightning.qubit", wires=2, seed=seed)
 

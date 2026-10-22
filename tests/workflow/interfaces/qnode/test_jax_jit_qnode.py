@@ -1039,15 +1039,8 @@ class TestShotsIntegration:
 class TestQubitIntegration:
     """Tests that ensure various qubit circuits integrate correctly"""
 
-    def test_sampling(
-        self, dev_name, diff_method, grad_on_execution, device_vjp, interface, seed, request
-    ):
+    def test_sampling(self, dev_name, diff_method, grad_on_execution, device_vjp, interface, seed):
         """Test sampling works as expected"""
-
-        if dev_name == "lightning.qubit" and diff_method == "parameter-shift":
-            request.applymarker(
-                pytest.mark.xfail(reason="Requires Lightning companion PR [sc-134032]")
-            )
 
         if grad_on_execution:
             pytest.skip("Sampling not possible with forward grad_on_execution differentiation.")
@@ -1077,19 +1070,8 @@ class TestQubitIntegration:
         assert isinstance(res[1], jax.Array)
         assert res[1].shape == (10,)
 
-    def test_counts(
-        self, dev_name, diff_method, grad_on_execution, device_vjp, interface, seed, request
-    ):
+    def test_counts(self, dev_name, diff_method, grad_on_execution, device_vjp, interface, seed):
         """Test counts works as expected"""
-
-        if (
-            dev_name == "lightning.qubit"
-            and diff_method == "parameter-shift"
-            and interface == "auto"
-        ):
-            request.applymarker(
-                pytest.mark.xfail(reason="Requires Lightning companion PR [sc-134032]")
-            )
 
         if grad_on_execution:
             pytest.skip("Sampling not possible with forward grad_on_execution differentiation.")
@@ -1800,16 +1782,11 @@ class TestTapeExpansion:
         interface,
         max_diff,
         seed,
-        request,
     ):
         """Test that the Hamiltonian is correctly measured if there
         are non-commuting groups and the number of shots is finite
         and the first and second order gradients are correctly evaluated"""
 
-        if dev_name == "lightning.qubit" and diff_method == "parameter-shift":
-            request.applymarker(
-                pytest.mark.xfail(reason="Requires Lightning companion PR [sc-134032]")
-            )
         gradient_kwargs = {}
         tol = 0.3
         if dev_name == "param_shift.qubit":
@@ -2669,14 +2646,8 @@ class TestReturn:
         shots,
         interface,
         seed,
-        request,
     ):
         """The jacobian of multiple measurements with multiple params return a tuple of arrays."""
-
-        if dev_name == "lightning.qubit" and diff_method == "parameter-shift" and shots is not None:
-            request.applymarker(
-                pytest.mark.xfail(reason="Requires Lightning companion PR [sc-134032]")
-            )
 
         if dev_name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention.")
@@ -2739,14 +2710,8 @@ class TestReturn:
         shots,
         interface,
         seed,
-        request,
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
-
-        if dev_name == "lightning.qubit" and diff_method == "parameter-shift" and shots is not None:
-            request.applymarker(
-                pytest.mark.xfail(reason="Requires Lightning companion PR [sc-134032]")
-            )
 
         if dev_name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention.")
