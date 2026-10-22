@@ -59,6 +59,7 @@ the small backward program has to be compiled.
 """
 
 import itertools
+import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from functools import partial
@@ -118,9 +119,7 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
             example, with ``dims=3`` and ``n_qudits=2``,
             ``{0: [{0: 1}], 1: [{1: 1}], 2: [{0: 1, 1: 1}]}`` defines three
             gates: :math:`Z^1` on qudit 0, :math:`Z^1` on qudit 1, and
-            :math:`Z^1 \otimes Z^1` on both. Only the active qudits of each
-            gate are stored, so the cost of describing a :math:`k`-local
-            circuit scales with :math:`k` rather than with ``n_qudits``.
+            :math:`Z^1 \otimes Z^1` on both.
         n_samples (int): Number of random dit-strings drawn for the
             estimation.
         key (ArrayLike): JAX PRNG key for random dit-string generation.
@@ -142,13 +141,14 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
             :math:`D'(\mathbf{\xi})` is given by a ``Callable`` with signature ``(params: ArrayLike, z: ArrayLike) -> scalar``
             where ``z`` is a dit-string of shape ``(n_qudits, )`` with entries in :math:`\{0, \dots, d-1\}` and
             ``params`` has shape matching :math:`\mathbf{\xi}`.
-        max_memory (float): Upper bound, in gigabytes (1 GB = 1024**3 bytes), on the temporary
-            memory used by the phase-difference computation. If the precomputed observable- and
-            sample-side factor matrices fit within this budget they are built once per PRNG key
-            and observable batch and reused by every evaluation and gradient. Otherwise the gates
-            are processed in blocks whose size is derived from this budget together with the gate
-            weight, the number of samples and the number of observables, so peak memory does not
-            grow with the number of gates. Defaults to ``1.0``.
+        max_memory (float | None): Upper bound, in gigabytes (1 GB = 1024**3 bytes), on the
+            temporary memory used by the phase-difference computation. If ``None`` (default),
+            memory is unbounded: the observable- and sample-side factor matrices are built once
+            per PRNG key and observable batch and reused by every evaluation and gradient. If a
+            budget is given and the precomputed matrices fit within it, the same path is used;
+            otherwise the gates are processed in blocks whose size is derived from the budget
+            together with the gate weight, the number of samples and the number of observables,
+            so peak memory does not grow with the number of gates.
 
     **Example**
 
@@ -186,8 +186,8 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     init_state_amps: ArrayLike | None = None
     #: Learnable phase layer
     phase_fn: Callable | None = None
-    #: Memory budget in GB for the blocked phase-difference computation.
-    max_memory: float = 1.0
+    #: Memory budget in GB for the blocked phase-difference computation, or ``None`` for unbounded.
+    max_memory: float | None = None
 
 
 def _dims_to_numpy(dims: int | Sequence[int], n_qudits: int) -> np.ndarray:
@@ -216,9 +216,6 @@ def _dims_to_numpy(dims: int | Sequence[int], n_qudits: int) -> np.ndarray:
 class SparseGateGroup(NamedTuple):
     """Gates of equal weight :math:`\\omega` stored in sparse ``(support, power)`` form.
 
-    Only the active qudits of each gate are kept, so the storage cost is
-    ``O(n_gates * omega)`` instead of ``O(n_gates * n_qudits)``.
-
     Args:
         omega (int): Number of active qudits shared by every gate in the group.
         supports (np.ndarray): Active qudit indices, shape ``(n_gates, omega)``,
@@ -244,10 +241,6 @@ def _normalize_sparse_gate(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Validate one sparse gate and return its sorted ``(support, powers)`` arrays.
 
-    Qudit indices may be negative (Python-style, counted from the end). Powers
-    are reduced modulo the local dimension of their qudit and zero powers are
-    dropped, so the returned support contains only genuinely active qudits.
-
     Raises:
         TypeError: If ``gate`` is not a ``dict`` (e.g. a dense length-``n_qudits`` vector).
         IndexError: If a qudit index is outside ``[-n_qudits, n_qudits)``.
@@ -255,16 +248,15 @@ def _normalize_sparse_gate(
     if not isinstance(gate, dict):
         raise TypeError(
             "Each qudit gate must be a dict mapping qudit index to Z power, e.g. {0: 1, 2: 2}; "
-            f"got {type(gate).__name__}. Dense length-n_qudits generator vectors are not accepted."
         )
 
     support: list[int] = []
     powers: list[int] = []
     for qudit, power in gate.items():
         q = int(qudit)
-        if q < -n_qudits or q >= n_qudits:
+        if q >= n_qudits or q < 0:
             raise IndexError(f"Qudit index {q} out of range for a {n_qudits}-qudit circuit.")
-        q = q % n_qudits
+        # q = q % n_qudits
         p = int(power) % int(dims[q])
         if p == 0:
             continue
@@ -279,17 +271,6 @@ def _parse_qudit_gate_dict(
     circuit_def: dict[int, list[dict[int, int]]], n_qudits: int, dims: ArrayLike
 ) -> list[SparseGateGroup]:
     """Convert a sparse qudit gate dictionary into weight-grouped support/power arrays.
-
-    This is the qudit analogue of
-    :func:`~pennylane.labs.tcdq.expval_functions._parse_generator_dict`. It never
-    materialises a dense ``(n_gates, n_qudits)`` generator matrix: each gate is
-    stored through its active qudits only, and gates are bucketed by weight so
-    that the downstream :math:`2^\\omega` angle-addition expansion can be
-    vectorised within each bucket.
-
-    Gates whose support is empty after reducing powers modulo ``dims`` act as
-    the identity and are dropped. Their parameter index is still a valid slot
-    in ``gates_params``; it simply receives zero gradient.
 
     Args:
         circuit_def (dict[int, list[dict[int, int]]]): Maps parameter indices to lists
@@ -308,6 +289,15 @@ def _parse_qudit_gate_dict(
     buckets: dict[int, tuple[list[np.ndarray], list[np.ndarray], list[int]]] = {}
 
     for param_idx in sorted(circuit_def.keys()):
+
+        if not isinstance(param_idx, int):
+            raise TypeError(f"Qudit indices must be type int, got type {type(param_idx)} instead.")
+
+        if param_idx < 0:
+            raise ValueError(
+                f"Qudit indices must be non-negative integers, got index {param_idx} instead."
+            )
+
         for gate in circuit_def[param_idx]:
             support, powers = _normalize_sparse_gate(gate, n_qudits, dims)
             omega = support.size
@@ -327,37 +317,6 @@ def _parse_qudit_gate_dict(
         )
         for omega, (sup_list, pow_list, pidx_list) in sorted(buckets.items())
     ]
-
-
-def _gates_to_dense_generators(
-    circuit_def: dict[int, list[dict[int, int]]], n_qudits: int, dims: ArrayLike
-) -> tuple[np.ndarray, np.ndarray]:
-    """Expand sparse gates into a dense generator matrix (for brute-force references).
-
-    This is intentionally *not* used by the estimator; it exists so that
-    exhaustive reference implementations and tests can consume the same
-    ``gates`` dictionary. Gates are flattened in the same order as
-    :func:`_parse_qudit_gate_dict` visits them (sorted parameter index, then
-    list order) and identity gates are kept so that the returned
-    ``param_map`` has one entry per gate in ``circuit_def``.
-
-    Returns:
-        tuple[np.ndarray, np.ndarray]: ``(generators, param_map)`` with shapes
-        ``(n_gates, n_qudits)`` and ``(n_gates,)``.
-    """
-    dims = np.asarray(dims, dtype=int)
-    rows: list[np.ndarray] = []
-    param_map: list[int] = []
-    for param_idx in sorted(circuit_def.keys()):
-        for gate in circuit_def[param_idx]:
-            support, powers = _normalize_sparse_gate(gate, n_qudits, dims)
-            row = np.zeros((n_qudits,), dtype=int)
-            row[support] = powers
-            rows.append(row)
-            param_map.append(int(param_idx))
-
-    generators = np.stack(rows) if rows else np.zeros((0, n_qudits), dtype=int)
-    return generators, np.asarray(param_map, dtype=int)
 
 
 # ---------------------------------------------------------------------------
@@ -410,18 +369,26 @@ _BYTES_PER_GB = 1024**3
 _FLOAT_BYTES = 4
 
 
-def _memory_budget_bytes(max_memory: float) -> int:
+def _memory_budget_bytes(max_memory: float | None) -> int | None:
     """Convert a ``max_memory`` budget in GB to an integer number of bytes."""
+    if max_memory is None:
+        return None
+
+    if (
+        isinstance(max_memory, bool)
+        or not isinstance(max_memory, (int, float, np.integer, np.floating))
+        or not math.isfinite(max_memory)
+        or max_memory <= 0
+    ):
+        raise ValueError(
+            "QuditCircuitConfig.max_memory must be None or a positive, finite number of "
+            f"gigabytes, got {max_memory!r}."
+        )
     return int(max_memory * _BYTES_PER_GB)
 
 
 def _qudit_phase_bytes_per_gate(omega: int, n_samples: int, n_obs: int) -> int:
-    """Approximate temporary bytes needed per gate of weight ``omega`` inside one block.
-
-    For every active position the block holds the angle, cosine and sine arrays on both
-    the sample side (``n_samples`` columns) and the observable side (``n_obs`` columns),
-    plus the :math:`2^\\omega` angle-addition products on each side.
-    """
+    """Approximate temporary bytes needed per gate of weight ``omega`` inside one block."""
     per_column = _FLOAT_BYTES * (3 * omega + 2**omega)
     return per_column * (n_samples + n_obs)
 
@@ -1361,7 +1328,11 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements,too-many-loc
         explicit_key = key is not None or n_samples is not None
         _key = (key if key is not None else config.key) if explicit_key else None
         n_obs = int(np.shape(l_raw)[0])
-        use_full = not has_gates or _full_context_bytes(structure, n_obs, _n) <= max_memory_bytes
+        use_full = (
+            max_memory_bytes is None
+            or not has_gates
+            or _full_context_bytes(structure, n_obs, _n) <= max_memory_bytes
+        )
         prepare = prepare_full if use_full else prepare_lite
 
         def build_context():
