@@ -2095,11 +2095,6 @@
   properly supported with program capture and Catalyst.
   [(#10324)](https://github.com/PennyLaneAI/pennylane/pull/10324)
 
-* The one- and two-worker :class:`~.MultiControlledX` decomposition rules and the
-  :class:`~.SelectTHC` decomposition rule now declare the adjoint gates of their uncompute steps in
-  their resources, so `qp.qjit(capture=True)` can fully decompose them to the target gate set.
-  [(#10341)](https://github.com/PennyLaneAI/pennylane/pull/10341)
-
 * Fixed captured transforms dropping keyword arguments to the transformed function,
   including when calling transformed QNodes with `qp.qjit(capture=True)`.
   [(#10301)](https://github.com/PennyLaneAI/pennylane/pull/10301)
