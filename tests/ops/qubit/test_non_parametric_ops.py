@@ -48,7 +48,7 @@ from scipy.stats import unitary_group
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.utils import _get_decomp_args
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
 from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 # pylint: disable=too-few-public-methods
@@ -878,8 +878,7 @@ class TestMultiControlledX:
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
-        for rule in qp.list_decomps(op):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_custom_dispatch(self):
         """Tests that qp.ctrl() of MCX dispatches to another MCX."""
@@ -1545,3 +1544,40 @@ class TestPPR:
             -1j * np.pi * sign / denominator * qp.matrix(pw, wire_order=wires)
         )
         assert np.allclose(mat_ppr, expected_manual)
+
+
+class TestToPPRDecompositions:
+    """Tests for the decomposition rules of non-parametric gates into PPRs."""
+
+    @pytest.mark.parametrize(
+        "op, rule_name, expected",
+        [
+            (qp.X(0), "_paulix_to_ppr", [qp.PPR_2(1, "X", 0), qp.GlobalPhase(-np.pi / 2)]),
+            (qp.Y(0), "_pauliy_to_ppr", [qp.PPR_2(1, "Y", 0), qp.GlobalPhase(-np.pi / 2)]),
+            (qp.Z(0), "_pauliz_to_ppr", [qp.PPR_2(1, "Z", 0), qp.GlobalPhase(-np.pi / 2)]),
+            (qp.S(0), "_s_to_ppr", [qp.PPR_4(1, "Z", 0), qp.GlobalPhase(-np.pi / 4)]),
+            (qp.T(0), "_t_to_ppr", [qp.PPR_8(1, "Z", 0), qp.GlobalPhase(-np.pi / 8)]),
+        ],
+    )
+    def test_decomposition_rule(self, op, rule_name, expected):
+        """Test the queued operations, resources and matrix of the decomposition rule."""
+        rule = qp.list_decomps(op)[rule_name]
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(**op.arguments)
+
+        for actual, exp in zip(q.queue, expected, strict=True):
+            qp.assert_equal(actual, exp)
+
+        assert_valid_decomp_rule(op, rule)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize("base, ppr_cls", [(qp.S, qp.PPR_4), (qp.T, qp.PPR_8)])
+    def test_adjoint_reaches_ppr(self, base, ppr_cls):
+        """Test that the adjoint of S and T decompose into a PPR with a negative sign."""
+        tape = qp.tape.QuantumScript([qp.adjoint(base(0))])
+        [new_tape], _ = decompose(tape, gate_set={ppr_cls, qp.GlobalPhase})
+
+        (ppr,) = (op for op in new_tape.operations if isinstance(op, ppr_cls))
+        qp.assert_equal(ppr, ppr_cls(-1, "Z", 0))
+        assert np.allclose(qp.matrix(new_tape, wire_order=[0]), qp.matrix(qp.adjoint(base(0))))

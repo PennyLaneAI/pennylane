@@ -28,7 +28,7 @@ from pennylane import math
 from pennylane.core.operator import Operator, abstractify
 from pennylane.exceptions import DeviceError, MatrixUndefinedError
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
@@ -1700,16 +1700,7 @@ class TestDecomposition:
             work_wires=work_wires,
             work_wire_type="zeroed",
         )
-        rules = qp.list_decomps("C(Prod)")
-        assert rules, "no decomp rules registered for C(Prod)"
-
-        # ``_test_decomposition_rule`` is a no-op for rules that are not applicable, so check
-        # explicitly that when the work_wire_type is "zeroed", at least one rule is applicable
-        applicable = [rule for rule in rules if rule.is_applicable(**op.resource_params)]
-        assert applicable
-
-        for rule in rules:
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
