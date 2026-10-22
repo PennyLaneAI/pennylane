@@ -47,7 +47,7 @@ def _adjust_determinant(matrix):
     det = math.linalg.det(matrix)
 
     mat = matrix
-    if math.is_abstract(det) or det < 0:
+    if math.is_tracer(det) or det < 0:
         if math.get_interface(mat) != "jax":
             mat = math.toarray(mat).copy()
         mat = math.T(math.set_index(math.T(mat), 0, -mat[:, 0]))
@@ -120,7 +120,7 @@ class BasisRotation(Operator2):
         The ``BasisRotation`` is implemented with :class:`~.PhaseShift` and
         :class:`~.SingleExcitation` gates:
 
-        >>> @qp.decompose(gate_set=qp.gate_sets.ALL_OPS)
+        >>> @qp.transforms._tape_decompose(gate_set=qp.gate_sets.ALL_OPS)
         ... def circ():
         ...     qp.BasisRotation(wires=wires, unitary_matrix=umat)
         >>> print(qp.draw(circ)())
@@ -132,7 +132,7 @@ class BasisRotation(Operator2):
 
         >>> from scipy.stats import ortho_group
         >>> O = ortho_group.rvs(4, random_state=51)
-        >>> @qp.decompose(gate_set=qp.gate_sets.ALL_OPS)
+        >>> @qp.transforms._tape_decompose(gate_set=qp.gate_sets.ALL_OPS)
         ... def circ():
         ...     qp.BasisRotation(wires=range(4), unitary_matrix=O)
         >>> print(qp.draw(circ)())
@@ -309,7 +309,7 @@ class BasisRotation(Operator2):
             raise ValueError(f"The unitary matrix should be of shape NxN, got {(M, N)}")
 
         if check:
-            if not math.is_abstract(unitary_matrix) and not math.allclose(
+            if not math.is_tracer(unitary_matrix) and not math.allclose(
                 unitary_matrix @ math.conj(unitary_matrix).T,
                 math.eye(M, dtype=complex),
                 atol=1e-4,
@@ -322,16 +322,8 @@ class BasisRotation(Operator2):
         super().__init__(unitary_matrix, wires=wires)
 
 
-def _is_complex_matrix(unitary_matrix, **__):
-    return math.get_dtype_name(unitary_matrix).startswith("complex")
-
-
-def _is_real_matrix(unitary_matrix, **__):
-    return not _is_complex_matrix(unitary_matrix)
-
-
 def _is_jax_jit(U):
-    return math.is_abstract(U) and not _qjit_or_capture()
+    return math.is_tracer(U) and not _qjit_or_capture()
 
 
 def _prepare_args(unitary_matrix, wires):
@@ -359,7 +351,7 @@ def _real_basis_rotation_resources(unitary_matrix, wires, check=False):
     return {PhaseShift: 1, SingleExcitation: dim * (dim - 1) // 2}
 
 
-@register_condition(_is_real_matrix)
+@register_condition(lambda unitary_matrix, **_: not math.is_complex_dtype(unitary_matrix))
 @register_resources(_real_basis_rotation_resources, exact=False)
 def _real_basis_rotation_decomp(unitary_matrix, wires, **_):
 
@@ -404,7 +396,7 @@ def _complex_basis_rotation_resources(unitary_matrix, wires, check=False):
     return {PhaseShift: dim + se_count, SingleExcitation: se_count}
 
 
-@register_condition(_is_complex_matrix)
+@register_condition(lambda unitary_matrix, **_: math.is_complex_dtype(unitary_matrix))
 @register_resources(_complex_basis_rotation_resources, exact=False)
 def _complex_basis_rotation_decomp(unitary_matrix, wires, **_):
 

@@ -22,6 +22,7 @@ import numpy as np
 import pennylane as qp
 from pennylane import capture, compiler, control_flow, math, ops
 from pennylane.core import queuing
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import register_condition, register_resources
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
@@ -57,12 +58,12 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
     >>> from pennylane.ops.op_math import ctrl_decomp_bisect
     >>> op = qp.T(0) # uses OD algorithm
     >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
-    0: ─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†─╭GlobalPhase(-0.39)─┤
-    1: ─├●────────│──────────├●────────│──────────├●──────────────────┤
-    2: ─├●────────│──────────├●────────│──────────├●──────────────────┤
-    3: ─╰●────────│──────────╰●────────│──────────├●──────────────────┤
-    4: ───────────├●───────────────────├●─────────├●──────────────────┤
-    5: ───────────╰●───────────────────╰●─────────╰●──────────────────┤
+    0: ─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†───┤
+    1: ─├●────────│──────────├●────────│──╭●────────┤
+    2: ─├●────────│──────────├●────────│──├●────────┤
+    3: ─╰●────────│──────────╰●────────│──├●────────┤
+    4: ───────────├●───────────────────├●─├●────────┤
+    5: ───────────╰●───────────────────╰●─╰Rϕ(0.39)─┤
     >>> op = qp.QubitUnitary([[0,1j],[1j,0]], 0) # uses MD algorithm
     >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
     0: ──H─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†──H─┤
@@ -73,19 +74,12 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
     5: ──────────────╰●───────────────────╰●────────────┤
     >>> op = qp.Hadamard(0) # uses general algorithm
     >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
-    0: ──U(M0)─╭X──U(M1)†──U(M2)─╭X──U(M2)†─╭X──U(M2)─╭X──U(M2)†─╭X──U(M1)─╭X──U(M0)† ···
-    1: ────────│─────────────────│──────────├●────────│──────────├●────────│───────── ···
-    2: ────────│─────────────────│──────────├●────────│──────────├●────────│───────── ···
-    3: ────────│─────────────────│──────────╰●────────│──────────╰●────────│───────── ···
-    4: ────────├●────────────────├●───────────────────├●───────────────────├●──────── ···
-    5: ────────╰●────────────────╰●───────────────────╰●───────────────────╰●──────── ···
-    <BLANKLINE>
-    0: ··· ─╭GlobalPhase(-1.57)─┤
-    1: ··· ─├●──────────────────┤
-    2: ··· ─├●──────────────────┤
-    3: ··· ─├●──────────────────┤
-    4: ··· ─├●──────────────────┤
-    5: ··· ─╰●──────────────────┤
+    0: ──U(M0)─╭X──U(M1)†──U(M2)─╭X──U(M2)†─╭X──U(M2)─╭X──U(M2)†─╭X──U(M1)─╭X──U(M0)†───┤
+    1: ────────│─────────────────│──────────├●────────│──────────├●────────│──╭●────────┤
+    2: ────────│─────────────────│──────────├●────────│──────────├●────────│──├●────────┤
+    3: ────────│─────────────────│──────────╰●────────│──────────╰●────────│──├●────────┤
+    4: ────────├●────────────────├●───────────────────├●───────────────────├●─├●────────┤
+    5: ────────╰●────────────────╰●───────────────────╰●───────────────────╰●─╰Rϕ(1.57)─┤
 
     """
     if len(target_operation.wires) > 1:
@@ -104,7 +98,7 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op)
+            apply(op)
 
     return q.queue
 
@@ -193,7 +187,7 @@ def ctrl_decomp_zyz(
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op)
+            apply(op)
 
     return q.queue
 
@@ -828,7 +822,16 @@ def _decompose_mcx_no_worker_resource(wires, *_, **__):
     } | mcx_reps
 
 
-@register_condition(lambda wires, *_, **__: len(wires) > 3)
+# pylint: disable-next=unused-argument
+def _mcx_no_worker_condition(wires, control_values, work_wires, **_):
+    # With work wires present, one of the one-, two- or many-worker rules always applies, which
+    # matches ``MultiControlledX.compute_decomposition``. Offering this rule as well pulls
+    # ``C(GlobalPhase)`` and ``C(PhaseShift)`` with every number of controls into the
+    # decomposition graph, and ``qjit(capture=True)`` traces and compiles all of them.
+    return len(wires) > 3 and len(work_wires) == 0
+
+
+@register_condition(_mcx_no_worker_condition)
 @register_resources(_decompose_mcx_no_worker_resource, exact=False)
 def decompose_mcx_with_no_worker(wires, control_values, *_, **__):
     """Use ctrl_decomp_bisect_md to decompose a multi-controlled X gate with no work wires."""

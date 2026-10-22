@@ -79,7 +79,7 @@ class Hermitian(Operator):
 
     def __init__(self, A: TensorLike, wires: WiresLike):
         A = np.array(A) if isinstance(A, list) else A
-        if not qp.math.is_abstract(A):
+        if not qp.math.is_tracer(A):
             if isinstance(wires, Sequence) and not isinstance(wires, str):
                 if len(wires) == 0:
                     raise ValueError(

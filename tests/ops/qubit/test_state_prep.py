@@ -135,7 +135,7 @@ class TestStandardValidityBasisState:
         # pylint: disable=import-outside-toplevel
         wires = [0, 1]
         op = qp.BasisState(input_state, wires=wires)
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     @staticmethod
     def make_abstract_check(state_traced, wires_traced, closure_state, closure_wires):
@@ -150,8 +150,8 @@ class TestStandardValidityBasisState:
             if not wires_traced:
                 # Using a closure variable avoids automatic tracing
                 wires = closure_wires
-            assert qp.math.is_abstract(state) == state_traced
-            assert qp.math.is_abstract(wires) == wires_traced
+            assert qp.math.is_tracer(state) == state_traced
+            assert qp.math.is_tracer(wires) == wires_traced
             tapes = []
             for rule in qp.list_decomps(qp.BasisState):
                 if not rule.is_applicable(num_wires=len(wires)):

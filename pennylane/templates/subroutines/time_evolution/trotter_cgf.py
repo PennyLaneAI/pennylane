@@ -26,7 +26,7 @@ from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math import ctrl
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
-from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import WiresLike
 
 from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
@@ -101,8 +101,8 @@ class TrotterCGF(Operator2):
         gate_set = {"Hadamard", "BasisRotation", "RZ", "CNOT", "PhaseShift", "ForLoop"}
 
         @qp.qjit
-        @qp.transforms.decompose(gate_set=gate_set)
-        @qp.qnode(qp.device("lightning.qubit"))
+        @qp.transforms._tape_decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("lightning.qubit", wires=1 + M * N))
         def trotter_circuit():
             qp.H(registers["hadamard"])
 
@@ -344,7 +344,7 @@ def _apply_system_basis_rotation(U, wires):
     for l in range(num_modes):
         U_l = math.swapaxes(U[l], -2, -1)
         mode_wires = wires[l * n_states : (l + 1) * n_states]
-        if math.is_abstract(U_l) or not np.allclose(U_l, np.eye(n_states)):
+        if math.is_tracer(U_l) or not np.allclose(U_l, np.eye(n_states)):
             BasisRotation(unitary_matrix=U_l, wires=mode_wires)
 
 
@@ -490,7 +490,7 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
     num_onebody_rotations = num_onebody_blocks * num_modes * n_states
 
     # NOTE: 'BasisRotation' decomposes differently depending on the dtype of the unitary matrix.
-    dtype_leaf = Complex if math.get_dtype_name(leaf_tensors).startswith("complex") else Float
+    dtype_leaf, _ = math.get_abstract_and_cast_dtype(leaf_tensors)
     sysrot_key = BasisRotation(dtype_leaf[n_states, n_states], wires=Wire[n_states])
     resources[sysrot_key] += num_modes * num_sysrot_calls
 

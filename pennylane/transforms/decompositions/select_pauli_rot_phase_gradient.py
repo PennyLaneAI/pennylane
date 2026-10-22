@@ -24,7 +24,7 @@ from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Int, Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import WireError, Wires
 
 from .rz_phase_gradient import validate_phase_gradient_wires
@@ -70,7 +70,7 @@ def _select_pauli_rot_phase_gradient(
             def x_basis_comp():
                 qp.Hadamard(target_wire)
 
-            return qp.change_op_basis(x_basis_comp, inner_cob)
+            return qp.change_op_basis(x_basis_comp, inner_cob, x_basis_comp)
 
         case "Y":
 
@@ -134,7 +134,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             angle_wires, phase_grad_wires, work_wires
         )
 
-        @qp.decompose(
+        @qp.transforms._tape_decompose(
             gate_set={"QROM", "Adjoint(QROM)", "SemiAdder", "MultiControlledX", "GlobalPhase"},
             fixed_decomps={qp.SelectPauliRot: custom_decomp}
         )
@@ -185,7 +185,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
         # 1. QROM compressed rep
         qrom_rep = qp.QROM(
-            bitstrings=Int[2**num_control_wires, len(angle_wires)],
+            bitstrings=Bool[2**num_control_wires, len(angle_wires)],
             control_wires=Wire[num_control_wires],
             target_wires=Wire[len(angle_wires)],
             work_wires=Wire[num_control_wires - 1],

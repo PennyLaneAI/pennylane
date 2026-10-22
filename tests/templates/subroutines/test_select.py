@@ -59,7 +59,7 @@ def test_standard_checks(num_ops, num_controls, partial, work_wires, parametrize
             assert op.target_wires == qp.wires.Wires([0, 10, 11, 12])
     else:
         assert op.target_wires == qp.wires.Wires([])
-    qp.ops.functions.assert_valid(
+    qp.testing.assert_valid(
         op,
         # differentiation and bind_new_parameters fail now that control_values are data
         skip_differentiation=not parametrized,
@@ -385,10 +385,7 @@ class TestSelect:
         assert resource_obj == expected_resources
 
         op = qp.Select(ops, control, partial=partial)
-        with qp.queuing.AnnotatedQueue() as q:
-            decomp(**op.arguments)
-
-        decomp_ops = qp.tape.QuantumScript.from_queue(q).operations
+        decomp_ops = qp.testing.decomp_rule_to_tape(op, decomp).operations
 
         qp.assert_equal(decomp_ops[0], qp.ctrl(qp.X(2), (0, 1), control_values=[0, 0]))
         qp.assert_equal(decomp_ops[1], qp.ctrl(qp.X(3), (0, 1), control_values=[0, 1]))
@@ -430,10 +427,7 @@ class TestSelect:
         assert resource_obj == expected_resources
 
         op = qp.Select(ops, control, partial=partial)
-        with qp.queuing.AnnotatedQueue() as q:
-            decomp(**op.arguments)
-
-        decomp_ops = qp.tape.QuantumScript.from_queue(q).operations
+        decomp_ops = qp.testing.decomp_rule_to_tape(op, decomp).operations
 
         if partial:
             ctrls = [(0, 1), (1,), (0,)]
@@ -471,10 +465,7 @@ class TestSelect:
         assert resource_obj == expected_resource
 
         op = qp.Select(ops, control, partial=partial)
-        with qp.queuing.AnnotatedQueue() as q:
-            decomp(**op.arguments)
-
-        decomp_ops = qp.tape.QuantumScript.from_queue(q).operations
+        decomp_ops = qp.testing.decomp_rule_to_tape(op, decomp).operations
         assert len(decomp_ops) == 1
 
         if partial:

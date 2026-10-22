@@ -209,6 +209,24 @@ class TestUpdate:
         assert new_circuit.diff_method == "parameter-shift"
         assert circuit.compile_pipeline == new_circuit.compile_pipeline
 
+    def test_update_pipelines(self):
+        """Test that QNode compile pipelines can be updated via update_pipelines."""
+        dev = qp.device("default.qubit", wires=1)
+        qn = qp.QNode(dummyfunc, dev)
+
+        new_compile = qp.CompilePipeline(qp.transforms.cancel_inverses)
+        new_post_device = qp.CompilePipeline(qp.transforms.merge_rotations)
+        updated = qn.update_pipelines(new_compile, new_post_device)
+
+        assert updated is not qn
+        assert updated.compile_pipeline is new_compile
+        assert updated.post_device_pipeline is new_post_device
+
+        empty_post_device = qn.update_pipelines(new_compile)
+        assert empty_post_device is not qn
+        assert empty_post_device.compile_pipeline is new_compile
+        assert empty_post_device.post_device_pipeline == qp.CompilePipeline()
+
 
 class TestInitialization:
     """Testing the initialization of the qnode."""
@@ -1072,12 +1090,11 @@ class TestIntegration:
             def decomposition(self) -> list:
                 return []
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(DummyCustomGraphOp, null_decomp)
-            graph = nx.complete_graph(3)
-            tape = qp.tape.QuantumScript([DummyCustomGraphOp(graph)], [qp.expval(qp.PauliZ(0))])
-            res = qp.execute([tape], dev)
-            assert qp.math.get_interface(res) == "numpy"
+        qp.add_decomps(DummyCustomGraphOp, null_decomp)
+        graph = nx.complete_graph(3)
+        tape = qp.tape.QuantumScript([DummyCustomGraphOp(graph)], [qp.expval(qp.PauliZ(0))])
+        res = qp.execute([tape], dev)
+        assert qp.math.get_interface(res) == "numpy"
 
     def test_error_device_vjp_unsuppoprted(self):
         """Test that an error is raised in the device_vjp is unsupported."""
@@ -1746,10 +1763,9 @@ class TestTapeExpansion:
         else:
             spy = mocker.spy(circuit.device, "execute")
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(UnsupportedOp, _decomp)
-            x = pnp.array(0.5)
-            circuit(x)
+        qp.add_decomps(UnsupportedOp, _decomp)
+        x = pnp.array(0.5)
+        circuit(x)
 
         tape = spy.call_args[0][0][0]
         assert len(tape.operations) == 1
@@ -1775,24 +1791,22 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qp.RX(3 * self.data[0], wires=self.wires)]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RX: 1})
+        def _decomp(data, wires):
+            qp.RX(3 * data, wires)
 
-            @qp.register_resources({qp.RX: 1})
-            def _decomp(data, wires):
-                qp.RX(3 * data, wires)
+        qp.add_decomps(UnsupportedOp, _decomp)
 
-            qp.add_decomps(UnsupportedOp, _decomp)
+        @qnode(dev, interface="autograd", diff_method="parameter-shift", max_diff=2)
+        def circuit(x):
+            UnsupportedOp(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
-            @qnode(dev, interface="autograd", diff_method="parameter-shift", max_diff=2)
-            def circuit(x):
-                UnsupportedOp(x, wires=0)
-                return qp.expval(qp.PauliZ(0))
+        x = pnp.array(0.5, requires_grad=True)
+        qp.grad(circuit)(x)
 
-            x = pnp.array(0.5, requires_grad=True)
-            qp.grad(circuit)(x)
-
-            # check second derivative
-            assert np.allclose(qp.grad(qp.grad(circuit))(x), -9 * np.cos(3 * x))
+        # check second derivative
+        assert np.allclose(qp.grad(qp.grad(circuit))(x), -9 * np.cos(3 * x))
 
     @pytest.mark.autograd
     def test_gradient_expansion(self, mocker):
@@ -1810,30 +1824,28 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qp.RY(3 * self.data[0], wires=self.wires)]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RY: 1})
+        def custom_decomposition(param, wires):
+            qp.RY(3 * param, wires=wires)
 
-            @qp.register_resources({qp.RY: 1})
-            def custom_decomposition(param, wires):
-                qp.RY(3 * param, wires=wires)
+        qp.add_decomps(PhaseShift, custom_decomposition)
 
-            qp.add_decomps(PhaseShift, custom_decomposition)
+        @qnode(dev, diff_method="parameter-shift", max_diff=2)
+        def circuit(x):
+            qp.Hadamard(wires=0)
+            PhaseShift(x, wires=0)
+            return qp.expval(qp.PauliX(0))
 
-            @qnode(dev, diff_method="parameter-shift", max_diff=2)
-            def circuit(x):
-                qp.Hadamard(wires=0)
-                PhaseShift(x, wires=0)
-                return qp.expval(qp.PauliX(0))
+        x = pnp.array(0.5, requires_grad=True)
+        circuit(x)
 
-            x = pnp.array(0.5, requires_grad=True)
-            circuit(x)
+        res = qp.grad(circuit)(x)
 
-            res = qp.grad(circuit)(x)
+        assert np.allclose(res, -3 * np.sin(3 * x))
 
-            assert np.allclose(res, -3 * np.sin(3 * x))
-
-            # test second order derivatives
-            res = qp.grad(qp.grad(circuit))(x)
-            assert np.allclose(res, -9 * np.cos(3 * x))
+        # test second order derivatives
+        res = qp.grad(qp.grad(circuit))(x)
+        assert np.allclose(res, -9 * np.cos(3 * x))
 
     def test_hamiltonian_expansion_analytic(self):
         """Test result if there are non-commuting groups and the number of shots is None"""

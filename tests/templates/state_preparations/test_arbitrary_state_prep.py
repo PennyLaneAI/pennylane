@@ -22,10 +22,10 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.arbitrary_state_preparation import (
     _state_preparation_pauli_words,
 )
+from pennylane.testing import assert_decomposable
 
 
 class TestHelpers:
@@ -79,8 +79,7 @@ def test_decomposition_new(weights, wires):
 
     op = qp.ArbitraryStatePreparation(weights, wires=wires)
 
-    for rule in qp.list_decomps(qp.ArbitraryStatePreparation):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 @pytest.mark.xfail_if_capture(reason="Come back to this when we port it to Op2.")
@@ -92,7 +91,7 @@ def test_standard_validity():
 
     op = qp.ArbitraryStatePreparation(weights, wires=[0])
 
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestDecomposition:
