@@ -65,6 +65,19 @@ class AQFT(Operator2):
     array([ 0.5 +0.j  , -0.25-0.25j,  0.  +0.j  , -0.25+0.25j,  0.5 +0.j  ,
         -0.25-0.25j,  0.  +0.j  , -0.25+0.25j])
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.AQFT
+            :symbols: :math:`n` wires and order :math:`m \leq n-1`
+            :example: :math:`n=4`, :math:`m=1`
+
+            .. decomposition-rule:: _AQFT_decomposition
+                :image: /_static/decomposition_thumbnails/aqft_cphase_swap.svg
+
+                :class:`~.Hadamard` | :math:`n` | 4
+                :class:`~.ControlledPhaseShift` | :math:`m(2n-m-1)/2` | 3
+                :class:`~.SWAP` | :math:`\lfloor n/2 \rfloor` | 2
 
     .. details::
         :title: Usage Details

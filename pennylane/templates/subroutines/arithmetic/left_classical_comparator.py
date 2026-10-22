@@ -78,6 +78,26 @@ class LeftClassicalComparator(Operator2):
 
     >>> print(circuit())
     [0. 1.]
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.LeftClassicalComparator
+            :symbols: :math:`n` ``x_wires``, the constant :math:`L` and ``comparator`` :math:`c`
+            :example: :math:`n=3`, :math:`L=6`, :math:`c={<}`
+
+            .. decomposition-rule:: _left_classical_comparator
+                :image: /_static/decomposition_thumbnails/left_classical_comparator_elbow_ladder.svg
+                :where: :math:`L' = L + [c \in \{\leq, >\}]`, :math:`b_0 = L' \bmod 2`,
+                    :math:`N = \mathrm{wt}(\lfloor L'/2 \rfloor)`, with :math:`\mathrm{wt}` the
+                    number of ones in the binary representation, and
+                    :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise. The counts
+                    hold for :math:`L' < 2^n`; for :math:`L' = 2^n`, the rule only applies
+                    :math:`1 + [c \in \{>, \geq\}]` :class:`~.X` gates
+
+                :class:`~.TemporaryAND` | :math:`n - 1` | 2
+                :class:`~.CNOT` | :math:`n - 1 + b_0` | 2
+                :class:`~.X` | :math:`2b_0 + 4N + [c \in \{>, \geq\}]` | 8
     """
 
     wire_argnames = ("x_wires", "target_wire", "work_wires")

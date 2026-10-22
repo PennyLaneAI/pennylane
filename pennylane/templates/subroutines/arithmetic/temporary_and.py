@@ -113,6 +113,37 @@ class TemporaryAND(Operator2):
     Note that we had to add ``qp.X`` to the gate set passed to ``decompose``, because the
     decomposition may contain bit flips on the control qubits, depending on potentially dynamic
     control values.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.TemporaryAND
+            :symbols: :math:`z` entries of ``control_values`` equal to 0
+            :example: ``control_values=(1, 0)``, i.e., :math:`z=1`
+
+            .. decomposition-rule:: _temporary_and
+                :image: /_static/decomposition_thumbnails/temporary_and_clifford_t.svg
+
+                :class:`~.Hadamard` | :math:`2` | 2
+                :class:`~.T` | :math:`2` | 2
+                :class:`T† <~.T>` | :math:`2` | 2
+                :class:`~.CNOT` | :math:`3` | 3
+                :class:`S† <~.S>` | :math:`1` | 1
+                :class:`~.X` | :math:`2z` | 2
+
+            .. decomposition-rule:: _temporary_and_to_toffoli
+                :image: /_static/decomposition_thumbnails/temporary_and_toffoli.svg
+
+                :class:`~.Toffoli` | :math:`1` | 1
+                :class:`~.X` | :math:`2z` | 2
+
+            .. decomposition-rule:: _temporary_and_ppr
+                :image: /_static/decomposition_thumbnails/temporary_and_ppr.svg
+
+                :class:`~.PPR_8` of :math:`ZZY` | :math:`1` | 1
+                :class:`~.PPR_8` of :math:`ZY` | :math:`2` | 2
+                :class:`~.PPR_8` of :math:`Y` | :math:`1` | 1
+                :class:`~.X` | :math:`2z` | 2
     """
 
     num_wires = 3

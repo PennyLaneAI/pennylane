@@ -155,6 +155,62 @@ class QROM(Operator2):
     >>> print(circuit())
     [[1 1 0]]
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.QROM
+            :symbols: :math:`K` bitstrings of length :math:`b`, :math:`c \geq 2` control wires,
+                :math:`w` work wires and ``clean=True``
+            :example: :math:`K=4`, :math:`b=2`, :math:`c=2`, :math:`w=2`, bitstrings
+                ``[[0, 0], [0, 1], [1, 0], [1, 1]]``
+
+            .. decomposition-rule:: _select_swap
+                :image: /_static/decomposition_thumbnails/qrom_select_swap.svg
+                :requires: :math:`w \geq c - 1` work wires and :math:`\lambda \geq 2`
+                :where: :math:`\lambda` is the number of bitstrings loaded in parallel: the largest
+                    power of 2 with :math:`\lambda \leq K`, :math:`b(\lambda - 1) \leq w` and
+                    :math:`w - b(\lambda - 1) \geq c - \log_2 \lambda - 1`. The nested
+                    :class:`~.QROM` loads :math:`\lceil K/\lambda \rceil` bitstrings of length
+                    :math:`\lambda b`
+
+                :class:`~.QROM` | :math:`2` | 2
+                :class:`~.Hadamard` | :math:`2b` | 4
+                :class:`~.CSWAP` | :math:`2b(\lambda - 1)` | 4
+                :class:`CSWAP† <~.CSWAP>` | :math:`2b(\lambda - 1)` | 4
+
+            .. decomposition-rule:: _qrom_unary_iteration
+                :image: /_static/decomposition_thumbnails/qrom_unary_iteration.svg
+                :requires: :math:`w \geq 1` work wire (otherwise, each bitstring is loaded by a
+                    :class:`~.MultiX` with :math:`c` controls)
+                :where: :math:`t = \min(c, w + 1)` control wires span the unary iteration tree and
+                    the other :math:`e = c - t` are added as controls to each load,
+                    :math:`B = \lceil K / 2^e \rceil`,
+                    :math:`N = t + B - 2 - \mathrm{wt}(B-1) - [B > 2^{t-1}]`, with
+                    :math:`\mathrm{wt}` the number of ones in the binary representation, and
+                    :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
+
+                :class:`~.TemporaryAND` | :math:`N` | 1
+                :class:`TemporaryAND† <~.TemporaryAND>` | :math:`N` | 1
+                :class:`~.CNOT` | :math:`B - 1 + [B > 2^{t-1}]` | 4
+                :class:`~.X` | :math:`2[B > 2^{t-2}]` | 2
+                :class:`~.MultiX` with :math:`e + 1` controls | :math:`K` | 4
+
+            .. decomposition-rule:: _qrom_measurement_decomposition
+                :image: /_static/decomposition_thumbnails/qrom_measurement.svg
+                :requires: :math:`w \geq c - 1` work wires and compilation with :func:`~.qjit`
+                :where: :math:`L = 2^c` (the data is padded to :math:`L` entries, assuming
+                    :math:`c = \lceil \log_2 K \rceil`) and :math:`A = L - 3`. Gates marked as
+                    conditional are applied depending on mid-circuit measurement outcomes,
+                    and the number of :class:`~.CNOT` gates depends on the bitstrings
+
+                :class:`~.MultiX` | :math:`1 + A` (:math:`A` conditional) | 2
+                :class:`~.TemporaryAND` | :math:`A` | 1
+                :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`1` | 1
+                :class:`~.CNOT` | at most :math:`\max(3, L/2 - 1) + 2b` | 5
+                :func:`~.pauli_measure` (:math:`X`-type, :math:`\leq b + 1` wires) | :math:`A` | 1
+                :func:`~.pauli_measure` (:math:`Z`, 1 wire) | :math:`A` | 1
+                :class:`~.CZ` (conditional) | :math:`A` | 1
+                :class:`~.X` (conditional) | :math:`A` | 1
 
     .. details::
         :title: Usage Details

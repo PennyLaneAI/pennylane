@@ -134,6 +134,24 @@ class TrotterCGF(Operator2):
     The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing into
     :class:`~.PhaseShift` and :class:`~.SingleExcitation` on ``lightning.qubit``.
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.TrotterCGF
+            :symbols: :math:`M` modes with :math:`N` modals each, :math:`L` two-body fragments and
+                :math:`n` = ``num_trotter_steps``
+            :example: the Hamiltonian above, :math:`M=2`, :math:`N=3`, :math:`L=1`, :math:`n=10`
+
+            .. decomposition-rule:: _trotter_cgf_decomposition
+                :image: /_static/decomposition_thumbnails/trotter_cgf_second_order.svg
+                :where: the counts are upper bounds, as basis rotations that are the identity are
+                    skipped
+
+                :class:`~.BasisRotation` on :math:`N` wires | :math:`M(2Ln + 2)` | 44
+                :class:`~.IsingZZ` | :math:`((2L-1)n + 1)\, \frac{M(M-1)}{2} N^2` | 99
+                :class:`~.RZ` | :math:`nMN` | 60
+                :class:`~.GlobalPhase` | :math:`1` | 1
+
     .. details ::
         :title: Usage Details
 

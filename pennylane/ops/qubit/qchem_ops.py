@@ -145,6 +145,30 @@ class SingleExcitation(Operator2):
             return qp.state()
 
         circuit(0.1)
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SingleExcitation
+
+            .. decomposition-rule:: _single_excitation_decomp
+                :image: /_static/decomposition_thumbnails/singleexcitation_h_cnot_ry.svg
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.CNOT` | :math:`2`
+                :class:`~.RY` | :math:`2`
+
+            .. decomposition-rule:: _single_excitation_ppr
+                :image: /_static/decomposition_thumbnails/singleexcitation_ppr.svg
+
+                :class:`~.PauliRot` with Pauli word ``"YX"`` | :math:`1`
+                :class:`~.PauliRot` with Pauli word ``"XY"`` | :math:`1`
+
+            .. decomposition-rule:: _single_excitation_ppr_rz
+                :image: /_static/decomposition_thumbnails/singleexcitation_ppr_rz.svg
+
+                :class:`~.PPR_4` with Pauli word ``"XX"`` | :math:`2`
+                :class:`~.RZ` | :math:`2`
     """
 
     dynamic_argnames = "phi"

@@ -289,6 +289,20 @@ class MPSPrep(Operator2):
       0.        +0.j  0.        +0.j -0.99425605+0.j  0.        +0.j]
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.MPSPrep
+            :symbols: :math:`n` MPS tensors (one per wire), :math:`w` work wires and maximal bond
+                dimension :math:`\chi`
+            :example: :math:`n=3`, :math:`w=1`
+
+            .. decomposition-rule:: _mps_prep_decomposition
+                :image: /_static/decomposition_thumbnails/mps_prep.svg
+                :requires: :math:`w \geq \log_2 \chi` work wires
+
+                :class:`~.QubitUnitary` on :math:`w + 1` wires | :math:`n` | 3
+
+    .. details::
         :title: Usage Details
 
         The input MPS must be a list of :math:`n` tensors :math:`[A^{(0)}, ..., A^{(n-1)}]`

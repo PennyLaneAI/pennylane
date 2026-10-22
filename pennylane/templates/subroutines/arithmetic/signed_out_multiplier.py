@@ -114,6 +114,29 @@ class SignedOutMultiplier(Operator2):
     15: ─────────────────────╰Incrementer──────────╰Incrementer─╰OutMultiplier──────────────────────╰Incrementer──────────╰Incrementer──────────╰Incrementer───────┤
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SignedOutMultiplier
+            :symbols: :math:`n` ``x_wires``, :math:`m` ``y_wires``, :math:`k` ``output_wires`` and
+                :math:`w` ``work_wires``
+            :example: :math:`n=m=2`, :math:`k=4`
+
+            .. decomposition-rule:: _signed_out_multiplier_decomposition_not_zeroed
+                :image: /_static/decomposition_thumbnails/signed_out_multiplier_not_zeroed.svg
+                :requires: ``output_wires_zeroed=False`` and :math:`w \geq 2k + 1` work wires
+
+                :class:`~.SignedOutMultiplier` with ``output_wires_zeroed=True`` | :math:`1` | 1
+                :class:`~.SemiAdder` | :math:`1` | 1
+
+            .. decomposition-rule:: _signed_out_multiplier_decomposition_zeroed
+                :image: /_static/decomposition_thumbnails/signed_out_multiplier_zeroed.svg
+                :requires: ``output_wires_zeroed=True`` and :math:`w \geq 2` work wires
+
+                :class:`~.CNOT` | :math:`2(n + m) + k + 5` | 17
+                :class:`~.Incrementer` with 1 control | :math:`5` | 5
+                :class:`~.OutMultiplier` | :math:`1` | 1
+
+    .. details::
         :title: Theoretical background
         :href: theory
 

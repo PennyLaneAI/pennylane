@@ -73,6 +73,18 @@ class MultiX(Operator2):
     ...     return qp.probs(wires=range(3))
     >>> circuit()
     array([0., 0., 0., 0., 0., 1., 0., 0.])
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.MultiX
+            :symbols: :math:`n` wires and bitstring :math:`\mathbf{b}`
+            :example: :math:`\mathbf{b}=(1, 0, 1)`
+
+            .. decomposition-rule:: _multix_decomposition
+                :image: /_static/decomposition_thumbnails/multix_conditional_x.svg
+
+                :class:`~.X` | :math:`\sum_i b_i \leq n` (one per :math:`b_i=1`) | 2
     """
 
     dynamic_argnames = ("bitstring",)

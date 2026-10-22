@@ -69,6 +69,21 @@ class FlipSign(Operator2):
     >>> circuit()
     array([ 0.5+0.j,  0.5+0.j, -0.5+0.j,  0.5+0.j])
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.FlipSign
+            :symbols: :math:`n` wires and basis state :math:`b=(b_0, \dots, b_{n-1})` (``state``)
+            :example: :math:`n=3`, :math:`b=(1, 0, 0)`
+
+            .. decomposition-rule:: _flip_sign_decomposition
+                :image: /_static/decomposition_thumbnails/flip_sign_controlled_z.svg
+                :where: the controls are on :math:`|b_0 \cdots b_{n-2}\rangle`, and
+                    :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
+
+                :class:`~.Z` with :math:`n-1` controls | :math:`1` | 1
+                :class:`~.X` | :math:`2[b_{n-1} = 0]` | 2
+
     """
 
     compilable_argnames = ("state",)

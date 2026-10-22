@@ -87,6 +87,21 @@ class IQPEmbedding(Operator2):
         ValueError: if inputs do not have the correct format
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.IQPEmbedding
+            :symbols: :math:`n` wires, :math:`r` repetitions (``n_repeats``) and :math:`K`
+                entanglers (``len(pattern)``, :math:`n(n-1)/2` by default)
+            :example: :math:`n=3`, :math:`r=1`, default ``pattern``
+
+            .. decomposition-rule:: _iqp_embedding_decomposition
+                :image: /_static/decomposition_thumbnails/iqp_embedding_multirz.svg
+
+                :class:`~.Hadamard` | :math:`rn` | 3
+                :class:`~.RZ` | :math:`rn` | 3
+                :class:`~.MultiRZ` on 2 wires | :math:`rK` | 3
+
+    .. details::
         :title: Usage Details
 
         A typical usage example of the template is the following:

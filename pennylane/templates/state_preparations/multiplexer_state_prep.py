@@ -60,6 +60,31 @@ class MultiplexerStatePreparation(Operator2):
         >>> np.round(circuit(), 2)
         array([0.5 , 0.  , 0.25, 0.25])
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.MultiplexerStatePreparation
+            :symbols: :math:`n` wires
+            :example: :math:`n=3`
+
+            .. decomposition-rule:: _real_multiplexer_state_prep_decomposition
+                :image: /_static/decomposition_thumbnails/multiplexer_state_prep_real.svg
+                :requires: a real-valued ``state_vector``
+                :where: one :class:`~.SelectPauliRot` with :math:`k` control wires for each
+                    :math:`k = 0, \dots, n-1`
+
+                :class:`~.SelectPauliRot` (:math:`R_Y`) | :math:`n` | 3
+
+            .. decomposition-rule:: _complex_multiplexer_state_prep_decomposition
+                :image: /_static/decomposition_thumbnails/multiplexer_state_prep_complex.svg
+                :requires: a complex-valued ``state_vector``
+                :where: one :class:`~.SelectPauliRot` with :math:`k` control wires for each
+                    :math:`k = 0, \dots, n-1`. The :class:`~.DiagonalQubitUnitary` on all
+                    :math:`n` wires is skipped if all phases vanish
+
+                :class:`~.SelectPauliRot` (:math:`R_Y`) | :math:`n` | 3
+                :class:`~.DiagonalQubitUnitary` | :math:`1` | 1
+
     .. seealso::
 
         :class:`~.SelectPauliRot` for a description of the main building blocks used to

@@ -356,6 +356,24 @@ class QubitizationTHC(Operator2):
     register returns to :math:`\lvert \vec 0 \rangle`, i.e. the squared norm of
     :math:`(\hat{\mathcal{H}} / \lambda) \lvert \psi \rangle`.
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.QubitizationTHC
+
+            .. decomposition-rule:: _qubitization_thc_decomp
+                :image: /_static/decomposition_thumbnails/qubitization_thc_walk.svg
+
+                :class:`~.SuperpositionTHC` | :math:`1`
+                :class:`SuperpositionTHC† <~.SuperpositionTHC>` | :math:`1`
+                :class:`~.AliasSamplingTHC` | :math:`1`
+                :class:`AliasSamplingTHC† <~.AliasSamplingTHC>` | :math:`1`
+                :class:`~.Hadamard` | :math:`4`
+                :class:`~.Z` | :math:`1`
+                :class:`~.SelectTHC` | :math:`1`
+                :class:`~.FlipSign` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
     """
 
     wire_argnames = (

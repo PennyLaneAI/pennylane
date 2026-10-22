@@ -87,6 +87,28 @@ class BasisRotation(Operator2):
         ValueError: if length of the wires is less than two.
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.BasisRotation
+            :symbols: :math:`N \times N` matrix :math:`u` (``unitary_matrix``) on :math:`N` wires
+            :example: :math:`N=3`, with :math:`\det u = -1` for the real-valued rule
+
+            .. decomposition-rule:: _real_basis_rotation_decomp
+                :image: /_static/decomposition_thumbnails/basis_rotation_real_givens.svg
+                :requires: real-valued :math:`u`
+                :where: :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
+
+                :class:`~.PhaseShift` | :math:`[\det u = -1]` | 1
+                :class:`~.SingleExcitation` | :math:`N(N-1)/2` | 3
+
+            .. decomposition-rule:: _complex_basis_rotation_decomp
+                :image: /_static/decomposition_thumbnails/basis_rotation_complex_givens.svg
+                :requires: complex-valued :math:`u`
+
+                :class:`~.PhaseShift` | :math:`N(N+1)/2` | 6
+                :class:`~.SingleExcitation` | :math:`N(N-1)/2` | 3
+
+    .. details::
         :title: Usage Details
         :href: usage-basis-rotation
 
