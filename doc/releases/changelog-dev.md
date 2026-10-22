@@ -2092,16 +2092,14 @@
 
 <h3>Bug fixes 🐛</h3>
 
-<<<<<<< HEAD
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
   argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
   [(#10360)](https://github.com/PennyLaneAI/pennylane/pull/10360)
-=======
+
 * :func:`~.ctrl` now supports mixed static and dynamic control values under
   `qp.qjit(capture=True)`, for both operator instances and callables.
   [(#10356)](https://github.com/PennyLaneAI/pennylane/pull/10356)
   [(#10367)](https://github.com/PennyLaneAI/pennylane/pull/10367)
->>>>>>> 059c432d94c1b48abf03f944490c2f6fc05b61ce
 
 * :func:`~.ctrl` of a quantum function now forwards ``work_wire_type`` to each inner operator,
   both with and without program capture.
