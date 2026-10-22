@@ -49,7 +49,7 @@ Config in `pyproject.toml` (`black`, `isort`, line length 100) and `.pylintrc` f
 
 # Changelog
 
-Add bullet to `doc/releases/changelog-dev.rst` under proper section, ending with PR link on next line `  [(#XXXX)](...)`.
+Add bullet to `doc/releases/changelog-dev.rst` under proper section, ending with an RST PR link on the next line: ``  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__``.
 
 # Module architecture
 

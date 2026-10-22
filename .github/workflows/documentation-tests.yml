@@ -146,4 +146,5 @@ jobs:
       - name: Test `changelog-dev.rst` file
         if: always()
         run: |
-          ! [ -f "doc/releases/changelog-dev.rst" ] || pytest doc/releases/changelog-dev.rst || [ $? -eq 5 ]
+          # Sybil handles the examples; disable pytest's duplicate RST doctest collection.
+          ! [ -f "doc/releases/changelog-dev.rst" ] || pytest -p no:doctest doc/releases/changelog-dev.rst || [ $? -eq 5 ]
