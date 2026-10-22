@@ -337,7 +337,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
     with QueuingManager.stop_recording():
         # Obtain the operation matrix and interface
         op_matrix = op.matrix()
-        if qp.compiler.active() or qp.math.is_abstract(op_matrix):
+        if qp.compiler.active() or qp.math.is_tracer(op_matrix):
             raise RuntimeError(
                 "Solovay-Kitaev decomposition is not supported with QJIT or JAX-JIT. "
                 "Use qp.ops.op_math.rs_decomposition (Ross-Selinger decomposition) instead."

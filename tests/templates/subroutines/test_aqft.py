@@ -104,7 +104,7 @@ class TestAQFT:
 
         rule = qp.list_decomps(qp.AQFT)[0]
         plxpr = jax.make_jaxpr(lambda: rule(wires=list(range(n_wires)), order=order))()
-        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
         num_cps = sum(isinstance(op, qp.ControlledPhaseShift) for op in ops)
         expected_hint = num_cps / n_wires
         assert hint_helpers.loop_hints(plxpr.jaxpr, skip_none=True) == [expected_hint]

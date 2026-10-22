@@ -838,6 +838,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* Renamed ``qp.math.is_abstract`` to ``qp.math.is_tracer`` to distinguish traced tensors
+  from PennyLane abstract input descriptors. The function's behavior is unchanged, and
+  ``qp.math.is_abstract`` remains available as a compatibility alias for Catalyst.
+  [(#10374)](https://github.com/PennyLaneAI/pennylane/pull/10374)
+
+
 * Terminal measurements now accept fixed-size `qp.typing.Wire[n]` registers during
   program capture.
   [(#10364)](https://github.com/PennyLaneAI/pennylane/pull/10364)
@@ -1214,11 +1220,18 @@
   - :func:`qp.testing.assert_valid <pennylane.testing.assert_valid>` replaces ``qp.ops.functions.assert_valid``.
   - :func:`qp.testing.assert_valid_decomp_rule <pennylane.testing.assert_valid_decomp_rule>` replaces the private ``_test_decomposition_rule``.
   - A new :func:`qp.testing.assert_decomposable <pennylane.testing.assert_decomposable>` is added.
+  - A new :func:`qp.testing.decomp_rule_to_tape <pennylane.testing.decomp_rule_to_tape>` records the
+    operations produced by a decomposition rule as a tape.
+  - :func:`qp.testing.plxpr_to_tape <pennylane.testing.plxpr_to_tape>` replaces ``qp.tape.plxpr_to_tape``.
+  - New :func:`qp.testing.assert_eqn_matches_op <pennylane.testing.assert_eqn_matches_op>`,
+    :func:`qp.testing.extract_all_primitives <pennylane.testing.extract_all_primitives>`, and
+    :func:`qp.testing.find_eqns <pennylane.testing.find_eqns>` help inspect captured programs.
 
   [(#10293)](https://github.com/PennyLaneAI/pennylane/pull/10293)
   [(#10306)](https://github.com/PennyLaneAI/pennylane/pull/10306)
   [(#10335)](https://github.com/PennyLaneAI/pennylane/pull/10335)
   [(#10342)](https://github.com/PennyLaneAI/pennylane/pull/10342)
+  [(#10360)](https://github.com/PennyLaneAI/pennylane/pull/10360)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -1362,6 +1375,10 @@
   inverse (for example, ``qp.RX(-theta, wires=0)``) or explicitly simplify with
   ``qp.simplify(qp.adjoint(op))``.
   [(#10371)](https://github.com/PennyLaneAI/pennylane/pull/10371)
+
+* ``qp.tape.plxpr_to_tape`` and ``qp.tape.plxpr_conversion.plxpr_to_tape`` have been removed.
+  Use :func:`~.testing.plxpr_to_tape` instead.
+  [(#10360)](https://github.com/PennyLaneAI/pennylane/pull/10360)
 
 * The `qp.Backline.backline` alias of `qp.Backline.placement` has been removed. Use `placement`.
   [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
@@ -2090,6 +2107,10 @@
 * Fixed decomposition graph construction discarding a reachable symbolic adjoint when an
   alternative decomposition revisits its base, which could overestimate required work wires.
   [(#10371)](https://github.com/PennyLaneAI/pennylane/pull/10371)
+
+* :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
+  argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
+  [(#10360)](https://github.com/PennyLaneAI/pennylane/pull/10360)
 
 * :func:`~.ctrl` now supports mixed static and dynamic control values under
   `qp.qjit(capture=True)`, for both operator instances and callables.

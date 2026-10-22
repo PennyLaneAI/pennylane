@@ -864,7 +864,7 @@ class QubitDevice(Device):
 
         basis_states = np.arange(number_of_states)
         # pylint:disable = import-outside-toplevel
-        if math.is_abstract(state_probability) and math.get_interface(state_probability) == "jax":
+        if math.is_tracer(state_probability) and math.get_interface(state_probability) == "jax":
 
             key = jax.random.PRNGKey(np.random.randint(0, 2**31))
             if jax.numpy.ndim(state_probability) == 2:

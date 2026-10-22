@@ -1363,7 +1363,7 @@ class MultiControlledX(Controlled2):
         ctrl_values = self.control_values
         # Same convention as ``Controlled2.__repr__``: trivial (all-``True``) control values and
         # the absence of work wires are not shown.
-        if isinstance(ctrl_values, AbstractArray) or math.is_abstract(ctrl_values):
+        if isinstance(ctrl_values, AbstractArray) or math.is_tracer(ctrl_values):
             params.append(f"control_values={ctrl_values}")
         elif not all(ctrl_values):
             params.append(f"control_values={ctrl_values.tolist()}")

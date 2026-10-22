@@ -76,7 +76,7 @@ class TestQFT:
 
         rule = qp.list_decomps(qp.QFT)[0]
         plxpr = jax.make_jaxpr(lambda: rule(wires=list(range(n_wires))))()
-        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
         num_cps = sum(isinstance(op, qp.ControlledPhaseShift) for op in ops)
 
         assert hint_helpers.loop_hints(plxpr.jaxpr) == [None, num_cps / n_wires, None]

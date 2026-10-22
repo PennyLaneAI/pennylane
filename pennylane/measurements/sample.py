@@ -63,7 +63,7 @@ class SampleMP(SampleMeasurement):
         if isinstance(obs, Sequence):
             if not all(
                 isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs
-            ) and not all(math.is_abstract(o) for o in obs):
+            ) and not all(math.is_tracer(o) for o in obs):
                 raise QuantumFunctionError(
                     "Only sequences of single MeasurementValues can be passed with the op "
                     "argument. MeasurementValues manipulated using arithmetic operators cannot be "

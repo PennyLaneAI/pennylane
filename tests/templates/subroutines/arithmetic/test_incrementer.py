@@ -25,8 +25,7 @@ from pennylane.measurements import state
 from pennylane.ops import CNOT, PauliX
 from pennylane.templates import BasisEmbedding, TemporaryAND
 from pennylane.templates.subroutines.arithmetic.incrementer import _decompose_mcxs
-from pennylane.testing import assert_decomposable, assert_valid
-from pennylane.testing.capture import plxpr_to_tape
+from pennylane.testing import assert_decomposable, assert_valid, plxpr_to_tape
 from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 

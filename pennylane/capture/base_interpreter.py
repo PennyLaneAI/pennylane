@@ -94,7 +94,7 @@ def _fill_in_shape_with_dyn_shape(dyn_shape: tuple[jax.core.Tracer], shape: tupl
         else:  # pragma: no cover
             # pull from iterable of dynamic shapes
             next_s = next(dyn_shape_iter)
-            if not qp.math.is_abstract(next_s):
+            if not qp.math.is_tracer(next_s):
                 # may need to cast to a built-in integer if possible
                 next_s = int(next_s)
             new_shape.append(next_s)
@@ -791,7 +791,7 @@ def flattened_cond(
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices, strict=True):
         consts = invals[const_slice]
-        if math.is_abstract(pred):
+        if math.is_tracer(pred):
             raise NotImplementedError(
                 f"{self} does not yet support jitting cond with abstract conditions."
             )

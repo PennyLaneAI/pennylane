@@ -873,7 +873,7 @@ class TestSumOfSlatersPrep:
         plxpr = jax.make_jaxpr(
             lambda: _sos_state_prep(coefficients, indices=indices, **all_wires)
         )()
-        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
 
         def is_cnot_onto(op, register):
             return isinstance(op, qp.CNOT) and op.wires[1] in all_wires[register]

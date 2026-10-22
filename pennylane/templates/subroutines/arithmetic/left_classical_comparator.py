@@ -136,7 +136,7 @@ class LeftClassicalComparator(Operator2):
         # (``x < 2 ** n`` is statically True for every representable ``x``); ``"<="`` / ``">"``
         # add one internally, so their largest allowed input stays ``2 ** n - 1``.
         max_L = 2 ** len(x_wires) if comparator in ["<", ">="] else 2 ** len(x_wires) - 1
-        if not math.is_abstract(L) and not 0 <= L <= max_L:
+        if not math.is_tracer(L) and not 0 <= L <= max_L:
             raise ValueError(
                 f"L must be less than or equal to {max_L} and non-negative for comparator "
                 f"'{comparator}'. Got {L=} and {2 ** len(x_wires)=}."
@@ -207,10 +207,10 @@ def _left_classical_comparator(x_wires, L, target_wire, work_wires, comparator, 
     # inequality ``x < 2 ** n`` is statically ``True`` for every representable ``x``, so we
     # emit a single ``X`` writing the constant result onto the target wire instead of running
     # the elbow-based comparator on the (all-zero) low bits of ``L``. This is guarded by
-    # ``is_abstract`` so it is skipped under qjit/capture, where ``L`` is a traced value that
+    # ``is_tracer`` so it is skipped under qjit/capture, where ``L`` is a traced value that
     # cannot be branched on in Python; there the general construction below is used, whose
     # trailing conditional ``X`` (controlled on bit ``n`` of ``L``) handles this bound.
-    if not math.is_abstract(L) and L == 2 ** len(x_wires):
+    if not math.is_tracer(L) and L == 2 ** len(x_wires):
         X(wires=target_wire)
         cond(comparator.startswith(">"), _negate_output)()
         return

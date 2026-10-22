@@ -166,7 +166,7 @@ def check_clifford_t(op, use_decomposition=False):
         theta = op.data[0]
         return (
             False
-            if qp.math.is_abstract(theta)
+            if qp.math.is_tracer(theta)
             else qp.math.allclose(qp.math.mod(theta, math.pi), 0.0)
         )
 
@@ -180,7 +180,7 @@ def _simplify_param(theta, gate):
     when even, and (b) returns combination of provided gate with global phase when odd.
     In rest of the other cases it would return None.
     """
-    if qp.math.is_abstract(theta):  # pragma: no cover
+    if qp.math.is_tracer(theta):  # pragma: no cover
         return None
 
     if qp.math.allclose(theta, 0.0, atol=1e-6):
@@ -243,7 +243,7 @@ def _rot_decompose(op):
         ops_ = _simplify_param(theta, qp.Z(wires))
         if ops_ is None:
             ops_ = [qp.RZ(theta, wires=wires), qp.GlobalPhase(-theta / 2)]
-            if not qp.math.is_abstract(theta):
+            if not qp.math.is_tracer(theta):
                 # The following loop simplifies the two cases where for all odd intergers `k`,
                 # `PhaseShift(k * pi / 2)` is S / S* and `PhaseShift(k * pi / 4)` is T / T*.
                 for val_ in [2, 4]:
@@ -622,7 +622,7 @@ def clifford_t_decomposition(
                 decomp_ops.append(op)
 
         # check if phase is non-zero for non jax-jit cases
-        if qp.math.is_abstract(phase) or not qp.math.allclose(phase, 0.0):
+        if qp.math.is_tracer(phase) or not qp.math.allclose(phase, 0.0):
             decomp_ops.append(qp.GlobalPhase(phase))
 
     # Construct a new tape with the expanded set of operations
