@@ -23,7 +23,7 @@ from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, CSWAP, RY, SWAP, Hadamard, PauliX, PauliZ, adjoint, cond, ctrl
 from pennylane.ops.qubit import BasisState
-from pennylane.typing import Bool, TensorLike, Wire
+from pennylane.typing import Bool, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=consider-using-generator
