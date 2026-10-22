@@ -838,6 +838,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* ``LeftClassicalComparator`` accepts a dynamic integer threshold ``L`` under captured
+  compilation and an abstract ``Int`` threshold for resource estimation. Its resource
+  rule now reports an upper bound instead of counts specific to the threshold value.
+
+
 * Terminal measurements now accept fixed-size `qp.typing.Wire[n]` registers during
   program capture.
   [(#10364)](https://github.com/PennyLaneAI/pennylane/pull/10364)
