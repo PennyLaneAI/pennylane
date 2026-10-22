@@ -1355,7 +1355,7 @@
 
 * Renamed ``qp.math.is_abstract`` to ``qp.math.is_tracer`` to distinguish traced tensors
   from PennyLane abstract input descriptors. The function's behavior is unchanged.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10374)](https://github.com/PennyLaneAI/pennylane/pull/10374)
 
 * ``qp.ops.functions.assert_valid`` has been removed. Use :func:`~.testing.assert_valid` instead.
   The private ``_test_decomposition_rule`` has been removed; use :func:`~.testing.assert_valid_decomp_rule`.
