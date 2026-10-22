@@ -90,7 +90,7 @@ class FABLE(Operation):
     def __init__(self, input_matrix, wires, tol=0):
         wires = Wires(wires)
 
-        if not math.is_abstract(input_matrix):
+        if not math.is_tracer(input_matrix):
             if math.any(math.iscomplex(input_matrix)):
                 raise ValueError("Support for imaginary values has not been implemented.")
 
@@ -174,7 +174,7 @@ class FABLE(Operation):
 
         nots = {}
         for theta, control_index in zip(thetas, control_wires, strict=True):
-            if math.is_abstract(theta):
+            if math.is_tracer(theta):
                 for c_wire in nots:
                     op_list.append(CNOT(wires=[c_wire] + auxiliary))
                 op_list.append(RY(2 * theta, wires=auxiliary))

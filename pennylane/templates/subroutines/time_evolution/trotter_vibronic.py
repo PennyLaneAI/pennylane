@@ -1278,7 +1278,7 @@ def _wires_are_concrete(wires):
     """Whether a wire register is concrete (i.e. its labels are known, not abstract/traced)."""
     if isinstance(wires, AbstractWires):
         return False
-    return not any(math.is_abstract(w) for w in Wires(wires))
+    return not any(math.is_tracer(w) for w in Wires(wires))
 
 
 def _validate_hamiltonian(hamiltonian):

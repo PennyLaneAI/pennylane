@@ -838,6 +838,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* Renamed ``qp.math.is_abstract`` to ``qp.math.is_tracer`` to distinguish traced tensors
+  from PennyLane abstract input descriptors. The function's behavior is unchanged, and
+  ``qp.math.is_abstract`` remains available as a compatibility alias for Catalyst.
+  [(#10374)](https://github.com/PennyLaneAI/pennylane/pull/10374)
+
+
 * Terminal measurements now accept fixed-size `qp.typing.Wire[n]` registers during
   program capture.
   [(#10364)](https://github.com/PennyLaneAI/pennylane/pull/10364)
