@@ -112,8 +112,7 @@ def analyze(
             The available options for ``level`` are:
 
             * ``"top"`` or ``0``: The original circuit before any transforms have been applied.
-            * ``int``: The circuit after the specified number of user-specified transforms have
-            been applied.
+            * ``int``: The circuit after the specified number of user-specified transforms have been applied.
             * ``"user"``: The circuit after all user-specified transforms have been applied.
             * Marker name (str): The circuit after the transforms that precede the given
             :func:`qp.marker <pennylane.marker>` have been applied.
