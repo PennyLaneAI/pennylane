@@ -152,6 +152,7 @@
   [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
   [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
   [(#10120)](https://github.com/PennyLaneAI/pennylane/pull/10120)
+  [(#10340)](https://github.com/PennyLaneAI/pennylane/pull/10340)
 
 * Three new operators called :class:`pennylane.PPR_2`, :class:`pennylane.PPR_4` and
   :class:`pennylane.PPR_8` have been added, which represent the Pauli product rotations
@@ -838,6 +839,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Terminal measurements now accept fixed-size `qp.typing.Wire[n]` registers during
+  program capture.
+  [(#10364)](https://github.com/PennyLaneAI/pennylane/pull/10364)
+
 * A Backline placement accepts any transport that a backend in Catalyst's transport backend
   registry implements, so a backend package can add a transport without a PennyLane change. A
   :class:`~.Controller` or :class:`~.Coprocessor` names the backend to run on with ``backend=``.
@@ -909,6 +914,11 @@
 * Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a
   decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
   [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
+
+* Added decompositions of :class:`~.PauliX`, :class:`~.PauliY` and :class:`~.PauliZ` to
+  :class:`~.PPR_2`, of :class:`~.S` to :class:`~.PPR_4`, of :class:`~.T` to :class:`~.PPR_8`
+  (each with a global phase), and of :class:`~.MultiRZ` to :class:`~.PauliRot`.
+  [(#10350)](https://github.com/PennyLaneAI/pennylane/pull/10350)
 
 * :class:`~.FlipSign` now accepts `work_wires`, which are forwarded to the multi-controlled
   :class:`~.Z` gate in its decomposition. Providing work wires substantially reduces the gate count.
@@ -1202,11 +1212,14 @@
   [(#10305)](https://github.com/PennyLaneAI/pennylane/pull/10305)
   
 * A new :mod:`pennylane.testing` module collects utilities for testing code built with PennyLane.
-  - ``qp.ops.functions.assert_valid`` is now available as :func:`qp.testing.assert_valid <pennylane.testing.assert_valid>`.
+  - :func:`qp.testing.assert_valid <pennylane.testing.assert_valid>` replaces ``qp.ops.functions.assert_valid``.
+  - :func:`qp.testing.assert_valid_decomp_rule <pennylane.testing.assert_valid_decomp_rule>` replaces the private ``_test_decomposition_rule``.
+  - A new :func:`qp.testing.assert_decomposable <pennylane.testing.assert_decomposable>` is added.
 
   [(#10293)](https://github.com/PennyLaneAI/pennylane/pull/10293)
   [(#10306)](https://github.com/PennyLaneAI/pennylane/pull/10306)
   [(#10335)](https://github.com/PennyLaneAI/pennylane/pull/10335)
+  [(#10342)](https://github.com/PennyLaneAI/pennylane/pull/10342)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -1340,9 +1353,9 @@
   [(#10337)](https://github.com/PennyLaneAI/pennylane/pull/10337)
 
 <h3>Breaking changes 💔</h3>
-
-* :class:`~.TrotterVibronic` wire argument order was updated for consistent hashing with Catalyst.
-  [(#10340)](https://github.com/PennyLaneAI/pennylane/pull/10340)
+* ``qp.ops.functions.assert_valid`` has been removed. Use :func:`~.testing.assert_valid` instead.
+  The private ``_test_decomposition_rule`` has been removed; use :func:`~.testing.assert_valid_decomp_rule`.
+  [(#10342)](https://github.com/PennyLaneAI/pennylane/pull/10342)
 
 * The `qp.Backline.backline` alias of `qp.Backline.placement` has been removed. Use `placement`.
   [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
@@ -2067,6 +2080,11 @@
   [(#10284)](https://github.com/PennyLaneAI/pennylane/pull/10284)
 
 <h3>Bug fixes 🐛</h3>
+
+* :func:`~.ctrl` now supports mixed static and dynamic control values under
+  `qp.qjit(capture=True)`, for both operator instances and callables.
+  [(#10356)](https://github.com/PennyLaneAI/pennylane/pull/10356)
+  [(#10367)](https://github.com/PennyLaneAI/pennylane/pull/10367)
 
 * :func:`~.ctrl` of a quantum function now forwards ``work_wire_type`` to each inner operator,
   both with and without program capture.

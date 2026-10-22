@@ -25,7 +25,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.op_math import Prod
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.typing import AbstractWires, Float
 
 
@@ -240,8 +240,7 @@ class TestSelectPauliRot:
 
         angles = np.random.random((2**n,))
         op = qp.SelectPauliRot(angles, control_wires=range(n), target_wire=n, rot_axis=axis)
-        for rule in qp.list_decomps("SelectPauliRot"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.jax
     def test_interface_jax(self):

@@ -1,38 +1,57 @@
-*~
+# Python bytecode and build artifacts
 *.pyc
-doc/_build
+*.egg-info*
 build
 dist
-qit.egg-info
-.idea
-.cursor
-.codex
-*.ipynb
-*.ipynb_checkpoints
-*.egg-info*
+
+# Virtual environments and local configuration
+*venv*/
+.envrc
+config.toml
+
+# Local Git worktrees
+/.worktrees/
+
+# Tests and coverage
 .coverage*
 !.coveragerc
 !pennylane/labs/.coveragerc
-coverage_html_report/*
-notebooks/*
 .pytest_cache/*
+coverage_html_report/*
+
+# Benchmarks and profiling
+.benchmarks/*
+benchmark/revisions/
+timer.dat
+
+# Documentation output
+doc/_build
 doc/tutorials/*
 doc/_static/thumbs/*
 doc/code/api/*
 !doc/_static/code.png
-*.DS_Store
-/.vscode/*
-timer.dat
-tmp/*
-benchmark/revisions/
-*venv*/
-config.toml
-.envrc
-qml_debug.log
-qp_debug.log
+
+# Notebooks and datasets
+*.ipynb
+*.ipynb_checkpoints
+notebooks/*
 datasets/*
-.benchmarks/*
 *.h5
 *.hdf5
+
+# Editors and operating system files
+*~
+*.DS_Store
+.idea
+.cursor
+.codex
+/.vscode/*
+
+# Logs and temporary files
+qml_debug.log
+qp_debug.log
+tmp/*
+
+# Local AI assistant instructions
 CLAUDE.local.md
 AGENTS.local.md
