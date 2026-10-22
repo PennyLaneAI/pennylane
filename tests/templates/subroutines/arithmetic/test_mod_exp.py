@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -195,8 +195,7 @@ class TestModExp:
             [9, 10, 11, 12, 13],
         )
         op = qp.ModExp(x_wires, output_wires, base, mod, work_wires)
-        for rule in qp.list_decomps(qp.ModExp):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.jax
     def test_jit_compatible(self):

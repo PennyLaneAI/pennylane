@@ -1211,11 +1211,14 @@
   [(#10305)](https://github.com/PennyLaneAI/pennylane/pull/10305)
   
 * A new :mod:`pennylane.testing` module collects utilities for testing code built with PennyLane.
-  - ``qp.ops.functions.assert_valid`` is now available as :func:`qp.testing.assert_valid <pennylane.testing.assert_valid>`.
+  - :func:`qp.testing.assert_valid <pennylane.testing.assert_valid>` replaces ``qp.ops.functions.assert_valid``.
+  - :func:`qp.testing.assert_valid_decomp_rule <pennylane.testing.assert_valid_decomp_rule>` replaces the private ``_test_decomposition_rule``.
+  - A new :func:`qp.testing.assert_decomposable <pennylane.testing.assert_decomposable>` is added.
 
   [(#10293)](https://github.com/PennyLaneAI/pennylane/pull/10293)
   [(#10306)](https://github.com/PennyLaneAI/pennylane/pull/10306)
   [(#10335)](https://github.com/PennyLaneAI/pennylane/pull/10335)
+  [(#10342)](https://github.com/PennyLaneAI/pennylane/pull/10342)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -1349,6 +1352,10 @@
   [(#10337)](https://github.com/PennyLaneAI/pennylane/pull/10337)
 
 <h3>Breaking changes 💔</h3>
+
+* ``qp.ops.functions.assert_valid`` has been removed. Use :func:`~.testing.assert_valid` instead.
+  The private ``_test_decomposition_rule`` has been removed; use :func:`~.testing.assert_valid_decomp_rule`.
+  [(#10342)](https://github.com/PennyLaneAI/pennylane/pull/10342)
 
 * The `qp.Backline.backline` alias of `qp.Backline.placement` has been removed. Use `placement`.
   [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
