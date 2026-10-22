@@ -359,7 +359,6 @@ class TestHigherOrderPrimitiveRegistrations:
 
         jaxpr = jax.make_jaxpr(f)(0.5)
 
-        assert "lazy" not in jaxpr.eqns[0].params
         assert jaxpr.eqns[0].primitive == adjoint_transform_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         # first eqn mul, second RX

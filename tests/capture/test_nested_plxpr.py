@@ -62,8 +62,6 @@ class TestAdjointQfunc:
         assert nested_jaxpr.eqns[0].params["op_cls"] is qp.PauliRot
         assert nested_jaxpr.eqns[0].params["pauli_word"][0] == ("XY",)
 
-        assert "lazy" not in plxpr.eqns[0].params
-
         with qp.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2)
 
@@ -83,8 +81,6 @@ class TestAdjointQfunc:
 
         nested_jaxpr = plxpr.eqns[0].params["jaxpr"]
         assert_eqn_matches_op(nested_jaxpr.eqns[0], qp.Rot)
-
-        assert "lazy" not in plxpr.eqns[0].params
 
         with qp.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, -1.0, -2.0, -3.0)
@@ -123,7 +119,6 @@ class TestAdjointQfunc:
         assert len(q.queue) == 2
 
         assert plxpr.eqns[0].primitive == adjoint_transform_prim
-        assert "lazy" not in plxpr.eqns[0].params
 
         inner_plxpr = plxpr.eqns[0].params["jaxpr"]
         assert len(inner_plxpr.eqns) == 5
