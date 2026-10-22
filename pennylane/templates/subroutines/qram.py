@@ -1271,7 +1271,7 @@ def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
     return {
         Hadamard: num_address_wires,
         PauliX: 2 * num_zero_bits,
-        ctrl(RY(Wire[1]), Wire[num_address_wires]): num_entries,
+        ctrl(RY(Float, Wire[1]), Wire[num_address_wires]): num_entries,
     }
 
 
