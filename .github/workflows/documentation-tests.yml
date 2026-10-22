@@ -146,5 +146,5 @@ jobs:
       - name: Test `changelog-dev.rst` file
         if: always()
         run: |
-          # Sybil handles the examples; disable pytest's duplicate RST doctest collection.
+          # -p no:doctest makes it so only sybil runs the tests, not pytest's default
           ! [ -f "doc/releases/changelog-dev.rst" ] || pytest -p no:doctest doc/releases/changelog-dev.rst || [ $? -eq 5 ]
