@@ -2081,6 +2081,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qp.snapshots` now returns one result per shot partition when a shot vector is used on
+  `default.qubit` and `default.mixed`. Previously, only the first partition was kept and the
+  rest were silently dropped.
+  [(#10361)](https://github.com/PennyLaneAI/pennylane/pull/10361)
+  
 * :func:`~.ctrl` now supports mixed static and dynamic control values under
   `qp.qjit(capture=True)`, for both operator instances and callables.
   [(#10356)](https://github.com/PennyLaneAI/pennylane/pull/10356)

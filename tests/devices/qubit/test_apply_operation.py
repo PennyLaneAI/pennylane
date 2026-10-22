@@ -578,6 +578,21 @@ class TestSnapshot:
 
         assert debugger.snapshots["tag"].shape == (50, 1)
 
+    def test_shot_vector(self, ml_framework):
+        """Test that a shot vector gives one snapshot result per shot partition."""
+
+        initial_state = qp.math.asarray(np.array([1.0, 0.0]), like=ml_framework)
+
+        debugger = Debugger()
+        op = qp.Snapshot("tag", qp.sample(wires=0), shots=[2, 3])
+        _ = apply_operation(op, initial_state, debugger=debugger)
+
+        snapshot = debugger.snapshots["tag"]
+        assert isinstance(snapshot, tuple)
+        assert len(snapshot) == 2
+        assert snapshot[0].shape == (2, 1)
+        assert snapshot[1].shape == (3, 1)
+
     def test_batched_state(self, ml_framework):
         """Test that batched states create batched snapshots."""
         initial_state = qp.math.asarray([[1.0, 0.0], [0.0, 0.1]], like=ml_framework)
