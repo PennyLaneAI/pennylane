@@ -178,7 +178,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
-    if math.is_abstract(op):
+    if math.is_tracer(op):
         return Controlled(
             op,
             control,
@@ -256,7 +256,7 @@ def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
 def _is_empty_or_all_true(control_values):
     """Checks whether a control values argument is empty or all True."""
     return control_values is None or (
-        not math.is_abstract(control_values)
+        not math.is_tracer(control_values)
         and not isinstance(control_values, AbstractArray)
         and all(control_values)
     )
@@ -301,7 +301,7 @@ def create_controlled_op(op, control, control_values, work_wires, work_wire_type
         control_values = [bool(control_values)]
     elif isinstance(control_values, (tuple, list)):
         control_values = [
-            math.cast(v, dtype=bool) if math.is_abstract(v) else bool(v) for v in control_values
+            math.cast(v, dtype=bool) if math.is_tracer(v) else bool(v) for v in control_values
         ]
 
     qp.QueuingManager.remove(op)
@@ -730,7 +730,7 @@ class Controlled(SymbolicOp):
         if self.base.name in ("RX", "RY", "RZ", "Rot"):
             base_params = str(
                 [
-                    (id(d) if math.is_abstract(d) else math.round(math.real(d) % (4 * np.pi), 10))
+                    (id(d) if math.is_tracer(d) else math.round(math.real(d) % (4 * np.pi), 10))
                     for d in self.base.data
                 ]
             )
@@ -936,7 +936,7 @@ class Controlled(SymbolicOp):
         ):
             return True
         is_su2 = _is_single_qubit_special_unitary(self.base)
-        if not math.is_abstract(is_su2) and is_su2:
+        if not math.is_tracer(is_su2) and is_su2:
             return True
         if self.base.has_decomposition:
             return True
@@ -1101,7 +1101,7 @@ def _decompose_no_control_values(op: Controlled) -> list[Operator] | None:
         return decomp
 
     is_su2 = _is_single_qubit_special_unitary(op.base)
-    if not math.is_abstract(is_su2) and is_su2:
+    if not math.is_tracer(is_su2) and is_su2:
         if len(op.control_wires) >= 2 and math.get_interface(*op.data) == "numpy":
             return ctrl_decomp_bisect(op.base, op.control_wires)
         return ctrl_decomp_zyz(
@@ -1203,7 +1203,7 @@ def _impl(
     work_wires=None,
     work_wire_type="borrowed",
 ):
-    control_wires = tuple(w if math.is_abstract(w) else int(w) for w in control_wires)
+    control_wires = tuple(w if math.is_tracer(w) else int(w) for w in control_wires)
     return type.__call__(
         Controlled,
         base,

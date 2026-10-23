@@ -20,7 +20,7 @@ from collections.abc import Callable
 import jax
 
 from pennylane import capture
-from pennylane.math import is_abstract
+from pennylane.math import is_tracer
 from pennylane.wires import Wires
 
 
@@ -181,10 +181,10 @@ def create_measurement_wires_primitive(
     @primitive.def_impl
     def _impl(*args, has_eigvals=False, **kwargs):
         if has_eigvals:
-            wires = Wires(tuple(w if is_abstract(w) else int(w) for w in args[:-1]))
+            wires = Wires(tuple(w if is_tracer(w) else int(w) for w in args[:-1]))
             kwargs["eigvals"] = args[-1]
         else:
-            wires = tuple(w if is_abstract(w) else int(w) for w in args)
+            wires = tuple(w if is_tracer(w) else int(w) for w in args)
             wires = Wires(wires)
         return type.__call__(measurement_type, wires=wires, **kwargs)
 
