@@ -839,6 +839,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* Arithmetic on ``AbstractArray`` now broadcasts shapes, permits unknown dimensions,
+  and infers operation-specific dtypes while preserving weak typing for chained expressions.
+  Python scalars are supported on either side of binary arithmetic operators.
+  Unary ``-``, ``+``, and ``abs`` and their NumPy equivalents are also supported.
+  Corresponding NumPy arithmetic ufuncs, such as ``np.add`` and ``np.power``, are also supported.
+  [(#10385)](https://github.com/PennyLaneAI/pennylane/pull/10385)
+
 * Terminal measurements now accept fixed-size `qp.typing.Wire[n]` registers during
   program capture.
   [(#10364)](https://github.com/PennyLaneAI/pennylane/pull/10364)
