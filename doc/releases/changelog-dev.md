@@ -152,6 +152,7 @@
   [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
   [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
   [(#10120)](https://github.com/PennyLaneAI/pennylane/pull/10120)
+  [(#10340)](https://github.com/PennyLaneAI/pennylane/pull/10340)
 
 * Three new operators called :class:`pennylane.PPR_2`, :class:`pennylane.PPR_4` and
   :class:`pennylane.PPR_8` have been added, which represent the Pauli product rotations
@@ -1365,7 +1366,6 @@
   [(#10337)](https://github.com/PennyLaneAI/pennylane/pull/10337)
 
 <h3>Breaking changes 💔</h3>
-
 * ``qp.ops.functions.assert_valid`` has been removed. Use :func:`~.testing.assert_valid` instead.
   The private ``_test_decomposition_rule`` has been removed; use :func:`~.testing.assert_valid_decomp_rule`.
   [(#10342)](https://github.com/PennyLaneAI/pennylane/pull/10342)
