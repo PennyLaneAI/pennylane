@@ -176,31 +176,23 @@ def _(f):
     wire_labels(f, -8, [(C0, "$c_0$"), (C1, "$c_1$"), (T, r"$|0\rangle$")])
 
 
-def ppr(f, x, paulis, angle, fill=PU2, contiguous=True):
-    """A Pauli product rotation: one Pauli letter per wire (a single box over adjacent wires,
-    separate boxes joined by a line across skipped wires) and its angle above the circuit."""
-    ys = sorted(paulis)
-    if contiguous:
-        f.gate(x, ys[0], ys[-1], w=30, fill=fill, **KW)
-        for y in ys:
-            f.text(x, y, f"${paulis[y]}$", size=15)
-    else:
-        f.vline(x, ys[0], ys[-1])
-        for y in ys:
-            g(f, x, y, f"${paulis[y]}$", fill)
-    f.text(x, C0 - 30, angle, size=12)
+def ppr(f, x, y0, y1, label, word, fill=PU2, w=52):
+    """A Pauli product rotation spanning wires ``y0..y1``: its name above its Pauli word, as in
+    the other thumbnails."""
+    f.gate(x, y0, y1, lines=[label, f"${word}$"], w=w, fill=fill, **KW)
 
 
 @drawing("temporary_and_ppr")
 def _(f):
-    xs = [30, 80, 128, 176, 224, 274]
+    xs = [30, 92, 158, 224, 298, 364]
     for y in (C0, C1, T):
-        f.wire(y, 0, 300)
+        f.wire(y, 0, 394)
     xg(f, xs[0], C1)
-    ppr(f, xs[1], {C0: "Z", C1: "Z", T: "Y"}, r"$\frac{\pi}{8}$")
-    ppr(f, xs[2], {C1: "Z", T: "Y"}, r"$-\frac{\pi}{8}$", fill=MG2)
-    ppr(f, xs[3], {C0: "Z", T: "Y"}, r"$-\frac{\pi}{8}$", fill=MG2, contiguous=False)
-    ppr(f, xs[4], {T: "Y"}, r"$\frac{\pi}{8}$", fill=CY2)
+    ppr(f, xs[1], C0, T, r"$\mathrm{PPR}_8$", "ZZY")
+    ppr(f, xs[2], C1, T, r"$\mathrm{PPR}_8^\dagger$", "ZY", fill=MG2)
+    # the "ZY" rotation on c_0 and the target is a "ZIY" rotation on all three wires
+    ppr(f, xs[3], C0, T, r"$\mathrm{PPR}_8^\dagger$", "ZIY", fill=MG2)
+    g(f, xs[4], T, r"$\mathrm{PPR}_8(Y)$", CY2, w=76)
     xg(f, xs[5], C1)
     wire_labels(f, -8, [(C0, "$c_0$"), (C1, "$c_1$"), (T, r"$|0\rangle$")])
 
