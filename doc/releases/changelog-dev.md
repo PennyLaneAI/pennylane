@@ -848,6 +848,11 @@
   :class:`~.Controller` or :class:`~.Coprocessor` names the backend to run on with ``backend=``.
   [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
 
+* :class:`~.Backline` takes a ``frame`` argument to choose the layout its messages travel in.
+  ``"auto"``, the default, leaves the choice to the compiler as before; ``"cuqr"`` selects
+  cudaq-realtime's format, to talk to a cudaq-realtime peer over RDMA.
+  [(#10379)](https://github.com/PennyLaneAI/pennylane/pull/10379)
+
 * The `decompose_mcx_with_no_worker` decomposition rule for :class:`~.MultiControlledX` now only
   applies when no work wires are provided, matching `MultiControlledX.compute_decomposition`.
   This removes controlled `GlobalPhase` and `PhaseShift` rules from the decomposition graph and
