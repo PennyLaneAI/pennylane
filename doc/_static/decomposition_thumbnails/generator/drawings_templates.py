@@ -54,7 +54,7 @@ def wires(f, ys, x1, x0=0):
         f.wire(y, x0, x1)
 
 
-def qlabels(f, ys, name="q"):
+def wlabels(f, ys, name="w"):
     wire_labels(f, -8, [(y, f"${name}_{i}$") for i, y in enumerate(ys)])
 
 
@@ -70,7 +70,7 @@ def _(f):
     cg(f, 210, [W[2]], W[1], r"$R_\phi$", PF, w=36)
     g(f, 254, W[2], "H", HF)
     swap(f, 284, W[0], W[2])
-    qlabels(f, W)
+    wlabels(f, W)
 
 
 @drawing("aqft_cphase_swap")
@@ -85,7 +85,7 @@ def _(f):
         x += 88
     swap(f, 318, W[0], W[3])
     swap(f, 344, W[1], W[2])
-    qlabels(f, W)
+    wlabels(f, W)
 
 
 # ---------------- FlipSign / MultiX ----------------
@@ -96,7 +96,7 @@ def _(f):
     g(f, 60, W[2], "X", XF)
     cg(f, 115, [W[0], W[1]], W[2], "Z", ZF, bits=[1, 0])
     g(f, 170, W[2], "X", XF)
-    qlabels(f, W)
+    wlabels(f, W)
 
 
 @drawing("multix_conditional_x")
@@ -120,7 +120,7 @@ def _(f):
     g(f, 150, W[0], r"$R_Z$", RF, w=36)
     g(f, 150, W[1], r"$R_Z$", RF, w=36)
     g(f, 210, W[0], r"$R_{ZZ}$", MG2, w=44, y1=W[1])
-    qlabels(f, W)
+    wlabels(f, W)
 
 
 @drawing("iqp_embedding_multirz")
@@ -139,7 +139,7 @@ def _(f):
     zz(130, W[0], W[1])
     zz(190, W[0], W[2])
     zz(250, W[1], W[2])
-    qlabels(f, W)
+    wlabels(f, W)
 
 
 # ---------------- GQSP ----------------
@@ -306,7 +306,7 @@ def _(f):
     g(f, 34, W[0], r"$R_\phi$", PF, w=36)
     for x, (a, b) in zip((90, 150, 210), ((0, 1), (1, 2), (0, 1))):
         g(f, x, W[a], "G", CY2, w=34, y1=W[b])
-    qlabels(f, W)
+    wlabels(f, W)
 
 
 @drawing("basis_rotation_complex_givens")
@@ -320,4 +320,4 @@ def _(f):
         g(f, x, W[a], "G", CY2, w=34, y1=W[b])
         g(f, x + 44, W[a], r"$R_\phi$", PF, w=36)
         x += 76
-    qlabels(f, W)
+    wlabels(f, W)

@@ -62,7 +62,7 @@ def _msp(f, complex_):
     mux_box(f, 135, ys[:2], ys[2], "$R_Y$", YL2, w=36)
     if complex_:
         box(f, 192, ys[0], ys[2], "$D$", PU2, w=34)
-    wire_labels(f, -8, [(ys[0], "$q_0$"), (ys[1], "$q_1$"), (ys[2], "$q_2$")])
+    wire_labels(f, -8, [(ys[0], "$w_0$"), (ys[1], "$w_1$"), (ys[2], "$w_2$")])
 
 
 @drawing("multiplexer_state_prep_real")
@@ -87,7 +87,7 @@ def _(f):
         f.vline(x, w, q)
         box(f, x, w, None, f"$U_{i}$", fills[i])
         box(f, x, q, None, f"$U_{i}$", fills[i])
-    wire_labels(f, -8, [(w, "work"), (q0, "$q_0$"), (q1, "$q_1$"), (q2, "$q_2$")])
+    wire_labels(f, -8, [(w, "work"), (q0, "$w_0$"), (q1, "$w_1$"), (q2, "$w_2$")])
 
 
 # ------------------------------------------------------------------ SumOfSlatersPrep

@@ -83,7 +83,12 @@ def _(f):
     elb(f, xs[5], [Q[3], Q[2]], A0)
     cnot(f, xs[6], Q[3], Q[2])
     xg(f, xs[7], Q[3])
-    wire_labels(f, -8, [(y, f"$q_{i}$") for i, y in enumerate(Q)] + [(A0, "$w_0$"), (A1, "$w_1$")])
+    wire_labels(
+        f,
+        -8,
+        [(y, f"$w_{i}$") for i, y in enumerate(Q)]
+        + [(A0, r"$\mathrm{work}_0$"), (A1, r"$\mathrm{work}_1$")],
+    )
 
 
 @drawing("incrementer_multi_controlled_x")
@@ -95,7 +100,7 @@ def _(f):
     mcx(f, xs[1], [Q[2], Q[3]], Q[1])
     mcx(f, xs[2], [Q[3]], Q[2])
     xg(f, xs[3], Q[3])
-    wire_labels(f, -8, [(y, f"$q_{i}$") for i, y in enumerate(Q)])
+    wire_labels(f, -8, [(y, f"$w_{i}$") for i, y in enumerate(Q)])
 
 
 # ---------------- SemiAdder (m = n = 3) ----------------
