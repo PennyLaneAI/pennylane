@@ -112,7 +112,7 @@ def preprocess_level_input(
         >>> preprocess_level_input([0, "after"], pipeline)
         [0, 1]
         >>> preprocess_level_input("all", pipeline)
-        [0, 1, 2]
+        [0, 1, 2, 3]
     """
     # pylint: disable=too-many-branches
     if trans := [pass_ for pass_ in compile_pipeline if pass_.pass_name is None]:
