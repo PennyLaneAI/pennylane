@@ -19,7 +19,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import partial
 
-from ..capture import enabled
+from pennylane.capture import enabled
 from ._utils import (
     apply_partial_args,
     build_circuit_specs,
