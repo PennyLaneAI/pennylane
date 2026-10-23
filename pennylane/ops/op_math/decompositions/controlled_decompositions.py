@@ -749,6 +749,7 @@ def _mcx_one_worker_resource(wires, control_values, work_wires, work_wire_type="
     adjoint_toffoli = qp.adjoint(ops.Toffoli(Wire[3]))
     adjoint_x = qp.adjoint(ops.X(Wire[1]))
     if work_wire_type == "zeroed":
+        n_ccx = 2 * num_control_wires - 5
         return {
             ops.Toffoli: n_ccx - n_adjoint_ladder,
             adjoint_toffoli: n_adjoint_ladder,
