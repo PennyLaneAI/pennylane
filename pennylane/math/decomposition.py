@@ -485,8 +485,8 @@ def _commute_phases_u(left_givens, right_givens, phases):
         c, s = math.real(grot_mat[1, 1]), math.real(grot_mat[0, 1])
         selected_cs = math.where(s > c, s, c)
         conj_p = math.where(s > c, -math.conj(grot_mat[1, 0]), math.conj(grot_mat[0, 0]))
-        abs_p = math.abs(conj_p) / selected_cs
-        conj_p = conj_p / math.abs(conj_p)
+        conj_p = conj_p / selected_cs
+        abs_p = math.abs(conj_p)
         rel_phase = phases[j, j] * math.conj(phases[i, i])
         givens_mat = math.array(
             [
