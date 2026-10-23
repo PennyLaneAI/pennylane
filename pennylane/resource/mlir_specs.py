@@ -169,8 +169,9 @@ def resources_from_analysis_pass(
         if compile_options.pipelines is None:
             # If the user has not explicitly chosen a pipeline, prevent unnecessary work by
             # limiting which passes are applied to just the necessary ones. In this case, only
-            # the set of user-specified transforms (the quantum-compilation-stage) are run
-            compile_options.pipelines = [("pipe", ["quantum-compilation-stage"])]
+            # the passes up to and including the user-specified transforms (the
+            # user-transform-stage) are run
+            compile_options.pipelines = [("pipe", ["user-transform-stage"])]
 
         # Partially compile the QNode, producing JSON data with resource info
         _execute_analysis_pass(new_qnode, compile_options, *args, **kwargs)
