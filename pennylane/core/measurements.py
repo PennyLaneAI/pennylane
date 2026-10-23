@@ -38,7 +38,7 @@ from pennylane.exceptions import (
     PennyLaneDeprecationWarning,
     QuantumFunctionError,
 )
-from pennylane.math.utils import is_abstract
+from pennylane.math.utils import is_tracer
 from pennylane.pytrees import flatten, register_pytree, unflatten
 from pennylane.typing import AbstractWires, TensorLike
 from pennylane.wires import Wires
@@ -182,7 +182,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             # Cast sequence of measurement values to list
             self.mv = obs if getattr(obs, "name", None) == "MeasurementValue" else list(obs)
             self.obs = None
-        elif is_abstract(obs):  # Catalyst program with qp.sample(m, wires=i)
+        elif is_tracer(obs):  # Catalyst program with qp.sample(m, wires=i)
             self.mv = obs
             self.obs = None
         else:
@@ -312,7 +312,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
         This is the union of all the Wires objects of the measurement.
         """
-        if self.mv is not None and not is_abstract(self.mv):
+        if self.mv is not None and not is_tracer(self.mv):
             if isinstance(self.mv, list):
                 return Wires.all_wires([m.wires for m in self.mv])
             return self.mv.wires

@@ -168,7 +168,7 @@ def test_ffft_num_iters_hints(n_wires):
         _permute_and_apply_parallel(wires, TwoWireFFT)
 
     plxpr = jax.make_jaxpr(permutation)()
-    ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+    ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
     num_fswaps = sum(isinstance(op, FermionicSWAP) for op in ops)
 
     num_layers = n_wires // 2 - 1

@@ -31,12 +31,6 @@ from pennylane.capture.primitives import operator_p
 from pennylane.ops.mid_measure import MidMeasure
 
 
-def test_plxpr_to_tape_aliases():
-    """Test that the old locations of plxpr_to_tape still give the same function."""
-    assert qp.tape.plxpr_to_tape is qp.testing.plxpr_to_tape
-    assert qp.tape.plxpr_conversion.plxpr_to_tape is qp.testing.plxpr_to_tape
-
-
 class TestPlxprToTape:
     """Tests for the plxpr_to_tape function."""
 
