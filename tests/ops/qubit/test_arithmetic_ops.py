@@ -442,11 +442,6 @@ class TestIntegerComparator:
 
     @pytest.mark.integration
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.xfail(
-        reason="Non-capture graph incorrectly requires work wires for the adjoint Toffoli path.",
-        raises=qp.exceptions.DecompositionError,
-        strict=True,
-    )
     def test_decomposition_graph_integration(self):
         """Tests that the decomposition is correct under the new system."""
 

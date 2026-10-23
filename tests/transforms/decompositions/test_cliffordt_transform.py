@@ -207,25 +207,10 @@ class TestCliffordCompile:
         )
         qp.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
+    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "circuit",
-        [
-            pytest.param(
-                circuit_7,
-                marks=pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]"),
-            ),
-            pytest.param(
-                circuit_8,
-                marks=pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]"),
-            ),
-            pytest.param(
-                circuit_10,
-                marks=pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]"),
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("circuit", [circuit_7, circuit_8, circuit_10])
     def test_decomposition_with_rs_qjit(self, circuit):
         """Test decomposition for the Clifford transform with Ross-Selinger method with QJIT enabled."""
 

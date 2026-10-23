@@ -1774,19 +1774,11 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_finite_shots(
-        self,
-        dev_name,
-        diff_method,
-        grad_on_execution,
-        device_vjp,
-        interface,
-        max_diff,
-        seed,
+        self, dev_name, diff_method, grad_on_execution, device_vjp, interface, max_diff, seed
     ):
         """Test that the Hamiltonian is correctly measured if there
         are non-commuting groups and the number of shots is finite
         and the first and second order gradients are correctly evaluated"""
-
         gradient_kwargs = {}
         tol = 0.3
         if dev_name == "param_shift.qubit":
@@ -2637,15 +2629,7 @@ class TestReturn:
         assert jac[1].shape == (2,)
 
     def test_jacobian_var_var_multiple_params(
-        self,
-        dev_name,
-        diff_method,
-        grad_on_execution,
-        device_vjp,
-        jacobian,
-        shots,
-        interface,
-        seed,
+        self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
     ):
         """The jacobian of multiple measurements with multiple params return a tuple of arrays."""
 
@@ -2701,15 +2685,7 @@ class TestReturn:
         assert jac[1][1].shape == ()
 
     def test_jacobian_var_var_multiple_params_array(
-        self,
-        dev_name,
-        diff_method,
-        grad_on_execution,
-        device_vjp,
-        jacobian,
-        shots,
-        interface,
-        seed,
+        self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
 
