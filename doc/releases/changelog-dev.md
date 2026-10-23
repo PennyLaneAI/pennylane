@@ -838,6 +838,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Arithmetic on ``AbstractArray`` now broadcasts shapes, permits unknown dimensions,
+  and infers operation-specific dtypes while preserving weak typing for chained expressions.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Terminal measurements now accept fixed-size `qp.typing.Wire[n]` registers during
   program capture.
   [(#10364)](https://github.com/PennyLaneAI/pennylane/pull/10364)

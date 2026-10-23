@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the ``typing.py`` file."""
 
+import operator
+
 import jax
 import numpy as np
 import pytest
@@ -150,6 +152,100 @@ class TestTensorLike:
 # pylint: disable=protected-access,too-many-public-methods
 class TestAbstractArray:
     """Tests for the AbstractArray class."""
+
+    @pytest.mark.parametrize(
+        "operation",
+        [
+            operator.add,
+            operator.sub,
+            operator.mul,
+            operator.truediv,
+            operator.mod,
+            operator.floordiv,
+            operator.pow,
+        ],
+    )
+    @pytest.mark.parametrize(
+        "left, right, expected",
+        [
+            ((), (), ()),
+            ((2, 3), (), (2, 3)),
+            ((3,), (2, 1), (2, 3)),
+            ((0, 3), (1, 3), (0, 3)),
+            ((-1, 3), (1, 3), (-1, 3)),
+            ((-1, 3), (4, 1), (4, 3)),
+            ((-1,), (0,), (0,)),
+            ((-1,), (-1,), (-1,)),
+            (Ellipsis, (2, 3), Ellipsis),
+        ],
+    )
+    def test_arithmetic_broadcasting(self, operation, left, right, expected):
+        """Arithmetic broadcasts metadata symmetrically without needing values."""
+        for lhs, rhs in [(left, right), (right, left)]:
+            result = operation(AbstractArray(lhs, float), AbstractArray(rhs, float))
+            assert isinstance(result, AbstractArray)
+            assert result.shape == expected
+            assert result.dtype == np.dtype(float)
+            assert result._weak_type
+            assert result.shape_fixed == (expected is not Ellipsis and -1 not in expected)
+
+    @pytest.mark.parametrize("left, right", [((2,), (3,)), ((-1, 2), (4, 3))])
+    def test_arithmetic_shape_conflict(self, left, right):
+        """Unknown axes do not hide a conflict on another axis."""
+        with pytest.raises(ValueError, match="Cannot broadcast shapes"):
+            AbstractArray(left, float) + AbstractArray(right, float)
+
+    @pytest.mark.parametrize(
+        "operation, left, right, expected, weak",
+        [
+            (operator.add, np.float32, float, np.float32, False),
+            (operator.add, float, np.float32, np.float32, False),
+            (operator.add, np.int32, int, np.int32, False),
+            (operator.add, np.float32, np.float64, np.float64, False),
+            (operator.add, int, float, np.float64, True),
+            (operator.add, bool, bool, np.bool_, True),
+            (operator.truediv, int, int, np.float64, True),
+            (operator.truediv, np.int32, np.int32, np.float64, False),
+            (operator.add, np.complex64, float, np.complex64, False),
+        ],
+    )
+    def test_arithmetic_dtype(self, operation, left, right, expected, weak):
+        """Dtype inference respects weak inputs and operation-specific output types."""
+        result = operation(AbstractArray((2,), left), AbstractArray((2,), right))
+        assert result.dtype == np.dtype(expected)
+        assert result._weak_type is weak
+
+    @pytest.mark.parametrize(
+        "operation, dtype",
+        [(operator.sub, bool), (operator.mod, complex), (operator.floordiv, complex)],
+    )
+    def test_arithmetic_invalid_dtype(self, operation, dtype):
+        """Unsupported arithmetic dtype combinations fail without evaluating values."""
+        with pytest.raises(TypeError):
+            operation(AbstractArray((2,), dtype), AbstractArray((2,), dtype))
+
+    def test_arithmetic_chaining(self):
+        """Results retain weak typing for subsequent arithmetic."""
+        weak = (AbstractArray((2, 1), int) + 1) / 2
+        assert weak._weak_type
+        result = weak * AbstractArray((3,), np.float32)
+        assert result.shape == (2, 3)
+        assert result.dtype == np.float32
+        assert not result._weak_type
+
+    def test_arithmetic_concrete_array(self):
+        """Concrete operands contribute only shape and dtype."""
+        result = AbstractArray((2, 1), float) + np.ones(3, dtype=np.float32)
+        assert result.shape == (2, 3)
+        assert result.dtype == np.float32
+        assert not result._weak_type
+
+    def test_arithmetic_unsupported_operand(self):
+        """Unrelated operands use Python's unsupported-operation protocol."""
+        array = AbstractArray((2,), float)
+        assert array.__add__(object()) is NotImplemented
+        with pytest.raises(TypeError):
+            array + object()
 
     def test_basic_instance(self):
         """Test a normal instance of AbstractArray."""
