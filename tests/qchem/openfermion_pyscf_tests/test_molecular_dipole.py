@@ -304,7 +304,8 @@ def test_differentiable_molecular_dipole(
         if not wires:
             eig = [0, 0]
         else:
-            eig = qp.eigvals(qp.SparseHamiltonian(dip.sparse_matrix(), wires=wires), k=3)
+            # Sparse eigensolvers may miss multiplicities when k cuts through a degenerate subspace.
+            eig = qp.math.linalg.eigvalsh(dip.sparse_matrix().toarray())[:3]
         assert np.allclose(np.sort(eig), np.sort(eig_ref[idx]))
 
 
