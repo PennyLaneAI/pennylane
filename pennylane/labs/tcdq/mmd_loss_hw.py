@@ -31,9 +31,10 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 from jax.typing import ArrayLike
 
-from .qudit_expval_functions import _dims_to_numpy
+from .qudit_expval_functions import _dims_to_numpy, _is_tracer, _key_token, _phase_fraction
 
 _REAL_DTYPE = jnp.float32
 _COMPLEX_DTYPE = jnp.complex64
@@ -127,6 +128,7 @@ def _marginal_probs(d: int, bandwidth: float, graph_type: str) -> jnp.ndarray:
     raise ValueError(f"Unknown graph_type {graph_type!r}; use 'cycle' or 'complete'.")
 
 
+@partial(jax.jit, static_argnames=["n_ops", "n_qudits", "dims", "graph_type", "wire_tuple"])
 def _sample_fourier_indices(  # pylint: disable=too-many-arguments,too-many-locals
     key: ArrayLike,
     n_ops: int,
@@ -150,49 +152,59 @@ def _sample_fourier_indices(  # pylint: disable=too-many-arguments,too-many-loca
         Integer array of shape ``(n_ops, n_qudits)``; column ``i`` has entries
         in :math:`\\{0, \\ldots, d_i-1\\}`.
     """
+    # Group the visible wires by local dimension so that every group is sampled with a
+    # single draw and written with a single scatter. The uniform variates are drawn as one
+    # flat array: XLA constant-folds the two-dimensional counter grid of the partitionable
+    # threefry generator, which costs seconds of compile time for 10^6 elements, whereas a
+    # one-dimensional draw of the same size compiles in tens of milliseconds.
     wires_by_dim: dict[int, list[int]] = {}
     for wire in wire_tuple:
         wires_by_dim.setdefault(int(dims[wire]), []).append(int(wire))
 
-    all_obs = jnp.zeros((n_ops, n_qudits), dtype=_INDEX_DTYPE)
     keys = jax.random.split(key, len(wires_by_dim)) if wires_by_dim else []
-    for group_key, (d_i, wires) in zip(keys, sorted(wires_by_dim.items())):
-        marginal = _marginal_probs(d_i, bandwidth, graph_type)
-        cols = jax.random.choice(group_key, d_i, shape=(n_ops, len(wires)), p=marginal)
-        all_obs = all_obs.at[:, jnp.asarray(wires, dtype=_INDEX_DTYPE)].set(
-            cols.astype(_INDEX_DTYPE)
-        )
+    groups = sorted(wires_by_dim.items())
+    columns = []
+    for group_key, (d_i, wires) in zip(keys, groups):
+        p_cuml = jnp.cumsum(_marginal_probs(d_i, bandwidth, graph_type))
+        u = jax.random.uniform(group_key, (n_ops * len(wires),), dtype=_REAL_DTYPE)
+        r = p_cuml[-1] * (1.0 - u)
+        cols = jnp.searchsorted(p_cuml, r, method="compare_all").astype(_INDEX_DTYPE)
+        columns.append(cols.reshape(n_ops, len(wires)))
+
+    if len(groups) == 1 and groups[0][1] == list(range(n_qudits)):
+        return columns[0]
+
+    all_obs = jnp.zeros((n_ops, n_qudits), dtype=_INDEX_DTYPE)
+    for cols, (_, wires) in zip(columns, groups):
+        all_obs = all_obs.at[:, jnp.asarray(wires, dtype=_INDEX_DTYPE)].set(cols)
     return all_obs
 
 
 def _empirical_fourier_moments(
     l_visible: jnp.ndarray,
     X_data: jnp.ndarray,
-    dims_visible: jnp.ndarray,
+    dims_visible: tuple[int, ...],
 ) -> jnp.ndarray:
     """Compute the empirical Fourier moment for each sampled observable from the dataset.
 
     For each Fourier index vector :math:`\\mathbf{l}`, computes
     :math:`\\hat{\\mu}_p(\\mathbf{l}) = \\frac{1}{m} \\sum_i \\exp(2\\pi i \\sum_k l_k x_{ik} / d_k)`,
-    i.e. the per-qudit root of unity :math:`\\omega_k = e^{2\\pi i / d_k}`. The
-    per-visible-wire dimension is folded in by column-scaling ``l_visible`` with
-    ``1 / dims_visible``.
+    i.e. the per-qudit root of unity :math:`\\omega_k = e^{2\\pi i / d_k}`. The phase
+    :math:`\\sum_k l_k x_{ik} / d_k` is reduced modulo one with exact integer arithmetic
+    before the exponential, so no precision is lost for wide dit-strings.
 
     Args:
         l_visible: Integer array of shape ``(n_obs, n_visible)`` — the Fourier
             index vectors restricted to the visible wires.
         X_data: Integer array of shape ``(m, n_visible)`` — target dataset
             samples on the visible wires.
-        dims_visible: Integer array of shape ``(n_visible,)`` — dimension of
-            each visible qudit.
+        dims_visible: Dimension of each visible qudit, length ``n_visible``.
 
     Returns:
         Complex array of shape ``(n_obs,)``.
     """
-    inv_d = 1.0 / jnp.asarray(dims_visible, dtype=_REAL_DTYPE)
-    l_scaled = l_visible.astype(_REAL_DTYPE) * inv_d[jnp.newaxis, :]
-    inner = l_scaled @ X_data.astype(_REAL_DTYPE).T
-    return jnp.mean(jnp.exp(2j * jnp.pi * inner).astype(_COMPLEX_DTYPE), axis=1)
+    frac = _phase_fraction(l_visible, X_data, tuple(int(d) for d in dims_visible))
+    return jnp.mean(jnp.exp((2j * jnp.pi) * frac).astype(_COMPLEX_DTYPE), axis=1)
 
 
 def _pp_term(mu_p_hat: jnp.ndarray, m: int) -> jnp.ndarray:
@@ -272,7 +284,7 @@ def _unbiased_mmd_squared(  # pylint: disable=too-many-arguments
     """
     m = X_data.shape[0]
 
-    mu_p_hat = _empirical_fourier_moments(l_visible, X_data, jnp.asarray(dims_visible))
+    mu_p_hat = _empirical_fourier_moments(l_visible, X_data, dims_visible)
 
     pp_term = _pp_term(mu_p_hat, m)
     pq_term = _pq_cross_term(mu_p_hat, mu_q_hat)
@@ -282,66 +294,75 @@ def _unbiased_mmd_squared(  # pylint: disable=too-many-arguments
     return jnp.sqrt(jnp.abs(mmd_sq)) if sqrt_loss else mmd_sq
 
 
-# pylint: disable=too-many-arguments,too-many-locals
-@partial(
-    jax.jit,
-    static_argnames=[
-        "n_ops",
-        "n_qudits",
-        "dims",
-        "wire_tuple",
-        "sqrt_loss",
-        "expval_fn",
-        "graph_type",
-    ],
-)
-def _compute_qudit_loss_for_bandwidth(
-    bandwidth: float,
-    obs_key: jnp.ndarray,
-    eval_key: jnp.ndarray,
-    params: jnp.ndarray,
-    target_data: jnp.ndarray,
-    n_ops: int,
-    n_qudits: int,
-    dims: tuple[int, ...],
-    wire_tuple: tuple[int, ...],
+@partial(jax.jit, static_argnames=["dims_visible", "sqrt_loss"])
+def _mmd_value_and_seeds(  # pylint: disable=too-many-arguments
+    mu_q_hat: jnp.ndarray,
+    cov: jnp.ndarray | None,
+    X_data: jnp.ndarray,
+    l_visible: jnp.ndarray,
+    dims_visible: tuple[int, ...],
     sqrt_loss: bool,
-    expval_fn: Callable,
-    graph_type: str,
-    expval_kwargs: dict,
-) -> jnp.ndarray:
-    """Estimate one unbiased MMD loss value for a single bandwidth setting."""
-    l_obs = _sample_fourier_indices(
-        obs_key, n_ops, n_qudits, dims, bandwidth, graph_type, wire_tuple
+) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray | None]:
+    """Loss value together with its cotangent seeds with respect to ``mu_q_hat`` and ``cov``.
+
+    The MMD estimator is quadratic in the model moments, so the gradient with respect to
+    ``mu_q_hat`` (``2 (mu_q - mu_p) / n_ops``, in JAX's conjugate convention for complex
+    inputs) and ``cov`` (``-I / n_ops``) costs nothing extra in the forward pass. Returning
+    them from the same compiled program lets the backward pass avoid compiling anything.
+    """
+    mu_q_c = jnp.asarray(mu_q_hat).astype(_COMPLEX_DTYPE)
+    cov_r = None if cov is None else jnp.asarray(cov).astype(_REAL_DTYPE)
+    value = _unbiased_mmd_squared(mu_q_c, cov_r, X_data, l_visible, dims_visible, sqrt_loss)
+
+    n_ops = mu_q_c.shape[0]
+    mu_p_hat = _empirical_fourier_moments(l_visible, X_data, dims_visible)
+    scale = 1.0 / n_ops
+    if sqrt_loss:
+        mmd_sq = _unbiased_mmd_squared(mu_q_c, cov_r, X_data, l_visible, dims_visible, False)
+        scale = scale * jnp.sign(mmd_sq) / (2.0 * jnp.sqrt(jnp.abs(mmd_sq)))
+    seed_mu = (2.0 * scale) * jnp.conj(mu_q_c - mu_p_hat)
+    seed_cov = None
+    if cov_r is not None:
+        seed_cov = jnp.broadcast_to(-scale * jnp.eye(2, dtype=_REAL_DTYPE), cov_r.shape)
+    return (
+        value,
+        seed_mu.astype(jnp.asarray(mu_q_hat).dtype),
+        (None if seed_cov is None else seed_cov.astype(jnp.asarray(cov).dtype)),
     )
-    m_obs = jnp.zeros_like(l_obs)
 
-    model_output = expval_fn(
-        params,
-        observables=(l_obs, m_obs),
-        key=eval_key,
-        **expval_kwargs,
-    )
 
-    mu_q_hat, cov = model_output if isinstance(model_output, tuple) else (model_output, None)
-
-    mu_q_hat = jnp.asarray(mu_q_hat).astype(_COMPLEX_DTYPE)
-    if cov is not None:
-        cov = jnp.asarray(cov).astype(_REAL_DTYPE)
-
-    if mu_q_hat.shape != (n_ops,):
+def _check_model_output(mu_q_hat, cov, n_ops: int) -> None:
+    """Validate the shapes returned by ``expval_fn``."""
+    if np.shape(mu_q_hat) != (n_ops,):
         raise ValueError(
-            f"expval_fn returned moments of shape {mu_q_hat.shape}, expected ({n_ops},)"
+            f"expval_fn returned moments of shape {np.shape(mu_q_hat)}, expected ({n_ops},)"
         )
-    if cov is not None and cov.shape != (n_ops, 2, 2):
+    if cov is not None and np.shape(cov) != (n_ops, 2, 2):
         raise ValueError(
-            f"expval_fn returned covariances of shape {cov.shape}, expected ({n_ops}, 2, 2)"
+            f"expval_fn returned covariances of shape {np.shape(cov)}, expected ({n_ops}, 2, 2)"
         )
 
-    l_visible = l_obs[:, list(wire_tuple)]
-    dims_visible = tuple(int(dims[w]) for w in wire_tuple)
 
-    return _unbiased_mmd_squared(mu_q_hat, cov, target_data, l_visible, dims_visible, sqrt_loss)
+def _make_mmd_combiner(dims_visible: tuple[int, ...], sqrt_loss: bool) -> Callable:
+    """Build ``(mu_q_hat, cov, X_data, l_visible) -> loss`` with a precomputed backward pass."""
+
+    @jax.custom_vjp
+    def combine(mu_q_hat, cov, X_data, l_visible):
+        return _mmd_value_and_seeds(mu_q_hat, cov, X_data, l_visible, dims_visible, sqrt_loss)[0]
+
+    def combine_fwd(mu_q_hat, cov, X_data, l_visible):
+        value, seed_mu, seed_cov = _mmd_value_and_seeds(
+            mu_q_hat, cov, X_data, l_visible, dims_visible, sqrt_loss
+        )
+        return value, (seed_mu, seed_cov)
+
+    def combine_bwd(res, ct):
+        seed_mu, seed_cov = res
+        d_cov = None if seed_cov is None else ct * seed_cov
+        return ct * seed_mu, d_cov, None, None
+
+    combine.defvjp(combine_fwd, combine_bwd)
+    return combine
 
 
 def build_mmd_loss_hw(
@@ -447,6 +468,34 @@ def build_mmd_loss_hw(
     if len(bandwidth_list) == 0:
         raise ValueError("bandwidth must not be empty")
 
+    graph_type = mmd_config.graph_type
+
+    n_visible = len(wire_tuple)
+    dims_visible = tuple(int(dims_tuple[w]) for w in wire_tuple)
+    all_wires_visible = wire_tuple == tuple(range(n_qudits))
+    visible_index = np.asarray(wire_tuple, dtype=np.int32)
+    # Only m = 0 is ever requested. Passing one fixed, concrete zero array lets the qudit IQP
+    # estimator recognise it (by identity) and skip the observable phase matrix altogether.
+    zero_m = jnp.zeros((mmd_config.n_ops, n_qudits), dtype=_INDEX_DTYPE)
+    obs_cache: dict[str, tuple] = {}
+    combine = _make_mmd_combiner(dims_visible, bool(mmd_config.sqrt_loss))
+
+    def sample_observables(obs_key, bandwidth):
+        """Sample the observable batch, reusing the previous batch for an identical key."""
+        if _is_tracer(obs_key):
+            return _sample_fourier_indices(
+                obs_key, mmd_config.n_ops, n_qudits, dims_tuple, bandwidth, graph_type, wire_tuple
+            )
+        token = (_key_token(obs_key), float(bandwidth))
+        entry = obs_cache.get("entry")
+        if entry is not None and entry[0] == token:
+            return entry[1]
+        l_obs = _sample_fourier_indices(
+            obs_key, mmd_config.n_ops, n_qudits, dims_tuple, bandwidth, graph_type, wire_tuple
+        )
+        obs_cache["entry"] = (token, l_obs)
+        return l_obs
+
     def loss_fn(
         params: ArrayLike,
         target_data: ArrayLike,
@@ -498,7 +547,6 @@ def build_mmd_loss_hw(
         if X_data.ndim != 2:
             raise ValueError(f"target_data must be 2-D, got shape {X_data.shape}")
 
-        n_visible = len(wire_tuple)
         if X_data.shape[1] != n_visible:
             raise ValueError(
                 f"target_data has {X_data.shape[1]} columns but expected "
@@ -512,25 +560,27 @@ def build_mmd_loss_hw(
         for bandwidth in bandwidth_list:
             active_key, obs_key, eval_key = jax.random.split(active_key, 3)
 
-            loss_val = _compute_qudit_loss_for_bandwidth(
-                bandwidth=bandwidth,
-                obs_key=obs_key,
-                eval_key=eval_key,
-                params=params,
-                target_data=X_data,
-                n_ops=mmd_config.n_ops,
-                n_qudits=n_qudits,
-                dims=dims_tuple,
-                wire_tuple=wire_tuple,
-                sqrt_loss=mmd_config.sqrt_loss,
-                expval_fn=expval_fn,
-                graph_type=mmd_config.graph_type,
-                expval_kwargs=expval_kwargs,
+            l_obs = sample_observables(obs_key, bandwidth)
+
+            model_output = expval_fn(
+                params,
+                observables=(l_obs, zero_m),
+                key=eval_key,
+                **expval_kwargs,
             )
-            losses.append(loss_val)
+            mu_q_hat, cov = (
+                model_output if isinstance(model_output, tuple) else (model_output, None)
+            )
+
+            _check_model_output(mu_q_hat, cov, mmd_config.n_ops)
+
+            l_visible = l_obs if all_wires_visible else l_obs[:, visible_index]
+            losses.append(combine(mu_q_hat, cov, X_data, l_visible))
 
         if mmd_config.return_per_bandwidth:
             return losses
+        if len(losses) == 1:
+            return losses[0]
         return jnp.mean(jnp.stack(losses))
 
     return loss_fn
