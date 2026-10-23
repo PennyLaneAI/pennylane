@@ -834,6 +834,29 @@ class SumOfSlatersPrep(Operator2):
     to ``20`` are work wires for the ``QROM`` and the enumeration uncomputation, respectively.
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SumOfSlatersPrep
+            :symbols: :math:`D \geq 2` entries in ``indices``, :math:`d = \lceil \log_2 D \rceil`
+                enumeration wires and :math:`m` identification bits (the number of rows of the
+                encoding computed by :func:`~.compute_sos_encoding`)
+            :example: the state above, :math:`D=8`, :math:`m=5`, :math:`u=10`
+
+            .. decomposition-rule:: _sos_state_prep
+                :image: /_static/decomposition_thumbnails/sum_of_slaters_prep.svg
+                :where: :math:`u` is the number of ones in the encoding matrix (:math:`u=0` for an
+                    identity encoding), :math:`\mathrm{wt}(k)` the number of ones in the binary
+                    representation of :math:`k`, and :math:`N_X` the number of bit flips between
+                    consecutive identification bit strings (data dependent)
+
+                :class:`~.MultiplexerStatePreparation` on :math:`d` wires | :math:`1` | 1
+                :class:`~.QROM` | :math:`1` | 1
+                :class:`~.CNOT` | :math:`2u + \sum_{k=1}^{D-1} \mathrm{wt}(k)` | 32
+                :class:`~.TemporaryAND` | :math:`(D-1)(m-1)` | 28
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`(D-1)(m-1)` | 28
+                :class:`~.X` | :math:`N_X \leq D m` | 22
+
+    .. details::
         :title: Usage details
 
         **Reduced circuit complexity for identity encodings**

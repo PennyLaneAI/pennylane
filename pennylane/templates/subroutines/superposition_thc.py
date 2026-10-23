@@ -142,6 +142,31 @@ class SuperpositionTHC(Operator2):
     True
     >>> np.allclose(probs[valid], 1/d)
     True
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SuperpositionTHC
+            :symbols: :math:`n` wires per index register
+            :example: :math:`n=3` (:math:`M=5`, :math:`N=2`)
+
+            .. decomposition-rule:: _superposition_thc
+                :image: /_static/decomposition_thumbnails/superposition_thc_amplification.svg
+
+                :class:`~.Hadamard` | :math:`6n` | 18
+                :class:`~.RY` | :math:`2` | 2
+                :class:`~.X` | :math:`4` | 4
+                :class:`~.LeftClassicalComparator` | :math:`4` | 4
+                :class:`Adjoint(LeftClassicalComparator) <.LeftClassicalComparator>` | :math:`4` | 4
+                :class:`~.LeftQuantumComparator` | :math:`2` | 2
+                :class:`Adjoint(LeftQuantumComparator) <.LeftQuantumComparator>` | :math:`2` | 2
+                :class:`~.MultiControlledX` with :math:`n` controls | :math:`3` | 3
+                :class:`~.X` with 3 controls | :math:`1` | 1
+                :class:`~.TemporaryAND` | :math:`2` | 2
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`2` | 2
+                :class:`~.Z` with 3 controls | :math:`1` | 1
+                :class:`~.FlipSign` on :math:`2n + 1` wires | :math:`1` | 1
+                :class:`~.GlobalPhase` | :math:`1` | 1
     """
 
     wire_argnames = ("mu_wires", "nu_wires", "work_wires")

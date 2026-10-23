@@ -245,6 +245,22 @@ class SemiAdder(Operator2):
     [[0 0]]
 
     The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4` where :math:`4 \mod 2^2 = 0`.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SemiAdder
+            :symbols: :math:`m` ``x_wires`` and :math:`n \geq 2` ``y_wires``
+            :example: :math:`m=n=3`
+
+            .. decomposition-rule:: _semi_adder
+                :image: /_static/decomposition_thumbnails/semi_adder_elbow_ladder.svg
+                :where: :math:`\ell = \min(m, n - 1)`, and :math:`[m \geq n]` equal to 1 if
+                    :math:`m \geq n` and 0 otherwise
+
+                :class:`~.TemporaryAND` | :math:`n - 1` | 2
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`n - 1` | 2
+                :class:`~.CNOT` | :math:`n + 5\ell - 5 + [m \geq n]` | 9
     """
 
     grad_method = None
