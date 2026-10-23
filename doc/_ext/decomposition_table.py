@@ -121,8 +121,8 @@ class DecompositionTable(SphinxDirective):
                 "Each circuit shows one example of the rule."
             )
         intro.append(
-            f'Use a rule when decomposing with :func:`qp.decompose(gate_set=..., fixed_decomps={{{op}: "\\<name>"}}) '
-            f"<pennylane.decompose>`, or inspect it with :func:`{access} <pennylane.list_decomps>`."
+            f'Use a rule when decomposing with :func:`qp.decompose(gate_set=..., fixed_decomps={{{op}: qp.list_decomps({op})["\\<name>"]}}) '
+            f"<pennylane.decompose>`."
         )
 
         # inline_text only parses inline markup, so the list itself is built from nodes
