@@ -23,7 +23,7 @@ from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
+from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
@@ -722,18 +722,19 @@ class SumOfSlatersPrep(Operator2):
             the enumeration register with multicontrolled bit flips.
             The required number of qubits depends on the particular ``indices`` of the sparse state,
             but it is at most :math:`2d-2` for :math:`d` entries in the state.
-        indices (tuple[int] | None): Indices of the sparse state to prepare. The ordering should match
-            that in ``coefficients``. ``None`` indicates unknown indices for the purposes of resource estimation.
+        indices (TensorLike): Distinct computational-basis indices of the sparse state. Their
+            ordering must match ``coefficients``. For resource estimation, use an abstract integer
+            array such as ``qp.typing.Int[8]`` instead of concrete values.
 
     The sizes for the numerous optional work wire registers can be computed with
     ``SumOfSlatersPrep.required_register_sizes(indices, wires)``.
 
     .. warning::
 
-        Note that we require ``coefficients`` to be treated as numerical data in the form of an
-        array, whereas the ``indices`` need to be hashable, and thus will be treated as static
-        information. This is because ``indices`` significantly impacts the structure and size of
-        the circuit that realizes the state preparation.
+        Both ``coefficients`` and ``indices`` are dynamic numerical arguments. The decomposition
+        uses all target wires with identity encoding, so register sizes depend only on the
+        number of entries and target wires. Row reduction and compression are not used.
+        The compression examples below describe the earlier static-index implementation.
 
     **Example**
 
@@ -948,7 +949,7 @@ class SumOfSlatersPrep(Operator2):
 
     """
 
-    dynamic_argnames = ("coefficients",)
+    dynamic_argnames = ("coefficients", "indices")
     wire_argnames = (
         "wires",
         "enumeration_wires",
@@ -956,17 +957,16 @@ class SumOfSlatersPrep(Operator2):
         "qrom_work_wires",
         "mcx_cache_wires",
     )
-    compilable_argnames = ("indices",)
     # NOTE: 'coefficients' is deliberately left out of the 'arg_specs' as real-valued
     # coefficients lead to a cheaper MultiplexerStatePreparation than complex-valued ones.
-    arg_specs = {"wires": Wire[-1]}
+    arg_specs = {"wires": Wire[-1], "indices": Int[-1]}
 
     # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         coefficients: TensorLike,
         wires: WiresLike,
-        indices: tuple | None,
+        indices: TensorLike | AbstractArray,
         enumeration_wires: WiresLike = (),
         identification_wires: WiresLike = (),
         qrom_work_wires: WiresLike = (),
@@ -975,12 +975,12 @@ class SumOfSlatersPrep(Operator2):
         n = 1 if isinstance(wires, int) else len(wires)
         num_entries = coefficients.shape[0]
 
-        if num_entries != 1 and indices is not None:
-            v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
-            _, data = _preprocess(v_bits, wires)
+        if isinstance(indices, (list, tuple)):
+            indices = math.array(indices, dtype=int)
 
+        if num_entries != 1:
             # pylint: disable-next=protected-access
-            sizes = self._required_register_sizes_from_nums(num_entries, data.r, n)
+            sizes = self._required_register_sizes_from_nums(num_entries, n, n)
 
             if len(enumeration_wires) > 0 and len(enumeration_wires) != sizes["enumeration_wires"]:
                 raise ValueError(
@@ -1041,12 +1041,9 @@ class SumOfSlatersPrep(Operator2):
          'mcx_cache_wires': 10}
 
         """
-        if isinstance(indices, AbstractArray):
-            return SumOfSlatersPrep._required_register_sizes_abstract(len(indices), num_wires)
-
-        _, vtilde_bits = select_sos_rows(math.int_to_binary(np.array(indices), num_wires).T)
-        num_bits, num_entries = vtilde_bits.shape
-        return SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, num_bits, num_wires)
+        return SumOfSlatersPrep._required_register_sizes_from_nums(
+            len(indices), num_wires, num_wires
+        )
 
     @staticmethod
     def _required_register_sizes_from_nums(num_entries: int, num_bits: int, num_wires: int):
@@ -1080,14 +1077,8 @@ class SumOfSlatersPrep(Operator2):
             }
 
         d = math.ceil_log2(num_entries)
-        m = _sos_encoding_size(num_bits, num_entries)
-        if num_bits <= m:
-            # Identity encoding. We do not need the identification register but can use the
-            # (subselection of) system wires directly
-            num_identification = 0
-        else:
-            # Non-identity encoding, we need 2d-1 auxiliary qubits for the identification register
-            num_identification = m
+        m = num_bits
+        num_identification = 0
 
         return {
             "wires": num_wires,
@@ -1101,33 +1092,9 @@ class SumOfSlatersPrep(Operator2):
     def _required_register_sizes_abstract(num_entries: int, num_wires: int) -> dict:
         """Compute the upper bound of the required register sizes, if only the number of
         basis states, but not the concrete states to be prepared, is known."""
-        if num_entries == 1:
-            return {
-                "wires": num_wires,
-                "enumeration_wires": 0,
-                "identification_wires": 0,
-                "qrom_work_wires": 0,
-                "mcx_cache_wires": 0,
-            }
-
-        d = math.ceil_log2(num_entries)
-        compressed_size = 2 * d - 1
-        # The reduced encoding width r is unknown, but is at most the smaller of the number of
-        # target wires and entries. Evaluate both register bounds across that full range.
-        max_num_bits = min(num_wires, num_entries)
-        max_encoding_size = _sos_encoding_size(max_num_bits, num_entries)
-        min_compressible_size = compressed_size + 1
-        compression_possible = (
-            max_num_bits >= min_compressible_size
-            and _sos_encoding_size(min_compressible_size, num_entries) == compressed_size
+        return SumOfSlatersPrep._required_register_sizes_from_nums(
+            num_entries, num_wires, num_wires
         )
-        return {
-            "wires": num_wires,
-            "enumeration_wires": d,
-            "identification_wires": compressed_size if compression_possible else 0,
-            "qrom_work_wires": d - 1,
-            "mcx_cache_wires": max_encoding_size - 1,
-        }
 
 
 # pylint: disable-next=unused-argument
@@ -1136,17 +1103,14 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     conditionally applied CNOT and X gates."""
 
     n = 1 if isinstance(wires, int) else len(wires)
-    v_bits = math.int_to_binary(np.array(indices), n).T
-    selector_ids, _ = select_sos_rows(v_bits)
-
     num_entries = len(indices)
-    num_bits = len(selector_ids)
+    num_bits = n
     num_wires = n
 
     if num_entries == 1:
         return {qp.BasisState(Bool[num_wires], Wire[num_wires]): 1}
     d = math.ceil_log2(num_entries)
-    m = _sos_encoding_size(num_bits, num_entries)
+    m = n
 
     identity_encoding = num_bits == m
 
@@ -1208,11 +1172,8 @@ def _sos_state_prep_work_wires(
         return {}
     # pylint: disable-next=protected-access
     n = 1 if isinstance(wires, int) else len(wires)
-    v_bits = math.int_to_binary(np.array(indices), n).T
-    selector_ids, _ = select_sos_rows(v_bits)
-
     num_entries = len(indices)
-    num_bits = len(selector_ids)
+    num_bits = n
     num_wires = n
 
     num_enum, num_id, num_qrom, num_mcx = (
@@ -1349,8 +1310,7 @@ def _sos_state_prep_with_wires(
 
     # Across all k > 0, the flipped bits are data.b_bits[:, k] ^ prev_bits, where prev_bits
     # is data.b_bits[:, k - 1], or all ones for k = 1.
-    prev_bits = np.concatenate([np.ones((data.m, 1), dtype=int), data.b_bits[:, 1:-1]], axis=1)
-    flip_x = qp.hint(qp.X, {"branch-prob": np.mean(data.b_bits[:, 1:] ^ prev_bits)})
+    flip_x = qp.X
 
     @for_loop(data.m)
     def flip(i, bits_to_flip):
@@ -1371,7 +1331,7 @@ def _sos_state_prep_with_wires(
 
     last_bits = uncompute_enumeration(np.ones(data.m, dtype=int))
 
-    last_flip_x = qp.hint(qp.X, {"branch-prob": np.mean(1 - data.b_bits[:, -1])})
+    last_flip_x = qp.X
 
     @for_loop(data.m)
     def last_flip(i):
@@ -1407,14 +1367,15 @@ def _sos_state_prep(
         len(mcx_cache_wires),
     )
     num_entries = len(indices)
-    v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
+    v_bits = math.int_to_binary(indices, n).T  # Shape (n, num_entries)
     if num_entries == 1:
         # This is only correct up to a global phase that might be contained in coefficients
         qp.BasisState(v_bits[:, 0], wires=wires)
         return
     assert v_bits.shape == (n, num_entries)
 
-    selected_wires, data = _preprocess(v_bits, wires)
+    selected_wires = wires
+    data = SoSData(None, v_bits, math.ceil_log2(num_entries), n, n)
     # pylint: disable-next=protected-access
     sizes = SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, data.r, n)
     all_allocate_wires = sum(sizes.values()) - n - num_enum - num_id - num_qrom - num_mcx
