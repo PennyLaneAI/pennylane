@@ -358,10 +358,9 @@ class TestPrepSelPrep:
 
         decomp = qp.list_decomps(qp.PrepSelPrep)[0]
 
-        with qp.queuing.AnnotatedQueue() as q:
-            decomp(*op.data, wires=op.wires, **op.hyperparameters)
+        tape = qp.testing.decomp_rule_to_tape(op, decomp)
 
-        q = q.queue[0].decomposition()
+        q = tape.operations[0].decomposition()
 
         phase_ops = [qp.GlobalPhase(0) for _ in ops]
 

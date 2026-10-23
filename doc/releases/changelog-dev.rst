@@ -153,6 +153,7 @@ New features since last release
   `(#10081) <https://github.com/PennyLaneAI/pennylane/pull/10081>`__
   `(#10138) <https://github.com/PennyLaneAI/pennylane/pull/10138>`__
   `(#10120) <https://github.com/PennyLaneAI/pennylane/pull/10120>`__
+  `(#10340) <https://github.com/PennyLaneAI/pennylane/pull/10340>`__
 
 * Three new operators called :class:`pennylane.PPR_2`, :class:`pennylane.PPR_4` and
   :class:`pennylane.PPR_8` have been added, which represent the Pauli product rotations
@@ -1198,11 +1199,18 @@ Improvements 🛠
   - :func:`qp.testing.assert_valid <pennylane.testing.assert_valid>` replaces ``qp.ops.functions.assert_valid``.
   - :func:`qp.testing.assert_valid_decomp_rule <pennylane.testing.assert_valid_decomp_rule>` replaces the private ``_test_decomposition_rule``.
   - A new :func:`qp.testing.assert_decomposable <pennylane.testing.assert_decomposable>` is added.
+  - A new :func:`qp.testing.decomp_rule_to_tape <pennylane.testing.decomp_rule_to_tape>` records the
+    operations produced by a decomposition rule as a tape.
+  - :func:`qp.testing.plxpr_to_tape <pennylane.testing.plxpr_to_tape>` replaces ``qp.tape.plxpr_to_tape``.
+  - New :func:`qp.testing.assert_eqn_matches_op <pennylane.testing.assert_eqn_matches_op>`,
+    :func:`qp.testing.extract_all_primitives <pennylane.testing.extract_all_primitives>`, and
+    :func:`qp.testing.find_eqns <pennylane.testing.find_eqns>` help inspect captured programs.
 
   `(#10293) <https://github.com/PennyLaneAI/pennylane/pull/10293>`__
   `(#10306) <https://github.com/PennyLaneAI/pennylane/pull/10306>`__
   `(#10335) <https://github.com/PennyLaneAI/pennylane/pull/10335>`__
   `(#10342) <https://github.com/PennyLaneAI/pennylane/pull/10342>`__
+  `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
 
 Labs: a place for unified and rapid prototyping of research software 🧪
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1337,9 +1345,19 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* Renamed ``qp.math.is_abstract`` to ``qp.math.is_tracer`` to distinguish traced tensors
+  from PennyLane abstract input descriptors. The function's behavior is unchanged.
+  Downstream callers must use ``qp.math.is_tracer``; the old name is no longer available.
+  `(#10374) <https://github.com/PennyLaneAI/pennylane/pull/10374>`__
+  `(#10376) <https://github.com/PennyLaneAI/pennylane/pull/10376>`__
+
 * ``qp.ops.functions.assert_valid`` has been removed. Use :func:`~.testing.assert_valid` instead.
   The private ``_test_decomposition_rule`` has been removed; use :func:`~.testing.assert_valid_decomp_rule`.
   `(#10342) <https://github.com/PennyLaneAI/pennylane/pull/10342>`__
+
+* ``qp.tape.plxpr_to_tape`` and ``qp.tape.plxpr_conversion.plxpr_to_tape`` have been removed.
+  Use :func:`~.testing.plxpr_to_tape` instead.
+  `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
 
 * The ``qp.Backline.backline`` alias of ``qp.Backline.placement`` has been removed. Use ``placement``.
   `(#10353) <https://github.com/PennyLaneAI/pennylane/pull/10353>`__
@@ -2097,6 +2115,10 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
+  argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
+  `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
 
 * :func:`~.ctrl` now supports mixed static and dynamic control values under
   ``qp.qjit(capture=True)``, for both operator instances and callables.
