@@ -1254,7 +1254,7 @@ def _normalize_amplitudes(amplitudes):
     """Normalize along the last axis, supporting optional batching."""
     norm = math.linalg.norm(amplitudes, axis=-1)
 
-    if not math.is_abstract(norm) and math.any(math.isclose(norm, 0.0)):
+    if not math.is_tracer(norm) and math.any(math.isclose(norm, 0.0)):
         raise ValueError("The amplitudes must have a non-zero norm.")
 
     # Follow StatePrep's pattern to deal with optional batch dimension.

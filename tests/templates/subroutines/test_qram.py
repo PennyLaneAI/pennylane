@@ -21,14 +21,12 @@ import numpy as np
 import pytest
 
 from pennylane import apply, device, measure, qnode, registers, workflow
-from pennylane.decomposition import list_decomps
 from pennylane.math import int_to_binary
 from pennylane.measurements import probs, state
 from pennylane.ops import CH, CNOT, CSWAP, CZ, SWAP, Controlled, MultiControlledX, Toffoli, X
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM, FFQRAM, HybridQRAM, SelectOnlyQRAM
-from pennylane.testing import assert_valid
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable, assert_valid
 
 has_jax = True
 try:
@@ -268,8 +266,7 @@ def test_bbqram_decomposition_new(
         [bus] + dir_wires + portL_wires + portR_wires,
     )
 
-    for rule in list_decomps(BBQRAM):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 @qnode(dev)
@@ -604,8 +601,7 @@ def test_hybrid_decomposition_new(
         work_wires=[signal] + [bus] + dir_wires + portL_wires + portR_wires,
         k=k,
     )
-    for rule in list_decomps(HybridQRAM):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 @pytest.mark.parametrize(
@@ -1203,8 +1199,7 @@ def test_select_decomposition_new(
         select_value,
     )
 
-    for rule in list_decomps(SelectOnlyQRAM):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -1388,8 +1383,7 @@ class TestFFQRAMDecomposition:
         """Tests the decomposition rule implemented with the new system."""
         op = FFQRAM([np.sqrt(0.3), np.sqrt(0.7)], wires=[0, 1, 2, 3], address=["000", "001"])
 
-        for rule in list_decomps(FFQRAM):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.pl2do(reason="we will come back to broadcasting later")
     def test_decomposition_broadcasted(self):

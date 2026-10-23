@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -167,8 +167,7 @@ class TestDecomposition:
     @pytest.mark.parametrize(("features", "wires", "rotation"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, wires, rotation):
         op = qp.AngleEmbedding(features, wires, rotation=rotation)
-        for rule in qp.list_decomps(qp.AngleEmbedding):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 class TestInputs:

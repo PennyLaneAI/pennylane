@@ -24,12 +24,9 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import allocation, capture, compiler, math
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core.operator import Operator, abstractify
-from pennylane.core.operator.operator2 import (  # tach-ignore
-    _to_symbolic_array,
-    operator_p,
-    pop_op_eqns,
-)
+from pennylane.core.operator.operator2 import _to_symbolic_array, operator_p  # tach-ignore
 from pennylane.core.queuing import remove_from_program
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
@@ -70,7 +67,9 @@ def _setup_control_values(control_values, num_control_wires):
         raise ValueError("control_values should be the same length as control_wires")
 
     if isinstance(control_values, (list, tuple)):
-        control_values = qp.math.asarray(control_values, like=control_values[0])
+        control_values = qp.math.asarray(
+            control_values, like=qp.math.get_interface(*control_values)
+        )
 
     if not isinstance(control_values, AbstractArray):
         control_values = qp.math.cast(control_values, dtype=bool)
@@ -549,7 +548,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         if self.work_wires:
             params.append(f"work_wires={self.work_wires}")
         ctrl_values = self.control_values
-        if isinstance(ctrl_values, AbstractArray) or math.is_abstract(ctrl_values):
+        if isinstance(ctrl_values, AbstractArray) or math.is_tracer(ctrl_values):
             params.append(f"control_values={ctrl_values}")
         elif not all(ctrl_values):
             params.append(f"control_values={ctrl_values.tolist()}")
@@ -621,7 +620,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         self.base.tracer = None
         # If we bind the primitive outside a tracing context but with program capture enabled,
         # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
-        if math.is_abstract(res):
+        if math.is_tracer(res):
             self.tracer = res
 
 

@@ -27,7 +27,7 @@ from pennylane.templates.subroutines.arithmetic.signed_out_square import (
     SignedOutSquare,
     _signed_out_square_resources,
 )
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
 from pennylane.typing import Wire
 
 
@@ -349,7 +349,7 @@ class TestSignedOutSquare:
         """Tests the decomposition rule implemented with the new system."""
         op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
         for rule in qp.list_decomps(SignedOutSquare):
-            _test_decomposition_rule(op, rule)
+            assert_valid_decomp_rule(op, rule)
             assert rule.is_applicable(**op.arguments)
             all_wires = (x_wires, output_wires, work_wires)
 
@@ -375,5 +375,4 @@ class TestSignedOutSquare:
         calls ``_c_subtract_then_add_one`` (triggered whenever ``len(output_wires) > len(x_wires)``)
         """
         op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
-        for rule in qp.list_decomps(SignedOutSquare):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)

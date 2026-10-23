@@ -31,8 +31,7 @@ from pennylane.ops.op_math import ChangeOpBasis2, Prod2, change_op_basis
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.change_op_basis import _validate_callable
 from pennylane.templates import Subroutine
-from pennylane.testing import assert_eqn_matches_op
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable, assert_eqn_matches_op
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp
@@ -576,8 +575,7 @@ class TestDecomposition:
         """Test the qfunc decomposition."""
         change_op_basis_op = ChangeOpBasis2(*ops_lst)
 
-        for rule in qp.list_decomps(ChangeOpBasis2):
-            _test_decomposition_rule(change_op_basis_op, rule)
+        assert_decomposable(change_op_basis_op)
 
     @pytest.mark.parametrize("ops_lst", ops)
     @pytest.mark.capture
@@ -595,8 +593,7 @@ class TestDecomposition:
         with qp.capture.pause():
             op = ChangeOpBasis2(NonParametricOp(0), DynOp(0.2, 1), NonParametricOp(2))
 
-        [rule] = qp.list_decomps(ChangeOpBasis2)
-        _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize("ops_lst", ops)
     @pytest.mark.parametrize("num_control_wires", (1, 3))
@@ -610,16 +607,14 @@ class TestDecomposition:
             control_values=[1] * num_control_wires,
             work_wires=work_wires,
         )
-        for rule in qp.list_decomps("C(ChangeOpBasis2)"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
         assert len(qp.list_decomps(op)) == 1
 
     def test_adjoint_decomposition_with_explicit_uncompute(self):
         """Test the generated adjoint rule with an asymmetric explicit uncompute operator."""
         op = qp.adjoint(ChangeOpBasis2(qp.S(0), qp.T(1), qp.SX(2)))
-        [rule] = qp.list_decomps(op)
-        _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_on_tape(self, ops_lst):

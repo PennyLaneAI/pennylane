@@ -47,7 +47,7 @@ def _adjust_determinant(matrix):
     det = math.linalg.det(matrix)
 
     mat = matrix
-    if math.is_abstract(det) or det < 0:
+    if math.is_tracer(det) or det < 0:
         if math.get_interface(mat) != "jax":
             mat = math.toarray(mat).copy()
         mat = math.T(math.set_index(math.T(mat), 0, -mat[:, 0]))
@@ -309,7 +309,7 @@ class BasisRotation(Operator2):
             raise ValueError(f"The unitary matrix should be of shape NxN, got {(M, N)}")
 
         if check:
-            if not math.is_abstract(unitary_matrix) and not math.allclose(
+            if not math.is_tracer(unitary_matrix) and not math.allclose(
                 unitary_matrix @ math.conj(unitary_matrix).T,
                 math.eye(M, dtype=complex),
                 atol=1e-4,
@@ -323,7 +323,7 @@ class BasisRotation(Operator2):
 
 
 def _is_jax_jit(U):
-    return math.is_abstract(U) and not _qjit_or_capture()
+    return math.is_tracer(U) and not _qjit_or_capture()
 
 
 def _prepare_args(unitary_matrix, wires):
