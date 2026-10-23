@@ -187,7 +187,9 @@ class AbstractArray:
     unless known axes conflict; compatibility may still depend on their concrete sizes.
     An unknown rank produces an unknown result rank. The corresponding NumPy arithmetic
     ufuncs are supported for ordinary calls without keyword options; reductions and other
-    ufunc methods are not supported.
+    ufunc methods are not supported. Unary ``-``, ``+``, and ``abs`` and their NumPy
+    equivalents preserve shape and infer the output dtype, including real dtypes for
+    the absolute value of complex inputs.
 
     """
 
@@ -404,6 +406,8 @@ class AbstractArray:
         # Ordinary calls like np.add(a, b) use "__call__"; reductions use "reduce", etc.
         if method != "__call__" or kwargs:
             return NotImplemented
+        if ufunc in (np.negative, np.positive, np.absolute):
+            return self._unary_arithmetic(ufunc)
         if ufunc not in (
             np.add,
             np.subtract,
@@ -460,6 +464,22 @@ class AbstractArray:
         result = AbstractArray(shape, dtype)
         object.__setattr__(result, "_weak_type", self._weak_type and other._weak_type)
         return result
+
+    def _unary_arithmetic(self, operation):
+        """Infer unary arithmetic metadata while preserving weak typing."""
+        dtype = operation.resolve_dtypes((self.dtype, None))[-1]
+        result = AbstractArray(self.shape, dtype)
+        object.__setattr__(result, "_weak_type", self._weak_type)
+        return result
+
+    def __neg__(self):
+        return self._unary_arithmetic(np.negative)
+
+    def __pos__(self):
+        return self._unary_arithmetic(np.positive)
+
+    def __abs__(self):
+        return self._unary_arithmetic(np.absolute)
 
     def __add__(self, other):
         return self._arithmetic(other, np.add)

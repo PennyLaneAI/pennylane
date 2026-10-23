@@ -285,6 +285,56 @@ class TestAbstractArray:
         assert result.dtype == np.float32
         assert not result._weak_type
 
+    @pytest.mark.parametrize("operation", [operator.neg, operator.pos, np.negative, np.positive])
+    @pytest.mark.parametrize("shape", [(), (2, 3), (-1, 3), Ellipsis])
+    @pytest.mark.parametrize(
+        "dtype, weak",
+        [(int, True), (float, True), (complex, True), (np.float32, False), (np.uint8, False)],
+    )
+    def test_unary_arithmetic(self, operation, shape, dtype, weak):
+        """Unary signs preserve shape, dtype, and weak typing."""
+        result = operation(AbstractArray(shape, dtype))
+        assert isinstance(result, AbstractArray)
+        assert result.shape == shape
+        assert result.dtype == np.dtype(dtype)
+        assert result._weak_type is weak
+        assert result.shape_fixed == (shape is not Ellipsis and -1 not in shape)
+
+    @pytest.mark.parametrize("operation", [abs, np.absolute])
+    @pytest.mark.parametrize("shape", [(), (2, 3), (-1, 3), Ellipsis])
+    @pytest.mark.parametrize(
+        "dtype, expected, weak",
+        [
+            (int, int, True),
+            (float, float, True),
+            (complex, float, True),
+            (np.complex64, np.float32, False),
+            (np.complex128, np.float64, False),
+            (bool, bool, True),
+        ],
+    )
+    def test_unary_absolute(self, operation, shape, dtype, expected, weak):
+        """Absolute value maps complex dtypes to real dtypes without changing shape."""
+        result = operation(AbstractArray(shape, dtype))
+        assert isinstance(result, AbstractArray)
+        assert result.shape == shape
+        assert result.dtype == np.dtype(expected)
+        assert result._weak_type is weak
+        assert result.shape_fixed == (shape is not Ellipsis and -1 not in shape)
+
+    @pytest.mark.parametrize("operation", [operator.neg, operator.pos, np.negative, np.positive])
+    def test_unary_invalid_dtype(self, operation):
+        """Unary signs reject boolean arrays consistently with NumPy."""
+        with pytest.raises(TypeError):
+            operation(AbstractArray((2,), bool))
+
+    def test_unary_arithmetic_chaining(self):
+        """Unary operations preserve weak promotion in subsequent arithmetic."""
+        result = abs(-AbstractArray((2, 1), complex)) + AbstractArray((3,), np.float32)
+        assert result.shape == (2, 3)
+        assert result.dtype == np.float32
+        assert not result._weak_type
+
     def test_arithmetic_unsupported_operand(self):
         """Unrelated operands use Python's unsupported-operation protocol."""
         array = AbstractArray((2,), float)
@@ -329,6 +379,10 @@ class TestAbstractArray:
             lambda a: np.add(a, a, where=True),
             lambda a: np.add(a, a, dtype=np.float32),
             lambda a: np.add(a, object()),
+            lambda a: np.negative.reduce(a),
+            lambda a: np.positive(a, out=a),
+            lambda a: np.absolute(a, where=True),
+            lambda a: np.negative(a, dtype=np.float32),
         ],
     )
     def test_ufunc_unsupported_call(self, call):
