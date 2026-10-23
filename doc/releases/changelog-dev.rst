@@ -1636,6 +1636,11 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* A new :func:`~.resource.resource_analysis` transform has been added as a frontend for Catalyst's
+  ``resource-analysis`` compilation pass, with validated ``output_json`` and ``output_fname``
+  options.
+  `(#10387) <https://github.com/PennyLaneAI/pennylane/pull/10387>`__
+
 * Moved ``pop_op_eqns`` into ``pennylane.capture``.
   `(#10345) <https://github.com/PennyLaneAI/pennylane/pull/10345>`__
 
