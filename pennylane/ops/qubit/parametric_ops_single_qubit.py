@@ -99,7 +99,7 @@ class RX(Operator2):
             .. decomposition-rule:: _rx_to_ppr
                 :image: /_static/decomposition_thumbnails/rx_to_ppr.svg
 
-                :class:`~.PauliRot` with Pauli word ``"X"`` | :math:`1`
+                :class:`PauliRot("X") <.PauliRot>` | :math:`1`
 
             .. decomposition-rule:: _rx_to_ry_cliff
                 :image: /_static/decomposition_thumbnails/rx_to_ry_cliff.svg
@@ -340,7 +340,7 @@ class RY(Operator2):
             .. decomposition-rule:: _ry_to_ppr
                 :image: /_static/decomposition_thumbnails/ry_to_ppr.svg
 
-                :class:`~.PauliRot` with Pauli word ``"Y"`` | :math:`1`
+                :class:`PauliRot("Y") <.PauliRot>` | :math:`1`
 
             .. decomposition-rule:: _ry_to_rx_cliff
                 :image: /_static/decomposition_thumbnails/ry_to_rx_cliff.svg
@@ -602,7 +602,7 @@ class RZ(Operator2):
             .. decomposition-rule:: _rz_to_ppr
                 :image: /_static/decomposition_thumbnails/rz_to_ppr.svg
 
-                :class:`~.PauliRot` with Pauli word ``"Z"`` | :math:`1`
+                :class:`PauliRot("Z") <.PauliRot>` | :math:`1`
 
             .. decomposition-rule:: _rz_to_rx_cliff
                 :image: /_static/decomposition_thumbnails/rz_to_rx_cliff.svg
