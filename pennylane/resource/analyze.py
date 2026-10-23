@@ -20,6 +20,7 @@ from collections.abc import Callable, Iterable
 from functools import partial
 
 from pennylane.capture import enabled
+
 from ._utils import (
     apply_partial_args,
     build_circuit_specs,
@@ -47,8 +48,8 @@ def _run_resource_analysis(func, original_qnode, level, *args, **kwargs) -> tupl
 
     has_device_level: bool = level in ("device", "all")
     if has_device_level:
-        if not qjit.compile_options.capture or (
-            qjit.compile_options.capture == "global" and not enabled()
+        if not func.compile_options.capture or (
+            func.compile_options.capture == "global" and not enabled()
         ):
             raise ValueError("Device level is only supported when capture is enabled.")
 
@@ -86,7 +87,7 @@ def _analyze_qjit(func, level, *args, **kwargs) -> CircuitSpecs:
     """Compile a qjit'd QNode up to the given level and return the specs found by analyzing it."""
     original_qnode = unwrap_qjit_qnode(func, fn_name="qp.analyze")
 
-    resources, level = _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs)
+    resources, level = _run_resource_analysis(func, original_qnode, level, *args, **kwargs)
 
     return build_circuit_specs(original_qnode, resources, level)
 
@@ -116,14 +117,14 @@ def analyze(
               These should be sorted in ascending transform order with no duplicates. Resources will be analyzed for each provided level in the ``iterable``.
 
             The following ``str`` presets are provided for ease of use:
-            
+
             * ``"top"``: Equivalent to ``0``; to analyze resources before any transforms have been applied.
             * ``"user"``: To analyze resources after the user-specified transforms have been applied.
             * ``"device"``: To analyze resources after the user-specified transforms and device preprocessing transforms have been applied.
             * ``"all-user"``: To analyze resources at each stage of compilation with respect to user-specified transforms.
             * ``"all"``: To analyze resources at each stage of compilation with respect
               to user-specified and device preprocessing transforms.
-            
+
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
         :class:`~.resource.CircuitSpecs` object containing the ``qnode`` specifications,
