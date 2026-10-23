@@ -2096,6 +2096,11 @@
   repr.
   [(#10284)](https://github.com/PennyLaneAI/pennylane/pull/10284)
 
+* Added "Available decompositions" tables to the documentation of :class:`~.RX`, :class:`~.RY`,
+  :class:`~.RZ`, :class:`~.PhaseShift`, :class:`~.Rot`, :class:`~.U1`, :class:`~.U2` and
+  :class:`~.U3`, listing each decomposition rule with a circuit diagram and its resources.
+  [(#10382)](https://github.com/PennyLaneAI/pennylane/pull/10382)
+
 <h3>Bug fixes 🐛</h3>
 
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic

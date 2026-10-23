@@ -346,7 +346,7 @@ class RY(Operator2):
                 :image: /_static/decomposition_thumbnails/ry_to_rx_cliff.svg
 
                 :class:`~.S` | :math:`1`
-                :class:`S† <~.S>` | :math:`1`
+                :class:`Adjoint(S) <.S>` | :math:`1`
                 :class:`~.RX` | :math:`1`
 
             .. decomposition-rule:: _ry_to_rz_cliff
@@ -354,7 +354,7 @@ class RY(Operator2):
 
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.S` | :math:`1`
-                :class:`S† <~.S>` | :math:`1`
+                :class:`Adjoint(S) <.S>` | :math:`1`
                 :class:`~.RZ` | :math:`1`
     """
 
@@ -615,7 +615,7 @@ class RZ(Operator2):
 
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.S` | :math:`1`
-                :class:`S† <~.S>` | :math:`1`
+                :class:`Adjoint(S) <.S>` | :math:`1`
                 :class:`~.RY` | :math:`1`
     """
 
