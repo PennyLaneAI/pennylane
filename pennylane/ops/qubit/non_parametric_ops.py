@@ -87,8 +87,8 @@ class Hadamard(Operator2):
                 :image: /_static/decomposition_thumbnails/hadamard_ppm.svg
                 :requires: 1 work wire (not restored)
 
-                :class:`PauliMeasure("YY") <.PauliMeasure>` | :math:`1`
-                :class:`PauliMeasure("X") <.PauliMeasure>` | :math:`1`
+                :func:`PauliMeasure("YY") <.pauli_measure>` | :math:`1`
+                :func:`PauliMeasure("X") <.pauli_measure>` | :math:`1`
                 :class:`~.Y` (conditional) | :math:`1`
                 :class:`~.Z` (one conditional) | :math:`2`
                 :class:`~.GlobalPhase` (conditional) | :math:`1`
