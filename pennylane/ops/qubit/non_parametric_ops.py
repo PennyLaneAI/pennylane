@@ -63,6 +63,42 @@ class Hadamard(Operator2):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.Hadamard
+
+            .. decomposition-rule:: _hadamard_to_rz_rx
+                :image: /_static/decomposition_thumbnails/hadamard_to_rz_rx.svg
+
+                :class:`~.RZ` | :math:`2`
+                :class:`~.RX` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _hadamard_to_rz_ry
+                :image: /_static/decomposition_thumbnails/hadamard_to_rz_ry.svg
+
+                :class:`~.RZ` | :math:`1`
+                :class:`~.RY` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _hadamard_ppm
+                :image: /_static/decomposition_thumbnails/hadamard_ppm.svg
+                :requires: 1 work wire (not restored)
+
+                :func:`Pauli measurement <~.pauli_measure>` of :math:`YY` | :math:`1`
+                :func:`Pauli measurement <~.pauli_measure>` of :math:`X` | :math:`1`
+                :class:`~.Y` (conditional) | :math:`1`
+                :class:`~.Z` (one conditional) | :math:`2`
+                :class:`~.GlobalPhase` (conditional) | :math:`1`
+
+            .. decomposition-rule:: _hadamard_ppr
+                :image: /_static/decomposition_thumbnails/hadamard_ppr.svg
+
+                :class:`~.PPR_2` of :math:`Z` | :math:`1`
+                :class:`~.PPR_4` of :math:`Y` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
     """
 
     is_verified_hermitian = True
@@ -323,6 +359,17 @@ class PauliX(Operator2):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PauliX
+
+            .. decomposition-rule:: _paulix_to_rx
+                :image: /_static/decomposition_thumbnails/paulix_to_rx.svg
+
+                :class:`~.RX` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
     """
 
     wire_sizes = (1,)
@@ -574,6 +621,17 @@ class PauliY(Operator2):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PauliY
+
+            .. decomposition-rule:: _pauliy_to_ry_gp
+                :image: /_static/decomposition_thumbnails/pauliy_to_ry.svg
+
+                :class:`~.RY` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
     """
 
     arg_specs = {"wires": Wire[1]}
@@ -814,6 +872,16 @@ class PauliZ(Operator2):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PauliZ
+
+            .. decomposition-rule:: _pauliz_to_ps
+                :image: /_static/decomposition_thumbnails/pauliz_to_phase_shift.svg
+
+                :class:`~.PhaseShift` | :math:`1`
     """
 
     arg_specs = {"wires": Wire[1]}
@@ -1088,6 +1156,16 @@ class S(Operator2):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.S
+
+            .. decomposition-rule:: _s_phaseshift
+                :image: /_static/decomposition_thumbnails/s_to_phase_shift.svg
+
+                :class:`~.PhaseShift` | :math:`1`
     """
 
     wire_sizes = (1,)
@@ -1241,6 +1319,16 @@ class T(Operator2):
 
     Args:
         wires (WiresLike): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.T
+
+            .. decomposition-rule:: _t_phaseshift
+                :image: /_static/decomposition_thumbnails/t_to_phase_shift.svg
+
+                :class:`~.PhaseShift` | :math:`1`
     """
 
     wire_sizes = (1,)
@@ -1377,6 +1465,17 @@ class SX(Operator2):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SX
+
+            .. decomposition-rule:: _sx_to_rx
+                :image: /_static/decomposition_thumbnails/sx_to_rx.svg
+
+                :class:`~.RX` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
     """
 
     wire_sizes = (1,)
@@ -1511,6 +1610,24 @@ class SWAP(Operator2):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SWAP
+
+            .. decomposition-rule:: _swap_to_cnot
+                :image: /_static/decomposition_thumbnails/swap_to_cnot.svg
+
+                :class:`~.CNOT` | :math:`3`
+
+            .. decomposition-rule:: _swap_to_ppr
+                :image: /_static/decomposition_thumbnails/swap_to_ppr.svg
+
+                :class:`~.PPR_4` of :math:`XX` | :math:`1`
+                :class:`~.PPR_4` of :math:`YY` | :math:`1`
+                :class:`~.PPR_4` of :math:`ZZ` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
     """
 
     wire_sizes = (2,)
@@ -1700,6 +1817,20 @@ class ECR(Operator2):
 
     Args:
         wires (int): the subsystem the gate acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.ECR
+
+            .. decomposition-rule:: _ecr_decomp
+                :image: /_static/decomposition_thumbnails/ecr_decomp.svg
+
+                :class:`~.Z` | :math:`1`
+                :class:`~.CNOT` | :math:`1`
+                :class:`~.SX` | :math:`1`
+                :class:`~.RX` | :math:`2`
+                :class:`~.RY` | :math:`1`
     """
 
     wire_sizes = (2,)
@@ -1837,6 +1968,24 @@ class ISWAP(Operator2):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.ISWAP
+
+            .. decomposition-rule:: _iswap_decomp
+                :image: /_static/decomposition_thumbnails/iswap_decomp.svg
+
+                :class:`~.S` | :math:`2`
+                :class:`~.H` | :math:`2`
+                :class:`~.CNOT` | :math:`2`
+
+            .. decomposition-rule:: _iswap_to_ppr
+                :image: /_static/decomposition_thumbnails/iswap_to_ppr.svg
+
+                :class:`PPR_4† <~.PPR_4>` of :math:`XX` | :math:`1`
+                :class:`PPR_4† <~.PPR_4>` of :math:`YY` | :math:`1`
     """
 
     wire_sizes = (2,)
@@ -1991,6 +2140,24 @@ class SISWAP(Operator2):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SISWAP
+
+            .. decomposition-rule:: _siswap_decomp
+                :image: /_static/decomposition_thumbnails/siswap_decomp.svg
+
+                :class:`~.SX` | :math:`6`
+                :class:`~.RZ` | :math:`4`
+                :class:`~.CNOT` | :math:`2`
+
+            .. decomposition-rule:: _siswap_to_ppr
+                :image: /_static/decomposition_thumbnails/siswap_to_ppr.svg
+
+                :class:`PPR_8† <~.PPR_8>` of :math:`XX` | :math:`1`
+                :class:`PPR_8† <~.PPR_8>` of :math:`YY` | :math:`1`
     """
 
     wire_sizes = (2,)
