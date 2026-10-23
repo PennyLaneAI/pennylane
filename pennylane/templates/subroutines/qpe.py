@@ -55,6 +55,20 @@ class QuantumPhaseEstimation(Operator2):
             element
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.QuantumPhaseEstimation
+            :symbols: :math:`U=` ``unitary`` and :math:`n` estimation wires
+            :example: :math:`n=3`
+
+            .. decomposition-rule:: _qpe_decomp
+                :image: /_static/decomposition_thumbnails/quantum_phase_estimation_qft.svg
+
+                :class:`~.Hadamard` | :math:`n` | 3
+                :math:`U^{2^k}` with 1 control | :math:`n` (one per :math:`k < n`) | 3
+                :class:`QFT† <~.QFT>` on :math:`n` wires | :math:`1` | 1
+
+    .. details::
         :title: Usage Details
 
         This circuit can be used to perform the standard quantum phase estimation algorithm, consisting

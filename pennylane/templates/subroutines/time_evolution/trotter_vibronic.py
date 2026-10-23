@@ -155,6 +155,36 @@ class TrotterVibronic(Operator2):
     {'PhaseGradientStatePrep': 1, 'QROM': 6, 'SemiAdder': 2, 'CNOT': 24, 'C(Incrementer)': 4, 'OutMultiplier': 3, 'MultiX': 2, 'AQFT': 1, 'SignedOutSquare': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(AQFT)': 1}
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.TrotterVibronic
+            :symbols: :math:`F` position fragments, :math:`M` modes with :math:`k` wires each,
+                :math:`n` electronic wires, :math:`b` coefficient and phase gradient wires, and
+                :math:`r` = ``num_trotter_steps``
+            :example: the Hamiltonian above, :math:`F=1`, :math:`M=1`, :math:`k=2`, :math:`n=1`,
+                :math:`b=3`, :math:`r=1`
+
+            .. decomposition-rule:: _trotter_vibronic_decomposition
+                :image: /_static/decomposition_thumbnails/trotter_vibronic_phase_gradient.svg
+                :where: :math:`P = 2Fr` position-fragment visits and :math:`K = M(M-1)/2` mode
+                    pairs. The :class:`~.Hadamard` and :class:`~.CNOT` counts are upper bounds, as
+                    the electronic diagonalization depends on each fragment
+
+                :class:`~.Hadamard` | :math:`\leq 2P` | 0
+                :class:`~.CNOT` | :math:`\leq 2P(n-1) + PM(2+2k+2b) + PK(2+4k+2b)` | 24
+                :class:`~.QROM` | :math:`P(2 + 2M + K)` | 8
+                :class:`~.SemiAdder` | :math:`P` | 2
+                :class:`~.OutMultiplier` | :math:`P(2M + K) + rM` | 5
+                :class:`~.Incrementer` with 1 control | :math:`2P(M + K)` | 4
+                :class:`~.SignedOutSquare` | :math:`PM + rM` | 3
+                :class:`SignedOutSquare† <~.SignedOutSquare>` | :math:`PM + rM` | 3
+                :class:`~.SignedOutMultiplier` | :math:`PK` | 0
+                :class:`SignedOutMultiplier† <~.SignedOutMultiplier>` | :math:`PK` | 0
+                :class:`~.MultiX` | :math:`2rM` | 2
+                :class:`~.AQFT` | :math:`rM` | 1
+                :class:`AQFT† <~.AQFT>` | :math:`rM` | 1
+
+    .. details::
         :title: Register Sizes
         :href: register-sizes
 

@@ -95,6 +95,28 @@ class GQSP(Operator2):
         [0.03 -0.089j 0.387+0.198j]]
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.GQSP
+            :symbols: :math:`U=` ``unitary``, polynomial degree :math:`d` (``angles`` of shape
+                ``(3, d+1)``) and shift :math:`s`
+            :example: :math:`d=1`, :math:`s=0`
+
+            .. decomposition-rule:: _GQSP_decomposition
+                :image: /_static/decomposition_thumbnails/gqsp_signal_processing.svg
+                :where: :math:`a = \min(\max(-s, 0), d)` is the number of controlled unitaries
+                    absorbing a negative shift, and :math:`[\cdot]` is 1 if the condition holds
+                    and 0 otherwise
+
+                :class:`~.X` | :math:`2(d+1)` | 4
+                :class:`~.U3` | :math:`d+1` | 2
+                :class:`~.Z` | :math:`d+1` | 2
+                :math:`U` with 1 control on :math:`|0\rangle` | :math:`d-a` | 1
+                :math:`U^\dagger` with 1 control | :math:`a` | 0
+                :math:`U^{s}` | :math:`[s > 0]` | 0
+                :math:`(U^\dagger)^{-s-d}` | :math:`[s < -d]` | 0
+
+    .. details::
         :title: Usage Details
 
         **Shifting the polynomial**

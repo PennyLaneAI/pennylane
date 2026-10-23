@@ -79,6 +79,20 @@ class IQP(Operator2):
     0: ─╭IQP─┤  <Z>
     1: ─╰IQP─┤  <Z>
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.IQP
+            :symbols: :math:`n` wires and :math:`G` generators in total in ``pattern``
+            :example: :math:`n=2`, ``pattern=[[[0]], [[1]], [[0, 1]]]``, ``spin_sym=True``
+
+            .. decomposition-rule:: _instantaneous_quantum_polynomial_decomposition
+                :image: /_static/decomposition_thumbnails/iqp_multirz.svg
+
+                :class:`~.PPR_4` on all :math:`n` wires | :math:`1` if ``spin_sym=True`` | 1
+                :class:`~.Hadamard` | :math:`2n` | 4
+                :class:`~.MultiRZ` on the wires of a generator | :math:`G` (one per generator) | 3
+
     .. seealso:: :doc:`IQP tutorial <demo:demos/tutorial_iqp_circuit_optimization_jax>`
     """
 
