@@ -66,7 +66,7 @@ def _validate_callable(func: Callable) -> None:
 
 def _is_abstract_operator(op) -> bool:
     """Return whether ``op`` is an operator-valued JAX tracer."""
-    return math.is_abstract(op) and isinstance(op.aval, capture.AbstractOperator)
+    return math.is_tracer(op) and isinstance(op.aval, capture.AbstractOperator)
 
 
 def _apply_op_or_func(op_or_func):

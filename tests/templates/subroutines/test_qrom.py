@@ -440,7 +440,7 @@ class TestQROM:
                 bitstrings, control_wires, target_wires, work_wires, clean=True
             )
         )()
-        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
         num_left_elbows = sum(isinstance(op, TemporaryAND) for op in ops)
         num_right_elbows = sum(
             isinstance(op, qp.ops.Adjoint) and isinstance(op.base, TemporaryAND) for op in ops
@@ -495,7 +495,7 @@ class TestQROM:
                 bitstrings, control_wires, target_wires, work_wires, clean=True
             )
         )()
-        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
         num_x = sum(isinstance(op, qp.X) for op in ops)
         num_cnots = sum(isinstance(op, qp.CNOT) for op in ops)
         num_main_loop_iterations = num_bitstrings - 1

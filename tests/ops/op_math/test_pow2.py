@@ -332,10 +332,9 @@ def test_pow_rotation2():
     op = pow(OneWireDynOp(0.3, wires=[0]), 2.5)
     assert isinstance(op, Pow2)
 
-    with qp.core.AnnotatedQueue() as q:
-        pow_rotation(**op.arguments)
+    tape = qp.testing.decomp_rule_to_tape(op, pow_rotation)
 
-    assert q.queue == [OneWireDynOp(0.3 * 2.5, wires=[0])]
+    assert tape.operations == [OneWireDynOp(0.3 * 2.5, wires=[0])]
     assert pow_rotation.compute_resources(**op.arguments) == Resources(
         {OneWireDynOp(Float, wires=Wire[1]): 1}
     )
