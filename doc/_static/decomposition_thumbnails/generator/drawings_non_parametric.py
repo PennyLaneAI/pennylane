@@ -94,7 +94,7 @@ def _(f):
     f.gate(xs[1], W0, A, lines=["PPM", "$YY$"], w=50, fill=GY0, **KW)
     f.gate(xs[2], A, label="PPM $X$", w=66, fill=GY0, **KW)
     f.gate(xs[3], W0, label="Y", w=30, fill=YL2, **KW)
-    f.gate(xs[4], W0, label=r"$e^{i\frac{\pi}{2}}$", w=46, fill=GP, **KW)
+    f.gate(xs[4], W0, label=r"$e^{-i\frac{\pi}{2}}$", w=46, fill=GP, **KW)
     f.gate(xs[5], A, label="Z", w=30, fill=CY2, **KW)
     f.text((xs[3] + xs[4]) / 2, W0 - 27, r"if $m_0 = m_1$", size=12)
     f.text(xs[5], A + 27, r"if $m_1$", size=12)

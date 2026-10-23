@@ -17,12 +17,13 @@ This file generates the circuit diagrams shown by the ``decomposition-table`` di
 PennyLane illustration guidelines.
 
 It is not intended to be used in any Continuous Integration, but saves time and hassle for
-developers adding or changing a decomposition rule. Requires ``matplotlib`` and ``fonttools``.
+developers adding or changing a decomposition rule. Requires ``matplotlib``, ``fonttools`` and
+``requests``.
 
 Usage, from this folder::
 
     python generate.py              # regenerate every diagram
-    python generate.py select_unary # regenerate only the named diagrams
+    python generate.py hadamard_ppm # regenerate only the named diagrams
 
 Diagrams are registered with ``@drawing("<name>")`` in the ``drawings_*.py`` modules and written
 to ``../<name>.svg``.

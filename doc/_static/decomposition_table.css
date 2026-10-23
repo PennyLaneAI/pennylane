@@ -1,6 +1,6 @@
 /* Styles for the ``decomposition-table`` directive (doc/_ext/decomposition_table.py) */
 
-ul.decomp-table-caption {
+p.decomp-table-caption {
   margin-bottom: 0.5rem;
   color: #555;
 }
