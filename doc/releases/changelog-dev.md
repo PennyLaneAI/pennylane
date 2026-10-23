@@ -2096,12 +2096,14 @@
   repr.
   [(#10284)](https://github.com/PennyLaneAI/pennylane/pull/10284)
 
-* Added "Available decompositions" tables to the documentation of the templates with
-  decomposition rules, including :class:`~.Select`, :class:`~.QROM`, :class:`~.QFT`,
-  :class:`~.QSVT`, the arithmetic templates such as :class:`~.SemiAdder` and
-  :class:`~.TemporaryAND`, the state preparations, and the THC and Trotter templates. Each table
-  lists the template's decomposition rules with a circuit diagram and their resources.
-  [(#10384)](https://github.com/PennyLaneAI/pennylane/pull/10384)
+* Operator documentation now has an "Available decompositions" table listing each of the
+  operator's decomposition rules, with a circuit diagram and the resources the rule uses. The
+  tables are rendered by a new ``decomposition-table`` Sphinx directive, and their diagrams are
+  drawn by a script in ``doc/_static/decomposition_thumbnails/generator``. Tables are added for
+  :class:`~.Hadamard`, :class:`~.PauliX`, :class:`~.PauliY`, :class:`~.PauliZ`, :class:`~.S`,
+  :class:`~.T`, :class:`~.SX`, :class:`~.SWAP`, :class:`~.ECR`, :class:`~.ISWAP`,
+  :class:`~.SISWAP`, :class:`~.PPR_2`, :class:`~.PPR_4` and :class:`~.PPR_8`.
+  [(#10381)](https://github.com/PennyLaneAI/pennylane/pull/10381)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -2380,6 +2382,7 @@ Astral Cai,
 Daniel Casota,
 Miguel Cárdenas,
 Yushao Chen,
+Isaac De Vlugt,
 Diksha Dhawan,
 Marcus Edwards,
 Sümeyye Nur Esin,
