@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the estimate transform"""
 
+import copy
 import importlib
 from functools import partial
 
@@ -69,6 +70,15 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
     def circuit(self, qnode):
         """Fixture for the qjit'd QNode with a user transform."""
         return qp.qjit(qp.transforms.cancel_inverses(qnode))
+
+    @pytest.fixture
+    def dev_without_cz(self):
+        """Fixture for a device that does not support CZ when compiled with Catalyst."""
+        dev = qp.device("lightning.qubit", wires=2)
+        capabilities = copy.deepcopy(dev.capabilities)
+        del capabilities.operations["CZ"]
+        dev.qjit_capabilities = capabilities
+        return dev
 
     def test_specs(self, circuit):
         """Test that estimate ignores the user transforms and decomposes the circuit into the
@@ -147,7 +157,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         target = TARGET | {"RY", "PauliZ"}
         circuit = qp.transforms.decompose(qnode, gate_set=target, fixed_decomps={qp.CZ: cz_with_ry})
 
-        specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
+        specs = qp.estimate(qp.qjit(circuit), target="user")(0.5)
 
         assert specs.resources.quantum_operations == {
             "Hadamard": 2,
@@ -164,7 +174,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         target = {"Hadamard": 10, "CNOT": 1, "RX": 1, "RY": 1, "PauliZ": 1}
         circuit = qp.transforms.decompose(qnode, gate_set=target, alt_decomps={qp.CZ: [cz_with_ry]})
 
-        specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
+        specs = qp.estimate(qp.qjit(circuit), target="user")(0.5)
 
         assert specs.resources.quantum_operations == {
             "Hadamard": 2,
@@ -174,26 +184,61 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             "RX": 1,
         }
 
-    def test_decomps_from_several_decompose_transforms(self, qnode):
-        """Test that the rules of every decompose transform in the pipeline are used."""
+    @pytest.mark.parametrize(
+        "target, counts",
+        [
+            (1, {"Hadamard": 2, "PauliZ": 2, "RY": 2, "CNOT": 1, "RX": 1}),
+            (2, {"PauliX": 2, "PauliZ": 2, "RY": 4, "CNOT": 1, "RX": 1}),
+            ("user", {"PauliX": 2, "PauliZ": 2, "RY": 4, "CNOT": 1, "RX": 1}),
+        ],
+    )
+    def test_decomps_from_several_decompose_transforms(self, qnode, target, counts):
+        """Test that a pipeline level as target uses the gate set of the last decompose transform
+        before that level, and the rules of every decompose transform before that level."""
 
-        target = {"CNOT", "RX", "RY", "PauliX", "PauliZ"}
+        gate_set = {"CNOT", "RX", "RY", "PauliX", "PauliZ"}
         circuit = qp.transforms.decompose(
-            qnode, gate_set=target | {"Hadamard"}, fixed_decomps={qp.CZ: cz_with_ry}
+            qnode, gate_set=gate_set | {"Hadamard"}, fixed_decomps={qp.CZ: cz_with_ry}
         )
         circuit = qp.transforms.decompose(
-            circuit, gate_set=target, fixed_decomps={qp.Hadamard: h_with_x}
+            circuit, gate_set=gate_set, fixed_decomps={qp.Hadamard: h_with_x}
         )
 
         specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
 
-        assert specs.resources.quantum_operations == {
-            "PauliX": 2,
-            "PauliZ": 2,
-            "RY": 4,
-            "CNOT": 1,
-            "RX": 1,
-        }
+        assert specs.resources.quantum_operations == counts
+
+    @pytest.mark.parametrize(
+        "target, counts",
+        [
+            (1, {"Hadamard": 4, "CNOT": 1, "RX": 1}),
+            (2, {"Hadamard": 2, "PauliZ": 2, "RY": 2, "CNOT": 1, "RX": 1}),
+        ],
+    )
+    def test_integer_target_ignores_later_rules(self, qnode, target, counts):
+        """Test that an integer target ignores the rules of the decompose transforms after that
+        level."""
+
+        gate_set = TARGET | {"RY", "PauliZ"}
+        circuit = qp.transforms.decompose(qnode, gate_set=gate_set)
+        circuit = qp.transforms.decompose(
+            circuit, gate_set=gate_set, fixed_decomps={qp.CZ: cz_with_ry}
+        )
+
+        specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
+
+        assert specs.resources.quantum_operations == counts
+
+    def test_gate_set_target_ignores_pipeline_rules(self, qnode):
+        """Test that the rules of the decompose transforms in the pipeline are ignored if the
+        target is a gate set."""
+
+        target = TARGET | {"RY", "PauliZ"}
+        circuit = qp.transforms.decompose(qnode, gate_set=target, fixed_decomps={qp.CZ: cz_with_ry})
+
+        specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
+
+        assert specs.resources.quantum_operations == {"Hadamard": 4, "CNOT": 1, "RX": 1}
 
     def test_unreachable_target(self, circuit):
         """Test that a short error naming the operator is raised if the circuit cannot be
@@ -308,14 +353,86 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         with pytest.raises(ValueError, match="Invalid level"):
             qp.estimate(circuit, level=level, target=TARGET)(0.5)
 
-    @pytest.mark.parametrize("target", ["device", "user"])
-    def test_unsupported_target(self, circuit, target):
-        """Test that an error is raised for string targets."""
+    def test_target_device_is_default(self, circuit):
+        """Test that the default target is the gate set of the device, which supports every
+        operation in the circuit."""
 
-        with pytest.raises(
-            NotImplementedError, match=f"qp.estimate does not support target='{target}'"
-        ):
+        specs = qp.estimate(circuit)(0.5)
+
+        assert specs == qp.estimate(circuit, target="device")(0.5)
+        assert specs.resources.quantum_operations == {"Hadamard": 2, "CZ": 1, "RX": 1}
+
+    def test_target_device_capabilities(self, dev_without_cz):
+        """Test that target="device" decomposes the operations that the device does not
+        support."""
+
+        @qp.qjit
+        @qp.qnode(dev_without_cz)
+        def circuit(x):
+            qp.CZ([0, 1])
+            qp.RX(x, wires=1)
+            return qp.probs()
+
+        specs = qp.estimate(circuit, target="device")(0.5)
+
+        assert specs.resources.quantum_operations == {"ControlledPhaseShift": 1, "RX": 1}
+
+    def test_target_device_uses_pipeline_rules(self, dev_without_cz):
+        """Test that target="device" uses the rules of the decompose transforms in the
+        pipeline."""
+
+        @qp.qjit
+        @qp.decompose(gate_set=TARGET | {"RY", "PauliZ"}, fixed_decomps={qp.CZ: cz_with_ry})
+        @qp.qnode(dev_without_cz)
+        def circuit(x):
+            qp.CZ([0, 1])
+            qp.RX(x, wires=1)
+            return qp.probs()
+
+        specs = qp.estimate(circuit, target="device")(0.5)
+
+        assert specs.resources.quantum_operations == {"PauliZ": 2, "RY": 2, "CNOT": 1, "RX": 1}
+
+    def test_target_user(self, qnode):
+        """Test that target="user" uses the gate set of the last decompose transform in the
+        pipeline."""
+
+        circuit = qp.transforms.decompose(qnode, gate_set=TARGET | {"CZ"})
+        circuit = qp.transforms.decompose(circuit, gate_set=TARGET)
+
+        specs = qp.estimate(qp.qjit(circuit), target="user")(0.5)
+
+        assert specs.resources.quantum_operations == {"Hadamard": 4, "CNOT": 1, "RX": 1}
+
+    @pytest.mark.parametrize("target", ["user", 0, 1])
+    def test_level_target_without_decompose(self, circuit, target):
+        """Test that an error is raised for a pipeline level as target if there is no decompose
+        transform before that level."""
+
+        with pytest.raises(ValueError, match=f"target={target!r} requires a qp.decompose"):
             qp.estimate(circuit, target=target)(0.5)
+
+    @pytest.mark.parametrize("target", [-1, 2])
+    def test_integer_target_out_of_bounds(self, circuit, target):
+        """Test that an error is raised for an integer target that is not a level of the
+        pipeline."""
+
+        with pytest.raises(ValueError, match=f"Invalid target={target}"):
+            qp.estimate(circuit, target=target)(0.5)
+
+    def test_gate_name_target(self):
+        """Test that a string other than "device" and "user" is the name of the only gate in the
+        target gate set, as in qp.decompose."""
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
+        def circuit():
+            qp.SWAP([0, 1])
+            return qp.probs()
+
+        specs = qp.estimate(circuit, target="CNOT")()
+
+        assert specs.resources.quantum_operations == {"CNOT": 3}
 
     def test_error_with_non_qjit(self):
         """Test that an error is raised if the QNode is not qjit'd."""

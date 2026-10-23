@@ -530,6 +530,14 @@
 
   ```
 
+  By default, ``target="device"`` projects the resources onto the gates supported by the QNode's
+  device. With ``target="user"``, the gate set of the last :func:`~.transforms.decompose` transform
+  in the compile pipeline is used instead, and with an integer ``target=n``, the gate set of the
+  last :func:`~.transforms.decompose` transform in the first ``n`` passes. For these pipeline
+  levels, the ``fixed_decomps`` and ``alt_decomps`` of the :func:`~.transforms.decompose`
+  transforms before that level are also used. If ``target`` is a gate set, they are ignored.
+  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
+
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
   In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.Expression` instances where `int` values would normally appear.

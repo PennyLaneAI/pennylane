@@ -48,6 +48,55 @@ def _decomps_from_pipeline(pipeline: CompilePipeline) -> dict:
     return {"fixed_decomps": fixed_decomps or None, "alt_decomps": alt_decomps or None}
 
 
+def _device_gate_set(qnode) -> set[str]:
+    """Return the names of the gates supported by the device of ``qnode`` when compiled with
+    Catalyst."""
+    # pylint: disable=import-outside-toplevel
+    from catalyst.device import QJITDevice
+
+    capabilities = QJITDevice(qnode.device).capabilities
+    return capabilities.filter(finite_shots=bool(qnode.shots)).gate_set()
+
+
+def _last_gate_set(pipeline: CompilePipeline, target):
+    """Return the ``gate_set`` of the last ``decompose`` transform in ``pipeline``, which holds the
+    passes before the ``target`` level."""
+    # pylint: disable=protected-access
+    gate_sets = [
+        bound_transform.kwargs["gate_set"]
+        for bound_transform in pipeline
+        if bound_transform._transform is decompose and "gate_set" in bound_transform.kwargs
+    ]
+    if not gate_sets:
+        raise ValueError(
+            f"qp.estimate with target={target!r} requires a qp.decompose transform with a "
+            "gate_set in the compile pipeline before that level."
+        )
+    return gate_sets[-1]
+
+
+def _decompose_kwargs(qnode, target) -> dict:
+    """Return the arguments of the ``decompose`` transform that projects the resources of
+    ``qnode`` onto ``target``. The pass configs of the compile pipeline are only used if
+    ``target`` is a level of the pipeline."""
+    pipeline = qnode.compile_pipeline
+    if isinstance(target, str) and target in ("device", "user"):
+        num_passes = len(pipeline)
+    elif isinstance(target, int) and not isinstance(target, bool):
+        if not 0 <= target <= len(pipeline):
+            raise ValueError(
+                f"Invalid target={target}: the levels of the compile pipeline go from 0 to "
+                f"{len(pipeline)}."
+            )
+        num_passes = target
+    else:
+        return {"gate_set": target}
+
+    passes = pipeline[:num_passes]
+    gate_set = _device_gate_set(qnode) if target == "device" else _last_gate_set(passes, target)
+    return {"gate_set": gate_set, **_decomps_from_pipeline(passes)}
+
+
 def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
     """Decompose a qjit'd QNode at ``level`` into the ``target`` gate set and return its specs."""
     # pylint: disable=import-outside-toplevel,protected-access,no-value-for-parameter
@@ -62,11 +111,6 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
             f"qp.estimate only supports level='top' or level=0, instead got: {level!r}."
         )
 
-    if isinstance(target, str):
-        raise NotImplementedError(
-            f"qp.estimate does not support target={target!r} yet. Provide a gate set instead."
-        )
-
     uses_capture = func.compile_options.capture
     if uses_capture == "global":
         uses_capture = capture.enabled()
@@ -78,7 +122,7 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
     # At level="top", the user transforms are skipped and only the decomposition is applied
     estimate_qnode = copy.copy(original_qnode)
     estimate_qnode._compile_pipeline = CompilePipeline(
-        decompose(gate_set=target, **_decomps_from_pipeline(original_qnode.compile_pipeline))
+        decompose(**_decompose_kwargs(original_qnode, target))
     )
 
     try:
@@ -100,7 +144,7 @@ def estimate(
     qnode,
     level: str | int = "top",
     *,
-    target: str | Iterable[type | str] | dict[type | str, float],
+    target: str | int | Iterable[type | str] | dict[type | str, float] = "device",
 ) -> Callable[..., CircuitSpecs]:
     r"""Provides a resource estimate of a quantum circuit with respect to the provided compilation target,
     via rapid analysis of decomposition pathways.
@@ -117,9 +161,10 @@ def estimate(
             ``target``. Only ``"top"``, ``0``, or the name of a marker placed before all passes,
             are currently supported, indicating the original circuit before any compilation
             passes have been applied. Defaults to ``"top"``.
-        target (str | Iterable[type | str] | dict[type | str, float]): The gate set to project
-            the resources onto, in any form accepted by the ``gate_set`` argument of
-            :func:`~.decompose`.
+        target (str | int | Iterable[type | str] | dict[type | str, float]): The gate set to
+            project the resources onto. Either a gate set, in any form accepted by the
+            ``gate_set`` argument of :func:`~.decompose`, or a level of the compile pipeline:
+            ``"device"``, ``"user"``, or a number of passes. Defaults to ``"device"``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
@@ -171,10 +216,45 @@ def estimate(
     is decomposed into ``Hadamard`` and ``CNOT`` gates.
 
     .. details::
+        :title: Pipeline levels as target
+
+        Instead of a gate set, ``target`` can be a level of the compile pipeline. The resources are
+        then projected onto the gate set of that level:
+
+        * ``"device"``, the default: the gates supported by the QNode's device.
+        * ``"user"``: the gate set of the last :func:`~.decompose` transform in the compile
+          pipeline.
+        * An integer ``n``: the gate set of the last :func:`~.decompose` transform in the first
+          ``n`` passes.
+
+        For example, ``null.qubit`` supports ``CZ`` but not ``SX``:
+
+        .. code-block:: python
+
+            @qp.qjit(capture=True)
+            @qp.decompose(gate_set={"Hadamard", "CNOT", "RX", "GlobalPhase"})
+            @qp.qnode(qp.device("null.qubit", wires=2))
+            def circuit():
+                qp.SX(0)
+                qp.CZ([0, 1])
+                return qp.probs()
+
+        >>> qp.estimate(circuit)().resources.quantum_operations
+        {'CZ': 1, 'GlobalPhase': 1, 'RX': 1}
+        >>> qp.estimate(circuit, target="user")().resources.quantum_operations
+        {'CNOT': 1, 'GlobalPhase': 1, 'Hadamard': 2, 'RX': 1}
+
+        .. note::
+
+            With ``target="device"``, controlled gates with more than one control wire, or with an
+            adjoint, are decomposed even if the device supports them.
+
+    .. details::
         :title: Custom decomposition rules
 
-        To reach the ``target`` gate set, ``estimate`` uses the ``fixed_decomps`` and
-        ``alt_decomps`` of the :func:`~.decompose` transforms in the compile pipeline.
+        If ``target`` is a level of the compile pipeline, ``estimate`` also uses the
+        ``fixed_decomps`` and ``alt_decomps`` of the :func:`~.decompose` transforms before that
+        level. If ``target`` is a gate set, they are ignored.
 
         For example, the following circuit fixes a decomposition rule for ``CZ`` that uses
         ``PauliZ`` and ``RY`` gates instead of ``Hadamard`` gates:
@@ -196,10 +276,15 @@ def estimate(
                 qp.CZ([0, 1])
                 return qp.probs()
 
-        The ``CZ`` gate is decomposed with this rule:
+        With ``target="user"``, the ``CZ`` gate is decomposed with this rule:
 
-        >>> qp.estimate(circuit, target={"CNOT", "PauliZ", "RY"})().resources.quantum_operations
+        >>> qp.estimate(circuit, target="user")().resources.quantum_operations
         {'CNOT': 1, 'PauliZ': 2, 'RY': 2}
+
+        With a gate set as ``target``, the rule is ignored:
+
+        >>> qp.estimate(circuit, target={"CNOT", "Hadamard"})().resources.quantum_operations
+        {'CNOT': 1, 'Hadamard': 2}
 
     .. details::
         :title: Symbolic resource counts
