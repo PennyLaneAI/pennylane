@@ -349,7 +349,7 @@ class TestTwoBodyWorkWireDecomposition:
                 core, wires, 0.1, control_wires, double_phase, work_wires
             )
         )()
-        operations = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        operations = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
         num_pairs = num_orbitals * (num_orbitals - 1) // 2
         num_pair_rotations = sum(
             isinstance(op, qp.CRZ) and op.wires[0] == work_wires[int(standard_control)]
