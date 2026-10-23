@@ -173,7 +173,7 @@ class Select(Operator2):
                     :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
 
                 :class:`~.TemporaryAND` | :math:`N` | 1
-                :class:`TemporaryAND† <~.TemporaryAND>` | :math:`N` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`N` | 1
                 :class:`~.CNOT` | :math:`K - 1` :math:`+ [K > 2^{c-1}]` :math:`- [K > 2^{c-2}]` | 3
                 :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`[K > 2^{c-2}]` | 1
                 :math:`U_j` with 1 control | :math:`K` (one per :math:`U_j`) | 4

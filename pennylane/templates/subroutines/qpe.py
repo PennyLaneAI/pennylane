@@ -66,7 +66,7 @@ class QuantumPhaseEstimation(Operator2):
 
                 :class:`~.Hadamard` | :math:`n` | 3
                 :math:`U^{2^k}` with 1 control | :math:`n` (one per :math:`k < n`) | 3
-                :class:`QFT† <~.QFT>` on :math:`n` wires | :math:`1` | 1
+                :class:`Adjoint(QFT) <.QFT>` on :math:`n` wires | :math:`1` | 1
 
     .. details::
         :title: Usage Details

@@ -98,7 +98,7 @@ class UniformPrep(Operator2):
 
                 :class:`~.Hadamard` | :math:`k + 3\ell` | 9
                 :class:`~.LeftClassicalComparator` | :math:`\delta` | 1
-                :class:`LeftClassicalComparator† <~.LeftClassicalComparator>` | :math:`\delta` | 1
+                :class:`Adjoint(LeftClassicalComparator) <.LeftClassicalComparator>` | :math:`\delta` | 1
                 :class:`~.RZ` | :math:`\delta` | 1
                 :class:`~.GlobalPhase` with :math:`\ell` controls | :math:`\delta` | 1
                 :class:`~.GlobalPhase` | :math:`\delta` | 1

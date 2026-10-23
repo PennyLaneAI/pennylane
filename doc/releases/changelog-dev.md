@@ -2096,6 +2096,13 @@
   repr.
   [(#10284)](https://github.com/PennyLaneAI/pennylane/pull/10284)
 
+* Added "Available decompositions" tables to the documentation of the templates with
+  decomposition rules, including :class:`~.Select`, :class:`~.QROM`, :class:`~.QFT`,
+  :class:`~.QSVT`, the arithmetic templates such as :class:`~.SemiAdder` and
+  :class:`~.TemporaryAND`, the state preparations, and the THC and Trotter templates. Each table
+  lists the template's decomposition rules with a circuit diagram and their resources.
+  [(#10384)](https://github.com/PennyLaneAI/pennylane/pull/10384)
+
 <h3>Bug fixes 🐛</h3>
 
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic

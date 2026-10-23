@@ -91,7 +91,7 @@ class IQP(Operator2):
                 :where: the Pauli word ``"YX...X"`` acts on all :math:`n` wires: one Y, then
                     :math:`n - 1` X's
 
-                :class:`PPR_4(1, "YX...X") <~.PPR_4>` | :math:`1` if ``spin_sym=True`` | 1
+                :class:`PPR_4(1, "YX...X") <.PPR_4>` | :math:`1` if ``spin_sym=True`` | 1
                 :class:`~.Hadamard` | :math:`2n` | 4
                 :class:`~.MultiRZ` on the wires of a generator | :math:`G` (one per generator) | 3
 

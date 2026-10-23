@@ -853,7 +853,7 @@ class SumOfSlatersPrep(Operator2):
                 :class:`~.QROM` | :math:`1` | 1
                 :class:`~.CNOT` | :math:`2u + \sum_{k=1}^{D-1} \mathrm{wt}(k)` | 32
                 :class:`~.TemporaryAND` | :math:`(D-1)(m-1)` | 28
-                :class:`TemporaryAND† <~.TemporaryAND>` | :math:`(D-1)(m-1)` | 28
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`(D-1)(m-1)` | 28
                 :class:`~.X` | :math:`N_X \leq D m` | 22
 
     .. details::

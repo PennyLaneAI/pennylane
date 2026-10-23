@@ -127,10 +127,11 @@ class OutMultiplier(Operator2):
 
             .. decomposition-rule:: _out_multiplier_with_qft
                 :image: /_static/decomposition_thumbnails/out_multiplier_qft.svg
+                :requires: program capture to be disabled
 
                 :class:`~.QFT` | :math:`1` | 1
                 :class:`~.ControlledSequence` (nested, of :class:`~.PhaseAdder`) | :math:`1` | 1
-                :class:`QFT† <~.QFT>` | :math:`1` | 1
+                :class:`Adjoint(QFT) <.QFT>` | :math:`1` | 1
 
             .. decomposition-rule:: _out_multiplier_with_adder
                 :image: /_static/decomposition_thumbnails/out_multiplier_adder.svg
@@ -144,7 +145,7 @@ class OutMultiplier(Operator2):
                 :where: :math:`[m > 1]` equal to 1 if :math:`m > 1` and 0 otherwise
 
                 :class:`~.TemporaryAND` | :math:`(n + 1)k - m - \binom{n}{2}` | 9
-                :class:`TemporaryAND† <~.TemporaryAND>` | :math:`(n + 1)k - m - \binom{n}{2}` | 9
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`(n + 1)k - m - \binom{n}{2}` | 9
                 :class:`~.CNOT` | :math:`(n + 1)k + 5nm + n - m - 4 - \binom{n}{2}` | 27
                 :class:`~.X` | :math:`2k + 8` | 16
                 :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`4n` | 8
@@ -158,7 +159,7 @@ class OutMultiplier(Operator2):
 
                 :class:`~.OutMultiplier` with ``output_wires_zeroed=True`` | :math:`1` | 1
                 :class:`~.SemiAdder` | :math:`1` | 1
-                :class:`OutMultiplier† <~.OutMultiplier>` | :math:`1` | 1
+                :class:`Adjoint(OutMultiplier) <.OutMultiplier>` | :math:`1` | 1
 
     .. details::
         :title: Usage Details

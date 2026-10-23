@@ -468,10 +468,10 @@ class AliasSamplingTHC(Operator2):
                 :class:`~.QROM` | :math:`1` | 1
                 :class:`~.Hadamard` | :math:`\aleph + 1` | 7
                 :class:`~.LeftQuantumComparator` | :math:`1` | 1
-                :class:`LeftQuantumComparator† <~.LeftQuantumComparator>` | :math:`1` | 1
+                :class:`Adjoint(LeftQuantumComparator) <.LeftQuantumComparator>` | :math:`1` | 1
                 :class:`~.CSWAP` | :math:`3n + 2` | 8
                 :class:`~.TemporaryAND` | :math:`1` | 1
-                :class:`TemporaryAND† <~.TemporaryAND>` | :math:`1` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1` | 1
     """
 
     wire_argnames = ("mu_wires", "nu_wires", "edge_flag", "work_wires")

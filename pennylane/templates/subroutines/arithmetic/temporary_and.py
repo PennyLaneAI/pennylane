@@ -126,9 +126,9 @@ class TemporaryAND(Operator2):
 
                 :class:`~.Hadamard` | :math:`2` | 2
                 :class:`~.T` | :math:`2` | 2
-                :class:`T† <~.T>` | :math:`2` | 2
+                :class:`Adjoint(T) <.T>` | :math:`2` | 2
                 :class:`~.CNOT` | :math:`3` | 3
-                :class:`S† <~.S>` | :math:`1` | 1
+                :class:`Adjoint(S) <.S>` | :math:`1` | 1
                 :class:`~.X` | :math:`2z` | 2
 
             .. decomposition-rule:: _temporary_and_to_toffoli
@@ -140,9 +140,9 @@ class TemporaryAND(Operator2):
             .. decomposition-rule:: _temporary_and_ppr
                 :image: /_static/decomposition_thumbnails/temporary_and_ppr.svg
 
-                :class:`PPR_8(1, "ZZY") <~.PPR_8>` | :math:`1` | 1
-                :class:`PPR_8(-1, "ZY") <~.PPR_8>` | :math:`2` | 2
-                :class:`PPR_8(1, "Y") <~.PPR_8>` | :math:`1` | 1
+                :class:`PPR_8(1, "ZZY") <.PPR_8>` | :math:`1` | 1
+                :class:`PPR_8(-1, "ZY") <.PPR_8>` | :math:`2` | 2
+                :class:`PPR_8(1, "Y") <.PPR_8>` | :math:`1` | 1
                 :class:`~.X` | :math:`2z` | 2
     """
 

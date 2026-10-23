@@ -109,7 +109,7 @@ class SelectPauliRot(Operator2):
                 :class:`~.CNOT` | :math:`2^c` | 2
                 :class:`~.Hadamard` | :math:`2[P \neq Z]` | 2
                 :class:`~.S` | :math:`[P = Y]` | 1
-                :class:`S† <~.S>` | :math:`[P = Y]` | 1
+                :class:`Adjoint(S) <.S>` | :math:`[P = Y]` | 1
     """
 
     dynamic_argnames = ("angles",)

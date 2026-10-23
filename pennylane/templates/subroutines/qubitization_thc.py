@@ -365,9 +365,9 @@ class QubitizationTHC(Operator2):
                 :image: /_static/decomposition_thumbnails/qubitization_thc_walk.svg
 
                 :class:`~.SuperpositionTHC` | :math:`1`
-                :class:`SuperpositionTHC† <~.SuperpositionTHC>` | :math:`1`
+                :class:`Adjoint(SuperpositionTHC) <.SuperpositionTHC>` | :math:`1`
                 :class:`~.AliasSamplingTHC` | :math:`1`
-                :class:`AliasSamplingTHC† <~.AliasSamplingTHC>` | :math:`1`
+                :class:`Adjoint(AliasSamplingTHC) <.AliasSamplingTHC>` | :math:`1`
                 :class:`~.Hadamard` | :math:`4`
                 :class:`~.Z` | :math:`1`
                 :class:`~.SelectTHC` | :math:`1`

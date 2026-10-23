@@ -616,16 +616,16 @@ class SelectTHC(Operator2):
                 :image: /_static/decomposition_thumbnails/select_thc_double_factorized.svg
 
                 :class:`~.QROM` | :math:`2B` | 2
-                :class:`QROM† <~.QROM>` | :math:`2B` | 2
+                :class:`Adjoint(QROM) <.QROM>` | :math:`2B` | 2
                 :class:`~.CSWAP` | :math:`4h + n + 1` | 11
                 :class:`~.Hadamard` | :math:`24P` | 24
                 :class:`~.CNOT` | :math:`8P` | 8
                 :class:`~.S` | :math:`8P` | 8
-                :class:`S† <~.S>` | :math:`8P` | 8
+                :class:`Adjoint(S) <.S>` | :math:`8P` | 8
                 :class:`~.Z` | :math:`8P` | 8
                 :class:`~.MultiX` with 1 control | :math:`16P` | 16
                 :class:`~.SemiAdder` | :math:`4P` | 4
-                :class:`SemiAdder† <~.SemiAdder>` | :math:`4P` | 4
+                :class:`Adjoint(SemiAdder) <.SemiAdder>` | :math:`4P` | 4
                 :class:`~.Z` with 1 control | :math:`1` | 1
                 :class:`~.Z` with 2 controls | :math:`1` | 1
                 :class:`~.X` | :math:`3` | 3

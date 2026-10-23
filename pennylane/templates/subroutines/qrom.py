@@ -176,21 +176,21 @@ class QROM(Operator2):
                 :class:`~.QROM` | :math:`2` | 2
                 :class:`~.Hadamard` | :math:`2b` | 4
                 :class:`~.CSWAP` | :math:`2b(\lambda - 1)` | 4
-                :class:`CSWAP† <~.CSWAP>` | :math:`2b(\lambda - 1)` | 4
+                :class:`Adjoint(CSWAP) <.CSWAP>` | :math:`2b(\lambda - 1)` | 4
 
             .. decomposition-rule:: _qrom_unary_iteration
                 :image: /_static/decomposition_thumbnails/qrom_unary_iteration.svg
-                :requires: :math:`w \geq 1` work wire (otherwise, each bitstring is loaded by a
-                    :class:`~.MultiX` with :math:`c` controls)
                 :where: :math:`t = \min(c, w + 1)` control wires span the unary iteration tree and
                     the other :math:`e = c - t` are added as controls to each load,
                     :math:`B = \lceil K / 2^e \rceil`,
                     :math:`N = t + B - 2 - \mathrm{wt}(B-1) - [B > 2^{t-1}]`, with
                     :math:`\mathrm{wt}` the number of ones in the binary representation, and
-                    :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
+                    :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise. With no work
+                    wires (:math:`w = 0`), each bitstring is instead loaded by a :class:`~.MultiX`
+                    with :math:`c` controls
 
                 :class:`~.TemporaryAND` | :math:`N` | 1
-                :class:`TemporaryAND† <~.TemporaryAND>` | :math:`N` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`N` | 1
                 :class:`~.CNOT` | :math:`B - 1 + [B > 2^{t-1}]` | 4
                 :class:`~.X` | :math:`2[B > 2^{t-2}]` | 2
                 :class:`~.MultiX` with :math:`e + 1` controls | :math:`K` | 4
@@ -207,8 +207,8 @@ class QROM(Operator2):
                 :class:`~.TemporaryAND` | :math:`A` | 1
                 :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`1` | 1
                 :class:`~.CNOT` | at most :math:`\max(3, L/2 - 1) + 2b` | 5
-                :class:`~.PauliMeasure` (:math:`X`-type, :math:`\leq b + 1` wires) | :math:`A` | 1
-                :class:`~.PauliMeasure` (:math:`Z`, 1 wire) | :math:`A` | 1
+                :func:`PauliMeasure <.pauli_measure>` (:math:`X`-type, :math:`\leq b + 1` wires) | :math:`A` | 1
+                :func:`PauliMeasure <.pauli_measure>` (:math:`Z`, 1 wire) | :math:`A` | 1
                 :class:`~.CZ` (conditional) | :math:`A` | 1
                 :class:`~.X` (conditional) | :math:`A` | 1
 

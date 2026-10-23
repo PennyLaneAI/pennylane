@@ -76,7 +76,7 @@ class Incrementer(Operator2):
                 :requires: :math:`w \geq n - 1` work wires
 
                 :class:`~.TemporaryAND` | :math:`n - 2` | 2
-                :class:`TemporaryAND† <~.TemporaryAND>` | :math:`n - 2` | 2
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`n - 2` | 2
                 :class:`~.CNOT` | :math:`n - 1` | 3
                 :class:`~.X` | :math:`1` | 1
 

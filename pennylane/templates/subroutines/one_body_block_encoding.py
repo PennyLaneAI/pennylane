@@ -251,11 +251,11 @@ class OneBodyBlockEncoding(Operator2):
                 :where: :math:`\delta = 1` if :math:`\nu > 0` and :math:`\delta = 0` otherwise
 
                 :class:`~.AliasSampling` | :math:`1` | 1
-                :class:`AliasSampling† <~.AliasSampling>` | :math:`1` | 1
+                :class:`Adjoint(AliasSampling) <.AliasSampling>` | :math:`1` | 1
                 :class:`~.Hadamard` | :math:`4K + 2` | 10
                 :class:`~.BasisRotation` on :math:`K` wires | :math:`4` | 4
                 :class:`~.LeftClassicalComparator` | :math:`\delta` | 1
-                :class:`LeftClassicalComparator† <~.LeftClassicalComparator>` | :math:`\delta` | 1
+                :class:`Adjoint(LeftClassicalComparator) <.LeftClassicalComparator>` | :math:`\delta` | 1
                 :class:`~.Z` | :math:`\delta` | 1
                 :class:`~.QROM` | :math:`1` | 1
                 :class:`~.GlobalPhase` | :math:`1` | 1

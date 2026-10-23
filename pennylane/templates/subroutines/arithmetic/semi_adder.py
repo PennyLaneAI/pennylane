@@ -259,7 +259,7 @@ class SemiAdder(Operator2):
                     :math:`m \geq n` and 0 otherwise
 
                 :class:`~.TemporaryAND` | :math:`n - 1` | 2
-                :class:`TemporaryAND† <~.TemporaryAND>` | :math:`n - 1` | 2
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`n - 1` | 2
                 :class:`~.CNOT` | :math:`n + 5\ell - 5 + [m \geq n]` | 9
     """
 

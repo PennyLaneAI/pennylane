@@ -491,8 +491,8 @@ def _(f):
     f.bundle(12, cache, "2k")
     f.bundle(12, coef, "b")
     f.bundle(12, pg, "b")
-    # one position fragment: diagonalize, load coefficients, add / multiply into the gradient
-    box(f, 40, el, None, "C", GY0, w=28)
+    # one position fragment (diagonal in the example, so no basis change): load coefficients,
+    # add / multiply into the gradient
     f.vline(85, el, coef)
     f.sqctrl(85, el)
     box(f, 85, coef, None, "QROM", MG2, w=50, size=13)
@@ -508,7 +508,6 @@ def _(f):
     box(f, 230, pg, None, "×", YL2, w=28, size=24)
     f.hdots(268, coef)
     f.hdots(268, pg)
-    box(f, 305, el, None, r"C$^\dagger$", GY0, w=32)
     # kinetic fragment: momentum space via AQFT
     box(f, 350, coef, None, "X", GY0, w=26)
     box(f, 390, mode, None, "QFT", PU2, w=40, size=13)
