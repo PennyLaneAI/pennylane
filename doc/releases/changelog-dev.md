@@ -2097,12 +2097,10 @@
   [(#10284)](https://github.com/PennyLaneAI/pennylane/pull/10284)
 
 * Operator documentation now has an "Available decompositions" table listing each of the
-  operator's decomposition rules, with a circuit diagram and the resources the rule uses. The
-  tables are rendered by a new ``decomposition-table`` Sphinx directive, and their diagrams are
-  drawn by a script in ``doc/_static/decomposition_thumbnails/generator``. Tables are added for
-  :class:`~.Hadamard`, :class:`~.PauliX`, :class:`~.PauliY`, :class:`~.PauliZ`, :class:`~.S`,
-  :class:`~.T`, :class:`~.SX`, :class:`~.SWAP`, :class:`~.ECR`, :class:`~.ISWAP`,
-  :class:`~.SISWAP`, :class:`~.PPR_2`, :class:`~.PPR_4` and :class:`~.PPR_8`.
+  operator's decomposition rules, with a circuit diagram and the resources the rule uses. 
+  This change only applies to operators that are subclasses of ``Operator2``. 
+  The tables are rendered by a new ``decomposition-table`` Sphinx directive, and their diagrams are
+  drawn by a script in ``doc/_static/decomposition_thumbnails/generator``. 
   [(#10381)](https://github.com/PennyLaneAI/pennylane/pull/10381)
 
 <h3>Bug fixes 🐛</h3>
