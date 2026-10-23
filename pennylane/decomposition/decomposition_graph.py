@@ -288,10 +288,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # operators we're still exploring decomposition paths for during **graph construction**.
         # If we loop back to an op that we're still exploring (e.g., if we find ourselves
         # exploring decomposition rules for C(RX) during exploration of RX itself), we stop.
-        self._in_progress: dict[AbstractOperatorLike, int] = {}
+        self._in_progress = []
         self._num_ctrl_wires_in_progress = defaultdict(list)
-        # Rebuild nodes whose alternatives were cut short by a cycle if another path needs them.
-        self._incomplete_op_indices: set[int] = set()
 
         # Update the global decomposition library using alt_decomps and fixed_decomps in a local
         # context manager (which restores it to the original state upon exit), so that list_decomps
@@ -343,9 +341,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         op_node = _OperatorNode(op, num_used_work_wires, known_work_wire_dependent)
 
         if op_node in self._all_op_indices:
-            existing_idx = self._all_op_indices[op_node]
-            if op in self._in_progress or existing_idx not in self._incomplete_op_indices:
-                return existing_idx
+            return self._all_op_indices[op_node]
 
         if op in self._gate_set_weights:
             op_node = replace(op_node, reachable=True)
@@ -358,7 +354,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op])
             return op_node_idx
 
-        self._push_in_progress(op, op_node_idx)
+        self._push_in_progress(op)
         rules = self._get_decompositions(op)
 
         # Treat ops that do not have a decomposition as supported if strict=False
@@ -370,42 +366,45 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             self._pop_in_progress(op)
             return op_node_idx
 
+        work_wire_dependent = known_work_wire_dependent
         min_work_wires = -1  # use -1 to represent undetermined work wire requirement
         for decomposition in rules:
             d_node = self._add_decomp(decomposition, op_node, op_node_idx, num_used_work_wires)
             if not d_node.applicable or not d_node.reachable:
                 continue
+            # Later alternatives may revisit this operator through its symbolic adjoint.
+            if not op_node.reachable:
+                op_node = replace(op_node, reachable=True)
+                self._replace_node(op_node_idx, op_node)
+            # If any of the operator's decompositions depend on work wires, this operator
+            # should also depend on work wires.
+            if d_node.work_wire_dependent:
+                work_wire_dependent = True
             if min_work_wires == -1 or d_node.min_work_wires < min_work_wires:
                 min_work_wires = d_node.min_work_wires
 
-            if (
-                not op_node.reachable
-                or op_node.min_work_wires != min_work_wires
-                or (d_node.work_wire_dependent and not op_node.work_wire_dependent)
-            ):
-                # Later alternatives may revisit this operator through a symbolic wrapper.
-                # Publish changes before exploring them.
-                op_node = replace(
-                    op_node,
-                    reachable=True,
-                    work_wire_dependent=op_node.work_wire_dependent or d_node.work_wire_dependent,
-                    min_work_wires=min_work_wires,
-                )
-                self._replace_node(op_node_idx, op_node)
-                if op_node.work_wire_dependent:
-                    self._work_wire_dependent_ops.add(op_node.op)
+        # If we found that this operator depends on work wires, but it's currently recorded
+        # as independent of work wires, we must replace every record of this operator node
+        # with a new node with `work_wire_dependent` set to `True`.
+        if not known_work_wire_dependent and work_wire_dependent:
+            op_node = replace(op_node, work_wire_dependent=True, min_work_wires=min_work_wires)
+            self._replace_node(op_node_idx, op_node)
+            # Also record that this operator type depends on work wires, so in the future
+            # when we encounter other instances of the same operator type, we correctly
+            # identify it as work-wire dependent.
+            self._work_wire_dependent_ops.add(op_node.op)
 
         self._pop_in_progress(op)
         return op_node_idx
 
-    def _push_in_progress(self, op, op_node_idx):
-        self._in_progress[op] = op_node_idx
+    def _push_in_progress(self, op):
+        self._in_progress.append(op)
         if unwrapped := _get_base_and_n_ctrls(op):
             base_rep, num_control_wires = unwrapped
             self._num_ctrl_wires_in_progress[base_rep].append(num_control_wires)
 
     def _pop_in_progress(self, op):
-        self._in_progress.pop(op)
+        self._in_progress.pop()
         if unwrapped := _get_base_and_n_ctrls(op):
             base_rep, _ = unwrapped
             self._num_ctrl_wires_in_progress[base_rep].pop()
@@ -461,7 +460,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         max_op_min_work_wires = 0
         for op in decomp_resource.gate_counts:
 
-            if self._base_in_progress(op, num_used_work_wires + work_wire_spec.total):
+            if self._base_in_progress(op):
                 d_node.reachable = False
                 self._graph.add_edge(d_node_idx, op_idx, 0)
                 return d_node
@@ -483,16 +482,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._graph.add_edge(d_node_idx, op_idx, 0)
         return d_node
 
-    def _base_in_progress(self, op, num_used_work_wires):
-        if op in self._in_progress:
-            ancestor_idx = self._in_progress[op]
-            ancestor = self._graph[ancestor_idx]
-            if num_used_work_wires > ancestor.num_work_wire_not_available:
-                # A larger used-wire budget must not turn a cycle into an unbounded chain.
-                # Intermediate nodes may need the excluded path when visited independently.
-                path = list(self._in_progress.values())
-                self._incomplete_op_indices.update(path[path.index(ancestor_idx) + 1 :])
-                return True
+    def _base_in_progress(self, op):
         unwrapped = _get_base_and_n_ctrls(op)
         if unwrapped is None:
             return False
