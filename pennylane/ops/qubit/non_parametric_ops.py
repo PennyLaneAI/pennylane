@@ -87,8 +87,8 @@ class Hadamard(Operator2):
                 :image: /_static/decomposition_thumbnails/hadamard_ppm.svg
                 :requires: 1 work wire (not restored)
 
-                :class:`PauliMeasure("YY") <~.PauliMeasure>` | :math:`1`
-                :class:`PauliMeasure("X") <~.PauliMeasure>` | :math:`1`
+                :class:`PauliMeasure("YY") <.PauliMeasure>` | :math:`1`
+                :class:`PauliMeasure("X") <.PauliMeasure>` | :math:`1`
                 :class:`~.Y` (conditional) | :math:`1`
                 :class:`~.Z` (one conditional) | :math:`2`
                 :class:`~.GlobalPhase` (conditional) | :math:`1`
@@ -96,8 +96,8 @@ class Hadamard(Operator2):
             .. decomposition-rule:: _hadamard_ppr
                 :image: /_static/decomposition_thumbnails/hadamard_ppr.svg
 
-                :class:`PPR_2(1, "Z") <~.PPR_2>` | :math:`1`
-                :class:`PPR_4(1, "Y") <~.PPR_4>` | :math:`1`
+                :class:`PPR_2(1, "Z") <.PPR_2>` | :math:`1`
+                :class:`PPR_4(1, "Y") <.PPR_4>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
     """
 
@@ -370,6 +370,12 @@ class PauliX(Operator2):
 
                 :class:`~.RX` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _paulix_to_ppr
+                :image: /_static/decomposition_thumbnails/paulix_to_ppr.svg
+
+                :class:`PPR_2(1, "X") <.PPR_2>` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
     """
 
     wire_sizes = (1,)
@@ -632,6 +638,12 @@ class PauliY(Operator2):
 
                 :class:`~.RY` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _pauliy_to_ppr
+                :image: /_static/decomposition_thumbnails/pauliy_to_ppr.svg
+
+                :class:`PPR_2(1, "Y") <.PPR_2>` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
     """
 
     arg_specs = {"wires": Wire[1]}
@@ -882,6 +894,12 @@ class PauliZ(Operator2):
                 :image: /_static/decomposition_thumbnails/pauliz_to_phase_shift.svg
 
                 :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: _pauliz_to_ppr
+                :image: /_static/decomposition_thumbnails/pauliz_to_ppr.svg
+
+                :class:`PPR_2(1, "Z") <.PPR_2>` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
     """
 
     arg_specs = {"wires": Wire[1]}
@@ -1166,6 +1184,12 @@ class S(Operator2):
                 :image: /_static/decomposition_thumbnails/s_to_phase_shift.svg
 
                 :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: _s_to_ppr
+                :image: /_static/decomposition_thumbnails/s_to_ppr.svg
+
+                :class:`PPR_4(1, "Z") <.PPR_4>` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
     """
 
     wire_sizes = (1,)
@@ -1329,6 +1353,12 @@ class T(Operator2):
                 :image: /_static/decomposition_thumbnails/t_to_phase_shift.svg
 
                 :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: _t_to_ppr
+                :image: /_static/decomposition_thumbnails/t_to_ppr.svg
+
+                :class:`PPR_8(1, "Z") <.PPR_8>` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
     """
 
     wire_sizes = (1,)
@@ -1624,9 +1654,9 @@ class SWAP(Operator2):
             .. decomposition-rule:: _swap_to_ppr
                 :image: /_static/decomposition_thumbnails/swap_to_ppr.svg
 
-                :class:`PPR_4(1, "XX") <~.PPR_4>` | :math:`1`
-                :class:`PPR_4(1, "YY") <~.PPR_4>` | :math:`1`
-                :class:`PPR_4(1, "ZZ") <~.PPR_4>` | :math:`1`
+                :class:`PPR_4(1, "XX") <.PPR_4>` | :math:`1`
+                :class:`PPR_4(1, "YY") <.PPR_4>` | :math:`1`
+                :class:`PPR_4(1, "ZZ") <.PPR_4>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
     """
 
@@ -1978,14 +2008,14 @@ class ISWAP(Operator2):
                 :image: /_static/decomposition_thumbnails/iswap_decomp.svg
 
                 :class:`~.S` | :math:`2`
-                :class:`~.H` | :math:`2`
+                :class:`~.Hadamard` | :math:`2`
                 :class:`~.CNOT` | :math:`2`
 
             .. decomposition-rule:: _iswap_to_ppr
                 :image: /_static/decomposition_thumbnails/iswap_to_ppr.svg
 
-                :class:`PPR_4(-1, "XX") <~.PPR_4>` | :math:`1`
-                :class:`PPR_4(-1, "YY") <~.PPR_4>` | :math:`1`
+                :class:`PPR_4(-1, "XX") <.PPR_4>` | :math:`1`
+                :class:`PPR_4(-1, "YY") <.PPR_4>` | :math:`1`
     """
 
     wire_sizes = (2,)
@@ -2156,8 +2186,8 @@ class SISWAP(Operator2):
             .. decomposition-rule:: _siswap_to_ppr
                 :image: /_static/decomposition_thumbnails/siswap_to_ppr.svg
 
-                :class:`PPR_8(-1, "XX") <~.PPR_8>` | :math:`1`
-                :class:`PPR_8(-1, "YY") <~.PPR_8>` | :math:`1`
+                :class:`PPR_8(-1, "XX") <.PPR_8>` | :math:`1`
+                :class:`PPR_8(-1, "YY") <.PPR_8>` | :math:`1`
     """
 
     wire_sizes = (2,)
@@ -2457,6 +2487,21 @@ class PPR_2(_FixedAnglePPR):
     To compile ``PPR_2`` with PBC compilation passes (e.g., :func:`~.ppr_to_ppm` or
     :func:`~.ppm_compilation`), the :func:`~.to_ppr` pass must be used beforehand.
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PPR_2
+            :symbols: ``sign`` :math:`s` and a Pauli word with :math:`x` X's, :math:`y` Y's
+                and :math:`z` Z's
+            :example: ``PPR_2(1, "XYZ")``
+
+            .. decomposition-rule:: _ppr2_to_paulis
+                :image: /_static/decomposition_thumbnails/ppr2_to_paulis.svg
+
+                :class:`~.X` | :math:`x` | 1
+                :class:`~.Y` | :math:`y` | 1
+                :class:`~.Z` | :math:`z` | 1
+                :class:`~.GlobalPhase` | :math:`1` | 1
     """
 
     _denominator = 2
@@ -2515,6 +2560,24 @@ class PPR_4(_FixedAnglePPR):
     To compile ``PPR_4`` with PBC compilation passes (e.g., :func:`~.ppr_to_ppm` or
     :func:`~.ppm_compilation`), the :func:`~.to_ppr` pass must be used beforehand.
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PPR_4
+            :symbols: ``sign`` :math:`s` and a Pauli word with :math:`x` X's, :math:`y` Y's
+                and :math:`z` Z's
+            :example: ``PPR_4(1, "XYZ")``
+
+            .. decomposition-rule:: _ppr4_to_cliffords
+                :image: /_static/decomposition_thumbnails/ppr4_to_cliffords.svg
+                :where: :math:`k = x + y + z`, and :math:`[\cdot]` equal to 1 if the condition
+                    holds and 0 otherwise
+
+                :class:`~.Hadamard` | :math:`2(x + y)` | 4
+                :class:`~.S` | :math:`y + [k > 0,\ s = 1]` | 2
+                :class:`Adjoint(S) <.S>` | :math:`y + [k > 0,\ s = -1]` | 1
+                :class:`~.CNOT` | :math:`2\max(k - 1, 0)` | 4
+                :class:`~.GlobalPhase` | :math:`1` | 1
     """
 
     _denominator = 4
@@ -2573,6 +2636,26 @@ class PPR_8(_FixedAnglePPR):
     To compile ``PPR_8`` with PBC compilation passes (e.g., :func:`~.ppr_to_ppm` or
     :func:`~.ppm_compilation`), the :func:`~.to_ppr` pass must be used beforehand.
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PPR_8
+            :symbols: ``sign`` :math:`s` and a Pauli word with :math:`x` X's, :math:`y` Y's
+                and :math:`z` Z's
+            :example: ``PPR_8(1, "XYZ")``
+
+            .. decomposition-rule:: _ppr8_to_clifford_t
+                :image: /_static/decomposition_thumbnails/ppr8_to_clifford_t.svg
+                :where: :math:`k = x + y + z`, and :math:`[\cdot]` equal to 1 if the condition
+                    holds and 0 otherwise
+
+                :class:`~.Hadamard` | :math:`2(x + y)` | 4
+                :class:`~.S` | :math:`y` | 1
+                :class:`Adjoint(S) <.S>` | :math:`y` | 1
+                :class:`~.T` | :math:`[k > 0,\ s = 1]` | 1
+                :class:`Adjoint(T) <.T>` | :math:`[k > 0,\ s = -1]` | 0
+                :class:`~.CNOT` | :math:`2\max(k - 1, 0)` | 4
+                :class:`~.GlobalPhase` | :math:`1` | 1
     """
 
     _denominator = 8

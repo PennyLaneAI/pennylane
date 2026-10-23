@@ -63,7 +63,7 @@ def _(f):
             (r"$R_Z(\frac{\pi}{2})$", W0, CY2, 62),
             (r"$R_X(\frac{\pi}{2})$", W0, MG2, 62),
             (r"$R_Z(\frac{\pi}{2})$", W0, CY2, 62),
-            (r"$e^{-i\frac{\pi}{2}}$", W0, GP, 50),
+            (r"$e^{i\frac{\pi}{2}}$", W0, GP, 50),
         ],
         gap=72,
         x0=40,
@@ -77,7 +77,7 @@ def _(f):
         [
             (r"$R_Z(\pi)$", W0, CY2, 56),
             (r"$R_Y(\frac{\pi}{2})$", W0, YL2, 62),
-            (r"$e^{-i\frac{\pi}{2}}$", W0, GP, 50),
+            (r"$e^{i\frac{\pi}{2}}$", W0, GP, 50),
         ],
         gap=72,
         x0=40,
@@ -108,18 +108,18 @@ def _(f):
     f.wire(W0, 0, 236)
     f.gate(46, W0, label=r"$\mathrm{PPR}_2(Z)$", w=76, fill=MG2, **KW)
     f.gate(134, W0, label=r"$\mathrm{PPR}_4(Y)$", w=76, fill=PU2, **KW)
-    f.gate(206, W0, label=r"$e^{-i\frac{\pi}{2}}$", w=50, fill=GP, **KW)
+    f.gate(206, W0, label=r"$e^{i\frac{\pi}{2}}$", w=50, fill=GP, **KW)
     wire_labels(f, -8, [(W0, "$w_0$")])
 
 
 @drawing("paulix_to_rx")
 def _(f):
-    one(f, [(r"$R_X(\pi)$", W0, MG2, 58), (r"$e^{-i\frac{\pi}{2}}$", W0, GP, 50)], gap=74, x0=42)
+    one(f, [(r"$R_X(\pi)$", W0, MG2, 58), (r"$e^{i\frac{\pi}{2}}$", W0, GP, 50)], gap=74, x0=42)
 
 
 @drawing("pauliy_to_ry")
 def _(f):
-    one(f, [(r"$R_Y(\pi)$", W0, YL2, 58), (r"$e^{-i\frac{\pi}{2}}$", W0, GP, 50)], gap=74, x0=42)
+    one(f, [(r"$R_Y(\pi)$", W0, YL2, 58), (r"$e^{i\frac{\pi}{2}}$", W0, GP, 50)], gap=74, x0=42)
 
 
 @drawing("pauliz_to_phase_shift")
@@ -141,7 +141,7 @@ def _(f):
 def _(f):
     one(
         f,
-        [(r"$R_X(\frac{\pi}{2})$", W0, MG2, 62), (r"$e^{-i\frac{\pi}{4}}$", W0, GP, 50)],
+        [(r"$R_X(\frac{\pi}{2})$", W0, MG2, 62), (r"$e^{i\frac{\pi}{4}}$", W0, GP, 50)],
         gap=74,
         x0=42,
     )
@@ -164,7 +164,7 @@ def _(f):
     ppr(f, 40, r"$\mathrm{PPR}_4$", "YY", fill=YL2)
     ppr(f, 110, r"$\mathrm{PPR}_4$", "XX", fill=MG2)
     ppr(f, 180, r"$\mathrm{PPR}_4$", "ZZ", fill=CY2)
-    f.gate(254, W0, W1, label=r"$e^{-i\frac{\pi}{4}}$", w=50, fill=GP, **KW)
+    f.gate(254, W0, W1, label=r"$e^{i\frac{\pi}{4}}$", w=50, fill=GP, **KW)
     two_labels(f)
 
 
@@ -231,3 +231,85 @@ def _(f):
     ppr(f, 70, r"$\mathrm{PPR}_8^\dagger$", "YY", fill=YL2)
     ppr(f, 160, r"$\mathrm{PPR}_8^\dagger$", "XX", fill=MG2)
     two_labels(f)
+
+
+def ppr_and_phase(f, label, fill, phase):
+    """A single-wire Pauli product rotation followed by a global phase."""
+    f.wire(W0, 0, 190)
+    f.gate(58, W0, label=label, w=76, fill=fill, **KW)
+    f.gate(150, W0, label=phase, w=50, fill=GP, **KW)
+    wire_labels(f, -8, [(W0, "$w_0$")])
+
+
+@drawing("paulix_to_ppr")
+def _(f):
+    ppr_and_phase(f, r"$\mathrm{PPR}_2(X)$", MG2, r"$e^{i\frac{\pi}{2}}$")
+
+
+@drawing("pauliy_to_ppr")
+def _(f):
+    ppr_and_phase(f, r"$\mathrm{PPR}_2(Y)$", MG2, r"$e^{i\frac{\pi}{2}}$")
+
+
+@drawing("pauliz_to_ppr")
+def _(f):
+    ppr_and_phase(f, r"$\mathrm{PPR}_2(Z)$", MG2, r"$e^{i\frac{\pi}{2}}$")
+
+
+@drawing("s_to_ppr")
+def _(f):
+    ppr_and_phase(f, r"$\mathrm{PPR}_4(Z)$", PU2, r"$e^{i\frac{\pi}{4}}$")
+
+
+@drawing("t_to_ppr")
+def _(f):
+    ppr_and_phase(f, r"$\mathrm{PPR}_8(Z)$", YL2, r"$e^{i\frac{\pi}{8}}$")
+
+
+W2 = 88
+
+
+def three_labels(f):
+    wire_labels(f, -8, [(W0, "$w_0$"), (W1, "$w_1$"), (W2, "$w_2$")])
+
+
+@drawing("ppr2_to_paulis")
+def _(f):
+    for y in (W0, W1, W2):
+        f.wire(y, 0, 170)
+    f.gate(40, W0, W2, label=r"$e^{-i\frac{\pi}{2}}$", w=50, fill=GP, **KW)
+    f.gate(115, W0, label="X", w=30, fill=MG2, **KW)
+    f.gate(115, W1, label="Y", w=30, fill=YL2, **KW)
+    f.gate(115, W2, label="Z", w=30, fill=CY2, **KW)
+    three_labels(f)
+
+
+def ppr_via_z_gate(f, central, phase):
+    """``PPR_k(1, "XYZ")``: change basis to Z on the first wire, apply ``central``, change back."""
+    for y in (W0, W1, W2):
+        f.wire(y, 0, 420)
+    s = dict(w=30, fill=CY2, **KW)
+    h = dict(w=30, fill=YL2, **KW)
+    f.gate(36, W0, W2, label=phase, w=50, fill=GP, **KW)
+    f.gate(86, W0, label="H", **h)
+    f.gate(86, W1, label=r"$S^\dagger$", **s)
+    f.gate(124, W1, label="H", **h)
+    cnot(f, 162, W2, W1)
+    cnot(f, 196, W1, W0)
+    f.gate(234, W0, label=central, w=30, fill=PU2, **KW)
+    cnot(f, 272, W1, W0)
+    cnot(f, 306, W2, W1)
+    f.gate(344, W0, label="H", **h)
+    f.gate(344, W1, label="H", **h)
+    f.gate(382, W1, label="S", **s)
+    three_labels(f)
+
+
+@drawing("ppr4_to_cliffords")
+def _(f):
+    ppr_via_z_gate(f, "S", r"$e^{-i\frac{\pi}{4}}$")
+
+
+@drawing("ppr8_to_clifford_t")
+def _(f):
+    ppr_via_z_gate(f, "T", r"$e^{-i\frac{\pi}{8}}$")
