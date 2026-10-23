@@ -634,29 +634,31 @@ def _mcx_two_workers_resource(wires, control_values, work_wires, work_wire_type=
 
     num_control_wires = len(wires) - 1
     is_small_mcx = num_control_wires < 6
-    # Each reversed ladder contributes one adjointed X per adjointed Toffoli.
-    n_adjoint_toffoli = num_control_wires - 4 + is_small_mcx
+    n_adjoint_ladder = num_control_wires - 4 + is_small_mcx
+    adjoint_toffoli = qp.adjoint(ops.Toffoli(Wire[3]))
+    adjoint_x = qp.adjoint(ops.X(Wire[1]))
 
     if work_wire_type == "zeroed":
         n_ccx = 2 * num_control_wires - 3
         n_temporary_ccx_pairs = 2 - is_small_mcx
+        n_x = (n_ccx - 3 if is_small_mcx else n_ccx - 5) + num_control_wires
         return {
-            ops.Toffoli: n_ccx - 2 * n_temporary_ccx_pairs - n_adjoint_toffoli,
-            qp.adjoint(ops.Toffoli(Wire[3])): n_adjoint_toffoli,
-            ops.X: n_adjoint_toffoli + num_control_wires,
-            qp.adjoint(ops.X(Wire[1])): n_adjoint_toffoli,
+            ops.Toffoli: n_ccx - 2 * n_temporary_ccx_pairs - n_adjoint_ladder,
+            adjoint_toffoli: n_adjoint_ladder,
+            ops.X: n_x - n_adjoint_ladder,
+            adjoint_x: n_adjoint_ladder,
             qp.TemporaryAND: n_temporary_ccx_pairs,
             qp.adjoint(qp.TemporaryAND(Wire[3])): n_temporary_ccx_pairs,
         }
 
     # Otherwise, we assume the work wires are borrowed
     n_ccx = 4 * num_control_wires - 8
-    n_adjoint_toffoli *= 2  # toggle detection repeats both ladders
+    n_x = (n_ccx - 4 if is_small_mcx else n_ccx - 8) + num_control_wires
     return {
-        ops.Toffoli: n_ccx - n_adjoint_toffoli,
-        qp.adjoint(ops.Toffoli(Wire[3])): n_adjoint_toffoli,
-        ops.X: n_adjoint_toffoli + num_control_wires,
-        qp.adjoint(ops.X(Wire[1])): n_adjoint_toffoli,
+        ops.Toffoli: n_ccx - 2 * n_adjoint_ladder,
+        adjoint_toffoli: 2 * n_adjoint_ladder,
+        ops.X: n_x - 2 * n_adjoint_ladder,
+        adjoint_x: 2 * n_adjoint_ladder,
     }
 
 
@@ -743,23 +745,25 @@ def _mcx_one_worker_condition(wires, control_values, work_wires, **_):
 # pylint: disable-next=unused-argument
 def _mcx_one_worker_resource(wires, control_values, work_wires, work_wire_type="borrowed"):
     num_control_wires = len(wires) - 1
+    n_adjoint_ladder = num_control_wires - 3
+    adjoint_toffoli = qp.adjoint(ops.Toffoli(Wire[3]))
+    adjoint_x = qp.adjoint(ops.X(Wire[1]))
     if work_wire_type == "zeroed":
         return {
-            ops.Toffoli: num_control_wires - 2,
-            qp.adjoint(ops.Toffoli(Wire[3])): num_control_wires - 3,
+            ops.Toffoli: n_ccx - n_adjoint_ladder,
+            adjoint_toffoli: n_adjoint_ladder,
             qp.TemporaryAND: 1,
             qp.adjoint(qp.TemporaryAND(Wire[3])): 1,
-            ops.X: 2 * num_control_wires - 3,
-            qp.adjoint(ops.X(Wire[1])): num_control_wires - 3,
+            ops.X: n_ccx - 1 + num_control_wires - n_adjoint_ladder,
+            adjoint_x: n_adjoint_ladder,
         }
     # Otherwise, we assume the work wire is borrowed
     n_ccx = 4 * num_control_wires - 8
-    n_adjoint = 2 * (num_control_wires - 3)
     return {
-        ops.Toffoli: n_ccx - n_adjoint,
-        qp.adjoint(ops.Toffoli(Wire[3])): n_adjoint,
-        ops.X: n_adjoint + num_control_wires,
-        qp.adjoint(ops.X(Wire[1])): n_adjoint,
+        ops.Toffoli: n_ccx - 2 * n_adjoint_ladder,
+        adjoint_toffoli: 2 * n_adjoint_ladder,
+        ops.X: n_ccx - 4 + num_control_wires - 2 * n_adjoint_ladder,
+        adjoint_x: 2 * n_adjoint_ladder,
     }
 
 

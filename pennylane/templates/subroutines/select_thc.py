@@ -466,8 +466,6 @@ def _select_half(
         )
 
     def _unbasis():
-        # Preserve the logical QROM adjoint so its uncomputation rule is selected
-        # before expanding any measurement-based decomposition.
         adjoint(_basis)()
 
     return change_op_basis(_basis, _reflect, _unbasis)
