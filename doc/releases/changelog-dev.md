@@ -2106,6 +2106,7 @@
 
 * Fixed decomposition graph construction discarding a reachable symbolic adjoint when an
   alternative decomposition revisits its base, which could overestimate required work wires.
+  Cyclic rules that reserve work wires no longer cause unbounded recursion during construction.
   [(#10371)](https://github.com/PennyLaneAI/pennylane/pull/10371)
 
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic

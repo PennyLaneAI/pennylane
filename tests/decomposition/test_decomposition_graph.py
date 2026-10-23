@@ -660,6 +660,42 @@ class TestDecompGraphWorkWireBudgeting:
     """Tests the work-wire budgeting of the decomposition graph."""
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_indirect_cycle_with_work_wires(self):
+        """A work-wire-consuming cycle must not prevent later reuse of an intermediate op."""
+
+        @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1})
+        def terminating_rule(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({AnotherOp: 1})
+        def forward_rule(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.X: 2}, work_wires={"zeroed": 3})
+        def fallback_rule(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1}, work_wires={"zeroed": 1})
+        def return_rule(*_, **__):
+            raise NotImplementedError
+
+        # AnotherOp is first visited inside the cycle, then requested independently.
+        operations = [CustomOp(wires=[0]), AnotherOp(wires=[0])]
+        graph = DecompositionGraph(
+            operations,
+            gate_set={qp.X},
+            alt_decomps={
+                CustomOp: [terminating_rule, forward_rule],
+                AnotherOp: [fallback_rule, return_rule],
+            },
+        )
+        solution = graph.solve(num_work_wires=None, minimize_work_wires=True)
+        assert solution.num_work_wires == 2
+        assert solution.resource_estimate(operations[1], num_work_wires=2) == to_resources(
+            {qp.X: 1}
+        )
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("num_work_wires", [0, 1])
     def test_reachable_rule_before_recursive_alternative(self, num_work_wires):
         """A recursive alternative can reuse an already reachable base decomposition."""

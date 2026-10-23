@@ -288,8 +288,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # operators we're still exploring decomposition paths for during **graph construction**.
         # If we loop back to an op that we're still exploring (e.g., if we find ourselves
         # exploring decomposition rules for C(RX) during exploration of RX itself), we stop.
-        self._in_progress = []
+        self._in_progress: dict[AbstractOperatorLike, int] = {}
         self._num_ctrl_wires_in_progress = defaultdict(list)
+        # Rebuild nodes whose alternatives were cut short by a cycle if another path needs them.
+        self._incomplete_op_indices: set[int] = set()
 
         # Update the global decomposition library using alt_decomps and fixed_decomps in a local
         # context manager (which restores it to the original state upon exit), so that list_decomps
@@ -341,7 +343,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         op_node = _OperatorNode(op, num_used_work_wires, known_work_wire_dependent)
 
         if op_node in self._all_op_indices:
-            return self._all_op_indices[op_node]
+            existing_idx = self._all_op_indices[op_node]
+            if op in self._in_progress or existing_idx not in self._incomplete_op_indices:
+                return existing_idx
 
         if op in self._gate_set_weights:
             op_node = replace(op_node, reachable=True)
@@ -354,7 +358,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op])
             return op_node_idx
 
-        self._push_in_progress(op)
+        self._push_in_progress(op, op_node_idx)
         rules = self._get_decompositions(op)
 
         # Treat ops that do not have a decomposition as supported if strict=False
@@ -394,14 +398,14 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._pop_in_progress(op)
         return op_node_idx
 
-    def _push_in_progress(self, op):
-        self._in_progress.append(op)
+    def _push_in_progress(self, op, op_node_idx):
+        self._in_progress[op] = op_node_idx
         if unwrapped := _get_base_and_n_ctrls(op):
             base_rep, num_control_wires = unwrapped
             self._num_ctrl_wires_in_progress[base_rep].append(num_control_wires)
 
     def _pop_in_progress(self, op):
-        self._in_progress.pop()
+        self._in_progress.pop(op)
         if unwrapped := _get_base_and_n_ctrls(op):
             base_rep, _ = unwrapped
             self._num_ctrl_wires_in_progress[base_rep].pop()
@@ -457,7 +461,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         max_op_min_work_wires = 0
         for op in decomp_resource.gate_counts:
 
-            if self._base_in_progress(op):
+            if self._base_in_progress(op, num_used_work_wires + work_wire_spec.total):
                 d_node.reachable = False
                 self._graph.add_edge(d_node_idx, op_idx, 0)
                 return d_node
@@ -479,7 +483,16 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._graph.add_edge(d_node_idx, op_idx, 0)
         return d_node
 
-    def _base_in_progress(self, op):
+    def _base_in_progress(self, op, num_used_work_wires):
+        if op in self._in_progress:
+            ancestor_idx = self._in_progress[op]
+            ancestor = self._graph[ancestor_idx]
+            if num_used_work_wires > ancestor.num_work_wire_not_available:
+                # A larger used-wire budget must not turn a cycle into an unbounded chain.
+                # Intermediate nodes may need the excluded path when visited independently.
+                path = list(self._in_progress.values())
+                self._incomplete_op_indices.update(path[path.index(ancestor_idx) + 1 :])
+                return True
         unwrapped = _get_base_and_n_ctrls(op)
         if unwrapped is None:
             return False
