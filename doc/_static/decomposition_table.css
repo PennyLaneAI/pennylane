@@ -80,6 +80,11 @@ table.decomposition-table td.decomp-circuit img {
   border-radius: 6px;
 }
 
+/* tables with only the gate and count columns draw their circuits 50% bigger */
+table.decomposition-table.decomp-two-cols td.decomp-circuit img {
+  max-width: 570px;
+}
+
 /* which instance of the rule the circuit shows */
 table.decomposition-table p.decomp-example {
   margin-top: 6px;
