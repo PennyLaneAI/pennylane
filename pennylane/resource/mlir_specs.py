@@ -113,7 +113,7 @@ def resources_from_analysis_pass(
             corresponding resource information.
     """
 
-    # pylint: disable=protected-access,too-many-arguments
+    # pylint: disable=protected-access,too-many-arguments,too-many-statements
 
     iter_pipeline = copy.deepcopy(original_qnode._compile_pipeline)
     new_compile_pipeline = CompilePipeline()
