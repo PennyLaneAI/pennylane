@@ -839,6 +839,16 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added optional ``work_wires`` to :class:`~.TrotterCDF` to combine the four equal-angle
+  ``IsingZZ`` gates between each pair of distinct spatial orbitals. With one work
+  wire initialized to :math:`|0\rangle`, each uncontrolled two-body layer uses
+  :math:`N(N-1)/2` ``CRZ`` and :math:`N` ``RZ`` gates instead of
+  :math:`N(2N-1)` ``IsingZZ`` gates, where :math:`N` is the number of spatial orbitals.
+  The double-phase decomposition also needs one work wire and shares control CNOTs
+  across orbital pairs; standard single-qubit control needs two work wires.
+  The original decomposition is used when fewer work wires are supplied.
+  [(#10380)](https://github.com/PennyLaneAI/pennylane/pull/10380)
+  
 * Renamed ``qp.math.is_abstract`` to ``qp.math.is_tracer`` to distinguish traced tensors
   from PennyLane abstract input descriptors. The function's behavior is unchanged, and
   ``qp.math.is_abstract`` remains available as a compatibility alias for Catalyst.
