@@ -343,7 +343,7 @@ class Fig:
             y0 -= (nh - h) / 2
             h = nh
         scale = DISPLAY_W / w  # px per unit when shown as a thumbnail
-        sw = min(max(1.35 / scale, 1.8), 3.0)
+        sw = 1.8  # the same stroke width in every diagram, whatever its size
         amp = min(max(0.55 / scale, 0.6), 1.3)
         body = "\n".join(fn(sw, amp) for _, _, fn in sorted(self.items, key=lambda t: (t[0], t[1])))
         return (

@@ -312,12 +312,12 @@ def _(f):
 @drawing("basis_rotation_complex_givens")
 def _(f):
     W = [0, 34, 68]
-    wires(f, W, 300)
+    wires(f, W, 340)
     for y in W:
         g(f, 30, y, r"$R_\phi$", PF, w=36)
     x = 84
     for a, b in ((0, 1), (1, 2), (0, 1)):
         g(f, x, W[a], "G", CY2, w=34, y1=W[b])
         g(f, x + 44, W[a], r"$R_\phi$", PF, w=36)
-        x += 76
+        x += 90
     wlabels(f, W)
