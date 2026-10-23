@@ -249,7 +249,11 @@ jobs:
             fromJSON(needs.setup-ci-load.outputs.python-version).torch-tests
             || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'torch-tests') }}
+    # TORCH-CI-PROBE: the PyTorch test suite is temporarily disabled so that the Codecov
+    # report shows exactly which lines are only ever exercised by torch tests.
+    # Restore the line below to re-enable:
+    #   if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'torch-tests') }}
+    if: false
     uses: ./.github/workflows/unit-test.yml
     with:
       job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
@@ -438,6 +442,9 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: all-interfaces-coverage
       python_version: ${{ matrix.python-version }}
+      # TORCH-CI-PROBE: torch is deliberately *kept* here. These 5600+ tests require both
+      # torch and jax (tests/conftest.py::pytest_runtest_setup), so dropping torch would
+      # skip the whole suite and report its jax coverage as a torch-only loss.
       additional_pip_packages: |
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         ${{ needs.default-dependency-versions.outputs.pytorch-version }}
@@ -592,9 +599,11 @@ jobs:
       python_version: ${{ matrix.python-version }}
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}gradients-tests (${{ matrix.config.suite }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
+      # TORCH-CI-PROBE: torch intentionally not installed; restore the line
+      #   ${{ needs.default-dependency-versions.outputs.pytorch-version }}
+      # to re-enable.
       additional_pip_packages: |
         ${{ needs.default-dependency-versions.outputs.jax-version }}
-        ${{ needs.default-dependency-versions.outputs.pytorch-version }}
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
@@ -672,9 +681,11 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
       python_version: ${{ matrix.python-version }}
+      # TORCH-CI-PROBE: torch intentionally not installed; restore the line
+      #   ${{ !contains(matrix.config.skip_interface, 'torch') && needs.default-dependency-versions.outputs.pytorch-version || '' }}
+      # to re-enable.
       additional_pip_packages: |
         ${{ !contains(matrix.config.skip_interface, 'jax') && needs.default-dependency-versions.outputs.jax-version || '' }}
-        ${{ !contains(matrix.config.skip_interface, 'torch') && needs.default-dependency-versions.outputs.pytorch-version || '' }}
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_test_directory: pennylane/devices/tests
