@@ -125,13 +125,8 @@ class DecompositionTable(SphinxDirective):
             f"<pennylane.decompose>`."
         )
 
-        # inline_text only parses inline markup, so the list itself is built from nodes
-        caption = nodes.bullet_list(classes=["decomp-table-caption"])
-        messages = []
-        for sentence in intro:
-            children, msgs = self.state.inline_text(sentence, self.lineno)
-            caption += nodes.list_item("", nodes.paragraph("", "", *children))
-            messages += msgs
+        children, messages = self.state.inline_text(" ".join(intro), self.lineno)
+        caption = nodes.paragraph("", "", *children, classes=["decomp-table-caption"])
 
         table = nodes.table(classes=["decomposition-table", "colwidths-given"])
         group = nodes.tgroup(cols=2)
