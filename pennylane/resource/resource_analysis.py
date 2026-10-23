@@ -32,7 +32,7 @@ def resource_analysis_setup_inputs(output_fname: str, output_json: bool = True):
 
     .. code-block:: python
 
-        @qp.qjit(capture=True, target="mlir")
+        @qp.qjit(capture=True)
         @qp.resource.resource_analysis("my_file.json")
         @qp.qnode(qp.device("null.qubit", wires=2))
         def circuit():
