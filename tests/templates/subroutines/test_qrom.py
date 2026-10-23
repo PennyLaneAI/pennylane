@@ -36,7 +36,7 @@ from pennylane.templates.subroutines.qrom import (
     _qrom_unary_iteration,
     _select_swap,
 )
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.typing import Bool, Wire
 
 
@@ -344,9 +344,8 @@ class TestQROM:
             (5, [0, 1, 2, 3], [4], [], False),
         ],  # pylint: disable=too-many-arguments
     )
-    @pytest.mark.parametrize("rule", qp.list_decomps(qp.QROM))
     def test_decomposition_new(
-        self, num_bitstrings, control_wires, target_wires, work_wires, clean, rule, seed
+        self, num_bitstrings, control_wires, target_wires, work_wires, clean, seed
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
         rng = np.random.default_rng(seed)
@@ -358,7 +357,7 @@ class TestQROM:
             work_wires=work_wires,
             clean=clean,
         )
-        _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_zero_control_wires(self):
         """Test that the edge case of zero control wires works"""
@@ -441,7 +440,7 @@ class TestQROM:
                 bitstrings, control_wires, target_wires, work_wires, clean=True
             )
         )()
-        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
         num_left_elbows = sum(isinstance(op, TemporaryAND) for op in ops)
         num_right_elbows = sum(
             isinstance(op, qp.ops.Adjoint) and isinstance(op.base, TemporaryAND) for op in ops
@@ -496,7 +495,7 @@ class TestQROM:
                 bitstrings, control_wires, target_wires, work_wires, clean=True
             )
         )()
-        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
         num_x = sum(isinstance(op, qp.X) for op in ops)
         num_cnots = sum(isinstance(op, qp.CNOT) for op in ops)
         num_main_loop_iterations = num_bitstrings - 1

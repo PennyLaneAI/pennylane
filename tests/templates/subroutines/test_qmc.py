@@ -29,7 +29,7 @@ from pennylane.templates.subroutines.qmc import (
     make_Q,
     probs_to_unitary,
 )
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.wires import Wires
 
 
@@ -279,8 +279,7 @@ class TestQuantumMonteCarlo:
     @pytest.mark.parametrize(("p", "target_wires", "estimation_wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, p, target_wires, estimation_wires):
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-        for rule in qp.list_decomps(QuantumMonteCarlo):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_non_flat(self):
         """Test if a ValueError is raised when a non-flat array is input"""

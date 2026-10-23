@@ -40,8 +40,7 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     compute_sos_encoding,
     select_sos_rows,
 )
-from pennylane.testing import assert_valid
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_valid, assert_valid_decomp_rule
 from pennylane.typing import Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
@@ -697,7 +696,7 @@ class TestSumOfSlatersPrep:
         op = SumOfSlatersPrep(coefficients, range(3), indices=(0, 3, 5, 6))
         resources = _sos_state_prep.compute_resources(**op.arguments).gate_counts
         assert qp.MultiplexerStatePreparation(state_type[4], wires=Wire[2]) in resources
-        _test_decomposition_rule(op, _sos_state_prep)
+        assert_valid_decomp_rule(op, _sos_state_prep)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
@@ -874,7 +873,7 @@ class TestSumOfSlatersPrep:
         plxpr = jax.make_jaxpr(
             lambda: _sos_state_prep(coefficients, indices=indices, **all_wires)
         )()
-        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
 
         def is_cnot_onto(op, register):
             return isinstance(op, qp.CNOT) and op.wires[1] in all_wires[register]

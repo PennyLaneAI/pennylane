@@ -48,7 +48,7 @@ from scipy.stats import unitary_group
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.utils import _get_decomp_args
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
 from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 # pylint: disable=too-few-public-methods
@@ -878,8 +878,7 @@ class TestMultiControlledX:
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
-        for rule in qp.list_decomps(op):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_custom_dispatch(self):
         """Tests that qp.ctrl() of MCX dispatches to another MCX."""
@@ -1176,12 +1175,9 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
         decomps = qp.list_decomps(f"Pow({op.name})")
         for rule in decomps:
             if rule.is_applicable(**pow_op.arguments):
-                with qp.queuing.AnnotatedQueue() as q:
-                    rule(**pow_op.arguments)
-
                 # It's fine to test matrix equivalence here because ISWAP and SISWAP
                 # have very specific power decompositions.
-                tape = qp.tape.QuantumScript.from_queue(q)
+                tape = qp.testing.decomp_rule_to_tape(pow_op, rule)
                 assert qp.math.allclose(qp.matrix(tape, wire_order=[0, 1]), qp.matrix(pow_op))
 
 
@@ -1514,11 +1510,10 @@ class TestPPR:
         adj_op = qp.adjoint(op_cls(1, "XY", wires=[0, 1]))
         rule = qp.list_decomps(f"Adjoint(PPR_{denominator})")["_adjoint_ppr_flip_sign"]
 
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(**adj_op.arguments)
+        tape = qp.testing.decomp_rule_to_tape(adj_op, rule)
 
         expected = [op_cls(-1, "XY", wires=[0, 1])]
-        for actual, exp in zip(q.queue, expected, strict=True):
+        for actual, exp in zip(tape.operations, expected, strict=True):
             qp.assert_equal(actual, exp)
 
     def test_adjoint_decomp_resources(self, op_cls):
@@ -1570,7 +1565,7 @@ class TestToPPRDecompositions:
         for actual, exp in zip(q.queue, expected, strict=True):
             qp.assert_equal(actual, exp)
 
-        _test_decomposition_rule(op, rule)
+        assert_valid_decomp_rule(op, rule)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("base, ppr_cls", [(qp.S, qp.PPR_4), (qp.T, qp.PPR_8)])

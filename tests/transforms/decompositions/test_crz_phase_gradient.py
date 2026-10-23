@@ -21,7 +21,7 @@ import phase_gradient_helpers
 import pytest
 
 import pennylane as qp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_valid_decomp_rule
 from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
 
 
@@ -64,7 +64,7 @@ def test_valid_decomp(p):
 
     custom_decomp = make_crz_to_phase_gradient_decomp(**kwargs)
     op = qp.CRZ(phi, [0, 1])
-    _test_decomposition_rule(op, custom_decomp, skip_decomp_matrix_check=True)
+    assert_valid_decomp_rule(op, custom_decomp, check_matrix=False)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
