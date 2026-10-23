@@ -45,9 +45,9 @@ def mux_box(f, x, cys, ty, label, fill=CY2, w=34):
     box(f, x, ty, None, label, fill, w)
 
 
-def float_box(f, x, y, label, fill=GY0, w=40, size=13):
-    """A gate acting on no wire (global phase)."""
-    f.gate(x, y, label=label, w=w, fill=fill, pad=11, size=size)
+def phase_box(f, x, y0, y1, label, w=34, size=13):
+    """A global phase. It acts on no wire, but it is drawn across all wires ``y0..y1``."""
+    box(f, x, y0, y1, label, GY0, w, size)
 
 
 # ------------------------------------------------------------------ MultiplexerStatePreparation
@@ -187,8 +187,8 @@ def _(f):
     for y in ts:
         f.ctrl(270, y, on=False, r=4.6)
     hlayer(315)
-    float_box(f, 365, -26, r"$e^{i\pi/2}$", w=44)
-    f.text(270, -22, r"$e^{-i\theta}$", size=12)
+    phase_box(f, 365, t0, flag, r"$e^{-i\pi/2}$", w=44)
+    f.text(270, -22, r"$e^{i\theta}$", size=12)
     wire_labels(f, -8, [(t0, "$t_0$"), (t1, "$t_1$"), (t2, "$t_2$"), (flag, "work")])
     del yb
 
@@ -286,7 +286,7 @@ def _(f):
 @drawing("superposition_thc_amplification")
 def _(f):
     mu, nu, aux, flags = 0, S, 2 * S, 3 * S + 4
-    x1 = 560
+    x1 = 620
     wires(f, [mu, nu, aux, flags], 0, x1)
     f.bundle(12, mu, "n")
     f.bundle(12, nu, "n")
@@ -312,11 +312,12 @@ def _(f):
     box(f, 292, aux, None, r"$R_Y^\dagger$", YL2, w=38)
     hh(337)
     box(f, 382, mu, aux, "$R_0$", PU2, w=36)
-    float_box(f, 382, mu - 30, "GP", w=34)
     hh(427)
     ineq(475)
     box(f, 524, flags, None, "X", PU2, w=28)
     f.hdots(524 + 26, flags)
+    # a global phase commutes with every gate, so it is drawn last
+    phase_box(f, 590, mu, flags, "GP")
     wire_labels(f, -8, [(mu, r"$\mu$"), (nu, r"$\nu$"), (aux, "amp"), (flags, "flags")])
 
 
@@ -389,7 +390,7 @@ def _(f):
     box(f, 358, idx, gar, r"Alias$^\dagger$", MG2, w=52, size=13)
     box(f, 416, idx, gar, r"Sup$^\dagger$", CY2, w=44, size=13)
     box(f, 468, idx, gar, "$R_0$", PU2, w=36)
-    float_box(f, 515, (spin + sys_) / 2, "GP", w=34)
+    phase_box(f, 515, idx, sys_, "GP")
     wire_labels(f, -8, [(idx, "index"), (gar, "garbage"), (spin, "spin"), (sys_, "system")])
 
 
@@ -399,7 +400,7 @@ def _(f):
 @drawing("one_body_block_encoding_lcu")
 def _(f):
     idx, gar, spin, a, b, work = 0, 30, 60, 98, 128, 162
-    x1 = 560
+    x1 = 600
     wires(f, [idx, spin, gar, a, b, work], 0, x1)
     f.bundle(12, idx, "")
     f.bundle(12, gar, "")
@@ -426,7 +427,7 @@ def _(f):
     box(f, 432, b, None, r"$V^\dagger$", YL2, w=34)
     box(f, 487, idx, gar, r"Alias$^\dagger$", MG2, w=52, size=13)
     box(f, 535, spin, None, "H", CY2, w=28)
-    float_box(f, 535, (b + work) / 2, "GP", w=34)
+    phase_box(f, 575, idx, work, "GP")
     wire_labels(
         f,
         -8,
@@ -464,7 +465,7 @@ def _trotter(f, labels, rot):
     f.hdots(360, ys[0])
     f.hdots(360, ys[1])
     rots(405, f"${rot}_1^\\dagger$", CY2)
-    float_box(f, 450, 20, "GP", w=34)
+    phase_box(f, 450, ys[0], ys[-1], "GP")
     wire_labels(f, -8, [(y, lab[0]) for y, lab in zip(ys, labels)])
 
 
