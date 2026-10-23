@@ -16,13 +16,18 @@
 
 # pylint: disable=no-value-for-parameter,disable=too-many-arguments
 
+from collections import Counter
+
+import hint_helpers
 import numpy as np
+import phase_gradient_helpers
 import pytest
 
 import pennylane as qp
 from pennylane.testing import assert_valid_decomp_rule
 from pennylane.transforms.decompositions import (
     make_rz_to_phase_gradient_decomp,
+    phase_gradient_precision_stats,
     validate_phase_gradient_wires,
 )
 from pennylane.wires import WireError
@@ -225,3 +230,149 @@ def test_integration_multi_wire(seed):
     out_state_expected = np.kron(zeros, out_state_expected)
 
     assert np.allclose(out_state, out_state_expected)
+
+
+# Cases for a 4-bit angle register: (binary angle, precision_stats, expected truncated width)
+PRECISION_STATS_CASES = [
+    ([1, 0, 1, 0], {1: 2, 3: 5, 4: 1}, 3),  # smallest sufficient precision
+    ([1, 0, 0, 0], {2: 1}, 2),  # larger precision than required
+    ([1, 0, 1, 0], {1: 1, 2: 1}, 4),  # unhinted fallback to full precision
+    ([0, 0, 0, 0], {0: 1, 3: 1}, 0),  # no rotation required
+    ([1, 0, 1, 0], {}, 4),  # treated like None
+    ([1, 0, 1, 0], {2: 0, 4: 0}, 4),  # zero counts are ignored, so treated like None
+]
+
+
+@pytest.mark.parametrize("key", [-1, 5])
+def test_precision_stats_invalid_key(key):
+    """Test that precision_stats keys outside of 0..len(angle_wires) raise an error."""
+    with pytest.raises(ValueError, match="precision_stats keys must be between 0 and 4"):
+        make_rz_to_phase_gradient_decomp(
+            [1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11], precision_stats={key: 1}
+        )
+
+
+def test_precision_stats_from_angles():
+    """Test that ``phase_gradient_precision_stats`` counts the bits required by each operator,
+    rounding at the full precision and maximizing over the angles of multi-angle operators."""
+    bits = [
+        [1, 0, 1, 0],  # 3 bits
+        [0, 1, 0, 0],  # 2 bits
+        [0, 0, 0, 0],  # 0 bits
+        [0, 0, 1, 1, 1],  # rounds to 0100, i.e., 2 bits
+        [1, 1, 1, 1, 1],  # rounds to 10000, i.e., 0 bits
+        [[1, 0, 0, 0], [0, 0, 1, 0]],  # 3 bits for the second angle
+    ]
+    angles = [phase_gradient_helpers.bits_to_angles(b, 2 * np.pi) for b in bits]
+    assert phase_gradient_precision_stats(angles, 4, qp.RZ) == {3: 2, 2: 2, 0: 2}
+
+
+def test_precision_stats_from_angles_op_type():
+    """Test that ``phase_gradient_precision_stats`` infers the unit of the angles from the
+    operator type, given as class or name, and raises an error for unsupported types."""
+    angles = [np.pi / 2, np.pi]  # (0.0100)_2 and (0.1000)_2 in units of 2 pi
+    assert phase_gradient_precision_stats(angles, 4, "RZ") == {1: 1, 2: 1}
+    # In units of 4 pi, the angles are (0.0010)_2 and (0.0100)_2
+    for op_type in (qp.CRZ, "CRZ", qp.SelectPauliRot, "SelectPauliRot"):
+        assert phase_gradient_precision_stats(angles, 4, op_type) == {2: 1, 3: 1}
+    with pytest.raises(ValueError, match="op_type must be one of"):
+        phase_gradient_precision_stats(angles, 4, qp.RX)
+
+
+def test_precision_stats_from_angles_dispatches_exactly():
+    """Test that each angle is applied at exactly its required precision if ``precision_stats``
+    is computed from the angles with ``phase_gradient_precision_stats``."""
+    bits = [[1, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0], [1, 1, 1, 1], [1, 0, 0, 0]]
+    angles = phase_gradient_helpers.bits_to_angles(bits, 2 * np.pi)
+    rule = make_rz_to_phase_gradient_decomp(
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+        [9, 10, 11],
+        phase_gradient_precision_stats(angles, 4, qp.RZ),
+    )
+    for b, phi in zip(bits, angles):
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(phi, wires=[0])
+        ops = phase_gradient_helpers.leaf_ops(q.queue)
+        widths = [len(o.x_wires) for o in ops if isinstance(o, qp.SemiAdder)]
+        required = max((i + 1 for i, bit in enumerate(b) if bit), default=0)
+        assert widths == ([required] if required else [])
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("bits, precision_stats, width", PRECISION_STATS_CASES)
+def test_precision_stats_decomp(bits, precision_stats, width, seed):
+    """Test that the rule with ``precision_stats`` truncates the SemiAdder to the smallest
+    precision in ``precision_stats`` that suffices for the angle (or to full precision otherwise),
+    accounts for all gates in its resources, and realizes RZ."""
+    angle_wires, phase_grad_wires = qp.wires.Wires([1, 2, 3, 4]), qp.wires.Wires([5, 6, 7, 8])
+    rule = make_rz_to_phase_gradient_decomp(
+        angle_wires, phase_grad_wires, [9, 10, 11], precision_stats=precision_stats
+    )
+    op = qp.RZ(phase_gradient_helpers.bits_to_angles(bits, 2 * np.pi), 0)
+    _test_decomposition_rule(op, rule, skip_decomp_matrix_check=True)
+
+    tape = phase_gradient_helpers.decomp_to_tape(op, rule)
+    adders = [
+        o for o in phase_gradient_helpers.leaf_ops(tape.operations) if isinstance(o, qp.SemiAdder)
+    ]
+    assert [(a.x_wires, a.y_wires) for a in adders] == (
+        [(angle_wires[:width], phase_grad_wires[:width])] if width else []
+    )
+    phase_gradient_helpers.assert_decomp_realizes_op(op, tape, phase_grad_wires, seed)
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize(
+    "precision_stats, expected",
+    [
+        ({1: 1, 3: 3}, [(0.25, 0.75, 0.0)]),
+        ({2: 1, 4: 3}, [(0.25, 0.75)]),
+        ({0: 2, 4: 2}, [(0.5, 0.5)]),
+        ({3: 7}, [(1.0, 0.0)]),
+        ({1: 0, 3: 2, 4: 0}, [(1.0, 0.0)]),
+        ({4: 3}, []),
+        (None, []),
+    ],
+)
+def test_precision_stats_hints(precision_stats, expected):
+    """Test that the conditional branches are hinted with the probabilities derived from
+    ``precision_stats``, that an unhinted full-precision fallback is only added if the full
+    precision is not part of ``precision_stats``, that no conditional is used if only the full
+    precision is required, and that zero counts are ignored."""
+    import jax
+
+    rule = make_rz_to_phase_gradient_decomp(
+        [1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11], precision_stats=precision_stats
+    )
+    jaxpr = jax.make_jaxpr(lambda phi: rule(phi, wires=[0]))(0.4)
+    assert hint_helpers.cond_hints(jaxpr.jaxpr) == [pytest.approx(e) for e in expected]
+
+
+@pytest.mark.catalyst
+def test_precision_stats_hint_weighted_resources():
+    """Test that the resources estimated from the hinted branches for a batch of rotations match
+    the decompositions of the individual rotations if ``precision_stats`` is computed from the
+    angles."""
+    pytest.importorskip("catalyst")
+    bits = [[0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 0, 0], [1, 0, 1, 1]]
+    angles = phase_gradient_helpers.bits_to_angles(bits, 2 * np.pi)
+    rule = make_rz_to_phase_gradient_decomp(
+        [1, 2, 3, 4],
+        [5, 6, 7, 8],
+        [9, 10, 11],
+        phase_gradient_precision_stats(angles, 4, qp.RZ),
+    )
+
+    @qp.qjit(capture=True)
+    @qp.qnode(qp.device("null.qubit", wires=12))
+    def circuit(angles):
+        qp.for_loop(len(angles))(lambda i: rule(angles[i], wires=[0]))()
+        return qp.expval(qp.Z(0))
+
+    expected = Counter()
+    for phi in angles:
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(phi, wires=[0])
+        expected.update(op.name for op in phase_gradient_helpers.leaf_ops(q.queue))
+    assert qp.specs(circuit, level=0)(angles).resources.counts == expected

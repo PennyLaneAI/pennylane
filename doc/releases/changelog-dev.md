@@ -1228,6 +1228,15 @@
   [(#10342)](https://github.com/PennyLaneAI/pennylane/pull/10342)
   [(#10360)](https://github.com/PennyLaneAI/pennylane/pull/10360)
 
+* The phase gradient decomposition rule factories :func:`~.make_rz_to_phase_gradient_decomp`,
+  :func:`~.make_crz_to_phase_gradient_decomp` and
+  :func:`~.make_selectpaulirot_to_phase_gradient_decomp` accept an optional ``precision_stats``
+  argument. If provided, the data loading and the :class:`~.SemiAdder` are truncated to the
+  number of bits required by the angle(s), dispatching with hinted :func:`~.cond` branches.
+  The new function :func:`~.transforms.decompositions.phase_gradient_precision_stats` computes
+  ``precision_stats`` from the rotation angles.
+  [(#10312)](https://github.com/PennyLaneAI/pennylane/pull/10312)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * The Phox module has been renamed to `tcdq` (Train Classical, Deploy Quantum) and now supports qudit systems of arbitrary dimension.
