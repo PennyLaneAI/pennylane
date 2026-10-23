@@ -16,7 +16,7 @@
 
 from common import *  # noqa
 
-RXF, RYF, RZF, PSF, CLF, PPRF, GPF, MRZF = CY2, MG2, PU2, TQ2, GY0, YL2, PK2, PU2
+RXF, RYF, RZF, PSF, CLF, PPRF, GPF, MRZF = CY2, MG2, PU2, TQ2, GY0, YL2, GY0, PU2
 KW = dict(pad=13, size=15)
 DY = 38  # wire spacing
 W = [i * DY for i in range(4)]

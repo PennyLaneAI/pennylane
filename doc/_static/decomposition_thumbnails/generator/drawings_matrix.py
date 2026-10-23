@@ -15,7 +15,7 @@
 
 from common import *  # noqa
 
-RXF, RYF, RZF, ROTF, UF, GPF, DF = CY2, MG2, PU2, YL2, CY2, PK2, YL2
+RXF, RYF, RZF, ROTF, UF, GPF, DF = CY2, MG2, PU2, YL2, CY2, GY0, YL2
 GAP = 16
 W0, W1, W2 = 0, 34, 68
 
@@ -26,7 +26,8 @@ def _w(label):
 
 
 def chain(f, gates, gphase=r"$e^{i\alpha}$", length=270):
-    """Single-qubit gates in order on one wire, then a free-floating global phase."""
+    """Single-qubit gates in order on one wire, then a global phase. A global phase acts on no
+    wire, but it is drawn across all wires of the diagram."""
     ws = [_w(lab) for lab, _ in gates]
     gw = _w(gphase)
     content = sum(ws) + GAP * len(ws) + gw
@@ -35,7 +36,7 @@ def chain(f, gates, gphase=r"$e^{i\alpha}$", length=270):
     for (lab, fill), w in zip(gates, ws):
         f.gate(x + w / 2, W0, label=lab, w=w, fill=fill, pad=13, size=15)
         x += w + GAP
-    f.gate(x + gw / 2, 34, label=gphase, w=gw, fill=GPF, pad=13, size=15)
+    f.gate(x + gw / 2, W0, label=gphase, w=gw, fill=GPF, pad=13, size=15)
     wire_labels(f, -8, [(W0, "$w_0$")])
 
 
@@ -97,7 +98,7 @@ def _(f):
     cnot(f, 232, W1, W0)
     g(f, 274, W0, "$A_2$", fills[2])
     g(f, 274, W1, "$B_2$", fills[3])
-    g(f, 330, W1 + 34, r"$e^{i\alpha}$", GPF)
+    g(f, 330, W0, r"$e^{i\alpha}$", GPF, y1=W1)
     wire_labels(f, -8, [(W0, "$w_0$"), (W1, "$w_1$")])
 
 
