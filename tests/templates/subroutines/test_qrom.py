@@ -315,7 +315,7 @@ class TestQROM:
         for op1, op2 in zip(qrom_decomposition, expected_gates):
             qp.assert_equal(op1, op2)
 
-    @pytest.mark.usefixtures("enable_capture")
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         ("num_bitstrings", "control_wires", "target_wires", "work_wires", "clean"),
         [
