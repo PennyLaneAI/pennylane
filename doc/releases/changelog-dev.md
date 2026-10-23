@@ -2359,6 +2359,10 @@
   the gates produced by the captured decomposition.
   [(#10351)](https://github.com/PennyLaneAI/pennylane/pull/10351)
 
+* Fixed a bug where :func:`~pennylane.math.relative_entropy` returned ``inf`` or ``nan`` for
+  rank-deficient states that are not diagonal in the computational basis, such as pure states.
+  [(#10348)](https://github.com/PennyLaneAI/pennylane/pull/10348)
+
 
 <h3>Contributors ✍️</h3>
 
@@ -2385,6 +2389,7 @@ Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
 Korbinian Kottmann,
+G. Karthik Koundinya,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,
