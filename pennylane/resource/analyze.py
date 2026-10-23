@@ -108,20 +108,22 @@ def analyze(
         level (str | int | Iterable[int | str]): The level of compilation at which to estimate
             resources. Defaults to ``"user"``.
 
-            The available options for ``level`` are:
+            ``level`` accepts the following types:
 
-            * ``"top"`` or ``0``: The original circuit before any transforms have been applied.
-            * ``int``: The circuit after the specified number of user-specified transforms have been applied.
-            * ``"user"``: The circuit after all user-specified transforms have been applied.
-            * Marker Name (``str``): The circuit after the transforms that precede the given :func:`qp.marker <pennylane.marker>` have been applied.
-            * ``iterable``: A ``list``, ``tuple``, or similar containing ints and/or marker names.
-              Should be sorted in ascending transform order with no duplicates. The output will
-              provide resource information for each level.
-            * ``"device"``: The circuit after the device preprocessing transforms have been applied.
-            * ``"all-user"``: To provide information at each stage of compilation with respect to user-specified transforms.
-            * ``"all"``: To provide information at each stage of compilation with respect
-              to user-specified and device-specific transforms.
+            * ``int``: The number of transforms to apply before analyzing resources.
+            * ``str``: The name of the last transform to apply before analyzing resources, or the ``label`` of a  :func:`~.marker`.
+            * ``iterable``: A ``list``, ``tuple``, or similar containing ``int`` or ``str`` values.
+              These should be sorted in ascending transform order with no duplicates. Resources will be analyzed for each provided level in the ``iterable``.
 
+            The following ``str`` presets are provided for ease of use:
+            
+            * ``"top"``: Equivalent to ``0``; to analyze resources before any transforms have been applied.
+            * ``"user"``: To analyze resources after the user-specified transforms have been applied.
+            * ``"device"``: To analyze resources after the user-specified transforms and device preprocessing transforms have been applied.
+            * ``"all-user"``: To analyze resources at each stage of compilation with respect to user-specified transforms.
+            * ``"all"``: To analyze resources at each stage of compilation with respect
+              to user-specified and device preprocessing transforms.
+            
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
         :class:`~.resource.CircuitSpecs` object containing the ``qnode`` specifications,
