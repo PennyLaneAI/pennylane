@@ -839,6 +839,14 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a new decomposition to ``Adjoint(QROM)`` based on measurement-based uncomputation from Appendix C
+  of [arXiv:1902.02134](https://arxiv.org/abs/1902.02134), available with ``qjit(capture=True)``. It
+  measures the target wires in the :math:`X` basis and fixes up the resulting phases with a lookup
+  of size :math:`\lceil L/k\rceil` targeting a one-hot register of size :math:`k`. This reduces the
+  Toffoli cost to roughly :math:`2\sqrt{L}` for :math:`L` bitstrings but requires additional
+  work wires.
+  [(#10363)](https://github.com/PennyLaneAI/pennylane/pull/10363)
+
 * Terminal measurements now accept fixed-size `qp.typing.Wire[n]` registers during
   program capture.
   [(#10364)](https://github.com/PennyLaneAI/pennylane/pull/10364)
@@ -2098,6 +2106,13 @@
   [(#10284)](https://github.com/PennyLaneAI/pennylane/pull/10284)
 
 <h3>Bug fixes 🐛</h3>
+
+* The resource function of the measurement-based decomposition of :class:`~.QROM` now declares
+  every operator that the decomposition may apply. In particular, it includes the controlled
+  :class:`~.MultiX` and the flag uncomputation used for extra control wires, as well as the
+  X-type Pauli measurements of all widths. The widths, which depend on the bitstrings, are
+  estimated from the distribution expected for uniformly random bitstrings.
+  [(#10363)](https://github.com/PennyLaneAI/pennylane/pull/10363)
 
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
   argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
