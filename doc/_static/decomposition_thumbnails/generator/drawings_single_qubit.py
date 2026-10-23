@@ -16,7 +16,7 @@
 
 from common import *  # noqa
 
-RXF, RYF, RZF, ROTF, PSF, CLF, PPRF, GPF = CY2, MG2, PU2, YL2, TQ2, GY0, YL2, PK2
+RXF, RYF, RZF, ROTF, PSF, CLF, PPRF, GPF = CY2, MG2, PU2, YL2, TQ2, GY0, YL2, GY0
 MINW = 270  # common wire length so all thumbnails share one text scale
 GAP = 16
 
@@ -30,7 +30,8 @@ def _w(f, label, w):
 
 def chain(f, gates, gphase=None):
     """Draw ``gates`` = [(label, fill), ...] in order on one wire; ``gphase`` is an optional
-    global-phase label drawn as a free-floating box after the gates (it acts on no wire)."""
+    global-phase label drawn as a box after the gates. A global phase acts on no wire, but it is
+    drawn across all wires of the diagram."""
     ws = [_w(f, lab, None) for lab, _ in gates]
     gw = _w(f, gphase, None) if gphase else 0
     content = sum(ws) + GAP * (len(ws) - 1) + (GAP + gw if gphase else 0)
@@ -41,7 +42,7 @@ def chain(f, gates, gphase=None):
         f.gate(x + w / 2, 0, label=lab, w=w, fill=fill, pad=13, size=15)
         x += w + GAP
     if gphase:
-        f.gate(x + gw / 2, 34, label=gphase, w=gw, fill=GPF, pad=13, size=15)
+        f.gate(x + gw / 2, 0, label=gphase, w=gw, fill=GPF, pad=13, size=15)
 
 
 S, SD, H = ("S", CLF), (r"$S^\dagger$", CLF), ("H", CLF)
