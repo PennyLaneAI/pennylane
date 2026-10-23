@@ -39,7 +39,7 @@ from pennylane.exceptions import CaptureWarning
 from pennylane.numeric_hamiltonians import CDFHamiltonian
 from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
     _apply_system_basis_rotation,
-    _apply_two_body_diagonal_spin_symmetric,
+    _apply_two_body_diagonal_with_work_wires,
     _cdf_resource_counts,
     _controlled_trotter_cdf_decomp,
     _energy_shift,
@@ -78,7 +78,7 @@ def _basis_rotation_matrix(U, n_wires):
 
 
 def assert_clean_work_wire_evolution(tape, active_wires, work_wires, expected):
-    """Compare all input columns with zero work wires, including their output work states."""
+    """Check every system input with the work register initially in |0>, including its restoration."""
     matrix = qp.matrix(tape, wire_order=active_wires + work_wires)
     work_dim = 2 ** len(work_wires)
     clean_columns = matrix[:, ::work_dim]
@@ -329,7 +329,7 @@ class TestCDFScheme:
         assert list(tape.operations[1].wires) == wires[1::2]
 
 
-class TestSpinSymmetricTwoBody:
+class TestTwoBodyWorkWireDecomposition:
     """Check the Fig. 3 layer independently of the Trotter and basis-rotation machinery."""
 
     @pytest.mark.capture
@@ -339,25 +339,25 @@ class TestSpinSymmetricTwoBody:
     )
     def test_num_iters_hint(self, num_orbitals, has_control, double_phase):
         """The average loop hint reproduces the exact number of orbital-pair gates."""
-        genuine_control = has_control and not double_phase
+        standard_control = has_control and not double_phase
         core = jax.numpy.ones((num_orbitals, num_orbitals))
         wires = jax.numpy.arange(2 * num_orbitals)
         control_wires = [2 * num_orbitals] if has_control else []
-        work_wires = list(range(2 * num_orbitals + 1, 2 * num_orbitals + 2 + int(genuine_control)))
+        work_wires = list(range(2 * num_orbitals + 1, 2 * num_orbitals + 2 + int(standard_control)))
         plxpr = jax.make_jaxpr(
-            lambda: _apply_two_body_diagonal_spin_symmetric(
+            lambda: _apply_two_body_diagonal_with_work_wires(
                 core, wires, 0.1, control_wires, double_phase, work_wires
             )
         )()
         operations = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
         num_pairs = num_orbitals * (num_orbitals - 1) // 2
         num_pair_rotations = sum(
-            isinstance(op, qp.CRZ) and op.wires[0] == work_wires[int(genuine_control)]
+            isinstance(op, qp.CRZ) and op.wires[0] == work_wires[int(standard_control)]
             for op in operations
         )
         assert num_pair_rotations == num_pairs
         assert sum(isinstance(op, qp.TemporaryAND) for op in operations) == num_pairs * (
-            1 + int(genuine_control)
+            1 + int(standard_control)
         )
         hints = hint_helpers.loop_hints(plxpr.jaxpr, skip_none=True)
         assert hints == ([] if num_orbitals == 1 else [num_orbitals / 2])
@@ -369,11 +369,11 @@ class TestSpinSymmetricTwoBody:
         ("mode", "expected"),
         [
             (
-                "base",
+                "uncontrolled",
                 {"CNOT": 12, "RZ": 3, "CRZ": 3, "TemporaryAND": 3, "Adjoint(TemporaryAND)": 3},
             ),
             (
-                "genuine",
+                "standard_control",
                 {"CNOT": 12, "CRZ": 6, "TemporaryAND": 6, "Adjoint(TemporaryAND)": 6},
             ),
             (
@@ -386,13 +386,13 @@ class TestSpinSymmetricTwoBody:
         """Compiled analysis preserves the fractional hint for three orbital pairs."""
         core = jax.numpy.ones((3, 3))
         wires = jax.numpy.arange(6)
-        control_wires = [6] if mode != "base" else []
-        work_wires = [7, 8] if mode == "genuine" else [7]
+        control_wires = [6] if mode != "uncontrolled" else []
+        work_wires = [7, 8] if mode == "standard_control" else [7]
 
         @qp.qjit(capture=True, target="mlir")
         @qp.qnode(qp.device("null.qubit", wires=9))
         def circuit():
-            _apply_two_body_diagonal_spin_symmetric(
+            _apply_two_body_diagonal_with_work_wires(
                 core, wires, 0.1, control_wires, mode == "double_phase", work_wires
             )
             return qp.expval(qp.Z(0))
@@ -405,7 +405,7 @@ class TestSpinSymmetricTwoBody:
     def test_double_phase_shares_control_cnots(self, num_orbitals):
         """Each outer orbital shares one control-CNOT pair across its inner pairs."""
         wires = list(range(2 * num_orbitals))
-        tape = qp.tape.make_qscript(_apply_two_body_diagonal_spin_symmetric)(
+        tape = qp.tape.make_qscript(_apply_two_body_diagonal_with_work_wires)(
             np.ones((num_orbitals, num_orbitals)), wires, 0.1, ["control"], True, ["and"]
         )
         cnots = [op for op in tape.operations if isinstance(op, qp.CNOT)]
@@ -436,7 +436,7 @@ class TestSpinSymmetricTwoBody:
         wires = list(range(2 * num_orbitals))
         control_wires = ["control"] if has_control else []
         work_wires = ["and", "controlled_and"] if has_control and not double_phase else ["and"]
-        tape = qp.tape.make_qscript(_apply_two_body_diagonal_spin_symmetric)(
+        tape = qp.tape.make_qscript(_apply_two_body_diagonal_with_work_wires)(
             core, wires, time_step, control_wires, double_phase, work_wires
         )
 
@@ -980,8 +980,8 @@ class TestIntegration:
         )
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize("mode", ["base", "genuine", "double_phase"])
-    def test_spin_symmetric_catalyst(self, toy_hamiltonian_cdf_concrete, mode):
+    @pytest.mark.parametrize("mode", ["uncontrolled", "standard_control", "double_phase"])
+    def test_work_wire_decomposition_catalyst(self, toy_hamiltonian_cdf_concrete, mode):
         """Compile the optimized layer with explicit work wires, including both controls."""
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
         num_system = 2 * num_orbitals
@@ -999,7 +999,7 @@ class TestIntegration:
         def circuit(t, clean_wires):
             for wire in system_wires:
                 qp.H(wire)
-            if mode != "base":
+            if mode != "uncontrolled":
                 qp.H(control_wire)
             op = qp.TrotterCDF(
                 t,
@@ -1009,7 +1009,7 @@ class TestIntegration:
                 double_phase=mode == "double_phase",
                 work_wires=clean_wires,
             )
-            if mode != "base":
+            if mode != "uncontrolled":
                 qp.ctrl(op, control=control_wire)
             return qp.state()
 
