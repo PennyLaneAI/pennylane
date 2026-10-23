@@ -299,7 +299,8 @@ class PauliRot(Operator2):
                 :where: :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
 
                 :class:`~.Hadamard` | :math:`2x` | 2
-                :class:`~.PPR_4` with Pauli word ``"X"`` | :math:`2y` | 2
+                :class:`PPR_4(1, "X") <~.PPR_4>` | :math:`y` | 1
+                :class:`PPR_4(-1, "X") <~.PPR_4>` | :math:`y` | 1
                 :class:`~.MultiRZ` on :math:`k` wires | :math:`[k > 0]` | 1
                 :class:`~.GlobalPhase` | :math:`[k = 0]` | 0
     """
