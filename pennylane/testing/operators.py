@@ -457,7 +457,7 @@ def _check_capture(op):
 
     leaves = jax.tree_util.tree_leaves(jaxpr.eqns[-1].params)
     error_msg = "capture params cannot contain tracers"
-    assert not any(math.is_abstract(l) for l in leaves), error_msg
+    assert not any(math.is_tracer(l) for l in leaves), error_msg
 
 
 def _check_pickle(op):
