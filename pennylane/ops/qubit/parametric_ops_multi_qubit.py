@@ -84,6 +84,11 @@ class MultiRZ(Operator2):
 
                 :class:`~.CNOT` | :math:`2(n-1)` | 4
                 :class:`~.RZ` | :math:`1` | 1
+
+            .. decomposition-rule:: _multi_rz_to_ppr
+                :image: /_static/decomposition_thumbnails/multirz_to_ppr.svg
+
+                :class:`~.PauliRot` with Pauli word ``"Z...Z"`` on :math:`n` wires | :math:`1` | 1
     """
 
     dynamic_argnames = ("theta",)
@@ -299,8 +304,8 @@ class PauliRot(Operator2):
                 :where: :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
 
                 :class:`~.Hadamard` | :math:`2x` | 2
-                :class:`PPR_4(1, "X") <~.PPR_4>` | :math:`y` | 1
-                :class:`PPR_4(-1, "X") <~.PPR_4>` | :math:`y` | 1
+                :class:`PPR_4(1, "X") <.PPR_4>` | :math:`y` | 1
+                :class:`PPR_4(-1, "X") <.PPR_4>` | :math:`y` | 1
                 :class:`~.MultiRZ` on :math:`k` wires | :math:`[k > 0]` | 1
                 :class:`~.GlobalPhase` | :math:`[k = 0]` | 0
     """

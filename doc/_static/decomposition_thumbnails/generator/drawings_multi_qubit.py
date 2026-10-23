@@ -68,6 +68,12 @@ def _(f):
     cnot(f, xs[4], W[2], W[1])
 
 
+@drawing("multirz_to_ppr")
+def _(f):
+    wires(f, 3)
+    box(f, L / 2, W[0], r"$e^{-i\theta ZZZ/2}$", PPRF, w=100, y1=W[2])
+
+
 # ---- PauliRot (P = XYZ) ----
 @drawing("paulirot_basis_change")
 def _(f):
@@ -87,7 +93,7 @@ def _(f):
     cps(f, 92, [(W[0], False)], W[1], r"$R_\phi(2\phi)$", w=64)
     box(f, 152, W[1], "X", CLF, w=30)
     cps(f, 222, [(W[0], False), (W[1], False), (W[2], True)], W[3], r"$R_\phi(-2\phi)$", w=72)
-    box(f, 298, W[0], r"$e^{i\phi}$", GPF, w=40, y1=W[3])
+    box(f, 298, W[0], r"$e^{-i\phi}$", GPF, w=40, y1=W[3])
 
 
 def conj(f, gate, mid):

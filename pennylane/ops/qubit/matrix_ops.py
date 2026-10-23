@@ -165,6 +165,9 @@ class QubitUnitary(Operator2):
             .. decomposition-rule:: rot
                 :image: /_static/decomposition_thumbnails/qubit_unitary_rot.svg
                 :requires: a single-qubit matrix
+                :where: the counts are for a general matrix: a matrix with :math:`\theta = 0` uses
+                    one :class:`~.RZ` instead of the :class:`~.Rot`, and the :class:`~.GlobalPhase`
+                    is skipped when its phase is zero
 
                 :class:`~.Rot` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
@@ -172,6 +175,9 @@ class QubitUnitary(Operator2):
             .. decomposition-rule:: two_qubit_decomp_rule
                 :image: /_static/decomposition_thumbnails/qubit_unitary_two_qubit.svg
                 :requires: a two-qubit matrix
+                :where: the counts are the worst case, a matrix that needs 3 :class:`~.CNOT` gates:
+                    matrices that need 0 or 1 (or, without program capture, 2) use fewer gates, and
+                    the :class:`~.GlobalPhase` is skipped when its phase is zero
 
                 :class:`~.QubitUnitary` on 1 wire | :math:`4`
                 :class:`~.CNOT` | :math:`3`
