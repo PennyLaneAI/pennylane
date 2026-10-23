@@ -1206,7 +1206,7 @@
 * ``Wires.all_wires`` can now handle a list with mixed ``Wires`` and ``AbstractWires`` instances.
   [(#10223)](https://github.com/PennyLaneAI/pennylane/pull/10223)
 
-* ``qp.add_decomps`` no longer raises an error when the new decomposition rule is the exact same 
+* ``qp.add_decomps`` no longer raises an error when the new decomposition rule is the exact same
   object as an existing one. An error is still raised if the new rule has the same name as an
   existing rule, but is a different object to the rule with that name.
   [(#10282)](https://github.com/PennyLaneAI/pennylane/pull/10282)
@@ -1377,6 +1377,10 @@
 * The `qp.Backline.backline` alias of `qp.Backline.placement` has been removed. Use `placement`.
   [(#10353)](https://github.com/PennyLaneAI/pennylane/pull/10353)
 
+* The ``pennylane.qnn`` module has been removed, including ``TorchLayer``.
+  ``pennylane.qnn.iqp_expval`` has been moved to :func:`pennylane.math.iqp_expval`.
+  [(#10247)](https://github.com/PennyLaneAI/pennylane/pull/10247)
+
 * :func:`~.transforms.decompose` is now a pass-only transform that always dispatches to Catalyst's
   ``graph_decomposition`` under :func:`~.qjit`. The previous tape-based implementation is
   available as :func:`~.transforms._tape_decompose`.
@@ -1400,7 +1404,7 @@
   [(#10238)](https://github.com/PennyLaneAI/pennylane/pull/10238)
 
 * :class:`~.IQPEmbedding`'s ``pattern`` argument now lists pairs of *indices into* ``wires``,
-  rather than wire labels. This matches the ``pattern`` argument of :class:`~.IQP`. 
+  rather than wire labels. This matches the ``pattern`` argument of :class:`~.IQP`.
   It is a dynamic ``(K, 2)`` integer
   tensor. The default all-pairs pattern is unchanged.
   To entangle the first and third of ``wires=["z", "a", "k"]``, pass ``pattern=[[0, 2]]``
@@ -2132,7 +2136,7 @@
   very minor increases.
   [(#10270)](https://github.com/PennyLaneAI/pennylane/pull/10270)
 
-* Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the 
+* Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the
   output matrix was with respect to a wrong wire ordering. The bug occurred in products where
   groups of factors with overlapping wires caused a partial matrix with permuted wires,
   e.g. ``H(1) @ H(0) @ CNOT([2, 1]) @ CNOT([1, 0])``.
