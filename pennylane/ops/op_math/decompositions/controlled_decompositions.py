@@ -634,8 +634,6 @@ def _mcx_two_workers_resource(wires, control_values, work_wires, work_wire_type=
 
     num_control_wires = len(wires) - 1
     is_small_mcx = num_control_wires < 6
-    # Under program capture, the gates of each adjoint ladder lower with the adjoint modifier
-    # instead of being simplified to their self-inverse bases.
     n_adjoint_ladder = num_control_wires - 4 + is_small_mcx
     adjoint_toffoli = qp.adjoint(ops.Toffoli(Wire[3]))
     adjoint_x = qp.adjoint(ops.X(Wire[1]))
@@ -747,8 +745,6 @@ def _mcx_one_worker_condition(wires, control_values, work_wires, **_):
 # pylint: disable-next=unused-argument
 def _mcx_one_worker_resource(wires, control_values, work_wires, work_wire_type="borrowed"):
     num_control_wires = len(wires) - 1
-    # Under program capture, the gates of each adjoint ladder lower with the adjoint modifier
-    # instead of being simplified to their self-inverse bases.
     n_adjoint_ladder = num_control_wires - 3
     adjoint_toffoli = qp.adjoint(ops.Toffoli(Wire[3]))
     adjoint_x = qp.adjoint(ops.X(Wire[1]))

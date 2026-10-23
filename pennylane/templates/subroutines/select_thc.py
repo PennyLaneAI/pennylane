@@ -466,8 +466,6 @@ def _select_half(
         )
 
     def _unbasis():
-        # Lazy so that the resources match Catalyst, which always lowers this adjoint as a region,
-        # leaving every op of the uncompute adjointed rather than simplified.
         adjoint(_basis)()
 
     return change_op_basis(_basis, _reflect, _unbasis)
