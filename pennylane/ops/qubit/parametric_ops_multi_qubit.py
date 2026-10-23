@@ -71,6 +71,19 @@ class MultiRZ(Operator2):
     Args:
         theta (TensorLike): rotation angle :math:`\theta`
         wires (Sequence[int] or int): the wires the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.MultiRZ
+            :symbols: :math:`n` wires
+            :example: :math:`n=3`
+
+            .. decomposition-rule:: _multi_rz_decomposition
+                :image: /_static/decomposition_thumbnails/multirz_cnot_ladder.svg
+
+                :class:`~.CNOT` | :math:`2(n-1)` | 4
+                :class:`~.RZ` | :math:`1` | 1
     """
 
     dynamic_argnames = ("theta",)
@@ -272,6 +285,23 @@ class PauliRot(Operator2):
     ...     return qp.expval(qp.Z(0))
     >>> print(example_circuit())
     0.8775825618903724
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PauliRot
+            :symbols: Pauli word :math:`P` with :math:`x` ``"X"``, :math:`y` ``"Y"`` and
+                :math:`z` ``"Z"`` entries, and :math:`k = x + y + z`
+            :example: :math:`P=` ``"XYZ"``
+
+            .. decomposition-rule:: _pauli_rot_decomposition
+                :image: /_static/decomposition_thumbnails/paulirot_basis_change.svg
+                :where: :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
+
+                :class:`~.Hadamard` | :math:`2x` | 2
+                :class:`~.PPR_4` with Pauli word ``"X"`` | :math:`2y` | 2
+                :class:`~.MultiRZ` on :math:`k` wires | :math:`[k > 0]` | 1
+                :class:`~.GlobalPhase` | :math:`[k = 0]` | 0
     """
 
     num_params = 1
@@ -632,6 +662,25 @@ class PCPhase(Operator2):
     3: ─────────────────├GlobalPhase(1.23)─┤
     4: ─────────────────├GlobalPhase(1.23)─┤
     5: ─────────────────╰GlobalPhase(1.23)─┤
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PCPhase
+            :symbols: :math:`n` wires and ``dim`` :math:`=d`
+            :example: :math:`n=4`, :math:`d=3`
+
+            .. decomposition-rule:: _decompose_pcphase
+                :image: /_static/decomposition_thumbnails/pcphase_ctrl_phase_shifts.svg
+                :where: :math:`d = f\,2^n + \sum_{i=0}^{n-1} p_i 2^{n-1-i}` in non-adjacent form,
+                    i.e., :math:`f\in\{0, 1\}` and :math:`p_i\in\{-1, 0, 1\}` with no two adjacent
+                    digits nonzero; :math:`M` is the number of :math:`p_i \neq 0` (one phase
+                    shift with :math:`i` controls each) and :math:`M_+` the number of
+                    :math:`p_i = 1` with :math:`i \geq 1`
+
+                :class:`~.PhaseShift` with :math:`i` controls | :math:`M` | 2
+                :class:`~.X` | :math:`2M_+` | 2
+                :class:`~.GlobalPhase` | :math:`1` | 1
 
     .. details::
         :title: Decomposition
@@ -1040,6 +1089,22 @@ class IsingXX(Operator2):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.IsingXX
+
+            .. decomposition-rule:: _isingxx_to_cnot_rx_cnot
+                :image: /_static/decomposition_thumbnails/isingxx_cnot_rx.svg
+
+                :class:`~.CNOT` | :math:`2`
+                :class:`~.RX` | :math:`1`
+
+            .. decomposition-rule:: _isingxx_to_ppr
+                :image: /_static/decomposition_thumbnails/isingxx_ppr.svg
+
+                :class:`~.PauliRot` with Pauli word ``"XX"`` | :math:`1`
     """
 
     dynamic_argnames = ("phi",)
@@ -1171,6 +1236,22 @@ class IsingYY(Operator2):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.IsingYY
+
+            .. decomposition-rule:: _isingyy_to_cy_ry_cy
+                :image: /_static/decomposition_thumbnails/isingyy_cy_ry.svg
+
+                :class:`~.CY` | :math:`2`
+                :class:`~.RY` | :math:`1`
+
+            .. decomposition-rule:: _isingyy_to_ppr
+                :image: /_static/decomposition_thumbnails/isingyy_ppr.svg
+
+                :class:`~.PauliRot` with Pauli word ``"YY"`` | :math:`1`
     """
 
     dynamic_argnames = ("phi",)
@@ -1313,6 +1394,22 @@ class IsingZZ(Operator2):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.IsingZZ
+
+            .. decomposition-rule:: _isingzz_to_cnot_rz_cnot
+                :image: /_static/decomposition_thumbnails/isingzz_cnot_rz.svg
+
+                :class:`~.CNOT` | :math:`2`
+                :class:`~.RZ` | :math:`1`
+
+            .. decomposition-rule:: _isingzz_to_ppr
+                :image: /_static/decomposition_thumbnails/isingzz_ppr.svg
+
+                :class:`~.PauliRot` with Pauli word ``"ZZ"`` | :math:`1`
     """
 
     dynamic_argnames = ("phi",)
@@ -1489,6 +1586,19 @@ class IsingXY(Operator2):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.IsingXY
+
+            .. decomposition-rule:: _isingxy_to_h_cy
+                :image: /_static/decomposition_thumbnails/isingxy_h_cy.svg
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.CY` | :math:`2`
+                :class:`~.RY` | :math:`1`
+                :class:`~.RX` | :math:`1`
     """
 
     dynamic_argnames = ("phi",)
