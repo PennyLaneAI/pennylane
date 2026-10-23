@@ -2051,6 +2051,7 @@
 * Added `post_device_pipeline` to `QNode`, representing user passes that are intended to run after
   device specific transformations, if `qjit`-ed. `update_pipelines` updates `QNode` with input compile and post-device pipelines.
   [(#10336)](https://github.com/PennyLaneAI/pennylane/pull/10336)
+  [(#10285)](https://github.com/PennyLaneAI/pennylane/pull/10285)
 
 <h3>Documentation 📝</h3>
 
