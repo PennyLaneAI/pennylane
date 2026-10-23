@@ -43,6 +43,7 @@ def chain(f, gates, gphase=None):
         x += w + GAP
     if gphase:
         f.gate(x + gw / 2, 0, label=gphase, w=gw, fill=GPF, pad=13, size=15)
+    wire_labels(f, -8, [(0, "$w_0$")])
 
 
 S, SD, H = ("S", CLF), (r"$S^\dagger$", CLF), ("H", CLF)
