@@ -711,7 +711,7 @@ def decompose_mcx_two_workers(wires, control_values, work_wires, work_wire_type=
         )
 
     # Uncompute the first ladder
-    ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
+    ops.adjoint(_build_log_n_depth_ccx_ladder)(wires[:-1])
 
     right_elbow = ops.Toffoli if work_wire_type == "borrowed" else qp.adjoint(qp.TemporaryAND)
     right_elbow([wires[0], wires[1], work0])
@@ -788,7 +788,7 @@ def _mcx_one_worker_no_flips(wires, work_wires, work_wire_type, _skip_toggle_det
         # is skipped for `work_wire_type="zeroed"` but not for `work_wire_type="borrowed"`.
         _build_linear_depth_ladder(wires[:-1])
         ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
-        ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
+        ops.adjoint(_build_linear_depth_ladder)(wires[:-1])
 
 
 @register_condition(_mcx_one_worker_condition)
