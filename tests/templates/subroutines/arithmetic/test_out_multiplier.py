@@ -583,6 +583,7 @@ class TestOutMultiplier:
         wires = qp.OutMultiplier(x_wires=[1, 2], y_wires=[3, 4], output_wires=[5, 6]).wires
         assert wires == qp.wires.Wires([1, 2, 3, 4, 5, 6])
 
+    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("mod", [16, 12])

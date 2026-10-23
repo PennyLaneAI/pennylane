@@ -65,28 +65,30 @@ def _select_ops(
     )
 
 
-def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires):
-    num_targets = len(target_wires)
+def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires, adjoint=False):
 
+    n_targets = len(target_wires)
     if capture.enabled() or compiler.active():
-        swap_wires = math.array(swap_wires, like="jax").reshape((-1, num_targets))
+        swap_wires = math.array(swap_wires, like="jax").reshape((-1, n_targets))
         swap_control_wires = math.array(swap_control_wires, like="jax")
     else:
         # Need to work with nested list here in order to not coerce (deprecated) string wire labels
         # to object-dtyped np.array. This forces manual "reshape" here and indexing via [j][k]
         # instead of [j, k] below.
-        num_columns = len(swap_wires) // num_targets
-        swap_wires = [
-            swap_wires[i * num_targets : (i + 1) * num_targets] for i in range(num_columns)
-        ]
+        num_columns = len(swap_wires) // n_targets
+        swap_wires = [swap_wires[i * n_targets : (i + 1) * n_targets] for i in range(num_columns)]
 
-    @for_loop(len(swap_control_wires) - 1, -1, -1)
+    n_iters = len(swap_control_wires)
+    outer_loop = for_loop(0, n_iters) if adjoint else for_loop(n_iters - 1, -1, -1)
+
     def outer(i):
 
-        @for_loop(2**i - 1, -1, -1)
+        inner_loop = for_loop(0, 2**i) if adjoint else for_loop(2**i - 1, -1, -1)
+
         def inner(j):
 
-            @for_loop(num_targets)
+            layer_loop = for_loop(n_targets - 1, -1, -1) if adjoint else for_loop(0, n_targets)
+
             def swap_layer(k):
                 ctrl(
                     qp_ops.SWAP([swap_wires[j][k], swap_wires[j + 2**i][k]]),
@@ -95,11 +97,11 @@ def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires):
                     work_wire_type="zeroed",
                 )
 
-            swap_layer()  # pylint: disable=no-value-for-parameter
+            layer_loop(swap_layer)()
 
-        inner()  # pylint: disable=no-value-for-parameter
+        inner_loop(inner)()
 
-    outer()  # pylint: disable=no-value-for-parameter
+    outer_loop(outer)()
 
 
 class QROM(Operator2):
@@ -412,7 +414,7 @@ def _select_swap(
 
         cswaps = partial(_swap_ops, swap_control_wires, swap_wires, target_wires, cswap_work_wires)
 
-        qp_ops.adjoint(cswaps, lazy=False)()
+        cswaps(adjoint=True)
         _select_ops(
             bitstrings, depth, target_wires, swap_wires, select_control_wires, select_work_wires
         )

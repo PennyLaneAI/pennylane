@@ -15,12 +15,15 @@
 Tests for the controlled decompositions.
 """
 
+from collections import Counter
+
 import numpy as np
 import pytest
 from scipy import sparse
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import _fix_decomp
 from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
 from pennylane.ops.op_math.decompositions.controlled_decompositions import (
@@ -34,9 +37,32 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     decompose_mcx_with_no_worker,
 )
 from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
+from pennylane.testing.decompositions import decomp_rule_to_tape
 from pennylane.wires import Wires
 
 cw5 = tuple(list(range(1, 1 + n)) for n in range(2, 6))
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("num_controls", [3, 4, 5, 6, 10, 11])
+@pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+@pytest.mark.parametrize(
+    "rule,num_workers", [(decompose_mcx_one_worker, 1), (decompose_mcx_two_workers, 2)]
+)
+def test_mcx_forward_and_adjoint_resource_counts(num_controls, work_wire_type, rule, num_workers):
+    """The resource estimates distinguish forward gates from symbolic uncomputation."""
+    op = qp.MultiControlledX(
+        wires=range(num_controls + 1),
+        work_wires=range(num_controls + 1, num_controls + 1 + num_workers),
+        work_wire_type=work_wire_type,
+    )
+    tape = decomp_rule_to_tape(op, rule)
+    actual = Counter(abstractify(gate) for gate in tape.operations)
+    estimated = dict(rule.compute_resources(**op.arguments).gate_counts)
+    # These rules include an average of one X per control for zero-control flips.
+    # The all-one control pattern above needs none of those flips.
+    estimated[abstractify(qp.X(0))] -= num_controls
+    assert {gate: count for gate, count in estimated.items() if count} == actual
 
 
 def _matrix_adjoint(matrix: np.ndarray):
@@ -781,6 +807,7 @@ class TestMCXDecomposition:
         _fix_decomp(qp.MultiControlledX, decompose_mcx_with_no_worker)
         assert list(qp.list_decomps(mcx)) == [decompose_mcx_with_no_worker]
 
+    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("num_control_wires, num_work_wires", [(4, 1), (4, 2)])
