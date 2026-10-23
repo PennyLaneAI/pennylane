@@ -105,7 +105,7 @@ class RX(Operator2):
                 :image: /_static/decomposition_thumbnails/rx_to_ry_cliff.svg
 
                 :class:`~.S` | :math:`1`
-                :class:`S† <~.S>` | :math:`1`
+                :class:`Adjoint(S) <~.S>` | :math:`1`
                 :class:`~.RY` | :math:`1`
 
             .. decomposition-rule:: _rx_to_rz_cliff
