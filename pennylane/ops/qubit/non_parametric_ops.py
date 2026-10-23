@@ -87,8 +87,8 @@ class Hadamard(Operator2):
                 :image: /_static/decomposition_thumbnails/hadamard_ppm.svg
                 :requires: 1 work wire (not restored)
 
-                :func:`Pauli measurement <~.pauli_measure>` of :math:`YY` | :math:`1`
-                :func:`Pauli measurement <~.pauli_measure>` of :math:`X` | :math:`1`
+                :class:`PauliMeasure("YY") <~.PauliMeasure>` | :math:`1`
+                :class:`PauliMeasure("X") <~.PauliMeasure>` | :math:`1`
                 :class:`~.Y` (conditional) | :math:`1`
                 :class:`~.Z` (one conditional) | :math:`2`
                 :class:`~.GlobalPhase` (conditional) | :math:`1`
@@ -96,8 +96,8 @@ class Hadamard(Operator2):
             .. decomposition-rule:: _hadamard_ppr
                 :image: /_static/decomposition_thumbnails/hadamard_ppr.svg
 
-                :class:`~.PPR_2` of :math:`Z` | :math:`1`
-                :class:`~.PPR_4` of :math:`Y` | :math:`1`
+                :class:`PPR_2(1, "Z") <~.PPR_2>` | :math:`1`
+                :class:`PPR_4(1, "Y") <~.PPR_4>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
     """
 
@@ -1624,9 +1624,9 @@ class SWAP(Operator2):
             .. decomposition-rule:: _swap_to_ppr
                 :image: /_static/decomposition_thumbnails/swap_to_ppr.svg
 
-                :class:`~.PPR_4` of :math:`XX` | :math:`1`
-                :class:`~.PPR_4` of :math:`YY` | :math:`1`
-                :class:`~.PPR_4` of :math:`ZZ` | :math:`1`
+                :class:`PPR_4(1, "XX") <~.PPR_4>` | :math:`1`
+                :class:`PPR_4(1, "YY") <~.PPR_4>` | :math:`1`
+                :class:`PPR_4(1, "ZZ") <~.PPR_4>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
     """
 
@@ -1984,8 +1984,8 @@ class ISWAP(Operator2):
             .. decomposition-rule:: _iswap_to_ppr
                 :image: /_static/decomposition_thumbnails/iswap_to_ppr.svg
 
-                :class:`PPR_4† <~.PPR_4>` of :math:`XX` | :math:`1`
-                :class:`PPR_4† <~.PPR_4>` of :math:`YY` | :math:`1`
+                :class:`PPR_4(-1, "XX") <~.PPR_4>` | :math:`1`
+                :class:`PPR_4(-1, "YY") <~.PPR_4>` | :math:`1`
     """
 
     wire_sizes = (2,)
@@ -2156,8 +2156,8 @@ class SISWAP(Operator2):
             .. decomposition-rule:: _siswap_to_ppr
                 :image: /_static/decomposition_thumbnails/siswap_to_ppr.svg
 
-                :class:`PPR_8† <~.PPR_8>` of :math:`XX` | :math:`1`
-                :class:`PPR_8† <~.PPR_8>` of :math:`YY` | :math:`1`
+                :class:`PPR_8(-1, "XX") <~.PPR_8>` | :math:`1`
+                :class:`PPR_8(-1, "YY") <~.PPR_8>` | :math:`1`
     """
 
     wire_sizes = (2,)
