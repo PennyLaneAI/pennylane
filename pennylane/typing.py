@@ -185,7 +185,9 @@ class AbstractArray:
     NumPy-promoted dtype. Builtin numeric dtypes participate as weak types, and the
     result remains weak when both operands are weak. Unknown dimensions are accepted
     unless known axes conflict; compatibility may still depend on their concrete sizes.
-    An unknown rank produces an unknown result rank.
+    An unknown rank produces an unknown result rank. The corresponding NumPy arithmetic
+    ufuncs are supported for ordinary calls without keyword options; reductions and other
+    ufunc methods are not supported.
 
     """
 
@@ -397,7 +399,27 @@ class AbstractArray:
     def __hash__(self) -> int:
         return hash(("AbstractArray", self.shape, self.dtype))
 
-    def _arithmetic(self, other, operation):
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        """Infer metadata for supported elementwise NumPy arithmetic calls."""
+        # Ordinary calls like np.add(a, b) use "__call__"; reductions use "reduce", etc.
+        if method != "__call__" or kwargs:
+            return NotImplemented
+        if ufunc not in (
+            np.add,
+            np.subtract,
+            np.multiply,
+            np.true_divide,
+            np.remainder,
+            np.floor_divide,
+            np.power,
+        ):
+            return NotImplemented
+        left, right = inputs
+        if isinstance(left, AbstractArray):
+            return left._arithmetic(right, ufunc)
+        return self._arithmetic(left, ufunc, reverse=True)
+
+    def _arithmetic(self, other, operation, reverse=False):
         """Infer elementwise arithmetic metadata, rejecting only known shape conflicts."""
         if not isinstance(other, AbstractArray):
             if isinstance(other, Number):
@@ -432,6 +454,8 @@ class AbstractArray:
         right_dtype = (
             weak_dtypes.get(other.dtype.kind, other.dtype) if other._weak_type else other.dtype
         )
+        if reverse:
+            left_dtype, right_dtype = right_dtype, left_dtype
         dtype = operation.resolve_dtypes((left_dtype, right_dtype, None))[-1]
         result = AbstractArray(shape, dtype)
         object.__setattr__(result, "_weak_type", self._weak_type and other._weak_type)

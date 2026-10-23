@@ -163,6 +163,14 @@ class TestAbstractArray:
             operator.mod,
             operator.floordiv,
             operator.pow,
+            np.add,
+            np.subtract,
+            np.multiply,
+            np.true_divide,
+            np.remainder,
+            np.floor_divide,
+            np.power,
+            np.pow,
         ],
     )
     @pytest.mark.parametrize(
@@ -246,6 +254,54 @@ class TestAbstractArray:
         assert array.__add__(object()) is NotImplemented
         with pytest.raises(TypeError):
             array + object()
+
+    @pytest.mark.parametrize("operation", [np.add, np.subtract, np.power])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("other", [2.0, np.float32(2), np.ones(3, dtype=np.float32)])
+    def test_ufunc_concrete_operand(self, operation, reverse, other):
+        """Ufuncs accept concrete operands on either side without losing weak typing."""
+        array = AbstractArray((2, 1), float)
+        result = operation(other, array) if reverse else operation(array, other)
+        assert result.shape == ((2, 3) if np.ndim(other) else (2, 1))
+        assert result.dtype == (np.float64 if type(other) is float else np.float32)
+        assert result._weak_type is (type(other) is float)
+
+    def test_ufunc_chaining(self):
+        """Ufunc results carry metadata into subsequent arithmetic."""
+        result = np.pow(np.add(AbstractArray((-1, 1), int), 1), 2)
+        assert result.shape == (-1, 1)
+        assert result.dtype == np.dtype(int)
+        assert result._weak_type
+        result = result / AbstractArray((3,), np.float32)
+        assert result.shape == (-1, 3)
+        assert result.dtype == np.float32
+        assert not result._weak_type
+
+    @pytest.mark.parametrize(
+        "call",
+        [
+            lambda a: np.sin(a),
+            lambda a: np.add.reduce(a),
+            lambda a: np.add.accumulate(a),
+            lambda a: np.add.outer(a, a),
+            lambda a: np.add.at(a, 0, 1),
+            lambda a: np.add(a, a, out=a),
+            lambda a: np.add(a, a, where=True),
+            lambda a: np.add(a, a, dtype=np.float32),
+            lambda a: np.add(a, object()),
+        ],
+    )
+    def test_ufunc_unsupported_call(self, call):
+        """Unsupported ufuncs, methods, operands, and options are rejected."""
+        with pytest.raises(TypeError):
+            call(AbstractArray((2,), float))
+
+    def test_ufunc_invalid_metadata(self):
+        """Ufunc dispatch retains shape and operator-specific dtype checks."""
+        with pytest.raises(ValueError, match="Cannot broadcast shapes"):
+            np.add(AbstractArray((2,), float), AbstractArray((3,), float))
+        with pytest.raises(TypeError):
+            np.subtract(AbstractArray((2,), bool), AbstractArray((2,), bool))
 
     def test_basic_instance(self):
         """Test a normal instance of AbstractArray."""
