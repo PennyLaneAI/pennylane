@@ -299,7 +299,7 @@ class TestAnalyze:
         https://github.com/PennyLaneAI/catalyst/pull/3275 is merged.
         """
 
-        class DummyOp(qp.core.Operator2):
+        class DummyOp(qp.core.Operator2):  # pylint: disable=too-few-public-methods
             def __init__(self, wires):
                 super().__init__(wires=wires)
 
