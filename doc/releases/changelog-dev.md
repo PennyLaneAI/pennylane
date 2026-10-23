@@ -115,7 +115,7 @@
   The operation has a gridsynth-based decomposition into Pauli product rotations on up to
   30 wires, consisting of :class:`~.PPR_8` operators, at most one :class:`~.PPR_2` or
   :class:`~.PPR_4` operator per wire, and a
-  :class:`~.GlobalPhase`. It approximates the phase gradient state on 30 wires to 
+  :class:`~.GlobalPhase`. It approximates the phase gradient state on 30 wires to
   precision :math:`10^{-12}` (in 2-norm).
 
 * Added a `qp.math.floor_log2` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
@@ -152,6 +152,7 @@
   [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
   [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
   [(#10120)](https://github.com/PennyLaneAI/pennylane/pull/10120)
+  [(#10340)](https://github.com/PennyLaneAI/pennylane/pull/10340)
 
 * Three new operators called :class:`pennylane.PPR_2`, :class:`pennylane.PPR_4` and
   :class:`pennylane.PPR_8` have been added, which represent the Pauli product rotations
@@ -838,12 +839,6 @@
 
 <h3>Improvements 🛠</h3>
 
-* Renamed ``qp.math.is_abstract`` to ``qp.math.is_tracer`` to distinguish traced tensors
-  from PennyLane abstract input descriptors. The function's behavior is unchanged, and
-  ``qp.math.is_abstract`` remains available as a compatibility alias for Catalyst.
-  [(#10374)](https://github.com/PennyLaneAI/pennylane/pull/10374)
-
-
 * Terminal measurements now accept fixed-size `qp.typing.Wire[n]` registers during
   program capture.
   [(#10364)](https://github.com/PennyLaneAI/pennylane/pull/10364)
@@ -1205,7 +1200,7 @@
 * ``Wires.all_wires`` can now handle a list with mixed ``Wires`` and ``AbstractWires`` instances.
   [(#10223)](https://github.com/PennyLaneAI/pennylane/pull/10223)
 
-* ``qp.add_decomps`` no longer raises an error when the new decomposition rule is the exact same 
+* ``qp.add_decomps`` no longer raises an error when the new decomposition rule is the exact same
   object as an existing one. An error is still raised if the new rule has the same name as an
   existing rule, but is a different object to the rule with that name.
   [(#10282)](https://github.com/PennyLaneAI/pennylane/pull/10282)
@@ -1215,7 +1210,7 @@
   controlled unitaries at no extra cost, by replacing ``ctrl(U, control_values=[0])`` with
   ``ctrl(adjoint(U), control_values=[1])``.
   [(#10305)](https://github.com/PennyLaneAI/pennylane/pull/10305)
-  
+
 * A new :mod:`pennylane.testing` module collects utilities for testing code built with PennyLane.
   - :func:`qp.testing.assert_valid <pennylane.testing.assert_valid>` replaces ``qp.ops.functions.assert_valid``.
   - :func:`qp.testing.assert_valid_decomp_rule <pennylane.testing.assert_valid_decomp_rule>` replaces the private ``_test_decomposition_rule``.
@@ -1375,6 +1370,12 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Renamed ``qp.math.is_abstract`` to ``qp.math.is_tracer`` to distinguish traced tensors
+  from PennyLane abstract input descriptors. The function's behavior is unchanged.
+  Downstream callers must use ``qp.math.is_tracer``; the old name is no longer available.
+  [(#10374)](https://github.com/PennyLaneAI/pennylane/pull/10374)
+  [(#10376)](https://github.com/PennyLaneAI/pennylane/pull/10376)
+
 * ``qp.ops.functions.assert_valid`` has been removed. Use :func:`~.testing.assert_valid` instead.
   The private ``_test_decomposition_rule`` has been removed; use :func:`~.testing.assert_valid_decomp_rule`.
   [(#10342)](https://github.com/PennyLaneAI/pennylane/pull/10342)
@@ -1409,7 +1410,7 @@
   [(#10238)](https://github.com/PennyLaneAI/pennylane/pull/10238)
 
 * :class:`~.IQPEmbedding`'s ``pattern`` argument now lists pairs of *indices into* ``wires``,
-  rather than wire labels. This matches the ``pattern`` argument of :class:`~.IQP`. 
+  rather than wire labels. This matches the ``pattern`` argument of :class:`~.IQP`.
   It is a dynamic ``(K, 2)`` integer
   tensor. The default all-pairs pattern is unchanged.
   To entangle the first and third of ``wires=["z", "a", "k"]``, pass ``pattern=[[0, 2]]``
@@ -2141,7 +2142,7 @@
   very minor increases.
   [(#10270)](https://github.com/PennyLaneAI/pennylane/pull/10270)
 
-* Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the 
+* Fixed a bug in the matrix computation of :class:`~.ops.op_math.Prod` and ``Prod2`` where the
   output matrix was with respect to a wrong wire ordering. The bug occurred in products where
   groups of factors with overlapping wires caused a partial matrix with permuted wires,
   e.g. ``H(1) @ H(0) @ CNOT([2, 1]) @ CNOT([1, 0])``.
