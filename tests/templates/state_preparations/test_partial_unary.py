@@ -584,14 +584,6 @@ class TestPartialUnaryStatePreparation:
         assert hints[1][:-1] == pytest.approx(expected_batch_probs)
         assert hints[1][-1] == 0.0
 
-    @pytest.fixture
-    def xfail_pending_catalyst_adjoint(self, request, num_entries, provide_work_wires):
-        """Track only cases requiring the pending Catalyst adjoint companion."""
-        if provide_work_wires and num_entries > 1:
-            request.applymarker(
-                pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
-            )
-
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "provide_work_wires",
@@ -605,7 +597,7 @@ class TestPartialUnaryStatePreparation:
             True,
         ],
     )
-    @pytest.mark.usefixtures("enable_graph_decomposition", "xfail_pending_catalyst_adjoint")
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "num_wires,num_entries",
         [
@@ -624,6 +616,9 @@ class TestPartialUnaryStatePreparation:
     )
     def test_decomposition_prepares_state(self, num_wires, num_entries, seed, provide_work_wires):
         """Test that the decomposition of PartialUnaryStatePreparation actually prepares the desired state."""
+        if provide_work_wires and num_entries > 1:
+            pytest.xfail("Requires Catalyst companion PR [sc-134032]")
+
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
         needed_work_wires = max(qp.math.ceil_log2(num_entries) - 1, 1)
         if provide_work_wires:

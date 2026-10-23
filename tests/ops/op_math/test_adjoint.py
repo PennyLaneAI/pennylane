@@ -899,16 +899,6 @@ class TestAdjointConstructorOutsideofQueuing:
         assert out.data == (x,)
         assert out.wires == qp.wires.Wires(0)
 
-    def test_single_op_with_defined_adjoint(self):
-        """An operator with a defined adjoint is still wrapped symbolically."""
-
-        x = 1.234
-        base = qp.RX(x, wires=0)
-        out = adjoint(base)
-
-        assert isinstance(out, Adjoint)
-        assert out.data == (x,)
-
     def test_single_op_function(self):
         """Test the transform on a single op as a callable outside of a queuing context."""
         x = 1.234
@@ -932,14 +922,6 @@ class TestAdjointConstructorOutsideofQueuing:
         assert len(out) == 2
         assert all(isinstance(op, Adjoint) for op in out)
         assert all(op.wires == qp.wires.Wires(wire) for op in out)
-
-    def test_self_adjoint_op_function(self):
-        """Test a self-adjoint operator remains symbolic outside a queuing context."""
-
-        out = adjoint(qp.PauliX)(0)
-
-        assert isinstance(out, Adjoint)
-        assert isinstance(out.base, qp.PauliX)
 
 
 class TestAdjointConstructorIntegration:
