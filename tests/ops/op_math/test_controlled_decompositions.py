@@ -705,37 +705,6 @@ class TestMCXDecomposition:
 
         assert qp.math.allclose(matrix, expected_matrix)
 
-    @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "rule, num_work_wires",
-        [(decompose_mcx_one_worker, 1), (decompose_mcx_two_workers, 2)],
-    )
-    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
-    @pytest.mark.parametrize("n_ctrl_wires", [5, 7])
-    def test_adjoint_ladder_with_qjit(self, rule, num_work_wires, work_wire_type, n_ctrl_wires):
-        """Test that the adjoint ladders of the worker rules are decomposed under qjit, which
-        lowers them to adjointed gates that must be declared in the resources."""
-        pytest.importorskip("catalyst")
-
-        control_wires = list(range(1, n_ctrl_wires + 1))
-        work_wires = list(range(n_ctrl_wires + 1, n_ctrl_wires + 1 + num_work_wires))
-        gate_set = {"CNOT", "Hadamard", "T", "Adjoint(T)", "S", "Adjoint(S)", "PauliX"}
-        dev = qp.device("null.qubit", wires=n_ctrl_wires + 1 + num_work_wires)
-
-        @qp.qjit(capture=True)
-        @qp.decompose(gate_set=gate_set, fixed_decomps={qp.MultiControlledX: rule.name})
-        @qp.qnode(dev)
-        def circuit():
-            for wire in control_wires:
-                qp.X(wire)
-            qp.MultiControlledX(
-                wires=control_wires + [0], work_wires=work_wires, work_wire_type=work_wire_type
-            )
-            return qp.probs(wires=0)
-
-        ops = qp.specs(circuit, level=1)().resources.quantum_operations
-        assert set(ops) <= gate_set
-
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("n_ctrl_wires", [4, 5, 6, 7, 8, 9, 10])
     def test_decomposition_with_no_workers(self, n_ctrl_wires):

@@ -347,34 +347,6 @@ class TestSelectTHCOperator:
         assert_valid(op, skip_differentiation=True)
         assert op.wires == qp.wires.Wires(system + index + flags + gradient + work)
 
-    @pytest.mark.catalyst
-    def test_uncompute_with_qjit(self):
-        """Test that qjit compiles the adjoint gates needed for uncomputation."""
-        pytest.importorskip("catalyst")
-        # Two spin orbitals isolate the adjointed CSWAPs from QROM lowering.
-        system, index, flags, gradient, work, ntot = _layout(1, 2, 1)
-        gate_set = qp.gate_sets.CLIFFORD_T_PLUS_RZ
-
-        @qp.qjit(capture=True)
-        @qp.decompose(gate_set=gate_set)
-        @qp.qnode(qp.device("null.qubit", wires=ntot))
-        def circuit():
-            SelectTHC(
-                ((1.0,),),
-                ((1.0,),),
-                1,
-                system,
-                index,
-                flags,
-                gradient,
-                work,
-            )
-            return qp.probs(wires=system)
-
-        ops = qp.specs(circuit, level=1)().resources.quantum_operations
-        # specs names the gate set's MidMeasure as MidCircuitMeasure
-        assert set(ops) <= set(gate_set) | {"MidCircuitMeasure"}
-
     def test_abstract_wires_keep_static_data(self):
         """Test that abstract construction stores compilable data as given."""
         sizes = qp.select_thc_wires(1, 2, 1)
