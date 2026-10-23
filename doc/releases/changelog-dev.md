@@ -2099,6 +2099,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Operators now reject abstract inputs in ``compilable_argnames`` during construction,
+  with an error identifying the operator and argument, instead of failing later during lowering.
+  [(#10373)](https://github.com/PennyLaneAI/pennylane/pull/10373)
+  
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
   argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
   [(#10360)](https://github.com/PennyLaneAI/pennylane/pull/10360)
