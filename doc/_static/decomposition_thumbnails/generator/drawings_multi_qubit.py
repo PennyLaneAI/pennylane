@@ -29,7 +29,7 @@ def wires(f, n, length=L, labels=True):
     for y in W[:n]:
         f.wire(y, 0, length)
     if labels:
-        wire_labels(f, -8, [(W[i], f"${i}$") for i in range(n)])
+        wire_labels(f, -8, [(W[i], f"$w_{i}$") for i in range(n)])
 
 
 def box(f, x, y, label, fill, w=34, y1=None):
