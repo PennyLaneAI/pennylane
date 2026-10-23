@@ -140,9 +140,9 @@ class TemporaryAND(Operator2):
             .. decomposition-rule:: _temporary_and_ppr
                 :image: /_static/decomposition_thumbnails/temporary_and_ppr.svg
 
-                :class:`~.PPR_8` of :math:`ZZY` | :math:`1` | 1
-                :class:`~.PPR_8` of :math:`ZY` | :math:`2` | 2
-                :class:`~.PPR_8` of :math:`Y` | :math:`1` | 1
+                :class:`PPR_8(1, "ZZY") <~.PPR_8>` | :math:`1` | 1
+                :class:`PPR_8(-1, "ZY") <~.PPR_8>` | :math:`2` | 2
+                :class:`PPR_8(1, "Y") <~.PPR_8>` | :math:`1` | 1
                 :class:`~.X` | :math:`2z` | 2
     """
 

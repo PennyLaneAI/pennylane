@@ -207,8 +207,8 @@ class QROM(Operator2):
                 :class:`~.TemporaryAND` | :math:`A` | 1
                 :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`1` | 1
                 :class:`~.CNOT` | at most :math:`\max(3, L/2 - 1) + 2b` | 5
-                :func:`~.pauli_measure` (:math:`X`-type, :math:`\leq b + 1` wires) | :math:`A` | 1
-                :func:`~.pauli_measure` (:math:`Z`, 1 wire) | :math:`A` | 1
+                :class:`~.PauliMeasure` (:math:`X`-type, :math:`\leq b + 1` wires) | :math:`A` | 1
+                :class:`~.PauliMeasure` (:math:`Z`, 1 wire) | :math:`A` | 1
                 :class:`~.CZ` (conditional) | :math:`A` | 1
                 :class:`~.X` (conditional) | :math:`A` | 1
 
