@@ -347,7 +347,7 @@ def _equal_operators(
             f"Got {op1.hyperparameters}\n and {op2.hyperparameters}."
         )
 
-    if any(math.is_abstract(d) for d in op1.data + op2.data):
+    if any(math.is_tracer(d) for d in op1.data + op2.data):
         # assume all tracers are independent
         return "Data contains a tracer. Abstract tracers are assumed to be unique."
     if len(op1.data) != len(op2.data):
@@ -496,7 +496,7 @@ def _check_wire_value(wname: str, wval1: Any, wval2: Any):
 
     else:
         for w1, w2 in zip(wval1, wval2, strict=True):
-            if math.is_abstract(w1) or math.is_abstract(w2):
+            if math.is_tracer(w1) or math.is_tracer(w2):
                 unequal_wires = True
                 abstract_wires = True
                 break
@@ -537,7 +537,7 @@ def _check_dynamic_value(
     if is_aa1 != is_aa2:
         return f"Unmatched representations for {dname}. Got {dval1} and {dval2}."
 
-    if math.is_abstract(dval1) or math.is_abstract(dval2):
+    if math.is_tracer(dval1) or math.is_tracer(dval2):
         return (
             f"At least one of op1 or op2 has a tracer value for '{dname}'. Abstract "
             "tracers are assumed to be unique."
@@ -904,7 +904,7 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
                 f"{op1.coeff} trainability is {coeff1_train} and {op2.coeff} trainability is {coeff2_train}"
             )
 
-    if qp.math.is_abstract(op1.coeff) or qp.math.is_abstract(op2.coeff):
+    if qp.math.is_tracer(op1.coeff) or qp.math.is_tracer(op2.coeff):
         if op1.coeff is not op2.coeff:
             return "Data contains a tracer. Abstract tracers are assumed to be unique."
 
@@ -946,7 +946,7 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
                 f"{op1.scalar} trainability is {scalar1_train} and {op2.scalar} trainability is {scalar2_train}"
             )
 
-    if qp.math.is_abstract(op1.scalar) or qp.math.is_abstract(op2.scalar):
+    if qp.math.is_tracer(op1.scalar) or qp.math.is_tracer(op2.scalar):
         if op1.scalar is not op2.scalar:
             return "Data contains a tracer. Abstract tracers are assumed to be unique."
 
@@ -989,7 +989,7 @@ def _equal_measurements(
         if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
             return qp.equal(op1.mv, op2.mv)
 
-        if math.is_abstract(op1.mv) or math.is_abstract(op2.mv):
+        if math.is_tracer(op1.mv) or math.is_tracer(op2.mv):
             return op1.mv is op2.mv
 
         if isinstance(op1.mv, Iterable) and isinstance(op2.mv, Iterable):
