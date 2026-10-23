@@ -161,8 +161,8 @@ class SingleExcitation(Operator2):
             .. decomposition-rule:: _single_excitation_ppr
                 :image: /_static/decomposition_thumbnails/singleexcitation_ppr.svg
 
-                :class:`~.PauliRot` with Pauli word ``"YX"`` | :math:`1`
-                :class:`~.PauliRot` with Pauli word ``"XY"`` | :math:`1`
+                :class:`PauliRot("YX") <.PauliRot>` | :math:`1`
+                :class:`PauliRot("XY") <.PauliRot>` | :math:`1`
 
             .. decomposition-rule:: _single_excitation_ppr_rz
                 :image: /_static/decomposition_thumbnails/singleexcitation_ppr_rz.svg

@@ -88,7 +88,7 @@ class MultiRZ(Operator2):
             .. decomposition-rule:: _multi_rz_to_ppr
                 :image: /_static/decomposition_thumbnails/multirz_to_ppr.svg
 
-                :class:`~.PauliRot` with Pauli word ``"Z...Z"`` on :math:`n` wires | :math:`1` | 1
+                :class:`PauliRot("Z...Z") <.PauliRot>` on :math:`n` wires | :math:`1` | 1
     """
 
     dynamic_argnames = ("theta",)
@@ -1110,7 +1110,7 @@ class IsingXX(Operator2):
             .. decomposition-rule:: _isingxx_to_ppr
                 :image: /_static/decomposition_thumbnails/isingxx_ppr.svg
 
-                :class:`~.PauliRot` with Pauli word ``"XX"`` | :math:`1`
+                :class:`PauliRot("XX") <.PauliRot>` | :math:`1`
     """
 
     dynamic_argnames = ("phi",)
@@ -1257,7 +1257,7 @@ class IsingYY(Operator2):
             .. decomposition-rule:: _isingyy_to_ppr
                 :image: /_static/decomposition_thumbnails/isingyy_ppr.svg
 
-                :class:`~.PauliRot` with Pauli word ``"YY"`` | :math:`1`
+                :class:`PauliRot("YY") <.PauliRot>` | :math:`1`
     """
 
     dynamic_argnames = ("phi",)
@@ -1415,7 +1415,7 @@ class IsingZZ(Operator2):
             .. decomposition-rule:: _isingzz_to_ppr
                 :image: /_static/decomposition_thumbnails/isingzz_ppr.svg
 
-                :class:`~.PauliRot` with Pauli word ``"ZZ"`` | :math:`1`
+                :class:`PauliRot("ZZ") <.PauliRot>` | :math:`1`
     """
 
     dynamic_argnames = ("phi",)
