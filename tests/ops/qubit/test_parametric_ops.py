@@ -31,6 +31,12 @@ from pennylane.core.operator import Operator1, Operator2
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
+from pennylane.ops.qubit.parametric_ops_single_qubit import (
+    _controlled_phase_shift_mcx_condition,
+    _controlled_phase_shift_mcx_decomp,
+    _mc_phase_shift,
+    _mc_phase_shift_counts,
+)
 from pennylane.testing import assert_decomposable
 from pennylane.testing.decompositions import assert_valid_decomp_rule, decomp_rule_to_tape
 from pennylane.wires import Wires
@@ -3921,3 +3927,68 @@ def test_op_aliases_are_valid():
     """Tests that ops in new files can still be accessed from the old parametric_ops module."""
     assert qp.ops.qubit.parametric_ops_multi_qubit.MultiRZ is old_loc_MultiRZ
     assert qp.ops.qubit.parametric_ops_single_qubit.RX is old_loc_RX
+
+
+class TestControlledPhaseShiftMCXDecomposition:
+    """Tests for the MultiControlledX-based decomposition of a multi-controlled PhaseShift."""
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("num_controls", range(2, 7))
+    def test_decomposition_rule(self, num_controls):
+        """Tests the resources and the unitary of the MCX-based decomposition rule."""
+
+        op = qp.ctrl(qp.PhaseShift(0.731, wires=num_controls), control=range(num_controls))
+        rules = qp.list_decomps("C(PhaseShift)")
+        assert any(_controlled_phase_shift_mcx_decomp.__name__ in r.name for r in rules)
+        for rule in rules:
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize("num_controls", range(1, 7))
+    def test_mc_phase_shift_matrix(self, num_controls):
+        """Tests that ``_mc_phase_shift`` implements a multi-controlled PhaseShift."""
+
+        phi = 0.731
+        tape = qp.tape.make_qscript(_mc_phase_shift)(phi, list(range(num_controls)), num_controls)
+        mat = qp.matrix(tape, wire_order=list(range(num_controls + 1)))
+
+        expected = np.eye(2 ** (num_controls + 1), dtype=complex)
+        expected[-1, -1] = np.exp(1j * phi)
+        assert np.allclose(mat, expected)
+
+    @pytest.mark.parametrize("num_controls", range(2, 7))
+    def test_resources_are_polynomial(self, num_controls):
+        """Tests that the gate count grows only polynomially with the number of controls."""
+
+        counts = _mc_phase_shift_counts(num_controls)
+        assert counts[qp.ControlledPhaseShift] == 2 * num_controls - 1
+        assert counts[qp.CNOT] == 2
+        assert sum(counts.values()) == 4 * num_controls - 3
+
+    def test_mcx_rule_condition(self):
+        """Tests that the MCX-based rule requires more than one control wire."""
+
+        assert not _controlled_phase_shift_mcx_condition(control_wires=[0])
+        assert _controlled_phase_shift_mcx_condition(control_wires=[0, 1])
+
+    @pytest.mark.integration
+    @pytest.mark.catalyst
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_graph_decomposition(self):
+        """Tests that a many-controlled PhaseShift decomposes with only MCX-based gates."""
+        import catalyst
+
+        wires = list(range(6))
+        gate_set = {"ControlledPhaseShift", "CNOT", "Toffoli", "MultiControlledX", "PauliX", "X"}
+
+        @qp.qjit(capture=True, target="mlir")
+        @catalyst.passes.graph_decomposition(gate_set=gate_set)
+        @qp.qnode(qp.device("null.qubit", wires=wires))
+        def c():
+            qp.ctrl(qp.PhaseShift(0.4, wires=5), control=wires[:5])
+
+        specs = qp.specs(c, level=1)()
+        assert set(specs.resources.quantum_operations.keys()) <= gate_set
+        assert specs.resources.quantum_operations["CNOT"] == 2
+        assert specs.resources.quantum_operations["ControlledPhaseShift"] == 9
+        assert specs.resources.quantum_operations["MultiControlledX"] == 6
+        assert specs.resources.quantum_operations["PauliX"] == 10
