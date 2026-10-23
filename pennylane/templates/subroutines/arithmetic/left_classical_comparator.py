@@ -19,7 +19,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, X, cond
-from pennylane.typing import AbstractWires, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Int, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .temporary_and import Elbow
@@ -56,6 +56,12 @@ class LeftClassicalComparator(Operator2):
         comparator (str): The operator used in the inequality. Possible values are:
             ``'<'``, ``'<='``, ``'>='`` and ``'>'``.
 
+    ``L`` may be a runtime integer under :func:`~.qjit`, including with capture enabled,
+    or an abstract scalar :data:`~pennylane.typing.Int` for resource estimation.
+    Its range is checked when concrete; runtime values must satisfy the same bounds.
+    Resource estimates use an upper bound independent of ``L`` and may overestimate
+    the gates used for a particular threshold.
+
     **Example**
 
     .. code-block:: python
@@ -81,8 +87,12 @@ class LeftClassicalComparator(Operator2):
     """
 
     wire_argnames = ("x_wires", "target_wire", "work_wires")
-    compilable_argnames = ("L", "comparator")
+    dynamic_argnames = ("L",)
+    compilable_argnames = ("comparator",)
+    ndim_params = (0,)
+    num_params = 0  # The integer threshold is dynamic but is not differentiable.
     arg_specs = {
+        "L": Int,
         "x_wires": Wire[-1],
         "target_wire": Wire[1],
         "work_wires": Wire[-1],
@@ -96,6 +106,9 @@ class LeftClassicalComparator(Operator2):
         work_wires: WiresLike,
         comparator: str,
     ):  # pylint: disable=too-many-arguments
+
+        if math.shape(L) != ():
+            raise ValueError("L must be a scalar integer.")
 
         if comparator not in ["<", "<=", ">=", ">"]:
             raise ValueError("Allowed values for 'comparator' are: '<', '<=', '>=' and '>'.")
@@ -136,7 +149,7 @@ class LeftClassicalComparator(Operator2):
         # (``x < 2 ** n`` is statically True for every representable ``x``); ``"<="`` / ``">"``
         # add one internally, so their largest allowed input stays ``2 ** n - 1``.
         max_L = 2 ** len(x_wires) if comparator in ["<", ">="] else 2 ** len(x_wires) - 1
-        if not math.is_tracer(L) and not 0 <= L <= max_L:
+        if not isinstance(L, AbstractArray) and not math.is_tracer(L) and not 0 <= L <= max_L:
             raise ValueError(
                 f"L must be less than or equal to {max_L} and non-negative for comparator "
                 f"'{comparator}'. Got {L=} and {2 ** len(x_wires)=}."
@@ -150,48 +163,19 @@ def _get_specific_bit(L, i):
     return (L >> i) & 1
 
 
-def _left_classical_comparator_resources(x_wires, L, target_wire, work_wires, comparator):
-    # pylint: disable=unused-argument
-    if comparator in ["<=", ">"]:
-        L += 1
-
+def _left_classical_comparator_resources(x_wires, comparator, **_):
+    """Bound the gate counts without knowing the runtime threshold."""
     n = len(x_wires)
-
-    # Concrete-``L`` fast path (resource params are always concrete, so this Python branch is
-    # safe): the effective ``L`` equals ``2 ** n``, so ``x < 2 ** n`` is statically ``True``
-    # for every representable ``x``. The decomposition then emits a single ``X`` writing the
-    # constant result onto the target wire (no elbows, no work wires); the ``> / >=`` negation
-    # flips it back to ``False``.
-    if L == 2**n:
-        resources = {Elbow: 0, CNOT: 0, X: 1}
-        if comparator in [">", ">="]:
-            resources[X] += 1
-        return resources
-
-    resources = {
+    # Count every conditional gate: two Xs for bit 0, four per remaining low bit,
+    # and one for bit n. The final negation depends only on the comparator.
+    return {
         Elbow: n - 1,
-        CNOT: n - 1,
-        X: 0,
+        CNOT: n,
+        X: 4 * n - 1 + int(comparator in [">", ">="]),
     }
 
-    bit_0 = _get_specific_bit(L, 0)
-    if bit_0:
-        resources[X] += 2
-        resources[CNOT] += 1
 
-    # X gates from the conditional negations inside the loop: 4 per set bit in
-    # positions ``1 .. n-1`` of ``L`` (each such iteration flips ``x[i]`` and
-    # ``w[i-1]`` before and after the Elbow).
-    mid_bits = (L & (2**n - 1)).bit_count() - bit_0
-    resources[X] += 4 * mid_bits
-
-    if comparator in [">", ">="]:
-        resources[X] += 1
-
-    return resources
-
-
-@register_resources(_left_classical_comparator_resources, exact=True)
+@register_resources(_left_classical_comparator_resources, exact=False)
 def _left_classical_comparator(x_wires, L, target_wire, work_wires, comparator, **_):
     x_wires = x_wires[::-1]
 

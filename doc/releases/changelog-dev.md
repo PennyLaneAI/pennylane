@@ -838,6 +838,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* ``LeftClassicalComparator`` accepts a dynamic integer threshold ``L`` under captured
+  compilation and an abstract ``Int`` threshold for resource estimation. Its resource
+  rule now reports an upper bound instead of counts specific to the threshold value.
+   [(#10377)](https://github.com/PennyLaneAI/pennylane/pull/10377)
+   
 * Renamed ``qp.math.is_abstract`` to ``qp.math.is_tracer`` to distinguish traced tensors
   from PennyLane abstract input descriptors. The function's behavior is unchanged, and
   ``qp.math.is_abstract`` remains available as a compatibility alias for Catalyst.
