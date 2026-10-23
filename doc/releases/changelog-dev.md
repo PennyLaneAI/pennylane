@@ -840,6 +840,7 @@
 
 * Arithmetic on ``AbstractArray`` now broadcasts shapes, permits unknown dimensions,
   and infers operation-specific dtypes while preserving weak typing for chained expressions.
+  Python scalars are supported on either side of binary arithmetic operators.
   Corresponding NumPy arithmetic ufuncs, such as ``np.add`` and ``np.power``, are also supported.
   [(#10385)](https://github.com/PennyLaneAI/pennylane/pull/10385)
 

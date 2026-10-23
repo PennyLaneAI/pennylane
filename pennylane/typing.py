@@ -464,23 +464,44 @@ class AbstractArray:
     def __add__(self, other):
         return self._arithmetic(other, np.add)
 
+    def __radd__(self, other):
+        return self._arithmetic(other, np.add, reverse=True)
+
     def __sub__(self, other):
         return self._arithmetic(other, np.subtract)
+
+    def __rsub__(self, other):
+        return self._arithmetic(other, np.subtract, reverse=True)
 
     def __mul__(self, other):
         return self._arithmetic(other, np.multiply)
 
+    def __rmul__(self, other):
+        return self._arithmetic(other, np.multiply, reverse=True)
+
     def __truediv__(self, other):
         return self._arithmetic(other, np.true_divide)
+
+    def __rtruediv__(self, other):
+        return self._arithmetic(other, np.true_divide, reverse=True)
 
     def __mod__(self, other):
         return self._arithmetic(other, np.remainder)
 
+    def __rmod__(self, other):
+        return self._arithmetic(other, np.remainder, reverse=True)
+
     def __floordiv__(self, other):
         return self._arithmetic(other, np.floor_divide)
 
+    def __rfloordiv__(self, other):
+        return self._arithmetic(other, np.floor_divide, reverse=True)
+
     def __pow__(self, other):
         return self._arithmetic(other, np.power)
+
+    def __rpow__(self, other):
+        return self._arithmetic(other, np.power, reverse=True)
 
 
 class _AbstractTypeFactory(AbstractArray):

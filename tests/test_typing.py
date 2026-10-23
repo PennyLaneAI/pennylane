@@ -248,12 +248,52 @@ class TestAbstractArray:
         assert result.dtype == np.float32
         assert not result._weak_type
 
+    @pytest.mark.parametrize(
+        "operation",
+        [
+            operator.add,
+            operator.sub,
+            operator.mul,
+            operator.truediv,
+            operator.mod,
+            operator.floordiv,
+            operator.pow,
+        ],
+    )
+    @pytest.mark.parametrize("scalar", [2, 2.0])
+    @pytest.mark.parametrize("dtype, weak", [(float, True), (np.float32, False)])
+    def test_reflected_arithmetic(self, operation, scalar, dtype, weak):
+        """Python scalars on the left preserve array metadata and weak typing."""
+        result = operation(scalar, AbstractArray((-1, 3), dtype))
+        assert isinstance(result, AbstractArray)
+        assert result.shape == (-1, 3)
+        assert result.dtype == np.dtype(dtype)
+        assert result._weak_type is weak
+        assert not result.shape_fixed
+
+    def test_reflected_division_integer_dtype(self):
+        """Reflected true division promotes integer operands to floating point."""
+        result = 2 / AbstractArray((3,), int)
+        assert result.shape == (3,)
+        assert result.dtype == np.dtype(float)
+        assert result._weak_type
+
+    def test_reflected_arithmetic_chaining(self):
+        """Reflected results retain weak typing for subsequent expressions."""
+        result = (2 - AbstractArray((2, 1), int)) * AbstractArray((3,), np.float32)
+        assert result.shape == (2, 3)
+        assert result.dtype == np.float32
+        assert not result._weak_type
+
     def test_arithmetic_unsupported_operand(self):
         """Unrelated operands use Python's unsupported-operation protocol."""
         array = AbstractArray((2,), float)
         assert array.__add__(object()) is NotImplemented
+        assert array.__radd__(object()) is NotImplemented
         with pytest.raises(TypeError):
             array + object()
+        with pytest.raises(TypeError):
+            object() + array
 
     @pytest.mark.parametrize("operation", [np.add, np.subtract, np.power])
     @pytest.mark.parametrize("reverse", [False, True])
