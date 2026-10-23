@@ -548,7 +548,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         if self.work_wires:
             params.append(f"work_wires={self.work_wires}")
         ctrl_values = self.control_values
-        if isinstance(ctrl_values, AbstractArray) or math.is_abstract(ctrl_values):
+        if isinstance(ctrl_values, AbstractArray) or math.is_tracer(ctrl_values):
             params.append(f"control_values={ctrl_values}")
         elif not all(ctrl_values):
             params.append(f"control_values={ctrl_values.tolist()}")
@@ -620,7 +620,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         self.base.tracer = None
         # If we bind the primitive outside a tracing context but with program capture enabled,
         # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
-        if math.is_abstract(res):
+        if math.is_tracer(res):
             self.tracer = res
 
 

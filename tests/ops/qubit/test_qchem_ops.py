@@ -308,13 +308,12 @@ class TestSingleExcitationDecompositions:
         rule = qp.list_decomps(qp.SingleExcitation)[0]
         op = qp.SingleExcitation(phi, wires=wires)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(**op.arguments)
+        tape = qp.testing.decomp_rule_to_tape(op, rule)
 
         # the rule queues a single ChangeOpBasis, which is what lets a control skip the
         # Hadamard/CNOT basis change. Operands are in matrix order, i.e. reversed relative to
         # the order they are applied in.
-        (cob,) = q.queue
+        (cob,) = tape.operations
         for actual, exp in zip(
             cob.compute_op.operands, [qp.CNOT(wires), qp.Hadamard(wires[0])], strict=True
         ):
@@ -409,14 +408,13 @@ class TestSingleExcitationDecompositions:
         rule = qp.list_decomps(qp.SingleExcitation)[1]
         op = qp.SingleExcitation(phi, wires=wires)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(**op.arguments)
+        tape = qp.testing.decomp_rule_to_tape(op, rule)
 
         expected = [
             qp.PauliRot(phi / 2, "YX", wires=wires),
             qp.PauliRot(-phi / 2, "XY", wires=wires),
         ]
-        for actual, exp in zip(q.queue, expected, strict=True):
+        for actual, exp in zip(tape.operations, expected, strict=True):
             qp.assert_equal(actual, exp)
 
     @pytest.mark.capture
@@ -463,11 +461,10 @@ class TestSingleExcitationDecompositions:
         rule = qp.list_decomps("Adjoint(SingleExcitation)")[0]
         adj_op = qp.adjoint(qp.SingleExcitation(phi, wires=wires))
 
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(**adj_op.arguments)
+        tape = qp.testing.decomp_rule_to_tape(adj_op, rule)
 
         expected = [qp.SingleExcitation(-phi, wires=wires)]
-        for actual, exp in zip(q.queue, expected, strict=True):
+        for actual, exp in zip(tape.operations, expected, strict=True):
             qp.assert_equal(actual, exp)
 
     @pytest.mark.capture
@@ -510,11 +507,10 @@ class TestSingleExcitationDecompositions:
         rule = qp.list_decomps("Pow(SingleExcitation)")[0]
         pow_op = qp.pow(qp.SingleExcitation(phi, wires=wires), z)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(**pow_op.arguments)
+        tape = qp.testing.decomp_rule_to_tape(pow_op, rule)
 
         expected = [qp.SingleExcitation(phi * z, wires=wires)]
-        for actual, exp in zip(q.queue, expected, strict=True):
+        for actual, exp in zip(tape.operations, expected, strict=True):
             qp.assert_equal(actual, exp)
 
     @pytest.mark.capture
