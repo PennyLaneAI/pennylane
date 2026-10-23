@@ -839,12 +839,6 @@
 
 <h3>Improvements 🛠</h3>
 
-* Renamed ``qp.math.is_abstract`` to ``qp.math.is_tracer`` to distinguish traced tensors
-  from PennyLane abstract input descriptors. The function's behavior is unchanged, and
-  ``qp.math.is_abstract`` remains available as a compatibility alias for Catalyst.
-  [(#10374)](https://github.com/PennyLaneAI/pennylane/pull/10374)
-
-
 * Terminal measurements now accept fixed-size `qp.typing.Wire[n]` registers during
   program capture.
   [(#10364)](https://github.com/PennyLaneAI/pennylane/pull/10364)
@@ -1366,6 +1360,13 @@
   [(#10337)](https://github.com/PennyLaneAI/pennylane/pull/10337)
 
 <h3>Breaking changes 💔</h3>
+
+* Renamed ``qp.math.is_abstract`` to ``qp.math.is_tracer`` to distinguish traced tensors
+  from PennyLane abstract input descriptors. The function's behavior is unchanged.
+  Downstream callers must use ``qp.math.is_tracer``; the old name is no longer available.
+  [(#10374)](https://github.com/PennyLaneAI/pennylane/pull/10374)
+  [(#10376)](https://github.com/PennyLaneAI/pennylane/pull/10376)
+
 * ``qp.ops.functions.assert_valid`` has been removed. Use :func:`~.testing.assert_valid` instead.
   The private ``_test_decomposition_rule`` has been removed; use :func:`~.testing.assert_valid_decomp_rule`.
   [(#10342)](https://github.com/PennyLaneAI/pennylane/pull/10342)
