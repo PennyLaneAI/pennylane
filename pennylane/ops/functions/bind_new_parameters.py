@@ -348,6 +348,13 @@ def bind_new_parameters_scalar_symbolic_op(op: ScalarSymbolicOp, params: Sequenc
 
 
 @bind_new_parameters.register
+def bind_new_parameters_evolution(op: ops.Evolution, params: Sequence[TensorLike]):
+    new_param = params[0]
+    new_base = copy.deepcopy(op.base)
+    return ops.Evolution(new_base, new_param)
+
+
+@bind_new_parameters.register
 def bind_new_parameters_sprod(op: SProd, params: Sequence[TensorLike]):
     # Separate dispatch for `SProd` since its constructor has a different interface
     new_scalar = params[0]

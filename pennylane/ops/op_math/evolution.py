@@ -78,6 +78,13 @@ class Evolution(Exp):
     _name = "Evolution"
     num_params = 1
 
+    def _flatten(self):
+        return (self.data[0],), (self.base,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(metadata[0], data[0])
+
     def __init__(self, generator, param=1):
         super().__init__(generator, coeff=-1j * param)
         self._data = (param,)
