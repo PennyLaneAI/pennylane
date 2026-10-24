@@ -2119,6 +2119,14 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed a bug where :func:`~.transforms.single_qubit_fusion` (through ``fuse_rot_angles``)
+  produced a gate with ``NaN`` rotation angles when the two fused rotations compose to a
+  diagonal or anti-diagonal unitary, such as fusing two Hadamards. A floating-point rounding
+  error could push the squared magnitude passed to ``sqrt`` and ``arccos`` slightly outside
+  ``[0, 1]``; it is now clipped to that interval.
+  `(#10185) <https://github.com/PennyLaneAI/pennylane/issues/10185>`__
+  `(#10188) <https://github.com/PennyLaneAI/pennylane/pull/10188>`__
+
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
   argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
   `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
@@ -2407,6 +2415,7 @@ Jacob Kitchen,
 Korbinian Kottmann,
 Isabel Nha Minh Le,
 Christina Lee,
+Dongjae Lee,
 Joseph Lee,
 Mehrdad Malekmohammadi,
 William Maxwell,

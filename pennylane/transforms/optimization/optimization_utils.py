@@ -127,9 +127,9 @@ def fuse_rot_angles(angles_1, angles_2):
     c1, c2 = qp.math.cos(theta1 / 2), qp.math.cos(theta2 / 2)
     s1, s2 = qp.math.sin(theta1 / 2), qp.math.sin(theta2 / 2)
 
-    mag = qp.math.sqrt(
-        c1**2 * c2**2 + s1**2 * s2**2 - 2 * c1 * c2 * s1 * s2 * qp.math.cos(omega1 + phi2)
-    )
+    mag_squared = c1**2 * c2**2 + s1**2 * s2**2 - 2 * c1 * c2 * s1 * s2 * qp.math.cos(omega1 + phi2)
+    # Rounding can push mag_squared slightly outside [0, 1], which makes sqrt or arccos return NaN
+    mag = qp.math.sqrt(qp.math.clip(mag_squared, 0.0, 1.0))
     theta_f = 2 * qp.math.arccos(mag)
 
     alpha1, beta1 = (phi1 + omega1) / 2, (phi1 - omega1) / 2
