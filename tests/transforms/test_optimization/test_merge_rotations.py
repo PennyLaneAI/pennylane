@@ -197,6 +197,16 @@ class TestMergeRotations:
         assert qp.math.isclose(ops[2].parameters[0], 0.5)
         assert qp.math.isclose(ops[3].parameters[0], -0.3)
 
+    def test_input_tape_not_mutated(self):
+        """Test that merge_rotations does not modify the operations of the input tape."""
+        ops = [qp.RX(0.1, 0), qp.RX(0.2, 0), qp.CNOT([0, 1])]
+        tape = qp.tape.QuantumScript(ops, [qp.expval(qp.Z(0))])
+
+        (new_tape,), _ = merge_rotations(tape)
+
+        assert tape.operations == ops
+        assert len(new_tape.operations) == 2
+
     def test_one_qubit_rotation_blocked(self):
         """Test that rotations on one-qubit separated by a "blocking" operation don't merge."""
 

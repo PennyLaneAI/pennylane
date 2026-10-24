@@ -2119,6 +2119,10 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* :func:`~.transforms.merge_rotations` no longer empties the operations of an input tape
+  that needs no decomposition.
+  `(#10303) <https://github.com/PennyLaneAI/pennylane/pull/10303>`__
+
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
   argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
   `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
@@ -2407,6 +2411,7 @@ Jacob Kitchen,
 Korbinian Kottmann,
 Isabel Nha Minh Le,
 Christina Lee,
+Dongjae Lee,
 Joseph Lee,
 Mehrdad Malekmohammadi,
 William Maxwell,
