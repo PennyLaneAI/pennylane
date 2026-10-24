@@ -97,6 +97,8 @@ class Node:
         hardware (str): The hardware this node executes on. Defaults to ``"cpu"``; other allowed values are
             ``gpu`` and ``fpga`. The compiler
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
+        backend (str, None): The name of the transport backend to run this node on. Defaults to
+            ``None``, letting the compiler pick the default backend for the transport and hardware.
         remote (bool): Whether this node runs on another machine. Defaults to ``False``.
         executor_options (dict, None): Options for the executor to launch for this node.
             Defaults to ``None``, which runs the node in this process. See the
@@ -115,6 +117,12 @@ class Node:
     hardware: Hardware = "cpu"
     """The hardware this node executes on. The compiler combines this with the placement's
     :class:`~.Transport` to select the runtime backend."""
+
+    backend: str | None = None
+    """The name of the transport backend to run this node on, out of those in Catalyst's transport
+    backend registry that implement the placement's transport on this node's hardware. Defaults to
+    ``None``, letting the compiler pick the default one. Naming one selects a backend that is not a
+    default, such as ``"fpga_verbs"``, or one installed by a backend package."""
 
     remote: bool = False
     """Whether this node runs on another machine, so that the libraries it loads are the ones
@@ -142,8 +150,7 @@ class Node:
     * ``"address"`` (str) - ``"host:port"`` of an executor whose lifetime is managed elsewhere.
       Attach to it rather than launching one.
     * ``"port"`` (int) - the port the executor binds on the target, and the local end of the ssh
-      tunnel reaching it. Omit it for a local executor and a free port is chosen at launch, so the
-      address is only known afterwards.
+      tunnel reaching it. Omit it for a local executor and the compiler picks a free port.
     * ``"user"`` (str) - the ssh account on the remote host. Defaults to the local username.
 
     Naming neither ``"host"`` nor ``"address"`` runs the executor as a subprocess on this machine.
@@ -167,8 +174,9 @@ class Node:
     * ``"env"`` (dict[str, str]) - environment variables for the executor process.
     * ``"sudo"`` (bool) - run it as root, for a target whose devices are not world-accessible.
       Defaults to ``False``.
-    * ``"sudo_password"`` (str) - password piped to ``sudo -S``; unnecessary with passwordless
-      sudo.
+    * ``"sudo_password_env"`` (str) - name of the environment variable holding the password to
+      pipe to ``sudo -S``, e.g. ``"MY_HOST_SUDO_PW"``. If unset and sudo is required, a prompt will
+      launch for the password; unnecessary with passwordless sudo.
     * ``"ready_timeout"`` (float) - seconds to wait for the executor to report that it bound its
       port. Defaults to ``60.0``.
     * ``"verbose"`` (int) - how much the launcher logs: ``0`` quiet, ``1`` normal, ``2``
@@ -206,8 +214,7 @@ class Node:
       index; the remaining keys are backend-specific (a GPU backend takes ``gpu=``, an FPGA engine
       takes ``sq_mem=``/``data_mem=``/``reply_mem=``).
 
-
-    Keys outside this set are dropped rather than rejected, so a misspelling is silent.
+    Keys outside this set are rejected when the program is compiled.
     """
 
     def __post_init__(self):
@@ -236,6 +243,8 @@ class Controller(Node):
         hardware (str): The hardware the controller executes on. Defaults to ``"cpu"``; other allowed
             values are ``"fpga"``. ``"gpu"`` is not accepted as a controller. The compiler
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
+        backend (str, None): The name of the transport backend to run this node on. Defaults to
+            ``None``, letting the compiler pick the default backend for the transport and hardware.
         remote (bool): Whether the controller runs on another machine. Defaults to ``False``.
         executor_options (dict, None): Options for the executor to launch for this controller.
             Defaults to ``None``, which runs the node in this process. See the
@@ -342,6 +351,8 @@ class Coprocessor(Node):
         hardware (str): The hardware the coprocessing function executes on. Defaults to ``"cpu"``; other allowed values are
             ``gpu``. ``fpga`` is not currently accepted for a coprocessor. The compiler
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
+        backend (str, None): The name of the transport backend to run this node on. Defaults to
+            ``None``, letting the compiler pick the default backend for the transport and hardware.
         remote (bool): Whether the controller runs on another machine. Defaults to ``False``.
         coprocessor_fn (str, CoprocessorFunction): The function that processes each received
             message. A string is wrapped in a :class:`~.CoprocessorFunction` naming that symbol, so
@@ -434,7 +445,8 @@ class Placement:
             :class:`coprocessing accelerators <.Coprocessor>`. Defaults to ``()``.
         transport (str | Transport): Which transport carries data between nodes, as a
             :class:`~.Transport` or its registry name (e.g. ``"rdma"``). A name is resolved on
-            construction, so this reads back as a :class:`~.Transport`.
+            construction, so this reads back as a :class:`~.Transport`. ``"none"`` places the
+            controller alone and cannot be used with coprocessors.
         qec_code (str | None): The quantum error-correcting code the circuit is encoded for.
             Defaults to ``None``, which leaves the circuit unencoded.
 
@@ -495,6 +507,9 @@ class Placement:
         if isinstance(self.transport, str):
             object.__setattr__(self, "transport", get_transport(self.transport))
         self._resolve_message_sizes()
+
+        if self.transport.name == "none" and self.coprocessors:
+            raise ValueError('Cannot use transport="none" with coprocessors')
 
         if self.transport.name == "rdma":
             for coprocessor in self.coprocessors:

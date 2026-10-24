@@ -38,7 +38,7 @@ def test_standard_validity(include_pi):
 
     op = qp.GateFabric(weights, wires=range(qubits), init_state=init_state, include_pi=include_pi)
 
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.parametrize("include_pi", (True, False))
@@ -617,7 +617,7 @@ def _get_queue(op, system):
     try:
         f = partial(qp.list_decomps(qp.GateFabric)[0], **op.hyperparameters)
         jaxpr = jax.make_jaxpr(f)(*op.data, op.wires)
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *op.data, *op.wires)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *op.data, *op.wires)
         return tape.circuit
     finally:
         qp.capture.disable()

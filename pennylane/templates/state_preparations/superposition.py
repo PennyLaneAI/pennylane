@@ -247,7 +247,7 @@ class Superposition(Operation):
         if len(basis_lengths) > 1:
             raise ValueError("All basis states must have the same length.")
 
-        if not qp.math.is_abstract(coeffs):
+        if not qp.math.is_tracer(coeffs):
             coeffs_norm = qp.math.linalg.norm(coeffs)
             if not qp.math.allclose(coeffs_norm, qp.math.array(1.0)):
                 raise ValueError("The input superposition must be normalized.")

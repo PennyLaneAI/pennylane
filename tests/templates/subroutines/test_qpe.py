@@ -29,7 +29,7 @@ def test_standard_validity():
         qp.QubitUnitary(np.eye(4), wires=(0, 1)), estimation_wires=[2, 5]
     )
     assert op.target_wires == qp.wires.Wires([0, 1])
-    qp.ops.functions.assert_valid(op, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_differentiation=True)
 
 
 class TestDecomposition:

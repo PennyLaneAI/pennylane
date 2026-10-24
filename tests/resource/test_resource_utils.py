@@ -51,12 +51,15 @@ def test_make_level_name_unique():
         ([0, 1], [0, 1], False),
         ([0, 1, 1, 1], [0, 1], True),
         ((0, 1), [0, 1], False),
+        (7, [7], False),
         (range(3, 0, -1), [1, 2, 3], True),
         ("foo", [2], False),
         (["foo", "bar"], [2, 3], False),
         ((1, "foo", "baz", 4, "bar"), [1, 2, 3, 4, 5], True),
-        ("all", [0, 1, 2, 3, 4, 5, 6], False),
+        ("all", [0, 1, 2, 3, 4, 5, 6, 7], False),
+        ("all-user", [0, 1, 2, 3, 4, 5, 6], False),
         ("user", [6], False),
+        ("device", [7], False),
         ("top", [0], False),
         (["top", 0], [0], True),
         (["top", 1], [0, 1], False),
@@ -80,14 +83,19 @@ def test_preprocess_levels(level, output, expect_warnings, example_pipeline):
 
 
 def test_preprocess_levels_invalid(example_pipeline):
+    # Device level is 1 on empty pipeline, so 2 is out of bounds
     with pytest.raises(ValueError, match="out of bounds"):
-        preprocess_level_input(1, qp.CompilePipeline())
+        preprocess_level_input(2, qp.CompilePipeline())
 
     with pytest.raises(ValueError, match="out of bounds"):
         preprocess_level_input(-10, example_pipeline)
 
     with pytest.raises(ValueError, match="out of bounds"):
         preprocess_level_input(10, example_pipeline)
+
+    # Beyond the device level is not allowed
+    with pytest.raises(ValueError, match="out of bounds"):
+        preprocess_level_input(len(example_pipeline) + 2, example_pipeline)
 
     with pytest.raises(ValueError, match="Invalid level"):
         preprocess_level_input([1, 2, 3.14, True], example_pipeline)
