@@ -26,9 +26,9 @@ import pennylane as qp
 from pennylane import pytrees
 from pennylane.capture.autograph import wraps
 from pennylane.capture.custom_primitives import QpPrimitive
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.compiler import compiler
 from pennylane.core.operator import Operation, Operator, Operator2
-from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import conj, moveaxis, transpose
@@ -184,7 +184,7 @@ def adjoint(fn, lazy=True):
 
 def create_adjoint_op(fn, lazy):
     """Main logic for qp.adjoint, but allows bypassing the compiler dispatch if needed."""
-    if qp.math.is_abstract(fn):
+    if qp.math.is_tracer(fn):
         return _make_adjoint_op(fn)
     if isinstance(fn, Operator):
         return _make_adjoint_op(fn) if lazy else _single_op_eager(fn, update_queue=True)

@@ -21,14 +21,15 @@ from collections.abc import Iterable
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator, Operator2, abstractify
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
     register_resources,
 )
-from pennylane.math import is_abstract
+from pennylane.math import is_tracer
 from pennylane.ops import CNOT, Hadamard, QubitUnitary
 from pennylane.typing import Complex, TensorLike, Wire
 from pennylane.wires import Wires
@@ -114,8 +115,8 @@ class HilbertSchmidt(Operation):
     @classmethod
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
         # pylint: disable=arguments-differ
-        U = (U,) if isinstance(U, Operator) or is_abstract(U) else U
-        V = (V,) if isinstance(V, Operator) or is_abstract(V) else V
+        U = (U,) if isinstance(U, Operator) or is_tracer(U) else U
+        V = (V,) if isinstance(V, Operator) or is_tracer(V) else V
 
         def _get_tracer(op):
             if isinstance(op, Operator2):

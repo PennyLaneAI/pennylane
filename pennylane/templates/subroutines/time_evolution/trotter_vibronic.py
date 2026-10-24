@@ -21,6 +21,7 @@ import numpy as np
 
 from pennylane import capture, compiler, math
 from pennylane.allocation import allocate
+from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
@@ -137,7 +138,7 @@ class TrotterVibronic(Operator2):
         all_wires = qp.wires.Wires.all_wires(list(wires.values()))
 
         # decompose by one step to see the top-level sub-templates
-        @qp.decompose(max_expansion=1, gate_set=qp.gate_sets.ALL_OPS | {qp.PhaseGradientStatePrep})
+        @qp.transforms._tape_decompose(max_expansion=1, gate_set=qp.gate_sets.ALL_OPS | {qp.PhaseGradientStatePrep})
         @qp.qnode(qp.device("default.qubit", wires=all_wires))
         def circuit():
             qp.PhaseGradientStatePrep(wires["phase_gradient"])
@@ -352,11 +353,11 @@ class TrotterVibronic(Operator2):
     dynamic_argnames = ("evolution_time",)
     hybrid_argnames = ("hamiltonian",)
     wire_argnames = (
-        "electronic_wires",
-        "vib_wires",
-        "coefficient_wires",
-        "phase_gradient_wires",
         "cache_wires",
+        "coefficient_wires",
+        "electronic_wires",
+        "phase_gradient_wires",
+        "vib_wires",
         "work_wires",
     )
     # Static rather than dynamic: sets the resource-function gate counts, and can't be
@@ -379,11 +380,12 @@ class TrotterVibronic(Operator2):
         evolution_time,
         num_trotter_steps,
         hamiltonian: VibronicHamiltonian,
-        electronic_wires: WiresLike,
-        vib_wires: WiresLike,
-        phase_gradient_wires: WiresLike,
-        coefficient_wires: WiresLike = (),
+        *,
         cache_wires: WiresLike = (),
+        coefficient_wires: WiresLike = (),
+        electronic_wires: WiresLike,
+        phase_gradient_wires: WiresLike,
+        vib_wires: WiresLike,
         work_wires: WiresLike = (),
         aqft_order=None,
     ):
@@ -423,13 +425,13 @@ class TrotterVibronic(Operator2):
             evolution_time,
             num_trotter_steps,
             hamiltonian,
-            electronic_wires,
-            vib_wires,
-            phase_gradient_wires,
-            coefficient_wires,
-            cache_wires,
-            work_wires,
-            aqft_order,
+            cache_wires=cache_wires,
+            coefficient_wires=coefficient_wires,
+            electronic_wires=electronic_wires,
+            phase_gradient_wires=phase_gradient_wires,
+            vib_wires=vib_wires,
+            work_wires=work_wires,
+            aqft_order=aqft_order,
         )
 
 
@@ -713,7 +715,21 @@ def _diagonalization_support(key, n_wires):
     return int(support[0]), [int(k) for k in support[1:]]
 
 
-def _diagonalize_vibronic_circuit(fragment_idx, wires):
+def _diagonalize_probs(num_fragments, n):
+    """Compute the probabilities for the outer loop and the CNOT loop in
+    ``_diagonalize_vibronic_circuit``."""
+    # at least a Hadamard is applied for all but the first fragment
+    apply_anything_prob = (num_fragments - 1) / num_fragments
+    # CNOTs are applied whenever more than one bit is set in the fragment index, overall we compute
+    # all set bits and subtract `num_fragments-1`, the number of "first set bits":
+    num_cnots = np.sum(np.bitwise_count(np.arange(num_fragments))) - (num_fragments - 1)
+    # For the probability we have to normalize by the inner loop size (n) and the effective outer
+    # loop size (num_fragments - 1)
+    cnot_prob = num_cnots / (n * (num_fragments - 1))
+    return apply_anything_prob, cnot_prob
+
+
+def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
     r"""Diagonalize position fragment ``fragment_idx`` by applying Clifford operations on the
     electronic register, following the ``key = (0, fragment_idx)`` convention (see
     :func:`_diagonalization_matrix`).
@@ -730,8 +746,18 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires):
         fragment_idx (int): index of the position fragment. The circuit is the identity if
             ``fragment_idx == 0``.
         wires (WiresLike): electronic wires on which the fragment acts.
+        num_fragments (int): total number of position fragments. The conditionals carry branch
+            probability hints that assume ``fragment_idx`` to be uniformly distributed over
+            ``range(num_fragments)``.
     """
+    if num_fragments == 1:
+        # Only have fragment_idx 0, which does not need a circuit.
+        return
     n = len(wires)
+
+    # Compute resource hints probabilities
+    apply_anything_prob, cnot_prob = _diagonalize_probs(num_fragments, n)
+
     # ``key = (0, fragment_idx)``, so the bits that differ between ``key[0]`` and ``key[1]``
     # (see ``_diagonalization_support``) are exactly the bits of ``fragment_idx`` itself.
     shifts = np.arange(n - 1, -1, -1)
@@ -748,12 +774,14 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires):
     control_wire = wires_arr[control_pos]
 
     @cond(any_diff)
+    @hint({"branch-prob": apply_anything_prob})
     def _apply():
         Hadamard(wires=[control_wire])
 
         @for_loop(n - 1, -1, -1)
         def _cnots(w):
             @cond((diff[w] > 0) & (w != control_pos))
+            @hint({"branch-prob": cnot_prob})
             def _maybe_cnot():
                 CNOT(wires=[control_wire, wires_arr[w]])
 
@@ -1081,7 +1109,7 @@ def _trotter_step_second_order(
         bilinear_coeffs = all_bilinear[i]
 
         adjoint(_diagonalize_vibronic_circuit, lazy=False)(
-            fragment_idx=i, wires=registers["electronic"]
+            fragment_idx=i, wires=registers["electronic"], num_fragments=num_position_fragments
         )
 
         def constant_term(prev_bitstrings):
@@ -1165,7 +1193,9 @@ def _trotter_step_second_order(
 
         # Finish up the coefficients register by unloading the last loaded coefficients
         QROM(prev_bitstrings, **qrom_wires)
-        _diagonalize_vibronic_circuit(fragment_idx=i, wires=registers["electronic"])
+        _diagonalize_vibronic_circuit(
+            fragment_idx=i, wires=registers["electronic"], num_fragments=num_position_fragments
+        )
 
     def kinetic_fragment():
         # use ``time``, not ``first_order_time_step`` because the kinetic fragment is the
@@ -1249,7 +1279,7 @@ def _wires_are_concrete(wires):
     """Whether a wire register is concrete (i.e. its labels are known, not abstract/traced)."""
     if isinstance(wires, AbstractWires):
         return False
-    return not any(math.is_abstract(w) for w in Wires(wires))
+    return not any(math.is_tracer(w) for w in Wires(wires))
 
 
 def _validate_hamiltonian(hamiltonian):

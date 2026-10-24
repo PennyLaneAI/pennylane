@@ -110,6 +110,24 @@ def test_memcpy_coprocessor_allows_missing_endpoint():
     assert dev.placement.coprocessors[0].endpoint is None
 
 
+def test_none_transport_without_coprocessors():
+    """Only the controller is used"""
+    dev = qp.Backline(controller=qp.Controller(), coprocessors=[], transport="none")
+
+    assert dev.placement.transport.name == "none"
+    assert dev.placement.coprocessors == ()
+
+
+def test_none_transport_with_coprocessors():
+    """A coprocessor is rejected when using the none transport"""
+    with pytest.raises(ValueError, match='Cannot use transport="none" with coprocessors'):
+        qp.Backline(
+            controller=qp.Controller(),
+            coprocessors=[qp.Coprocessor(coprocessor_fn="decoder")],
+            transport="none",
+        )
+
+
 def test_rdma_coprocessor_requires_endpoint():
     """RDMA placements require every coprocessor to expose a connection endpoint."""
     controller = qp.Controller()
@@ -453,11 +471,36 @@ class TestPlacement:
         placement = Placement(controller=ctrl, coprocessors=[cop], transport="rdma")
         assert isinstance(placement.coprocessors, tuple)
 
-    def test_unknown_transport_raises(self):
-        """An unregistered transport name is rejected at construction."""
+    def test_unknown_transport_raises(self, monkeypatch):
+        """A transport neither built in nor known to Catalyst's registry is rejected."""
+        monkeypatch.setattr("pennylane.backline.transports._catalyst_transports", set)
         ctrl = qp.Controller(name="fpga")
         with pytest.raises(ValueError, match="unknown transport"):
             Placement(controller=ctrl, transport="does-not-exist")
+
+    def test_a_transport_from_catalysts_registry_is_accepted(self, monkeypatch):
+        """A backend package's transport needs no PennyLane change."""
+        monkeypatch.setattr(
+            "pennylane.backline.transports._catalyst_transports", lambda: {"example"}
+        )
+        assert (
+            Placement(controller=qp.Controller(name="c"), transport="example").transport.name
+            == "example"
+        )
+
+    def test_without_catalyst_any_transport_is_left_to_the_compiler(self, monkeypatch):
+        """With no registry to ask, the name is checked when the program is compiled."""
+        monkeypatch.setattr("pennylane.backline.transports._catalyst_transports", lambda: None)
+        assert (
+            Placement(controller=qp.Controller(name="c"), transport="example").transport.name
+            == "example"
+        )
+
+    def test_a_node_names_its_backend(self):
+        """``backend`` defaults to letting the compiler choose, and keeps a name it is given."""
+        assert qp.Controller().backend is None
+        assert qp.Controller(backend="fpga_verbs").backend == "fpga_verbs"
+        assert qp.Coprocessor(coprocessor_fn="decoder", backend="example").backend == "example"
 
     def test_not_exported_at_top_level(self):
         """Placement is reached via pennylane.backline, not the top-level namespace."""

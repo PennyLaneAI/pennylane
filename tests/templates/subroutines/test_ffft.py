@@ -13,15 +13,16 @@
 # limitations under the License.
 """Tests of the Fast Fermionic Fourier Transform (FFFT)."""
 
+import hint_helpers
 import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import FermionicSWAP, PauliZ, device, list_decomps, qnode
+from pennylane import FermionicSWAP, PauliZ, device, qnode
 from pennylane.measurements import state
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
-from pennylane.templates.subroutines.ffft import FFFT, TwoWireFFT
+from pennylane.templates.subroutines.ffft import FFFT, TwoWireFFT, _permute_and_apply_parallel
+from pennylane.testing import assert_decomposable
 from pennylane.wires import Wires
 
 dev = device("default.qubit")
@@ -48,8 +49,7 @@ def ffft(wires, input=None):
 def test_ffft_decomposition_new(wires):
     op = FFFT(wires)
 
-    for rule in list_decomps(FFFT):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 @pytest.mark.parametrize(
@@ -145,7 +145,7 @@ def test_ffft_circuit_capture(wires, expected_circuit):
 
     plxpr = qp.capture.make_plxpr(rule, autograph=False)(wires=op.wires)
     flat_args = jax.tree.leaves({"wires": op.wires})
-    tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_args)
+    tape = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_args)
     ops = tape.operations
 
     assert len(ops) == len(expected_circuit)
@@ -154,6 +154,30 @@ def test_ffft_circuit_capture(wires, expected_circuit):
         assert actual.wires == expected.wires
         if actual.data:
             assert np.allclose(actual.data, expected.data)
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize("n_wires", [4, 8, 16])
+def test_ffft_num_iters_hints(n_wires):
+    """Test that the permutation loops with dynamic bounds carry ``num-iters`` hints that
+    reproduce the number of ``FermionicSWAP`` gates."""
+    import jax  # pylint: disable=import-outside-toplevel
+
+    def permutation():
+        wires = qp.math.array(list(range(n_wires)), like="jax")
+        _permute_and_apply_parallel(wires, TwoWireFFT)
+
+    plxpr = jax.make_jaxpr(permutation)()
+    ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+    num_fswaps = sum(isinstance(op, FermionicSWAP) for op in ops)
+
+    num_layers = n_wires // 2 - 1
+    # Only the swaps within each layer have dynamic bounds, the loops over layers and the
+    # operator loop are static.
+    swaps_per_layer = (num_layers + 1) / 2
+    hints = [None, swaps_per_layer, None, None, swaps_per_layer]
+    assert hint_helpers.loop_hints(plxpr.jaxpr) == hints
+    assert 2 * num_layers * swaps_per_layer == num_fswaps
 
 
 def fermionic_superposition_state(amplitudes):

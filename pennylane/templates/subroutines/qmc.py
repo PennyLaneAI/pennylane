@@ -64,9 +64,7 @@ def probs_to_unitary(probs):
            [ 0.5   ,  0.1667,  0.1667, -0.8333]])
     """
 
-    if not math.is_abstract(
-        sum(probs)
-    ):  # skip check and error if jitting to avoid JAX tracer errors
+    if not math.is_tracer(sum(probs)):  # skip check and error if jitting to avoid JAX tracer errors
         if not math.allclose(sum(probs), 1) or min(probs) < 0:
             raise ValueError(
                 "A valid probability distribution of non-negative numbers that sum to one "
@@ -132,7 +130,7 @@ def func_to_unitary(func, M):
     unitary = np.zeros((2 * M, 2 * M))
 
     fs = [func(i) for i in range(M)]
-    if not math.is_abstract(fs[0]):  # skip check and error if jitting to avoid JAX tracer errors
+    if not math.is_tracer(fs[0]):  # skip check and error if jitting to avoid JAX tracer errors
         if min(fs) < 0 or max(fs) > 1:
             raise ValueError(
                 "func must be bounded within the interval [0, 1] for the range of input values"

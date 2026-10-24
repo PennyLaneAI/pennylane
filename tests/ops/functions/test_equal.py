@@ -1807,8 +1807,8 @@ class TestMeasurementsEqual:
 
         @jax.jit
         def eq_traced(a, b):
-            assert qp.math.is_abstract(a)
-            assert qp.math.is_abstract(b)
+            assert qp.math.is_tracer(a)
+            assert qp.math.is_tracer(b)
 
             mp1 = mp_fn(op=a)
             mp2 = mp_fn(op=a)
