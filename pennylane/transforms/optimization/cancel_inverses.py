@@ -53,7 +53,7 @@ def _data_equal(data1: TensorLike, data2: TensorLike) -> bool:
     """
 
     for d1, d2 in zip(data1, data2, strict=True):
-        if is_abstract(d1) or is_abstract(d2):
+        if is_tracer(d1) or is_tracer(d2):
             if d1 is not d2:
                 return False
         elif math.shape(d1) != math.shape(d2) or not math.allclose(d1, d2, rtol=0, atol=0):
