@@ -51,6 +51,7 @@ pytestmark = [pytest.mark.gpu]
 
 from pennylane.backline.decoders.triton import triton_so_builder as builder
 from pennylane.backline.decoders.triton.persistent_kernel import _persistent_decoder_kernel
+from pennylane.backline.functions import _TRITON_LAUNCHER_ABI_VERSION
 
 
 @triton.jit
@@ -237,8 +238,10 @@ class TestCatalystWrapperSource:
         passes the slot stride to the kernel in 8-byte words."""
         source = builder._make_catalyst_wrapper_source("cuda", "kernel")
         assert "const CoprocessorFnInfoCompat *kernel_catalyst_info(void)" in source
-        assert "info = {2, 0, 0, 0}" in source
+        # The version functions.py checks Catalyst against.
+        assert f"info = {{{_TRITON_LAUNCHER_ABI_VERSION}, 0, 0, 0}}" in source
         assert "desc->frame_mode != 0" in source
+        assert "desc->ring_slots," in source
         assert "desc->slot_stride / 8," in source
 
     def test_an_unknown_backend_is_refused(self):

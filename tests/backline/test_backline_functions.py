@@ -229,6 +229,7 @@ class TestCatalystLauncherCheck:
             _check_catalyst_runs_triton_kernels()
 
     def test_a_matching_catalyst_passes(self, monkeypatch):
+        """A Catalyst following the kernels' launcher ABI is accepted."""
         from pennylane.backline.functions import _check_catalyst_runs_triton_kernels
 
         self._catalyst(monkeypatch, COPROCESSOR_LAUNCHER_ABI_VERSION=2)

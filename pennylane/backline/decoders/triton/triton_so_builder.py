@@ -163,8 +163,8 @@ def _make_catalyst_wrapper_source(backend: str, raw_symbol: str) -> str:
             /* The kernel reads 16 B frames (mode 0), in slots a whole number of words apart. */
             if (desc->frame_mode != 0 || desc->slot_stride < 16 || desc->slot_stride % 8 != 0) {{
                 fprintf(stderr,
-                        "[triton] decoder takes messages of at most 8 B in 16 B frames, but the "
-                        "session uses frame mode %u with %u B slots\\n",
+                        "[triton] decoders read only 16 B frames (frame mode 0), which carry 8 B, "
+                        "but the session uses frame mode %u with %u B slots\\n",
                         desc->frame_mode, desc->slot_stride);
                 return 1;
             }}
