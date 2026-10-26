@@ -48,9 +48,9 @@ def resource_analysis_setup_inputs(output_fname: str, output_json: bool = True):
 
     """
     if not isinstance(output_json, bool):
-        raise ValueError(f"output_json must be of type bool. Got {output_json!r}.")
+        raise TypeError(f"output_json must be of type bool. Got {output_json!r}.")
     if not isinstance(output_fname, str):
-        raise ValueError(f"output_fname must be of type str. Got {output_fname!r}.")
+        raise TypeError(f"output_fname must be of type str. Got {output_fname!r}.")
     return (), {"output_json": output_json, "output_fname": output_fname}
 
 
