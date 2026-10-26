@@ -2080,6 +2080,11 @@ Internal changes ⚙️
 Documentation 📝
 ~~~~~~~~~~~~~~~~
 
+* Added an explanation of the PPM decompositions of :class:`~.SemiAdder`, with ASCII
+  circuits, measurement corrections, and resource requirements for controlled and
+  uncontrolled addition.
+  `(#10099) <https://github.com/PennyLaneAI/pennylane/pull/10099>`__
+
 * The dependency versions in the developer installation guide now match ``pyproject.toml``, and a rendering issue in the list of optional dependencies was fixed.
   `(#10232) <https://github.com/PennyLaneAI/pennylane/pull/10232>`__
 
