@@ -2129,6 +2129,9 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* ``qp.adjoint`` now rejects numerical tracers during capture instead of treating
+  them as quantum operators.
+
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
   argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
   `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
