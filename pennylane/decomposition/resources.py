@@ -273,10 +273,7 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
 ):
     """Creates a ``CompressedResourceOp`` representation of a controlled operator.
 
-    This function mirrors the custom logic in ``qp.ctrl`` which does the following:
-
-    - Flattens nested controlled operations.
-    - Dispatches to custom-controlled operations when applicable.
+    This function mirrors ``qp.ctrl``, including flattening nested controlled operations.
 
     Args:
         base_class: the base operator type
@@ -303,11 +300,6 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
             num_work_wires=num_work_wires,
             work_wire_type=work_wire_type,
         )
-
-    custom_controlled_map = qp.ops.op_math.controlled.base_to_custom_ctrl_op()
-    custom_ctrl = custom_controlled_map.get((base_class, num_control_wires))
-    if num_zero_control_values == 0 and custom_ctrl:
-        return resource_rep(custom_ctrl)  # handles direct dispatch to custom controlled ops.
 
     return CompressedResourceOp(
         qp.ops.Controlled,

@@ -880,8 +880,8 @@ class TestMultiControlledX:
         )
         assert_decomposable(op)
 
-    def test_custom_dispatch(self):
-        """Tests that qp.ctrl() of MCX dispatches to another MCX."""
+    def test_symbolic_control(self):
+        """Controlling MCX flattens its controls into a symbolic controlled X."""
 
         op = qp.MultiControlledX(
             [0, 1, 2],
@@ -898,8 +898,9 @@ class TestMultiControlledX:
         )
         qp.assert_equal(
             new_op,
-            qp.MultiControlledX(
-                [4, 5, 0, 1, 2],
+            qp.ops.ControlledOp2(
+                qp.X(2),
+                control_wires=[4, 5, 0, 1],
                 control_values=[1, 0, 0, 1],
                 work_wires=[6, 3],
                 work_wire_type="borrowed",
@@ -1113,14 +1114,14 @@ class TestPowMethod:
 
 
 class TestControlledMethod:
-    """Tests for the _controlled method of non-parametric operations."""
+    """Tests symbolic controls of non-parametric operations."""
 
     # pylint: disable=protected-access
 
     def test_PauliZ(self):
-        """A positive control on ``PauliZ`` should dispatch to ``CZ``."""
+        """A positive control on ``PauliZ`` stays symbolic."""
         out = qp.ctrl(qp.PauliZ(0), "a")
-        qp.assert_equal(out, qp.CZ(("a", 0)))
+        qp.assert_equal(out, qp.ops.ControlledOp2(qp.Z(0), ["a"]))
 
     def test_Barrier(self):
         """Tests the control behavior of Barrier."""
@@ -1129,9 +1130,9 @@ class TestControlledMethod:
         qp.assert_equal(original, out)
 
     def test_CZ(self):
-        """Test the CZ ctrl dispatch produces CCZ."""
+        """Controlling a named CZ flattens its controls."""
         out = qp.ctrl(qp.CZ(wires=[0, 1]), control="a")
-        qp.assert_equal(out, qp.CCZ(("a", 0, 1)))
+        qp.assert_equal(out, qp.ops.ControlledOp2(qp.Z(1), ["a", 0]))
 
 
 class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods

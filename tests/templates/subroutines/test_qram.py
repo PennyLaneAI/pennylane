@@ -24,7 +24,7 @@ import pennylane as qp
 from pennylane import apply, device, measure, qnode, registers, workflow
 from pennylane.math import int_to_binary
 from pennylane.measurements import probs, state
-from pennylane.ops import CH, CNOT, CSWAP, CZ, SWAP, Controlled, MultiControlledX, Toffoli, X
+from pennylane.ops import CH, CSWAP, CZ, SWAP, Controlled, X
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM, FFQRAM, HybridQRAM, SelectOnlyQRAM
 from pennylane.testing import assert_decomposable, assert_valid
@@ -455,7 +455,7 @@ def hybrid_quantum(
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
             [
                 BasisEmbedding([0, 0], wires=[0, 1]),
-                MultiControlledX(wires=[0, 5], control_values=[False]),
+                qp.ops.ControlledOp2(qp.X(5), control_wires=[0], control_values=[False]),
                 CSWAP(wires=[5, 1, 6]),
                 CSWAP(wires=[5, 6, 7]),
                 CH(wires=[5, 2]),
@@ -500,8 +500,8 @@ def hybrid_quantum(
                 CH(wires=[5, 4]),
                 qp.adjoint(CSWAP(wires=[5, 6, 7])),
                 qp.adjoint(CSWAP(wires=[5, 1, 6])),
-                MultiControlledX(wires=[0, 5], control_values=[False]),
-                CNOT(wires=[0, 5]),
+                qp.ops.ControlledOp2(qp.X(5), control_wires=[0], control_values=[False]),
+                qp.ops.ControlledOp2(qp.X(5), control_wires=[0]),
                 CSWAP(wires=[5, 1, 6]),
                 CSWAP(wires=[5, 6, 7]),
                 CH(wires=[5, 2]),
@@ -544,7 +544,7 @@ def hybrid_quantum(
                 CH(wires=[5, 4]),
                 qp.adjoint(CSWAP(wires=[5, 6, 7])),
                 qp.adjoint(CSWAP(wires=[5, 1, 6])),
-                CNOT(wires=[0, 5]),
+                qp.ops.ControlledOp2(qp.X(5), control_wires=[0]),
             ],
         ),
     ],
@@ -807,7 +807,9 @@ def select_only_quantum(
                 X(6),
                 X(0),
                 X(1),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(5),
                 X(6),
                 X(0),
@@ -815,17 +817,27 @@ def select_only_quantum(
                 X(5),
                 X(6),
                 X(0),
-                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(2), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(4), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(5),
                 X(6),
                 X(0),
                 X(5),
                 X(6),
                 X(1),
-                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(2), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(5),
                 X(6),
                 X(1),
@@ -868,7 +880,9 @@ def select_only_quantum(
                 X(6),
                 X(0),
                 X(1),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(5),
                 X(6),
                 X(0),
@@ -876,17 +890,27 @@ def select_only_quantum(
                 X(5),
                 X(6),
                 X(0),
-                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(2), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(4), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(5),
                 X(6),
                 X(0),
                 X(5),
                 X(6),
                 X(1),
-                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(2), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(5),
                 X(6),
                 X(1),
@@ -929,7 +953,9 @@ def select_only_quantum(
                 X(6),
                 X(0),
                 X(1),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(5),
                 X(6),
                 X(0),
@@ -937,17 +963,27 @@ def select_only_quantum(
                 X(5),
                 X(6),
                 X(0),
-                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(2), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(4), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(5),
                 X(6),
                 X(0),
                 X(5),
                 X(6),
                 X(1),
-                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(2), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(5),
                 X(6),
                 X(1),
@@ -958,21 +994,33 @@ def select_only_quantum(
                 X(5),
                 X(0),
                 X(1),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(5),
                 X(0),
                 X(1),
                 X(5),
                 X(0),
-                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(2), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(4), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(5),
                 X(0),
                 X(5),
                 X(1),
-                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(2), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(5),
                 X(1),
                 X(5),
@@ -980,38 +1028,62 @@ def select_only_quantum(
                 X(6),
                 X(0),
                 X(1),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(6),
                 X(0),
                 X(1),
                 X(6),
                 X(0),
-                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(2), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(4), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(6),
                 X(0),
                 X(6),
                 X(1),
-                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(2), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(6),
                 X(1),
                 X(6),
                 X(6),
                 X(0),
                 X(1),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(0),
                 X(1),
                 X(0),
-                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 4], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(2), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(4), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(0),
                 X(1),
-                MultiControlledX(wires=[5, 6, 0, 1, 2], control_values=[True, True, True, True]),
-                MultiControlledX(wires=[5, 6, 0, 1, 3], control_values=[True, True, True, True]),
+                qp.ops.ControlledOp2(
+                    qp.X(2), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
+                qp.ops.ControlledOp2(
+                    qp.X(3), control_wires=[5, 6, 0, 1], control_values=[True, True, True, True]
+                ),
                 X(1),
             ],
         ),
@@ -1032,17 +1104,17 @@ def select_only_quantum(
                 BasisEmbedding([0, 0], wires=[0, 1]),
                 X(0),
                 X(1),
-                Toffoli(wires=[0, 1, 3]),
+                qp.ops.ControlledOp2(qp.X(3), control_wires=[0, 1]),
                 X(0),
                 X(1),
                 X(0),
-                Toffoli(wires=[0, 1, 2]),
-                Toffoli(wires=[0, 1, 3]),
-                Toffoli(wires=[0, 1, 4]),
+                qp.ops.ControlledOp2(qp.X(2), control_wires=[0, 1]),
+                qp.ops.ControlledOp2(qp.X(3), control_wires=[0, 1]),
+                qp.ops.ControlledOp2(qp.X(4), control_wires=[0, 1]),
                 X(0),
                 X(1),
-                Toffoli(wires=[0, 1, 2]),
-                Toffoli(wires=[0, 1, 3]),
+                qp.ops.ControlledOp2(qp.X(2), control_wires=[0, 1]),
+                qp.ops.ControlledOp2(qp.X(3), control_wires=[0, 1]),
                 X(1),
             ],
         ),

@@ -58,12 +58,12 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
     >>> from pennylane.ops.op_math import ctrl_decomp_bisect
     >>> op = qp.T(0) # uses OD algorithm
     >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
-    0: ─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†───┤
-    1: ─├●────────│──────────├●────────│──╭●────────┤
-    2: ─├●────────│──────────├●────────│──├●────────┤
-    3: ─╰●────────│──────────╰●────────│──├●────────┤
-    4: ───────────├●───────────────────├●─├●────────┤
-    5: ───────────╰●───────────────────╰●─╰Rϕ(0.39)─┤
+    0: ─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†─╭GlobalPhase(-0.39)─┤
+    1: ─├●────────│──────────├●────────│──────────├●──────────────────┤
+    2: ─├●────────│──────────├●────────│──────────├●──────────────────┤
+    3: ─╰●────────│──────────╰●────────│──────────├●──────────────────┤
+    4: ───────────├●───────────────────├●─────────├●──────────────────┤
+    5: ───────────╰●───────────────────╰●─────────╰●──────────────────┤
     >>> op = qp.QubitUnitary([[0,1j],[1j,0]], 0) # uses MD algorithm
     >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
     0: ──H─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†──H─┤
@@ -74,12 +74,19 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
     5: ──────────────╰●───────────────────╰●────────────┤
     >>> op = qp.Hadamard(0) # uses general algorithm
     >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
-    0: ──U(M0)─╭X──U(M1)†──U(M2)─╭X──U(M2)†─╭X──U(M2)─╭X──U(M2)†─╭X──U(M1)─╭X──U(M0)†───┤
-    1: ────────│─────────────────│──────────├●────────│──────────├●────────│──╭●────────┤
-    2: ────────│─────────────────│──────────├●────────│──────────├●────────│──├●────────┤
-    3: ────────│─────────────────│──────────╰●────────│──────────╰●────────│──├●────────┤
-    4: ────────├●────────────────├●───────────────────├●───────────────────├●─├●────────┤
-    5: ────────╰●────────────────╰●───────────────────╰●───────────────────╰●─╰Rϕ(1.57)─┤
+    0: ──U(M0)─╭X──U(M1)†──U(M2)─╭X──U(M2)†─╭X──U(M2)─╭X──U(M2)†─╭X──U(M1)─╭X──U(M0)† ···
+    1: ────────│─────────────────│──────────├●────────│──────────├●────────│───────── ···
+    2: ────────│─────────────────│──────────├●────────│──────────├●────────│───────── ···
+    3: ────────│─────────────────│──────────╰●────────│──────────╰●────────│───────── ···
+    4: ────────├●────────────────├●───────────────────├●───────────────────├●──────── ···
+    5: ────────╰●────────────────╰●───────────────────╰●───────────────────╰●──────── ···
+    <BLANKLINE>
+    0: ··· ─╭GlobalPhase(-1.57)─┤
+    1: ··· ─├●──────────────────┤
+    2: ··· ─├●──────────────────┤
+    3: ··· ─├●──────────────────┤
+    4: ··· ─├●──────────────────┤
+    5: ··· ─╰●──────────────────┤
 
     """
     if len(target_operation.wires) > 1:
@@ -533,11 +540,7 @@ def _mcx_many_workers_resource(wires, control_values, work_wires, work_wire_type
     num_used_work_wires = num_control_wires - 2
     num_extra_work_wires = len(work_wires) - num_used_work_wires
 
-    if work_wire_type == "borrowed" and not num_extra_work_wires:
-        return {ops.Toffoli: 4 * num_used_work_wires, qp.X: num_control_wires}
-
-    # the middle toffoli might dispatch to a Toffoli or an MultiControlledX depending on
-    # whether extra work wires are available, so we need to replicate the logic here.
+    # The middle controlled X retains the variable number of extra work wires.
     middle_toffoli = qp.ctrl(
         qp.X(Wire[1]),
         control=Wire[2],

@@ -560,7 +560,7 @@ def _ctrl_prod_resources_with_one_work_wire(
     **_,
 ):
     factor_reps = base_params["resources"]  # {rep: count} from Prod
-    multicx_rep = qp.MultiControlledX(Wire[num_control_wires + 1])
+    multicx_rep = _ctrl_abstract(qp.X, Wire[num_control_wires])
 
     resources = Counter()
     resources[multicx_rep] += 2

@@ -25,7 +25,7 @@ from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.ops import CNOT, X, adjoint, ctrl
+from pennylane.ops import CNOT, MultiControlledX, X, adjoint, ctrl
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
@@ -477,7 +477,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
     first_half = (
         [TemporaryAND(and_wires, control_values=(0, 0))]
         + _add_k_units(ops[:k0], new_controls, work_wires, k0)
-        + [ctrl(X(controls[2]), control=controls[0], control_values=[0])]
+        + [MultiControlledX([controls[0], controls[2]], control_values=[0])]
         + _add_k_units(ops[k0:k01], new_controls, work_wires, k1)
     )
 
@@ -607,7 +607,7 @@ def _select_resources_unary_not_partial(ops, num_control_wires, num_work_wires):
     more_than_a_quarter = int(K > 2 ** (c - 2))
     more_than_a_half = int(K > 2 ** (c - 1))
     resources[CNOT] += K - 1 + more_than_a_half - more_than_a_quarter
-    resources[_ctrl_abstract(X, Wire[1], num_zero_control_values=1)] += more_than_a_quarter
+    resources[MultiControlledX(Wire[2], control_values=[0])] += more_than_a_quarter
     for op in ops:
         resources[_ctrl_abstract(op, Wire[1], Wire[num_work_wires])] += 1
 
@@ -645,7 +645,7 @@ def _select_resources_unary(ops, control, work_wires, partial):
                 TemporaryAND: num_ops - 3,
                 _adjoint_abstract(TemporaryAND): num_ops - 3,
                 CNOT: num_ops - 1,
-                _ctrl_abstract(X, Wire[1], num_zero_control_values=1): 1,
+                MultiControlledX(Wire[2], control_values=[0]): 1,
             }
         )
     else:
@@ -654,7 +654,7 @@ def _select_resources_unary(ops, control, work_wires, partial):
                 TemporaryAND: num_ops - 2,
                 _adjoint_abstract(TemporaryAND): num_ops - 2,
                 CNOT: num_ops - 3,
-                _ctrl_abstract(X, Wire[1], num_zero_control_values=1): 1,
+                MultiControlledX(Wire[2], control_values=[0]): 1,
             }
         )
 
@@ -813,7 +813,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
             if first_bit_has_flipped:
                 inter_ops = [CNOT([c0, c2])]
             else:
-                inter_ops = [ctrl(X(c2), control=[c0], control_values=[0])]
+                inter_ops = [MultiControlledX([c0, c2], control_values=[0])]
         elif first_flip_bit == 0:
             c0, c1, c2 = unary_triples[0]
             inter_ops = [CNOT([c0, c2]), CNOT([c1, c2])]

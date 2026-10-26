@@ -277,17 +277,6 @@ def _left_inequalities(
     )
 
 
-def _controlled_pauli(pauli, num_control_wires, num_work_wires, control_values=None):
-    """Resources for a zeroed-work multi-controlled single-qubit Pauli."""
-    return ctrl(
-        pauli(Wire[1]),
-        control=Wire[num_control_wires],
-        control_values=control_values,
-        work_wires=Wire[num_work_wires],
-        work_wire_type="zeroed",
-    )
-
-
 def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
     # pylint: disable=unused-argument
     r"""Returns the exact gate counts of the SuperpositionTHC decomposition."""
@@ -304,7 +293,7 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
     lcc_le = LeftClassicalComparator(Wire[n], M, Wire[1], Wire[n - 1], comparator="<=")
     lcc_gt = LeftClassicalComparator(Wire[n], N // 2, Wire[1], Wire[n - 1], comparator=">=")
     lqc = LeftQuantumComparator(Wire[n], Wire[n], Wire[1], Wire[n], comparator="<=")
-    mcx = _controlled_pauli(X, n, num_work_wires - 7, control_values=Bool[n])
+    mcx = MultiControlledX(Wire[n + 1], Bool[n], Wire[num_work_wires - 7], work_wire_type="zeroed")
 
     resources = defaultdict(int)
 
@@ -317,8 +306,10 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
         FlipSign([0] * (2 * n + 1), Wire[2 * n + 1], work_wires=Wire[num_work_wires - 1])
     ] += 1
     resources[adjoint(TemporaryAND(Wire[3]))] += 2
-    resources[_controlled_pauli(X, 3, extra_work)] += 1
-    resources[_controlled_pauli(Z, 3, extra_work + 1)] += 1
+    resources[MultiControlledX(Wire[4], work_wires=Wire[extra_work], work_wire_type="zeroed")] += 1
+    resources[
+        ctrl(Z(Wire[1]), Wire[3], work_wires=Wire[extra_work + 1], work_wire_type="zeroed")
+    ] += 1
     # _left_inequalities applied twice in the forward direction
     resources[lcc_le] += 2
     resources[lcc_gt] += 2
@@ -406,9 +397,8 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
 
     TemporaryAND(work_wires[3:6])
     X(wires=work_wires[5])
-    ctrl(
-        X(work_wires[6]),
-        control=work_wires[1:3] + work_wires[5:6],
+    MultiControlledX(
+        wires=work_wires[1:3] + work_wires[5:7],
         work_wires=extra_work,
         work_wire_type="zeroed",
     )

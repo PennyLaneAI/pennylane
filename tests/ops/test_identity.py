@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator.utils import abstractify
-from pennylane.ops.identity import GlobalPhase, Identity, _ctrl_g_phase
+from pennylane.ops.identity import GlobalPhase, Identity
 from pennylane.testing import assert_valid
 from pennylane.typing import Float, Wire
 
@@ -58,7 +58,7 @@ def test_abstractify_identity():
 
 
 class TestControlledGlobalPhase:
-    """Tests for the custom controlled dispatch of GlobalPhase (``_ctrl_g_phase``)."""
+    """Tests for symbolic controls of GlobalPhase."""
 
     @staticmethod
     def _expected_matrix(phi, n_control):
@@ -67,31 +67,25 @@ class TestControlledGlobalPhase:
         mat[-1, -1] = np.exp(-1j * phi)
         return mat
 
-    def test_single_control_returns_phase_shift(self):
-        """A single control turns GlobalPhase into a PhaseShift on the control wire."""
-        op = qp.ctrl(GlobalPhase(0.123), control=[0])
-        qp.assert_equal(op, qp.PhaseShift(-0.123, wires=0))
-
-    def test_two_controls_returns_controlled_phase_shift(self):
-        """Two controls turn GlobalPhase into a ControlledPhaseShift."""
-        op = qp.ctrl(GlobalPhase(0.123), control=[0, 1])
-        qp.assert_equal(op, qp.ControlledPhaseShift(-0.123, wires=[0, 1]))
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("control", ([0], [0, 1], [0, 1, 2]))
+    @pytest.mark.parametrize("control_value", [False, True])
+    def test_symbolic_control(self, control, control_value):
+        """GlobalPhase retains its symbolic base for either control value."""
+        values = [control_value] * len(control)
+        op = qp.ctrl(GlobalPhase(0.123), control=control, control_values=values)
+        assert isinstance(op, qp.ops.ControlledOp2)
+        qp.assert_equal(op.base, GlobalPhase(0.123))
+        assert list(op.control_values) == values
+        qp.testing.assert_valid_decomp_rule(op, qp.list_decomps(op)[0])
 
     @pytest.mark.parametrize("control", ([0], [0, 1], [0, 1, 2]))
     def test_matrix_matches_controlled_global_phase(self, control):
-        """The dispatched op reproduces the controlled-GlobalPhase matrix."""
+        """The symbolic op reproduces the controlled-GlobalPhase matrix."""
         phi = 0.123
         op = qp.ctrl(GlobalPhase(phi), control=control)
         mat = qp.matrix(op, wire_order=control)
         assert np.allclose(mat, self._expected_matrix(phi, len(control)))
-
-    def test_not_all_true_control_values_not_implemented(self):
-        """With a zero control value the dispatch declines, falling back to a generic Controlled."""
-        res = _ctrl_g_phase(GlobalPhase(0.123), qp.wires.Wires([0]), [False])
-        assert res is NotImplemented
-
-        op = qp.ctrl(GlobalPhase(0.123), control=[0], control_values=[False])
-        assert not isinstance(op, qp.PhaseShift)
 
     @pytest.mark.parametrize(
         "phi, control, work_wires, work_wire_type",
@@ -102,7 +96,7 @@ class TestControlledGlobalPhase:
         ],
     )
     def test_work_wires_passed_through(self, phi, control, work_wires, work_wire_type):
-        """Regression test that work wires are forwarded to the multi-control dispatch."""
+        """Work wires are retained by the symbolic control."""
         op = qp.ctrl(
             GlobalPhase(phi),
             control=control,
@@ -113,9 +107,9 @@ class TestControlledGlobalPhase:
         assert op.work_wire_type == work_wire_type
         qp.assert_equal(
             op,
-            qp.ctrl(
-                qp.PhaseShift(-phi, wires=control[-1]),
-                control=control[:-1],
+            qp.ops.ControlledOp2(
+                GlobalPhase(phi),
+                control_wires=control,
                 work_wires=work_wires,
                 work_wire_type=work_wire_type,
             ),

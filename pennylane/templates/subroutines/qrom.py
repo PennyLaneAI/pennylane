@@ -31,7 +31,7 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.math import ceil_log2
-from pennylane.ops import CNOT, CZ, X, cond, ctrl, pauli_measure
+from pennylane.ops import CNOT, CZ, MultiControlledX, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -65,7 +65,7 @@ def _select_ops(
     )
 
 
-def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires, adjoint=False):
+def _swap_ops(swap_control_wires, swap_wires, target_wires, adjoint=False):
 
     n_targets = len(target_wires)
     if capture.enabled() or compiler.active():
@@ -90,11 +90,8 @@ def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires, ad
             layer_loop = for_loop(n_targets - 1, -1, -1) if adjoint else for_loop(0, n_targets)
 
             def swap_layer(k):
-                ctrl(
-                    qp_ops.SWAP([swap_wires[j][k], swap_wires[j + 2**i][k]]),
-                    control=swap_control_wires[-i - 1],
-                    work_wires=cswap_work_wires,
-                    work_wire_type="zeroed",
+                qp_ops.CSWAP(
+                    [swap_control_wires[-i - 1], swap_wires[j][k], swap_wires[j + 2**i][k]]
                 )
 
             layer_loop(swap_layer)()
@@ -338,7 +335,7 @@ def _select_swap_resources(
     num_targets = len(target_wires)
     num_work_wires = len(work_wires)
 
-    num_control_wires_select, _, _, num_work_wires_cswap, depth = _calculate_select_swap_sizes(
+    num_control_wires_select, _, _, _, depth = _calculate_select_swap_sizes(
         num_bitstrings, num_control_wires, num_targets, num_work_wires
     )
     num_work_wires_select = max(0, num_control_wires_select - 1)
@@ -357,12 +354,7 @@ def _select_swap_resources(
     num_control_wires_swap = num_control_wires - num_control_wires_select
     num_cswaps_per_block = num_targets * (2**num_control_wires_swap - 1)
 
-    cswap_rep = ctrl(
-        qp_ops.SWAP(Wire[2]),
-        control=Wire[1],
-        work_wires=Wire[num_work_wires_cswap],
-        work_wire_type="zeroed",
-    )
+    cswap_rep = qp_ops.CSWAP(Wire[3])
 
     if not clean:
         return {bigger_qrom: 1, cswap_rep: num_cswaps_per_block}
@@ -387,7 +379,6 @@ def _select_swap(
 
     swap_work_wires = work_wires[:num_work_wires_swap]
     select_work_wires = work_wires[num_work_wires_swap : len(work_wires) - num_work_wires_cswap]
-    cswap_work_wires = work_wires[len(work_wires) - num_work_wires_cswap :]
     swap_wires = Wires(target_wires) + Wires(swap_work_wires)
 
     select_control_wires = control_wires[:num_control_wires_select]
@@ -397,7 +388,7 @@ def _select_swap(
         _select_ops(
             bitstrings, depth, target_wires, swap_wires, select_control_wires, select_work_wires
         )
-        _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires)
+        _swap_ops(swap_control_wires, swap_wires, target_wires)
         return
 
     if capture.enabled() or compiler.active():
@@ -412,7 +403,7 @@ def _select_swap(
 
         apply_h()  # pylint: disable=no-value-for-parameter
 
-        cswaps = partial(_swap_ops, swap_control_wires, swap_wires, target_wires, cswap_work_wires)
+        cswaps = partial(_swap_ops, swap_control_wires, swap_wires, target_wires)
 
         cswaps(adjoint=True)
         _select_ops(
@@ -512,7 +503,7 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):
     _measurement_qrom_inner(child_controls, targets, bitstrings[:k0])
 
     # --- Q0 -> Q1 transition ---
-    ctrl(X(controls[2]), control=controls[0], control_values=[0])
+    MultiControlledX([controls[0], controls[2]], control_values=[0])
     diff_q1 = math.bitwise_xor(bitstrings[0], bitstrings[k0])
 
     # --- Q1 ---
@@ -616,7 +607,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
         CNOT: L - 1,
         MultiX(Bool[num_targets], Wire[num_targets]): L,
         X: L + flag.get(X, 0),
-        ctrl(X(Wire[1]), control=Wire[1], control_values=Bool[1]): 1,
+        MultiControlledX(Wire[2], control_values=[0]): 1,
     }
     # Merge the remaining flag-only resource types (controlled-X load, adjoint ANDs).
     for rep, count in flag.items():
@@ -634,7 +625,7 @@ def _flag_resources(num_control_wires_extra, num_targets):
     """
     if num_control_wires_extra < 1:
         return {}
-    resources = {ctrl(X(Wire[1]), control=Wire[1]): num_targets}
+    resources = {CNOT: num_targets}
     if num_control_wires_extra == 1:
         resources[X] = 2
         return resources

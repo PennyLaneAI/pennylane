@@ -25,7 +25,7 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
-from pennylane.ops import H, X, adjoint, change_op_basis, ctrl, prod
+from pennylane.ops import H, MultiControlledX, X, adjoint, change_op_basis, ctrl, prod
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.multix import MultiX
@@ -550,8 +550,10 @@ def _c_add_sub_resources(num_x_wires, num_y_wires):
         ctrl_basis_rep = ctrl(MultiX(Bool[num_x_wires - 1], Wire[num_x_wires - 1]), Wire[1])
         resources[ctrl_basis_rep] += 2
 
-    cnot_on_0_rep = ctrl(X(Wire[1]), control=Wire[1], control_values=[0])
-    resources[cnot_on_0_rep] += 2 * (1 + int(num_y_wires > 1))
+    cnot_on_0_rep = MultiControlledX(Wire[2], control_values=[0])
+    resources[cnot_on_0_rep] += 2
+    if num_y_wires > 1:
+        resources[ctrl(X(Wire[1]), Wire[1], control_values=Bool[1])] += 2
 
     for key, value in _semi_adder_resources(Wire[num_x_wires], Wire[num_y_wires]).items():
         resources[key] += value
@@ -586,14 +588,14 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
     work_wires = work_wires[: len(y_wires) - 1]
     # Control-flip the LSB of the output register. This is part of achieving addition plus one
     # for c_wire=|0>. (c.f. _add_plus_one).
-    ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
+    MultiControlledX(c_wire + [y_wires[-1]], control_values=[0])
 
     # Create the operator sequence for an adder and insert (controlled) work wire bit flips
     # We insert controlled work wire bit flips where a carry-in qubit would cause them,
     # i.e., after the very first left elbow and before the last right elbow
     _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=(c_wire, 0))
 
-    ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
+    MultiControlledX(c_wire + [y_wires[-1]], control_values=[0])
 
     if len(x_wires) > 1:
         ctrl(MultiX([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])

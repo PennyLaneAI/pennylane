@@ -196,16 +196,18 @@ def match_controlled_iX_gate(
         raise ValueError(
             "There must be at least one control wire for the controlled iX gate decomposition."
         )
+    cx_type = {1: qp.CNOT, 2: qp.Toffoli}.get(num_controls, qp.MultiControlledX)
+    ccx_type = qp.Toffoli if num_controls == 1 else qp.MultiControlledX
     pattern_ops = [
         qp.ctrl(qp.S(num_controls), control=list(range(num_controls))),
-        qp.ctrl(qp.X(num_controls + 1), control=list(range(num_controls + 1))),
+        ccx_type(list(range(num_controls + 2))),
         # ------------
         qp.Hadamard(num_controls + 1),
-        qp.ctrl(qp.X(num_controls + 1), control=list(range(num_controls))),
+        cx_type([*range(num_controls), num_controls + 1]),
         qp.adjoint(qp.T(num_controls + 1)),
         qp.CNOT([num_controls, num_controls + 1]),
         qp.T(num_controls + 1),
-        qp.ctrl(qp.X(num_controls + 1), control=list(range(num_controls))),
+        cx_type([*range(num_controls), num_controls + 1]),
         qp.adjoint(qp.T(num_controls + 1)),
         qp.CNOT([num_controls, num_controls + 1]),
         qp.T(num_controls + 1),

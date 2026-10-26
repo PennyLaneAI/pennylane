@@ -21,7 +21,7 @@ from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import CNOT, CSWAP, RY, SWAP, Hadamard, PauliX, PauliZ, adjoint, cond, ctrl
+from pennylane.ops import CH, CSWAP, CZ, RY, SWAP, Hadamard, PauliX, PauliZ, adjoint, cond, ctrl
 from pennylane.ops.qubit import BasisState
 from pennylane.typing import Bool, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
@@ -575,7 +575,7 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
 
     resources[PauliX] += (num_select_wires <= 0) * num_blocks * 2
 
-    ctrl_swap = ctrl(SWAP(Wire[2]), Wire[1])
+    ctrl_swap = CSWAP(Wire[3])
     n_address_swaps = num_tree_control_wires + (1 << num_tree_control_wires) - 1
     resources[ctrl_swap] += (n_address_swaps + 2 * num_target_wires) * num_blocks
     resources[adjoint(ctrl_swap)] += n_address_swaps * num_blocks
@@ -595,20 +595,12 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
     resources[ctrl(SWAP(Wire[2]), Wire[2], Bool[2])] += ccswap_count // 2
     resources[adjoint(ctrl(SWAP(Wire[2]), Wire[2], Bool[2]))] += ccswap_count // 2
 
-    resources[ctrl(Hadamard(Wire[1]), Wire[1])] += num_target_wires * num_blocks * 2
+    resources[CH] += num_target_wires * num_blocks * 2
 
-    for block_index in range(num_blocks):
-        zero_control_values = [
-            (block_index >> (num_select_wires - 1 - i)) & 1 for i in range(num_select_wires)
-        ].count(0)
-        if zero_control_values == 0:
-            resources[CNOT] += (num_select_wires > 0) * 2
-        else:
-            cx_rep = ctrl(PauliX(Wire[1]), Wire[num_select_wires], Bool[num_select_wires])
-            resources[cx_rep] += (num_select_wires > 0) * 2
-
-        cz_rep = ctrl(PauliZ(Wire[1]), Wire[1])
-        resources[cz_rep] += (1 << num_tree_control_wires) * num_target_wires
+    if num_select_wires > 0:
+        cx_rep = ctrl(PauliX(Wire[1]), Wire[num_select_wires], Bool[num_select_wires])
+        resources[cx_rep] += 2 * num_blocks
+    resources[CZ] += (1 << num_tree_control_wires) * num_target_wires * num_blocks
 
     return resources
 
@@ -635,7 +627,7 @@ def _tree_leaf_ops_for_bit_block_ctrl(
         addr = (block_index << n_tree) + p
         bit = bitstrings[addr][j]
         # pylint: disable=cell-var-from-loop
-        cond(bit, lambda: ctrl(PauliZ(wires=target), control=[signal], control_values=[1]))()
+        cond(bit, lambda: CZ(wires=[signal, target]))()
 
 
 def _tree_route_bus_down_first_k_levels_ctrl(k_levels, tree_wire_manager, signal):
@@ -662,7 +654,7 @@ def _tree_route_bus_down_first_k_levels_ctrl(k_levels, tree_wire_manager, signal
 def _swap_controlled_on_signal(tree_wire_manager, signal, level, k):
     origin = tree_wire_manager.control_wires[k:][level]
     target = tree_wire_manager.bus_wire[0]
-    ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
+    CSWAP(wires=[signal, origin, target])
 
 
 def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
@@ -675,11 +667,7 @@ def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
     _tree_route_bus_down_first_k_levels_ctrl(0, tree_wire_manager, signal)
 
     # deposit into dir[0, *] along active path
-    ctrl(
-        SWAP(wires=[tree_wire_manager.bus_wire[0], tree_wire_manager.router(0, 0)]),
-        control=[signal],
-        control_values=[1],
-    )
+    CSWAP(wires=[signal, tree_wire_manager.bus_wire[0], tree_wire_manager.router(0, 0)])
 
     for level in range(1, n_tree):
         # SWAP(tree_control_wires[level], bus) controlled on signal
@@ -696,7 +684,7 @@ def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
             else:
                 origin = tree_wire_manager.portR_wires[parent]
             target = tree_wire_manager.router(level, p)
-            ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
+            CSWAP(wires=[signal, origin, target])
 
 
 def _block_tree_query_ops(
@@ -710,10 +698,10 @@ def _block_tree_query_ops(
     # 2) per-target data phase, controlled on signal
     for j, tw in enumerate(tree_wire_manager.target_wires):
         # H on target
-        ctrl(Hadamard(wires=[tw]), control=[signal], control_values=[1])
+        CH(wires=[signal, tw])
 
         # Swap target <-> bus
-        ctrl(SWAP(wires=[tw, tree_wire_manager.bus_wire[0]]), control=[signal], control_values=[1])
+        CSWAP(wires=[signal, tw, tree_wire_manager.bus_wire[0]])
 
         # Route down tree
         _tree_route_bus_down_first_k_levels_ctrl(n_tree, tree_wire_manager, signal)
@@ -727,10 +715,10 @@ def _block_tree_query_ops(
         adjoint(_tree_route_bus_down_first_k_levels_ctrl)(n_tree, tree_wire_manager, signal)
 
         # Swap back bus -> target
-        ctrl(SWAP(wires=[tw, tree_wire_manager.bus_wire[0]]), control=[signal], control_values=[1])
+        CSWAP(wires=[signal, tw, tree_wire_manager.bus_wire[0]])
 
         # Final H on target
-        ctrl(Hadamard(wires=[tw]), control=[signal], control_values=[1])
+        CH(wires=[signal, tw])
 
     # 3) address unloading for the tree (controlled on signal)
     adjoint(_tree_mark_routers_via_bus_ctrl)(tree_wire_manager, n_tree, k, signal)

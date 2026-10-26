@@ -22,7 +22,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.numeric_hamiltonians import CGFHamiltonian
-from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ, PhaseShift
+from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math import ctrl
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
@@ -123,8 +123,7 @@ class TrotterCGF(Operator2):
 
     Or check the quantum resources required for this task. Because the (default) controlled
     decomposition is a genuine controlled unitary, each diagonal rotation is individually
-    controlled via ``ctrl(RZ(...))`` and ``ctrl(IsingZZ(...))`` (showing up here as
-    :class:`~.CRZ` and controlled :class:`~.IsingZZ`). Note that the order of the keys in
+    controlled via :class:`~.CRZ` and ``ctrl(IsingZZ(...))``. Note that the order of the keys in
     the ``quantum_operations`` dictionary is not guaranteed, so we sort it before printing:
 
     >>> specs = qp.specs(trotter_circuit)()["resources"].quantum_operations
@@ -506,9 +505,9 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
         resources[CNOT] += num_twobody_blocks * num_pairs * 2 * n_states
         resources[RZ] += 1
     else:
-        # Genuine controlled: one-body ``ctrl(RZ(...))``, two-body ``ctrl(IsingZZ(...))``; the
+        # Genuine controlled: one-body ``CRZ(...)``, two-body ``ctrl(IsingZZ(...))``; the
         # global phase becomes a PhaseShift on the control wire. There are no bare IsingZZ/RZ gates.
-        resources[ctrl(RZ(Float, wires=Wire[1]), control=Wire[1])] += num_onebody_rotations
+        resources[CRZ] += num_onebody_rotations
         resources[ctrl(IsingZZ(Float, wires=Wire[2]), control=Wire[1])] += num_twobody_rotations
         resources[PhaseShift] += 1
 

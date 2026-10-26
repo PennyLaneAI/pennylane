@@ -30,6 +30,7 @@ from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract, flip_control_adjoint
 from pennylane.ops.op_math.pow2 import _pow_abstract
+from pennylane.transforms.decompositions import make_rz_to_phase_gradient_decomp
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import (
     DynOp,
@@ -83,6 +84,26 @@ class AnotherOp(Operation):
     @property
     def resource_params(self):
         return {}
+
+
+@pytest.mark.parametrize("outer_adjoint", [False, True])
+@pytest.mark.parametrize("inner_adjoint", [False, True])
+def test_control_growth_under_adjoint(outer_adjoint, inner_adjoint):
+    """Generated phase-gradient rules must not grow controls indefinitely under adjoints."""
+    base = qp.adjoint(qp.X(1)) if inner_adjoint else qp.X(1)
+    op = qp.ctrl(base, 0)
+    if outer_adjoint:
+        op = qp.adjoint(op)
+    graph = DecompositionGraph(
+        [op],
+        gate_set={"CNOT", "PauliX", "SemiAdder", "GlobalPhase"},
+        fixed_decomps={qp.RZ: make_rz_to_phase_gradient_decomp([2, 3], [4, 5], [6])},
+    )
+    solution = graph.solve()
+    assert solution.decomposition(op)
+    counts = solution.resource_estimate(op).gate_counts
+    assert counts[abstractify(qp.CNOT)] == 1
+    assert set(counts) <= {abstractify(qp.CNOT), abstractify(qp.X)}
 
 
 @pytest.mark.unit
@@ -872,11 +893,8 @@ class TestControlledDecompositions:
             [op1, op2],
             gate_set={"ControlledPhaseShift", "PhaseShift", "GlobalPhase", "X"},
         )
-        # 6 op nodes and 3 decomposition nodes, and 1 dummy starting node.
-        assert len(graph._graph.nodes()) == 10
-        # 3 edges from decompositions to ops and 4 edges from ops to decompositions,
-        # and 4 edges from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 11
+        assert len(graph._graph.nodes()) == 17
+        assert len(graph._graph.edges()) == 22
 
         # Verify the decompositions
         solution = graph.solve()
@@ -886,7 +904,7 @@ class TestControlledDecompositions:
 
         assert q.queue == [
             qp.PhaseShift(-0.5, wires=[1]),
-            qp.ControlledPhaseShift(-0.5, wires=[1, 2]),
+            ControlledOp2(qp.PhaseShift(-0.5, wires=2), [1]),
         ]
 
     def test_controlled_base_decomposition(self):
@@ -927,8 +945,8 @@ class TestControlledDecompositions:
                 CustomControlledOp: [custom_controlled_decomp],
             },
         )
-        assert len(graph._graph.nodes()) == 39
-        assert len(graph._graph.edges()) == 62
+        assert len(graph._graph.nodes()) == 83
+        assert len(graph._graph.edges()) == 137
 
         solution = graph.solve()
 
@@ -944,29 +962,13 @@ class TestControlledDecompositions:
         """Tests that the controlled form of an adjoint operator is decomposed properly."""
 
         op = qp.ctrl(qp.adjoint(qp.U1(0.5, wires=0)), control=[1])
-        # Applying ``flip_control_adjoint`` rewrites ``C(Adjoint(U1))`` as ``Adjoint(C(U1))``.
-        # With the eager ``C(U1) -> ControlledPhaseShift`` lowering, the inner ``C(U1)`` is lowered
-        # directly to ``ControlledPhaseShift``, so the result is an adjoint of a
-        # ``ControlledPhaseShift``.
+        # Modifier interchange preserves the symbolic controlled U1.
         tape = qp.testing.decomp_rule_to_tape(op, flip_control_adjoint)
-        assert tape.operations == [qp.adjoint(qp.ControlledPhaseShift(0.5, wires=[1, 0]))]
+        assert tape.operations == [qp.adjoint(ControlledOp2(qp.U1(0.5, wires=0), [1]))]
 
     def test_flip_controlled_adjoint_full_solve(self):
-        """Tests that a full graph solve resolves C(Adjoint(U1)) down to
-        Adjoint(ControlledPhaseShift), without any decomposition rule registered
-        specifically for ``C(U1)``.
-
-        The controlled U1 node only appears once ``flip_control_adjoint`` is applied, and
-        it already resolves to ``ControlledPhaseShift`` through the generic mechanism that
-        applies control to U1's own (unconditional) decomposition into ``PhaseShift``,
-        combined with the pre-existing ``(PhaseShift, 1) -> ControlledPhaseShift`` mapping.
-        ``PauliX`` must be included in the target gate set because the resource estimate for
-        a controlled operator conservatively accounts for a potential zero-control flip, even
-        though none is required for this concrete, all-``True`` control case. ``self_adjoint``
-        must be supplied for ``PauliX`` via ``alt_decomps`` since the test-local decomposition
-        registry (unlike the real one) doesn't register it for ``Adjoint(PauliX)``, which is
-        pulled in when adjointing the same zero-control-flip resource estimate.
-        """
+        """A full graph solve lowers C(Adjoint(U1)) through symbolic C(U1)
+        and C(PhaseShift), reaching named gates through registered rules."""
 
         op = qp.ctrl(qp.adjoint(qp.U1(0.5, wires=0)), control=[1])
         graph = DecompositionGraph(
@@ -980,7 +982,7 @@ class TestControlledDecompositions:
 
         tape = qp.testing.decomp_rule_to_tape(op, solution.decomposition(op))
 
-        assert tape.operations == [qp.adjoint(qp.ControlledPhaseShift(0.5, wires=[1, 0]))]
+        assert tape.operations == [qp.adjoint(ControlledOp2(qp.U1(0.5, wires=0), [1]))]
 
     def test_decompose_with_single_work_wire(self):
         """Tests that the Lemma 7.11 decomposition from https://arxiv.org/pdf/quant-ph/9503016 is applied correctly."""
@@ -993,12 +995,12 @@ class TestControlledDecompositions:
         tape = qp.testing.decomp_rule_to_tape(op, rule)
         [tape], _ = qp.transforms.resolve_dynamic_wires([tape], min_int=4)
         assert tape.operations == [
-            qp.MultiControlledX(wires=[1, 2, 3, 4]),
-            qp.CRot(0.123, 0.234, 0.345, wires=[4, 0]),
-            qp.MultiControlledX(wires=[1, 2, 3, 4]),
+            ControlledOp2(qp.X(4), [1, 2, 3]),
+            ControlledOp2(qp.Rot(0.123, 0.234, 0.345, wires=0), [4]),
+            ControlledOp2(qp.X(4), [1, 2, 3]),
         ]
         assert solution.resource_estimate(op, num_work_wires=1) == to_resources(
-            {_ctrl_abstract(qp.X, Wire[3]): 2, qp.CRot: 1, qp.X: 3}
+            {qp.MultiControlledX(Wire[4]): 2, qp.CRot: 1, qp.X: 4}
         )
 
     def test_base_decomp_contains_mcms(self):
