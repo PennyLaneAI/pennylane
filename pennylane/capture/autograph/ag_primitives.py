@@ -22,8 +22,11 @@ import functools
 import operator
 from collections.abc import Callable, Iterator
 from numbers import Number
-from typing import Any, SupportsIndex, Union
+from typing import Any, SupportsIndex
 
+import jax
+import jax.numpy as jnp
+from jax.interpreters.partial_eval import DynamicJaxprTracer
 from malt.core import config as ag_config
 from malt.impl import api as ag_api
 from malt.impl.api import converted_call as ag_converted_call
@@ -32,15 +35,6 @@ from malt.operators.variables import Undefined
 
 import pennylane as qp
 from pennylane.exceptions import AutoGraphError
-
-has_jax = True
-try:
-    import jax
-    import jax.numpy as jnp
-    from jax.interpreters.partial_eval import DynamicJaxprTracer
-except ImportError:  # pragma: no cover
-    has_jax = False
-
 
 __all__ = [
     "if_stmt",
@@ -56,13 +50,13 @@ __all__ = [
 
 
 def set_item(
-    target: Union["DynamicJaxprTracer", list],
-    index: Union[int, "DynamicJaxprTracer"],
-    x: Union[Number, "DynamicJaxprTracer"],
+    target: DynamicJaxprTracer | list,
+    index: int | DynamicJaxprTracer,
+    x: Number | DynamicJaxprTracer,
 ):
     """An implementation of the AutoGraph 'set_item' function."""
 
-    if qp.math.is_abstract(target):
+    if qp.math.is_tracer(target):
         target = target.at[index].set(x)
     else:
         target[index] = x
@@ -71,9 +65,9 @@ def set_item(
 
 
 def update_item_with_op(
-    target: Union["DynamicJaxprTracer", list],
-    index: Union[int, "DynamicJaxprTracer"],
-    x: Union[Number, "DynamicJaxprTracer"],
+    target: DynamicJaxprTracer | list,
+    index: int | DynamicJaxprTracer,
+    x: Number | DynamicJaxprTracer,
     op: str,
 ):
     """An implementation of the AutoGraph 'update_item_with_op' function."""
@@ -89,7 +83,7 @@ def update_item_with_op(
     if op == "sub":
         x = -x
 
-    if qp.math.is_abstract(target):
+    if qp.math.is_tracer(target):
         if isinstance(index, slice):
             target = getattr(target.at[index.start : index.stop : index.step], ast_op_map[op])(x)
         else:
@@ -162,9 +156,6 @@ def _assert_iteration_inputs(inputs, symbol_names):
         inputs (Tuple): The loop carried values
         symbol_names (Tuple[str]): The names of the loop carried values.
     """
-
-    if not has_jax:  # pragma: no cover
-        raise ImportError("autograph capture requires JAX to be installed.")
 
     for i, inp in enumerate(inputs):
         if isinstance(inp, Undefined):
@@ -379,7 +370,7 @@ def _logical_op(*args, jax_fn: Callable, python_fn: Callable):
 
     values = [arg() if callable(arg) else arg for arg in args]
 
-    if any(qp.math.is_abstract(val) for val in values):
+    if any(qp.math.is_tracer(val) for val in values):
         result = jax_fn(*values)
     else:
         result = python_fn(*values)
@@ -476,7 +467,7 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
             if not args:
                 raise ValueError(f"{fn.__name__} requires at least one argument")
 
-            is_abstract_operator = qp.math.is_abstract(args[0]) and isinstance(
+            is_abstract_operator = qp.math.is_tracer(args[0]) and isinstance(
                 args[0].aval, qp.capture.primitives.AbstractOperator
             )
             # If first argument is already an operator, pass it through directly

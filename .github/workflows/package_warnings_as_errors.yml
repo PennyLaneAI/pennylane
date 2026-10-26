@@ -28,7 +28,6 @@ jobs:
       skip_ci_test_jobs: |
         all-interfaces-tests
         external-libraries-tests
-        qcut-tests
         qchem-tests
         gradients-tests
         device-tests

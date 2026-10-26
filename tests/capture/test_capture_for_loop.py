@@ -19,6 +19,8 @@ Tests for capturing for loops into jaxpr.
 # pylint: disable=too-many-positional-arguments, too-many-arguments
 # pylint: disable=unbalanced-tuple-unpacking
 
+from functools import partial
+
 import numpy as np
 import pytest
 
@@ -32,7 +34,7 @@ jnp = pytest.importorskip("jax.numpy")
 # must be below jax importorskip
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import for_loop_prim
-from tests.capture.capture_utils import extract_all_primitives
+from pennylane.testing import extract_all_primitives
 
 
 class TestCaptureForLoop:
@@ -853,3 +855,54 @@ def test_pytree_inputs():
     out = f(x)
     assert list(out.keys()) == ["x"]
     assert qp.math.allclose(out["x"], 9)  # 1 + 3 + 5 = 9
+
+
+class TestForLoopHintsCapture:
+    """Tests that ``num-iters`` reaches the for-loop capture primitive."""
+
+    def test_estimated_iterations_in_jaxpr(self):
+        """``num-iters`` should become ``estimated_iterations`` on ``for_loop``."""
+
+        @qp.hint({"num-iters": 10})
+        @qp.for_loop(0, 5, 1)
+        def loop(i, x):  # pylint: disable=unused-argument
+            return x + 1
+
+        jaxpr = jax.make_jaxpr(loop)(0)
+        assert jaxpr.eqns[0].primitive == for_loop_prim
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 10
+
+    def test_without_hint_has_none_estimated_iterations(self):
+        """Unhinted for loops should bind ``estimated_iterations=None``."""
+
+        @qp.for_loop(0, 3, 1)
+        def loop(i, x):  # pylint: disable=unused-argument
+            return x + 1
+
+        jaxpr = jax.make_jaxpr(loop)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] is None
+
+    def test_apply_hint_form_sets_estimated_iterations(self):
+        """``qp.hint(...)(loop)`` should also populate ``estimated_iterations``."""
+
+        @qp.for_loop(0, 4, 1)
+        def loop(i, x):  # pylint: disable=unused-argument
+            return x + 1
+
+        hinted = qp.hint({"num-iters": 4})(loop)
+        jaxpr = jax.make_jaxpr(hinted)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 4
+
+        double_hinted = qp.hint({"num-iters": 10})(hinted)
+        jaxpr = jax.make_jaxpr(double_hinted)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 10
+
+    def test_hint_under_partial(self):
+        """``num-iters`` should be found when the hinted body is wrapped in a partial."""
+
+        def body(i, x, step):  # pylint: disable=unused-argument
+            return x + step
+
+        loop = qp.for_loop(0, 5, 1)(partial(qp.hint(body, {"num-iters": 10}), step=1))
+        jaxpr = jax.make_jaxpr(loop)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 10

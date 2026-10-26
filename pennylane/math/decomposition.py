@@ -16,16 +16,11 @@
 
 from functools import lru_cache, partial
 
+import jax
+import jax.numpy as jnp
 import numpy as np
 
 from pennylane import math
-
-has_jax = True
-try:
-    import jax
-    import jax.numpy as jnp
-except ModuleNotFoundError:  # pragma: no cover
-    has_jax = False
 
 
 def zyz_rotation_angles(U) -> tuple[float, float, float, float]:
@@ -680,7 +675,7 @@ def givens_decomposition(unitary):
     """
     interface = math.get_deep_interface(unitary)
     unitary_mat = math.copy(unitary) if interface == "jax" else math.toarray(unitary).copy()
-    is_real = "complex" not in math.get_dtype_name(unitary)
+    is_real = not math.is_complex_dtype(unitary)
 
     shape = math.shape(unitary_mat)
 

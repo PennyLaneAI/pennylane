@@ -20,13 +20,34 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.temporary_and import (
     _adjoint_temporary_and,
+    _adjoint_temporary_and_ppm,
     _adjoint_temporary_and_to_toffoli,
-    _temporary_and_to_toffoli,
 )
+from pennylane.testing import assert_valid_decomp_rule
 from pennylane.typing import Bool, Wire
+
+expected_adjoint_temporary_and_rule_ops = [
+    (
+        _adjoint_temporary_and,
+        [
+            "H(2)",
+            "MidMeasure(wires=[2], postselect=None, reset=True)",
+            "Conditional(CZ)(wires=[0, 1])",
+        ],
+    ),
+    (_adjoint_temporary_and_to_toffoli, ["Toffoli(wires=[0, 1, 2])"]),
+    (
+        _adjoint_temporary_and_ppm,
+        [
+            "PauliMeasure('X', wires=[2])",
+            "Conditional(CZ)(wires=[0, 1])",
+            "PauliMeasure('Z', wires=[2])",
+            "Conditional(PauliX)(wires=[2])",
+        ],
+    ),
+]
 
 
 class TestTemporaryAND:
@@ -90,14 +111,15 @@ class TestTemporaryAND:
         op2 = qp.Elbow(wires=[0, "a", 2], control_values=(0, 0))
         qp.assert_equal(op1, op2)
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
-        op = qp.TemporaryAND(wires=[0, "a", 2], control_values=(0, 0))
+        cvals = qp.math.array([0, 0], like="jax") if qp.capture.enabled() else [0, 0]
+        op = qp.TemporaryAND(wires=[0, 1, 2], control_values=cvals)
         # Skip matrix check because the decomposition to Toffoli,and the adjoint decomposition
         # to mcm + cond(CZ) do not reproduce the matrix of the op. Skip bind_new_parameters
         # now that control_values is part of dynamic data
-        qp.ops.functions.assert_valid(
+        qp.testing.assert_valid(
             op,
             skip_decomp_matrix_check=True,
             skip_bind_new_parameters=True,
@@ -152,23 +174,31 @@ class TestTemporaryAND:
         self.compare_to_toffoli_on_zero(matrix_and, "input")
         self.compare_to_toffoli_on_zero(matrix_and_adj, "output")
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("cvals", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_temporary_and_decompositions(self, cvals):
         """Tests that TemporaryAND is decomposed properly."""
         wires = [0, 1, 2]
+        op = qp.TemporaryAND(wires, control_values=cvals)
         for rule in qp.list_decomps(qp.TemporaryAND):
-            _test_decomposition_rule(
-                qp.TemporaryAND(wires, control_values=cvals), rule, skip_decomp_matrix_check=True
-            )
-            matrix = qp.matrix(rule, wire_order=wires)(wires, control_values=cvals)
+            assert rule.is_applicable(**op.arguments)
+            assert_valid_decomp_rule(op, rule, check_matrix=False)
+            with qp.capture.pause():
+                matrix = qp.matrix(rule, wire_order=wires)(wires, control_values=cvals)
             self.compare_to_toffoli_on_zero(matrix, "input", cvals)
 
     @pytest.mark.parametrize("rule", qp.list_decomps("Adjoint(TemporaryAND)"))
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_adjoint_temporary_and_decomposition(self, control_values, rule, seed):
-        """
-        Validate the MCM-based decomposition of Adjoint(TemporaryAND).
-        """
+        """Validate various decompositions of Adjoint(TemporaryAND), excluding the PPM-based rule,
+        which is tested in test_adjoint_temporary_and_ppm_decomposition below."""
+        if rule == _adjoint_temporary_and_ppm:
+            pytest.skip(
+                reason=(
+                    "The PPM-based decomposition requires special handling and is tested separately "
+                    "in test_adjoint_temporary_and_ppm_decomposition."
+                )
+            )
         sys_wires = [0, 1, 2]
         work_wires = [3]  # auxiliary qubit for deferred measure
         dev = qp.device("default.qubit", wires=sys_wires + work_wires)
@@ -187,81 +217,88 @@ class TestTemporaryAND:
         state = rng.random(4) + 1j * rng.random(4)
         state /= np.linalg.norm(state)
         probs = circuit(state)
-        assert qp.math.allclose(probs, np.eye(8)[0])
+        assert qp.math.allclose(probs, np.eye(1, 8))
 
-    @pytest.mark.parametrize("rule", qp.list_decomps("Adjoint(TemporaryAND)"))
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
+    def test_adjoint_temporary_and_ppm_decomposition(self, control_values, seed):
+        """Validate the PPM-based decomposition of Adjoint(TemporaryAND)."""
+        sys_wires = [0, 1, 2]
+        dev = qp.device("lightning.qubit", wires=sys_wires, seed=seed)
+
+        gate_set = {"Toffoli", "CNOT", "RX", "RY", "RZ", "PauliMeasure", "X", "CZ", "GlobalPhase"}
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=gate_set)
+        @qp.qnode(dev, shots=100, mcm_method="one-shot")
+        def circuit(state):
+            # Prepare control state
+            qp.StatePrep(state, wires=sys_wires[:2])
+            op = qp.TemporaryAND(wires=sys_wires, control_values=control_values)
+            _adjoint_temporary_and_ppm(op)
+            qp.adjoint(qp.MottonenStatePreparation.compute_decomposition)(
+                state, wires=sys_wires[:2]
+            )
+            return qp.probs(wires=sys_wires)
+
+        rng = np.random.default_rng(seed)
+        state = rng.random(4) + 1j * rng.random(4)
+        state /= np.linalg.norm(state)
+        probs = circuit(state)
+        assert qp.math.allclose(probs, np.eye(1, 8))
+
+    def test_all_adjoint_temporary_and_rules_are_tested(self):
+        """Test that the test cases in `expected_adjoint_temporary_and_rule_ops` cover all
+        implemented decomposition rules."""
+        if len(expected_adjoint_temporary_and_rule_ops) != len(
+            qp.list_decomps("Adjoint(TemporaryAND)")
+        ):
+            raise NotImplementedError(
+                "Need to add the expected operators for at least one decomposition rule of "
+                "Adjoint(TemporaryAND) to `expected_adjoint_temporary_and_rule_ops` in the tests."
+            )
+
+    @pytest.mark.parametrize(
+        "rule, expected_ops_per_elbow", expected_adjoint_temporary_and_rule_ops
+    )
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_adjoint_temporary_and_integration(self, rule):
-        wires = [0, 1, "aux0", 2]
-        gate_set = {"X", "Hadamard", "CNOT", "CZ", "MidMeasureMP", "Toffoli"}
+    def test_adjoint_temporary_and_decomposition_ops(self, rule, expected_ops_per_elbow):
+        """Test that the expected operators are produced by a fixed decomposition of
+        Adjoint(TemporaryAND)."""
+
+        wires = [0, 1, 2]
+        gate_set = {"X", "Hadamard", "CNOT", "CZ", "MidMeasureMP", "Toffoli", "PauliMeasure"}
 
         @qp.set_shots(1)
-        @qp.qnode(qp.device("default.qubit", wires=wires), interface=None)
-        @qp.transforms.decompose(
+        @qp.qnode(qp.device("default.qubit", wires=wires))
+        # pylint: disable-next=protected-access
+        @qp.transforms._tape_decompose(
             gate_set=gate_set,
-            fixed_decomps={
-                qp.Select: qp.templates.subroutines.select._select_decomp_unary,  # pylint: disable=protected-access
-                "Adjoint(TemporaryAND)": rule,
-                "TemporaryAND": _temporary_and_to_toffoli,
-            },
+            fixed_decomps={"Adjoint(TemporaryAND)": rule},
         )
         def circuit():
-            ops = [qp.Z(2) for _ in range(4)]
-            qp.Select(ops, control=[0, 1], work_wires=["aux0"], partial=True)
+            qp.adjoint(qp.TemporaryAND(wires, control_values=(0, 0)))
+            qp.adjoint(qp.TemporaryAND(wires, control_values=(0, 1)))
+            qp.adjoint(qp.TemporaryAND(wires, control_values=(1, 0)))
+            qp.adjoint(qp.TemporaryAND(wires))
             return qp.sample(wires=wires)
 
         tape = qp.workflow.construct_tape(circuit)()
-        expected_operators = [
-            # Start of left elbow with cval [0, 0]
-            qp.X(0),
-            qp.X(1),
-            qp.Toffoli([0, 1, "aux0"]),
-            qp.X(0),
-            qp.X(1),
-            # End of left elbow
-            qp.CZ(wires=["aux0", 2]),  # First target op
-            # Merged right and left elbow (cvals [0, 0] to [0, 1])
-            qp.CNOT(wires=[0, "aux0"]),
-            qp.X("aux0"),
-            qp.CZ(wires=["aux0", 2]),  # Second target op
-            # Merged right and left elbow (cvals [0, 1] to [1, 0])
-            qp.CNOT(wires=[0, "aux0"]),
-            qp.CNOT(wires=[1, "aux0"]),
-            qp.CZ(wires=["aux0", 2]),  # Third target op
-            # Merged right and left elbow (cvals [1, 0] to [1, 1])
-            qp.CNOT(wires=[0, "aux0"]),
-            qp.CZ(wires=["aux0", 2]),  # Fourth target op
-        ]
-        if rule == _adjoint_temporary_and:
-            expected_operators += [
-                qp.H("aux0"),
-                qp.measurements.MidMeasureMP(wires=["aux0"], postselect=None, reset=True),
-                "ConditionalCZ",
-            ]
-        elif rule == _adjoint_temporary_and_to_toffoli:
-            expected_operators += [qp.Toffoli([0, 1, "aux0"])]
+        expected_ops = (
+            ["X(0)", "X(1)"]
+            + expected_ops_per_elbow
+            + ["X(0)", "X(1)"]
+            + ["X(0)"]
+            + expected_ops_per_elbow
+            + ["X(0)"]
+            + ["X(1)"]
+            + expected_ops_per_elbow
+            + ["X(1)"]
+            + expected_ops_per_elbow
+        )
 
-        else:
-            raise NotImplementedError(f"Please add expected operators for rule {rule}")
-
-        for op, exp_op in zip(tape.operations, expected_operators):
-            # manual check: each MidMeasure has a unique ID, which prevents
-            # qp.equal from treating two MidMeasure as equal.
-            if isinstance(op, qp.measurements.MidMeasureMP):
-                assert op.wires == exp_op.wires
-                assert op.postselect == exp_op.postselect
-                assert op.reset == exp_op.reset
-
-            # manual check for the conditional operator
-            elif isinstance(op, qp.ops.op_math.condition.Conditional):
-                assert exp_op == "ConditionalCZ"
-                assert isinstance(op.base, qp.CZ)
-                assert list(op.base.wires) == [0, 1]
-                meas = op.meas_val  # same as the expr passed to qp.cond
-                assert list(meas.wires) == ["aux0"]
-
-            else:
-                qp.assert_equal(op, exp_op)
+        for op, exp_op in zip(tape.operations, expected_ops):
+            assert repr(op) == exp_op
 
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_compute_matrix_temporary_and(self, control_values):

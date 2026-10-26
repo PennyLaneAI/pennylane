@@ -25,6 +25,8 @@ from enum import StrEnum
 from functools import partial
 from typing import TYPE_CHECKING, Any, overload
 
+import jax
+
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import TransformError
 from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
@@ -33,7 +35,6 @@ from .cotransform_cache import CotransformCache
 from .transform import BoundTransform, Transform
 
 if TYPE_CHECKING:
-    import jax
 
     from pennylane.workflow import QNode
 
@@ -46,7 +47,6 @@ class ProtectedLevel(StrEnum):
     GRADIENT = "gradient"
     DEVICE = "device"
     ALL = "all"
-    ALL_MLIR = "all-mlir"
 
 
 def _batch_postprocessing(
@@ -232,10 +232,10 @@ class CompilePipeline:
 
         Additionally, multiple compilation pipelines can be concatenated:
 
-        >>> another_pipeline = qp.decompose(gate_set={qp.RX, qp.RZ, qp.CNOT}) + qp.transforms.combine_global_phases
+        >>> another_pipeline = qp.transforms._tape_decompose(gate_set={qp.RX, qp.RZ, qp.CNOT}) + qp.transforms.combine_global_phases
         >>> print(another_pipeline + pipeline)
         CompilePipeline(
-          [1] decompose(gate_set=...),
+          [1] _tape_decompose(gate_set=...),
           [2] combine_global_phases(),
           [3] remove_barrier(),
           [4] merge_rotations(),

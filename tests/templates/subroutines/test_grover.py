@@ -23,7 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.ops import Hadamard, MultiControlledX, PauliZ
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 def test_repr():
@@ -39,12 +39,12 @@ def test_work_wire_property():
     assert op.work_wires == expected
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Test the standard criteria for a valid operation."""
     work_wires = qp.wires.Wires((3, 4))
     op = qp.GroverOperator(wires=(0, 1, 2), work_wires=work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_work_wires():
@@ -209,8 +209,7 @@ def test_expand(wires):
 def test_decomposition_new(wires, work_wires):
     """Tests the decomposition rule implemented with the new system."""
     op = qp.GroverOperator(wires=wires, work_wires=work_wires)
-    for rule in qp.list_decomps(qp.GroverOperator):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 @pytest.mark.parametrize("n_wires", [6, 13])

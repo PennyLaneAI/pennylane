@@ -29,7 +29,7 @@ GPUs, CPUs, FPGAs, and QPUs. For examples and tutorials see the
 .. note::
 
     Backline requires a recent version of PennyLane, Catalyst, and Lightning. Check out the `installation
-    instructions and requirements <https://github.com/PennyLaneAI/backline/tree/readme#installation>`__.
+    instructions and requirements <https://github.com/PennyLaneAI/backline/#installation>`__.
 
     Note that due to the wide range of system, network, and hardware configurations you can use
     Backline with, there are different installation requirements and steps depending on your
@@ -72,7 +72,7 @@ Backline provides the following abstractions for use with PennyLane and Catalyst
           device=qp.device("lightning.qubit", wires=1)
       )
 
-- :class:`.Coprocessor`: Hardware device :class:`~.Node` (such as CPUs, GPUs, or FPGAs)  that
+- :class:`.Coprocessor`: Hardware device :class:`~.Node` (such as CPUs or GPUs)  that
   receive information from a controller for processing. They run :class:`.CoprocessingFuncion`
   callables, potentially as a persistent kernel, such as a QEC decoder.
 
@@ -89,10 +89,11 @@ Backline provides the following abstractions for use with PennyLane and Catalyst
 - :class:`.Backline`: A representation of the complete hardware infrastructure supporting the
   quantum-classical program (:class:`~.Placement`), packaged as a QNode device. The backline
   includes a :class:`.Controller`, zero or more :class:`.Coprocessor` nodes, and a transport
-  method (``"rdma"``, ``"memcpy"``, or a :class:`~.Transport` object). A backline object is given
-  directly to a QNode in place of a traditional QNode `qp.device`, and orchestrates the remote
-  executor and the RDMA network the controllers and coprocessors talk over, separate from the
-  network used to log into remote machines.
+  method (``"rdma"``, ``"memcpy"``, ``"none"`` for a controller with no coprocessors, or a
+  :class:`~.Transport` object). A backline object is given directly to a QNode in place of a
+  traditional QNode `qp.device`, and orchestrates the remote executor and the RDMA network the
+  controllers and coprocessors talk over, separate from the network used to log into remote
+  machines.
 
   .. code-block:: python
 
@@ -115,6 +116,7 @@ Coprocessing functions and QEC
     ~CoprocessorFunction
     ~backline.decode
     ~backline.css_bp_decoder
+    ~backline.onnx_decoder
     ~backline.triton_decoder
 
 When using a backline to execute a quantum program, there are multiple ways to incorporate
@@ -141,6 +143,9 @@ can be specified in multiple ways:
   decoder function into a shared library that can be used as a coprocessing function. Alternatively,
   :func:`~.css_bp_decoder` is a convenience function to compile a CSS Tanner graph to a
   belief proagation decoder using Triton.
+
+* **An ONNX model**: :func:`~.onnx_decoder` runs a model exported to ONNX on each message,
+  on the CPU or on the GPU the installed onnxruntime supports, with no build step.
 
 * **A precompiled library**: :class:`~.CoprocessorFunction` registers a precompiled library symbol
   and (optionally) the library path.
@@ -218,6 +223,7 @@ from . import runtime
 from .decode import decode
 from .device import Backline
 from .functions import CoprocessorFunction, css_bp_decoder, triton_decoder
+from .onnx import onnx_decoder
 from .placement import Controller, Coprocessor, Endpoint, Node, Placement
 from .transports import Transport, get_transport, register_transport
 
@@ -231,6 +237,7 @@ __all__ = [
     "decode",
     "CoprocessorFunction",
     "css_bp_decoder",
+    "onnx_decoder",
     "triton_decoder",
     "Transport",
     "get_transport",

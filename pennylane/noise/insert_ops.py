@@ -41,7 +41,7 @@ def _check_position(position):
             try:
                 if not (isinstance(operation, type) and issubclass(operation, Operator)):
                     not_op = True
-            except AttributeError:
+            except AttributeError:  # pragma: no cover
                 not_op = True
     elif not isinstance(position, list):
         try:
@@ -49,7 +49,7 @@ def _check_position(position):
                 req_ops = [position]
             else:
                 not_op = True
-        except AttributeError:
+        except AttributeError:  # pragma: no cover
             not_op = True
     return not_op, req_ops
 
@@ -218,9 +218,9 @@ def insert(
     # decompose templates and their adjoints to fix a bug in the tutorial_error_mitigation demo
     def stop_at(obj):
         if not isinstance(obj, Operator):
-            return True
+            return True  # pragma: no cover
         if not obj.has_decomposition:
-            return True
+            return True  # pragma: no cover
         return not (hasattr(templates, obj.name) or isinstance(obj, Adjoint))
 
     [tape], _ = decompose(

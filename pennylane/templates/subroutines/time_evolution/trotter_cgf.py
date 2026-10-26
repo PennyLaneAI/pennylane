@@ -26,7 +26,7 @@ from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math import ctrl
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
-from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import WiresLike
 
 from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
@@ -101,8 +101,8 @@ class TrotterCGF(Operator2):
         gate_set = {"Hadamard", "BasisRotation", "RZ", "CNOT", "PhaseShift", "ForLoop"}
 
         @qp.qjit
-        @qp.transforms.decompose(gate_set=gate_set)
-        @qp.qnode(qp.device("lightning.qubit"))
+        @qp.transforms._tape_decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("lightning.qubit", wires=1 + M * N))
         def trotter_circuit():
             qp.H(registers["hadamard"])
 
@@ -129,7 +129,7 @@ class TrotterCGF(Operator2):
 
     >>> specs = qp.specs(trotter_circuit)()["resources"].quantum_operations
     >>> dict(sorted(specs.items()))
-    {'C(IsingZZ)': 180, 'CRZ': 60, 'Hadamard': 1, 'PhaseShift': 1, 'SingleExcitation': 186}
+    {'C(IsingZZ)': 99, 'CRZ': 60, 'Hadamard': 1, 'PhaseShift': 1, 'SingleExcitation': 132}
 
     The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing into
     :class:`~.PhaseShift` and :class:`~.SingleExcitation` on ``lightning.qubit``.
@@ -203,7 +203,8 @@ class TrotterCGF(Operator2):
         which visits each two-body fragment *twice* per step (at the half-step duration
         ``first_order_time_step`` :math:`= \Delta t/2`) and the central one-body fragment *once* (at the
         full :math:`\Delta t`). The next steps derive :math:`e^{-i H_\nu \tau}` for a single fragment and
-        duration :math:`\tau`.
+        duration :math:`\tau`. In the circuit, adjacent :math:`H_1` half evolutions at
+        internal step boundaries are merged into one full-duration evolution.
 
         **2. Evolving a fragment**
         The fragments are obtained via Christiansen greedy fragmentation (see `arXiv:2508.11865
@@ -343,7 +344,7 @@ def _apply_system_basis_rotation(U, wires):
     for l in range(num_modes):
         U_l = math.swapaxes(U[l], -2, -1)
         mode_wires = wires[l * n_states : (l + 1) * n_states]
-        if math.is_abstract(U_l) or not np.allclose(U_l, np.eye(n_states)):
+        if math.is_tracer(U_l) or not np.allclose(U_l, np.eye(n_states)):
             BasisRotation(unitary_matrix=U_l, wires=mode_wires)
 
 
@@ -481,14 +482,16 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
     n_states = leaf_tensors.shape[2]
 
     resources = defaultdict(int)
-    num_sysrot_calls = num_trotter_steps * (2 * num_two_body_fragments + 1) + 1
-    num_twobody_blocks = num_trotter_steps * 2 * num_two_body_fragments
+    num_sysrot_calls = 2 * num_two_body_fragments * num_trotter_steps + 2
+    num_twobody_blocks = (2 * num_two_body_fragments - 1) * num_trotter_steps + 1
     num_onebody_blocks = num_trotter_steps
     num_pairs = num_modes * (num_modes - 1) // 2
     num_twobody_rotations = num_twobody_blocks * num_pairs * n_states**2
     num_onebody_rotations = num_onebody_blocks * num_modes * n_states
 
-    sysrot_key = BasisRotation(Complex[n_states, n_states], wires=Wire[n_states])
+    # NOTE: 'BasisRotation' decomposes differently depending on the dtype of the unitary matrix.
+    dtype_leaf, _ = math.get_abstract_and_cast_dtype(leaf_tensors)
+    sysrot_key = BasisRotation(dtype_leaf[n_states, n_states], wires=Wire[n_states])
     resources[sysrot_key] += num_modes * num_sysrot_calls
 
     if not has_control:

@@ -63,8 +63,21 @@ class CompositeOp2(Operator2, is_baseclass=True):
                 self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
             )
 
-        for op in self:
-            remove_from_program(op)
+        remove_from_program(*operands)
+
+    # FIX: This is a temporary work-around. Long-term fix is to remove `_init_pauli_rep`
+    # from the constructor [sc-130145].
+    def _flatten(self):
+        (dyn_args, wires, hybrid_args), metadata = super()._flatten()
+
+        # Filter out _init_pauli_rep, replacing it with None for JAX compatibility
+        names = [h for h in self.hybrid_argnames if h not in self.wire_argnames]
+        hybrid_args = tuple(
+            None if name == "_init_pauli_rep" else arg
+            for name, arg in zip(names, hybrid_args, strict=True)
+        )
+
+        return (dyn_args, wires, hybrid_args), metadata
 
     @property
     def operands(self) -> Sequence[Operator]:
@@ -193,6 +206,11 @@ class CompositeOp2(Operator2, is_baseclass=True):
     def num_wires(self):
         """Number of wires the operator acts on."""
         return len(self.wires)
+
+    @property
+    @handle_recursion_error
+    def is_fully_abstract(self):
+        return super().is_fully_abstract
 
     @property
     @handle_recursion_error

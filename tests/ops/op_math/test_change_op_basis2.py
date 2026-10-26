@@ -27,14 +27,13 @@ import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane.core.operator import abstractify
 from pennylane.exceptions import DeviceError, DiagGatesUndefinedError
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis2, Prod2, change_op_basis
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.change_op_basis import _validate_callable
 from pennylane.templates import Subroutine
+from pennylane.testing import assert_decomposable, assert_eqn_matches_op
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
-from tests.capture.capture_utils import assert_eqn_matches_op
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
@@ -54,7 +53,7 @@ def test_basic_validity():
     op2 = qp.Rot(1.2, 2.3, 3.4, wires=0)
     op3 = qp.PauliZ(0)
     op = qp.change_op_basis(op1, op2, op3)
-    qp.ops.functions.assert_valid(op, skip_eigvals=True)
+    qp.testing.assert_valid(op, skip_eigvals=True)
 
 
 def test_change_op_basis_callables():
@@ -128,7 +127,7 @@ def test_change_op_basis_concrete_legacy_operand_capture():
     import jax
 
     # Building with capture paused yields a concrete legacy operator rather than a tracer, so
-    # ``_apply_op_or_func`` takes the ``isinstance(op, Operator)`` -> ``queuing.apply`` branch.
+    # ``_apply_op_or_func`` takes the ``isinstance(op, Operator)`` -> ``apply`` branch.
     with qp.capture.pause():
         legacy_op = qp.ControlledSequence(qp.RX(0.1, 0), control=1)
 
@@ -294,7 +293,7 @@ def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
         qp.change_op_basis(compute_op(0), target_op(1), uncompute)
 
     jaxpr = qp.capture.make_plxpr(circuit)()
-    tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+    tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
     expected_uncompute = uncompute_op(0) if uncompute_op else qp.adjoint(compute_op(0))
     assert tape.operations == [compute_op(0), target_op(1), expected_uncompute]
 
@@ -462,7 +461,7 @@ class TestWrapperFunc:  # pylint: disable=too-few-public-methods
 
         factors = (qp.PauliX(wires=1), qp.RX(1.23, wires=0), qp.CNOT(wires=[0, 1]))
 
-        change_op_basis_func_op = ChangeOpBasis2(*factors)
+        change_op_basis_func_op = change_op_basis(*factors)
         change_op_basis_class_op = ChangeOpBasis2(*factors)
         qp.assert_equal(change_op_basis_func_op, change_op_basis_class_op)
 
@@ -576,8 +575,7 @@ class TestDecomposition:
         """Test the qfunc decomposition."""
         change_op_basis_op = ChangeOpBasis2(*ops_lst)
 
-        for rule in qp.list_decomps(ChangeOpBasis2):
-            _test_decomposition_rule(change_op_basis_op, rule)
+        assert_decomposable(change_op_basis_op)
 
     @pytest.mark.parametrize("ops_lst", ops)
     @pytest.mark.capture
@@ -585,7 +583,7 @@ class TestDecomposition:
         """Test that capture applies each decomposition operand in order."""
 
         jaxpr = qp.capture.make_plxpr(lambda: change_op_basis(*ops_lst))()
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
         assert tape.operations == list(ops_lst)
 
@@ -595,8 +593,7 @@ class TestDecomposition:
         with qp.capture.pause():
             op = ChangeOpBasis2(NonParametricOp(0), DynOp(0.2, 1), NonParametricOp(2))
 
-        [rule] = qp.list_decomps(ChangeOpBasis2)
-        _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize("ops_lst", ops)
     @pytest.mark.parametrize("num_control_wires", (1, 3))
@@ -610,16 +607,14 @@ class TestDecomposition:
             control_values=[1] * num_control_wires,
             work_wires=work_wires,
         )
-        for rule in qp.list_decomps("C(ChangeOpBasis2)"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
         assert len(qp.list_decomps(op)) == 1
 
     def test_adjoint_decomposition_with_explicit_uncompute(self):
         """Test the generated adjoint rule with an asymmetric explicit uncompute operator."""
         op = qp.adjoint(ChangeOpBasis2(qp.S(0), qp.T(1), qp.SX(2)))
-        [rule] = qp.list_decomps(op)
-        _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_on_tape(self, ops_lst):

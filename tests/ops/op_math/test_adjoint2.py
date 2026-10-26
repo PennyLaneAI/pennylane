@@ -157,12 +157,10 @@ def test_old_decomp_integartion():
     def _sx_to_rx(wires):
         qp.RX(np.pi / 2, wires=wires)
 
-    with qp.decomposition.local_decomps():
-
-        qp.add_decomps(SX2, _sx_to_rx)
-        op = qp.adjoint(SX2(0))
-        assert op.has_decomposition
-        assert op.decomposition() == [qp.adjoint(qp.RX(np.pi / 2, wires=[0]))]
+    qp.add_decomps(SX2, _sx_to_rx)
+    op = qp.adjoint(SX2(0))
+    assert op.has_decomposition
+    assert op.decomposition() == [qp.adjoint(qp.RX(np.pi / 2, wires=[0]))]
 
 
 def test_parameter_frequencies():
@@ -251,10 +249,9 @@ def test_adjoint_rotation_decomposition_rule():
     op = qp.adjoint(OneWireDynOp(0.5, wires=[0]))
     assert isinstance(op, Adjoint2)
 
-    with qp.core.AnnotatedQueue() as q:
-        adjoint_rotation(**op.arguments)
+    tape = qp.testing.decomp_rule_to_tape(op, adjoint_rotation)
 
-    assert q.queue == [OneWireDynOp(-0.5, wires=[0])]
+    assert tape.operations == [OneWireDynOp(-0.5, wires=[0])]
     assert adjoint_rotation.compute_resources(**op.arguments) == Resources(
         {OneWireDynOp(Float, wires=Wire[1]): 1}
     )

@@ -33,7 +33,6 @@ ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 
 

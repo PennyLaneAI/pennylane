@@ -19,12 +19,21 @@ import functools
 from collections.abc import Callable, Sequence
 from typing import Union
 
+import jax
+
 import pennylane as qp
 from pennylane import QueuingManager, math
-from pennylane.capture import FlatFn
+from pennylane.capture import FlatFn, HintedCallable
+from pennylane.capture import enabled as capture_enabled
 from pennylane.capture.autograph import wraps
+from pennylane.capture.custom_primitives import QpPrimitive
+from pennylane.capture.dynamic_shapes import register_custom_staging_rule
+from pennylane.capture.hint import get_hints
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.compiler import compiler
-from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.apply import apply
+from pennylane.core.operator import Operation, Operator, Operator1, Operator2
+from pennylane.core.operator.base import AbstractOperator  # tach-ignore
 from pennylane.exceptions import ConditionalTransformError
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
@@ -70,13 +79,17 @@ def _add_abstract_shapes(f):
         out = f(*args, **kwargs)
         shapes = []
         for x in out:
-            shapes.extend(s for s in getattr(x, "shape", ()) if math.is_abstract(s))
+            shapes.extend(s for s in getattr(x, "shape", ()) if math.is_tracer(s))
         return *shapes, *out
 
     return new_f
 
 
 def _is_operator_type(fn):
+    """Determine whether ``fn`` is a subclass of ``Operator``, or a (possibly nested) hinted
+    or ``partial`` wrapper of an ``Operator`` subclass."""
+    while isinstance(fn, (HintedCallable, functools.partial)):
+        fn = fn.f if isinstance(fn, HintedCallable) else fn.func
     return isinstance(fn, type) and issubclass(fn, Operator)
 
 
@@ -84,7 +97,7 @@ def _format_and_validate_branch_fn(fn):
     """Normalizes conditional branches to prevent quantum operators from being returned."""
 
     # Format directly returned operators as a function with no return
-    if _is_operator_type(fn) or (isinstance(fn, functools.partial) and _is_operator_type(fn.func)):
+    if _is_operator_type(fn):
 
         def fn_with_no_return(*args, **kwargs):
             fn(*args, **kwargs)
@@ -92,7 +105,6 @@ def _format_and_validate_branch_fn(fn):
         return fn_with_no_return
 
     # Standard branch functions should not return any Operator2
-    import jax  # pylint: disable=import-outside-toplevel
 
     def wrapped_fn(*args, **kwargs):
         output = fn(*args, **kwargs)
@@ -106,8 +118,64 @@ def _format_and_validate_branch_fn(fn):
     return wrapped_fn
 
 
+def _drop_operator_return(fn):
+    """Wrap operator types so that they do not return the created operator. Other branch
+    functions are returned unchanged."""
+    return _format_and_validate_branch_fn(fn) if _is_operator_type(fn) else fn
+
+
 def _empty_return_fn(*_, **__):
     return None
+
+
+def _get_hint(branch_fn):
+    p = get_hints(branch_fn, {"branch-prob"}).get("branch-prob")
+    return float(p) if p is not None else p
+
+
+def _setup_probs(branch_fns) -> None | tuple[float, ...]:
+    branch_probs = [_get_hint(f) for f in branch_fns]
+    n_encountered = sum(bool(p is not None) for p in branch_probs)
+    if not n_encountered:
+        return None
+    if n_encountered == len(branch_fns):
+        return tuple[float](branch_probs)
+
+    total = sum(s for s in branch_probs if s is not None)
+    guess = max(1 - total, 0) / (len(branch_fns) - n_encountered)
+    return tuple[float](guess if p is None else p for p in branch_probs)
+
+
+def _handle_op(fn, branch_name: str):
+    if fn is None:
+        return fn
+
+    if math.is_tracer(fn) and isinstance(fn.aval, AbstractOperator):
+        raise ValueError(
+            f"Got Operator1 AbstractOperator as input to cond {branch_name}. Only Operator2 is supported."
+        )
+    if isinstance(fn, Operator1):
+        raise ValueError(
+            f"Got Operator1 input {fn} to cond {branch_name}. Only Operator2 is supported."
+        )
+    if isinstance(fn, Operator2):
+        pop_op_eqns((fn,))
+
+        def new_fn():
+            apply(fn)
+
+        return new_fn
+    raise ValueError(
+        f"If true_fn is an Operator2, all other branches must be Operator2 or None. Got {fn} for {branch_name}."
+    )
+
+
+def _handle_op_inputs(condition, true_fn, false_fn, elifs):
+    new_true_fn = _handle_op(true_fn, "true_fn")
+    new_false_fn = _handle_op(false_fn, "false_fn")
+    new_elifs = tuple((c, _handle_op(fn, "elif")) for c, fn in elifs)
+
+    return CondCallable(condition, new_true_fn, new_false_fn, new_elifs)()
 
 
 class Conditional(SymbolicOp, Operation):
@@ -222,17 +290,12 @@ class CondCallable:
         self.branch_fns = [true_fn]
         self.otherwise_fn = false_fn
 
-        if (
-            len(elifs) == 2
-            and not isinstance(elifs[0], (tuple, list))
-            and isinstance(elifs[1], Callable)
-        ):
-            # elifs = (elif_condition, elif_function)
-            elifs = (elifs,)
         if elifs:
             elif_preds, elif_fns = list(zip(*elifs, strict=True))
             self.preds.extend(elif_preds)
             self.branch_fns.extend(elif_fns)
+
+        self._branch_probs = _setup_probs((*self.branch_fns, self.otherwise_fn))
 
     def else_if(self, pred):
         """Decorator that allows else-if functions to be registered with a corresponding
@@ -248,6 +311,7 @@ class CondCallable:
         def decorator(branch_fn):
             self.preds.append(pred)
             self.branch_fns.append(branch_fn)
+            self._branch_probs = _setup_probs((*self.branch_fns, self.otherwise_fn))
             return self
 
         return decorator
@@ -260,6 +324,7 @@ class CondCallable:
             otherwise_fn (callable): the function to apply if all ``self.preds`` evaluate to ``False``
         """
         self.otherwise_fn = otherwise_fn
+        self._branch_probs = _setup_probs((*self.branch_fns, self.otherwise_fn))
         return self
 
     @property
@@ -302,9 +367,6 @@ class CondCallable:
         return None
 
     def __call_capture_enabled(self, *args, **kwargs):
-        import jax  # pylint: disable=import-outside-toplevel
-
-        cond_prim = _get_cond_qfunc_prim()
 
         # consts go after the len(branches) conditions
         end_const_ind = len(self.branch_fns)
@@ -352,16 +414,52 @@ class CondCallable:
             jaxpr_branches=jaxpr_branches,
             consts_slices=consts_slices,
             args_slice=slice(end_const_ind, None),
+            estimated_probabilities=self._branch_probs,
         )
         assert flat_true_fn.out_tree is not None, "out_tree of flat_true_fn should exist"
         results = results[-flat_true_fn.out_tree.num_leaves :]
         return jax.tree_util.tree_unflatten(flat_true_fn.out_tree, results)
 
     def __call__(self, *args, **kwargs):
-        if qp.capture.enabled() and any(math.is_abstract(p) for p in self.preds):
+        if capture_enabled() and any(math.is_tracer(p) for p in self.preds):
             return self.__call_capture_enabled(*args, **kwargs)
 
         return self.__call_capture_disabled(*args, **kwargs)
+
+
+def _is_operator(op):
+    return isinstance(op, Operator) or (
+        math.is_tracer(op) and isinstance(op.aval, AbstractOperator)
+    )
+
+
+def _capture_dispatch(condition, true_fn, false_fn, elifs):
+    if (
+        len(elifs) == 2
+        and not isinstance(elifs[0], (tuple, list))
+        and isinstance(elifs[1], (Callable, Operator))
+    ):
+        # elifs = (elif_condition, elif_function)
+        elifs = (elifs,)
+
+    if isinstance(true_fn, Operator):
+        return _handle_op_inputs(condition, true_fn, false_fn, elifs)
+
+    if math.is_tracer(true_fn) and isinstance(true_fn.aval, AbstractOperator):
+        raise ValueError("Operator1 instances cannot be provided as true_fn to pennylane.cond.")
+
+    if _is_operator(false_fn):
+        raise ValueError(
+            f"Cannot provide an Operator as false_fn if true_fn is a callable. Got {false_fn}"
+        )
+
+    for _, elif_fn in elifs:
+        if _is_operator(elif_fn):
+            raise ValueError(
+                f"Cannot provide an Operator as elif_fn if true_fn is a callable. Got {elif_fn}"
+            )
+
+    return CondCallable(condition, true_fn, false_fn, elifs)
 
 
 def cond(
@@ -640,6 +738,94 @@ def cond(
         >>> z = np.array(0.3)
         >>> qnode(par, x, y, z)
         np.float64(-0.3092...)
+
+        **Resource Profiling and Compiler Hints:**
+
+        When used with resource profiling with :func:`~.analyze` and qjit, resources will be reported
+        as a maximum across all possible branches by default. For example:
+
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=1)
+
+            @qp.qjit(capture=True)
+            @qp.qnode(dev)
+            def circuit(m1, m2):
+
+                def true_fn():
+                    for _ in range(10):
+                        qp.X(0)
+
+                def false_fn():
+                    for _ in range(10):
+                        qp.Y(0)
+
+                def elif_fn():
+                    for _ in range(10):
+                        qp.X(0)
+                        qp.Z(0)
+
+                qp.cond(m1, true_fn, false_fn, elifs=(m2, elif_fn))()
+
+                return qp.expval(qp.Z(0))
+
+        >>> print(qp.analyze(circuit)(True, True).resources)
+        Quantum operations:
+        - Total: 30
+          - PauliX: 10
+          - PauliY: 10
+          - PauliZ: 10
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
+
+        The count for each operator is the largest encountered across all three branches. To prevent this overcounting,
+        :func:`~.hint` can indicate the probabibility each branch will be hit, leading to a weighted average instead.
+
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=1)
+
+            @qp.qjit(capture=True)
+            @qp.qnode(dev)
+            def circuit(m1, m2):
+
+                @qp.hint({"branch-prob": 0.4})
+                def true_fn():
+                    for _ in range(10):
+                        qp.X(0)
+
+                @qp.hint({"branch-prob": 0.4})
+                def false_fn():
+                    for _ in range(10):
+                        qp.Y(0)
+
+                def elif_fn():
+                    for _ in range(10):
+                        qp.X(0)
+                        qp.Z(0)
+
+                qp.cond(m1, true_fn, false_fn, elifs=(m2, elif_fn))()
+
+                return qp.expval(qp.Z(0))
+
+        >>> print(qp.analyze(circuit)(True, True).resources)
+        Quantum operations:
+        - Total: 12
+          - PauliX: 6
+          - PauliY: 4
+          - PauliZ: 2
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
+
+        Due to the presence of a compiler hint, the resources are now weighted by the branch probabilities.
+        Unhinted branches, like ``elif_fn``, have the remaining probability equally distributed amoung them.
+        In this case, the ``elif_fn`` gets a ``0.2`` probability. The 6 ``PauliX`` gates come from ``0.4``
+        of the ``true_fn`` resources and ``0.2`` of the ``elif_fn`` resources.
+
     """
 
     if active_jit := compiler.active_compiler():
@@ -649,15 +835,15 @@ def cond(
         if true_fn is None:
             return ops_loader.cond(condition)
 
-        cond_func = ops_loader.cond(condition)(true_fn)
+        cond_func = ops_loader.cond(condition)(_drop_operator_return(true_fn))
 
         # Optional 'elif' branches
         for cond_val, elif_fn in elifs:
-            cond_func.else_if(cond_val)(elif_fn)
+            cond_func.else_if(cond_val)(_drop_operator_return(elif_fn))
 
         # Optional 'else' branch
         if false_fn:
-            cond_func.otherwise(false_fn)
+            cond_func.otherwise(_drop_operator_return(false_fn))
 
         return cond_func
 
@@ -667,7 +853,7 @@ def cond(
         if true_fn is None:
             return lambda fn: CondCallable(condition, fn)
 
-        return CondCallable(condition, true_fn, false_fn, elifs)
+        return _capture_dispatch(condition, true_fn, false_fn, elifs)
 
     if true_fn is None:
         raise TypeError(
@@ -749,7 +935,6 @@ def _validate_abstract_values(
     outvals: list, expected_outvals: list, branch_type: str, branch_index: int
 ) -> None:
     """Ensure the collected abstract values match the expected ones."""
-    import jax  # pylint: disable=import-outside-toplevel
 
     if len(outvals) != len(expected_outvals):
         msg = (
@@ -797,61 +982,53 @@ def _validate_jaxpr_returns(jaxpr_branches, false_fn):
         _validate_abstract_values(out_avals_branch, out_avals_true, branch_type, idx - 1)
 
 
-@functools.lru_cache
-def _get_cond_qfunc_prim():
-    """Get the cond primitive for quantum functions."""
+cond_prim = QpPrimitive("cond")
+cond_prim.multiple_results = True
+cond_prim.prim_type = "higher_order"
 
-    # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import QpPrimitive
+register_custom_staging_rule(cond_prim, lambda params: params["jaxpr_branches"][0])
 
-    cond_prim = QpPrimitive("cond")
-    cond_prim.multiple_results = True
-    cond_prim.prim_type = "higher_order"
 
-    qp.capture.register_custom_staging_rule(cond_prim, lambda params: params["jaxpr_branches"][0])
+@cond_prim.def_abstract_eval
+def _cond_abstract_eval(*_, jaxpr_branches, **__):
+    return [out.aval for out in jaxpr_branches[0].outvars]
 
-    @cond_prim.def_abstract_eval
-    def _abstract_eval(*_, jaxpr_branches, **__):
-        return [out.aval for out in jaxpr_branches[0].outvars]
 
-    @cond_prim.def_impl
-    def _impl(*all_args, jaxpr_branches, consts_slices, args_slice):
-        args_slice = slice(*args_slice)
-        consts_slices = [slice(*s) for s in consts_slices]
+# pylint: disable=unused-argument
+@cond_prim.def_impl
+def _cond_impl(*all_args, jaxpr_branches, consts_slices, args_slice, estimated_probabilities):
+    args_slice = slice(*args_slice)
+    consts_slices = [slice(*s) for s in consts_slices]
 
-        n_branches = len(jaxpr_branches)
-        conditions = all_args[: n_branches - 1]
-        args = all_args[args_slice]
+    n_branches = len(jaxpr_branches)
+    conditions = all_args[: n_branches - 1]
+    args = all_args[args_slice]
 
-        # Find predicates that use mid-circuit measurements.
-        mcm_conditions = tuple(
-            pred for pred in conditions if isinstance(pred, qp.ops.MeasurementValue)
-        )
-        if len(mcm_conditions) != 0:
-            if len(mcm_conditions) != len(conditions):
+    # Find predicates that use mid-circuit measurements.
+    mcm_conditions = tuple(pred for pred in conditions if isinstance(pred, qp.ops.MeasurementValue))
+    if len(mcm_conditions) != 0:
+        if len(mcm_conditions) != len(conditions):
+            raise ConditionalTransformError(
+                "Cannot use qp.cond with a combination of mid-circuit measurements "
+                "and other classical conditions as predicates."
+            )
+        conditions = qp.measurements.get_mcm_predicates(mcm_conditions)
+    else:
+        conditions = (*conditions, True)
+
+    for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices, strict=True):
+        consts = all_args[const_slice]
+        if isinstance(pred, qp.ops.MeasurementValue):
+            with qp.queuing.AnnotatedQueue() as q:
+                out = qp.capture.eval_jaxpr(jaxpr, consts, *args)
+            if len(out) != 0:
                 raise ConditionalTransformError(
-                    "Cannot use qp.cond with a combination of mid-circuit measurements "
-                    "and other classical conditions as predicates."
+                    "Only quantum functions without return values can be applied "
+                    "conditionally with mid-circuit measurement predicates."
                 )
-            conditions = qp.measurements.get_mcm_predicates(mcm_conditions)
-        else:
-            conditions = (*conditions, True)
+            for wrapped_op in q:
+                Conditional(pred, wrapped_op.obj)
+        elif pred:
+            return qp.capture.eval_jaxpr(jaxpr, consts, *args)
 
-        for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices, strict=True):
-            consts = all_args[const_slice]
-            if isinstance(pred, qp.ops.MeasurementValue):
-                with qp.queuing.AnnotatedQueue() as q:
-                    out = qp.capture.eval_jaxpr(jaxpr, consts, *args)
-                if len(out) != 0:
-                    raise ConditionalTransformError(
-                        "Only quantum functions without return values can be applied "
-                        "conditionally with mid-circuit measurement predicates."
-                    )
-                for wrapped_op in q:
-                    Conditional(pred, wrapped_op.obj)
-            elif pred:
-                return qp.capture.eval_jaxpr(jaxpr, consts, *args)
-
-        return ()
-
-    return cond_prim
+    return ()

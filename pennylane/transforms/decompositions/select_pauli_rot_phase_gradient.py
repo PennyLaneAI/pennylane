@@ -24,7 +24,7 @@ from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Int, Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import WireError, Wires
 
 from .rz_phase_gradient import validate_phase_gradient_wires
@@ -70,7 +70,7 @@ def _select_pauli_rot_phase_gradient(
             def x_basis_comp():
                 qp.Hadamard(target_wire)
 
-            return qp.change_op_basis(x_basis_comp, inner_cob)
+            return qp.change_op_basis(x_basis_comp, inner_cob, x_basis_comp)
 
         case "Y":
 
@@ -134,7 +134,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             angle_wires, phase_grad_wires, work_wires
         )
 
-        @qp.decompose(
+        @qp.transforms._tape_decompose(
             gate_set={"QROM", "Adjoint(QROM)", "SemiAdder", "MultiControlledX", "GlobalPhase"},
             fixed_decomps={qp.SelectPauliRot: custom_decomp}
         )
@@ -143,16 +143,12 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             qp.SelectPauliRot(angles, control_wires=range(3), target_wire=3)
             return qp.state()
 
-        specs = qp.specs(circuit)(angles)["resources"].quantum_operations
-
     The resulting circuit corresponds to the
     `phase gradient decomposition <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__
     of ``SelectPauliRot``, containing two static CNOT fanouts that toggle between addition and
     subtraction based on the target wire state, two QROMs that load the binary representation of
     the rotation angles, and the :class:`~.SemiAdder`:
 
-    >>> specs
-    {'QROM': 2, 'MultiControlledX': 6, 'SemiAdder': 1}
     >>> wire_order = [0, 1, 2, 3] + angle_wires + phase_grad_wires + work_wires
     >>> print(qp.draw(circuit, wire_order=wire_order, show_matrices=False)(angles))
          0: ─╭◑────────────────────────────╭◑─────────────────┤ ╭State
@@ -189,7 +185,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
         # 1. QROM compressed rep
         qrom_rep = qp.QROM(
-            bitstrings=Int[2**num_control_wires, len(angle_wires)],
+            bitstrings=Bool[2**num_control_wires, len(angle_wires)],
             control_wires=Wire[num_control_wires],
             target_wires=Wire[len(angle_wires)],
             work_wires=Wire[num_control_wires - 1],
@@ -201,7 +197,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         ctrl_x_rep = _ctrl_abstract(qp.X, Wire[1], num_zero_control_values=1)
 
         # 3. The callable decomposition produces the controls before the QROM in product order.
-        prod_rep = qp.ops.Prod2((ctrl_x_rep,) * len(phase_grad_wires) + (qrom_rep,))
+        prod_rep = qp.ops.prod(*((ctrl_x_rep,) * len(phase_grad_wires) + (qrom_rep,)))
 
         # 4. SemiAdder as the target_op
         semi_adder_rep = qp.SemiAdder(
@@ -228,7 +224,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
                     qp.Hadamard,
                 )
             case "Y":
-                comp_rep = qp.ops.Prod2((abstractify(qp.Hadamard), _adjoint_abstract(qp.S)))
+                comp_rep = qp.ops.prod(abstractify(qp.Hadamard), _adjoint_abstract(qp.S))
                 change_basis_rep_basis_adapted = _change_op_basis_abstract(
                     comp_rep,
                     change_basis_rep,
@@ -241,7 +237,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         return resources
 
     @qp.register_resources(_resource_fn)
-    def _decomp_fn(angles, control_wires, target_wire, rot_axis, **_):
+    def _select_pauli_rot_phase_gradient_decomp(angles, control_wires, target_wire, rot_axis, **_):
         if len(control_wires) == 0:
             match rot_axis:
                 case "X":
@@ -269,4 +265,4 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             work_wires=work_wires,
         )
 
-    return _decomp_fn
+    return _select_pauli_rot_phase_gradient_decomp

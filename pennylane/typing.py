@@ -24,91 +24,112 @@ from dataclasses import dataclass, field
 from math import prod
 from numbers import Number
 from types import EllipsisType
-from typing import Any, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
+from jax import Array
+from jax.core import Tracer, UnshapedArray
+from jax.numpy import ndarray
 
 FlatPytree = tuple[Sequence[Any], Hashable]
 
 
-class InterfaceTensorMeta(type):
-    """defines dunder methods for the ``isinstance`` and ``issubclass`` checks.
+_TENSORLIKE_PYTHON_TYPES = (
+    int,
+    float,
+    bool,
+    complex,
+    bytes,
+    list,
+    tuple,
+    np.ndarray,
+    np.generic,
+    ArrayBox,
+)
 
-    .. note:: These special dunder methods can only be defined inside a metaclass.
 
+# Once Python 3.12 support is dropped, the separate runtime class and this tuple
+# can be replaced by a Union with an interface helper for _is_jax/_is_torch checks.
+# Keep the aval check; including Array/Tracer directly would accept operator tracers.
+class TensorLikeMeta(type):
+    """Runtime ``isinstance`` / ``issubclass`` for :class:`TensorLike`.
+
+    Must not be a ``typing.Union``: on Python ≤3.12, ``isinstance(x, Union[...])``
+    reduces to ``issubclass(type(x), ...)``, which cannot inspect a JAX tracer's
+    ``aval`` and would still treat :class:`~.AbstractOperator` tracers as tensors.
     """
 
     def __instancecheck__(cls, other):
-        """Dunder method used to check if an object is a `InterfaceTensor` instance."""
-        return _is_jax(other) or _is_torch(other) or _is_tensorflow(other)  # pragma: no cover
+        return isinstance(other, _TENSORLIKE_PYTHON_TYPES) or _is_jax(other) or _is_torch(other)
 
     def __subclasscheck__(cls, other):
-        """Dunder method that checks if a class is a subclass of ``InterfaceTensor``."""
-        return (
-            _is_jax(other, subclass=True)
-            or _is_torch(other, subclass=True)
-            or _is_tensorflow(other, subclass=True)
-        )
+        if issubclass(other, _TENSORLIKE_PYTHON_TYPES):
+            return True
+        return _is_jax(other, subclass=True) or _is_torch(other, subclass=True)
 
 
-class InterfaceTensor(metaclass=InterfaceTensorMeta):
-    """Adds support for runtime instance checking of interface-specific tensor-like data"""
+# Type checkers need a union: they do not use metaclass instance checks for assignability.
+if TYPE_CHECKING:
+    # Keep the optional torch import out of runtime module initialization.
+    from torch import Tensor as TorchTensor
 
+    TensorLike = Union[
+        int,
+        float,
+        bool,
+        complex,
+        bytes,
+        list,
+        tuple,
+        np.ndarray,
+        np.generic,
+        ArrayBox,
+        Array,
+        Tracer,
+        TorchTensor,
+    ]
+else:
+    # Runtime checks must inspect each tracer, including on Python 3.12.
 
-TensorLike = Union[
-    int, float, bool, complex, bytes, list, tuple, np.ndarray, np.generic, ArrayBox, InterfaceTensor
-]
-"""A type for all tensor-like data.
+    class TensorLike(metaclass=TensorLikeMeta):
+        """A type for all tensor-like data.
 
-TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor,
-including lists and tuples. Any argument accepted by ``qp.numpy.array`` is tensor-like.
+        TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor,
+        including lists and tuples. Any argument accepted by ``qp.numpy.array`` is tensor-like.
 
-**Examples**
+        JAX tracers are tensor-like only when array-valued; operator, measurement and qubit
+        tracers created under program capture are not.
 
->>> from pennylane.typing import TensorLike
->>> isinstance(4, TensorLike)
-True
->>> isinstance([2, 6, 8], TensorLike)
-True
->>> isinstance(torch.tensor([1, 2, 3]), TensorLike)
-True
->>> issubclass(list, TensorLike)
-True
->>> issubclass(jax.Array, TensorLike)
-True
+        **Examples**
 
-"""
+        >>> from pennylane.typing import TensorLike
+        >>> isinstance(4, TensorLike)
+        True
+        >>> isinstance([2, 6, 8], TensorLike)
+        True
+        >>> isinstance(torch.tensor([1, 2, 3]), TensorLike)
+        True
+        >>> issubclass(list, TensorLike)
+        True
+        >>> issubclass(jax.Array, TensorLike)
+        True
+
+        """
 
 
 def _is_jax(other, subclass=False):
     """Check if other is an instance or a subclass of a jax tensor."""
-    if "jax" in sys.modules:
-        with contextlib.suppress(ImportError):
-            from jax import Array
-            from jax.core import Tracer
-            from jax.numpy import ndarray
-
-            JaxTensor = ndarray | Array | Tracer
-            check = issubclass if subclass else isinstance
-
-            return check(other, JaxTensor)
-    return False
-
-
-def _is_tensorflow(
-    other, subclass=False
-):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-    """Check if other is an instance or a subclass of a tensorflow tensor."""
-    if "tensorflow" in sys.modules or "tensorflow-macos" in sys.modules:
-        with contextlib.suppress(ImportError):
-            from tensorflow import Tensor as tfTensor
-            from tensorflow import Variable
-
-            check = issubclass if subclass else isinstance
-
-            return check(other, (tfTensor, Variable))
-    return False
+    JaxTensor = ndarray | Array | Tracer
+    if subclass:
+        # A tracer class alone cannot tell us whether its instances represent arrays.
+        return issubclass(other, JaxTensor)
+    # Check tracers first: even operator-valued tracers can satisfy isinstance(other, Array).
+    if isinstance(other, Tracer):
+        # Only array-valued tracers (ShapedArray / DShapedArray) are tensor-like;
+        # operator, measurement and qubit avals are not.
+        return isinstance(other.aval, UnshapedArray)
+    return isinstance(other, JaxTensor)
 
 
 def _is_torch(other, subclass=False):
@@ -504,6 +525,49 @@ class AbstractWires:
         """np.int64. The dtype of wires when used with Catalyst."""
         return np.int64
 
+    def is_compatible_with(self, val) -> bool:
+        """Check whether an input value is compatible with an ``AbstractWires``. A value is
+        considered compatible if it represents a number of wires consistent with this
+        ``AbstractWires``.
+
+        Args:
+            val (Any): input value to check for compatibility. This can be another
+                ``AbstractWires`` or any object with a length (for example, a :class:`~.Wires`
+                instance or a sequence of wire labels).
+
+        Returns:
+            bool: ``True`` if ``val`` is compatible, ``False`` otherwise
+
+        The following conditions must be met to be considered compatible:
+
+        * If this ``AbstractWires`` has an unknown number of wires (``num_wires = -1``), then
+          the input value can have any number of wires.
+        * Otherwise, the input value must have the same, fixed number of wires.
+
+        **Example**
+
+        >>> AbstractWires(-1).is_compatible_with(AbstractWires(3))
+        True
+        >>> AbstractWires(2).is_compatible_with(AbstractWires(2))
+        True
+        >>> AbstractWires(2).is_compatible_with(AbstractWires(3))
+        False
+        >>> AbstractWires(2).is_compatible_with(AbstractWires(-1))
+        False
+        """
+        if isinstance(val, AbstractWires):
+            num_wires = val.shape[0]
+        else:
+            val = np.array(val) if isinstance(val, (Number, list, tuple)) else val
+            shape = getattr(val, "shape", None)
+            if shape is None or len(shape) > 1:
+                return False
+            num_wires = shape[0] if shape else 1
+
+        if not self.shape_fixed:
+            return True
+        return num_wires == self._num_wires
+
     def __hash__(self):
         return hash(("AbstractWires", self._num_wires))
 
@@ -578,7 +642,7 @@ class _AbstractWireTypeFactory:
 
 
 Wire = _AbstractWireTypeFactory()
-"""An :class:`~.AbstractWires` subclass. It can be indexed to create :class:`~.AbstractWires` 
+"""An :class:`~.AbstractWires` subclass. It can be indexed to create :class:`~.AbstractWires`
 with a fixed or dynamic wire count. It should not be used on its own.
 
 >>> from pennylane.typing import Wire

@@ -22,7 +22,6 @@ from dataclasses import replace
 from functools import partial
 from typing import TYPE_CHECKING
 
-import pennylane as qp
 from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import Interface
@@ -42,69 +41,6 @@ if TYPE_CHECKING:
     from pennylane.typing import ResultBatch
 
     ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]
-
-
-def _construct_tf_autograph_pipeline(
-    config: ExecutionConfig,
-    device: Device,
-    inner_transform_program: CompilePipeline,
-):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-    """Handles the pipeline construction for the TF_AUTOGRAPH interface.
-
-    This function determines the execution function (`execute_fn`) and gradient method specifically
-    for the Autograph interface.
-
-    Args:
-        config (qp.devices.ExecutionConfig): resolved execution configuration
-        device (qp.devices.Device): a Pennylane device
-
-        inner_transform_program (qp.CompilePipeline): the transformation applied to quantum tapes
-    Returns:
-        tuple: A tuple containing:
-            - `execute_fn`: function to execute quantum tapes
-            - `diff_method`: method for computing gradients
-    """
-    inner_execute = _make_inner_execute(device, inner_transform_program, config)
-
-    def inner_execute_with_empty_jac(tapes, **_):
-        return inner_execute(tapes), []
-
-    execute_fn = inner_execute_with_empty_jac
-
-    if config.use_device_gradient:
-        if config.grad_on_execution:
-
-            def wrap_execute_and_compute_derivatives(internal_tapes):
-                """A partial function wrapping the execute_and_compute_derivatives method of the device."""
-                numpy_tapes, _ = qp.transforms.convert_to_numpy_parameters(internal_tapes)
-                return device.execute_and_compute_derivatives(numpy_tapes, config)
-
-            execute_fn = wrap_execute_and_compute_derivatives
-            diff_method = None
-
-        else:
-
-            def execution_with_dummy_jac(internal_tapes):
-                """A wrapper around device.execute that returns an empty tuple for derivatives."""
-                numpy_tapes, _ = qp.transforms.convert_to_numpy_parameters(internal_tapes)
-                return device.execute(numpy_tapes, config), tuple()
-
-            execute_fn = execution_with_dummy_jac
-
-            def device_compute_derivatives(internal_tapes):
-                """A partial function wrapping the compute_derivatives method of the device."""
-                numpy_tapes, _ = qp.transforms.convert_to_numpy_parameters(internal_tapes)
-                return device.compute_derivatives(numpy_tapes, config)
-
-            diff_method = device_compute_derivatives
-
-    elif config.grad_on_execution is True:
-        raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
-
-    else:
-        diff_method = config.gradient_method
-
-    return execute_fn, diff_method
 
 
 def _construct_ml_execution_pipeline(
@@ -157,9 +93,8 @@ def _construct_ml_execution_pipeline(
         config.gradient_keyword_arguments,
         cache_full_jacobian=config.interface == Interface.AUTOGRAD,
     )
-    for i in range(1, config.derivative_order):
-        differentiable = i > 1
-        ml_boundary_execute = _get_ml_boundary_execute(config, differentiable=differentiable)
+    for _ in range(1, config.derivative_order):
+        ml_boundary_execute = _get_ml_boundary_execute(config)
         execute_fn = partial(
             ml_boundary_execute,
             execute_fn=execute_fn,
@@ -177,14 +112,12 @@ def _construct_ml_execution_pipeline(
 
 # pylint: disable=import-outside-toplevel
 def _get_ml_boundary_execute(
-    resolved_execution_config: ExecutionConfig, differentiable=False
+    resolved_execution_config: ExecutionConfig,
 ) -> Callable:
     """Imports and returns the function that handles the interface boundary for a given machine learning framework.
 
     Args:
         resolved_execution_config (ExecutionConfig): resolved execution configuration set-up for execution
-        differentiable (bool): Specifies if the operation should be differentiable within the framework.
-            Defaults to ``False``.
 
     Returns:
         Callable: Execution function for the specified machine learning framework.
@@ -193,26 +126,11 @@ def _get_ml_boundary_execute(
         pennylane.QuantumFunctionError: If the required package for the specified interface is not installed.
     """
     interface = resolved_execution_config.interface
-    grad_on_execution = resolved_execution_config.grad_on_execution
     device_vjp = resolved_execution_config.use_device_jacobian_product
     try:
         match interface:
             case Interface.AUTOGRAD:
                 from .interfaces.autograd import autograd_execute as ml_boundary
-
-            case (
-                Interface.TF_AUTOGRAPH
-            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-                from .interfaces.tensorflow_autograph import execute as ml_boundary
-
-                ml_boundary = partial(ml_boundary, grad_on_execution=grad_on_execution)
-
-            case (
-                Interface.TF
-            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-                from .interfaces.tensorflow import tf_execute as full_ml_boundary
-
-                ml_boundary = partial(full_ml_boundary, differentiable=differentiable)
 
             case Interface.TORCH:
                 from .interfaces.torch import execute as ml_boundary
@@ -295,30 +213,6 @@ def run(
         results = inner_execute(tapes)
         return results
 
-    # TODO: Prune once support for tf-autograph is dropped
-    if (
-        config.interface == Interface.TF_AUTOGRAPH
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        execute_fn, diff_method = _construct_tf_autograph_pipeline(
-            config, device, inner_transform_program
-        )
-
-        ml_execute = _get_ml_boundary_execute(
-            config,
-            differentiable=config.derivative_order > 1,
-        )
-        results = ml_execute(
-            tapes,
-            device,
-            execute_fn,
-            diff_method,
-            config.gradient_keyword_arguments,
-            _n=1,
-            max_diff=config.derivative_order,
-        )
-
-        return results
-
     jpc, execute_fn = _construct_ml_execution_pipeline(config, device, inner_transform_program)
 
     if config.interface == Interface.JAX_JIT and config.derivative_order > 1:
@@ -326,10 +220,7 @@ def run(
         # higher order derivatives
         config = replace(config, interface=Interface.JAX)
 
-    ml_execute = _get_ml_boundary_execute(
-        config,
-        differentiable=config.derivative_order > 1,
-    )
+    ml_execute = _get_ml_boundary_execute(config)
 
     # trainable parameters can only be set on the first pass for jax
     # not higher order passes for higher order derivatives

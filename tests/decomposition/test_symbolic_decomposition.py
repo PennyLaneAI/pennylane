@@ -31,6 +31,7 @@ from pennylane.decomposition.decomposition_rule import (
 from pennylane.decomposition.resources import (
     Resources,
     adjoint_resource_rep,
+    controlled_resource_rep,
     pow_resource_rep,
     resource_rep,
 )
@@ -65,6 +66,7 @@ from pennylane.ops.op_math.pow2 import flip_pow_adjoint as flip_pow_adjoint2
 from pennylane.ops.op_math.pow2 import merge_powers as merge_powers2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import repeat_pow_base as repeat_pow_base2
+from pennylane.testing import decomp_rule_to_tape
 from pennylane.typing import Bool, Complex, Float, Wire
 
 # pylint: disable=no-name-in-module
@@ -100,10 +102,9 @@ class TestAdjointDecompositionRules:
 
         op = qp.adjoint(qp.adjoint(CustomOp(0.5, wires=0)))
 
-        with qp.queuing.AnnotatedQueue() as q:
-            cancel_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
+        tape = decomp_rule_to_tape(op, cancel_adjoint)
 
-        assert q.queue == [CustomOp(0.5, wires=0)]
+        assert tape.operations == [CustomOp(0.5, wires=0)]
         assert cancel_adjoint.compute_resources(**op.resource_params) == to_resources(
             {resource_rep(CustomOp, key=0): 1}
         )
@@ -113,27 +114,19 @@ class TestAdjointDecompositionRules:
 
         op = qp.adjoint(qp.adjoint(OneWireDynOp(0.5, wires=[0])))
 
-        with qp.queuing.AnnotatedQueue() as q:
-            cancel_adjoint2(**op.arguments)
+        tape = decomp_rule_to_tape(op, cancel_adjoint2)
 
-        assert q.queue == [OneWireDynOp(0.5, wires=[0])]
+        assert tape.operations == [OneWireDynOp(0.5, wires=[0])]
         assert cancel_adjoint2.compute_resources(**op.arguments) == to_resources({OneWireDynOp: 1})
 
     @pytest.mark.capture
     def test_cancel_adjoint_capture(self):
         """Tests that the adjoint of an adjoint works with capture."""
 
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-
         op = qp.adjoint(qp.adjoint(CustomOp(0.5, wires=0)))
 
-        def circuit():
-            cancel_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
-
-        plxpr = qp.capture.make_plxpr(circuit)()
-        collector = CollectOpsandMeas()
-        collector.eval(plxpr.jaxpr, plxpr.consts)
-        assert collector.state["ops"] == [CustomOp(0.5, wires=0)]
+        tape = decomp_rule_to_tape(op, cancel_adjoint)
+        assert tape.operations == [CustomOp(0.5, wires=0)]
 
     def test_adjoint_general(self):
         """Tests the adjoint of a general operator can be correctly decomposed."""
@@ -174,10 +167,9 @@ class TestAdjointDecompositionRules:
 
         assert rule.name == "adjoint(_custom_decomp)"
 
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+        tape = decomp_rule_to_tape(op, rule)
 
-        assert q.queue == [
+        assert tape.operations == [
             qp.adjoint(qp.T(2)),
             qp.adjoint(qp.CNOT(wires=[1, 2])),
             qp.adjoint(qp.RX(0.5, wires=1)),
@@ -205,15 +197,14 @@ class TestAdjointDecompositionRules:
             qp.T(wires)
             OneWireDynOp(phi, wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(DynOp, custom_rule)
+        qp.add_decomps(DynOp, custom_rule)
 
-            op = qp.adjoint(DynOp(0.5, wires=0))
-            [rule] = qp.list_decomps(op)
+        op = qp.adjoint(DynOp(0.5, wires=0))
+        [rule] = qp.list_decomps(op)
 
-            op2 = qp.adjoint(DynOp(0.5, wires=[0, 1]))
-            [rule2] = qp.list_decomps(op2)
-            assert not rule2.is_applicable(**op2.arguments)
+        op2 = qp.adjoint(DynOp(0.5, wires=[0, 1]))
+        [rule2] = qp.list_decomps(op2)
+        assert not rule2.is_applicable(**op2.arguments)
 
         assert rule.compute_resources(**op.arguments) == to_resources(
             {
@@ -224,10 +215,9 @@ class TestAdjointDecompositionRules:
             }
         )
 
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(**op.arguments)
+        tape = decomp_rule_to_tape(op, rule)
 
-        assert q.queue == [
+        assert tape.operations == [
             qp.adjoint(OneWireDynOp(0.5, wires=0)),
             qp.adjoint(qp.T)(0),
             qp.adjoint(qp.RX)(0.5, 0),
@@ -238,10 +228,9 @@ class TestAdjointDecompositionRules:
         """Tests the adjoint_rotation decomposition."""
 
         op = qp.adjoint(CustomOp(0.5, wires=[0, 1, 2]))
-        with queuing.AnnotatedQueue() as q:
-            adjoint_rotation(*op.parameters, wires=op.wires, **op.hyperparameters)
+        tape = decomp_rule_to_tape(op, adjoint_rotation)
 
-        assert q.queue == [CustomOp(-0.5, wires=[0, 1, 2])]
+        assert tape.operations == [CustomOp(-0.5, wires=[0, 1, 2])]
         assert adjoint_rotation.compute_resources(**op.resource_params) == Resources(
             {resource_rep(CustomOp, key=0): 1}
         )
@@ -250,10 +239,9 @@ class TestAdjointDecompositionRules:
         """Tests the self_adjoint decomposition."""
 
         op = qp.adjoint(CustomOp(0.5, wires=[0, 1, 2]))
-        with queuing.AnnotatedQueue() as q:
-            self_adjoint_legacy(*op.parameters, wires=op.wires, **op.hyperparameters)
+        tape = decomp_rule_to_tape(op, self_adjoint_legacy)
 
-        assert q.queue == [CustomOp(0.5, wires=[0, 1, 2])]
+        assert tape.operations == [CustomOp(0.5, wires=[0, 1, 2])]
         assert self_adjoint_legacy.compute_resources(**op.resource_params) == Resources(
             {resource_rep(CustomOp, key=0): 1}
         )
@@ -262,10 +250,9 @@ class TestAdjointDecompositionRules:
         """Tests the self_adjoint decomposition."""
 
         op = qp.adjoint(OneWireDynOp(0.5, wires=[0]))
-        with queuing.AnnotatedQueue() as q:
-            self_adjoint(**op.arguments)
+        tape = decomp_rule_to_tape(op, self_adjoint)
 
-        assert q.queue == [OneWireDynOp(0.5, wires=[0])]
+        assert tape.operations == [OneWireDynOp(0.5, wires=[0])]
         assert self_adjoint.compute_resources(**op.arguments) == to_resources({OneWireDynOp: 1})
 
 
@@ -277,10 +264,9 @@ class TestPowDecomposition:
         """Test the decomposition rule for nested powers."""
 
         op = qp.pow(qp.pow(DummyHadamard(0), 3), 2)
-        with qp.queuing.AnnotatedQueue() as q:
-            merge_powers(*op.parameters, wires=op.wires, **op.hyperparameters)
+        tape = decomp_rule_to_tape(op, merge_powers)
 
-        assert q.queue == [qp.pow(DummyHadamard(0), 6)]
+        assert tape.operations == [qp.pow(DummyHadamard(0), 6)]
         assert merge_powers.compute_resources(**op.resource_params) == to_resources(
             {pow_resource_rep(DummyHadamard, {}, 6): 1}
         )
@@ -289,10 +275,9 @@ class TestPowDecomposition:
         """Test the decomposition rule for nested powers."""
 
         op = pow(pow(qp.S(0), 3), 2)
-        with qp.queuing.AnnotatedQueue() as q:
-            merge_powers2(**op.arguments)
+        tape = decomp_rule_to_tape(op, merge_powers2)
 
-        assert q.queue == [pow(qp.S(0), 6)]
+        assert tape.operations == [pow(qp.S(0), 6)]
         assert merge_powers2.compute_resources(**op.arguments) == to_resources(
             {qp.S(Wire[1]) ** 6: 1}
         )
@@ -301,10 +286,9 @@ class TestPowDecomposition:
         """Tests repeating the same op z number of times."""
 
         op = qp.pow(DummyHadamard(0), 3)
-        with qp.queuing.AnnotatedQueue() as q:
-            repeat_pow_base(*op.parameters, wires=op.wires, **op.hyperparameters)
+        tape = decomp_rule_to_tape(op, repeat_pow_base)
 
-        assert q.queue == [DummyHadamard(0), DummyHadamard(0), DummyHadamard(0)]
+        assert tape.operations == [DummyHadamard(0), DummyHadamard(0), DummyHadamard(0)]
         assert repeat_pow_base.compute_resources(**op.resource_params) == to_resources(
             {DummyHadamard: 3}
         )
@@ -313,10 +297,9 @@ class TestPowDecomposition:
         """Tests repeating the same op z number of times."""
 
         op = pow(qp.S(0), 3)
-        with qp.queuing.AnnotatedQueue() as q:
-            repeat_pow_base2(**op.arguments)
+        tape = decomp_rule_to_tape(op, repeat_pow_base2)
 
-        assert q.queue == [qp.S(0), qp.S(0), qp.S(0)]
+        assert tape.operations == [qp.S(0), qp.S(0), qp.S(0)]
         assert repeat_pow_base2.compute_resources(**op.arguments) == to_resources({qp.S: 3})
 
     @pytest.mark.capture
@@ -339,17 +322,10 @@ class TestPowDecomposition:
     def test_repeat_pow_base_capture2(self):
         """Tests that the general pow decomposition works with capture."""
 
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-
         op = pow(qp.S(0), 3)
 
-        def circuit():
-            repeat_pow_base2(**op.arguments)
-
-        plxpr = qp.capture.make_plxpr(circuit)()
-        collector = CollectOpsandMeas()
-        collector.eval(plxpr.jaxpr, plxpr.consts)
-        assert collector.state["ops"] == [qp.S(0), qp.S(0), qp.S(0)]
+        tape = decomp_rule_to_tape(op, repeat_pow_base2)
+        assert tape.operations == [qp.S(0), qp.S(0), qp.S(0)]
 
     def test_non_integer_pow_not_applicable(self):
         """Tests that is_applicable returns False when z isn't a positive integer."""
@@ -372,10 +348,9 @@ class TestPowDecomposition:
 
         op = qp.pow(qp.adjoint(CustomOp(0.5, wires=[0, 1, 2])), 2)
 
-        with queuing.AnnotatedQueue() as q:
-            flip_pow_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
+        tape = decomp_rule_to_tape(op, flip_pow_adjoint)
 
-        assert q.queue == [qp.adjoint(qp.pow(CustomOp(0.5, wires=[0, 1, 2]), 2))]
+        assert tape.operations == [qp.adjoint(qp.pow(CustomOp(0.5, wires=[0, 1, 2]), 2))]
         assert flip_pow_adjoint.compute_resources(**op.resource_params) == Resources(
             {
                 adjoint_resource_rep(
@@ -390,10 +365,9 @@ class TestPowDecomposition:
 
         op = pow(qp.adjoint(DynOp(0.5, wires=[0, 1, 2])), 2)
 
-        with queuing.AnnotatedQueue() as q:
-            flip_pow_adjoint2(**op.arguments)
+        tape = decomp_rule_to_tape(op, flip_pow_adjoint2)
 
-        assert q.queue == [qp.adjoint(pow(DynOp(0.5, wires=[0, 1, 2]), 2))]
+        assert tape.operations == [qp.adjoint(pow(DynOp(0.5, wires=[0, 1, 2]), 2))]
         assert flip_pow_adjoint2.compute_resources(**op.arguments) == Resources(
             {
                 _adjoint_abstract(
@@ -476,10 +450,9 @@ class TestPowDecomposition:
         """Tests the pow_rotations decomposition."""
 
         op = qp.pow(CustomOp(0.3, wires=[0, 1, 2]), 2.5)
-        with queuing.AnnotatedQueue() as q:
-            pow_rotation(*op.parameters, wires=op.wires, **op.hyperparameters)
+        tape = decomp_rule_to_tape(op, pow_rotation)
 
-        assert q.queue == [CustomOp(0.3 * 2.5, wires=[0, 1, 2])]
+        assert tape.operations == [CustomOp(0.3 * 2.5, wires=[0, 1, 2])]
         assert pow_rotation.compute_resources(**op.resource_params) == Resources(
             {resource_rep(CustomOp, key=0): 1}
         )
@@ -590,8 +563,7 @@ class TestControlledDecomposition:
         op = qp.ctrl(
             CustomMultiQubitOp(0.5, 0.6, 0.7, wires=[0, 1, 2, 3, 4, 5]), control=[6], work_wires=[7]
         )
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+        tape = decomp_rule_to_tape(op, rule)
 
         expected_ops = [
             qp.CNOT(wires=[6, 0]),
@@ -621,7 +593,7 @@ class TestControlledDecomposition:
             qp.CZ(wires=[6, 0]),
             qp.CCZ(wires=[6, 0, 1]),
         ]
-        for actual, expected in zip(q.queue, expected_ops, strict=True):
+        for actual, expected in zip(tape.operations, expected_ops, strict=True):
             qp.assert_equal(actual, expected)
 
         actual_resources = rule.compute_resources(**op.resource_params)
@@ -700,8 +672,7 @@ class TestControlledDecomposition:
             control_values=[False, True],
             work_wires=[8],
         )
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+        tape = decomp_rule_to_tape(op, rule)
 
         expected_ops = [
             qp.X(6),
@@ -740,7 +711,7 @@ class TestControlledDecomposition:
             qp.X(6),
         ]
 
-        for actual, expected in zip(q.queue, expected_ops, strict=True):
+        for actual, expected in zip(tape.operations, expected_ops, strict=True):
             qp.assert_equal(actual, expected)
 
         actual_resources = rule.compute_resources(**op.resource_params)
@@ -774,8 +745,7 @@ class TestControlledDecomposition:
             control_values=[False, True, False],
             work_wires=[8],
         )
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+        tape = decomp_rule_to_tape(op, rule)
 
         expected_ops = [
             qp.X(6),
@@ -816,7 +786,7 @@ class TestControlledDecomposition:
             qp.X(9),
         ]
 
-        for actual, expected in zip(q.queue, expected_ops, strict=True):
+        for actual, expected in zip(tape.operations, expected_ops, strict=True):
             qp.assert_equal(actual, expected)
 
         if isinstance(op, Operator1):
@@ -872,10 +842,9 @@ class TestControlledDecomposition:
         op = qp.ctrl(DynOp(0.5, [0, 1, 2]), control=[3])
         assert ctrl_rule.is_applicable(**op.arguments)
 
-        with queuing.AnnotatedQueue() as q:
-            ctrl_rule(**op.arguments)
+        tape = decomp_rule_to_tape(op, ctrl_rule)
 
-        assert q.queue == [
+        assert tape.operations == [
             ControlledOp2(OneWireDynOp(0.5, 0), control_wires=[3]),
             ControlledOp2(OneWireDynOp(0.5, 1), control_wires=[3]),
             ControlledOp2(OneWireDynOp(0.5, 2), control_wires=[3]),
@@ -895,10 +864,9 @@ class TestControlledDecomposition:
         """Tests the flip_control_adjoint decomposition."""
 
         op = qp.ctrl(qp.adjoint(CustomMultiQubitOp(0.5, wires=[0, 1])), control=2)
-        with queuing.AnnotatedQueue() as q:
-            flip_control_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
+        tape = decomp_rule_to_tape(op, flip_control_adjoint)
 
-        assert q.queue == [qp.adjoint(qp.ctrl(CustomMultiQubitOp(0.5, wires=[0, 1]), 2))]
+        assert tape.operations == [qp.adjoint(qp.ctrl(CustomMultiQubitOp(0.5, wires=[0, 1]), 2))]
         assert flip_control_adjoint.compute_resources(**op.resource_params) == Resources(
             {
                 adjoint_resource_rep(
@@ -919,10 +887,9 @@ class TestControlledDecomposition:
         """Tests the flip_control_adjoint decomposition."""
 
         op = qp.ctrl(qp.adjoint(DynOp(0.5, wires=[0, 1])), control=2)
-        with queuing.AnnotatedQueue() as q:
-            flip_control_adjoint2(**op.arguments)
+        tape = decomp_rule_to_tape(op, flip_control_adjoint2)
 
-        assert q.queue == [qp.adjoint(qp.ctrl(DynOp(0.5, wires=[0, 1]), 2))]
+        assert tape.operations == [qp.adjoint(qp.ctrl(DynOp(0.5, wires=[0, 1]), 2))]
         assert flip_control_adjoint2.compute_resources(**op.arguments) == to_resources(
             {Adjoint2(ControlledOp2(DynOp(Float, Wire[2]), control_wires=Wire[1])): 1}
         )
@@ -1015,10 +982,9 @@ class TestControlledDecomposition:
         resources = custom_rule.compute_resources(**op.arguments)
         assert resources == to_resources({qp.CNOT: 3, qp.H: 2, qp.X: 3})
 
-        with qp.queuing.AnnotatedQueue() as q:
-            custom_rule(**op.arguments)
+        tape = decomp_rule_to_tape(op, custom_rule)
 
-        assert q.queue == [
+        assert tape.operations == [
             qp.X(3),
             qp.CNOT([1, 2]),
             qp.H(3),
@@ -1115,16 +1081,26 @@ class TestControlledDecomposition:
             def compute_matrix(*params):
                 return qp.Rot.compute_matrix(*params)
 
-        op = qp.ctrl(CustomRot(0.123, 0.234, 0.345, wires=0), control=[1, 2])
+        # the rule requires more than two control wires
+        op = qp.ctrl(CustomRot(0.123, 0.234, 0.345, wires=0), control=[1, 2, 3])
+        assert ctrl_single_work_wire.is_applicable(**op.resource_params)
+
+        assert ctrl_single_work_wire.compute_resources(**op.resource_params) == to_resources(
+            {
+                _ctrl_abstract(qp.X, Wire[3]): 2,
+                controlled_resource_rep(CustomRot, {}, 1): 1,
+            }
+        )
+        assert ctrl_single_work_wire.get_work_wire_spec(**op.resource_params).zeroed == 1
 
         with queuing.AnnotatedQueue() as q:
-            qp.Projector([0], wires=3)
+            qp.Projector([0], wires=4)
             ctrl_single_work_wire(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         tape = qp.tape.QuantumScript.from_queue(q)
-        [tape], _ = qp.transforms.resolve_dynamic_wires([tape], min_int=3)
-        mat = qp.matrix(tape, wire_order=[0, 1, 2, 3])
-        expected_mat = qp.matrix(op @ qp.Projector([0], wires=3), wire_order=[0, 1, 2, 3])
+        [tape], _ = qp.transforms.resolve_dynamic_wires([tape], min_int=4)
+        mat = qp.matrix(tape, wire_order=[0, 1, 2, 3, 4])
+        expected_mat = qp.matrix(op @ qp.Projector([0], wires=4), wire_order=[0, 1, 2, 3, 4])
         assert qp.math.allclose(mat, expected_mat)
 
     @pytest.mark.unit
@@ -1178,10 +1154,9 @@ class TestControlledDecomposition:
                 return qp.Rot.compute_matrix(*params)
 
         op = qp.ctrl(CustomRot(0.1, 0.2, 0.3, wires=0), control=[1, 2, 3], work_wires=[4, 5])
-        with queuing.AnnotatedQueue() as q:
-            to_controlled_qubit_unitary(*op.parameters, wires=op.wires, **op.hyperparameters)
+        tape = decomp_rule_to_tape(op, to_controlled_qubit_unitary)
 
-        assert q.queue == [
+        assert tape.operations == [
             qp.ControlledQubitUnitary(
                 qp.Rot.compute_matrix(0.1, 0.2, 0.3), wires=[1, 2, 3, 0], work_wires=[4, 5]
             )
@@ -1203,10 +1178,9 @@ class TestControlledDecomposition:
         """Tests the decomposition to controlled qubit unitary."""
 
         op = qp.ctrl(DynOpWithMatrix(0.1, 0.2, 0.3, wires=0), control=[1, 2, 3], work_wires=[4, 5])
-        with queuing.AnnotatedQueue() as q:
-            to_controlled_unitary(**op.arguments)
+        tape = decomp_rule_to_tape(op, to_controlled_unitary)
 
-        assert q.queue == [
+        assert tape.operations == [
             qp.ControlledQubitUnitary(
                 qp.Rot.compute_matrix(0.1, 0.2, 0.3), wires=[1, 2, 3, 0], work_wires=[4, 5]
             )

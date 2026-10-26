@@ -81,13 +81,9 @@ from functools import partial
 from numbers import Number
 from warnings import warn
 
-try:
-    import jax
-    from jax.interpreters import ad, batching, mlir
-    from jax.interpreters import partial_eval as pe
-
-except (ImportError, NameError) as e:  # pragma: no cover
-    pass
+import jax
+from jax.interpreters import ad, batching, mlir
+from jax.interpreters import partial_eval as pe
 
 import pennylane as qp
 from pennylane import math
@@ -447,7 +443,7 @@ def _bind_qnode(qnode, *args, **kwargs):
             "devices must specify wires for integration with program capture."
         )
 
-    if any(math.is_abstract(w) for w in qnode.device.wires):
+    if any(math.is_tracer(w) for w in qnode.device.wires):
         raise NotImplementedError(
             "Dynamic device wires are not currently supported with program capture."
         )

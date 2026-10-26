@@ -16,7 +16,6 @@ Unit tests for :mod:`pennylane.operation`.
 """
 
 import copy
-from collections.abc import Callable
 
 import numpy as np
 import pytest
@@ -527,24 +526,6 @@ class TestBroadcasting:
         assert op.ndim_params == (0, 2)
         assert op.batch_size == exp_batch_size
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
-    def test_broadcasted_params_tf(self, params, exp_batch_size):
-        r"""Test that initialization of an operator with broadcasted parameters
-        works and sets the ``batch_size`` correctly with TensorFlow parameters."""
-        import tensorflow as tf
-
-        class DummyOp(qp.operation.Operator):
-            r"""Dummy custom operator that declares ndim_params as a class property"""
-
-            ndim_params = (0, 2)
-            num_wires = 1
-
-        params = tuple(tf.Variable(p) for p in params)
-        op = DummyOp(*params, wires=0)
-        assert op.ndim_params == (0, 2)
-        assert op.batch_size == exp_batch_size
-
     @pytest.mark.torch
     @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
     def test_broadcasted_params_torch(self, params, exp_batch_size):
@@ -562,27 +543,6 @@ class TestBroadcasting:
         op = DummyOp(*params, wires=0)
         assert op.ndim_params == (0, 2)
         assert op.batch_size == exp_batch_size
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("jit_compile", [True, False])
-    def test_with_tf_function(self, jit_compile):
-        """Tests using tf.function with an operation works with and without
-        just in time (JIT) compilation."""
-        import tensorflow as tf
-
-        def fun(x):
-            _ = qp.RX(x, 0).batch_size
-
-        # No kwargs
-        fun0 = tf.function(fun)
-        fun0(tf.Variable(0.2))
-        fun0(tf.Variable([0.2, 0.5]))
-
-        # With kwargs
-        signature = (tf.TensorSpec(shape=None, dtype=tf.float32),)
-        fun1 = tf.function(fun, jit_compile=jit_compile, input_signature=signature)
-        fun1(tf.Variable(0.2))
-        fun1(tf.Variable([0.2, 0.5]))
 
 
 class TestHasReprProperties:
@@ -682,15 +642,13 @@ class TestHasReprProperties:
         class SomeRandomName(qp.operation.Operator):
             pass
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.X: 1})
+        def decomp(x, wires):
+            qp.RX(x, wires)
 
-            @qp.register_resources({qp.X: 1})
-            def decomp(x, wires):
-                qp.RX(x, wires)
+        qp.add_decomps(SomeRandomName, decomp)
 
-            qp.add_decomps(SomeRandomName, decomp)
-
-            assert SomeRandomName(0.5, wires=0).has_decomposition
+        assert SomeRandomName(0.5, wires=0).has_decomposition
 
     def test_has_decomposition_graph_decomp_multiple_conditions(self):
         """Test that operators with multiple decompositions and conditions have
@@ -711,12 +669,11 @@ class TestHasReprProperties:
         def decomp2(x, wires):
             qp.CRX(x, wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(MNBV, decomp1, decomp2)
+        qp.add_decomps(MNBV, decomp1, decomp2)
 
-            assert MNBV(0.5, wires=0).has_decomposition
-            assert MNBV(0.5, wires=(0, 1)).has_decomposition
-            assert not MNBV(0.5, wires=(0, 1, 2)).has_decomposition
+        assert MNBV(0.5, wires=0).has_decomposition
+        assert MNBV(0.5, wires=(0, 1)).has_decomposition
+        assert not MNBV(0.5, wires=(0, 1, 2)).has_decomposition
 
     def test_has_decomposition_false(self):
         """Test has_decomposition property defaults to false if neither
@@ -1171,16 +1128,6 @@ class TestOperatorIntegration:
         assert isinstance(sum_op, Sum)
         assert sum_op[1].scalar is scalar
 
-    @pytest.mark.tf
-    def test_sum_scalar_tf_tensor(self):
-        """Test the __sum__ dunder method with a scalar tf tensor."""
-        import tensorflow as tf
-
-        scalar = tf.constant(5)
-        sum_op = qp.RX(1.23, 0) + scalar
-        assert isinstance(sum_op, Sum)
-        assert sum_op[1].scalar is scalar
-
     @pytest.mark.jax
     def test_sum_scalar_jax_tensor(self):
         """Test the __sum__ dunder method with a scalar jax tensor."""
@@ -1312,20 +1259,6 @@ class TestOperatorIntegration:
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
-    @pytest.mark.tf
-    def test_mul_scalar_tf_tensor(self):
-        """Test the __mul__ dunder method with a scalar tf tensor."""
-        import tensorflow as tf
-
-        scalar = tf.constant(5)
-        prod_op = qp.RX(1.23, 0) * scalar
-        assert isinstance(prod_op, SProd)
-        assert prod_op.scalar is scalar
-
-        prod_op = scalar * qp.RX(1.23, 0)
-        assert isinstance(prod_op, SProd)
-        assert prod_op.scalar is scalar
-
     @pytest.mark.jax
     def test_mul_scalar_jax_tensor(self):
         """Test the __mul__ dunder method with a scalar jax tensor."""
@@ -1404,18 +1337,17 @@ class TestDefaultRepresentations:
         def decomp2(x, wires):
             qp.RZ(x, wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(OpWithACustomName98786, decomp1, decomp2)
+        qp.add_decomps(OpWithACustomName98786, decomp1, decomp2)
 
-            [out] = OpWithACustomName98786(0.5, wires=0).decomposition()
-            qp.assert_equal(out, qp.RX(0.5, wires=0))
+        [out] = OpWithACustomName98786(0.5, wires=0).decomposition()
+        qp.assert_equal(out, qp.RX(0.5, wires=0))
 
-            op = OpWithACustomName98786(0.5, wires=0)
-            with qp.queuing.AnnotatedQueue() as q:
-                op.decomposition()
+        op = OpWithACustomName98786(0.5, wires=0)
+        with qp.queuing.AnnotatedQueue() as q:
+            op.decomposition()
 
-            assert len(q.queue) == 1
-            qp.assert_equal(q.queue[0], qp.RX(0.5, wires=0))
+        assert len(q.queue) == 1
+        qp.assert_equal(q.queue[0], qp.RX(0.5, wires=0))
 
     def test_graph_decomposition_fallback_conditions(self):
         """Test the graph decomposition fallback is sensitive to conditions."""
@@ -1439,16 +1371,15 @@ class TestDefaultRepresentations:
         def decomp2(x, wires):
             qp.CRX(x, wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(BVCX, decomp1, decomp2)
+        qp.add_decomps(BVCX, decomp1, decomp2)
 
-            [op1] = BVCX(0.5, wires=0).decomposition()
-            qp.assert_equal(op1, qp.RX(0.5, wires=0))
-            [op2] = BVCX(0.5, wires=(0, 1)).decomposition()
-            qp.assert_equal(op2, qp.CRX(0.5, wires=(0, 1)))
+        [op1] = BVCX(0.5, wires=0).decomposition()
+        qp.assert_equal(op1, qp.RX(0.5, wires=0))
+        [op2] = BVCX(0.5, wires=(0, 1)).decomposition()
+        qp.assert_equal(op2, qp.CRX(0.5, wires=(0, 1)))
 
-            with pytest.raises(qp.exceptions.DecompositionUndefinedError):
-                BVCX(0.5, wires=(0, 1, 2)).decomposition()
+        with pytest.raises(qp.exceptions.DecompositionUndefinedError):
+            BVCX(0.5, wires=(0, 1, 2)).decomposition()
 
     def test_matrix_undefined(self):
         """Tests that custom error is raised in the default matrix representation."""
@@ -1841,18 +1772,14 @@ class TestNewOpMath:
                 (1.1, X2(0)),
                 (1 + 2j, X2(0)),
                 ([3, 4j], X2(0)),
-                (lambda x: x, X2(0)),
             ],
         )
         def test_mul(self, operand, base):
             """Tests multiplying an operator by a scalar coefficient works as expected."""
             for op in [operand * base, base * operand]:
-                if isinstance(operand, Callable):
-                    assert isinstance(op, qp.pulse.ParametrizedHamiltonian)
-                else:
-                    assert isinstance(op, SProd)
-                    assert qp.math.allequal(op.scalar, operand)
-                    qp.assert_equal(op.base, base)
+                assert isinstance(op, SProd)
+                assert qp.math.allequal(op.scalar, operand)
+                qp.assert_equal(op.base, base)
 
         @pytest.mark.parametrize(
             "scalar, base",

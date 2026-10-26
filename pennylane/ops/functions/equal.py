@@ -26,6 +26,7 @@ from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator, Operator2
 from pennylane.core.qscript import QuantumScript
+from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.measurements.mutual_info import MutualInfoMP
@@ -47,7 +48,6 @@ from pennylane.ops.op_math.composite2 import CompositeOp2
 from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPrep, Select
@@ -347,7 +347,7 @@ def _equal_operators(
             f"Got {op1.hyperparameters}\n and {op2.hyperparameters}."
         )
 
-    if any(math.is_abstract(d) for d in op1.data + op2.data):
+    if any(math.is_tracer(d) for d in op1.data + op2.data):
         # assume all tracers are independent
         return "Data contains a tracer. Abstract tracers are assumed to be unique."
     if len(op1.data) != len(op2.data):
@@ -394,6 +394,12 @@ def _equal_operator2(
 
     if type(op1) is not type(op2):
         return f"op1 and op2 have different types. Got {type(op1)} and {type(op2)}."
+
+    if isinstance(op1, qp.Identity):
+        # All Identities are equivalent, independent of wires.
+        # We already know op1 and op2 are of the same type, so no need to check
+        # that op2 is also an Identity
+        return True
 
     # Check static arguments
     for (sname, sval1), (_, sval2) in zip(
@@ -490,7 +496,7 @@ def _check_wire_value(wname: str, wval1: Any, wval2: Any):
 
     else:
         for w1, w2 in zip(wval1, wval2, strict=True):
-            if math.is_abstract(w1) or math.is_abstract(w2):
+            if math.is_tracer(w1) or math.is_tracer(w2):
                 unequal_wires = True
                 abstract_wires = True
                 break
@@ -531,7 +537,7 @@ def _check_dynamic_value(
     if is_aa1 != is_aa2:
         return f"Unmatched representations for {dname}. Got {dval1} and {dval2}."
 
-    if math.is_abstract(dval1) or math.is_abstract(dval2):
+    if math.is_tracer(dval1) or math.is_tracer(dval2):
         return (
             f"At least one of op1 or op2 has a tracer value for '{dname}'. Abstract "
             "tracers are assumed to be unique."
@@ -898,7 +904,7 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
                 f"{op1.coeff} trainability is {coeff1_train} and {op2.coeff} trainability is {coeff2_train}"
             )
 
-    if qp.math.is_abstract(op1.coeff) or qp.math.is_abstract(op2.coeff):
+    if qp.math.is_tracer(op1.coeff) or qp.math.is_tracer(op2.coeff):
         if op1.coeff is not op2.coeff:
             return "Data contains a tracer. Abstract tracers are assumed to be unique."
 
@@ -940,7 +946,7 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
                 f"{op1.scalar} trainability is {scalar1_train} and {op2.scalar} trainability is {scalar2_train}"
             )
 
-    if qp.math.is_abstract(op1.scalar) or qp.math.is_abstract(op2.scalar):
+    if qp.math.is_tracer(op1.scalar) or qp.math.is_tracer(op2.scalar):
         if op1.scalar is not op2.scalar:
             return "Data contains a tracer. Abstract tracers are assumed to be unique."
 
@@ -956,29 +962,6 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
         return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + equal_check
 
     return True
-
-
-@_equal_dispatch.register
-def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedEvolution, **kwargs):
-    # check times match
-    if op1.t is None or op2.t is None:
-        if not (op1.t is None and op2.t is None):
-            return False
-    elif not math.allclose(op1.t, op2.t):
-        return False
-
-    # check parameters passed to operator match
-    operator_check = _equal_operators(op1, op2, **kwargs)
-    if isinstance(operator_check, str):
-        return False
-
-    # check H.coeffs match
-    if len(op1.H.coeffs) != len(op2.H.coeffs) or len(op1.H.ops) != len(op2.H.ops):
-        return False
-    if not all(c1 == c2 for c1, c2 in zip(op1.H.coeffs, op2.H.coeffs, strict=True)):
-        return False
-
-    return all(equal(o1, o2, **kwargs) for o1, o2 in zip(op1.H.ops, op2.H.ops, strict=True))
 
 
 @_equal_dispatch.register
@@ -1006,7 +989,7 @@ def _equal_measurements(
         if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
             return qp.equal(op1.mv, op2.mv)
 
-        if math.is_abstract(op1.mv) or math.is_abstract(op2.mv):
+        if math.is_tracer(op1.mv) or math.is_tracer(op2.mv):
             return op1.mv is op2.mv
 
         if isinstance(op1.mv, Iterable) and isinstance(op2.mv, Iterable):
@@ -1204,10 +1187,9 @@ def _equal_qsvt(op1: QSVT, op2: QSVT, **kwargs):
     if len(projectors1) != len(projectors2):
         return f"op1 and op2 have a different number of projectors. Got {projectors1} and {projectors2}."
     for i, (p1, p2) in enumerate(zip(projectors1, projectors2, strict=True)):
-        try:
-            assert_equal(p1, p2, **kwargs)
-        except AssertionError as e:
-            return f"op1 and op2 have different projectors at position {i}. Got {p1} and {p2}, which differ: {e}."
+        comparer = _equal(p1, p2, **kwargs)
+        if isinstance(comparer, str):
+            return f"op1 and op2 have different projectors at position {i}. Got {p1} and {p2}, which differ: {comparer}."
     return True
 
 
@@ -1227,3 +1209,13 @@ def _equal_select(op1: Select, op2: Select, **kwargs):
         if isinstance(comparer, str):
             return f"got different operations at index {idx}: {_t1} and {_t2}. They differ because {comparer}."
     return True
+
+
+@_equal_dispatch.register
+def _equal_compressed_resource_op(op1: CompressedResourceOp, op2: CompressedResourceOp, **_):
+    """Determine whether two resource representations are equal.
+
+    Resource representations (produced by abstractifying operators for the decomposition graph)
+    appear, for example, as the target operators of an abstract ``Select``.
+    """
+    return op1 == op2 or f"op1 and op2 are different resource representations. Got {op1} and {op2}."

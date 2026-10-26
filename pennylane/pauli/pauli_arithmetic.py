@@ -26,7 +26,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
+from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod2, SProd, Sum
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -531,7 +531,7 @@ class PauliWord(dict):
             factors = [_make_operation(op, wire) for wire, op in self.items()]
 
         pauli_rep = PauliSentence({self: 1})
-        return factors[0] if len(factors) == 1 else Prod(*factors, _pauli_rep=pauli_rep)
+        return factors[0] if len(factors) == 1 else Prod2(factors, _init_pauli_rep=pauli_rep)
 
     def map_wires(self, wire_map: dict) -> "PauliWord":
         """Return a new PauliWord with the wires mapped."""
@@ -1029,7 +1029,7 @@ class PauliSentence(dict):
             rep = PauliSentence({pw: coeff})
             summands.append(
                 pw_op
-                if not math.is_abstract(coeff) and qp.math.all(coeff == 1)
+                if not math.is_tracer(coeff) and qp.math.all(coeff == 1)
                 else SProd(coeff, pw_op, _pauli_rep=rep)
             )
         return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
@@ -1053,7 +1053,7 @@ class PauliSentence(dict):
         """
         items = list(self.items())
         for pw, coeff in items:
-            if not math.is_abstract(coeff) and abs(coeff) <= tol:
+            if not math.is_tracer(coeff) and abs(coeff) <= tol:
                 del self[pw]
 
     def simplify(self, tol=1e-8) -> None:

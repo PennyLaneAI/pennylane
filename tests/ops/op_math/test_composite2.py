@@ -25,10 +25,10 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.ops.functions.assert_valid import assert_valid
 from pennylane.ops.op_math import CompositeOp2
 from pennylane.pauli.pauli_arithmetic import PauliWord
 from pennylane.queuing import AnnotatedQueue
+from pennylane.testing import assert_valid
 from pennylane.typing import Float, Wire
 from pennylane.wires import WiresLike
 
@@ -55,7 +55,7 @@ ops_rep = (
 class NoOperandsOp(CompositeOp2):
     # pylint:disable=unused-argument
     _op_symbol = "#"
-    _math_op = math.prod
+    _math_op = staticmethod(math.prod)
 
     hybrid_argnames = ("ops", "_init_pauli_rep")  # different name than operands
     wire_argnames = ()
@@ -88,7 +88,7 @@ class NoOperandsOp(CompositeOp2):
 class ValidOp(CompositeOp2):
     # pylint:disable=unused-argument
     _op_symbol = "#"
-    _math_op = math.prod
+    _math_op = staticmethod(math.prod)
 
     hybrid_argnames = ("operands", "_init_pauli_rep")
     wire_argnames = ()
@@ -142,7 +142,7 @@ class NoPauliRepOp(ValidOp):
         return None
 
 
-@pytest.mark.capture
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize(
     "operands",
     [
@@ -618,7 +618,7 @@ class TestCapture:
         """Test that a ValidOp can be captured into and reconstructed from jaxpr."""
         import jax
 
-        from tests.capture.capture_utils import assert_eqn_matches_op
+        from pennylane.testing import assert_eqn_matches_op
 
         def qfunc():
             return ValidOp((qp.RX(1.2, wires=0), qp.PauliZ(0)))

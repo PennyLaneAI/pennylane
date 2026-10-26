@@ -34,7 +34,7 @@ def find_next_gate(wires, op_list):
     next_gate_idx = None
 
     for op_idx, op in enumerate(op_list):
-        if any(qp.math.is_abstract(w) for w in op.wires):
+        if any(qp.math.is_tracer(w) for w in op.wires):
             break
         if len(Wires.shared_wires([wires, op.wires])) > 0:
             next_gate_idx = op_idx
@@ -47,7 +47,7 @@ def _try_no_fuse(angles_1, angles_2):
     """Try to combine rotation angles without trigonometric identities
     if some angles in the input angles vanish."""
     # This sum is only computed to obtain a dtype-coerced object that respects
-    # TensorFlow's coercion rules between Python/NumPy objects and TF objects.
+    # interface coercion rules between Python/NumPy objects and interface tensors.
     _sum = angles_1 + angles_2
     # moveaxis required for batched inputs
     phi1, theta1, omega1 = qp.math.moveaxis(qp.math.cast_like(angles_1, _sum), -1, 0)
@@ -110,8 +110,8 @@ def fuse_rot_angles(angles_1, angles_2):
     angles_2 = qp.math.asarray(angles_2)
 
     if not (
-        qp.math.is_abstract(angles_1)
-        or qp.math.is_abstract(angles_2)
+        qp.math.is_tracer(angles_1)
+        or qp.math.is_tracer(angles_2)
         or qp.math.requires_grad(angles_1)
         or qp.math.requires_grad(angles_2)
     ):

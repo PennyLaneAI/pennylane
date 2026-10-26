@@ -22,12 +22,12 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.signed_out_square import (
     OutSquare,
     SignedOutSquare,
     _signed_out_square_resources,
 )
+from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
 from pennylane.typing import Wire
 
 
@@ -39,7 +39,7 @@ def test_standard_validity_signed_out_square(output_wires_zeroed):
     output_wires = [4, 5, 6, 7, 8, 9, 10]
     work_wires = [11, 12, 13, 14, 15, 16, 17, 18, 19]
     op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.parametrize("output_wires_zeroed", [False, True])
@@ -200,7 +200,8 @@ class TestSignedOutSquare:
         }
 
         @qp.set_shots(1)
-        @qp.decompose(gate_set=gate_set, max_expansion=3)
+        # pylint: disable-next=protected-access
+        @qp.transforms._tape_decompose(gate_set=gate_set, max_expansion=3)
         @qp.qnode(dev)
         def circuit(x, z, x_wires, work_wires):
             qp.BasisEmbedding(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
@@ -292,7 +293,7 @@ class TestSignedOutSquare:
 
         expected = [
             qp.OutSquare(x_wires[1:], output_wires, work_wires, output_wires_zeroed),
-            qp.BasisState([1], [1]),
+            qp.MultiX([1], [1]),
             qp.X(4),
             qp.TemporaryAND([2, 4, 8]),
             qp.X(8),
@@ -302,7 +303,7 @@ class TestSignedOutSquare:
             qp.adjoint(qp.TemporaryAND([2, 4, 8])),
             qp.ctrl(qp.CNOT([2, 4]), [0], work_wires=[9, 10, 11, 12], work_wire_type="zeroed"),
             qp.X(4),
-            qp.BasisState([1], [1]),
+            qp.MultiX([1], [1]),
             qp.X(3),
             qp.SemiAdder([0], [3], [8, 9, 10, 11, 12]),
             qp.X(3),
@@ -334,6 +335,7 @@ class TestSignedOutSquare:
             ([0, 1, 2, 3], [4, 5, 6, 7], [9, 10, 11, 12, 13], False),
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=pytest.mark.jax), False])
     def test_decomposition_new(
         self,
@@ -347,9 +349,14 @@ class TestSignedOutSquare:
         """Tests the decomposition rule implemented with the new system."""
         op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
         for rule in qp.list_decomps(SignedOutSquare):
-            _test_decomposition_rule(op, rule)
+            assert_valid_decomp_rule(op, rule)
             assert rule.is_applicable(**op.arguments)
             all_wires = (x_wires, output_wires, work_wires)
+
+        if qp.capture.enabled():
+            pytest.skip("The following test relies on executing a qnode with capture.")
+
+        for rule in qp.list_decomps(SignedOutSquare):
             _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -368,5 +375,4 @@ class TestSignedOutSquare:
         calls ``_c_subtract_then_add_one`` (triggered whenever ``len(output_wires) > len(x_wires)``)
         """
         op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
-        for rule in qp.list_decomps(SignedOutSquare):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)

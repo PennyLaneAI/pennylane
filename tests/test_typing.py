@@ -13,10 +13,13 @@
 # limitations under the License.
 """Unit tests for the ``typing.py`` file."""
 
+import jax
 import numpy as np
 import pytest
 
+import pennylane as qp
 import pennylane.numpy as pnp
+from pennylane.core.operator.base import AbstractOperator
 from pennylane.typing import (
     AbstractArray,
     AbstractWires,
@@ -30,6 +33,11 @@ from pennylane.typing import (
     _AbstractWireTypeFactory,
 )
 from pennylane.wires import Wires
+
+try:
+    import torch
+except ImportError:
+    torch = None
 
 
 class TestTensorLike:
@@ -53,29 +61,61 @@ class TestTensorLike:
     @pytest.mark.jax
     def test_isinstance_jax_array_is_tensor_like(self):
         """Tests that a jax DeviceArray is a Tensor"""
-        import jax
 
         tensor = jax.numpy.array(1)
         assert isinstance(tensor, TensorLike)
 
+    @pytest.mark.jax
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_capture")
+    def test_abstract_operator_tracer_is_not_tensor_like(self):
+        """Captured operators are tracers, but not tensor-like numeric data."""
+
+        tracer = None
+
+        def grab():
+            nonlocal tracer
+            tracer = 3 * qp.X(0)
+            return tracer
+
+        jax.make_jaxpr(grab)()
+        assert isinstance(tracer.aval, AbstractOperator)
+        # JAX may also report the tracer as Array; TensorLike must still reject it.
+        assert isinstance(tracer, jax.Array)
+        assert not isinstance(tracer, TensorLike)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("value", [1.0, np.array([1.0, 2.0])])
+    def test_array_tracer_is_tensor_like(self, value):
+        """Both scalar and array tracers remain tensor-like."""
+
+        def check(tensor):
+            assert isinstance(tensor, jax.core.Tracer)
+            assert isinstance(tensor, TensorLike)
+            return tensor
+
+        jax.make_jaxpr(check)(value)
+
+    @pytest.mark.jax
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_capture")
+    def test_measurement_tracer_is_not_tensor_like(self):
+        """Captured measurements are not tensor-like numeric data."""
+
+        def check():
+            measurement = qp.expval(qp.X(0))
+            assert isinstance(measurement, jax.core.Tracer)
+            assert not isinstance(measurement, TensorLike)
+            return measurement
+
+        jax.make_jaxpr(check)()
+
     @pytest.mark.torch
     def test_isinstance_torch_tensor_is_tensor_like(self):
         """Tests that a torch Tensor is a Tensor"""
-        import torch
 
         tensor = torch.Tensor(1)
         assert isinstance(tensor, TensorLike)
-
-    @pytest.mark.tf
-    def test_isinstance_tf_tensor_is_tensor_like(self):
-        """Tests that a tensorflow Tensor is a Tensor"""
-        import tensorflow as tf
-
-        tensor = tf.constant([1, 2, 3])
-        assert isinstance(tensor, tf.Tensor)
-        assert isinstance(tensor, TensorLike)
-        var = tf.Variable(9)
-        assert isinstance(var, TensorLike)
 
     def test_subclass_unknown_type(self):
         """Test that an unknown type returns False."""
@@ -97,24 +137,14 @@ class TestTensorLike:
     @pytest.mark.jax
     def test_subclass_jax_array_is_tensor_like(self):
         """Tests that a jax DeviceArray is a Tensor"""
-        import jax
 
         assert issubclass(jax.numpy.ndarray, TensorLike)
 
     @pytest.mark.torch
     def test_subclass_torch_tensor_is_tensor_like(self):
         """Tests that a torch Tensor is a Tensor"""
-        import torch
 
         assert issubclass(torch.Tensor, TensorLike)
-
-    @pytest.mark.tf
-    def test_subclass_tf_tensor_is_tensor_like(self):
-        """Tests that a tensorflow Tensor is a Tensor"""
-        import tensorflow as tf
-
-        assert issubclass(tf.Tensor, TensorLike)
-        assert issubclass(tf.Variable, TensorLike)
 
 
 # pylint: disable=protected-access,too-many-public-methods
@@ -140,8 +170,6 @@ class TestAbstractArray:
     @pytest.mark.torch
     def test_provide_torch_dtype(self):
         """Test that a torch dtype is converted to a numpy dtype."""
-
-        import torch
 
         a = AbstractArray((2,), torch.int32)
 
@@ -476,7 +504,6 @@ class TestAbstractArray:
     @pytest.mark.torch
     def test_is_compatible_with_torch_tensor(self):
         """Test compatibility checks against torch tensors."""
-        import torch
 
         aa = AbstractArray((2,), torch.float32)
         assert aa.is_compatible_with(torch.ones(2, dtype=torch.float32))
@@ -607,3 +634,36 @@ class TestAbstractWires:
 
         with pytest.raises(TypeError, match="Cannot index into an AbstractWires with"):
             _ = Wire[-1][2]
+
+    def test_is_compatible_with_abstract_wires(self):
+        """Test compatibility checks against another ``AbstractWires``."""
+        # A dynamic ``AbstractWires`` is compatible with any number of wires.
+        assert AbstractWires(-1).is_compatible_with(AbstractWires(3))
+        assert AbstractWires(-1).is_compatible_with(AbstractWires(-1))
+
+        # A fixed ``AbstractWires`` is only compatible with a matching number of wires.
+        assert AbstractWires(2).is_compatible_with(AbstractWires(2))
+        assert not AbstractWires(2).is_compatible_with(AbstractWires(3))
+
+        # A dynamic value has an unknown number of wires, so it is not compatible with a fixed spec.
+        assert not AbstractWires(2).is_compatible_with(AbstractWires(-1))
+
+    def test_is_compatible_with_sequences(self):
+        """Test compatibility checks against sequences and arrays of wire labels."""
+        assert AbstractWires(2).is_compatible_with([0, 1])
+        assert AbstractWires(2).is_compatible_with((3, 4))
+        assert AbstractWires(2).is_compatible_with(np.array([0, 1]))
+
+        assert not AbstractWires(2).is_compatible_with([0, 1, 2])
+        assert AbstractWires(-1).is_compatible_with([0, 1, 2])
+
+    def test_is_compatible_with_scalar(self):
+        """Test compatibility against scalar values."""
+        assert AbstractWires(1).is_compatible_with(5)
+        assert not AbstractWires(2).is_compatible_with(5)
+
+    def test_is_compatible_with_invalid(self):
+        """Test that values that cannot represent a 1D sequence of wires are not
+        compatible."""
+        assert not AbstractWires(2).is_compatible_with(None)
+        assert not AbstractWires(2).is_compatible_with(np.ones((2, 2)))

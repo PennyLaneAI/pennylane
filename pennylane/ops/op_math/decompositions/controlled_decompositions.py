@@ -22,6 +22,7 @@ import numpy as np
 import pennylane as qp
 from pennylane import capture, compiler, control_flow, math, ops
 from pennylane.core import queuing
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import register_condition, register_resources
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
@@ -57,12 +58,12 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
     >>> from pennylane.ops.op_math import ctrl_decomp_bisect
     >>> op = qp.T(0) # uses OD algorithm
     >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
-    0: ─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†─╭GlobalPhase(-0.39)─┤
-    1: ─├●────────│──────────├●────────│──────────├●──────────────────┤
-    2: ─├●────────│──────────├●────────│──────────├●──────────────────┤
-    3: ─╰●────────│──────────╰●────────│──────────├●──────────────────┤
-    4: ───────────├●───────────────────├●─────────├●──────────────────┤
-    5: ───────────╰●───────────────────╰●─────────╰●──────────────────┤
+    0: ─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†───┤
+    1: ─├●────────│──────────├●────────│──╭●────────┤
+    2: ─├●────────│──────────├●────────│──├●────────┤
+    3: ─╰●────────│──────────╰●────────│──├●────────┤
+    4: ───────────├●───────────────────├●─├●────────┤
+    5: ───────────╰●───────────────────╰●─╰Rϕ(0.39)─┤
     >>> op = qp.QubitUnitary([[0,1j],[1j,0]], 0) # uses MD algorithm
     >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
     0: ──H─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†──H─┤
@@ -73,19 +74,12 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
     5: ──────────────╰●───────────────────╰●────────────┤
     >>> op = qp.Hadamard(0) # uses general algorithm
     >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
-    0: ──U(M0)─╭X──U(M1)†──U(M2)─╭X──U(M2)†─╭X──U(M2)─╭X──U(M2)†─╭X──U(M1)─╭X──U(M0)† ···
-    1: ────────│─────────────────│──────────├●────────│──────────├●────────│───────── ···
-    2: ────────│─────────────────│──────────├●────────│──────────├●────────│───────── ···
-    3: ────────│─────────────────│──────────╰●────────│──────────╰●────────│───────── ···
-    4: ────────├●────────────────├●───────────────────├●───────────────────├●──────── ···
-    5: ────────╰●────────────────╰●───────────────────╰●───────────────────╰●──────── ···
-    <BLANKLINE>
-    0: ··· ─╭GlobalPhase(-1.57)─┤
-    1: ··· ─├●──────────────────┤
-    2: ··· ─├●──────────────────┤
-    3: ··· ─├●──────────────────┤
-    4: ··· ─├●──────────────────┤
-    5: ··· ─╰●──────────────────┤
+    0: ──U(M0)─╭X──U(M1)†──U(M2)─╭X──U(M2)†─╭X──U(M2)─╭X──U(M2)†─╭X──U(M1)─╭X──U(M0)†───┤
+    1: ────────│─────────────────│──────────├●────────│──────────├●────────│──╭●────────┤
+    2: ────────│─────────────────│──────────├●────────│──────────├●────────│──├●────────┤
+    3: ────────│─────────────────│──────────╰●────────│──────────╰●────────│──├●────────┤
+    4: ────────├●────────────────├●───────────────────├●───────────────────├●─├●────────┤
+    5: ────────╰●────────────────╰●───────────────────╰●───────────────────╰●─╰Rϕ(1.57)─┤
 
     """
     if len(target_operation.wires) > 1:
@@ -104,7 +98,7 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op)
+            apply(op)
 
     return q.queue
 
@@ -193,7 +187,7 @@ def ctrl_decomp_zyz(
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op)
+            apply(op)
 
     return q.queue
 
@@ -430,8 +424,13 @@ def _wrap_mcx_rule_w_alloc(base_rule, num_work_wires, work_wire_type, name=""):
             work_wire_type=work_wire_type,
         )
 
-    def _condition_fn(wires, control_values, *_, **__):
-        return base_rule.is_applicable(
+    # pylint: disable-next=unused-argument
+    def _condition_fn(wires, control_values, work_wires, work_wire_type):
+        # The allocation-based rules are only considered if the operator does not
+        # come with explicitly specified work wires. We've made the decision last
+        # year that passing work wires to an operator is like explicitly saying
+        # "use these work wires in the operator's decomposition"
+        return len(work_wires) == 0 and base_rule.is_applicable(
             wires,
             control_values,
             Wire[num_work_wires],
@@ -535,7 +534,7 @@ def _mcx_many_workers_resource(wires, control_values, work_wires, work_wire_type
     num_extra_work_wires = len(work_wires) - num_used_work_wires
 
     if work_wire_type == "borrowed" and not num_extra_work_wires:
-        return {ops.Toffoli: 4 * num_used_work_wires}
+        return {ops.Toffoli: 4 * num_used_work_wires, qp.X: num_control_wires}
 
     # the middle toffoli might dispatch to a Toffoli or an MultiControlledX depending on
     # whether extra work wires are available, so we need to replicate the logic here.
@@ -547,17 +546,22 @@ def _mcx_many_workers_resource(wires, control_values, work_wires, work_wire_type
     )
 
     if work_wire_type == "borrowed":
-        return {ops.Toffoli: 4 * num_used_work_wires - 1, middle_toffoli: 1}
+        return {
+            ops.Toffoli: 4 * num_used_work_wires - 1,
+            middle_toffoli: 1,
+            qp.X: num_control_wires,
+        }
 
     return {
         qp.TemporaryAND: num_used_work_wires,
         qp.adjoint(qp.TemporaryAND(Wire[3])): num_used_work_wires,
         middle_toffoli: 1,
+        qp.X: num_control_wires,
     }
 
 
 @register_condition(_mcx_many_workers_condition)
-@register_resources(_mcx_many_workers_resource)
+@register_resources(_mcx_many_workers_resource, exact=False)
 # pylint: disable-next=unused-argument
 def decompose_mcx_many_workers(wires, control_values, work_wires, work_wire_type="borrowed"):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
@@ -630,13 +634,19 @@ def _mcx_two_workers_resource(wires, control_values, work_wires, work_wire_type=
 
     num_control_wires = len(wires) - 1
     is_small_mcx = num_control_wires < 6
+    n_adjoint_ladder = num_control_wires - 4 + is_small_mcx
+    adjoint_toffoli = qp.adjoint(ops.Toffoli(Wire[3]))
+    adjoint_x = qp.adjoint(ops.X(Wire[1]))
 
     if work_wire_type == "zeroed":
         n_ccx = 2 * num_control_wires - 3
         n_temporary_ccx_pairs = 2 - is_small_mcx
+        n_x = (n_ccx - 3 if is_small_mcx else n_ccx - 5) + num_control_wires
         return {
-            ops.Toffoli: n_ccx - 2 * n_temporary_ccx_pairs,
-            ops.X: (n_ccx - 3 if is_small_mcx else n_ccx - 5) + num_control_wires,
+            ops.Toffoli: n_ccx - 2 * n_temporary_ccx_pairs - n_adjoint_ladder,
+            adjoint_toffoli: n_adjoint_ladder,
+            ops.X: n_x - n_adjoint_ladder,
+            adjoint_x: n_adjoint_ladder,
             qp.TemporaryAND: n_temporary_ccx_pairs,
             qp.adjoint(qp.TemporaryAND(Wire[3])): n_temporary_ccx_pairs,
         }
@@ -644,7 +654,12 @@ def _mcx_two_workers_resource(wires, control_values, work_wires, work_wire_type=
     # Otherwise, we assume the work wires are borrowed
     n_ccx = 4 * num_control_wires - 8
     n_x = (n_ccx - 4 if is_small_mcx else n_ccx - 8) + num_control_wires
-    return {ops.Toffoli: n_ccx, ops.X: n_x}
+    return {
+        ops.Toffoli: n_ccx - 2 * n_adjoint_ladder,
+        adjoint_toffoli: 2 * n_adjoint_ladder,
+        ops.X: n_x - 2 * n_adjoint_ladder,
+        adjoint_x: 2 * n_adjoint_ladder,
+    }
 
 
 @register_condition(_mcx_two_workers_condition)
@@ -696,7 +711,7 @@ def decompose_mcx_two_workers(wires, control_values, work_wires, work_wire_type=
         )
 
     # Uncompute the first ladder
-    ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
+    ops.adjoint(_build_log_n_depth_ccx_ladder)(wires[:-1])
 
     right_elbow = ops.Toffoli if work_wire_type == "borrowed" else qp.adjoint(qp.TemporaryAND)
     right_elbow([wires[0], wires[1], work0])
@@ -730,17 +745,27 @@ def _mcx_one_worker_condition(wires, control_values, work_wires, **_):
 # pylint: disable-next=unused-argument
 def _mcx_one_worker_resource(wires, control_values, work_wires, work_wire_type="borrowed"):
     num_control_wires = len(wires) - 1
+    n_adjoint_ladder = num_control_wires - 3
+    adjoint_toffoli = qp.adjoint(ops.Toffoli(Wire[3]))
+    adjoint_x = qp.adjoint(ops.X(Wire[1]))
     if work_wire_type == "zeroed":
         n_ccx = 2 * num_control_wires - 5
         return {
-            ops.Toffoli: n_ccx,
+            ops.Toffoli: n_ccx - n_adjoint_ladder,
+            adjoint_toffoli: n_adjoint_ladder,
             qp.TemporaryAND: 1,
             qp.adjoint(qp.TemporaryAND(Wire[3])): 1,
-            ops.X: n_ccx - 1 + num_control_wires,
+            ops.X: n_ccx - 1 + num_control_wires - n_adjoint_ladder,
+            adjoint_x: n_adjoint_ladder,
         }
     # Otherwise, we assume the work wire is borrowed
     n_ccx = 4 * num_control_wires - 8
-    return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4 + num_control_wires}
+    return {
+        ops.Toffoli: n_ccx - 2 * n_adjoint_ladder,
+        adjoint_toffoli: 2 * n_adjoint_ladder,
+        ops.X: n_ccx - 4 + num_control_wires - 2 * n_adjoint_ladder,
+        adjoint_x: 2 * n_adjoint_ladder,
+    }
 
 
 def _mcx_one_worker_no_flips(wires, work_wires, work_wire_type, _skip_toggle_detection=False):
@@ -763,7 +788,7 @@ def _mcx_one_worker_no_flips(wires, work_wires, work_wire_type, _skip_toggle_det
         # is skipped for `work_wire_type="zeroed"` but not for `work_wire_type="borrowed"`.
         _build_linear_depth_ladder(wires[:-1])
         ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
-        ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
+        ops.adjoint(_build_linear_depth_ladder)(wires[:-1])
 
 
 @register_condition(_mcx_one_worker_condition)
@@ -818,7 +843,16 @@ def _decompose_mcx_no_worker_resource(wires, *_, **__):
     } | mcx_reps
 
 
-@register_condition(lambda wires, *_, **__: len(wires) > 3)
+# pylint: disable-next=unused-argument
+def _mcx_no_worker_condition(wires, control_values, work_wires, **_):
+    # With work wires present, one of the one-, two- or many-worker rules always applies, which
+    # matches ``MultiControlledX.compute_decomposition``. Offering this rule as well pulls
+    # ``C(GlobalPhase)`` and ``C(PhaseShift)`` with every number of controls into the
+    # decomposition graph, and ``qjit(capture=True)`` traces and compiles all of them.
+    return len(wires) > 3 and len(work_wires) == 0
+
+
+@register_condition(_mcx_no_worker_condition)
 @register_resources(_decompose_mcx_no_worker_resource, exact=False)
 def decompose_mcx_with_no_worker(wires, control_values, *_, **__):
     """Use ctrl_decomp_bisect_md to decompose a multi-controlled X gate with no work wires."""

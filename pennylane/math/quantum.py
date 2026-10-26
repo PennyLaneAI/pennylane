@@ -156,11 +156,11 @@ def marginal_prob(prob, axis):
 
     **Example**
 
-    >>> x = tf.Variable([1, 0, 0, 1.], dtype=tf.float64) / np.sqrt(2)
+    >>> x = torch.tensor([1, 0, 0, 1.], dtype=torch.float64) / np.sqrt(2)
     >>> marginal_prob(x, axis=[0, 1])
-    <tf.Tensor: shape=(4,), dtype=float64, numpy=array([0.70710678, 0.        , 0.        , 0.70710678])>
+    tensor([0.7071, 0.0000, 0.0000, 0.7071], dtype=torch.float64)
     >>> marginal_prob(x, axis=[0])
-    <tf.Tensor: shape=(2,), dtype=float64, numpy=array([0.70710678, 0.70710678])>
+    tensor([0.7071, 0.7071], dtype=torch.float64)
     """
     prob = np.flatten(prob)
     num_wires = int(np.log2(len(prob)))
@@ -205,11 +205,10 @@ def reduce_dm(density_matrix, indices, check_state=False, c_dtype="complex128"):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
-    >>> z = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
+    >>> z = torch.tensor([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=torch.complex128)
     >>> reduce_dm(z, indices=[1])
-    tf.Tensor(
-    [[1.+0.j 0.+0.j]
-     [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+    tensor([[1.+0.j, 0.+0.j],
+            [0.+0.j, 0.+0.j]], dtype=torch.complex128)
 
     >>> x = np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
     ...               [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]])
@@ -286,8 +285,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
            [[0.+0.j, 0.+0.j],
             [0.+0.j, 1.+0.j]]])
     """
-    # Autograd does not support same indices sum in backprop, and tensorflow
-    # has a limit of 8 dimensions if same indices are used
+    # Autograd does not support same indices sum in backprop
     matrix = math.cast(matrix, dtype=c_dtype)
     if math.ndim(matrix) == 2:
         is_batched = False
@@ -296,7 +294,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
         is_batched = True
         batch_dim, dim = matrix.shape[:2]
 
-    if math.get_interface(matrix) in ["autograd", "tensorflow"]:
+    if math.get_interface(matrix) == "autograd":
         return _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim, dim)
 
     # Dimension and reshape
@@ -414,11 +412,10 @@ def reduce_statevector(state, indices, check_state=False, c_dtype="complex128"):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
-    >>> z = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
+    >>> z = torch.tensor([1, 0, 0, 0], dtype=torch.complex128)
     >>> reduce_statevector(z, indices=[1])
-    tf.Tensor(
-    [[1.+0.j 0.+0.j]
-     [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+    tensor([[1.+0.j, 0.+0.j],
+            [0.+0.j, 0.+0.j]], dtype=torch.complex128)
 
     >>> x = np.array([[1, 0, 0, 0], [0, 1, 0, 0]])
     >>> reduce_statevector(x, indices=[1])
@@ -790,7 +787,7 @@ def _check_hermitian_operator(operators):
     if len(operators.shape) == 2:
         operators = math.stack([operators])
 
-    if not math.is_abstract(operators):
+    if not math.is_tracer(operators):
         for ops in operators:
             conj_trans = np.transpose(np.conj(ops))
             if not math.allclose(ops, conj_trans):
@@ -950,7 +947,7 @@ def sqrt_matrix(density_matrix):
     evs, vecs = math.linalg.eigh(density_matrix)
     evs = math.real(evs)
     evs = math.where(evs > 0.0, evs, 0.0)
-    if not math.is_abstract(evs):
+    if not math.is_tracer(evs):
         evs = math.cast_like(evs, vecs)
 
     shape = math.shape(density_matrix)
@@ -1189,7 +1186,7 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
     state0 = math.cast(state0, dtype=c_dtype)
 
     # Cannot be cast_like if jit
-    if not math.is_abstract(state0):
+    if not math.is_tracer(state0):
         state1 = math.cast_like(state1, state0)
 
     if check_state:
@@ -1217,7 +1214,7 @@ def _check_density_matrix(density_matrix):
     if len(density_matrix.shape) == 2:
         density_matrix = math.stack([density_matrix])
 
-    if not math.is_abstract(density_matrix):
+    if not math.is_tracer(density_matrix):
         for dm in density_matrix:
             # Check trace
             trace = np.trace(dm)
@@ -1247,7 +1244,7 @@ def _check_state_vector(state_vector):
         state_vector = math.stack([state_vector])
 
     # Check norm
-    if not math.is_abstract(state_vector):
+    if not math.is_tracer(state_vector):
         for sv in state_vector:
             norm = np.linalg.norm(sv, ord=2)
             if not math.allclose(norm, 1.0, atol=1e-10):
@@ -1488,7 +1485,7 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
     state0 = math.cast(state0, dtype=c_dtype)
 
     # Cannot be cast_like if jit
-    if not math.is_abstract(state0):
+    if not math.is_tracer(state0):
         state1 = math.cast_like(state1, state0)
 
     if check_state:

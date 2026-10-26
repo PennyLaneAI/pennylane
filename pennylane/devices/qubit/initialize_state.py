@@ -48,7 +48,6 @@ def create_initial_state(
     dtype = str(state_vector.dtype)
     floating_single = "float32" in dtype or "complex64" in dtype
     dtype = "complex64" if floating_single else "complex128"
-    dtype = "complex128" if like == "tensorflow" else dtype
     # sparse matrix VIP tunnel
     if sp.sparse.issparse(state_vector):
         # currently, state_vector returns a flattened target shape.

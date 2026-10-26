@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_valid_decomp_rule
 from pennylane.transforms.decompositions import (
     make_selectpaulirot_to_phase_gradient_decomp,
 )
@@ -48,9 +48,31 @@ def test_wires_error_decomp_fun():
         rule(angles, control_wires, target_wire, "X")
 
 
+def test_decomp_has_a_name():
+    """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as expected
+    as a fixed decomposition and yields the correct resources"""
+
+    prec = 3
+    num_controls = 2
+
+    first_aux = num_controls + 1
+
+    angle_wires = list(range(first_aux, first_aux + prec))
+    phase_grad_wires = list(range(first_aux + prec, first_aux + 2 * prec))
+    num_work_wires = max(prec, num_controls + 1) - 1
+    work_wires = list(range(first_aux + 2 * prec, first_aux + 2 * prec + num_work_wires))
+
+    custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
+        angle_wires, phase_grad_wires, work_wires
+    )
+    assert custom_decomp.name == "_select_pauli_rot_phase_gradient_decomp"
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("rot_axis", ["X", "Y", "Z"])
 @pytest.mark.parametrize("prec", [2, 3, 5])
 @pytest.mark.parametrize("num_controls", [1, 2])
-def test_valid_decomp(prec, num_controls):
+def test_valid_decomp(prec, num_controls, rot_axis):
     """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as expected
     as a fixed decomposition and yields the correct resources"""
 
@@ -65,16 +87,24 @@ def test_valid_decomp(prec, num_controls):
     # required number of work wires.
     num_work_wires = max(prec, num_controls + 1) - 1
 
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(num_work_wires)])
+    wire_idx = 0
+    angle_wires = qp.wires.Wires([wire_idx + i for i in range(prec)])
+    wire_idx += len(angle_wires)
+    phase_grad_wires = qp.wires.Wires([wire_idx + i for i in range(prec)])
+    wire_idx += len(phase_grad_wires)
+    work_wires = qp.wires.Wires([wire_idx + i for i in range(num_work_wires)])
+    wire_idx += len(work_wires)
 
     custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
         angle_wires, phase_grad_wires, work_wires
     )
 
-    op = qp.SelectPauliRot(angles, control_wires=range(num_controls), target_wire=num_controls)
-    _test_decomposition_rule(op, custom_decomp)
+    control_wires = qp.wires.Wires([wire_idx + i for i in range(num_controls)])
+    wire_idx += len(control_wires)
+    op = qp.SelectPauliRot(
+        angles, control_wires=control_wires, target_wire=wire_idx, rot_axis=rot_axis
+    )
+    assert_valid_decomp_rule(op, custom_decomp)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -102,7 +132,8 @@ def test_as_fixed_decomps(prec, num_controls):
         angle_wires, phase_grad_wires, work_wires
     )
 
-    @qp.transforms.decompose(
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(
         gate_set={
             "QROM",
             "SemiAdder",
@@ -118,7 +149,8 @@ def test_as_fixed_decomps(prec, num_controls):
         qp.SelectPauliRot(angles, control_wires=range(num_controls), target_wire=num_controls)
         return qp.state()
 
-    specs = qp.specs(circuit)(angles)["resources"].quantum_operations
+    tape = qp.workflow.construct_tape(circuit)(angles)
+    specs = qp.resource.resources_from_tape(tape).quantum_operations
     expected_specs = {
         "QROM": 2,
         "CNOT": 2 * prec,
@@ -149,7 +181,6 @@ def test_integration_multi_wire(rot_axis, seed):
     num_work = max(prec, num_controls + 1) - 1
     work_wires = qp.wires.Wires([f"work_{i}" for i in range(num_work)])
 
-    phase_grad_state = np.exp(-1j * 2 * np.pi * np.arange(2**prec) / 2**prec) / np.sqrt(2**prec)
     all_wires = angle_wires + phase_grad_wires + work_wires + qp.wires.Wires(sys_wires)
 
     custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
@@ -162,8 +193,9 @@ def test_integration_multi_wire(rot_axis, seed):
         "CNOT",
         "PauliX",
         "GlobalPhase",
+        "PhaseGradientStatePrep",
+        "Adjoint(PhaseGradientStatePrep)",
         "StatePrep",
-        "Adjoint(StatePrep)",
     }
 
     # Depending on the rot_axis, additional operators
@@ -176,25 +208,27 @@ def test_integration_multi_wire(rot_axis, seed):
     if rot_axis in ("X", "Y"):
         gs |= {"Hadamard"}
 
-    @qp.decompose(
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(
         gate_set=gs,
         fixed_decomps={qp.SelectPauliRot: custom_decomp},
     )
     @qp.qnode(qp.device("default.qubit", wires=all_wires))
     def circuit(in_state):
-        qp.StatePrep(in_state, wires=sys_wires)  # input state
-        qp.StatePrep(phase_grad_state, wires=phase_grad_wires)  # phase gradient state
+        # input state
+        qp.StatePrep(in_state, wires=sys_wires)
+        # phase gradient state
+        qp.PhaseGradientStatePrep(wires=phase_grad_wires)
         qp.SelectPauliRot(
             angles, control_wires=ctrl_wires, target_wire=target_wire, rot_axis=rot_axis
         )
-        qp.adjoint(
-            qp.StatePrep(phase_grad_state, wires=phase_grad_wires)
-        )  # uncompute phase gradient state
+        # uncompute phase gradient state
+        qp.adjoint(qp.PhaseGradientStatePrep(wires=phase_grad_wires))
         return qp.state()
 
     # random input state
     rng = np.random.default_rng(seed)
-    in_state = rng.random(2 ** len(sys_wires))
+    in_state = rng.random(2 ** len(sys_wires)) + 1j * rng.random(2 ** len(sys_wires))
     in_state /= np.linalg.norm(in_state)
 
     # returned output state
@@ -224,7 +258,7 @@ def test_integration_multi_wire(rot_axis, seed):
     assert np.allclose(out_state, expected), f"decomposition wrong for rot_axis={rot_axis}"
 
 
-@pytest.mark.capture
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_capture_compatibility():
     """Ensures capture compatibility."""
 
@@ -253,7 +287,7 @@ def test_capture_compatibility():
     )
 
     op = qp.SelectPauliRot(angles, control_wires=control_wires, target_wire=target_wire)
-    _test_decomposition_rule(op, custom_decomp)
+    assert_valid_decomp_rule(op, custom_decomp)
 
 
 @pytest.mark.parametrize(
@@ -264,6 +298,7 @@ def test_capture_compatibility():
         ("Z", qp.RZ),
     ],
 )
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_rot_axis_zero_controls(rot_axis, expected_op):
     """Test the 0-control-wire edge case for all rotation axes."""
     angle_wires = qp.wires.Wires(["aux_0"])
@@ -277,7 +312,7 @@ def test_rot_axis_zero_controls(rot_axis, expected_op):
     angles = np.array([1.23])
     op = qp.SelectPauliRot(angles, control_wires=[], target_wire=0, rot_axis=rot_axis)
 
-    _test_decomposition_rule(op, custom_decomp)
+    assert_valid_decomp_rule(op, custom_decomp)
 
     with qp.queuing.AnnotatedQueue() as q:
         custom_decomp(angles, [], 0, rot_axis=rot_axis)

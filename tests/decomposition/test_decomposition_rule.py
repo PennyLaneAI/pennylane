@@ -14,6 +14,7 @@
 
 """Unit tests for the DecompositionRule class."""
 
+import inspect
 from textwrap import dedent
 
 import numpy as np
@@ -25,8 +26,8 @@ from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
     WorkWireSpec,
-    _decompositions_private,
     _fix_decomp,
+    _unroll_change_op_basis,
     _verify_is_abstract_and_fixed,
     register_condition,
     register_resources,
@@ -34,8 +35,11 @@ from pennylane.decomposition.decomposition_rule import (
 from pennylane.decomposition.resources import Resources
 from pennylane.ops.mid_measure import MidMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2, _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow2 import flip_pow_adjoint, merge_powers, repeat_pow_base
+from pennylane.ops.op_math.prod2 import Prod2
+from pennylane.testing.decompositions import assert_valid_decomp_rule
 from pennylane.typing import Float, Int, Wire
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp, ParametrizedHybridOp
 
@@ -49,6 +53,18 @@ class CustomOp(Operator):
 @pytest.mark.unit
 class TestDecompositionRule:
     """Unit tests for DecompositionRule."""
+
+    def test_wraps_rule(self):
+        """Test that a DecompositionRule has the same sig and docstring as the qfunc."""
+
+        # pylint: disable=unused-argument
+        def f(x, wires: qp.wires.Wires, arg: str = "hello"):
+            """A docstring."""
+
+        rule = qp.decomposition.DecompositionRule(f, {})
+        assert inspect.signature(rule) == inspect.signature(f)
+
+        assert rule.__doc__ == """A docstring."""
 
     @pytest.mark.parametrize("exact_resources", [False, True])
     def test_create_decomposition_rule(self, exact_resources):
@@ -240,12 +256,11 @@ class TestDecompositionRule:
             qp.RX(theta, wires=wires[0])
             qp.RZ(theta, wires=wires[1])
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps("Adjoint(NonParametricOp)", my_adjoint_custom_op)
-            assert qp.decomposition.has_decomp("Adjoint(NonParametricOp)")
-            assert list(qp.list_decomps("Adjoint(NonParametricOp)")) == [my_adjoint_custom_op]
-            assert qp.decomposition.has_decomp(qp.adjoint(NonParametricOp(wires=[0, 1])))
-            assert list(qp.list_decomps("Adjoint(NonParametricOp)")) == [my_adjoint_custom_op]
+        qp.add_decomps("Adjoint(NonParametricOp)", my_adjoint_custom_op)
+        assert qp.decomposition.has_decomp("Adjoint(NonParametricOp)")
+        assert list(qp.list_decomps("Adjoint(NonParametricOp)")) == [my_adjoint_custom_op]
+        assert qp.decomposition.has_decomp(qp.adjoint(NonParametricOp(wires=[0, 1])))
+        assert list(qp.list_decomps("Adjoint(NonParametricOp)")) == [my_adjoint_custom_op]
 
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
@@ -445,6 +460,13 @@ class TestDecompositionRule:
         with pytest.raises(TypeError, match="abstract data of undetermined dimensions"):
             _verify_is_abstract_and_fixed(op)
 
+    def test_verify_operator2_with_legacy_resource_rep(self):
+        """Tests that a legacy resource rep is a valid fully abstract leaf of an Operator2."""
+
+        # e.g. ``Select`` stores the resource reps of its legacy target operators
+        op = ParametrizedHybridOp(Float[3], Wire[3], qp.resource_rep(qp.ops.Sum))
+        _verify_is_abstract_and_fixed(op)
+
 
 class TestDecompDictionary:
     """Tests the behaviour of adding and getting decomposition rules."""
@@ -499,8 +521,6 @@ class TestDecompDictionary:
         with pytest.raises(TypeError, match="decomposition rule must be a qfunc with a resource"):
             qp.add_decomps(SomeOtherOp, custom_decomp4)
 
-        _decompositions_private.pop("SomeOtherOp")  # cleanup
-
     def test_add_decomp_duplicate_names(self):
         """Tests that you cannot add decomposition rules with duplicate names."""
 
@@ -525,7 +545,24 @@ class TestDecompDictionary:
         with pytest.raises(ValueError, match="name: custom_decomp already exists"):
             qp.add_decomps(AnotherOp, some_decomp)
 
-        _decompositions_private.pop("AnotherOp")  # cleanup
+    def test_add_decomp_exact_alias(self):
+        """Tests that adding exactly the same decomp rule twice does not error out."""
+
+        class AnotherOp(Operator):  # pylint: disable=too-few-public-methods
+            pass
+
+        @register_resources({qp.RZ: 2, qp.CNOT: 1})
+        def custom_decomp(theta, wires, **_):
+            qp.RZ(theta, wires=wires[0])
+            qp.CNOT(wires=[wires[0], wires[1]])
+            qp.RZ(theta, wires=wires[0])
+
+        qp.add_decomps(AnotherOp, custom_decomp)
+
+        # this shouldn't error out
+        qp.add_decomps(AnotherOp, custom_decomp)
+
+        assert list(qp.list_decomps(AnotherOp)) == [custom_decomp]
 
     def test_local_decomp_context(self):
         """Tests the local context manager for decompositions."""
@@ -584,13 +621,12 @@ class TestDecompDictionary:
         def custom_rule2(theta, wires):
             raise NotImplementedError
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps("Adjoint(DynOp)", _adjoint_rule)
-            qp.add_decomps(DynOp, custom_rule)
-            qp.add_decomps(DynOp, custom_rule2)
+        qp.add_decomps("Adjoint(DynOp)", _adjoint_rule)
+        qp.add_decomps(DynOp, custom_rule)
+        qp.add_decomps(DynOp, custom_rule2)
 
-            rule_names = {rule.name for rule in qp.list_decomps(Adjoint2(DynOp(Float, Wire[1])))}
-            assert rule_names == {"_adjoint_rule", "adjoint(custom_rule)", "adjoint(custom_rule2)"}
+        rule_names = {rule.name for rule in qp.list_decomps(Adjoint2(DynOp(Float, Wire[1])))}
+        assert rule_names == {"_adjoint_rule", "adjoint(custom_rule)", "adjoint(custom_rule2)"}
 
         op = qp.adjoint(qp.adjoint(NonParametricOp(wires=[0, 1])))
         assert [rule.name for rule in qp.list_decomps(op)] == ["cancel_adjoint"]
@@ -610,36 +646,36 @@ class TestDecompDictionary:
         def custom_rule2(theta, wires):
             raise NotImplementedError
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps("Controlled(DynOp)", _controlled_rule)
-            qp.add_decomps(DynOp, custom_rule)
-            qp.add_decomps(DynOp, custom_rule2)
+        qp.add_decomps("Controlled(DynOp)", _controlled_rule)
+        qp.add_decomps(DynOp, custom_rule)
+        qp.add_decomps(DynOp, custom_rule2)
 
-            op = qp.ctrl(qp.adjoint(DynOp(Float, Wire[1])), control=Wire[1])
-            rule_names = {rule.name for rule in qp.list_decomps(op)}
-            assert rule_names == {"flip_control_adjoint"}
+        op = qp.ctrl(qp.adjoint(DynOp(Float, Wire[1])), control=Wire[1])
+        rule_names = {rule.name for rule in qp.list_decomps(op)}
+        assert rule_names == {"flip_control_adjoint"}
 
-            op = qp.ctrl(DynOp(Float, Wire[1]), control=Wire[1])
-            rule_names = {rule.name for rule in qp.list_decomps(op)}
-            assert rule_names == {
-                "_controlled_rule",
-                "controlled(custom_rule)",
-                "controlled(custom_rule2)",
-            }
+        op = qp.ctrl(DynOp(Float, Wire[1]), control=Wire[1])
+        rule_names = {rule.name for rule in qp.list_decomps(op)}
+        assert rule_names == {
+            "_controlled_rule",
+            "controlled(custom_rule)",
+            "controlled(custom_rule2)",
+        }
 
-            class AnotherOp(DynOp):  # pylint: disable=too-few-public-methods
-                has_matrix = True
-                name = "DynOp"
+        class AnotherOp(DynOp):  # pylint: disable=too-few-public-methods
+            has_matrix = True
+            name = "DynOp"
 
-            op = qp.ctrl(AnotherOp(Float, Wire[1]), control=Wire[4])
-            rule_names = {rule.name for rule in qp.list_decomps(op)}
-            assert rule_names == {
-                "_controlled_rule",
-                "controlled(custom_rule)",
-                "controlled(custom_rule2)",
-                "ctrl_single_work_wire",
-                "to_controlled_unitary",
-            }
+        op = qp.ctrl(AnotherOp(Float, Wire[1]), control=Wire[4])
+        rule_names = {rule.name for rule in qp.list_decomps(op)}
+        assert rule_names == {
+            "_controlled_rule",
+            "controlled(custom_rule)",
+            "controlled(custom_rule2)",
+            "ctrl_many_zeroed_work_wires",
+            "ctrl_single_work_wire",
+            "to_controlled_unitary",
+        }
 
     def test_list_pow_decomps2(self):
         """Tests the rules listed by _list_pow_decomps for a Pow2, covering all branches."""
@@ -679,7 +715,7 @@ class TestDecompDictionary:
     def test_mcm_and_allocation_rules_skipped_for_adjoint2(self):
         """Tests that rules containing MCMs and wire allocations can't be adjointed."""
 
-        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure: 1})
+        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure(wires=Wire[1]): 1})
         def custom_rule(theta, wires):
             raise NotImplementedError
 
@@ -687,23 +723,85 @@ class TestDecompDictionary:
         def custom_rule2(theta, wires, **__):
             raise NotImplementedError
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(DynOp, custom_rule)
-            qp.add_decomps(DynOp, custom_rule2)
+        qp.add_decomps(DynOp, custom_rule)
+        qp.add_decomps(DynOp, custom_rule2)
 
-            assert list(qp.list_decomps(Adjoint2(DynOp(Float, Wire[1])))) == []
+        assert list(qp.list_decomps(Adjoint2(DynOp(Float, Wire[1])))) == []
 
     def test_mcm_rules_skipped_for_controlled2(self):
         """Tests that rules containing MCMs are skipped for controlled."""
 
-        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure: 1})
+        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure(wires=Wire[1]): 1})
         def custom_rule(theta, wires):
             raise NotImplementedError
 
+        qp.add_decomps(DynOp, custom_rule)
+        # Single control wire so general multi-control rules are not listed.
+        op = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[1])
+        assert list(qp.list_decomps(op)) == []
+
+
+class TestExcludeDecomps:
+    """Tests the exclude_decomps function."""
+
+    def test_exclude_without_context(self):
+        """Tests that rules stay excluded without a context, but are not removed."""
+
+        all_names = [rule.name for rule in qp.list_decomps(qp.CRX)]
+
         with qp.decomposition.local_decomps():
-            qp.add_decomps(DynOp, custom_rule)
-            op = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[2])
-            assert list(qp.list_decomps(op)) == []
+            qp.exclude_decomps(qp.CRX, "_crx_to_ppr", "_crx_to_h_crz")
+            assert "_crx_to_ppr" not in qp.list_decomps(qp.CRX)
+            assert "_crx_to_h_crz" not in qp.list_decomps(qp.CRX)
+
+        assert [rule.name for rule in qp.list_decomps(qp.CRX)] == all_names
+
+    def test_exclude_as_context_manager(self):
+        """Tests that the rules are restored when the context exits."""
+
+        all_names = [rule.name for rule in qp.list_decomps(qp.CRX)]
+
+        with qp.exclude_decomps(qp.CRX, "_crx_to_ppr"):
+            assert "_crx_to_ppr" not in qp.list_decomps(qp.CRX)
+
+        assert [rule.name for rule in qp.list_decomps(qp.CRX)] == all_names
+
+    def test_previous_exclusions_preserved(self):
+        """Tests that rules excluded before a context remain excluded after it exits."""
+
+        with qp.decomposition.local_decomps():
+            qp.exclude_decomps(qp.CRX, "_crx_to_ppr")
+            with qp.exclude_decomps(qp.CRX, "_crx_to_ppr", "_crx_to_h_crz"):
+                assert "_crx_to_h_crz" not in qp.list_decomps(qp.CRX)
+            assert "_crx_to_h_crz" in qp.list_decomps(qp.CRX)
+            assert "_crx_to_ppr" not in qp.list_decomps(qp.CRX)
+
+    def test_rule_instance_raises_error(self):
+        """Tests that passing a DecompositionRule instead of its name raises an error."""
+
+        rule = qp.list_decomps(qp.CRX)[0]
+        with pytest.raises(TypeError, match="must be excluded by name"):
+            qp.exclude_decomps(qp.CRX, rule)
+        assert rule in qp.list_decomps(qp.CRX)
+
+    def test_unknown_name_raises_error(self):
+        """Tests that excluding a rule that does not exist raises an error."""
+
+        all_names = [rule.name for rule in qp.list_decomps(qp.CRX)]
+        with pytest.raises(ValueError, match="Cannot find a decomposition rule named '_crx_typo'"):
+            qp.exclude_decomps(qp.CRX, "_crx_to_ppr", "_crx_typo")
+        assert [rule.name for rule in qp.list_decomps(qp.CRX)] == all_names
+
+        with pytest.raises(ValueError, match="Cannot find a decomposition rule named"):
+            qp.exclude_decomps("Pow(DynOp)", repeat_pow_base.name)
+
+    def test_excluded_rules_can_be_excluded_again(self):
+        """Tests that an already excluded rule is still recognized as an existing rule."""
+
+        with qp.decomposition.local_decomps():
+            qp.exclude_decomps(qp.CRX, "_crx_to_ppr")
+            qp.exclude_decomps(qp.CRX, "_crx_to_ppr")
+            assert "_crx_to_ppr" not in qp.list_decomps(qp.CRX)
 
 
 class TestDecompCollection:
@@ -859,7 +957,7 @@ class TestInspectDecomps:
                 qp.Toffoli: 2 * (num_wires - 1),
                 qp.H: 1,
                 qp.RX: 1,
-                qp.ops.MidMeasure: 1,
+                qp.ops.MidMeasure(wires=Wire[1]): 1,
             },
             work_wires={"zeroed": 2},
             name="with-aux",
@@ -896,25 +994,25 @@ class TestInspectDecomps:
         result = qp.inspect_decomps(CustomParametrizedOp(0.5, wires=[0, 1]))
         assert str(result) == dedent("""
             Decomposition 0 (name: simple)
-            0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
-            1: ───────────╰X───────────┤  
+            0: ──RZ(0.50)─╭●──RZ(0.50)─┤
+            1: ───────────╰X───────────┤
             Gate Count: {CNOT: 1, RZ: 2}
 
             Decomposition 1 (name: general_decomp)
-            0: ──RX(0.50)─╭●────╭●──RX(0.50)─┤  
-            1: ───────────╰Z──H─╰Z───────────┤  
+            0: ──RX(0.50)─╭●────╭●──RX(0.50)─┤
+            1: ───────────╰Z──H─╰Z───────────┤
             Gate Count: {CZ: 2, Hadamard: 1, RX: 2}
 
             Decomposition 2 (name: with-aux)
             Not applicable (provided operator instance does not meet all conditions for this rule).
-            """).strip()
+""").strip()
 
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: simple)
 
             ```
-            0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
-            1: ───────────╰X───────────┤  
+            0: ──RZ(0.50)─╭●──RZ(0.50)─┤
+            1: ───────────╰X───────────┤
             ```
             <details><summary>Gate Counts and Wire Allocations</summary>
 
@@ -929,8 +1027,8 @@ class TestInspectDecomps:
             #### Decomposition 1 (name: general_decomp)
 
             ```
-            0: ──RX(0.50)─╭●────╭●──RX(0.50)─┤  
-            1: ───────────╰Z──H─╰Z───────────┤  
+            0: ──RX(0.50)─╭●────╭●──RX(0.50)─┤
+            1: ───────────╰Z──H─╰Z───────────┤
             ```
             <details><summary>Gate Counts and Wire Allocations</summary>
 
@@ -946,7 +1044,7 @@ class TestInspectDecomps:
             #### Decomposition 2 (name: with-aux)
 
             _Not applicable (provided operator instance does not meet all conditions for this rule)._
-            """).strip()
+""").strip()
 
         assert repr(result) == str(result)
 
@@ -956,26 +1054,26 @@ class TestInspectDecomps:
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
             Decomposition 1 (name: general_decomp)
-            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
-            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
-            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
-            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
-            4: ────────────────────╰Z──H─╰Z────────────────────┤  
+            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤
+            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤
+            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤
+            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤
+            4: ────────────────────╰Z──H─╰Z────────────────────┤
             Gate Count: {CZ: 8, Hadamard: 1, RX: 2}
 
             Decomposition 2 (name: with-aux)
-            0: ───────╭●────╭Z─╭●──────────────────────╭●─╭Z────╭●────┤  
-            1: ───────│─────│──├●─╭●────────────────╭●─├●─│─────│─────┤  
-            2: ───────│─────│──╰X─├●───╭●────────╭●─├●─╰X─│─────│─────┤  
-            3: ───────│─────│─────╰X───├●────────├●─╰X────│─────│─────┤  
-            4: ───────│─────│──────────╰X────────╰X───────│─────│─────┤  
-                 |0>├─╰Z─╭●─│───────────RX(0.50)──────────│──╭●─╰Z──┤    
-                 |0>├────╰Z─╰●──H──┤↗├──║─────────────────╰●─╰Z─────┤    
-                                    ╚═══╝                                
+            0: ───────╭●────╭Z─╭●──────────────────────╭●─╭Z────╭●────┤
+            1: ───────│─────│──├●─╭●────────────────╭●─├●─│─────│─────┤
+            2: ───────│─────│──╰X─├●───╭●────────╭●─├●─╰X─│─────│─────┤
+            3: ───────│─────│─────╰X───├●────────├●─╰X────│─────│─────┤
+            4: ───────│─────│──────────╰X────────╰X───────│─────│─────┤
+                 |0>├─╰Z─╭●─│───────────RX(0.50)──────────│──╭●─╰Z──┤
+                 |0>├────╰Z─╰●──H──┤↗├──║─────────────────╰●─╰Z─────┤
+                                    ╚═══╝
             Estimated Gate Count: {CZ: 6, Hadamard: 1, MidMeasure: 1, RX: 1, Toffoli: 8}
             Actual Gate Count: {CZ: 6, Hadamard: 1, MidMeasure: 1, RX: 1, Toffoli: 6}
             Wire Allocations: {'zero': 2}
-            """).strip()
+""").strip()
 
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: simple)
@@ -987,11 +1085,11 @@ class TestInspectDecomps:
             #### Decomposition 1 (name: general_decomp)
 
             ```
-            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
-            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
-            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
-            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
-            4: ────────────────────╰Z──H─╰Z────────────────────┤  
+            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤
+            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤
+            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤
+            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤
+            4: ────────────────────╰Z──H─╰Z────────────────────┤
             ```
             <details><summary>Gate Counts and Wire Allocations</summary>
 
@@ -1007,14 +1105,14 @@ class TestInspectDecomps:
             #### Decomposition 2 (name: with-aux)
 
             ```
-            0: ───────╭●────╭Z─╭●──────────────────────╭●─╭Z────╭●────┤  
-            1: ───────│─────│──├●─╭●────────────────╭●─├●─│─────│─────┤  
-            2: ───────│─────│──╰X─├●───╭●────────╭●─├●─╰X─│─────│─────┤  
-            3: ───────│─────│─────╰X───├●────────├●─╰X────│─────│─────┤  
-            4: ───────│─────│──────────╰X────────╰X───────│─────│─────┤  
-                 |0>├─╰Z─╭●─│───────────RX(0.50)──────────│──╭●─╰Z──┤    
-                 |0>├────╰Z─╰●──H──┤↗├──║─────────────────╰●─╰Z─────┤    
-                                    ╚═══╝                                
+            0: ───────╭●────╭Z─╭●──────────────────────╭●─╭Z────╭●────┤
+            1: ───────│─────│──├●─╭●────────────────╭●─├●─│─────│─────┤
+            2: ───────│─────│──╰X─├●───╭●────────╭●─├●─╰X─│─────│─────┤
+            3: ───────│─────│─────╰X───├●────────├●─╰X────│─────│─────┤
+            4: ───────│─────│──────────╰X────────╰X───────│─────│─────┤
+                 |0>├─╰Z─╭●─│───────────RX(0.50)──────────│──╭●─╰Z──┤
+                 |0>├────╰Z─╰●──H──┤↗├──║─────────────────╰●─╰Z─────┤
+                                    ╚═══╝
             ```
             <details><summary>Gate Counts and Wire Allocations</summary>
 
@@ -1030,7 +1128,7 @@ class TestInspectDecomps:
             | :--- | :--- |
             | zero | 2 |
             </details>
-            """).strip()
+""").strip()
 
     def test_exclude_not_applicable(self):
         """Tests that not-applicable rules can be excluded."""
@@ -1040,41 +1138,41 @@ class TestInspectDecomps:
         )
         assert str(result) == dedent("""
             Decomposition 0 (name: simple)
-            0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
-            1: ───────────╰X───────────┤  
+            0: ──RZ(0.50)─╭●──RZ(0.50)─┤
+            1: ───────────╰X───────────┤
             Gate Count: {CNOT: 1, RZ: 2}
 
             Decomposition 1 (name: general_decomp)
-            0: ──RX(0.50)─╭●────╭●──RX(0.50)─┤  
-            1: ───────────╰Z──H─╰Z───────────┤  
+            0: ──RX(0.50)─╭●────╭●──RX(0.50)─┤
+            1: ───────────╰Z──H─╰Z───────────┤
             Gate Count: {CZ: 2, Hadamard: 1, RX: 2}
-            """).strip()
+""").strip()
 
         result = qp.inspect_decomps(
             CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), show_not_applicable=False
         )
         assert str(result) == dedent("""
             Decomposition 1 (name: general_decomp)
-            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
-            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
-            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
-            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
-            4: ────────────────────╰Z──H─╰Z────────────────────┤  
+            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤
+            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤
+            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤
+            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤
+            4: ────────────────────╰Z──H─╰Z────────────────────┤
             Gate Count: {CZ: 8, Hadamard: 1, RX: 2}
 
             Decomposition 2 (name: with-aux)
-            0: ───────╭●────╭Z─╭●──────────────────────╭●─╭Z────╭●────┤  
-            1: ───────│─────│──├●─╭●────────────────╭●─├●─│─────│─────┤  
-            2: ───────│─────│──╰X─├●───╭●────────╭●─├●─╰X─│─────│─────┤  
-            3: ───────│─────│─────╰X───├●────────├●─╰X────│─────│─────┤  
-            4: ───────│─────│──────────╰X────────╰X───────│─────│─────┤  
-                 |0>├─╰Z─╭●─│───────────RX(0.50)──────────│──╭●─╰Z──┤    
-                 |0>├────╰Z─╰●──H──┤↗├──║─────────────────╰●─╰Z─────┤    
-                                    ╚═══╝                                
+            0: ───────╭●────╭Z─╭●──────────────────────╭●─╭Z────╭●────┤
+            1: ───────│─────│──├●─╭●────────────────╭●─├●─│─────│─────┤
+            2: ───────│─────│──╰X─├●───╭●────────╭●─├●─╰X─│─────│─────┤
+            3: ───────│─────│─────╰X───├●────────├●─╰X────│─────│─────┤
+            4: ───────│─────│──────────╰X────────╰X───────│─────│─────┤
+                 |0>├─╰Z─╭●─│───────────RX(0.50)──────────│──╭●─╰Z──┤
+                 |0>├────╰Z─╰●──H──┤↗├──║─────────────────╰●─╰Z─────┤
+                                    ╚═══╝
             Estimated Gate Count: {CZ: 6, Hadamard: 1, MidMeasure: 1, RX: 1, Toffoli: 8}
             Actual Gate Count: {CZ: 6, Hadamard: 1, MidMeasure: 1, RX: 1, Toffoli: 6}
             Wire Allocations: {'zero': 2}
-            """).strip()
+""").strip()
 
     def test_num_work_wires(self):
         """Tests that num_work_wires work."""
@@ -1087,16 +1185,16 @@ class TestInspectDecomps:
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
             Decomposition 1 (name: general_decomp)
-            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
-            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
-            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
-            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
-            4: ────────────────────╰Z──H─╰Z────────────────────┤  
+            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤
+            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤
+            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤
+            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤
+            4: ────────────────────╰Z──H─╰Z────────────────────┤
             Gate Count: {CZ: 8, Hadamard: 1, RX: 2}
 
             Decomposition 2 (name: with-aux)
             Insufficient work wires: requires 2 but only 1 available.
-            """).strip()
+""").strip()
 
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: simple)
@@ -1108,11 +1206,11 @@ class TestInspectDecomps:
             #### Decomposition 1 (name: general_decomp)
 
             ```
-            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
-            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
-            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
-            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
-            4: ────────────────────╰Z──H─╰Z────────────────────┤  
+            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤
+            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤
+            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤
+            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤
+            4: ────────────────────╰Z──H─╰Z────────────────────┤
             ```
             <details><summary>Gate Counts and Wire Allocations</summary>
 
@@ -1128,7 +1226,7 @@ class TestInspectDecomps:
             #### Decomposition 2 (name: with-aux)
 
             _Insufficient work wires: requires 2 but only 1 available._
-            """).strip()
+""").strip()
 
         result = qp.inspect_decomps(
             CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]),
@@ -1137,13 +1235,13 @@ class TestInspectDecomps:
         )
         assert str(result) == dedent("""
             Decomposition 1 (name: general_decomp)
-            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
-            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
-            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
-            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
-            4: ────────────────────╰Z──H─╰Z────────────────────┤  
+            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤
+            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤
+            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤
+            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤
+            4: ────────────────────╰Z──H─╰Z────────────────────┤
             Gate Count: {CZ: 8, Hadamard: 1, RX: 2}
-            """).strip()
+""").strip()
 
     def test_show_no_decomps(self):
         """Tests when no rules are available."""
@@ -1157,9 +1255,8 @@ class TestInspectDecomps:
         def invalid_rule(*_, **__):
             raise NotImplementedError
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(CustomOp, invalid_rule)
-            result = qp.inspect_decomps(CustomOp(0.5, wires=[0, 1]), show_not_applicable=False)
+        qp.add_decomps(CustomOp, invalid_rule)
+        result = qp.inspect_decomps(CustomOp(0.5, wires=[0, 1]), show_not_applicable=False)
 
         assert (
             str(result) == "No applicable decomposition rules (non-applicable rules are excluded)."
@@ -1175,10 +1272,10 @@ class TestInspectDecomps:
         result = qp.inspect_decomps(CustomParametrizedOp(0.5, wires=[0, 1]), "simple")
         assert str(result) == dedent("""
             Decomposition 0 (name: simple)
-            0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
-            1: ───────────╰X───────────┤  
+            0: ──RZ(0.50)─╭●──RZ(0.50)─┤
+            1: ───────────╰X───────────┤
             Gate Count: {CNOT: 1, RZ: 2}
-            """).strip()
+""").strip()
 
     def test_show_decomp_with_rule(self):
         """Tests inspecting a particular decomposition rule."""
@@ -1187,13 +1284,13 @@ class TestInspectDecomps:
         result = qp.inspect_decomps(CustomParametrizedOp(0.5, wires=[0, 1, 2, 3, 4]), rule)
         assert str(result) == dedent("""
             Decomposition 0 (name: general_decomp)
-            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
-            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
-            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
-            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
-            4: ────────────────────╰Z──H─╰Z────────────────────┤  
+            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤
+            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤
+            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤
+            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤
+            4: ────────────────────╰Z──H─╰Z────────────────────┤
             Gate Count: {CZ: 8, Hadamard: 1, RX: 2}
-            """).strip()
+""").strip()
 
     def test_show_multiple_decomps(self):
         """Tests showing multiple decomposition rules."""
@@ -1204,29 +1301,119 @@ class TestInspectDecomps:
         )
         assert str(result) == dedent("""
             Decomposition 0 (name: general_decomp)
-            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤  
-            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤  
-            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
-            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
-            4: ────────────────────╰Z──H─╰Z────────────────────┤  
+            0: ──RX(0.50)─╭●──────────────────────╭●──RX(0.50)─┤
+            1: ───────────╰Z─╭●────────────────╭●─╰Z───────────┤
+            2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤
+            3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤
+            4: ────────────────────╰Z──H─╰Z────────────────────┤
             Gate Count: {CZ: 8, Hadamard: 1, RX: 2}
 
             Decomposition 1 (name: with-aux)
-            0: ───────╭●────╭Z─╭●──────────────────────╭●─╭Z────╭●────┤  
-            1: ───────│─────│──├●─╭●────────────────╭●─├●─│─────│─────┤  
-            2: ───────│─────│──╰X─├●───╭●────────╭●─├●─╰X─│─────│─────┤  
-            3: ───────│─────│─────╰X───├●────────├●─╰X────│─────│─────┤  
-            4: ───────│─────│──────────╰X────────╰X───────│─────│─────┤  
-                 |0>├─╰Z─╭●─│───────────RX(0.50)──────────│──╭●─╰Z──┤    
-                 |0>├────╰Z─╰●──H──┤↗├──║─────────────────╰●─╰Z─────┤    
-                                    ╚═══╝                                
+            0: ───────╭●────╭Z─╭●──────────────────────╭●─╭Z────╭●────┤
+            1: ───────│─────│──├●─╭●────────────────╭●─├●─│─────│─────┤
+            2: ───────│─────│──╰X─├●───╭●────────╭●─├●─╰X─│─────│─────┤
+            3: ───────│─────│─────╰X───├●────────├●─╰X────│─────│─────┤
+            4: ───────│─────│──────────╰X────────╰X───────│─────│─────┤
+                 |0>├─╰Z─╭●─│───────────RX(0.50)──────────│──╭●─╰Z──┤
+                 |0>├────╰Z─╰●──H──┤↗├──║─────────────────╰●─╰Z─────┤
+                                    ╚═══╝
             Estimated Gate Count: {CZ: 6, Hadamard: 1, MidMeasure: 1, RX: 1, Toffoli: 8}
             Actual Gate Count: {CZ: 6, Hadamard: 1, MidMeasure: 1, RX: 1, Toffoli: 6}
             Wire Allocations: {'zero': 2}
-            """).strip()
+""").strip()
 
     def test_type_error(self):
         """Tests that an informative error is raised when operator type is provided."""
 
         with pytest.raises(TypeError, match="concrete operator instance as its first argument"):
             qp.inspect_decomps(CustomParametrizedOp)
+
+
+class TestCOBUnroll:  # pylint: disable=too-few-public-methods
+    """Tests the custom behaviour related to COB in the resource function."""
+
+    def test_unroll_change_op_basis_resources(self):
+        """ChangeOpBasis resource keys are expanded without rewriting other keys."""
+
+        x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
+        prod_rep = qp.resource_rep(qp.ops.Prod, resources={x_rep: 2})
+        cob_rep = _change_op_basis_abstract(prod_rep, y_rep, x_rep)
+
+        result = _unroll_change_op_basis({cob_rep: 2, z_rep: 4, prod_rep: 3})
+        assert result == {x_rep: 6, y_rep: 2, z_rep: 4, prod_rep: 3}
+
+    def test_unroll_nested_symbolic_change_op_basis_resources(self):
+        """ChangeOpBasis resource keys are recursively expanded through symbolic wrappers."""
+
+        x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
+        cob = _change_op_basis_abstract(x_rep, y_rep, x_rep)
+
+        def wrapper(op):
+            return qp.adjoint(qp.ctrl(op, control=Wire[1]))
+
+        wrapped_z = wrapper(z_rep)
+        result = _unroll_change_op_basis({wrapper(cob): 2, wrapped_z: 3})
+        assert result == {wrapper(x_rep): 4, wrapper(y_rep): 2, wrapped_z: 3}
+
+    def test_unroll_nested_change_op_basis_resources(self):
+        """ChangeOpBasis resource keys nested in another ChangeOpBasis are recursively expanded."""
+
+        x_rep, y_rep, z_rep, h_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z, qp.H))
+        inner_cob = _change_op_basis_abstract(x_rep, y_rep, x_rep)
+        outer_cob = _change_op_basis_abstract(z_rep, inner_cob, z_rep)
+
+        result = _unroll_change_op_basis({outer_cob: 3})
+        assert result == {z_rep: 6, x_rep: 6, y_rep: 3}
+
+        level_three_cob = _change_op_basis_abstract(h_rep, outer_cob, h_rep)
+        result = _unroll_change_op_basis({level_three_cob: 3})
+        assert result == {h_rep: 6, z_rep: 6, x_rep: 6, y_rep: 3}
+
+    def test_unroll_change_op_basis_nested_in_prod_resources(self):
+        """ChangeOpBasis resource keys inside a Prod operand of a ChangeOpBasis are expanded."""
+
+        x_rep, y_rep, z_rep, h_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z, qp.H))
+        inner_cob = _change_op_basis_abstract(y_rep, z_rep, y_rep)
+        prod_rep = qp.ops.prod(x_rep, inner_cob)
+        outer_cob = _change_op_basis_abstract(prod_rep, h_rep, prod_rep)
+
+        result = _unroll_change_op_basis({outer_cob: 2})
+        assert result == {x_rep: 4, y_rep: 8, z_rep: 4, h_rep: 2}
+
+    @pytest.mark.capture
+    def test_compute_resources_returns_unrolled(self):
+        """Tests that compute_resources returns a dictionary where COBs are unrolled."""
+
+        @register_resources(
+            {ChangeOpBasis2(Prod2([qp.X(Wire[1]), qp.Y(Wire[1])]), qp.H(Wire[1])): 1}
+        )
+        def custom_rule(*args, **kwargs):
+            raise NotImplementedError
+
+        assert custom_rule.compute_resources().gate_counts == {
+            qp.X(Wire[1]): 1,
+            qp.Y(Wire[1]): 1,
+            qp.H(Wire[1]): 1,
+            qp.adjoint(qp.X(Wire[1])): 1,
+            qp.adjoint(qp.Y(Wire[1])): 1,
+        }
+
+    @pytest.mark.capture
+    def test_nested_change_op_basis_rule_is_valid(self):
+        """Tests that a rule with nested COBs in both its body and its resources is valid."""
+
+        def resources(**_):
+            inner_cob = _change_op_basis_abstract(qp.H, qp.Z(Wire[1]), qp.H)
+            return {_change_op_basis_abstract(qp.X, inner_cob, qp.X): 1}
+
+        @register_resources(resources)
+        def rule(wires, **_):
+            def inner_cob():
+                qp.change_op_basis(qp.H(wires), qp.Z(wires), qp.H(wires))
+
+            def outer_compute():
+                qp.X(wires)
+
+            qp.change_op_basis(outer_compute, inner_cob, outer_compute)
+
+        assert_valid_decomp_rule(qp.X(0), rule)

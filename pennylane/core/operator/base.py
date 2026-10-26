@@ -19,12 +19,11 @@ Defines the base class for Operator and Operation.
 import abc
 import copy
 import warnings
-from collections.abc import Callable, Hashable, Iterable, Set
-from functools import lru_cache
-from importlib.util import find_spec
+from collections.abc import Hashable, Iterable, Set
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Union
 from warnings import warn
 
+import jax
 import numpy as np
 from scipy.sparse import spmatrix
 
@@ -46,7 +45,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.math import expand_matrix, is_abstract
+from pennylane.math import expand_matrix, is_tracer
 from pennylane.pytrees import register_pytree
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit
@@ -56,7 +55,6 @@ from .utils import abstractify
 if TYPE_CHECKING:
     from pennylane.decomposition.resources import CompressedResourceOp
 
-has_jax = find_spec("jax") is not None
 _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
 
 
@@ -65,72 +63,86 @@ _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been 
 # =============================================================================
 
 
-@lru_cache  # construct the first time lazily
-def _get_abstract_operator() -> type:
-    """Create an AbstractOperator once in a way protected from lack of a jax install."""
-    if not has_jax:  # pragma: no cover
-        raise ImportError("Jax is required for plxpr.")  # pragma: no cover
+# Coverage is lost as we migrated operators to the `Operator2` interface; we don't
+# really care about maintaining coverage of Operator1 code if it turns out to be a lot of work.
+class AbstractOperator(jax.core.AbstractValue):  # pragma: no cover
+    """An operator captured into plxpr."""
 
-    import jax  # pylint: disable=import-outside-toplevel
+    # pylint: disable=missing-function-docstring
+    def at_least_vspace(self):
+        # TODO: investigate the proper definition of this method
+        raise NotImplementedError
 
-    # We're adding "no cover" here because coverage is lost as we migrated operators to
-    # the `Operator2` interface, and we don't really care about maintaining coverage of
-    # Operator1 code if it turns out to be a lot of work.
-    class AbstractOperator(jax.core.AbstractValue):  # pragma: no cover
-        """An operator captured into plxpr."""
+    # pylint: disable=missing-function-docstring
+    def join(self, other):
+        # TODO: investigate the proper definition of this method
+        raise NotImplementedError
 
-        # pylint: disable=missing-function-docstring
-        def at_least_vspace(self):
-            # TODO: investigate the proper definition of this method
-            raise NotImplementedError
+    # pylint: disable=missing-function-docstring
+    def update(self, **kwargs):
+        # TODO: investigate the proper definition of this method
+        raise NotImplementedError
 
-        # pylint: disable=missing-function-docstring
-        def join(self, other):
-            # TODO: investigate the proper definition of this method
-            raise NotImplementedError
+    def __eq__(self, other):
+        return isinstance(other, AbstractOperator)
 
-        # pylint: disable=missing-function-docstring
-        def update(self, **kwargs):
-            # TODO: investigate the proper definition of this method
-            raise NotImplementedError
+    def __hash__(self):
+        return hash("AbstractOperator")
 
-        def __eq__(self, other):
-            return isinstance(other, AbstractOperator)
+    @staticmethod
+    def _is_op(x):
+        """True for Operator instances and operator-valued tracers.
 
-        def __hash__(self):
-            return hash("AbstractOperator")
+        ``+``/``-`` between an operator tracer and a scalar return ``NotImplemented`` (a clear
+        ``TypeError``) rather than building a ``Sum`` with a non-operator operand.
+        """
+        return isinstance(x, Operator) or isinstance(getattr(x, "aval", None), AbstractOperator)
 
-        @staticmethod
-        def _matmul(*args):
-            return qp.prod(*args)
+    @staticmethod
+    def _matmul(*args):
+        return qp.prod(*args)
 
-        @staticmethod
-        def _rmatmul(a, b):
-            """Preserve operand order when ``@`` falls back to the captured right operand."""
-            return qp.prod(b, a)
+    @staticmethod
+    def _rmatmul(a, b):
+        """Preserve operand order when ``@`` falls back to the captured right operand."""
+        return qp.prod(b, a)
 
-        @staticmethod
-        def _mul(a, b):
-            return qp.s_prod(b, a)
+    @staticmethod
+    def _mul(a, b):
+        return qp.s_prod(b, a) if isinstance(b, TensorLike) else NotImplemented
 
-        @staticmethod
-        def _rmul(a, b):
-            return qp.s_prod(b, a)
+    _rmul = _mul
 
-        @staticmethod
-        def _add(a, b):
-            return qp.sum(a, b)
+    @staticmethod
+    def _add(a, b):
+        return qp.sum(a, b) if AbstractOperator._is_op(b) else NotImplemented
 
-        @staticmethod
-        def _pow(a, b):
-            return qp.pow(a, b)
+    @staticmethod
+    def _radd(a, b):
+        """Preserve operand order when ``+`` falls back to the captured right operand."""
+        return qp.sum(b, a) if AbstractOperator._is_op(b) else NotImplemented
 
-    return AbstractOperator
+    @staticmethod
+    def _sub(a, b):
+        return qp.sum(a, qp.s_prod(-1, b)) if AbstractOperator._is_op(b) else NotImplemented
+
+    @staticmethod
+    def _rsub(a, b):
+        """Preserve operand order when ``-`` falls back to the captured right operand."""
+        return qp.sum(b, qp.s_prod(-1, a)) if AbstractOperator._is_op(b) else NotImplemented
+
+    @staticmethod
+    def _neg(a):
+        return qp.s_prod(-1, a)
+
+    @staticmethod
+    def _pow(a, b):
+        return qp.pow(a, b)
 
 
 def create_operator_primitive(
     operator_type: type["qp.operation.Operator"],
-) -> Optional["jax.extend.core.Primitive"]:
+) -> jax.extend.core.Primitive:
     """Create a primitive corresponding to an operator type.
 
     Called when defining any :class:`~.Operator` subclass, and is used to set the
@@ -140,15 +152,9 @@ def create_operator_primitive(
         operator_type (type): a subclass of qp.operation.Operator
 
     Returns:
-        Optional[jax.extend.core.Primitive]: A new jax primitive with the same name as the operator subclass.
-        ``None`` is returned if jax is not available.
+        jax.extend.core.Primitive: A new jax primitive with the same name as the operator subclass.
 
     """
-    if not has_jax:
-        return None
-
-    import jax  # pylint: disable=import-outside-toplevel
-
     primitive = capture.QpPrimitive(operator_type.__name__)
     primitive.prim_type = "operator"
 
@@ -163,14 +169,12 @@ def create_operator_primitive(
         # for plxpr, all wires must be integers
         # could be abstract when using tracing evaluation in interpreter
         wire_args = args[split:] if split else ()
-        wires = tuple(w if is_abstract(w) else int(w) for w in wire_args)
+        wires = tuple(w if is_tracer(w) else int(w) for w in wire_args)
         return type.__call__(operator_type, *args[:split], wires=wires, **kwargs)
-
-    abstract_type = _get_abstract_operator()
 
     @primitive.def_abstract_eval
     def _abstract_eval(*_, **__):
-        return abstract_type()
+        return AbstractOperator()
 
     return primitive
 
@@ -194,7 +198,7 @@ def _process_data(op):
     else:
         mod_val = None
 
-    return str([id(d) if is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
+    return str([id(d) if is_tracer(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
 # pylint: disable=abstract-method
@@ -541,10 +545,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     _operator_version = 1
 
-    _primitive: Optional["jax.extend.core.Primitive"] = None
-    """
-    Optional[jax.extend.core.Primitive]
-    """
+    _primitive: jax.extend.core.Primitive
+    """jax.extend.core.Primitive"""
 
     resource_keys: ClassVar[Set] = set()
     """The set of parameters that affects the resource requirement of the operator.
@@ -592,12 +594,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         to the primitive via ``cls._primitive.bind``.
 
         """
-        if cls._primitive is None:
-            # guard against this being called when primitive is not defined.
-            return type.__call__(cls, *args, **kwargs)
-
-        import jax  # pylint: disable=import-outside-toplevel
-
         array_types = (jax.numpy.ndarray, np.ndarray)
         iterable_wires_types = (
             list,
@@ -1054,30 +1050,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         self._batch_size = None
         params = self.data
-
-        try:
-            ndims = tuple(qp.math.ndim(p) for p in params)
-        except (
-            ValueError
-        ) as e:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            # TODO:[dwierichs] When using tf.function with an input_signature that contains
-            # an unknown-shaped input, ndim() will not be able to determine the number of
-            # dimensions because they are not specified yet. Failing example: Let `fun` be
-            # a single-parameter QNode.
-            # `tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))`
-            # There might be a way to support batching nonetheless, which remains to be
-            # investigated. For now, the batch_size is left to be `None` when instantiating
-            # an operation with abstract parameters that make `qp.math.ndim` fail.
-            if any(is_abstract(p) for p in params):
-                self._batch_size = None
-                self._ndim_params = (0,) * len(params)
-                return
-            raise e  # pragma: no cover
+        ndims = tuple(qp.math.ndim(p) for p in params)
 
         if any(len(qp.math.shape(p)) >= 1 and qp.math.shape(p)[0] is None for p in params):
             # if the batch dimension is unknown, then skip the validation
             # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
-            # typically during compilation of a function decorated with jax.jit or tf.function
+            # typically during compilation of a function decorated with jax.jit
             return  # pragma: no cover
 
         self._ndim_params = ndims
@@ -1510,10 +1488,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     __radd__ = __add__
 
-    def __mul__(self, other: Callable | TensorLike) -> "Operator":
+    def __mul__(self, other: TensorLike) -> "Operator":
         """The scalar multiplication between scalars and Operators."""
-        if callable(other):
-            return qp.pulse.ParametrizedHamiltonian([other], [self])
         if isinstance(other, TensorLike):
             return qp.s_prod(scalar=other, operator=self, lazy=False)
         return NotImplemented  # pragma: no cover
@@ -1732,7 +1708,6 @@ class Operation(Operator):
 
         These frequencies encode the behaviour of the operator :math:`U(\mathbf{p})`
         on the value of the expectation value as the parameters are modified.
-        For more details, please see the :mod:`.pennylane.fourier` module.
 
         Returns:
             list[tuple[int or float]]: Tuple of frequencies for each parameter.
