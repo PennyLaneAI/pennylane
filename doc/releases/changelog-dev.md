@@ -2100,7 +2100,7 @@
   operator's decomposition rules, with a circuit diagram and the resources the rule uses. 
   This change only applies to operators that are subclasses of ``Operator2``. 
   The tables are rendered by a new ``decomposition-table`` Sphinx directive, and their diagrams are
-  drawn by a script in ``doc/_static/decomposition_thumbnails/generator``. 
+  drawn with :func:`~.draw_mpl`.
   [(#10381)](https://github.com/PennyLaneAI/pennylane/pull/10381)
 
 <h3>Bug fixes 🐛</h3>
