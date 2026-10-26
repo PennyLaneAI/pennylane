@@ -825,12 +825,6 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
-* Graph decompositions now use direct inverse rules for ``RotXZX``, ``PCPhase``,
-  ``IntegerComparator``, ``CommutingEvolution``, ``SpecialUnitary``,
-  ``ControlledQubitUnitary`` and ``TmpPauliRot``. The adjoint rule for
-  ``ChangeOpBasis2`` preserves symbolic uncomputation.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
-
 * Terminal measurements now accept fixed-size ``qp.typing.Wire[n]`` registers during
   program capture.
   `(#10364) <https://github.com/PennyLaneAI/pennylane/pull/10364>`__
@@ -1368,6 +1362,7 @@ Breaking changes 💔
   inverse (for example, ``qp.RX(-theta, wires=0)``) or explicitly simplify with
   ``qp.simplify(qp.adjoint(op))``.
   `(#10371) <https://github.com/PennyLaneAI/pennylane/pull/10371>`__
+  `(#10394) <https://github.com/PennyLaneAI/pennylane/pull/10394>`__
 
 * ``qp.tape.plxpr_to_tape`` and ``qp.tape.plxpr_conversion.plxpr_to_tape`` have been removed.
   Use :func:`~.testing.plxpr_to_tape` instead.
