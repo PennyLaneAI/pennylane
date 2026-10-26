@@ -135,10 +135,15 @@ class DecompositionTable(SphinxDirective):
         inline_nodes, parsing_messages = self.state.inline_text(" ".join(caption_parts), self.lineno)
         caption = nodes.paragraph("", "", *inline_nodes, classes=["decomp-table-caption"])
 
+        # with only the gate and count columns, the resources need less room, so the circuits
+        # are drawn 50% bigger
+        two_cols = all("decomp-cols-2" in rule["resources"]["classes"] for rule in rules)
         table = nodes.table(classes=["decomposition-table", "colwidths-given"])
+        if two_cols:
+            table["classes"].append("decomp-two-cols")
         column_group = nodes.tgroup(cols=2)
         table += column_group
-        for column_width in (40, 60):
+        for column_width in (60, 40) if two_cols else (40, 60):
             column_group += nodes.colspec(colwidth=column_width)
 
         table_body = nodes.tbody()
