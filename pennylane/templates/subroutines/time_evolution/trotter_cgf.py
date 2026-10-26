@@ -140,16 +140,16 @@ class TrotterCGF(Operator2):
         .. decomposition-table:: qp.TrotterCGF
             :symbols: :math:`M` modes with :math:`N` modals each, :math:`L` two-body fragments and
                 :math:`n` = ``num_trotter_steps``
-            :example: the Hamiltonian above, :math:`M=2`, :math:`N=3`, :math:`L=1`, :math:`n=10`
+            :example: the Hamiltonian above, :math:`M=2`, :math:`N=3`, :math:`L=1`, :math:`n=1`
 
             .. decomposition-rule:: _trotter_cgf_decomposition
                 :image: /_static/decomposition_thumbnails/trotter_cgf_second_order.svg
                 :where: the counts are upper bounds, as basis rotations that are the identity are
                     skipped
 
-                :class:`~.BasisRotation` on :math:`N` wires | :math:`M(2Ln + 2)` | 44
-                :class:`~.IsingZZ` | :math:`((2L-1)n + 1)\, \frac{M(M-1)}{2} N^2` | 99
-                :class:`~.RZ` | :math:`nMN` | 60
+                :class:`~.BasisRotation` on :math:`N` wires | :math:`M(2Ln + 2)` | 8
+                :class:`~.IsingZZ` | :math:`((2L-1)n + 1)\, \frac{M(M-1)}{2} N^2` | 18
+                :class:`~.RZ` | :math:`nMN` | 6
                 :class:`~.GlobalPhase` | :math:`1` | 1
 
     .. details ::

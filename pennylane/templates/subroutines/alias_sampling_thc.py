@@ -458,7 +458,7 @@ class AliasSamplingTHC(Operator2):
         .. decomposition-table:: qp.AliasSamplingTHC
             :symbols: :math:`n = \lceil \log_2(M+1) \rceil` wires per index register and
                 :math:`\aleph` = ``aleph`` bits
-            :example: :math:`M=2`, :math:`N=2`, :math:`\aleph=6` (:math:`n=2`)
+            :example: :math:`M=1`, :math:`N=2`, :math:`\aleph=1` (:math:`n=1`)
 
             .. decomposition-rule:: _alias_sampling_thc_decomp
                 :image: /_static/decomposition_thumbnails/alias_sampling_thc_walker.svg
@@ -466,10 +466,10 @@ class AliasSamplingTHC(Operator2):
                 :class:`~.OutSquare` | :math:`1` | 1
                 :class:`~.SemiAdder` | :math:`2` | 2
                 :class:`~.QROM` | :math:`1` | 1
-                :class:`~.Hadamard` | :math:`\aleph + 1` | 7
+                :class:`~.Hadamard` | :math:`\aleph + 1` | 2
                 :class:`~.LeftQuantumComparator` | :math:`1` | 1
                 :class:`Adjoint(LeftQuantumComparator) <.LeftQuantumComparator>` | :math:`1` | 1
-                :class:`~.CSWAP` | :math:`3n + 2` | 8
+                :class:`~.CSWAP` | :math:`3n + 2` | 5
                 :class:`~.TemporaryAND` | :math:`1` | 1
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1` | 1
     """

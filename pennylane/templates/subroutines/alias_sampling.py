@@ -400,13 +400,13 @@ class AliasSampling(Operator2):
         .. decomposition-table:: qp.AliasSampling
             :symbols: :math:`L` weights in ``probs``, :math:`\ell = \lceil \log_2 L \rceil` and
                 :math:`\mu` = ``mu`` bits
-            :example: :math:`L=4`, :math:`\mu=4`
+            :example: :math:`L=4`, :math:`\mu=2`
 
             .. decomposition-rule:: _alias_sampling_decomp
                 :image: /_static/decomposition_thumbnails/alias_sampling_coherent.svg
 
                 :class:`~.UniformPrep` | :math:`1` | 1
-                :class:`~.Hadamard` | :math:`\mu` | 4
+                :class:`~.Hadamard` | :math:`\mu` | 2
                 :class:`~.QROM` | :math:`1` | 1
                 :class:`~.LeftQuantumComparator` | :math:`1` | 1
                 :class:`~.CSWAP` | :math:`\ell` | 2

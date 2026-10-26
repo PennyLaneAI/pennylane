@@ -244,7 +244,7 @@ class OneBodyBlockEncoding(Operator2):
         .. decomposition-table:: qp.OneBodyBlockEncoding
             :symbols: :math:`K` = ``norbs`` spatial orbitals and :math:`\nu` negative
                 eigenvalues of ``op_matrix``
-            :example: the operator above, :math:`K=2`, :math:`\nu=1`
+            :example: the operator above with ``alias_sampling_nbits=1``, :math:`K=2`, :math:`\nu=1`
 
             .. decomposition-rule:: _one_body_block_encoding_decomp
                 :image: /_static/decomposition_thumbnails/one_body_block_encoding_lcu.svg

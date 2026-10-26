@@ -840,7 +840,7 @@ class SumOfSlatersPrep(Operator2):
             :symbols: :math:`D \geq 2` entries in ``indices``, :math:`d = \lceil \log_2 D \rceil`
                 enumeration wires and :math:`m` identification bits (the number of rows of the
                 encoding computed by :func:`~.compute_sos_encoding`)
-            :example: the state above, :math:`D=8`, :math:`m=5`, :math:`u=10`
+            :example: ``indices=(0, 1, 2, 4)`` on three wires, :math:`D=4`, :math:`m=3`, :math:`u=0`
 
             .. decomposition-rule:: _sos_state_prep
                 :image: /_static/decomposition_thumbnails/sum_of_slaters_prep.svg
@@ -851,10 +851,10 @@ class SumOfSlatersPrep(Operator2):
 
                 :class:`~.MultiplexerStatePreparation` on :math:`d` wires | :math:`1` | 1
                 :class:`~.QROM` | :math:`1` | 1
-                :class:`~.CNOT` | :math:`2u + \sum_{k=1}^{D-1} \mathrm{wt}(k)` | 32
-                :class:`~.TemporaryAND` | :math:`(D-1)(m-1)` | 28
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`(D-1)(m-1)` | 28
-                :class:`~.X` | :math:`N_X \leq D m` | 22
+                :class:`~.CNOT` | :math:`2u + \sum_{k=1}^{D-1} \mathrm{wt}(k)` | 4
+                :class:`~.TemporaryAND` | :math:`(D-1)(m-1)` | 6
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`(D-1)(m-1)` | 6
+                :class:`~.X` | :math:`N_X \leq D m` | 8
 
     .. details::
         :title: Usage details

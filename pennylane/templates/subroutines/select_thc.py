@@ -610,14 +610,14 @@ class SelectTHC(Operator2):
             :symbols: :math:`h = N/2` spatial orbitals, :math:`P = h - 1` Givens pairs loaded in
                 :math:`B` batches (:math:`B \leq` ``num_batches``, and :math:`B = 0` if
                 :math:`P = 0`), and :math:`n = \lceil \log_2(M+1) \rceil` wires per index
-            :example: :math:`M=3`, :math:`N=4` (:math:`h=2`, :math:`P=1`, :math:`B=1`, :math:`n=2`)
+            :example: :math:`M=1`, :math:`N=4` (:math:`h=2`, :math:`P=1`, :math:`B=1`, :math:`n=1`)
 
             .. decomposition-rule:: _select_thc_decomp
                 :image: /_static/decomposition_thumbnails/select_thc_double_factorized.svg
 
                 :class:`~.QROM` | :math:`2B` | 2
                 :class:`Adjoint(QROM) <.QROM>` | :math:`2B` | 2
-                :class:`~.CSWAP` | :math:`4h + n + 1` | 11
+                :class:`~.CSWAP` | :math:`4h + n + 1` | 10
                 :class:`~.Hadamard` | :math:`24P` | 24
                 :class:`~.CNOT` | :math:`8P` | 8
                 :class:`~.S` | :math:`8P` | 8

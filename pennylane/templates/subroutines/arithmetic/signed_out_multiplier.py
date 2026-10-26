@@ -119,7 +119,7 @@ class SignedOutMultiplier(Operator2):
         .. decomposition-table:: qp.SignedOutMultiplier
             :symbols: :math:`n` ``x_wires``, :math:`m` ``y_wires``, :math:`k` ``output_wires`` and
                 :math:`w` ``work_wires``
-            :example: :math:`n=m=2`, :math:`k=4`
+            :example: :math:`n=m=1`, :math:`k=2`
 
             .. decomposition-rule:: _signed_out_multiplier_decomposition_not_zeroed
                 :image: /_static/decomposition_thumbnails/signed_out_multiplier_not_zeroed.svg
@@ -132,7 +132,7 @@ class SignedOutMultiplier(Operator2):
                 :image: /_static/decomposition_thumbnails/signed_out_multiplier_zeroed.svg
                 :requires: ``output_wires_zeroed=True`` and :math:`w \geq 2` work wires
 
-                :class:`~.CNOT` | :math:`2(n + m) + k + 5` | 17
+                :class:`~.CNOT` | :math:`2(n + m) + k + 5` | 11
                 :class:`~.Incrementer` with 1 control | :math:`5` | 5
                 :class:`~.OutMultiplier` | :math:`1` | 1
 

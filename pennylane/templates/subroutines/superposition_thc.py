@@ -148,12 +148,12 @@ class SuperpositionTHC(Operator2):
 
         .. decomposition-table:: qp.SuperpositionTHC
             :symbols: :math:`n` wires per index register
-            :example: :math:`n=3` (:math:`M=5`, :math:`N=2`)
+            :example: :math:`n=1` (:math:`M=1`, :math:`N=2`)
 
             .. decomposition-rule:: _superposition_thc
                 :image: /_static/decomposition_thumbnails/superposition_thc_amplification.svg
 
-                :class:`~.Hadamard` | :math:`6n` | 18
+                :class:`~.Hadamard` | :math:`6n` | 6
                 :class:`~.RY` | :math:`2` | 2
                 :class:`~.X` | :math:`4` | 4
                 :class:`~.LeftClassicalComparator` | :math:`4` | 4

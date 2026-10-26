@@ -123,7 +123,7 @@ class OutMultiplier(Operator2):
             :symbols: :math:`n` ``x_wires``, :math:`m` ``y_wires``, :math:`k \geq n + m`
                 ``output_wires``, :math:`w` ``work_wires``, ``mod`` :math:`=2^k` and
                 ``output_wires_zeroed=False``
-            :example: :math:`n=m=2`, :math:`k=4`
+            :example: :math:`n=m=1`, :math:`k=2`
 
             .. decomposition-rule:: _out_multiplier_with_qft
                 :image: /_static/decomposition_thumbnails/out_multiplier_qft.svg
@@ -137,19 +137,19 @@ class OutMultiplier(Operator2):
                 :image: /_static/decomposition_thumbnails/out_multiplier_adder.svg
                 :requires: :math:`w \geq k` work wires
 
-                :class:`~.SemiAdder` with 1 control | :math:`n` | 2
+                :class:`~.SemiAdder` with 1 control | :math:`n` | 1
 
             .. decomposition-rule:: _out_multiplier_with_caddsub
                 :image: /_static/decomposition_thumbnails/out_multiplier_caddsub.svg
                 :requires: :math:`w \geq k + 1` work wires
                 :where: :math:`[m > 1]` equal to 1 if :math:`m > 1` and 0 otherwise
 
-                :class:`~.TemporaryAND` | :math:`(n + 1)k - m - \binom{n}{2}` | 9
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`(n + 1)k - m - \binom{n}{2}` | 9
-                :class:`~.CNOT` | :math:`(n + 1)k + 5nm + n - m - 4 - \binom{n}{2}` | 27
-                :class:`~.X` | :math:`2k + 8` | 16
-                :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`4n` | 8
-                :class:`~.MultiX` with 1 control on :math:`|0\rangle` | :math:`2n\,[m > 1]` | 4
+                :class:`~.TemporaryAND` | :math:`(n + 1)k - m - \binom{n}{2}` | 3
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`(n + 1)k - m - \binom{n}{2}` | 3
+                :class:`~.CNOT` | :math:`(n + 1)k + 5nm + n - m - 4 - \binom{n}{2}` | 5
+                :class:`~.X` | :math:`2k + 8` | 12
+                :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`4n` | 4
+                :class:`~.MultiX` with 1 control on :math:`|0\rangle` | :math:`2n\,[m > 1]` | 0
                 :class:`~.SemiAdder` | :math:`2` | 2
                 :class:`~.Incrementer` | :math:`1` | 1
 
