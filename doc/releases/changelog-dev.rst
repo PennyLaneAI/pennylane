@@ -825,6 +825,9 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* ``qp.gate_sets.ALL_QUBIT_OPS`` now includes the in-build controlled gates like :class:`~.CNOT`,
+  :class:`~.CRZ`, and others.
+
 * Terminal measurements now accept fixed-size ``qp.typing.Wire[n]`` registers during
   program capture.
   `(#10364) <https://github.com/PennyLaneAI/pennylane/pull/10364>`__
