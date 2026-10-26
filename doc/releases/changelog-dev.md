@@ -2099,17 +2099,6 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a bug where :class:`~.BasisRotation` for real-valued matrices :math:`u` implemented the
-  rotation for :math:`S u S` instead of :math:`u`, with :math:`S=\operatorname{diag}((-1)^p)`,
-  and handled matrices with determinant :math:`-1` inconsistently. It now implements
-  the same operator for real-valued (orthogonal) matrices as for complex-valued ones, matching
-  its documentation. Circuits using ``BasisRotation`` with real-valued matrices change due to this.
-  [(#10331)](https://github.com/PennyLaneAI/pennylane/pull/10331)
-
-* Fixed a bug where :func:`~.math.decomposition.givens_decomposition` and :class:`~.BasisRotation`
-  produced ``nan`` values for complex-valued unitaries with exact zeros, such as diagonal matrices.
-  [(#10331)](https://github.com/PennyLaneAI/pennylane/pull/10331)
-
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
   argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
   [(#10360)](https://github.com/PennyLaneAI/pennylane/pull/10360)
