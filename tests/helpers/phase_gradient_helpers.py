@@ -18,9 +18,7 @@ Pytest helper functions for testing phase gradient decomposition rules.
 import numpy as np
 
 import pennylane as qp
-from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.ops.op_math.composite2 import CompositeOp2
-from pennylane.testing.decompositions import _capture_decomp_rule_to_tape, _decomp_rule_to_tape
 
 
 def bits_to_angles(bits, unit):
@@ -36,15 +34,6 @@ def leaf_ops(ops):
             yield from leaf_ops(op.decomposition())
         else:
             yield op
-
-
-def decomp_to_tape(op, rule):
-    """Decompose ``op`` with ``rule`` into a tape, tracing with program capture if it is enabled,
-    so that the operator data are abstract during the decomposition."""
-    if qp.capture.enabled():
-        return _capture_decomp_rule_to_tape(rule, op)
-    _, args, kwargs = _get_decomp_args(op)
-    return _decomp_rule_to_tape(rule, args, kwargs)
 
 
 def assert_decomp_realizes_op(op, tape, phase_grad_wires, seed):

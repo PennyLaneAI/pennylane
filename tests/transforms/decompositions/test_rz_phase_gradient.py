@@ -310,9 +310,9 @@ def test_precision_stats_decomp(bits, precision_stats, width, seed):
         angle_wires, phase_grad_wires, [9, 10, 11], precision_stats=precision_stats
     )
     op = qp.RZ(phase_gradient_helpers.bits_to_angles(bits, 2 * np.pi), 0)
-    _test_decomposition_rule(op, rule, skip_decomp_matrix_check=True)
+    assert_valid_decomp_rule(op, rule, check_matrix=False)
 
-    tape = phase_gradient_helpers.decomp_to_tape(op, rule)
+    tape = qp.testing.decomp_rule_to_tape(op, rule)
     adders = [
         o for o in phase_gradient_helpers.leaf_ops(tape.operations) if isinstance(o, qp.SemiAdder)
     ]

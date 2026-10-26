@@ -361,9 +361,9 @@ def test_precision_stats_decomp(bits, precision_stats, width, rot_axis, seed):
         target_wire=11 + num_controls,
         rot_axis=rot_axis,
     )
-    _test_decomposition_rule(op, rule)
+    assert_valid_decomp_rule(op, rule)
 
-    tape = phase_gradient_helpers.decomp_to_tape(op, rule)
+    tape = qp.testing.decomp_rule_to_tape(op, rule)
     ops = list(phase_gradient_helpers.leaf_ops(tape.operations))
     adders = [o for o in ops if isinstance(o, qp.SemiAdder)]
     assert [(a.x_wires, a.y_wires) for a in adders] == (
