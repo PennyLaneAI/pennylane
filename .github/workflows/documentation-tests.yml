@@ -88,9 +88,7 @@ jobs:
           --ignore=pennylane/capture
           --ignore=pennylane/gradients
           --ignore=pennylane/optimize
-          --ignore=pennylane/pulse
           --ignore=pennylane/io
-          --ignore=pennylane/qnn
           --ignore=pennylane/data
           --ignore=pennylane/debugging
           --ignore=pennylane/qchem

@@ -1347,6 +1347,11 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* The ``pennylane.qnn`` module has been removed, including ``TorchLayer``.
+  ``pennylane.qnn.iqp_expval`` has been moved to :mod:`pennylane.math` and is
+  available as :func:`pennylane.math.iqp_expval`.
+  `(#10247) <https://github.com/PennyLaneAI/pennylane/pull/10247>`__
+
 * Renamed ``qp.math.is_abstract`` to ``qp.math.is_tracer`` to distinguish traced tensors
   from PennyLane abstract input descriptors. The function's behavior is unchanged.
   Downstream callers must use ``qp.math.is_tracer``; the old name is no longer available.
