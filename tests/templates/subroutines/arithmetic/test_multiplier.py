@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -30,7 +30,7 @@ def test_standard_validity_Multiplier():
     x_wires = [0, 1, 2, 3]
     work_wires = [4, 5, 6, 7, 8, 9]
     op = qp.Multiplier(k, x_wires=x_wires, mod=mod, work_wires=work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.system
@@ -184,8 +184,7 @@ class TestMultiplierUnit:
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
         op = qp.Multiplier(k, x_wire, mod, work_wires)
-        for rule in qp.list_decomps(qp.Multiplier):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize(
         ("k", "x_wires", "mod", "work_wires", "msg_match"),

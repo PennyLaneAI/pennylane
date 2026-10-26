@@ -24,10 +24,9 @@ import pytest
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import abstractify
-from pennylane.decomposition import list_decomps
 from pennylane.ops import PPR_4, H, MultiRZ
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates.subroutines.iqp import IQP
+from pennylane.testing import assert_decomposable, assert_valid
 from pennylane.typing import AbstractArray, AbstractWires
 
 
@@ -100,8 +99,7 @@ def test_raises(params, error, match):
 def test_decomposition_new(weights, pattern, spin_sym, wires):  # pylint: disable=too-many-arguments
     op = IQP(weights, wires, pattern, spin_sym)
 
-    for rule in list_decomps(IQP):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 @pytest.mark.parametrize(

@@ -86,7 +86,7 @@ def _verify_no_traced_static_args(cls, arguments):
     """Verify that no static/compilable arguments received a tracer."""
     for arg_name in cls.static_argnames + cls.compilable_argnames:
         leaves, _ = flatten(arguments[arg_name])
-        if any(math.is_abstract(l) for l in leaves):
+        if any(math.is_tracer(l) for l in leaves):
             raise ValueError(
                 f"Argument '{arg_name}' of operator '{cls.__name__}' must be a concrete, "
                 f"compile-time constant. A dynamic/traced variable was provided instead. "

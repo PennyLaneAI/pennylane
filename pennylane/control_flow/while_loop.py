@@ -23,7 +23,7 @@ from pennylane import capture
 from pennylane.capture import FlatFn, HintedCallable, apply_hint, enabled
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
-from pennylane.capture.hint import process_hints
+from pennylane.capture.hint import get_hints, process_hints
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 
 from ._loop_abstract_axes import (
@@ -283,12 +283,9 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
         Returns:
             Callable: a callable with the same signature as ``body_fn`` and ``cond_fn``.
         """
+        num_iters_hint = get_hints(body_fn, {"num-iters"}).get("num-iters", None)
         if isinstance(body_fn, HintedCallable):
-            hints = process_hints(body_fn.hints, {"num-iters"})
-            num_iters_hint = hints.get("num-iters", None)
             body_fn = body_fn.f
-        else:
-            num_iters_hint = None
 
         return WhileLoopCallable(
             cond_fn,

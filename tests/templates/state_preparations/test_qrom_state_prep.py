@@ -58,7 +58,7 @@ class TestQROMStatePreparation:
             precision_wires=wires["precision_wires"],
             work_wires=wires["work_wires"],
         )
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.parametrize(
         ("state", "msg_match"),

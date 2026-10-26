@@ -581,38 +581,35 @@ class TestAutogradExecuteIntegration:
             program = device.preprocess_transforms(execution_config=config)
             return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        def _decomp(theta, phi, delta, wires):
+            qp.Rot(delta, theta, -delta, wires)
+            qp.PhaseShift(phi + delta, wires)
 
-            @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
-            def _decomp(theta, phi, delta, wires):
-                qp.Rot(delta, theta, -delta, wires)
-                qp.PhaseShift(phi + delta, wires)
+        qp.add_decomps(MyU3, _decomp)
 
-            qp.add_decomps(MyU3, _decomp)
+        a = pnp.array(0.1, requires_grad=False)
+        p = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
 
-            a = pnp.array(0.1, requires_grad=False)
-            p = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
+        res = cost_fn(a, p)
+        expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
+            np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
+        )
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-            res = cost_fn(a, p)
-            expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
-                np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
-            )
-            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
-
-            jac_fn = qp.jacobian(cost_fn)
-            res = jac_fn(a, p)
-            expected = np.array(
-                [
-                    np.cos(p[1])
-                    * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
-                    np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
-                    - np.sin(p[1])
-                    * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
-                    np.sin(a)
-                    * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
-                ]
-            )
-            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        jac_fn = qp.jacobian(cost_fn)
+        res = jac_fn(a, p)
+        expected = np.array(
+            [
+                np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
+                np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
+                - np.sin(p[1])
+                * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
+                np.sin(a)
+                * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
+            ]
+        )
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
     def test_probability_differentiation(self, execute_kwargs, device_name, seed, shots):
         """Tests correct output shape and evaluation for a tape

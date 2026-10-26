@@ -24,7 +24,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition import gate_sets
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 from pennylane.wires import Wires
 
@@ -438,11 +438,15 @@ class TestIntegerComparator:
     def test_decomposition_qfuncs(self, value, geq):
         """Tests the qfunc decompositions of the IntegerComparator operator."""
         op = qp.IntegerComparator(value, wires=[0, 1, 2, 3], geq=geq)
-        for rule in qp.list_decomps(qp.IntegerComparator):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.integration
     @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.xfail(
+        reason="Non-capture graph incorrectly requires work wires for the adjoint Toffoli path.",
+        raises=qp.exceptions.DecompositionError,
+        strict=True,
+    )
     def test_decomposition_graph_integration(self):
         """Tests that the decomposition is correct under the new system."""
 

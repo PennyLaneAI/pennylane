@@ -18,7 +18,7 @@ import pytest
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Float, Int, Wire
 from pennylane.wires import Wires
 
@@ -86,7 +86,7 @@ class TestValidation:
     def test_standard_checks(self):
         """Runs the standard Operator2 validity checks for MultiX."""
         op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.parametrize(
         ("bitstring", "wires", "error_match"),
@@ -303,8 +303,7 @@ class TestDecomposition:
         """Tests that the MultiX decomposition rule is capture compatible."""
         op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
 
-        for rule in qp.list_decomps(qp.MultiX):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.capture
     def test_decomposition_capture_with_tuple_wires(self):
@@ -315,6 +314,7 @@ class TestDecomposition:
         from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
             for_loop_prim,
         )
+        from pennylane.testing import find_eqns  # pylint: disable=import-outside-toplevel
 
         bitstring = jax.numpy.array([1, 0, 1])
         wires = (0, 1, 2)
@@ -325,8 +325,7 @@ class TestDecomposition:
         jaxpr = jax.make_jaxpr(lambda bits: decomposition(bits, wires))(bitstring)
 
         # Ensures exactly one for loop primitive appears in the jaxpr
-        loop_eqns = [eqn for eqn in jaxpr.eqns if eqn.primitive == for_loop_prim]
-        assert len(loop_eqns) == 1
+        assert len(find_eqns(jaxpr, for_loop_prim)) == 1
 
         # Check that the only constants are the wires
         assert len(jaxpr.consts) == 1
@@ -397,8 +396,7 @@ class TestDecomposition:
         op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
         adjoint_op = qp.adjoint(op)
 
-        for rule in qp.list_decomps("Adjoint(MultiX)"):
-            _test_decomposition_rule(adjoint_op, rule)
+        assert_decomposable(adjoint_op)
 
     @pytest.mark.parametrize("exponent", [0, 1, 2, 3, 4, 5])
     def test_pow_decomposition(self, exponent):
@@ -418,16 +416,14 @@ class TestDecomposition:
         op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
         pow_op = qp.pow(op, 3)
 
-        for rule in qp.list_decomps("Pow(MultiX)"):
-            _test_decomposition_rule(pow_op, rule)
+        assert_decomposable(pow_op)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_controlled_decomposition_capture_compatibility(self):
         """Tests that the C(MultiX) decomposition rule is a valid, capture-compatible rule."""
         op = qp.ctrl(qp.MultiX([1, 0, 1], wires=[1, 2, 3]), control=0)
 
-        for rule in qp.list_decomps("C(MultiX)"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
@@ -468,8 +464,7 @@ class TestDecomposition:
             qp.MultiX([1, 0, 1], wires=[1, 2, 3]), control=0, control_values=control_values
         )
 
-        for rule in qp.list_decomps("C(MultiX)"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -486,8 +481,7 @@ class TestDecomposition:
             control_values=control_values,
         )
 
-        for rule in qp.list_decomps("C(MultiX)"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_multi_control_ladder_uses_fewer_non_clifford_gates(self):

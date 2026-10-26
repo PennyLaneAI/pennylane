@@ -28,13 +28,14 @@ from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 import numpy as np
 from jax.core import ShapedArray
-from scipy.sparse import spmatrix
+from scipy.sparse import issparse, spmatrix
 
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
 from pennylane.capture import enabled, pause, symbolic_array
 from pennylane.capture.custom_primitives import QpPrimitive
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core.apply import apply
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.exceptions import (
@@ -1361,7 +1362,7 @@ class Operator2(metaclass=OperatorMeta):
         if isinstance(other, Operator):
             return qp.sum(self, other, lazy=False)
         if isinstance(other, TensorLike):
-            if not qp.math.is_abstract(other) and qp.math.allequal(other, 0):
+            if not qp.math.is_tracer(other) and qp.math.allequal(other, 0):
                 return self
             return qp.sum(
                 self,
@@ -1601,7 +1602,7 @@ class Operator2(metaclass=OperatorMeta):
         )
         # If we bind the primitive outside a tracing context but with program capture enabled,
         # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
-        if math.is_abstract(res):
+        if math.is_tracer(res):
             self.tracer = res
 
     def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
@@ -1985,32 +1986,6 @@ def _op_aval(*_, **__):
     return AbstractOperator()
 
 
-def pop_op_eqns(ops: Iterable):
-    """Delete the jaxpr equations for operators that have been used as data.
-
-    These equations must be deleted because operators used as data are treated as
-    pytrees wrapping dynamic data rather than instructions. Thus, the equation that
-    corresponds to the operator as an instruction should be removed.
-    """
-    old_eqns = []
-
-    for op in ops:
-        if op.tracer is not None:
-            # pylint: disable=protected-access
-            frame = op.tracer._trace.frame
-            assert frame.auto_dce is False  # eqns are stored differently if this is enabled
-
-            # for some reason the frame now wraps equations in lambdas
-            eqn = op.tracer.parent
-            old_eqns.append(eqn)
-            frame.tracing_eqns = [r for r in frame.tracing_eqns if r() is not eqn]
-
-            # delete reference to tracer after its equation has been deleted
-            op.tracer = None
-
-    return old_eqns
-
-
 def _is_pytree_placeholder(obj) -> bool:
     """Whether 'obj' is a sentinel placeholder that JAX substitutes for real pytree leaves."""
     cls = type(obj)
@@ -2166,7 +2141,7 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
         return hash(d)
 
     # We stringify the data because arrays are unhashable
-    return str(id(d) if math.is_abstract(d) else _mod_and_round(d, mod_val))
+    return str(id(d) if math.is_tracer(d) else _mod_and_round(d, mod_val))
 
 
 def _is_hash_leaf(l) -> bool:
@@ -2195,7 +2170,7 @@ def _to_int_wires(wires):
             " AbstractWires, AbstractQubits"
         )
 
-    return Wires(tuple(w if math.is_abstract(w) else int(w) for w in wires))
+    return Wires(tuple(w if math.is_tracer(w) else int(w) for w in wires))
 
 
 class _ArgType(Enum):
@@ -2254,7 +2229,7 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
                     "specifiers found in pennylane.typing."
                 )
             # Ensure it behaves like a clean array/scalar leaf before abstractifying
-            if math.is_abstract(val):
+            if math.is_tracer(val) or issparse(val):
                 return abstractify(val)
             return abstractify(math.asarray(val))
 

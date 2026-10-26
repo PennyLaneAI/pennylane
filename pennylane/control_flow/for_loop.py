@@ -23,7 +23,7 @@ from pennylane import capture, math
 from pennylane.capture import FlatFn, HintedCallable, apply_hint, enabled
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
-from pennylane.capture.hint import process_hints
+from pennylane.capture.hint import get_hints, process_hints
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 from pennylane.exceptions import CaptureWarning
 
@@ -54,9 +54,9 @@ def _reverse_iterator(f, start, step):
 def _is_reverse_iteration(start, stop, step):
     # without the int() call, when we have a jnp array with a single int
     # in it (jnp.array(1)), performing a comparison will produce a tracer
-    if not math.is_abstract(step):
+    if not math.is_tracer(step):
         return int(step) < 0
-    return not math.is_abstract(start) and not math.is_abstract(stop) and int(stop) < int(start)
+    return not math.is_tracer(start) and not math.is_tracer(stop) and int(stop) < int(start)
 
 
 def for_loop(
@@ -335,12 +335,9 @@ def for_loop(
         Returns:
             Callable: a callable with the same signature as ``body_fn``
         """
+        num_iters_hint = get_hints(body_fn, {"num-iters"}).get("num-iters", None)
         if isinstance(body_fn, HintedCallable):
-            hints = process_hints(body_fn.hints, {"num-iters"})
-            num_iters_hint = hints.get("num-iters", None)
             body_fn = body_fn.f
-        else:
-            num_iters_hint = None
 
         return ForLoopCallable(
             start,
