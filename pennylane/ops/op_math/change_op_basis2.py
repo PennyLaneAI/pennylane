@@ -30,6 +30,7 @@ from pennylane.exceptions import (
 )
 from pennylane.ops.op_math import adjoint, ctrl
 from pennylane.ops.op_math.adjoint import _adjoint_eager
+from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
 
 from .composite import handle_recursion_error
@@ -229,3 +230,23 @@ def _change_op_basis_decomp(compute_op, target_op, uncompute_op):
 
 add_decomps(ChangeOpBasis2, _change_op_basis_decomp)
 add_decomps("C(ChangeOpBasis2)", flip_zero_control(_controlled_change_op_basis_decomposition))
+
+
+def _adjoint_change_op_basis_resources(base):
+    uncompute = base.uncompute_op
+    compute = uncompute.base if isinstance(uncompute, Adjoint2) else _adjoint_abstract(uncompute)
+    return Counter([compute, _adjoint_abstract(base.target_op), _adjoint_abstract(base.compute_op)])
+
+
+@register_resources(_adjoint_change_op_basis_resources)
+def _adjoint_change_op_basis_decomp(base):
+    # Cancel symbolic uncomputation before decomposing it, preserving measurement-based rules.
+    if isinstance(base.uncompute_op, Adjoint2):
+        apply(base.uncompute_op.base)
+    else:
+        adjoint(base.uncompute_op)
+    adjoint(base.target_op)
+    adjoint(base.compute_op)
+
+
+add_decomps("Adjoint(ChangeOpBasis2)", _adjoint_change_op_basis_decomp)

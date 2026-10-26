@@ -31,6 +31,7 @@ from pennylane.ops.op_math import ChangeOpBasis2, Prod2, change_op_basis
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.change_op_basis import _validate_callable
 from pennylane.templates import Subroutine
+from pennylane.templates.subroutines.arithmetic.temporary_and import _adjoint_temporary_and
 from pennylane.testing import assert_decomposable, assert_eqn_matches_op
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
@@ -611,10 +612,56 @@ class TestDecomposition:
 
         assert len(qp.list_decomps(op)) == 1
 
-    def test_adjoint_decomposition_with_explicit_uncompute(self):
-        """Test the generated adjoint rule with an asymmetric explicit uncompute operator."""
-        op = qp.adjoint(ChangeOpBasis2(qp.S(0), qp.T(1), qp.SX(2)))
-        assert_decomposable(op)
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("paired_uncompute", [True, False])
+    def test_adjoint_decomposition(self, paired_uncompute):
+        """Invert the factors in order, cancelling paired symbolic uncomputation."""
+        compute, target = qp.RX(0.2, 0), qp.RZ(0.3, 0)
+        uncompute = qp.adjoint(compute) if paired_uncompute else qp.RY(0.4, 0)
+        base = ChangeOpBasis2(compute, target, uncompute)
+        op = qp.adjoint(base)
+        [rule] = qp.list_decomps("Adjoint(ChangeOpBasis2)")
+        qp.testing.assert_valid_decomp_rule(op, rule)
+        tape = qp.testing.decomp_rule_to_tape(op, rule)
+        expected = [
+            compute if paired_uncompute else qp.adjoint(uncompute),
+            qp.adjoint(target),
+            qp.adjoint(compute),
+        ]
+        assert tape.operations == expected
+        with qp.capture.pause():
+            forward = qp.tape.QuantumScript([compute, target, uncompute])
+            assert np.allclose(
+                qp.matrix(tape, wire_order=[0]),
+                qp.matrix(forward, wire_order=[0]).conj().T,
+            )
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_adjoint_measurement_uncompute(self):
+        """Retain logical uncomputation so its measurement rule restores the scratch qubit."""
+        compute = qp.TemporaryAND([0, 1, 2])
+        op = qp.adjoint(ChangeOpBasis2(compute, qp.RZ(0.3, 2)))
+        [rule] = qp.list_decomps("Adjoint(ChangeOpBasis2)")
+        qp.testing.assert_valid_decomp_rule(op, rule, check_matrix=False)
+        tape = qp.testing.decomp_rule_to_tape(op, rule)
+        qp.assert_equal(tape.operations[-1], qp.adjoint(compute), check_interface=False)
+
+        with qp.capture.pause():
+
+            @qp.qnode(qp.device("default.qubit", wires=4))
+            def circuit():
+                qp.H(0)
+                qp.H(1)
+                for gate in tape.operations[:-1]:
+                    qp.apply(gate)
+                _adjoint_temporary_and(tape.operations[-1].base)
+                # Undo the equivalent controlled phase on the input register.
+                qp.ControlledPhaseShift(0.3, wires=[0, 1])
+                qp.H(1)
+                qp.H(0)
+                return qp.probs(wires=[0, 1, 2])
+
+            assert np.allclose(circuit(), [1, 0, 0, 0, 0, 0, 0, 0])
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_on_tape(self, ops_lst):

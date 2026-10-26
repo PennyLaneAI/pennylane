@@ -56,6 +56,21 @@ X_broadcasted = np.array([X] * 3)
 class TestControlledQubitUnitary:
     """Tests specific to the ControlledQubitUnitary operation"""
 
+    def test_adjoint_rule_sparse(self):
+        """The direct inverse also preserves sparse target matrices."""
+        U = sparse.csr_matrix(qp.Rot.compute_matrix(0.2, 0.3, 0.4))
+        base = qp.ControlledQubitUnitary(
+            U, wires=[0, 1, 2], control_values=[False, True], work_wires=[3]
+        )
+        [rule] = qp.list_decomps("Adjoint(ControlledQubitUnitary)")
+        op = qp.adjoint(base)
+        qp.testing.assert_valid_decomp_rule(op, rule)
+        [inverse] = qp.testing.decomp_rule_to_tape(op, rule).operations
+        assert sparse.issparse(inverse.U)
+        assert np.allclose(
+            inverse.sparse_matrix().toarray(), base.sparse_matrix().toarray().conj().T
+        )
+
     def test_has_decomposition_sparse_edge_case(self):
         """Test that has_decomposition doesn't error out with sparse matrices."""
         U = np.random.rand(4, 4) + 1.0j * np.random.rand(4, 4)

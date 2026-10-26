@@ -113,3 +113,11 @@ def _xzx_decompose(phi, theta, omega, wires, **__):
 
 
 add_decomps(RotXZX, _xzx_decompose)
+
+
+@register_resources({RotXZX: 1})
+def _adjoint_rot_xzx(phi, theta, omega, wires, **__):
+    RotXZX(-omega, -theta, -phi, wires=wires)
+
+
+add_decomps("Adjoint(RotXZX)", _adjoint_rot_xzx)

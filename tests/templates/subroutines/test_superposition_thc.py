@@ -117,16 +117,7 @@ class TestSuperpositionTHC:
     """Test the SuperpositionTHC template."""
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "qjit",
-        [
-            False,
-            pytest.param(
-                True,
-                marks=pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]"),
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("qjit", [False, True])
     @pytest.mark.parametrize(
         ("M", "N", "n"),
         [

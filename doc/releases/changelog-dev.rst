@@ -825,6 +825,12 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* Graph decompositions now use direct inverse rules for ``RotXZX``, ``PCPhase``,
+  ``IntegerComparator``, ``CommutingEvolution``, ``SpecialUnitary``,
+  ``ControlledQubitUnitary`` and ``TmpPauliRot``. The adjoint rule for
+  ``ChangeOpBasis2`` preserves symbolic uncomputation.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * Terminal measurements now accept fixed-size ``qp.typing.Wire[n]`` registers during
   program capture.
   `(#10364) <https://github.com/PennyLaneAI/pennylane/pull/10364>`__

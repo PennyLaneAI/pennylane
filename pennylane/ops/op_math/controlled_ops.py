@@ -24,12 +24,13 @@ from functools import partial
 from typing import Literal, override
 
 import numpy as np
+from scipy import sparse
 from scipy.linalg import block_diag
 
 import pennylane as qp
 from pennylane import math
 from pennylane.allocation import allocate
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
@@ -254,6 +255,22 @@ add_decomps(
     controlled_two_qubit_unitary_rule,
     _to_general_c_qu,
 )
+
+
+@register_resources(lambda base: {abstractify(base): 1})
+def _adjoint_controlled_qubit_unitary(base):
+    U = base.U
+    U = U.conjugate().transpose() if sparse.issparse(U) else math.moveaxis(math.conj(U), -2, -1)
+    ControlledQubitUnitary(
+        U,
+        wires=base.wires,
+        control_values=base.control_values,
+        work_wires=base.work_wires,
+        work_wire_type=base.work_wire_type,
+    )
+
+
+add_decomps("Adjoint(ControlledQubitUnitary)", _adjoint_controlled_qubit_unitary)
 
 
 class CH(Controlled2):
