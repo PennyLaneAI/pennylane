@@ -33,6 +33,9 @@ DEFAULT_MESSAGE_BYTES = 8
 Hardware = Literal["cpu", "gpu", "fpga"]
 """Hardware on which a backline node executes."""
 _SUPPORTED_HARDWARE = frozenset(get_args(Hardware))
+Frame = Literal["auto", "bl16", "blv", "cuqr"]
+"""Frame layout a placement's messages travel in."""
+_SUPPORTED_FRAMES = frozenset(get_args(Frame))
 
 
 @dataclass(frozen=True)
@@ -449,6 +452,8 @@ class Placement:
             controller alone and cannot be used with coprocessors.
         qec_code (str | None): The quantum error-correcting code the circuit is encoded for.
             Defaults to ``None``, which leaves the circuit unencoded.
+        frame (str): The frame layout messages travel in; see :attr:`frame`. Defaults to
+            ``"auto"``.
 
     .. seealso:: :class:`~.Controller`, :class:`~.Coprocessor`, :class:`~.Transport`,
         :class:`~pennylane.Backline`
@@ -493,7 +498,7 @@ class Placement:
     here lets the compiler encode the circuit, and no separate lowering step is needed. Defaults to
     ``None``, which leaves the circuit unencoded."""
 
-    frame: str = "auto"
+    frame: Frame = "auto"
     """The frame layout messages travel in. One of:
 
     * ``"auto"`` (the default): the compiler picks ``"bl16"`` when every message fits in 8 B,
@@ -514,6 +519,10 @@ class Placement:
     """The size in bytes of each reply the controller receives, resolved like :attr:`in_bytes`."""
 
     def __post_init__(self):
+        if self.frame not in _SUPPORTED_FRAMES:
+            raise ValueError(
+                f"frame must be one of {sorted(_SUPPORTED_FRAMES)}, got {self.frame!r}"
+            )
         if not isinstance(self.coprocessors, tuple):
             object.__setattr__(self, "coprocessors", tuple(self.coprocessors))
         if isinstance(self.transport, str):
