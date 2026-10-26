@@ -943,11 +943,7 @@ class TestMeasurementQROM:
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L",
-        [
-            pytest.param(1, marks=CTRL_WORK_WIRE_TYPE_XFAIL),
-            pytest.param(2, marks=CTRL_WORK_WIRE_TYPE_XFAIL),
-            *[3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
-        ],
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
     )
     def test_no_phases_error(self, L):
         """Test that QROM introduces no relative phases on the control register."""
@@ -1055,13 +1051,12 @@ class TestMeasurementQROM:
                 work_samples, 0
             ), f"L={L}, out-of-range j={j}: work wires not clean, got {work_samples}"
 
-    @CTRL_WORK_WIRE_TYPE_XFAIL
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         ("L", "n_extra"),
         [
-            (1, 1),
+            pytest.param(1, 1, marks=CTRL_WORK_WIRE_TYPE_XFAIL),
             (1, 2),
             (4, 1),
             (4, 2),
