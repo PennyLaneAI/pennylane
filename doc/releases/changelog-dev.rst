@@ -825,6 +825,11 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* :func:`~pennylane.estimate` and :func:`~.analyze` are now faster on qjit-compiled workflows. They use
+  Catalyst's new ``user-transform-stage`` pipeline, which stops compiling right after the user
+  transforms are applied.
+  `(#10343) <https://github.com/PennyLaneAI/pennylane/pull/10343>`__
+
 * Terminal measurements now accept fixed-size ``qp.typing.Wire[n]`` registers during
   program capture.
   `(#10364) <https://github.com/PennyLaneAI/pennylane/pull/10364>`__
