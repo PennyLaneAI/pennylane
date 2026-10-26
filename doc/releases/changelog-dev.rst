@@ -825,6 +825,10 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* ``qp.gate_sets.ALL_QUBIT_OPS`` now includes the in-build controlled gates like :class:`~.CNOT`,
+  :class:`~.CRZ`, and others.
+  `(#10396) <https://github.com/PennyLaneAI/pennylane/pull/10396/>`__
+
 * :func:`~pennylane.estimate` and :func:`~.analyze` are now faster on qjit-compiled workflows. They use
   Catalyst's new ``user-transform-stage`` pipeline, which stops compiling right after the user
   transforms are applied.
