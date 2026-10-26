@@ -67,10 +67,10 @@ class TestResourceAnalysis:
 
     def test_bad_inputs(self):
         """Test that invalid option types raise ValueError."""
-        with pytest.raises(ValueError, match="output_json must be of type bool"):
+        with pytest.raises(TypeError, match="output_json must be of type bool"):
             resource_analysis("out.json", output_json="yes")
 
-        with pytest.raises(ValueError, match="output_fname must be of type str"):
+        with pytest.raises(TypeError, match="output_fname must be of type str"):
             resource_analysis(output_fname=None)
 
 

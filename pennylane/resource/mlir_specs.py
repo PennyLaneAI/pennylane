@@ -169,9 +169,7 @@ def resources_from_analysis_pass(
             level_to_name[max_legal_level] = make_level_name_unique(
                 "Device Preprocessing", frozenset(level_to_name.values())
             )
-            new_post_device_pipeline += transform(pass_name="resource-analysis")(
-                output_json=True, output_fname=fname
-            )
+            new_post_device_pipeline += resource_analysis(output_fname=fname)
         else:
             # If device level not requested, skip device preprocessing
             compile_options.skip_preprocess = True
