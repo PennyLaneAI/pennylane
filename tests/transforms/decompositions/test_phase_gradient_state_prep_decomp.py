@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import _fix_decomp
 from pennylane.exceptions import WireError
 from pennylane.transforms.decompositions.phase_gradient_state_prep_decomp import (
@@ -223,6 +224,20 @@ def test_resources_are_structural_one_attempt_counts():
         "PauliMeasure": 9,
         "PauliX": 6,
     }
+
+
+@pytest.mark.parametrize("num_wires", [3, 5])
+def test_postselected_resources_match_queued_operations(num_wires):
+    """Test that the postselected resources match the operations of the successful branch."""
+    rule = make_phase_gradient_distillation_decomp(
+        aux_wires=range(num_wires, 2 * num_wires),
+        work_wires=range(2 * num_wires, 3 * num_wires - 1),
+        mode="postselect",
+    )
+    tape = qp.testing.decomp_rule_to_tape(qp.PhaseGradientStatePrep(range(num_wires)), rule)
+
+    actual = Counter(abstractify(op) for op in tape.operations)
+    assert actual == rule.compute_resources(qp.typing.Wire[num_wires]).gate_counts
 
 
 @pytest.mark.parametrize(
