@@ -1292,15 +1292,15 @@ def _unroll_change_op_basis_resource(op_rep):
 
     # pylint: disable=import-outside-toplevel
     from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-    from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 
     if isinstance(op_rep, qp.ops.Adjoint2):
         return _unroll_symbolic_change_op_basis(op_rep, _adjoint_abstract)
 
     if isinstance(op_rep, qp.ops.ControlledOp2):
         wrapper = partial(
-            _ctrl_abstract,
-            control_wires=op_rep.control_wires,
+            qp.ctrl,
+            control=op_rep.control_wires,
+            control_values=op_rep.control_values,
             work_wires=op_rep.work_wires,
             work_wire_type=op_rep.work_wire_type,
         )

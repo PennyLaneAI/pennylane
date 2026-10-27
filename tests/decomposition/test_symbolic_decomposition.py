@@ -56,7 +56,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 from pennylane.ftqc import RotXZX
 from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import cancel_adjoint as cancel_adjoint2
-from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
+from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.controlled2 import _make_controlled_decomp as make_controlled_decomp2
 from pennylane.ops.op_math.controlled2 import ctrl_single_work_wire as ctrl_single_work_wire2
 from pennylane.ops.op_math.controlled2 import flip_control_adjoint as flip_control_adjoint2
@@ -609,10 +609,7 @@ def _custom_resource(num_wires):
         qp.Rot: 1,
         qp.CRZ: 1,
         qp.MultiRZ(Float, Wire[num_wires]): 1,
-        _ctrl_abstract(
-            qp.MultiRZ(Float, Wire[num_wires - 1]),
-            control_wires=Wire[1],
-        ): 1,
+        qp.ctrl(qp.MultiRZ(Float, Wire[num_wires - 1]), control=Wire[1], control_values=Bool[1]): 1,
         qp.PauliRot(Float, pauli_word="XYX", wires=Wire[3]): 1,
         qp.Z: 1,
         qp.CZ: 1,
@@ -687,18 +684,40 @@ class TestControlledDecomposition:
         actual_resources = rule.compute_resources(**op.resource_params)
         assert actual_resources == to_resources(
             {
-                _ctrl_abstract(qp.X, Wire[1], Wire[1]): 1,
-                _ctrl_abstract(qp.X, Wire[2], Wire[1]): 1,
-                _ctrl_abstract(qp.X, Wire[3], Wire[1]): 1,
-                _ctrl_abstract(qp.X, Wire[4], Wire[2]): 1,
-                _ctrl_abstract(qp.RX, Wire[1], Wire[1]): 1,
-                _ctrl_abstract(qp.Rot, Wire[1], Wire[1]): 1,
+                qp.ctrl(
+                    qp.X(Wire[1]), control=Wire[1], control_values=Bool[1], work_wires=Wire[1]
+                ): 1,
+                qp.ctrl(
+                    qp.X(Wire[1]), control=Wire[2], control_values=Bool[2], work_wires=Wire[1]
+                ): 1,
+                qp.ctrl(
+                    qp.X(Wire[1]), control=Wire[3], control_values=Bool[3], work_wires=Wire[1]
+                ): 1,
+                qp.ctrl(
+                    qp.X(Wire[1]), control=Wire[4], control_values=Bool[4], work_wires=Wire[2]
+                ): 1,
+                qp.ctrl(
+                    qp.RX(Float, Wire[1]),
+                    control=Wire[1],
+                    control_values=Bool[1],
+                    work_wires=Wire[1],
+                ): 1,
+                qp.ctrl(
+                    qp.Rot(Float, Float, Float, Wire[1]),
+                    control=Wire[1],
+                    control_values=Bool[1],
+                    work_wires=Wire[1],
+                ): 1,
                 qp.ctrl(qp.RZ(Float, Wire[1]), Wire[2], work_wires=Wire[1]): 1,
                 qp.ctrl(qp.MultiRZ(Float, Wire[6]), Wire[1], work_wires=Wire[1]): 1,
                 qp.ctrl(qp.MultiRZ(Float, Wire[5]), Wire[2], work_wires=Wire[1]): 1,
                 qp.ctrl(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[1], work_wires=Wire[1]): 1,
-                _ctrl_abstract(qp.Z, Wire[1], Wire[1]): 1,
-                _ctrl_abstract(qp.Z, Wire[2], Wire[1]): 1,
+                qp.ctrl(
+                    qp.Z(Wire[1]), control=Wire[1], control_values=Bool[1], work_wires=Wire[1]
+                ): 1,
+                qp.ctrl(
+                    qp.Z(Wire[1]), control=Wire[2], control_values=Bool[2], work_wires=Wire[1]
+                ): 1,
             }
         )
 
@@ -807,18 +826,60 @@ class TestControlledDecomposition:
         assert actual_resources == to_resources(
             {
                 qp.X: 2,
-                _ctrl_abstract(qp.X, Wire[2], Wire[1]): 1,
-                _ctrl_abstract(qp.X, Wire[3], Wire[1]): 1,
-                _ctrl_abstract(qp.X, Wire[4], Wire[1]): 1,
-                _ctrl_abstract(qp.X, Wire[5], Wire[2]): 1,
-                _ctrl_abstract(qp.RX(Float, Wire[1]), Wire[2], Wire[1]): 1,
-                _ctrl_abstract(abstractify(qp.Rot), Wire[2], Wire[1]): 1,
-                _ctrl_abstract(qp.RZ(Float, Wire[1]), Wire[3], Wire[1]): 1,
-                _ctrl_abstract(qp.MultiRZ(Float, Wire[6]), Wire[2], Wire[1]): 1,
-                _ctrl_abstract(qp.MultiRZ(Float, Wire[5]), Wire[3], Wire[1]): 1,
-                _ctrl_abstract(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[2], Wire[1]): 1,
-                _ctrl_abstract(qp.Z, Wire[2], Wire[1]): 1,
-                _ctrl_abstract(qp.Z, Wire[3], Wire[1]): 1,
+                qp.ctrl(
+                    qp.X(Wire[1]), control=Wire[2], control_values=Bool[2], work_wires=Wire[1]
+                ): 1,
+                qp.ctrl(
+                    qp.X(Wire[1]), control=Wire[3], control_values=Bool[3], work_wires=Wire[1]
+                ): 1,
+                qp.ctrl(
+                    qp.X(Wire[1]), control=Wire[4], control_values=Bool[4], work_wires=Wire[1]
+                ): 1,
+                qp.ctrl(
+                    qp.X(Wire[1]), control=Wire[5], control_values=Bool[5], work_wires=Wire[2]
+                ): 1,
+                qp.ctrl(
+                    qp.RX(Float, Wire[1]),
+                    control=Wire[2],
+                    control_values=Bool[2],
+                    work_wires=Wire[1],
+                ): 1,
+                qp.ctrl(
+                    qp.Rot(Float, Float, Float, Wire[1]),
+                    control=Wire[2],
+                    control_values=Bool[2],
+                    work_wires=Wire[1],
+                ): 1,
+                qp.ctrl(
+                    qp.RZ(Float, Wire[1]),
+                    control=Wire[3],
+                    control_values=Bool[3],
+                    work_wires=Wire[1],
+                ): 1,
+                qp.ctrl(
+                    qp.MultiRZ(Float, Wire[6]),
+                    control=Wire[2],
+                    control_values=Bool[2],
+                    work_wires=Wire[1],
+                ): 1,
+                qp.ctrl(
+                    qp.MultiRZ(Float, Wire[5]),
+                    control=Wire[3],
+                    control_values=Bool[3],
+                    work_wires=Wire[1],
+                ): 1,
+                qp.ctrl(
+                    qp.PauliRot(Float, "XYX", wires=Wire[3]),
+                    control=Wire[2],
+                    control_values=Bool[2],
+                    work_wires=Wire[1],
+                ): 1,
+                qp.ctrl(
+                    qp.Z(Wire[1]), control=Wire[2], control_values=Bool[2], work_wires=Wire[1]
+                ): 1,
+                qp.ctrl(
+                    qp.Z(Wire[1]), control=Wire[3], control_values=Bool[3], work_wires=Wire[1]
+                ): 1,
             }
         )
 
@@ -886,18 +947,60 @@ class TestControlledDecomposition:
         assert actual_resources == to_resources(
             {
                 qp.X: 4,
-                _ctrl_abstract(qp.X, Wire[3], Wire[1]): 1,
-                _ctrl_abstract(qp.X, Wire[4], Wire[1]): 1,
-                _ctrl_abstract(qp.X, Wire[5], Wire[1]): 1,
-                _ctrl_abstract(qp.X, Wire[6], Wire[2]): 1,
-                _ctrl_abstract(qp.RX(Float, Wire[1]), Wire[3], Wire[1]): 1,
-                _ctrl_abstract(abstractify(qp.Rot), Wire[3], Wire[1]): 1,
-                _ctrl_abstract(qp.RZ(Float, Wire[1]), Wire[4], Wire[1]): 1,
-                _ctrl_abstract(qp.MultiRZ(Float, Wire[6]), Wire[3], Wire[1]): 1,
-                _ctrl_abstract(qp.MultiRZ(Float, Wire[5]), Wire[4], Wire[1]): 1,
-                _ctrl_abstract(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[3], Wire[1]): 1,
-                _ctrl_abstract(qp.Z(Wire[1]), Wire[3], Wire[1]): 1,
-                _ctrl_abstract(qp.Z, Wire[4], Wire[1]): 1,
+                qp.ctrl(
+                    qp.X(Wire[1]), control=Wire[3], control_values=Bool[3], work_wires=Wire[1]
+                ): 1,
+                qp.ctrl(
+                    qp.X(Wire[1]), control=Wire[4], control_values=Bool[4], work_wires=Wire[1]
+                ): 1,
+                qp.ctrl(
+                    qp.X(Wire[1]), control=Wire[5], control_values=Bool[5], work_wires=Wire[1]
+                ): 1,
+                qp.ctrl(
+                    qp.X(Wire[1]), control=Wire[6], control_values=Bool[6], work_wires=Wire[2]
+                ): 1,
+                qp.ctrl(
+                    qp.RX(Float, Wire[1]),
+                    control=Wire[3],
+                    control_values=Bool[3],
+                    work_wires=Wire[1],
+                ): 1,
+                qp.ctrl(
+                    qp.Rot(Float, Float, Float, Wire[1]),
+                    control=Wire[3],
+                    control_values=Bool[3],
+                    work_wires=Wire[1],
+                ): 1,
+                qp.ctrl(
+                    qp.RZ(Float, Wire[1]),
+                    control=Wire[4],
+                    control_values=Bool[4],
+                    work_wires=Wire[1],
+                ): 1,
+                qp.ctrl(
+                    qp.MultiRZ(Float, Wire[6]),
+                    control=Wire[3],
+                    control_values=Bool[3],
+                    work_wires=Wire[1],
+                ): 1,
+                qp.ctrl(
+                    qp.MultiRZ(Float, Wire[5]),
+                    control=Wire[4],
+                    control_values=Bool[4],
+                    work_wires=Wire[1],
+                ): 1,
+                qp.ctrl(
+                    qp.PauliRot(Float, "XYX", wires=Wire[3]),
+                    control=Wire[3],
+                    control_values=Bool[3],
+                    work_wires=Wire[1],
+                ): 1,
+                qp.ctrl(
+                    qp.Z(Wire[1]), control=Wire[3], control_values=Bool[3], work_wires=Wire[1]
+                ): 1,
+                qp.ctrl(
+                    qp.Z(Wire[1]), control=Wire[4], control_values=Bool[4], work_wires=Wire[1]
+                ): 1,
             }
         )
 
@@ -945,7 +1048,7 @@ class TestControlledDecomposition:
         assert ctrl_rule.compute_resources(**op.arguments) == to_resources(
             {
                 ControlledOp2(abstractify(OneWireDynOp), control_wires=Wire[1]): 3,
-                _ctrl_abstract(qp.X, Wire[2]): 2,
+                qp.ctrl(qp.X(Wire[1]), control=Wire[2], control_values=Bool[2]): 2,
                 qp.X: 1,
             }
         )

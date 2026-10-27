@@ -854,7 +854,7 @@ def _ctrl_single_work_wire_resource(base, control_wires, *_, **__):
     # as this rule assumes that no work wires are *explicitly* provided and instead
     # the only work wire comes from allocation.
     return {
-        _ctrl_abstract(base, Wire[1]): 1,
+        qp.ctrl(base, control=Wire[1], control_values=Bool[1]): 1,
         qp.MultiControlledX(Wire[len(control_wires) + 1]): 2,
     }
 
@@ -876,7 +876,7 @@ def _ctrl_many_zeroed_work_wires_resource(base, control_wires, *_, **__):
     return {
         qp.TemporaryAND: num_control_wires - 1,
         qp.adjoint(qp.TemporaryAND(Wire[3])): num_control_wires - 1,
-        _ctrl_abstract(base, Wire[1]): 1,
+        qp.ctrl(base, control=Wire[1], control_values=Bool[1]): 1,
     }
 
 

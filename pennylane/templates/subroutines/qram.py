@@ -639,8 +639,7 @@ def _tree_leaf_ops_for_bit_block_ctrl(
         # Global address index: (block_index << n_tree) + p
         addr = (block_index << n_tree) + p
         bit = bitstrings[addr][j]
-        # pylint: disable=cell-var-from-loop
-        cond(bit, lambda: CZ(wires=[signal, target]))()
+        cond(bit, CZ)(wires=[signal, target])
 
 
 def _tree_route_bus_down_first_k_levels_ctrl(k_levels, tree_wire_manager, signal):
@@ -1024,7 +1023,6 @@ def _select_only_qram_decomposition(
             # Multi-controlled X on target_wires[j],
             # controlled on controls matching `control_values`.
 
-            # pylint: disable=cell-var-from-loop
             cond(bits[j], gate)(wires=concatenate_wires(controls, [target_wires[j]]))
 
         _flip_controls(controls, control_values)

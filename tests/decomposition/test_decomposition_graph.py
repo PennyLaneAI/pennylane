@@ -31,7 +31,7 @@ from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract, flip_control_adjoint
 from pennylane.ops.op_math.pow2 import _pow_abstract
 from pennylane.transforms.decompositions import make_rz_to_phase_gradient_decomp
-from pennylane.typing import Float, Wire
+from pennylane.typing import Bool, Float, Wire
 from tests.core.operator.operator2_utils import (
     DynOp,
     NonParametricOp,
@@ -329,7 +329,7 @@ class TestDecompGraphConstruction:
                 qp.RX: 1,
                 qp.X: 1,
                 _adjoint_abstract(qp.RY): 1,
-                _ctrl_abstract(qp.T, Wire[2]): 1,
+                qp.ctrl(qp.T(Wire[1]), control=Wire[2], control_values=Bool[2]): 1,
                 _pow_abstract(qp.Z, z=2): 1,
             }
         )
@@ -995,9 +995,9 @@ class TestControlledDecompositions:
         tape = qp.testing.decomp_rule_to_tape(op, rule)
         [tape], _ = qp.transforms.resolve_dynamic_wires([tape], min_int=4)
         assert tape.operations == [
-            ControlledOp2(qp.X(4), [1, 2, 3]),
+            qp.MultiControlledX([1, 2, 3, 4]),
             ControlledOp2(qp.Rot(0.123, 0.234, 0.345, wires=0), [4]),
-            ControlledOp2(qp.X(4), [1, 2, 3]),
+            qp.MultiControlledX([1, 2, 3, 4]),
         ]
         assert solution.resource_estimate(op, num_work_wires=1) == to_resources(
             {qp.MultiControlledX(Wire[4]): 2, qp.CRot: 1, qp.X: 4}

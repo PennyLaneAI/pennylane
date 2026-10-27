@@ -37,10 +37,9 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.op_math.prod2 import Prod2
-from pennylane.typing import Float, TensorLike, Wire
+from pennylane.typing import Bool, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -832,15 +831,15 @@ class PCPhase(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "∏_ϕ", cache=cache)
 
 
-def _ctrl_phase_shift_resource(subspace, n_control_wires, n_zero_control_values, n_work_wires):
+def _ctrl_phase_shift_resource(subspace, n_control_wires, n_work_wires):
     if n_control_wires == 0:
         return {qp.PhaseShift: 1}
     return {
-        _ctrl_abstract(
-            qp.PhaseShift,
-            Wire[n_control_wires],
-            Wire[n_work_wires],
-            num_zero_control_values=n_zero_control_values,
+        qp.ctrl(
+            qp.PhaseShift(Float, Wire[1]),
+            control=Wire[n_control_wires],
+            work_wires=Wire[n_work_wires],
+            control_values=Bool[n_control_wires],
         ): 1,
         qp.X: 2 * (1 - subspace),
     }
@@ -926,7 +925,6 @@ def _decompose_pcphase_resource(phi: TensorLike, dim: int, wires: WiresLike):
     sigma = (-1) ** flipped
     powers_of_two = [sigma * val for val in powers_of_two]
 
-    n_zero_control_values = 0
     for i, c_i in enumerate(powers_of_two):
         if c_i != 0:
             subspace = int(c_i < 0)
@@ -936,19 +934,9 @@ def _decompose_pcphase_resource(phi: TensorLike, dim: int, wires: WiresLike):
                 _ctrl_phase_shift_resource(
                     subspace,
                     n_control_wires=i,
-                    n_zero_control_values=n_zero_control_values,
                     n_work_wires=num_wires - i - 1,
                 )
             )
-
-        d_i = next(iter(val for val in powers_of_two[i + 1 :] if val != 0), None)
-        next_cval = d_i == 1
-        if c_i == 0:
-            next_cval = not next_cval
-        if flipped:
-            next_cval = not next_cval
-        if not next_cval:
-            n_zero_control_values += 1
 
     gate_count[qp.GlobalPhase] += 1
     return dict(gate_count)
