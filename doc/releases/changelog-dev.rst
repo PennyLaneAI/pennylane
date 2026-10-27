@@ -1365,6 +1365,12 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* The ``pennylane.kernels`` module has been removed. This includes ``kernel_matrix``,
+  ``square_kernel_matrix``, ``polarity``, ``target_alignment``, ``threshold_matrix``,
+  ``displace_matrix``, ``flip_matrix``, ``closest_psd_matrix`` and
+  ``mitigate_depolarizing_noise``. The ``kernels`` installation extra has also been removed.
+  `(#10402) <https://github.com/PennyLaneAI/pennylane/pull/10402>`__
+
 * The ``pennylane.qnn`` module has been removed, including ``TorchLayer``.
   ``pennylane.qnn.iqp_expval`` has been moved to :mod:`pennylane.math` and is
   available as :func:`pennylane.math.iqp_expval`.
