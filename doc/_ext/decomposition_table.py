@@ -50,6 +50,7 @@ class DecompositionRule(SphinxDirective):
     required_arguments = 1
     has_content = True
     option_spec = {
+        # a decomp circuit image is required, and is left as an image
         "image": directives.unchanged_required,
         "requires": directives.unchanged,
         "where": directives.unchanged,
