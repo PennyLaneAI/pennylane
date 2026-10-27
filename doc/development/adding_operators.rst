@@ -283,6 +283,54 @@ are added to a file of a similar name and location in ``tests/``. Generally, the
 new operator should also be imported in the module's ``__init__.py`` file in
 order for users to import the operator directly from ``pennylane``.
 
+Ensure that the operator's decomposition rules are displayed at the end of
+its docstring with a ``decomposition-table`` directive inside an "Available
+decompositions" ``details`` block. Add one nested ``decomposition-rule`` per
+rule, giving the rule's name, a circuit thumbnail saved under
+``doc/_static/decomposition_thumbnails/``, and one ``gate | count`` line per
+gate in its resources. If a decomposition rule has certain constraints (e.g., it
+needs work wires), say so with ``:requires:``.
+
+If the resources depend on the operator's arguments (e.g., the number of
+wires), write the counts as symbolic expressions and add:
+
+* ``:symbols:`` to ``decomposition-table``, defining each symbol used in the
+  counts;
+* ``:example:`` to ``decomposition-table``, giving the symbol values used to draw
+  the thumbnail;
+* a third column on each line, giving the count in the example circuit;
+* optionally, ``:where:`` to ``decomposition-rule``, defining any shorthand used
+  in that rule's counts.
+
+.. code-block:: rst
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.MyNewOperator
+            :symbols: :math:`n` wires
+            :example: :math:`n=4`
+
+            .. decomposition-rule:: _my_new_operator_decomp
+                :image: /_static/decomposition_thumbnails/my_new_operator_decomp.svg
+                :requires: :math:`n - 2` work wires
+                :where: :math:`m = 2(n - 1)`
+
+                :class:`~.CNOT` | :math:`m` | 6
+                :class:`~.RZ` | :math:`n` | 4
+
+For operators with fixed resources, omit these and use only ``gate | count``
+lines.
+
+You can generate thumbnails by drawing the decomposition rule with
+:func:`~pennylane.draw_mpl` and the ``"pennylane"`` style, calling it with the
+example's argument values, and saving the figure as an SVG:
+
+.. code-block:: python
+
+    fig, ax = qp.draw_mpl(_my_new_operator_decomp, style="pennylane")(wires=range(4))
+    fig.savefig("doc/_static/decomposition_thumbnails/my_new_operator_decomp.svg")
+
 Don't forget to also add the new operator to the documentation in the
 ``doc/introduction/operations.rst`` file, or to
 ``doc/introduction/subroutines.rst`` if it falls under that category. The latter
