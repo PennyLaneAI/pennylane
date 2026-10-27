@@ -287,8 +287,8 @@ class TestConcreteCDFCGF:
 
         jax.make_jaxpr(f)(CGFHamiltonian(**cgf_tensors(seed)))
 
-        assert qp.math.is_abstract(seen["core"])
-        assert qp.math.is_abstract(seen["nuc"])
+        assert qp.math.is_tracer(seen["core"])
+        assert qp.math.is_tracer(seen["nuc"])
         assert seen["core"].shape == (L + 1, M, M, N, N)
         assert seen["num_modes"] == M
 

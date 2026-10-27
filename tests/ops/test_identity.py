@@ -18,8 +18,8 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator.utils import abstractify
-from pennylane.ops.functions import assert_valid
 from pennylane.ops.identity import GlobalPhase, Identity, _ctrl_g_phase
+from pennylane.testing import assert_valid
 from pennylane.typing import Float, Wire
 
 op_wires = [[], [0], ["a"], [0, 1], ["a", "b", "c"], [100, "xasd", 12]]

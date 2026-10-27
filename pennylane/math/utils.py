@@ -294,7 +294,7 @@ def cast_like(tensor1, tensor2):
 
     # Check for abstract tensors FIRST before trying to convert to numpy
     # This is important for JAX 0.7.0+ which has additional tracer types
-    if is_abstract(tensor2):
+    if is_tracer(tensor2):
         dtype = tensor2.dtype
     elif isinstance(tensor2, ArrayBox):
         dtype = ar.to_numpy(tensor2._value).dtype.type  # pylint: disable=protected-access
@@ -335,15 +335,13 @@ def convert_like(tensor1, tensor2):
     return np.asarray(tensor1, like=interface)
 
 
-def is_abstract(tensor, like=None):
-    """Returns True if the tensor is considered abstract.
+def is_tracer(tensor, like=None):
+    """Return whether the tensor is a JAX tracer without a concrete value.
 
-    Abstract arrays have no internal value, and are used primarily when
-    tracing Python functions, for example, in order to perform just-in-time
-    (JIT) compilation.
-
-    Abstract tensors most commonly occur within a function that has been
-    decorated using ``@jax.jit``.
+    Such tracers commonly occur when tracing functions decorated with ``@jax.jit``.
+    This function does not identify PennyLane shape/type descriptors such as
+    ``qp.typing.Float[3]`` or ``qp.typing.Wire[3]``. Tracers with a concrete value
+    also return ``False``.
 
     .. note::
 
@@ -360,7 +358,7 @@ def is_abstract(tensor, like=None):
             if not provided.
 
     Returns:
-        bool: whether the tensor is abstract or not
+        bool: whether the tensor is a tracer without a concrete value
 
     **Example**
 
@@ -373,7 +371,7 @@ def is_abstract(tensor, like=None):
 
         def function(x):
             print("Value:", x)
-            print("Abstract:", qp.math.is_abstract(x))
+            print("Tracer:", qp.math.is_tracer(x))
             return jnp.sum(x ** 2)
 
     When we execute it, we see that the tensor is not abstract; it has known value:
@@ -381,7 +379,7 @@ def is_abstract(tensor, like=None):
     >>> x = jnp.array([0.5, 0.1])
     >>> function(x)
     Value: [0.5, 0.1]
-    Abstract: False
+    Tracer: False
     Array(0.26, dtype=float32)
 
     However, if we use the ``@jax.jit`` decorator, the tensor will now be abstract:
@@ -389,7 +387,7 @@ def is_abstract(tensor, like=None):
     >>> x = jnp.array([0.5, 0.1])
     >>> jax.jit(function)(x)
     Value: Traced<ShapedArray(float32[2])>with<DynamicJaxprTrace(level=0/1)>
-    Abstract: True
+    Tracer: True
     Array(0.26, dtype=float32)
 
     Note that JAX uses an abstract *shaped* array, so although we won't be able to
@@ -416,6 +414,10 @@ def is_abstract(tensor, like=None):
     #   NotSupportedError: Compiled functions can't take variable number of arguments or
     #   use keyword-only arguments with defaults.
     return False
+
+
+# Remove this compatibility alias once supported Catalyst versions use is_tracer.
+is_abstract = is_tracer
 
 
 def requires_grad(tensor, interface=None):
@@ -563,7 +565,7 @@ def ceil_log2(n: numbers.Real) -> int:
     For simple ``int`` inputs, this function computes the same as ``(n - 1).bit_length()``, which
     does not work for inputs like ``np.int64``.
     """
-    if is_abstract(n):
+    if is_tracer(n):
         # The ceiling exceeds the floor by one unless n is a power of two, which is the
         # case if and only if n & (n - 1) vanishes
         return floor_log2(n) + ((n & (n - 1)) != 0)
@@ -627,7 +629,7 @@ def floor_log2(n: numbers.Real) -> int:
     """
     # np.log2 loses precision for inputs with more than 53 significant bits, so that its rounded
     # result may be off by one. Comparing to the neighbouring powers of two corrects this.
-    if is_abstract(n):
+    if is_tracer(n):
         exponent = np.floor(np.log2(n)).astype(int)
         # Shifting compares n to 2 ** exponent without forming the power itself, which could
         # exceed the integer data type

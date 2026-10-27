@@ -22,10 +22,10 @@ from collections.abc import Callable
 from functools import reduce
 
 from pennylane import capture, math
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core import queuing
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
@@ -66,7 +66,7 @@ def _validate_callable(func: Callable) -> None:
 
 def _is_abstract_operator(op) -> bool:
     """Return whether ``op`` is an operator-valued JAX tracer."""
-    return math.is_abstract(op) and isinstance(op.aval, capture.AbstractOperator)
+    return math.is_tracer(op) and isinstance(op.aval, capture.AbstractOperator)
 
 
 def _apply_op_or_func(op_or_func):

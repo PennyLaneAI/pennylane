@@ -34,7 +34,7 @@ def test_standard_validity(init_state):
     weights = np.random.random(size=(1, 2, 2))
     op = qp.ParticleConservingU1(weights, wires=range(3), init_state=init_state)
 
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_resources():

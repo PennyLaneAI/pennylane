@@ -33,8 +33,8 @@ from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
+    _list_decomps,
     get_fixed_decomp,
-    list_decomps,
 )
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
@@ -76,6 +76,23 @@ from .decompositions.controlled_decompositions import (
     single_ctrl_decomp_zyz_rule,
 )
 from .pow2 import pow_involutory as pow_involutory2
+
+__all__ = [
+    "ControlledQubitUnitary",
+    "CH",
+    "CY",
+    "CZ",
+    "CSWAP",
+    "CCZ",
+    "CNOT",
+    "Toffoli",
+    "MultiControlledX",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "CRot",
+    "ControlledPhaseShift",
+]
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -1363,7 +1380,7 @@ class MultiControlledX(Controlled2):
         ctrl_values = self.control_values
         # Same convention as ``Controlled2.__repr__``: trivial (all-``True``) control values and
         # the absence of work wires are not shown.
-        if isinstance(ctrl_values, AbstractArray) or math.is_abstract(ctrl_values):
+        if isinstance(ctrl_values, AbstractArray) or math.is_tracer(ctrl_values):
             params.append(f"control_values={ctrl_values}")
         elif not all(ctrl_values):
             params.append(f"control_values={ctrl_values.tolist()}")
@@ -1483,7 +1500,7 @@ def _to_op_list(rule):
     return _inner
 
 
-@list_decomps.register
+@_list_decomps.register
 def _list_mcx_decomps(op: MultiControlledX):
     # fixed_decomps should override everything
     if fixed_rule := get_fixed_decomp(op):

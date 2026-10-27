@@ -33,7 +33,7 @@ from pennylane.exceptions import (
     QuantumFunctionError,
     WireError,
 )
-from pennylane.math import is_abstract, requires_grad
+from pennylane.math import is_tracer, requires_grad
 from pennylane.measurements import (
     counts,
     sample,
@@ -130,7 +130,7 @@ def validate_device_wires(
         WireError: if the tape has a wire not present in the provided wires, or if abstract wires are present.
     """
 
-    if any(is_abstract(w) for w in tape.wires):
+    if any(is_tracer(w) for w in tape.wires):
         raise WireError(
             f"Cannot run circuit(s) on {name} as abstract wires are present in the tape: {tape.wires}. "
             f"Abstract wires are not yet supported."
@@ -139,7 +139,7 @@ def validate_device_wires(
     if not wires:
         return (tape,), null_postprocessing
 
-    if any(is_abstract(w) for w in wires):
+    if any(is_tracer(w) for w in wires):
         raise WireError(
             f"Cannot run circuit(s) on {name} as abstract wires are present in the device: {wires}. "
             f"Abstract wires are not yet supported."

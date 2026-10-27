@@ -83,6 +83,7 @@ from .multi_dispatch import (
     unwrap,
     where,
 )
+from .iqp import iqp_expval
 from .quantum import (
     cov_matrix,
     dm_from_state_vector,
@@ -112,7 +113,7 @@ from .utils import (
     ceil_log2,
     convert_like,
     in_backprop,
-    is_abstract,
+    is_tracer,
     floor_log2,
     requires_grad,
 )
@@ -223,7 +224,7 @@ def is_real_obj_or_close(obj):
     # If it's a concrete array, check if the imaginary part is effectively zero
     if type(obj).__name__ != "AbstractArray":
         imag = ar.imag(obj)
-        return not is_abstract(imag) and allclose(imag, 0.0)
+        return not is_tracer(imag) and allclose(imag, 0.0)
 
     return False
 
@@ -291,8 +292,9 @@ __all__ = [
     "get_trainable_indices",
     "grad",
     "int_to_binary",
+    "iqp_expval",
     "in_backprop",
-    "is_abstract",
+    "is_tracer",
     "is_complex_dtype",
     "is_independent",
     "is_real_obj_or_close",
