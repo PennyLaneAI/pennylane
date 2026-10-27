@@ -1714,6 +1714,11 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* :func:`~.specs`, :func:`~.analyze` and :func:`~pennylane.estimate` now compile QJIT-compiled
+  QNodes up to the MLIR passes with Catalyst's ``target="mlir_opt"``, instead of reproducing part
+  of ``QJIT.jit_compile``.
+  `(#10389) <https://github.com/PennyLaneAI/pennylane/pull/10389>`__
+
 * Moved ``pop_op_eqns`` into ``pennylane.capture``.
   `(#10345) <https://github.com/PennyLaneAI/pennylane/pull/10345>`__
 
