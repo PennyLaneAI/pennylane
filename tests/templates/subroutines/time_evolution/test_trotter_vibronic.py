@@ -721,17 +721,19 @@ class TestDecomposition:
             fragment["linear"][..., i % n_modes] = 0.0
         position[-1]["constant"][:] = 0.0
         kinetic["kinetic"][..., -1, -1] = 0.0
+        hamiltonian = build_hamiltonian(fragments)
         num_steps = 2
-        op = make_op(
-            build_hamiltonian(fragments),
-            make_wires(n_states, n_modes),
-            num_trotter_steps=num_steps,
-        )
-
+        op = make_op(hamiltonian, make_wires(n_states, n_modes), num_trotter_steps=num_steps)
         decomposition = qp.list_decomps(qp.TrotterVibronic)[0]
-        plxpr = jax.make_jaxpr(lambda: decomposition(**op.arguments))()
-        ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
-        counts = Counter(o.name for o in ops)
+
+        def traced_decomposition(*tensors):
+            # The hints must not rely on concrete Hamiltonian data within the decomposition
+            traced_hamiltonian = qp.VibronicHamiltonian(*tensors)
+            return decomposition(**(op.arguments | {"hamiltonian": traced_hamiltonian}))
+
+        plxpr = jax.make_jaxpr(traced_decomposition)(*hamiltonian.tensors)
+        tape = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *hamiltonian.tensors)
+        counts = Counter(o.name for o in tape.operations)
 
         # Infer the number of applied terms from the arithmetic operations specific to them
         num_fragments = len(position)
@@ -757,38 +759,38 @@ class TestDecomposition:
         assert hint_helpers.cond_hints(plxpr.jaxpr) == expected
 
     @pytest.mark.capture
-    def test_term_branch_prob_hints_traced_inputs(self, seed):
-        """Test that the term ``branch-prob`` hints account for a concrete evolution time, use the
-        unscaled coefficients for a traced evolution time, and are omitted for a traced
-        Hamiltonian."""
+    def test_branch_probs_argument(self, seed):
+        """Test that ``branch_probs`` is computed from a concrete Hamiltonian, omitted for a traced
+        one, and that provided values are used as ``branch-prob`` hints."""
         fragments = fragment_list(n_states=2, n_modes=2, seed=seed)
         # A single position fragment, so that all conditionals belong to terms
         hamiltonian = build_hamiltonian([fragments[0], fragments[-1]])
-        op = make_op(hamiltonian, make_wires(2, 2))
+        wires = make_wires(2, 2)
+
+        # The fragment has no bilinear terms
+        expected = (
+            ("constant", 1.0),
+            ("linear", 1.0),
+            ("quadratic", 1.0),
+            ("bilinear", 0.0),
+            ("kinetic", 1.0),
+        )
+        assert make_op(hamiltonian, wires).arguments["branch_probs"] == expected
+
+        def make_traced(constant):
+            traced_op = make_op(replace(hamiltonian, constant=constant), wires)
+            assert traced_op.arguments["branch_probs"] is None
+            return 0
+
+        jax.make_jaxpr(make_traced)(hamiltonian.constant)
+
+        op = make_op(hamiltonian, wires, branch_probs={"kinetic": 0.25, "constant": 0.5})
+        assert op.arguments["branch_probs"] == (("constant", 0.5), ("kinetic", 0.25))
         decomposition = qp.list_decomps(qp.TrotterVibronic)[0]
-
-        def hints(fn, *args):
-            return hint_helpers.cond_hints(jax.make_jaxpr(fn)(*args).jaxpr)
-
-        def with_time(t):
-            return decomposition(**(op.arguments | {"evolution_time": t}))
-
-        def with_constant(c):
-            return decomposition(
-                **(op.arguments | {"hamiltonian": replace(hamiltonian, constant=c)})
-            )
-
-        nonzero_time = hints(partial(with_time, 0.4))
-        zero_time = hints(partial(with_time, 0.0))
-        traced_time = hints(with_time, 0.0)
-        traced_hamiltonian = hints(with_constant, hamiltonian.constant)
-
-        # constant, linear, quadratic and bilinear terms twice, and the kinetic term once
-        num_conds = 9
-        assert zero_time == [(1.0, 0.0)] * num_conds
-        assert nonzero_time != zero_time
-        assert traced_time == nonzero_time
-        assert traced_hamiltonian == [None] * num_conds
+        plxpr = jax.make_jaxpr(lambda: decomposition(**op.arguments))()
+        position_hints = [(0.5, 0.5), None, None, None]
+        expected_hints = [*position_hints, (0.75, 0.25), *position_hints]
+        assert hint_helpers.cond_hints(plxpr.jaxpr) == expected_hints
 
 
 # ---------------------------------------------------------------------------
