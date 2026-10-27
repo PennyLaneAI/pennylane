@@ -80,7 +80,7 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
     decompose_args = decompose(
         gate_set=target, **_decomps_from_pipeline(original_qnode.compile_pipeline)
     )
-    resource_analysis_transform = transform(pass_name="resource-analysis")(**decompose_args.kwargs)
+    resource_analysis_transform = transform(pass_name="resource-estimate")(**decompose_args.kwargs)
     estimate_qnode._compile_pipeline = CompilePipeline(resource_analysis_transform)
 
     try:
