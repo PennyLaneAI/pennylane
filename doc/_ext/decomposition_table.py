@@ -108,6 +108,7 @@ class DecompositionRule(SphinxDirective):
 class DecompositionTable(SphinxDirective):
     """A table of ``decomposition-rule`` entries for one operator."""
 
+    # the only required argument is the operation name, the rest is passed as options
     required_arguments = 1
     has_content = True
     option_spec = {"symbols": directives.unchanged, "example": directives.unchanged}
