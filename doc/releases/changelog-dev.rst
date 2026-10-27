@@ -2144,7 +2144,7 @@ Documentation 📝
   This change only applies to operators that are subclasses of ``Operator2``. 
   The tables are rendered by a new ``decomposition-table`` Sphinx directive, and their diagrams are
   drawn with :func:`~pennylane.draw_mpl`.
-  `(#10381)<https://github.com/PennyLaneAI/pennylane/pull/10381>`__
+  `(#10381) <https://github.com/PennyLaneAI/pennylane/pull/10381>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
