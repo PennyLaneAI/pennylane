@@ -2133,6 +2133,12 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* The resource estimate of the measurement-based decomposition of :class:`~.QROM` now declares
+  every gate type that the decomposition uses and upper-bounds its count. The X-type measurements
+  are spread over the widths expected for uniformly random bitstrings instead of all using the
+  worst-case width.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
   argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
   `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
