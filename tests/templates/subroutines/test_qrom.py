@@ -1277,7 +1277,7 @@ class TestAdjointQROMMeasurement:
 
     @pytest.mark.xfail(
         reason="Controlled MultiX needs work wire support for control regions in Catalyst "
-        "(PennyLaneAI/catalyst#3366, PennyLaneAI/catalyst#3376).",
+        "(Catalyst #3376).",
         strict=True,
     )
     @pytest.mark.usefixtures("enable_graph_decomposition")
