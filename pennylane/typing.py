@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import contextlib
 import sys
+import copy
 from collections.abc import Callable, Hashable, Sequence
 from dataclasses import dataclass, field
 from math import prod
@@ -423,16 +424,8 @@ class AbstractArray:
             return left._arithmetic(right, ufunc)
         return self._arithmetic(left, ufunc, reverse=True)
 
-    def _arithmetic(self, other, operation, reverse=False):
-        """Infer elementwise arithmetic metadata, rejecting only known shape conflicts."""
-        if not isinstance(other, AbstractArray):
-            if isinstance(other, Number):
-                other = AbstractArray((), getattr(other, "dtype", type(other)))
-            elif hasattr(other, "shape") and hasattr(other, "dtype"):
-                other = AbstractArray(other.shape, other.dtype)
-            else:
-                return NotImplemented
-
+    def _resolve_shape(self, other):
+        """Resolve the shape for a binary operation."""
         if self.shape is Ellipsis or other.shape is Ellipsis:
             shape = Ellipsis
         else:
@@ -453,6 +446,10 @@ class AbstractArray:
                     raise ValueError(f"Cannot broadcast shapes {self.shape} and {other.shape}.")
             shape = tuple(shape)
 
+        return shape
+
+    def _resolve_dtype(self, other, operation, reverse):
+        """Resolve the dtype for a binary operation."""
         weak_dtypes = {"i": int, "u": int, "f": float, "c": complex}
         left_dtype = weak_dtypes.get(self.dtype.kind, self.dtype) if self._weak_type else self.dtype
         right_dtype = (
@@ -460,17 +457,30 @@ class AbstractArray:
         )
         if reverse:
             left_dtype, right_dtype = right_dtype, left_dtype
-        dtype = operation.resolve_dtypes((left_dtype, right_dtype, None))[-1]
+
+        return operation.resolve_dtypes((left_dtype, right_dtype, None))[-1]
+
+    def _arithmetic(self, other, operation, reverse=False):
+        """Infer elementwise arithmetic metadata, rejecting only known shape conflicts."""
+        if not isinstance(other, AbstractArray):
+            if isinstance(other, Number):
+                other = AbstractArray((), getattr(other, "dtype", type(other)))
+            elif hasattr(other, "shape") and hasattr(other, "dtype"):
+                other = AbstractArray(other.shape, other.dtype)
+            else:
+                return NotImplemented
+        
+        shape = self._resolve_shape(other)
+        dtype = self._resolve_dtype(other, operation, reverse)
+
         result = AbstractArray(shape, dtype)
         object.__setattr__(result, "_weak_type", self._weak_type and other._weak_type)
+
         return result
 
     def _unary_arithmetic(self, operation):
         """Infer unary arithmetic metadata while preserving weak typing."""
-        dtype = operation.resolve_dtypes((self.dtype, None))[-1]
-        result = AbstractArray(self.shape, dtype)
-        object.__setattr__(result, "_weak_type", self._weak_type)
-        return result
+        return copy.deepcopy(self)
 
     def __neg__(self):
         return self._unary_arithmetic(np.negative)
