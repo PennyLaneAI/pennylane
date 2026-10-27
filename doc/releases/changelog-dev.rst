@@ -1665,6 +1665,10 @@ Internal changes ⚙️
   to avoid thread oversubscription when running tests in parallel.
   `(#10404) <https://github.com/PennyLaneAI/pennylane/pull/10404>`__
 
+* Reference calculations in ``default.tensor`` tests now run in-process instead of
+  creating a multiprocessing pool for each calculation, reducing CI overhead.
+  `(#10404) <https://github.com/PennyLaneAI/pennylane/pull/10404>`__
+
 * Moved ``pop_op_eqns`` into ``pennylane.capture``.
   `(#10345) <https://github.com/PennyLaneAI/pennylane/pull/10345>`__
 
