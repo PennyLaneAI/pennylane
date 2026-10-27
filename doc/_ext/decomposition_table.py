@@ -55,6 +55,8 @@ class DecompositionRule(SphinxDirective):
         # we are not required to specify anything, such as work wires, required by the circuit
         # if we do specify something as text, it is left as text
         "requires": directives.unchanged,
+        # we are not specified to elaborate on the decomp with mathematical definitions,
+        # but if we do, the text remains text
         "where": directives.unchanged,
     }
 
