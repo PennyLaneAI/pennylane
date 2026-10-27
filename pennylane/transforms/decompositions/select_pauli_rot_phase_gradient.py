@@ -134,7 +134,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         angles = np.random.rand(2**3)
 
         angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-        phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
+        phase_grad_wires = qp.wires.Wires([f"phg_{i}" for i in range(prec)])
         work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
 
         custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
@@ -165,9 +165,9 @@ def make_selectpaulirot_to_phase_gradient_decomp(
      aux_0: ─├QROM(M0)─│──│──│──╭SemiAdder─├QROM(M0)─│──│──│──┤ ├State
      aux_1: ─├QROM(M0)─│──│──│──├SemiAdder─├QROM(M0)─│──│──│──┤ ├State
      aux_2: ─├QROM(M0)─│──│──│──├SemiAdder─├QROM(M0)─│──│──│──┤ ├State
-     qft_0: ─│─────────╰X─│──│──├SemiAdder─│─────────╰X─│──│──┤ ├State
-     qft_1: ─│────────────╰X─│──├SemiAdder─│────────────╰X─│──┤ ├State
-     qft_2: ─│───────────────╰X─├SemiAdder─│───────────────╰X─┤ ├State
+     phg_0: ─│─────────╰X─│──│──├SemiAdder─│─────────╰X─│──│──┤ ├State
+     phg_1: ─│────────────╰X─│──├SemiAdder─│────────────╰X─│──┤ ├State
+     phg_2: ─│───────────────╰X─├SemiAdder─│───────────────╰X─┤ ├State
     work_0: ─├work──────────────├SemiAdder─├work──────────────┤ ├State
     work_1: ─╰work──────────────╰SemiAdder─╰work──────────────┤ ╰State
 
@@ -179,7 +179,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         For angles that do not require the full precision determined by the angle encoding and
         phase gradient wires, we may use a smaller encoding and adder, reducing the cost of the
         phase gradient rotation. However, as rotation angles are not known statically in general,
-        this adaptive precision only is supported if additional information about the destribution
+        this adaptive precision is only supported if additional information about the distribution
         of rotation angles is provided via ``precision_stats``, a dictionary mapping a number
         of bits to the number of rotations requiring that many bits.
 
@@ -230,8 +230,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(
              3: ─│─────────╭○─╭○────────────│─────────╭○─╭○─┤ ├State
          aux_0: ─├QROM(M0)─│──│──╭SemiAdder─├QROM(M0)─│──│──┤ ├State
          aux_1: ─├QROM(M0)─│──│──├SemiAdder─├QROM(M0)─│──│──┤ ├State
-         qft_0: ─│─────────╰X─│──├SemiAdder─│─────────╰X─│──┤ ├State
-         qft_1: ─│────────────╰X─├SemiAdder─│────────────╰X─┤ ├State
+         phg_0: ─│─────────╰X─│──├SemiAdder─│─────────╰X─│──┤ ├State
+         phg_1: ─│────────────╰X─├SemiAdder─│────────────╰X─┤ ├State
         work_0: ─├work───────────├SemiAdder─├work───────────┤ ├State
         work_1: ─╰work───────────╰SemiAdder─╰work───────────┤ ╰State
 

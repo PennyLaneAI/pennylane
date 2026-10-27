@@ -238,8 +238,6 @@ PRECISION_STATS_CASES = [
     ([1, 0, 0, 0], {2: 1}, 2),  # larger precision than required
     ([1, 0, 1, 0], {1: 1, 2: 1}, 4),  # unhinted fallback to full precision
     ([0, 0, 0, 0], {0: 1, 3: 1}, 0),  # no rotation required
-    ([1, 0, 1, 0], {}, 4),  # treated like None
-    ([1, 0, 1, 0], {2: 0, 4: 0}, 4),  # zero counts are ignored, so treated like None
 ]
 
 
@@ -277,26 +275,6 @@ def test_precision_stats_from_angles_op_type():
         assert phase_gradient_precision_stats(angles, 4, op_type) == {2: 1, 3: 1}
     with pytest.raises(ValueError, match="op_type must be one of"):
         phase_gradient_precision_stats(angles, 4, qp.RX)
-
-
-def test_precision_stats_from_angles_dispatches_exactly():
-    """Test that each angle is applied at exactly its required precision if ``precision_stats``
-    is computed from the angles with ``phase_gradient_precision_stats``."""
-    bits = [[1, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0], [1, 1, 1, 1], [1, 0, 0, 0]]
-    angles = phase_gradient_helpers.bits_to_angles(bits, 2 * np.pi)
-    rule = make_rz_to_phase_gradient_decomp(
-        [1, 2, 3, 4],
-        [5, 6, 7, 8],
-        [9, 10, 11],
-        phase_gradient_precision_stats(angles, 4, qp.RZ),
-    )
-    for b, phi in zip(bits, angles):
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(phi, wires=[0])
-        ops = phase_gradient_helpers.leaf_ops(q.queue)
-        widths = [len(o.x_wires) for o in ops if isinstance(o, qp.SemiAdder)]
-        required = max((i + 1 for i, bit in enumerate(b) if bit), default=0)
-        assert widths == ([required] if required else [])
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

@@ -89,7 +89,7 @@ def make_crz_to_phase_gradient_decomp(
         phi = (1/2 + 1/4 + 1/8) * 4 * np.pi # binary rep is (111)
 
         angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-        phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
+        phase_grad_wires = qp.wires.Wires([f"phg_{i}" for i in range(prec)])
         work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
 
         custom_decomp = make_crz_to_phase_gradient_decomp(
@@ -121,9 +121,9 @@ def make_crz_to_phase_gradient_decomp(
      aux_0: ─╰X─│──│─────│──│──│──╭SemiAdder─╰X─│──│─────│──│──│─────┤ ├State
      aux_1: ────╰X─│─────│──│──│──├SemiAdder────╰X─│─────│──│──│─────┤ ├State
      aux_2: ───────╰X────│──│──│──├SemiAdder───────╰X────│──│──│─────┤ ├State
-     qft_0: ─────────────╰X─│──│──├SemiAdder─────────────╰X─│──│─────┤ ├State
-     qft_1: ────────────────╰X─│──├SemiAdder────────────────╰X─│─────┤ ├State
-     qft_2: ───────────────────╰X─├SemiAdder───────────────────╰X────┤ ├State
+     phg_0: ─────────────╰X─│──│──├SemiAdder─────────────╰X─│──│─────┤ ├State
+     phg_1: ────────────────╰X─│──├SemiAdder────────────────╰X─│─────┤ ├State
+     phg_2: ───────────────────╰X─├SemiAdder───────────────────╰X────┤ ├State
     work_0: ──────────────────────├SemiAdder─────────────────────────┤ ├State
     work_1: ──────────────────────╰SemiAdder─────────────────────────┤ ╰State
 
@@ -136,7 +136,7 @@ def make_crz_to_phase_gradient_decomp(
         For angles that do not require the full precision determined by the angle encoding and
         phase gradient wires, we may use smaller fanouts and adder, reducing the cost of the
         phase gradient rotation. However, as rotation angles are not known statically in general,
-        this adaptive precision only is supported if additional information about the destribution
+        this adaptive precision is only supported if additional information about the distribution
         of rotation angles is provided via ``precision_stats``, a dictionary mapping a number
         of bits to the number of rotations requiring that many bits.
 
@@ -182,8 +182,8 @@ def make_crz_to_phase_gradient_decomp(
              1: ─│───X─╭●─╭●──X─────────│───X─╭●─╭●──X─┤ ├State
          aux_0: ─│─────│──│──╭SemiAdder─│─────│──│─────┤ ├State
          aux_1: ─╰X────│──│──├SemiAdder─╰X────│──│─────┤ ├State
-         qft_0: ───────╰X─│──├SemiAdder───────╰X─│─────┤ ├State
-         qft_1: ──────────╰X─├SemiAdder──────────╰X────┤ ├State
+         phg_0: ───────╰X─│──├SemiAdder───────╰X─│─────┤ ├State
+         phg_1: ──────────╰X─├SemiAdder──────────╰X────┤ ├State
         work_0: ─────────────├SemiAdder────────────────┤ ├State
         work_1: ─────────────╰SemiAdder────────────────┤ ╰State
 

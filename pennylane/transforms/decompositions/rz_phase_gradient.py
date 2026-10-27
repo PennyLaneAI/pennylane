@@ -292,7 +292,7 @@ def make_rz_to_phase_gradient_decomp(
         For angles that do not require the full precision determined by the angle encoding and
         phase gradient wires, we may use a smaller encoding and adder, reducing the cost of the
         phase gradient rotation. However, as rotation angles are not known statically in general,
-        this adaptive precision only is supported if additional information about the destribution
+        this adaptive precision is only supported if additional information about the distribution
         of rotation angles is provided via ``precision_stats``, a dictionary mapping a number
         of bits to the number of rotations requiring that many bits.
 
@@ -382,7 +382,6 @@ def make_rz_to_phase_gradient_decomp(
         return resources
 
     # MultiX only emits a gate per set bit, so the gate count depends on the concrete angle.
-    # Thus we need to set ``exact=False``
     @qp.register_resources(_resource_fn, exact=False)
     def _rz_phase_gradient_decomp(phi, wires):
         qp.GlobalPhase(phi / 2)
