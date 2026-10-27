@@ -99,6 +99,13 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
+* The ``pennylane.kernels`` module has been removed, including ``kernel_matrix``,
+  ``square_kernel_matrix``, ``polarity``, ``target_alignment``, ``threshold_matrix``,
+  ``displace_matrix``, ``flip_matrix``, ``closest_psd_matrix`` and
+  ``mitigate_depolarizing_noise``. The ``kernels`` installation extra has also been removed.
+
+  - Removed in releases after v0.45
+
 * The ``pennylane.qnn`` module has been removed, including ``TorchLayer``.
   ``pennylane.qnn.iqp_expval`` has been moved to :func:`pennylane.math.iqp_expval`.
 
