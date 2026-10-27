@@ -1652,6 +1652,11 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* Removed a test that asserts that transforms can not be applied to ``qjit`` objects.
+  This behaviour is now supported via the work in 
+  `Catalyst #3397 <https://github.com/PennyLaneAI/catalyst/pull/3397>`__.
+  `(#10400) <https://github.com/PennyLaneAI/pennylane/pull/10400>`__
+
 * Moved ``pop_op_eqns`` into ``pennylane.capture``.
   `(#10345) <https://github.com/PennyLaneAI/pennylane/pull/10345>`__
 
