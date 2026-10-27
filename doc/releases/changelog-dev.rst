@@ -2154,6 +2154,9 @@ Internal changes ⚙️
 Documentation 📝
 ~~~~~~~~~~~~~~~~
 
+* The docstring for :class:`~.LinearCombination` now mentions the :class:`~.Hamiltonian` alias in the first sentence.
+  `(#10406) <https://github.com/PennyLaneAI/pennylane/pull/10406>`__
+
 * The dependency versions in the developer installation guide now match ``pyproject.toml``, and a rendering issue in the list of optional dependencies was fixed.
   `(#10232) <https://github.com/PennyLaneAI/pennylane/pull/10232>`__
 
