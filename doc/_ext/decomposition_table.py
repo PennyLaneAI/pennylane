@@ -147,7 +147,7 @@ class DecompositionTable(SphinxDirective):
 
         # with only the gate and count columns, the resources need less room, so the circuits
         # are drawn 50% bigger
-        two_cols = all("decomp-cols-2" in rule["resources"]["classes"] for rule in rules)
+        two_cols = all("decomp-cols-2" in rule["resources"]["classes"] for rule in rule_nodes)
         table = nodes.table(classes=["decomposition-table", "colwidths-given"])
         if two_cols:
             # marks when all rules in the table have two columns,
