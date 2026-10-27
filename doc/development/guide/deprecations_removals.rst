@@ -58,7 +58,7 @@ a feature:
 7. Add an entry to the top of the "Pending deprecations" section of ``doc/development/deprecations.rst``.
    There should be existing examples to follow for style.
 
-8. Add a similar entry to the bottom of the "Deprecations" section in ``doc/releases/changelog-dev.md``.
+8. Add a similar entry to the bottom of the "Deprecations" section in ``doc/releases/changelog-dev.rst``.
 
 Additional notes on deprecations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,4 +82,4 @@ Here are the steps needed to properly remove a deprecated feature:
    deprecation cycles" section below. Be sure to update the language to state that it has been
    removed, and ensure that the PennyLane version in which it's being removed is correct.
 
-3. Add a similar entry to the bottom of the "Breaking Changes" section in ``doc/releases/changelog-dev.md``.
+3. Add a similar entry to the bottom of the "Breaking Changes" section in ``doc/releases/changelog-dev.rst``.
