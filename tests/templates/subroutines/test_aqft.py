@@ -20,14 +20,14 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qp.AQFT(order=2, wires=(0, 1, 2))
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestAQFT:
@@ -93,8 +93,7 @@ class TestAQFT:
         """Tests the decomposition rule implemented with the new system."""
         op = qp.AQFT(order=order, wires=range(wires))
 
-        for rule in qp.list_decomps(qp.AQFT):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.capture
     @pytest.mark.parametrize("order,n_wires", [(0, 4), (1, 4), (2, 5), (3, 6), (5, 6)])
@@ -105,7 +104,7 @@ class TestAQFT:
 
         rule = qp.list_decomps(qp.AQFT)[0]
         plxpr = jax.make_jaxpr(lambda: rule(wires=list(range(n_wires)), order=order))()
-        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
         num_cps = sum(isinstance(op, qp.ControlledPhaseShift) for op in ops)
         expected_hint = num_cps / n_wires
         assert hint_helpers.loop_hints(plxpr.jaxpr, skip_none=True) == [expected_hint]

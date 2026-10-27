@@ -22,7 +22,7 @@ import pytest
 from numpy.linalg import matrix_power
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 class TestGQSP:
@@ -43,7 +43,7 @@ class TestGQSP:
         angles = np.ones([3, 5])
 
         op = qp.GQSP(unitary, angles, control=(0,), shift=shift)
-        qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_bind_new_parameters=True)
+        qp.testing.assert_valid(op, skip_differentiation=True, skip_bind_new_parameters=True)
 
     @pytest.mark.parametrize(
         "angles",
@@ -97,8 +97,7 @@ class TestGQSP:
             ),
         )
 
-        for rule in qp.list_decomps(qp.GQSP):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize(
         ("unitary", "poly"),
@@ -254,8 +253,7 @@ class TestGQSP:
             shift=shift,
         )
 
-        for rule in qp.list_decomps(qp.GQSP):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize("shift", [1.5, True, "1", None])
     def test_invalid_shift_raises(self, shift):

@@ -24,9 +24,9 @@ import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.operation import abstractify
-from pennylane.ops.functions.assert_valid import _check_eigendecomposition
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2, _make_controlled_decomp
+from pennylane.testing.operators import _check_eigendecomposition
 from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import CompilableOp, DynOp, NonParametricOp, OneWireDynOp
@@ -636,6 +636,8 @@ class TestControlledOp2:
             qp.ctrl(op, control=[3, 4], control_values=[0, 1])
             op2 = qp.ctrl(qp.H(0), control=[1, 2], control_values=[1, 0])
             qp.ctrl(op2, control=[3, 4], control_values=cvals)
+            qp.ctrl(qp.H(0), control=[1, 2], control_values=[True, cvals[0]])
+            qp.ctrl(qp.H(0), control=[1, 2], control_values=[cvals[0], True])
 
         jaxpr = jax.make_jaxpr(circ)(jax.numpy.array([True, False]))
         tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, jax.numpy.array([False, True]))
@@ -644,6 +646,8 @@ class TestControlledOp2:
             qp.ctrl(qp.H(1), control=[2, 3, 0], control_values=[0, 1, 1]),
             qp.ctrl(qp.H(0), control=[3, 4, 1, 2], control_values=[0, 1, 0, 1]),
             qp.ctrl(qp.H(0), control=[3, 4, 1, 2], control_values=[0, 1, 1, 0]),
+            qp.ctrl(qp.H(0), control=[1, 2], control_values=[1, 0]),
+            qp.ctrl(qp.H(0), control=[1, 2], control_values=[0, 1]),
         ]
 
     def test_old_decomp_integration(self):

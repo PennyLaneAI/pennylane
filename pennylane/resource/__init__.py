@@ -24,9 +24,10 @@ Circuit Resource Profiling
 .. autosummary::
     :toctree: api
 
+    ~estimate
     ~analyze
-    ~specs
     ~track
+    ~specs
 
 Circuit Specification Classes and Utilities
 -------------------------------------------
@@ -54,6 +55,7 @@ from .resource import (
 )
 from .expression import Expression
 from .analyze import analyze
+from .estimate import estimate
 from .specs import specs
 from .track import track
 
@@ -65,6 +67,7 @@ __all__ = [
     "resources_from_tape",
     "Expression",
     "analyze",
+    "estimate",
     "specs",
     "track",
 ]
