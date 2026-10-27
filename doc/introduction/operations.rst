@@ -110,7 +110,7 @@ Observables
 
 The following operations can be the argument of certain
 :doc:`terminal measurements <measurements>`, like :func:`~.expval` and
-`~.sample`.
+:func:`~.sample`.
 
 :html:`<div class="summary-table">`
 
@@ -122,7 +122,7 @@ The following operations can be the argument of certain
     ~pennylane.PauliX
     ~pennylane.PauliY
     ~pennylane.PauliZ
-    ~pennylane.Hamiltonian
+    ~pennylane.ops.LinearCombination
 
 :html:`</div>`
 
