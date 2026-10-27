@@ -1365,6 +1365,12 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* The ``pennylane.kernels`` module has been removed. This includes ``kernel_matrix``,
+  ``square_kernel_matrix``, ``polarity``, ``target_alignment``, ``threshold_matrix``,
+  ``displace_matrix``, ``flip_matrix``, ``closest_psd_matrix`` and
+  ``mitigate_depolarizing_noise``. The ``kernels`` installation extra has also been removed.
+  `(#10402) <https://github.com/PennyLaneAI/pennylane/pull/10402>`__
+
 * The ``pennylane.qnn`` module has been removed, including ``TorchLayer``.
   ``pennylane.qnn.iqp_expval`` has been moved to :mod:`pennylane.math` and is
   available as :func:`pennylane.math.iqp_expval`.
@@ -2149,6 +2155,10 @@ Bug fixes 🐛
   overestimating by at most the number of target wires. The decomposition also no longer
   introduces a global phase of :math:`-1` for some mid-circuit measurement outcomes.
   `(#10399) <https://github.com/PennyLaneAI/pennylane/pull/10399>`__
+
+* ``qp.adjoint`` now rejects numerical tracers during capture instead of treating
+  them as quantum operators.
+  `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
 
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
   argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
