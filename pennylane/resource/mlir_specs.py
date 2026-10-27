@@ -113,15 +113,17 @@ def resources_from_analysis_pass(
             corresponding resource information.
     """
 
-    # pylint: disable=protected-access,too-many-arguments
+    # pylint: disable=protected-access,too-many-arguments,too-many-statements
 
     iter_pipeline = copy.deepcopy(original_qnode._compile_pipeline)
     new_compile_pipeline = CompilePipeline()
+    new_post_device_pipeline = CompilePipeline()
 
     if isinstance(level, int):
         level = [level]
     max_level = max(level)
-    max_legal_level = len(iter_pipeline)
+
+    max_legal_level = len(iter_pipeline) + 1
     fname_to_level = {}
 
     if max_level > max_legal_level:
@@ -161,16 +163,34 @@ def resources_from_analysis_pass(
                     output_json=True, output_fname=fname
                 )
 
-        new_qnode = copy.copy(original_qnode)
-        new_qnode._compile_pipeline = new_compile_pipeline
         compile_options = copy.deepcopy(qjit.compile_options)
+
+        # The Max Legal Level is the device level
+        if max_legal_level in level:
+            fname = f"{fname_prefix}device.json"
+            fname_to_level[fname] = max_legal_level
+            level_to_name[max_legal_level] = make_level_name_unique(
+                "Device Preprocessing", frozenset(level_to_name.values())
+            )
+            new_post_device_pipeline += transform(pass_name="resource-analysis")(
+                output_json=True, output_fname=fname
+            )
+        else:
+            # If device level not requested, skip device preprocessing
+            compile_options.skip_preprocess = True
+
+        new_qnode = original_qnode.update_pipelines(
+            new_compile_pipeline, post_device_pipeline=new_post_device_pipeline
+        )
+
         compile_options.target = "mlir"
         compile_options.lower_to_llvm = False
         if compile_options.pipelines is None:
             # If the user has not explicitly chosen a pipeline, prevent unnecessary work by
             # limiting which passes are applied to just the necessary ones. In this case, only
-            # the set of user-specified transforms (the quantum-compilation-stage) are run
-            compile_options.pipelines = [("pipe", ["quantum-compilation-stage"])]
+            # the passes up to and including the user-specified transforms (the
+            # user-transform-stage) are run
+            compile_options.pipelines = [("pipe", ["user-transform-stage"])]
 
         # Partially compile the QNode, producing JSON data with resource info
         _execute_analysis_pass(new_qnode, compile_options, *args, **kwargs)
