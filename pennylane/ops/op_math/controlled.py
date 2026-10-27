@@ -27,6 +27,7 @@ from typing import Any, Literal, overload
 
 import jax
 import numpy as np
+from jax._src.core import trace_state_clean
 from scipy import sparse
 
 import pennylane as qp
@@ -126,9 +127,6 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     >>> qp.ctrl(qp.Hadamard(0), (1,2))
     Controlled(H(0), control_wires=[1, 2])
 
-    >>> qp.ctrl(qp.X(0), control=1)
-    Controlled(X(0), control_wires=[1])
-
     Controlled operations work with all other forms of operator math and simplification:
 
     >>> op = qp.ctrl(qp.RX(1.2, wires=0) ** 2 @ qp.RY(0.1, wires=0), control=1)
@@ -213,8 +211,7 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
     _ = pop_op_eqns((op,))
 
     if isinstance(op, qp.Barrier):
-        qp.QueuingManager.append(op)
-        return op
+        return _apply_if_recording(op)
 
     if isinstance(op, Controlled2):
         work_wire_type = resolve_work_wire_type(
@@ -249,6 +246,15 @@ def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
     return math.array(math.concatenate([control_values, base_ctrl_values]), dtype=bool)
 
 
+def _is_recording():
+    return (qp.capture.enabled() and not trace_state_clean()) or qp.QueuingManager.recording()
+
+
+def _apply_if_recording(op):
+    """Apply a pass-through operator to the active program, if there is one."""
+    return qp.apply(op) if _is_recording() else op
+
+
 def create_controlled_op(op, control, control_values, work_wires, work_wire_type):
     """Default ``qp.ctrl`` implementation, allowing other implementations to call it when needed."""
 
@@ -264,13 +270,7 @@ def create_controlled_op(op, control, control_values, work_wires, work_wire_type
     qp.QueuingManager.remove(op)
 
     if isinstance(op, (qp.Barrier, qp.Snapshot)):
-        if qp.QueuingManager.recording():
-            # for example
-            # op = Barrier(), qp.X(), qp.ctrl(op, 1)
-            # new barrier should exist after the X
-            qp.QueuingManager.remove(op)
-            qp.QueuingManager.append(op)  # requeue in proper place
-        return op
+        return _apply_if_recording(op)
 
     one_controlled = False
     if control_values is None:

@@ -1349,9 +1349,9 @@ Breaking changes 💔
 
 * ``qp.ctrl`` now constructs symbolic controlled operators without dispatching to specialized
   gates such as ``CNOT`` or ``CRX``. Construct the specialized gate directly when that operator
-  identity is required. The ``custom_ctrl_dispatch`` registration function has been removed,
-  and decomposition rules and resource declarations have been updated accordingly.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  identity is required. Decomposition rules and resource declarations have been updated
+  accordingly.
+  `(#10395) <https://github.com/PennyLaneAI/pennylane/pull/10395>`__
 
 * Renamed ``qp.math.is_abstract`` to ``qp.math.is_tracer`` to distinguish traced tensors
   from PennyLane abstract input descriptors. The function's behavior is unchanged.
