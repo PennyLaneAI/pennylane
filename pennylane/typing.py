@@ -18,8 +18,8 @@
 from __future__ import annotations
 
 import contextlib
-import sys
 import copy
+import sys
 from collections.abc import Callable, Hashable, Sequence
 from dataclasses import dataclass, field
 from math import prod
@@ -466,7 +466,7 @@ class AbstractArray:
                 other = AbstractArray(other.shape, other.dtype)
             else:
                 return NotImplemented
-        
+
         shape = self._resolve_binary_shape(other)
         dtype = self._resolve_binary_dtype(other, operation)
 
