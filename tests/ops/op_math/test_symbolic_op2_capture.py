@@ -32,6 +32,20 @@ from pennylane.testing import find_eqns
 from tests.core.operator.operator2_utils import NonParametricOp
 
 
+@pytest.mark.parametrize("value", [0.5, [0.5, 1.0]])
+def test_adjoint_rejects_numerical_tracer(value):
+    """Numerical tracers must not be captured as adjoint operators."""
+    with pytest.raises(ValueError, match="is not callable"):
+        jax.make_jaxpr(qp.adjoint)(jax.numpy.asarray(value))
+
+
+def test_adjoint_accepts_operator_tracer():
+    """Raw operator-valued tracers remain valid adjoint inputs."""
+    jaxpr = jax.make_jaxpr(lambda x: qp.adjoint(RX2(x, wires=0).tracer))(0.5)
+    [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
+    qp.assert_equal(op, Adjoint2(RX2(0.7, wires=0)), check_interface=False)
+
+
 @pytest.mark.parametrize("adjoint_fn", [qp.adjoint, Adjoint2])
 @pytest.mark.parametrize("lazy", [True, False])
 class TestAdjointCapture:
