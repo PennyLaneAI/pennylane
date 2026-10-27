@@ -148,6 +148,8 @@ class DecompositionTable(SphinxDirective):
         two_cols = all("decomp-cols-2" in rule["resources"]["classes"] for rule in rules)
         table = nodes.table(classes=["decomposition-table", "colwidths-given"])
         if two_cols:
+            # marks when all rules in the table have two columns,
+            # as opposed to decomp-cols-2 which marks that an individual rule has two
             table["classes"].append("decomp-two-cols")
         column_group = nodes.tgroup(cols=2)
         table += column_group
