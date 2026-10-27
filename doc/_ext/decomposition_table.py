@@ -111,12 +111,14 @@ class DecompositionTable(SphinxDirective):
         operator_name = self.arguments[0]
         parsed_content = nodes.Element()
         self.state.nested_parse(self.content, self.content_offset, parsed_content)
-        rule_nodes = [
-            child for child in parsed_content.children if isinstance(child, decomposition_rule)
-        ]
-        other_nodes = [
-            child for child in parsed_content.children if not isinstance(child, decomposition_rule)
-        ]
+        
+        rule_nodes = []
+        other_nodes = []
+        for child in parsed_content.children:
+            if isinstance(child, decomposition_rule):
+                rule_nodes.append(child)
+            else:
+                other_nodes.append(child)
 
         caption_parts = []
         if "symbols" in self.options:

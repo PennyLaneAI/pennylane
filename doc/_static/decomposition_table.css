@@ -1,5 +1,10 @@
 /* Styles for the ``decomposition-table`` directive (doc/_ext/decomposition_table.py) */
 
+:root {
+  --default-padding: 16px;
+  --bg-colour: #fff8e5;
+}
+
 p.decomp-table-caption {
   margin-bottom: 0.5rem;
   color: #555;
@@ -25,7 +30,7 @@ table.decomposition-table tbody tr.decomp-body-row {
 
 table.decomposition-table td {
   vertical-align: top;
-  padding: 16px 16px 16px 0;
+  padding: var(--default-padding) var(--default-padding) var(--default-padding) 0;
   border: none !important;
 }
 
@@ -34,7 +39,7 @@ table.decomposition-table td p {
 }
 
 table.decomposition-table tr.decomp-access-row td {
-  padding: 20px 0 10px;
+  padding: var(--default-padding) 0 var(--default-padding)/2;
 }
 
 table.decomposition-table tr.decomp-body-row td {
@@ -62,7 +67,7 @@ table.decomposition-table p.decomp-requires {
   margin-bottom: 10px;
   padding: 2px 10px;
   border-radius: 999px;
-  background: #fff8e5;
+  background: var(--bg-colour);
   border: 1px solid #ffd36a;
   font-size: 0.8rem;
 }
@@ -75,7 +80,7 @@ table.decomposition-table td.decomp-circuit img {
   aspect-ratio: 21 / 9;
   object-fit: contain;
   padding: 6px;
-  background: #fff;
+  background: var(--bg-colour);
   border: 1px solid #e5e5e5;
   border-radius: 6px;
 }
@@ -151,7 +156,7 @@ table.decomposition-table p.decomp-where {
   table.decomposition-table tr,
   table.decomposition-table td {
     display: block;
-    width: 100% !important;
+    width: 100%;
   }
 
   table.decomposition-table td {
