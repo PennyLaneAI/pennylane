@@ -111,6 +111,7 @@ class DecompositionTable(SphinxDirective):
     # the only required argument is the operation name, the rest is passed as options
     required_arguments = 1
     has_content = True
+    # symbol def'ns and example values for them are optional and left as text
     option_spec = {"symbols": directives.unchanged, "example": directives.unchanged}
 
     def run(self):
