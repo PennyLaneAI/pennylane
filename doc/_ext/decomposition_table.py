@@ -46,6 +46,7 @@ class decomposition_rule(nodes.General, nodes.Element):
 class DecompositionRule(SphinxDirective):
     """One row of a ``decomposition-table``."""
 
+    # the only required argument is the decomp rule name, the rest is passed as options
     required_arguments = 1
     has_content = True
     option_spec = {
