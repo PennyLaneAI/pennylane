@@ -336,7 +336,6 @@ class TestCDFScheme:
 class TestTwoBodyWorkWireDecomposition:
     """Check the clean-work-wire two-body layer independently of Trotter and basis rotations."""
 
-
     @pytest.mark.catalyst
     def test_analyze_concrete_resources(self):
         """Tests that the compiler preserves fractional loop hints, which assert_valid does not exercise."""
