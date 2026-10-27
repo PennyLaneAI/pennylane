@@ -52,6 +52,8 @@ class DecompositionRule(SphinxDirective):
     option_spec = {
         # a decomp circuit image is required, and is left as an image
         "image": directives.unchanged_required,
+        # we are not required to specify anything, such as work wires, required by the circuit
+        # if we do specify something as text, it is left as text
         "requires": directives.unchanged,
         "where": directives.unchanged,
     }
