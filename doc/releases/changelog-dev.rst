@@ -825,8 +825,13 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
-* Added a decomposition for ``Adjoint(Incrementer)`` into ``Incrementer`` wrapped by ``MultiX``,
-  realizing the identity :math:`x-1 = ~(~x+1)`.
+* Added a decomposition for :class:`~.OutMuliplier` with longer ``x_wires`` input than ``y_wires``
+  input into a new ``OutMultiplier`` with swapped input registers. This is computationally
+  equivalent but makes the multiplication cheaper.
+  `(#10405) <https://github.com/PennyLaneAI/pennylane/pull/10405/>`__
+
+* Added a decomposition for ``Adjoint(Incrementer)`` into :class:`~.Incrementer` sandwiched by 
+  :class:`~.MultiX`, realizing the identity :math:`x-1 = \overline{(\overline{x}+1)}`.
   `(#10405) <https://github.com/PennyLaneAI/pennylane/pull/10405/>`__
 
 * ``qp.gate_sets.ALL_QUBIT_OPS`` now includes the in-build controlled gates like :class:`~.CNOT`,
