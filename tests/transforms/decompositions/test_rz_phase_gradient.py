@@ -336,10 +336,13 @@ def test_precision_stats_decomp(bits, precision_stats, width, seed):
     ],
 )
 def test_precision_stats_hints(precision_stats, expected):
-    """Test that the conditional branches are hinted with the probabilities derived from
-    ``precision_stats``, that an unhinted full-precision fallback is only added if the full
-    precision is not part of ``precision_stats``, that no conditional is used if only the full
-    precision is required, and that zero counts are ignored."""
+    """Test that the conditional branches are hinted correctly:
+    - hint with the probabilities derived from ``precision_stats``,
+    - an unhinted full-precision fallback is only added if the full precision is _not_ included in
+      ``precision_stats``,
+    - no conditional is used if only a single precision is required,
+    - zero counts are ignored.
+    """
     import jax
 
     rule = make_rz_to_phase_gradient_decomp(
@@ -375,4 +378,4 @@ def test_precision_stats_hint_weighted_resources():
         with qp.queuing.AnnotatedQueue() as q:
             rule(phi, wires=[0])
         expected.update(op.name for op in phase_gradient_helpers.leaf_ops(q.queue))
-    assert qp.specs(circuit, level=0)(angles).resources.counts == expected
+    assert qp.analyze(circuit, level=0)(angles).resources.counts == expected
