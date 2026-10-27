@@ -1661,6 +1661,10 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* Limited OpenMP, OpenBLAS, and MKL to one thread per pytest worker in unit-test CI
+  to avoid thread oversubscription when running tests in parallel.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * Moved ``pop_op_eqns`` into ``pennylane.capture``.
   `(#10345) <https://github.com/PennyLaneAI/pennylane/pull/10345>`__
 
