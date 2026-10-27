@@ -25,7 +25,6 @@ unitary and the (``True``) double-phase Hadamard-test circuit of Fig. 6 of arXiv
 # pylint: disable=too-many-arguments, redefined-outer-name, too-few-public-methods, wrong-import-position, protected-access
 import warnings
 
-import hint_helpers
 import numpy as np
 import pytest
 from scipy.linalg import expm
