@@ -2148,6 +2148,9 @@ Internal changes ⚙️
 Documentation 📝
 ~~~~~~~~~~~~~~~~
 
+* The docstring for :class:`~.ControlledPhaseShift` now mentions that :class:`~.CPhase` is an alias. 
+  `(#??) <https://github.com/PennyLaneAI/pennylane/pull/??>`__
+
 * The dependency versions in the developer installation guide now match ``pyproject.toml``, and a rendering issue in the list of optional dependencies was fixed.
   `(#10232) <https://github.com/PennyLaneAI/pennylane/pull/10232>`__
 
