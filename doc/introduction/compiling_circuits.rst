@@ -6,16 +6,12 @@
 Compiling circuits
 ==================
 
-The :doc:`doc/introduction/qjit.rst` page provides an overview of quantum
-just-in-time compilation with :func:`~pennylane.qjit`. "Compilation" in that
-context refers to the traditional use of the word: the translation of
-human-readable code into machine code that a processing unit can directly
-execute.
+The :doc:`qjit` page provides an overview of quantum
+just-in-time compilation with :func:`~pennylane.qjit`. Here, "compilation" means
+*quantum circuit transformations*, which can include pattern matching, gate
+cancellations, gate decomposition, and more.
 
-Here, means *quantum circuit transformations*, which can include pattern
-matching, gate cancellations, gate decomposition, and more.
-
-PennyLane2 includes a variety of quantum circuit transforms:
+PennyLane2 includes a growing library of quantum circuit transforms:
 
 :html:`<div class="summary-table">`
 
@@ -26,15 +22,12 @@ PennyLane2 includes a variety of quantum circuit transforms:
     ~pennylane.transforms.gridsynth
     ~pennylane.transforms.clifford_t_decomposition
     ~pennylane.transforms.parity_synth
-
-
     ~pennylane.transforms.merge_rotations
     ~pennylane.transforms.cancel_inverses
     ~pennylane.transforms.combine_global_phases
     ~pennylane.transforms.disentangle_cnot
     ~pennylane.transforms.disentangle_swap
     ~pennylane.transforms.combine_global_phases
-
     ~transforms.to_ppr
     ~transforms.ppm_compilation
     ~transforms.ppr_to_ppm
@@ -45,36 +38,37 @@ PennyLane2 includes a variety of quantum circuit transforms:
 
 :html:`</div>`
 
-.. note::
+Applying compilation passes
+---------------------------
 
-    Most compilation transforms support just-in-time compilation with ``jax.jit``.
-
-Transforms can be applied on ``QNodes`` using the decorator syntax:
+Transforms can be applied on QNodes using the decorator syntax, then decorated
+with :func:`~pennylane.qjit`:
 
 .. code-block:: python
 
-    dev = qp.device("default.qubit", wires=2)
+    dev = qp.device("lightning.qubit", wires=1)
 
-    @qp.transforms.split_non_commuting(grouping_strategy="wires")
+    @qp.qjit(capture=True)
+    @qp.transforms.gridsynth(epsilon=1e-4)
     @qp.qnode(dev)
-    def circuit(params):
-        qp.RX(params[0], wires=0)
-        qp.RZ(params[1], wires=1)
-        return [
-            qp.expval(qp.X(0)),
-            qp.expval(qp.Y(1)),
-            qp.expval(qp.Z(0) @ qp.Z(1)),
-            qp.expval(qp.X(0) @ qp.Z(1) + 0.5 * qp.Y(1) + qp.Z(0)),
-        ]
+    def circuit(x):
+        qp.Hadamard(0)
+        qp.RZ(x, wires=0)
+        return qp.expval(qp.X(0))
 
-They can additionally be stacked, allowing for the application of multiple compilation passes on a ``QNode``:
+>>> qp.analyze(circuit)(0.1).resources.quantum_operations
+{'Adjoint(S)': 1, 'GlobalPhase': 1, 'Hadamard': 43, 'Identity': 1, 'PauliX': 1, 'PauliY': 1, 'PauliZ': 1, 'S': 21, 'T': 42}
+
+Transforms can be stacked, allowing for the application of multiple compilation
+passes on a QNode:
 
 .. code-block:: python
 
-    dev = qp.device("default.qubit", wires=1)
+    dev = qp.device("lightning.qubit", wires=1)
 
+    @qp.qjit(capture=True)
     @qp.transforms.merge_rotations
-    @qp.transforms.cancel_inverses(recursive=True)
+    @qp.transforms.cancel_inverses
     @qp.qnode(device=dev)
     def circuit(x, y):
         qp.X(wires=0)
@@ -85,441 +79,110 @@ They can additionally be stacked, allowing for the application of multiple compi
         qp.RX(y, wires=0)
         return qp.expval(qp.Z(0))
 
-Alternatively, multiple transforms can be chained together into custom circuit optimization pipelines
-via the :class:`~.CompilePipeline` class. The defined compilation program can then be applied on a
-``QNode``, which will transform the circuit with each pass therein.
+>>> qp.analyze(circuit)(0.1, 0.2).resources.quantum_operations
+Device: lightning.qubit
+Device wires: 1
+Shots: Shots(total=None)
+Levels:
+- 0: Before MLIR Passes
+- 1: cancel-inverses
+- 2: merge-rotations
+<BLANKLINE>
+↓Metric         Level→ |  0 |  1 |  2
+-------------------------------------
+Quantum operations:    |
+- Total                |  6 |  2 |  1
+  - Hadamard           |  2 |  0 |  0
+  - PauliX             |  2 |  0 |  0
+  - RX                 |  2 |  2 |  1
+Measurement processes: |
+- expval(PauliZ)       |  1 |  1 |  1
+Total wires            |  1 |  1 |  1
 
-For example, by constructing a pipeline with the sequence of three transforms: :func:`~.pennylane.transforms.commute_controlled`,
-:func:`~.pennylane.transforms.cancel_inverses`, and :func:`~.pennylane.transforms.merge_rotations`,
-the number of gates in the following quantum circuit can be reduced by almost a half:
+Alternatively, multiple transforms can be chained together into custom
+compilation pipelines with :class:`~.CompilePipeline`.
 
 .. code-block:: python
 
     pipeline = qp.CompilePipeline(
-        qp.transforms.commute_controlled,
-        qp.transforms.cancel_inverses(recursive=True),
+        qp.transforms.cancel_inverses,
         qp.transforms.merge_rotations,
     )
 
+    @qp.qjit(capture=True)
     @pipeline
-    @qp.qnode(qp.device("default.qubit"))
-    def circuit(x, y, z):
-        qp.Hadamard(wires=0)
-        qp.Hadamard(wires=1)
-        qp.Hadamard(wires=2)
-        qp.RZ(z, wires=2)
-        qp.CNOT(wires=[2, 1])
-        qp.RX(z, wires=0)
-        qp.CNOT(wires=[1, 0])
+    @qp.qnode(qp.device("lightning.qubit", wires=2))
+    def circuit(x, y):
         qp.RX(x, wires=0)
-        qp.CNOT(wires=[1, 0])
-        qp.RZ(-z, wires=2)
-        qp.RX(y, wires=2)
-        qp.Y(wires=2)
-        qp.CZ(wires=[1, 2])
-        return qp.expval(qp.Z(wires=0))
+        qp.CNOT(wires=[0, 1])
+        qp.Hadamard(wires=1)
+        qp.Hadamard(wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.RX(y, wires=0)
+        return qp.expval(qp.Z(0))
 
->>> print(qp.draw(circuit)(0.2, 0.3, 0.4))
-0: ──H──RX(0.60)─────────────────┤  <Z>
-1: ──H─╭X─────────────────────╭●─┤
-2: ──H─╰●─────────RX(0.30)──Y─╰Z─┤
+For more details on :class:`~.CompilePipeline` and available compilation passes,
+visit `the compilation documentation <../code/qp_transforms.html#transforms-for-circuit-compilation>`_.
 
-.. note::
-
-    The :class:`~.pennylane.Barrier` operator can be used to prevent blocks of code from being merged during
-    compilation.
-
-For more details on :class:`~.CompilePipeline` and the available compilation transforms, visit
-`the compilation documentation
-<../code/qp_transforms.html#transforms-for-circuit-compilation>`_.
-
-Gate decompositions
--------------------
+Circuit decomposition
+---------------------
 
 When compiling a circuit, it is often beneficial to decompose the circuit into a
-set of gates. For tape-based (non-compiled) workflows, use
-:func:`~.pennylane.transforms._tape_decompose`, which decomposes circuits into a
-set of gates defined either by their name, type, or by a set of rules they must
-follow. Under :func:`~.qjit`, use :func:`~.pennylane.transforms.decompose`, which
-dispatches to Catalyst's graph-decomposition pass.
-
-.. note::
-
-    Using :func:`~.pennylane.decomposition.enable_graph` enables PennyLane's new
-    **experimental** decomposition algorithm (by default, this new system is *not*
-    enabled). This new system uses a graph-based approach, which provides better
-    overall versatility and resource efficiency.
-
-Using a gate set
-****************
+set of specific operators. Every operator can have multiple different
+decompositions into other operators, and the :func:`~pennylane.decompose`
+compilation pass finds the most resource-efficient decomposition pathway to the
+desired target.
 
 The example below demonstrates how a three-wire circuit can be decomposed using
 a pre-defined set of gates:
 
 .. code-block:: python
 
-    from pennylane.transforms import _tape_decompose
-
-    dev = qp.device('default.qubit')
+    dev = qp.device("lightning.qubit", wires=3)
     allowed_gates = {qp.Toffoli, qp.RX, qp.RZ, qp.GlobalPhase}
 
-    @_tape_decompose(gate_set=allowed_gates)
+    @qp.qjit(capture=True)
+    @qp.decompose(gate_set=allowed_gates)
     @qp.qnode(dev)
     def circuit():
         qp.Hadamard(wires=[0])
         qp.Toffoli(wires=[0,1,2])
         return qp.expval(qp.Z(0))
 
-With the Hadamard gate not in our gate set, it will be decomposed into allowed rotation
-gate operators.
+The :class:`~pennylane.Hadamard` will be decomposed into rotation gates and a
+global phase, while :class:`~pennylane.Toffoli` remains since it is in the
+target gate set.
 
->>> print(qp.draw(circuit)())
-0: ──RZ(1.57)─╭GlobalPhase(-0.79)──RX(1.57)──RZ(1.57)─╭GlobalPhase(-0.79)─╭●─┤  <Z>
-1: ───────────├GlobalPhase(-0.79)─────────────────────├GlobalPhase(-0.79)─├●─┤
-2: ───────────╰GlobalPhase(-0.79)─────────────────────╰GlobalPhase(-0.79)─╰X─┤
+>>> qp.analyze(circuit)().resources.quantum_operations
+{'GlobalPhase': 1, 'RX': 1, 'RZ': 2, 'Toffoli': 1}
 
-Using a gate rule
-*****************
-
-The example below demonstrates how a three-wire circuit can be decomposed into single
-or two-qubit gates using a rule:
+Gates in the gate set can also be specified by name. The example below
+decomposes a ``Toffoli`` gate into a subset of Clifford + T gates:
 
 .. code-block:: python
 
-    qp.decomposition.disable_graph()
-
-    @_tape_decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
+    @qp.qjit(capture=True)
+    @qp.decompose(gate_set={"H", "T", "Adjoint(T)", "CNOT"})
     @qp.qnode(dev)
     def circuit():
         qp.Toffoli(wires=[0,1,2])
         return qp.expval(qp.Z(0))
 
->>> print(qp.draw(circuit)())
-0: ───────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
-1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
-2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
-
-Decomposition in stages
-***********************
-
-You can use the ``max_expansion`` argument to control the number of decomposition
-stages applied to the circuit. By default, the function will decompose the circuit
-until the desired gate set is reached.
-
-The example below shows how the user can visualize the decomposition. We begin
-with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit:
-
-.. code-block:: python
-
-    phase = 1
-    unitary = qp.RX(phase, wires=0)
-    n_estimation_wires = 3
-    estimation_wires = range(1, n_estimation_wires + 1)
-
-    @qp.qnode(qp.device('default.qubit'))
-    def circuit():
-        # Start in the |+> eigenstate of the unitary
-        qp.Hadamard(0)
-        qp.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)
-
-From here, we can iterate through the stages of decomposition:
-
->>> from pennylane.transforms import _tape_decompose
->>> print(qp.draw(_tape_decompose(circuit, max_expansion=0))())
-0: ──H─╭QuantumPhaseEstimation─┤
-1: ────├QuantumPhaseEstimation─┤
-2: ────├QuantumPhaseEstimation─┤
-3: ────╰QuantumPhaseEstimation─┤
-
->>> print(qp.draw(_tape_decompose(circuit, max_expansion=1))())
-0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
-1: ──H─╰●──────│───────│───────╭QFT†─┤
-2: ──H─────────╰●──────│───────├QFT†─┤
-3: ──H─────────────────╰●──────╰QFT†─┤
-M0 =
-[[0.87758256+0.j         0.        -0.47942554j]
- [0.        -0.47942554j 0.87758256+0.j        ]]
-
->>> print(qp.draw(_tape_decompose(circuit, max_expansion=2))())
-0: ──H──RZ(4.71)──RY(1.14)─╭X──RY(-1.14)──RZ(-3.14)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X ···
-1: ──H─────────────────────╰●───────────────────────╰●────────────────────────────────│─ ···
-2: ──H────────────────────────────────────────────────────────────────────────────────╰● ···
-3: ──H────────────────────────────────────────────────────────────────────────────────── ···
-<BLANKLINE>
-0: ··· ──RY(-1.00)──RZ(-6.28)─╭X──RZ(4.71)──RZ(1.57)──RY(0.50)─╭X──RY(-0.50)──RZ(-6.28)─╭X ···
-1: ··· ───────────────────────│────────────────────────────────│────────────────────────│─ ···
-2: ··· ───────────────────────╰●───────────────────────────────│────────────────────────│─ ···
-3: ··· ────────────────────────────────────────────────────────╰●───────────────────────╰● ···
-<BLANKLINE>
-0: ··· ──RZ(4.71)────────────────────────────────────────────────────┤
-1: ··· ─╭SWAP†─────────────────────────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
-2: ··· ─│─────────────╭(Rϕ(1.57))†──H†─│────────────╰(Rϕ(1.57))†─────┤
-3: ··· ─╰SWAP†─────H†─╰(Rϕ(1.57))†─────╰(Rϕ(0.79))†──────────────────┤
-
-Custom Operator Decomposition
------------------------------
-
-When executing QNodes on a device, PennyLane will automatically decompose gates
-that are unsupported by the device using built-in decomposition rules.
-
-In addition, you can provide *new* decomposition rules to be used, but the behaviour
-and user-interface is different depending on if the graph decompositions system is
-enabled.
-
-Default behaviour with custom decompositions
-********************************************
-
-For example, suppose we would like to implement the following QNode:
-
-.. code-block:: python
-
-    def circuit(weights):
-        qp.BasicEntanglerLayers(weights, wires=[0, 1, 2])
-        return qp.expval(qp.Z(0))
-
-    original_dev = qp.device("default.qubit", wires=3)
-    original_qnode = qp.QNode(circuit, original_dev)
-
->>> weights = np.array([[0.4, 0.5, 0.6]])
->>> print(qp.draw(original_qnode, level="device")(weights))
-0: ──RX(0.40)─╭●────╭X─┤  <Z>
-1: ──RX(0.50)─╰X─╭●─│──┤
-2: ──RX(0.60)────╰X─╰●─┤
-
-Now, let's swap out PennyLane's default decomposition of the ``CNOT`` gate into
-``CZ`` and ``Hadamard``. We define the custom decompositions like so, and pass them
-to a device:
-
-.. code-block:: python3
-
-    @qp.decomposition.register_resources({
-        qp.H: 2,
-        qp.CZ: 1
-    })
-    def _custom_cnot_decomposition(wires, **_):
-        qp.Hadamard(wires=wires[1])
-        qp.CZ(wires=[wires[0], wires[1]])
-        qp.Hadamard(wires=wires[1])
-
-    qp.decomposition.add_decomps(qp.CNOT, _custom_cnot_decomposition)
-
-    qp.decomposition.enable_graph()
-
-    decomp_dev = qp.device("default.qubit", wires=3)
-    qnode = qp.QNode(circuit, decomp_dev)
-    decomp_qnode = qp.transforms._tape_decompose(qnode, gate_set={qp.CZ, qp.H})
-
-Now when we draw or run a QNode on this device, the gates will be expanded according
-to our specifications:
-
->>> print(qp.draw(decomp_qnode, level="device")(weights))
-0: ──RX(0.40)────╭●──H───────╭Z──H─┤  <Z>
-1: ──RX(0.50)──H─╰Z──H─╭●────│─────┤
-2: ──RX(0.60)──H───────╰Z──H─╰●────┤
-
-.. _custom_decomps_with_graph:
-
-Custom decompositions with qp.decomposition.enable_graph
-*********************************************************
-
-With the graph decompositions system enabled, custom decompositions for operators
-in PennyLane can be added in a few ways depending on the application.
-
-The :func:`~.pennylane.transforms._tape_decompose` transform offers the ability to inject
-custom decompositions via two keyword arguments:
-
-* ``fixed_decomps``: any decomposition for an operator type here will automatically
-  be chosen by the new algorithm, regardless of how resource efficient it may or
-  may not be.
-* ``alt_decomps``: any decompositions for an operator type list here are added as
-  *possible* decomposition rules the algorithm can choose based on its resource
-  efficiency.
-
-Both keyword arguments above require a dictionary mapping PennyLane operator types to
-custom decompositions. Creating custom decompositions that the graph-based system
-can use involves a PennyLane quantum function that represents the decomposition,
-and a declaration of its resource requirements (gate counts) via :func:`~.pennylane.register_resources`.
-
-Consider this example where we add a fixed decomposition to ``CNOT`` gates:
-
-.. code-block:: python
-
-    qp.decomposition.enable_graph()
-
-    @qp.register_resources({qp.H: 2, qp.CZ: 1})
-    def my_cnot(wires, **__):
-        qp.H(wires=wires[1])
-        qp.CZ(wires=wires)
-        qp.H(wires=wires[1])
-
-The :func:`~.pennylane.register_resources` accepts a dictionary mapping operator
-types within the custom decomposition to the number of times they occur in the decomposition.
-With the resources registered, this can be used with ``fixed_decomps`` or ``alt_decomps``:
-
-.. code-block:: python
-
-    @qp.transforms._tape_decompose(
-        fixed_decomps={qp.CNOT: my_cnot},
-        gate_set={qp.H, qp.S, qp.T, qp.CZ},
-    )
-    @qp.qnode(qp.device("default.qubit"))
-    def circuit():
-        qp.CNOT(wires=[0, 1])
-        return qp.state()
-
->>> print(qp.draw(circuit, level="device")())
-0: ────╭●────┤  State
-1: ──H─╰Z──H─┤  State
-
-Note that the ``alt_decomps`` argument can handle multiple alternatives per operator
-type:
-
-.. code-block:: python
-
-    @qp.register_resources({qp.H: 2, qp.CZ: 1})
-    def my_cnot1(wires, **__):
-        qp.H(wires=wires[1])
-        qp.CZ(wires=wires)
-        qp.H(wires=wires[1])
-
-    @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2})
-    def my_cnot2(wires, **__):
-        qp.RY(np.pi/2, wires[1])
-        qp.Z(wires[1])
-        qp.CZ(wires=wires)
-        qp.RY(np.pi/2, wires[1])
-        qp.Z(wires[1])
-
-    @qp.transforms._tape_decompose(
-        gate_set={qp.CZ, qp.H, qp.Z, qp.RY},
-        alt_decomps={qp.CNOT: [my_cnot1, my_cnot2]},
-    )
-    @qp.qnode(qp.device("default.qubit"))
-    def circuit():
-        qp.CNOT(wires=[0, 1])
-        return qp.state()
-
-The decomposition that the algorithm chooses internally will be the most resource-efficient.
-More details on creating complex decomposition rules that may depend on runtime
-parameters can be found in the usage details for :func:`~.pennylane.register_resources`.
-
-Alternatively, new decomposition rules can be added to operators *globally* with
-the :func:`~.pennylane.add_decomps` function. This negates having to specify ``alt_decomps``
-in every instance of the ``_tape_decompose`` transform. The following example globally
-adds the ``my_cnot1`` and ``my_cnot2`` decomposition rules to the ``qp.CNOT`` gate:
-
->>> qp.add_decomps(qp.CNOT, my_cnot1, my_cnot2)
-
-The newly added rules for the ``qp.CNOT`` operator can be verified or inspected
-with the :func:`~.pennylane.list_decomps` function:
-
->>> my_new_rules = qp.list_decomps(qp.CNOT)[-2:]
->>> print(qp.draw(my_new_rules[1])(wires=[0, 1]))
-0: ──────────────╭●──────────────┤
-1: ──RY(1.57)──Z─╰Z──RY(1.57)──Z─┤
-
-Simplifying Operators
-----------------------
-
-PennyLane provides the :func:`~.pennylane.simplify` function to simplify single operators, quantum
-functions, QNodes and tapes. This function has several purposes:
-
-* Reducing the arithmetic depth of the given operators to its minimum.
-* Grouping like terms in sums and products.
-* Resolving products of Pauli operators.
-* Combining identical rotation gates by summing its angles.
-
-Here are some simple simplification routines:
-
->>> qp.simplify(qp.RX(4*np.pi+0.1, 0 ))
-RX(0.09999999999999964, wires=[0])
->>> qp.simplify(qp.adjoint(qp.RX(1.23, 0)))
-RX(11.336370614359172, wires=[0])
->>> qp.simplify(qp.ops.Pow(qp.RX(1, 0), 3))
-RX(3.0, wires=[0])
->>> qp.simplify(qp.sum(qp.Y(3), qp.Y(3)))
-2.0 * Y(3)
->>> qp.simplify(qp.RX(1, 0) @ qp.RX(1, 0))
-RX(2.0, wires=[0])
->>> qp.simplify(qp.prod(qp.X(0), qp.Z(0)))
--1j * Y(0)
-
-Now lets simplify a nested operator:
-
->>> sum_op = qp.RX(1, 0) + qp.X(0)
->>> prod1 = qp.X(0) @ sum_op
->>> nested_op = qp.prod(prod1, qp.RX(1, 0))
->>> qp.simplify(nested_op)
-(X(0) @ RX(2.0, wires=[0])) + RX(1.0, wires=[0])
-
-Several simplifications steps are happening here. First of all, the nested products are removed:
-
-.. code-block:: python
-
-    qp.prod(qp.X(0), qp.sum(qp.RX(1, 0), qp.X(0)), qp.RX(1, 0))
-
-Then the product of sums is transformed into a sum of products:
-
-.. code-block:: python
-
-    qp.sum(qp.prod(qp.X(0), qp.RX(1, 0), qp.RX(1, 0)), qp.prod(qp.X(0), qp.X(0), qp.RX(1, 0)))
-
-And finally like terms in the obtained products are grouped together, removing all identities:
-
-.. code-block:: python
-
-    qp.sum(qp.prod(qp.X(0), qp.RX(2, 0)), qp.RX(1, 0))
-
-As mentioned earlier we can also simplify QNode objects to, for example, group rotation gates:
-
-.. code-block:: python
-
-    dev = qp.device("default.qubit", wires=2)
-
-    @qp.simplify
-    @qp.qnode(dev)
-    def circuit(x):
-        (
-            qp.RX(x[0], wires=0)
-            @ qp.RY(x[1], wires=1)
-            @ qp.RZ(x[2], wires=2)
-            @ qp.RX(-1, wires=0)
-            @ qp.RY(-2, wires=1)
-            @ qp.RZ(2, wires=2)
-        )
-        return qp.probs([0, 1, 2])
-
->>> x = [1, 2, 3]
->>> print(qp.draw(circuit)(x))
-0: ───────────┤ ╭Probs
-1: ───────────┤ ├Probs
-2: ──RZ(5.00)─┤ ╰Probs
-
-Groups of commuting Pauli words
--------------------------------
-
-Mutually commuting Pauli words can be measured simultaneously on a quantum computer.
-Finding groups of mutually commuting observables can therefore reduce the number of circuit executions,
-and is an example of how observables can be "compiled".
-
-PennyLane contains different functionalities for this purpose, ranging from higher-level
-transforms acting on QNodes to lower-level functions acting on operators.
-
-An example of a transform manipulating QNodes is :func:`~.pennylane.transforms.split_non_commuting`.
-It turns a QNode that measures non-commuting observables into a QNode that internally
-uses *multiple* circuit executions with qubit-wise commuting groups. The transform is used
-by devices to make such measurements possible.
-
-On a lower level, the :func:`~.pennylane.pauli.group_observables` function can be used to split lists of
-observables and coefficients:
-
->>> obs = [qp.Y(0), qp.X(0) @ qp.X(1), qp.Z(1)]
->>> coeffs = [1.43, 4.21, 0.97]
->>> groupings = qp.pauli.group_observables(obs, coeffs, 'anticommuting', 'lf')
->>> obs_groupings, coeffs_groupings = groupings
->>> obs_groupings
-[[Z(1), X(0) @ X(1)], [Y(0)]]
->>> coeffs_groupings
-[[0.97, 4.21], [1.43]]
-
-This and more logic to manipulate Pauli observables is found in the :doc:`pauli module <../code/qp_pauli>`.
+>>> qp.analyze(circuit)().resources.quantum_operations
+{'Adjoint(T)': 3, 'CNOT': 6, 'Hadamard': 2, 'T': 4}
+
+Influencing decomposition pathways
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Briefly, the :func:`~pennylane.decompose` compilation pass works by constructing
+a weighted graph and finding the "shortest" (or least resource-intensive) path
+between source nodes (original operators in the circuit) and target nodes
+(operators in the target gate set). This algorithm can be influenced in several
+ways:
+
+* ``exclude_decomps``
+* ``fixed_decomps``
+* weights
+* ??
+
+Examples
