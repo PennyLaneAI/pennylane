@@ -2233,6 +2233,10 @@ class ControlledPhaseShift(Controlled2):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
 
+    .. see-also:: 
+
+        ``ControlledPhaseShift is also available as :class:`~.CPhase`.
+
     """
 
     wire_sizes = (2,)
