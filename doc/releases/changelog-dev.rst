@@ -1661,6 +1661,9 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* Moved ``pop_op_eqns`` into ``pennylane.capture``.
+  `(#10345) <https://github.com/PennyLaneAI/pennylane/pull/10345>`__
+
 * Limited OpenMP, OpenBLAS, and MKL to one thread per pytest worker in unit-test CI
   to avoid thread oversubscription when running tests in parallel.
   `(#10404) <https://github.com/PennyLaneAI/pennylane/pull/10404>`__
@@ -1668,9 +1671,6 @@ Internal changes ⚙️
 * Reference calculations in ``default.tensor`` tests now run in-process instead of
   creating a multiprocessing pool for each calculation, reducing CI overhead.
   `(#10404) <https://github.com/PennyLaneAI/pennylane/pull/10404>`__
-
-* Moved ``pop_op_eqns`` into ``pennylane.capture``.
-  `(#10345) <https://github.com/PennyLaneAI/pennylane/pull/10345>`__
 
 * Added an autouse fixture that undoes any changes a test makes to the registry of decomposition
   rules, and removed the ``qp.decomposition.local_decomps`` blocks that only served as cleanup.
