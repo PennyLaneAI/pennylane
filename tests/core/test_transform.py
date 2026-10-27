@@ -344,7 +344,7 @@ class TestTransform:  # pylint: disable=too-many-public-methods
     def test_transform_on_qjit(self):
         """Test that applying a transform to a qjit object transforms the wrapped workflow."""
 
-        catalyst = pytest.importorskip("catalyst")
+        import catalyst
 
         @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=1))
