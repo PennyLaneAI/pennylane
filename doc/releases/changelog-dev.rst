@@ -2153,6 +2153,9 @@ Internal changes ⚙️
 Documentation 📝
 ~~~~~~~~~~~~~~~~
 
+* API documentation now automatically links alternate public names for the same
+  PennyLane class or function. Redundant hard-coded alias notes have been removed.
+
 * The dependency versions in the developer installation guide now match ``pyproject.toml``, and a rendering issue in the list of optional dependencies was fixed.
   `(#10232) <https://github.com/PennyLaneAI/pennylane/pull/10232>`__
 

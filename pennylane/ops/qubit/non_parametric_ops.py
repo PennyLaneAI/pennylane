@@ -54,8 +54,6 @@ class Hadamard(Operator2):
 
     .. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
 
-    .. seealso:: The equivalent short-form alias :class:`~H`
-
     **Details:**
 
     * Number of wires: 1
@@ -233,8 +231,6 @@ The Hadamard operator
 
 .. math:: H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1\\ 1 & -1\end{bmatrix}.
 
-.. seealso:: The equivalent long-form alias :class:`~Hadamard`
-
 **Details:**
 
 * Number of wires: 1
@@ -349,8 +345,6 @@ class PauliX(Operator2):
     The Pauli X operator
 
     .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
-
-    .. seealso:: The equivalent short-form alias :class:`~X`
 
     **Details:**
 
@@ -537,8 +531,6 @@ r"""The Pauli X operator
 
 .. math:: \sigma_x = \begin{bmatrix} 0 & 1 \\ 1 & 0\end{bmatrix}.
 
-.. seealso:: The equivalent long-form alias :class:`~PauliX`
-
 **Details:**
 
 * Number of wires: 1
@@ -617,8 +609,6 @@ class PauliY(Operator2):
     The Pauli Y operator
 
     .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
-
-    .. seealso:: The equivalent short-form alias :class:`~Y`
 
     **Details:**
 
@@ -792,8 +782,6 @@ r"""The Pauli Y operator
 
 .. math:: \sigma_y = \begin{bmatrix} 0 & -i \\ i & 0\end{bmatrix}.
 
-.. seealso:: The equivalent long-form alias :class:`~PauliY`
-
 **Details:**
 
 * Number of wires: 1
@@ -874,8 +862,6 @@ class PauliZ(Operator2):
     The Pauli Z operator
 
     .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
-
-    .. seealso:: The equivalent short-form alias :class:`~Z`
 
     **Details:**
 
@@ -1064,8 +1050,6 @@ Z = PauliZ
 r"""The Pauli Z operator
 
 .. math:: \sigma_z = \begin{bmatrix} 1 & 0 \\ 0 & -1\end{bmatrix}.
-
-.. seealso:: The equivalent long-form alias :class:`~PauliZ`
 
 **Details:**
 
