@@ -46,11 +46,17 @@ class decomposition_rule(nodes.General, nodes.Element):
 class DecompositionRule(SphinxDirective):
     """One row of a ``decomposition-table``."""
 
+    # the only required argument is the decomp rule name, the rest is passed as options
     required_arguments = 1
     has_content = True
     option_spec = {
+        # a decomp circuit image is required, and is left as an image
         "image": directives.unchanged_required,
+        # we are not required to specify anything, such as work wires, required by the circuit
+        # if we do specify something as text, it is left as text
         "requires": directives.unchanged,
+        # we are not specified to elaborate on the decomp with mathematical definitions,
+        # but if we do, the text remains text
         "where": directives.unchanged,
     }
 
@@ -102,8 +108,10 @@ class DecompositionRule(SphinxDirective):
 class DecompositionTable(SphinxDirective):
     """A table of ``decomposition-rule`` entries for one operator."""
 
+    # the only required argument is the operation name, the rest is passed as options
     required_arguments = 1
     has_content = True
+    # symbol def'ns and example values for them are optional and left as text
     option_spec = {"symbols": directives.unchanged, "example": directives.unchanged}
 
     def run(self):
@@ -127,7 +135,7 @@ class DecompositionTable(SphinxDirective):
                 "Each circuit shows one example of the rule."
             )
         # Escape "<" so reStructuredText does not interpret it as a link target.
-        rule_lookup = f'qp.list_decomps({operator_name})["\\<name>"]'
+        rule_lookup = "\\<name>"
         caption_parts.append(
             "Use a rule when decomposing with "
             f":func:`qp.decompose(gate_set=..., fixed_decomps={{{operator_name}: {rule_lookup}}}) "
@@ -142,6 +150,8 @@ class DecompositionTable(SphinxDirective):
         two_cols = all("decomp-cols-2" in rule["resources"]["classes"] for rule in rules)
         table = nodes.table(classes=["decomposition-table", "colwidths-given"])
         if two_cols:
+            # marks when all rules in the table have two columns,
+            # as opposed to decomp-cols-2 which marks that an individual rule has two
             table["classes"].append("decomp-two-cols")
         column_group = nodes.tgroup(cols=2)
         table += column_group
