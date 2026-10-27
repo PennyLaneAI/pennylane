@@ -133,3 +133,37 @@ def test_extension_loads_before_autodoc(tmp_path):
         timeout=60,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("leading_lines", [[], [""]])
+def test_alias_note_follows_summary(leading_lines):
+    """Alias links precede the detailed documentation without replacing the summary."""
+    lines = leading_lines + [
+        "Opening summary",
+        "continued on another line.",
+        "",
+        "Detailed documentation.",
+    ]
+    public_aliases.add_public_aliases(
+        None, "class", "pennylane.ControlledPhaseShift", qp.ControlledPhaseShift, None, lines
+    )
+    assert lines == leading_lines + [
+        "Opening summary",
+        "continued on another line.",
+        "",
+        ".. note::",
+        "",
+        "   Also available as :class:`~pennylane.CPhase`.",
+        "",
+        "",
+        "Detailed documentation.",
+    ]
+
+
+def test_nested_class_top_level_alias():
+    """A class in qp.ops can have an alias exported at the top level."""
+    lines = ["Original documentation."]
+    public_aliases.add_public_aliases(
+        None, "class", "pennylane.ops.LinearCombination", qp.ops.LinearCombination, None, lines
+    )
+    assert ":class:`~pennylane.Hamiltonian`" in "\n".join(lines)

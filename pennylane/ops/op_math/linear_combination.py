@@ -31,14 +31,10 @@ from .sum import Sum
 
 
 class LinearCombination(Sum):
-    r"""Operator representing a linear combination of operators. Also accessible as :class:`~.Hamiltonian`.
+    r"""Operator representing a linear combination of operators.
 
     The ``LinearCombination`` is represented as a linear combination of other operators, e.g.,
     :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` are trainable parameters.
-
-    .. note::
-
-        ``qp.Hamiltonian`` dispatches to :class:`~pennylane.ops.op_math.LinearCombination`.
 
     Args:
         coeffs (tensor_like): coefficients of the ``LinearCombination`` expression

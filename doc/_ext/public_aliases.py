@@ -17,7 +17,7 @@ import pennylane as qp
 
 
 def add_public_aliases(app, what, name, obj, options, lines):
-    """Append links to other top-level exports of the documented object."""
+    """Add alias links immediately after the opening documentation paragraph."""
     if what not in {"class", "function"}:
         return
     if not getattr(obj, "__module__", "").startswith("pennylane."):
@@ -36,7 +36,19 @@ def add_public_aliases(app, what, name, obj, options, lines):
 
     role = "class" if what == "class" else "func"
     references = ", ".join(f":{role}:`~pennylane.{alias}`" for alias in aliases)
-    lines.extend(["", ".. note::", "", f"   Also available as {references}.", ""])
+    # Keep the opening paragraph available to autosummary as the object summary.
+    insertion_index = 0
+    while insertion_index < len(lines) and not lines[insertion_index].strip():
+        insertion_index += 1
+    while insertion_index < len(lines) and lines[insertion_index].strip():
+        insertion_index += 1
+    lines[insertion_index:insertion_index] = [
+        "",
+        ".. note::",
+        "",
+        f"   Also available as {references}.",
+        "",
+    ]
 
 
 def setup(app):
