@@ -932,7 +932,7 @@ class TestMeasurementQROM:
     @pytest.mark.catalyst
     @pytest.mark.parametrize("L", list(range(1, 26)))
     def test_no_phases_error(self, L):
-        """Test that QROM introduces no relative phases on the control register."""
+        """Test that QROM introduces no relative phases."""
         rng = np.random.default_rng(42 + L)
         n_target = 3
 
@@ -1047,7 +1047,7 @@ class TestMeasurementQROM:
                 1,
                 marks=pytest.mark.xfail(
                     reason="Controlled MultiX needs work wire support for control regions in Catalyst "
-                    "(PennyLaneAI/catalyst#3366, PennyLaneAI/catalyst#3376).",
+                    "(Catalyst #3376).",
                     strict=True,
                 ),
             ),
