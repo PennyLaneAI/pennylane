@@ -42,7 +42,7 @@ Circuit Specification Classes and Utilities
     ~Resources
     ~SpecsResources
     ~PBCSpecsResources
-
+    ~resource_analysis
     ~resources_from_tape
 """
 
@@ -56,6 +56,7 @@ from .resource import (
 from .expression import Expression
 from .analyze import analyze
 from .estimate import estimate
+from .resource_analysis import resource_analysis
 from .specs import specs
 from .track import track
 
@@ -68,6 +69,7 @@ __all__ = [
     "Expression",
     "analyze",
     "estimate",
+    "resource_analysis",
     "specs",
     "track",
 ]
