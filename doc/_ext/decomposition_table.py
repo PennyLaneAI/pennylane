@@ -46,125 +46,145 @@ class decomposition_rule(nodes.General, nodes.Element):
 class DecompositionRule(SphinxDirective):
     """One row of a ``decomposition-table``."""
 
+    # the only required argument is the decomp rule name, the rest is passed as options
     required_arguments = 1
     has_content = True
     option_spec = {
+        # a decomp circuit image is required, and is left as an image
         "image": directives.unchanged_required,
+        # we are not required to specify anything, such as work wires, required by the circuit
+        # if we do specify something as text, it is left as text
         "requires": directives.unchanged,
+        # we are not specified to elaborate on the decomp with mathematical definitions,
+        # but if we do, the text remains text
         "where": directives.unchanged,
     }
 
-    def _inline(self, text):
-        children, messages = self.state.inline_text(text, self.lineno)
-        return nodes.paragraph("", "", *children), messages
+    def _parse_paragraph(self, text):
+        """Parse inline reStructuredText into a paragraph and any diagnostic messages."""
+        inline_nodes, messages = self.state.inline_text(text, self.lineno)
+        return nodes.paragraph("", "", *inline_nodes), messages
 
     def run(self):
-        name = self.arguments[0]
-        node = decomposition_rule(name=name)
+        """Collect the circuit image, requirements, and resources for one rule."""
+        rule_name = self.arguments[0]
+        rule_node = decomposition_rule(name=rule_name)
+        rule_node["image"] = nodes.image(uri=self.options["image"], alt=rule_name)
 
-        image = nodes.image(uri=self.options["image"], alt=name)
-        node["image"] = image
-
-        messages = []
-        requires = None
+        parsing_messages = []
+        requirements = None
         if "requires" in self.options:
-            requires, msgs = self._inline("Requires " + self.options["requires"])
-            requires["classes"].append("decomp-requires")
-            messages += msgs
-        node["requires"] = requires
+            requirements, messages = self._parse_paragraph("Requires " + self.options["requires"])
+            requirements["classes"].append("decomp-requires")
+            parsing_messages.extend(messages)
+        rule_node["requires"] = requirements
 
-        rows = [
-            [part.strip() for part in line.split(" | ")] for line in self.content if line.strip()
+        resource_rows = [
+            [cell.strip() for cell in line.split(" | ")] for line in self.content if line.strip()
         ]
-        # an optional third column gives the counts for the example circuit
-        titles = ["Gate", "Count", "Example"][: max(len(row) for row in rows)]
-        classes = ["decomp-gate", "decomp-count", "decomp-example-count"]
-        resources = nodes.container(classes=["decomp-resources", f"decomp-cols-{len(titles)}"])
-        for title in titles:
+        column_titles = ["Gate", "Count", "Example"][: max(len(row) for row in resource_rows)]
+        column_classes = ["decomp-gate", "decomp-count", "decomp-example-count"]
+        column_count = len(column_titles)
+        resources = nodes.container(classes=["decomp-resources", f"decomp-cols-{column_count}"])
+        for title in column_titles:
             resources += nodes.paragraph(text=title, classes=["decomp-resources-head"])
-        for row in rows:
-            for cell, cls in zip(row + [""] * (len(titles) - len(row)), classes):
-                par, msgs = self._inline(cell)
-                par["classes"].append(cls)
-                resources += par
-                messages += msgs
+        for resource_row in resource_rows:
+            padded_cells = resource_row + [""] * (column_count - len(resource_row))
+            for cell_text, column_class in zip(padded_cells, column_classes):
+                paragraph, messages = self._parse_paragraph(cell_text)
+                paragraph["classes"].append(column_class)
+                resources += paragraph
+                parsing_messages.extend(messages)
         if "where" in self.options:
-            par, msgs = self._inline("where " + self.options["where"])
-            par["classes"].append("decomp-where")
-            resources += par
-            messages += msgs
-        node["resources"] = resources
+            explanation, messages = self._parse_paragraph("where " + self.options["where"])
+            explanation["classes"].append("decomp-where")
+            resources += explanation
+            parsing_messages.extend(messages)
+        rule_node["resources"] = resources
 
-        return [node, *messages]
+        return [rule_node, *parsing_messages]
 
 
 class DecompositionTable(SphinxDirective):
     """A table of ``decomposition-rule`` entries for one operator."""
 
+    # the only required argument is the operation name, the rest is passed as options
     required_arguments = 1
     has_content = True
+    # symbol def'ns and example values for them are optional and left as text
     option_spec = {"symbols": directives.unchanged, "example": directives.unchanged}
 
     def run(self):
-        op = self.arguments[0]
-        content = nodes.Element()
-        self.state.nested_parse(self.content, self.content_offset, content)
-        rules = [child for child in content.children if isinstance(child, decomposition_rule)]
-        others = [child for child in content.children if not isinstance(child, decomposition_rule)]
+        """Build a caption and a two-column table from the nested rule directives."""
+        operator_name = self.arguments[0]
+        parsed_content = nodes.Element()
+        self.state.nested_parse(self.content, self.content_offset, parsed_content)
 
-        # the "<" is escaped, so that it is not read as the start of the link target
-        access = f'qp.list_decomps({op})["\\<name>"]'
-        intro = []
+        rule_nodes = []
+        other_nodes = []
+        for child in parsed_content.children:
+            if isinstance(child, decomposition_rule):
+                rule_nodes.append(child)
+            else:
+                other_nodes.append(child)
+
+        caption_parts = []
         if "symbols" in self.options:
-            intro.append(
+            caption_parts.append(
                 "Resources are general, for " + self.options["symbols"] + ". "
                 "Each circuit shows one example of the rule."
             )
-        intro.append(
-            f'Use a rule when decomposing with :func:`qp.decompose(gate_set=..., fixed_decomps={{{op}: qp.list_decomps({op})["\\<name>"]}}) '
-            f"<pennylane.decompose>`."
+        caption_parts.append(
+            "Use a rule when decomposing with :func:`qp.decompose <pennylane.decompose>`:"
         )
 
-        children, messages = self.state.inline_text(" ".join(intro), self.lineno)
-        caption = nodes.paragraph("", "", *children, classes=["decomp-table-caption"])
+        inline_nodes, parsing_messages = self.state.inline_text(
+            " ".join(caption_parts), self.lineno
+        )
+        caption = nodes.paragraph("", "", *inline_nodes, classes=["decomp-table-caption"])
+        usage_code = f'qp.decompose(gate_set=..., fixed_decomps={{{operator_name}: "<name>"}})'
+        usage = nodes.literal_block(usage_code, usage_code, language="python")
 
         # with only the gate and count columns, the resources need less room, so the circuits
         # are drawn 50% bigger
-        two_cols = all("decomp-cols-2" in rule["resources"]["classes"] for rule in rules)
+        two_cols = all("decomp-cols-2" in rule["resources"]["classes"] for rule in rule_nodes)
         table = nodes.table(classes=["decomposition-table", "colwidths-given"])
         if two_cols:
+            # marks when all rules in the table have two columns,
+            # as opposed to decomp-cols-2 which marks that an individual rule has two
             table["classes"].append("decomp-two-cols")
-        group = nodes.tgroup(cols=2)
-        table += group
-        for width in (60, 40) if two_cols else (40, 60):
-            group += nodes.colspec(colwidth=width)
+        column_group = nodes.tgroup(cols=2)
+        table += column_group
+        for column_width in (60, 40) if two_cols else (40, 60):
+            column_group += nodes.colspec(colwidth=column_width)
 
-        body = nodes.tbody()
-        for rule in rules:
-            # the name of the rule, spanning both columns
-            access = nodes.literal(rule["name"], rule["name"], classes=["decomp-access-name"])
-            access_row = nodes.row(classes=["decomp-access-row"])
-            access_row += nodes.entry("", nodes.paragraph("", "", access), morecols=1)
-            body += access_row
+        table_body = nodes.tbody()
+        for rule_node in rule_nodes:
+            rule_name = nodes.literal(
+                rule_node["name"], rule_node["name"], classes=["decomp-access-name"]
+            )
+            name_row = nodes.row(classes=["decomp-access-row"])
+            name_row += nodes.entry("", nodes.paragraph("", "", rule_name), morecols=1)
+            table_body += name_row
 
-            row = nodes.row(classes=["decomp-body-row"])
-            circuit = nodes.entry("", rule["image"], classes=["decomp-circuit"])
+            detail_row = nodes.row(classes=["decomp-body-row"])
+            circuit_cell = nodes.entry("", rule_node["image"], classes=["decomp-circuit"])
             if "example" in self.options:
-                children, msgs = self.state.inline_text(
+                inline_nodes, messages = self.state.inline_text(
                     "Example: " + self.options["example"], self.lineno
                 )
-                circuit += nodes.paragraph("", "", *children, classes=["decomp-example"])
-                messages += msgs
-            row += circuit
-            resources = nodes.entry("")
-            if rule["requires"] is not None:
-                resources += rule["requires"]
-            resources += rule["resources"]
-            row += resources
-            body += row
-        group += body
+                circuit_cell += nodes.paragraph("", "", *inline_nodes, classes=["decomp-example"])
+                parsing_messages.extend(messages)
+            detail_row += circuit_cell
+            resources_cell = nodes.entry("")
+            if rule_node["requires"] is not None:
+                resources_cell += rule_node["requires"]
+            resources_cell += rule_node["resources"]
+            detail_row += resources_cell
+            table_body += detail_row
+        column_group += table_body
 
-        return [caption, table, *others, *messages]
+        return [caption, usage, table, *other_nodes, *parsing_messages]
 
 
 def setup(app):
