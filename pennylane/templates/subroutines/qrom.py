@@ -890,19 +890,20 @@ def _qrom_unary_iteration_resources(
 
 
 def _load_block(block, address_wires, target_wires, flag=None):
+    """Load one block of bitstrings into the target register.
+
+    The ``s``-th entry of ``block`` is loaded when the ``address_wires`` hold the value ``s``,
+    read most-significant bit first. If given, ``flag`` is an additional control wire that must
+    be in state 1, which is how the unary iteration selects the current block.
+    """
     num_address = len(address_wires)
     controls = list(address_wires) if flag is None else [flag, *address_wires]
     address_start = 0 if flag is None else (1 << num_address)
-    first = 0 if flag is None else 1  # flag bit is always 1
 
     @for_loop(len(block))
     def ctrl_sequence(s):
-        bits = math.int_to_binary(s + address_start, len(controls))
-        for j in range(first, len(controls)):
-            cond(bits[j] == 0, X)(controls[j])
-        ctrl(MultiX(block[s], target_wires), control=controls)
-        for j in range(first, len(controls)):
-            cond(bits[j] == 0, X)(controls[j])
+        control_values = math.int_to_binary(s + address_start, len(controls))
+        ctrl(MultiX(block[s], target_wires), control=controls, control_values=control_values)
 
     ctrl_sequence()  # pylint: disable=no-value-for-parameter
 
