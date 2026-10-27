@@ -2235,7 +2235,7 @@ class ControlledPhaseShift(Controlled2):
 
     .. see-also:: 
 
-        ``ControlledPhaseShift is also available as :class:`~.CPhase`.
+        ``ControlledPhaseShift`` is also available as :class:`~.CPhase`.
 
     """
 
