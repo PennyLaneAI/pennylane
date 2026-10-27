@@ -2192,6 +2192,13 @@ Documentation 📝
   repr.
   `(#10284) <https://github.com/PennyLaneAI/pennylane/pull/10284>`__
 
+* Operator documentation now has an "Available decompositions" table listing each of the
+  operator's decomposition rules, with a circuit diagram and the resources the rule uses. 
+  This change only applies to operators that are subclasses of ``Operator2``. 
+  The tables are rendered by a new ``decomposition-table`` Sphinx directive, and their diagrams are
+  drawn with :func:`~pennylane.draw_mpl`.
+  `(#10381) <https://github.com/PennyLaneAI/pennylane/pull/10381>`__
+
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
