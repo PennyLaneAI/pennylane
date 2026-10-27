@@ -33,7 +33,9 @@ Non-parametrized gates and operations
     ~pennylane.PauliY
     ~pennylane.PauliZ
     ~pennylane.measure
-    ~pennylane.PPR
+    ~pennylane.PPR_2
+    ~pennylane.PPR_4
+    ~pennylane.PPR_8
     ~pennylane.pauli_measure
     ~pennylane.SX
     ~pennylane.CY
@@ -45,7 +47,6 @@ Non-parametrized gates and operations
     ~pennylane.CSWAP
     ~pennylane.SISWAP
     ~pennylane.ECR
-    ~pennylane.SQISW
     ~pennylane.MultiControlledX
 
 :html:`</div>`
@@ -68,7 +69,6 @@ Parametrized gates
     ~pennylane.PauliRot
     ~pennylane.PhaseShift
     ~pennylane.ControlledPhaseShift
-    ~pennylane.CPhase
     ~pennylane.PCPhase
     ~pennylane.CRX
     ~pennylane.CRY
