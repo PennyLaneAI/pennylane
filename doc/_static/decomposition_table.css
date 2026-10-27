@@ -2,7 +2,6 @@
 
 :root {
   --default-padding: 16px;
-  --bg-colour: #fff8e5;
 }
 
 p.decomp-table-caption {
@@ -67,7 +66,7 @@ table.decomposition-table p.decomp-requires {
   margin-bottom: 10px;
   padding: 2px 10px;
   border-radius: 999px;
-  background: var(--bg-colour);
+  background: #fff8e5;
   border: 1px solid #ffd36a;
   font-size: 0.8rem;
 }
@@ -80,7 +79,7 @@ table.decomposition-table td.decomp-circuit img {
   aspect-ratio: 21 / 9;
   object-fit: contain;
   padding: 6px;
-  background: var(--bg-colour);
+  background: #fff;
   border: 1px solid #e5e5e5;
   border-radius: 6px;
 }
