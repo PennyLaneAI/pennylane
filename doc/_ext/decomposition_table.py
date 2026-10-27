@@ -119,7 +119,7 @@ class DecompositionTable(SphinxDirective):
         operator_name = self.arguments[0]
         parsed_content = nodes.Element()
         self.state.nested_parse(self.content, self.content_offset, parsed_content)
-        
+
         rule_nodes = []
         other_nodes = []
         for child in parsed_content.children:
@@ -134,16 +134,16 @@ class DecompositionTable(SphinxDirective):
                 "Resources are general, for " + self.options["symbols"] + ". "
                 "Each circuit shows one example of the rule."
             )
-        # Escape "<" so reStructuredText does not interpret it as a link target.
-        rule_lookup = "\\<name>"
         caption_parts.append(
-            "Use a rule when decomposing with "
-            f":func:`qp.decompose(gate_set=..., fixed_decomps={{{operator_name}: {rule_lookup}}}) "
-            "<pennylane.decompose>`."
+            "Use a rule when decomposing with :func:`qp.decompose <pennylane.decompose>`:"
         )
 
-        inline_nodes, parsing_messages = self.state.inline_text(" ".join(caption_parts), self.lineno)
+        inline_nodes, parsing_messages = self.state.inline_text(
+            " ".join(caption_parts), self.lineno
+        )
         caption = nodes.paragraph("", "", *inline_nodes, classes=["decomp-table-caption"])
+        usage_code = f'qp.decompose(gate_set=..., fixed_decomps={{{operator_name}: "<name>"}})'
+        usage = nodes.literal_block(usage_code, usage_code, language="python")
 
         # with only the gate and count columns, the resources need less room, so the circuits
         # are drawn 50% bigger
@@ -184,7 +184,7 @@ class DecompositionTable(SphinxDirective):
             table_body += detail_row
         column_group += table_body
 
-        return [caption, table, *other_nodes, *parsing_messages]
+        return [caption, usage, table, *other_nodes, *parsing_messages]
 
 
 def setup(app):
