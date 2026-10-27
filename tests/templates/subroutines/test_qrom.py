@@ -41,12 +41,6 @@ from pennylane.templates.subroutines.qrom import (
 from pennylane.testing import assert_decomposable
 from pennylane.typing import Bool, Wire
 
-CTRL_WORK_WIRE_TYPE_XFAIL = pytest.mark.xfail(
-    reason="Controlled MultiX needs work wire support for control regions in Catalyst "
-    "(PennyLaneAI/catalyst#3366, PennyLaneAI/catalyst#3376).",
-    strict=True,
-)
-
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid_qrom():
@@ -936,10 +930,7 @@ class TestMeasurementQROM:
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "L",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
-    )
+    @pytest.mark.parametrize("L", list(range(1, 26)))
     def test_no_phases_error(self, L):
         """Test that QROM introduces no relative phases on the control register."""
         rng = np.random.default_rng(42 + L)
@@ -1051,7 +1042,15 @@ class TestMeasurementQROM:
     @pytest.mark.parametrize(
         ("L", "n_extra"),
         [
-            pytest.param(1, 1, marks=CTRL_WORK_WIRE_TYPE_XFAIL),
+            pytest.param(
+                1,
+                1,
+                marks=pytest.mark.xfail(
+                    reason="Controlled MultiX needs work wire support for control regions in Catalyst "
+                    "(PennyLaneAI/catalyst#3366, PennyLaneAI/catalyst#3376).",
+                    strict=True,
+                ),
+            ),
             (1, 2),
             (4, 1),
             (4, 2),
