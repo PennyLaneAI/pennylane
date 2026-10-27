@@ -422,9 +422,9 @@ class AbstractArray:
         left, right = inputs
         if isinstance(left, AbstractArray):
             return left._arithmetic(right, ufunc)
-        return self._arithmetic(left, ufunc, reverse=True)
+        return self._arithmetic(left, ufunc)
 
-    def _resolve_shape(self, other):
+    def _resolve_binary_shape(self, other):
         """Resolve the shape for a binary operation."""
         if self.shape is Ellipsis or other.shape is Ellipsis:
             shape = Ellipsis
@@ -448,19 +448,16 @@ class AbstractArray:
 
         return shape
 
-    def _resolve_dtype(self, other, operation, reverse):
+    def _resolve_binary_dtype(self, other, operation):
         """Resolve the dtype for a binary operation."""
         weak_dtypes = {"i": int, "u": int, "f": float, "c": complex}
         left_dtype = weak_dtypes.get(self.dtype.kind, self.dtype) if self._weak_type else self.dtype
         right_dtype = (
             weak_dtypes.get(other.dtype.kind, other.dtype) if other._weak_type else other.dtype
         )
-        if reverse:
-            left_dtype, right_dtype = right_dtype, left_dtype
-
         return operation.resolve_dtypes((left_dtype, right_dtype, None))[-1]
 
-    def _arithmetic(self, other, operation, reverse=False):
+    def _arithmetic(self, other, operation):
         """Infer elementwise arithmetic metadata, rejecting only known shape conflicts."""
         if not isinstance(other, AbstractArray):
             if isinstance(other, Number):
@@ -470,8 +467,8 @@ class AbstractArray:
             else:
                 return NotImplemented
         
-        shape = self._resolve_shape(other)
-        dtype = self._resolve_dtype(other, operation, reverse)
+        shape = self._resolve_binary_shape(other)
+        dtype = self._resolve_binary_dtype(other, operation)
 
         result = AbstractArray(shape, dtype)
         object.__setattr__(result, "_weak_type", self._weak_type and other._weak_type)
@@ -495,43 +492,43 @@ class AbstractArray:
         return self._arithmetic(other, np.add)
 
     def __radd__(self, other):
-        return self._arithmetic(other, np.add, reverse=True)
+        return self._arithmetic(other, np.add)
 
     def __sub__(self, other):
         return self._arithmetic(other, np.subtract)
 
     def __rsub__(self, other):
-        return self._arithmetic(other, np.subtract, reverse=True)
+        return self._arithmetic(other, np.subtract)
 
     def __mul__(self, other):
         return self._arithmetic(other, np.multiply)
 
     def __rmul__(self, other):
-        return self._arithmetic(other, np.multiply, reverse=True)
+        return self._arithmetic(other, np.multiply)
 
     def __truediv__(self, other):
         return self._arithmetic(other, np.true_divide)
 
     def __rtruediv__(self, other):
-        return self._arithmetic(other, np.true_divide, reverse=True)
+        return self._arithmetic(other, np.true_divide)
 
     def __mod__(self, other):
         return self._arithmetic(other, np.remainder)
 
     def __rmod__(self, other):
-        return self._arithmetic(other, np.remainder, reverse=True)
+        return self._arithmetic(other, np.remainder)
 
     def __floordiv__(self, other):
         return self._arithmetic(other, np.floor_divide)
 
     def __rfloordiv__(self, other):
-        return self._arithmetic(other, np.floor_divide, reverse=True)
+        return self._arithmetic(other, np.floor_divide)
 
     def __pow__(self, other):
         return self._arithmetic(other, np.power)
 
     def __rpow__(self, other):
-        return self._arithmetic(other, np.power, reverse=True)
+        return self._arithmetic(other, np.power)
 
 
 class _AbstractTypeFactory(AbstractArray):
