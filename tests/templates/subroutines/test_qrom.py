@@ -48,12 +48,6 @@ from pennylane.testing import assert_decomposable
 from pennylane.testing.decompositions import _assert_counts_match
 from pennylane.typing import Bool, Wire
 
-CTRL_WORK_WIRE_TYPE_XFAIL = pytest.mark.xfail(
-    reason="Controlled MultiX needs work wire support for control regions in Catalyst "
-    "(PennyLaneAI/catalyst#3366, PennyLaneAI/catalyst#3376).",
-    strict=True,
-)
-
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid_qrom():
@@ -787,6 +781,8 @@ class TestMeasurementQROM:
     def test_resources_bound_decomposition(self, L, n_extra, n_targets, seed):
         """Test that the resource estimate declares every gate type queued by the decomposition
         and upper-bounds its count."""
+        # ``assert_valid`` skips this rule, as its condition requires an active compiler, and for
+        # an inexact estimate it would only check the declared gate types, not their counts.
         rng = np.random.default_rng(seed)
         bitstrings = rng.integers(0, 2, size=(L, n_targets))
         n_control = math.ceil(math.log2(L)) + n_extra
@@ -941,12 +937,9 @@ class TestMeasurementQROM:
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "L",
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25],
-    )
+    @pytest.mark.parametrize("L", list(range(1, 26)))
     def test_no_phases_error(self, L):
-        """Test that QROM introduces no relative phases on the control register."""
+        """Test that QROM introduces no relative phases."""
         rng = np.random.default_rng(42 + L)
         n_target = 3
 
@@ -1056,7 +1049,15 @@ class TestMeasurementQROM:
     @pytest.mark.parametrize(
         ("L", "n_extra"),
         [
-            pytest.param(1, 1, marks=CTRL_WORK_WIRE_TYPE_XFAIL),
+            pytest.param(
+                1,
+                1,
+                marks=pytest.mark.xfail(
+                    reason="Controlled MultiX needs work wire support for control regions in Catalyst "
+                    "(Catalyst #3376).",
+                    strict=True,
+                ),
+            ),
             (1, 2),
             (4, 1),
             (4, 2),
@@ -1274,7 +1275,11 @@ class TestAdjointQROMMeasurement:
             op.target_wires
         )
 
-    @CTRL_WORK_WIRE_TYPE_XFAIL
+    @pytest.mark.xfail(
+        reason="Controlled MultiX needs work wire support for control regions in Catalyst "
+        "(PennyLaneAI/catalyst#3366, PennyLaneAI/catalyst#3376).",
+        strict=True,
+    )
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize("case", [(4, 2, 0, 1), (8, 2, 0, 2), (11, 2, 0, 3), (4, 2, 1, 2)])
