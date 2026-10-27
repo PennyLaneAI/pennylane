@@ -133,7 +133,7 @@ class DecompositionTable(SphinxDirective):
                 "Each circuit shows one example of the rule."
             )
         # Escape "<" so reStructuredText does not interpret it as a link target.
-        rule_lookup = f'qp.list_decomps({operator_name})["\\<name>"]'
+        rule_lookup = "\\<name>"
         caption_parts.append(
             "Use a rule when decomposing with "
             f":func:`qp.decompose(gate_set=..., fixed_decomps={{{operator_name}: {rule_lookup}}}) "
