@@ -840,6 +840,15 @@ Improvements 🛠
   The original decomposition is used when fewer work wires are supplied.
   `(#10380) <https://github.com/PennyLaneAI/pennylane/pull/10380>`__
   
+* The phase gradient decomposition rule factories :func:`~.make_rz_to_phase_gradient_decomp`,
+  :func:`~.make_crz_to_phase_gradient_decomp` and
+  :func:`~.make_selectpaulirot_to_phase_gradient_decomp` accept an optional ``precision_stats``
+  argument. If provided, the data loading and the :class:`~.SemiAdder` are truncated to the
+  number of bits required by the angle(s), dispatching with hinted :func:`~.cond` branches.
+  The new function :func:`~.transforms.decompositions.phase_gradient_precision_stats` computes
+  ``precision_stats`` from the rotation angles.
+  `(#10312) <https://github.com/PennyLaneAI/pennylane/pull/10312>`__
+
 * ``qp.gate_sets.ALL_QUBIT_OPS`` now includes the in-build controlled gates like :class:`~.CNOT`,
   :class:`~.CRZ`, and others.
   `(#10396) <https://github.com/PennyLaneAI/pennylane/pull/10396/>`__
