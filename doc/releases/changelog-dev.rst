@@ -825,6 +825,15 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* The phase gradient decomposition rule factories :func:`~.make_rz_to_phase_gradient_decomp`,
+  :func:`~.make_crz_to_phase_gradient_decomp` and
+  :func:`~.make_selectpaulirot_to_phase_gradient_decomp` accept an optional ``precision_stats``
+  argument. If provided, the data loading and the :class:`~.SemiAdder` are truncated to the
+  number of bits required by the angle(s), dispatching with hinted :func:`~.cond` branches.
+  The new function :func:`~.transforms.decompositions.phase_gradient_precision_stats` computes
+  ``precision_stats`` from the rotation angles.
+  `(#10312) <https://github.com/PennyLaneAI/pennylane/pull/10312>`__
+
 * ``qp.gate_sets.ALL_QUBIT_OPS`` now includes the in-build controlled gates like :class:`~.CNOT`,
   :class:`~.CRZ`, and others.
   `(#10396) <https://github.com/PennyLaneAI/pennylane/pull/10396/>`__
@@ -2134,8 +2143,8 @@ Documentation 📝
   operator's decomposition rules, with a circuit diagram and the resources the rule uses. 
   This change only applies to operators that are subclasses of ``Operator2``. 
   The tables are rendered by a new ``decomposition-table`` Sphinx directive, and their diagrams are
-  drawn with :func:`~.draw_mpl`.
-  `(#10381)<https://github.com/PennyLaneAI/pennylane/pull/10381>`__
+  drawn with :func:`~pennylane.draw_mpl`.
+  `(#10381) <https://github.com/PennyLaneAI/pennylane/pull/10381>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
