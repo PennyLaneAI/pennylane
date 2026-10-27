@@ -58,15 +58,17 @@ New features since last release
       ...     controller=qp.Controller(), coprocessors=[coproc], transport="memcpy"
       ... )
 
-* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function
-  can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
-  `(#10230) <https://github.com/PennyLaneAI/pennylane/pull/10230/>`__
-  `(#10297) <https://github.com/PennyLaneAI/pennylane/pull/10297>`__
-  `(#10251) <https://github.com/PennyLaneAI/pennylane/pull/10251>`__
-  `(#10325) <https://github.com/PennyLaneAI/pennylane/pull/10325>`__
+* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. With
+  this release, the :func:`~.hint` function can be used on :func:`~.for_loop` and
+  :func:`~.while_loop` to specify a heuristic number of times the loop will iterate, and on
+  :func:`~.cond` to specify heuristic branch probabilities. This provides more concrete and accurate
+  resource estimates with :func:`~.analyze`.
+  [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
+  [(#10297)](https://github.com/PennyLaneAI/pennylane/pull/10297)
+  [(#10251)](https://github.com/PennyLaneAI/pennylane/pull/10251)
 
-  By hinting control flow like :func:`~.for_loop`, :func:`~.while_loop`, and :func:`~.cond` profiling
-  with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
+  By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, reosurce profiling with
+  :func:`~.analyze` can heuristically specify the number of iterations, leading to concrete
   resource counts (no symbolic expressions).
 
   .. code-block:: python
@@ -92,7 +94,7 @@ New features since last release
 
   .. code-block:: pycon
 
-      >>> print(qp.specs(c, level=0)(5).resources)
+      >>> print(qp.analyze(c, level=0)(5).resources)
       Symbolic Variables: a
       Quantum operations:
       - Total: a + 10
@@ -103,7 +105,52 @@ New features since last release
       Total wires: 10
       Circuit Depth: Not computed
 
-  The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
+  The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the
+  unhinted loop.
+
+  A :func:`~.hint` can also be used on :func:`~.cond` branches, which :func:`~.analyze` uses to
+  provide a weighted average of resources as opposed to the max union of all unique gate types
+  in each branch.
+
+  .. code-block:: python
+
+      import pennylane as qp
+
+      @qp.qjit(capture=True)
+      @qp.qnode(qp.device("lightning.qubit", wires=2))
+      def circuit():
+          qp.H(0)
+          qp.H(1)
+
+          @qp.for_loop(0, 10)
+          def loop_hinted(_):
+              m = qp.measure(0)
+
+              @qp.hint({"branch-prob": 0.8})
+              def true_fn():
+                  qp.CNOT((0, 1))
+
+              @qp.hint({"branch-prob": 0.2})
+              def false_fn():
+                  qp.CZ((1, 0))
+
+              qp.cond(m, true_fn=true_fn, false_fn=false_fn)()
+
+          loop_hinted()
+
+          return qp.expval(qp.X(0))
+
+  .. code-block:: pycon
+
+      >>> print(qp.analyze(circuit)().resources.quantum_operations)
+      {'CNOT': 8, 'CZ': 2, 'Hadamard': 2, 'MidCircuitMeasure': 10}
+
+  With the hinted conditional branches in ``loop_hinted``, :func:`~.analyze` takes the
+  weighted sum of each branch's resources
+  (:math:`10 \text{iterations} \times (0.8 \times \text{CNOT} + 0.2 \times \text{CZ}) = 8 \times \text{CNOT} + 2 \times \text{CZ}`).
+  In contrast, with the unhinted conditional branches in ``loop_unhinted``, :func:`~.analyze`
+  takes the max union of all gate types across every branch, which accumulates to
+  :math:`10 \times \text{CRZ} + 10 \times \text{CRY}`.
 
 * A new state preparation routine called :class:`~.PhaseGradientStatePrep` has been added, which
   prepares the phase gradient state
@@ -825,6 +872,15 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* The phase gradient decomposition rule factories :func:`~.make_rz_to_phase_gradient_decomp`,
+  :func:`~.make_crz_to_phase_gradient_decomp` and
+  :func:`~.make_selectpaulirot_to_phase_gradient_decomp` accept an optional ``precision_stats``
+  argument. If provided, the data loading and the :class:`~.SemiAdder` are truncated to the
+  number of bits required by the angle(s), dispatching with hinted :func:`~.cond` branches.
+  The new function :func:`~.transforms.decompositions.phase_gradient_precision_stats` computes
+  ``precision_stats`` from the rotation angles.
+  `(#10312) <https://github.com/PennyLaneAI/pennylane/pull/10312>`__
+
 * ``qp.gate_sets.ALL_QUBIT_OPS`` now includes the in-build controlled gates like :class:`~.CNOT`,
   :class:`~.CRZ`, and others.
   `(#10396) <https://github.com/PennyLaneAI/pennylane/pull/10396/>`__
@@ -1360,6 +1416,12 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
+
+* The ``pennylane.kernels`` module has been removed. This includes ``kernel_matrix``,
+  ``square_kernel_matrix``, ``polarity``, ``target_alignment``, ``threshold_matrix``,
+  ``displace_matrix``, ``flip_matrix``, ``closest_psd_matrix`` and
+  ``mitigate_depolarizing_noise``. The ``kernels`` installation extra has also been removed.
+  `(#10402) <https://github.com/PennyLaneAI/pennylane/pull/10402>`__
 
 * The ``pennylane.qnn`` module has been removed, including ``TorchLayer``.
   ``pennylane.qnn.iqp_expval`` has been moved to :mod:`pennylane.math` and is
@@ -2135,8 +2197,19 @@ Documentation 📝
   repr.
   `(#10284) <https://github.com/PennyLaneAI/pennylane/pull/10284>`__
 
+* Operator documentation now has an "Available decompositions" table listing each of the
+  operator's decomposition rules, with a circuit diagram and the resources the rule uses. 
+  This change only applies to operators that are subclasses of ``Operator2``. 
+  The tables are rendered by a new ``decomposition-table`` Sphinx directive, and their diagrams are
+  drawn with :func:`~pennylane.draw_mpl`.
+  `(#10381) <https://github.com/PennyLaneAI/pennylane/pull/10381>`__
+
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* ``qp.adjoint`` now rejects numerical tracers during capture instead of treating
+  them as quantum operators.
+  `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
 
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
   argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
