@@ -780,6 +780,8 @@ class TestMeasurementQROM:
     def test_resources_bound_decomposition(self, L, n_extra, n_targets, seed):
         """Test that the resource estimate declares every gate type queued by the decomposition
         and upper-bounds its count."""
+        # ``assert_valid`` skips this rule, as its condition requires an active compiler, and for
+        # an inexact estimate it would only check the declared gate types, not their counts.
         rng = np.random.default_rng(seed)
         bitstrings = rng.integers(0, 2, size=(L, n_targets))
         n_control = math.ceil(math.log2(L)) + n_extra
