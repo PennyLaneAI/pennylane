@@ -589,11 +589,17 @@ class QNode:
     def __copy__(self) -> QNode:
         copied_qnode = QNode.__new__(QNode)
         for attr, value in vars(self).items():
-            if attr not in {"execute_kwargs", "_compile_pipeline", "gradient_kwargs"}:
+            if attr not in {
+                "execute_kwargs",
+                "_compile_pipeline",
+                "_post_device_pipeline",
+                "gradient_kwargs",
+            }:
                 setattr(copied_qnode, attr, value)
 
         copied_qnode.execute_kwargs = dict(self.execute_kwargs)
         copied_qnode._compile_pipeline = CompilePipeline(self.compile_pipeline)
+        copied_qnode._post_device_pipeline = CompilePipeline(self.post_device_pipeline)
         copied_qnode.gradient_kwargs = dict(self.gradient_kwargs)
         return copied_qnode
 
@@ -737,6 +743,7 @@ class QNode:
 
         # pylint: disable=protected-access
         updated_qn._compile_pipeline = CompilePipeline(self.compile_pipeline)
+        updated_qn._post_device_pipeline = CompilePipeline(self.post_device_pipeline)
         return updated_qn
 
     def update_shots(self, shots: int | Shots) -> QNode:
