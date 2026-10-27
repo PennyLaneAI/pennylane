@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the ``TrotterVibronic`` template."""
 
+from collections import Counter
 from dataclasses import replace
 from functools import partial
 
@@ -31,6 +32,7 @@ from pennylane.templates.subroutines.arithmetic import (
 )
 from pennylane.templates.subroutines.time_evolution.trotter_vibronic import (
     _diagonalization_matrix,
+    _diagonalize_probs,
     _diagonalize_vibronic_circuit,
     _half_signed_out_multiplier,
     _momentum_coefficients,
@@ -705,6 +707,88 @@ class TestDecomposition:
         # ``num_position_fragments == n_states`` here; if the fragment loop were unrolled, the
         # traced ``for_loop`` count would scale with it instead of staying constant.
         assert num_for_loops(2) == num_for_loops(8)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("n_states, n_modes", [(2, 2), (4, 3)])
+    def test_term_branch_prob_hints(self, n_states, n_modes, seed):
+        """Test that the conditionals skipping terms with vanishing coefficients carry
+        ``branch-prob`` hints that reproduce the number of applied terms."""
+        fragments = fragment_list(n_states=n_states, n_modes=n_modes, seed=seed)
+        position, kinetic = fragments[:-1], fragments[-1]
+        for i, fragment in enumerate(position):
+            # Bilinear term between the first and last mode, with the XOR structure
+            fragment["quadratic"][..., 0, -1] = fragment["linear"][..., 0]
+            fragment["linear"][..., i % n_modes] = 0.0
+        position[-1]["constant"][:] = 0.0
+        kinetic["kinetic"][..., -1, -1] = 0.0
+        num_steps = 2
+        op = make_op(
+            build_hamiltonian(fragments),
+            make_wires(n_states, n_modes),
+            num_trotter_steps=num_steps,
+        )
+
+        decomposition = qp.list_decomps(qp.TrotterVibronic)[0]
+        plxpr = jax.make_jaxpr(lambda: decomposition(**op.arguments))()
+        ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        counts = Counter(o.name for o in ops)
+
+        # Infer the number of applied terms from the arithmetic operations specific to them
+        num_fragments = len(position)
+        position_visits = 2 * num_fragments * num_steps
+        num_pairs = n_modes * (n_modes - 1) // 2
+        num_linear = counts["OutMultiplier"] - counts["SignedOutSquare"]
+        num_linear -= counts["SignedOutMultiplier"]
+        p_kinetic = counts["AQFT"] / (num_steps * n_modes)
+        p_constant = counts["SemiAdder"] / position_visits
+        p_linear = num_linear / (position_visits * n_modes)
+        p_quadratic = (counts["SignedOutSquare"] - counts["AQFT"]) / (position_visits * n_modes)
+        p_bilinear = counts["SignedOutMultiplier"] / (position_visits * num_pairs)
+
+        def skip_hint(p):
+            # The skipping branch is the true branch
+            return pytest.approx((1 - p, p))
+
+        n = int(qp.math.ceil_log2(n_states))
+        diag = [pytest.approx((p, 1 - p)) for p in _diagonalize_probs(num_fragments, n)]
+        terms = [skip_hint(p) for p in (p_constant, p_linear, p_quadratic, p_bilinear)]
+        fragment_hints = [*diag, *terms, *diag]
+        expected = [*fragment_hints, skip_hint(p_kinetic), *fragment_hints]
+        assert hint_helpers.cond_hints(plxpr.jaxpr) == expected
+
+    @pytest.mark.capture
+    def test_term_branch_prob_hints_traced_inputs(self, seed):
+        """Test that the term ``branch-prob`` hints account for a concrete evolution time, use the
+        unscaled coefficients for a traced evolution time, and are omitted for a traced
+        Hamiltonian."""
+        fragments = fragment_list(n_states=2, n_modes=2, seed=seed)
+        # A single position fragment, so that all conditionals belong to terms
+        hamiltonian = build_hamiltonian([fragments[0], fragments[-1]])
+        op = make_op(hamiltonian, make_wires(2, 2))
+        decomposition = qp.list_decomps(qp.TrotterVibronic)[0]
+
+        def hints(fn, *args):
+            return hint_helpers.cond_hints(jax.make_jaxpr(fn)(*args).jaxpr)
+
+        def with_time(t):
+            return decomposition(**(op.arguments | {"evolution_time": t}))
+
+        def with_constant(c):
+            return decomposition(
+                **(op.arguments | {"hamiltonian": replace(hamiltonian, constant=c)})
+            )
+
+        nonzero_time = hints(partial(with_time, 0.4))
+        zero_time = hints(partial(with_time, 0.0))
+        traced_time = hints(with_time, 0.0)
+        traced_hamiltonian = hints(with_constant, hamiltonian.constant)
+
+        # constant, linear, quadratic and bilinear terms twice, and the kinetic term once
+        num_conds = 9
+        assert zero_time == [(1.0, 0.0)] * num_conds
+        assert nonzero_time != zero_time
+        assert traced_time == nonzero_time
+        assert traced_hamiltonian == [None] * num_conds
 
 
 # ---------------------------------------------------------------------------

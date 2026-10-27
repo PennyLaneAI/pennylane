@@ -940,6 +940,29 @@ def _momentum_coefficients(kinetic):
     return math.diag(kinetic[0, 0])
 
 
+def _diagonalized_coefficients(hamiltonian, n_elec, n_states, n_modes):
+    """Diagonalize all position fragments.
+
+    Returns the tuple ``(constant, linear, quadratic, bilinear)`` of the coefficient tensors of
+    :func:`_position_coefficients`, stacked over the position fragments. Fragment ``i`` is
+    diagonalized with the ``(0, i)`` key.
+    """
+    all_coeffs = []
+    for i in range(hamiltonian.num_fragments):
+        matrix = _diagonalization_matrix((0, i), n_elec)[:n_states, :n_states]
+        all_coeffs.append(
+            _position_coefficients(
+                matrix,
+                hamiltonian.constant[i],
+                hamiltonian.linear[i],
+                hamiltonian.quadratic[i],
+                n_states,
+                n_modes,
+            )
+        )
+    return tuple(math.stack(coeffs) for coeffs in zip(*all_coeffs))
+
+
 def _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes):
     """Diagonalize all position fragments and scale their coefficients by the time step.
 
@@ -949,43 +972,57 @@ def _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes):
     diagonalized with the ``(0, i)`` key.
     """
     first_order_time_step = time / 2
-    constant_dense = hamiltonian.constant
-    linear_dense = hamiltonian.linear
-    quadratic_dense = hamiltonian.quadratic
-    num_fragments = hamiltonian.num_fragments
-
-    all_constant, all_linear, all_quadratic, all_bilinear = [], [], [], []
-    for i in range(num_fragments):
-        matrix = _diagonalization_matrix((0, i), n_elec)[:n_states, :n_states]
-        constant, linear, quadratic, bilinear = _position_coefficients(
-            matrix,
-            constant_dense[i],
-            linear_dense[i],
-            quadratic_dense[i],
-            n_states,
-            n_modes,
-        )
-        all_constant.append(constant * first_order_time_step)
-        all_linear.append(linear * first_order_time_step)
-        all_quadratic.append(quadratic * first_order_time_step)
-        all_bilinear.append(bilinear * first_order_time_step)
-
-    all_constant = math.stack(all_constant)
-    all_linear = math.stack(all_linear)
-    all_quadratic = math.stack(all_quadratic)
-    all_bilinear = math.stack(all_bilinear)
+    all_coeffs = tuple(
+        coeffs * first_order_time_step
+        for coeffs in _diagonalized_coefficients(hamiltonian, n_elec, n_states, n_modes)
+    )
     # Reshape the bilinear data into a flattened structure with respect to mode pairs.
     # ``k < ell`` matches bilinear_coeffs, populated only in the upper triangle.
     bilinear_indices = np.array(np.triu_indices(n_modes, 1))
 
     if compiler.active() or capture.enabled():
-        all_constant = math.array(all_constant, like="jax")
-        all_linear = math.array(all_linear, like="jax")
-        all_quadratic = math.array(all_quadratic, like="jax")
-        all_bilinear = math.array(all_bilinear, like="jax")
+        all_coeffs = tuple(math.array(coeffs, like="jax") for coeffs in all_coeffs)
         bilinear_indices = math.array(bilinear_indices, like="jax")
 
-    return (all_constant, all_linear, all_quadratic, all_bilinear), bilinear_indices
+    return all_coeffs, bilinear_indices
+
+
+def _applied_fraction(coeffs):
+    """Fraction of the terms, each given by a coefficient vector along the last axis of
+    ``coeffs``, that are applied rather than skipped for vanishing coefficients.
+
+    The tolerance must match the ``math.allclose(..., 0.0)`` skip conditions of the Trotter step.
+    """
+    applied = ~np.isclose(coeffs, 0.0).all(axis=-1)
+    return float(np.mean(applied)) if applied.size else None
+
+
+def _term_probs(time, hamiltonian, n_elec, n_states, n_modes):
+    """Probabilities for the terms of a Trotter step with time step ``time`` to be applied rather
+    than skipped for vanishing coefficients, used as ``branch-prob`` hints.
+
+    Each probability is averaged over the fragment and/or mode loops around the term. If ``time``
+    is traced, the probabilities are computed from the unscaled coefficients instead. If the
+    Hamiltonian is traced, all probabilities are ``None``, leaving the conditionals unhinted.
+    """
+    if any(math.is_tracer(tensor) for tensor in hamiltonian.tensors):
+        return dict.fromkeys(("constant", "linear", "quadratic", "bilinear", "kinetic"))
+    if math.is_tracer(time):
+        position_scale, kinetic_scale = 1.0, 1.0
+    else:
+        position_scale, kinetic_scale = time / 2, time
+
+    constant, linear, quadratic, bilinear = _diagonalized_coefficients(
+        hamiltonian, n_elec, n_states, n_modes
+    )
+    kinetic = _momentum_coefficients(hamiltonian.kinetic)
+    return {
+        "constant": _applied_fraction(constant * position_scale),
+        "linear": _applied_fraction(linear * position_scale),
+        "quadratic": _applied_fraction(quadratic * position_scale),
+        "bilinear": _applied_fraction(bilinear * position_scale),
+        "kinetic": _applied_fraction(kinetic[:, None] * kinetic_scale),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -1086,7 +1123,7 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
 
 # pylint: disable-next=too-many-arguments,too-many-statements
 def _trotter_step_second_order(
-    time, hamiltonian, registers, mode_registers, aqft_order, n_states, n_modes, n_elec
+    time, hamiltonian, registers, mode_registers, aqft_order, n_states, n_modes, n_elec, term_probs
 ):
     r"""Emit a single symmetric second-order Trotter step.
 
@@ -1095,6 +1132,9 @@ def _trotter_step_second_order(
     position fragment we iterate over the linear, quadratic and bilinear terms; within each of
     these we iterate over the modes (or mode pairs) using ``for_loop``\ s. The fragment loop
     itself is also a ``for_loop``, so ``fragment_idx`` may be a traced value.
+
+    ``term_probs`` holds the ``branch-prob`` hints for applying each term, see
+    :func:`_term_probs`.
     """
     precision = len(registers["phase_gradient"])
     all_coeffs, bilinear_indices = _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes)
@@ -1116,6 +1156,7 @@ def _trotter_step_second_order(
             def skip_fn():
                 return prev_bitstrings
 
+            @hint({"branch-prob": term_probs["constant"]})
             def actual_fn():
                 new_bitstrings = _load_coefficients(
                     const_coeffs, precision, prev_bitstrings, qrom_wires
@@ -1132,6 +1173,7 @@ def _trotter_step_second_order(
             def skip_fn():
                 return prev_bitstrings
 
+            @hint({"branch-prob": term_probs["linear"]})
             def actual_fn():
                 new_bitstrings = _load_coefficients(_coeffs, precision, prev_bitstrings, qrom_wires)
                 _half_signed_out_multiplier(
@@ -1148,6 +1190,7 @@ def _trotter_step_second_order(
             def skip_fn():
                 return prev_bitstrings
 
+            @hint({"branch-prob": term_probs["quadratic"]})
             def actual_fn():
                 new_bitstrings = _load_coefficients(_coeffs, precision, prev_bitstrings, qrom_wires)
                 square_wires, mult_wires = _extract_registers(
@@ -1168,6 +1211,7 @@ def _trotter_step_second_order(
             def skip_fn():
                 return prev_bitstrings
 
+            @hint({"branch-prob": term_probs["bilinear"]})
             def actual_fn():
                 mode_mult_wires, coeff_mult_wires = _extract_registers(
                     registers, mode_registers, "bilinear", *ids
@@ -1211,6 +1255,7 @@ def _trotter_step_second_order(
             def skip_fn():
                 """Do nothing."""
 
+            @hint({"branch-prob": term_probs["kinetic"]})
             def actual_fn():
                 square_wires, mult_wires = _extract_registers(
                     registers, mode_registers, "quadratic", k
@@ -1252,6 +1297,8 @@ def _run_trotter_vibronic(
 ):
     """Emit ``num_trotter_steps`` symmetric second-order Trotter steps."""
     trotter_time_step = evolution_time / num_trotter_steps
+    # Computed outside of the loop, in which ``hamiltonian`` is always traced under capture.
+    term_probs = _term_probs(trotter_time_step, hamiltonian, n_elec, n_states, n_modes)
 
     def _step(_step_idx, hamiltonian):
         # Carry ``hamiltonian`` through the loop for valid traced loop-body inputs.
@@ -1264,6 +1311,7 @@ def _run_trotter_vibronic(
             n_states,
             n_modes,
             n_elec,
+            term_probs,
         )
         return hamiltonian
 
