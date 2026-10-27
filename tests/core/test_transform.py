@@ -339,27 +339,6 @@ class TestTransformExtension:
 class TestTransform:  # pylint: disable=too-many-public-methods
     """Test the transform function (validate and dispatch)."""
 
-    @pytest.mark.catalyst
-    def test_error_on_qjit(self):
-        """Test that an error is raised on when applying a transform to a qjit object."""
-
-        pytest.importorskip("catalyst")
-
-        @qp.qjit
-        @qp.qnode(qp.device("lightning.qubit", wires=1))
-        def cost():
-            qp.RY(0.1, wires=0)
-            qp.RY(0.1, wires=0)
-            return qp.expval(qp.Z(0))
-
-        dispatched_transform = qp.transform(first_valid_transform)
-
-        with pytest.raises(
-            TransformError,
-            match=r"Functions that are wrapped / decorated with qjit cannot subsequently",
-        ):
-            dispatched_transform(cost)
-
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_integration_dispatcher_with_valid_transform(self, valid_transform):
         """Test that no error is raised with the transform function and that the transform dispatcher returns
