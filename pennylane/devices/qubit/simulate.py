@@ -139,7 +139,7 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
     # are incorrect.
     norm = math.norm(state)
 
-    if not math.is_abstract(state) and math.allclose(norm, 0.0):
+    if not math.is_tracer(state) and math.allclose(norm, 0.0):
         if postselect_mode == "fill-shots" and shots:
             raise RuntimeError(
                 "The probability of the postselected mid-circuit measurement outcome is 0. "
@@ -158,7 +158,7 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
 
         postselected_shots = (
             shots
-            if postselect_mode == "fill-shots" or math.is_abstract(norm)
+            if postselect_mode == "fill-shots" or math.is_tracer(norm)
             else [int(binomial_fn(s, float(norm**2))) for s in shots]
         )
 

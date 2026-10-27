@@ -3186,6 +3186,7 @@ external-libraries = [
     { name = "openqasm3" },
     { name = "optax" },
     { name = "pennylane-qiskit" },
+    { name = "python-dateutil" },
     { name = "pyzx" },
     { name = "qualtran" },
     { name = "quimb" },
@@ -3198,10 +3199,6 @@ qchem = [
     { name = "numpy" },
     { name = "openfermionpyscf" },
     { name = "scikit-learn" },
-]
-qcut = [
-    { name = "kahypar" },
-    { name = "opt-einsum" },
 ]
 upload-reports = [
     { name = "pydantic" },
@@ -3274,7 +3271,7 @@ docs = [
     { name = "openfermionpyscf" },
     { name = "pennylane-sphinx-theme" },
     { name = "pygments-github-lexers" },
-    { name = "pyzx" },
+    { name = "pyzx", specifier = ">=0.10" },
     { name = "requests", specifier = "==2.33.0" },
     { name = "sphinx", specifier = "==9.0" },
     { name = "sphinx-automodapi", specifier = "==0.22" },
@@ -3294,7 +3291,7 @@ docs = [
 doctest = [
     { name = "matplotlib" },
     { name = "pytest", specifier = ">=8.4.1" },
-    { name = "pyzx" },
+    { name = "pyzx", specifier = ">=0.10" },
     { name = "quimb" },
     { name = "stim" },
     { name = "sybil" },
@@ -3307,7 +3304,8 @@ external-libraries = [
     { name = "openqasm3" },
     { name = "optax" },
     { name = "pennylane-qiskit", git = "https://github.com/PennyLaneAI/pennylane-qiskit.git?rev=master" },
-    { name = "pyzx" },
+    { name = "python-dateutil", specifier = "<3" },
+    { name = "pyzx", specifier = ">=0.10" },
     { name = "qualtran" },
     { name = "quimb" },
     { name = "scipy-openblas32", specifier = ">=0.3.26" },
@@ -3319,10 +3317,6 @@ qchem = [
     { name = "numpy", specifier = "<2.4" },
     { name = "openfermionpyscf" },
     { name = "scikit-learn" },
-]
-qcut = [
-    { name = "kahypar", specifier = "==1.3.5" },
-    { name = "opt-einsum" },
 ]
 upload-reports = [
     { name = "pydantic", specifier = "==2.10.6" },
@@ -4206,7 +4200,7 @@ wheels = [
 
 [[package]]
 name = "pyzx"
-version = "0.9.0"
+version = "0.10.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ipywidgets" },
@@ -4216,9 +4210,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a6/22/b37c477bf79249bd2655267de071cb6ab7dbfe39579cfaeb6c3e99e26667/pyzx-0.9.0.tar.gz", hash = "sha256:9e1f4c7e490c6862750a0a0021d1c830eaff948185240eb88b4902105f7e27df", size = 327849, upload-time = "2025-01-30T20:35:59.942Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/92/0a/df4db9b2c5b0b573f108499c2fadb2ed286c49acf52130e091f84570f5f3/pyzx-0.10.7.tar.gz", hash = "sha256:8f076c67fc79be694dbf85429fd92697143697f44a7f53401f98f3dd5983e720", size = 545691, upload-time = "2026-10-01T15:54:49.293Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/21/78/9b1a64fa38f79d9f93289ed405c880da992ce106236a62bebf700a30100e/pyzx-0.9.0-py3-none-any.whl", hash = "sha256:13211a5922b1b79460c22e7cb685448261145e90bf30a29616f8058982a47b3f", size = 358711, upload-time = "2025-01-30T20:35:57.123Z" },
+    { url = "https://files.pythonhosted.org/packages/c8/62/9b8721e5d61c03d86cec21ec2c2cbdcfed67dd6c71d8d76c76106ece2ec5/pyzx-0.10.7-py3-none-any.whl", hash = "sha256:63b53fff19b1e2b00173b3dac3746bfb8f3ebca02487e192831ffe27cf0f9076", size = 567223, upload-time = "2026-10-01T15:54:47.832Z" },
 ]
 
 [[package]]
