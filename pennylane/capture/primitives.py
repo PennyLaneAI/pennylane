@@ -31,6 +31,7 @@ from pennylane.core.transforms.transform import transform_prim  # tach-ignore
 from pennylane.ops.mid_measure.mid_measure import measure_prim
 from pennylane.ops.mid_measure.pauli_measure import pauli_measure_prim
 from pennylane.ops.op_math.adjoint import adjoint_transform_prim
+from pennylane.ops.op_math.compute_uncompute import compute_uncompute_prim
 from pennylane.ops.op_math.condition import cond_prim
 from pennylane.ops.op_math.controlled import ctrl_transform_prim
 from pennylane.workflow._capture_qnode import qnode_prim
@@ -44,6 +45,7 @@ __all__ = [
     "AbstractOperator",
     "AbstractMeasurement",
     "adjoint_transform_prim",
+    "compute_uncompute_prim",
     "ctrl_transform_prim",
     "symbolic_array_prim",
     "jacobian_prim",

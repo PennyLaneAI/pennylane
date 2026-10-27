@@ -32,6 +32,7 @@ from pennylane.core.operator import Operator2
 from .flatfn import FlatFn
 from .primitives import (
     adjoint_transform_prim,
+    compute_uncompute_prim,
     cond_prim,
     ctrl_transform_prim,
     for_loop_prim,
@@ -482,6 +483,27 @@ def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
 
     return adjoint_transform_prim.bind(
         *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
+    )
+
+
+@PlxprInterpreter.register_primitive(compute_uncompute_prim)
+def handle_compute_uncompute(self, *invals, compute_jaxpr, target_jaxpr, uncompute_jaxpr, n_consts):
+    """Interpret a compute-uncompute primitive by interpreting each of its regions."""
+    from pennylane.ops.op_math.compute_uncompute import (  # pylint: disable=import-outside-toplevel
+        split_consts,
+    )
+
+    jaxprs = [compute_jaxpr, target_jaxpr]
+    if uncompute_jaxpr is not None:
+        jaxprs.append(uncompute_jaxpr)
+    new = [jaxpr_to_jaxpr(copy(self), j, c) for j, c in zip(jaxprs, split_consts(invals, n_consts))]
+
+    return compute_uncompute_prim.bind(
+        *(c for n in new for c in n.consts),
+        compute_jaxpr=new[0].jaxpr,
+        target_jaxpr=new[1].jaxpr,
+        uncompute_jaxpr=new[2].jaxpr if len(new) == 3 else None,
+        n_consts=tuple(len(n.consts) for n in new),
     )
 
 

@@ -27,6 +27,7 @@ from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedInterpreter
 from pennylane.capture.primitives import (
     adjoint_transform_prim,
+    compute_uncompute_prim,
     cond_prim,
     ctrl_transform_prim,
     jacobian_prim,
@@ -122,6 +123,30 @@ def _adjoint_transform_prim(self, *invals, jaxpr, lazy, n_consts):
 
     for op in reversed(child.state["ops"]):
         self.state["ops"].append(ops.adjoint(op, lazy=lazy))
+
+    return []
+
+
+@CollectOpsandMeas.register_primitive(compute_uncompute_prim)
+def _compute_uncompute_prim(self, *invals, compute_jaxpr, target_jaxpr, uncompute_jaxpr, n_consts):
+    """Handle a compute-uncompute primitive by collecting the operations in each region and
+    combining them into a single compute-uncompute operator."""
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.compute_uncompute import combine_ops, split_consts
+
+    consts = split_consts(invals, n_consts)
+
+    def _collect(jaxpr, region_consts):
+        child = CollectOpsandMeas()
+        child.eval(jaxpr, region_consts)
+        return combine_ops(child.state["ops"])
+
+    compute = _collect(compute_jaxpr, consts[0])
+    target = _collect(target_jaxpr, consts[1])
+    uncompute = _collect(uncompute_jaxpr, consts[2]) if uncompute_jaxpr is not None else None
+
+    with pause():
+        self.state["ops"].append(ops.change_op_basis(compute, target, uncompute))
 
     return []
 
