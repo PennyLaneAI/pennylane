@@ -22,20 +22,40 @@ import pennylane as qp
 from pennylane.ops.op_math import ChangeOpBasis2, prod
 from pennylane.typing import Bool, Wire
 
-from .rz_phase_gradient import validate_phase_gradient_wires
+from .rz_phase_gradient import _precision_dispatcher, validate_phase_gradient_wires
 
 
-def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
+def _crz_phase_gradient(phi, wires, angle_wires, phase_grad_wires, work_wires):
+    """Apply the phase gradient circuit for CRZ. The precision is implicitly defined by the
+    length of ``angle_wires``."""
+    binary_int = qp.math.binary_decimals(phi, len(angle_wires), unit=4 * np.pi)
+    control_wire, target_wire = wires[0], wires[1]
+
+    def _compute_fn():
+        qp.ctrl(qp.MultiX(binary_int, angle_wires), control=control_wire)
+        # Flip the phase-gradient wires when the target wire is |0> (double-phase trick).
+        qp.ctrl(
+            qp.MultiX([1] * len(phase_grad_wires), phase_grad_wires),
+            control=target_wire,
+            control_values=[0],
+        )
+
+    target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
+    qp.change_op_basis(_compute_fn, target_op, _compute_fn)
+
+
+def make_crz_to_phase_gradient_decomp(
+    angle_wires, phase_grad_wires, work_wires, precision_stats=None
+):
     r"""
     Create a custom decomposition rule for :class:`~.CRZ` gates.
 
-    This is a temporary workaround before moving to `capture` as default frontend, which unlocks dynamic wire allocation.
-    Here, we explicitly provide the necessary wires for the
-    `phase gradient decomposition of SelectPauliRot <https://pennylane.ai/compilation/phase-gradient/c-control-rotations>`__.
-    This way, this function can be used in a workflow context that explicitly uses those wires to
-    generate the decomposition rule, which can then be used
-    as ``alt_decomps`` or ``fixed_decomp`` within :func:`~.pennylane.decompose` (with the
-    graph-based decomposition system).
+    Here, the necessary auxiliary wires for the `phase gradient decomposition of CRZ
+    <https://pennylane.ai/compilation/phase-gradient/c-control-rotations>`__ are taken as inputs
+    and bound into the created decomposition rule.
+    This way, this function can be used in a workflow context that explicitly uses those wires
+    to generate this decomposition rule, which can then be used as ``alt_decomps`` or
+    ``fixed_decomp`` within :func:`~.pennylane.decompose`.
 
     Parameters:
         angle_wires (Wires): wires that encode the binary representation of the rotation angle
@@ -43,6 +63,8 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
             length as ``angle_wires``.
         work_wires (Wires): additional work wires for :class:`~.SemiAdder` decomposition.
             At least ``len(angle_wires)-1`` work wires are required.
+        precision_stats (dict[int, int] | None): Optional statistics of the number of bits
+            required by the rotation angles. Defaults to ``None``.
 
     Returns:
         func: decomposition rule to be used within :func:`~.pennylane.decompose`.
@@ -67,7 +89,7 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
         phi = (1/2 + 1/4 + 1/8) * 4 * np.pi # binary rep is (111)
 
         angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-        phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
+        phase_grad_wires = qp.wires.Wires([f"phg_{i}" for i in range(prec)])
         work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
 
         custom_decomp = make_crz_to_phase_gradient_decomp(
@@ -99,44 +121,112 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
      aux_0: ─╰X─│──│─────│──│──│──╭SemiAdder─╰X─│──│─────│──│──│─────┤ ├State
      aux_1: ────╰X─│─────│──│──│──├SemiAdder────╰X─│─────│──│──│─────┤ ├State
      aux_2: ───────╰X────│──│──│──├SemiAdder───────╰X────│──│──│─────┤ ├State
-     qft_0: ─────────────╰X─│──│──├SemiAdder─────────────╰X─│──│─────┤ ├State
-     qft_1: ────────────────╰X─│──├SemiAdder────────────────╰X─│─────┤ ├State
-     qft_2: ───────────────────╰X─├SemiAdder───────────────────╰X────┤ ├State
+     phg_0: ─────────────╰X─│──│──├SemiAdder─────────────╰X─│──│─────┤ ├State
+     phg_1: ────────────────╰X─│──├SemiAdder────────────────╰X─│─────┤ ├State
+     phg_2: ───────────────────╰X─├SemiAdder───────────────────╰X────┤ ├State
     work_0: ──────────────────────├SemiAdder─────────────────────────┤ ├State
     work_1: ──────────────────────╰SemiAdder─────────────────────────┤ ╰State
+
+
+    .. details::
+        :title: Usage details
+
+        **Adaptive precision via ``precision_stats``**
+
+        For angles that do not require the full precision determined by the angle encoding and
+        phase gradient wires, we may use smaller fanouts and adder, reducing the cost of the
+        phase gradient rotation. However, as rotation angles are not known statically in general,
+        this adaptive precision is only supported if additional information about the distribution
+        of rotation angles is provided via ``precision_stats``, a dictionary mapping a number
+        of bits to the number of rotations requiring that many bits.
+
+        The bits required by an angle :math:`\phi` are the
+        position of the last set bit in ``qp.math.binary_decimals(phi, len(angle_wires),
+        unit=4 * np.pi)``, i.e., the precision without trailing zeros. If provided,
+        the fanouts and the :class:`~.SemiAdder` are truncated to the smallest number of
+        bits in ``precision_stats`` that suffices for a given angle, using :func:`~.cond`
+        branches that are hinted with the corresponding probabilities via :func:`~.hint`.
+        If no number of bits in ``precision_stats`` suffices, the full precision is used.
+        Keys must lie between ``0`` and ``len(angle_wires)``. Zero counts are ignored, and
+        a dictionary without non-zero counts is treated like ``None``. Use
+        :func:`~.phase_gradient_precision_stats` to compute the statistics from the angles.
+
+        **Example**
+
+        .. code-block:: python
+
+            from pennylane.transforms.decompositions import phase_gradient_precision_stats
+
+            angles = np.array([1/4, 1/2 + 1/8]) * 4 * np.pi # (010) and (101)
+            precision_stats = phase_gradient_precision_stats(angles, prec, qp.CRZ)
+
+            truncating_decomp = make_crz_to_phase_gradient_decomp(
+                angle_wires, phase_grad_wires, work_wires, precision_stats=precision_stats
+            )
+
+            @qp.transforms._tape_decompose(
+                gate_set={"CNOT", "SemiAdder", "PauliX"},
+                fixed_decomps={qp.CRZ: truncating_decomp}
+            )
+            @qp.qnode(qp.device("null.qubit"))
+            def truncated_circuit(phi):
+                qp.CRZ(phi, [0, 1])
+                return qp.state()
+
+        The rotation by the first angle only uses two angle wires and phase gradient wires:
+
+        >>> precision_stats
+        {2: 1, 3: 1}
+        >>> print(qp.draw(truncated_circuit, wire_order=wire_order)(angles[0]))
+             0: ─╭●─────────────────────╭●─────────────┤ ╭State
+             1: ─│───X─╭●─╭●──X─────────│───X─╭●─╭●──X─┤ ├State
+         aux_0: ─│─────│──│──╭SemiAdder─│─────│──│─────┤ ├State
+         aux_1: ─╰X────│──│──├SemiAdder─╰X────│──│─────┤ ├State
+         phg_0: ───────╰X─│──├SemiAdder───────╰X─│─────┤ ├State
+         phg_1: ──────────╰X─├SemiAdder──────────╰X────┤ ├State
+        work_0: ─────────────├SemiAdder────────────────┤ ├State
+        work_1: ─────────────╰SemiAdder────────────────┤ ╰State
+
+        Finally, keep the following in mind when using ``precision_stats``:
+
+        * The resource function of the rule adds up the cost of all supported precisions, so
+          that the graph-based decomposition system accounts for the operators in all
+          conditional branches. This over-reports the cost of the rule, so that the
+          decomposition graph may prefer another rule over this one when it is passed via
+          ``alt_decomps``. Use ``fixed_decomps`` to enforce this rule.
+        * Angles that require more bits than the largest key in ``precision_stats`` fall back
+          to the full precision. Unless ``len(angle_wires)`` is a key in ``precision_stats``,
+          this fallback branch is hinted with probability ``0``, so that resource estimates
+          based on the hints do not account for these angles.
+
+
     """
     angle_wires, phase_grad_wires, work_wires = validate_phase_gradient_wires(
         angle_wires, phase_grad_wires, work_wires
     )
+    precisions, dispatch = _precision_dispatcher(precision_stats, len(angle_wires), "CRZ")
 
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
-        # Full-precision cost from the wires in the outer scope. The angle-load fanout emits one
-        # gate per *set* bit of the (concrete) angle, so this is an upper bound (exact=False below).
-        precision = len(angle_wires)
-        target_op = qp.SemiAdder(Wire[precision], Wire[precision], Wire[len(work_wires)])
-        # angle-load and phase-flip fanouts abstractify to the same op (control_values aren't
-        # part of the abstract representation), hence the repeated ``fanout`` below.
-        fanout = qp.ctrl(qp.MultiX(Bool[precision], Wire[precision]), control=Wire[1])
-        compute_op = uncompute_op = prod(fanout, fanout)
-        change_basis_rep = ChangeOpBasis2(compute_op, target_op, uncompute_op)
-        return {change_basis_rep: 1}
+        # Cost from the wires in the outer scope, counting each non-zero precision that may be
+        # applied once. The angle-load fanout emits one gate per *set* bit of the (concrete) angle,
+        # so this is an upper bound (exact=False below).
+        resources = {}
+        for p in precisions - {0}:
+            target_op = qp.SemiAdder(Wire[p], Wire[p], Wire[len(work_wires)])
+            # angle-load and phase-flip fanouts abstractify to the same op (control_values aren't
+            # part of the abstract representation), hence the repeated ``fanout`` below.
+            fanout = qp.ctrl(qp.MultiX(Bool[p], Wire[p]), control=Wire[1])
+            compute_op = uncompute_op = prod(fanout, fanout)
+            resources[ChangeOpBasis2(compute_op, target_op, uncompute_op)] = 1
+        return resources
 
     @qp.register_resources(_resource_fn, exact=False)
     def _crz_phase_gradient_decomp(phi, wires):
-        precision = len(angle_wires)
-        binary_int = qp.math.binary_decimals(phi, precision, unit=4 * np.pi)
-        control_wire, target_wire = wires[0], wires[1]
-
-        def _compute_fn():
-            qp.ctrl(qp.MultiX(binary_int, angle_wires), control=control_wire)
-            # Flip the phase-gradient wires when the target wire is |0> (double-phase trick).
-            qp.ctrl(
-                qp.MultiX([1] * len(phase_grad_wires), phase_grad_wires),
-                control=target_wire,
-                control_values=[0],
-            )
-
-        target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
-        qp.change_op_basis(_compute_fn, target_op, _compute_fn)
+        dispatch(
+            phi,
+            lambda p: _crz_phase_gradient(
+                phi, wires, angle_wires[:p], phase_grad_wires[:p], work_wires
+            ),
+        )
 
     return _crz_phase_gradient_decomp
