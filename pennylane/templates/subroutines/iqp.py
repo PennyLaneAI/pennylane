@@ -95,7 +95,8 @@ class IQP(Operator2):
                 :class:`~.Hadamard` | :math:`2n` | 4
                 :class:`~.MultiRZ` on the wires of a generator | :math:`G` (one per generator) | 3
 
-    .. seealso:: :doc:`IQP tutorial <demo:demos/tutorial_iqp_circuit_optimization_jax>`
+    .. seealso:: :func:`pennylane.math.iqp_expval`,
+        :doc:`IQP tutorial <demo:demos/tutorial_iqp_circuit_optimization_jax>`
     """
 
     dynamic_argnames = ("weights",)
