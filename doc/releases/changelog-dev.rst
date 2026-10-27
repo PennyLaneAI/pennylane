@@ -860,12 +860,7 @@ Improvements 🛠
   frequency is known from the surrounding loops, replacing the worst-case resource counts of
   unhinted conditionals by the exact average counts when compiling them with Catalyst.
   `(#10311) <https://github.com/PennyLaneAI/pennylane/pull/10311>`__
-
-* The decomposition of :class:`~.TrotterVibronic` now provides ``branch-prob`` hints for the
-  conditionals that skip terms with vanishing coefficients, computed from the Hamiltonian data
-  if it is not traced. This replaces the worst-case resource counts of these conditionals by the
-  exact average counts when compiling with Catalyst.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10401) <https://github.com/PennyLaneAI/pennylane/pull/10401>`__
 
 * The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
   but instead expresses the Select block as another ``QROM`` with fewer controls and more target
