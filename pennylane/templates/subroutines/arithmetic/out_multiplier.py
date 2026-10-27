@@ -31,7 +31,7 @@ from pennylane.templates.subroutines.controlled_sequence import ControlledSequen
 from pennylane.templates.subroutines.multix import MultiX
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
 
 from .incrementer import Incrementer
 from .phase_adder import PhaseAdder
@@ -521,7 +521,7 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
             X(wire)
         else:
             c_wire, c_val = flip_control
-            ctrl(X(wire), control=c_wire, control_values=[c_val])
+            MultiControlledX(concatenate_wires(c_wire, [wire]), control_values=[c_val])
 
     _semi_adder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
 
@@ -550,10 +550,7 @@ def _c_add_sub_resources(num_x_wires, num_y_wires):
         ctrl_basis_rep = ctrl(MultiX(Bool[num_x_wires - 1], Wire[num_x_wires - 1]), Wire[1])
         resources[ctrl_basis_rep] += 2
 
-    cnot_on_0_rep = MultiControlledX(Wire[2], control_values=[0])
-    resources[cnot_on_0_rep] += 2
-    if num_y_wires > 1:
-        resources[ctrl(X(Wire[1]), Wire[1], control_values=Bool[1])] += 2
+    resources[MultiControlledX(Wire[2], control_values=Bool[1])] += 2 + 2 * (num_y_wires > 1)
 
     for key, value in _semi_adder_resources(Wire[num_x_wires], Wire[num_y_wires]).items():
         resources[key] += value

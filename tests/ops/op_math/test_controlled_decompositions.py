@@ -323,11 +323,11 @@ class TestControlledDecompBisect:
 
         assert len(op_seq) == 8
 
-        mcx1 = qp.ops.ControlledOp2(qp.X(0), [1, 2, 3], work_wires=[4, 5])
+        mcx1 = qp.MultiControlledX([1, 2, 3, 0], work_wires=[4, 5])
         qp.assert_equal(mcx1, op_seq[0])
         qp.assert_equal(mcx1, op_seq[4])
 
-        mcx2 = qp.ops.ControlledOp2(qp.X(0), [4, 5], work_wires=[1, 2, 3])
+        mcx2 = qp.MultiControlledX([4, 5, 0], work_wires=[1, 2, 3])
         qp.assert_equal(mcx2, op_seq[2])
         qp.assert_equal(mcx2, op_seq[6])
 

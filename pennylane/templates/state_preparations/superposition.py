@@ -22,8 +22,8 @@ import pennylane as qp
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
+from pennylane.typing import Bool, Wire
+from pennylane.wires import concatenate_wires
 
 
 def order_states(basis_states: list[list[int]]) -> dict[tuple[int], tuple[int]]:
@@ -106,13 +106,13 @@ def _permutation_operator(basis1, basis2, wires, work_wire):
     """
 
     ops = []
-    ops.append(qp.ctrl(qp.PauliX(work_wire), control=wires, control_values=basis1))
+    ops.append(qp.MultiControlledX(concatenate_wires(wires, work_wire), control_values=basis1))
 
     for i, b in enumerate(basis1):
         if b != basis2[i]:
             ops.append(qp.CNOT(wires=work_wire + wires[i]))
 
-    ops.append(qp.ctrl(qp.PauliX(work_wire), control=wires, control_values=basis2))
+    ops.append(qp.MultiControlledX(concatenate_wires(wires, work_wire), control_values=basis2))
 
     return ops
 
@@ -128,7 +128,7 @@ def _permutation_operator_qfunc(basis1, basis2, wires, work_wire):
         work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation.
     """
 
-    qp.ctrl(qp.PauliX(work_wire), control=wires, control_values=basis1)
+    qp.MultiControlledX(concatenate_wires(wires, work_wire), control_values=basis1)
 
     @for_loop(len(basis1))
     def apply_cnots(i):
@@ -141,7 +141,7 @@ def _permutation_operator_qfunc(basis1, basis2, wires, work_wire):
 
     apply_cnots()  # pylint: disable=no-value-for-parameter
 
-    qp.ctrl(qp.PauliX(work_wire), control=wires, control_values=basis2)
+    qp.MultiControlledX(concatenate_wires(wires, work_wire), control_values=basis2)
 
 
 class Superposition(Operation):
@@ -389,13 +389,7 @@ def _superposition_resources(num_wires, num_coeffs, bases):
 
     for basis2, basis1 in perms.items():
         if not qp.math.allclose(basis1, basis2):
-            resources[
-                _ctrl_abstract(
-                    qp.PauliX,
-                    Wire[num_wires],
-                    num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), basis1, 0),
-                )
-            ] += 1
+            resources[qp.MultiControlledX(Wire[num_wires + 1], control_values=Bool[num_wires])] += 2
 
             resources[qp.CNOT] += reduce(
                 lambda acc, ib: acc
@@ -403,14 +397,6 @@ def _superposition_resources(num_wires, num_coeffs, bases):
                 enumerate(basis1),
                 0,
             )
-
-            resources[
-                _ctrl_abstract(
-                    qp.PauliX,
-                    Wire[num_wires],
-                    num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), basis2, 0),
-                )
-            ] += 1
 
     return dict(resources)
 

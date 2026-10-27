@@ -299,17 +299,17 @@ class TestQROM:
 
         expected_gates = [
             qp.Hadamard(wires=[2]),
-            qp.CSWAP(wires=[1, 2, 3]),
+            qp.ctrl(qp.SWAP([2, 3]), control=1, work_wire_type="zeroed"),
             qp.QROM(
                 [[1, 0], [0, 1]], control_wires=[0], target_wires=[2, 3], work_wires=[], clean=False
             ),
-            qp.CSWAP(wires=[1, 2, 3]),
+            qp.ctrl(qp.SWAP([2, 3]), control=1, work_wire_type="zeroed"),
             qp.Hadamard(wires=[2]),
-            qp.CSWAP(wires=[1, 2, 3]),
+            qp.ctrl(qp.SWAP([2, 3]), control=1, work_wire_type="zeroed"),
             qp.QROM(
                 [[1, 0], [0, 1]], control_wires=[0], target_wires=[2, 3], work_wires=[], clean=False
             ),
-            qp.CSWAP(wires=[1, 2, 3]),
+            qp.ctrl(qp.SWAP([2, 3]), control=1, work_wire_type="zeroed"),
         ]
 
         for op1, op2 in zip(qrom_decomposition, expected_gates):

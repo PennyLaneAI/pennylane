@@ -1348,9 +1348,7 @@ Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
 * ``qp.ctrl`` now constructs symbolic controlled operators without dispatching to specialized
-  gates such as ``CNOT`` or ``CRX``. Construct the specialized gate directly when that operator
-  identity is required. Decomposition rules and resource declarations have been updated
-  accordingly.
+  gates such as ``CNOT`` or ``CRX``.Decomposition rules have been updated accordingly.
   `(#10395) <https://github.com/PennyLaneAI/pennylane/pull/10395>`__
 
 * Renamed ``qp.math.is_abstract`` to ``qp.math.is_tracer`` to distinguish traced tensors

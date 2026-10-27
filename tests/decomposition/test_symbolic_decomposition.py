@@ -1177,7 +1177,7 @@ class TestControlledDecomposition:
 
         assert ctrl_single_work_wire.compute_resources(**op.resource_params) == to_resources(
             {
-                _ctrl_abstract(qp.X, Wire[3]): 2,
+                qp.MultiControlledX(Wire[4]): 2,
                 controlled_resource_rep(CustomRot, {}, 1): 1,
             }
         )
@@ -1207,7 +1207,7 @@ class TestControlledDecomposition:
             {
                 qp.X: 3,
                 ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[1]): 1,
-                _ctrl_abstract(qp.X, Wire[3]): 2,
+                qp.MultiControlledX(Wire[4]): 2,
             }
         )
 
@@ -1217,9 +1217,9 @@ class TestControlledDecomposition:
         assert tape.operations == [
             qp.Projector([0], wires=4),
             qp.X(2),
-            qp.ctrl(qp.X(4), control=[1, 2, 3]),
+            qp.MultiControlledX([1, 2, 3, 4]),
             qp.ctrl(DynOp(0.5, [0]), control=[4]),
-            qp.ctrl(qp.X(4), control=[1, 2, 3]),
+            qp.MultiControlledX([1, 2, 3, 4]),
             qp.X(2),
         ]
 

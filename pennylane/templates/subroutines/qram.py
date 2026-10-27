@@ -21,10 +21,23 @@ from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import CH, CSWAP, CZ, RY, SWAP, Hadamard, PauliX, PauliZ, adjoint, cond, ctrl
+from pennylane.ops import (
+    CH,
+    CSWAP,
+    CZ,
+    RY,
+    SWAP,
+    Hadamard,
+    MultiControlledX,
+    PauliX,
+    PauliZ,
+    adjoint,
+    cond,
+    ctrl,
+)
 from pennylane.ops.qubit import BasisState
 from pennylane.typing import Bool, Float, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, concatenate_wires
 
 # pylint: disable=consider-using-generator
 
@@ -598,7 +611,7 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
     resources[CH] += num_target_wires * num_blocks * 2
 
     if num_select_wires > 0:
-        cx_rep = ctrl(PauliX(Wire[1]), Wire[num_select_wires], Bool[num_select_wires])
+        cx_rep = MultiControlledX(Wire[num_select_wires + 1], control_values=Bool[num_select_wires])
         resources[cx_rep] += 2 * num_blocks
     resources[CZ] += (1 << num_tree_control_wires) * num_target_wires * num_blocks
 
@@ -737,7 +750,7 @@ def _hybrid_qram_decomposition(
         # Multi-controlled X to turn signal on when select bits == block_index
         if k > 0:
             sel_pattern = _bits(block_index, k)
-            ctrl(PauliX(wires=signal), control=select_wires, control_values=sel_pattern)
+            MultiControlledX(concatenate_wires(select_wires, [signal]), control_values=sel_pattern)
         else:
             # No select bits: just flip signal for all addresses
             PauliX(wires=signal)
@@ -754,7 +767,7 @@ def _hybrid_qram_decomposition(
 
         # Uncompute signal
         if k > 0:
-            ctrl(PauliX(wires=signal), control=select_wires, control_values=sel_pattern)
+            MultiControlledX(concatenate_wires(select_wires, [signal]), control_values=sel_pattern)
         else:
             PauliX(wires=signal)
 
@@ -970,7 +983,7 @@ def _select_only_qram_resources(
 
         resources[PauliX] += control_values.count(0) * 2
 
-        resources[ctrl(PauliX(Wire[1]), Wire[n_total])] += num_target_wires
+        resources[MultiControlledX(Wire[n_total + 1]) if n_total else PauliX] += num_target_wires
 
     return resources
 
@@ -988,6 +1001,7 @@ def _select_only_qram_decomposition(
     controls = select_wires + control_wires
     num_select = len(select_wires)
     n_total = num_select + len(control_wires)
+    gate = MultiControlledX if n_total else PauliX
 
     if select_value is not None and num_select > 0:
         BasisState(math.int_to_binary(select_value, num_select), wires=select_wires)
@@ -1011,7 +1025,7 @@ def _select_only_qram_decomposition(
             # controlled on controls matching `control_values`.
 
             # pylint: disable=cell-var-from-loop
-            cond(bits[j], lambda: ctrl(PauliX(wires=target_wires[j]), control=controls))()
+            cond(bits[j], gate)(wires=concatenate_wires(controls, [target_wires[j]]))
 
         _flip_controls(controls, control_values)
 

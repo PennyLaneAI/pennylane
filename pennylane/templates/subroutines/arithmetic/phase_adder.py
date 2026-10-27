@@ -252,10 +252,7 @@ class PhaseAdder(Operation):
                 )
             )
 
-            op_list.extend(
-                ops.ControlledPhaseShift(mod * np.pi / (2**i), wires=[work_wire[0], wire])
-                for i, wire in enumerate(x_wires)
-            )
+            op_list.extend(ops.ctrl(op, control=work_wire) for op in _add_k_fourier(mod, x_wires))
 
             op_list.append(
                 ops.change_op_basis(
@@ -296,7 +293,7 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
             ops.CNOT,
             QFT(Wire[num_x_wires]),
         ): 1,
-        ops.ControlledPhaseShift: num_x_wires,
+        ops.ctrl(ops.PhaseShift(Float, Wire[1]), control=Wire[1]): num_x_wires,
         _change_op_basis_abstract(
             basis_op1,
             ops.CNOT,
@@ -330,11 +327,7 @@ def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire, **__):
         QFT(wires=x_wires),
     )
 
-    @for_loop(n_wires)
-    def _controlled_add_mod(i):
-        ops.ControlledPhaseShift(mod * np.pi / (2**i), wires=[work_wire[0], x_wires[i]])
-
-    _controlled_add_mod()
+    ops.ctrl(_add_k_fourier_loop, control=work_wire)(mod)
     ops.change_op_basis(
         prod(
             ops.X(aux_k),

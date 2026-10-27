@@ -404,6 +404,7 @@ def _controlled_g_phase_resource(
             abstractify(qp.PhaseShift),
             control=Wire[num_control_wires - 1],
             work_wires=Wire[num_work_wires],
+            work_wire_type=work_wire_type,
         )
     ] = 1
 

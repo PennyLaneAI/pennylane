@@ -27,7 +27,7 @@ from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import register_condition, register_resources
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
 from pennylane.typing import Complex, Float, Wire
-from pennylane.wires import Wires
+from pennylane.wires import Wires, concatenate_wires
 
 
 def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
@@ -220,8 +220,8 @@ def _ctrl_decomp_bisect_resources(U, wires, control_values, *_, **__):
     len_k2 = num_ctrl_wires - len_k1
 
     # this is a heuristic overestimate based on the resource requirement of the general case.
-    mcx_k1 = qp.ctrl(ops.X(Wire[1]), Wire[len_k1], work_wires=Wire[len_k2])
-    mcx_k2 = qp.ctrl(ops.X(Wire[1]), Wire[len_k2], work_wires=Wire[len_k1])
+    mcx_k1 = ops.MultiControlledX(Wire[len_k1 + 1], work_wires=Wire[len_k2])
+    mcx_k2 = ops.MultiControlledX(Wire[len_k2 + 1], work_wires=Wire[len_k1])
     mcx_reps = {mcx_k1: 6} if len_k1 == len_k2 else {mcx_k2: 4, mcx_k1: 2}
     return {
         ops.QubitUnitary(Complex[2, 2], wires=Wire[1]): 4,
@@ -322,9 +322,8 @@ def _multi_ctrl_decomp_zyz_resources(U, wires, control_values, work_wires, work_
     return {
         ops.CRZ: 3,
         ops.CRY: 2,
-        ops.ctrl(
-            ops.X(Wire[1]),
-            control=Wire[num_ctrl_wires - 1],
+        ops.MultiControlledX(
+            Wire[num_ctrl_wires],
             work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 2,
@@ -540,10 +539,9 @@ def _mcx_many_workers_resource(wires, control_values, work_wires, work_wire_type
     num_used_work_wires = num_control_wires - 2
     num_extra_work_wires = len(work_wires) - num_used_work_wires
 
-    # The middle controlled X retains the variable number of extra work wires.
-    middle_toffoli = qp.ctrl(
-        qp.X(Wire[1]),
-        control=Wire[2],
+    # The middle MCX retains the variable number of extra work wires.
+    middle_toffoli = ops.MultiControlledX(
+        Wire[3],
         work_wires=Wire[num_extra_work_wires],
         work_wire_type=work_wire_type,
     )
@@ -609,9 +607,8 @@ def decompose_mcx_many_workers(wires, control_values, work_wires, work_wire_type
     loop_down()  # pylint: disable=no-value-for-parameter
 
     _wires = [control_wires[0], work_wires[0], target_wire]
-    qp.ctrl(
-        qp.X(target_wire),
-        control=[control_wires[0], work_wires[0]],
+    ops.MultiControlledX(
+        _wires,
         work_wires=extra_work_wires,
         work_wire_type=work_wire_type,
     )
@@ -834,8 +831,8 @@ def _decompose_mcx_no_worker_resource(wires, *_, **__):
     num_control_wires = len(wires) - 1
     len_k1 = (num_control_wires + 1) // 2
     len_k2 = num_control_wires - len_k1
-    mcx_k1 = qp.ctrl(ops.X(Wire[1]), Wire[len_k1], work_wires=Wire[len_k2])
-    mcx_k2 = qp.ctrl(ops.X(Wire[1]), Wire[len_k2], work_wires=Wire[len_k1])
+    mcx_k1 = ops.MultiControlledX(Wire[len_k1 + 1], work_wires=Wire[len_k2])
+    mcx_k2 = ops.MultiControlledX(Wire[len_k2 + 1], work_wires=Wire[len_k1])
     mcx_reps = {mcx_k1: 4} if len_k1 == len_k2 else {mcx_k1: 2, mcx_k2: 2}
     return {
         ops.Hadamard: 2,
@@ -915,16 +912,22 @@ def _ctrl_decomp_bisect_general(U, wires):
 
     # The component
     ops.QubitUnitary(c2t, wires[-1])
-    ops.ctrl(qp.X(wires[-1]), control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
+    ops.MultiControlledX(
+        concatenate_wires(ctrl_k2, wires[-1:]), work_wires=ctrl_k1, work_wire_type="borrowed"
+    )
     ops.adjoint(ops.QubitUnitary(c1, wires[-1]))
 
     # Cancel the two identity controlled X gates
     _ctrl_decomp_bisect_od(d, wires, skip_initial_cx=True)
 
     # Adjoint of the component
-    ops.ctrl(qp.X(wires[-1]), control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="borrowed")
+    ops.MultiControlledX(
+        concatenate_wires(ctrl_k1, wires[-1:]), work_wires=ctrl_k2, work_wire_type="borrowed"
+    )
     ops.QubitUnitary(c1, wires[-1])
-    ops.ctrl(qp.X(wires[-1]), control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
+    ops.MultiControlledX(
+        concatenate_wires(ctrl_k2, wires[-1:]), work_wires=ctrl_k1, work_wire_type="borrowed"
+    )
     ops.adjoint(ops.QubitUnitary(c2t, wires[-1]))
 
 
@@ -949,14 +952,22 @@ def _ctrl_decomp_bisect_od(U, wires, skip_initial_cx=False):
     ctrl_k2 = wires[mid:-1]
 
     if not skip_initial_cx:
-        ops.ctrl(qp.X(wires[-1]), control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="borrowed")
+        ops.MultiControlledX(
+            concatenate_wires(ctrl_k1, wires[-1:]), work_wires=ctrl_k2, work_wire_type="borrowed"
+        )
 
     ops.QubitUnitary(a, wires[-1])
-    ops.ctrl(qp.X(wires[-1]), control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
+    ops.MultiControlledX(
+        concatenate_wires(ctrl_k2, wires[-1:]), work_wires=ctrl_k1, work_wire_type="borrowed"
+    )
     ops.adjoint(ops.QubitUnitary(a, wires[-1]))
-    ops.ctrl(qp.X(wires[-1]), control=ctrl_k1, work_wires=ctrl_k2, work_wire_type="borrowed")
+    ops.MultiControlledX(
+        concatenate_wires(ctrl_k1, wires[-1:]), work_wires=ctrl_k2, work_wire_type="borrowed"
+    )
     ops.QubitUnitary(a, wires[-1])
-    ops.ctrl(qp.X(wires[-1]), control=ctrl_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
+    ops.MultiControlledX(
+        concatenate_wires(ctrl_k2, wires[-1:]), work_wires=ctrl_k1, work_wire_type="borrowed"
+    )
     ops.adjoint(ops.QubitUnitary(a, wires[-1]))
 
 
@@ -1120,16 +1131,20 @@ def _multi_control_zyz(phi, theta, omega, wires, work_wires, work_wire_type):
     ops.cond(_not_zero(phi), ops.CRZ)(phi, wires=wires[-2:])
     ops.cond(_not_zero(theta), ops.CRY)(theta / 2, wires=wires[-2:])
 
-    ops.ctrl(
-        ops.X(wires[-1]), control=wires[:-2], work_wires=work_wires, work_wire_type=work_wire_type
+    ops.MultiControlledX(
+        concatenate_wires(wires[:-2], wires[-1:]),
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
     )
 
     # Operator B
     ops.cond(_not_zero(theta), ops.CRY)(-theta / 2, wires=wires[-2:])
     ops.cond(_not_zero(phi + omega), ops.CRZ)(-(phi + omega) / 2, wires=wires[-2:])
 
-    ops.ctrl(
-        ops.X(wires[-1]), control=wires[:-2], work_wires=work_wires, work_wire_type=work_wire_type
+    ops.MultiControlledX(
+        concatenate_wires(wires[:-2], wires[-1:]),
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
     )
 
     # Operator C

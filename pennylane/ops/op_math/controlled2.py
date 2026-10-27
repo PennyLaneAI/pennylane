@@ -855,7 +855,7 @@ def _ctrl_single_work_wire_resource(base, control_wires, *_, **__):
     # the only work wire comes from allocation.
     return {
         _ctrl_abstract(base, Wire[1]): 1,
-        qp.ctrl(qp.X(Wire[1]), Wire[len(control_wires)]): 2,
+        qp.MultiControlledX(Wire[len(control_wires) + 1]): 2,
     }
 
 
@@ -863,9 +863,9 @@ def _ctrl_single_work_wire_resource(base, control_wires, *_, **__):
 def _ctrl_single_work_wire(base, control_wires, *_, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     with allocation.allocate(1, state="zero", restored=True) as aux:
-        qp.ctrl(qp.X(aux[0]), control=control_wires)
+        qp.MultiControlledX([*control_wires, aux[0]])
         qp.ctrl(base, control=aux[0])
-        qp.ctrl(qp.X(aux[0]), control=control_wires)
+        qp.MultiControlledX([*control_wires, aux[0]])
 
 
 ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire, name="ctrl_single_work_wire")

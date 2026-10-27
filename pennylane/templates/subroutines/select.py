@@ -25,10 +25,10 @@ from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.ops import CNOT, MultiControlledX, X, adjoint, ctrl
+from pennylane.ops import CNOT, MultiControlledX, adjoint, ctrl
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, validate_no_wire_overlaps
 
 from .arithmetic.temporary_and import TemporaryAND
@@ -607,7 +607,7 @@ def _select_resources_unary_not_partial(ops, num_control_wires, num_work_wires):
     more_than_a_quarter = int(K > 2 ** (c - 2))
     more_than_a_half = int(K > 2 ** (c - 1))
     resources[CNOT] += K - 1 + more_than_a_half - more_than_a_quarter
-    resources[MultiControlledX(Wire[2], control_values=[0])] += more_than_a_quarter
+    resources[MultiControlledX(Wire[2], control_values=Bool[1])] += more_than_a_quarter
     for op in ops:
         resources[_ctrl_abstract(op, Wire[1], Wire[num_work_wires])] += 1
 
@@ -645,7 +645,7 @@ def _select_resources_unary(ops, control, work_wires, partial):
                 TemporaryAND: num_ops - 3,
                 _adjoint_abstract(TemporaryAND): num_ops - 3,
                 CNOT: num_ops - 1,
-                MultiControlledX(Wire[2], control_values=[0]): 1,
+                MultiControlledX(Wire[2], control_values=Bool[1]): 1,
             }
         )
     else:
@@ -654,7 +654,7 @@ def _select_resources_unary(ops, control, work_wires, partial):
                 TemporaryAND: num_ops - 2,
                 _adjoint_abstract(TemporaryAND): num_ops - 2,
                 CNOT: num_ops - 3,
-                MultiControlledX(Wire[2], control_values=[0]): 1,
+                MultiControlledX(Wire[2], control_values=Bool[1]): 1,
             }
         )
 
@@ -914,6 +914,9 @@ add_decomps(Select, _select_decomp_unary)
 
 
 def _select_multi_control_work_wire_resources(ops, control, work_wires, partial):
+    if len(control) == 0:
+        return dict(Counter(ops))
+
     num_control_wires = len(control)
     num_work_wires = len(work_wires)
     resources = defaultdict(int)
@@ -922,24 +925,38 @@ def _select_multi_control_work_wire_resources(ops, control, work_wires, partial)
         if len(ops) == 1:
             resources[_multi_controlled_rep(ops[0], 1, [1], num_work_wires - 1)] += 1
             resources[
-                _multi_controlled_rep(
-                    X, num_control_wires, [0] * num_control_wires, num_work_wires - 1
+                MultiControlledX(
+                    Wire[num_control_wires + 1],
+                    control_values=Bool[num_control_wires],
+                    work_wires=Wire[num_work_wires - 1],
                 )
             ] += 2
         else:
             # Use dummy control values, we will only care about the length of the outputs
             ctrls_and_ctrl_states = _partial_select(len(ops), list(range(num_control_wires)))
-            for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops, strict=True):
+            for (ctrl_, _), op in zip(ctrls_and_ctrl_states, ops, strict=True):
                 resources[_multi_controlled_rep(op, 1, [1], num_work_wires - 1)] += 1
-                resources[_multi_controlled_rep(X, len(ctrl_), ctrl_state, num_work_wires - 1)] += 2
+                resources[
+                    MultiControlledX(
+                        Wire[len(ctrl_) + 1],
+                        control_values=Bool[len(ctrl_)],
+                        work_wires=Wire[num_work_wires - 1],
+                    )
+                ] += 2
     else:
         state_iterator = product([0, 1], repeat=num_control_wires)
 
         # state_iterator may be longer than ops, but will not be shorter. So we use strict=False
-        for state, op in zip(state_iterator, ops, strict=False):
+        for _, op in zip(state_iterator, ops, strict=False):
 
             resources[_multi_controlled_rep(op, 1, [1], num_work_wires - 1)] += 1
-            resources[_multi_controlled_rep(X, num_control_wires, state, num_work_wires - 1)] += 2
+            resources[
+                MultiControlledX(
+                    Wire[num_control_wires + 1],
+                    control_values=Bool[num_control_wires],
+                    work_wires=Wire[num_work_wires - 1],
+                )
+            ] += 2
 
     return dict(resources)
 
@@ -962,18 +979,21 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
     if len(ops) == 0:
         return []
 
+    if len(control) == 0:
+        for op in ops:
+            apply(op)
+        return []
+
     if partial:
         if len(ops) == 1:
-            ctrl(
-                X(work_wires[:1]),
-                control,
+            MultiControlledX(
+                [*control, work_wires[0]],
                 control_values=[0] * len(control),
                 work_wires=work_wires[1:],
             )
             ctrl(ops[0], control=work_wires[:1], work_wires=work_wires[1:])
-            ctrl(
-                X(work_wires[:1]),
-                control,
+            MultiControlledX(
+                [*control, work_wires[0]],
                 control_values=[0] * len(control),
                 work_wires=work_wires[1:],
             )
@@ -981,16 +1001,24 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
 
         ctrls_and_ctrl_states = _partial_select(len(ops), control)
         for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops, strict=True):
-            ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state, work_wires=work_wires[1:])
+            MultiControlledX(
+                [*ctrl_, work_wires[0]], control_values=ctrl_state, work_wires=work_wires[1:]
+            )
             ctrl(op, control=work_wires[:1], work_wires=work_wires[1:])
-            ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state, work_wires=work_wires[1:])
+            MultiControlledX(
+                [*ctrl_, work_wires[0]], control_values=ctrl_state, work_wires=work_wires[1:]
+            )
         return []
 
     # ctrl_states may be longer than `ops`, but will never be shorter. So we use strict=False
     for ctrl_state, op in zip(product([0, 1], repeat=len(control)), ops, strict=False):
-        ctrl(X(work_wires[:1]), control, control_values=ctrl_state, work_wires=work_wires[1:])
+        MultiControlledX(
+            [*control, work_wires[0]], control_values=ctrl_state, work_wires=work_wires[1:]
+        )
         ctrl(op, control=work_wires[:1], work_wires=work_wires[1:])
-        ctrl(X(work_wires[:1]), control, control_values=ctrl_state, work_wires=work_wires[1:])
+        MultiControlledX(
+            [*control, work_wires[0]], control_values=ctrl_state, work_wires=work_wires[1:]
+        )
     return []
 
 

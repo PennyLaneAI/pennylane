@@ -191,9 +191,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             clean=True,
         )
 
-        # 2. ctrl(X, control=target_wire, control_values=[0])
-        #    -> Controlled X with 1 control, 1 zero-ctrl
-        ctrl_x_rep = qp.MultiControlledX(Wire[2], control_values=[0])
+        # 2. MultiControlledX with one control (the runtime control value is zero).
+        ctrl_x_rep = qp.MultiControlledX(Wire[2], control_values=Bool[1])
 
         # 3. The callable decomposition produces the controls before the QROM in product order.
         prod_rep = qp.ops.prod(*((ctrl_x_rep,) * len(phase_grad_wires) + (qrom_rep,)))

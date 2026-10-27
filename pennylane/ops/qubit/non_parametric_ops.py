@@ -37,7 +37,6 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
@@ -268,11 +267,10 @@ def _controlled_h_resources(base, control_wires, control_values, work_wires, wor
     return {
         qp.H: 2,
         qp.RY: 2,
-        _ctrl_abstract(
-            qp.X,
-            Wire[len(control_wires)],
-            Wire[len(work_wires)],
-            work_wire_type,
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 1],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
         ): 1,
     }
 
@@ -287,9 +285,8 @@ def _controlled_hadamard(base, control_wires, control_values, work_wires, work_w
 
     qp.RY(-np.pi / 4, wires=wires[-1])
     qp.H(wires=wires[-1])
-    qp.ctrl(
-        qp.X(wires[-1]),
-        control=wires[:-1],
+    qp.MultiControlledX(
+        wires,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
@@ -745,11 +742,10 @@ def _controlled_y_resource(base, control_wires, control_values, work_wires, work
     return {
         qp.S: 1,
         _adjoint_abstract(qp.S): 1,
-        _ctrl_abstract(
-            qp.X,
-            Wire[len(control_wires)],
-            Wire[len(work_wires)],
-            work_wire_type,
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 1],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
         ): 1,
     }
 
@@ -763,9 +759,7 @@ def _controlled_y_decomp(base, control_wires, control_values, work_wires, work_w
         return
 
     qp.adjoint(qp.S(wires[-1]))
-    qp.ctrl(
-        qp.X(wires[-1]), control=wires[:-1], work_wires=work_wires, work_wire_type=work_wire_type
-    )
+    qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
     qp.S(wires=wires[-1])
 
 
