@@ -119,7 +119,6 @@ Completed deprecation cycles
 
   - Removed in releases after v0.45
 
-* Maintenance support for the ``tensorflow`` interface has been removed. Future versions of
 * The ``pennylane.pulse`` module has been removed. This includes ``ParametrizedHamiltonian`` and
   ``ParametrizedEvolution``, as well as the ``stoch_pulse_grad`` and ``pulse_odegen``
   pulse-level gradient transforms.
