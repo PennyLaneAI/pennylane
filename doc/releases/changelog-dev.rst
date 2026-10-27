@@ -833,6 +833,15 @@ Improvements 🛠
   work wires.
   `(#10363) <https://github.com/PennyLaneAI/pennylane/pull/10363>`__
 
+* ``qp.gate_sets.ALL_QUBIT_OPS`` now includes the in-build controlled gates like :class:`~.CNOT`,
+  :class:`~.CRZ`, and others.
+  `(#10396) <https://github.com/PennyLaneAI/pennylane/pull/10396/>`__
+
+* :func:`~pennylane.estimate` and :func:`~.analyze` are now faster on qjit-compiled workflows. They use
+  Catalyst's new ``user-transform-stage`` pipeline, which stops compiling right after the user
+  transforms are applied.
+  `(#10343) <https://github.com/PennyLaneAI/pennylane/pull/10343>`__
+
 * Terminal measurements now accept fixed-size ``qp.typing.Wire[n]`` registers during
   program capture.
   `(#10364) <https://github.com/PennyLaneAI/pennylane/pull/10364>`__
@@ -1354,6 +1363,11 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
+
+* The ``pennylane.qnn`` module has been removed, including ``TorchLayer``.
+  ``pennylane.qnn.iqp_expval`` has been moved to :mod:`pennylane.math` and is
+  available as :func:`pennylane.math.iqp_expval`.
+  `(#10247) <https://github.com/PennyLaneAI/pennylane/pull/10247>`__
 
 * Renamed ``qp.math.is_abstract`` to ``qp.math.is_tracer`` to distinguish traced tensors
   from PennyLane abstract input descriptors. The function's behavior is unchanged.
