@@ -2137,7 +2137,7 @@ Bug fixes 🐛
   every gate type that the decomposition uses and upper-bounds its count. The X-type measurements
   are spread over the widths expected for uniformly random bitstrings instead of all using the
   worst-case width.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10399) <https://github.com/PennyLaneAI/pennylane/pull/10399>`__
 
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
   argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
