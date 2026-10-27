@@ -41,5 +41,6 @@ def add_public_aliases(app, what, name, obj, options, lines):
 
 def setup(app):
     """Register the docstring hook."""
+    app.setup_extension("sphinx.ext.autodoc")
     app.connect("autodoc-process-docstring", add_public_aliases)
     return {"parallel_read_safe": True, "parallel_write_safe": True}

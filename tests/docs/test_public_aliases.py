@@ -14,8 +14,10 @@
 """Tests for the Sphinx extension that discovers public Python aliases."""
 
 import importlib.util
+import subprocess
+import sys
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 
@@ -92,6 +94,42 @@ def test_setup():
     """The extension registers the autodoc event."""
     app = Mock()
     public_aliases.setup(app)
-    app.connect.assert_called_once_with(
-        "autodoc-process-docstring", public_aliases.add_public_aliases
+    assert app.mock_calls == [
+        call.setup_extension("sphinx.ext.autodoc"),
+        call.connect("autodoc-process-docstring", public_aliases.add_public_aliases),
+    ]
+
+
+def test_extension_loads_before_autodoc(tmp_path):
+    """The actual Sphinx application supports the extension order in doc/conf.py."""
+    pytest.importorskip("sphinx")
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "conf.py").write_text(
+        "import sys\n"
+        f"sys.path.insert(0, {str(EXTENSION_PATH.parent)!r})\n"
+        "extensions = ['public_aliases', 'sphinx.ext.autodoc']\n"
+        "project = 'Alias documentation'\n",
+        encoding="utf-8",
     )
+    (source / "index.rst").write_text(
+        "Alias documentation\n===================\n", encoding="utf-8"
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "sphinx",
+            "-n",
+            "-W",
+            "-b",
+            "html",
+            str(source),
+            str(tmp_path / "html"),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
