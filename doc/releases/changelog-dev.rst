@@ -2146,7 +2146,8 @@ Bug fixes 🐛
   every gate type that the decomposition uses and upper-bounds every count except the split of
   X-type measurements across widths, which is assumed to follow a binomial distribution
   like for uniformly random bitstrings. The total of those measurements is also upper-bounded,
-  overestimating by at most the number of target wires.
+  overestimating by at most the number of target wires. The decomposition also no longer
+  introduces a global phase of :math:`-1` for some mid-circuit measurement outcomes.
   `(#10399) <https://github.com/PennyLaneAI/pennylane/pull/10399>`__
 
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic

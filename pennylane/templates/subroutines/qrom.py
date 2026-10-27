@@ -32,7 +32,7 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.math import ceil_log2
-from pennylane.ops import CNOT, CZ, X, cond, ctrl, pauli_measure
+from pennylane.ops import CNOT, CZ, X, Z, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -436,6 +436,8 @@ def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
     m1 = pauli_measure("X" + "X" * len(x_wires), [work_wire, *x_wires])
 
     cond(m1 == 1, CZ)(wires=ctrl_wires)
+    # Without this, the reset below would leave a global phase of -1 if both outcomes are 1
+    cond(m1 == 1, Z)(wires=work_wire)
 
     m2 = pauli_measure("Z", [work_wire])
     cond(m2 == 1, X)(wires=work_wire)
@@ -566,7 +568,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
 
     Each TemporaryAND is uncomputed via _measurement_uncompute which produces:
       - 2 PauliMeasure (one X-type joint measurement, one Z measurement)
-      - 1 CZ (phase correction conditioned on X measurement)
+      - 1 CZ and 1 Z (phase corrections conditioned on X measurement)
       - conditional X gates on work + targets
 
     Only the shape of ``bitstrings`` is known, so counts that depend on the bitstring data are
@@ -618,6 +620,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
         TemporaryAND: num_ands,
         PauliMeasure("Z", wires=Wire[1]): num_ands,
         CZ: num_ands,
+        Z: num_ands,
         X: num_ands,
         load: num_ands,
         CNOT: num_cnots,
