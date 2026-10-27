@@ -831,7 +831,12 @@ Improvements 🛠
   :math:`N(N-1)/2` ``CRZ`` and :math:`N` ``RZ`` gates instead of
   :math:`N(2N-1)` ``IsingZZ`` gates, where :math:`N` is the number of spatial orbitals.
   The double-phase decomposition also needs one work wire and shares control CNOTs
-  across orbital pairs; standard single-qubit control needs two work wires.
+  across orbital pairs; standard single-qubit control needs two work wires and shares
+  one ``TemporaryAND`` computation across pairs with the same first orbital.
+  Standard control on :math:`m>1` wires reuses this decomposition when :math:`m-1`
+  additional clean work wires are supplied to :func:`~.ctrl` with
+  ``work_wire_type="zeroed"``.
+  The reduction in rotations comes at the cost of additional ``TemporaryAND`` and CNOT gates.
   The original decomposition is used when fewer work wires are supplied.
   `(#10380) <https://github.com/PennyLaneAI/pennylane/pull/10380>`__
 
