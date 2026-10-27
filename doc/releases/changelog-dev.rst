@@ -825,6 +825,18 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* :class:`~.TrotterVibronic` has a new ``branch_probs`` argument, a dictionary with the
+  probabilities for the ``"constant"``, ``"linear"``, ``"quadratic"``, ``"bilinear"`` and
+  ``"kinetic"`` terms to be applied rather than skipped for vanishing coefficients. The
+  decomposition uses them as ``branch-prob`` hints for the conditionals that skip these terms,
+  replacing their worst-case resource counts by the average counts when compiling with Catalyst.
+  The probabilities do not affect the circuit itself. If ``branch_probs`` is not provided, it is
+  computed from the ``hamiltonian`` data at construction, as long as that data is concrete. For
+  traced or abstract Hamiltonian data, e.g., when passing the Hamiltonian as an argument to a
+  :func:`~.qjit`-compiled function, the probabilities can be provided manually, and the
+  conditionals are left unhinted otherwise.
+  `(#10401) <https://github.com/PennyLaneAI/pennylane/pull/10401>`__
+
 * ``qp.gate_sets.ALL_QUBIT_OPS`` now includes the in-build controlled gates like :class:`~.CNOT`,
   :class:`~.CRZ`, and others.
   `(#10396) <https://github.com/PennyLaneAI/pennylane/pull/10396/>`__
@@ -860,7 +872,6 @@ Improvements 🛠
   frequency is known from the surrounding loops, replacing the worst-case resource counts of
   unhinted conditionals by the exact average counts when compiling them with Catalyst.
   `(#10311) <https://github.com/PennyLaneAI/pennylane/pull/10311>`__
-  `(#10401) <https://github.com/PennyLaneAI/pennylane/pull/10401>`__
 
 * The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
   but instead expresses the Select block as another ``QROM`` with fewer controls and more target
