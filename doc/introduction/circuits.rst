@@ -48,8 +48,10 @@ special Python function called a *quantum function*. For example:
 Quantum circuit operators (e.g., :doc:`gates <operations>` or
 :doc:`subroutines <subroutines>`) are placed one-per-line, where the operators
 occur in the final circuit in the order they appear in the quantum function. The
-final line of a Python function is the ``return`` statement, which in quantum
-circuit terms is the :doc:`terminal measurement <measurements>`.
+final line of a Python function is typically the ``return`` statement, which in
+quantum-circuit terms is the :doc:`terminal measurement <measurements>`.
+Although, standard Python functions don't have to return anything, and neither
+do quantum functions.
 
 Additionally, quantum functions can accept classical input arguments and contain
 control-flow like ``for`` loops, ``while`` loops, and ``if`` statements.
@@ -74,9 +76,18 @@ desired device. For example, the Lightning Qubit C++ simulator's short name is
 3. Decorate with qp.qnode, compile with qp.qjit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To be able to simulate or get quantum resource estimates from the quantum
-function, simply decorate with :func:`@qp.qnode(dev) <~pennylane.qnode>` and
-:func:`@qp.qjit <~pennylane.qjit>`.
+Together, a quantum function and a device are used to create a *quantum node*,
+or QNode object, which wraps the quantum function and binds it to the device.
+QNodes are the foundational computational unit of PennyLane. Simply decorate
+with :func:`@qp.qnode(dev) <~pennylane.qnode>` to create a QNode.
+
+.. note::
+
+    A QNode *must* return a terminal measurement.
+
+To be able to simulate or get quantum resource estimates, decorate with
+:func:`@qp.qjit <~pennylane.qjit>`, which is PennyLane's bespoke quantum
+just-in-time compiler.
 
 .. code-block:: python
 
@@ -96,7 +107,7 @@ function,
 >>> circuit(0.1, 0.2)
 Array(0.98006658, dtype=float64)
 
-or inspected with, say, :func:`~pennylane.analyze` for fast resource estimation.
+or inspected with, say, :func:`~pennylane.analyze` for fast resource analysis.
 
 >>> qp.analyze(circuit)(0.1, 0.2).resources
 SpecsResources(counts={'CNOT': 1, 'RY': 1, 'RZ': 1}, measurement_processes={'expval(PauliZ)': 1}, num_wires=2, circuit_depth=None, total_quantum_operations=3)
