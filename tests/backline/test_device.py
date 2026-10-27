@@ -135,6 +135,18 @@ class TestPublicUsagePattern:
         assert not hasattr(qp.backline, "HeterogeneousDevice")
 
 
+def test_backline_forwards_the_frame_layout_to_its_placement():
+    """``frame=`` reaches the placement the compiler reads."""
+    dev = qp.Backline(controller=qp.Controller(), transport="none", frame="cuqr")
+    assert dev.placement.frame == "cuqr"
+
+
+def test_backline_refuses_an_unknown_frame_layout():
+    """A misspelt layout is refused rather than ignored by the compiler."""
+    with pytest.raises(ValueError, match="frame must be one of"):
+        qp.Backline(controller=qp.Controller(), transport="none", frame="blvv")
+
+
 class TestAccessors:
     """Tests for the controller / coprocessors accessors."""
 
