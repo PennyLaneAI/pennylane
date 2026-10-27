@@ -2138,7 +2138,7 @@ add_decomps("Pow(ISWAP)", make_pow_decomp_with_period2(4), _pow_iswap_to_zz, _po
 
 class SISWAP(Operator2):
     r"""SISWAP(wires)
-    The square root of i-swap operator. Can also be accessed as ``qp.SQISW``
+    The square root of i-swap operator.
 
     .. math:: SISWAP = \begin{bmatrix}
             1 & 0 & 0 & 0 \\

@@ -61,8 +61,6 @@ class TemporaryAND(Operator2):
             Default is ``(1, 1)``, corresponding to a traditional ``AND`` gate.
 
 
-    .. seealso:: The alias :class:`~Elbow`.
-
     **Example**
 
     .. code-block:: python
@@ -352,9 +350,7 @@ add_decomps(
 
 Elbow = TemporaryAND
 r"""Elbow(wire, control_values)
-The Elbow, or :class:`~TemporaryAND` operator.
-
-.. seealso:: The alias :class:`~TemporaryAND` for more details.
+The Elbow operator.
 
 **Details:**
 
