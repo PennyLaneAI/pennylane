@@ -19,6 +19,8 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import partial
 
+from pennylane.capture import enabled
+
 from ._utils import (
     apply_partial_args,
     build_circuit_specs,
@@ -42,7 +44,14 @@ def _run_resource_analysis(func, original_qnode, level, *args, **kwargs) -> tupl
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
 
-    return_single_level: bool = isinstance(level, (int, str)) and level != "all"
+    return_single_level: bool = isinstance(level, (int, str)) and level not in ("all", "all-user")
+
+    has_device_level: bool = level in ("device", "all")
+    if has_device_level:
+        if not func.compile_options.capture or (
+            func.compile_options.capture == "global" and not enabled()
+        ):
+            raise ValueError("Device level is only supported when capture is enabled.")
 
     # Easier to assume level is always a sorted list of int levels
     level = preprocess_level_input(level, compile_pipeline)
@@ -78,9 +87,6 @@ def _analyze_qjit(func, level, *args, **kwargs) -> CircuitSpecs:
     """Compile a qjit'd QNode up to the given level and return the specs found by analyzing it."""
     original_qnode = unwrap_qjit_qnode(func, fn_name="qp.analyze")
 
-    if level == "device":
-        raise NotImplementedError("qp.analyze does not support level='device' yet.")
-
     resources, level = _run_resource_analysis(func, original_qnode, level, *args, **kwargs)
 
     return build_circuit_specs(original_qnode, resources, level)
@@ -101,7 +107,23 @@ def analyze(
         qnode (:class:`~catalyst.jit.QJIT`): the (qjit'd) QNode for which to estimate resources.
             ``functools.partial`` wrappers around supported callables are also accepted.
         level (str | int | Iterable[int | str]): The level of compilation at which to estimate
-            resources. Defaults to ``"user"``. See the note below for the accepted values.
+            resources. Defaults to ``"user"``.
+
+            ``level`` accepts the following types:
+
+            * ``int``: The number of transforms to apply before analyzing resources.
+            * ``str``: The name of the last transform to apply before analyzing resources, or the ``label`` of a  :func:`~.marker`.
+            * ``iterable``: A ``list``, ``tuple``, or similar containing ``int`` or ``str`` values.
+              These should be sorted in ascending transform order with no duplicates. Resources will be analyzed for each provided level in the ``iterable``.
+
+            The following ``str`` presets are provided for ease of use:
+
+            * ``"top"``: Equivalent to ``0``; to analyze resources before any transforms have been applied.
+            * ``"user"``: To analyze resources after the user-specified transforms have been applied.
+            * ``"device"``: To analyze resources after the user-specified transforms and device preprocessing transforms have been applied.
+            * ``"all-user"``: To analyze resources at each stage of compilation with respect to user-specified transforms.
+            * ``"all"``: To analyze resources at each stage of compilation with respect
+              to user-specified and device preprocessing transforms.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
@@ -111,32 +133,13 @@ def analyze(
 
     .. seealso:: :func:`~.estimate`, :func:`~.track`
 
-    .. note::
-
-        The available options for ``level`` are:
-
-        * ``"top"`` or ``0``: The original circuit before any transforms have been applied.
-        * An ``int``: The circuit after the specified number of user-specified transforms have
-          been applied.
-        * ``"user"``: The circuit after all user-specified transforms have been applied.
-        * A marker name (str): The circuit after the transforms that precede the given
-          :func:`qp.marker <pennylane.marker>` have been applied.
-        * An iterable: A ``list``, ``tuple``, or similar containing ints and/or marker names.
-          Should be sorted in ascending transform order with no duplicates. The output will
-          provide resource information for each level.
-        * The string ``"all"``: To provide information at each stage of compilation with respect
-          to user-specified transforms.
-
-        Levels that include the device preprocessing transforms, such as ``"device"``, are not
-        currently supported.
-
     **Example**
 
     .. code-block:: python
 
         dev = qp.device("null.qubit", wires=2)
 
-        @qp.qjit
+        @qp.qjit(capture=True)
         @qp.transforms.merge_rotations
         @qp.transforms.cancel_inverses
         @qp.qnode(dev)
@@ -174,17 +177,18 @@ def analyze(
     - 0: Before MLIR Passes
     - 1: cancel-inverses
     - 2: merge-rotations
+    - 3: Device Preprocessing
     <BLANKLINE>
-    ↓Metric         Level→ |  0 |  1 |  2
-    -------------------------------------
+    ↓Metric         Level→ |  0 |  1 |  2 |  3
+    ------------------------------------------
     Quantum operations:    |
-    - Total                |  5 |  3 |  2
-      - CNOT               |  1 |  1 |  1
-      - PauliX             |  2 |  0 |  0
-      - RX                 |  2 |  2 |  1
+    - Total                |  5 |  3 |  2 |  2
+      - CNOT               |  1 |  1 |  1 |  1
+      - PauliX             |  2 |  0 |  0 |  0
+      - RX                 |  2 |  2 |  1 |  1
     Measurement processes: |
-    - probs(all wires)     |  1 |  1 |  1
-    Total wires            |  2 |  2 |  2
+    - probs(all wires)     |  1 |  1 |  1 |  1
+    Total wires            |  2 |  2 |  2 |  2
 
     The resources at a given level can be accessed with the name of the corresponding transform
     or marker:

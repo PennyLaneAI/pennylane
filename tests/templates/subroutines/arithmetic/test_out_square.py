@@ -27,7 +27,7 @@ from pennylane.templates.subroutines.arithmetic.out_square import (
     _out_square_with_caddsub,
 )
 from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
 from pennylane.typing import Wire
 
 
@@ -165,6 +165,7 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
 class TestOutSquare:
     """Test the OutSquare template."""
 
+    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("output_wires_zeroed", [False, True])
@@ -293,7 +294,19 @@ class TestOutSquare:
         ],
     )
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=(pytest.mark.catalyst,)), False])
+    @pytest.mark.parametrize(
+        "use_jit",
+        [
+            pytest.param(
+                True,
+                marks=(
+                    pytest.mark.catalyst,
+                    pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]"),
+                ),
+            ),
+            False,
+        ],
+    )
     def test_decomposition_new(
         self,
         x_wires,
@@ -310,7 +323,7 @@ class TestOutSquare:
         for j, rule in enumerate(qp.list_decomps(OutSquare)):
             applicable = rule.is_applicable(**op.arguments)
             assert applicable is (j in applicable_rules)
-            _test_decomposition_rule(op, rule)
+            assert_valid_decomp_rule(op, rule)
 
         if qp.capture.enabled():
             pytest.skip("The following test relies on executing a qnode with capture.")
@@ -336,8 +349,7 @@ class TestOutSquare:
         """Test that the decomposition rules are consistent with the operator, with program
         capture enabled and disabled."""
         op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
-        for rule in qp.list_decomps(OutSquare):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_adder_decomposition_output_wires_zeroed(self):
         """Test that the controlled adder decomposition has the expected structure with

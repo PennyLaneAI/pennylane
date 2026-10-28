@@ -34,6 +34,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import adjoint, ctrl, prod
+from pennylane.ops.op_math.adjoint import _adjoint_eager
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -66,7 +67,7 @@ def _validate_callable(func: Callable) -> None:
 
 def _is_abstract_operator(op) -> bool:
     """Return whether ``op`` is an operator-valued JAX tracer."""
-    return math.is_abstract(op) and isinstance(op.aval, capture.AbstractOperator)
+    return math.is_tracer(op) and isinstance(op.aval, capture.AbstractOperator)
 
 
 def _apply_op_or_func(op_or_func):
@@ -368,7 +369,7 @@ class ChangeOpBasis(CompositeOp):
         return True
 
     def adjoint(self):
-        return ChangeOpBasis(*(adjoint(factor, lazy=False) for factor in self))
+        return ChangeOpBasis(*(_adjoint_eager(factor, update_queue=True) for factor in self))
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""

@@ -21,14 +21,11 @@ import numpy as np
 import pytest
 
 from pennylane import Incrementer, ctrl, device, qnode
-from pennylane.decomposition import list_decomps
 from pennylane.measurements import state
 from pennylane.ops import CNOT, PauliX
 from pennylane.templates import BasisEmbedding, TemporaryAND
 from pennylane.templates.subroutines.arithmetic.incrementer import _decompose_mcxs
-from pennylane.testing import assert_valid
-from pennylane.testing.capture import plxpr_to_tape
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable, assert_valid, plxpr_to_tape
 from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 
@@ -60,8 +57,7 @@ def test_decomposition_rules(wires, work_wires):
     capture enabled and disabled."""
     op = Incrementer(wires, work_wires)
 
-    for rule in list_decomps(Incrementer):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 @pytest.mark.parametrize(
@@ -266,8 +262,7 @@ def test_controlled_decomposition_new(wires, work_wires, controls, control_value
 
     # Work wires only in incrementer
     op = ctrl(Incrementer(wires, work_wires), controls, control_values=control_values)
-    for rule in list_decomps("C(Incrementer)"):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
     # Split work wires between incrementer and control
     split = len(work_wires) // 2
     op = ctrl(
@@ -277,8 +272,7 @@ def test_controlled_decomposition_new(wires, work_wires, controls, control_value
         work_wires=work_wires[split:],
         work_wire_type="zeroed",
     )
-    for rule in list_decomps("C(Incrementer)"):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
     # Work wires only in control
     op = ctrl(
@@ -288,8 +282,7 @@ def test_controlled_decomposition_new(wires, work_wires, controls, control_value
         work_wires=work_wires,
         work_wire_type="zeroed",
     )
-    for rule in list_decomps("C(Incrementer)"):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 @pytest.mark.capture

@@ -458,23 +458,11 @@ def test_fermionic_template_ops(op, new_params, expected_op):
             [1.23, 4.56, 7.89],
             qp.Rot(1.23, 4.56, 7.89, wires=1),
         ),
-        (
-            qp.QubitUnitary(X, wires=0),
-            [I],
-            qp.QubitUnitary(I, wires=0),
-        ),
-        (
-            qp.BasisState([0, 1], wires=[0, 1]),
-            [[1, 1]],
-            qp.BasisState([1, 1], wires=[0, 1]),
-        ),
+        (qp.QubitUnitary(X, wires=0), [I], qp.QubitUnitary(I, wires=0)),
+        (qp.BasisState([0, 1], wires=[0, 1]), [[1, 1]], qp.BasisState([1, 1], wires=[0, 1])),
         (qp.Identity(wires=[1, 2]), [], qp.Identity(wires=[1, 2])),
         (qp.pow(qp.RX(0.123, 0), 2, lazy=False), [0.456], qp.RX(0.456, 0)),
-        (
-            qp.adjoint(qp.RX(0.123, wires=0), lazy=False),
-            [0.456],
-            qp.RX(0.456, wires=0),
-        ),
+        (qp.RX(-0.123, wires=0), [0.456], qp.RX(0.456, wires=0)),
         (qp.PCPhase(0.123, 2, wires=[0, 1]), [0.456], qp.PCPhase(0.456, 2, wires=[0, 1])),
     ],
 )

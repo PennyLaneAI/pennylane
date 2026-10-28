@@ -45,7 +45,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.math import expand_matrix, is_abstract
+from pennylane.math import expand_matrix, is_tracer
 from pennylane.pytrees import register_pytree
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit
@@ -90,6 +90,15 @@ class AbstractOperator(jax.core.AbstractValue):  # pragma: no cover
         return hash("AbstractOperator")
 
     @staticmethod
+    def _is_op(x):
+        """True for Operator instances and operator-valued tracers.
+
+        ``+``/``-`` between an operator tracer and a scalar return ``NotImplemented`` (a clear
+        ``TypeError``) rather than building a ``Sum`` with a non-operator operand.
+        """
+        return isinstance(x, Operator) or isinstance(getattr(x, "aval", None), AbstractOperator)
+
+    @staticmethod
     def _matmul(*args):
         return qp.prod(*args)
 
@@ -100,15 +109,31 @@ class AbstractOperator(jax.core.AbstractValue):  # pragma: no cover
 
     @staticmethod
     def _mul(a, b):
-        return qp.s_prod(b, a)
+        return qp.s_prod(b, a) if isinstance(b, TensorLike) else NotImplemented
 
-    @staticmethod
-    def _rmul(a, b):
-        return qp.s_prod(b, a)
+    _rmul = _mul
 
     @staticmethod
     def _add(a, b):
-        return qp.sum(a, b)
+        return qp.sum(a, b) if AbstractOperator._is_op(b) else NotImplemented
+
+    @staticmethod
+    def _radd(a, b):
+        """Preserve operand order when ``+`` falls back to the captured right operand."""
+        return qp.sum(b, a) if AbstractOperator._is_op(b) else NotImplemented
+
+    @staticmethod
+    def _sub(a, b):
+        return qp.sum(a, qp.s_prod(-1, b)) if AbstractOperator._is_op(b) else NotImplemented
+
+    @staticmethod
+    def _rsub(a, b):
+        """Preserve operand order when ``-`` falls back to the captured right operand."""
+        return qp.sum(b, qp.s_prod(-1, a)) if AbstractOperator._is_op(b) else NotImplemented
+
+    @staticmethod
+    def _neg(a):
+        return qp.s_prod(-1, a)
 
     @staticmethod
     def _pow(a, b):
@@ -144,7 +169,7 @@ def create_operator_primitive(
         # for plxpr, all wires must be integers
         # could be abstract when using tracing evaluation in interpreter
         wire_args = args[split:] if split else ()
-        wires = tuple(w if is_abstract(w) else int(w) for w in wire_args)
+        wires = tuple(w if is_tracer(w) else int(w) for w in wire_args)
         return type.__call__(operator_type, *args[:split], wires=wires, **kwargs)
 
     @primitive.def_abstract_eval
@@ -173,7 +198,7 @@ def _process_data(op):
     else:
         mod_val = None
 
-    return str([id(d) if is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
+    return str([id(d) if is_tracer(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
 # pylint: disable=abstract-method

@@ -178,7 +178,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
-    if math.is_abstract(op):
+    if math.is_tracer(op):
         return Controlled(
             op,
             control,
@@ -256,7 +256,7 @@ def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
 def _is_empty_or_all_true(control_values):
     """Checks whether a control values argument is empty or all True."""
     return control_values is None or (
-        not math.is_abstract(control_values)
+        not math.is_tracer(control_values)
         and not isinstance(control_values, AbstractArray)
         and all(control_values)
     )
@@ -299,8 +299,10 @@ def create_controlled_op(op, control, control_values, work_wires, work_wire_type
         control = Wires(control)
     if isinstance(control_values, (int, bool)):
         control_values = [bool(control_values)]
-    elif isinstance(control_values, tuple):
-        control_values = [bool(v) for v in control_values]
+    elif isinstance(control_values, (tuple, list)):
+        control_values = [
+            math.cast(v, dtype=bool) if math.is_tracer(v) else bool(v) for v in control_values
+        ]
 
     qp.QueuingManager.remove(op)
 
@@ -369,16 +371,23 @@ def create_controlled_op(op, control, control_values, work_wires, work_wire_type
             "This error might occur if you apply ctrl to a list "
             "of operations instead of a function or Operator."
         )
-    return _ctrl_transform(op, control, control_values, work_wires, one_controlled)
+    return _ctrl_transform(op, control, control_values, work_wires, work_wire_type, one_controlled)
 
 
-def _ctrl_transform(op, control, control_values, work_wires, one_controlled):
+# pylint: disable=too-many-arguments
+def _ctrl_transform(op, control, control_values, work_wires, work_wire_type, one_controlled):
 
     @wraps(op)
     def wrapper(*args, **kwargs):
 
         if qp.capture.enabled():
-            return _capture_ctrl_transform(op, control, control_values, work_wires)(*args, **kwargs)
+            return _capture_ctrl_transform(
+                op,
+                control,
+                control_values,
+                work_wires,
+                work_wire_type,
+            )(*args, **kwargs)
 
         qscript = qp.tape.make_qscript(op)(*args, **kwargs)
 
@@ -394,7 +403,13 @@ def _ctrl_transform(op, control, control_values, work_wires, one_controlled):
 
         _ = [
             (
-                ctrl(op, control=control, control_values=op_control_values, work_wires=work_wires)
+                ctrl(
+                    op,
+                    control=control,
+                    control_values=op_control_values,
+                    work_wires=work_wires,
+                    work_wire_type=work_wire_type,
+                )
                 if not isinstance(op, (Allocate, Deallocate))
                 else qp.apply(op)
             )
@@ -417,22 +432,33 @@ ctrl_transform_prim.multiple_results = True
 ctrl_transform_prim.prim_type = "higher_order"
 
 
+# pylint: disable=too-many-arguments
 @ctrl_transform_prim.def_impl
-def _ctrl_transform_impl(*args, n_control, jaxpr, control_values, work_wires, n_consts):
-    from pennylane.tape.plxpr_conversion import (  # pylint: disable=import-outside-toplevel
-        CollectOpsandMeas,
-    )
+def _ctrl_transform_impl(
+    *args,
+    n_control,
+    jaxpr,
+    work_wires,
+    n_consts,
+    work_wire_type="borrowed",
+):
+    # pylint: disable=import-outside-toplevel
+    from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
+    values_start = len(args) - n_control
+    controls_start = values_start - n_control
     consts = args[:n_consts]
-    control_wires = args[-n_control:]
-    args = args[n_consts:-n_control]
+    control_wires = args[controls_start:values_start]
+    control_values = args[values_start:]
+    args = args[n_consts:controls_start]
 
     collector = CollectOpsandMeas()
     with qp.QueuingManager.stop_recording():
         collector.eval(jaxpr, consts, *args)
 
     for op in collector.state["ops"]:
-        ctrl(op, control_wires, control_values, work_wires)
+        ctrl(op, control_wires, control_values, work_wires, work_wire_type=work_wire_type)
+
     return []
 
 
@@ -441,7 +467,13 @@ def _ctrl_transform_abstract_eval(*_, **__):
     return []
 
 
-def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires) -> Callable:
+def _capture_ctrl_transform(
+    qfunc: Callable,
+    control,
+    control_values,
+    work_wires,
+    work_wire_type="borrowed",
+) -> Callable:
     """Capture compatible way of performing an ctrl transform."""
     # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
 
@@ -458,10 +490,11 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
             *abstract_shapes,
             *flat_args,
             *control_wires,
+            *(math.cast(value, dtype=bool) for value in control_values),
             jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),
-            control_values=control_values,
             work_wires=qp.wires.Wires(work_wires) if work_wires is not None else work_wires,
+            work_wire_type=work_wire_type,
             n_consts=len(jaxpr.consts),
         )
 
@@ -697,7 +730,7 @@ class Controlled(SymbolicOp):
         if self.base.name in ("RX", "RY", "RZ", "Rot"):
             base_params = str(
                 [
-                    (id(d) if math.is_abstract(d) else math.round(math.real(d) % (4 * np.pi), 10))
+                    (id(d) if math.is_tracer(d) else math.round(math.real(d) % (4 * np.pi), 10))
                     for d in self.base.data
                 ]
             )
@@ -903,7 +936,7 @@ class Controlled(SymbolicOp):
         ):
             return True
         is_su2 = _is_single_qubit_special_unitary(self.base)
-        if not math.is_abstract(is_su2) and is_su2:
+        if not math.is_tracer(is_su2) and is_su2:
             return True
         if self.base.has_decomposition:
             return True
@@ -1068,7 +1101,7 @@ def _decompose_no_control_values(op: Controlled) -> list[Operator] | None:
         return decomp
 
     is_su2 = _is_single_qubit_special_unitary(op.base)
-    if not math.is_abstract(is_su2) and is_su2:
+    if not math.is_tracer(is_su2) and is_su2:
         if len(op.control_wires) >= 2 and math.get_interface(*op.data) == "numpy":
             return ctrl_decomp_bisect(op.base, op.control_wires)
         return ctrl_decomp_zyz(
@@ -1170,7 +1203,7 @@ def _impl(
     work_wires=None,
     work_wire_type="borrowed",
 ):
-    control_wires = tuple(w if math.is_abstract(w) else int(w) for w in control_wires)
+    control_wires = tuple(w if math.is_tracer(w) else int(w) for w in control_wires)
     return type.__call__(
         Controlled,
         base,

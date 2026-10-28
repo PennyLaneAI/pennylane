@@ -33,8 +33,7 @@ from pennylane.templates.state_preparations.partial_unary import (
     _partial_unary_state_prep_core,
     _partial_unary_state_prep_resources,
 )
-from pennylane.testing import assert_valid
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_valid, assert_valid_decomp_rule
 from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires
 
@@ -510,7 +509,7 @@ class TestPartialUnaryStatePreparation:
         [rule] = list_decomps(PartialUnaryStatePreparation)
         resources = rule.compute_resources(**op.arguments).gate_counts
         assert qp.MultiplexerStatePreparation(state_type[8], wires=Wire[3]) in resources
-        _test_decomposition_rule(op, rule)
+        assert_valid_decomp_rule(op, rule)
 
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -562,7 +561,7 @@ class TestPartialUnaryStatePreparation:
                 coefficients, range(num_wires), indices, work_wires
             )
         )()
-        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
 
         qroms = [op for op in ops if isinstance(op, qp.QROM)]
         type_counts = np.array(
@@ -617,6 +616,9 @@ class TestPartialUnaryStatePreparation:
     )
     def test_decomposition_prepares_state(self, num_wires, num_entries, seed, provide_work_wires):
         """Test that the decomposition of PartialUnaryStatePreparation actually prepares the desired state."""
+        if provide_work_wires and num_entries > 1:
+            pytest.xfail("Requires Catalyst companion PR [sc-134032]")
+
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
         needed_work_wires = max(qp.math.ceil_log2(num_entries) - 1, 1)
         if provide_work_wires:
@@ -637,6 +639,7 @@ class TestPartialUnaryStatePreparation:
         wire_specs = wires, work_wires, num_wires + needed_work_wires
         assert_pui_correctness(rule, coefficients, indices, wire_specs)
 
+    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(

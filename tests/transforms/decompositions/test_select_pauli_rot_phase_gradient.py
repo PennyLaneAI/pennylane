@@ -17,12 +17,13 @@
 import warnings
 
 import numpy as np
+import phase_gradient_helpers
 
 # pylint: disable=no-value-for-parameter
 import pytest
 
 import pennylane as qp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_valid_decomp_rule
 from pennylane.transforms.decompositions import (
     make_selectpaulirot_to_phase_gradient_decomp,
 )
@@ -104,7 +105,7 @@ def test_valid_decomp(prec, num_controls, rot_axis):
     op = qp.SelectPauliRot(
         angles, control_wires=control_wires, target_wire=wire_idx, rot_axis=rot_axis
     )
-    _test_decomposition_rule(op, custom_decomp)
+    assert_valid_decomp_rule(op, custom_decomp)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -287,7 +288,7 @@ def test_capture_compatibility():
     )
 
     op = qp.SelectPauliRot(angles, control_wires=control_wires, target_wire=target_wire)
-    _test_decomposition_rule(op, custom_decomp)
+    assert_valid_decomp_rule(op, custom_decomp)
 
 
 @pytest.mark.parametrize(
@@ -312,10 +313,63 @@ def test_rot_axis_zero_controls(rot_axis, expected_op):
     angles = np.array([1.23])
     op = qp.SelectPauliRot(angles, control_wires=[], target_wire=0, rot_axis=rot_axis)
 
-    _test_decomposition_rule(op, custom_decomp)
+    assert_valid_decomp_rule(op, custom_decomp)
 
     with qp.queuing.AnnotatedQueue() as q:
         custom_decomp(angles, [], 0, rot_axis=rot_axis)
 
     assert len(q.queue) == 1
     assert isinstance(q.queue[0], expected_op)
+
+
+@pytest.mark.parametrize(
+    "precision_stats, exact",
+    [(None, True), ({2: 0, 4: 3}, True), ({0: 1, 4: 1}, False), ({2: 1}, False)],
+)
+def test_precision_stats_exact_resources(precision_stats, exact):
+    """Test that the resources of the rule are only marked as exact if no conditional is used."""
+    rule = make_selectpaulirot_to_phase_gradient_decomp(
+        [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10], precision_stats=precision_stats
+    )
+    assert rule.exact_resources is exact
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize(
+    "bits, precision_stats, width, rot_axis",
+    [
+        ([[1, 0, 1, 0], [0, 1, 0, 0]], {1: 1, 3: 5}, 3, "Z"),
+        # The required precision is the maximum over all angles
+        ([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [1, 1, 0, 0]], {1: 1, 2: 1, 4: 1}, 2, "X"),
+        ([[1, 0, 0, 1], [0, 0, 0, 0]], {2: 1, 3: 1}, 4, "Y"),
+        ([[0, 0, 0, 0], [0, 0, 0, 0]], {0: 1, 4: 1}, 0, "Z"),
+    ],
+)
+def test_precision_stats_decomp(bits, precision_stats, width, rot_axis, seed):
+    """Test that the rule with ``precision_stats`` truncates the QROM, the phase-gradient flips
+    and the SemiAdder to the smallest precision that suffices for all angles, accounts for all
+    gates in its resources, and realizes SelectPauliRot. The precision dispatch itself is tested in
+    test_rz_phase_gradient.py."""
+    angle_wires, phase_grad_wires = qp.wires.Wires([0, 1, 2, 3]), qp.wires.Wires([4, 5, 6, 7])
+    rule = make_selectpaulirot_to_phase_gradient_decomp(
+        angle_wires, phase_grad_wires, [8, 9, 10], precision_stats=precision_stats
+    )
+    num_controls = int(np.log2(len(bits)))
+    op = qp.SelectPauliRot(
+        phase_gradient_helpers.bits_to_angles(bits, 4 * np.pi),
+        control_wires=list(range(11, 11 + num_controls)),
+        target_wire=11 + num_controls,
+        rot_axis=rot_axis,
+    )
+    assert_valid_decomp_rule(op, rule)
+
+    tape = qp.testing.decomp_rule_to_tape(op, rule)
+    ops = list(phase_gradient_helpers.leaf_ops(tape.operations))
+    adders = [o for o in ops if isinstance(o, qp.SemiAdder)]
+    assert [(a.x_wires, a.y_wires) for a in adders] == (
+        [(angle_wires[:width], phase_grad_wires[:width])] if width else []
+    )
+    for qrom in (o for o in ops if isinstance(o, qp.QROM)):
+        assert qrom.target_wires == angle_wires[:width]
+        assert np.array_equal(qrom.bitstrings, np.array(bits)[:, :width])
+    phase_gradient_helpers.assert_decomp_realizes_op(op, tape, phase_grad_wires, seed)
