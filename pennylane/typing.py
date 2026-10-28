@@ -454,7 +454,7 @@ class AbstractArray:
         left_dtype = weak_dtypes.get(self.dtype.kind, self.dtype) if self._weak_type else self.dtype
         right_dtype = (
             weak_dtypes.get(other.dtype.kind, other.dtype)
-            if other._weak_type
+            if other._weak_type  # pylint: disable=protected-access
             else other.dtype  # pylint: disable=protected-access
         )
         return operation.resolve_dtypes((left_dtype, right_dtype, None))[-1]
@@ -474,7 +474,7 @@ class AbstractArray:
 
         result = AbstractArray(shape, dtype)
         object.__setattr__(
-            result, "_weak_type", self._weak_type and other._weak_type
+            result, "_weak_type", self._weak_type and other._weak_type  # pylint: disable=protected-access
         )  # pylint: disable=protected-access
 
         return result
