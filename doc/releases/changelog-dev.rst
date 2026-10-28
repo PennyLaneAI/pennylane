@@ -1098,6 +1098,7 @@ Improvements 🛠
   `(#9385) <https://github.com/PennyLaneAI/pennylane/pull/9385>`__
   `(#9712) <https://github.com/PennyLaneAI/pennylane/pull/9712>`__
   `(#10032) <https://github.com/PennyLaneAI/pennylane/pull/10032>`__
+  `(#10385) <https://github.com/PennyLaneAI/pennylane/pull/10385>`__
 
 * ``Tracker`` now has a readable ``__repr__`` that displays all relevant internals
   (``active``, ``totals``, ``history``, ``latest``, ``persistent``, ``callback``).
