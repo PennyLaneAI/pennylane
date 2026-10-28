@@ -186,45 +186,52 @@ def _mlir_resources_to_specs_resources(
     )
 
 
+def _sum_scaled_extended_field(total: Any, value: Any, factor: int | float | Expression) -> Any:
+    """Add a called function's numeric extension data, preserving nested dictionaries.
+
+    Numeric leaves follow the same additive call semantics as instruction counts.
+    ``None`` denotes an unavailable metric and propagates instead of producing a
+    partial total. Nonnumeric metadata has no defined aggregation rule.
+    """
+    if factor == 0:
+        return copy.deepcopy(total)
+    if isinstance(total, dict) and isinstance(value, dict):
+        result = copy.deepcopy(total)
+        for key, item in value.items():
+            default = {} if isinstance(item, dict) else 0
+            result[key] = _sum_scaled_extended_field(result.get(key, default), item, factor)
+        return result
+    numeric_types = (int, float, Expression)
+    if any(
+        item is not None and (isinstance(item, bool) or not isinstance(item, numeric_types))
+        for item in (total, value)
+    ):
+        raise TypeError("Only numeric extension leaves can be accumulated.")
+    if total is None or value is None:
+        return None
+    return total + factor * value
+
+
 def _handle_extended_fields(
     extended_fields: dict[str, Any],
     call_count: int | float | Expression,
     called_fn_resources: SpecsResources,
 ) -> None:
-    """Helper function to handle extended fields in the resource data.
+    """Accumulate numeric Catalyst extensions using the standard call-count expressions.
 
-    .. warning::
-        This function modifies the input `extended_fields` argument.
-
-    Args:
-        extended_fields (dict[str, Any]): The extended fields from the resource data (modified by function)
-        called_fn_resources (SpecsResources): The resources of the called function
-        call_count (int | float | Expression): The number of times the called function is invoked.
-            For float values, this is the average number of times the function is invoked.
+    Extension values may be numbers or nested dictionaries of numbers. ``None``
+    propagates unavailable metrics. Unsupported metadata is preserved in the
+    calling function and reported with a warning, without partially merging a field.
     """
-
     unknown_fields = []
-
-    for field_name in called_fn_resources.extra:
-        match field_name:
-            case "pbc_depth":
-                pbc_depth = extended_fields.get("pbc_depth", None)
-                if pbc_depth is None:
-                    extended_fields["pbc_depth"] = {
-                        "any_commuting_depth": call_count
-                        * called_fn_resources.extra["pbc_depth"]["any_commuting_depth"],
-                        "qubit_disjoint_depth": call_count
-                        * called_fn_resources.extra["pbc_depth"]["qubit_disjoint_depth"],
-                    }
-                else:
-                    pbc_depth["any_commuting_depth"] += (
-                        call_count * called_fn_resources.extra["pbc_depth"]["any_commuting_depth"]
-                    )
-                    pbc_depth["qubit_disjoint_depth"] += (
-                        call_count * called_fn_resources.extra["pbc_depth"]["qubit_disjoint_depth"]
-                    )
-            case _:
-                unknown_fields.append(field_name)
+    for field_name, value in called_fn_resources.extra.items():
+        default = {} if isinstance(value, dict) else 0
+        try:
+            extended_fields[field_name] = _sum_scaled_extended_field(
+                extended_fields.get(field_name, default), value, call_count
+            )
+        except TypeError:
+            unknown_fields.append(field_name)
 
     if unknown_fields:
         warnings.warn(

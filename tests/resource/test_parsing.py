@@ -295,13 +295,13 @@ class TestAnalysisPassConversion:
 
     def test_extra_depth_info(self, example_loop_analysis_pass_result):
         """Test that PBC depth information is correctly extracted from the analysis pass result."""
-        example_loop_analysis_pass_result["for_loop_2"]["extended_fields"]["pbc_depth"] = {
-            "any_commuting_depth": 5,
-            "qubit_disjoint_depth": 0,
+        example_loop_analysis_pass_result["for_loop_2"]["extended_fields"] = {
+            "pbc_any_commuting_depth": 5,
+            "pbc_qubit_disjoint_depth": 0,
         }
-        example_loop_analysis_pass_result["for_loop_1"]["extended_fields"]["pbc_depth"] = {
-            "any_commuting_depth": 2,
-            "qubit_disjoint_depth": 3,
+        example_loop_analysis_pass_result["for_loop_1"]["extended_fields"] = {
+            "pbc_any_commuting_depth": 2,
+            "pbc_qubit_disjoint_depth": 3,
         }
 
         actual = parse_resources_json(example_loop_analysis_pass_result)
@@ -349,7 +349,7 @@ class TestConvertToSubclass:
 
     def test_convert_to_pbc(self):
         """Test that _convert_to_subclass correctly converts a SpecsResources to a PBCSpecsResources."""
-        pbc_data = {"pbc_depth": {"any_commuting_depth": 22, "qubit_disjoint_depth": 18}}
+        pbc_data = {"any_commuting_depth": 22, "qubit_disjoint_depth": 18}
 
         res = SpecsResources(
             counts={"Hadamard": 3, "PauliX": 2, "PauliZ": 6},
@@ -366,8 +366,8 @@ class TestConvertToSubclass:
         assert converted.measurement_processes == res.measurement_processes
         assert converted.num_wires == res.num_wires
         assert converted.circuit_depth == res.circuit_depth
-        assert converted.any_commuting_depth == pbc_data["pbc_depth"]["any_commuting_depth"]
-        assert converted.qubit_disjoint_depth == pbc_data["pbc_depth"]["qubit_disjoint_depth"]
+        assert converted.any_commuting_depth == pbc_data["any_commuting_depth"]
+        assert converted.qubit_disjoint_depth == pbc_data["qubit_disjoint_depth"]
         assert "any_commuting_depth" not in converted.extra
         assert "qubit_disjoint_depth" not in converted.extra
 
