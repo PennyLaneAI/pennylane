@@ -85,9 +85,7 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
     estimate_qnode._compile_pipeline = CompilePipeline(resource_analysis_transform)
 
     try:
-        resources = resources_from_analysis_pass(
-            func, estimate_qnode, 1, {}, {}, *args, is_estimate=True, **kwargs
-        )
+        resources = resources_from_analysis_pass(func, estimate_qnode, 1, {}, {}, *args, **kwargs)
     except CompileError as exc:
         missing_rule = re.search(r"Decomposition rule not found for operator '([^'{]+)", str(exc))
         if missing_rule is None:

@@ -417,6 +417,21 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         with pytest.raises(ValueError, match="qp.estimate can only be applied to a qjit'd QNode"):
             qp.estimate(circuit, target=TARGET)()
 
+    def test_dynamic_allocation(self):
+        """Test that estimate counts the gates acting on dynamically allocated wires."""
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
+        def circuit():
+            with qp.allocate(2) as aux:
+                qp.CZ(aux)
+            return qp.probs(wires=0)
+
+        resources = qp.estimate(circuit, target={"Hadamard", "CNOT"})().resources
+
+        assert resources.quantum_operations == {"Hadamard": 2, "CNOT": 1}
+        assert resources.num_wires == 4
+
 
 @pytest.mark.usefixtures("disable_capture")
 @pytest.mark.parametrize("capture", [False, "global"])

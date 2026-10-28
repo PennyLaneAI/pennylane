@@ -63,7 +63,6 @@ def _run_resource_analysis(func, original_qnode, level, *args, **kwargs) -> tupl
         level_to_markers,
         level_to_name,
         *args,
-        is_estimate=False,
         **kwargs,
     )
 
