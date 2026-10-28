@@ -2237,6 +2237,32 @@ class ControlledPhaseShift(Controlled2):
 
         ``ControlledPhaseShift`` is also available as :class:`~.CPhase`.
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.ControlledPhaseShift
+
+            .. decomposition-rule:: _cphase_to_rz_cnot
+                :image: /_static/decomposition_thumbnails/cphase_to_rz_cnot.svg
+
+                :class:`~.RZ` | :math:`3`
+                :class:`~.CNOT` | :math:`2`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _cphase_to_ppr
+                :image: /_static/decomposition_thumbnails/cphase_to_ppr.svg
+
+                :class:`PauliRot("ZZ") <.PauliRot>` | :math:`1`
+                :class:`PauliRot("Z") <.PauliRot>` | :math:`2`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _cphase_to_single_phase
+                :image: /_static/decomposition_thumbnails/cphase_to_single_phase.svg
+                :requires: 1 work wire
+
+                :class:`~.TemporaryAND` | :math:`1`
+                :class:`~.PhaseShift` | :math:`1`
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1`
     """
 
     wire_sizes = (2,)
