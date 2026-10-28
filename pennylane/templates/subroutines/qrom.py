@@ -1282,4 +1282,6 @@ add_decomps(
     _qrom_unary_iteration,
     _qrom_measurement_decomposition,
 )
+# TODO[dwierichs]: _qrom_measurement_decomposition assumes zeroed work wires, but they may hold
+# leftover data after a QROM with clean=False. Restrict it to clean=True for Adjoint(QROM).
 add_decomps("Adjoint(QROM)", _qrom_measurement_decomposition, _adjoint_qrom_measurement)

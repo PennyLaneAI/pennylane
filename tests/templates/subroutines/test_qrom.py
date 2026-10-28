@@ -1185,7 +1185,7 @@ class TestAdjointQROMMeasurement:
 
     def test_condition(self, mocker):
         """Test that the rule requires an active compiler with program capture, at least one
-        control wire, and at least one work wire."""
+        control wire, at least one work wire, and ``clean=True``."""
         op = qp.adjoint(qp.QROM(Bool[4, 2], Wire[2], Wire[2], Wire[1]))
         assert not _adjoint_qrom_measurement.is_applicable(base=op.base)
         with qp.capture.toggle_ctx(True):
@@ -1198,6 +1198,8 @@ class TestAdjointQROMMeasurement:
             op = qp.adjoint(qp.QROM(Bool[1, 2], Wire[0], Wire[2], Wire[1]))
             assert not _adjoint_qrom_measurement.is_applicable(base=op.base)
             op = qp.adjoint(qp.QROM(Bool[4, 2], Wire[2], Wire[2], Wire[0]))
+            assert not _adjoint_qrom_measurement.is_applicable(base=op.base)
+            op = qp.adjoint(qp.QROM(Bool[4, 2], Wire[2], Wire[2], Wire[1], False))
             assert not _adjoint_qrom_measurement.is_applicable(base=op.base)
 
     @pytest.mark.parametrize("case", ADJOINT_QROM_CASES)
