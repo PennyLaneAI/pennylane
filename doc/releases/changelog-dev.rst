@@ -2153,6 +2153,10 @@ Internal changes ⚙️
 Documentation 📝
 ~~~~~~~~~~~~~~~~
 
+* API documentation now automatically links alternate public names for the same
+  PennyLane class or function. Redundant hard-coded alias notes have been removed.
+  `(#10407) <https://github.com/PennyLaneAI/pennylane/pull/10407>`__
+  
 * The docstring for :class:`~.ControlledPhaseShift` now mentions that :class:`~.CPhase` is an alias.
   `(#10405) <https://github.com/PennyLaneAI/pennylane/pull/10405>`__
 
