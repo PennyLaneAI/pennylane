@@ -1199,6 +1199,27 @@ def _adjoint_qrom_measurement(base):
     computed with ``TemporaryAND`` gates and uncomputed with their adjoints (Figures 8 to 10).
     The remaining work wires are passed on to the lookup. All work wires must be in the
     :math:`|0\rangle` state.
+
+    For example, for 16 bitstrings with four control wires, two target wires and five work
+    wires, two address bits are encoded into a one-hot register of :math:`k=4` work wires:
+
+    .. code-block::
+
+        c0: ─────────────────────────────────────╭◑───────────────────────────────────┤
+        c1: ─────────────────────────────────────├◑───────────────────────────────────┤
+        c2: ──────────────────────╭●────╭●───────│────────────────●╮─────●╮───────────┤
+        c3: ────────────────╭●────│─────│────────│─────────────────│──────│─────●╮────┤
+        t0: ──┤↗X├──┤↗Z├──X─│─────│─────│────────│─────────────────│──────│──────│────┤
+        t1: ──┤↗X├──┤↗Z├──X─│─────│─────│────────│─────────────────│──────│──────│────┤
+        w0: ──X─────────────├●─╭X─├●─╭X─│───H────├QROM(M0)──H──────│─╭X──●┤─╭X──●┤──X─┤
+        w1: ────────────────╰⊕─╰●─│──│──├●─╭X──H─├QROM(M0)──H─╭X──●┤─│────│─╰●──⊕╯────┤
+        w2: ──────────────────────╰⊕─╰●─│──│───H─├QROM(M0)──H─│────│─╰●──⊕╯───────────┤
+        w3: ────────────────────────────╰⊕─╰●──H─├QROM(M0)──H─╰●──⊕╯──────────────────┤
+        w4: ─────────────────────────────────────╰work────────────────────────────────┤
+
+    Here, the ``X`` on each target wire is conditioned on the outcome of its :math:`Z`
+    measurement, and ``M0`` is the fixup table computed from the outcomes of the :math:`X`
+    measurements.
     """
     bitstrings = math.cast(base.bitstrings, int)
     control_wires, target_wires, work_wires = base.control_wires, base.target_wires, base.work_wires
