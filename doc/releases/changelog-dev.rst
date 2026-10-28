@@ -872,6 +872,10 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* Added a decomposition to :class:`~.ControlledPhaseShift` using one clean work wire and a single
+  :class:`~.PhaseShift` gate.
+  `(#10405) <https://github.com/PennyLaneAI/pennylane/pull/10405/>`__
+
 * Added a decomposition for :class:`~.OutMuliplier` with longer ``x_wires`` input than ``y_wires``
   input into a new ``OutMultiplier`` with swapped input registers. This is computationally
   equivalent but makes the multiplication cheaper.
