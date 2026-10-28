@@ -1137,7 +1137,12 @@ def _one_hot_swap_triples(address_wires, one_hot_wires):
     ``one_hot_wires[0]`` to ``one_hot_wires[l]``, where ``l`` is the value stored in
     ``address_wires`` (most-significant bit first), following Figure 8 of
     `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__. The wire ``y`` is in the
-    :math:`|0\rangle` state before its controlled SWAP is applied."""
+    :math:`|0\rangle` state before its controlled SWAP is applied.
+
+    These are the controlled SWAPs of ``qp.adjoint(_swap_ops)`` with a single target column,
+    i.e., of the inverted SWAP network of Select-SWAP. They are not obtained from ``_swap_ops``,
+    because the latter applies generic controlled SWAPs and cannot make use of ``y`` being in
+    the :math:`|0\rangle` state."""
     num_address = len(address_wires)
     return [
         (address_wires[num_address - 1 - p], one_hot_wires[j], one_hot_wires[j + 2**p])
