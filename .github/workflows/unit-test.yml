@@ -203,6 +203,9 @@ jobs:
           OMP_NUM_THREADS: 1
           OPENBLAS_NUM_THREADS: 1
           MKL_NUM_THREADS: 1
+          # sys.monitoring coverage backend (Python 3.12+); much cheaper than the C
+          # tracer. Safe here because .coveragerc sets neither branch nor concurrency.
+          COVERAGE_CORE: sysmon
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
         run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
 
