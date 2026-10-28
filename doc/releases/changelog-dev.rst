@@ -1445,6 +1445,12 @@ Breaking changes 💔
   The private ``_test_decomposition_rule`` has been removed; use :func:`~.testing.assert_valid_decomp_rule`.
   `(#10342) <https://github.com/PennyLaneAI/pennylane/pull/10342>`__
 
+* The ``lazy`` argument has been removed from ``qp.adjoint``. Adjoint construction is
+  always symbolic. Remove ``lazy=True``; replace ``lazy=False`` with a direct known
+  inverse (for example, ``qp.RX(-theta, wires=0)``) or explicitly simplify with
+  ``qp.simplify(qp.adjoint(op))``.
+  `(#10371) <https://github.com/PennyLaneAI/pennylane/pull/10371>`__
+
 * ``qp.tape.plxpr_to_tape`` and ``qp.tape.plxpr_conversion.plxpr_to_tape`` have been removed.
   Use :func:`~.testing.plxpr_to_tape` instead.
   `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
@@ -2224,6 +2230,10 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed decomposition graph construction discarding a reachable symbolic adjoint when an
+  alternative decomposition revisits its base, which could overestimate required work wires.
+  `(#10371) <https://github.com/PennyLaneAI/pennylane/pull/10371>`__
 
 * The resource estimate of the measurement-based decomposition of :class:`~.QROM` now declares
   every gate type that the decomposition uses and upper-bounds every count except the split of

@@ -781,6 +781,7 @@ class TestMCXDecomposition:
         _fix_decomp(qp.MultiControlledX, decompose_mcx_with_no_worker)
         assert list(qp.list_decomps(mcx)) == [decompose_mcx_with_no_worker]
 
+    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("num_control_wires, num_work_wires", [(4, 1), (4, 2)])
