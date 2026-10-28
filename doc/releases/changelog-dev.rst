@@ -2213,6 +2213,10 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed a bug where ``qp.is_commuting`` returned false negatives for
+  ``RX``, ``RY``, and ``RZ`` rotations at an angle of ``2*pi``.
+  `(#10408) <https://github.com/PennyLaneAI/pennylane/pull/10408>`__
+
 * ``qp.adjoint`` now rejects numerical tracers during capture instead of treating
   them as quantum operators.
   `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__

@@ -100,6 +100,18 @@ def _get_target_name(op):
     return op.name
 
 
+def _is_2pi_rotation(op):
+    """Check whether an RX, RY, or RZ rotation is equivalent to a 2*pi rotation."""
+    if op.name not in {"RX", "RY", "RZ"}:
+        return False
+
+    angle = op.data[0]
+    if not isinstance(angle, (int, float, np.number)):
+        return False
+
+    return bool(np.isclose(np.mod(angle, 4 * np.pi), 2 * np.pi))
+
+
 def _check_mat_commutation(op1, op2):
     """Uses matrices and matrix multiplication to determine whether op1 and op2 commute.
 
@@ -311,6 +323,10 @@ def is_commuting(operation1, operation2):
 
     # Arithmetic non-disjoint operations only contain Pauli words
     _check_opmath_operations(operation1, operation2)
+
+    # Uncontrolled rotations equivalent to 2*pi are scalar multiples of identity.
+    if _is_2pi_rotation(operation1) or _is_2pi_rotation(operation2):
+        return True
 
     # Two CRot that cannot be simplified
     if operation1.name == "CRot" and operation2.name == "CRot":
