@@ -2154,6 +2154,9 @@ Internal changes ⚙️
 Documentation 📝
 ~~~~~~~~~~~~~~~~
 
+* The docstring for :class:`~.ControlledPhaseShift` now mentions that :class:`~.CPhase` is an alias.
+  `(#10405) <https://github.com/PennyLaneAI/pennylane/pull/10405>`__
+
 * The docstring for :class:`~.LinearCombination` now mentions the :class:`~.Hamiltonian` alias in the first sentence.
   `(#10406) <https://github.com/PennyLaneAI/pennylane/pull/10406>`__
 
