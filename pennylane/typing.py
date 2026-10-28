@@ -474,7 +474,9 @@ class AbstractArray:
 
         result = AbstractArray(shape, dtype)
         object.__setattr__(
-            result, "_weak_type", self._weak_type and other._weak_type  # pylint: disable=protected-access
+            result,
+            "_weak_type",
+            self._weak_type and other._weak_type,  # pylint: disable=protected-access
         )  # pylint: disable=protected-access
 
         return result
