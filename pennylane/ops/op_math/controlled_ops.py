@@ -2368,7 +2368,7 @@ def _cphase_to_single_phase_resources(phi, wires):  # pylint: disable=unused-arg
 @register_resources(_cphase_to_single_phase_resources, work_wires={"zeroed": 1})
 def _cphase_to_single_phase(phi: TensorLike, wires: WiresLike, **__):
     with qp.allocate(1, state="zero", restored=True) as work_wire:
-        elbow = qp.TemporaryAND(concatenate_wires(wires, work_wire))
+        elbow = qp.TemporaryAND([wires[0], wires[1], work_wire[0]])
         qp.change_op_basis(elbow, qp.PhaseShift(phi, work_wire))
 
 
