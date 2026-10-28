@@ -2210,7 +2210,7 @@ add_decomps("Adjoint(CRot)", _adjoint_crot)
 
 
 class ControlledPhaseShift(Controlled2):
-    r"""A qubit controlled phase shift. Also accessible as :class:`~.CPhase`.
+    r"""A qubit controlled phase shift.
 
     .. math:: CR_\phi(\phi) = \begin{bmatrix}
                 1 & 0 & 0 & 0 \\
@@ -2232,10 +2232,6 @@ class ControlledPhaseShift(Controlled2):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
-
-    .. seealso::
-
-        ``ControlledPhaseShift`` is also available as :class:`~.CPhase`.
 
     """
 

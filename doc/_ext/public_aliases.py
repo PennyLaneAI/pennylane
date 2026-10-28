@@ -11,19 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Add links to public aliases when Sphinx documents PennyLane objects."""
+"""Add alias links while Sphinx renders docstrings, without changing ``__doc__``."""
 
 import pennylane as qp
 
 
 def add_public_aliases(app, what, name, obj, options, lines):
-    """Add alias links immediately after the opening documentation paragraph."""
+    """Edit Sphinx's reStructuredText ``lines`` in place; no return value is needed."""
+    # Only document PennyLane classes and functions.
     if what not in {"class", "function"}:
         return
     if not getattr(obj, "__module__", "").startswith("pennylane."):
         return
 
+    # The documented name can differ from obj.__name__ on alias pages.
     documented_name = name.rsplit(".", 1)[-1]
+    # Inspect loaded exports without triggering lazy imports; "is" identifies aliases.
     aliases = sorted(
         export_name
         for export_name, exported_obj in vars(qp).items()
@@ -34,14 +37,16 @@ def add_public_aliases(app, what, name, obj, options, lines):
     if not aliases:
         return
 
+    # Sphinx roles link to the full target; "~" displays only its short name.
     role = "class" if what == "class" else "func"
     references = ", ".join(f":{role}:`~pennylane.{alias}`" for alias in aliases)
-    # Keep the opening paragraph available to autosummary as the object summary.
+    # Preserve the opening paragraph, which Sphinx also uses in summary tables.
     insertion_index = 0
     while insertion_index < len(lines) and not lines[insertion_index].strip():
         insertion_index += 1
     while insertion_index < len(lines) and lines[insertion_index].strip():
         insertion_index += 1
+    # reStructuredText notes require blank lines and indented content.
     lines[insertion_index:insertion_index] = [
         "",
         ".. note::",
@@ -52,7 +57,9 @@ def add_public_aliases(app, what, name, obj, options, lines):
 
 
 def setup(app):
-    """Register the docstring hook."""
+    """Entry point called by Sphinx when this extension is loaded."""
+    # Autodoc must register the event before we connect to it.
     app.setup_extension("sphinx.ext.autodoc")
     app.connect("autodoc-process-docstring", add_public_aliases)
+    # No shared state is modified, so parallel builds are safe.
     return {"parallel_read_safe": True, "parallel_write_safe": True}
