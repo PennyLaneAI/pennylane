@@ -872,6 +872,14 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* Added a new decomposition to ``Adjoint(QROM)`` based on measurement-based uncomputation from Appendix C
+  of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, available with ``qjit(capture=True)``. It
+  measures the target wires in the :math:`X` basis and fixes up the resulting phases with a lookup
+  of size :math:`\lceil L/k\rceil` targeting a one-hot register of size :math:`k`. This reduces the
+  Toffoli cost to roughly :math:`2\sqrt{L}` for :math:`L` bitstrings but requires additional
+  work wires.
+  `(#10363) <https://github.com/PennyLaneAI/pennylane/pull/10363>`__
+
 * The phase gradient decomposition rule factories :func:`~.make_rz_to_phase_gradient_decomp`,
   :func:`~.make_crz_to_phase_gradient_decomp` and
   :func:`~.make_selectpaulirot_to_phase_gradient_decomp` accept an optional ``precision_stats``

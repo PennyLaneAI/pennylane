@@ -394,7 +394,7 @@ class CDFHamiltonian(NumericHamiltonian):
 
         super().__post_init__()
 
-    def normalize_leaf_determinant(self) -> "CDFHamiltonian":
+    def normalize_leaf_determinant(self) -> CDFHamiltonian:
         r"""Force every leaf to determinant ``+1`` so :class:`~.BasisRotation`'s real-orthogonal sign
         gauge is identical across fragments.
 
@@ -568,7 +568,7 @@ class CGFHamiltonian(NumericHamiltonian):
 
         super().__post_init__()
 
-    def normalize_leaf_determinant(self) -> "CGFHamiltonian":
+    def normalize_leaf_determinant(self) -> CGFHamiltonian:
         r"""Force every per-mode leaf to determinant ``+1`` so :class:`~.BasisRotation`'s real-orthogonal
         sign gauge is identical across fragments.
 
@@ -590,7 +590,7 @@ class CGFHamiltonian(NumericHamiltonian):
 
         return replace(self, leaf_tensors=math.concatenate([one_body, two_body], axis=0))
 
-    def align_one_body_leaf(self) -> "CGFHamiltonian":
+    def align_one_body_leaf(self) -> CGFHamiltonian:
         """Transpose the one-body leaf so both sectors share the scaffolding's row convention.
 
         The scaffolding assumes each ``leaf_tensors[nu][l]`` stores its per-mode diagonalizing
