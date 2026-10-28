@@ -2213,6 +2213,14 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* The resource estimate of the measurement-based decomposition of :class:`~.QROM` now declares
+  every gate type that the decomposition uses and upper-bounds every count except the split of
+  X-type measurements across widths, which is assumed to follow a binomial distribution
+  like for uniformly random bitstrings. The total of those measurements is also upper-bounded,
+  overestimating by at most the number of target wires. The decomposition also no longer
+  introduces a global phase of :math:`-1` for some mid-circuit measurement outcomes.
+  `(#10399) <https://github.com/PennyLaneAI/pennylane/pull/10399>`__
+
 * ``qp.adjoint`` now rejects numerical tracers during capture instead of treating
   them as quantum operators.
   `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
