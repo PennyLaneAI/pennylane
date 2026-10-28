@@ -79,9 +79,7 @@ def test_various_cases(op1, op2, expected):
 
 
 @pytest.mark.parametrize("rotation_cls", [qp.RX, qp.RY, qp.RZ])
-@pytest.mark.parametrize(
-    "gate_cls", [qp.PauliX, qp.PauliY, qp.PauliZ, qp.Hadamard]
-)
+@pytest.mark.parametrize("gate_cls", [qp.PauliX, qp.PauliY, qp.PauliZ, qp.Hadamard])
 def test_rotations_at_two_pi_commute_with_single_qubit_gates(rotation_cls, gate_cls):
     """Rotations at 2*pi commute with all single-qubit gates on the same wire."""
     rotation = rotation_cls(2 * np.pi, wires=0)
