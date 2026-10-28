@@ -1186,6 +1186,7 @@ def _adjoint_qrom_measurement_resources(base):
     and capture.enabled()
     and len(base.control_wires) > 0
     and len(base.work_wires) > 0
+    and base.clean
 )
 @register_resources(_adjoint_qrom_measurement_resources, exact=False)
 def _adjoint_qrom_measurement(base):
