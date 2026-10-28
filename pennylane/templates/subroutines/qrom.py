@@ -15,6 +15,7 @@
 This submodule contains the template for QROM.
 """
 
+import math as builtin_math
 from collections.abc import Sequence
 from functools import partial
 
@@ -31,7 +32,7 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.math import ceil_log2
-from pennylane.ops import CNOT, CZ, X, cond, ctrl, pauli_measure
+from pennylane.ops import CNOT, CZ, X, Z, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -437,6 +438,8 @@ def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
     m1 = pauli_measure("X" + "X" * len(x_wires), [work_wire, *x_wires])
 
     cond(m1 == 1, CZ)(wires=ctrl_wires)
+    # Without this, the reset below would leave a global phase of -1 if both outcomes are 1
+    cond(m1 == 1, Z)(wires=work_wire)
 
     m2 = pauli_measure("Z", [work_wire])
     cond(m2 == 1, X)(wires=work_wire)
@@ -567,8 +570,12 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
 
     Each TemporaryAND is uncomputed via _measurement_uncompute which produces:
       - 2 PauliMeasure (one X-type joint measurement, one Z measurement)
-      - 1 CZ (phase correction conditioned on X measurement)
+      - 1 CZ and 1 Z (phase corrections conditioned on X measurement)
       - conditional X gates on work + targets
+
+    Only the shape of ``bitstrings`` is known, so counts that depend on the bitstring data are
+    estimated: CNOTs use the worst case, and the widths of the X-type measurements follow the
+    distribution expected for uniformly random data.
     """
     # When called for Adjoint(QROM), extract params from the base parameters
     if base is not None:
@@ -586,61 +593,62 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
     # L = num_bitstrings
     # TODO: allowing partial QROM will reduce this term
     L = 2 ** ceil_log2(num_bitstrings)
+    load = MultiX(Bool[num_targets], Wire[num_targets])
 
-    if L <= 1 and num_control_wires_extra == 0:
-        return {MultiX(Bool[num_targets], Wire[num_targets]): 1}
+    if num_control_wires_extra > 0:
+        # Flag-gated load followed by the binary inner iterator over all ``L`` entries.
+        num_ands = L - 1
+        num_cnots = max(L // 2 - 1, 0)
+        resources = _flag_resources(num_control_wires_extra)
+        resources[ctrl(load, Wire[1])] = 1
+    elif L <= 1:
+        return {load: 1}
+    elif L == 2:
+        return {load: 1, ctrl(load, Wire[1]): 1}
+    else:
+        # Base load followed by the 4-quarter outer iterator. Its CNOTs are 3 structural ones,
+        # one per inner-iterator split in the quarters, and up to ``num_targets`` for each of the
+        # two explicit base corrections.
+        num_ands = _count_tempAND_in_measurement_qrom(L)
+        num_cnots = 3 + max(L // 2 - 4, 0) + 2 * num_targets
+        resources = {load: 1, ctrl(X(Wire[1]), control=Wire[1], control_values=Bool[1]): 1}
 
-    if L == 2 and num_control_wires_extra == 0:
-        return {
-            MultiX(Bool[num_targets], Wire[num_targets]): 1,
-            ctrl(MultiX(Bool[num_targets], Wire[num_targets]), Wire[1]): 1,
-        }
-
-    # Without extra wires the load uses the cheaper 4-quarter outer iterator; with extra wires
-    # it uses the flag-gated binary inner iterator, which needs ``L - 1`` AND gates.
-    num_ands = L - 1 if num_control_wires_extra > 0 else _count_tempAND_in_measurement_qrom(L)
-    num_cz = num_ands  # CZ correction per uncomputation
-
-    # TemporaryAND counts are exact
-    # CNOTs, PauliX gates and MultiX ops are an approximation
-    flag = _flag_resources(num_control_wires_extra, num_targets)
-    resources = {
-        TemporaryAND: num_ands + flag.get(TemporaryAND, 0),
-        # Each of the ``num_ands`` uncomputations performs one Z measurement on the work wire and
-        # one X-type joint measurement on the work wire plus the target wires flipped by that
-        # bitstring. The joint measurement's size (``1 + len(x_wires)``) varies per bitstring, so
-        # the worst case (all ``num_targets`` flipped) is used for this approximate estimate.
+    # Each of the ``num_ands`` uncomputations performs one Z measurement on the work wire and
+    # one X-type joint measurement on the work wire plus the ``w`` target wires flipped by the XOR
+    # of two bitstrings. For uniformly random data, ``w`` is binomially distributed, so the
+    # measurements are spread over all widths accordingly. Rounding up makes every width appear
+    # and overestimates the total number of X-type measurements by at most ``num_targets``.
+    uncompute = {
+        TemporaryAND: num_ands,
         PauliMeasure("Z", wires=Wire[1]): num_ands,
-        PauliMeasure("X" * (num_targets + 1), wires=Wire[num_targets + 1]): num_ands,
-        CZ: num_cz,
-        CNOT: L - 1,
-        MultiX(Bool[num_targets], Wire[num_targets]): L,
-        X: L + flag.get(X, 0),
-        ctrl(X(Wire[1]), control=Wire[1], control_values=Bool[1]): 1,
+        CZ: num_ands,
+        Z: num_ands,
+        X: num_ands,
+        load: num_ands,
+        CNOT: num_cnots,
     }
-    # Merge the remaining flag-only resource types (controlled-X load, adjoint ANDs).
-    for rep, count in flag.items():
-        if rep not in resources:
-            resources[rep] = count
+    for w in range(num_targets + 1):
+        x_measure = PauliMeasure("X" * (w + 1), wires=Wire[w + 1])
+        uncompute[x_measure] = -(-num_ands * builtin_math.comb(num_targets, w) // 2**num_targets)
+    for rep, count in uncompute.items():
+        if count:
+            resources[rep] = resources.get(rep, 0) + count
     return resources
 
 
-def _flag_resources(num_control_wires_extra, num_targets):
-    """Return the resources for the flag that gates the load on extra control wires.
+def _flag_resources(num_control_wires_extra):
+    """Return the resources for building and uncomputing the flag on extra control wires.
 
-    A single extra wire uses two X gates; two or more use a ladder of ``num_control_wires_extra - 1`` AND gates,
-    all later uncomputed by the same number of adjoints. In both cases the base load is gated,
-    adding up to ``num_targets`` controlled-X gates.
+    A single extra wire is flipped with an X gate and restored with its adjoint; two or more use a
+    ladder of ``num_control_wires_extra - 1`` AND gates, all later uncomputed by the same number
+    of adjoints.
     """
-    if num_control_wires_extra < 1:
-        return {}
-    resources = {ctrl(X(Wire[1]), control=Wire[1]): num_targets}
     if num_control_wires_extra == 1:
-        resources[X] = 2
-        return resources
-    resources[TemporaryAND] = num_control_wires_extra - 1
-    resources[qp_ops.adjoint(TemporaryAND(Wire[3]))] = num_control_wires_extra - 1
-    return resources
+        return {X: 1, qp_ops.adjoint(X(Wire[1])): 1}
+    return {
+        TemporaryAND: num_control_wires_extra - 1,
+        qp_ops.adjoint(TemporaryAND(Wire[3])): num_control_wires_extra - 1,
+    }
 
 
 def _qrom_measurement_condition(

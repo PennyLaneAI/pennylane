@@ -1,0 +1,168 @@
+/* Styles for the ``decomposition-table`` directive (doc/_ext/decomposition_table.py) */
+
+:root {
+  --default-padding: 16px;
+}
+
+p.decomp-table-caption {
+  margin-bottom: 0.5rem;
+  color: #555;
+}
+
+table.decomposition-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  border: none;
+  box-shadow: none;
+  margin: 0 0 2rem;
+}
+
+/* each rule spans two rows: the access expression, then its circuit and resources */
+table.decomposition-table tbody tr {
+  background: transparent !important;
+}
+
+table.decomposition-table tbody tr.decomp-body-row {
+  border-bottom: 1px solid #e5e5e5;
+}
+
+table.decomposition-table td {
+  vertical-align: top;
+  padding: var(--default-padding) var(--default-padding) var(--default-padding) 0;
+  border: none !important;
+}
+
+table.decomposition-table td p {
+  margin: 0;
+}
+
+table.decomposition-table tr.decomp-access-row td {
+  padding: var(--default-padding) 0 var(--default-padding)/2;
+}
+
+table.decomposition-table tr.decomp-body-row td {
+  padding-top: 0;
+}
+
+table.decomposition-table tr.decomp-access-row code.decomp-access-name {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #f0eeef;
+  font-size: 0.85rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+table.decomposition-table code.decomp-access-name {
+  font-weight: 700;
+  color: #c756b2;
+}
+
+/* applicability condition, above the resources */
+table.decomposition-table p.decomp-requires {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #fff8e5;
+  border: 1px solid #ffd36a;
+  font-size: 0.8rem;
+}
+
+/* circuit diagram, below the rule name */
+table.decomposition-table td.decomp-circuit img {
+  display: block;
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 21 / 9;
+  object-fit: contain;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+}
+
+/* tables with only the gate and count columns draw their circuits 50% bigger */
+table.decomposition-table.decomp-two-cols td.decomp-circuit img {
+  max-width: 570px;
+}
+
+/* which instance of the rule the circuit shows */
+table.decomposition-table p.decomp-example {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+/* resources: a small table of gates and their counts, with a header row */
+table.decomposition-table .decomp-resources {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 4px;
+  align-items: baseline;
+  font-size: 0.9rem;
+}
+
+table.decomposition-table .decomp-resources.decomp-cols-3 {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) max-content;
+}
+
+table.decomposition-table p.decomp-example-count {
+  text-align: center;
+}
+
+table.decomposition-table p.decomp-resources-head {
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e5e5e5;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #555;
+}
+
+/* cells may shrink below their content width; long formulas then wrap between their terms or,
+   failing that, scroll within the cell instead of spilling into the next column */
+table.decomposition-table .decomp-resources > p {
+  min-width: 0;
+}
+
+table.decomposition-table p.decomp-count {
+  overflow-x: auto;
+  overflow-wrap: anywhere;
+}
+
+table.decomposition-table p.decomp-count .math,
+table.decomposition-table p.decomp-count mjx-container {
+  display: inline-block;
+  max-width: 100%;
+}
+
+table.decomposition-table p.decomp-where {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+/* On narrow screens, stack the resources below the circuit */
+@media (max-width: 700px) {
+  table.decomposition-table,
+  table.decomposition-table tbody,
+  table.decomposition-table tr,
+  table.decomposition-table td {
+    display: block;
+    width: 100%;
+  }
+
+  table.decomposition-table td {
+    padding: 6px 0;
+  }
+
+  table.decomposition-table tbody tr {
+    padding: 10px 0;
+  }
+}
