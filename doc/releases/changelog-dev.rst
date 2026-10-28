@@ -973,7 +973,8 @@ Improvements 🛠
   and one and preserves superpositions of the control. These rules are available with
   program capture or an active compiler and require respectively ``len(y_wires) + 1``
   and ``len(y_wires) + 2`` zeroed work wires, which are allocated as needed and returned
-  to :math:`|0\rangle`.
+  to :math:`|0\rangle`. The documentation explains both decompositions with ASCII
+  circuits, measurement corrections, and resource requirements.
   `(#10099) <https://github.com/PennyLaneAI/pennylane/pull/10099>`__
 
 * Sorts the gate counts in the display of resources produced from decompositions.
@@ -2079,11 +2080,6 @@ Internal changes ⚙️
 
 Documentation 📝
 ~~~~~~~~~~~~~~~~
-
-* Added an explanation of the PPM decompositions of :class:`~.SemiAdder`, with ASCII
-  circuits, measurement corrections, and resource requirements for controlled and
-  uncontrolled addition.
-  `(#10099) <https://github.com/PennyLaneAI/pennylane/pull/10099>`__
 
 * The dependency versions in the developer installation guide now match ``pyproject.toml``, and a rendering issue in the list of optional dependencies was fixed.
   `(#10232) <https://github.com/PennyLaneAI/pennylane/pull/10232>`__
