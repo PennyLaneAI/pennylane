@@ -421,7 +421,7 @@ class AbstractArray:
             return NotImplemented
         left, right = inputs
         if isinstance(left, AbstractArray):
-            return left._arithmetic(right, ufunc)
+            return left._arithmetic(right, ufunc)  # pylint: disable=protected-access
         return self._arithmetic(left, ufunc)
 
     def _resolve_binary_shape(self, other):
@@ -434,7 +434,7 @@ class AbstractArray:
             right_shape = (1,) * (ndim - len(other.shape)) + other.shape
             shape = []
             for left, right in zip(left_shape, right_shape, strict=True):
-                if left == right or right == 1:
+                if right in (left, 1):
                     shape.append(left)
                 elif left == 1:
                     shape.append(right)
@@ -453,7 +453,9 @@ class AbstractArray:
         weak_dtypes = {"i": int, "u": int, "f": float, "c": complex}
         left_dtype = weak_dtypes.get(self.dtype.kind, self.dtype) if self._weak_type else self.dtype
         right_dtype = (
-            weak_dtypes.get(other.dtype.kind, other.dtype) if other._weak_type else other.dtype
+            weak_dtypes.get(other.dtype.kind, other.dtype)
+            if other._weak_type
+            else other.dtype  # pylint: disable=protected-access
         )
         return operation.resolve_dtypes((left_dtype, right_dtype, None))[-1]
 
@@ -471,10 +473,13 @@ class AbstractArray:
         dtype = self._resolve_binary_dtype(other, operation)
 
         result = AbstractArray(shape, dtype)
-        object.__setattr__(result, "_weak_type", self._weak_type and other._weak_type)
+        object.__setattr__(
+            result, "_weak_type", self._weak_type and other._weak_type
+        )  # pylint: disable=protected-access
 
         return result
 
+    # pylint: disable-next=unused-argument
     def _unary_arithmetic(self, operation):
         """Infer unary arithmetic metadata while preserving weak typing."""
         return copy.deepcopy(self)

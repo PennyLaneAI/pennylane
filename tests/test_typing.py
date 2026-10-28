@@ -201,6 +201,7 @@ class TestAbstractArray:
     def test_arithmetic_shape_conflict(self, left, right):
         """Unknown axes do not hide a conflict on another axis."""
         with pytest.raises(ValueError, match="Cannot broadcast shapes"):
+            # pylint: disable-next=expression-not-assigned
             AbstractArray(left, float) + AbstractArray(right, float)
 
     @pytest.mark.parametrize(
@@ -343,12 +344,14 @@ class TestAbstractArray:
     def test_arithmetic_unsupported_operand(self):
         """Unrelated operands use Python's unsupported-operation protocol."""
         array = AbstractArray((2,), float)
+        # pylint: disable-next=unnecessary-dunder-call
         assert array.__add__(object()) is NotImplemented
+        # pylint: disable-next=unnecessary-dunder-call
         assert array.__radd__(object()) is NotImplemented
         with pytest.raises(TypeError):
-            array + object()
+            array + object()  # pylint: disable=expression-not-assigned
         with pytest.raises(TypeError):
-            object() + array
+            object() + array  # pylint: disable=expression-not-assigned
 
     @pytest.mark.parametrize("operation", [np.add, np.subtract, np.power])
     @pytest.mark.parametrize("reverse", [False, True])
@@ -358,8 +361,8 @@ class TestAbstractArray:
         array = AbstractArray((2, 1), float)
         result = operation(other, array) if reverse else operation(array, other)
         assert result.shape == ((2, 3) if np.ndim(other) else (2, 1))
-        assert result.dtype == (np.float64 if type(other) is float else np.float32)
-        assert result._weak_type is (type(other) is float)
+        assert result.dtype == (np.float64 if isinstance(other, float) else np.float32)
+        assert result._weak_type is (isinstance(other, float))
 
     def test_ufunc_chaining(self):
         """Ufunc results carry metadata into subsequent arithmetic."""
@@ -375,9 +378,9 @@ class TestAbstractArray:
     @pytest.mark.parametrize(
         "call",
         [
-            lambda a: np.sin(a),
-            lambda a: np.add.reduce(a),
-            lambda a: np.add.accumulate(a),
+            np.sin,
+            np.add.reduce,
+            np.add.accumulate,
             lambda a: np.add.outer(a, a),
             lambda a: np.add.at(a, 0, 1),
             lambda a: np.add(a, a, out=a),
