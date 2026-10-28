@@ -45,8 +45,6 @@ classifiers = [
 ]
 [dependency-groups]
 ci = [
-    "cvxpy",
-    "cvxopt~=1.3.0; python_version < '3.14'",
     "matplotlib",
     "rich",
     "pandas",
@@ -150,9 +148,6 @@ email = "software@xanadu.ai"
 
 [project.urls]
 repository = "https://github.com/PennyLaneAI/pennylane"
-
-[project.optional-dependencies]
-kernels = ["cvxpy", "cvxopt"]
 
 [project.scripts]
 pl-device-test = "pennylane.devices.tests:cli"
