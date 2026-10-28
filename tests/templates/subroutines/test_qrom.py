@@ -938,9 +938,9 @@ class TestMeasurementQROM:
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize("L", list(range(1, 26)))
-    def test_no_phases_error(self, L):
-        """Test that QROM introduces no relative phases."""
-        rng = np.random.default_rng(42 + L)
+    def test_no_phases_error(self, L, seed):
+        """Test that QROM introduces no relative or global phases."""
+        rng = np.random.default_rng(seed)
         n_target = 3
 
         n_input = max(1, math.ceil(math.log2(L)))
@@ -958,7 +958,9 @@ class TestMeasurementQROM:
         x_state = rng.random(L) + 1j * rng.random(L)
         x_state /= np.linalg.norm(x_state)
 
-        @qp.qjit(capture=True)
+        @qp.qjit(
+            capture=True, seed=seed
+        )  # Provide a seed for deterministic measurement projections
         @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
         @qp.qnode(dev)
         def circuit():
@@ -985,8 +987,10 @@ class TestMeasurementQROM:
         target_state = np.ones(2**n_target) / np.sqrt(2**n_target)
         expected = np.kron(np.kron(control_state, work_state), target_state)
 
-        # A _global_ phase mismatch is okay, hence the `np.abs`
-        assert np.isclose(np.abs(np.vdot(expected, circuit())), 1.0)
+        # Each execution samples new mid-circuit measurement outcomes, and the phase must be
+        # correct for all of them.
+        for _ in range(10):
+            assert np.allclose(circuit(), expected)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst

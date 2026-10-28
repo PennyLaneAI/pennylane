@@ -833,6 +833,15 @@ Improvements 🛠
   work wires.
   `(#10363) <https://github.com/PennyLaneAI/pennylane/pull/10363>`__
 
+* The phase gradient decomposition rule factories :func:`~.make_rz_to_phase_gradient_decomp`,
+  :func:`~.make_crz_to_phase_gradient_decomp` and
+  :func:`~.make_selectpaulirot_to_phase_gradient_decomp` accept an optional ``precision_stats``
+  argument. If provided, the data loading and the :class:`~.SemiAdder` are truncated to the
+  number of bits required by the angle(s), dispatching with hinted :func:`~.cond` branches.
+  The new function :func:`~.transforms.decompositions.phase_gradient_precision_stats` computes
+  ``precision_stats`` from the rotation angles.
+  `(#10312) <https://github.com/PennyLaneAI/pennylane/pull/10312>`__
+
 * ``qp.gate_sets.ALL_QUBIT_OPS`` now includes the in-build controlled gates like :class:`~.CNOT`,
   :class:`~.CRZ`, and others.
   `(#10396) <https://github.com/PennyLaneAI/pennylane/pull/10396/>`__
@@ -1363,6 +1372,12 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
+
+* The ``pennylane.kernels`` module has been removed. This includes ``kernel_matrix``,
+  ``square_kernel_matrix``, ``polarity``, ``target_alignment``, ``threshold_matrix``,
+  ``displace_matrix``, ``flip_matrix``, ``closest_psd_matrix`` and
+  ``mitigate_depolarizing_noise``. The ``kernels`` installation extra has also been removed.
+  `(#10402) <https://github.com/PennyLaneAI/pennylane/pull/10402>`__
 
 * The ``pennylane.qnn`` module has been removed, including ``TorchLayer``.
   ``pennylane.qnn.iqp_expval`` has been moved to :mod:`pennylane.math` and is
@@ -2145,8 +2160,13 @@ Bug fixes 🐛
   every gate type that the decomposition uses and upper-bounds every count except the split of
   X-type measurements across widths, which is assumed to follow a binomial distribution
   like for uniformly random bitstrings. The total of those measurements is also upper-bounded,
-  overestimating by at most the number of target wires.
+  overestimating by at most the number of target wires. The decomposition also no longer
+  introduces a global phase of :math:`-1` for some mid-circuit measurement outcomes.
   `(#10399) <https://github.com/PennyLaneAI/pennylane/pull/10399>`__
+
+* ``qp.adjoint`` now rejects numerical tracers during capture instead of treating
+  them as quantum operators.
+  `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
 
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
   argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
