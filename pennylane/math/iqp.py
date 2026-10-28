@@ -321,7 +321,7 @@ def iqp_expval(
 
     .. code-block:: python
 
-        from pennylane.qnn import iqp_expval
+        from pennylane.math import iqp_expval
         import jax
 
         num_wires = 2
@@ -329,13 +329,13 @@ def iqp_expval(
         n_samples = 1000
         key = jax.random.PRNGKey(42)
 
-        weights = np.ones(len(pattern))
         pattern = [[[0]], [[1]], [[0, 1]]] # binary array representing gates X0, X1, X0X1
+        weights = np.ones(len(pattern))
 
         expvals, stds = iqp_expval(ops, weights, pattern, num_wires, n_samples, key)
 
     >>> print(expvals, stds)
-    [0.18971464 0.14175898 0.17152457] [0.02615426 0.02614059 0.02615943]
+    [0.14506625 0.17813912 0.18971463] [0.02614436 0.02615901 0.02615425]
 
     .. seealso:: The :class:`~.IQP` operation associated with this method.
     """
