@@ -327,6 +327,21 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
         assert qp.math.allclose(op.matrix(), expected)
 
     @pytest.mark.autograd
+    @pytest.mark.parametrize("requires_grad", (False, True))
+    @pytest.mark.parametrize("use_evolve", (False, True))
+    def test_indexed_tensor_composite_evolution(self, requires_grad, use_evolve):
+        """Regression test for issue #10370."""
+        base = qp.Z(0) @ qp.Z(1) + qp.Z(1) @ qp.Z(2)
+        coeff = np.array([[1.0, 1.0]], requires_grad=requires_grad)[0][0]
+
+        op = qp.evolve(base, coeff) if use_evolve else qp.exp(base, -1j * coeff)
+
+        actual = qp.matrix(op, wire_order=range(3))
+        expected = qp.math.expm(-1j * qp.matrix(base, wire_order=range(3)))
+
+        assert qp.math.allclose(actual, expected, atol=1e-10)
+
+    @pytest.mark.autograd
     def test_matrix_autograd_composite_base_batched(self):
         """A broadcasted (batched) trainable scalar with a composite base must take
         the `math.ndim(scalar) > 0` branch and match the stacked `expm`."""
