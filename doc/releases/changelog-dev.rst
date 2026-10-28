@@ -1098,6 +1098,7 @@ Improvements 🛠
   `(#9385) <https://github.com/PennyLaneAI/pennylane/pull/9385>`__
   `(#9712) <https://github.com/PennyLaneAI/pennylane/pull/9712>`__
   `(#10032) <https://github.com/PennyLaneAI/pennylane/pull/10032>`__
+  `(#10385) <https://github.com/PennyLaneAI/pennylane/pull/10385>`__
 
 * ``Tracker`` now has a readable ``__repr__`` that displays all relevant internals
   (``active``, ``totals``, ``history``, ``latest``, ``persistent``, ``callback``).
@@ -2222,6 +2223,14 @@ Bug fixes 🐛
 * Fixed decomposition graph construction discarding a reachable symbolic adjoint when an
   alternative decomposition revisits its base, which could overestimate required work wires.
   `(#10371) <https://github.com/PennyLaneAI/pennylane/pull/10371>`__
+
+* The resource estimate of the measurement-based decomposition of :class:`~.QROM` now declares
+  every gate type that the decomposition uses and upper-bounds every count except the split of
+  X-type measurements across widths, which is assumed to follow a binomial distribution
+  like for uniformly random bitstrings. The total of those measurements is also upper-bounded,
+  overestimating by at most the number of target wires. The decomposition also no longer
+  introduces a global phase of :math:`-1` for some mid-circuit measurement outcomes.
+  `(#10399) <https://github.com/PennyLaneAI/pennylane/pull/10399>`__
 
 * ``qp.adjoint`` now rejects numerical tracers during capture instead of treating
   them as quantum operators.
