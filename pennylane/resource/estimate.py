@@ -23,6 +23,7 @@ from functools import partial
 from pennylane import capture
 from pennylane.core.transforms import CompilePipeline, transform
 from pennylane.transforms import decompose
+from pennylane.transforms.decompose import _decompose_setup_inputs
 
 from ._utils import (
     apply_partial_args,
@@ -76,11 +77,11 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
         )
 
     # At level="top", the user transforms are skipped and only the decomposition is applied
-    estimate_qnode = copy.copy(original_qnode)
-    decompose_args = decompose(
+    _, estimate_kwargs = _decompose_setup_inputs(
         gate_set=target, **_decomps_from_pipeline(original_qnode.compile_pipeline)
     )
-    resource_analysis_transform = transform(pass_name="resource-estimate")(**decompose_args.kwargs)
+    estimate_qnode = copy.copy(original_qnode)
+    resource_analysis_transform = transform(pass_name="resource-estimate")(**estimate_kwargs)
     estimate_qnode._compile_pipeline = CompilePipeline(resource_analysis_transform)
 
     try:
