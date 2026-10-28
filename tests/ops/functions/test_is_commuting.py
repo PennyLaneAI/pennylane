@@ -78,6 +78,28 @@ def test_various_cases(op1, op2, expected):
     assert qp.is_commuting(op2, op1) == expected
 
 
+@pytest.mark.parametrize("rotation_cls", [qp.RX, qp.RY, qp.RZ])
+@pytest.mark.parametrize(
+    "gate_cls", [qp.PauliX, qp.PauliY, qp.PauliZ, qp.Hadamard]
+)
+def test_rotations_at_two_pi_commute_with_single_qubit_gates(rotation_cls, gate_cls):
+    """Rotations at 2*pi commute with all single-qubit gates on the same wire."""
+    rotation = rotation_cls(2 * np.pi, wires=0)
+    gate = gate_cls(wires=0)
+
+    assert qp.is_commuting(rotation, gate)
+    assert qp.is_commuting(gate, rotation)
+
+
+def test_rotation_at_two_pi_commutes_with_cnot():
+    """A 2*pi rotation commutes with a multiwire operation."""
+    rotation = qp.RX(2 * np.pi, wires=0)
+    cnot = qp.CNOT(wires=[0, 1])
+
+    assert qp.is_commuting(rotation, cnot)
+    assert qp.is_commuting(cnot, rotation)
+
+
 class TestGetTargetName:
     """Tests the _get_target_name helper function."""
 
