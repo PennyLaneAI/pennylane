@@ -18,7 +18,7 @@ This submodule contains the autograd wrappers :class:`grad` and :func:`jacobian`
 import inspect
 import numbers
 import warnings
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from functools import wraps
 
 import jax
@@ -30,6 +30,7 @@ from autograd.wrap_util import unary_to_nary
 from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten, treedef_tuple
 
 from pennylane import capture
+from pennylane.capture.autograph import register_autograph_wrapper
 from pennylane.compiler import compiler
 
 make_vjp = unary_to_nary(_make_vjp)
@@ -298,6 +299,26 @@ class grad:
         )
         fn_name = getattr(self._func, "__name__", repr(self._func))
         self.__name__ = f"<grad: {fn_name}>"
+
+    @property
+    def func(self) -> Callable:
+        """The function to differentiate."""
+        return self._func
+
+    @property
+    def argnums(self) -> int | Sequence[int] | None:
+        """Argument indices to differentiate, or ``None`` to infer trainable arguments."""
+        return self._argnums
+
+    @property
+    def method(self) -> str | None:
+        """The differentiation method, or ``None`` to use the default."""
+        return self._method
+
+    @property
+    def h(self) -> float | None:
+        """The finite-difference step size, or ``None`` to use the default."""
+        return self._h
 
     def _get_grad_fn(self, args):
         """Get the required gradient function.
@@ -655,6 +676,26 @@ class jacobian:
         fn_name = getattr(self._func, "__name__", repr(self._func))
         self.__name__ = f"<jacobian: {fn_name}>"
 
+    @property
+    def func(self) -> Callable:
+        """The function to differentiate."""
+        return self._func
+
+    @property
+    def argnums(self) -> int | Sequence[int] | None:
+        """Argument indices to differentiate, or ``None`` to infer trainable arguments."""
+        return self._argnums
+
+    @property
+    def method(self) -> str | None:
+        """The differentiation method, or ``None`` to use the default."""
+        return self._method
+
+    @property
+    def h(self) -> float | None:
+        """The finite-difference step size, or ``None`` to use the default."""
+        return self._h
+
     def __call__(self, *args, **kwargs):
         if active_jit := compiler.active_compiler():
             available_eps = compiler.AvailableCompilers.names_entrypoints
@@ -705,3 +746,18 @@ class jacobian:
         )
 
         return jac[0] if unpack else jac
+
+
+@register_autograph_wrapper(grad)
+@register_autograph_wrapper(jacobian)
+def _grad_autograph_wrapper(
+    derivative: grad | jacobian,
+) -> tuple[Callable, Callable[[Callable], grad | jacobian]]:
+    """Return the wrapped function and a callback that preserves differentiation settings."""
+
+    def rebuild(function: Callable) -> grad | jacobian:
+        return type(derivative)(
+            function, argnums=derivative.argnums, method=derivative.method, h=derivative.h
+        )
+
+    return derivative.func, rebuild

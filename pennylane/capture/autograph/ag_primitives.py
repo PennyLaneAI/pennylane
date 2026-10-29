@@ -17,7 +17,6 @@ This module provides the implementation of AutoGraph primitives in terms of trac
 functions. The purpose is to convert imperative style code to functional or graph-style code.
 """
 
-import copy
 import functools
 import operator
 from collections.abc import Callable, Iterator
@@ -35,6 +34,8 @@ from malt.operators.variables import Undefined
 
 import pennylane as qp
 from pennylane.exceptions import AutoGraphError
+
+from .wrappers import get_autograph_wrapper
 
 __all__ = [
     "if_stmt",
@@ -461,6 +462,7 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
             qp.ctrl,
             qp.grad,
             qp.jacobian,
+            qp.value_and_grad,
             qp.vjp,
             qp.jvp,
         ):
@@ -493,17 +495,15 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
                 **(kwargs if kwargs is not None else {}),
             )
 
-        # For QNode calls, we employ a wrapper to forward the quantum function call to autograph
-        if isinstance(fn, qp.QNode):
+        adapter = get_autograph_wrapper(fn)
+        if adapter is not None:
+            target, rebuild = adapter
 
-            @functools.wraps(fn.func)
-            def qnode_call_wrapper():
-                return ag_converted_call(fn.func, args, kwargs, caller_fn_scope, options)
+            @functools.wraps(target)
+            def converted_target(*inner_args, **inner_kwargs):
+                return converted_call(target, inner_args, inner_kwargs, caller_fn_scope, options)
 
-            # Copy the original qnode but replace its function.
-            new_qnode = copy.copy(fn)
-            new_qnode.func = qnode_call_wrapper
-            return new_qnode()
+            return rebuild(converted_target)(*args, **(kwargs or {}))
 
         return ag_converted_call(fn, args, kwargs, caller_fn_scope, options)
 
