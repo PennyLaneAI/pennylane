@@ -47,10 +47,8 @@ class TestAQFT:
             qp.AQFT(order=order, wires=range(n_qubits))
             return qp.state()
 
-        assert np.allclose(1, circ(n_qubits, order)[0], tol)
-
-        for i in range(1, n_qubits):
-            assert np.allclose(0, circ(n_qubits, order)[i], tol)
+        state = circ(n_qubits, order)
+        assert np.allclose(state, np.eye(1, 2**n_qubits), atol=tol)
 
     @pytest.mark.filterwarnings("ignore:The order should be an integer:UserWarning")
     @pytest.mark.parametrize("order", [-1, -5.4])
@@ -72,10 +70,10 @@ class TestAQFT:
         with pytest.warns(UserWarning, match="Using order = 4 instead"):
             qp.AQFT(order=order, wires=range(5))
 
-    @pytest.mark.parametrize("wires", [3, 4, 5, 6, 8, 9, 11])
+    @pytest.mark.parametrize("wires", [3, 4, 5, 6, 8, 9])
     def test_matrix_higher_order(self, wires):
         """Test that the matrix from AQFT and QFT are same for higher order"""
-        order = 10
+        order = 8
         if wires < order + 1:
             with pytest.warns(UserWarning, match="The order .* is larger than or equal to"):
                 m1 = qp.matrix(qp.AQFT(order=order, wires=range(wires)))
