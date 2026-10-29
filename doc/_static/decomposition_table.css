@@ -71,6 +71,20 @@ table.decomposition-table p.decomp-requires {
   font-size: 0.8rem;
 }
 
+/* divider before the rules for an adjoint or controlled region, explaining how to access them */
+table.decomposition-table tr.decomp-region-row {
+  border-top: 2px solid #c756b2;
+}
+
+table.decomposition-table tr.decomp-region-row td {
+  padding: calc(2 * var(--default-padding)) 0 0;
+}
+
+table.decomposition-table tr.decomp-region-row td p {
+  margin-bottom: 0.5rem;
+  color: #555;
+}
+
 /* circuit diagram, below the rule name */
 table.decomposition-table td.decomp-circuit img {
   display: block;

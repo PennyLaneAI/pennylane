@@ -1114,6 +1114,22 @@ class Rot(Operator2):
 
                 :class:`~.RZ` | :math:`2`
                 :class:`~.RY` | :math:`1`
+
+            .. decomposition-rule:: _adjoint_rot
+                :image: /_static/decomposition_thumbnails/rot_adjoint.svg
+                :region: adjoint
+
+                :class:`~.Rot` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rot_decomp)
+                :image: /_static/decomposition_thumbnails/rot_controlled.svg
+                :region: controlled
+                :where: :math:`c` is the number of control wires, and the circuit shows :math:`c = 2`
+
+                :class:`~.CRot` | :math:`1` if :math:`c = 1`
+                :class:`~.RZ` | :math:`3` if :math:`c \geq 2`
+                :class:`~.RY` | :math:`2` if :math:`c \geq 2`
+                :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
     """
 
     ndim_params = (0, 0, 0)
