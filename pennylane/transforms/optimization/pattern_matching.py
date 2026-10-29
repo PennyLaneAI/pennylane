@@ -23,7 +23,8 @@ import numpy as np
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.ops.op_math import Controlled, adjoint
+from pennylane.ops.op_math import Controlled
+from pennylane.ops.op_math.adjoint import _adjoint_eager
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires
 from pennylane.transforms import transform
 from pennylane.transforms.commutation_dag import commutation_dag
@@ -292,7 +293,7 @@ def pattern_matching_optimization(
                             inst = qp.map_wires(
                                 inst, wire_map=dict(zip(inst.wires, wires, strict=True))
                             )
-                            adjoint(qp.apply, lazy=False)(inst)
+                            _adjoint_eager(inst, update_queue=True)
 
                     # Add the unmatched gates.
                     for node_id in substitution.unmatched_list:

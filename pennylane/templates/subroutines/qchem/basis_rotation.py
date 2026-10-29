@@ -47,11 +47,17 @@ def _adjust_determinant(matrix):
     det = math.linalg.det(matrix)
 
     mat = matrix
-    if math.is_tracer(det) or det < 0:
+    if math.is_tracer(det):
+        is_negative = det < 0
+        mat = math.set_index(mat, 0, math.where(is_negative, -mat[0], mat[0]))
+        angle = math.where(is_negative, math.ones_like(det) * np.pi, math.zeros_like(det))
+        return angle, mat
+
+    if det < 0:
         if math.get_interface(mat) != "jax":
             mat = math.toarray(mat).copy()
-        mat = math.T(math.set_index(math.T(mat), 0, -mat[:, 0]))
-        return np.pi * (1 - math.real(det)) / 2, mat
+        mat = math.set_index(mat, 0, -mat[0])
+        return math.ones_like(det) * np.pi, mat
 
     return np.array(0.0), mat
 
@@ -136,10 +142,10 @@ class BasisRotation(Operator2):
         ... def circ():
         ...     qp.BasisRotation(wires=range(4), unitary_matrix=O)
         >>> print(qp.draw(circ)())
-        0: ──Rϕ(3.14)─╭G(-3.19)──────────╭G(2.63)─┤
-        1: ─╭G(-3.13)─╰G(-3.19)─╭G(2.68)─╰G(2.63)─┤
-        2: ─╰G(-3.13)─╭G(-2.98)─╰G(2.68)─╭G(5.70)─┤
-        3: ───────────╰G(-2.98)──────────╰G(5.70)─┤
+        0: ──Rϕ(3.14)─╭G(-3.19)───────────╭G(2.63)──┤
+        1: ─╭G(3.13)──╰G(-3.19)─╭G(-2.68)─╰G(2.63)──┤
+        2: ─╰G(3.13)──╭G(2.98)──╰G(-2.68)─╭G(-5.70)─┤
+        3: ───────────╰G(2.98)────────────╰G(-5.70)─┤
 
     .. details::
         :title: Theory
@@ -376,7 +382,7 @@ def _real_basis_rotation_decomp(unitary_matrix, wires, **_):
     def givens_loop(idx):
         grot_mat = givens_matrices[idx]
         i, j = givens_ids[idx]
-        theta = math.arctan2(math.real(grot_mat[0, 1]), math.real(grot_mat[0, 0]))
+        theta = math.arctan2(math.real(grot_mat[1, 0]), math.real(grot_mat[0, 0]))
         SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
 
     givens_loop()  # pylint: disable=no-value-for-parameter
@@ -422,7 +428,9 @@ def _complex_basis_rotation_decomp(unitary_matrix, wires, **_):
         grot_mat = givens_matrices[idx]
         i, j = givens_ids[idx]
         theta = math.arccos(math.real(grot_mat[1, 1]))
-        phi = math.angle(grot_mat[0, 0])
+        # The first column of grot_mat is e^{i phi} (cos(theta), sin(theta)) with both entries
+        # non-negative before the phase, so their sum always carries the phase.
+        phi = math.angle(grot_mat[0, 0] + grot_mat[1, 0])
         SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
         if _is_jax_jit(phi):
             PhaseShift(phi, wires[i])

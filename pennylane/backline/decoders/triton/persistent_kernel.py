@@ -20,9 +20,6 @@ try:
 except ImportError as exc:
     raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
-_PAYLOAD_SLOT_WORDS = tl.constexpr(8)  # sizeof(PayloadSlot) / sizeof(u64)
-_HANDOFF_SLOT_WORDS = tl.constexpr(2)  # sizeof(HandoffSlot) / sizeof(u64)
-
 
 @triton.jit
 def _persistent_decoder_kernel(  # pylint: disable=too-many-arguments  # pragma: no cover
@@ -30,25 +27,28 @@ def _persistent_decoder_kernel(  # pylint: disable=too-many-arguments  # pragma:
     handoff_u64_ptr,
     stop_u32_ptr,
     ring_slots,
+    slot_words,
     total,
     decoder_fns: tl.constexpr,
     cache_mod: tl.constexpr,
 ):
     """Poll decoder requests from a ring buffer and write packed corrections.
 
+    Both rings hold Catalyst's 16 B frames, one at the start of each slot: the payload in bytes
+    ``0-7``, then little-endian metadata in bytes ``8-15`` with ``decoder_id`` in the low 32 bits
+    and the sequence number in the high 32 bits.
+
     Args:
-        ring_u64_ptr (*u64): Pointer to the request ring buffer. Each slot stores
-            a packed syndrome in bytes ``0-7`` and packed metadata in bytes
-            ``8-15``. The metadata layout is little-endian, with
-            ``decoder_id`` in the low 32 bits and the sequence number in the
-            high 32 bits.
-        handoff_u64_ptr (*u64): Pointer to the response buffer. Bytes ``0-7``
-            of each slot store the packed correction mask and bytes ``8-15``
-            store the completion sequence number.
+        ring_u64_ptr (*u64): Pointer to the request ring buffer, whose frames carry a packed
+            syndrome.
+        handoff_u64_ptr (*u64): Pointer to the reply ring buffer. Each reply frame carries the
+            packed correction mask and the request's ``decoder_id``, and its sequence number,
+            written last, marks it complete.
         stop_u32_ptr (*u32): Pointer to a stop flag polled while waiting for the
             next request.
         ring_slots (u32): Number of request and handoff slots. Must be a power
             of two so the kernel can mask ``cursor`` into a slot index.
+        slot_words (u32): Distance from one slot to the next, in 8-byte words.
         total (u64): Number of requests to process. A value of ``0`` means keep
             running until ``stop_u32_ptr`` becomes nonzero.
         decoder_fns (tuple[Callable]): Compile-time tuple of Triton decoder
@@ -67,8 +67,7 @@ def _persistent_decoder_kernel(  # pylint: disable=too-many-arguments  # pragma:
         idx = tl.cast(cursor & ring_slot_mask, tl.uint32)
         expect = tl.cast(cursor + 1, tl.uint32)
 
-        # PayloadSlot = 8 * uint64
-        req = ring_u64_ptr + idx * _PAYLOAD_SLOT_WORDS
+        req = ring_u64_ptr + idx * slot_words
         # little-endian: low32=decoder_id, high32=seq
         metadata = tl.load(req + 1, volatile=True, cache_modifier=cache_mod)
         seq = tl.cast(metadata >> 32, tl.uint32)
@@ -93,11 +92,13 @@ def _persistent_decoder_kernel(  # pylint: disable=too-many-arguments  # pragma:
                 if decoder_id == i:
                     correction = decoder_fns[i](syndrome)
 
-            out = handoff_u64_ptr + idx * _HANDOFF_SLOT_WORDS
+            out = handoff_u64_ptr + idx * slot_words
             tl.store(out, correction, cache_modifier=".wt")
+            # The reply's decoder_id and sequence number in one release store, so the sequence
+            # number is never seen before the correction it completes.
             tl.atomic_xchg(
                 out + 1,
-                tl.cast(expect, tl.uint64),  # sets seq assuming little-endian
+                (tl.cast(expect, tl.uint64) << 32) | tl.cast(decoder_id, tl.uint64),
                 sem="release",
                 scope="sys",
             )
