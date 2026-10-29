@@ -93,6 +93,23 @@ class SelectPauliRot(Operator2):
     >>> print(circuit()) # doctest: +SKIP
     [0.8776+0.j 0.4794+0.j 0.    +0.j 0.    +0.j 0.    +0.j 0.    +0.j
      0.    +0.j 0.    +0.j]
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SelectPauliRot
+            :symbols: :math:`c \geq 1` control wires and rotation axis :math:`P` (``rot_axis``)
+            :example: :math:`c=1`, :math:`P=Y`
+
+            .. decomposition-rule:: decompose_select_pauli_rot
+                :image: /_static/decomposition_thumbnails/select_pauli_rot_cnot_ladder.svg
+                :where: :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
+
+                :class:`~.RZ` | :math:`2^c` | 2
+                :class:`~.CNOT` | :math:`2^c` | 2
+                :class:`~.Hadamard` | :math:`2[P \neq Z]` | 2
+                :class:`~.S` | :math:`[P = Y]` | 1
+                :class:`Adjoint(S) <.S>` | :math:`[P = Y]` | 1
     """
 
     dynamic_argnames = ("angles",)
