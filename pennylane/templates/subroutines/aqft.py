@@ -71,35 +71,14 @@ class AQFT(Operator2):
 
         **Order**
 
-        The order of approximation must be a whole number less than :math:`n-1`
+        The order of approximation must be a whole number less than :math:`n`
         where :math:`n` is the number of wires the operation is being applied on.
         This creates four cases for different ``order`` values:
 
         * ``order`` :math:`< 0`
             This will raise a ``ValueError``
 
-        * ``order`` :math:`= 0`
-            This will warn the user that only a Hadamard transform is being applied.
-
-            .. code-block:: python
-
-                @qp.qnode(qp.device('default.qubit'))
-                def circ():
-                    qp.AQFT(order=0, wires=range(6))
-                    return qp.probs()
-
-            The resulting circuit is:
-
-            >>> print(qp.draw(circ, level='device')()) # doctest: +SKIP
-            UserWarning: order=0, applying Hadamard transform warnings.warn("order=0, applying Hadamard transform")
-            0: ──H─╭SWAP─────────────┤ ╭Probs
-            1: ──H─│─────╭SWAP───────┤ ├Probs
-            2: ──H─│─────│─────╭SWAP─┤ ├Probs
-            3: ──H─│─────│─────╰SWAP─┤ ├Probs
-            4: ──H─│─────╰SWAP───────┤ ├Probs
-            5: ──H─╰SWAP─────────────┤ ╰Probs
-
-        * :math:`0 <` ``order`` :math:`< n-1`
+        * :math:`0 \leq` ``order`` :math:`< n`
             This is the intended AQFT use case.
 
             .. code-block:: python
@@ -117,9 +96,10 @@ class AQFT(Operator2):
             2: ──────────────╰●───────────╰●────────│──────────H─╭Rϕ(1.57)────│─────╰SWAP─┤ ├Probs
             3: ─────────────────────────────────────╰●───────────╰●─────────H─╰SWAP───────┤ ╰Probs
 
-        * ``order`` :math:`\geq n-1`
-            Using the QFT class is recommended in this case. The AQFT operation here is
-            equivalent to QFT.
+            For ``order`` :math:`= n-1`, the AQFT is equivalent to a standard :class:`~.QFT`.
+
+        * ``order`` :math:`\geq n`
+            The AQFT is equivalent to the one with ``order`` :math:`= n-1`, and to a standard QFT.
 
     """
 
@@ -132,20 +112,20 @@ class AQFT(Operator2):
         num_wires = len(wires)
 
         if not isinstance(order, int):
-            warnings.warn(f"The order must be an integer. Using order = {round(order)}.")
+            warnings.warn(
+                f"The order must be an integer, got {order}. Using order = {round(order)}."
+            )
             order = round(order)
 
-        if order >= num_wires - 1:
+        if order >= num_wires:
             warnings.warn(
-                f"The order ({order}) is >= to the number of wires - 1 ({num_wires - 1}). Using the QFT class is recommended in this case."
+                f"The order ({order}) is larger than or equal to the number of wires "
+                f"({num_wires}). Using order = {num_wires - 1} instead."
             )
             order = num_wires - 1
 
         if order < 0:
             raise ValueError("Order can not be less than 0")
-
-        if order == 0:
-            warnings.warn("order=0, applying Hadamard transform")
 
         super().__init__(order, wires)
 

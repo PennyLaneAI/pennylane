@@ -51,6 +51,7 @@ class TestAQFT:
         for i in range(1, n_qubits):
             assert np.allclose(0, circ(n_qubits, order)[i], tol)
 
+    @pytest.mark.filterwarnings("ignore:The order must be an integer:UserWarning")
     @pytest.mark.parametrize("order", [-1, -5.4])
     def test_negative_order(self, order):
         """Test if ValueError is raised for negative orders"""
@@ -64,20 +65,13 @@ class TestAQFT:
             op = qp.AQFT(order=order, wires=range(9))
             assert op.hyperparameters["order"] == round(order)
 
-    @pytest.mark.parametrize("wires", range(3, 10))
-    def test_zero_order(self, wires):
-        """Test if Hadamard transform is applied for zero order"""
-        with pytest.warns(UserWarning, match="order=0"):
-            op = qp.AQFT(order=0, wires=range(wires))
-            for gate in op.decomposition()[: -wires // 2]:
-                assert gate.name == "Hadamard"
-
-    @pytest.mark.parametrize("order", [4, 5, 6])
+    @pytest.mark.parametrize("order", [5, 6])
     def test_higher_order(self, order):
         """Test if higher order recommends using QFT"""
-        with pytest.warns(UserWarning, match="Using the QFT class is recommended in this case"):
+        with pytest.warns(UserWarning, match="Using order = 4 instead"):
             qp.AQFT(order=order, wires=range(5))
 
+    @pytest.mark.filterwarnings("ignore:The order .* is larger than or equal to:UserWarning")
     @pytest.mark.parametrize("wires", [3, 4, 5, 6, 7, 8, 9])
     def test_matrix_higher_order(self, wires):
         """Test if the matrix from AQFT and QFT are same for higher order"""
