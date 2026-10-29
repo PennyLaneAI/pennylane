@@ -876,6 +876,11 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* Refined the warnings raised by :class:`~.AQFT`:
+  - No warning for ``order=0``, as it is a valid approximation.
+  - No warning for ``order=len(wires)-1``, as it is an equivalent realization of :class:`~.QFT`.
+  `(#10415) <https://github.com/PennyLaneAI/pennylane/pull/10415>`__
+
 * The phase gradient decomposition rule factories :func:`~.make_rz_to_phase_gradient_decomp`,
   :func:`~.make_crz_to_phase_gradient_decomp` and
   :func:`~.make_selectpaulirot_to_phase_gradient_decomp` accept an optional ``precision_stats``
