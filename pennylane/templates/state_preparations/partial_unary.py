@@ -993,9 +993,14 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
     nonsubspace_wires = Wires(wires[n_subspace:])
 
     # Step 1: Dense state preparation
-    ids = np.array([bijection[i] for i in range(num_entries)])
-    dense_state = math.scatter(
-        ids, coefficients, 2**n_subspace, like=math.get_interface(coefficients)
+    # Invert the static bijection so that dynamic coefficients only need a gather.
+    # Unoccupied entries select the appended zero. This preserves the coefficient
+    # ordering without requiring a runtime scatter with sorted/unique indices.
+    inverse = {bijection[i]: i for i in range(num_entries)}
+    dense_state = math.take(
+        math.concatenate([coefficients, math.zeros_like(coefficients[:1])]),
+        [inverse.get(i, num_entries) for i in range(2**n_subspace)],
+        axis=0,
     )
     _, cast_dtype = math.get_abstract_and_cast_dtype(coefficients)
     qp.MultiplexerStatePreparation(math.cast(dense_state, cast_dtype), subspace_wires)
