@@ -115,6 +115,24 @@ class TrotterCDF(Operator2):
     The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing
     further on ``lightning.qubit``.
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.TrotterCDF
+            :symbols: :math:`N` orbitals, :math:`L` two-body fragments and :math:`n` =
+                ``num_trotter_steps``
+            :example: the Hamiltonian above, :math:`N=2`, :math:`L=1`, :math:`n=1`
+
+            .. decomposition-rule:: _trotter_cdf_decomposition
+                :image: /_static/decomposition_thumbnails/trotter_cdf_second_order.svg
+                :where: the counts are upper bounds, as basis rotations that are the identity are
+                    skipped
+
+                :class:`~.BasisRotation` on :math:`N` wires | :math:`4Ln + 4` | 8
+                :class:`~.IsingZZ` | :math:`((2L-1)n + 1)\, N(2N-1)` | 12
+                :class:`~.RZ` | :math:`2Nn` | 4
+                :class:`~.GlobalPhase` | :math:`1` | 1
+
     .. details ::
         :title: Usage Details
 
