@@ -23,11 +23,19 @@ from copy import copy
 from typing import Literal
 
 import pennylane as qp
+from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.core.operator import Operation, Operator2
+from pennylane.core.operator.operator2 import operator_p
 from pennylane.decomposition.decomposition_rule import add_decomps, null_decomp
 from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
 from pennylane.typing import Wire
 from pennylane.wires import WiresLike
+
+
+barrier_p = QpPrimitive("barrier")
+barrier_p.prim_type = "operator"
+barrier_p.def_impl(operator_p.impl)
+barrier_p.def_effectful_abstract_eval(operator_p.abstract_eval)
 
 
 class Barrier(Operator2):
@@ -55,6 +63,10 @@ class Barrier(Operator2):
 
     def __init__(self, wires: WiresLike = (), only_visual: bool = False):
         super().__init__(wires=wires, only_visual=only_visual)
+
+    def _bind_primitive(self):
+        """Capture a barrier using the dedicated operator primitive."""
+        super()._bind_primitive(primitive=barrier_p)
 
     def __repr__(self):
         return f"Barrier(wires={self.wires.tolist()})"
