@@ -15,6 +15,7 @@
 This submodule contains the template for AQFT.
 """
 
+import numbers
 import warnings
 
 import numpy as np
@@ -71,9 +72,9 @@ class AQFT(Operator2):
 
         **Order**
 
-        The order of approximation must be a whole number less than :math:`n`
+        The order of approximation should be a whole number less than :math:`n`
         where :math:`n` is the number of wires the operation is being applied on.
-        This creates four cases for different ``order`` values:
+        This creates three cases for different ``order`` values:
 
         * ``order`` :math:`< 0`
             This will raise a ``ValueError``
@@ -99,7 +100,8 @@ class AQFT(Operator2):
             For ``order`` :math:`= n-1`, the AQFT is equivalent to a standard :class:`~.QFT`.
 
         * ``order`` :math:`\geq n`
-            The AQFT is equivalent to the one with ``order`` :math:`= n-1`, and to a standard QFT.
+            The AQFT is equivalent to a standard QFT, and to AQFT with ``order`` :math:`= n-1`,
+            so the ``order`` is capped at :math:`n-1`.
 
     """
 
@@ -111,9 +113,12 @@ class AQFT(Operator2):
         wires = Wires(wires)
         num_wires = len(wires)
 
-        if not isinstance(order, int):
+        if order < 0:
+            raise ValueError("Order can not be less than 0")
+
+        if not isinstance(order, numbers.Integral):
             warnings.warn(
-                f"The order must be an integer, got {order}. Using order = {round(order)}."
+                f"The order should be an integer, got {order}; using order = {round(order)}"
             )
             order = round(order)
 
@@ -123,9 +128,6 @@ class AQFT(Operator2):
                 f"({num_wires}). Using order = {num_wires - 1} instead."
             )
             order = num_wires - 1
-
-        if order < 0:
-            raise ValueError("Order can not be less than 0")
 
         super().__init__(order, wires)
 
