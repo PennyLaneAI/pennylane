@@ -62,19 +62,17 @@ class TestAdjointQfunc:
         assert nested_jaxpr.eqns[0].params["op_cls"] is qp.PauliRot
         assert nested_jaxpr.eqns[0].params["pauli_word"][0] == ("XY",)
 
-        assert plxpr.eqns[0].params["lazy"] is True
-
         with qp.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2)
 
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.adjoint(qp.PauliRot(1.2, "XY", wires=(0, 1))))
 
-    def test_adjoint_qfunc_eager(self):
-        """Test eager execution can be captured by the qfunc transform."""
+    def test_adjoint_qfunc_rot(self):
+        """Test that a captured callable preserves its symbolic adjoint."""
 
         def workflow(x, y, z):
-            qp.adjoint(qp.Rot, lazy=False)(x, y, z, 0)
+            qp.adjoint(qp.Rot)(x, y, z, 0)
 
         plxpr = jax.make_jaxpr(workflow)(0.5, 0.7, 0.8)
 
@@ -84,13 +82,11 @@ class TestAdjointQfunc:
         nested_jaxpr = plxpr.eqns[0].params["jaxpr"]
         assert_eqn_matches_op(nested_jaxpr.eqns[0], qp.Rot)
 
-        assert plxpr.eqns[0].params["lazy"] is False
-
         with qp.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, -1.0, -2.0, -3.0)
 
         assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.Rot(3.0, 2.0, 1.0, 0))
+        qp.assert_equal(q.queue[0], qp.adjoint(qp.Rot(-1.0, -2.0, -3.0, 0)))
 
     @pytest.mark.parametrize("eqn_out", (None, 2))
     def test_multiple_ops_and_classical_processing(self, eqn_out):
@@ -123,7 +119,6 @@ class TestAdjointQfunc:
         assert len(q.queue) == 2
 
         assert plxpr.eqns[0].primitive == adjoint_transform_prim
-        assert plxpr.eqns[0].params["lazy"] is True
 
         inner_plxpr = plxpr.eqns[0].params["jaxpr"]
         assert len(inner_plxpr.eqns) == 5

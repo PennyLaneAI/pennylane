@@ -74,6 +74,7 @@ def test_ross_selinger(op, epsilon):
     assert qp.prod(*gates, lazy=False).wires == op.wires
 
 
+@pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
 @pytest.mark.catalyst
 @pytest.mark.jax
 @pytest.mark.parametrize(
@@ -133,6 +134,7 @@ def test_exception():
         rs_decomposition(op, epsilon=1e-4, max_search_trials=1)
 
 
+@pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
 @pytest.mark.catalyst
 @pytest.mark.jax
 @pytest.mark.parametrize(

@@ -156,8 +156,12 @@ New features since last release
   prepares the phase gradient state
   :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`.
   It is a catalytic state for (generalized) rotation gates.
+  :func:`~.transforms.decompositions.make_phase_gradient_distillation_decomp` can be used to
+  create a decomposition rule based on Jones' repeat-until-success construction, which uses only
+  Clifford gates, adders, and mid-circuit measurements and supports any number of wires.
   See the `compilation hub <https://pennylane.ai/compilation/phase-gradient/>`__ for more details on the state and how to use it in rotations.
   `(#10227) <https://github.com/PennyLaneAI/pennylane/pull/10227>`__
+  `(#10245) <https://github.com/PennyLaneAI/pennylane/pull/10245>`__
   `(#10264) <https://github.com/PennyLaneAI/pennylane/pull/10264>`__
 
   The operation has a gridsynth-based decomposition into Pauli product rotations on up to
@@ -899,6 +903,17 @@ Improvements 🛠
   :class:`~.Controller` or :class:`~.Coprocessor` names the backend to run on with ``backend=``.
   `(#10353) <https://github.com/PennyLaneAI/pennylane/pull/10353>`__
 
+* A Backline placement over ``transport="rdma"`` no longer limits messages to 8 bytes. Which sizes
+  are supported depends on the transport backend Catalyst selects, and Catalyst reports a size no
+  backend carries when the program is compiled.
+  `(#10369) <https://github.com/PennyLaneAI/pennylane/pull/10369>`__
+
+* Backline Triton decoders write their replies in Catalyst's frame layout, carrying the request's
+  decoder id, and find each ring slot from the slot size Catalyst passes. They need a Catalyst whose
+  GPU coprocessors use that layout, and ``triton_decoder`` and ``css_bp_decoder`` say so when the
+  installed Catalyst is older.
+  `(#10369) <https://github.com/PennyLaneAI/pennylane/pull/10369>`__
+
 * The ``decompose_mcx_with_no_worker`` decomposition rule for :class:`~.MultiControlledX` now only
   applies when no work wires are provided, matching ``MultiControlledX.compute_decomposition``.
   This removes controlled ``GlobalPhase`` and ``PhaseShift`` rules from the decomposition graph and
@@ -1098,6 +1113,7 @@ Improvements 🛠
   `(#9385) <https://github.com/PennyLaneAI/pennylane/pull/9385>`__
   `(#9712) <https://github.com/PennyLaneAI/pennylane/pull/9712>`__
   `(#10032) <https://github.com/PennyLaneAI/pennylane/pull/10032>`__
+  `(#10385) <https://github.com/PennyLaneAI/pennylane/pull/10385>`__
 
 * ``Tracker`` now has a readable ``__repr__`` that displays all relevant internals
   (``active``, ``totals``, ``history``, ``latest``, ``persistent``, ``callback``).
@@ -1432,6 +1448,12 @@ Breaking changes 💔
 * ``qp.ops.functions.assert_valid`` has been removed. Use :func:`~.testing.assert_valid` instead.
   The private ``_test_decomposition_rule`` has been removed; use :func:`~.testing.assert_valid_decomp_rule`.
   `(#10342) <https://github.com/PennyLaneAI/pennylane/pull/10342>`__
+
+* The ``lazy`` argument has been removed from ``qp.adjoint``. Adjoint construction is
+  always symbolic. Remove ``lazy=True``; replace ``lazy=False`` with a direct known
+  inverse (for example, ``qp.RX(-theta, wires=0)``) or explicitly simplify with
+  ``qp.simplify(qp.adjoint(op))``.
+  `(#10371) <https://github.com/PennyLaneAI/pennylane/pull/10371>`__
 
 * ``qp.tape.plxpr_to_tape`` and ``qp.tape.plxpr_conversion.plxpr_to_tape`` have been removed.
   Use :func:`~.testing.plxpr_to_tape` instead.
@@ -2212,6 +2234,29 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed a bug where :class:`~.BasisRotation` for real-valued matrices :math:`u` implemented the
+  rotation for :math:`S u S` instead of :math:`u`, with :math:`S=\operatorname{diag}((-1)^p)`,
+  and handled matrices with determinant :math:`-1` inconsistently. It now implements
+  the same operator for real-valued (orthogonal) matrices as for complex-valued ones, matching
+  its documentation. Circuits using ``BasisRotation`` with real-valued matrices change due to this.
+  `(#10331) <https://github.com/PennyLaneAI/pennylane/pull/10331>`__
+
+* Fixed a bug where :func:`~.math.decomposition.givens_decomposition` and :class:`~.BasisRotation`
+  produced ``nan`` values for complex-valued unitaries with exact zeros, such as diagonal matrices.
+  `(#10331) <https://github.com/PennyLaneAI/pennylane/pull/10331>`__
+
+* Fixed decomposition graph construction discarding a reachable symbolic adjoint when an
+  alternative decomposition revisits its base, which could overestimate required work wires.
+  `(#10371) <https://github.com/PennyLaneAI/pennylane/pull/10371>`__
+
+* The resource estimate of the measurement-based decomposition of :class:`~.QROM` now declares
+  every gate type that the decomposition uses and upper-bounds every count except the split of
+  X-type measurements across widths, which is assumed to follow a binomial distribution
+  like for uniformly random bitstrings. The total of those measurements is also upper-bounded,
+  overestimating by at most the number of target wires. The decomposition also no longer
+  introduces a global phase of :math:`-1` for some mid-circuit measurement outcomes.
+  `(#10399) <https://github.com/PennyLaneAI/pennylane/pull/10399>`__
 
 * ``qp.adjoint`` now rejects numerical tracers during capture instead of treating
   them as quantum operators.
