@@ -126,7 +126,7 @@ def _region_row(operator_name, region):
     usage_code = f'qp.decompose(gate_set=..., fixed_decomps={{"{region_key}": "<name>"}})'
     usage = nodes.literal_block(usage_code, usage_code, language="python")
     region_row = nodes.row(classes=["decomp-region-row"])
-    region_row += nodes.entry("", region_text, usage, morecols=1)
+    region_row += nodes.entry(region_text, region_text, usage, morecols=1)
     return region_row
 
 
