@@ -26,6 +26,7 @@ Constructor Functions
     ~ctrl
     ~cond
     ~change_op_basis
+    ~compute_uncompute
     ~exp
     ~sum
     ~pow
@@ -163,6 +164,7 @@ from .prod import Prod, prod
 from .prod2 import Prod2
 from .change_op_basis import ChangeOpBasis, change_op_basis
 from .change_op_basis2 import ChangeOpBasis2
+from .compute_uncompute import compute_uncompute
 from .sprod import SProd, s_prod
 from .sum import Sum, sum
 from .symbolicop import ScalarSymbolicOp, SymbolicOp

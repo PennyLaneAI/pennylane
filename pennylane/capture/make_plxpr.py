@@ -15,12 +15,14 @@
 """The make_plxpr function and helper methods"""
 
 from collections.abc import Callable, Sequence
+from functools import wraps
 
 import jax
 
 import pennylane as qp
 
 from .autograph import run_autograph
+from .compute_uncompute import normalize_compute_uncompute
 
 
 def make_plxpr(func: Callable, static_argnums: int | Sequence[int] = (), autograph=True, **kwargs):
@@ -145,4 +147,15 @@ def make_plxpr(func: Callable, static_argnums: int | Sequence[int] = (), autogra
     if autograph:
         func = run_autograph(func)
 
-    return jax.make_jaxpr(func, static_argnums=static_argnums, **kwargs)
+    capture = jax.make_jaxpr(func, static_argnums=static_argnums, **kwargs)
+
+    @wraps(capture)
+    def wrapped(*args, **call_kwargs):
+        result = capture(*args, **call_kwargs)
+        program = result[0] if kwargs.get("return_shape") else result
+        program = jax.extend.core.ClosedJaxpr(
+            normalize_compute_uncompute(program.jaxpr), program.consts
+        )
+        return (program, result[1]) if kwargs.get("return_shape") else program
+
+    return wrapped
