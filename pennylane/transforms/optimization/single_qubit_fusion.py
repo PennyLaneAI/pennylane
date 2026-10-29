@@ -253,7 +253,6 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
         if len(current_gate.wires) == 1:
             *angles, phase = qp.single_qubit_zyz_angles(current_gate)
             cumulative_angles = math.stack(angles)
-            global_phase += phase
         else:
             new_operations.append(current_gate)
             list_copy.pop(0)
@@ -276,6 +275,11 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
                 new_operations.append(current_gate)
                 list_copy.pop(0)
                 continue
+
+        # From here on the gate is replaced by its ``Rot`` decomposition, so its
+        # decomposition phase belongs in the global phase. Gates kept as-is above
+        # must not contribute, or the output picks up a phase the input does not have.
+        global_phase += phase
 
         # Loop as long as a valid next gate exists
         while next_gate_idx is not None:
