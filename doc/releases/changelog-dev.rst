@@ -2239,7 +2239,7 @@ Bug fixes 🐛
   :class:`~.jacobian`, and :class:`~.value_and_grad` instances. New callable class wrappers can
   register their conversion behaviour with a new
   :func:`~pennylane.capture.autograph.register_autograph_wrapper`.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10422 ) <https://github.com/PennyLaneAI/pennylane/pull/10422>`__
 
 * Fixed a bug where :class:`~.BasisRotation` for real-valued matrices :math:`u` implemented the
   rotation for :math:`S u S` instead of :math:`u`, with :math:`S=\operatorname{diag}((-1)^p)`,
