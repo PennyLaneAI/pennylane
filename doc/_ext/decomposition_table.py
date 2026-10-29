@@ -65,7 +65,8 @@ class DecompositionRule(SphinxDirective):
         # we are not specified to elaborate on the decomp with mathematical definitions,
         # but if we do, the text remains text
         "where": directives.unchanged,
-        # rules registered for the operator inside an adjoint or controlled region
+        # when dealing with rules registered for the operator inside an adjoint or controlled region,
+        # we can specify what kind of region from the given tuple of values
         "region": lambda arg: directives.choice(arg, tuple(REGIONS)),
     }
 
