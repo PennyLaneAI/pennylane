@@ -794,9 +794,7 @@ def _multi_controlled_trotter_cdf_decomp(
             "work_wires": base.arguments["work_wires"],
         }
     )
-    ctrl_many_zeroed_work_wires(
-        base, control_wires, control_values, work_wires, work_wire_type
-    )
+    ctrl_many_zeroed_work_wires(base, control_wires, control_values, work_wires, work_wire_type)
 
 
 add_decomps(
