@@ -50,7 +50,6 @@ class TestAQFT:
         state = circ(n_qubits, order)
         assert np.allclose(state, np.eye(1, 2**n_qubits), atol=tol)
 
-    @pytest.mark.filterwarnings("ignore:The order should be an integer:UserWarning")
     @pytest.mark.parametrize("order", [-1, -5.4])
     def test_negative_order(self, order):
         """Test if ValueError is raised for negative orders"""

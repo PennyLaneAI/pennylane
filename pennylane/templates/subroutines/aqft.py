@@ -118,7 +118,7 @@ class AQFT(Operator2):
 
         if not isinstance(order, numbers.Integral):
             warnings.warn(
-                f"The order should be an integer, got {order}; using order = {round(order)}"
+                f"The order should be an integer, got {order}; using order = {round(order)} instead."
             )
             order = round(order)
 
@@ -127,7 +127,8 @@ class AQFT(Operator2):
                 f"The order ({order}) is larger than or equal to the number of wires "
                 f"({num_wires}). Using order = {num_wires - 1} instead."
             )
-            order = num_wires - 1
+            # Handle edge case of empty wires to use order=0 (not a realistic use case).
+            order = max(num_wires - 1, 0)
 
         super().__init__(order, wires)
 
