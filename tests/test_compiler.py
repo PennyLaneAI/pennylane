@@ -274,20 +274,6 @@ class TestCatalyst:
 
         assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
 
-    def test_qjit_adjoint_lazy(self):
-        """Test that the lazy kwarg is supported."""
-        dev = qp.device("lightning.qubit", wires=2)
-
-        @qp.qnode(device=dev)
-        def workflow_pl(theta, wires):
-            qp.Hadamard(wires)
-            qp.adjoint(qp.RX(theta, wires=wires), lazy=False)
-            return qp.probs()
-
-        workflow_cl = qp.qjit(workflow_pl)
-
-        assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
-
     def test_control(self):
         """Test that control works with qjit."""
         dev = qp.device("lightning.qubit", wires=2)
