@@ -492,6 +492,7 @@ def _capture_ctrl_transform(
         )
         flat_args = jax.tree_util.tree_leaves(args)
         control_wires = qp.wires.Wires(control)  # make sure is iterable
+        # Keep static metadata for backward compatibility, including string work-wire labels.
         static_work_wires = qp.wires.Wires(work_wires) if work_wires is not None else None
         dynamic_work_wires = ()
         if static_work_wires and any(math.is_tracer(w) for w in static_work_wires):
