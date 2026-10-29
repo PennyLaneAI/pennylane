@@ -76,20 +76,6 @@ def _basis_rotation_matrix(U, n_wires):
     return qp.matrix(qp.tape.QuantumScript(ops), wire_order=range(n_wires))
 
 
-def assert_clean_work_wire_evolution(tape, active_wires, work_wires, expected):
-    """Compare an independent reference on every input with initially clean work wires.
-
-    TrotterCDF has no separate matrix implementation for ``assert_decomposable`` to check.
-    The clean columns also verify that the work register is restored, including all phases.
-    """
-    matrix = qp.matrix(tape, wire_order=active_wires + work_wires)
-    work_dim = 2 ** len(work_wires)
-    clean_columns = matrix[:, ::work_dim]
-    expected_columns = np.zeros_like(clean_columns, dtype=complex)
-    expected_columns[::work_dim] = expected
-    assert np.allclose(clean_columns, expected_columns, atol=1e-10, rtol=0)
-
-
 def cdf_reference_hamiltonian_leaves(ham):
     """Exact Hamiltonian matrix implied by a CDF Hamiltonian dict with arbitrary (real
     orthogonal) leaves, built independently from the template.
@@ -403,7 +389,10 @@ class TestTwoBodyWorkWireDecomposition:
             phases = np.concatenate(
                 [phases, phases.conj()] if double_phase else [np.ones(dim), phases]
             )
-        assert_clean_work_wire_evolution(tape, control_wires + wires, work_wires, np.diag(phases))
+        matrix = qp.matrix(tape, wire_order=control_wires + wires + work_wires)
+        work_dim = 2 ** len(work_wires)
+        expected = qp.math.kron(qp.math.diag(phases), qp.math.eye(work_dim)[:, :1])
+        assert qp.math.allclose(matrix[:, ::work_dim], expected, atol=1e-10, rtol=0)
 
 
 class TestResourceRule:
@@ -429,10 +418,10 @@ class TestResourceRule:
         assert resources == Resources({})
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.parametrize(("double_phase", "num_controls"), [(False, 1), (True, 1), (False, 3)])
+    @pytest.mark.parametrize("double_phase", [False, True])
     @pytest.mark.parametrize("work_wires", [(), ("and", "controlled_and")])
     def test_controlled_zero_steps_empty_decomposition(
-        self, toy_hamiltonian_cdf_concrete, double_phase, num_controls, work_wires
+        self, toy_hamiltonian_cdf_concrete, double_phase, work_wires
     ):
         """Test that C(TrotterCDF) with zero steps emits no gates."""
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
@@ -440,12 +429,7 @@ class TestResourceRule:
         op = qp.TrotterCDF(
             1.0, 0, ham, wires=wires, double_phase=double_phase, work_wires=work_wires
         )
-        controlled = qp.ctrl(
-            op,
-            control=list(range(99, 99 + num_controls)),
-            work_wires=list(range(110, 109 + num_controls)),
-            work_wire_type="zeroed",
-        )
+        controlled = qp.ctrl(op, control=[99])
         assert controlled.decomposition() == []
         assert _controlled_trotter_cdf_decomp.compute_resources(
             **controlled.arguments
@@ -573,8 +557,14 @@ class TestDecomposition:
                 branches.reverse()
             expected = np.zeros((2 * dim, 2 * dim), dtype=complex)
             expected[:dim, :dim], expected[dim:, dim:] = branches
+        assert_decomposable(op)
+        # TrotterCDF has no matrix implementation, so compare the clean-work-wire
+        # columns with an independent reference in addition to assert_decomposable.
         tape = qp.tape.QuantumScript(op.decomposition())
-        assert_clean_work_wire_evolution(tape, control_wires + wires, work_wires, expected)
+        matrix = qp.matrix(tape, wire_order=control_wires + wires + work_wires)
+        work_dim = 2 ** len(work_wires)
+        expected = qp.math.kron(expected, qp.math.eye(work_dim)[:, :1])
+        assert qp.math.allclose(matrix[:, ::work_dim], expected, atol=1e-10, rtol=0)
         optimized = not has_control or double_phase or num_work_wires >= 2
         assert any(isinstance(gate, qp.TemporaryAND) for gate in tape.operations) == optimized
 
@@ -850,7 +840,7 @@ class TestControlledDecomposition:
     def test_multiple_controls_preserve_evolution(
         self, toy_hamiltonian_cdf_concrete, control_values, num_cdf_work_wires
     ):
-        """The public decomposition reduces controls once and restores both work registers."""
+        """Generic controlled decompositions preserve evolution and restore both work registers."""
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
         control_wires = list(range(4, 4 + len(control_values)))
@@ -864,100 +854,34 @@ class TestControlledDecomposition:
             work_wires=control_work_wires,
             work_wire_type="zeroed",
         )
-        operations = controlled.decomposition()
-        assert sum(isinstance(op, qp.TemporaryAND) for op in operations) == len(control_values) - 1
-        [inner] = [op for op in operations if op.name == "C(TrotterCDF)"]
-        qp.assert_equal(inner, qp.ctrl(base, control=control_work_wires[-1]))
-
+        assert_decomposable(controlled)
         expected_base = cdf_second_order_trotter_matrix(ham, 0.3, 1)
         dim = expected_base.shape[0]
         expected = qp.math.eye(dim * 2 ** len(control_values), dtype=complex)
         start = int("".join(str(value) for value in control_values), 2) * dim
         expected[start : start + dim, start : start + dim] = expected_base
-        assert_clean_work_wire_evolution(
-            qp.tape.QuantumScript(operations),
-            control_wires + wires,
-            control_work_wires + cdf_work_wires,
-            expected,
-        )
+        work_wires = control_work_wires + cdf_work_wires
+        tape = qp.tape.QuantumScript(controlled.decomposition())
+        matrix = qp.matrix(tape, wire_order=control_wires + wires + work_wires)
+        work_dim = 2 ** len(work_wires)
+        expected = qp.math.kron(expected, qp.math.eye(work_dim)[:, :1])
+        assert qp.math.allclose(matrix[:, ::work_dim], expected, atol=1e-10, rtol=0)
 
-    @pytest.mark.parametrize(
-        ("num_controls", "double_phase", "num_work_wires", "work_wire_type", "applicable"),
-        [
-            (1, True, 0, "borrowed", True),
-            (2, False, 1, "zeroed", True),
-            (2, True, 1, "zeroed", False),
-            (3, False, 1, "zeroed", False),
-            (2, False, 1, "borrowed", False),
-        ],
-    )
-    def test_multiple_control_rule_conditions(
-        self,
-        toy_hamiltonian_cdf_concrete,
-        num_controls,
-        double_phase,
-        num_work_wires,
-        work_wire_type,
-        applicable,
+    @pytest.mark.parametrize("num_controls", [1, 2, 3])
+    @pytest.mark.parametrize("double_phase", [False, True])
+    def test_control_rule_requires_single_control(
+        self, toy_hamiltonian_cdf_concrete, num_controls, double_phase
     ):
-        """Only genuine multiple controls with enough clean control auxiliaries use this rule."""
+        """The specialized rule leaves multiple controls to the generic decompositions."""
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
         base = qp.TrotterCDF(0.3, 1, ham, range(2 * num_orbitals), double_phase=double_phase)
         op = qp.ctrl(
             base,
             control=list(range(4, 4 + num_controls)),
-            work_wires=list(range(7, 7 + num_work_wires)),
-            work_wire_type=work_wire_type,
+            work_wires=list(range(7, 6 + num_controls)),
+            work_wire_type="zeroed",
         )
-        assert qp.list_decomps(op)[0].is_applicable(**op.arguments) == applicable
-
-    @pytest.mark.capture
-    def test_multiple_controls_capture_and_resources(self, toy_hamiltonian_cdf_concrete):
-        """Capture preserves mixed controls and the resource rule counts the single AND ladder."""
-        ham, _ = toy_hamiltonian_cdf_concrete
-        rule = qp.list_decomps("C(TrotterCDF)")[0]
-
-        def make_controlled(t, control_values):
-            return qp.ctrl(
-                qp.TrotterCDF(t, 1, ham, [0, 1, 2, 3], work_wires=[9, 10]),
-                control=[4, 5, 6],
-                control_values=control_values,
-                work_wires=[7, 8],
-                work_wire_type="zeroed",
-            )
-
-        def circuit(t, control_values):
-            with qp.capture.pause():
-                op = make_controlled(t, control_values)
-            rule(**op.arguments)
-
-        args = (jax.numpy.array(0.3), jax.numpy.array([1, 1, 1]))
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", CaptureWarning)
-            jaxpr = jax.make_jaxpr(circuit)(*args)
-        operations = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *args).operations
-        with qp.capture.pause():
-            op = make_controlled(0.3, [1, 1, 1])
-            resources = _controlled_trotter_cdf_decomp.compute_resources(**op.arguments)
-        assert_resource_counts_match(resources.gate_counts, operations)
-
-        mixed_values = jax.numpy.array([0, 1, 0])
-        operations = qp.testing.plxpr_to_tape(
-            jaxpr.jaxpr, jaxpr.consts, args[0], mixed_values
-        ).operations
-        with qp.capture.pause():
-            expected = make_controlled(args[0], mixed_values).decomposition()
-        for actual, reference in zip(operations, expected, strict=True):
-            qp.assert_equal(actual, reference)
-
-    def test_control_auxiliaries_cannot_overlap_cdf_work_wires(self, toy_hamiltonian_cdf_concrete):
-        """Even intermediate AND-ladder auxiliaries must be separate from the CDF work wires."""
-        ham, num_orbitals = toy_hamiltonian_cdf_concrete
-        base = qp.TrotterCDF(0.3, 1, ham, range(2 * num_orbitals), work_wires=[9, 10])
-        with pytest.raises(ValueError, match="must not overlap"):
-            qp.ctrl(
-                base, control=[4, 5, 6], work_wires=[9, 8], work_wire_type="zeroed"
-            ).decomposition()
+        assert _controlled_trotter_cdf_decomp.is_applicable(**op.arguments) == (num_controls == 1)
 
     def test_control_cannot_overlap_clean_work_wire(self, toy_hamiltonian_cdf_concrete):
         """The controlled decomposition must reject a control used as a clean work wire."""
@@ -1046,13 +970,12 @@ class TestIntegration:
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
 
-        def _circuit():
-            qp.TrotterCDF(t, num_steps, ham, wires, work_wires=work_wires)
-
-        tape = qp.tape.make_qscript(_circuit)()
-        assert_clean_work_wire_evolution(
-            tape, wires, list(work_wires), np.eye(2 ** len(wires), dtype=complex)
-        )
+        op = qp.TrotterCDF(t, num_steps, ham, wires, work_wires=work_wires)
+        assert_decomposable(op)
+        matrix = qp.matrix(op, wire_order=wires + list(work_wires))
+        work_dim = 2 ** len(work_wires)
+        expected = qp.math.kron(qp.math.eye(2 ** len(wires)), qp.math.eye(work_dim)[:, :1])
+        assert qp.math.allclose(matrix[:, ::work_dim], expected, atol=1e-10, rtol=0)
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
@@ -1070,6 +993,7 @@ class TestIntegration:
         control_work_wires = list(range(work_wires[-1] + 1, num_wires))
         control_values = [1, 0] if mode == "multiple_controls" else [1]
         gate_set = CATALYST_GATE_SET_GENUINE | {
+            "Cond",
             "CRZ",
             "IsingZZ",
             "GlobalPhase",

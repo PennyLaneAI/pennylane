@@ -26,7 +26,6 @@ from pennylane.decomposition import add_decomps, register_condition, register_re
 from pennylane.numeric_hamiltonians import CDFHamiltonian
 from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math import adjoint, ctrl
-from pennylane.ops.op_math.controlled2 import _ctrl_many_zeroed_work_wires
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
@@ -131,23 +130,6 @@ class TrotterCDF(Operator2):
         Controlling this operator with :func:`~pennylane.ctrl` produces by default a genuine
         controlled evolution :math:`\text{diag}(1, U)` (assuming a single control wire),
         where :math:`U = e^{-iHt}` is the Trotter evolution.
-
-        For standard control on :math:`m>1` wires, supply :math:`m-1` additional clean
-        ``work_wires`` to :func:`~pennylane.ctrl` with ``work_wire_type="zeroed"``.
-        The decomposition combines the controls with :class:`~.TemporaryAND`, uses the
-        result as a single control for the full evolution, and then uncomputes it.
-        These wires must be distinct from the ``work_wires`` supplied to ``TrotterCDF``,
-        which are used for the two-body layers. For example, with the two-orbital
-        Hamiltonian above:
-
-        .. code-block:: python
-
-            op = qp.TrotterCDF(
-                1.0, 10, hamiltonian, wires=range(4), work_wires=[4, 5]
-            )
-            controlled_op = qp.ctrl(
-                op, control=[6, 7], work_wires=[8], work_wire_type="zeroed"
-            )
 
         With a single control and ``double_phase=True``, :func:`~pennylane.ctrl` instead produces the double-phase Hadamard-test circuit
         of `Fig. 6 of arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`__, which realizes
@@ -538,10 +520,6 @@ def _apply_two_body_diagonal_with_work_wires(
 
     @for_loop(num_orbitals - 1)
     def orbital_pairs(p):
-        if standard_control:
-            control_and_wires = [wires[2 * p + 1], control_wires[0], work_wires[0]]
-            TemporaryAND(control_and_wires, control_values=(0, 1))
-
         # The inner loop visits N-1, ..., 1 pairs, averaging N/2 iterations.
         @hint({"num-iters": num_orbitals / 2})
         @for_loop(p + 1, num_orbitals)
@@ -561,6 +539,9 @@ def _apply_two_body_diagonal_with_work_wires(
             CNOT([wires[2 * p], rotation_target])
             adjoint(TemporaryAND)(pair_and_wires, control_values=control_values)
 
+        if standard_control:
+            control_and_wires = [wires[2 * p + 1], control_wires[0], work_wires[0]]
+            TemporaryAND(control_and_wires, control_values=(0, 1))
         # Flipping p-alpha reverses all (p, q) rotations, so one CNOT pair serves this loop.
         if double_phase:
             CNOT([control_wires[0], wires[2 * p]])
@@ -723,12 +704,6 @@ add_decomps(TrotterCDF, _trotter_cdf_decomposition)
 def _controlled_trotter_cdf_resource(
     base, control_wires, control_values, work_wires, work_wire_type
 ):
-    if base.arguments["num_trotter_steps"] <= 0:
-        return {}
-    if len(control_wires) > 1:
-        return _ctrl_many_zeroed_work_wires.compute_resources(
-            base=base, control_wires=control_wires, work_wires=work_wires
-        ).gate_counts
     return _cdf_resource_counts(
         base.arguments["num_trotter_steps"],
         base.arguments["hamiltonian"],
@@ -738,20 +713,7 @@ def _controlled_trotter_cdf_resource(
     )
 
 
-def _controlled_trotter_cdf_condition(
-    base, control_wires, control_values, work_wires, work_wire_type
-):
-    return len(control_wires) == 1 or (
-        not base.arguments["double_phase"]
-        and _ctrl_many_zeroed_work_wires.is_applicable(
-            control_wires=control_wires,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
-    )
-
-
-@register_condition(_controlled_trotter_cdf_condition)
+@register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
 @register_resources(_controlled_trotter_cdf_resource, exact=False)
 def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wires, work_wire_type):
     evolution_time = base.arguments["evolution_time"]
@@ -763,11 +725,6 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
     validate_no_wire_overlaps({"control_wires": control_wires, "work_wires": cdf_work_wires})
 
     if num_trotter_steps == 0:
-        return
-
-    if len(control_wires) > 1:
-        validate_no_wire_overlaps({"control_work_wires": work_wires, "work_wires": cdf_work_wires})
-        _ctrl_many_zeroed_work_wires(base, control_wires, work_wires)
         return
 
     helpers = _cdf_decomposition_helpers(
