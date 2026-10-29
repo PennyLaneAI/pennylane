@@ -180,6 +180,22 @@ def decomposition_queue(op):
     return q.queue
 
 
+def assert_resources_match_decomposition(op):
+    """Assert that the resource function reproduces the operations of the decomposition, except
+    for the upper bounds of the electronic diagonalization."""
+    rule = qp.list_decomps(qp.TrotterVibronic)[0]
+    estimated = Counter()
+    for rep, count in rule.compute_resources(**op.arguments).gate_counts.items():
+        estimated[rep.name] += count
+    actual = Counter(o.name for o in decomposition_queue(op))
+
+    assert estimated["Hadamard"] >= actual["Hadamard"]
+    assert estimated["CNOT"] >= actual["CNOT"]
+    for name in ("Hadamard", "CNOT"):
+        del estimated[name], actual[name]
+    assert estimated == actual
+
+
 def count_ops(queue, *op_types):
     return sum(isinstance(op, op_types) for op in queue)
 
@@ -633,17 +649,24 @@ class TestDecomposition:
         the operations of the decomposition except for the diagonalization upper bounds."""
         hamiltonian = build_hamiltonian(sparse_fragment_list(n_states, n_modes, seed))
         op = make_op(hamiltonian, make_wires(n_states, n_modes), num_trotter_steps=2)
-        rule = qp.list_decomps(qp.TrotterVibronic)[0]
-        estimated = Counter()
-        for rep, count in rule.compute_resources(**op.arguments).gate_counts.items():
-            estimated[rep.name] += count
-        actual = Counter(o.name for o in decomposition_queue(op))
+        assert_resources_match_decomposition(op)
 
-        assert estimated["Hadamard"] >= actual["Hadamard"]
-        assert estimated["CNOT"] >= actual["CNOT"]
-        for name in ("Hadamard", "CNOT"):
-            del estimated[name], actual[name]
-        assert estimated == actual
+    @pytest.mark.parametrize(
+        "magnitude, evolution_time, expected_prob",
+        [(3e-9, 0.52, 0.5), (3e-9, 100.0, 1.0), (1e-7, 0.52, 1.0), (1e-7, 0.001, 0.5)],
+    )
+    def test_branch_probs_use_time_step(self, magnitude, evolution_time, expected_prob, seed):
+        """Test that ``branch_probs`` take the time step into account, which scales the
+        coefficients before they are compared against the skipping tolerance."""
+        fragments = sparse_fragment_list(2, 2, seed)
+        # Linear coefficients close to the skipping tolerance instead of exact zeros
+        for i, fragment in enumerate(fragments[:-1]):
+            fragment["linear"][..., i % 2] = magnitude
+        hamiltonian = build_hamiltonian(fragments)
+        op = make_op(hamiltonian, make_wires(2, 2), evolution_time=evolution_time)
+
+        assert dict(op.arguments["branch_probs"])["linear"] == expected_prob
+        assert_resources_match_decomposition(op)
 
     @pytest.mark.parametrize(
         "branch_probs, num_visits, expected",
@@ -809,8 +832,8 @@ class TestDecomposition:
 
     @pytest.mark.capture
     def test_branch_probs_argument(self, seed):
-        """Test that ``branch_probs`` is computed from a concrete Hamiltonian, omitted for a traced
-        one, and that provided values are used as ``branch-prob`` hints."""
+        """Test that ``branch_probs`` is computed from a concrete Hamiltonian and evolution time,
+        omitted if either is traced, and that provided values are used as ``branch-prob`` hints."""
         fragments = fragment_list(n_states=2, n_modes=2, seed=seed)
         # A single position fragment, so that all conditionals belong to terms
         hamiltonian = build_hamiltonian([fragments[0], fragments[-1]])
@@ -826,12 +849,14 @@ class TestDecomposition:
         )
         assert make_op(hamiltonian, wires).arguments["branch_probs"] == expected
 
-        def make_traced(constant):
+        def make_traced(constant, evolution_time):
             traced_op = make_op(replace(hamiltonian, constant=constant), wires)
+            assert traced_op.arguments["branch_probs"] is None
+            traced_op = make_op(hamiltonian, wires, evolution_time=evolution_time)
             assert traced_op.arguments["branch_probs"] is None
             return 0
 
-        jax.make_jaxpr(make_traced)(hamiltonian.constant)
+        jax.make_jaxpr(make_traced)(hamiltonian.constant, 0.52)
 
         op = make_op(hamiltonian, wires, branch_probs={"kinetic": 0.25, "constant": 0.5})
         assert op.arguments["branch_probs"] == (("constant", 0.5), ("kinetic", 0.25))

@@ -102,11 +102,23 @@ class TrotterVibronic(Operator2):
         aqft_order (int): approximation order of the :class:`~.AQFT` used to transform between
             position and momentum space. If ``None`` (default), no approximation is made
             (``aqft_order = k - 1``).
-        branch_probs (dict[str, float]): probabilities for the fragment terms to be
-            applied rather than skipped for vanishing coefficients. They
-            are only used as resource hints via :func:`~.hint` and do not affect the circuit.
-            If ``None`` (default), they are computed from ``hamiltonian`` if its data is concrete,
-            and omitted otherwise.
+        branch_probs (dict[str, float]): probabilities for the fragment terms to be applied rather
+            than skipped for vanishing coefficients. They are only used for resource estimation
+            and do not affect the circuit, see the note below. If ``None`` (default), they are
+            computed from ``hamiltonian`` and ``evolution_time`` if both are concrete, and omitted
+            otherwise.
+
+    .. note::
+
+        The keys of ``branch_probs`` are ``"constant"``, ``"linear"``, ``"quadratic"``,
+        ``"bilinear"`` and ``"kinetic"``. The probabilities are attached as ``"branch-prob"``
+        hints via :func:`~.hint` to the conditionals that skip the respective terms. In addition,
+        they weight the gate counts of the terms in the resources of the decomposition rule, and
+        thus affect the weight of this rule in the graph-based decomposition system.
+
+        Providing ``branch_probs`` replaces the probabilities computed from ``hamiltonian`` and
+        ``evolution_time`` entirely, rather than updating them. Terms missing from
+        ``branch_probs`` are left unhinted and counted at every visit.
 
     **Example**
 
@@ -431,7 +443,7 @@ class TrotterVibronic(Operator2):
                 )
 
         if branch_probs is None:
-            branch_probs = _branch_probs(hamiltonian)
+            branch_probs = _branch_probs(hamiltonian, evolution_time, num_trotter_steps)
         if branch_probs is not None:
             # Static arguments must be hashable, and a fixed order lets equal values hash equally
             branch_probs = dict(branch_probs)
@@ -992,29 +1004,6 @@ def _momentum_coefficients(kinetic):
     return math.diag(kinetic[0, 0])
 
 
-def _diagonalized_coefficients(hamiltonian, n_elec, n_states, n_modes):
-    """Diagonalize all position fragments.
-
-    Returns the tuple ``(constant, linear, quadratic, bilinear)`` of the coefficient tensors of
-    :func:`_position_coefficients`, stacked over the position fragments. Fragment ``i`` is
-    diagonalized with the ``(0, i)`` key.
-    """
-    all_coeffs = []
-    for i in range(hamiltonian.num_fragments):
-        matrix = _diagonalization_matrix((0, i), n_elec)[:n_states, :n_states]
-        all_coeffs.append(
-            _position_coefficients(
-                matrix,
-                hamiltonian.constant[i],
-                hamiltonian.linear[i],
-                hamiltonian.quadratic[i],
-                n_states,
-                n_modes,
-            )
-        )
-    return tuple(math.stack(coeffs) for coeffs in zip(*all_coeffs))
-
-
 def _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes):
     """Diagonalize all position fragments and scale their coefficients by the time step.
 
@@ -1024,19 +1013,43 @@ def _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes):
     diagonalized with the ``(0, i)`` key.
     """
     first_order_time_step = time / 2
-    all_coeffs = tuple(
-        coeffs * first_order_time_step
-        for coeffs in _diagonalized_coefficients(hamiltonian, n_elec, n_states, n_modes)
-    )
+    constant_dense = hamiltonian.constant
+    linear_dense = hamiltonian.linear
+    quadratic_dense = hamiltonian.quadratic
+    num_fragments = hamiltonian.num_fragments
+
+    all_constant, all_linear, all_quadratic, all_bilinear = [], [], [], []
+    for i in range(num_fragments):
+        matrix = _diagonalization_matrix((0, i), n_elec)[:n_states, :n_states]
+        constant, linear, quadratic, bilinear = _position_coefficients(
+            matrix,
+            constant_dense[i],
+            linear_dense[i],
+            quadratic_dense[i],
+            n_states,
+            n_modes,
+        )
+        all_constant.append(constant * first_order_time_step)
+        all_linear.append(linear * first_order_time_step)
+        all_quadratic.append(quadratic * first_order_time_step)
+        all_bilinear.append(bilinear * first_order_time_step)
+
+    all_constant = math.stack(all_constant)
+    all_linear = math.stack(all_linear)
+    all_quadratic = math.stack(all_quadratic)
+    all_bilinear = math.stack(all_bilinear)
     # Reshape the bilinear data into a flattened structure with respect to mode pairs.
     # ``k < ell`` matches bilinear_coeffs, populated only in the upper triangle.
     bilinear_indices = np.array(np.triu_indices(n_modes, 1))
 
     if compiler.active() or capture.enabled():
-        all_coeffs = tuple(math.array(coeffs, like="jax") for coeffs in all_coeffs)
+        all_constant = math.array(all_constant, like="jax")
+        all_linear = math.array(all_linear, like="jax")
+        all_quadratic = math.array(all_quadratic, like="jax")
+        all_bilinear = math.array(all_bilinear, like="jax")
         bilinear_indices = math.array(bilinear_indices, like="jax")
 
-    return all_coeffs, bilinear_indices
+    return (all_constant, all_linear, all_quadratic, all_bilinear), bilinear_indices
 
 
 def _applied_fraction(coeffs):
@@ -1049,18 +1062,23 @@ def _applied_fraction(coeffs):
     return float(np.mean(applied)) if applied.size else None
 
 
-def _branch_probs(hamiltonian):
+def _branch_probs(hamiltonian, evolution_time, num_trotter_steps):
     """Probabilities for the terms of a Trotter step to be applied rather than skipped for
     vanishing coefficients, see the ``branch_probs`` argument of :class:`~.TrotterVibronic`.
 
-    Returns ``None`` if the Hamiltonian data is not concrete.
+    The coefficients are scaled by the time steps as in :func:`_trotter_step_second_order`,
+    because the skip conditions compare the scaled coefficients against a fixed tolerance.
+
+    Returns ``None`` if the Hamiltonian data or the evolution time are not concrete.
     """
-    if any(math.is_tracer(t) or isinstance(t, AbstractArray) for t in hamiltonian.tensors):
+    data = (evolution_time, *hamiltonian.tensors)
+    if any(math.is_tracer(t) or isinstance(t, AbstractArray) for t in data):
         return None
     n_states, n_modes = hamiltonian.num_states, hamiltonian.num_modes
     n_elec = math.ceil_log2(n_states)
-    coeffs = _diagonalized_coefficients(hamiltonian, n_elec, n_states, n_modes)
-    kinetic = _momentum_coefficients(hamiltonian.kinetic)[:, None]
+    time_step = evolution_time / num_trotter_steps
+    coeffs, _ = _preprocess_data(time_step, hamiltonian, n_elec, n_states, n_modes)
+    kinetic = (_momentum_coefficients(hamiltonian.kinetic) * time_step)[:, None]
     return {term: _applied_fraction(c) for term, c in zip(_BRANCH_TERMS, (*coeffs, kinetic))}
 
 
