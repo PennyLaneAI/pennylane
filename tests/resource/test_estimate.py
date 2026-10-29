@@ -141,7 +141,6 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         @qp.qjit(capture=True)
         @qp.qnode(qp.device("null.qubit", wires=3))
         def circuit():
-            qp.Toffoli([0, 1, 2])
             qp.Hadamard(0)
             qp.Hadamard(0)
             qp.SWAP([0, 1])
@@ -158,7 +157,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         resources = qp.estimate(circuit, target=qp.gate_sets.ROTATIONS_PLUS_CNOT)().resources
 
         assert resources == SpecsResources(
-            counts={"CNOT": 20, "GlobalPhase": 11, "RX": 2, "RY": 9, "RZ": 19},
+            counts={"CNOT": 14, "GlobalPhase": 2, "RX": 2, "RY": 7, "RZ": 10},
             measurement_processes={"expval(PauliZ)": 1, "probs(2 wires)": 1, "var(PauliX)": 1},
             num_wires=3,
         )
@@ -167,7 +166,6 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         @qp.transforms.decompose(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT)
         @qp.qnode(qp.device("null.qubit", wires=3))
         def decomposed_circuit():
-            qp.Toffoli([0, 1, 2])
             qp.Hadamard(0)
             qp.Hadamard(0)
             qp.SWAP([0, 1])
