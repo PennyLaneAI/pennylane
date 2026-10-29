@@ -851,7 +851,7 @@ class TestOrbitalRotation:
         phi = 1.234
         wires = (0, 1, 2, 3)
         op = qp.OrbitalRotation(phi, wires=wires)
-        adj_op = qp.adjoint(op, lazy=False)
+        adj_op = op.adjoint()
         qp.assert_equal(adj_op, qp.OrbitalRotation(-phi, wires=wires))
 
     def test_adjoint_integration(self):
@@ -1145,7 +1145,7 @@ class TestFermionicSWAP:
         phi = 1.234
         wires = (0, 1)
         op = qp.FermionicSWAP(phi, wires=wires)
-        adj_op = qp.adjoint(op, lazy=False)
+        adj_op = op.adjoint()
         qp.assert_equal(adj_op, qp.FermionicSWAP(-phi, wires=wires))
 
     def test_adjoint_integration(self):

@@ -163,6 +163,7 @@ class TestDeviceLevelSpecs:
             ),
         )
 
+    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     def test_complex(self):
         """Test a complex case of qp.specs() against PennyLane"""
 

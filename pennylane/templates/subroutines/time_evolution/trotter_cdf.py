@@ -284,8 +284,7 @@ class TrotterCDF(Operator2):
         one basis rotation is emitted per fragment boundary, plus a single trailing
         :math:`\mathcal{U}^{(1)\dagger}` after the last step. Each leaf is first normalized to
         determinant :math:`+1` (negating one orbital column, a no-op on :math:`\tilde{n}_p`) so that
-        :class:`~.BasisRotation`'s real-orthogonal sign gauge is consistent across fragments;
-        otherwise leaves with mixed determinants realize a different Hamiltonian.
+        no :class:`~.BasisRotation` needs a determinant-correcting phase flip.
 
         **3. One-body diagonal**
         In the fragment basis the one-body generator is :math:`D_0 = \sum_w \epsilon_p\, n_w`, summed
