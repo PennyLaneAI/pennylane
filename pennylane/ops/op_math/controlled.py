@@ -494,7 +494,7 @@ def _capture_ctrl_transform(
         control_wires = qp.wires.Wires(control)  # make sure is iterable
         static_work_wires = qp.wires.Wires(work_wires) if work_wires is not None else None
         dynamic_work_wires = ()
-        if static_work_wires and any(math.is_abstract(w) for w in static_work_wires):
+        if static_work_wires and any(math.is_tracer(w) for w in static_work_wires):
             # Traced labels must be operands so they remain connected to the enclosing trace.
             dynamic_work_wires = tuple(static_work_wires)
             static_work_wires = None
