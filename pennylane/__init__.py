@@ -26,7 +26,7 @@ from pennylane.core.apply import apply
 from pennylane.core.queuing import QueuingManager
 
 from pennylane import compiler
-from pennylane.compiler import qjit
+from pennylane.compiler import qjit, flatten
 from pennylane import capture
 from pennylane.capture import hint
 from pennylane import core
