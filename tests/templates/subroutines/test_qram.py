@@ -20,6 +20,7 @@ import re
 import numpy as np
 import pytest
 
+import pennylane as qp
 from pennylane import apply, device, measure, qnode, registers, workflow
 from pennylane.math import int_to_binary
 from pennylane.measurements import probs, state
@@ -337,16 +338,24 @@ def hybrid_quantum(
                 ),
                 CZ(wires=[5, 14]),
                 CZ(wires=[5, 12]),
-                Controlled(
-                    SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                    )
                 ),
-                Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9]),
-                Controlled(
-                    SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                qp.adjoint(Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9])),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                    )
                 ),
-                Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8])),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 2, 6]),
                 CH(wires=[5, 2]),
                 CH(wires=[5, 3]),
@@ -364,16 +373,24 @@ def hybrid_quantum(
                 CZ(wires=[5, 11]),
                 CZ(wires=[5, 14]),
                 CZ(wires=[5, 12]),
-                Controlled(
-                    SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                    )
                 ),
-                Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9]),
-                Controlled(
-                    SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                qp.adjoint(Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9])),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                    )
                 ),
-                Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8])),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 3, 6]),
                 CH(wires=[5, 3]),
                 CH(wires=[5, 4]),
@@ -389,25 +406,37 @@ def hybrid_quantum(
                     SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
                 ),
                 CZ(wires=[5, 14]),
-                Controlled(
-                    SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                    )
                 ),
-                Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9]),
-                Controlled(
-                    SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                qp.adjoint(Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9])),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                    )
                 ),
-                Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8])),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 4, 6]),
                 CH(wires=[5, 4]),
-                CSWAP(wires=[5, 13, 9]),
-                CSWAP(wires=[5, 10, 8]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
-                CSWAP(wires=[5, 1, 6]),
-                CSWAP(wires=[5, 6, 7]),
-                CSWAP(wires=[5, 0, 6]),
+                qp.adjoint(CSWAP(wires=[5, 13, 9])),
+                qp.adjoint(CSWAP(wires=[5, 10, 8])),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
+                qp.adjoint(CSWAP(wires=[5, 1, 6])),
+                qp.adjoint(CSWAP(wires=[5, 6, 7])),
+                qp.adjoint(CSWAP(wires=[5, 0, 6])),
                 X(5),
             ],
         ),
@@ -434,8 +463,12 @@ def hybrid_quantum(
                 Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
                 Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
                 CZ(wires=[5, 13]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 2, 6]),
                 CH(wires=[5, 2]),
                 CH(wires=[5, 3]),
@@ -444,8 +477,12 @@ def hybrid_quantum(
                 Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
                 CZ(wires=[5, 10]),
                 CZ(wires=[5, 13]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 3, 6]),
                 CH(wires=[5, 3]),
                 CH(wires=[5, 4]),
@@ -453,12 +490,16 @@ def hybrid_quantum(
                 Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
                 Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
                 CZ(wires=[5, 13]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 4, 6]),
                 CH(wires=[5, 4]),
-                CSWAP(wires=[5, 6, 7]),
-                CSWAP(wires=[5, 1, 6]),
+                qp.adjoint(CSWAP(wires=[5, 6, 7])),
+                qp.adjoint(CSWAP(wires=[5, 1, 6])),
                 MultiControlledX(wires=[0, 5], control_values=[False]),
                 CNOT(wires=[0, 5]),
                 CSWAP(wires=[5, 1, 6]),
@@ -468,8 +509,12 @@ def hybrid_quantum(
                 Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
                 Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
                 CZ(wires=[5, 10]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 2, 6]),
                 CH(wires=[5, 2]),
                 CH(wires=[5, 3]),
@@ -477,20 +522,28 @@ def hybrid_quantum(
                 Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
                 Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
                 CZ(wires=[5, 10]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 3, 6]),
                 CH(wires=[5, 3]),
                 CH(wires=[5, 4]),
                 CSWAP(wires=[5, 4, 6]),
                 Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
                 Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 4, 6]),
                 CH(wires=[5, 4]),
-                CSWAP(wires=[5, 6, 7]),
-                CSWAP(wires=[5, 1, 6]),
+                qp.adjoint(CSWAP(wires=[5, 6, 7])),
+                qp.adjoint(CSWAP(wires=[5, 1, 6])),
                 CNOT(wires=[0, 5]),
             ],
         ),

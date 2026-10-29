@@ -52,6 +52,9 @@ def _aqft(order, wires):
         return AQFT(order=order, wires=wires)
 
 
+_BRANCH_TERMS = ("constant", "linear", "quadratic", "bilinear", "kinetic")
+
+
 class TrotterVibronic(Operator2):
     r"""Second-order Trotter circuit for vibronic Hamiltonian simulation using phase-gradient
     arithmetic.
@@ -99,14 +102,11 @@ class TrotterVibronic(Operator2):
         aqft_order (int): approximation order of the :class:`~.AQFT` used to transform between
             position and momentum space. If ``None`` (default), no approximation is made
             (``aqft_order = k - 1``).
-        branch_probs (dict[str, float]): probabilities for the ``"constant"``, ``"linear"``,
-            ``"quadratic"``, ``"bilinear"`` and ``"kinetic"`` terms to be applied rather than
-            skipped for vanishing coefficients, i.e., the fraction of position fragments
-            (constant), pairs of fragments and modes (linear and quadratic), pairs of fragments
-            and mode pairs (bilinear), or modes (kinetic) with non-vanishing coefficients. They
-            are only used as ``branch-prob`` compiler hints (see :func:`~.hint`) for resource
-            analysis and do not affect the circuit. If ``None`` (default), they are computed from
-            ``hamiltonian`` if its data is concrete, and omitted otherwise.
+        branch_probs (dict[str, float]): probabilities for the fragment terms to be
+            applied rather than skipped for vanishing coefficients. They
+            are only used as resource hints via :func:`~.hint` and do not affect the circuit.
+            If ``None`` (default), they are computed from ``hamiltonian`` if its data is concrete,
+            and omitted otherwise.
 
     **Example**
 
@@ -466,13 +466,15 @@ def _trotter_vibronic_resources(
     aqft_order,
     branch_probs,
 ):
-    """Coarse (upper-bound) gate counts for the vibronic Trotter circuit.
+    """Gate counts for the vibronic Trotter circuit.
 
-    This estimate is intentionally inexact (``exact=False``): terms whose coefficients happen to
-    vanish are skipped at runtime, and the sub-operations are counted at their top level.
+    Each term is counted as often as it is expected to be applied according to ``branch_probs``,
+    or as often as it is visited if its probability is unknown. This estimate is inexact
+    (``exact=False``): the expected counts are rounded up, the electronic diagonalization is
+    counted as an upper bound, and the sub-operations are counted at their top level.
     """
-    # ``evolution_time``, ``cache_wires`` and ``branch_probs`` are part of the shared
-    # resource/decomposition signature but do not affect the (structural) gate counts.
+    # ``evolution_time`` and ``cache_wires`` are part of the shared resource/decomposition
+    # signature but do not affect the gate counts.
     # pylint: disable=unused-argument
     num_fragments = hamiltonian.num_fragments
     n_states = hamiltonian.num_states
@@ -490,6 +492,11 @@ def _trotter_vibronic_resources(
 
     # Each Trotter step visits every position fragment twice (forward + backward).
     position_visits = 2 * num_fragments * num_trotter_steps
+    num_constant = _num_applied_terms(branch_probs, "constant", position_visits)
+    num_linear = _num_applied_terms(branch_probs, "linear", position_visits * n_modes)
+    num_quadratic = _num_applied_terms(branch_probs, "quadratic", position_visits * n_modes)
+    num_bilinear = _num_applied_terms(branch_probs, "bilinear", position_visits * num_pairs)
+    num_kinetic = _num_applied_terms(branch_probs, "kinetic", num_trotter_steps * n_modes)
 
     # Data loading (QROM) and the arithmetic primitives, sized to match ``_extract_registers``.
     # ``Wire[size]`` builds an abstract wire register of the given size; only the sizes matter
@@ -561,43 +568,56 @@ def _trotter_vibronic_resources(
     #    bit, invert the register for the two's complement, and apply the controlled output flips --
     resources[CNOT(wires=Wire[2])] += (
         2 * position_visits * max(n_elec - 1, 0)
-        + position_visits * n_modes * (2 + 2 * k + 2 * n_pg)
-        + position_visits * num_pairs * (2 + 4 * k + 2 * n_pg)
+        + num_linear * (2 + 2 * k + 2 * n_pg)
+        + num_bilinear * (2 + 4 * k + 2 * n_pg)
     )
 
-    # -- Data loading: constant + each linear/quadratic/bilinear term + final unload --
-    resources[qrom] += position_visits * (2 + 2 * n_modes + num_pairs)
-    resources[semi_adder] += position_visits
+    # -- Data loading: each applied constant/linear/quadratic/bilinear term + final unload --
+    resources[qrom] += num_constant + num_linear + num_quadratic + num_bilinear + position_visits
+    resources[semi_adder] += num_constant
 
     # -- Linear terms: one half-signed multiplier each --
-    resources[out_mult_linear] += position_visits * n_modes
-    resources[ctrl_incrementer_linear] += position_visits * n_modes * 2
+    resources[out_mult_linear] += num_linear
+    resources[ctrl_incrementer_linear] += num_linear * 2
 
     # -- Quadratic terms: two SignedOutSquares (compute + uncompute) and one OutMultiplier --
-    resources[signed_square] += position_visits * n_modes
-    resources[adj_signed_square] += position_visits * n_modes
-    resources[out_mult_quad] += position_visits * n_modes
+    resources[signed_square] += num_quadratic
+    resources[adj_signed_square] += num_quadratic
+    resources[out_mult_quad] += num_quadratic
 
     # -- Bilinear terms: two SignedOutMultipliers (compute + uncompute) and one half-signed
     #    multiplier --
-    resources[signed_out_mult] += position_visits * num_pairs
-    resources[adj_signed_out_mult] += position_visits * num_pairs
-    resources[out_mult_bilinear] += position_visits * num_pairs
-    resources[ctrl_incrementer_bilinear] += position_visits * num_pairs * 2
+    resources[signed_out_mult] += num_bilinear
+    resources[adj_signed_out_mult] += num_bilinear
+    resources[out_mult_bilinear] += num_bilinear
+    resources[ctrl_incrementer_bilinear] += num_bilinear * 2
 
     # -- Kinetic fragment (once per Trotter step): per mode, load the momentum coefficients as a
     #    basis state (``MultiX``), then AQFT + SignedOutSquare + OutMultiplier and their
     #    uncomputation --
-    kinetic_visits = num_trotter_steps * n_modes
     multi_x = MultiX(np.zeros(b, dtype=bool), wires=Wire[b])
-    resources[multi_x] += kinetic_visits * 2
-    resources[aqft] += kinetic_visits
-    resources[adj_aqft] += kinetic_visits
-    resources[signed_square] += kinetic_visits
-    resources[adj_signed_square] += kinetic_visits
-    resources[out_mult_quad] += kinetic_visits
+    resources[multi_x] += num_kinetic * 2
+    resources[aqft] += num_kinetic
+    resources[adj_aqft] += num_kinetic
+    resources[signed_square] += num_kinetic
+    resources[adj_signed_square] += num_kinetic
+    resources[out_mult_quad] += num_kinetic
 
     return dict(resources)
+
+
+def _num_applied_terms(branch_probs, term, num_visits):
+    """Number of applications of ``term`` out of ``num_visits``, weighted with its probability in
+    ``branch_probs`` and rounded up.
+
+    A visited term is counted at least once, because the resources must contain the gates in its
+    conditional branch, which is traced under capture even if it is never taken.
+    """
+    prob = dict(branch_probs or ()).get(term)
+    if prob is None or num_visits == 0:
+        return num_visits
+    # Rounding first keeps float errors in exact products, e.g. ``6 * (2 / 3)``, from rounding up
+    return max(int(np.ceil(round(prob * num_visits, 9))), 1)
 
 
 def _coefficient_register_size(coefficient_wires, phase_gradient_wires):
@@ -749,7 +769,7 @@ def _diagonalize_probs(num_fragments, n):
     return apply_anything_prob, cnot_prob
 
 
-def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
+def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments, inverse=False):
     r"""Diagonalize position fragment ``fragment_idx`` by applying Clifford operations on the
     electronic register, following the ``key = (0, fragment_idx)`` convention (see
     :func:`_diagonalization_matrix`).
@@ -766,6 +786,7 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
         fragment_idx (int): index of the position fragment. The circuit is the identity if
             ``fragment_idx == 0``.
         wires (WiresLike): electronic wires on which the fragment acts.
+        inverse (bool): Apply the inverse gate sequence.
         num_fragments (int): total number of position fragments. The conditionals carry branch
             probability hints that assume ``fragment_idx`` to be uniformly distributed over
             ``range(num_fragments)``.
@@ -793,13 +814,9 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
     control_pos = math.max(math.where(diff > 0, math.arange(n), -1))
     control_wire = wires_arr[control_pos]
 
-    @cond(any_diff)
-    @hint({"branch-prob": apply_anything_prob})
-    def _apply():
-        Hadamard(wires=[control_wire])
-
-        @for_loop(n - 1, -1, -1)
-        def _cnots(w):
+    def _cnots(start, stop, step):
+        @for_loop(start, stop, step)
+        def loop(w):
             @cond((diff[w] > 0) & (w != control_pos))
             @hint({"branch-prob": cnot_prob})
             def _maybe_cnot():
@@ -807,9 +824,24 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
 
             _maybe_cnot()
 
-        _cnots()  # pylint: disable=no-value-for-parameter
+        loop()  # pylint: disable=no-value-for-parameter
 
-    _apply()
+    @cond(any_diff)
+    @hint({"branch-prob": apply_anything_prob})
+    def _apply():
+        Hadamard(wires=[control_wire])
+        _cnots(n - 1, -1, -1)
+
+    @cond(any_diff)
+    @hint({"branch-prob": apply_anything_prob})
+    def _adjoint_apply():
+        _cnots(0, n, 1)
+        Hadamard(wires=[control_wire])
+
+    if inverse:
+        _adjoint_apply()
+    else:
+        _apply()
 
 
 def _diagonalization_matrix(key, n_wires):
@@ -1017,9 +1049,6 @@ def _applied_fraction(coeffs):
     return float(np.mean(applied)) if applied.size else None
 
 
-_BRANCH_TERMS = ("constant", "linear", "quadratic", "bilinear", "kinetic")
-
-
 def _branch_probs(hamiltonian):
     """Probabilities for the terms of a Trotter step to be applied rather than skipped for
     vanishing coefficients, see the ``branch_probs`` argument of :class:`~.TrotterVibronic`.
@@ -1167,8 +1196,11 @@ def _trotter_step_second_order(
         quadratic_coeffs = all_quadratic[i]
         bilinear_coeffs = all_bilinear[i]
 
-        adjoint(_diagonalize_vibronic_circuit, lazy=False)(
-            fragment_idx=i, wires=registers["electronic"], num_fragments=num_position_fragments
+        _diagonalize_vibronic_circuit(
+            fragment_idx=i,
+            wires=registers["electronic"],
+            num_fragments=num_position_fragments,
+            inverse=True,
         )
 
         def constant_term(prev_bitstrings):
