@@ -20,6 +20,9 @@ import pytest
 
 import pennylane as qp
 from pennylane.core import abstractify
+from pennylane.templates.subroutines.arithmetic.left_classical_comparator import (
+    _left_classical_comparator,
+)
 from pennylane.testing import assert_valid, decomp_rule_to_tape
 from pennylane.typing import Int, Wire
 
@@ -217,8 +220,8 @@ class TestLeftClassicalComparator:
 @pytest.mark.parametrize("n", [1, 2, 3])
 @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
 def test_resource_upper_bound(n, comparator):
-    """The abstract resource bound covers every valid threshold, including endpoints."""
-    rule = qp.list_decomps(qp.LeftClassicalComparator)[0]
+    """Worst-case estimates must cover each gate count for every valid threshold, including endpoints."""
+    rule = _left_classical_comparator
     abstract_op = qp.LeftClassicalComparator(Wire[n], Int, Wire[1], Wire[n - 1], comparator)
     estimates = rule.compute_resources(**abstract_op.arguments).gate_counts
     assert not rule.exact_resources
@@ -236,7 +239,7 @@ def test_resource_upper_bound(n, comparator):
 @pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
 def test_capture_dynamic_threshold(comparator):
-    """Captured compilation accepts changing thresholds."""
+    """A captured circuit returns the correct comparison result as the runtime threshold changes."""
     target = qp.gate_sets.CLIFFORD_T_PLUS_RZ
 
     @qp.qjit(capture=True)
@@ -257,12 +260,12 @@ def test_capture_dynamic_threshold(comparator):
         }[comparator]
         expected = np.zeros(2)
         expected[int(expected_bit)] = 1
-        np.testing.assert_allclose(circuit(threshold), expected, atol=1e-8)
+        assert qp.math.allclose(circuit(threshold), expected, atol=1e-8)
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("threshold", [[1, 2], np.array([1]), Int[2]])
 def test_non_scalar_threshold_rejected(threshold):
-    """Malformed thresholds fail before Python comparisons or MLIR lowering."""
+    """Reject concrete and abstract non-scalar thresholds with capture enabled or disabled."""
     with pytest.raises(ValueError, match="L must be a scalar integer"):
         qp.LeftClassicalComparator([0, 1], threshold, 2, [3], "<")
