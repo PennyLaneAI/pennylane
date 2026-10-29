@@ -985,6 +985,7 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
         return []
 
     if partial:
+
         if len(ops) == 1:
             MultiControlledX(
                 [*control, work_wires[0]],
@@ -1001,24 +1002,19 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
 
         ctrls_and_ctrl_states = _partial_select(len(ops), control)
         for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops, strict=True):
-            MultiControlledX(
-                [*ctrl_, work_wires[0]], control_values=ctrl_state, work_wires=work_wires[1:]
-            )
+            mcx_wires = [*ctrl_, work_wires[0]]
+            MultiControlledX(mcx_wires, control_values=ctrl_state, work_wires=work_wires[1:])
             ctrl(op, control=work_wires[:1], work_wires=work_wires[1:])
-            MultiControlledX(
-                [*ctrl_, work_wires[0]], control_values=ctrl_state, work_wires=work_wires[1:]
-            )
+            MultiControlledX(mcx_wires, control_values=ctrl_state, work_wires=work_wires[1:])
         return []
 
     # ctrl_states may be longer than `ops`, but will never be shorter. So we use strict=False
     for ctrl_state, op in zip(product([0, 1], repeat=len(control)), ops, strict=False):
-        MultiControlledX(
-            [*control, work_wires[0]], control_values=ctrl_state, work_wires=work_wires[1:]
-        )
+        mcx_wires = [*control, work_wires[0]]
+        MultiControlledX(mcx_wires, control_values=ctrl_state, work_wires=work_wires[1:])
         ctrl(op, control=work_wires[:1], work_wires=work_wires[1:])
-        MultiControlledX(
-            [*control, work_wires[0]], control_values=ctrl_state, work_wires=work_wires[1:]
-        )
+        MultiControlledX(mcx_wires, control_values=ctrl_state, work_wires=work_wires[1:])
+
     return []
 
 

@@ -44,6 +44,7 @@ CONTROL_BASE = {
     "CRY": "RY",
     "CRZ": "RZ",
     "C(S)": "S",
+    "C(PauliX)": "PauliX",
     "CRot": "Rot",
     "MultiControlledX": "PauliX",
     "ControlledOperation": "ControlledOperation",
@@ -1557,6 +1558,7 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                 # the quantum cost of a MultiControlledX gate scales as 4n^2, where n is the number of control wires
                 # see exercise 4.29 in Nielsen and Chuang
                 "MultiControlledX": lambda op: 2 * 4 * len(op.control_wires) ** 2,
+                "C(PauliX)": lambda op: 2 * 4 * len(op.control_wires) ** 2,
             }
 
     def _pred_block(self, circuit_sublist, index):
