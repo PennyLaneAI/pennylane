@@ -90,7 +90,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
             as if it was not marked as tensor list. If ``None``, this option is ignored.
 
     Returns:
-        func: A wrapped version of the function, which will automatically attempt
+        Callable: A wrapped version of the function, which will automatically attempt
         to dispatch to the correct autodifferentiation framework for the requested
         arguments. Note that the ``like`` argument will be optional, but can be provided
         if an explicit override is needed.
