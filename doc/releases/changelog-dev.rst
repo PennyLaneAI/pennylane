@@ -2262,6 +2262,10 @@ Bug fixes 🐛
   them as quantum operators.
   `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
 
+* :class:`~.PartialUnaryStatePreparation` now constructs its dense state using a static
+  inverse mapping, avoiding an unsupported runtime scatter when compiling to a binary.
+  `(#) <https://github.com/PennyLaneAI/pennylane/pull/>`__
+
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
   argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
   `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
