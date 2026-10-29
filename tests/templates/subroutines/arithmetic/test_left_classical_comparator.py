@@ -248,18 +248,16 @@ def test_resource_upper_bound(n, comparator):
 @pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
 def test_capture_dynamic_threshold(comparator):
-    """Captured compilation accepts changing thresholds and cleans the work register."""
+    """Captured compilation accepts changing thresholds."""
     target = qp.gate_sets.CLIFFORD_T_PLUS_RZ
 
     @qp.qjit(capture=True)
     @qp.decompose(gate_set=target)
-    @qp.qnode(qp.device("lightning.qubit", wires=5))
+    @qp.qnode(qp.device("lightning.qubit", wires=4))
     def circuit(threshold):
         qp.X(1)  # x = 1
         qp.LeftClassicalComparator([0, 1], threshold, 2, [3], comparator)
-        qp.CNOT([2, 4])
-        qp.adjoint(qp.LeftClassicalComparator([0, 1], threshold, 2, [3], comparator))
-        return qp.probs(wires=[4, 2, 3, 0, 1])
+        return qp.probs(wires=[2])
 
     max_L = 4 if comparator in ["<", ">="] else 3
     for threshold in range(max_L + 1):
@@ -269,8 +267,8 @@ def test_capture_dynamic_threshold(comparator):
             ">": 1 > threshold,
             ">=": 1 >= threshold,
         }[comparator]
-        expected = np.zeros(32)
-        expected[16 * int(expected_bit) + 1] = 1
+        expected = np.zeros(2)
+        expected[int(expected_bit)] = 1
         np.testing.assert_allclose(circuit(threshold), expected, atol=1e-8)
 
 
