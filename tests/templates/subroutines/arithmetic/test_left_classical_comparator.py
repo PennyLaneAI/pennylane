@@ -249,7 +249,7 @@ def test_resource_upper_bound(n, comparator):
 @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
 def test_capture_dynamic_threshold(comparator):
     """Captured compilation accepts changing thresholds and cleans the work register."""
-    target = {qp.X, qp.Y, qp.Z, qp.H, qp.S, qp.T, qp.CNOT, qp.RX, qp.RY, qp.RZ, qp.GlobalPhase}
+    target = qp.gate_sets.CLIFFORD_T_PLUS_RZ
 
     @qp.qjit(capture=True)
     @qp.decompose(gate_set=target)
