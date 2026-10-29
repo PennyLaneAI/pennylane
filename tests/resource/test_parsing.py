@@ -14,9 +14,11 @@
 """Unit tests for the JSON parsing helpers for the specs transform"""
 
 import copy
+from dataclasses import dataclass
 
 import pytest
 
+import pennylane as qp
 from pennylane.resource import PBCSpecsResources, SpecsResources
 from pennylane.resource.expression import Expression
 from pennylane.resource.parsing import (
@@ -296,12 +298,18 @@ class TestAnalysisPassConversion:
     def test_extra_depth_info(self, example_loop_analysis_pass_result):
         """Test that PBC depth information is correctly extracted from the analysis pass result."""
         example_loop_analysis_pass_result["for_loop_2"]["extended_fields"] = {
-            "pbc_any_commuting_depth": 5,
-            "pbc_qubit_disjoint_depth": 0,
+            "pbc_depth": {
+                "display_name": "PBC Depth",
+                "any_commuting_depth": 5,
+                "qubit_disjoint_depth": 0,
+            }
         }
         example_loop_analysis_pass_result["for_loop_1"]["extended_fields"] = {
-            "pbc_any_commuting_depth": 2,
-            "pbc_qubit_disjoint_depth": 3,
+            "pbc_depth": {
+                "display_name": "PBC Depth",
+                "any_commuting_depth": 2,
+                "qubit_disjoint_depth": 3,
+            }
         }
 
         actual = parse_resources_json(example_loop_analysis_pass_result)
@@ -347,31 +355,52 @@ class TestAnalysisPassConversion:
 class TestConvertToSubclass:
     """Unit tests for the _convert_to_subclass function."""
 
-    def test_convert_to_pbc(self):
-        """Test that _convert_to_subclass correctly converts a SpecsResources to a PBCSpecsResources."""
-        pbc_data = {"any_commuting_depth": 22, "qubit_disjoint_depth": 18}
+    def test_convert_registered_subclass(self, monkeypatch):
+        """A plugin converter maps its own fields without changing the input resources."""
+
+        @dataclass(frozen=True, kw_only=True)
+        class ExtraSpecsResources(SpecsResources):
+            extra_depth: int
+
+            @classmethod
+            def from_resources(cls, resources):
+                extra = resources.extra.copy()
+                depth = extra.pop("extra_depth")
+                return cls(
+                    counts=resources.counts,
+                    measurement_processes=resources.measurement_processes,
+                    num_wires=resources.num_wires,
+                    circuit_depth=resources.circuit_depth,
+                    extra=extra,
+                    extra_depth=depth["depth"],
+                )
+
+        monkeypatch.setattr(qp.resource.parsing, "_RESOURCE_CONVERTERS", {})
+        qp.resource.register_specs_resources("plugin_depth", ExtraSpecsResources.from_resources)
+        extra_data = {
+            "extra_metrics": {"display_name": "Extra Metrics", "depth": 22},
+            "unregistered": {"value": 1.5},
+        }
 
         res = SpecsResources(
             counts={"Hadamard": 3, "PauliX": 2, "PauliZ": 6},
             measurement_processes={"expval(PauliZ)": 1},
             num_wires=10,
             circuit_depth=5,
-            extra=copy.deepcopy(pbc_data),
+            extra=copy.deepcopy(extra_data),
         )
 
         converted = _convert_to_subclass(res)
 
-        assert isinstance(converted, PBCSpecsResources)
+        assert isinstance(converted, ExtraSpecsResources)
         assert converted.counts == res.counts
         assert converted.measurement_processes == res.measurement_processes
         assert converted.num_wires == res.num_wires
         assert converted.circuit_depth == res.circuit_depth
-        assert converted.any_commuting_depth == pbc_data["any_commuting_depth"]
-        assert converted.qubit_disjoint_depth == pbc_data["qubit_disjoint_depth"]
-        assert "any_commuting_depth" not in converted.extra
-        assert "qubit_disjoint_depth" not in converted.extra
+        assert converted.extra_depth == 22
+        assert converted.extra == {"unregistered": {"value": 1.5}}
 
-        assert res.extra == pbc_data  # Ensure the original extra data is unchanged
+        assert res.extra == extra_data
 
     def test_convert_rounds_floats(self):
         """Test that _convert_to_subclass rounds float counts and measurement processes to integers."""

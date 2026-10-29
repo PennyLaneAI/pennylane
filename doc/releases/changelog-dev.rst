@@ -825,6 +825,11 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* Catalyst plugins can register resource converters with
+  :func:`~pennylane.resource.register_specs_resources` to return their own
+  :class:`~pennylane.resource.SpecsResources` subclasses from compiler resource analysis.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * Terminal measurements now accept fixed-size ``qp.typing.Wire[n]`` registers during
   program capture.
   `(#10364) <https://github.com/PennyLaneAI/pennylane/pull/10364>`__
