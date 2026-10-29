@@ -29,6 +29,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import adjoint, ctrl
+from pennylane.ops.op_math.adjoint import _adjoint_eager
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
 
 from .composite import handle_recursion_error
@@ -123,7 +124,7 @@ class ChangeOpBasis2(CompositeOp2):
     def adjoint(self):
         return ChangeOpBasis2(
             self.compute_op,
-            adjoint(self.target_op, lazy=False),
+            _adjoint_eager(self.target_op, update_queue=True),
             self.uncompute_op,
         )
 
