@@ -88,7 +88,7 @@ class TestAQFT:
         assert np.allclose(m1, m2)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(1, w)])
+    @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(w)])
     def test_decomposition_new(self, order, wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.AQFT(order=order, wires=range(wires))
@@ -109,7 +109,7 @@ class TestAQFT:
         expected_hint = num_cps / n_wires
         assert hint_helpers.loop_hints(plxpr.jaxpr, skip_none=True) == [expected_hint]
 
-    @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(1, w)])
+    @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(w)])
     def test_gates(self, order, wires):
         """Test if the AQFT operation consists of only 3 type of gates"""
 
