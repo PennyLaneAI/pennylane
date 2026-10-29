@@ -37,6 +37,8 @@ def resources_from_analysis_pass(
     level_to_markers: dict[int, list[str]],
     level_to_name: dict[int, str],
     *args,
+    analysis_pass_name: str = "resource-analysis",
+    analysis_pass_kwargs: dict | None = None,
     **kwargs,
 ) -> dict[str, SpecsResources | list[SpecsResources]]:
     """
@@ -69,6 +71,7 @@ def resources_from_analysis_pass(
     # pylint: disable=protected-access,too-many-arguments,too-many-statements
     from catalyst import QJIT  # pylint: disable=import-outside-toplevel
 
+    analysis_pass_kwargs = analysis_pass_kwargs or {}
     iter_pipeline = copy.deepcopy(original_qnode._compile_pipeline)
     new_compile_pipeline = CompilePipeline()
     new_post_device_pipeline = CompilePipeline()
@@ -95,8 +98,8 @@ def resources_from_analysis_pass(
             level_to_name[0] = (
                 ", ".join(level_to_markers[0]) if 0 in level_to_markers else "Before MLIR Passes"
             )
-            new_compile_pipeline += transform(pass_name="resource-analysis")(
-                output_json=True, output_fname=fname
+            new_compile_pipeline += transform(pass_name=analysis_pass_name)(
+                output_json=True, output_fname=fname, **analysis_pass_kwargs
             )
 
         for i, comp_pass in enumerate(iter_pipeline, start=1):
@@ -113,13 +116,9 @@ def resources_from_analysis_pass(
                 level_name = make_level_name_unique(level_name, frozenset(level_to_name.values()))
                 fname_to_level[fname] = i
                 level_to_name[i] = level_name
-                if comp_pass.pass_name == "resource-estimate":
-                    new_compile_pipeline[-1].kwargs["output_json"] = True
-                    new_compile_pipeline[-1].kwargs["output_fname"] = fname
-                else:
-                    new_compile_pipeline += transform(pass_name="resource-analysis")(
-                        output_json=True, output_fname=fname
-                    )
+                new_compile_pipeline += transform(pass_name="resource-analysis")(
+                    output_json=True, output_fname=fname
+                )
 
         compile_options = copy.deepcopy(qjit.compile_options)
 
