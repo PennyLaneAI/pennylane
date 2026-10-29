@@ -44,7 +44,7 @@ from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
     _merge_leaves,
     _trotter_cdf_decomposition,
 )
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.templates.subroutines.time_evolution.fermi_tools import (  # pylint: disable=no-name-in-module
@@ -363,8 +363,7 @@ class TestDecomposition:
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
         op = qp.TrotterCDF(0.4, 2, ham, wires)
-        for rule in qp.list_decomps(qp.TrotterCDF):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_base_matches_expm(self, diagonal_hamiltonian_cdf):
         """For an identity-leaf (Trotter-exact) Hamiltonian, matrix(TrotterCDF) equals the
@@ -466,9 +465,7 @@ class TestDecomposition:
         ``|v><v|`` -- and hence the physical fragment -- unchanged. The template normalizes
         leaf determinants internally, so the circuit is invariant under this flip even when it
         yields mixed determinants (as ``qp.qchem.factorize`` does for many molecules, e.g. an
-        ``eigh`` one-body leaf with ``det = -1`` next to ``expm`` two-body leaves). Without the
-        normalization ``BasisRotation``'s real-orthogonal sign gauge would realize a different
-        Hamiltonian."""
+        ``eigh`` one-body leaf with ``det = -1`` next to ``expm`` two-body leaves)."""
         rng = np.random.default_rng(seed)
         num_orbitals, L = 3, 2
         core = rng.normal(size=(L + 1, num_orbitals, num_orbitals)) * 0.4
@@ -529,9 +526,6 @@ class TestDecomposition:
         dim = 2**n_wires
         # alpha modes 0..N-1 then beta N..2N-1, placed on interleaved wires (2p alpha, 2p+1 beta)
         mode_on_wire = [i + s * num_orbitals for i in range(num_orbitals) for s in (0, 1)]
-        # BasisRotation's real-orthogonal sign gauge is diag((-1)^k) for det = +1 leaves (all
-        # leaves here, and after the template's determinant normalization, are det = +1)
-        pi_gauge = np.diag([(-1.0) ** k for k in range(num_orbitals)])
 
         def onebody_wire_matrix(mat_orb):
             full = np.zeros((n_wires, n_wires), dtype=complex)
@@ -547,7 +541,7 @@ class TestDecomposition:
         lam_raw = rng.normal(size=(num_orbitals, num_orbitals)) * 0.5
         lam = 0.5 * (lam_raw + lam_raw.T)
         leaf2 = random_orthogonal(num_orbitals, rng)
-        vecs = [pi_gauge @ leaf2[:, p] for p in range(num_orbitals)]  # realized fragment orbitals
+        vecs = [leaf2[:, p] for p in range(num_orbitals)]  # fragment orbitals
 
         h_phys = nuc * np.eye(dim, dtype=complex) + onebody_wire_matrix(h)
         num_ops = [onebody_wire_matrix(np.outer(vecs[p], vecs[p])) for p in range(num_orbitals)]
@@ -559,10 +553,7 @@ class TestDecomposition:
         mu = lam.sum(axis=1)
         vg = np.stack(vecs, axis=1)
         h_eff = h + vg @ np.diag(mu) @ vg.T
-        eps, ve = np.linalg.eigh(h_eff)
-        if np.linalg.det(pi_gauge @ ve) < 0:  # keep det(leaf_0) = +1 so its gauge is pi_gauge too
-            ve[:, 0] = -ve[:, 0]
-        leaf0 = pi_gauge @ ve
+        eps, leaf0 = np.linalg.eigh(h_eff)
 
         ham = CDFHamiltonian(
             core_tensors=np.stack([np.diag(eps), lam]),
@@ -594,15 +585,14 @@ class TestControlledDecomposition:
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
         op = qp.ctrl(qp.TrotterCDF(0.4, 2, ham, wires), control=[99])
-        for rule in qp.list_decomps("C(TrotterCDF)"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.capture
     def test_controlled_decomposition_capture(self, toy_hamiltonian_cdf_concrete):
         """The C(TrotterCDF) rule captures cleanly. Operators can't be passed as capture inputs
         yet - they surface as ``ArgInfo`` wires (the "ArgInfo issue" tracked by ``test_Controlled``
         in ``tests/capture/test_operators.py``) - so the base is built inside the traced function.
-        Once that is resolved this can use ``_test_decomposition_rule`` under capture directly."""
+        Once that is resolved this can use ``assert_valid_decomp_rule`` under capture directly."""
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
         n = 2 * num_orbitals
         rule = qp.list_decomps("C(TrotterCDF)")[0]
@@ -655,15 +645,14 @@ class TestDoublePhaseControlledDecomposition:
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
         op = qp.ctrl(qp.TrotterCDF(0.4, 2, ham, wires, double_phase=True), control=[99])
-        for rule in qp.list_decomps("C(TrotterCDF)"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.capture
     def test_controlled_decomposition_capture(self, toy_hamiltonian_cdf_concrete):
         """The double-phase C(TrotterCDF) rule captures cleanly. Operators can't be passed as
         capture inputs yet - they surface as ``ArgInfo`` wires (the "ArgInfo issue" tracked by
         ``test_Controlled`` in ``tests/capture/test_operators.py``) - so the base is built inside
-        the traced function; once resolved this can use ``_test_decomposition_rule`` directly."""
+        the traced function; once resolved this can use ``assert_valid_decomp_rule`` directly."""
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
         n = 2 * num_orbitals
         rule = qp.list_decomps("C(TrotterCDF)")[0]

@@ -162,7 +162,7 @@ class TestIdentity:
         if all(isinstance(w, int) for w in wires):
             # ``Operator2`` treats wires as dynamic pytree leaves, so only integer wire
             # labels can be traced by ``jax.jit``.
-            adj_op = jax.jit(lambda op: qp.adjoint(op, lazy=False))(op)
+            adj_op = jax.jit(lambda op: op.adjoint())(op)
             qp.assert_equal(op, adj_op)
 
     def test_identity_eigvals(self, wires, tol):

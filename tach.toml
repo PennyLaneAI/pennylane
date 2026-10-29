@@ -303,16 +303,6 @@ layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.qnn"
-layer = "tertiary"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.kernels"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-layer = "tertiary"
-
-[[modules]]
 path = "pennylane.data"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "tertiary"
@@ -414,7 +404,7 @@ path = "pennylane.resource"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[interfaces]]
-expose = ["SpecsResources", "SymbolicSpecsResources", "CircuitSpecs", "resources_from_tape", "Expression", "analyze", "specs", "track"]
+expose = ["SpecsResources", "SymbolicSpecsResources", "CircuitSpecs", "resources_from_tape", "Expression", "analyze", "estimate", "specs", "track"]
 from = ["pennylane.resource"]
 
 [[modules]]

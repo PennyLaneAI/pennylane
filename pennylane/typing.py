@@ -18,73 +18,119 @@
 from __future__ import annotations
 
 import contextlib
+import copy
 import sys
 from collections.abc import Callable, Hashable, Sequence
 from dataclasses import dataclass, field
 from math import prod
 from numbers import Number
 from types import EllipsisType
-from typing import Any, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
 from jax import Array
-from jax.core import Tracer
+from jax.core import Tracer, UnshapedArray
 from jax.numpy import ndarray
 
 FlatPytree = tuple[Sequence[Any], Hashable]
 
 
-class InterfaceTensorMeta(type):
-    """defines dunder methods for the ``isinstance`` and ``issubclass`` checks.
+_TENSORLIKE_PYTHON_TYPES = (
+    int,
+    float,
+    bool,
+    complex,
+    bytes,
+    list,
+    tuple,
+    np.ndarray,
+    np.generic,
+    ArrayBox,
+)
 
-    .. note:: These special dunder methods can only be defined inside a metaclass.
 
+# Once Python 3.12 support is dropped, the separate runtime class and this tuple
+# can be replaced by a Union with an interface helper for _is_jax/_is_torch checks.
+# Keep the aval check; including Array/Tracer directly would accept operator tracers.
+class TensorLikeMeta(type):
+    """Runtime ``isinstance`` / ``issubclass`` for :class:`TensorLike`.
+
+    Must not be a ``typing.Union``: on Python ≤3.12, ``isinstance(x, Union[...])``
+    reduces to ``issubclass(type(x), ...)``, which cannot inspect a JAX tracer's
+    ``aval`` and would still treat :class:`~.AbstractOperator` tracers as tensors.
     """
 
     def __instancecheck__(cls, other):
-        """Dunder method used to check if an object is a `InterfaceTensor` instance."""
-        return _is_jax(other) or _is_torch(other)  # pragma: no cover
+        return isinstance(other, _TENSORLIKE_PYTHON_TYPES) or _is_jax(other) or _is_torch(other)
 
     def __subclasscheck__(cls, other):
-        """Dunder method that checks if a class is a subclass of ``InterfaceTensor``."""
+        if issubclass(other, _TENSORLIKE_PYTHON_TYPES):
+            return True
         return _is_jax(other, subclass=True) or _is_torch(other, subclass=True)
 
 
-class InterfaceTensor(metaclass=InterfaceTensorMeta):
-    """Adds support for runtime instance checking of interface-specific tensor-like data"""
+# Type checkers need a union: they do not use metaclass instance checks for assignability.
+if TYPE_CHECKING:
+    # Keep the optional torch import out of runtime module initialization.
+    from torch import Tensor as TorchTensor
 
+    TensorLike = Union[
+        int,
+        float,
+        bool,
+        complex,
+        bytes,
+        list,
+        tuple,
+        np.ndarray,
+        np.generic,
+        ArrayBox,
+        Array,
+        Tracer,
+        TorchTensor,
+    ]
+else:
+    # Runtime checks must inspect each tracer, including on Python 3.12.
 
-TensorLike = Union[
-    int, float, bool, complex, bytes, list, tuple, np.ndarray, np.generic, ArrayBox, InterfaceTensor
-]
-"""A type for all tensor-like data.
+    class TensorLike(metaclass=TensorLikeMeta):
+        """A type for all tensor-like data.
 
-TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor,
-including lists and tuples. Any argument accepted by ``qp.numpy.array`` is tensor-like.
+        TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor,
+        including lists and tuples. Any argument accepted by ``qp.numpy.array`` is tensor-like.
 
-**Examples**
+        JAX tracers are tensor-like only when array-valued; operator, measurement and qubit
+        tracers created under program capture are not.
 
->>> from pennylane.typing import TensorLike
->>> isinstance(4, TensorLike)
-True
->>> isinstance([2, 6, 8], TensorLike)
-True
->>> isinstance(torch.tensor([1, 2, 3]), TensorLike)
-True
->>> issubclass(list, TensorLike)
-True
->>> issubclass(jax.Array, TensorLike)
-True
+        **Examples**
 
-"""
+        >>> from pennylane.typing import TensorLike
+        >>> isinstance(4, TensorLike)
+        True
+        >>> isinstance([2, 6, 8], TensorLike)
+        True
+        >>> isinstance(torch.tensor([1, 2, 3]), TensorLike)
+        True
+        >>> issubclass(list, TensorLike)
+        True
+        >>> issubclass(jax.Array, TensorLike)
+        True
+
+        """
 
 
 def _is_jax(other, subclass=False):
     """Check if other is an instance or a subclass of a jax tensor."""
     JaxTensor = ndarray | Array | Tracer
-    check = issubclass if subclass else isinstance
-    return check(other, JaxTensor)
+    if subclass:
+        # A tracer class alone cannot tell us whether its instances represent arrays.
+        return issubclass(other, JaxTensor)
+    # Check tracers first: even operator-valued tracers can satisfy isinstance(other, Array).
+    if isinstance(other, Tracer):
+        # Only array-valued tracers (ShapedArray / DShapedArray) are tensor-like;
+        # operator, measurement and qubit avals are not.
+        return isinstance(other.aval, UnshapedArray)
+    return isinstance(other, JaxTensor)
 
 
 def _is_torch(other, subclass=False):
@@ -135,6 +181,16 @@ class AbstractArray:
 
     >>> isinstance(np.ones((4, 2)), AbstractArray(..., float))
     True
+
+    Elementwise arithmetic returns an ``AbstractArray`` with broadcast shape and
+    NumPy-promoted dtype. Builtin numeric dtypes participate as weak types, and the
+    result remains weak when both operands are weak. Unknown dimensions are accepted
+    unless known axes conflict; compatibility may still depend on their concrete sizes.
+    An unknown rank produces an unknown result rank. The corresponding NumPy arithmetic
+    ufuncs are supported for ordinary calls without keyword options; reductions and other
+    ufunc methods are not supported. Unary ``-``, ``+``, and ``abs`` and their NumPy
+    equivalents preserve shape and infer the output dtype, including real dtypes for
+    the absolute value of complex inputs.
 
     """
 
@@ -345,6 +401,141 @@ class AbstractArray:
 
     def __hash__(self) -> int:
         return hash(("AbstractArray", self.shape, self.dtype))
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        """Infer metadata for supported elementwise NumPy arithmetic calls."""
+        # Ordinary calls like np.add(a, b) use "__call__"; reductions use "reduce", etc.
+        if method != "__call__" or kwargs:
+            return NotImplemented
+        if ufunc in (np.negative, np.positive, np.absolute):
+            return self._unary_arithmetic(ufunc)
+        if ufunc not in (
+            np.add,
+            np.subtract,
+            np.multiply,
+            np.true_divide,
+            np.remainder,
+            np.floor_divide,
+            np.power,
+        ):
+            return NotImplemented
+        left, right = inputs
+        if isinstance(left, AbstractArray):
+            return left._arithmetic(right, ufunc)  # pylint: disable=protected-access
+        return self._arithmetic(left, ufunc)
+
+    def _resolve_binary_shape(self, other):
+        """Resolve the shape for a binary operation."""
+        if self.shape is Ellipsis or other.shape is Ellipsis:
+            shape = Ellipsis
+        else:
+            ndim = max(len(self.shape), len(other.shape))
+            left_shape = (1,) * (ndim - len(self.shape)) + self.shape
+            right_shape = (1,) * (ndim - len(other.shape)) + other.shape
+            shape = []
+            for left, right in zip(left_shape, right_shape, strict=True):
+                if right in (left, 1):
+                    shape.append(left)
+                elif left == 1:
+                    shape.append(right)
+                elif left == -1:
+                    shape.append(right)
+                elif right == -1:
+                    shape.append(left)
+                else:
+                    raise ValueError(f"Cannot broadcast shapes {self.shape} and {other.shape}.")
+            shape = tuple(shape)
+
+        return shape
+
+    def _resolve_binary_dtype(self, other, operation):
+        """Resolve the dtype for a binary operation."""
+        weak_dtypes = {"i": int, "u": int, "f": float, "c": complex}
+        left_dtype = weak_dtypes.get(self.dtype.kind, self.dtype) if self._weak_type else self.dtype
+        right_dtype = (
+            weak_dtypes.get(other.dtype.kind, other.dtype)
+            if other._weak_type  # pylint: disable=protected-access
+            else other.dtype  # pylint: disable=protected-access
+        )
+        return operation.resolve_dtypes((left_dtype, right_dtype, None))[-1]
+
+    def _arithmetic(self, other, operation):
+        """Infer elementwise arithmetic metadata, rejecting only known shape conflicts."""
+        if not isinstance(other, AbstractArray):
+            if isinstance(other, Number):
+                other = AbstractArray((), getattr(other, "dtype", type(other)))
+            elif hasattr(other, "shape") and hasattr(other, "dtype"):
+                other = AbstractArray(other.shape, other.dtype)
+            else:
+                return NotImplemented
+
+        shape = self._resolve_binary_shape(other)
+        dtype = self._resolve_binary_dtype(other, operation)
+
+        result = AbstractArray(shape, dtype)
+        object.__setattr__(
+            result,
+            "_weak_type",
+            self._weak_type and other._weak_type,  # pylint: disable=protected-access
+        )  # pylint: disable=protected-access
+
+        return result
+
+    # pylint: disable-next=unused-argument
+    def _unary_arithmetic(self, operation):
+        """Infer unary arithmetic metadata while preserving weak typing."""
+        return copy.deepcopy(self)
+
+    def __neg__(self):
+        return self._unary_arithmetic(np.negative)
+
+    def __pos__(self):
+        return self._unary_arithmetic(np.positive)
+
+    def __abs__(self):
+        return self._unary_arithmetic(np.absolute)
+
+    def __add__(self, other):
+        return self._arithmetic(other, np.add)
+
+    def __radd__(self, other):
+        return self._arithmetic(other, np.add)
+
+    def __sub__(self, other):
+        return self._arithmetic(other, np.subtract)
+
+    def __rsub__(self, other):
+        return self._arithmetic(other, np.subtract)
+
+    def __mul__(self, other):
+        return self._arithmetic(other, np.multiply)
+
+    def __rmul__(self, other):
+        return self._arithmetic(other, np.multiply)
+
+    def __truediv__(self, other):
+        return self._arithmetic(other, np.true_divide)
+
+    def __rtruediv__(self, other):
+        return self._arithmetic(other, np.true_divide)
+
+    def __mod__(self, other):
+        return self._arithmetic(other, np.remainder)
+
+    def __rmod__(self, other):
+        return self._arithmetic(other, np.remainder)
+
+    def __floordiv__(self, other):
+        return self._arithmetic(other, np.floor_divide)
+
+    def __rfloordiv__(self, other):
+        return self._arithmetic(other, np.floor_divide)
+
+    def __pow__(self, other):
+        return self._arithmetic(other, np.power)
+
+    def __rpow__(self, other):
+        return self._arithmetic(other, np.power)
 
 
 class _AbstractTypeFactory(AbstractArray):

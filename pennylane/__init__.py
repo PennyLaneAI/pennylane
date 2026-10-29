@@ -32,7 +32,6 @@ from pennylane.capture import hint
 from pennylane import core
 from pennylane import control_flow
 from pennylane.control_flow import for_loop, while_loop
-from pennylane import kernels
 from pennylane import math
 from pennylane import operation
 from pennylane.core import operator
@@ -114,7 +113,7 @@ from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
-from pennylane.resource import analyze, specs, track
+from pennylane.resource import analyze, estimate, specs, track
 from pennylane import resource
 
 from pennylane.transforms import (
@@ -219,7 +218,6 @@ from pennylane import spin
 
 from pennylane import liealg
 from pennylane.liealg import lie_closure, structure_constants, center
-from pennylane import qnn
 
 from pennylane import estimator
 

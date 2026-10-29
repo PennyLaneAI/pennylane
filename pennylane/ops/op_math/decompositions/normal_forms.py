@@ -23,6 +23,11 @@ import pennylane as qp
 from pennylane.ops.op_math.decompositions.rings import _SQRT2, DyadicMatrix, SO3Matrix, ZOmega
 
 
+def _adjoint_s(wire):
+    """Construct S's adjoint using the current compiler context."""
+    return qp.adjoint(qp.S)(wire)
+
+
 @lru_cache
 def _clifford_keys_unwired() -> list:
     """Returns a list of standard Clifford gate sequences (without wires).
@@ -30,9 +35,14 @@ def _clifford_keys_unwired() -> list:
     Returns:
         list[tuple[~pennylane.operation.Operation]]: Clifford gate sequences.
     """
+    # Defer adjoint dispatch until the gate is applied. Caching qp.adjoint(qp.S)
+    # here retains the first caller's compiler context and makes Catalyst xfails
+    # depend on test order while the companion API changes are in flight.
+    # TODO [sc-134032]: Revert to qp.adjoint(qp.S) once all companion PRs are merged
+    # and CI uses their compatible builds.
     # fmt: off
     I, X, Y, Z = qp.I, qp.X, qp.Y, qp.Z
-    H, S, Sd = qp.H, qp.S, qp.adjoint(qp.S)
+    H, S, Sd = qp.H, qp.S, _adjoint_s
 
     return [
         (I,), (H,), (S,), (X,), (Y,), (Z,), (Sd,),

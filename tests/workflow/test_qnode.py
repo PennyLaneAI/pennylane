@@ -93,6 +93,8 @@ def test_copy():
     assert copied_qn.execute_kwargs is not qn.execute_kwargs
     assert list(copied_qn.compile_pipeline) == list(qn.compile_pipeline)
     assert copied_qn.compile_pipeline is not qn.compile_pipeline
+    assert list(copied_qn.post_device_pipeline) == list(qn.post_device_pipeline)
+    assert copied_qn.post_device_pipeline is not qn.post_device_pipeline
     assert copied_qn.gradient_kwargs == qn.gradient_kwargs
     assert copied_qn.gradient_kwargs is not qn.gradient_kwargs
 
@@ -208,6 +210,26 @@ class TestUpdate:
         new_circuit = circuit.update(diff_method="parameter-shift")
         assert new_circuit.diff_method == "parameter-shift"
         assert circuit.compile_pipeline == new_circuit.compile_pipeline
+        assert circuit.post_device_pipeline == new_circuit.post_device_pipeline
+        assert new_circuit.post_device_pipeline is not circuit.post_device_pipeline
+
+    def test_update_pipelines(self):
+        """Test that QNode compile pipelines can be updated via update_pipelines."""
+        dev = qp.device("default.qubit", wires=1)
+        qn = qp.QNode(dummyfunc, dev)
+
+        new_compile = qp.CompilePipeline(qp.transforms.cancel_inverses)
+        new_post_device = qp.CompilePipeline(qp.transforms.merge_rotations)
+        updated = qn.update_pipelines(new_compile, new_post_device)
+
+        assert updated is not qn
+        assert updated.compile_pipeline is new_compile
+        assert updated.post_device_pipeline is new_post_device
+
+        empty_post_device = qn.update_pipelines(new_compile)
+        assert empty_post_device is not qn
+        assert empty_post_device.compile_pipeline is new_compile
+        assert empty_post_device.post_device_pipeline == qp.CompilePipeline()
 
 
 class TestInitialization:

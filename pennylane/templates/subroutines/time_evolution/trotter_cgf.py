@@ -228,9 +228,8 @@ class TrotterCGF(Operator2):
         :class:`~.BasisRotation`, so only one basis rotation is emitted per mode per boundary. The
         leaves are assumed real orthogonal (they are merged by transpose, not adjoint). Each leaf is
         first normalized to determinant :math:`+1` (negating one orbital line, a no-op on
-        :math:`\tilde{n}_{lp}`) so that :class:`~.BasisRotation`'s real-orthogonal sign gauge is
-        consistent across fragments; otherwise leaves with mixed determinants realize a different
-        Hamiltonian.
+        :math:`\tilde{n}_{lp}`) so that no :class:`~.BasisRotation` needs a determinant-correcting
+        phase flip.
 
         **3. One-body diagonal**
         The one-body generator is :math:`D_0 = \sum_{l,p} \epsilon_{lp}\, n_{lp}`, with
@@ -344,7 +343,7 @@ def _apply_system_basis_rotation(U, wires):
     for l in range(num_modes):
         U_l = math.swapaxes(U[l], -2, -1)
         mode_wires = wires[l * n_states : (l + 1) * n_states]
-        if math.is_abstract(U_l) or not np.allclose(U_l, np.eye(n_states)):
+        if math.is_tracer(U_l) or not np.allclose(U_l, np.eye(n_states)):
             BasisRotation(unitary_matrix=U_l, wires=mode_wires)
 
 

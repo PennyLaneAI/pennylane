@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.parametrize(
@@ -97,7 +97,7 @@ _REAL_CASES = [
                 [-0.5748820588092205, 0.8182362852252838],
             ]
         ),
-        [([0, 1], 2 * 0.61246)],
+        [([0, 1], -2 * 0.61246)],
     ),
     (
         2,
@@ -120,7 +120,7 @@ _REAL_CASES = [
         ),
         [
             ([0, 1], 2 * 0.42275745323754343),
-            ([1, 2], -2 * 2.118222067141928),
+            ([1, 2], 2 * 2.118222067141928),
             ([0, 1], -2 * 1.805041881040138),
             ([0], np.pi),
         ],
@@ -180,6 +180,50 @@ class TestDecomposition:
             assert np.allclose(_op.parameters[0], gate_angles[idx])  # gate parameter
             assert list(_op.wires) == gate_wires[idx]  # gate wires
 
+    @pytest.mark.parametrize("num_wires", [2, 3, 4])
+    @pytest.mark.parametrize("det", [1, -1])
+    def test_real_and_complex_decompositions_agree(self, num_wires, det, seed):
+        """Test that the real-valued and the complex-valued decomposition implement the same
+        operator for an orthogonal matrix, independently of its determinant."""
+        rng = np.random.default_rng(seed)
+        q, r = np.linalg.qr(rng.normal(size=(num_wires, num_wires)))
+        ortho_matrix = q * np.sign(np.diag(r))
+        if np.linalg.det(ortho_matrix) * det < 0:
+            ortho_matrix[:, 0] *= -1
+
+        wires = list(range(num_wires))
+        mat_real = qp.matrix(
+            qp.BasisRotation(wires=wires, unitary_matrix=ortho_matrix), wire_order=wires
+        )
+        mat_complex = qp.matrix(
+            qp.BasisRotation(wires=wires, unitary_matrix=ortho_matrix.astype(complex)),
+            wire_order=wires,
+        )
+        assert np.allclose(mat_real, mat_complex)
+
+    @pytest.mark.parametrize(
+        "unitary_matrix",
+        [
+            np.eye(4, dtype=complex),
+            np.diag(np.exp(1j * np.array([0.3, -1.2, 2.5, 0.7]))),
+            np.eye(4, dtype=complex)[[1, 0, 3, 2]],
+            np.kron(np.eye(2), np.array([[0.6, 0.8j], [0.8j, 0.6]])),
+        ],
+    )
+    def test_complex_matrix_with_exact_zeros(self, unitary_matrix):
+        """Test that a complex matrix with exact zeros is implemented correctly, by comparing
+        the action on single-particle states to the matrix."""
+        num_wires = len(unitary_matrix)
+        wires = list(range(num_wires))
+        mat = qp.matrix(
+            qp.BasisRotation(wires=wires, unitary_matrix=unitary_matrix), wire_order=wires
+        )
+        single_particle_states = [2 ** (num_wires - 1 - p) for p in range(num_wires)]
+        single_particle_block = mat[np.ix_(single_particle_states, single_particle_states)]
+
+        assert np.allclose(single_particle_block, unitary_matrix.T)
+        assert np.isclose(mat[0, 0], 1.0)
+
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         ("num_wires", "unitary_matrix"), [(case[0], case[1]) for case in _COMPLEX_CASES]
@@ -189,8 +233,7 @@ class TestDecomposition:
         operator for complex (unitary) inputs, with and without program capture enabled."""
 
         op = qp.BasisRotation(wires=range(num_wires), unitary_matrix=unitary_matrix)
-        for rule in qp.list_decomps(qp.BasisRotation):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
@@ -201,8 +244,7 @@ class TestDecomposition:
         operator for real (orthogonal) inputs, with and without program capture enabled."""
 
         op = qp.BasisRotation(wires=range(num_wires), unitary_matrix=ortho_matrix)
-        for rule in qp.list_decomps(qp.BasisRotation):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize(
         ("num_wires", "ortho_matrix"),
@@ -227,8 +269,7 @@ class TestDecomposition:
         op = qp.BasisRotation(wires=range(num_wires), unitary_matrix=ortho_matrix)
 
         # Tests the decomposition rule defined with the new system
-        for rule in qp.list_decomps(qp.BasisRotation):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_custom_wire_labels(self, tol):
         """Test that BasisRotation template can deal with non-numeric, nonconsecutive wire labels."""
@@ -558,6 +599,57 @@ class TestInterfaces:
         grads2 = grad_fn2(unitary_matrix)
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("det", [1, -1])
+    @pytest.mark.jax
+    def test_jax_jit_real_matrix_state(self, det):
+        """Test that JIT compilation preserves the state for real matrices of either determinant."""
+        import jax
+        import jax.numpy as jnp
+
+        theta = 0.4
+        unitary_matrix = np.array([[np.cos(theta), np.sin(theta)], [-np.sin(theta), np.cos(theta)]])
+        if det < 0:
+            unitary_matrix[0] *= -1
+        unitary_matrix = jnp.array(unitary_matrix, dtype=jnp.float32)
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit(matrix):
+            qp.PauliX(0)
+            qp.BasisRotation(unitary_matrix=matrix, wires=range(2))
+            return qp.state()
+
+        assert qp.math.allclose(
+            jax.jit(circuit)(unitary_matrix), circuit(unitary_matrix), atol=1e-11, rtol=0
+        )
+
+    @pytest.mark.jax
+    def test_jax_jit_float32_negative_determinant_state(self):
+        """Test exact JIT agreement when a float32 determinant is only approximately negative one."""
+        import jax
+        import jax.numpy as jnp
+
+        unitary_matrix = jnp.array(
+            [
+                [-0.9889079, -0.14836748, 0.0069464],
+                [0.08414589, -0.59816617, -0.79694206],
+                [-0.12239539, 0.7875178, -0.60401577],
+            ],
+            dtype=jnp.float32,
+        )
+        dev = qp.device("default.qubit", wires=3)
+
+        @qp.qnode(dev)
+        def circuit(matrix):
+            qp.PauliX(0)
+            qp.BasisRotation(unitary_matrix=matrix, wires=range(3))
+            return qp.state()
+
+        assert qp.math.allclose(
+            jax.jit(circuit)(unitary_matrix), circuit(unitary_matrix), atol=1e-11, rtol=0
+        )
 
     @pytest.mark.parametrize(
         "unitary",

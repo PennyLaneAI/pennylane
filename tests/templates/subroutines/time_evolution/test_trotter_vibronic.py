@@ -218,25 +218,33 @@ class TestDiagonalization:
         assert q.queue == []
         assert np.allclose(_diagonalization_matrix((0, 0), 2), np.eye(4))
 
-    @pytest.mark.parametrize("n, fragment_idx", [(1, 1), (2, 3), (3, 7)])
-    def test_matrix_matches_circuit(self, n, fragment_idx):
+    @pytest.mark.parametrize("adjoint", [False, True])
+    @pytest.mark.parametrize("n, fragment_idx", [(1, 0), (1, 1), (2, 3), (3, 7)])
+    def test_matrix_matches_circuit(self, n, fragment_idx, adjoint):
         """Test that the dense diagonalization matrix matches the circuit unitary."""
         wires = list(range(n))
         circuit_matrix = qp.matrix(_diagonalize_vibronic_circuit, wires)(
-            fragment_idx=fragment_idx, wires=wires, num_fragments=2**n
+            fragment_idx=fragment_idx, wires=wires, num_fragments=2**n, inverse=adjoint
         )
-        assert np.allclose(_diagonalization_matrix((0, fragment_idx), n), circuit_matrix)
+        expected = _diagonalization_matrix((0, fragment_idx), n)
+        assert np.allclose(expected.T if adjoint else expected, circuit_matrix)
 
     @pytest.mark.capture
+    @pytest.mark.parametrize("adjoint", [False, True])
     @pytest.mark.parametrize(
         "n, num_fragments", [(1, 1), (1, 2), (2, 3), (2, 4), (3, 1), (3, 6), (3, 8)]
     )
-    def test_branch_prob_hints(self, n, num_fragments):
+    def test_branch_prob_hints(self, n, num_fragments, adjoint):
         """Test that the conditionals carry ``branch-prob`` hints that reproduce the number of
         gates applied across all fragments."""
         wires = list(range(n))
         plxpr = jax.make_jaxpr(
-            partial(_diagonalize_vibronic_circuit, wires=wires, num_fragments=num_fragments)
+            partial(
+                _diagonalize_vibronic_circuit,
+                wires=wires,
+                num_fragments=num_fragments,
+                inverse=adjoint,
+            )
         )(0)
         hints = hint_helpers.cond_hints(plxpr.jaxpr)
         if num_fragments == 1:
@@ -247,7 +255,7 @@ class TestDiagonalization:
 
         num_hadamards = num_cnots = 0
         for fragment_idx in range(num_fragments):
-            ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, fragment_idx).operations
+            ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, fragment_idx).operations
             num_hadamards += sum(isinstance(op, qp.Hadamard) for op in ops)
             num_cnots += sum(isinstance(op, qp.CNOT) for op in ops)
 

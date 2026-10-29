@@ -140,13 +140,14 @@ def test_rdma_coprocessor_requires_endpoint():
 
 
 @pytest.mark.parametrize("name", ["in_bytes", "out_bytes"])
-def test_rdma_rejects_messages_above_eight_bytes(name):
-    """RDMA carries 8-byte messages, so a larger controller message size is rejected."""
-    controller = qp.Controller(**{name: 9})
+def test_rdma_leaves_message_sizes_to_the_compiler(name):
+    """Which sizes RDMA carries depends on the backend the compiler selects, so a placement
+    accepts any size and the compiler reports one no backend carries."""
+    controller = qp.Controller(**{name: 64})
     coprocessor = qp.Coprocessor(coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1", 7760))
 
-    with pytest.raises(ValueError, match=f"transport='rdma' carries at most 8 bytes.*{name}=9"):
-        qp.Backline(controller=controller, coprocessors=[coprocessor], transport="rdma")
+    dev = qp.Backline(controller=controller, coprocessors=[coprocessor], transport="rdma")
+    assert getattr(dev.placement, name) == 64
 
 
 def test_rdma_accepts_eight_byte_messages():
@@ -234,15 +235,6 @@ def test_coprocessors_declaring_different_sizes_raise():
             ],
             transport="memcpy",
         )
-
-
-def test_a_declared_size_above_eight_bytes_is_rejected_over_rdma():
-    """Sizes taken from a function are subject to the transport's limit, like set ones."""
-    fn = qp.CoprocessorFunction("decoder", message_bytes=(120, 121))
-    coprocessor = qp.Coprocessor(coprocessor_fn=fn, endpoint=qp.Endpoint("127.0.0.1", 7760))
-
-    with pytest.raises(ValueError, match="transport='rdma' carries at most 8 bytes.*in_bytes=120"):
-        qp.Backline(controller=qp.Controller(), coprocessors=[coprocessor], transport="rdma")
 
 
 def test_coprocessor_stores_endpoint():
@@ -471,11 +463,36 @@ class TestPlacement:
         placement = Placement(controller=ctrl, coprocessors=[cop], transport="rdma")
         assert isinstance(placement.coprocessors, tuple)
 
-    def test_unknown_transport_raises(self):
-        """An unregistered transport name is rejected at construction."""
+    def test_unknown_transport_raises(self, monkeypatch):
+        """A transport neither built in nor known to Catalyst's registry is rejected."""
+        monkeypatch.setattr("pennylane.backline.transports._catalyst_transports", set)
         ctrl = qp.Controller(name="fpga")
         with pytest.raises(ValueError, match="unknown transport"):
             Placement(controller=ctrl, transport="does-not-exist")
+
+    def test_a_transport_from_catalysts_registry_is_accepted(self, monkeypatch):
+        """A backend package's transport needs no PennyLane change."""
+        monkeypatch.setattr(
+            "pennylane.backline.transports._catalyst_transports", lambda: {"example"}
+        )
+        assert (
+            Placement(controller=qp.Controller(name="c"), transport="example").transport.name
+            == "example"
+        )
+
+    def test_without_catalyst_any_transport_is_left_to_the_compiler(self, monkeypatch):
+        """With no registry to ask, the name is checked when the program is compiled."""
+        monkeypatch.setattr("pennylane.backline.transports._catalyst_transports", lambda: None)
+        assert (
+            Placement(controller=qp.Controller(name="c"), transport="example").transport.name
+            == "example"
+        )
+
+    def test_a_node_names_its_backend(self):
+        """``backend`` defaults to letting the compiler choose, and keeps a name it is given."""
+        assert qp.Controller().backend is None
+        assert qp.Controller(backend="fpga_verbs").backend == "fpga_verbs"
+        assert qp.Coprocessor(coprocessor_fn="decoder", backend="example").backend == "example"
 
     def test_not_exported_at_top_level(self):
         """Placement is reached via pennylane.backline, not the top-level namespace."""

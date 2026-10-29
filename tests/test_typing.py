@@ -13,10 +13,15 @@
 # limitations under the License.
 """Unit tests for the ``typing.py`` file."""
 
+import operator
+
+import jax
 import numpy as np
 import pytest
 
+import pennylane as qp
 import pennylane.numpy as pnp
+from pennylane.core.operator.base import AbstractOperator
 from pennylane.typing import (
     AbstractArray,
     AbstractWires,
@@ -30,6 +35,11 @@ from pennylane.typing import (
     _AbstractWireTypeFactory,
 )
 from pennylane.wires import Wires
+
+try:
+    import torch
+except ImportError:
+    torch = None
 
 
 class TestTensorLike:
@@ -53,15 +63,58 @@ class TestTensorLike:
     @pytest.mark.jax
     def test_isinstance_jax_array_is_tensor_like(self):
         """Tests that a jax DeviceArray is a Tensor"""
-        import jax
 
         tensor = jax.numpy.array(1)
         assert isinstance(tensor, TensorLike)
 
+    @pytest.mark.jax
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_capture")
+    def test_abstract_operator_tracer_is_not_tensor_like(self):
+        """Captured operators are tracers, but not tensor-like numeric data."""
+
+        tracer = None
+
+        def grab():
+            nonlocal tracer
+            tracer = 3 * qp.X(0)
+            return tracer
+
+        jax.make_jaxpr(grab)()
+        assert isinstance(tracer.aval, AbstractOperator)
+        # JAX may also report the tracer as Array; TensorLike must still reject it.
+        assert isinstance(tracer, jax.Array)
+        assert not isinstance(tracer, TensorLike)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("value", [1.0, np.array([1.0, 2.0])])
+    def test_array_tracer_is_tensor_like(self, value):
+        """Both scalar and array tracers remain tensor-like."""
+
+        def check(tensor):
+            assert isinstance(tensor, jax.core.Tracer)
+            assert isinstance(tensor, TensorLike)
+            return tensor
+
+        jax.make_jaxpr(check)(value)
+
+    @pytest.mark.jax
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_capture")
+    def test_measurement_tracer_is_not_tensor_like(self):
+        """Captured measurements are not tensor-like numeric data."""
+
+        def check():
+            measurement = qp.expval(qp.X(0))
+            assert isinstance(measurement, jax.core.Tracer)
+            assert not isinstance(measurement, TensorLike)
+            return measurement
+
+        jax.make_jaxpr(check)()
+
     @pytest.mark.torch
     def test_isinstance_torch_tensor_is_tensor_like(self):
         """Tests that a torch Tensor is a Tensor"""
-        import torch
 
         tensor = torch.Tensor(1)
         assert isinstance(tensor, TensorLike)
@@ -86,14 +139,12 @@ class TestTensorLike:
     @pytest.mark.jax
     def test_subclass_jax_array_is_tensor_like(self):
         """Tests that a jax DeviceArray is a Tensor"""
-        import jax
 
         assert issubclass(jax.numpy.ndarray, TensorLike)
 
     @pytest.mark.torch
     def test_subclass_torch_tensor_is_tensor_like(self):
         """Tests that a torch Tensor is a Tensor"""
-        import torch
 
         assert issubclass(torch.Tensor, TensorLike)
 
@@ -101,6 +152,262 @@ class TestTensorLike:
 # pylint: disable=protected-access,too-many-public-methods
 class TestAbstractArray:
     """Tests for the AbstractArray class."""
+
+    @pytest.mark.parametrize(
+        "operation",
+        [
+            operator.add,
+            operator.sub,
+            operator.mul,
+            operator.truediv,
+            operator.mod,
+            operator.floordiv,
+            operator.pow,
+            np.add,
+            np.subtract,
+            np.multiply,
+            np.true_divide,
+            np.remainder,
+            np.floor_divide,
+            np.power,
+            np.pow,
+        ],
+    )
+    @pytest.mark.parametrize(
+        "left, right, expected",
+        [
+            ((), (), ()),
+            ((2, 3), (), (2, 3)),
+            ((3,), (2, 1), (2, 3)),
+            ((0, 3), (1, 3), (0, 3)),
+            ((-1, 3), (1, 3), (-1, 3)),
+            ((-1, 3), (4, 1), (4, 3)),
+            ((-1,), (0,), (0,)),
+            ((-1,), (-1,), (-1,)),
+            (Ellipsis, (2, 3), Ellipsis),
+        ],
+    )
+    def test_arithmetic_broadcasting(self, operation, left, right, expected):
+        """Arithmetic broadcasts metadata symmetrically without needing values."""
+        for lhs, rhs in [(left, right), (right, left)]:
+            result = operation(AbstractArray(lhs, float), AbstractArray(rhs, float))
+            assert isinstance(result, AbstractArray)
+            assert result.shape == expected
+            assert result.dtype == np.dtype(float)
+            assert result._weak_type
+            assert result.shape_fixed == (expected is not Ellipsis and -1 not in expected)
+
+    @pytest.mark.parametrize("left, right", [((2,), (3,)), ((-1, 2), (4, 3))])
+    def test_arithmetic_shape_conflict(self, left, right):
+        """Unknown axes do not hide a conflict on another axis."""
+        with pytest.raises(ValueError, match="Cannot broadcast shapes"):
+            # pylint: disable-next=expression-not-assigned
+            AbstractArray(left, float) + AbstractArray(right, float)
+
+    @pytest.mark.parametrize(
+        "operation, left, right, expected, weak",
+        [
+            (operator.add, np.float32, float, np.float32, False),
+            (operator.add, float, np.float32, np.float32, False),
+            (operator.add, np.int32, int, np.int32, False),
+            (operator.add, np.float32, np.float64, np.float64, False),
+            (operator.add, int, float, np.float64, True),
+            (operator.add, bool, bool, np.bool_, True),
+            (operator.truediv, int, int, np.float64, True),
+            (operator.truediv, np.int32, np.int32, np.float64, False),
+            (operator.add, np.complex64, float, np.complex64, False),
+        ],
+    )
+    def test_arithmetic_dtype(self, operation, left, right, expected, weak):
+        """Dtype inference respects weak inputs and operation-specific output types."""
+        result = operation(AbstractArray((2,), left), AbstractArray((2,), right))
+        assert result.dtype == np.dtype(expected)
+        assert result._weak_type is weak
+
+    @pytest.mark.parametrize(
+        "operation, dtype",
+        [(operator.sub, bool), (operator.mod, complex), (operator.floordiv, complex)],
+    )
+    def test_arithmetic_invalid_dtype(self, operation, dtype):
+        """Unsupported arithmetic dtype combinations fail without evaluating values."""
+        with pytest.raises(TypeError):
+            operation(AbstractArray((2,), dtype), AbstractArray((2,), dtype))
+
+    def test_arithmetic_chaining(self):
+        """Results retain weak typing for subsequent arithmetic."""
+        weak = (AbstractArray((2, 1), int) + 1) / 2
+        assert weak._weak_type
+        result = weak * AbstractArray((3,), np.float32)
+        assert result.shape == (2, 3)
+        assert result.dtype == np.float32
+        assert not result._weak_type
+
+    def test_arithmetic_concrete_array(self):
+        """Concrete operands contribute only shape and dtype."""
+        result = AbstractArray((2, 1), float) + np.ones(3, dtype=np.float32)
+        assert result.shape == (2, 3)
+        assert result.dtype == np.float32
+        assert not result._weak_type
+
+    @pytest.mark.parametrize(
+        "operation",
+        [
+            operator.add,
+            operator.sub,
+            operator.mul,
+            operator.truediv,
+            operator.mod,
+            operator.floordiv,
+            operator.pow,
+        ],
+    )
+    @pytest.mark.parametrize("scalar", [2, 2.0])
+    @pytest.mark.parametrize("dtype, weak", [(float, True), (np.float32, False)])
+    def test_reflected_arithmetic(self, operation, scalar, dtype, weak):
+        """Python scalars on the left preserve array metadata and weak typing."""
+        result = operation(scalar, AbstractArray((-1, 3), dtype))
+        assert isinstance(result, AbstractArray)
+        assert result.shape == (-1, 3)
+        assert result.dtype == np.dtype(dtype)
+        assert result._weak_type is weak
+        assert not result.shape_fixed
+
+    def test_reflected_division_integer_dtype(self):
+        """Reflected true division promotes integer operands to floating point."""
+        result = 2 / AbstractArray((3,), int)
+        assert result.shape == (3,)
+        assert result.dtype == np.dtype(float)
+        assert result._weak_type
+
+    def test_reflected_arithmetic_chaining(self):
+        """Reflected results retain weak typing for subsequent expressions."""
+        result = (2 - AbstractArray((2, 1), int)) * AbstractArray((3,), np.float32)
+        assert result.shape == (2, 3)
+        assert result.dtype == np.float32
+        assert not result._weak_type
+
+    @pytest.mark.parametrize("operation", [operator.neg, operator.pos, np.negative, np.positive])
+    @pytest.mark.parametrize("shape", [(), (2, 3), (-1, 3), Ellipsis])
+    @pytest.mark.parametrize(
+        "dtype, weak",
+        [
+            (int, True),
+            (float, True),
+            (complex, True),
+            (bool, True),
+            (np.float32, False),
+            (np.uint8, False),
+        ],
+    )
+    def test_unary_arithmetic(self, operation, shape, dtype, weak):
+        """Unary signs preserve shape, dtype, and weak typing."""
+        array = AbstractArray(shape, dtype)
+        result = operation(array)
+        assert isinstance(result, AbstractArray)
+        assert result is not array
+        assert result.shape == shape
+        assert result.dtype == np.dtype(dtype)
+        assert result._weak_type is weak
+        assert result.shape_fixed == (shape is not Ellipsis and -1 not in shape)
+
+    @pytest.mark.parametrize("operation", [abs, np.absolute])
+    @pytest.mark.parametrize("shape", [(), (2, 3), (-1, 3), Ellipsis])
+    @pytest.mark.parametrize(
+        "dtype, weak",
+        [
+            (int, True),
+            (float, True),
+            (complex, True),
+            (np.complex64, False),
+            (np.complex128, False),
+            (bool, True),
+        ],
+    )
+    def test_unary_absolute(self, operation, shape, dtype, weak):
+        """Abstract absolute value preserves shape, dtype, and weak typing."""
+        array = AbstractArray(shape, dtype)
+        result = operation(array)
+        assert isinstance(result, AbstractArray)
+        assert result is not array
+        assert result.shape == shape
+        assert result.dtype == np.dtype(dtype)
+        assert result._weak_type is weak
+        assert result.shape_fixed == (shape is not Ellipsis and -1 not in shape)
+
+    def test_unary_arithmetic_chaining(self):
+        """Unary operations preserve weak promotion in subsequent arithmetic."""
+        result = abs(-AbstractArray((2, 1), complex)) + AbstractArray((3,), np.float32)
+        assert result.shape == (2, 3)
+        assert result.dtype == np.complex64
+        assert not result._weak_type
+
+    def test_arithmetic_unsupported_operand(self):
+        """Unrelated operands use Python's unsupported-operation protocol."""
+        array = AbstractArray((2,), float)
+        # pylint: disable-next=unnecessary-dunder-call
+        assert array.__add__(object()) is NotImplemented
+        # pylint: disable-next=unnecessary-dunder-call
+        assert array.__radd__(object()) is NotImplemented
+        with pytest.raises(TypeError):
+            array + object()  # pylint: disable=expression-not-assigned
+        with pytest.raises(TypeError):
+            object() + array  # pylint: disable=expression-not-assigned
+
+    @pytest.mark.parametrize("operation", [np.add, np.subtract, np.power])
+    @pytest.mark.parametrize("reverse", [False, True])
+    @pytest.mark.parametrize("other", [2.0, np.float32(2), np.ones(3, dtype=np.float32)])
+    def test_ufunc_concrete_operand(self, operation, reverse, other):
+        """Ufuncs accept concrete operands on either side without losing weak typing."""
+        array = AbstractArray((2, 1), float)
+        result = operation(other, array) if reverse else operation(array, other)
+        assert result.shape == ((2, 3) if np.ndim(other) else (2, 1))
+        assert result.dtype == (np.float64 if isinstance(other, float) else np.float32)
+        assert result._weak_type is (isinstance(other, float))
+
+    def test_ufunc_chaining(self):
+        """Ufunc results carry metadata into subsequent arithmetic."""
+        result = np.pow(np.add(AbstractArray((-1, 1), int), 1), 2)
+        assert result.shape == (-1, 1)
+        assert result.dtype == np.dtype(int)
+        assert result._weak_type
+        result = result / AbstractArray((3,), np.float32)
+        assert result.shape == (-1, 3)
+        assert result.dtype == np.float32
+        assert not result._weak_type
+
+    @pytest.mark.parametrize(
+        "call",
+        [
+            np.sin,
+            np.add.reduce,
+            np.add.accumulate,
+            lambda a: np.add.outer(a, a),
+            lambda a: np.add.at(a, 0, 1),
+            lambda a: np.add(a, a, out=a),
+            lambda a: np.add(a, a, where=True),
+            lambda a: np.add(a, a, dtype=np.float32),
+            lambda a: np.add(a, object()),
+            lambda a: np.positive(a, out=a),
+            lambda a: np.absolute(a, where=True),
+            lambda a: np.negative(a, dtype=np.float32),
+        ],
+    )
+    def test_ufunc_unsupported_call(self, call):
+        """Unsupported ufuncs, methods, operands, and options are rejected."""
+        with pytest.raises(TypeError):
+            call(AbstractArray((2,), float))
+
+    def test_unary_ufunc_reduce(self):
+        """NumPy rejects reductions of unary ufuncs."""
+        with pytest.raises(ValueError, match="reduce only supported for binary functions"):
+            np.negative.reduce(AbstractArray((2,), float))
+
+    def test_ufunc_invalid_metadata(self):
+        """Ufunc dispatch retains shape and operator-specific dtype checks."""
+        with pytest.raises(ValueError, match="Cannot broadcast shapes"):
+            np.add(AbstractArray((2,), float), AbstractArray((3,), float))
+        with pytest.raises(TypeError):
+            np.subtract(AbstractArray((2,), bool), AbstractArray((2,), bool))
 
     def test_basic_instance(self):
         """Test a normal instance of AbstractArray."""
@@ -121,8 +428,6 @@ class TestAbstractArray:
     @pytest.mark.torch
     def test_provide_torch_dtype(self):
         """Test that a torch dtype is converted to a numpy dtype."""
-
-        import torch
 
         a = AbstractArray((2,), torch.int32)
 
@@ -457,7 +762,6 @@ class TestAbstractArray:
     @pytest.mark.torch
     def test_is_compatible_with_torch_tensor(self):
         """Test compatibility checks against torch tensors."""
-        import torch
 
         aa = AbstractArray((2,), torch.float32)
         assert aa.is_compatible_with(torch.ones(2, dtype=torch.float32))

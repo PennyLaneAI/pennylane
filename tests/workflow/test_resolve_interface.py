@@ -94,7 +94,7 @@ def test_jax():
     tapes = [
         QuantumScript([qp.RX(x, wires=0)], [qp.expval(qp.PauliZ(0))]),
     ]
-    assert not qp.math.is_abstract(x)
+    assert not qp.math.is_tracer(x)
 
     resolved_interface_abstract = _resolve_interface("jax", tapes)
     assert resolved_interface_abstract == Interface.JAX
@@ -111,11 +111,11 @@ def test_jax_jit():
         pytest.skip("JAX not installed.")
 
     param = jnp.array(0.5)
-    assert not qp.math.is_abstract(param)
+    assert not qp.math.is_tracer(param)
 
     @jax.jit
     def abstract_func(x):
-        assert qp.math.is_abstract(x)
+        assert qp.math.is_tracer(x)
         tapes = [
             QuantumScript([qp.RX(x, wires=0)], [qp.expval(qp.PauliZ(0))]),
         ]

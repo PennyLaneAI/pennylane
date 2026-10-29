@@ -212,8 +212,7 @@ class TrotterCDF(Operator2):
         one basis rotation is emitted per fragment boundary, plus a single trailing
         :math:`\mathcal{U}^{(1)\dagger}` after the last step. Each leaf is first normalized to
         determinant :math:`+1` (negating one orbital column, a no-op on :math:`\tilde{n}_p`) so that
-        :class:`~.BasisRotation`'s real-orthogonal sign gauge is consistent across fragments;
-        otherwise leaves with mixed determinants realize a different Hamiltonian.
+        no :class:`~.BasisRotation` needs a determinant-correcting phase flip.
 
         **3. One-body diagonal**
         In the fragment basis the one-body generator is :math:`D_0 = \sum_w \epsilon_p\, n_w`, summed
@@ -318,7 +317,7 @@ class TrotterCDF(Operator2):
 
 def _apply_system_basis_rotation(U, wires):
     """Apply a fragment's basis rotation on the alpha and beta spin channels."""
-    if math.is_abstract(U) or not np.allclose(U, np.eye(len(U))):
+    if math.is_tracer(U) or not np.allclose(U, np.eye(len(U))):
         BasisRotation(unitary_matrix=U, wires=wires[::2])
         BasisRotation(unitary_matrix=U, wires=wires[1::2])
 

@@ -21,7 +21,7 @@ import pytest
 from gate_data import QFT
 
 import pennylane as qp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -65,8 +65,7 @@ class TestQFT:
     def test_QFT_decomposition_new(self, wires):
         """Tests that QFT's decomposition rules are correct."""
         op = qp.QFT(wires=wires)
-        for rule in qp.list_decomps(op):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.capture
     @pytest.mark.parametrize("n_wires", [2, 3, 6])
@@ -77,7 +76,7 @@ class TestQFT:
 
         rule = qp.list_decomps(qp.QFT)[0]
         plxpr = jax.make_jaxpr(lambda: rule(wires=list(range(n_wires))))()
-        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
         num_cps = sum(isinstance(op, qp.ControlledPhaseShift) for op in ops)
 
         assert hint_helpers.loop_hints(plxpr.jaxpr) == [None, num_cps / n_wires, None]
