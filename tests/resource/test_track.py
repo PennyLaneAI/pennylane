@@ -114,7 +114,7 @@ class TestTrack:
         @qp.qjit(capture=True)
         @qp.transforms.ppr_to_ppm
         @qp.transforms.to_ppr
-        @catalyst.passes.graph_decomposition(gate_set=qp.gate_sets.CLIFFORD_T)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T)
         @qp.qnode(qp.device("null.qubit", wires=3))
         def qfunc():
             qp.Toffoli([0, 1, 2])
