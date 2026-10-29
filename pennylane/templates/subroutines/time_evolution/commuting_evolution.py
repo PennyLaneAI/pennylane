@@ -230,10 +230,7 @@ add_decomps(CommutingEvolution, _commuting_evolution_decomposition)
 
 @register_resources(lambda base_params, **_: {resource_rep(CommutingEvolution, **base_params): 1})
 def _adjoint_commuting_evolution(time, *params, base, **__):
-    with capture.pause(), QueuingManager.stop_recording():
-        hamiltonian = ops.functions.bind_new_parameters(base.hyperparameters["hamiltonian"], params)
-    if capture.enabled() and isinstance(hamiltonian, Operator1):
-        hamiltonian = apply(hamiltonian)
+    hamiltonian = ops.functions.bind_new_parameters(base.hyperparameters["hamiltonian"], params)
     CommutingEvolution(
         hamiltonian,
         -time,

@@ -274,12 +274,14 @@ add_decomps(
 )
 
 
+def _conj_transpose(U):
+    return U.conjugate().transpose() if sparse.issparse(U) else math.moveaxis(math.conj(U), -2, -1)
+
+
 @register_resources(lambda base: {abstractify(base): 1})
 def _adjoint_controlled_qubit_unitary(base):
-    U = base.U
-    U = U.conjugate().transpose() if sparse.issparse(U) else math.moveaxis(math.conj(U), -2, -1)
     ControlledQubitUnitary(
-        U,
+        _conj_transpose(base.U),
         wires=base.wires,
         control_values=base.control_values,
         work_wires=base.work_wires,

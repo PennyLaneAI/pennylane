@@ -233,20 +233,18 @@ add_decomps("C(ChangeOpBasis2)", flip_zero_control(_controlled_change_op_basis_d
 
 
 def _adjoint_change_op_basis_resources(base):
-    uncompute = base.uncompute_op
-    compute = uncompute.base if isinstance(uncompute, Adjoint2) else _adjoint_abstract(uncompute)
-    return Counter([compute, _adjoint_abstract(base.target_op), _adjoint_abstract(base.compute_op)])
+    resources = Counter()
+    resources[base.compute_op] += 1
+    resources[adjoint(base.target_op)] += 1
+    resources[base.uncompute_op] += 1
+    return dict(resources)
 
 
 @register_resources(_adjoint_change_op_basis_resources)
 def _adjoint_change_op_basis_decomp(base):
-    # Cancel symbolic uncomputation before decomposing it, preserving measurement-based rules.
-    if isinstance(base.uncompute_op, Adjoint2):
-        apply(base.uncompute_op.base)
-    else:
-        adjoint(base.uncompute_op)
+    apply(base.compute_op)
     adjoint(base.target_op)
-    adjoint(base.compute_op)
+    apply(base.uncompute_op)
 
 
 add_decomps("Adjoint(ChangeOpBasis2)", _adjoint_change_op_basis_decomp)

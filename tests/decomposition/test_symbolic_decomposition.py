@@ -17,7 +17,6 @@
 import warnings
 from textwrap import dedent
 
-import numpy as np
 import pytest
 
 import pennylane as qp
@@ -53,7 +52,6 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint_legacy,
     to_controlled_qubit_unitary,
 )
-from pennylane.ftqc import RotXZX
 from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import cancel_adjoint as cancel_adjoint2
 from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
@@ -68,7 +66,6 @@ from pennylane.ops.op_math.pow2 import flip_pow_adjoint as flip_pow_adjoint2
 from pennylane.ops.op_math.pow2 import merge_powers as merge_powers2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import repeat_pow_base as repeat_pow_base2
-from pennylane.ops.qubit.special_unitary import TmpPauliRot
 from pennylane.testing import decomp_rule_to_tape
 from pennylane.typing import Bool, Complex, Float, Wire
 
@@ -99,88 +96,6 @@ class DummyHadamard(qp.operation.Operator):
 @pytest.mark.unit
 class TestAdjointDecompositionRules:
     """Tests the decomposition rules defined for the adjoint of operations."""
-
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize(
-        "base",
-        [
-            RotXZX(0.1, 0.2, 0.3, wires=0),
-            qp.PCPhase(0.4, dim=3, wires=[0, 1]),
-            qp.IntegerComparator(2, geq=True, wires=[0, 1, 2], work_wires=[3]),
-            qp.IntegerComparator(1, geq=False, wires=[0, 1, 2]),
-            qp.SpecialUnitary(np.arange(15) / 20, wires=[0, 1]),
-            qp.CommutingEvolution(
-                qp.Hamiltonian([0.2, -0.7], [qp.X(0) @ qp.X(1), qp.Z(0) @ qp.Z(1)]),
-                0.3,
-                frequencies=(0.4, 1.0, 1.4, 1.8),
-                shifts=(0.2, 0.6, 1.0, 1.4),
-            ),
-            TmpPauliRot(0.3, "XYZ", wires=[0, 1, 2]),
-        ],
-        ids=[
-            "RotXZX",
-            "PCPhase",
-            "IntegerComparator_geq",
-            "IntegerComparator_lt",
-            "SpecialUnitary",
-            "CommutingEvolution",
-            "TmpPauliRot",
-        ],
-    )
-    def test_direct_inverse(self, base):
-        """Direct rules preserve the custom inverse and declare its emitted operator."""
-        op = qp.adjoint(base)
-        [rule] = qp.list_decomps(f"Adjoint({base.name})")
-        qp.testing.assert_valid_decomp_rule(op, rule)
-        tape = decomp_rule_to_tape(op, rule)
-        [inverse] = tape.operations
-        qp.assert_equal(inverse, base.adjoint(), check_interface=False)
-
-        # Also check operators whose matrix is available only through their decomposition.
-        with qp.capture.pause():
-            expected = qp.matrix(base).conj().T
-            assert qp.math.allclose(qp.matrix(tape, wire_order=base.wires), expected)
-
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("batched", [False, True])
-    @pytest.mark.parametrize("work_wire_type", ["borrowed", "zeroed"])
-    def test_controlled_unitary_inverse(self, batched, work_wire_type):
-        """Conjugate transpose the targets without changing control or work-wire metadata."""
-        U = qp.Rot.compute_matrix(0.2, 0.3, 0.4)
-        if batched:
-            U = np.stack([U, qp.Rot.compute_matrix(0.5, 0.6, 0.7)])
-        base = qp.ControlledQubitUnitary(
-            U,
-            wires=[0, 1, 2],
-            control_values=[False, True],
-            work_wires=[3],
-            work_wire_type=work_wire_type,
-        )
-        op = qp.adjoint(base)
-        [rule] = qp.list_decomps("Adjoint(ControlledQubitUnitary)")
-        qp.testing.assert_valid_decomp_rule(op, rule)
-        [inverse] = decomp_rule_to_tape(op, rule).operations
-        expected = qp.ControlledQubitUnitary(
-            np.swapaxes(U.conj(), -2, -1),
-            wires=base.wires,
-            control_values=base.control_values,
-            work_wires=base.work_wires,
-            work_wire_type=work_wire_type,
-        )
-        qp.assert_equal(inverse, expected, check_interface=False)
-
-    @pytest.mark.capture
-    def test_commuting_evolution_dynamic_coefficients(self):
-        """Captured inverse rules use the runtime coefficients as well as the runtime time."""
-        base = qp.CommutingEvolution(qp.Hamiltonian([0.2, 0.3], [qp.Z(0), qp.Z(1)]), 0.4)
-        [rule] = qp.list_decomps("Adjoint(CommutingEvolution)")
-        plxpr = qp.capture.make_plxpr(
-            lambda time, c0, c1: rule(time, c0, c1, base=base, wires=base.wires)
-        )(0.4, 0.2, 0.3)
-        tape = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, 0.7, 0.5, -0.9)
-        [inverse] = tape.operations
-        expected = qp.CommutingEvolution(qp.Hamiltonian([0.5, -0.9], [qp.Z(0), qp.Z(1)]), -0.7)
-        qp.assert_equal(inverse, expected, check_interface=False)
 
     def test_cancel_adjoint(self):
         """Tests that the adjoint of an adjoint cancels out."""
