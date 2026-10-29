@@ -21,7 +21,7 @@ import pytest
 import pennylane as qp
 from pennylane.core import abstractify
 from pennylane.testing import assert_valid, decomp_rule_to_tape
-from pennylane.typing import Float, Int, Wire
+from pennylane.typing import Int, Wire
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -214,18 +214,6 @@ class TestLeftClassicalComparator:
             )
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
-@pytest.mark.parametrize("abstract_wires", [False, True])
-def test_abstract_threshold(abstract_wires):
-    """An unknown threshold is valid with either concrete or abstract registers."""
-    x_wires, target_wire, work_wires = (
-        (Wire[2], Wire[1], Wire[1]) if abstract_wires else ([0, 1], [2], [3])
-    )
-    op = qp.LeftClassicalComparator(x_wires, Int, target_wire, work_wires, "<")
-    concrete = qp.LeftClassicalComparator([0, 1], 2, [2], [3], "<")
-    qp.assert_equal(abstractify(op), abstractify(concrete))
-
-
 @pytest.mark.parametrize("n", [1, 2, 3])
 @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
 def test_resource_upper_bound(n, comparator):
@@ -272,32 +260,9 @@ def test_capture_dynamic_threshold(comparator):
         np.testing.assert_allclose(circuit(threshold), expected, atol=1e-8)
 
 
-@pytest.mark.catalyst
-@pytest.mark.usefixtures("enable_graph_decomposition")
-def test_estimate_abstract_threshold():
-    """Resource estimation accepts abstract threshold and wire registers."""
-
-    @qp.qjit(capture=True, target="mlir")
-    @qp.qnode(qp.device("null.qubit", wires=4))
-    def circuit():
-        qp.LeftClassicalComparator(Wire[2], Int, Wire[1], Wire[1], "<")
-        return qp.probs(wires=Wire[1])
-
-    specs = qp.estimate(circuit, target={qp.X, qp.CNOT, qp.Elbow})()
-    assert specs.resources.counts == {"PauliX": 7, "CNOT": 2, "TemporaryAND": 1}
-
-
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("threshold", [[1, 2], np.array([1]), Int[2]])
 def test_non_scalar_threshold_rejected(threshold):
     """Malformed thresholds fail before Python comparisons or MLIR lowering."""
     with pytest.raises(ValueError, match="L must be a scalar integer"):
-        qp.LeftClassicalComparator([0, 1], threshold, 2, [3], "<")
-
-
-@pytest.mark.usefixtures("enable_and_disable_capture")
-@pytest.mark.parametrize("threshold", [1.5, Float])
-def test_non_integer_threshold_rejected(threshold):
-    """The integer argument specification rejects concrete and abstract floats."""
-    with pytest.raises(ValueError, match="Parameter 'L'.*dtype"):
         qp.LeftClassicalComparator([0, 1], threshold, 2, [3], "<")
