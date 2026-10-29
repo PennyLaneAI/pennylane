@@ -26,6 +26,7 @@ from pennylane.decomposition import add_decomps, register_condition, register_re
 from pennylane.numeric_hamiltonians import CDFHamiltonian
 from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math import adjoint, ctrl
+from pennylane.ops.op_math.controlled2 import ctrl_many_zeroed_work_wires
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
@@ -130,6 +131,13 @@ class TrotterCDF(Operator2):
         Controlling this operator with :func:`~pennylane.ctrl` produces by default a genuine
         controlled evolution :math:`\text{diag}(1, U)` (assuming a single control wire),
         where :math:`U = e^{-iHt}` is the Trotter evolution.
+
+        With :math:`m>1` standard controls, supply :math:`m-1` clean ``work_wires`` to
+        :func:`~pennylane.ctrl` with ``work_wire_type="zeroed"``. The registered
+        multi-control decomposition combines the controls with :class:`~.TemporaryAND`,
+        reuses the single-control ``TrotterCDF`` decomposition, and uncomputes the AND.
+        These auxiliary wires must be distinct from the ``work_wires`` supplied to
+        ``TrotterCDF``, which are used for the two-body layers.
 
         With a single control and ``double_phase=True``, :func:`~pennylane.ctrl` instead produces the double-phase Hadamard-test circuit
         of `Fig. 6 of arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`__, which realizes
@@ -767,4 +775,32 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
     PhaseShift(-phi, control_wires)
 
 
-add_decomps("C(TrotterCDF)", flip_zero_control2(_controlled_trotter_cdf_decomp))
+@register_condition(ctrl_many_zeroed_work_wires.is_applicable)
+@register_condition(lambda base, **_: not base.arguments["double_phase"])
+@register_resources(
+    lambda *args, **kwargs: ctrl_many_zeroed_work_wires.compute_resources(
+        *args, **kwargs
+    ).gate_counts,
+    exact=False,
+)
+def _multi_controlled_trotter_cdf_decomp(
+    base, control_wires, control_values, work_wires, work_wire_type
+):
+    """Reuse the single-control CDF decomposition after combining multiple controls."""
+    validate_no_wire_overlaps(
+        {
+            "control_wires": control_wires,
+            "control_work_wires": work_wires,
+            "work_wires": base.arguments["work_wires"],
+        }
+    )
+    ctrl_many_zeroed_work_wires(
+        base, control_wires, control_values, work_wires, work_wire_type
+    )
+
+
+add_decomps(
+    "C(TrotterCDF)",
+    flip_zero_control2(_controlled_trotter_cdf_decomp),
+    _multi_controlled_trotter_cdf_decomp,
+)
