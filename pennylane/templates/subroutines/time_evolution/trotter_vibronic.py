@@ -1069,13 +1069,16 @@ def _branch_probs(hamiltonian, evolution_time, num_trotter_steps):
     The coefficients are scaled by the time steps as in :func:`_trotter_step_second_order`,
     because the skip conditions compare the scaled coefficients against a fixed tolerance.
 
-    Returns ``None`` if the Hamiltonian data or the evolution time are not concrete.
+    Returns ``None`` if the Hamiltonian data or the evolution time are not concrete, or if the
+    Hamiltonian has more position fragments than the XOR scheme on the electronic register allows.
     """
     data = (evolution_time, *hamiltonian.tensors)
     if any(math.is_tracer(t) or isinstance(t, AbstractArray) for t in data):
         return None
     n_states, n_modes = hamiltonian.num_states, hamiltonian.num_modes
     n_elec = math.ceil_log2(n_states)
+    if hamiltonian.num_fragments > 2**n_elec:
+        return None
     time_step = evolution_time / num_trotter_steps
     coeffs, _ = _preprocess_data(time_step, hamiltonian, n_elec, n_states, n_modes)
     kinetic = (_momentum_coefficients(hamiltonian.kinetic) * time_step)[:, None]
