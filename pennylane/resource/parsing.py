@@ -257,11 +257,14 @@ def _handle_extended_fields(
     call_count: int | float | Expression,
     called_fn_resources: SpecsResources,
 ) -> None:
-    """Accumulate numeric Catalyst extensions using the standard call-count expressions.
+    """Helper function to handle extended fields in the resource data.
 
-    Extension values may be numbers or nested dictionaries of numbers. ``None``
-    propagates unavailable metrics. Unsupported metadata is preserved in the
-    calling function and reported with a warning, without partially merging a field.
+    Args:
+        extended_fields (dict[str, Any]): The extended fields from the resource data (modified by function)
+        call_count (int | float | Expression): The number of times the called function is invoked.
+            For float values, this is the average number of times the function is invoked.
+        called_fn_resources (SpecsResources): The resources of the called function
+
     """
     unknown_fields = []
     for field_name, value in called_fn_resources.extra.items():
@@ -303,13 +306,13 @@ def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
         "num_wires": _safe_ceil(res.num_wires) if res.num_wires is not None else None,
         "circuit_depth": _safe_ceil(res.circuit_depth) if res.circuit_depth is not None else None,
     }
-    rounded = SpecsResources(**kwargs, extra=copy.deepcopy(res.extra))
-    matches = [name for name in _RESOURCE_CONVERTERS if name in rounded.extra]
+    resources = SpecsResources(**kwargs, extra=copy.deepcopy(res.extra))
+    matches = [name for name in _RESOURCE_CONVERTERS if name in resources.extra]
     if len(matches) > 1:
         raise ValueError(f"Multiple registered specs resource extensions match: {matches}.")
     if matches:
-        return _RESOURCE_CONVERTERS[matches[0]](rounded)
-    return rounded
+        return _RESOURCE_CONVERTERS[matches[0]](resources)
+    return resources
 
 
 def parse_resources_json(

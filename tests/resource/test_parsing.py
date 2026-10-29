@@ -356,7 +356,7 @@ class TestConvertToSubclass:
     """Unit tests for the _convert_to_subclass function."""
 
     def test_convert_registered_subclass(self, monkeypatch):
-        """A plugin converter maps its own fields without changing the input resources."""
+        """Test that converter maps its own fields without changing the input resources."""
 
         @dataclass(frozen=True, kw_only=True)
         class ExtraSpecsResources(SpecsResources):
