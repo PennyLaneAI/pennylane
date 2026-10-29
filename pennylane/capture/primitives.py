@@ -35,7 +35,6 @@ from pennylane.ops.op_math.condition import cond_prim
 from pennylane.ops.op_math.controlled import ctrl_transform_prim
 from pennylane.workflow._capture_qnode import qnode_prim
 
-from .compute_uncompute import compute_uncompute_p
 from .subroutine import quantum_subroutine_prim
 from .symbolic_array import symbolic_array_p
 
@@ -60,5 +59,4 @@ __all__ = [
     "quantum_subroutine_prim",
     "pauli_measure_prim",
     "transform_prim",
-    "compute_uncompute_p",
 ]

@@ -29,7 +29,6 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator2
 
-from .compute_uncompute import compute_uncompute_p
 from .flatfn import FlatFn
 from .primitives import (
     adjoint_transform_prim,
@@ -472,27 +471,6 @@ def _iota_primitive(self, *dyn_shape, dimension, dtype, shape, sharding):
     # iota is primitive created by jnp.arange
     new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
     return jax.lax.broadcasted_iota(dtype, new_shape, dimension, out_sharding=sharding)
-
-
-@PlxprInterpreter.register_primitive(compute_uncompute_p)
-def handle_compute_uncompute(self, *invals, compute_jaxpr, body_jaxpr, n_compute):
-    """Transform both regions while preserving their compute/action roles."""
-    compute_args, body_args = invals[:n_compute], invals[n_compute:]
-    compute = jaxpr_to_jaxpr(copy(self), compute_jaxpr, (), *compute_args)
-    body = jaxpr_to_jaxpr(copy(self), body_jaxpr, (), *body_args)
-    return compute_uncompute_p.bind(
-        *compute.consts,
-        *compute_args,
-        *body.consts,
-        *body_args,
-        compute_jaxpr=compute.jaxpr.replace(
-            constvars=(), invars=[*compute.jaxpr.constvars, *compute.jaxpr.invars]
-        ),
-        body_jaxpr=body.jaxpr.replace(
-            constvars=(), invars=[*body.jaxpr.constvars, *body.jaxpr.invars]
-        ),
-        n_compute=len(compute.consts) + len(compute_args),
-    )
 
 
 @PlxprInterpreter.register_primitive(adjoint_transform_prim)

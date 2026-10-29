@@ -102,7 +102,6 @@ from pennylane.measurements import (
 )
 from pennylane.ops import *
 from pennylane.ops import adjoint, ctrl, cond, change_op_basis, exp, sum, pow, prod, s_prod, measure
-from pennylane.ops import compute_uncompute
 from pennylane.ops import LinearCombination as Hamiltonian
 from pennylane.decomposition import gate_sets
 from pennylane.templates import layer
