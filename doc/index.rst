@@ -246,7 +246,6 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qp_fermi
    code/qp_gradients
    code/qp_io
-   code/qp_kernels
    code/qp_labs
    code/qp_liealg
    code/qp_logging
