@@ -32,6 +32,9 @@ its general resources.
 
 Each content line of a rule is a gate, its count, and optionally its count in the example circuit,
 all inline reStructuredText, separated by `` | ``.
+
+With the ``:stacked:`` flag, each circuit is drawn across the full width with its resources below,
+instead of side by side. This suits wide circuits, such as those of templates.
 """
 
 from docutils import nodes
@@ -112,7 +115,11 @@ class DecompositionTable(SphinxDirective):
     required_arguments = 1
     has_content = True
     # symbol def'ns and example values for them are optional and left as text
-    option_spec = {"symbols": directives.unchanged, "example": directives.unchanged}
+    option_spec = {
+        "symbols": directives.unchanged,
+        "example": directives.unchanged,
+        "stacked": directives.flag,
+    }
 
     def run(self):
         """Build a caption and a two-column table from the nested rule directives."""
@@ -153,6 +160,9 @@ class DecompositionTable(SphinxDirective):
             # marks when all rules in the table have two columns,
             # as opposed to decomp-cols-2 which marks that an individual rule has two
             table["classes"].append("decomp-two-cols")
+        stacked = "stacked" in self.options
+        if stacked:
+            table["classes"].append("decomp-stacked")
         column_group = nodes.tgroup(cols=2)
         table += column_group
         for column_width in (60, 40) if two_cols else (40, 60):
@@ -167,7 +177,6 @@ class DecompositionTable(SphinxDirective):
             name_row += nodes.entry("", nodes.paragraph("", "", rule_name), morecols=1)
             table_body += name_row
 
-            detail_row = nodes.row(classes=["decomp-body-row"])
             circuit_cell = nodes.entry("", rule_node["image"], classes=["decomp-circuit"])
             if "example" in self.options:
                 inline_nodes, messages = self.state.inline_text(
@@ -175,13 +184,19 @@ class DecompositionTable(SphinxDirective):
                 )
                 circuit_cell += nodes.paragraph("", "", *inline_nodes, classes=["decomp-example"])
                 parsing_messages.extend(messages)
-            detail_row += circuit_cell
             resources_cell = nodes.entry("")
             if rule_node["requires"] is not None:
                 resources_cell += rule_node["requires"]
             resources_cell += rule_node["resources"]
-            detail_row += resources_cell
-            table_body += detail_row
+            if stacked:
+                # the circuit spans the full width, with the resources in a row below it
+                circuit_cell["morecols"] = resources_cell["morecols"] = 1
+                table_body += nodes.row("", circuit_cell, classes=["decomp-circuit-row"])
+                table_body += nodes.row("", resources_cell, classes=["decomp-body-row"])
+            else:
+                table_body += nodes.row(
+                    "", circuit_cell, resources_cell, classes=["decomp-body-row"]
+                )
         column_group += table_body
 
         return [caption, usage, table, *other_nodes, *parsing_messages]

@@ -158,6 +158,7 @@ class TrotterVibronic(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.TrotterVibronic
+            :stacked:
             :symbols: :math:`F` position fragments, :math:`M` modes with :math:`k` wires each,
                 :math:`n` electronic wires, :math:`b` coefficient and phase gradient wires, and
                 :math:`r` = ``num_trotter_steps``

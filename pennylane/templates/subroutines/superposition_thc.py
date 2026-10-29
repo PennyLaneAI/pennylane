@@ -147,6 +147,7 @@ class SuperpositionTHC(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.SuperpositionTHC
+            :stacked:
             :symbols: :math:`n` wires per index register
             :example: :math:`n=1` (:math:`M=1`, :math:`N=2`)
 

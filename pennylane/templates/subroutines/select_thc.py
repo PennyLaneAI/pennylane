@@ -604,6 +604,7 @@ class SelectTHC(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.SelectTHC
+            :stacked:
             :symbols: :math:`h = N/2` spatial orbitals, :math:`P = h - 1` Givens pairs loaded in
                 :math:`B` batches (:math:`B \leq` ``num_batches``, and :math:`B = 0` if
                 :math:`P = 0`), and :math:`n = \lceil \log_2(M+1) \rceil` wires per index

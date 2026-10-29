@@ -89,6 +89,22 @@ table.decomposition-table.decomp-two-cols td.decomp-circuit img {
   max-width: 570px;
 }
 
+/* stacked tables draw each circuit across the full width, above its resources */
+table.decomposition-table.decomp-stacked tr.decomp-circuit-row td {
+  padding-top: 0;
+  padding-bottom: 12px;
+}
+
+table.decomposition-table.decomp-stacked td.decomp-circuit img {
+  max-width: 100%;
+  aspect-ratio: auto;
+}
+
+table.decomposition-table.decomp-stacked .decomp-resources {
+  max-width: 640px;
+  margin-left: 0;
+}
+
 /* which instance of the rule the circuit shows */
 table.decomposition-table p.decomp-example {
   margin-top: 6px;

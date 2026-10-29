@@ -138,6 +138,7 @@ class TrotterCGF(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.TrotterCGF
+            :stacked:
             :symbols: :math:`M` modes with :math:`N` modals each, :math:`L` two-body fragments and
                 :math:`n` = ``num_trotter_steps``
             :example: the Hamiltonian above, :math:`M=2`, :math:`N=3`, :math:`L=1`, :math:`n=1`

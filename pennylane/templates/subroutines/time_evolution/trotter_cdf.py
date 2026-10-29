@@ -119,6 +119,7 @@ class TrotterCDF(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.TrotterCDF
+            :stacked:
             :symbols: :math:`N` orbitals, :math:`L` two-body fragments and :math:`n` =
                 ``num_trotter_steps``
             :example: the Hamiltonian above, :math:`N=2`, :math:`L=1`, :math:`n=1`

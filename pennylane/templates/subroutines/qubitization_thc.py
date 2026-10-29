@@ -360,6 +360,7 @@ class QubitizationTHC(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.QubitizationTHC
+            :stacked:
 
             .. decomposition-rule:: _qubitization_thc_decomp
                 :image: /_static/decomposition_thumbnails/qubitization_thc_walk.svg

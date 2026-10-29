@@ -90,6 +90,7 @@ class BasisRotation(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.BasisRotation
+            :stacked:
             :symbols: :math:`N \times N` matrix :math:`u` (``unitary_matrix``) on :math:`N` wires
             :example: :math:`N=3`, with :math:`\det u = -1` for the real-valued rule
 
