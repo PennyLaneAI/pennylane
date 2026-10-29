@@ -112,6 +112,8 @@ class AQFT(Operator2):
     def __init__(self, order: int, wires: WiresLike) -> None:
         wires = Wires(wires)
         num_wires = len(wires)
+        if num_wires == 0:
+            raise ValueError("AQFT on empty wires is not supported.")
 
         if order < 0:
             raise ValueError("Order can not be less than 0")
@@ -127,8 +129,7 @@ class AQFT(Operator2):
                 f"The order ({order}) is larger than or equal to the number of wires "
                 f"({num_wires}). Using order = {num_wires - 1} instead."
             )
-            # Handle edge case of empty wires to use order=0 (not a realistic use case).
-            order = max(num_wires - 1, 0)
+            order = num_wires - 1
 
         super().__init__(order, wires)
 

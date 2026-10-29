@@ -50,6 +50,11 @@ class TestAQFT:
         state = circ(n_qubits, order)
         assert np.allclose(state, np.eye(1, 2**n_qubits), atol=tol)
 
+    def test_empty_wires(self):
+        """Test if ValueError is raised for empty wires."""
+        with pytest.raises(ValueError, match="AQFT on empty wires is not supported."):
+            qp.AQFT(order=1, wires=[])
+
     @pytest.mark.parametrize("order", [-1, -5.4])
     def test_negative_order(self, order):
         """Test if ValueError is raised for negative orders"""
