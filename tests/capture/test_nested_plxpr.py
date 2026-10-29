@@ -321,7 +321,7 @@ class TestCtrlQfunc:
         assert plxpr.eqns[0].primitive == ctrl_transform_prim
         assert plxpr.eqns[0].invars[-1].val
         assert plxpr.eqns[0].params["n_control"] == 1
-        assert plxpr.eqns[0].params["work_wires"] is None
+        assert "work_wires" not in plxpr.eqns[0].params
         assert plxpr.eqns[0].params["n_consts"] == 0
 
     def test_dynamic_control_wires(self):
@@ -343,11 +343,11 @@ class TestCtrlQfunc:
         assert plxpr.eqns[0].primitive == ctrl_transform_prim
         assert [value.val for value in plxpr.eqns[0].invars[-2:]] == [True, True]
         assert plxpr.eqns[0].params["n_control"] == 2
-        assert plxpr.eqns[0].params["work_wires"] is None
+        assert "work_wires" not in plxpr.eqns[0].params
 
-    @pytest.mark.parametrize("work_wires", [None, [], [3], "aux"])
+    @pytest.mark.parametrize("work_wires", [None, [], [3], [3, 4]])
     def test_work_wires(self, work_wires):
-        """Concrete work wires retain the existing static representation."""
+        """Concrete work wires are captured as operands, including an empty register."""
 
         def f(w):
             return qp.ctrl(qp.S, (1, 2), work_wires=work_wires)(w)
@@ -362,10 +362,24 @@ class TestCtrlQfunc:
         qp.assert_equal(q.queue[0], expected)
         assert len(q) == 1
 
-        assert plxpr.eqns[0].params["work_wires"] == (
-            qp.wires.Wires(work_wires) if work_wires is not None else None
-        )
-        assert "n_work" not in plxpr.eqns[0].params
+        eqn = plxpr.eqns[0]
+        assert "work_wires" not in eqn.params
+        assert eqn.params["n_work"] == len(work_wires or ())
+        if work_wires:
+            assert [wire.val for wire in eqn.invars[-len(work_wires) :]] == work_wires
+
+    def test_string_work_wires_require_capture_disabled(self):
+        """String work-wire labels remain valid outside capture but cannot be JAX operands."""
+
+        def circuit():
+            qp.ctrl(qp.S, (1, 2), work_wires="aux")(0)
+
+        with pytest.raises(TypeError, match="not a valid JAX type"):
+            jax.make_jaxpr(circuit)()
+
+        with qp.capture.pause(), qp.queuing.AnnotatedQueue() as queue:
+            circuit()
+        assert queue.queue[0].work_wires == qp.wires.Wires("aux")
 
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     @pytest.mark.parametrize("container", [list, tuple, qp.wires.Wires, jax.numpy.array])
@@ -386,7 +400,7 @@ class TestCtrlQfunc:
 
         eqn = plxpr.eqns[-1]
         assert eqn.primitive == ctrl_transform_prim
-        assert eqn.params["work_wires"] is None
+        assert "work_wires" not in eqn.params
         assert eqn.params["n_work"] == 2
         assert eqn.params["work_wire_type"] == work_wire_type
         if container is not jax.numpy.array:
@@ -463,7 +477,7 @@ class TestCtrlQfunc:
         eqn = plxpr.eqns[-1]
         assert eqn.primitive == ctrl_transform_prim
         assert eqn.params["n_work"] == 1
-        assert eqn.params["work_wires"] is None
+        assert "work_wires" not in eqn.params
         assert eqn.invars[-1] == plxpr.jaxpr.invars[-1]
 
         with qp.queuing.AnnotatedQueue() as queue:
@@ -476,7 +490,7 @@ class TestCtrlQfunc:
         """Test that work_wire_type is forwarded to each inner operator."""
 
         def f(w):
-            return qp.ctrl(qp.S, (1, 2), work_wires="aux", work_wire_type=work_wire_type)(w)
+            return qp.ctrl(qp.S, (1, 2), work_wires=[3], work_wire_type=work_wire_type)(w)
 
         plxpr = jax.make_jaxpr(f)(6)
 
@@ -484,7 +498,7 @@ class TestCtrlQfunc:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 5)
 
         assert out == []
-        expected = qp.ctrl(qp.S(5), (1, 2), work_wires="aux", work_wire_type=work_wire_type)
+        expected = qp.ctrl(qp.S(5), (1, 2), work_wires=[3], work_wire_type=work_wire_type)
         qp.assert_equal(q.queue[0], expected)
         assert q.queue[0].work_wire_type == work_wire_type
         assert plxpr.eqns[0].params["work_wire_type"] == work_wire_type
@@ -603,7 +617,7 @@ class TestCtrlQfunc:
         assert eqn.invars[-1].val
         assert eqn.params["n_consts"] == 0
         assert eqn.params["n_control"] == 1
-        assert eqn.params["work_wires"] is None
+        assert "work_wires" not in eqn.params
 
         assert len(eqn.params["jaxpr"].eqns) == 5 + include_s
 

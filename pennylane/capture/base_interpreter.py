@@ -492,7 +492,6 @@ def handle_ctrl_transform(
     *invals,
     n_control,
     jaxpr,
-    work_wires,
     n_consts,
     n_work=0,
     work_wire_type="borrowed",
@@ -509,10 +508,9 @@ def handle_ctrl_transform(
         *invals[controls_start:],
         n_control=n_control,
         jaxpr=jaxpr.jaxpr,
-        work_wires=work_wires,
+        n_work=n_work,
         work_wire_type=work_wire_type,
         n_consts=len(jaxpr.consts),
-        **({"n_work": n_work} if n_work else {}),
     )
 
 

@@ -400,7 +400,7 @@ class TestHigherOrderPrimitiveRegistrations:
         assert jaxpr.eqns[0].primitive == ctrl_transform_prim
         assert jaxpr.eqns[0].invars[-3:] == jaxpr.jaxpr.invars[1:]
         assert jaxpr.eqns[0].params["n_work"] == 1
-        assert jaxpr.eqns[0].params["work_wires"] is None
+        assert "work_wires" not in jaxpr.eqns[0].params
         assert "control_values" not in jaxpr.eqns[0].params
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         # first eqn mul, second RY

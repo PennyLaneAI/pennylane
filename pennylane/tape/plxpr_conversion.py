@@ -138,8 +138,7 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, n_work=0, **
     args = invals[n_consts:controls_start]
     control = math.array(invals[controls_start:values_start])
     control_values = invals[values_start:work_start]
-    if n_work:
-        params["work_wires"] = math.array(invals[work_start:])
+    work_wires = math.array(invals[work_start:]) if n_work else None
 
     child = CollectOpsandMeas()
     child.eval(jaxpr, consts, *args)
@@ -148,7 +147,13 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, n_work=0, **
     for op in child.state["ops"]:
         with pause():
             self.state["ops"].append(
-                ops.ctrl(op, control=control, control_values=control_values, **params)
+                ops.ctrl(
+                    op,
+                    control=control,
+                    control_values=control_values,
+                    work_wires=work_wires,
+                    **params,
+                )
             )
 
     return []
