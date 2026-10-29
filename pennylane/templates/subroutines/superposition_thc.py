@@ -314,7 +314,7 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
         adjoint(lcc_gt): 2,
         adjoint(lqc): 2,
         mcx: 2,
-        adjoint(mcx): 2,
+        adjoint(mcx): 1,
     }
 
 

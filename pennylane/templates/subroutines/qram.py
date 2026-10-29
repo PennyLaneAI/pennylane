@@ -735,9 +735,8 @@ def _hybrid_qram_decomposition(
         # Multi-controlled X to turn signal on when select bits == block_index
         if k > 0:
             sel_pattern = _bits(block_index, k)
-            ops.MultiControlledX(
-                concatenate_wires(select_wires, [signal]), control_values=sel_pattern
-            )
+            mcx_wires = concatenate_wires(select_wires, [signal])
+            ops.MultiControlledX(mcx_wires, control_values=sel_pattern)
         else:
             # No select bits: just flip signal for all addresses
             ops.PauliX(wires=signal)
@@ -754,9 +753,8 @@ def _hybrid_qram_decomposition(
 
         # Uncompute signal
         if k > 0:
-            ops.MultiControlledX(
-                concatenate_wires(select_wires, [signal]), control_values=sel_pattern
-            )
+            mcx_wires = concatenate_wires(select_wires, [signal])
+            ops.MultiControlledX(mcx_wires, control_values=sel_pattern)
         else:
             ops.PauliX(wires=signal)
 
@@ -961,6 +959,7 @@ def _select_only_qram_resources(
         resources[ops.BasisState(Bool[num_select_wires], Wire[num_select_wires])] += 1
 
     for addr in range(2 ** (num_select_wires + num_control_wires)):
+
         if (
             select_value is not None
             and num_select_wires > 0
@@ -969,12 +968,9 @@ def _select_only_qram_resources(
             continue
 
         control_values = [(addr >> (n_total - 1 - i)) & 1 for i in range(n_total)]
-
         resources[ops.PauliX] += control_values.count(0) * 2
-
-        resources[
-            ops.MultiControlledX(Wire[n_total + 1]) if n_total else ops.PauliX
-        ] += num_target_wires
+        x_rep = ops.MultiControlledX(Wire[n_total + 1]) if n_total else ops.PauliX
+        resources[x_rep] += num_target_wires
 
     return resources
 
