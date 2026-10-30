@@ -122,6 +122,75 @@ class QubitUnitary(Operator2):
     ...     return qp.expval(qp.Z(0))
     >>> print(example_circuit())
     0.0
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.QubitUnitary
+            :symbols: :math:`n` wires
+
+            .. decomposition-rule:: zyz
+                :image: /_static/decomposition_thumbnails/qubit_unitary_zyz.svg
+                :requires: a single-qubit matrix
+
+                :class:`~.RZ` | :math:`2`
+                :class:`~.RY` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: zxz
+                :image: /_static/decomposition_thumbnails/qubit_unitary_zxz.svg
+                :requires: a single-qubit matrix
+
+                :class:`~.RZ` | :math:`2`
+                :class:`~.RX` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: xzx
+                :image: /_static/decomposition_thumbnails/qubit_unitary_xzx.svg
+                :requires: a single-qubit matrix
+
+                :class:`~.RX` | :math:`2`
+                :class:`~.RZ` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: xyx
+                :image: /_static/decomposition_thumbnails/qubit_unitary_xyx.svg
+                :requires: a single-qubit matrix
+
+                :class:`~.RX` | :math:`2`
+                :class:`~.RY` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: rot
+                :image: /_static/decomposition_thumbnails/qubit_unitary_rot.svg
+                :requires: a single-qubit matrix
+                :where: the counts are for a general matrix: a matrix with :math:`\theta = 0` uses
+                    one :class:`~.RZ` instead of the :class:`~.Rot`, and the :class:`~.GlobalPhase`
+                    is skipped when its phase is zero
+
+                :class:`~.Rot` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: two_qubit_decomp_rule
+                :image: /_static/decomposition_thumbnails/qubit_unitary_two_qubit.svg
+                :requires: a two-qubit matrix
+                :where: the counts are the worst case, a matrix that needs 3 :class:`~.CNOT` gates:
+                    matrices that need 0 or 1 (or, without program capture, 2) use fewer gates, and
+                    the :class:`~.GlobalPhase` is skipped when its phase is zero
+
+                :class:`~.QubitUnitary` on 1 wire | :math:`4`
+                :class:`~.CNOT` | :math:`3`
+                :class:`~.RZ` | :math:`1`
+                :class:`~.RY` | :math:`2`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: multi_qubit_decomp_rule
+                :image: /_static/decomposition_thumbnails/qubit_unitary_multi_qubit.svg
+                :requires: a matrix on :math:`n > 2` wires
+
+                :class:`~.QubitUnitary` on :math:`n-1` wires | :math:`4`
+                :class:`~.SelectPauliRot` (:math:`Z`) with :math:`n-1` controls | :math:`2`
+                :class:`~.SelectPauliRot` (:math:`Y`) with :math:`n-1` controls | :math:`1`
     """
 
     dynamic_argnames = ("U",)
@@ -435,6 +504,28 @@ class DiagonalQubitUnitary(Operator2):
     Args:
         D (array[complex]): diagonal of unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.DiagonalQubitUnitary
+            :symbols: :math:`n` wires and :math:`w` work wires
+            :example: :math:`n=2`
+
+            .. decomposition-rule:: _diagonal_qu_decomp
+                :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_recursive.svg
+                :where: :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
+
+                :class:`~.DiagonalQubitUnitary` on :math:`n-1` wires | :math:`[n>1]` | 1
+                :class:`~.SelectPauliRot` (:math:`Z`) with :math:`n-1` controls | :math:`[n>1]` | 1
+                :class:`~.RZ` | :math:`[n=1]` | 0
+                :class:`~.GlobalPhase` | :math:`[n=1]` | 0
+
+            .. decomposition-rule:: _diagonal_mux_on_aux_decomp
+                :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_mux_on_aux.svg
+                :requires: :math:`w \geq 1` work wire
+
+                :class:`~.SelectPauliRot` (:math:`Z`) with :math:`n` controls | :math:`1` | 1
     """
 
     dynamic_argnames = ("D",)
