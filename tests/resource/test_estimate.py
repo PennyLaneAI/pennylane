@@ -358,6 +358,32 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         assert not concrete.is_symbolic
         assert concrete.counts == {"Hadamard": 10, "CNOT": 5}
 
+    def test_abstract_data_hints_scf(self):
+        """Estimate supports abstract inputs together with hinted SCF."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def circuit(n, angles, wires):
+            @qp.hint({"num-iters": 4})
+            @qp.for_loop(n)
+            def loop(i):
+                qp.CZ([wires[0], wires[1]])
+                qp.RX(angles[i], wires[0])
+
+            loop()
+            return qp.expval(qp.Z(wires[0]))
+
+        resources = qp.estimate(circuit, target={"Hadamard", "CNOT", "RX"})(
+            2, qp.typing.AbstractArray((5,), float), qp.typing.Wire[2]
+        ).resources
+
+        # hint overrides the runtime bound: 4 iters of CZ -> 2 H + CNOT, plus RX
+        assert resources == SpecsResources(
+            counts={"Hadamard": 8, "CNOT": 4, "RX": 4},
+            measurement_processes={"expval(PauliZ)": 1},
+            num_wires=10,
+        )
+
     def test_partial(self, circuit):
         """Test that estimate supports functools.partial wrappers."""
 
