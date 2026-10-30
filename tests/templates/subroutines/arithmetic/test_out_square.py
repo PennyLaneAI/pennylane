@@ -361,8 +361,9 @@ class TestOutSquare:
             qp.TemporaryAND(wires=[2, 0, 3]),
             # First AND copied from third-least significant output bit
             qp.CNOT([4, 7]),
-            qp.MultiControlledX(
-                wires=[1, 7, 3],
+            qp.ctrl(
+                qp.X(3),
+                control=[1, 7],
                 control_values=[True, True],
                 work_wires=[8, 9, 10, 6, 5],
                 work_wire_type="zeroed",

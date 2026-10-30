@@ -301,17 +301,17 @@ class TestQROM:
 
         expected_gates = [
             qp.Hadamard(wires=[2]),
-            qp.CSWAP(wires=[1, 2, 3]),
+            qp.ctrl(qp.SWAP([2, 3]), control=1, work_wire_type="zeroed"),
             qp.QROM(
                 [[1, 0], [0, 1]], control_wires=[0], target_wires=[2, 3], work_wires=[], clean=False
             ),
-            qp.CSWAP(wires=[1, 2, 3]),
+            qp.ctrl(qp.SWAP([2, 3]), control=1, work_wire_type="zeroed"),
             qp.Hadamard(wires=[2]),
-            qp.CSWAP(wires=[1, 2, 3]),
+            qp.ctrl(qp.SWAP([2, 3]), control=1, work_wire_type="zeroed"),
             qp.QROM(
                 [[1, 0], [0, 1]], control_wires=[0], target_wires=[2, 3], work_wires=[], clean=False
             ),
-            qp.CSWAP(wires=[1, 2, 3]),
+            qp.ctrl(qp.SWAP([2, 3]), control=1, work_wire_type="zeroed"),
         ]
 
         for op1, op2 in zip(qrom_decomposition, expected_gates):
@@ -608,7 +608,19 @@ def test_too_many_work_wires_case():
         assert qrom_op.control_wires == qp.wires.Wires([])
         assert qrom_op.target_wires == qp.wires.Wires([2, 3, 4, 5])
 
-    assert gates_few_work[1:] == gates_many_work[1:]
+    for few, many in zip(gates_few_work[1:], gates_many_work[1:]):
+        assert few.work_wires == qp.wires.Wires([])
+        assert many.work_wires == qp.wires.Wires([16])
+        qp.assert_equal(
+            many,
+            qp.ctrl(
+                few.base,
+                few.control_wires,
+                control_values=few.control_values,
+                work_wires=[16],
+                work_wire_type=few.work_wire_type,
+            ),
+        )
 
 
 @pytest.mark.parametrize(

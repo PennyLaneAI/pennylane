@@ -1136,7 +1136,9 @@ class TestSimplify:
         prod_op = prod_fn(
             qp.RX(1, 0), qp.RZ(1, 1), qp.CNOT((1, 2)), qp.RZ(1, 1), qp.RX(3, 0), qp.RZ(1, 1)
         )
-        final_op = prod_fn(qp.RZ(1, 1), qp.CNOT((1, 2)), qp.RX(4, 0), qp.RZ(2, 1))
+        final_op = prod_fn(
+            qp.RZ(1, 1), qp.ops.ControlledOp2(qp.X(2), [1]), qp.RX(4, 0), qp.RZ(2, 1)
+        )
         simplified_op = prod_op.simplify()
         qp.assert_equal(simplified_op, final_op)
 

@@ -1349,7 +1349,7 @@ class TestCOBUnroll:  # pylint: disable=too-few-public-methods
         cob = _change_op_basis_abstract(x_rep, y_rep, x_rep)
 
         def wrapper(op):
-            return qp.adjoint(qp.ctrl(op, control=Wire[1]))
+            return abstractify(qp.adjoint(qp.ctrl(op, control=Wire[1])))
 
         wrapped_z = wrapper(z_rep)
         result = _unroll_change_op_basis({wrapper(cob): 2, wrapped_z: 3})

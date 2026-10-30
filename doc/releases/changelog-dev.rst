@@ -1432,6 +1432,10 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* ``qp.ctrl`` now constructs symbolic controlled operators without dispatching to specialized
+  gates such as ``CNOT`` or ``CRX``. Decomposition rules have been updated accordingly.
+  `(#10395) <https://github.com/PennyLaneAI/pennylane/pull/10395>`__
+
 * The ``pennylane.kernels`` module has been removed. This includes ``kernel_matrix``,
   ``square_kernel_matrix``, ``polarity``, ``target_alignment``, ``threshold_matrix``,
   ``displace_matrix``, ``flip_matrix``, ``closest_psd_matrix`` and
@@ -2160,10 +2164,6 @@ Internal changes ⚙️
   `(#9400) <https://github.com/PennyLaneAI/pennylane/pull/9400>`__
   `(#9541) <https://github.com/PennyLaneAI/pennylane/pull/9541>`__
 
-* The custom dispatch logic from general controlled operators to equivalent bespoke operators (e.g.,
-  from ``qp.ctrl(qp.X(0), control=[1, 2])`` to ``Toffoli(wires=[1, 2, 0])``) is re-written to use a
-  singledispatch function ``custom_ctrl_dispatch`` as opposed to relying on hard-coded logic.
-  `(#9798) <https://github.com/PennyLaneAI/pennylane/pull/9798>`__
 
 * ``capture.enable()``, ``capture.disable()`` are updated to use ``ContextVar`` for thread safety. A ``capture.toggle_ctx``
   context manager that temporarily enables or disables capture is added.

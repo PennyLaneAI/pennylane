@@ -166,7 +166,7 @@ def match_controlled_iX_gate(
             # begin multi-controlled iX gate
 
             qp.ctrl(qp.S(wires=[2]), control=[0, 1])
-            qp.MultiControlledX(wires=[0, 1, 2, 3])
+            qp.ctrl(qp.X(wires=3), control=[0, 1, 2])
 
             # end multi-controlled iX gate
 

@@ -117,7 +117,6 @@ Other Functions
 .. autosummary::
     :toctree: api
 
-    ~custom_ctrl_dispatch
 
 """
 
@@ -126,7 +125,7 @@ from .adjoint2 import Adjoint2
 from .composite import CompositeOp
 from .composite2 import CompositeOp2
 from .condition import Conditional, cond
-from .controlled import Controlled, ControlledOp, ctrl, custom_ctrl_dispatch
+from .controlled import Controlled, ControlledOp, ctrl
 from .controlled2 import Controlled2, ControlledOp2
 from .controlled_ops import (
     CCZ,

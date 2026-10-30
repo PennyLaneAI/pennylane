@@ -371,12 +371,8 @@ def flip_control_adjoint(
 
 
 def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, **__):
-
-    # pylint: disable=import-outside-toplevel
-    from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-
     return {
-        _ctrl_abstract(qp.X, Wire[num_control_wires]): 2,
+        qp.MultiControlledX(Wire[num_control_wires + 1]): 2,
         controlled_resource_rep(base_class, base_params, 1): 1,
     }
 
@@ -387,9 +383,9 @@ def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, 
 def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     with allocation.allocate(1, state="zero", restored=True) as work_wires:
-        qp.ctrl(qp.X(work_wires[0]), control=control_wires)
+        qp.MultiControlledX([*control_wires, work_wires[0]])
         qp.ctrl(base, control=work_wires[0])
-        qp.ctrl(qp.X(work_wires[0]), control=control_wires)
+        qp.MultiControlledX([*control_wires, work_wires[0]])
 
 
 ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire)

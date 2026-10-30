@@ -771,7 +771,7 @@ class TestMultiControlledX:
         with qp.queuing.AnnotatedQueue() as q:
             qp.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
         tape = qp.tape.QuantumScript.from_queue(q)
-        [tape], _ = decompose(tape, max_expansion=2, gate_set=qp.gate_sets.CLIFFORD_T)
+        [tape], _ = decompose(tape, max_expansion=1, gate_set=qp.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qp.MultiControlledX) for op in tape.operations)
 
         @qp.qnode(dev)
@@ -880,32 +880,6 @@ class TestMultiControlledX:
         )
         assert_decomposable(op)
 
-    def test_custom_dispatch(self):
-        """Tests that qp.ctrl() of MCX dispatches to another MCX."""
-
-        op = qp.MultiControlledX(
-            [0, 1, 2],
-            control_values=[0, 1],
-            work_wires=[3],
-            work_wire_type="borrowed",
-        )
-        new_op = qp.ctrl(
-            op,
-            control=[4, 5],
-            control_values=[1, 0],
-            work_wires=[6],
-            work_wire_type="zeroed",
-        )
-        qp.assert_equal(
-            new_op,
-            qp.MultiControlledX(
-                [4, 5, 0, 1, 2],
-                control_values=[1, 0, 0, 1],
-                work_wires=[6, 3],
-                work_wire_type="borrowed",
-            ),
-        )
-
 
 period_two_ops = (
     qp.PauliX(0),
@@ -935,7 +909,12 @@ class TestPowMethod:
         """Test that ops with a period of 2 raised to an odd power are the same as the original op."""
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
-        qp.assert_equal(pow_ops[0], op)
+        expected = (
+            qp.ctrl(op.base, op.control_wires, control_values=op.control_values)
+            if isinstance(op, qp.ops.Controlled2)
+            else op
+        )
+        qp.assert_equal(pow_ops[0], expected)
 
     @pytest.mark.parametrize("op", period_two_ops)
     @pytest.mark.parametrize("n", (2, 6, 0, -2))
@@ -1113,25 +1092,15 @@ class TestPowMethod:
 
 
 class TestControlledMethod:
-    """Tests for the _controlled method of non-parametric operations."""
+    """Tests symbolic controls of non-parametric operations."""
 
     # pylint: disable=protected-access
-
-    def test_PauliZ(self):
-        """A positive control on ``PauliZ`` should dispatch to ``CZ``."""
-        out = qp.ctrl(qp.PauliZ(0), "a")
-        qp.assert_equal(out, qp.CZ(("a", 0)))
 
     def test_Barrier(self):
         """Tests the control behavior of Barrier."""
         original = qp.Barrier((0, 1, 2), only_visual=True)
         out = qp.ctrl(original, "a")
         qp.assert_equal(original, out)
-
-    def test_CZ(self):
-        """Test the CZ ctrl dispatch produces CCZ."""
-        out = qp.ctrl(qp.CZ(wires=[0, 1]), control="a")
-        qp.assert_equal(out, qp.CCZ(("a", 0, 1)))
 
 
 class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods

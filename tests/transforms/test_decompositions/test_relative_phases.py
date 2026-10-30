@@ -42,9 +42,9 @@ class TestMultiControlledPhaseXGate:
     def test_multiple_matches(self):
         def qfunc():
             qp.ctrl(qp.S(wires=[2]), control=[0, 1])
-            qp.MultiControlledX(wires=[0, 1, 2, 3])
+            qp.ctrl(qp.X(3), control=[0, 1, 2])
             qp.ctrl(qp.S(wires=[2]), control=[0, 1])
-            qp.MultiControlledX(wires=[0, 1, 2, 3])
+            qp.ctrl(qp.X(3), control=[0, 1, 2])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 2)
@@ -57,22 +57,22 @@ class TestMultiControlledPhaseXGate:
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.Hadamard(wires=3),
             # second instance
             qp.Hadamard(wires=3),
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.Hadamard(wires=3),
         ]
 
@@ -83,7 +83,7 @@ class TestMultiControlledPhaseXGate:
             qp.PauliX(wires=3)
             qp.ctrl(qp.S(wires=[2]), control=[0, 1])
             qp.PauliZ(wires=5)
-            qp.MultiControlledX(wires=[0, 1, 2, 3])
+            qp.ctrl(qp.X(3), control=[0, 1, 2])
             qp.PauliZ(wires=0)
             qp.Hadamard(wires=2)
             qp.PauliX(wires=3)
@@ -99,11 +99,11 @@ class TestMultiControlledPhaseXGate:
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.Hadamard(wires=3),
             qp.PauliZ(wires=0),
             qp.PauliX(wires=3),
@@ -115,7 +115,7 @@ class TestMultiControlledPhaseXGate:
 
     def test_incomplete_pattern(self):
         def qfunc():
-            qp.MultiControlledX(wires=[0, 1, 2, 3])
+            qp.ctrl(qp.X(3), control=[0, 1, 2])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 2)
@@ -127,11 +127,11 @@ class TestMultiControlledPhaseXGate:
             qp.adjoint(qp.T(3)),
             qp.CNOT(wires=[2, 3]),
             qp.T(3),
-            qp.Toffoli(wires=[0, 1, 3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.adjoint(qp.T(3)),
             qp.CNOT(wires=[2, 3]),
             qp.T(3),
-            qp.Toffoli(wires=[0, 1, 3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.H(3),
             qp.adjoint(qp.ctrl(qp.S(2), control=[0, 1])),
         ]
@@ -141,7 +141,7 @@ class TestMultiControlledPhaseXGate:
 
             def qfunc(one, two, three, four):
                 qp.ctrl(qp.S(wires=[three]), control=[one, two])
-                qp.MultiControlledX(wires=[one, two, three, four])
+                qp.ctrl(qp.X(four), control=[one, two, three])
                 return qp.expval(qp.Z(one))
 
             func = partial(qfunc, first, second, third, fourth)
@@ -155,11 +155,11 @@ class TestMultiControlledPhaseXGate:
                 qp.adjoint(qp.T(wires=fourth)),
                 qp.CNOT(wires=[third] + [fourth]),
                 qp.T(wires=fourth),
-                qp.Toffoli(wires=[first, second] + [fourth]),
+                qp.ctrl(qp.X(fourth), control=[first, second]),
                 qp.adjoint(qp.T(wires=fourth)),
                 qp.CNOT(wires=[third] + [fourth]),
                 qp.T(wires=fourth),
-                qp.Toffoli(wires=[first, second] + [fourth]),
+                qp.ctrl(qp.X(fourth), control=[first, second]),
                 qp.Hadamard(wires=fourth),
             ]
 
@@ -167,7 +167,7 @@ class TestMultiControlledPhaseXGate:
         def qfunc():
             qp.ctrl(qp.S(wires=[2]), control=[0, 1])
             qp.PauliX(4)  # change it to five and it breaks! A bug?
-            qp.MultiControlledX(wires=[0, 1, 2, 3])
+            qp.ctrl(qp.X(3), control=[0, 1, 2])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 2)
@@ -179,11 +179,11 @@ class TestMultiControlledPhaseXGate:
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.Hadamard(wires=3),
             qp.PauliX(wires=4),
         ]
@@ -191,7 +191,7 @@ class TestMultiControlledPhaseXGate:
     def test_basic_transform(self):
         def qfunc():
             qp.ctrl(qp.S(wires=[2]), control=[0, 1])
-            qp.MultiControlledX(wires=[0, 1, 2, 3])
+            qp.ctrl(qp.X(3), control=[0, 1, 2])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 2)
@@ -203,11 +203,11 @@ class TestMultiControlledPhaseXGate:
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.Hadamard(wires=3),
         ]
 
@@ -217,9 +217,9 @@ class TestPhaseXGate:
     def test_multiple_matches(self):
         def qfunc():
             qp.ctrl(qp.S(wires=[1]), control=[0])
-            qp.Toffoli(wires=[0, 1, 2])
+            qp.ctrl(qp.X(2), control=[0, 1])
             qp.ctrl(qp.S(wires=[1]), control=[0])
-            qp.Toffoli(wires=[0, 1, 2])
+            qp.ctrl(qp.X(2), control=[0, 1])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 1)
@@ -232,22 +232,22 @@ class TestPhaseXGate:
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.Hadamard(wires=2),
             # second instance
             qp.Hadamard(wires=2),
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.Hadamard(wires=2),
         ]
 
@@ -258,7 +258,7 @@ class TestPhaseXGate:
             qp.PauliX(wires=3)
             qp.ctrl(qp.S(wires=[1]), control=[0])
             qp.PauliZ(wires=5)
-            qp.Toffoli(wires=[0, 1, 2])
+            qp.ctrl(qp.X(2), control=[0, 1])
             qp.PauliZ(wires=0)
             qp.Hadamard(wires=2)  # cancels with H in the replacement
             qp.PauliX(wires=3)
@@ -274,11 +274,11 @@ class TestPhaseXGate:
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.PauliZ(wires=0),
             qp.PauliX(wires=3),
             qp.PauliZ(wires=5),
@@ -288,7 +288,7 @@ class TestPhaseXGate:
 
     def test_incomplete_pattern(self):
         def qfunc():
-            qp.Toffoli(wires=[0, 1, 2])
+            qp.ctrl(qp.X(2), control=[0, 1])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 1)
@@ -300,11 +300,11 @@ class TestPhaseXGate:
             qp.adjoint(qp.T(2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.adjoint(qp.T(2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.H(2),
             qp.adjoint(qp.ctrl(qp.S(1), control=[0])),
         ]
@@ -314,7 +314,7 @@ class TestPhaseXGate:
 
             def qfunc(one, two, three):
                 qp.ctrl(qp.S(wires=[two]), control=[one])
-                qp.Toffoli(wires=[one, two, three])
+                qp.ctrl(qp.X(three), control=[one, two])
                 return qp.expval(qp.Z(one))
 
             func = partial(qfunc, one=first, two=second, three=third)
@@ -328,11 +328,11 @@ class TestPhaseXGate:
                 qp.adjoint(qp.T(wires=third)),
                 qp.CNOT(wires=[second, third]),
                 qp.T(wires=third),
-                qp.CNOT(wires=[first, third]),
+                qp.ctrl(qp.X(third), control=[first]),
                 qp.adjoint(qp.T(wires=third)),
                 qp.CNOT(wires=[second, third]),
                 qp.T(wires=third),
-                qp.CNOT(wires=[first, third]),
+                qp.ctrl(qp.X(third), control=[first]),
                 qp.Hadamard(wires=third),
             ]
 
@@ -340,7 +340,7 @@ class TestPhaseXGate:
         def qfunc():
             qp.ctrl(qp.S(wires=[1]), control=[0])
             qp.PauliX(3)
-            qp.Toffoli(wires=[0, 1, 2])
+            qp.ctrl(qp.X(2), control=[0, 1])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 1)
@@ -352,11 +352,11 @@ class TestPhaseXGate:
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.Hadamard(wires=2),
             qp.PauliX(wires=3),
         ]
@@ -364,7 +364,7 @@ class TestPhaseXGate:
     def test_basic_transform(self):
         def qfunc():
             qp.ctrl(qp.S(wires=[1]), control=[0])
-            qp.Toffoli(wires=[0, 1, 2])
+            qp.ctrl(qp.X(2), control=[0, 1])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 1)
@@ -376,11 +376,11 @@ class TestPhaseXGate:
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.Hadamard(wires=2),
         ]
 

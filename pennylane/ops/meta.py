@@ -25,7 +25,6 @@ from typing import Literal
 import pennylane as qp
 from pennylane.core.operator import Operation, Operator2
 from pennylane.decomposition.decomposition_rule import add_decomps, null_decomp
-from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
 from pennylane.typing import Wire
 from pennylane.wires import WiresLike
 
@@ -74,14 +73,6 @@ class Barrier(Operator2):
                 return qp.Identity(self.wires[0])
             return qp.prod(*(qp.Identity(w) for w in self.wires))
         return self
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_barrier(base: Barrier, control, control_values, *_):  # pylint: disable=unused-argument
-    """Controlling a ``Barrier`` has no effect, so the ``Barrier`` itself is returned."""
-    if qp.QueuingManager.recording():
-        qp.QueuingManager.append(base)
-    return base
 
 
 add_decomps(Barrier, null_decomp)

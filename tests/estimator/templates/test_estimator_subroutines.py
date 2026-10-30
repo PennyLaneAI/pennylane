@@ -282,8 +282,7 @@ class TestHybridQRAM:
                     "Adjoint(C(SWAP))": 12,
                     "CH": 12,
                     "CZ": 6,
-                    "MultiControlledX": 2,
-                    "CNOT": 2,
+                    "MultiControlledX": 4,
                 },
             ),
             (

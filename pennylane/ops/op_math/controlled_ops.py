@@ -57,12 +57,7 @@ from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Float,
 from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
 
 from .adjoint2 import _adjoint_abstract
-from .controlled import (
-    Controlled2,
-    _is_empty_or_all_true,
-    _resolve_ctrl_values,
-    custom_ctrl_dispatch,
-)
+from .controlled import Controlled2, _resolve_ctrl_values
 from .decompositions.controlled_decompositions import (
     _wrap_mcx_rule_w_alloc,
     controlled_two_qubit_unitary_rule,
@@ -216,19 +211,6 @@ class ControlledQubitUnitary(Controlled2):
                 "The decomposition of a controlled sparse multi-qubit QubitUnitary is undefined."
             )
         return super().decomposition()
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_c_qu(base: ControlledQubitUnitary, control, control_values, work_wires, work_wire_type):
-    return ControlledQubitUnitary(
-        base.U,
-        control + base.wires,
-        control_values=_resolve_ctrl_values(control_values, base.control_values, len(control)),
-        work_wires=work_wires + base.work_wires,
-        work_wire_type=resolve_work_wire_type(
-            base.work_wires, base.work_wire_type, work_wires, work_wire_type
-        ),
-    )
 
 
 def _to_general_c_qu_resource(U, wires, control_values, work_wires, work_wire_type, **_):
@@ -590,13 +572,6 @@ class CZ(Controlled2):
          [ 0  0  0 -1]]
         """
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_cz(base: CZ, control, control_values, *_):
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CCZ(control + base.wires)
-    return NotImplemented
 
 
 def _cz_to_cps_resources(wires: AbstractWires):  # pylint: disable=unused-argument
@@ -1024,17 +999,6 @@ class CNOT(Controlled2):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
 
-@custom_ctrl_dispatch.register
-def _ctrl_cnot(base: CNOT, control, control_values, work_wires, work_wire_type):
-    wires = control + base.wires
-    if not _is_empty_or_all_true(control_values):
-        ctrl_values = _resolve_ctrl_values(control_values, [True], len(control))
-        return qp.MultiControlledX(wires, ctrl_values, work_wires, work_wire_type)
-    if len(control) == 1 and not work_wires:
-        return qp.Toffoli(control + base.wires)
-    return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
-
-
 def _cnot_cz_h_resources(wires: WiresLike):
     return {qp.H: 2, qp.CZ: 1}
 
@@ -1210,15 +1174,6 @@ class Toffoli(Controlled2):
                 [0, 0, 0, 0, 0, 0, 1, 0],
             ]
         )
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_toffoli(base: Toffoli, control, control_values, work_wires, work_wire_type):
-    wires = control + base.wires
-    if not _is_empty_or_all_true(control_values):
-        ctrl_values = _resolve_ctrl_values(control_values, [True, True], len(control))
-        return qp.MultiControlledX(wires, ctrl_values, work_wires, work_wire_type)
-    return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
 def _toffoli_resources(wires: WiresLike):
@@ -1460,20 +1415,6 @@ class MultiControlledX(Controlled2):
             return _to_op_list(decompose_mcx_one_worker)(**arguments)
 
         return _to_op_list(decompose_mcx_with_no_worker)(**arguments)
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_mcx(base: MultiControlledX, control, control_values, work_wires, work_wire_type):
-    ctrl_values = _resolve_ctrl_values(control_values, base.control_values, len(control))
-    work_wire_type = resolve_work_wire_type(
-        base.work_wires,
-        base.work_wire_type,
-        work_wires,
-        work_wire_type,
-    )
-    wires = control + base.wires
-    work_wires = work_wires + base.work_wires
-    return qp.MultiControlledX(wires, ctrl_values, work_wires, work_wire_type)
 
 
 def _setup_inputs_mcx(

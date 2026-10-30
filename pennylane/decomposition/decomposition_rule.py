@@ -302,7 +302,7 @@ def register_resources(
 
           def _ops_fn(control_wires, **_):
               return {
-                  qp.ctrl(qp.X(Wire[1]), control_wires): 2,
+                  qp.MultiControlledX(Wire[len(control_wires) + 1]): 2,
                   qp.CRot: 1
               }
 
@@ -311,9 +311,9 @@ def register_resources(
           def _controlled_rot_decomp(base, control_wires, **_):
               wires = control_wires + base.wires
               with allocate(1, state="zero", restored=True) as work_wires:
-                  qp.ctrl(qp.X(work_wires[0]), control=wires[:-1])
+                  qp.MultiControlledX([*wires[:-1], work_wires[0]])
                   qp.CRot(**base.dynamic_args, wires=[work_wires[0], wires[-1]])
-                  qp.ctrl(qp.X(work_wires[0]), control=wires[:-1])
+                  qp.MultiControlledX([*wires[:-1], work_wires[0]])
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
 
@@ -1292,15 +1292,15 @@ def _unroll_change_op_basis_resource(op_rep):
 
     # pylint: disable=import-outside-toplevel
     from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-    from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 
     if isinstance(op_rep, qp.ops.Adjoint2):
         return _unroll_symbolic_change_op_basis(op_rep, _adjoint_abstract)
 
     if isinstance(op_rep, qp.ops.ControlledOp2):
         wrapper = partial(
-            _ctrl_abstract,
-            control_wires=op_rep.control_wires,
+            qp.ctrl,
+            control=op_rep.control_wires,
+            control_values=op_rep.control_values,
             work_wires=op_rep.work_wires,
             work_wire_type=op_rep.work_wire_type,
         )

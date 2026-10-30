@@ -270,13 +270,13 @@ class TestDifferentModes:
 
         expected_H = qp.IsingXY(0.5, wires=(0, 1)).generator() @ qp.Y(2)
         expected0 = qp.tape.QuantumScript(
-            [qp.IsingXY(0.5, wires=(0, 1)), qp.H(2), qp.CNOT((2, 0)), qp.H(2)],
+            [qp.IsingXY(0.5, wires=(0, 1)), qp.H(2), qp.ctrl(qp.X(0), 2), qp.H(2)],
             [qp.expval(expected_H)],
             shots=50,
         )
         qp.assert_equal(batch[0], expected0)
         expected1 = qp.tape.QuantumScript(
-            [qp.IsingXY(0.5, wires=(0, 1)), qp.H(2), qp.CY((2, 0)), qp.H(2)],
+            [qp.IsingXY(0.5, wires=(0, 1)), qp.H(2), qp.ctrl(qp.Y(0), 2), qp.H(2)],
             [qp.expval(expected_H)],
             shots=50,
         )
@@ -423,9 +423,9 @@ class TestDifferentModes:
         batch, _ = qp.gradients.hadamard_grad(tape, mode="auto", aux_wire="a")
         assert len(batch) == 3
 
-        assert qp.CNOT(("a", 0)) in batch[0].operations
-        assert qp.CNOT(("a", 0)) in batch[1].operations
-        assert qp.CY(("a", 0)) in batch[2].operations
+        assert qp.ctrl(qp.X(0), "a") in batch[0].operations
+        assert qp.ctrl(qp.X(0), "a") in batch[1].operations
+        assert qp.ctrl(qp.Y(0), "a") in batch[2].operations
 
         standard.assert_called_once()
         reverse.assert_called_once()
