@@ -33,17 +33,24 @@ its general resources.
 Each content line of a rule is a gate, its count, and optionally its count in the example circuit,
 all inline reStructuredText, separated by `` | ``.
 
-A rule registered for the operator inside an adjoint or controlled region (e.g.
-``add_decomps("C(Hadamard)", ...)``) is marked with ``:region: adjoint`` or ``:region: controlled``.
+A rule registered for the operator inside an adjoint, controlled or power region (e.g.
+``add_decomps("C(Hadamard)", ...)``) is marked with ``:region: adjoint``, ``:region: controlled``
+or ``:region: pow``.
 Such rules are listed after the regular rules, below a divider explaining how to access them.
 """
 
 from docutils import nodes
 from docutils.parsers.rst import directives
+from sphinx import addnodes
 from sphinx.util.docutils import SphinxDirective
 
-# symbolic operator name for each region, used in the fixed_decomps key, e.g. "Adjoint(Hadamard)"
-REGIONS = {"adjoint": "Adjoint", "controlled": "Controlled"}
+# for each region, the symbolic operator name used in the fixed_decomps key, e.g.
+# "Adjoint(Hadamard)", and the PennyLane function that creates such a region
+REGIONS = {
+    "adjoint": ("Adjoint", "pennylane.adjoint"),
+    "controlled": ("Controlled", "pennylane.ctrl"),
+    "pow": ("Pow", "pennylane.pow"),
+}
 
 
 class decomposition_rule(nodes.General, nodes.Element):
@@ -65,8 +72,8 @@ class DecompositionRule(SphinxDirective):
         # we are not specified to elaborate on the decomp with mathematical definitions,
         # but if we do, the text remains text
         "where": directives.unchanged,
-        # when dealing with rules registered for the operator inside an adjoint or controlled region,
-        # we can specify what kind of region from the given tuple of values
+        # when dealing with rules registered for the operator inside an adjoint, controlled or power
+        # region, we can specify what kind of region from the given tuple of values
         "region": lambda arg: directives.choice(arg, tuple(REGIONS)),
     }
 
@@ -115,13 +122,25 @@ class DecompositionRule(SphinxDirective):
         return [rule_node, *parsing_messages]
 
 
-def _region_row(operator_name, region):
+def _region_row(operator_name, region, docname):
     """A full-width divider row explaining how to access the rules for ``region``."""
-    region_key = f"{REGIONS[region]}({operator_name.rsplit('.', maxsplit=1)[-1]})"
+    region_name, region_func = REGIONS[region]
+    base_name = f"({operator_name.rsplit('.', maxsplit=1)[-1]})"
+    region_key = region_name + base_name
+    # the region name links to the function that creates the region, e.g. qp.adjoint
+    region_link = addnodes.pending_xref(
+        "",
+        nodes.Text(region_name),
+        refdomain="py",
+        reftype="func",
+        reftarget=region_func,
+        refexplicit=True,
+        refdoc=docname,
+    )
     region_text = nodes.paragraph(
         "",
         "The following rules are for ",
-        nodes.literal(region_key, region_key),
+        nodes.literal("", "", region_link, nodes.Text(base_name)),
         nodes.Text(", and they can be accessed with:"),
     )
     usage_code = f'qp.decompose(gate_set=..., fixed_decomps={{"{region_key}": "<name>"}})'
@@ -192,7 +211,7 @@ class DecompositionTable(SphinxDirective):
         for rule_node in rule_nodes:
             if rule_node["region"] != current_region:
                 current_region = rule_node["region"]
-                table_body += _region_row(operator_name, current_region)
+                table_body += _region_row(operator_name, current_region, self.env.docname)
 
             rule_name = nodes.literal(
                 rule_node["name"], rule_node["name"], classes=["decomp-access-name"]

@@ -71,13 +71,16 @@ table.decomposition-table p.decomp-requires {
   font-size: 0.8rem;
 }
 
-/* divider before the rules for an adjoint or controlled region, explaining how to access them */
-table.decomposition-table tr.decomp-region-row {
-  border-top: 2px solid #c756b2;
-}
-
+/* divider before the rules for an adjoint, controlled or power region, explaining how to access
+   them. The line is drawn on the cell, and the rule above gives up its own bottom border, so that
+   browsers never have to choose between the two collapsed borders (some chose the grey one) */
 table.decomposition-table tr.decomp-region-row td {
   padding: calc(2 * var(--default-padding)) 0 0;
+  border-top: 2px solid #c756b2 !important;
+}
+
+table.decomposition-table tr.decomp-body-row:has(+ tr.decomp-region-row) {
+  border-bottom: none;
 }
 
 table.decomposition-table tr.decomp-region-row td p {

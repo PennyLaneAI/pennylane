@@ -641,6 +641,12 @@ class RZ(Operator2):
                 :region: controlled
 
                 :class:`~.RZ` | :math:`1`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/rz_pow.svg
+                :region: pow
+
+                :class:`~.RZ` | :math:`1`
     """
 
     num_wires = 1
