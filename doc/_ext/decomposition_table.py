@@ -35,11 +35,24 @@ all inline reStructuredText, separated by `` | ``.
 
 With the ``:stacked:`` flag, each circuit is drawn across the full width with its resources below,
 instead of side by side. This suits wide circuits, such as those of templates.
+
+A rule registered for the operator inside an adjoint, controlled or pow region (e.g.
+``add_decomps("C(Hadamard)", ...)``) is marked with ``:region: adjoint``, ``:region: controlled``
+or ``:region: pow``.
+Such rules are listed after the regular rules, below a divider explaining how to access them.
 """
 
 from docutils import nodes
 from docutils.parsers.rst import directives
 from sphinx.util.docutils import SphinxDirective
+
+# for each region, the symbolic operator name used in the fixed_decomps key, e.g.
+# "Adjoint(Hadamard)", and the PennyLane function that creates such a region
+REGIONS = {
+    "adjoint": ("Adjoint", "pennylane.adjoint"),
+    "controlled": ("Controlled", "pennylane.ctrl"),
+    "pow": ("Pow", "pennylane.pow"),
+}
 
 
 class decomposition_rule(nodes.General, nodes.Element):
@@ -61,6 +74,9 @@ class DecompositionRule(SphinxDirective):
         # we are not specified to elaborate on the decomp with mathematical definitions,
         # but if we do, the text remains text
         "where": directives.unchanged,
+        # when dealing with rules registered for the operator inside an adjoint, controlled or power
+        # region, we can specify what kind of region from the given tuple of values
+        "region": lambda arg: directives.choice(arg, tuple(REGIONS)),
     }
 
     def _parse_paragraph(self, text):
@@ -71,7 +87,7 @@ class DecompositionRule(SphinxDirective):
     def run(self):
         """Collect the circuit image, requirements, and resources for one rule."""
         rule_name = self.arguments[0]
-        rule_node = decomposition_rule(name=rule_name)
+        rule_node = decomposition_rule(name=rule_name, region=self.options.get("region"))
         rule_node["image"] = nodes.image(uri=self.options["image"], alt=rule_name)
 
         parsing_messages = []
@@ -106,6 +122,26 @@ class DecompositionRule(SphinxDirective):
         rule_node["resources"] = resources
 
         return [rule_node, *parsing_messages]
+
+
+def _region_row(operator_name, region, state, lineno, parsing_messages):
+    """A full-width divider row explaining how to access the rules for ``region``. Messages from
+    parsing its text are added to ``parsing_messages``."""
+    region_name, region_func = REGIONS[region]
+    region_key = f"{region_name}({operator_name.rsplit('.', maxsplit=1)[-1]})"
+    # e.g. Adjoint(RZ) links to the function that creates the region, qp.adjoint
+    inline_nodes, messages = state.inline_text(
+        f"The following rules are for :func:`{region_key} <{region_func}>`, "
+        "and they can be accessed with:",
+        lineno,
+    )
+    parsing_messages.extend(messages)
+    region_text = nodes.paragraph("", "", *inline_nodes)
+    usage_code = f'qp.decompose(gate_set=..., fixed_decomps={{"{region_key}": "<name>"}})'
+    usage = nodes.literal_block(usage_code, usage_code, language="python")
+    region_row = nodes.row(classes=["decomp-region-row"])
+    region_row += nodes.entry("", region_text, usage, morecols=1)
+    return region_row
 
 
 class DecompositionTable(SphinxDirective):
@@ -168,8 +204,18 @@ class DecompositionTable(SphinxDirective):
         for column_width in (60, 40) if two_cols else (40, 60):
             column_group += nodes.colspec(colwidth=column_width)
 
+        # regular rules first, then each region's rules, keeping the written order within each group
+        rule_nodes.sort(key=lambda rule: [None, *REGIONS].index(rule["region"]))
+
         table_body = nodes.tbody()
+        current_region = None
         for rule_node in rule_nodes:
+            if rule_node["region"] != current_region:
+                current_region = rule_node["region"]
+                table_body += _region_row(
+                    operator_name, current_region, self.state, self.lineno, parsing_messages
+                )
+
             rule_name = nodes.literal(
                 rule_node["name"], rule_node["name"], classes=["decomp-access-name"]
             )
