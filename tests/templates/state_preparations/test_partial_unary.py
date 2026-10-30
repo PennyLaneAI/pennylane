@@ -535,14 +535,14 @@ class TestPartialUnaryStatePreparation:
         _, _, bijection, _ = _select_isometry(indices, num_wires, n_subspace)
         expected = np.zeros(2**n_subspace, dtype=coefficients.dtype)
         expected[[bijection[i] for i in range(len(indices))]] = coefficients
-        np.testing.assert_allclose(dense_state(coefficients), expected)
+        assert qp.math.allclose(dense_state(coefficients), expected)
         actual = jax.jit(dense_state)(jax.numpy.array(coefficients))
-        np.testing.assert_allclose(actual, expected)
+        assert qp.math.allclose(actual, expected)
         # Padded positions contribute no gradient; every coefficient appears exactly once.
         jac = jax.jacfwd(dense_state, holomorphic=complex_coefficients)(
             jax.numpy.array(coefficients)
         )
-        np.testing.assert_allclose(np.sum(jac, axis=0), np.ones(len(indices)))
+        assert qp.math.allclose(np.sum(jac, axis=0), np.ones(len(indices)))
         assert "scatter" not in str(jax.make_jaxpr(dense_state)(jax.numpy.array(coefficients)))
 
     @pytest.mark.jax
