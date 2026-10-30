@@ -31,6 +31,8 @@ table.decomposition-table td {
   vertical-align: top;
   padding: var(--default-padding) var(--default-padding) var(--default-padding) 0;
   border: none !important;
+  /* the theme keeps first cells on one line, which would stop full-width cells from wrapping */
+  white-space: normal;
 }
 
 table.decomposition-table td p {
@@ -89,7 +91,12 @@ table.decomposition-table.decomp-two-cols td.decomp-circuit img {
   max-width: 570px;
 }
 
-/* stacked tables draw each circuit across the full width, above its resources */
+/* stacked tables draw each circuit across the full width, above its resources, so their cells need
+   no padding to separate them from a neighbouring column */
+table.decomposition-table.decomp-stacked td {
+  padding-right: 0;
+}
+
 table.decomposition-table.decomp-stacked tr.decomp-circuit-row td {
   padding-top: 0;
   padding-bottom: 12px;
@@ -100,9 +107,12 @@ table.decomposition-table.decomp-stacked td.decomp-circuit img {
   aspect-ratio: auto;
 }
 
+/* the resources span the full table width, like the circuit, undoing the centring, width limits
+   and side padding of Bootstrap's ``container`` class */
 table.decomposition-table.decomp-stacked .decomp-resources {
-  max-width: 640px;
-  margin-left: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
 }
 
 /* which instance of the rule the circuit shows */
@@ -123,7 +133,7 @@ table.decomposition-table .decomp-resources {
 }
 
 table.decomposition-table .decomp-resources.decomp-cols-3 {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) max-content;
+  grid-template-columns: minmax(min-content, 1fr) minmax(0, 1.3fr) max-content;
 }
 
 table.decomposition-table p.decomp-example-count {
