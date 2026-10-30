@@ -56,12 +56,6 @@ class LeftClassicalComparator(Operator2):
         comparator (str): The operator used in the inequality. Possible values are:
             ``'<'``, ``'<='``, ``'>='`` and ``'>'``.
 
-    ``L`` may be a runtime integer under :func:`~.qjit`, including with capture enabled,
-    or an abstract scalar :data:`~pennylane.typing.Int` for resource estimation.
-    Its range is checked when concrete; runtime values must satisfy the same bounds.
-    Resource estimates use an upper bound independent of ``L`` and may overestimate
-    the gates used for a particular threshold.
-
     **Example**
 
     .. code-block:: python
