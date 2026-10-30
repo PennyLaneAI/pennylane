@@ -4,6 +4,9 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* A new decomposition for ``C(IsingZZ)`` has been added.
+  `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
+
 * :func:`~.transforms.gridsynth` has a new ``method`` keyword argument with two randomized
   synthesis methods from `arXiv:2203.10064 <https://arxiv.org/abs/2203.10064>`__, which reduce the
   T-count at the same accuracy of the channel averaged over executions.
