@@ -730,10 +730,52 @@ def _out_multiplier_with_cache(
     )
 
 
+def _out_multiplier_swapped_condition(x_wires, y_wires, **_):
+    """Condition for swapping the two input registers of OutMultiplier. It only is reasonable
+    to switch if x_wires is larger than y_wires. This also prevents the decomposition from
+    switching back and forth in the case of equal cost of both orderings."""
+    return len(x_wires) > len(y_wires)
+
+
+def _out_multiplier_swapped_resources(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=too-many-arguments
+    swapped = OutMultiplier(
+        Wire[len(y_wires)],
+        Wire[len(x_wires)],
+        Wire[len(output_wires)],
+        mod=mod,
+        work_wires=Wire[len(work_wires)],
+        output_wires_zeroed=output_wires_zeroed,
+    )
+    return {swapped: 1}
+
+
+@register_condition(_out_multiplier_swapped_condition)
+@register_resources(_out_multiplier_swapped_resources)
+def _out_multiplier_swapped(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
+):  # pylint: disable=too-many-arguments
+    """Swap the factors of an ``OutMultiplier`` so that ``x_wires`` is the shorter register.
+    The schoolbook ``OutMultiplier`` rules perform one controlled addition per bit of ``x_wires``,
+    so multiplying a short register into a long one is cheaper than the other way around.
+    Computationally, both paths are equivalent because multiplication is commutative.
+    """
+    OutMultiplier(
+        y_wires,
+        x_wires,
+        output_wires,
+        mod=mod,
+        work_wires=work_wires,
+        output_wires_zeroed=output_wires_zeroed,
+    )
+
+
 add_decomps(
     OutMultiplier,
     _out_multiplier_with_qft,
     _out_multiplier_with_adder,
     _out_multiplier_with_caddsub,
     _out_multiplier_with_cache,
+    _out_multiplier_swapped,
 )

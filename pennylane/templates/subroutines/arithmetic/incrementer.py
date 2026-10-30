@@ -18,12 +18,14 @@ from pennylane.capture import enabled, hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.ops import CNOT, MultiControlledX, PauliX, X, adjoint, cond
+from pennylane.ops import CNOT, MultiControlledX, PauliX, X, adjoint, change_op_basis, cond
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
-from pennylane.typing import Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit
 
+from ..multix import MultiX
 from ..qrom import _interleave_controls
 from .temporary_and import TemporaryAND
 
@@ -337,6 +339,26 @@ def _controlled_incrementer_decomposition(base, control_wires, work_wires, **_):
     _decompose_mcxs(wires, work_wires, control_wires)
 
 
+def _adjoint_incrementer_resources(base):
+    num_wires = len(base.increment_wires)
+    multix = MultiX(Bool[num_wires], Wire[num_wires])
+    incrementer = Incrementer(Wire[num_wires], work_wires=Wire[len(base.work_wires)])
+    return {_change_op_basis_abstract(multix, incrementer, multix): 1}
+
+
+@register_resources(_adjoint_incrementer_resources)
+def _adjoint_incrementer_decomposition(base):
+    """Decompose a decrement into an increment conjugated by bit flips, ``x - 1 = ~(~x + 1)``."""
+    wires = base.increment_wires
+    ones = [1] * len(wires)
+    change_op_basis(
+        MultiX(ones, wires),
+        Incrementer(wires, work_wires=base.work_wires),
+        MultiX(ones, wires),
+    )
+
+
 add_decomps(Incrementer, _incrementer_decomposition)
 add_decomps(Incrementer, _incrementer_fallback_decomposition)
 add_decomps("C(Incrementer)", flip_zero_control2(_controlled_incrementer_decomposition))
+add_decomps("Adjoint(Incrementer)", _adjoint_incrementer_decomposition)

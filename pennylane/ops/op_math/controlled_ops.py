@@ -2237,6 +2237,32 @@ class ControlledPhaseShift(Controlled2):
 
         ``ControlledPhaseShift`` is also available as :class:`~.CPhase`.
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.ControlledPhaseShift
+
+            .. decomposition-rule:: _cphase_to_rz_cnot
+                :image: /_static/decomposition_thumbnails/cphase_to_rz_cnot.svg
+
+                :class:`~.RZ` | :math:`3`
+                :class:`~.CNOT` | :math:`2`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _cphase_to_ppr
+                :image: /_static/decomposition_thumbnails/cphase_to_ppr.svg
+
+                :class:`PauliRot("ZZ") <.PauliRot>` | :math:`1`
+                :class:`PauliRot("Z") <.PauliRot>` | :math:`2`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _cphase_to_single_phase
+                :image: /_static/decomposition_thumbnails/cphase_to_single_phase.svg
+                :requires: 1 work wire
+
+                :class:`~.TemporaryAND` | :math:`1`
+                :class:`~.PhaseShift` | :math:`1`
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1`
     """
 
     wire_sizes = (2,)
@@ -2360,7 +2386,19 @@ def _cphase_to_ppr(phi: TensorLike, wires: WiresLike, **__):
     qp.GlobalPhase(-phi / 4)
 
 
-add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot, _cphase_to_ppr)
+def _cphase_to_single_phase_resources(phi, wires):  # pylint: disable=unused-argument
+    elbow = qp.TemporaryAND(wires=Wire[3])
+    return {_change_op_basis_abstract(elbow, qp.PhaseShift, qp.adjoint(elbow)): 1}
+
+
+@register_resources(_cphase_to_single_phase_resources, work_wires={"zeroed": 1})
+def _cphase_to_single_phase(phi: TensorLike, wires: WiresLike, **__):
+    with qp.allocate(1, state="zero", restored=True) as work_wire:
+        elbow = qp.TemporaryAND([wires[0], wires[1], work_wire[0]])
+        qp.change_op_basis(elbow, qp.PhaseShift(phi, work_wire))
+
+
+add_decomps(ControlledPhaseShift, _cphase_to_rz_cnot, _cphase_to_ppr, _cphase_to_single_phase)
 add_decomps("Adjoint(ControlledPhaseShift)", adjoint_rotation2)
 add_decomps("Pow(ControlledPhaseShift)", pow_rotation2)
 

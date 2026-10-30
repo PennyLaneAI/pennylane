@@ -876,6 +876,19 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* Added a decomposition to :class:`~.ControlledPhaseShift` using one clean work wire and a single
+  :class:`~.PhaseShift` gate.
+  `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
+
+* Added a decomposition for :class:`~.OutMultiplier` with longer ``x_wires`` input than ``y_wires``
+  input into a new ``OutMultiplier`` with swapped input registers. This is computationally
+  equivalent but makes the multiplication cheaper.
+  `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
+
+* Added a decomposition for ``Adjoint(Incrementer)`` into :class:`~.Incrementer` sandwiched by
+  :class:`~.MultiX`, realizing the identity :math:`x-1 = \overline{(\overline{x}+1)}`.
+  `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
+
 * The phase gradient decomposition rule factories :func:`~.make_rz_to_phase_gradient_decomp`,
   :func:`~.make_crz_to_phase_gradient_decomp` and
   :func:`~.make_selectpaulirot_to_phase_gradient_decomp` accept an optional ``precision_stats``
@@ -2226,8 +2239,8 @@ Documentation 📝
   `(#10284) <https://github.com/PennyLaneAI/pennylane/pull/10284>`__
 
 * Operator documentation now has an "Available decompositions" table listing each of the
-  operator's decomposition rules, with a circuit diagram and the resources the rule uses. 
-  This change only applies to operators that are subclasses of ``Operator2``. 
+  operator's decomposition rules, with a circuit diagram and the resources the rule uses.
+  This change only applies to operators that are subclasses of ``Operator2``.
   The tables are rendered by a new ``decomposition-table`` Sphinx directive, and their diagrams are
   drawn with :func:`~pennylane.draw_mpl`.
   `(#10381) <https://github.com/PennyLaneAI/pennylane/pull/10381>`__
