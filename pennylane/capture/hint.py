@@ -312,7 +312,7 @@ def hint(f_or_hints, hints: dict[str, Any] | None = None):
 
         With the hinted conditional branches in ``loop_hinted``, :func:`~.analyze` takes the
         weighted sum of each branch's resources
-        (:math:`10 \text{iterations} \times (0.8 \times \text{CNOT} + 0.2 \times \text{CZ}) = 8 \times \text{CNOT} + 2 \times \text{CZ}`).
+        (:math:`10\ \text{iterations} \times (0.8 \times \text{CNOT} + 0.2 \times \text{CZ}) = 8 \times \text{CNOT} + 2 \times \text{CZ}`).
         In contrast, with the unhinted conditional branches in ``loop_unhinted``, :func:`~.analyze`
         takes the max union of all gate types across every branch, which accumulates to
         :math:`10 \times \text{CRZ} + 10 \times \text{CRY}`.
