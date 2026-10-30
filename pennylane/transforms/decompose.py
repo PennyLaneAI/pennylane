@@ -472,9 +472,7 @@ def _tape_decompose(
                 qp.IsingXX(0.5, wires=[0, 1])
                 return qp.state()
 
-        .. TODO: Remove this skip once CI uses Catalyst's adjoint API without ``lazy``.
-
-        >>> qp.specs(qp.qjit(circuit))().resources.quantum_operations  # doctest: +SKIP
+        >>> qp.specs(qp.qjit(circuit))().resources.quantum_operations
         {'GlobalPhase': 6, 'CZ': 3, 'RX': 7, 'RZ': 12}
         >>> qp.decomposition.disable_graph()
 

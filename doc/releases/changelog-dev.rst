@@ -891,6 +891,10 @@ Improvements 🛠
   The original decomposition is used when fewer work wires are supplied.
   `(#10380) <https://github.com/PennyLaneAI/pennylane/pull/10380>`__
   
+* Added a new decomposition rule, ``_single_excitation_ppr_crz``, to :class:`~.SingleExcitation`, that
+  realizes the Givens rotation with a single arbitrary-angle ``CRZ`` gate and four Clifford operations.
+  `(#10358) <https://github.com/PennyLaneAI/pennylane/pull/10358>`__
+
 * The phase gradient decomposition rule factories :func:`~.make_rz_to_phase_gradient_decomp`,
   :func:`~.make_crz_to_phase_gradient_decomp` and
   :func:`~.make_selectpaulirot_to_phase_gradient_decomp` accept an optional ``precision_stats``
@@ -1469,6 +1473,7 @@ Breaking changes 💔
   inverse (for example, ``qp.RX(-theta, wires=0)``) or explicitly simplify with
   ``qp.simplify(qp.adjoint(op))``.
   `(#10371) <https://github.com/PennyLaneAI/pennylane/pull/10371>`__
+  `(#10394) <https://github.com/PennyLaneAI/pennylane/pull/10394>`__
 
 * ``qp.tape.plxpr_to_tape`` and ``qp.tape.plxpr_conversion.plxpr_to_tape`` have been removed.
   Use :func:`~.testing.plxpr_to_tape` instead.
