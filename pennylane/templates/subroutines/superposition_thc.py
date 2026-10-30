@@ -353,7 +353,8 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
     resources[adjoint(lcc_le)] += 2
     resources[adjoint(lcc_gt)] += 2
     resources[adjoint(lqc)] += 2
-    resources[mcx] += 3
+    resources[mcx] += 2
+    resources[adjoint(mcx)] += 1
     return dict(resources)
 
 
@@ -408,11 +409,9 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     # 4. Uncompute the flags and the amplitude-marking rotation. The closure keeps ``M``
     # and ``N`` concrete; passing them as traced arguments breaks the comparators, whose
     # classical operands must be compile-time constants.
-    # ``lazy=False`` adjoints each op of the body in place rather than wrapping the body in a
-    # region that is reversed later. The comparators uncompute their elbows through
-    # ``Adjoint(TemporaryAND)``, whose measurement-based rule is not reversible, so a lazy
-    # adjoint region would put a mid-circuit measurement inside an inverse.
-    adjoint(lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires), lazy=False)()
+    # Keep the comparators symbolic so their adjoint rules can select measurement-based
+    # uncomputation without reversing measurements in an expanded forward rule.
+    adjoint(lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires))()
     RY(-angle, wires=work_wires[0])
 
     # 5. Reflection about the equal-superposition state (the amplification step).
@@ -443,9 +442,8 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     adjoint(TemporaryAND(work_wires[3:6]))
 
     # 7. Final uncomputation, keeping the diagonal (mu = nu) equality flag.
-    # ``lazy=False`` for the same reason as in step 4.
     adjoint(
-        lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True), lazy=False
+        lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True)
     )()  # The rotation that would clean work_wires[0] back to |0> is omitted (see note above).
 
 

@@ -247,9 +247,8 @@ class TrotterCGF(Operator2):
         :class:`~.BasisRotation`, so only one basis rotation is emitted per mode per boundary. The
         leaves are assumed real orthogonal (they are merged by transpose, not adjoint). Each leaf is
         first normalized to determinant :math:`+1` (negating one orbital line, a no-op on
-        :math:`\tilde{n}_{lp}`) so that :class:`~.BasisRotation`'s real-orthogonal sign gauge is
-        consistent across fragments; otherwise leaves with mixed determinants realize a different
-        Hamiltonian.
+        :math:`\tilde{n}_{lp}`) so that no :class:`~.BasisRotation` needs a determinant-correcting
+        phase flip.
 
         **3. One-body diagonal**
         The one-body generator is :math:`D_0 = \sum_{l,p} \epsilon_{lp}\, n_{lp}`, with

@@ -761,7 +761,7 @@ def _diagonalize_probs(num_fragments, n):
     return apply_anything_prob, cnot_prob
 
 
-def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
+def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments, inverse=False):
     r"""Diagonalize position fragment ``fragment_idx`` by applying Clifford operations on the
     electronic register, following the ``key = (0, fragment_idx)`` convention (see
     :func:`_diagonalization_matrix`).
@@ -778,6 +778,7 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
         fragment_idx (int): index of the position fragment. The circuit is the identity if
             ``fragment_idx == 0``.
         wires (WiresLike): electronic wires on which the fragment acts.
+        inverse (bool): Apply the inverse gate sequence.
         num_fragments (int): total number of position fragments. The conditionals carry branch
             probability hints that assume ``fragment_idx`` to be uniformly distributed over
             ``range(num_fragments)``.
@@ -805,13 +806,9 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
     control_pos = math.max(math.where(diff > 0, math.arange(n), -1))
     control_wire = wires_arr[control_pos]
 
-    @cond(any_diff)
-    @hint({"branch-prob": apply_anything_prob})
-    def _apply():
-        Hadamard(wires=[control_wire])
-
-        @for_loop(n - 1, -1, -1)
-        def _cnots(w):
+    def _cnots(start, stop, step):
+        @for_loop(start, stop, step)
+        def loop(w):
             @cond((diff[w] > 0) & (w != control_pos))
             @hint({"branch-prob": cnot_prob})
             def _maybe_cnot():
@@ -819,9 +816,24 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments):
 
             _maybe_cnot()
 
-        _cnots()  # pylint: disable=no-value-for-parameter
+        loop()  # pylint: disable=no-value-for-parameter
 
-    _apply()
+    @cond(any_diff)
+    @hint({"branch-prob": apply_anything_prob})
+    def _apply():
+        Hadamard(wires=[control_wire])
+        _cnots(n - 1, -1, -1)
+
+    @cond(any_diff)
+    @hint({"branch-prob": apply_anything_prob})
+    def _adjoint_apply():
+        _cnots(0, n, 1)
+        Hadamard(wires=[control_wire])
+
+    if inverse:
+        _adjoint_apply()
+    else:
+        _apply()
 
 
 def _diagonalization_matrix(key, n_wires):
@@ -1140,8 +1152,11 @@ def _trotter_step_second_order(
         quadratic_coeffs = all_quadratic[i]
         bilinear_coeffs = all_bilinear[i]
 
-        adjoint(_diagonalize_vibronic_circuit, lazy=False)(
-            fragment_idx=i, wires=registers["electronic"], num_fragments=num_position_fragments
+        _diagonalize_vibronic_circuit(
+            fragment_idx=i,
+            wires=registers["electronic"],
+            num_fragments=num_position_fragments,
+            inverse=True,
         )
 
         def constant_term(prev_bitstrings):
