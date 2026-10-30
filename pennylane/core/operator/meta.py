@@ -45,13 +45,13 @@ def _stop_autograph(f):
 class OperatorRegistry:
     """A Singleton class that keeps track of all the Operator2 operators (including user-defined operators) defined."""
 
-    instance = None
+    _instance = None
     registry = {}
 
     def __new__(cls):
-        if cls.instance is None:
-            cls.instance = super().__new__(cls)
-        return cls.instance
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
     def __getitem__(self, index):
         return self.registry[index]

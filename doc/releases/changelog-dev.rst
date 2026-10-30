@@ -4,11 +4,6 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Added ``pennylane.core.get_op_class_by_name`` and ``pennylane.core.OperatorRegistry``
-  to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
-  automatically registered when they are defined.
-  `(#10430) <https://github.com/PennyLaneAI/pennylane/pull/10430>`__
-
 * :func:`~.transforms.gridsynth` has a new ``method`` keyword argument with two randomized
   synthesis methods from `arXiv:2203.10064 <https://arxiv.org/abs/2203.10064>`__, which reduce the
   T-count at the same accuracy of the channel averaged over executions.
@@ -880,6 +875,11 @@ New features since last release
 
 Improvements 🛠
 ~~~~~~~~~~~~~~
+
+* Added ``pennylane.core.get_op_class_by_name`` and ``pennylane.core.OperatorRegistry``
+  to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
+  automatically registered when they are defined.
+  `(#10430) <https://github.com/PennyLaneAI/pennylane/pull/10430>`__
 
 * Added a new decomposition rule, ``_single_excitation_ppr_crz``, to :class:`~.SingleExcitation`, that
   realizes the Givens rotation with a single arbitrary-angle ``CRZ`` gate and four Clifford operations.
