@@ -293,7 +293,13 @@ class TestOutSquare:
         ],
     )
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=(pytest.mark.catalyst,)), False])
+    @pytest.mark.parametrize(
+        "use_jit",
+        [
+            pytest.param(True, marks=pytest.mark.catalyst),
+            False,
+        ],
+    )
     def test_decomposition_new(
         self,
         x_wires,

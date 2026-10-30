@@ -300,6 +300,8 @@ def quantum_monte_carlo(
 
             func = lambda i: np.sin(xs[i]) ** 2
             r_rotations = np.array([2 * np.arcsin(np.sqrt(func(i))) for i in range(M)])
+            # Preserve f(x) = f(-x) exactly to avoid roundoff-induced rotations.
+            r_rotations = (r_rotations + r_rotations[::-1]) / 2
 
         The ``quantum_monte_carlo`` transform can then be used:
 
@@ -345,18 +347,18 @@ def quantum_monte_carlo(
                      num_device_wires=12,
                      shots=Shots(total_shots=None, shot_vector=()),
                      level='device',
-                    resources=SpecsResources(counts={'6C(PauliX)': 126,
-                                                     'CNOT': 15686,
-                                                     'CZ': 126,
-                                                     'ControlledPhaseShift': 15,
-                                                     'Hadamard': 264,
-                                                     'PauliX': 252,
-                                                     'RY': 6325,
-                                                     'SWAP': 3},
-                                             measurement_processes={'probs(6 wires)': 1},
-                                             num_wires=12,
-                                             circuit_depth=21502,
-                                             total_quantum_operations=22797))
+                     resources=SpecsResources(counts={'6C(PauliX)': 126,
+                                                      'CNOT': 15686,
+                                                      'CZ': 126,
+                                                      'ControlledPhaseShift': 15,
+                                                      'Hadamard': 264,
+                                                      'PauliX': 252,
+                                                      'RY': 6325,
+                                                      'SWAP': 3},
+                                              measurement_processes={'probs(6 wires)': 1},
+                                              num_wires=12,
+                                              circuit_depth=21502,
+                                              total_quantum_operations=22797))
     """
     operations = tape.operations.copy()
     wires = Wires(wires)
@@ -387,6 +389,6 @@ def quantum_monte_carlo(
             for _ in range(n_reps):
                 updated_operations.extend(tape_q.operations)
 
-        updated_operations.append(adjoint(QFT(wires=estimation_wires), lazy=False))
+        updated_operations.append(adjoint(QFT(wires=estimation_wires)))
     updated_tape = tape.copy(operations=updated_operations)
     return [updated_tape], lambda x: x[0]
