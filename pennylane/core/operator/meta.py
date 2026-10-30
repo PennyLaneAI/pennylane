@@ -17,6 +17,7 @@ Defines a metaclass for automatic integration of any ``Operator`` with plxpr pro
 See ``explanations.md`` for technical explanations of how this works.
 """
 
+import warnings
 from abc import ABCMeta
 from inspect import Signature, signature
 from typing import ClassVar
@@ -41,6 +42,62 @@ def _stop_autograph(f):
     return new_f
 
 
+class OperatorRegistry:
+    """A Singleton class that keeps track of all the Operator2 operators (including user-defined operators) defined."""
+
+    instance = None
+    registry = {}
+
+    def __new__(cls):
+        if cls.instance is None:
+            cls.instance = super().__new__(cls)
+        return cls.instance
+
+    def __getitem__(self, index):
+        return self.registry[index]
+
+    def __setitem__(self, index, value):
+        if index not in self.registry:
+            self.registry[index] = value
+        elif self.registry[index] is not value:
+            warnings.warn(
+                f"More than one operator class by the same name ({index}) has been defined."
+            )
+
+
+def get_op_class_by_name(name):
+    """
+    Helper to get an operator class by name using a function call.
+    To use indexing syntax instead, use `OperatorRegistry` directly.
+
+    Args:
+        name (str): the name of the class to retrieve.
+
+    Returns:
+        The class with the provided name.
+
+    **Example**
+
+    .. code-block:: python
+        from pennylane import Operator2
+
+        class MyNamedOp(Operator2):
+            static_argnames = ("label",)
+
+            def __init__(self, label, wires):
+                super().__init__(label, wires=wires)
+
+    >>> from pennylane.core import get_op_class_by_name
+    >>> get_op_class_by_name("MyNamedOp")("my-label", [0, 1])
+    MyNamedOp(label=my-label, wires=[0, 1])
+
+    >>> from pennylane.core import OperatorRegistry
+    >>> OperatorRegistry["MyNamedOp"]("my-second-label", [0, 1])
+    MyNamedOp(label=my-second-label, wires=[0, 1])
+    """
+    return OperatorRegistry()[name]
+
+
 class OperatorMeta(ABCMeta):
     """A metatype that overrides class construction for operators for program capture
     and graph-based decompositions integration.
@@ -58,6 +115,11 @@ class OperatorMeta(ABCMeta):
         sig = signature(cls.__init__)
         without_self = tuple(sig.parameters.values())[1:]
         return Signature(without_self)
+
+    def __new__(mcls, name, *args, **kwargs):
+        cls = super().__new__(mcls, name, *args, **kwargs)
+        OperatorRegistry()[name] = cls
+        return cls
 
     @_stop_autograph
     def __call__(cls, *args, **kwargs):

@@ -17,11 +17,52 @@ import pytest
 from operator2_utils import CompilableOp, DynOp, StaticOp
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator2, get_op_class_by_name
+from pennylane.core.operator.meta import OperatorRegistry
 from pennylane.core.operator.operator2 import operator_p
 from pennylane.testing import find_eqns
 from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
 from pennylane.wires import Wires
+
+
+class TestOperatorRegistry:
+    """Tests that operator classes are registered when they are defined."""
+
+    @pytest.mark.parametrize("op_class", (qp.Hadamard, qp.PauliX, qp.GlobalPhase))
+    def test_builtin_subclasses(self, op_class):
+        """Built-in operators are registered under their class names."""
+        assert issubclass(op_class, Operator2)
+        assert OperatorRegistry()[op_class.__name__] is op_class
+        assert get_op_class_by_name(op_class.__name__) is op_class
+
+    def test_user_defined_subclass(self):
+        """A custom operator is registered without constructing an instance."""
+
+        class RegistryCustomOp(Operator2):
+            """A user-defined operator with a wire argument."""
+
+            def __init__(self, wires):
+                raise AssertionError("Registration must not instantiate the operator")
+
+        assert OperatorRegistry()["RegistryCustomOp"] is RegistryCustomOp
+        assert get_op_class_by_name("RegistryCustomOp") is RegistryCustomOp
+
+    def test_indirect_subclass(self):
+        """An inherited custom operator has its own registry entry."""
+
+        class RegistryParentOp(Operator2):
+            """A user-defined parent operator."""
+
+            def __init__(self, wires):
+                raise AssertionError("Registration must not instantiate the operator")
+
+        class RegistryChildOp(RegistryParentOp):
+            """An operator inheriting from a user-defined operator."""
+
+        registry = OperatorRegistry()
+        assert registry["RegistryParentOp"] is RegistryParentOp
+        assert registry["RegistryChildOp"] is RegistryChildOp
+        assert get_op_class_by_name("RegistryChildOp") is RegistryChildOp
 
 
 class DynCanonOp(Operator2):  # pylint: disable=too-few-public-methods
