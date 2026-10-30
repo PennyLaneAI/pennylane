@@ -451,6 +451,28 @@ class AliasSamplingTHC(Operator2):
 
         qp.SuperpositionTHC(M, N, mu_wires, nu_wires, sup_work)
         qp.AliasSamplingTHC(M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph)
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.AliasSamplingTHC
+            :stacked:
+            :symbols: :math:`n = \lceil \log_2(M+1) \rceil` wires per index register and
+                :math:`\aleph` = ``aleph`` bits
+            :example: :math:`M=1`, :math:`N=2`, :math:`\aleph=1` (:math:`n=1`)
+
+            .. decomposition-rule:: _alias_sampling_thc_decomp
+                :image: /_static/decomposition_thumbnails/alias_sampling_thc_walker.svg
+
+                :class:`~.OutSquare` | :math:`1` | 1
+                :class:`~.SemiAdder` | :math:`2` | 2
+                :class:`~.QROM` | :math:`1` | 1
+                :class:`~.Hadamard` | :math:`\aleph + 1` | 2
+                :class:`~.LeftQuantumComparator` | :math:`1` | 1
+                :class:`Adjoint(LeftQuantumComparator) <.LeftQuantumComparator>` | :math:`1` | 1
+                :class:`~.CSWAP` | :math:`3n + 2` | 5
+                :class:`~.TemporaryAND` | :math:`1` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1` | 1
     """
 
     wire_argnames = ("mu_wires", "nu_wires", "edge_flag", "work_wires")
