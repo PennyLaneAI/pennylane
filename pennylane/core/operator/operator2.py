@@ -16,6 +16,7 @@ operations and observables.
 TODO: [sc-120453] Fill docstring
 """
 
+import warnings
 from abc import abstractmethod
 from collections.abc import Hashable, Iterable, Sequence
 from copy import copy, deepcopy
@@ -84,6 +85,63 @@ ARGNAME_CATEGORIES = (
     "compilable_argnames",
     "hybrid_argnames",
 )
+
+
+class OperatorRegistry:
+    """A Singleton class that keeps track of all the Operator2 operators (including user-defined operators) defined."""
+
+    _instance = None
+    registry = {}
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __getitem__(self, index):
+        return self.registry[index]
+
+    def __setitem__(self, index, value):
+        if index not in self.registry:
+            self.registry[index] = value
+        elif self.registry[index] is not value:
+            warnings.warn(
+                f"More than one operator class by the same name ({index}) has been defined."
+            )
+
+
+def get_op_class_by_name(name):
+    """
+    Helper to get an operator class by name using a function call.
+    To use indexing syntax instead, use `OperatorRegistry` directly.
+
+    Args:
+        name (str): the name of the class to retrieve.
+
+    Returns:
+        The class with the provided name.
+
+    **Example**
+
+    .. code-block:: python
+
+        from pennylane import Operator2
+
+        class MyNamedOp(Operator2):
+            static_argnames = ("label",)
+
+            def __init__(self, label, wires):
+                super().__init__(label, wires=wires)
+
+    >>> from pennylane.core import get_op_class_by_name
+    >>> get_op_class_by_name("MyNamedOp")("my-label", [0, 1])
+    MyNamedOp(label=my-label, wires=[0, 1])
+
+    >>> from pennylane.core import OperatorRegistry
+    >>> OperatorRegistry()["MyNamedOp"]("my-second-label", [0, 1])
+    MyNamedOp(label=my-second-label, wires=[0, 1])
+    """
+    return OperatorRegistry()[name]
 
 
 class Operator2(metaclass=OperatorMeta):
@@ -1608,6 +1666,7 @@ class Operator2(metaclass=OperatorMeta):
     def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
         cls._sig = signature(cls)
         if is_baseclass:
+            OperatorRegistry()[cls.__name__] = cls
             return
 
         # Argnames setup
@@ -1628,6 +1687,8 @@ class Operator2(metaclass=OperatorMeta):
 
         if cls.has_fixed_sig:
             qp.decomposition.register_signature(cls)
+
+        OperatorRegistry()[cls.__name__] = cls
 
 
 # ---------------------------------------------------------------------------------

@@ -35,6 +35,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qp
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator2, StatePrepBase2, abstractify
+from pennylane.core.operator.operator2 import OperatorRegistry, get_op_class_by_name
 from pennylane.core.queuing import AnnotatedQueue
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -52,6 +53,82 @@ from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
 from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Int, Wire
 from pennylane.wires import Wires
+
+
+class TestOperatorRegistry:
+    """Tests that operator classes are registered when they are defined."""
+
+    @pytest.mark.parametrize("op_class", (qp.Hadamard, qp.PauliX, qp.GlobalPhase))
+    def test_builtin_subclasses(self, op_class):
+        """Built-in operators are registered under their class names."""
+        assert issubclass(op_class, Operator2)
+        assert OperatorRegistry()[op_class.__name__] is op_class
+        assert get_op_class_by_name(op_class.__name__) is op_class
+
+    def test_user_defined_subclass(self):
+        """A custom operator is registered without constructing an instance."""
+
+        class RegistryCustomOp(Operator2):
+            """A user-defined operator with a wire argument."""
+
+            def __init__(self, wires):
+                raise AssertionError("Registration must not instantiate the operator")
+
+        assert OperatorRegistry()["RegistryCustomOp"] is RegistryCustomOp
+        assert get_op_class_by_name("RegistryCustomOp") is RegistryCustomOp
+
+    def test_indirect_subclass(self):
+        """An inherited custom operator has its own registry entry."""
+
+        class RegistryParentOp(Operator2):
+            """A user-defined parent operator."""
+
+            def __init__(self, wires):
+                raise AssertionError("Registration must not instantiate the operator")
+
+        class RegistryChildOp(RegistryParentOp):
+            """An operator inheriting from a user-defined operator."""
+
+        registry = OperatorRegistry()
+        assert registry["RegistryParentOp"] is RegistryParentOp
+        assert registry["RegistryChildOp"] is RegistryChildOp
+        assert get_op_class_by_name("RegistryChildOp") is RegistryChildOp
+
+    def test_duplicate_name(self):
+        """Duplicate names warn and preserve the first registered class."""
+
+        class RegistryDuplicateOp(Operator2):
+            """The first operator registered under this name."""
+
+            def __init__(self, wires):
+                raise AssertionError("Registration must not instantiate the operator")
+
+        original_class = RegistryDuplicateOp
+        with pytest.warns(
+            UserWarning,
+            match=r"More than one operator class by the same name \(RegistryDuplicateOp\)",
+        ):
+
+            class RegistryDuplicateOp(Operator2):
+                """A different operator with the same name."""
+
+                def __init__(self, wires):
+                    raise AssertionError("Registration must not instantiate the operator")
+
+        assert RegistryDuplicateOp is not original_class
+        assert OperatorRegistry()["RegistryDuplicateOp"] is original_class
+        assert get_op_class_by_name("RegistryDuplicateOp") is original_class
+
+    @pytest.mark.parametrize(
+        "lookup", (get_op_class_by_name, lambda name: OperatorRegistry()[name])
+    )
+    def test_unknown_name(self, lookup):
+        """Both lookup interfaces raise KeyError for an unregistered name."""
+
+        with pytest.raises(KeyError) as exc_info:
+            lookup("RegistryUnknownOp")
+
+        assert exc_info.value.args == ("RegistryUnknownOp",)
 
 
 # pylint: disable=too-many-public-methods

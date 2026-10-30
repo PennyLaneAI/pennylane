@@ -156,7 +156,7 @@ from .operator2 import Operator2, StatePrepBase2
 from .channel import Channel
 from .state_prep import StatePrepBase
 from .utils import abstractify
-from .meta import get_op_class_by_name, OperatorRegistry
+from .operator2 import get_op_class_by_name, OperatorRegistry
 
 __all__ = [
     "Operator",
