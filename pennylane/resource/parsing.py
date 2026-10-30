@@ -26,11 +26,49 @@ import warnings
 from collections import defaultdict
 from typing import Any
 
+from pennylane.pytrees import is_pytree, register_pytree
+
 from .expression import Expression
-from .resource import PBCSpecsResources, SpecsResources, num_to_letters
+from .extension import PBCDepthResourceExtension, ResourceExtension
+from .resource import SpecsResources, num_to_letters
 
 # Tolerance (in number of decimal digits) for floating point precision issues
 _FLOAT_PRECISION_PLACES = 4
+
+_RESOURCE_EXTENSIONS: dict[str, type[ResourceExtension]] = {}
+
+
+def register_resource_extension(
+    extension_name: str, extension_type: type[ResourceExtension]
+) -> None:
+    """Register an independent resource extension for a Catalyst JSON key.
+
+    Importing a plugin should register its extension dataclasses before requesting specs.
+    Each key in ``extended_fields`` selects its own extension within ``resources.extra``.
+    All compiler levels return :class:`~.resource.SpecsResources` containers.
+
+    Args:
+        extension_name (str): The backend extension name.
+        extension_type (type[ResourceExtension]): A dataclass implementing aggregation
+            and display, with ``from_dict`` mapping the aggregated backend data to fields.
+            Registration enables symbolic discovery and substitution in those fields.
+
+    Raises:
+        ValueError: If the extension name is already registered.
+
+    Unknown groups remain raw in ``extra``. Unknown callee groups are skipped with a
+    warning because their aggregation rules are undefined.
+    """
+    if extension_name in _RESOURCE_EXTENSIONS:
+        raise ValueError(f"A resource extension is already registered for '{extension_name}'.")
+    if not is_pytree(extension_type):
+        register_pytree(
+            extension_type,
+            extension_type.flatten,
+            extension_type.unflatten,
+            namespace=f"pennylane.resource.{extension_name}",
+        )
+    _RESOURCE_EXTENSIONS[extension_name] = extension_type
 
 
 def _safe_ceil(value: int | float | Expression) -> int | Expression:
@@ -88,15 +126,8 @@ def _mlir_resources_to_specs_resources(
     with the appropriate multiplicative factors. Builds out `fn_resources`, a mapping from
     function name to the corresponding :class:`~pennylane.resource.SpecsResources` object.
 
-    .. warning::
-
-        The resulting :class:`~.resource.SpecsResources` objects will always be of the :class:`~.resource.SpecsResources`
-        type, even if they should be instances of a subclass. This is necessary to preserve the
-        format of the ``extended_fields`` attribute, which may contain additional fields from the
-        original JSON.
-
-        It is the responsibility of the caller to convert to a subclass after calling this function
-        if needed.
+    Extension groups remain raw during call resolution. They are converted independently
+    after aggregation, so handlers always receive the backend schema.
 
     Args:
         all_data (dict[str, Any]): the full JSON representation of the resource data
@@ -193,38 +224,22 @@ def _handle_extended_fields(
 ) -> None:
     """Helper function to handle extended fields in the resource data.
 
-    .. warning::
-        This function modifies the input `extended_fields` argument.
-
     Args:
         extended_fields (dict[str, Any]): The extended fields from the resource data (modified by function)
-        called_fn_resources (SpecsResources): The resources of the called function
         call_count (int | float | Expression): The number of times the called function is invoked.
             For float values, this is the average number of times the function is invoked.
+        called_fn_resources (SpecsResources): The resources of the called function
+
     """
-
     unknown_fields = []
-
-    for field_name in called_fn_resources.extra:
-        match field_name:
-            case "pbc_depth":
-                pbc_depth = extended_fields.get("pbc_depth", None)
-                if pbc_depth is None:
-                    extended_fields["pbc_depth"] = {
-                        "any_commuting_depth": call_count
-                        * called_fn_resources.extra["pbc_depth"]["any_commuting_depth"],
-                        "qubit_disjoint_depth": call_count
-                        * called_fn_resources.extra["pbc_depth"]["qubit_disjoint_depth"],
-                    }
-                else:
-                    pbc_depth["any_commuting_depth"] += (
-                        call_count * called_fn_resources.extra["pbc_depth"]["any_commuting_depth"]
-                    )
-                    pbc_depth["qubit_disjoint_depth"] += (
-                        call_count * called_fn_resources.extra["pbc_depth"]["qubit_disjoint_depth"]
-                    )
-            case _:
-                unknown_fields.append(field_name)
+    for field_name, value in called_fn_resources.extra.items():
+        extension_type = _RESOURCE_EXTENSIONS.get(field_name)
+        if extension_type is None:
+            unknown_fields.append(field_name)
+            continue
+        extended_fields[field_name] = extension_type.aggregate(
+            copy.deepcopy(extended_fields.get(field_name)), copy.deepcopy(value), call_count
+        )
 
     if unknown_fields:
         warnings.warn(
@@ -234,9 +249,9 @@ def _handle_extended_fields(
         )
 
 
-def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
+def _convert_resources(res: SpecsResources) -> SpecsResources:
     """
-    Converts a :class:`~.resource.SpecsResources` instance to a subclass if possible.
+    Round standard counts and construct each registered extension independently.
 
     Ensures that all counts are rounded up to the nearest integer, as required by the
     :class:`~.resource.SpecsResources` class.
@@ -245,8 +260,7 @@ def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
         res (SpecsResources): The :class:`~.resource.SpecsResources` object to convert.
 
     Returns:
-        SpecsResources: A :class:`~.resource.SpecsResources` object, potentially of
-            a subclass type if the original object contained the appropriate extra data.
+        SpecsResources: A container with registered extensions in ``extra``.
     """
     kwargs = {
         "counts": {op: _safe_ceil(count) for op, count in res.counts.items()},
@@ -256,19 +270,10 @@ def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
         "num_wires": _safe_ceil(res.num_wires) if res.num_wires is not None else None,
         "circuit_depth": _safe_ceil(res.circuit_depth) if res.circuit_depth is not None else None,
     }
-    # Copy the extra fields to avoid mutating the original object
     extra = copy.deepcopy(res.extra)
-
-    if "pbc_depth" in extra:
-        pbc_depth = extra.pop("pbc_depth")
-        kwargs["any_commuting_depth"] = _safe_ceil(pbc_depth.pop("any_commuting_depth"))
-        kwargs["qubit_disjoint_depth"] = _safe_ceil(pbc_depth.pop("qubit_disjoint_depth"))
-        # Pylint gets confused by the dynamic updates to kwargs here
-        # pylint: disable=missing-kwoa
-        return PBCSpecsResources(
-            **kwargs,
-            extra=extra,
-        )
+    for name, data in extra.items():
+        if extension_type := _RESOURCE_EXTENSIONS.get(name):
+            extra[name] = extension_type.from_dict(data)
     return SpecsResources(**kwargs, extra=extra)
 
 
@@ -299,7 +304,10 @@ def parse_resources_json(
 
     # Only include information about qnodes, ignoring any extra functions
     return [
-        _convert_to_subclass(resource_data[fn])
+        _convert_resources(resource_data[fn])
         for fn, data in all_data.items()
         if data["metadata"]["qnode"]
     ]
+
+
+register_resource_extension("pbc_depth", PBCDepthResourceExtension)

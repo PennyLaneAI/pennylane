@@ -904,6 +904,15 @@ Improvements 🛠
   ``precision_stats`` from the rotation angles.
   `(#10312) <https://github.com/PennyLaneAI/pennylane/pull/10312>`__
 
+* Compiler resource results use :class:`~pennylane.resource.SpecsResources` containers
+  with independent :class:`~pennylane.resource.ResourceExtension` objects in ``extra``.
+  Plugins register extension dataclasses with
+  :func:`~pennylane.resource.register_resource_extension` to define aggregation and
+  display behavior. Extensions appear in individual results and multi-level tables.
+  ``PBCSpecsResources`` is replaced by :class:`~pennylane.resource.PBCDepthResourceExtension`
+  under ``resources.extra["pbc_depth"]``.
+  `(#10411) <https://github.com/PennyLaneAI/pennylane/pull/10411>`__
+
 * ``qp.gate_sets.ALL_QUBIT_OPS`` now includes the in-build controlled gates like :class:`~.CNOT`,
   :class:`~.CRZ`, and others.
   `(#10396) <https://github.com/PennyLaneAI/pennylane/pull/10396/>`__
@@ -1823,7 +1832,7 @@ Internal changes ⚙️
 * Established a new dataclass hierarchy for resource information in the :mod:`~.resource` module.
   This enables easier development of resource estimation features, and simplifies the creation of new resource classes.
   The :class:`~.resource.Resources` class serves as the new base class,
-  and the :class:`~.resource.SpecsResources` and :class:`~.resource.PBCSpecsResources` inherit from it.
+  and :class:`~.resource.SpecsResources` inherits from it.
   `(#9841) <https://github.com/PennyLaneAI/pennylane/pull/9841>`__
 
 * The following legacy operators are now ported to the new ``~.Operator2`` base class.
