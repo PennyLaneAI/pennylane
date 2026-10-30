@@ -70,6 +70,9 @@ class TestOperatorRegistry:
         class RegistryDuplicateOp(Operator2):
             """The first operator registered under this name."""
 
+            def __init__(self, wires):
+                raise AssertionError("Registration must not instantiate the operator")
+
         original_class = RegistryDuplicateOp
         with pytest.warns(
             UserWarning,
@@ -78,6 +81,9 @@ class TestOperatorRegistry:
 
             class RegistryDuplicateOp(Operator2):
                 """A different operator with the same name."""
+
+                def __init__(self, wires):
+                    raise AssertionError("Registration must not instantiate the operator")
 
         assert RegistryDuplicateOp is not original_class
         assert OperatorRegistry()["RegistryDuplicateOp"] is original_class
