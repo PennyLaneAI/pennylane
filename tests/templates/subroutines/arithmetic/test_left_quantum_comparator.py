@@ -37,7 +37,6 @@ def test_assert_valid():
 class TestLeftQuantumComparator:
     """Test LeftQuantumComparator template."""
 
-    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
     @pytest.mark.parametrize(
