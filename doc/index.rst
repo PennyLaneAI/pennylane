@@ -203,6 +203,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/qjit
    introduction/compiling_circuits
    introduction/applications
+   introduction/coming_from_classic
    introduction/data
 
 .. toctree::
