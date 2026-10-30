@@ -149,7 +149,7 @@ def _uniform_prep_resources(n_states, target_wires, work_wires):
 
     lcc = LeftClassicalComparator(
         x_wires=Wire[logL],
-        L=L,
+        value=L,
         target_wire=Wire[1],
         work_wires=Wire[max(logL - 1, 0)],
         comparator="<",
@@ -180,11 +180,11 @@ def _uniform_prep_decomp(n_states, target_wires, work_wires, **_):
     w_used = work_wires[1:logL]
 
     LeftClassicalComparator(
-        x_wires=data_L, L=L, target_wire=work_wires[0], work_wires=w_used, comparator="<"
+        x_wires=data_L, value=L, target_wire=work_wires[0], work_wires=w_used, comparator="<"
     )
     RZ(theta, wires=work_wires[0])
     adjoint(LeftClassicalComparator)(
-        x_wires=data_L, L=L, target_wire=work_wires[0], work_wires=w_used, comparator="<"
+        x_wires=data_L, value=L, target_wire=work_wires[0], work_wires=w_used, comparator="<"
     )
 
     _apply_hadamards(data_L)
