@@ -1319,6 +1319,10 @@ Improvements 🛠
 Labs: a place for unified and rapid prototyping of research software 🧪
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* Added :func:`~.labs.tcdq.shot_resources` for qubit and qudit sampling estimates,
+  including angle-dependent diagonal costs and digit-sum phase layers.
+  `(alternative to #10412) <https://github.com/PennyLaneAI/pennylane/pull/10412>`__
+
 * The Phox module has been renamed to ``tcdq`` (Train Classical, Deploy Quantum) and now supports qudit systems of arbitrary dimension.
   `(#9745) <https://github.com/PennyLaneAI/pennylane/pull/9745>`__
 
