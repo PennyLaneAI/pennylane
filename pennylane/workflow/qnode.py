@@ -29,6 +29,7 @@ from cachetools import Cache
 
 import pennylane as qp
 from pennylane import math, pytrees
+from pennylane.capture.autograph import register_autograph_wrapper
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.queuing import AnnotatedQueue
 from pennylane.core.shots import Shots, ShotsLike
@@ -862,6 +863,18 @@ class QNode:
 
             return capture_qnode(self, *args, **kwargs)
         return self._impl_call(*args, **kwargs)
+
+
+@register_autograph_wrapper(QNode)
+def _qnode_autograph_wrapper(wrapped_node: QNode) -> tuple[Callable, Callable[[Callable], QNode]]:
+    """Return the quantum function and a callback that preserves the QNode configuration."""
+
+    def rebuild(function: Callable) -> QNode:
+        new_qnode = copy.copy(wrapped_node)
+        new_qnode.func = function
+        return new_qnode
+
+    return wrapped_node.func, rebuild
 
 
 def qnode(device, **kwargs) -> Callable[[Callable], QNode]:

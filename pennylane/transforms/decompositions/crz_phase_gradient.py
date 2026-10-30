@@ -67,7 +67,8 @@ def make_crz_to_phase_gradient_decomp(
             required by the rotation angles. Defaults to ``None``.
 
     Returns:
-        func: decomposition rule to be used within :func:`~.pennylane.decompose`.
+        pennylane.decomposition.DecompositionRule: decomposition rule to be used within
+        :func:`~.pennylane.decompose`.
 
     .. seealso:: :func:`~.make_rz_to_phase_gradient_decomp`, :func:`~.make_selectpaulirot_to_phase_gradient_decomp`
 

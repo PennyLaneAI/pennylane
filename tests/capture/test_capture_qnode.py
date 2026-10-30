@@ -1122,8 +1122,7 @@ class TestQNodeAutographIntegration:
             assert j3.eqns[0].primitive == qnode_prim
             j4 = j3.eqns[0].params["qfunc_jaxpr"]
             assert j4.eqns[0].primitive == qp.capture.primitives.for_loop_prim
-            # somehow promoted to closure var?
-            assert j4.eqns[0].invars[1] is j4.constvars[0]
+            assert j4.eqns[0].invars[1] is j4.invars[0]
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_python_for_loop(self, autograph):
