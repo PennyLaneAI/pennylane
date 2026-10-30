@@ -37,7 +37,7 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Float, TensorLike, Wire
@@ -1443,9 +1443,44 @@ def _isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
     qp.PauliRot(phi, "ZZ", wires=wires)
 
 
+def _controlled_ising_zz_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    return {
+        qp.CNOT: 2,
+        qp.ctrl(
+            qp.RZ(Float, wires=Wire[1]),
+            control=Wire[len(control_wires)],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
+        ): 1,
+    }
+
+
+@qp.register_resources(_controlled_ising_zz_resource)
+def _controlled_ising_zz(base, control_wires, control_values, work_wires, work_wire_type):
+    r"""``ctrl_c[IsingZZ(phi)_{a,b}] = CNOT_{a,b} ctrl_c[RZ(phi)_b] CNOT_{a,b}``.
+
+    ``IsingZZ(phi)`` phases the parity of its two wires, so copying that parity onto ``b`` with
+    a CNOT turns it into a single-qubit ``RZ(phi)``. The CNOTs need no control: they cancel on
+    the ``|0>_c`` branch. Verified exactly (to 0.0) against ``qp.ctrl(qp.IsingZZ(...))`` for one
+    and two control wires.
+    """
+    a, b = base.wires
+    qp.CNOT(wires=[a, b])
+    qp.ctrl(
+        qp.RZ(base.data[0], wires=b),
+        control=control_wires,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+    qp.CNOT(wires=[a, b])
+
+
+controlled_ising_zz = flip_zero_control(_controlled_ising_zz)
+
 add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot, _isingzz_to_ppr)
 add_decomps("Adjoint(IsingZZ)", adjoint_rotation2)
 add_decomps("Pow(IsingZZ)", pow_rotation2)
+add_decomps("C(IsingZZ)", controlled_ising_zz)
 
 
 class IsingXY(Operator2):
