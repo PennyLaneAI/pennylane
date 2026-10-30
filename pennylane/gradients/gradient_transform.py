@@ -112,6 +112,31 @@ def assert_no_trainable_tape_batching(tape, transform_name):
             )
 
 
+def trainable_tape_batching(tape):
+    """Return the indices of trainable parameters that carry the tape batch.
+
+    A trainable parameter carries the batch if the operation it belongs to
+    has a batch size, i.e. its value is broadcast over the batch dimension
+    of the tape. Returns an empty list for tapes that are not broadcasted
+    or whose broadcasted operations own no trainable parameters.
+
+    Args:
+        tape (.QuantumScript): the tape to inspect
+
+    Returns:
+        list[int]: indices (into the trainable parameters) of the trainable
+        parameters carrying the batch
+    """
+    if tape.batch_size is None:
+        return []
+
+    return [
+        idx
+        for idx in range(len(tape.trainable_params))
+        if tape.get_operation(idx)[0].batch_size is not None
+    ]
+
+
 def choose_trainable_param_indices(tape, argnum=None):
     """Returns a list of trainable parameter indices in the tape.
 

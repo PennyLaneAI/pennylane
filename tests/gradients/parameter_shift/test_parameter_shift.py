@@ -1071,15 +1071,15 @@ class TestParamShift:
                 qp.gradients.param_shift(tape)
 
 
-# Remove the following and unskip the class below once broadcasted
-# tapes are fully supported with gradient transforms. See #4462 for details.
+# Trainable broadcasted parameters are supported for single expectation-value,
+# analytic tapes; unsupported cases (here: probabilities) still raise.
 class TestParamShiftRaisesWithBroadcasted:
-    """Test that an error is raised with broadcasted tapes."""
+    """Test that an error is raised with broadcasted tapes for unsupported cases."""
 
-    def test_batched_tape_raises(self):
-        """Test that an error is raised for a broadcasted/batched tape if the broadcasted
-        parameter is differentiated."""
-        tape = qp.tape.QuantumScript([qp.RX([0.4, 0.2], 0)], [qp.expval(qp.PauliZ(0))])
+    def test_batched_tape_probs_raises(self):
+        """Test that an error is raised for a broadcasted/batched tape whose
+        measurement is not supported for trainable broadcasted parameters."""
+        tape = qp.tape.QuantumScript([qp.RX([0.4, 0.2], 0)], [qp.probs(wires=0)])
         _match = r"Computing the gradient of broadcasted tapes .* using the parameter-shift rule"
         with pytest.raises(NotImplementedError, match=_match):
             qp.gradients.param_shift(tape)
@@ -1090,9 +1090,7 @@ class TestParamShiftWithBroadcasted:
     The tests for `param_shift` using broadcasting itself can be found
     further below."""
 
-    # Revert the following skip once broadcasted tapes are fully supported with gradient transforms.
-    # See #4462 for details.
-    @pytest.mark.skip(reason="Applying gradient transforms to broadcasted tapes is disallowed")
+    # Supported for single expectation-value, analytic tapes (#4462).
     @pytest.mark.parametrize("dim", [1, 3])
     @pytest.mark.parametrize("pos", [0, 1])
     def test_with_single_trainable_parameter_broadcasted(self, dim, pos):
@@ -1123,9 +1121,7 @@ class TestParamShiftWithBroadcasted:
         assert res[0].shape == (dim,)
         assert res[1].shape == (dim,)
 
-    # Revert the following skip once broadcasted tapes are fully supported with gradient transforms.
-    # See #4462 for details.
-    @pytest.mark.skip(reason="Applying gradient transforms to broadcasted tapes is disallowed")
+    # Supported for single expectation-value, analytic tapes (#4462).
     @pytest.mark.parametrize("argnum", [(0, 2), (0, 1), (1,), (2,)])
     @pytest.mark.parametrize("dim", [1, 3])
     def test_with_multiple_parameters_broadcasted(self, dim, argnum):

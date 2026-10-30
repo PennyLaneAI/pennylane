@@ -59,6 +59,7 @@ from .gradient_transform import (
     contract_qjac_with_cjac,
     find_and_validate_gradient_methods,
     reorder_grads,
+    trainable_tape_batching,
 )
 
 # pylint: disable=too-many-arguments,unused-argument
@@ -822,6 +823,20 @@ def _expand_transform_param_shift(
     return batch, postprocessing
 
 
+def _trainable_batching_supported(tape):
+    """Whether the parameter-shift transform supports differentiating the
+    trainable broadcasted (batched) parameters of ``tape``.
+
+    Supported at this stage (see #4462): a single expectation-value
+    measurement and analytic execution.
+    """
+    if len(tape.measurements) != 1:
+        return False
+    if not isinstance(tape.measurements[0], ExpectationMP):
+        return False
+    return tape.shots.total_shots is None
+
+
 @partial(
     transform,
     expand_transform=_expand_transform_param_shift,
@@ -1146,7 +1161,12 @@ def param_shift(
 
     transform_name = "parameter-shift rule"
     assert_no_state_returns(tape.measurements, transform_name)
-    assert_no_trainable_tape_batching(tape, transform_name)
+    batched_params = trainable_tape_batching(tape)
+    if batched_params and (broadcast or not _trainable_batching_supported(tape)):
+        # Trainable broadcasted parameters are supported for analytic,
+        # single-expectation-value tapes (see #4462); all other cases remain
+        # unsupported.
+        assert_no_trainable_tape_batching(tape, transform_name)
 
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
