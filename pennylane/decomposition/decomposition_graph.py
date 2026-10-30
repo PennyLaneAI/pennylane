@@ -401,7 +401,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._in_progress.append(op)
         if unwrapped := _get_base_and_n_ctrls(op):
             base_rep, num_control_wires = unwrapped
-            self._num_ctrl_wires_in_progress[base_rep].append((num_control_wires, to_name(op)))
+            self._num_ctrl_wires_in_progress[base_rep].append(num_control_wires)
 
     def _pop_in_progress(self, op):
         self._in_progress.pop()
@@ -460,13 +460,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         max_op_min_work_wires = 0
         for op in decomp_resource.gate_counts:
 
-            next_node = _OperatorNode(
-                op,
-                num_used_work_wires + work_wire_spec.total,
-                op in self._work_wire_dependent_ops,
-            )
-            # Reusing an existing node closes a finite cycle without growing the graph.
-            if next_node not in self._all_op_indices and self._base_in_progress(op):
+            if self._base_in_progress(op):
                 d_node.reachable = False
                 self._graph.add_edge(d_node_idx, op_idx, 0)
                 return d_node
@@ -497,12 +491,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return True
         if not (ctrl_wires_in_progress := self._num_ctrl_wires_in_progress[base]):
             return False
-        previous_num_controls, previous_name = ctrl_wires_in_progress[-1]
-        # C(Adjoint(op)) may lower through Adjoint(C(op)) at the same control count.
-        # Reject control growth and revisiting the same modifier ordering.
-        return num_control_wires > previous_num_controls or (
-            num_control_wires == previous_num_controls and to_name(op) == previous_name
-        )
+        return num_control_wires >= ctrl_wires_in_progress[-1]
 
     def _get_decompositions(self, op: AbstractOperatorLike) -> Iterable[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
@@ -671,18 +660,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
 
 def _get_base_and_n_ctrls(op: AbstractOperatorLike) -> tuple[AbstractOperatorLike, int] | None:
-    if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Adjoint:
-        inner = resource_rep(op.params["base_class"], **op.params["base_params"])
-        if unwrapped := _get_base_and_n_ctrls(inner):
-            base, num_controls = unwrapped
-            return (
-                resource_rep(qp.ops.Adjoint, base_class=base.op_type, base_params=base.params),
-                num_controls,
-            )
-    if isinstance(op, qp.ops.Adjoint2):
-        if unwrapped := _get_base_and_n_ctrls(op.base):
-            base, num_controls = unwrapped
-            return abstractify(qp.adjoint(base)), num_controls
     if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Controlled:
         base_class, base_params = op.params["base_class"], op.params["base_params"]
         return resource_rep(base_class, **base_params), op.params["num_control_wires"]

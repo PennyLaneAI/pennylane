@@ -30,7 +30,6 @@ from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract, flip_control_adjoint
 from pennylane.ops.op_math.pow2 import _pow_abstract
-from pennylane.transforms.decompositions import make_rz_to_phase_gradient_decomp
 from pennylane.typing import Bool, Float, Wire
 from tests.core.operator.operator2_utils import (
     DynOp,
@@ -84,42 +83,6 @@ class AnotherOp(Operation):
     @property
     def resource_params(self):
         return {}
-
-
-@pytest.mark.parametrize("outer_adjoint", [False, True])
-@pytest.mark.parametrize("inner_adjoint", [False, True])
-def test_control_growth_under_adjoint(outer_adjoint, inner_adjoint):
-    """Generated phase-gradient rules must not grow controls indefinitely under adjoints."""
-    base = qp.adjoint(qp.X(1)) if inner_adjoint else qp.X(1)
-    op = qp.ctrl(base, 0)
-    if outer_adjoint:
-        op = qp.adjoint(op)
-    graph = DecompositionGraph(
-        [op],
-        gate_set={"CNOT", "PauliX", "SemiAdder", "GlobalPhase"},
-        fixed_decomps={qp.RZ: make_rz_to_phase_gradient_decomp([2, 3], [4, 5], [6])},
-    )
-    solution = graph.solve()
-    assert solution.decomposition(op)
-    counts = solution.resource_estimate(op).gate_counts
-    assert counts[abstractify(qp.CNOT)] == 1
-    assert set(counts) <= {abstractify(qp.CNOT), abstractify(qp.X)}
-
-
-def test_adaptive_phase_gradient_reuses_controlled_nodes():
-    """Alternative precisions can reuse a controlled node still being expanded."""
-    op = qp.RZ(np.pi, 0)
-    rule = make_rz_to_phase_gradient_decomp(
-        [1, 2, 3], [4, 5, 6], [7, 8], precision_stats={1: 1, 3: 2}
-    )
-    graph = DecompositionGraph(
-        [op],
-        gate_set={"CNOT", "PauliX", "SemiAdder", "GlobalPhase"},
-        fixed_decomps={qp.RZ: rule},
-    )
-    solution = graph.solve()
-    assert solution.decomposition(op) is rule
-    assert solution.resource_estimate(op).gate_counts[abstractify(qp.CNOT)] == 8
 
 
 @pytest.mark.unit

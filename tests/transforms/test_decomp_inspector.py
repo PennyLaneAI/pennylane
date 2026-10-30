@@ -122,8 +122,7 @@ class TestInspectDecompGraph:
             5: ─╰●─────────┤
             Estimated First-Level Expansion Gates: {Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool, weak_type=True)): 1, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
-            Full Expansion Gates: {CNOT: 46, GlobalPhase: 25, RX: 23, RZ: 22}
-            Weighted Cost: 91.0
+            Missing Ops: {Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool, weak_type=True))}
 
             CHOSEN: Decomposition 3 (name: controlled(_multi_rz_decomposition))
             0: ─╭(X)@RZ(0.50)@(X)─┤
@@ -165,15 +164,11 @@ class TestInspectDecompGraph:
             | :--- | :--- | :--- |
             | Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool, weak_type=True)) | 1 | 1 |
             | PauliX | 3 | 0 |
-
-            | Full Expansion | Count |
-            | :--- | :--- |
-            | CNOT | 46 |
-            | GlobalPhase | 25 |
-            | RX | 23 |
-            | RZ | 22 |
-            | **Weighted Cost** | 91.0 |
             </details>
+
+            | Missing Ops |
+            | :--- |
+            | Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool, weak_type=True)) |
 
             ---
 
@@ -245,8 +240,8 @@ class TestInspectDecompGraph:
             5: ─╰●─────────┤
             Estimated First-Level Expansion Gates: {Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool, weak_type=True)): 1, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
-            Full Expansion Gates: {CNOT: 46, GlobalPhase: 25, RX: 23, RZ: 22}
-            Weighted Cost: 2296.0
+            Full Expansion Gates: {CNOT: 26, GlobalPhase: 60, MidMeasure: 2, RX: 24, RY: 10, RZ: 42}
+            Weighted Cost: 3828.0
 
             CHOSEN: Decomposition 3 (name: controlled(_multi_rz_decomposition))
             0: ─╭(X)@RZ(0.50)@(X)─┤
@@ -320,11 +315,13 @@ class TestInspectDecompGraph:
 
             | Full Expansion | Count |
             | :--- | :--- |
-            | CNOT | 46 |
-            | GlobalPhase | 25 |
-            | RX | 23 |
-            | RZ | 22 |
-            | **Weighted Cost** | 2296.0 |
+            | CNOT | 26 |
+            | GlobalPhase | 60 |
+            | MidMeasure | 2 |
+            | RX | 24 |
+            | RY | 10 |
+            | RZ | 42 |
+            | **Weighted Cost** | 3828.0 |
             </details>
 
             ---
