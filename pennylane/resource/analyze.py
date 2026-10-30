@@ -113,7 +113,6 @@ def analyze(
 
             * ``int``: The number of transforms to apply before analyzing resources.
             * ``str``: One of the presets listed below, or the ``label`` of a :func:`~.marker`.
-              Transform names, such as ``"cancel-inverses"``, are not accepted.
             * ``iterable``: A ``list``, ``tuple``, or similar containing ``int`` or ``str`` values.
               These should be sorted in ascending transform order with no duplicates. Resources will be analyzed for each provided level in the ``iterable``.
 
