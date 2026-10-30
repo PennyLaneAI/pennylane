@@ -343,6 +343,7 @@ New features since last release
   `(#9847) <https://github.com/PennyLaneAI/pennylane/pull/9847>`__
   `(#10008) <https://github.com/PennyLaneAI/pennylane/pull/10008>`__
   `(#10053) <https://github.com/PennyLaneAI/pennylane/pull/10053>`__
+  `(#10414) <https://github.com/PennyLaneAI/pennylane/pull/10414>`__
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
   want to prepare, the template is simple to call. Consider the following example:
