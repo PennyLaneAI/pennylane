@@ -779,8 +779,8 @@ class TestDecompGraphWorkWireBudgeting:
         assert solution.is_solved_for(SimpleOp(0))
 
     def test_cycle_through_work_wire_dependent_ops(self):
-        """Tests that a cycle of work-wire dependent ops that uses more work wires on every pass
-        does not recurse indefinitely."""
+        """Tests that a cycle of work-wire dependent ops that uses more work wires on every cycle
+        iteration does not recurse indefinitely."""
 
         class WrapperOp(Operation):
             """An operation that decomposes into ``CustomOp`` using a work wire."""
