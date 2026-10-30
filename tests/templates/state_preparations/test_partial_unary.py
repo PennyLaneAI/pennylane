@@ -645,9 +645,6 @@ class TestPartialUnaryStatePreparation:
     )
     def test_decomposition_prepares_state(self, num_wires, num_entries, seed, provide_work_wires):
         """Test that the decomposition of PartialUnaryStatePreparation actually prepares the desired state."""
-        if provide_work_wires and num_entries > 1:
-            pytest.xfail("Requires Catalyst companion PR [sc-134032]")
-
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
         needed_work_wires = max(qp.math.ceil_log2(num_entries) - 1, 1)
         if provide_work_wires:
@@ -668,7 +665,6 @@ class TestPartialUnaryStatePreparation:
         wire_specs = wires, work_wires, num_wires + needed_work_wires
         assert_pui_correctness(rule, coefficients, indices, wire_specs)
 
-    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(

@@ -1706,16 +1706,7 @@ class TestDecomposition:
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "num_control_wires, num_work_wires",
-        [
-            (3, 1),
-            pytest.param(
-                3,
-                2,
-                marks=pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]"),
-            ),
-            (4, 1),
-            (5, 3),
-        ],
+        [(3, 1), (3, 2), (4, 1), (5, 3)],
     )
     @pytest.mark.parametrize("work_wire_type", ["zeroed"])
     def test_controlled_prod_qjit(self, num_control_wires, num_work_wires, work_wire_type):

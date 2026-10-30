@@ -45,7 +45,9 @@ class TestLeftClassicalComparator:
         [
             pytest.param(
                 True,
-                marks=pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]"),
+                marks=pytest.mark.xfail(
+                    reason="Dynamic L requires https://github.com/PennyLaneAI/pennylane/pull/10377"
+                ),
             ),
             False,
         ],
