@@ -813,6 +813,54 @@ class TestDecompGraphWorkWireBudgeting:
         solution = graph.solve(num_work_wires=None)
         assert solution.decomposition(WrapperOp(0), num_work_wires=None) is _wrapper_to_custom
 
+    def test_cycle_through_work_wire_dependent_ops_without_extra_work_wires(self):
+        """Tests that a cycle of work-wire dependent ops that does not use additional work wires
+        is not pruned, so that it remains available to the solver."""
+
+        class WrapperOp(Operation):
+            """An operation that decomposes into ``CustomOp`` using a work wire."""
+
+        class OuterOp(Operation):
+            """An operation that decomposes into ``AnotherOp`` using a work wire."""
+
+        @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1})
+        def _custom_to_x(_):
+            raise NotImplementedError
+
+        @qp.register_resources({AnotherOp: 1})
+        def _custom_to_another(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1})
+        def _another_to_custom(_):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.Z: 1}, work_wires={"zeroed": 1})
+        def _another_to_z(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1}, work_wires={"zeroed": 1})
+        def _wrapper_to_custom(_):
+            raise NotImplementedError
+
+        @qp.register_resources({AnotherOp: 1}, work_wires={"zeroed": 1})
+        def _outer_to_another(_):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [CustomOp(0), WrapperOp(0), OuterOp(0)],
+            gate_set={qp.X: 1.0, qp.Z: 100.0},
+            alt_decomps={
+                CustomOp: [_custom_to_x, _custom_to_another],
+                AnotherOp: [_another_to_custom, _another_to_z],
+                WrapperOp: [_wrapper_to_custom],
+                OuterOp: [_outer_to_another],
+            },
+        )
+        solution = graph.solve(num_work_wires=None)
+        resources = solution.resource_estimate(OuterOp(0), num_work_wires=None)
+        assert resources == to_resources({qp.X: 1})
+
     def test_min_work_wires(self):
         """Tests that the graph tracks the minimum number of work wires."""
 

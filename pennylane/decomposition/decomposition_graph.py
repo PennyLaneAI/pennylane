@@ -464,9 +464,14 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             # infinite recursion with growing control register.
             ctrl_cycle = self._base_in_progress(op)
 
-            # Revisiting an in-progress work-wire dependent operator would add a new node with
-            # fewer available work wires on every pass through the cycle, recursing indefinitely.
-            work_wire_cycle = op in self._work_wire_dependent_ops and op in self._in_progress
+            # Revisiting an in-progress work-wire dependent operator with a new work wire budget
+            # would add a new node on every pass through the cycle, recursing indefinitely.
+            next_budget = num_used_work_wires + work_wire_spec.total
+            work_wire_cycle = (
+                op in self._work_wire_dependent_ops
+                and op in self._in_progress
+                and _OperatorNode(op, next_budget, True) not in self._all_op_indices
+            )
 
             if ctrl_cycle or work_wire_cycle:
                 d_node.reachable = False
