@@ -61,8 +61,7 @@ class TestLeftClassicalComparator:
             qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
             qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             qp.CNOT([11, 12])
-            # qfunc form: L is traced under qjit, and adjoint(op) would evaluate the
-            # resource function, which branches on L.
+            # Keep the compile-time operand L outside the adjoint's traced arguments.
             qp.adjoint(
                 lambda: qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             )()
@@ -70,7 +69,7 @@ class TestLeftClassicalComparator:
             return qp.sample(wires=[12]), qp.sample(wires=work_wires), qp.sample(wires=x_wires)
 
         if qjit:
-            circuit = qp.qjit(circuit)
+            circuit = qp.qjit(circuit, static_argnums=(1,))
         output = circuit(x_wires, L)
         expected = {"<": x < L, "<=": x <= L, ">": x > L, ">=": x >= L}[comparator]
         assert bool(output[0]) == expected

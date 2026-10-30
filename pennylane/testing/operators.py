@@ -50,6 +50,7 @@ from pennylane.ops.op_math import (
     Adjoint2,
     CompositeOp2,
     Controlled,
+    Controlled2,
     ControlledOp2,
     Pow2,
     SymbolicOp2,
@@ -596,8 +597,9 @@ def _check_properties_operator2(op: Operator2) -> None:
 
     # Some operators (e.g. composites and ``Select``) hold their data inside operator-valued
     # arguments rather than dynamic arguments, so their ``data`` does not correspond to
-    # ``dynamic_argnames`` and this check does not apply.
-    if not isinstance(op, (Adjoint2, CompositeOp2, ControlledOp2, Pow2, Select, QSVT)):
+    # ``dynamic_argnames`` and this check does not apply. Controlled operators also exclude
+    # Boolean control values from their legacy parameter view.
+    if not isinstance(op, (Adjoint2, CompositeOp2, Controlled2, Pow2, Select, QSVT)):
 
         error_msg = "ndim_params must have the same length as dynamic_argnames"
         assert len(op.ndim_params) == len(op.dynamic_argnames), error_msg

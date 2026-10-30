@@ -14,8 +14,6 @@
 """Contains the SuperpositionTHC template, used as a subroutine in tensor
 hypercontraction (THC) qubitization."""
 
-from collections import defaultdict
-
 import numpy as np
 
 from pennylane import math
@@ -402,7 +400,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
 
     # 7. Final uncomputation, keeping the diagonal (mu = nu) equality flag.
     # The rotation that would clean work_wires[0] back to |0> is omitted (see note above).
-    adjoint(_left_inequalities)(M, N, mu_wires, nu_wires, work_wires, keep_eq=True)
+    adjoint(lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True))()
 
 
 add_decomps(SuperpositionTHC, _superposition_thc)

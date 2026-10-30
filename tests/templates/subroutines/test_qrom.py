@@ -608,7 +608,19 @@ def test_too_many_work_wires_case():
         assert qrom_op.control_wires == qp.wires.Wires([])
         assert qrom_op.target_wires == qp.wires.Wires([2, 3, 4, 5])
 
-    assert gates_few_work[1:] == gates_many_work[1:]
+    for few, many in zip(gates_few_work[1:], gates_many_work[1:]):
+        assert few.work_wires == qp.wires.Wires([])
+        assert many.work_wires == qp.wires.Wires([16])
+        qp.assert_equal(
+            many,
+            qp.ctrl(
+                few.base,
+                few.control_wires,
+                control_values=few.control_values,
+                work_wires=[16],
+                work_wire_type=few.work_wire_type,
+            ),
+        )
 
 
 @pytest.mark.parametrize(

@@ -952,9 +952,9 @@ class TestDecomposition:
         decomp = op.decomposition()
 
         qp.assert_equal(decomp[0], qp.RZ(qp.numpy.array(theta / 2), [0]))
-        qp.assert_equal(decomp[1], ControlledOp2(qp.X(0), [1, 2, 3, 4]))
+        qp.assert_equal(decomp[1], qp.MultiControlledX([1, 2, 3, 4, 0]))
         qp.assert_equal(decomp[2], qp.RZ(qp.numpy.array(-theta / 2), wires=[0]))
-        qp.assert_equal(decomp[3], ControlledOp2(qp.X(0), [1, 2, 3, 4]))
+        qp.assert_equal(decomp[3], qp.MultiControlledX([1, 2, 3, 4, 0]))
 
         decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
         assert qp.math.allclose(op.matrix(), decomp_mat)
@@ -1028,9 +1028,9 @@ class TestDecomposition:
         ctrl_op = qp.ctrl(qp.ctrl(qp.RZ(0.123, wires=0), control=1), control=2)
         expected = [
             qp.RZ(0.0615, wires=[0]),
-            ControlledOp2(qp.X(0), [2, 1]),
+            qp.MultiControlledX([2, 1, 0]),
             qp.RZ(-0.0615, wires=[0]),
-            ControlledOp2(qp.X(0), [2, 1]),
+            qp.MultiControlledX([2, 1, 0]),
         ]
         assert ctrl_op.decomposition() == expected
 

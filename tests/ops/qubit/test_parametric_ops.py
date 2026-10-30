@@ -3844,7 +3844,13 @@ class TestParametricPow:
         pow_op = op.pow(n)
 
         assert len(pow_op) == 1
-        assert pow_op[0].__class__ is op.__class__
+        if isinstance(op, qp.ops.Controlled2):
+            assert isinstance(pow_op[0], qp.ops.ControlledOp2)
+            assert pow_op[0].base.__class__ is op.base.__class__
+            assert pow_op[0].control_wires == op.control_wires
+            assert qp.math.allequal(pow_op[0].control_values, op.control_values)
+        else:
+            assert pow_op[0].__class__ is op.__class__
         assert all((qp.math.allclose(d1, d2 * n) for d1, d2 in zip(pow_op[0].data, op.data)))
 
     @pytest.mark.parametrize("op", pow_parametric_ops)

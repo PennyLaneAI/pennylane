@@ -805,7 +805,7 @@ class TestMultiControlledX:
         with qp.queuing.AnnotatedQueue() as q:
             qp.MultiControlledX(wires=control_target_wires, work_wires=worker_wires)
         tape = qp.tape.QuantumScript.from_queue(q)
-        [tape], _ = decompose(tape, max_expansion=1, gate_set=qp.gate_sets.CLIFFORD_T)
+        [tape], _ = decompose(tape, max_expansion=2, gate_set=qp.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qp.MultiControlledX) for op in tape.operations)
 
         @qp.qnode(dev)
@@ -936,7 +936,12 @@ class TestPowMethod:
         """Test that ops with a period of 2 raised to an odd power are the same as the original op."""
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
-        qp.assert_equal(pow_ops[0], op)
+        expected = (
+            qp.ctrl(op.base, op.control_wires, control_values=op.control_values)
+            if isinstance(op, qp.ops.Controlled2)
+            else op
+        )
+        qp.assert_equal(pow_ops[0], expected)
 
     @pytest.mark.parametrize("op", period_two_ops)
     @pytest.mark.parametrize("n", (2, 6, 0, -2))

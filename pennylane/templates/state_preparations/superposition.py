@@ -321,7 +321,7 @@ class Superposition(Operation):
         [StatePrep(array([0.707..., 0.707...]), wires=[1]),
         MultiControlledX(wires=[0, 1, 2], control_values=[False, True]),
         CNOT(wires=[2, 0]),
-        Toffoli(wires=[0, 1, 2])]
+        MultiControlledX(wires=[0, 1, 2])]
 
         """
 

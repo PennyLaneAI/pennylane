@@ -298,9 +298,9 @@ def draw(
         on the control wire:
 
         >>> print(qp.draw(qp.ctrl(qp.GlobalPhase, control=[2]), **draw_kwargs)(phi=0.5))
-        0: ────────────┤
-        1: ────────────┤
-        2: ──Rϕ(-0.50)─┤
+        0: ─╭GlobalPhase(0.50)─┤
+        1: ─├GlobalPhase(0.50)─┤
+        2: ─╰●─────────────────┤
 
     """
     qnode, partial_args, partial_kwargs = _unwrap_partial(qnode)

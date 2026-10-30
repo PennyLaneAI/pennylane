@@ -460,7 +460,13 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         max_op_min_work_wires = 0
         for op in decomp_resource.gate_counts:
 
-            if self._base_in_progress(op):
+            next_node = _OperatorNode(
+                op,
+                num_used_work_wires + work_wire_spec.total,
+                op in self._work_wire_dependent_ops,
+            )
+            # Reusing an existing node closes a finite cycle without growing the graph.
+            if next_node not in self._all_op_indices and self._base_in_progress(op):
                 d_node.reachable = False
                 self._graph.add_edge(d_node_idx, op_idx, 0)
                 return d_node
