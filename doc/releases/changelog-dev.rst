@@ -343,6 +343,7 @@ New features since last release
   `(#9847) <https://github.com/PennyLaneAI/pennylane/pull/9847>`__
   `(#10008) <https://github.com/PennyLaneAI/pennylane/pull/10008>`__
   `(#10053) <https://github.com/PennyLaneAI/pennylane/pull/10053>`__
+  `(#10414) <https://github.com/PennyLaneAI/pennylane/pull/10414>`__
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
   want to prepare, the template is simple to call. Consider the following example:
@@ -2266,10 +2267,6 @@ Bug fixes 🐛
 * ``qp.adjoint`` now rejects numerical tracers during capture instead of treating
   them as quantum operators.
   `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
-
-* :class:`~.PartialUnaryStatePreparation` now constructs its dense state using a static
-  inverse mapping, avoiding an unsupported runtime scatter when compiling to a binary.
-  `(#) <https://github.com/PennyLaneAI/pennylane/pull/>`__
 
 * :func:`~.core.abstractify` no longer raises an error for an :class:`~.Operator2` whose dynamic
   argument is a SciPy sparse matrix, such as a :class:`~.QubitUnitary` built from a ``csr_matrix``.
