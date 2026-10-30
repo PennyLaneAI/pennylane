@@ -70,6 +70,117 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         """Fixture for the qjit'd QNode with a user transform."""
         return qp.qjit(qp.transforms.cancel_inverses(qnode))
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_decomposition_clifford_t(self):
+        """Test the resources of a circuit with many Clifford and T-based operators and several
+        measurements projected onto Clifford+T, and compare with a real decompose call."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def circuit():
+            qp.Toffoli([0, 1, 2])
+            qp.Hadamard(0)
+            qp.Hadamard(0)
+            qp.CCZ([0, 1, 2])
+            qp.SWAP([0, 1])
+            qp.CZ([1, 2])
+            qp.CY([0, 2])
+            qp.adjoint(qp.T(0))
+            qp.adjoint(qp.S(1))
+            qp.S(2)
+            qp.T(2)
+            qp.CNOT([0, 1])
+            qp.PauliX(1)
+            return qp.expval(qp.Z(0)), qp.probs(wires=[0, 1]), qp.var(qp.X(2))
+
+        resources = qp.estimate(circuit, target=qp.gate_sets.CLIFFORD_T)().resources
+
+        assert resources == SpecsResources(
+            counts={
+                "Adjoint(S)": 1,
+                "Adjoint(T)": 7,
+                "CNOT": 13,
+                "CY": 1,
+                "CZ": 1,
+                "Hadamard": 6,
+                "PauliX": 1,
+                "S": 1,
+                "SWAP": 1,
+                "T": 9,
+            },
+            measurement_processes={"expval(PauliZ)": 1, "probs(2 wires)": 1, "var(PauliX)": 1},
+            num_wires=3,
+        )
+
+        @qp.qjit(capture=True)
+        @qp.transforms.decompose(gate_set=qp.gate_sets.CLIFFORD_T)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def decomposed_circuit():
+            qp.Toffoli([0, 1, 2])
+            qp.Hadamard(0)
+            qp.Hadamard(0)
+            qp.CCZ([0, 1, 2])
+            qp.SWAP([0, 1])
+            qp.CZ([1, 2])
+            qp.CY([0, 2])
+            qp.adjoint(qp.T(0))
+            qp.adjoint(qp.S(1))
+            qp.S(2)
+            qp.T(2)
+            qp.CNOT([0, 1])
+            qp.PauliX(1)
+            return qp.expval(qp.Z(0)), qp.probs(wires=[0, 1]), qp.var(qp.X(2))
+
+        assert qp.analyze(decomposed_circuit, level=1)().resources == resources
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_decomposition_rotations(self):
+        """Test the resources of a circuit with many kinds of rotations and several measurements
+        projected onto rotations and CNOT, and compare with a real decompose call."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def circuit():
+            qp.Hadamard(0)
+            qp.Hadamard(0)
+            qp.SWAP([0, 1])
+            qp.CRX(0.2, [0, 1])
+            qp.MultiRZ(0.3, [0, 1, 2])
+            qp.IsingXX(0.4, [1, 2])
+            qp.Rot(0.1, 0.2, 0.3, 0)
+            qp.adjoint(qp.RX(0.5, 2))
+            qp.ctrl(qp.RX(0.3, 2), control=[1])
+            qp.RZ(0.7, 1)
+            qp.CNOT([1, 2])
+            return qp.expval(qp.Z(0)), qp.probs(wires=[0, 1]), qp.var(qp.X(2))
+
+        resources = qp.estimate(circuit, target=qp.gate_sets.ROTATIONS_PLUS_CNOT)().resources
+
+        assert resources == SpecsResources(
+            counts={"CNOT": 14, "GlobalPhase": 2, "RX": 2, "RY": 7, "RZ": 10},
+            measurement_processes={"expval(PauliZ)": 1, "probs(2 wires)": 1, "var(PauliX)": 1},
+            num_wires=3,
+        )
+
+        @qp.qjit(capture=True)
+        @qp.transforms.decompose(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def decomposed_circuit():
+            qp.Hadamard(0)
+            qp.Hadamard(0)
+            qp.SWAP([0, 1])
+            qp.CRX(0.2, [0, 1])
+            qp.MultiRZ(0.3, [0, 1, 2])
+            qp.IsingXX(0.4, [1, 2])
+            qp.Rot(0.1, 0.2, 0.3, 0)
+            qp.adjoint(qp.RX(0.5, 2))
+            qp.ctrl(qp.RX(0.3, 2), control=[1])
+            qp.RZ(0.7, 1)
+            qp.CNOT([1, 2])
+            return qp.expval(qp.Z(0)), qp.probs(wires=[0, 1]), qp.var(qp.X(2))
+
+        assert qp.analyze(decomposed_circuit, level=1)().resources == resources
+
     def test_specs(self, circuit):
         """Test that estimate ignores the user transforms and decomposes the circuit into the
         target gate set."""
@@ -247,6 +358,32 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         assert not concrete.is_symbolic
         assert concrete.counts == {"Hadamard": 10, "CNOT": 5}
 
+    def test_abstract_data_hints_scf(self):
+        """Estimate supports abstract inputs together with hinted SCF."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def circuit(n, angles, wires):
+            @qp.hint({"num-iters": 4})
+            @qp.for_loop(n)
+            def loop(i):
+                qp.CZ([wires[0], wires[1]])
+                qp.RX(angles[i], wires[0])
+
+            loop()
+            return qp.expval(qp.Z(wires[0]))
+
+        resources = qp.estimate(circuit, target={"Hadamard", "CNOT", "RX"})(
+            2, qp.typing.AbstractArray((5,), float), qp.typing.Wire[2]
+        ).resources
+
+        # hint overrides the runtime bound: 4 iters of CZ -> 2 H + CNOT, plus RX
+        assert resources == SpecsResources(
+            counts={"Hadamard": 8, "CNOT": 4, "RX": 4},
+            measurement_processes={"expval(PauliZ)": 1},
+            num_wires=10,
+        )
+
     def test_partial(self, circuit):
         """Test that estimate supports functools.partial wrappers."""
 
@@ -326,6 +463,21 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
 
         with pytest.raises(ValueError, match="qp.estimate can only be applied to a qjit'd QNode"):
             qp.estimate(circuit, target=TARGET)()
+
+    def test_dynamic_allocation(self):
+        """Test that estimate counts the gates acting on dynamically allocated wires."""
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
+        def circuit():
+            with qp.allocate(2) as aux:
+                qp.CZ(aux)
+            return qp.probs(wires=0)
+
+        resources = qp.estimate(circuit, target={"Hadamard", "CNOT"})().resources
+
+        assert resources.quantum_operations == {"Hadamard": 2, "CNOT": 1}
+        assert resources.num_wires == 4
 
 
 @pytest.mark.usefixtures("disable_capture")
