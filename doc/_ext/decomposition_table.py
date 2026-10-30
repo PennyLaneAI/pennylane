@@ -41,7 +41,6 @@ Such rules are listed after the regular rules, below a divider explaining how to
 
 from docutils import nodes
 from docutils.parsers.rst import directives
-from sphinx import addnodes
 from sphinx.util.docutils import SphinxDirective
 
 # for each region, the symbolic operator name used in the fixed_decomps key, e.g.
