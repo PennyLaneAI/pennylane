@@ -1427,8 +1427,8 @@ class TestModifiedTemplates:
         qp.assert_equal(op, qp.Incrementer(**kwargs))
 
     def test_left_classical_comparator(self):
-        """Test the primitive bind call of LeftClassicalComparator. 
-        
+        """Test the primitive bind call of LeftClassicalComparator.
+
         NOTE: The threshold is captured as an operand and can change at evaluation time.
         """
 
