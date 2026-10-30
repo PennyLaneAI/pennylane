@@ -117,6 +117,51 @@ class OutMultiplier(Operator2):
     :math:`2 \cdot 7 \; \text{modulo} \; 12 = 2`.
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.OutMultiplier
+            :symbols: :math:`n` ``x_wires``, :math:`m` ``y_wires``, :math:`k \geq n + m`
+                ``output_wires``, :math:`w` ``work_wires``, ``mod`` :math:`=2^k` and
+                ``output_wires_zeroed=False``
+            :example: :math:`n=m=1`, :math:`k=2`
+
+            .. decomposition-rule:: _out_multiplier_with_qft
+                :image: /_static/decomposition_thumbnails/out_multiplier_qft.svg
+                :requires: program capture to be disabled
+
+                :class:`~.QFT` | :math:`1` | 1
+                :class:`~.ControlledSequence` (nested, of :class:`~.PhaseAdder`) | :math:`1` | 1
+                :class:`Adjoint(QFT) <.QFT>` | :math:`1` | 1
+
+            .. decomposition-rule:: _out_multiplier_with_adder
+                :image: /_static/decomposition_thumbnails/out_multiplier_adder.svg
+                :requires: :math:`w \geq k` work wires
+
+                :class:`~.SemiAdder` with 1 control | :math:`n` | 1
+
+            .. decomposition-rule:: _out_multiplier_with_caddsub
+                :image: /_static/decomposition_thumbnails/out_multiplier_caddsub.svg
+                :requires: :math:`w \geq k + 1` work wires
+                :where: :math:`[m > 1]` equal to 1 if :math:`m > 1` and 0 otherwise
+
+                :class:`~.TemporaryAND` | :math:`(n + 1)k - m - \binom{n}{2}` | 3
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`(n + 1)k - m - \binom{n}{2}` | 3
+                :class:`~.CNOT` | :math:`(n + 1)k + 5nm + n - m - 4 - \binom{n}{2}` | 5
+                :class:`~.X` | :math:`2k + 8` | 12
+                :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`4n` | 4
+                :class:`~.MultiX` with 1 control on :math:`|0\rangle` | :math:`2n\,[m > 1]` | 0
+                :class:`~.SemiAdder` | :math:`2` | 2
+                :class:`~.Incrementer` | :math:`1` | 1
+
+            .. decomposition-rule:: _out_multiplier_with_cache
+                :image: /_static/decomposition_thumbnails/out_multiplier_cache.svg
+                :requires: :math:`w \geq 2k - 1` work wires
+
+                :class:`~.OutMultiplier` with ``output_wires_zeroed=True`` | :math:`1` | 1
+                :class:`~.SemiAdder` | :math:`1` | 1
+                :class:`Adjoint(OutMultiplier) <.OutMultiplier>` | :math:`1` | 1
+
+    .. details::
         :title: Usage Details
 
         This template takes as input four different registers of wires.

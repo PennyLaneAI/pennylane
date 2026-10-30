@@ -29,7 +29,7 @@ from .temporary_and import TemporaryAND
 
 
 class Incrementer(Operator2):
-    """
+    r"""
     Increment the input ``wires`` by one, using zeroed ``work_wires``.
 
     Args:
@@ -63,6 +63,29 @@ class Incrementer(Operator2):
     array([0, 1, 1])
 
     The result incremented the binary value in the non-work wires by 1: :math:`(010)_2 + (001)_2 = (011)_2`.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.Incrementer
+            :symbols: :math:`n \geq 2` ``wires`` and :math:`w` ``work_wires``
+            :example: :math:`n=4`
+
+            .. decomposition-rule:: _incrementer_decomposition
+                :image: /_static/decomposition_thumbnails/incrementer_elbow_ladder.svg
+                :requires: :math:`w \geq n - 1` work wires
+
+                :class:`~.TemporaryAND` | :math:`n - 2` | 2
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`n - 2` | 2
+                :class:`~.CNOT` | :math:`n - 1` | 3
+                :class:`~.X` | :math:`1` | 1
+
+            .. decomposition-rule:: _incrementer_fallback_decomposition
+                :image: /_static/decomposition_thumbnails/incrementer_multi_controlled_x.svg
+                :requires: :math:`w < n - 1` work wires
+
+                :class:`~.MultiControlledX` with :math:`1, \dots, n-1` controls | :math:`n-1` | 3
+                :class:`~.X` | :math:`1` | 1
 
     .. details::
         :title: Decomposition
