@@ -24,16 +24,17 @@ from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_standard_validity():
+@pytest.mark.parametrize("order, n_qubits", [(0, 3), (2, 3), (3, 9)])
+def test_standard_validity(order, n_qubits):
     """Check the operation using the assert_valid function."""
-    op = qp.AQFT(order=2, wires=(0, 1, 2))
+    op = qp.AQFT(order=order, wires=list(range(n_qubits)))
     qp.testing.assert_valid(op)
 
 
 class TestAQFT:
     """Tests for the aqft operations"""
 
-    @pytest.mark.parametrize("order,n_qubits", [(o, w) for w in range(2, 10) for o in range(1, w)])
+    @pytest.mark.parametrize("order,n_qubits", [(o, w) for w in range(2, 7) for o in range(w)])
     def test_AQFT_adjoint_identity(self, order, n_qubits, tol):
         """Test if after using the qp.adjoint transform the resulting operation is
         the inverse of AQFT."""
@@ -46,10 +47,13 @@ class TestAQFT:
             qp.AQFT(order=order, wires=range(n_qubits))
             return qp.state()
 
-        assert np.allclose(1, circ(n_qubits, order)[0], tol)
+        state = circ(n_qubits, order)
+        assert np.allclose(state, np.eye(1, 2**n_qubits), atol=tol)
 
-        for i in range(1, n_qubits):
-            assert np.allclose(0, circ(n_qubits, order)[i], tol)
+    def test_empty_wires(self):
+        """Test if ValueError is raised for empty wires."""
+        with pytest.raises(ValueError, match="AQFT on empty wires is not supported."):
+            qp.AQFT(order=1, wires=[])
 
     @pytest.mark.parametrize("order", [-1, -5.4])
     def test_negative_order(self, order):
@@ -60,35 +64,31 @@ class TestAQFT:
     @pytest.mark.parametrize("order", [1.2, 4.6])
     def test_float_order(self, order):
         """Test if float order is handled correctly"""
-        with pytest.warns(UserWarning, match="The order must be an integer"):
+        with pytest.warns(UserWarning, match="The order should be an integer"):
             op = qp.AQFT(order=order, wires=range(9))
             assert op.hyperparameters["order"] == round(order)
 
-    @pytest.mark.parametrize("wires", range(3, 10))
-    def test_zero_order(self, wires):
-        """Test if Hadamard transform is applied for zero order"""
-        with pytest.warns(UserWarning, match="order=0"):
-            op = qp.AQFT(order=0, wires=range(wires))
-            for gate in op.decomposition()[: -wires // 2]:
-                assert gate.name == "Hadamard"
-
-    @pytest.mark.parametrize("order", [4, 5, 6])
+    @pytest.mark.parametrize("order", [5, 6])
     def test_higher_order(self, order):
-        """Test if higher order recommends using QFT"""
-        with pytest.warns(UserWarning, match="Using the QFT class is recommended in this case"):
+        """Test that higher order recommends using capped order"""
+        with pytest.warns(UserWarning, match="Using order = 4 instead"):
             qp.AQFT(order=order, wires=range(5))
 
-    @pytest.mark.parametrize("wires", [3, 4, 5, 6, 7, 8, 9])
+    @pytest.mark.parametrize("wires", [3, 4, 5, 6, 8, 9])
     def test_matrix_higher_order(self, wires):
-        """Test if the matrix from AQFT and QFT are same for higher order"""
+        """Test that the matrix from AQFT and QFT are same for higher order"""
+        order = 8
+        if wires < order + 1:
+            with pytest.warns(UserWarning, match="The order .* is larger than or equal to"):
+                m1 = qp.matrix(qp.AQFT(order=order, wires=range(wires)))
+        else:
+            m1 = qp.matrix(qp.AQFT(order=order, wires=range(wires)))
 
-        m1 = qp.matrix(qp.AQFT(order=10, wires=range(wires)))
         m2 = qp.matrix(qp.QFT(wires=range(wires)))
-
         assert np.allclose(m1, m2)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(1, w)])
+    @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(w)])
     def test_decomposition_new(self, order, wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.AQFT(order=order, wires=range(wires))
@@ -109,7 +109,7 @@ class TestAQFT:
         expected_hint = num_cps / n_wires
         assert hint_helpers.loop_hints(plxpr.jaxpr, skip_none=True) == [expected_hint]
 
-    @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(1, w)])
+    @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(w)])
     def test_gates(self, order, wires):
         """Test if the AQFT operation consists of only 3 type of gates"""
 
