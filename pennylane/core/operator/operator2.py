@@ -1546,8 +1546,8 @@ class Operator2(metaclass=OperatorMeta):
 
             self._batch_size = first_dims[0]
 
-    def _bind_primitive(self):
-        """Bind the operator plxpr primitive."""
+    def _bind_primitive(self, *, primitive=None):
+        """Bind the operator plxpr primitive, optionally using a custom primitive."""
 
         # Skip if program capture is disabled
         if not enabled():
@@ -1589,7 +1589,9 @@ class Operator2(metaclass=OperatorMeta):
             leaves, tree = flatten(value)
             static_args[name] = (tuple(leaves), tree)
 
-        res = operator_p.bind(
+        if primitive is None:
+            primitive = operator_p
+        res = primitive.bind(
             *positional_args,
             op_cls=type(self),
             wire_lens=wire_lens,
