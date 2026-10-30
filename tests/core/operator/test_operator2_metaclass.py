@@ -64,6 +64,36 @@ class TestOperatorRegistry:
         assert registry["RegistryChildOp"] is RegistryChildOp
         assert get_op_class_by_name("RegistryChildOp") is RegistryChildOp
 
+    def test_duplicate_name(self):
+        """Duplicate names warn and preserve the first registered class."""
+
+        class RegistryDuplicateOp(Operator2):
+            """The first operator registered under this name."""
+
+        original_class = RegistryDuplicateOp
+        with pytest.warns(
+            UserWarning,
+            match=r"More than one operator class by the same name \(RegistryDuplicateOp\)",
+        ):
+
+            class RegistryDuplicateOp(Operator2):
+                """A different operator with the same name."""
+
+        assert RegistryDuplicateOp is not original_class
+        assert OperatorRegistry()["RegistryDuplicateOp"] is original_class
+        assert get_op_class_by_name("RegistryDuplicateOp") is original_class
+
+    @pytest.mark.parametrize(
+        "lookup", (get_op_class_by_name, lambda name: OperatorRegistry()[name])
+    )
+    def test_unknown_name(self, lookup):
+        """Both lookup interfaces raise KeyError for an unregistered name."""
+
+        with pytest.raises(KeyError) as exc_info:
+            lookup("RegistryUnknownOp")
+
+        assert exc_info.value.args == ("RegistryUnknownOp",)
+
 
 class DynCanonOp(Operator2):  # pylint: disable=too-few-public-methods
     """Operator with a dynamic parameter and wires that performs canonicalization."""

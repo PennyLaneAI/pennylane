@@ -92,7 +92,7 @@ def get_op_class_by_name(name):
     MyNamedOp(label=my-label, wires=[0, 1])
 
     >>> from pennylane.core import OperatorRegistry
-    >>> OperatorRegistry["MyNamedOp"]("my-second-label", [0, 1])
+    >>> OperatorRegistry()["MyNamedOp"]("my-second-label", [0, 1])
     MyNamedOp(label=my-second-label, wires=[0, 1])
     """
     return OperatorRegistry()[name]
