@@ -15,8 +15,6 @@
 A transform for decomposing RZ rotations using a phase gradient catalyst state.
 """
 
-from functools import partial
-
 import numpy as np
 
 import pennylane as qp
@@ -41,17 +39,11 @@ def _rz_phase_gradient(
 
     binary_int = math.binary_decimals(phi, precision, unit=2 * np.pi)
 
-    # NOTE: To be capture compatible, must wrap in function
-    # so operators are only constructed when called
     control_wire = Wires(wire)[0]
+    compute_op = qp.ctrl(qp.MultiX(binary_int, angle_wires), control=control_wire)
+    target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires)
 
-    def compute_fn():
-        qp.ctrl(qp.MultiX(binary_int, angle_wires), control=control_wire)
-
-    target_fn = partial(qp.SemiAdder, angle_wires, phase_grad_wires, work_wires)
-
-    # NOTE: Compute function is self-inverse, pass it for the uncompute function
-    return change_op_basis(compute_fn, target_fn, compute_fn)
+    return change_op_basis(compute_op, target_op, compute_op)
 
 
 @transform

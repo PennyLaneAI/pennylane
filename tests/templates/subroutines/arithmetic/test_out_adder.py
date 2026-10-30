@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.templates.subroutines.arithmetic.out_adder import _out_adder_decomposition
 from pennylane.testing import assert_decomposable
 
 
@@ -230,6 +231,25 @@ class TestOutAdder:
         work_wires = [0, 1]
         op = qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
         assert_decomposable(op)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_basis_change_with_concrete_wires(self):
+        """The rule preserves modular addition when capture is enabled with concrete wires."""
+        with qp.queuing.AnnotatedQueue() as queue:
+            _out_adder_decomposition([5], [1], [8], 2, [])
+
+        with qp.capture.pause():
+            tape = qp.tape.QuantumScript.from_queue(queue)
+            assert isinstance(tape.operations[0], qp.ops.ChangeOpBasis2)
+            assert not isinstance(tape.operations[0].target_op, qp.ops.Prod2)
+            qp.testing.assert_valid(tape.operations[0].target_op)
+            matrix = qp.matrix(tape, wire_order=[5, 1, 8])
+        expected = np.zeros((8, 8))
+        for column in range(8):
+            x, y, output = column >> 2, (column >> 1) & 1, column & 1
+            row = (x << 2) + (y << 1) + ((output + x + y) % 2)
+            expected[row, column] = 1
+        assert np.allclose(matrix, expected)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""

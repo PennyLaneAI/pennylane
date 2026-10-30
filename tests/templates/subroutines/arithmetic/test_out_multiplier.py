@@ -492,6 +492,28 @@ class TestOutMultiplier:
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("num_output_wires", [1, 2])
+    def test_qft_rule_zeroed_output_with_concrete_wires(self, num_output_wires):
+        """Concrete-wire capture preserves multiplication on the zero-output subspace."""
+        output_wires = [8, 3][:num_output_wires]
+        modulus = 2**num_output_wires
+        with qp.queuing.AnnotatedQueue() as queue:
+            _out_multiplier_with_qft([5], [1], output_wires, modulus, [], True)
+
+        with qp.capture.pause():
+            tape = qp.tape.QuantumScript.from_queue(queue)
+            compute = tape.operations[0].operands[-1]
+            assert not isinstance(compute, qp.ops.Prod2)
+            qp.testing.assert_valid(compute)
+            matrix = qp.matrix(tape, wire_order=[5, 1, *output_wires])
+        for x in range(2):
+            for y in range(2):
+                column = (2 * x + y) * modulus
+                expected = np.zeros(4 * modulus)
+                expected[column + x * y] = 1
+                assert np.allclose(matrix[:, column], expected)
+
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "applicable_rules"),
         _DECOMP_NEW_OUTPUT_WIRES_ZEROED_CASES,

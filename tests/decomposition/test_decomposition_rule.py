@@ -27,7 +27,6 @@ from pennylane.decomposition.decomposition_rule import (
     DecompositionRule,
     WorkWireSpec,
     _fix_decomp,
-    _unroll_change_op_basis,
     _verify_is_abstract_and_fixed,
     register_condition,
     register_resources,
@@ -40,7 +39,7 @@ from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow2 import flip_pow_adjoint, merge_powers, repeat_pow_base
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.testing.decompositions import assert_valid_decomp_rule
-from pennylane.typing import Float, Int, Wire
+from pennylane.typing import Bool, Float, Int, Wire
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp, ParametrizedHybridOp
 
 # pylint: disable=too-few-public-methods,useless-parent-delegation
@@ -1329,76 +1328,36 @@ class TestInspectDecomps:
             qp.inspect_decomps(CustomParametrizedOp)
 
 
-class TestCOBUnroll:  # pylint: disable=too-few-public-methods
-    """Tests the custom behaviour related to COB in the resource function."""
+@pytest.mark.usefixtures("enable_and_disable_capture")
+class TestChangeOpBasisResources:
+    """Resource dependencies retain the composites emitted by decomposition rules."""
 
-    def test_unroll_change_op_basis_resources(self):
-        """ChangeOpBasis resource keys are expanded without rewriting other keys."""
-
-        x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
-        prod_rep = qp.resource_rep(qp.ops.Prod, resources={x_rep: 2})
-        cob_rep = _change_op_basis_abstract(prod_rep, y_rep, x_rep)
-
-        result = _unroll_change_op_basis({cob_rep: 2, z_rep: 4, prod_rep: 3})
-        assert result == {x_rep: 6, y_rep: 2, z_rep: 4, prod_rep: 3}
-
-    def test_unroll_nested_symbolic_change_op_basis_resources(self):
-        """ChangeOpBasis resource keys are recursively expanded through symbolic wrappers."""
-
-        x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
-        cob = _change_op_basis_abstract(x_rep, y_rep, x_rep)
-
-        def wrapper(op):
-            return qp.adjoint(qp.ctrl(op, control=Wire[1]))
-
-        wrapped_z = wrapper(z_rep)
-        result = _unroll_change_op_basis({wrapper(cob): 2, wrapped_z: 3})
-        assert result == {wrapper(x_rep): 4, wrapper(y_rep): 2, wrapped_z: 3}
-
-    def test_unroll_nested_change_op_basis_resources(self):
-        """ChangeOpBasis resource keys nested in another ChangeOpBasis are recursively expanded."""
-
+    @pytest.mark.parametrize("kind", ["product", "legacy", "nested", "symbolic", "nested_product"])
+    def test_compute_resources_preserves_composite(self, kind):
+        """Keep nested and wrapped basis changes as graph dependencies in both capture modes."""
         x_rep, y_rep, z_rep, h_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z, qp.H))
-        inner_cob = _change_op_basis_abstract(x_rep, y_rep, x_rep)
-        outer_cob = _change_op_basis_abstract(z_rep, inner_cob, z_rep)
+        inner = ChangeOpBasis2(x_rep, y_rep, x_rep)
+        if kind == "product":
+            composite = ChangeOpBasis2(Prod2((x_rep, y_rep)), h_rep)
+        elif kind == "legacy":
+            product = qp.resource_rep(qp.ops.Prod, resources={x_rep: 2})
+            composite = _change_op_basis_abstract(product, y_rep, x_rep)
+        elif kind == "nested":
+            composite = ChangeOpBasis2(z_rep, inner, z_rep)
+        elif kind == "symbolic":
+            composite = qp.adjoint(
+                qp.ctrl(inner, control=Wire[1], control_values=Bool[1], work_wires=Wire[0])
+            )
+        else:
+            product = qp.prod(x_rep, inner)
+            composite = ChangeOpBasis2(product, h_rep, product)
 
-        result = _unroll_change_op_basis({outer_cob: 3})
-        assert result == {z_rep: 6, x_rep: 6, y_rep: 3}
-
-        level_three_cob = _change_op_basis_abstract(h_rep, outer_cob, h_rep)
-        result = _unroll_change_op_basis({level_three_cob: 3})
-        assert result == {h_rep: 6, z_rep: 6, x_rep: 6, y_rep: 3}
-
-    def test_unroll_change_op_basis_nested_in_prod_resources(self):
-        """ChangeOpBasis resource keys inside a Prod operand of a ChangeOpBasis are expanded."""
-
-        x_rep, y_rep, z_rep, h_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z, qp.H))
-        inner_cob = _change_op_basis_abstract(y_rep, z_rep, y_rep)
-        prod_rep = qp.ops.prod(x_rep, inner_cob)
-        outer_cob = _change_op_basis_abstract(prod_rep, h_rep, prod_rep)
-
-        result = _unroll_change_op_basis({outer_cob: 2})
-        assert result == {x_rep: 4, y_rep: 8, z_rep: 4, h_rep: 2}
-
-    @pytest.mark.capture
-    def test_compute_resources_returns_unrolled(self):
-        """Tests that compute_resources returns a dictionary where COBs are unrolled."""
-
-        @register_resources(
-            {ChangeOpBasis2(Prod2([qp.X(Wire[1]), qp.Y(Wire[1])]), qp.H(Wire[1])): 1}
-        )
-        def custom_rule(*args, **kwargs):
+        @register_resources({composite: 2, z_rep: 3})
+        def rule(wires):
             raise NotImplementedError
 
-        assert custom_rule.compute_resources().gate_counts == {
-            qp.X(Wire[1]): 1,
-            qp.Y(Wire[1]): 1,
-            qp.H(Wire[1]): 1,
-            qp.adjoint(qp.X(Wire[1])): 1,
-            qp.adjoint(qp.Y(Wire[1])): 1,
-        }
+        assert rule.compute_resources().gate_counts == {composite: 2, z_rep: 3}
 
-    @pytest.mark.capture
     def test_nested_change_op_basis_rule_is_valid(self):
         """Tests that a rule with nested COBs in both its body and its resources is valid."""
 
@@ -1408,12 +1367,7 @@ class TestCOBUnroll:  # pylint: disable=too-few-public-methods
 
         @register_resources(resources)
         def rule(wires, **_):
-            def inner_cob():
-                qp.change_op_basis(qp.H(wires), qp.Z(wires), qp.H(wires))
-
-            def outer_compute():
-                qp.X(wires)
-
-            qp.change_op_basis(outer_compute, inner_cob, outer_compute)
+            inner = qp.change_op_basis(qp.H(wires), qp.Z(wires), qp.H(wires))
+            qp.change_op_basis(qp.X(wires), inner, qp.X(wires))
 
         assert_valid_decomp_rule(qp.X(0), rule)

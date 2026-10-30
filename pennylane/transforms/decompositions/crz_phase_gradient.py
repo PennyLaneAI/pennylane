@@ -19,29 +19,53 @@ Factory that produces a decomposition rule for CRZ in terms of
 import numpy as np
 
 import pennylane as qp
-from pennylane.ops.op_math import ChangeOpBasis2, prod
+from pennylane.decomposition._subcircuit import subcircuit
+from pennylane.ops.op_math import ChangeOpBasis2
 from pennylane.typing import Bool, Wire
 
 from .rz_phase_gradient import _precision_dispatcher, validate_phase_gradient_wires
 
 
+def _crz_phase_gradient_compute_resources(bitstrings, wires, angle_wires, phase_grad_wires):
+    """Resources for loading a controlled angle and flipping the phase-gradient register."""
+    angle_fanout = qp.ctrl(qp.MultiX(bitstrings, angle_wires), control=wires[:1])
+    phase_fanout = qp.ctrl(
+        qp.MultiX(Bool[len(phase_grad_wires)], phase_grad_wires), control=wires[1:]
+    )
+    resources = {angle_fanout: 1}
+    resources[phase_fanout] = resources.get(phase_fanout, 0) + 1
+    return resources
+
+
+@subcircuit(
+    dynamic_argnames=("bitstrings",),
+    wire_argnames=("wires", "angle_wires", "phase_grad_wires"),
+    arg_specs={
+        "bitstrings": Bool[-1],
+        "wires": Wire[2],
+        "angle_wires": Wire[-1],
+        "phase_grad_wires": Wire[-1],
+    },
+    grad_method=None,
+)
+@qp.register_resources(_crz_phase_gradient_compute_resources)
+def _CRZPhaseGradientCompute(bitstrings, wires, angle_wires, phase_grad_wires) -> None:
+    """Load a controlled angle and flip phase-gradient wires when the target is zero."""
+    qp.ctrl(qp.MultiX(bitstrings, angle_wires), control=wires[0])
+    qp.ctrl(
+        qp.MultiX([1] * len(phase_grad_wires), phase_grad_wires),
+        control=wires[1],
+        control_values=[0],
+    )
+
+
 def _crz_phase_gradient(phi, wires, angle_wires, phase_grad_wires, work_wires):
     """Apply the phase gradient circuit for CRZ. The precision is implicitly defined by the
     length of ``angle_wires``."""
-    binary_int = qp.math.binary_decimals(phi, len(angle_wires), unit=4 * np.pi)
-    control_wire, target_wire = wires[0], wires[1]
-
-    def _compute_fn():
-        qp.ctrl(qp.MultiX(binary_int, angle_wires), control=control_wire)
-        # Flip the phase-gradient wires when the target wire is |0> (double-phase trick).
-        qp.ctrl(
-            qp.MultiX([1] * len(phase_grad_wires), phase_grad_wires),
-            control=target_wire,
-            control_values=[0],
-        )
-
+    binary_int = qp.math.cast(qp.math.binary_decimals(phi, len(angle_wires), unit=4 * np.pi), bool)
+    compute_op = _CRZPhaseGradientCompute(binary_int, wires, angle_wires, phase_grad_wires)
     target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
-    qp.change_op_basis(_compute_fn, target_op, _compute_fn)
+    qp.change_op_basis(compute_op, target_op, compute_op)
 
 
 def make_crz_to_phase_gradient_decomp(
@@ -213,11 +237,8 @@ def make_crz_to_phase_gradient_decomp(
         resources = {}
         for p in precisions - {0}:
             target_op = qp.SemiAdder(Wire[p], Wire[p], Wire[len(work_wires)])
-            # angle-load and phase-flip fanouts abstractify to the same op (control_values aren't
-            # part of the abstract representation), hence the repeated ``fanout`` below.
-            fanout = qp.ctrl(qp.MultiX(Bool[p], Wire[p]), control=Wire[1])
-            compute_op = uncompute_op = prod(fanout, fanout)
-            resources[ChangeOpBasis2(compute_op, target_op, uncompute_op)] = 1
+            compute_op = _CRZPhaseGradientCompute(Bool[p], Wire[2], Wire[p], Wire[p])
+            resources[ChangeOpBasis2(compute_op, target_op, compute_op)] = 1
         return resources
 
     @qp.register_resources(_resource_fn, exact=False)

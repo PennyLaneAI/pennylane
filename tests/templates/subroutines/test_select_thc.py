@@ -24,6 +24,8 @@ from pennylane.templates.subroutines.select_thc import (
     _build_qrom_givens_data,
     _cascade_angles,
     _select_half,
+    _SelectTHCBasis,
+    _THCIndexSwaps,
 )
 from pennylane.testing import assert_valid
 from pennylane.typing import AbstractWires
@@ -346,6 +348,34 @@ class TestSelectTHCOperator:
 
         assert_valid(op, skip_differentiation=True)
         assert op.wires == qp.wires.Wires(system + index + flags + gradient + work)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("n_half, num_batches", [(1, 1), (2, 1), (4, 2)])
+    def test_basis_and_swap_resources(self, n_half, num_batches):
+        """Each captured sandwich preserves its basis, target and declared resources."""
+        sizes = select_thc_wires(3, 2 * n_half, 2, num_batches)
+        wires = qp.registers(sizes)
+        op = qp.SelectTHC(
+            _static_matrix(np.ones((3, n_half))),
+            _static_matrix(np.eye(n_half)),
+            2,
+            **wires,
+            num_batches=num_batches,
+        )
+        rule = qp.list_decomps(qp.SelectTHC)[0]
+        qp.testing.assert_valid_decomp_rule(op, rule, check_matrix=False)
+        tape = qp.testing.decomp_rule_to_tape(op, rule)
+
+        assert len(tape.operations) == 4
+        assert tape.operations[0].compute_op.__class__ is _SelectTHCBasis
+        assert tape.operations[1].compute_op.__class__ is _SelectTHCBasis
+        assert tape.operations[2].target_op.__class__ is _THCIndexSwaps
+        for sandwich in tape.operations[:3]:
+            assert isinstance(sandwich, qp.ops.ChangeOpBasis2)
+            for operand in (sandwich.compute_op, sandwich.target_op):
+                qp.testing.assert_decomposable(operand, check_matrix=False)
+                if type(operand) in (_SelectTHCBasis, _THCIndexSwaps):
+                    assert_valid(operand, skip_differentiation=True)
 
     def test_abstract_wires_keep_static_data(self):
         """Test that abstract construction stores compilable data as given."""

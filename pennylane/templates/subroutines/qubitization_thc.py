@@ -16,8 +16,10 @@
 import numpy as np
 
 from pennylane import capture
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition._subcircuit import subcircuit
 from pennylane.ops import GlobalPhase, Hadamard, Z, change_op_basis
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -434,6 +436,84 @@ class QubitizationTHC(Operator2):
         )
 
 
+def _thc_prepare_resources(alias_data, index_wires, work_wires, **_):
+    """Return the superposition, alias sampling and spin preparation resources."""
+    zeta, t_ell, aleph = alias_data
+    M, N = len(zeta), 2 * len(t_ell)
+    n = len(index_wires) // 2
+    n_sup = alias_sampling_thc_wires(M, N, aleph)["superposition_work_wires"]
+    _, n_garbage = _alias_wire_split(M, N, aleph)
+    return {
+        SuperpositionTHC(M, N, Wire[n], Wire[n], Wire[n_sup + len(work_wires)]): 1,
+        AliasSamplingTHC(
+            M,
+            N,
+            zeta,
+            t_ell,
+            Wire[n],
+            Wire[n],
+            Wire[1],
+            Wire[n_garbage + len(work_wires)],
+            aleph,
+        ): 1,
+        Hadamard: 2,
+    }
+
+
+@subcircuit(
+    compilable_argnames=("alias_data",),
+    wire_argnames=("index_wires", "prep_garbage_wires", "work_wires"),
+)
+@register_resources(_thc_prepare_resources)
+def _THCPrepare(
+    alias_data: tuple,
+    index_wires: WiresLike,
+    prep_garbage_wires: WiresLike,
+    work_wires: WiresLike,
+):
+    """Prepare the THC index, coefficient and spin registers.
+
+    Args:
+        alias_data (tuple): the THC core matrix, one-body eigenvalues and alias precision
+        index_wires (Sequence[int]): both THC index registers
+        prep_garbage_wires (Sequence[int]): the persistent alias, superposition and spin registers
+        work_wires (Sequence[int]): shared clean scratch
+    """
+    zeta, t_ell, aleph = alias_data
+    M, N = len(zeta), 2 * len(t_ell)
+    registers = _prepare_registers(M, N, aleph, index_wires, prep_garbage_wires, work_wires)
+    SuperpositionTHC(
+        M, N, registers["mu_wires"], registers["nu_wires"], registers["superposition_work"]
+    )
+    AliasSamplingTHC(
+        M,
+        N,
+        zeta,
+        t_ell,
+        registers["mu_wires"],
+        registers["nu_wires"],
+        registers["edge_flag"],
+        registers["alias_work"],
+        aleph,
+    )
+    # The two spin flags are the |+> controls that route each V onto a spin sector.
+    for wire in registers["spin_wires"]:
+        Hadamard(wire)
+
+
+def _thc_select_resources(selection, **_):
+    """Return the signed THC selection resources."""
+    return {selection: 1, Z: 1}
+
+
+@subcircuit(hybrid_argnames=("selection",), wire_argnames=("sign_wire",))
+@register_resources(_thc_select_resources)
+def _THCSelect(selection: Operator2, sign_wire: WiresLike):
+    """Apply the coefficient sign and THC selection oracle."""
+    Z(sign_wire)
+    apply(selection)
+
+
 def _prepare_select(
     M,
     N,
@@ -452,33 +532,20 @@ def _prepare_select(
 ):  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     r"""Return ``PREPARE``:math:`^\dagger \cdot` ``SELECT`` :math:`\cdot` ``PREPARE`` as a
     single :func:`~.change_op_basis`, given the registers of :func:`_prepare_registers`."""
-    mu_wires, nu_wires = registers["mu_wires"], registers["nu_wires"]
     spin_wires = registers["spin_wires"]
     sign_wire = registers["alias_work"][alias_sampling_thc_wires(M, N, aleph)["sign_wire"]]
 
-    def prepare():
-        SuperpositionTHC(M, N, mu_wires, nu_wires, registers["superposition_work"])
-        AliasSamplingTHC(
-            M,
-            N,
-            zeta,
-            t_ell,
-            mu_wires,
-            nu_wires,
-            registers["edge_flag"],
-            registers["alias_work"],
-            aleph,
-        )
-        # The two spin flags are the |+> controls that route each V onto a spin sector.
-        for wire in spin_wires:
-            Hadamard(wire)
-
-    def select():
-        # The sign of each LCU coefficient must be applied an *odd* number of times between
-        # PREPARE and PREPARE^dagger, so it cannot sit inside ``prepare``: the adjoint would
-        # square the sign away and the walk would block encode the coefficient *magnitudes*
-        # instead.
-        Z(sign_wire)
+    prepare = _THCPrepare(
+        (zeta, t_ell, aleph),
+        index_wires,
+        registers["reflected"][len(index_wires) :],
+        work_wires,
+    )
+    # The sign of each LCU coefficient must be applied an *odd* number of times between
+    # PREPARE and PREPARE^dagger, so it cannot sit inside ``prepare``: the adjoint would
+    # square the sign away and the walk would block encode the coefficient *magnitudes*
+    # instead.
+    select = _THCSelect(
         SelectTHC(
             chi,
             t_eigenvectors,
@@ -495,7 +562,9 @@ def _prepare_select(
             gradient_wires,
             work_wires,
             num_batches=num_batches,
-        )
+        ),
+        sign_wire,
+    )
 
     return change_op_basis(prepare, select)
 
@@ -528,10 +597,7 @@ def _qubitization_thc_resources(
     )
     registers = _prepare_registers(M, N, aleph, index, garbage, work)
 
-    # `_prepare_select` returns change_op_basis. Under capture this is unrolled eagerly
-    # (binds inner gates into the jaxpr and returns None), so we pause here while we build the
-    # resource key. compute_resources already stops queuing but does not pause capture.
-    # This can be removed once https://github.com/PennyLaneAI/pennylane/issues/10162 is resolved.
+    # Resource keys use placeholder wires and must not emit executable capture equations.
     with capture.pause():
         prepselprep = _prepare_select(
             M,

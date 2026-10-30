@@ -25,6 +25,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qp
 from pennylane.core.operator import Operation, Operator2
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition._subcircuit import subcircuit
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     pow_rotation,
@@ -32,7 +33,6 @@ from pennylane.decomposition.symbolic_decomposition import (
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
-from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -208,37 +208,48 @@ class SingleExcitation(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
 
 
-# needs to be wrapped in function due to circular dependencies
+@subcircuit(static_argnames=("reverse",))
+@register_resources(lambda **_: {qp.Hadamard: 1, qp.CNOT: 1})
+def _single_excitation_basis(wires: WiresLike, reverse: bool):
+    if not reverse:
+        qp.Hadamard(wires[0])
+    qp.CNOT(wires)
+    if reverse:
+        qp.Hadamard(wires[0])
+
+
+@subcircuit(dynamic_argnames=("phi",))
+@register_resources(lambda **_: {qp.RY: 2})
+def _single_excitation_rotations(phi: TensorLike, wires: WiresLike):
+    qp.RY(-phi / 2, wires[0])
+    qp.RY(-phi / 2, wires[1])
+
+
 # pylint: disable=unused-argument
 def _single_excitation_resources(phi, wires):
-    # ``Prod2`` takes its operands in matrix order, i.e. reversed relative to the order in which
-    # the decomposition below applies them.
-    basis = Prod2((qp.CNOT(wires=Wire[2]), qp.Hadamard(wires=Wire[1])))
-    unbasis = Prod2((qp.Hadamard(wires=Wire[1]), qp.CNOT(wires=Wire[2])))
     return {
         _change_op_basis_abstract(
-            basis,
-            Prod2((qp.RY(Float, wires=Wire[1]), qp.RY(Float, wires=Wire[1]))),
-            unbasis,
+            _single_excitation_basis(wires=Wire[2], reverse=False),
+            _single_excitation_rotations(Float, wires=Wire[2]),
+            _single_excitation_basis(wires=Wire[2], reverse=True),
         ): 1
     }
 
 
 @register_resources(_single_excitation_resources)
 def _single_excitation_decomp(phi: TensorLike, wires: WiresLike):
-    def _to_basis():
-        qp.Hadamard(wires[0])
-        qp.CNOT(wires)
+    qp.change_op_basis(
+        _single_excitation_basis(wires=wires, reverse=False),
+        _single_excitation_rotations(phi, wires=wires),
+        _single_excitation_basis(wires=wires, reverse=True),
+    )
 
-    def _rotations():
-        qp.RY(-phi / 2, wires[0])
-        qp.RY(-phi / 2, wires[1])
 
-    def _from_basis():
-        qp.CNOT(wires)
-        qp.Hadamard(wires[0])
-
-    qp.change_op_basis(_to_basis, _rotations, _from_basis)
+@subcircuit(dynamic_argnames=("phi",))
+@register_resources(lambda **_: {qp.RZ: 2})
+def _single_excitation_rz_rotations(phi: TensorLike, wires: WiresLike):
+    qp.RZ(phi / 2, wires[0])
+    qp.RZ(-phi / 2, wires[1])
 
 
 # pylint: disable=unused-argument
@@ -260,7 +271,7 @@ def _single_excitation_ppr_rz_resource(phi, wires):
     return {
         _change_op_basis_abstract(
             qp.PPR_4(1, "XX", wires=Wire[2]),
-            Prod2((qp.RZ(Float, wires=Wire[1]), qp.RZ(Float, wires=Wire[1]))),
+            _single_excitation_rz_rotations(Float, wires=Wire[2]),
             qp.PPR_4(-1, "XX", wires=Wire[2]),
         ): 1
     }
@@ -268,11 +279,11 @@ def _single_excitation_ppr_rz_resource(phi, wires):
 
 @register_resources(_single_excitation_ppr_rz_resource)
 def _single_excitation_ppr_rz(phi: TensorLike, wires: WiresLike):
-    def _rotations():
-        qp.RZ(phi / 2, wires[0])
-        qp.RZ(-phi / 2, wires[1])
-
-    qp.change_op_basis(qp.PPR_4(1, "XX", wires=wires), _rotations, qp.PPR_4(-1, "XX", wires=wires))
+    qp.change_op_basis(
+        qp.PPR_4(1, "XX", wires=wires),
+        _single_excitation_rz_rotations(phi, wires=wires),
+        qp.PPR_4(-1, "XX", wires=wires),
+    )
 
 
 add_decomps(

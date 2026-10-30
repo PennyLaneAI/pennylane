@@ -280,6 +280,7 @@ class ChangeOpBasis(CompositeOp):
                 # so prebuilt operands can be reused in another trace.
                 leaf.tracer = None
             elif isinstance(leaf, Operator):
+                queuing.QueuingManager.remove(leaf)
                 new_leaves.append(apply(leaf))
             else:
                 new_leaves.append(leaf)

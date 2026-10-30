@@ -1388,6 +1388,20 @@ PPR_DENOMINATORS = {qp.PPR_2: 2, qp.PPR_4: 4, qp.PPR_8: 8}
 class TestPPR:
     """Tests for the fixed-angle Pauli product rotations (PPR) PPR_2, PPR_4 and PPR_8."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("sign", [1, -1])
+    @pytest.mark.parametrize("pauli_word", ["III", "IZI", "ZZZ", "XIY", "YZX"])
+    def test_decomposition_resources_and_matrix(self, op_cls, sign, pauli_word):
+        """Captured PPR rules preserve phase, basis changes, and resource identities."""
+        op = op_cls(sign, pauli_word, wires=[3, 1, 4])
+        rule = qp.list_decomps(op)[0]
+        assert_valid_decomp_rule(op, rule)
+        for gate in qp.testing.decomp_rule_to_tape(op, rule).operations:
+            if isinstance(gate, qp.ops.ChangeOpBasis2):
+                for block in (gate.compute_op, gate.uncompute_op):
+                    assert not isinstance(block, qp.ops.Prod2)
+                    assert_valid_decomp_rule(block, qp.list_decomps(block)[0])
+
     @pytest.mark.parametrize("sign", [1, -1])
     def test_init(self, op_cls, sign):
         """Test that both signs can be used."""
