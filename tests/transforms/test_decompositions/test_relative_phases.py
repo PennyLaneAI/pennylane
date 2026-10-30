@@ -121,8 +121,20 @@ class TestMultiControlledPhaseXGate:
         transformed_qfunc = match_controlled_iX_gate(qfunc, 2)
 
         tape = qp.tape.make_qscript(transformed_qfunc)()
-        # Without the phase gate, the replacement costs more than the original control.
-        assert tape.operations == [qp.ctrl(qp.X(3), control=[0, 1, 2])]
+        assert len(tape.operations) == 11
+        assert tape.operations == [
+            qp.H(3),
+            qp.adjoint(qp.T(3)),
+            qp.CNOT(wires=[2, 3]),
+            qp.T(3),
+            qp.ctrl(qp.X(3), control=[0, 1]),
+            qp.adjoint(qp.T(3)),
+            qp.CNOT(wires=[2, 3]),
+            qp.T(3),
+            qp.ctrl(qp.X(3), control=[0, 1]),
+            qp.H(3),
+            qp.adjoint(qp.ctrl(qp.S(2), control=[0, 1])),
+        ]
 
     def test_wire_permutations(self):
         for first, second, third, fourth in permutations([0, 1, 2, 3]):

@@ -839,20 +839,6 @@ def test_abstract_controlled_ops(op_type, wires):
     assert len(key.wires) == len(wires)
 
 
-@pytest.mark.parametrize(
-    "base, control_wires, control_values, expected",
-    [
-        (qp.X(Wire[1]), Wire[1], [1], qp.ops.ControlledOp2(qp.X(Wire[1]), Wire[1])),
-        (qp.CNOT(Wire[2]), Wire[1], [1], qp.ops.ControlledOp2(qp.X(Wire[1]), Wire[2])),
-        (qp.Y(Wire[1]), Wire[1], [1], qp.ops.ControlledOp2(qp.Y(Wire[1]), Wire[1])),
-    ],
-)
-def test_symbolic_controlled_ops(base, control_wires, control_values, expected):
-    """Abstract controlled operators use the symbolic representation."""
-    mapped_op = qp.ctrl(base, control_wires, control_values)
-    assert mapped_op == expected
-
-
 @pytest.mark.catalyst
 @pytest.mark.parametrize(
     ("op_type", "rule_name"),

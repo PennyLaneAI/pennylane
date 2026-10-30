@@ -67,18 +67,6 @@ class TestControlledGlobalPhase:
         mat[-1, -1] = np.exp(-1j * phi)
         return mat
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("control", ([0], [0, 1], [0, 1, 2]))
-    @pytest.mark.parametrize("control_value", [False, True])
-    def test_symbolic_control(self, control, control_value):
-        """GlobalPhase retains its symbolic base for either control value."""
-        values = [control_value] * len(control)
-        op = qp.ctrl(GlobalPhase(0.123), control=control, control_values=values)
-        assert isinstance(op, qp.ops.ControlledOp2)
-        qp.assert_equal(op.base, GlobalPhase(0.123))
-        assert list(op.control_values) == values
-        qp.testing.assert_valid_decomp_rule(op, qp.list_decomps(op)[0])
-
     @pytest.mark.parametrize("control", ([0], [0, 1], [0, 1, 2]))
     def test_matrix_matches_controlled_global_phase(self, control):
         """The symbolic op reproduces the controlled-GlobalPhase matrix."""

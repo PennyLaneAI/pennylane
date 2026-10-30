@@ -1322,7 +1322,7 @@ class MultiControlledX(Controlled2):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    ndim_params = ()
+    ndim_params = (1,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     dynamic_argnames = ("control_values",)

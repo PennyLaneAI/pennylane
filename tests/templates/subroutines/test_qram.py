@@ -1239,6 +1239,7 @@ def test_select_only_raises(params, error, match):
         ),
     ],
 )
+@pytest.mark.xfail_if_capture(reason="Come back to this when we port SelectOnlyQRAM [sc-129956]")
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_select_decomposition_new(
     bitstrings, control_wires, target_wires, select_wires, select_value

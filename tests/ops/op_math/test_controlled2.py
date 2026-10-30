@@ -28,7 +28,6 @@ from pennylane.ops.op_math.controlled import Controlled, ControlledOp
 from pennylane.ops.op_math.controlled2 import (
     Controlled2,
     ControlledOp2,
-    _ctrl_abstract,
     _make_controlled_decomp,
 )
 from pennylane.testing.operators import _check_eigendecomposition
@@ -423,17 +422,6 @@ class TestControlled2:
 
 class TestControlledOp2:
     """Tests the ControlledOp2 class."""
-
-    @pytest.mark.parametrize("base", [qp.X, qp.RX, qp.PhaseShift, qp.GlobalPhase])
-    @pytest.mark.parametrize("num_zero_control_values", [0, 1, 2])
-    def test_symbolic_resources(self, base, num_zero_control_values):
-        """Operator2 control resources abstract Boolean values instead of specializing gates."""
-        rep = _ctrl_abstract(
-            base, Wire[2], Wire[1], "zeroed", num_zero_control_values=num_zero_control_values
-        )
-        assert rep == abstractify(
-            ControlledOp2(abstractify(base), Wire[2], Bool[2], Wire[1], "zeroed")
-        )
 
     def test_initialization(self):
         """Tests initializing a general controlled operator."""

@@ -40,7 +40,18 @@ class TestLeftClassicalComparator:
     """Test LeftClassicalComparator template."""
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize("qjit", [True, False])
+    @pytest.mark.parametrize(
+        "qjit",
+        [
+            pytest.param(
+                True,
+                marks=pytest.mark.xfail(
+                    reason="Dynamic L requires https://github.com/PennyLaneAI/pennylane/pull/10377"
+                ),
+            ),
+            False,
+        ],
+    )
     @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
     @pytest.mark.parametrize(
         ("x_wires", "L", "target_wire", "work_wires", "x"),
@@ -61,7 +72,8 @@ class TestLeftClassicalComparator:
             qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
             qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             qp.CNOT([11, 12])
-            # Keep the compile-time operand L outside the adjoint's traced arguments.
+            # qfunc form: L is traced under qjit, and adjoint(op) would evaluate the
+            # resource function, which branches on L.
             qp.adjoint(
                 lambda: qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             )()
@@ -69,7 +81,7 @@ class TestLeftClassicalComparator:
             return qp.sample(wires=[12]), qp.sample(wires=work_wires), qp.sample(wires=x_wires)
 
         if qjit:
-            circuit = qp.qjit(circuit, static_argnums=(1,))
+            circuit = qp.qjit(circuit)
         output = circuit(x_wires, L)
         expected = {"<": x < L, "<=": x <= L, ">": x > L, ">=": x >= L}[comparator]
         assert bool(output[0]) == expected

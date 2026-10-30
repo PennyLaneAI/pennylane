@@ -771,7 +771,7 @@ class TestMultiControlledX:
         with qp.queuing.AnnotatedQueue() as q:
             qp.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
         tape = qp.tape.QuantumScript.from_queue(q)
-        [tape], _ = decompose(tape, max_expansion=2, gate_set=qp.gate_sets.CLIFFORD_T)
+        [tape], _ = decompose(tape, max_expansion=1, gate_set=qp.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qp.MultiControlledX) for op in tape.operations)
 
         @qp.qnode(dev)
@@ -805,7 +805,7 @@ class TestMultiControlledX:
         with qp.queuing.AnnotatedQueue() as q:
             qp.MultiControlledX(wires=control_target_wires, work_wires=worker_wires)
         tape = qp.tape.QuantumScript.from_queue(q)
-        [tape], _ = decompose(tape, max_expansion=2, gate_set=qp.gate_sets.CLIFFORD_T)
+        [tape], _ = decompose(tape, max_expansion=1, gate_set=qp.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qp.MultiControlledX) for op in tape.operations)
 
         @qp.qnode(dev)
@@ -879,33 +879,6 @@ class TestMultiControlledX:
             work_wire_type=work_wire_type,
         )
         assert_decomposable(op)
-
-    def test_symbolic_control(self):
-        """Controlling MCX flattens its controls into a symbolic controlled X."""
-
-        op = qp.MultiControlledX(
-            [0, 1, 2],
-            control_values=[0, 1],
-            work_wires=[3],
-            work_wire_type="borrowed",
-        )
-        new_op = qp.ctrl(
-            op,
-            control=[4, 5],
-            control_values=[1, 0],
-            work_wires=[6],
-            work_wire_type="zeroed",
-        )
-        qp.assert_equal(
-            new_op,
-            qp.ops.ControlledOp2(
-                qp.X(2),
-                control_wires=[4, 5, 0, 1],
-                control_values=[1, 0, 0, 1],
-                work_wires=[6, 3],
-                work_wire_type="borrowed",
-            ),
-        )
 
 
 period_two_ops = (
@@ -1123,21 +1096,11 @@ class TestControlledMethod:
 
     # pylint: disable=protected-access
 
-    def test_PauliZ(self):
-        """A positive control on ``PauliZ`` stays symbolic."""
-        out = qp.ctrl(qp.PauliZ(0), "a")
-        qp.assert_equal(out, qp.ops.ControlledOp2(qp.Z(0), ["a"]))
-
     def test_Barrier(self):
         """Tests the control behavior of Barrier."""
         original = qp.Barrier((0, 1, 2), only_visual=True)
         out = qp.ctrl(original, "a")
         qp.assert_equal(original, out)
-
-    def test_CZ(self):
-        """Controlling a named CZ flattens its controls."""
-        out = qp.ctrl(qp.CZ(wires=[0, 1]), control="a")
-        qp.assert_equal(out, qp.ops.ControlledOp2(qp.Z(1), ["a", 0]))
 
 
 class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods

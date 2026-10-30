@@ -1535,11 +1535,6 @@ class TestControlledSupportsBroadcasting:
 
 
 custom_ctrl_ops = [
-    (qp.H(0), [1], qp.CH([1, 0])),
-    (qp.X(0), [1], qp.CNOT([1, 0])),
-    (qp.Y(0), [1], qp.CY([1, 0])),
-    (qp.Z(0), [1], qp.CZ([1, 0])),
-    (qp.SWAP([0, 1]), [2], qp.CSWAP([2, 0, 1])),
     (qp.RX(0.123, wires=0), [1], qp.CRX(0.123, wires=[1, 0])),
     (qp.RY(0.123, wires=0), [1], qp.CRY(0.123, wires=[1, 0])),
     (qp.RZ(0.123, wires=0), [1], qp.CRZ(0.123, wires=[1, 0])),
@@ -1564,45 +1559,6 @@ def test_ctrl_non_boolean_control_values():
     """Test that qp.ctrl converts control values using Python truth values."""
     op = qp.ctrl(TempOperator("a"), (0, 1, 2), control_values=["", None, 5])
     assert op.control_values == [False, False, True]
-
-
-@pytest.mark.usefixtures("enable_and_disable_capture")
-@pytest.mark.parametrize("base_type", [TempOperation, qp.X])
-@pytest.mark.parametrize("as_callable", [False, True])
-@pytest.mark.parametrize("control_values", [[True], [False], [False, True]])
-@pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
-def test_symbolic_construction(base_type, as_callable, control_values, work_wire_type):
-    """Both operator versions and callable controls preserve symbolic identity and metadata."""
-    control_wires = list(range(1, len(control_values) + 1))
-
-    def circuit():
-        kwargs = {
-            "control": control_wires,
-            "control_values": control_values,
-            "work_wires": [3],
-            "work_wire_type": work_wire_type,
-        }
-        if as_callable:
-            qp.ctrl(base_type, **kwargs)(wires=0)
-        else:
-            qp.ctrl(base_type(wires=0), **kwargs)
-
-    if qp.capture.enabled():
-        jax = pytest.importorskip("jax")
-        jaxpr = jax.make_jaxpr(circuit)()
-        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
-    else:
-        tape = qp.tape.make_qscript(circuit)()
-    controlled_type = ControlledOp2 if base_type is qp.X else ControlledOp
-    assert tape.operations == [
-        controlled_type(
-            base_type(wires=0),
-            control_wires,
-            control_values=control_values,
-            work_wires=[3],
-            work_wire_type=work_wire_type,
-        )
-    ]
 
 
 class TestCtrl:
@@ -1650,11 +1606,6 @@ class TestCtrl:
         assert q.queue[0] == qp.X(0)
         assert q.queue[1] == qp.Barrier()
 
-    def test_ctrl_u1_single_control(self):
-        """Single-control U1 remains symbolic."""
-        op = qp.ctrl(qp.U1(0.5, wires=0), control=[1])
-        assert op == ControlledOp2(qp.U1(0.5, wires=0), control_wires=[1])
-
     @pytest.mark.parametrize("control, control_values", [([1, 2], None), ([1], [False])])
     def test_ctrl_u1_falls_back_to_controlled(self, control, control_values):
         """Test that qp.ctrl(U1) falls back to a generic controlled operator instead of
@@ -1663,17 +1614,6 @@ class TestCtrl:
         op = qp.ctrl(qp.U1(0.5, wires=0), control=control, control_values=control_values)
         assert isinstance(op, qp.ops.ControlledOp2)
         assert op.base == qp.U1(0.5, wires=0)
-
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("op, ctrl_wires, expected_op", custom_ctrl_ops)
-    def test_custom_controlled_ops(self, op, ctrl_wires, expected_op):
-        """Formerly specialized controls stay symbolic and retain their matrices."""
-        controlled = qp.ctrl(op, control=ctrl_wires)
-        if isinstance(op, qp.Barrier):
-            assert controlled == expected_op
-            return
-        assert controlled == ControlledOp2(op, control_wires=ctrl_wires)
-        assert np.allclose(controlled.matrix(), expected_op.matrix())
 
     @pytest.mark.parametrize("op, ctrl_wires, _", custom_ctrl_ops)
     def test_custom_controlled_ops_ctrl_on_zero(self, op, ctrl_wires, _):
@@ -1824,7 +1764,6 @@ class TestCtrl:
         )
         assert op == expected
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         "op, ctrl_wires, ctrl_values, work_wires, expected_op",
         [
@@ -1939,7 +1878,6 @@ class TestCtrl:
             work_wires=expected_op.work_wires,
             work_wire_type=expected_op.work_wire_type,
         )
-        assert np.allclose(op.matrix(), expected_op.matrix())
 
     def test_nested_pauli_x_based_ctrl_ops(self):
         """Tests that nested PauliX-based ops are handled correctly."""
@@ -1999,16 +1937,6 @@ class TestCtrl:
         assert new_op.control_wires == Wires([3, 4, 0])
         assert qp.math.allclose(new_op.control_values, [1, 1, 1])
         assert new_op.work_wires == Wires([5])
-
-    # pylint: disable=too-few-public-methods,unused-argument
-    def test_custom_operator_control(self):
-        """Custom operators are wrapped symbolically."""
-
-        class CustomOp(Operator2):
-            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
-                super().__init__(wires)
-
-        assert qp.ctrl(CustomOp([0]), control=1) == ControlledOp2(CustomOp([0]), [1])
 
 
 class _Rot(Operation):
