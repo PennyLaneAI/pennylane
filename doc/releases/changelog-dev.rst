@@ -876,6 +876,25 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* Added optional ``work_wires`` to :class:`~.TrotterCDF` to combine the four equal-angle
+  ``IsingZZ`` gates between each pair of distinct spatial orbitals. With one work
+  wire initialized to :math:`|0\rangle`, each uncontrolled two-body layer uses
+  :math:`N(N-1)/2` ``CRZ`` and :math:`N` ``RZ`` gates instead of
+  :math:`N(2N-1)` ``IsingZZ`` gates, where :math:`N` is the number of spatial orbitals.
+  The double-phase decomposition also needs one work wire and shares control CNOTs
+  across orbital pairs; standard single-qubit control needs two work wires and shares
+  one ``TemporaryAND`` computation across pairs with the same first orbital.
+  For :math:`m>1` standard controls, a registered decomposition reuses the single-control
+  implementation through the generic AND reduction when :math:`m-1` additional clean
+  work wires are supplied to :func:`~.ctrl` with ``work_wire_type="zeroed"``.
+  The reduction in rotations comes at the cost of additional ``TemporaryAND`` and CNOT gates.
+  The original decomposition is used when fewer work wires are supplied.
+  `(#10380) <https://github.com/PennyLaneAI/pennylane/pull/10380>`__
+  
+* Added a new decomposition rule, ``_single_excitation_ppr_crz``, to :class:`~.SingleExcitation`, that
+  realizes the Givens rotation with a single arbitrary-angle ``CRZ`` gate and four Clifford operations.
+  `(#10358) <https://github.com/PennyLaneAI/pennylane/pull/10358>`__
+
 * The phase gradient decomposition rule factories :func:`~.make_rz_to_phase_gradient_decomp`,
   :func:`~.make_crz_to_phase_gradient_decomp` and
   :func:`~.make_selectpaulirot_to_phase_gradient_decomp` accept an optional ``precision_stats``
