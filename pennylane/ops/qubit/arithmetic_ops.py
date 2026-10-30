@@ -873,3 +873,5 @@ add_decomps(
     _integer_comparator_ge_decomposition,
     _integer_comparator_flip_geq,
 )
+
+add_decomps("Adjoint(IntegerComparator)", self_adjoint_legacy)
