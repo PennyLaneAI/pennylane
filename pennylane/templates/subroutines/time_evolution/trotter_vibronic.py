@@ -27,7 +27,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.numeric_hamiltonians import VibronicHamiltonian
 from pennylane.ops import CNOT, Hadamard, adjoint, cond, ctrl
-from pennylane.typing import AbstractWires, Float, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import Wires, WiresLike
 
 from ..aqft import AQFT
@@ -50,6 +50,9 @@ def _aqft(order, wires):
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", message=".*QFT class is recommended.*")
         return AQFT(order=order, wires=wires)
+
+
+_BRANCH_TERMS = ("constant", "linear", "quadratic", "bilinear", "kinetic")
 
 
 class TrotterVibronic(Operator2):
@@ -99,6 +102,23 @@ class TrotterVibronic(Operator2):
         aqft_order (int): approximation order of the :class:`~.AQFT` used to transform between
             position and momentum space. If ``None`` (default), no approximation is made
             (``aqft_order = k - 1``).
+        branch_probs (dict[str, float]): probabilities for the fragment terms to be applied rather
+            than skipped for vanishing coefficients. They are only used for resource estimation
+            and do not affect the circuit, see the note below. If ``None`` (default), they are
+            computed from ``hamiltonian`` and ``evolution_time`` if both are concrete, and omitted
+            otherwise.
+
+    .. note::
+
+        The keys of ``branch_probs`` are ``"constant"``, ``"linear"``, ``"quadratic"``,
+        ``"bilinear"`` and ``"kinetic"``. The probabilities are attached as ``"branch-prob"``
+        hints via :func:`~.hint` to the conditionals that skip the respective terms. In addition,
+        they weight the gate counts of the terms in the resources of the decomposition rule, and
+        thus affect the weight of this rule in the graph-based decomposition system.
+
+        Providing ``branch_probs`` replaces the probabilities computed from ``hamiltonian`` and
+        ``evolution_time`` entirely, rather than updating them. Terms missing from
+        ``branch_probs`` are left unhinted and counted at every visit.
 
     **Example**
 
@@ -360,9 +380,9 @@ class TrotterVibronic(Operator2):
         "vib_wires",
         "work_wires",
     )
-    # Static rather than dynamic: sets the resource-function gate counts, and can't be
-    # `compilable_argnames` alongside the hybrid `hamiltonian` argument.
-    static_argnames = ("num_trotter_steps", "aqft_order")
+    # Static rather than dynamic: sets the resource-function gate counts or compiler hints, and
+    # can't be `compilable_argnames` alongside the hybrid `hamiltonian` argument.
+    static_argnames = ("num_trotter_steps", "aqft_order", "branch_probs")
 
     arg_specs = {
         "evolution_time": Float,
@@ -388,6 +408,7 @@ class TrotterVibronic(Operator2):
         vib_wires: WiresLike,
         work_wires: WiresLike = (),
         aqft_order=None,
+        branch_probs=None,
     ):
         _validate_hamiltonian(hamiltonian)
         # Reject ``bool`` (subclass of ``int``); accept numpy integers.
@@ -421,6 +442,13 @@ class TrotterVibronic(Operator2):
                     f"states, but got {len(Wires(electronic_wires))}."
                 )
 
+        if branch_probs is None:
+            branch_probs = _branch_probs(hamiltonian, evolution_time, num_trotter_steps)
+        if branch_probs is not None:
+            # Static arguments must be hashable, and a fixed order lets equal values hash equally
+            branch_probs = dict(branch_probs)
+            branch_probs = tuple((t, branch_probs[t]) for t in _BRANCH_TERMS if t in branch_probs)
+
         super().__init__(
             evolution_time,
             num_trotter_steps,
@@ -432,6 +460,7 @@ class TrotterVibronic(Operator2):
             vib_wires=vib_wires,
             work_wires=work_wires,
             aqft_order=aqft_order,
+            branch_probs=branch_probs,
         )
 
 
@@ -447,14 +476,17 @@ def _trotter_vibronic_resources(
     cache_wires,
     work_wires,
     aqft_order,
+    branch_probs,
 ):
-    """Coarse (upper-bound) gate counts for the vibronic Trotter circuit.
+    """Gate counts for the vibronic Trotter circuit.
 
-    This estimate is intentionally inexact (``exact=False``): terms whose coefficients happen to
-    vanish are skipped at runtime, and the sub-operations are counted at their top level.
+    Each term is counted as often as it is expected to be applied according to ``branch_probs``,
+    or as often as it is visited if its probability is unknown. This estimate is inexact
+    (``exact=False``): the expected counts are rounded up, the electronic diagonalization is
+    counted as an upper bound, and the sub-operations are counted at their top level.
     """
     # ``evolution_time`` and ``cache_wires`` are part of the shared resource/decomposition
-    # signature but do not affect the (structural) gate counts.
+    # signature but do not affect the gate counts.
     # pylint: disable=unused-argument
     num_fragments = hamiltonian.num_fragments
     n_states = hamiltonian.num_states
@@ -472,6 +504,11 @@ def _trotter_vibronic_resources(
 
     # Each Trotter step visits every position fragment twice (forward + backward).
     position_visits = 2 * num_fragments * num_trotter_steps
+    num_constant = _num_applied_terms(branch_probs, "constant", position_visits)
+    num_linear = _num_applied_terms(branch_probs, "linear", position_visits * n_modes)
+    num_quadratic = _num_applied_terms(branch_probs, "quadratic", position_visits * n_modes)
+    num_bilinear = _num_applied_terms(branch_probs, "bilinear", position_visits * num_pairs)
+    num_kinetic = _num_applied_terms(branch_probs, "kinetic", num_trotter_steps * n_modes)
 
     # Data loading (QROM) and the arithmetic primitives, sized to match ``_extract_registers``.
     # ``Wire[size]`` builds an abstract wire register of the given size; only the sizes matter
@@ -543,43 +580,56 @@ def _trotter_vibronic_resources(
     #    bit, invert the register for the two's complement, and apply the controlled output flips --
     resources[CNOT(wires=Wire[2])] += (
         2 * position_visits * max(n_elec - 1, 0)
-        + position_visits * n_modes * (2 + 2 * k + 2 * n_pg)
-        + position_visits * num_pairs * (2 + 4 * k + 2 * n_pg)
+        + num_linear * (2 + 2 * k + 2 * n_pg)
+        + num_bilinear * (2 + 4 * k + 2 * n_pg)
     )
 
-    # -- Data loading: constant + each linear/quadratic/bilinear term + final unload --
-    resources[qrom] += position_visits * (2 + 2 * n_modes + num_pairs)
-    resources[semi_adder] += position_visits
+    # -- Data loading: each applied constant/linear/quadratic/bilinear term + final unload --
+    resources[qrom] += num_constant + num_linear + num_quadratic + num_bilinear + position_visits
+    resources[semi_adder] += num_constant
 
     # -- Linear terms: one half-signed multiplier each --
-    resources[out_mult_linear] += position_visits * n_modes
-    resources[ctrl_incrementer_linear] += position_visits * n_modes * 2
+    resources[out_mult_linear] += num_linear
+    resources[ctrl_incrementer_linear] += num_linear * 2
 
     # -- Quadratic terms: two SignedOutSquares (compute + uncompute) and one OutMultiplier --
-    resources[signed_square] += position_visits * n_modes
-    resources[adj_signed_square] += position_visits * n_modes
-    resources[out_mult_quad] += position_visits * n_modes
+    resources[signed_square] += num_quadratic
+    resources[adj_signed_square] += num_quadratic
+    resources[out_mult_quad] += num_quadratic
 
     # -- Bilinear terms: two SignedOutMultipliers (compute + uncompute) and one half-signed
     #    multiplier --
-    resources[signed_out_mult] += position_visits * num_pairs
-    resources[adj_signed_out_mult] += position_visits * num_pairs
-    resources[out_mult_bilinear] += position_visits * num_pairs
-    resources[ctrl_incrementer_bilinear] += position_visits * num_pairs * 2
+    resources[signed_out_mult] += num_bilinear
+    resources[adj_signed_out_mult] += num_bilinear
+    resources[out_mult_bilinear] += num_bilinear
+    resources[ctrl_incrementer_bilinear] += num_bilinear * 2
 
     # -- Kinetic fragment (once per Trotter step): per mode, load the momentum coefficients as a
     #    basis state (``MultiX``), then AQFT + SignedOutSquare + OutMultiplier and their
     #    uncomputation --
-    kinetic_visits = num_trotter_steps * n_modes
     multi_x = MultiX(np.zeros(b, dtype=bool), wires=Wire[b])
-    resources[multi_x] += kinetic_visits * 2
-    resources[aqft] += kinetic_visits
-    resources[adj_aqft] += kinetic_visits
-    resources[signed_square] += kinetic_visits
-    resources[adj_signed_square] += kinetic_visits
-    resources[out_mult_quad] += kinetic_visits
+    resources[multi_x] += num_kinetic * 2
+    resources[aqft] += num_kinetic
+    resources[adj_aqft] += num_kinetic
+    resources[signed_square] += num_kinetic
+    resources[adj_signed_square] += num_kinetic
+    resources[out_mult_quad] += num_kinetic
 
     return dict(resources)
+
+
+def _num_applied_terms(branch_probs, term, num_visits):
+    """Number of applications of ``term`` out of ``num_visits``, weighted with its probability in
+    ``branch_probs`` and rounded up.
+
+    A visited term is counted at least once, because the resources must contain the gates in its
+    conditional branch, which is traced under capture even if it is never taken.
+    """
+    prob = dict(branch_probs or ()).get(term)
+    if prob is None or num_visits == 0:
+        return num_visits
+    # Rounding first keeps float errors in exact products, e.g. ``6 * (2 / 3)``, from rounding up
+    return max(int(np.ceil(round(prob * num_visits, 9))), 1)
 
 
 def _coefficient_register_size(coefficient_wires, phase_gradient_wires):
@@ -630,6 +680,7 @@ def _trotter_vibronic_decomposition(
     cache_wires,
     work_wires,
     aqft_order,
+    branch_probs,
 ):
     n_states = hamiltonian.num_states
     n_modes = hamiltonian.num_modes
@@ -663,6 +714,7 @@ def _trotter_vibronic_decomposition(
             n_states,
             n_modes,
             n_elec,
+            branch_probs,
         )
 
     # Dynamically allocate ``coefficient_wires``/``cache_wires``/``work_wires`` when omitted.
@@ -1000,6 +1052,39 @@ def _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes):
     return (all_constant, all_linear, all_quadratic, all_bilinear), bilinear_indices
 
 
+def _applied_fraction(coeffs):
+    """Fraction of the terms, each given by a coefficient vector along the last axis of
+    ``coeffs``, that are applied rather than skipped for vanishing coefficients.
+
+    The tolerance must match the ``math.allclose(..., 0.0)`` skip conditions of the Trotter step.
+    """
+    applied = ~np.isclose(coeffs, 0.0).all(axis=-1)
+    return float(np.mean(applied)) if applied.size else None
+
+
+def _branch_probs(hamiltonian, evolution_time, num_trotter_steps):
+    """Probabilities for the terms of a Trotter step to be applied rather than skipped for
+    vanishing coefficients, see the ``branch_probs`` argument of :class:`~.TrotterVibronic`.
+
+    The coefficients are scaled by the time steps as in :func:`_trotter_step_second_order`,
+    because the skip conditions compare the scaled coefficients against a fixed tolerance.
+
+    Returns ``None`` if the Hamiltonian data or the evolution time are not concrete, or if the
+    Hamiltonian has more position fragments than the XOR scheme on the electronic register allows.
+    """
+    data = (evolution_time, *hamiltonian.tensors)
+    if any(math.is_tracer(t) or isinstance(t, AbstractArray) for t in data):
+        return None
+    n_states, n_modes = hamiltonian.num_states, hamiltonian.num_modes
+    n_elec = math.ceil_log2(n_states)
+    if hamiltonian.num_fragments > 2**n_elec:
+        return None
+    time_step = evolution_time / num_trotter_steps
+    coeffs, _ = _preprocess_data(time_step, hamiltonian, n_elec, n_states, n_modes)
+    kinetic = (_momentum_coefficients(hamiltonian.kinetic) * time_step)[:, None]
+    return {term: _applied_fraction(c) for term, c in zip(_BRANCH_TERMS, (*coeffs, kinetic))}
+
+
 # ---------------------------------------------------------------------------
 # ------------------------------ Data loading -------------------------------
 # ---------------------------------------------------------------------------
@@ -1098,7 +1183,15 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
 
 # pylint: disable-next=too-many-arguments,too-many-statements
 def _trotter_step_second_order(
-    time, hamiltonian, registers, mode_registers, aqft_order, n_states, n_modes, n_elec
+    time,
+    hamiltonian,
+    registers,
+    mode_registers,
+    aqft_order,
+    n_states,
+    n_modes,
+    n_elec,
+    branch_probs,
 ):
     r"""Emit a single symmetric second-order Trotter step.
 
@@ -1107,7 +1200,11 @@ def _trotter_step_second_order(
     position fragment we iterate over the linear, quadratic and bilinear terms; within each of
     these we iterate over the modes (or mode pairs) using ``for_loop``\ s. The fragment loop
     itself is also a ``for_loop``, so ``fragment_idx`` may be a traced value.
+
+    ``branch_probs`` holds the ``branch-prob`` hints for applying each term, see
+    :class:`~.TrotterVibronic`.
     """
+    branch_probs = dict(branch_probs or ())
     precision = len(registers["phase_gradient"])
     all_coeffs, bilinear_indices = _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes)
     all_constant, all_linear, all_quadratic, all_bilinear = all_coeffs
@@ -1131,6 +1228,7 @@ def _trotter_step_second_order(
             def skip_fn():
                 return prev_bitstrings
 
+            @hint({"branch-prob": branch_probs.get("constant")})
             def actual_fn():
                 new_bitstrings = _load_coefficients(
                     const_coeffs, precision, prev_bitstrings, qrom_wires
@@ -1147,6 +1245,7 @@ def _trotter_step_second_order(
             def skip_fn():
                 return prev_bitstrings
 
+            @hint({"branch-prob": branch_probs.get("linear")})
             def actual_fn():
                 new_bitstrings = _load_coefficients(_coeffs, precision, prev_bitstrings, qrom_wires)
                 _half_signed_out_multiplier(
@@ -1163,6 +1262,7 @@ def _trotter_step_second_order(
             def skip_fn():
                 return prev_bitstrings
 
+            @hint({"branch-prob": branch_probs.get("quadratic")})
             def actual_fn():
                 new_bitstrings = _load_coefficients(_coeffs, precision, prev_bitstrings, qrom_wires)
                 square_wires, mult_wires = _extract_registers(
@@ -1183,6 +1283,7 @@ def _trotter_step_second_order(
             def skip_fn():
                 return prev_bitstrings
 
+            @hint({"branch-prob": branch_probs.get("bilinear")})
             def actual_fn():
                 mode_mult_wires, coeff_mult_wires = _extract_registers(
                     registers, mode_registers, "bilinear", *ids
@@ -1226,6 +1327,7 @@ def _trotter_step_second_order(
             def skip_fn():
                 """Do nothing."""
 
+            @hint({"branch-prob": branch_probs.get("kinetic")})
             def actual_fn():
                 square_wires, mult_wires = _extract_registers(
                     registers, mode_registers, "quadratic", k
@@ -1264,6 +1366,7 @@ def _run_trotter_vibronic(
     n_states,
     n_modes,
     n_elec,
+    branch_probs,
 ):
     """Emit ``num_trotter_steps`` symmetric second-order Trotter steps."""
     trotter_time_step = evolution_time / num_trotter_steps
@@ -1279,6 +1382,7 @@ def _run_trotter_vibronic(
             n_states,
             n_modes,
             n_elec,
+            branch_probs,
         )
         return hamiltonian
 

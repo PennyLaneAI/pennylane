@@ -876,6 +876,20 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* :class:`~.TrotterVibronic` has a new ``branch_probs`` argument, a dictionary with the
+  probabilities for the ``"constant"``, ``"linear"``, ``"quadratic"``, ``"bilinear"`` and
+  ``"kinetic"`` terms to be applied rather than skipped for vanishing coefficients. The
+  decomposition uses them as ``branch-prob`` hints for the conditionals that skip these terms,
+  replacing their worst-case resource counts by the average counts when compiling with Catalyst.
+  The resource function of the decomposition rule, and thus its weight in the graph-based
+  decomposition system, uses the same average counts. The probabilities do not affect the
+  circuit itself. If ``branch_probs`` is not provided, it is computed from the ``hamiltonian``
+  data and the ``evolution_time`` at construction, as long as both are concrete. For traced or
+  abstract inputs, e.g., when passing the Hamiltonian as an argument to a
+  :func:`~.qjit`-compiled function, the probabilities can be provided manually, and the
+  conditionals are left unhinted otherwise.
+  `(#10401) <https://github.com/PennyLaneAI/pennylane/pull/10401>`__
+
 * The phase gradient decomposition rule factories :func:`~.make_rz_to_phase_gradient_decomp`,
   :func:`~.make_crz_to_phase_gradient_decomp` and
   :func:`~.make_selectpaulirot_to_phase_gradient_decomp` accept an optional ``precision_stats``

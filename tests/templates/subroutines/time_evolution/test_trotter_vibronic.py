@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the ``TrotterVibronic`` template."""
 
+from collections import Counter
 from dataclasses import replace
 from functools import partial
 
@@ -31,9 +32,11 @@ from pennylane.templates.subroutines.arithmetic import (
 )
 from pennylane.templates.subroutines.time_evolution.trotter_vibronic import (
     _diagonalization_matrix,
+    _diagonalize_probs,
     _diagonalize_vibronic_circuit,
     _half_signed_out_multiplier,
     _momentum_coefficients,
+    _num_applied_terms,
     _position_coefficients,
     _validate_registers,
     _wires_are_concrete,
@@ -117,6 +120,20 @@ def fragment_list(n_states=2, n_modes=2, seed=42):
     return fragments
 
 
+def sparse_fragment_list(n_states, n_modes, seed):
+    """Create fragments as in ``fragment_list`` in which some of the constant, linear, bilinear
+    and kinetic terms vanish, and that contain bilinear terms."""
+    fragments = fragment_list(n_states=n_states, n_modes=n_modes, seed=seed)
+    position, kinetic = fragments[:-1], fragments[-1]
+    for i, fragment in enumerate(position):
+        # Bilinear term between the first and last mode, with the XOR structure
+        fragment["quadratic"][..., 0, -1] = fragment["linear"][..., 0]
+        fragment["linear"][..., i % n_modes] = 0.0
+    position[-1]["constant"][:] = 0.0
+    kinetic["kinetic"][..., -1, -1] = 0.0
+    return fragments
+
+
 def make_wires(n_states, n_modes, k=3, b=3):
     """Create the wire registers required by :class:`~.TrotterVibronic`."""
     n = int(qp.math.ceil_log2(n_states))
@@ -161,6 +178,22 @@ def decomposition_queue(op):
     with qp.queuing.AnnotatedQueue() as q:
         op.compute_decomposition(**op.arguments)
     return q.queue
+
+
+def assert_resources_match_decomposition(op):
+    """Assert that the resource function reproduces the operations of the decomposition, except
+    for the upper bounds of the electronic diagonalization."""
+    rule = qp.list_decomps(qp.TrotterVibronic)[0]
+    estimated = Counter()
+    for rep, count in rule.compute_resources(**op.arguments).gate_counts.items():
+        estimated[rep.name] += count
+    actual = Counter(o.name for o in decomposition_queue(op))
+
+    assert estimated["Hadamard"] >= actual["Hadamard"]
+    assert estimated["CNOT"] >= actual["CNOT"]
+    for name in ("Hadamard", "CNOT"):
+        del estimated[name], actual[name]
+    assert estimated == actual
 
 
 def count_ops(queue, *op_types):
@@ -610,6 +643,47 @@ class TestDecomposition:
         resources = rule.compute_resources(**op.arguments)
         assert resources.num_gates > 0
 
+    @pytest.mark.parametrize("n_states, n_modes", [(2, 2), (4, 3)])
+    def test_resources_use_branch_probs(self, n_states, n_modes, seed):
+        """Test that the resource function weights the terms with ``branch_probs``, reproducing
+        the operations of the decomposition except for the diagonalization upper bounds."""
+        hamiltonian = build_hamiltonian(sparse_fragment_list(n_states, n_modes, seed))
+        op = make_op(hamiltonian, make_wires(n_states, n_modes), num_trotter_steps=2)
+        assert_resources_match_decomposition(op)
+
+    @pytest.mark.parametrize(
+        "magnitude, evolution_time, expected_prob",
+        [(3e-9, 0.52, 0.5), (3e-9, 100.0, 1.0), (1e-7, 0.52, 1.0), (1e-7, 0.001, 0.5)],
+    )
+    def test_branch_probs_use_time_step(self, magnitude, evolution_time, expected_prob, seed):
+        """Test that ``branch_probs`` take the time step into account, which scales the
+        coefficients before they are compared against the skipping tolerance."""
+        fragments = sparse_fragment_list(2, 2, seed)
+        # Linear coefficients close to the skipping tolerance instead of exact zeros
+        for i, fragment in enumerate(fragments[:-1]):
+            fragment["linear"][..., i % 2] = magnitude
+        hamiltonian = build_hamiltonian(fragments)
+        op = make_op(hamiltonian, make_wires(2, 2), evolution_time=evolution_time)
+
+        assert dict(op.arguments["branch_probs"])["linear"] == expected_prob
+        assert_resources_match_decomposition(op)
+
+    @pytest.mark.parametrize(
+        "branch_probs, num_visits, expected",
+        [
+            (None, 10, 10),
+            ((("constant", 0.5),), 10, 10),
+            ((("linear", 0.25),), 10, 3),
+            ((("linear", 0.7),), 10, 7),
+            ((("linear", 0.0),), 10, 1),
+            ((("linear", 0.0),), 0, 0),
+        ],
+    )
+    def test_num_applied_terms(self, branch_probs, num_visits, expected):
+        """Test that the number of applied terms is weighted with the probability of the term,
+        rounded up and at least one for visited terms, and unweighted without probability."""
+        assert _num_applied_terms(branch_probs, "linear", num_visits) == expected
+
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp", "enable_and_disable_capture")
     def test_assert_valid(self):
@@ -713,6 +787,84 @@ class TestDecomposition:
         # ``num_position_fragments == n_states`` here; if the fragment loop were unrolled, the
         # traced ``for_loop`` count would scale with it instead of staying constant.
         assert num_for_loops(2) == num_for_loops(8)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("n_states, n_modes", [(2, 2), (4, 3)])
+    def test_term_branch_prob_hints(self, n_states, n_modes, seed):
+        """Test that the conditionals skipping terms with vanishing coefficients carry
+        ``branch-prob`` hints that reproduce the number of applied terms."""
+        hamiltonian = build_hamiltonian(sparse_fragment_list(n_states, n_modes, seed))
+        num_steps = 2
+        op = make_op(hamiltonian, make_wires(n_states, n_modes), num_trotter_steps=num_steps)
+        decomposition = qp.list_decomps(qp.TrotterVibronic)[0]
+
+        def traced_decomposition(*tensors):
+            # The hints must not rely on concrete Hamiltonian data within the decomposition
+            traced_hamiltonian = qp.VibronicHamiltonian(*tensors)
+            return decomposition(**(op.arguments | {"hamiltonian": traced_hamiltonian}))
+
+        plxpr = jax.make_jaxpr(traced_decomposition)(*hamiltonian.tensors)
+        tape = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *hamiltonian.tensors)
+        counts = Counter(o.name for o in tape.operations)
+
+        # Infer the number of applied terms from the arithmetic operations specific to them
+        num_fragments = hamiltonian.num_fragments
+        position_visits = 2 * num_fragments * num_steps
+        num_pairs = n_modes * (n_modes - 1) // 2
+        num_linear = counts["OutMultiplier"] - counts["SignedOutSquare"]
+        num_linear -= counts["SignedOutMultiplier"]
+        p_kinetic = counts["AQFT"] / (num_steps * n_modes)
+        p_constant = counts["SemiAdder"] / position_visits
+        p_linear = num_linear / (position_visits * n_modes)
+        p_quadratic = (counts["SignedOutSquare"] - counts["AQFT"]) / (position_visits * n_modes)
+        p_bilinear = counts["SignedOutMultiplier"] / (position_visits * num_pairs)
+
+        def skip_hint(p):
+            # The skipping branch is the true branch
+            return pytest.approx((1 - p, p))
+
+        n = int(qp.math.ceil_log2(n_states))
+        diag = [pytest.approx((p, 1 - p)) for p in _diagonalize_probs(num_fragments, n)]
+        terms = [skip_hint(p) for p in (p_constant, p_linear, p_quadratic, p_bilinear)]
+        fragment_hints = [*diag, *terms, *diag]
+        expected = [*fragment_hints, skip_hint(p_kinetic), *fragment_hints]
+        assert hint_helpers.cond_hints(plxpr.jaxpr) == expected
+
+    @pytest.mark.capture
+    def test_branch_probs_argument(self, seed):
+        """Test that ``branch_probs`` is computed from a concrete Hamiltonian and evolution time,
+        omitted if either is traced, and that provided values are used as ``branch-prob`` hints."""
+        fragments = fragment_list(n_states=2, n_modes=2, seed=seed)
+        # A single position fragment, so that all conditionals belong to terms
+        hamiltonian = build_hamiltonian([fragments[0], fragments[-1]])
+        wires = make_wires(2, 2)
+
+        # The fragment has no bilinear terms
+        expected = (
+            ("constant", 1.0),
+            ("linear", 1.0),
+            ("quadratic", 1.0),
+            ("bilinear", 0.0),
+            ("kinetic", 1.0),
+        )
+        assert make_op(hamiltonian, wires).arguments["branch_probs"] == expected
+
+        def make_traced(constant, evolution_time):
+            traced_op = make_op(replace(hamiltonian, constant=constant), wires)
+            assert traced_op.arguments["branch_probs"] is None
+            traced_op = make_op(hamiltonian, wires, evolution_time=evolution_time)
+            assert traced_op.arguments["branch_probs"] is None
+            return 0
+
+        jax.make_jaxpr(make_traced)(hamiltonian.constant, 0.52)
+
+        op = make_op(hamiltonian, wires, branch_probs={"kinetic": 0.25, "constant": 0.5})
+        assert op.arguments["branch_probs"] == (("constant", 0.5), ("kinetic", 0.25))
+        decomposition = qp.list_decomps(qp.TrotterVibronic)[0]
+        plxpr = jax.make_jaxpr(lambda: decomposition(**op.arguments))()
+        position_hints = [(0.5, 0.5), None, None, None]
+        expected_hints = [*position_hints, (0.75, 0.25), *position_hints]
+        assert hint_helpers.cond_hints(plxpr.jaxpr) == expected_hints
 
 
 # ---------------------------------------------------------------------------
