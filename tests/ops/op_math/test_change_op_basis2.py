@@ -31,7 +31,7 @@ from pennylane.ops.op_math import ChangeOpBasis2, Prod2, change_op_basis
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.change_op_basis import _validate_callable
 from pennylane.templates import Subroutine
-from pennylane.testing import assert_decomposable, assert_eqn_matches_op
+from pennylane.testing import assert_decomposable
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp
@@ -45,7 +45,6 @@ ops = (
 )
 
 
-# NOTE: this test does not make sense with capture, since with capture enabled, COB does not produce an op
 @pytest.mark.jax
 def test_basic_validity():
     """Run basic validity checks on a change_op_basis operator."""
@@ -126,8 +125,6 @@ def test_change_op_basis_concrete_legacy_operand_capture():
     change_op_basis program exactly once (and not duplicated)."""
     import jax
 
-    # Building with capture paused yields a concrete legacy operator rather than a tracer, so
-    # ``_apply_op_or_func`` takes the ``isinstance(op, Operator)`` -> ``apply`` branch.
     with qp.capture.pause():
         legacy_op = qp.ControlledSequence(qp.RX(0.1, 0), control=1)
 
@@ -138,6 +135,9 @@ def test_change_op_basis_concrete_legacy_operand_capture():
 
     names = [eqn.primitive.name for eqn in jaxpr.eqns]
     assert names.count("ControlledSequence") == 1
+    tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+    assert len(tape.operations) == 1
+    assert isinstance(tape.operations[0], qp.ops.ChangeOpBasis)
 
 
 @pytest.mark.capture
@@ -146,9 +146,6 @@ def test_change_op_basis_abstract_legacy_operand_capture():
     change_op_basis program exactly once (and not re-emitted)."""
     import jax
 
-    # A legacy operator constructed inside the trace becomes an ``AbstractOperator`` tracer, so
-    # ``_apply_op_or_func`` takes the ``_is_abstract_operator`` -> ``pass`` branch (the equation is
-    # already in the jaxpr from construction and must not be re-emitted).
     def circuit():
         legacy_op = qp.ControlledSequence(qp.RX(0.1, 0), control=1)
         qp.change_op_basis(legacy_op, qp.X(2), qp.X(2))
@@ -157,32 +154,9 @@ def test_change_op_basis_abstract_legacy_operand_capture():
 
     names = [eqn.primitive.name for eqn in jaxpr.eqns]
     assert names.count("ControlledSequence") == 1
-
-
-@pytest.mark.capture
-def test_change_op_basis_callables_capture_with_none():
-    """Tests that we can pass callables to change_op_basis with capture enabled and uncompute_op omitted."""
-    import jax
-
-    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
-    def f(a, reg1, reg2):
-        qp.BasisState(np.zeros(len(reg2)), reg2)
-        qp.QFT(reg1)
-        qp.RX(a, reg1[0])
-
-    def g(wires):
-        qp.PauliX(wires[0])
-
-    def circuit():
-        qp.change_op_basis(partial(f, 0.1, Wires([0]), Wires([1])), partial(g, Wires([0])))
-
-    jaxpr = jax.make_jaxpr(circuit)()
-
-    assert jaxpr.eqns[-1].primitive.name == "adjoint_transform"
-    assert jaxpr.eqns[-1].params["jaxpr"].eqns[-1].primitive.name == "quantum_subroutine_prim"
-
-    assert_eqn_matches_op(jaxpr.eqns[-2], qp.X)
-    assert jaxpr.eqns[-3].primitive.name == "quantum_subroutine_prim"
+    tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+    assert len(tape.operations) == 1
+    assert isinstance(tape.operations[0], qp.ops.ChangeOpBasis)
 
 
 def test_change_op_basis_raises():
@@ -204,60 +178,6 @@ def test_change_op_basis_raises():
         qp.change_op_basis(f, qp.X(0), qp.RX(0.1, 0))
 
 
-@pytest.mark.capture
-def test_change_op_basis_raises_capture():
-    """Tests that we appropriately raise from change_op_basis with capture enabled."""
-
-    with pytest.raises(
-        TypeError, match="The parameters to change_op_basis must be Operator or Callable"
-    ):
-        qp.change_op_basis("X", "Y")
-
-    @partial(Subroutine, static_argnames="a", wire_argnames="reg1")
-    def f(a, reg1):
-        qp.adjoint(qp.RX)(a, reg1[0])
-
-    with pytest.raises(
-        TypeError,
-        match="change_op_basis requires that Callable inputs have no unbound mandatory parameters",
-    ):
-        qp.change_op_basis(f, qp.X(0), qp.RX(0.1, 0))
-
-
-@pytest.mark.capture
-def test_change_op_basis_callables_capture():
-    """Tests that we can pass callables to change_op_basis with capture enabled."""
-    import jax
-
-    @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
-    def f(a, reg1, reg2):
-        qp.BasisState(np.zeros(len(reg2)), reg2)
-        qp.QFT(reg1)
-        qp.RX(a, reg1[0])
-
-    def g(wires):
-        qp.PauliX(wires[0])
-
-    @partial(Subroutine, static_argnames="a", wire_argnames="reg1")
-    def h(a, reg1):
-        qp.adjoint(qp.RX)(a, reg1[0])
-        qp.adjoint(qp.QFT)(reg1)
-        qp.adjoint(qp.BasisState)(np.zeros(len(reg1)), reg1)
-
-    def circuit():
-        qp.change_op_basis(
-            partial(f, 0.1, Wires([0]), Wires([1])),
-            partial(g, Wires([0])),
-            partial(h, 0.2, Wires([0])),
-        )
-
-    jaxpr = jax.make_jaxpr(circuit)()
-
-    assert jaxpr.eqns[-1].primitive.name == "quantum_subroutine_prim"
-    assert_eqn_matches_op(jaxpr.eqns[-3], qp.X)
-    assert jaxpr.eqns[-4].primitive.name == "quantum_subroutine_prim"
-
-
 def test_change_op_basis_with_mixed_types():
     """Tests we can pass mixed types to change_op_basis."""
 
@@ -277,16 +197,16 @@ def test_change_op_basis_with_mixed_types():
 @pytest.mark.parametrize(
     "compute_op, target_op, uncompute_op",
     (
-        (qp.X, qp.Z, qp.X),  # Operator1 only
-        (NonParametricOp, NonParametricOp, NonParametricOp),  # Operator2 only
-        (qp.X, NonParametricOp, qp.X),  # Operator1 compute and Operator2 target
-        (NonParametricOp, qp.X, NonParametricOp),  # Operator2 compute and Operator1 target
+        (qp.X, qp.Z, qp.X),
+        (NonParametricOp, NonParametricOp, NonParametricOp),
+        (qp.X, NonParametricOp, qp.X),
+        (NonParametricOp, qp.X, NonParametricOp),
         (NonParametricOp, NonParametricOp, None),  # Operator2 default uncompute
     ),
 )
 @pytest.mark.capture
 def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
-    """Tests that Operator1 and Operator2 operands are captured in argument order."""
+    """Version-2 operands remain inside one captured basis-change operator."""
 
     def circuit():
         uncompute = uncompute_op(0) if uncompute_op else None
@@ -295,7 +215,69 @@ def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
     jaxpr = qp.capture.make_plxpr(circuit)()
     tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
     expected_uncompute = uncompute_op(0) if uncompute_op else qp.adjoint(compute_op(0))
-    assert tape.operations == [compute_op(0), target_op(1), expected_uncompute]
+    assert len(tape.operations) == 1
+    assert isinstance(tape.operations[0], ChangeOpBasis2)
+    assert tape.operations[0].operands == (expected_uncompute, target_op(1), compute_op(0))
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize("constructor", (change_op_basis, ChangeOpBasis2))
+@pytest.mark.parametrize("explicit_uncompute", (False, True))
+def test_subcircuit_capture(constructor, explicit_uncompute):
+    """Subcircuits retain their parameters inside a single captured basis change."""
+
+    @qp.subcircuit(dynamic_argnames=("angle",))
+    @qp.register_resources({qp.RX: 1, qp.H: 1})
+    def Compute(angle, wires):
+        qp.RX(angle, wires)
+        qp.H(wires)
+
+    def circuit(angle, wire):
+        compute = Compute(angle, wires=wire)
+        uncompute = qp.adjoint(Compute(angle, wires=wire)) if explicit_uncompute else None
+        return constructor(compute, qp.RZ(2 * angle, wire), uncompute)
+
+    jaxpr = qp.capture.make_plxpr(circuit)(0.2, 1)
+    tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, 0)
+    [result] = tape.operations
+    assert isinstance(result, ChangeOpBasis2)
+    assert len(jaxpr.eqns) == 2  # classical multiplication and the composite operator
+    with qp.capture.pause():
+        qp.assert_equal(result.compute_op, Compute(0.4, wires=0))
+        qp.assert_equal(result.target_op, qp.RZ(0.8, 0), check_interface=False)
+        qp.assert_equal(result.uncompute_op, qp.adjoint(Compute(0.4, wires=0)))
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize("constructor", (change_op_basis, ChangeOpBasis2))
+def test_reused_compute_capture(constructor):
+    """Using the compute operand again does not apply its adjoint accidentally."""
+
+    def circuit(angle):
+        compute = qp.RX(angle, 0)
+        constructor(compute, qp.Z(0))
+        qp.apply(compute)
+
+    jaxpr = qp.capture.make_plxpr(circuit)(0.2)
+    tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.2)
+    assert len(tape.operations) == 2
+    assert isinstance(tape.operations[0], ChangeOpBasis2)
+    qp.assert_equal(tape.operations[1], qp.RX(0.2, 0))
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize("wrapper", (qp.adjoint, partial(qp.ctrl, control=1)))
+def test_symbolic_capture(wrapper):
+    """Symbolic operations consume the captured basis change as a single operator."""
+
+    def circuit(angle):
+        wrapper(change_op_basis(qp.H(0), qp.RZ(angle, 0)))
+
+    jaxpr = qp.capture.make_plxpr(circuit)(0.2)
+    assert len(jaxpr.eqns) == 1
+    tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.2)
+    assert len(tape.operations) == 1
+    assert isinstance(tape.operations[0].base, ChangeOpBasis2)
 
 
 class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
@@ -580,12 +562,13 @@ class TestDecomposition:
     @pytest.mark.parametrize("ops_lst", ops)
     @pytest.mark.capture
     def test_decomposition_new_capture(self, ops_lst):
-        """Test that capture applies each decomposition operand in order."""
+        """Prebuilt operands remain inside the captured basis-change operator."""
 
         jaxpr = qp.capture.make_plxpr(lambda: change_op_basis(*ops_lst))()
         tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
-        assert tape.operations == list(ops_lst)
+        assert len(tape.operations) == 1
+        assert tape.operations[0].operands == tuple(reversed(ops_lst))
 
     @pytest.mark.capture
     def test_registered_decomposition_rule_capture(self):

@@ -37,24 +37,28 @@ from .composite2 import CompositeOp2
 
 
 class ChangeOpBasis2(CompositeOp2):
-    """
-    Composite operator representing a compute-uncompute pattern of operators, which constitutes changing the basis in
-    which an operator is applied.
+    """Composite operator representing a compute-uncompute pattern of version-2 operators.
 
     Args:
-        compute_op (:class:`~.Operator`): A single operator or product that applies quantum operations.
-        target_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
-            Default is uncompute_op=qp.adjoint(compute_op).
-
-    Returns:
-        (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.
+        compute_op (~.Operator2): operator applied before the target
+        target_op (~.Operator2): operator applied in the changed basis
+        uncompute_op (~.Operator2 or None): Operator applied after the target.
+            ``None`` uses the adjoint of ``compute_op``.
 
     .. note::
-        When a ``ChangeOpBasis`` operator is iterated over, its factors are iterated in the reverse order. This is to
-        have a similar behaviour to ``Prod`` which applies its factors in reverse order.
+        The factors are stored and iterated in matrix-product order: uncompute, target, compute.
+        Program capture preserves this composite operator, including operands created with
+        :func:`~.subcircuit`.
 
-    .. seealso:: :func:`~.change_op_basis`
+    .. seealso:: :func:`~.change_op_basis`, :class:`~.ops.op_math.ChangeOpBasis`
+
+    **Example**
+
+    >>> op = qp.ops.ChangeOpBasis2(qp.H(0), qp.RZ(0.3, 0))
+    >>> op.compute_op
+    H(0)
+    >>> op.target_op
+    RZ(0.3, wires=[0])
     """
 
     def __init__(self, compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):

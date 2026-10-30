@@ -1706,6 +1706,22 @@ Breaking changes 💔
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
+* :func:`~.change_op_basis` now preserves the basis-change operator during program capture and
+  requires operator instances as inputs. Convert quantum functions with :func:`~.subcircuit`
+  and instantiate the resulting operator class before passing it to ``change_op_basis``.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
+  .. code-block:: python
+
+      @qp.subcircuit(dynamic_argnames=("angle",))
+      @qp.register_resources({qp.H: 1, qp.RX: 1})
+      def Compute(angle, wires):
+          qp.H(wires)
+          qp.RX(angle, wires)
+
+      def circuit(angle):
+          qp.change_op_basis(Compute(angle, wires=0), qp.RZ(0.3, 0))
+
 Deprecations 👋
 ~~~~~~~~~~~~~~~
 

@@ -15,14 +15,12 @@
 This submodule defines a class for compute-uncompute patterns.
 """
 
-import copy
 import inspect
 from collections import Counter, defaultdict
 from collections.abc import Callable
 from functools import reduce
 
 from pennylane import capture, math
-from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core import queuing
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
@@ -70,26 +68,6 @@ def _is_abstract_operator(op) -> bool:
     return math.is_tracer(op) and isinstance(op.aval, capture.AbstractOperator)
 
 
-def _apply_op_or_func(op_or_func):
-    if callable(op_or_func):
-        _validate_callable(op_or_func)
-        op_or_func()
-    elif isinstance(op_or_func, Operator2):
-        # NOTE: An Operator2 built outside the trace context has no equation
-        # so we need to emit one.
-        if op_or_func.tracer is None:
-            # pylint: disable-next=protected-access
-            op_or_func._bind_primitive()
-    elif isinstance(op_or_func, Operator):
-        apply(op_or_func)
-    elif _is_abstract_operator(op_or_func):
-        pass
-    else:
-        raise TypeError(
-            f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
-        )
-
-
 def _convert_to_prod(op_or_func):
     if callable(op_or_func):
         _validate_callable(op_or_func)
@@ -101,30 +79,41 @@ def _convert_to_prod(op_or_func):
     )
 
 
-# pylint: disable=inconsistent-return-statements
 def change_op_basis(
     compute_op: Operator | Callable,
     target_op: Operator | Callable,
     uncompute_op: Operator | Callable | None = None,
 ):
-    """Construct an operator that represents the product of the
-    operators provided; particularly a compute-uncompute pattern.
+    """Construct an operator representing a compute-uncompute pattern.
 
     Args:
-        compute_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
-        target_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
-        uncompute_op (None | :class:`~.Operator` | Callable): An optional single operator or ``Callable`` with no inputs that applies quantum
-            operations. ``None`` corresponds to ``uncompute_op=qp.adjoint(compute_op)``.
+        compute_op (~.Operator or Callable): operator applied before the target
+        target_op (~.Operator or Callable): operator applied in the changed basis
+        uncompute_op (~.Operator or Callable or None): Operator applied after the target.
+            ``None`` uses the adjoint of ``compute_op``.
 
     Returns:
-        ~ops.op_math.ChangeOpBasis: the operator representing the compute-uncompute pattern.
+        ~ops.op_math.ChangeOpBasis or ~ops.op_math.ChangeOpBasis2: the operator representing the
+        compute-uncompute pattern
 
     Raises:
-        TypeError: if any arguments are not ``Callable`` s or :class:`~.Operator` s, or a ``Callable`` argument has input parameters.
+        TypeError: if an operand is not an operator or a supported callable
+
+    .. note::
+
+        With program capture enabled, all operands must be operators. Use :func:`~.subcircuit`
+        to turn a quantum function with registered resources into an operator class, then pass
+        an instance of that class. The basis-change operator is preserved in the captured program.
+
+        With program capture disabled, callables with no unbound mandatory parameters are also
+        accepted.
+
+    .. seealso:: :func:`~.subcircuit`, :class:`~.ops.op_math.ChangeOpBasis`,
+        :class:`~.ops.op_math.ChangeOpBasis2`
 
     **Example**
 
-    Consider the following example involving a ``change_op_basis``. The compute, uncompute pattern
+    Consider the following example involving a ``change_op_basis``. The compute-uncompute pattern
     is composed of a Quantum Fourier Transform (``QFT``), followed by a ``PhaseAdder``, and finally
     an inverse ``QFT``.
 
@@ -156,10 +145,9 @@ def change_op_basis(
     1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤ ├State
     2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤ ╰State
 
-    A ``Callable`` can also be provided as an argument to ``change_op_basis``. This can be a
-    function that applies a series of ``Operation`` s. Since ``change_op_basis`` requires this
-    ``Callable`` to have no input arguments, ``functools.partial`` can be used to absorb any
-    necessary parameters.
+    With program capture disabled, a callable can also be provided as an argument. The callable
+    applies a series of operations and must have no unbound mandatory parameters.
+    ``functools.partial`` can be used to bind any necessary parameters.
 
     .. code-block:: python
 
@@ -187,59 +175,59 @@ def change_op_basis(
     0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤ ╭State
     1: ─╰RX(0.10)@QFT@|Ψ⟩────╰(RX(0.10)@QFT@|Ψ⟩)†─┤ ╰State
 
-    .. warning::
+    .. details::
+        :title: Program capture
 
-        There is limited support for passing callables to ``change_op_basis`` when program capture
-        is enabled. Specifically, passing callables to ``qp.adjoint(qp.change_op_basis)(...)`` and
-        ``qp.ctrl(qp.change_op_basis, control=...)(...)`` are not supported with ``@qp.qjit(capture=True)``
+        Instantiate a :func:`~.subcircuit` to use a quantum function as an operand:
 
-    .. seealso:: :class:`~.ops.op_math.ChangeOpBasis`
+        .. code-block:: python
+
+            @qp.subcircuit(dynamic_argnames=("angle",))
+            @qp.register_resources({qp.H: 1, qp.RX: 1})
+            def Compute(angle, wires):
+                qp.H(wires)
+                qp.RX(angle, wires)
+
+            qp.capture.enable()
+            op = qp.change_op_basis(Compute(0.2, wires=0), qp.RZ(0.3, 0))
+
+        >>> isinstance(op, qp.ops.ChangeOpBasis2)
+        True
+        >>> qp.capture.disable()
 
     """
 
     if capture.enabled():
-        # NOTE: Need to pop any eagerly constructed operators present in the traced function
-        # out of the jaxpr. This ensures that the order is kept consistent if any operators
-        # were built outside of the traced function. '_apply_op_or_func' will bind the primitives
-        # and insert them in the correct order.
-        operands = (compute_op, target_op, uncompute_op)
-        # Operator1 constructors return AbstractOperator tracers during capture, while
-        # Operator2 constructors retain Python wrappers whose ``tracer`` attributes point to
-        # their equations. If any operand is already an AbstractOperator tracer, preserve the
-        # constructor order instead of moving only the Operator2 equations.
-        if not any(_is_abstract_operator(op) for op in operands):
-            for _op in operands:
-                if isinstance(_op, Operator2) and _op.tracer is not None:
-                    pop_op_eqns((_op,))
-        _apply_op_or_func(compute_op)
-        _apply_op_or_func(target_op)
+        operands = (compute_op, target_op)
         if uncompute_op is not None:
-            _apply_op_or_func(uncompute_op)
-        elif isinstance(compute_op, Operator2):
-            # NOTE: The new Adjoint2 will consume compute_op as a hybrid pytree argument
-            # and will pop its jaxpr equation (see pop_op_eqns). To prevent this from happening,
-            # we can feed a copy of the op to adjoint and detach its tracer as if it was
-            # removed from the jaxpr.
-            dummy = copy.copy(compute_op)
-            dummy.tracer = None
-            _apply_op_or_func(adjoint(dummy))
-        else:
-            _apply_op_or_func(adjoint(compute_op))
+            operands += (uncompute_op,)
+        for op in operands:
+            if callable(op):
+                raise TypeError(
+                    "change_op_basis does not support callables as inputs when using program "
+                    "capture. To create an operator from a quantum function, use qp.subcircuit."
+                )
+            if not (isinstance(op, Operator) or _is_abstract_operator(op)):
+                raise TypeError(
+                    "The parameters to change_op_basis must be Operator when using program "
+                    f"capture, not {type(op)}"
+                )
+        compute, target, uncompute = compute_op, target_op, uncompute_op
     else:
         compute = _convert_to_prod(compute_op)
         target = _convert_to_prod(target_op)
         uncompute = _convert_to_prod(uncompute_op) if uncompute_op is not None else None
-        if (
-            isinstance(compute, Operator2)
-            and isinstance(target, Operator2)
-            and (isinstance(uncompute, Operator2) or uncompute is None)
-        ):
-            return ChangeOpBasis2(
-                compute,
-                target,
-                uncompute,
-            )
-        return ChangeOpBasis(compute, target, uncompute)
+    if (
+        isinstance(compute, Operator2)
+        and isinstance(target, Operator2)
+        and (isinstance(uncompute, Operator2) or uncompute is None)
+    ):
+        return ChangeOpBasis2(
+            compute,
+            target,
+            uncompute,
+        )
+    return ChangeOpBasis(compute, target, uncompute)
 
 
 class ChangeOpBasis(CompositeOp):
@@ -288,6 +276,11 @@ class ChangeOpBasis(CompositeOp):
                     # pylint: disable-next=protected-access
                     leaf._bind_primitive()
                 new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
+                # The equation is now an input to the legacy primitive. Detach its tracer
+                # so prebuilt operands can be reused in another trace.
+                leaf.tracer = None
+            elif isinstance(leaf, Operator):
+                new_leaves.append(apply(leaf))
             else:
                 new_leaves.append(leaf)
 
