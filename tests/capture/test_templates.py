@@ -1440,7 +1440,7 @@ class TestModifiedTemplates:
         }
 
         def qfunc(threshold):
-            return qp.LeftClassicalComparator(L=threshold, **kwargs).tracer
+            return qp.LeftClassicalComparator(value=threshold, **kwargs).tracer
 
         jaxpr = jax.make_jaxpr(qfunc)(3)
 
@@ -1450,7 +1450,7 @@ class TestModifiedTemplates:
         assert_eqn_matches_op(eqn, qp.LeftClassicalComparator)
 
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 5)
-        qp.assert_equal(op, qp.LeftClassicalComparator(L=5, **kwargs))
+        qp.assert_equal(op, qp.LeftClassicalComparator(value=5, **kwargs))
 
     def test_left_quantum_comparator(self):
         """Test the primitive bind call of LeftQuantumComparator."""
