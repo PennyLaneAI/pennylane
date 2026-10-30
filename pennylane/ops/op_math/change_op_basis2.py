@@ -30,7 +30,6 @@ from pennylane.exceptions import (
 )
 from pennylane.ops.op_math import adjoint, ctrl
 from pennylane.ops.op_math.adjoint import _adjoint_eager
-from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
 
 from .composite import handle_recursion_error
