@@ -73,6 +73,23 @@ from .decompositions.controlled_decompositions import (
 )
 from .pow2 import pow_involutory as pow_involutory2
 
+__all__ = [
+    "ControlledQubitUnitary",
+    "CH",
+    "CY",
+    "CZ",
+    "CSWAP",
+    "CCZ",
+    "CNOT",
+    "Toffoli",
+    "MultiControlledX",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "CRot",
+    "ControlledPhaseShift",
+]
+
 INV_SQRT2 = 1 / math.sqrt(2)
 
 stack_last = partial(math.stack, axis=-1)
@@ -239,12 +256,14 @@ add_decomps(
 )
 
 
+def _conj_transpose(U):
+    return U.conjugate().transpose() if sparse.issparse(U) else math.moveaxis(math.conj(U), -2, -1)
+
+
 @register_resources(lambda base: {abstractify(base): 1})
 def _adjoint_controlled_qubit_unitary(base):
-    U = base.U
-    U = U.conjugate().transpose() if sparse.issparse(U) else math.moveaxis(math.conj(U), -2, -1)
     ControlledQubitUnitary(
-        U,
+        _conj_transpose(base.U),
         wires=base.wires,
         control_values=base.control_values,
         work_wires=base.work_wires,
@@ -2151,7 +2170,7 @@ add_decomps("Adjoint(CRot)", _adjoint_crot)
 
 
 class ControlledPhaseShift(Controlled2):
-    r"""A qubit controlled phase shift.
+    r"""A qubit controlled phase shift. Also accessible as :class:`~.CPhase`.
 
     .. math:: CR_\phi(\phi) = \begin{bmatrix}
                 1 & 0 & 0 & 0 \\
@@ -2173,6 +2192,10 @@ class ControlledPhaseShift(Controlled2):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+
+    .. seealso::
+
+        ``ControlledPhaseShift`` is also available as :class:`~.CPhase`.
 
     """
 

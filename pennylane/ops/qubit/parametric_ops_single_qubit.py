@@ -78,6 +78,40 @@ class RX(Operator2):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.RX
+
+            .. decomposition-rule:: _rx_to_rot
+                :image: /_static/decomposition_thumbnails/rx_to_rot.svg
+
+                :class:`~.Rot` | :math:`1`
+
+            .. decomposition-rule:: _rx_to_rz_ry
+                :image: /_static/decomposition_thumbnails/rx_to_rz_ry.svg
+
+                :class:`~.RZ` | :math:`2`
+                :class:`~.RY` | :math:`1`
+
+            .. decomposition-rule:: _rx_to_ppr
+                :image: /_static/decomposition_thumbnails/rx_to_ppr.svg
+
+                :class:`PauliRot("X") <.PauliRot>` | :math:`1`
+
+            .. decomposition-rule:: _rx_to_ry_cliff
+                :image: /_static/decomposition_thumbnails/rx_to_ry_cliff.svg
+
+                :class:`~.S` | :math:`1`
+                :class:`Adjoint(S) <.S>` | :math:`1`
+                :class:`~.RY` | :math:`1`
+
+            .. decomposition-rule:: _rx_to_rz_cliff
+                :image: /_static/decomposition_thumbnails/rx_to_rz_cliff.svg
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.RZ` | :math:`1`
     """
 
     num_wires = 1
@@ -278,6 +312,42 @@ class RY(Operator2):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.RY
+
+            .. decomposition-rule:: _ry_to_rot
+                :image: /_static/decomposition_thumbnails/ry_to_rot.svg
+
+                :class:`~.Rot` | :math:`1`
+
+            .. decomposition-rule:: _ry_to_rz_rx
+                :image: /_static/decomposition_thumbnails/ry_to_rz_rx.svg
+
+                :class:`~.RZ` | :math:`2`
+                :class:`~.RX` | :math:`1`
+
+            .. decomposition-rule:: _ry_to_ppr
+                :image: /_static/decomposition_thumbnails/ry_to_ppr.svg
+
+                :class:`PauliRot("Y") <.PauliRot>` | :math:`1`
+
+            .. decomposition-rule:: _ry_to_rx_cliff
+                :image: /_static/decomposition_thumbnails/ry_to_rx_cliff.svg
+
+                :class:`~.S` | :math:`1`
+                :class:`Adjoint(S) <.S>` | :math:`1`
+                :class:`~.RX` | :math:`1`
+
+            .. decomposition-rule:: _ry_to_rz_cliff
+                :image: /_static/decomposition_thumbnails/ry_to_rz_cliff.svg
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.S` | :math:`1`
+                :class:`Adjoint(S) <.S>` | :math:`1`
+                :class:`~.RZ` | :math:`1`
     """
 
     num_wires = 1
@@ -491,6 +561,47 @@ class RZ(Operator2):
     Args:
         phi (TensorLike): rotation angle :math:`\phi`
         wires (WiresLike): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.RZ
+
+            .. decomposition-rule:: _rz_to_ps
+                :image: /_static/decomposition_thumbnails/rz_to_phaseshift.svg
+
+                :class:`~.PhaseShift` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _rz_to_rot
+                :image: /_static/decomposition_thumbnails/rz_to_rot.svg
+
+                :class:`~.Rot` | :math:`1`
+
+            .. decomposition-rule:: _rz_to_ry_rx
+                :image: /_static/decomposition_thumbnails/rz_to_ry_rx.svg
+
+                :class:`~.RY` | :math:`2`
+                :class:`~.RX` | :math:`1`
+
+            .. decomposition-rule:: _rz_to_ppr
+                :image: /_static/decomposition_thumbnails/rz_to_ppr.svg
+
+                :class:`PauliRot("Z") <.PauliRot>` | :math:`1`
+
+            .. decomposition-rule:: _rz_to_rx_cliff
+                :image: /_static/decomposition_thumbnails/rz_to_rx_cliff.svg
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.RX` | :math:`1`
+
+            .. decomposition-rule:: _rz_to_ry_cliff
+                :image: /_static/decomposition_thumbnails/rz_to_ry_cliff.svg
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.S` | :math:`1`
+                :class:`Adjoint(S) <.S>` | :math:`1`
+                :class:`~.RY` | :math:`1`
     """
 
     num_wires = 1
@@ -751,6 +862,17 @@ class PhaseShift(Operator2):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PhaseShift
+
+            .. decomposition-rule:: _phaseshift_to_rz_gp
+                :image: /_static/decomposition_thumbnails/phaseshift_to_rz_gp.svg
+
+                :class:`~.RZ` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
     """
 
     num_wires = 1
@@ -949,6 +1071,17 @@ class Rot(Operator2):
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
         wires (Any, Wires): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.Rot
+
+            .. decomposition-rule:: _rot_to_rz_ry_rz
+                :image: /_static/decomposition_thumbnails/rot_to_rz_ry_rz.svg
+
+                :class:`~.RZ` | :math:`2`
+                :class:`~.RY` | :math:`1`
     """
 
     ndim_params = (0, 0, 0)
@@ -1126,6 +1259,16 @@ class U1(Operator2):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.U1
+
+            .. decomposition-rule:: _u1_phaseshift
+                :image: /_static/decomposition_thumbnails/u1_to_phaseshift.svg
+
+                :class:`~.PhaseShift` | :math:`1`
     """
 
     num_wires = 1
@@ -1242,6 +1385,17 @@ class U2(Operator2):
         phi (float): azimuthal angle :math:`\phi`
         delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.U2
+
+            .. decomposition-rule:: _u2_phaseshift_rot
+                :image: /_static/decomposition_thumbnails/u2_to_rot_phaseshift.svg
+
+                :class:`~.Rot` | :math:`1`
+                :class:`~.PhaseShift` | :math:`2`
     """
 
     num_wires = 1
@@ -1372,6 +1526,17 @@ class U3(Operator2):
         phi (float): azimuthal angle :math:`\phi`
         delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.U3
+
+            .. decomposition-rule:: _u3_phaseshift_rot
+                :image: /_static/decomposition_thumbnails/u3_to_rot_phaseshift.svg
+
+                :class:`~.Rot` | :math:`1`
+                :class:`~.PhaseShift` | :math:`2`
     """
 
     num_wires = 1

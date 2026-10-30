@@ -164,7 +164,7 @@ def adjoint(fn):
 
 def create_adjoint_op(fn):
     """Main logic for qp.adjoint, but allows bypassing the compiler dispatch if needed."""
-    if qp.math.is_tracer(fn):
+    if qp.math.is_tracer(fn) and isinstance(fn.aval, qp.capture.AbstractOperator):
         return _make_adjoint_op(fn)
     if isinstance(fn, Operator):
         return _make_adjoint_op(fn)
