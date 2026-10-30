@@ -1428,6 +1428,13 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* Callable :func:`~.ctrl` capture now passes all work-wire labels as operands.
+  The ``ctrl_transform`` primitive no longer has a ``work_wires`` parameter;
+  interpreters must read the trailing ``n_work`` operands instead. String work-wire
+  labels are no longer supported in callable capture, but remain supported outside
+  capture. The work-wire count and ``work_wire_type`` remain static.
+  `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
+
 * The ``pennylane.kernels`` module has been removed. This includes ``kernel_matrix``,
   ``square_kernel_matrix``, ``polarity``, ``target_alignment``, ``threshold_matrix``,
   ``displace_matrix``, ``flip_matrix``, ``closest_psd_matrix`` and

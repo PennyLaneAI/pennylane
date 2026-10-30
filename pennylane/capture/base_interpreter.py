@@ -492,12 +492,12 @@ def handle_ctrl_transform(
     *invals,
     n_control,
     jaxpr,
-    work_wires,
     n_consts,
+    n_work=0,
     work_wire_type="borrowed",
 ):
     """Interpret a ctrl transform primitive."""
-    controls_start = len(invals) - 2 * n_control
+    controls_start = len(invals) - n_work - 2 * n_control
     consts = invals[:n_consts]
     args = invals[n_consts:controls_start]
     jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
@@ -508,7 +508,7 @@ def handle_ctrl_transform(
         *invals[controls_start:],
         n_control=n_control,
         jaxpr=jaxpr.jaxpr,
-        work_wires=work_wires,
+        n_work=n_work,
         work_wire_type=work_wire_type,
         n_consts=len(jaxpr.consts),
     )
