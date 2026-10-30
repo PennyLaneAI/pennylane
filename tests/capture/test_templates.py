@@ -1427,28 +1427,30 @@ class TestModifiedTemplates:
         qp.assert_equal(op, qp.Incrementer(**kwargs))
 
     def test_left_classical_comparator(self):
-        """Test the primitive bind call of LeftClassicalComparator."""
+        """Test the primitive bind call of LeftClassicalComparator.
+
+        NOTE: The threshold is captured as an operand and can change at evaluation time.
+        """
 
         kwargs = {
             "x_wires": [0, 1, 2],
-            "L": 3,
             "target_wire": 3,
             "work_wires": [4, 5],
             "comparator": "<",
         }
 
-        def qfunc():
-            return qp.LeftClassicalComparator(**kwargs).tracer
+        def qfunc(threshold):
+            return qp.LeftClassicalComparator(value=threshold, **kwargs).tracer
 
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = jax.make_jaxpr(qfunc)(3)
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(eqn, qp.LeftClassicalComparator)
 
-        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-        qp.assert_equal(op, qp.LeftClassicalComparator(**kwargs))
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 5)
+        qp.assert_equal(op, qp.LeftClassicalComparator(value=5, **kwargs))
 
     def test_left_quantum_comparator(self):
         """Test the primitive bind call of LeftQuantumComparator."""

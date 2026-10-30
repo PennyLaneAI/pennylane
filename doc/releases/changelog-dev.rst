@@ -847,6 +847,7 @@ New features since last release
   `(#9308) <https://github.com/PennyLaneAI/pennylane/pull/9308>`__
   `(#9554) <https://github.com/PennyLaneAI/pennylane/pull/9554>`__
   `(#10145) <https://github.com/PennyLaneAI/pennylane/pull/10145>`__
+  `(#10377) <https://github.com/PennyLaneAI/pennylane/pull/10377>`__
 
   .. code-block:: python
 
@@ -856,12 +857,12 @@ New features since last release
 
       @qp.set_shots(shots=1)
       @qp.qnode(dev)
-      def circuit(x_val, L_val):
+      def circuit(x_val, value):
           x_val_bin = qp.math.int_to_binary(x_val, 3)
           qp.BasisState(x_val_bin, wires=[0, 1, 2])
           qp.LeftClassicalComparator(
               x_wires=[0, 1, 2],
-              L=L_val,
+              value=value,
               target_wire=3,
               work_wires=[4, 5],
               comparator=">=",
