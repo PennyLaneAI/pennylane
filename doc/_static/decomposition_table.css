@@ -76,7 +76,7 @@ table.decomposition-table p.decomp-requires {
    browsers never have to choose between the two collapsed borders (some chose the grey one) */
 table.decomposition-table tr.decomp-region-row td {
   padding: calc(2 * var(--default-padding)) 0 0;
-  border-top: 2px solid #c756b2 !important;
+  border-top: 2px solid #c756b2;
 }
 
 table.decomposition-table tr.decomp-body-row:has(+ tr.decomp-region-row) {
