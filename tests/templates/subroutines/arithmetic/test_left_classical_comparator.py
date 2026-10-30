@@ -13,11 +13,18 @@
 # limitations under the License.
 """Tests for LeftClassicalComparator."""
 
+from collections import Counter
+
 import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.testing import assert_valid
+from pennylane.core import abstractify
+from pennylane.templates.subroutines.arithmetic.left_classical_comparator import (
+    _left_classical_comparator,
+)
+from pennylane.testing import assert_valid, decomp_rule_to_tape
+from pennylane.typing import Int, Wire
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -25,12 +32,12 @@ def test_assert_valid():
     """Test that LeftClassicalComparator passes the standard Operator2 checks,
     with capture enabled and disabled."""
     op = qp.LeftClassicalComparator(
-        x_wires=[0, 1, 2], L=2, target_wire=3, work_wires=[4, 5], comparator=">="
+        x_wires=[0, 1, 2], value=2, target_wire=3, work_wires=[4, 5], comparator=">="
     )
     assert_valid(op, skip_differentiation=True)
 
     assert op.arguments["x_wires"] == qp.wires.Wires([0, 1, 2])
-    assert op.arguments["L"] == 2
+    assert op.arguments["value"] == 2
     assert op.arguments["target_wire"] == qp.wires.Wires(3)
     assert op.arguments["work_wires"] == qp.wires.Wires([4, 5])
     assert op.arguments["comparator"] == ">="
@@ -43,18 +50,13 @@ class TestLeftClassicalComparator:
     @pytest.mark.parametrize(
         "qjit",
         [
-            pytest.param(
-                True,
-                marks=pytest.mark.xfail(
-                    reason="Dynamic L requires https://github.com/PennyLaneAI/pennylane/pull/10377"
-                ),
-            ),
+            True,
             False,
         ],
     )
     @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
     @pytest.mark.parametrize(
-        ("x_wires", "L", "target_wire", "work_wires", "x"),
+        ("x_wires", "value", "target_wire", "work_wires", "x"),
         [
             ([0, 3, 6, 9], 1, 11, [2, 5, 8], 1),
             ([0, 3, 6, 9], 1, 11, [2, 5, 8], 2),
@@ -63,33 +65,35 @@ class TestLeftClassicalComparator:
         ],
     )
     def test_operation_result(
-        self, x_wires, L, target_wire, work_wires, x, comparator, qjit
+        self, x_wires, value, target_wire, work_wires, x, comparator, qjit
     ):  # pylint: disable=too-many-arguments
         """Test that the LeftClassicalComparator template produces the correct output."""
 
         @qp.qnode(qp.device("lightning.qubit", wires=range(13)), shots=1)
-        def circuit(x_wires, L):
+        def circuit(x_wires, value):
             qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
-            qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
+            qp.LeftClassicalComparator(x_wires, value, target_wire, work_wires, comparator)
             qp.CNOT([11, 12])
-            # qfunc form: L is traced under qjit, and adjoint(op) would evaluate the
-            # resource function, which branches on L.
             qp.adjoint(
-                lambda: qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
-            )()
+                qp.LeftClassicalComparator(x_wires, value, target_wire, work_wires, comparator)
+            )
             qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
-            return qp.sample(wires=[12]), qp.sample(wires=work_wires), qp.sample(wires=x_wires)
+            return (
+                qp.sample(wires=[12]),
+                qp.sample(wires=work_wires),
+                qp.sample(wires=x_wires),
+            )
 
         if qjit:
             circuit = qp.qjit(circuit)
-        output = circuit(x_wires, L)
-        expected = {"<": x < L, "<=": x <= L, ">": x > L, ">=": x >= L}[comparator]
+        output = circuit(x_wires, value)
+        expected = {"<": x < value, "<=": x <= value, ">": x > value, ">=": x >= value}[comparator]
         assert bool(output[0]) == expected
         assert np.isclose(sum(*output[1]), 0)  # work wires are clean
         assert np.isclose(sum(*output[2]), 0)  # x_wires are not modified
 
     @pytest.mark.parametrize(
-        ("target_wire", "x_wires", "L", "work_wires", "comparator", "msg_match"),
+        ("target_wire", "x_wires", "value", "work_wires", "comparator", "msg_match"),
         [
             (
                 8,
@@ -129,20 +133,22 @@ class TestLeftClassicalComparator:
                 10,
                 [6, 7],
                 "<",
-                "L must be less than",
+                "value must be less than",
             ),
         ],
     )
     def test_wires_error(
-        self, target_wire, x_wires, L, work_wires, comparator, msg_match
+        self, target_wire, x_wires, value, work_wires, comparator, msg_match
     ):  # pylint: disable=too-many-arguments
         """Test that an error is raised when some work_wires don't meet the requirements."""
         with pytest.raises(ValueError, match=msg_match):
-            qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator=comparator)
+            qp.LeftClassicalComparator(
+                x_wires, value, target_wire, work_wires, comparator=comparator
+            )
 
     @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
     @pytest.mark.parametrize(
-        ("x_wires", "L", "target_wire", "work_wires"),
+        ("x_wires", "value", "target_wire", "work_wires"),
         [
             ([0, 3, 6, 9], 1, 11, [2, 5, 8]),
             ([0, 3, 6, 9], 2, 11, [2, 5, 8]),
@@ -151,7 +157,7 @@ class TestLeftClassicalComparator:
     )
     @pytest.mark.parametrize("seed", [42, 123])
     def test_no_phase_errors(  # pylint: disable=too-many-arguments
-        self, x_wires, L, target_wire, work_wires, comparator, seed
+        self, x_wires, value, target_wire, work_wires, comparator, seed
     ):
         """Test that the comparator introduces no complex phases.
         A correct classical reversible circuit is a real permutation matrix,
@@ -162,7 +168,7 @@ class TestLeftClassicalComparator:
         @qp.qnode(dev)
         def circuit(x_state):
             qp.StatePrep(x_state, x_wires)
-            qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
+            qp.LeftClassicalComparator(x_wires, value, target_wire, work_wires, comparator)
             return qp.state()
 
         num_x = 2 ** len(x_wires)
@@ -182,33 +188,91 @@ class TestLeftClassicalComparator:
     @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
     @pytest.mark.parametrize("n", [2, 3, 4])
     def test_max_bound_all_inputs(self, comparator, n):
-        """Test that the comparator is correct for the largest allowed bound ``L = 2 ** n - 1``."""
+        """Test that the comparator is correct for the largest allowed bound ``value = 2 ** n - 1``."""
 
         x_wires = list(range(n))
         target_wire = n
         work_wires = list(range(n + 1, n + 1 + max(1, n - 1)))
         total = n + 1 + max(1, n - 1)
-        L = 2**n - 1
+        value = 2**n - 1
 
         dev = qp.device("lightning.qubit", wires=total)
 
         @qp.qnode(dev)
         def circuit(x):
             qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
-            qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
+            qp.LeftClassicalComparator(x_wires, value, target_wire, work_wires, comparator)
             return qp.probs(wires=[target_wire])
 
         expected_fn = {
-            "<": lambda x: x < L,
-            "<=": lambda x: x <= L,
-            ">": lambda x: x > L,
-            ">=": lambda x: x >= L,
+            "<": lambda x: x < value,
+            "<=": lambda x: x <= value,
+            ">": lambda x: x > value,
+            ">=": lambda x: x >= value,
         }[comparator]
 
         for x in range(2**n):
             probs = np.asarray(circuit(x))
             got = np.isclose(probs[1], 1.0)
             assert got == expected_fn(x), (
-                f"comparator={comparator} L={L} x={x}: got {got}, "
+                f"comparator={comparator} value={value} x={x}: got {got}, "
                 f"expected {bool(expected_fn(x))}"
             )
+
+
+@pytest.mark.parametrize("n", [1, 2, 3])
+@pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
+@pytest.mark.parametrize("positional", [False, True])
+def test_resource_upper_bound(n, comparator, positional):
+    """Worst-case estimates must cover each gate count for every valid threshold, including endpoints."""
+    rule = _left_classical_comparator
+    abstract_op = qp.LeftClassicalComparator(Wire[n], Int, Wire[1], Wire[n - 1], comparator)
+    if positional:
+        estimates = rule.compute_resources(*abstract_op.arguments.values()).gate_counts
+    else:
+        estimates = rule.compute_resources(**abstract_op.arguments).gate_counts
+    assert not rule.exact_resources
+    max_value = 2 ** n if comparator in ["<", ">="] else 2**n - 1
+    for threshold in range(max_value + 1):
+        op = qp.LeftClassicalComparator(
+            list(range(n)), threshold, n, list(range(n + 1, 2 * n)), comparator
+        )
+        tape = decomp_rule_to_tape(op, rule)
+        counts = Counter(abstractify(gate) for gate in tape.operations)
+        assert all(count <= estimates.get(gate, 0) for gate, count in counts.items())
+
+
+@pytest.mark.catalyst
+@pytest.mark.usefixtures("enable_graph_decomposition")
+@pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
+def test_capture_dynamic_threshold(comparator):
+    """A captured circuit returns the correct comparison result as the runtime threshold changes."""
+    target = qp.gate_sets.CLIFFORD_T_PLUS_RZ
+
+    @qp.qjit(capture=True)
+    @qp.decompose(gate_set=target)
+    @qp.qnode(qp.device("lightning.qubit", wires=4))
+    def circuit(threshold):
+        qp.X(1)  # x = 1
+        qp.LeftClassicalComparator([0, 1], threshold, 2, [3], comparator)
+        return qp.probs(wires=[2])
+
+    max_value = 4 if comparator in ["<", ">="] else 3
+    for threshold in range(max_value + 1):
+        expected_bit = {
+            "<": 1 < threshold,
+            "<=": 1 <= threshold,
+            ">": 1 > threshold,
+            ">=": 1 >= threshold,
+        }[comparator]
+        expected = np.zeros(2)
+        expected[int(expected_bit)] = 1
+        assert qp.math.allclose(circuit(threshold), expected, atol=1e-8)
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("threshold", [[1, 2], np.array([1]), Int[2]])
+def test_non_scalar_threshold_rejected(threshold):
+    """Reject concrete and abstract non-scalar thresholds with capture enabled or disabled."""
+    with pytest.raises(ValueError, match="value must be a scalar integer"):
+        qp.LeftClassicalComparator([0, 1], threshold, 2, [3], "<")
