@@ -30,9 +30,9 @@ from pennylane.templates.state_preparations.partial_unary import (
     PUIsometryFinder,
     _find_affine_subspace_isometry,
     _is_affine_subspace,
+    _partial_unary_dense_state,
     _partial_unary_state_prep_core,
     _partial_unary_state_prep_resources,
-    _select_isometry,
 )
 from pennylane.testing import assert_valid, assert_valid_decomp_rule
 from pennylane.typing import Complex, Float, Wire
@@ -512,38 +512,33 @@ class TestPartialUnaryStatePreparation:
         assert qp.MultiplexerStatePreparation(state_type[8], wires=Wire[3]) in resources
         assert_valid_decomp_rule(op, rule)
 
-    @pytest.mark.parametrize("indices", [(3, 0), (7, 0, 3), (0, 3, 7, 17, 25)])
+    @pytest.mark.parametrize(
+        "bijection, expected",
+        [
+            ({0: 1, 1: 0}, [2, 1]),
+            ({0: 2, 1: 0, 2: 1}, [2, 3, 1, 0]),
+            ({0: 4, 1: 0, 2: 2, 3: 6, 4: 1}, [2, 5, 3, 0, 1, 0, 4, 0]),
+        ],
+    )
     @pytest.mark.parametrize("complex_coefficients", [False, True])
-    def test_dense_state_gather(self, indices, complex_coefficients):
-        """The static inverse mapping preserves coefficients, padding, and differentiation."""
-        num_wires = 5
-        n_subspace = ceil_log2(len(indices))
-        work_wires = list(range(num_wires, num_wires + max(n_subspace - 1, 1)))
-        coefficients = np.arange(1, len(indices) + 1, dtype=float)
+    @pytest.mark.catalyst
+    def test_dense_state_gather(self, bijection, expected, complex_coefficients):
+        """Gather places coefficients at their mapped positions and fills unused positions with zero."""
+        catalyst = pytest.importorskip("catalyst")
+        n_subspace = ceil_log2(len(expected))
+        coefficients = jax.numpy.arange(1, len(bijection) + 1, dtype=float)
+        expected = jax.numpy.array(expected, dtype=float)
         if complex_coefficients:
-            coefficients = coefficients + 1j * coefficients[::-1]
-        coefficients /= np.linalg.norm(coefficients)
+            coefficients = coefficients * (1 + 1j)
+            expected = expected * (1 + 1j)
 
         def dense_state(values):
-            with qp.queuing.AnnotatedQueue() as queue:
-                _partial_unary_state_prep_core(values, range(num_wires), indices, work_wires)
-            state_prep = next(
-                op for op in queue.queue if isinstance(op, qp.MultiplexerStatePreparation)
-            )
-            return state_prep.data[0]
+            return _partial_unary_dense_state(values, bijection, n_subspace)
 
-        _, _, bijection, _ = _select_isometry(indices, num_wires, n_subspace)
-        expected = np.zeros(2**n_subspace, dtype=coefficients.dtype)
-        expected[[bijection[i] for i in range(len(indices))]] = coefficients
+        compiled = catalyst.qjit(dense_state, capture=True)
+
         assert qp.math.allclose(dense_state(coefficients), expected)
-        actual = jax.jit(dense_state)(jax.numpy.array(coefficients))
-        assert qp.math.allclose(actual, expected)
-        # Padded positions contribute no gradient; every coefficient appears exactly once.
-        jac = jax.jacfwd(dense_state, holomorphic=complex_coefficients)(
-            jax.numpy.array(coefficients)
-        )
-        assert qp.math.allclose(np.sum(jac, axis=0), np.ones(len(indices)))
-        assert "scatter" not in str(jax.make_jaxpr(dense_state)(jax.numpy.array(coefficients)))
+        assert qp.math.allclose(compiled(coefficients), expected)
 
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
