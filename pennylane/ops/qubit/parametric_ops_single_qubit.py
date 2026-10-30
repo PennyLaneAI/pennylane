@@ -617,6 +617,12 @@ class RZ(Operator2):
                 :class:`~.S` | :math:`1`
                 :class:`Adjoint(S) <.S>` | :math:`1`
                 :class:`~.RY` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/rz_adjoint.svg
+                :region: adjoint
+
+                :class:`~.RZ` | :math:`1`
     """
 
     num_wires = 1
