@@ -2250,6 +2250,10 @@ Bug fixes 🐛
   alternative decomposition revisits its base, which could overestimate required work wires.
   `(#10371) <https://github.com/PennyLaneAI/pennylane/pull/10371>`__
 
+* Fixed infinite recursion in decomposition graph construction when a cycle of work-wire
+  dependent operators uses additional work wires on every pass.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * The resource estimate of the measurement-based decomposition of :class:`~.QROM` now declares
   every gate type that the decomposition uses and upper-bounds every count except the split of
   X-type measurements across widths, which is assumed to follow a binomial distribution

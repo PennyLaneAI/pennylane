@@ -778,6 +778,41 @@ class TestDecompGraphWorkWireBudgeting:
         solution = graph.solve()
         assert solution.is_solved_for(SimpleOp(0))
 
+    def test_cycle_through_work_wire_dependent_ops(self):
+        """Tests that a cycle of work-wire dependent ops that uses more work wires on every pass
+        does not recurse indefinitely."""
+
+        class WrapperOp(Operation):
+            """An operation that decomposes into ``CustomOp`` using a work wire."""
+
+        @qp.register_resources({CustomOp: 1})
+        def _another_to_custom(_):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1})
+        def _custom_to_x(_):
+            raise NotImplementedError
+
+        @qp.register_resources({AnotherOp: 1}, work_wires={"zeroed": 1})
+        def _custom_to_another(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1}, work_wires={"zeroed": 1})
+        def _wrapper_to_custom(_):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [AnotherOp(0), WrapperOp(0)],
+            gate_set={qp.X},
+            alt_decomps={
+                AnotherOp: [_another_to_custom],
+                CustomOp: [_custom_to_x, _custom_to_another],
+                WrapperOp: [_wrapper_to_custom],
+            },
+        )
+        solution = graph.solve(num_work_wires=None)
+        assert solution.decomposition(WrapperOp(0), num_work_wires=None) is _wrapper_to_custom
+
     def test_min_work_wires(self):
         """Tests that the graph tracks the minimum number of work wires."""
 
