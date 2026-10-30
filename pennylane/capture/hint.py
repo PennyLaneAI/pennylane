@@ -169,7 +169,7 @@ def hint(f_or_hints: dict[str, Any], hints: None = None) -> Callable: ...
 @overload
 def hint(f_or_hints: Any, hints: dict[str, Any]) -> Any: ...
 def hint(f_or_hints, hints: dict[str, Any] | None = None):
-    """Attaches a compiler hint to applicable functionality.
+    r"""Attaches a compiler hint to applicable functionality.
 
     Can be used as a decorator or applied directly:
 
@@ -199,13 +199,13 @@ def hint(f_or_hints, hints: dict[str, Any] | None = None):
         correctness, meaning that the compiler can safely ignore them and still provide correct
         results.
 
-        While close mispellings may be accepted (e.g., ``"num-iter"``), spellings sufficiently far
+        While close misspellings may be accepted (e.g., ``"num-iter"``), spellings sufficiently far
         away from the target will be ignored.
 
     .. details::
         :title: Usage Details
 
-        **``"num-iters"`` with ``for`` and ``while`` loops**
+        **"num-iters" with for and while loops**
 
         By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
         with :func:`~.analyze` can heuristically specify the number of iterations, leading to
@@ -256,13 +256,13 @@ def hint(f_or_hints, hints: dict[str, Any] | None = None):
 
             hinted_loop = qp.hint(hinted_loop, {"num-iters": 10})
 
-        **``"branch-prob"`` with ``cond``**
+        **"branch-prob" with cond**
 
         By hinting :func:`~.cond` branches with ``"branch-prob"``, profiling with :func:`~.analyze`
         can heuristically specify the probabilities for each branch being selected, leading to a
         weighted average of resources from each branch.
 
-        By default (with no ``hint``s), :func:`~.analyze` takes the maximum union of all gate types
+        By default (with no hints), :func:`~.analyze` takes the maximum union of all gate types
         in every :func:`~.cond` branch. The difference in behaviour with and without ``hint`` is
         evident in the example below.
 
@@ -315,9 +315,9 @@ def hint(f_or_hints, hints: dict[str, Any] | None = None):
         (:math:`10 \text{iterations} \times (0.8 \times \text{CNOT} + 0.2 \times \text{CZ}) = 8 \times \text{CNOT} + 2 \times \text{CZ}`).
         In contrast, with the unhinted conditional branches in ``loop_unhinted``, :func:`~.analyze`
         takes the max union of all gate types across every branch, which accumulates to
-        :math:`10 \times \text{CRZ} + 10 \times \text{CRY})`.
+        :math:`10 \times \text{CRZ} + 10 \times \text{CRY}`.
 
-        **General notes on using ``hint``**
+        **General notes on using hint**
 
         Note that hints can be overwritten. The following will use ``20`` as the number of
         iterations:
