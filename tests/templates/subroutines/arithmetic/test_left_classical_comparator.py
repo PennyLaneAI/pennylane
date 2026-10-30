@@ -47,16 +47,7 @@ class TestLeftClassicalComparator:
     """Test LeftClassicalComparator template."""
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "qjit",
-        [
-            pytest.param(
-                True,
-                marks=pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]"),
-            ),
-            False,
-        ],
-    )
+    @pytest.mark.parametrize("qjit", [True, False])
     @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
     @pytest.mark.parametrize(
         ("x_wires", "L", "target_wire", "work_wires", "x"),
