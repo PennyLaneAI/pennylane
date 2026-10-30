@@ -175,14 +175,41 @@ Influencing decomposition pathways
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Briefly, the :func:`~pennylane.decompose` compilation pass works by constructing
-a weighted graph and finding the "shortest" (or least resource-intensive) path
+a weighted graph and finding the "shortest" (least resource-intensive) path
 between source nodes (original operators in the circuit) and target nodes
 (operators in the target gate set). This algorithm can be influenced in several
 ways:
 
-* ``exclude_decomps``
-* ``fixed_decomps``
-* weights
-* ??
+* :func:`qp.decompose(..., exclude_decomps={...}) <~pennylane.decompose>`:
+  The ``exclude_decomps`` argument excludes given decomposition rules from the
+  decomposition pathway—they cannot be explored as a path to the target gate
+  set.
+* :func:`qp.decompose(..., fixed_decomps={...}) <~pennylane.decompose>`:
+  The ``fixed_decomps`` argument fixes the exploration of decomposition pathways
+  that only use the given decomposition rules (if the given operator is not in
+  the target gate set).
+* **Target gate set weights**: It is typical for certain gates to be more costly
+  than others (e.g., :class:`~pennylane.T` and :class:`~pennylane.Toffoli` gates
+  are more expensive than :class:`~pennylane.H`). Gate-by-gate costs can be
+  given to target gates to influence the resource intensiveness of certain
+  decomposition pathways. In the example below, the :class:`~pennylane.H` gate
+  is decomposed into :class:`~pennylane.RZ` :math:`\otimes` :class:`~pennylane.RY`
+  instead of :class:`~pennylane.RZ` :math:`\otimes` :class:`~pennylane.RX`
+  :math:`\otimes` :class:`~pennylane.RZ` (modulo global phases) since
+  :class:`~pennylane.RX` is 100-times more costly.
 
-Examples
+.. code-block:: python
+
+    dev = qp.device("lightning.qubit", wires=3)
+    allowed_gates = {qp.Toffoli: 1, qp.RX: 100, qp.RY: 1, qp.RZ: 1, qp.GlobalPhase: 1}
+
+    @qp.qjit(capture=True)
+    @qp.decompose(gate_set=allowed_gates)
+    @qp.qnode(dev)
+    def circuit():
+        qp.Hadamard(wires=[0])
+        qp.Toffoli(wires=[0,1,2])
+        return qp.expval(qp.Z(0))
+
+>>> qp.analyze(circuit)().resources.quantum_operations
+{'GlobalPhase': 1, 'RY': 1, 'RZ': 1, 'Toffoli': 1}
