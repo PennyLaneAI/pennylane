@@ -79,6 +79,7 @@ def get_op_class_by_name(name):
     **Example**
 
     .. code-block:: python
+
         from pennylane import Operator2
 
         class MyNamedOp(Operator2):
