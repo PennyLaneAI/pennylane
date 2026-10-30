@@ -300,8 +300,46 @@ def _single_excitation_ppr_rz(phi: TensorLike, wires: WiresLike):
     qp.change_op_basis(qp.PPR_4(1, "XX", wires=wires), _rotations, qp.PPR_4(-1, "XX", wires=wires))
 
 
+# pylint: disable=unused-argument
+def _single_excitation_ppr_crz_resource(phi, wires):
+    compute = Prod2((qp.CNOT(Wire[2]), qp.PPR_4(1, "XX", wires=Wire[2])))
+    return {
+        _change_op_basis_abstract(
+            compute,
+            qp.CRZ(Float, wires=Wire[2]),
+            qp.adjoint(compute),
+        ): 1
+    }
+
+
+@register_resources(_single_excitation_ppr_crz_resource)
+def _single_excitation_ppr_crz(phi: TensorLike, wires: WiresLike):
+    r"""A single arbitrary-angle rotation per Givens rotation.
+
+    In the basis of ``_single_excitation_ppr_rz``, the two rotations
+    :math:`RZ(\phi/2)_i\, RZ(-\phi/2)_j = e^{-i\phi(Z_i - Z_j)/4}` are a rotation whose angle
+    depends only on whether the two wires differ. In the parity frame ``CNOT(i, j)`` this reads
+    :math:`e^{-i\phi Z_i n_j/2}`, i.e. a single :class:`~.CRZ` controlled on ``j`` and targeting
+    ``i``. This halves the number of arbitrary-angle rotations whenever a controlled rotation is
+    about as expensive as an uncontrolled one, as for phase-gradient synthesis.
+    """
+
+    def _compute():
+        qp.PPR_4(1, "XX", wires=wires)
+        qp.CNOT(wires)
+
+    def _rotation():
+        qp.CRZ(phi, wires=[wires[1], wires[0]])
+
+    qp.change_op_basis(_compute, _rotation)
+
+
 add_decomps(
-    SingleExcitation, _single_excitation_decomp, _single_excitation_ppr, _single_excitation_ppr_rz
+    SingleExcitation,
+    _single_excitation_decomp,
+    _single_excitation_ppr,
+    _single_excitation_ppr_rz,
+    _single_excitation_ppr_crz,
 )
 add_decomps("Adjoint(SingleExcitation)", adjoint_rotation2)
 add_decomps("Pow(SingleExcitation)", pow_rotation2)

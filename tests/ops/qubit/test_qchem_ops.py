@@ -145,6 +145,22 @@ class TestSingleExcitation:
             decomposed_matrix = qp.matrix(tape, wire_order=[0, 1])
             assert np.allclose(decomposed_matrix, exp)
 
+    def test_single_excitation_ppr_crz_decomp(self):
+        """Tests that the Clifford operations belong to the basis change, leaving only CRZ as target."""
+        rule = qp.list_decomps(qp.SingleExcitation)["_single_excitation_ppr_crz"]
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(0.2, [0, 1])
+
+        assert len(q.queue) == 1
+        cob = q.queue[0]
+        assert cob.name == "ChangeOpBasis2"
+        qp.assert_equal(
+            cob.compute_op,
+            qp.prod(qp.CNOT([0, 1]), qp.PPR_4(1, "XX", wires=[0, 1])),
+        )
+        qp.assert_equal(cob.target_op, qp.CRZ(0.2, wires=[1, 0]))
+        qp.assert_equal(cob.uncompute_op, qp.adjoint(cob.compute_op))
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_generator(self, phi):
         """Tests that the SingleExcitation operation calculates the correct generator"""
