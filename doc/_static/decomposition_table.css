@@ -30,7 +30,6 @@ table.decomposition-table tbody tr.decomp-body-row {
 table.decomposition-table td {
   vertical-align: top;
   padding: var(--default-padding) var(--default-padding) var(--default-padding) 0;
-  border: none !important;
 }
 
 table.decomposition-table td p {
