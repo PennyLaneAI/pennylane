@@ -969,7 +969,7 @@ def _branch_probs(circuit):
 
 def _partial_unary_dense_state(coefficients, bijection, n_subspace):
     """Place coefficients in the dense subspace using a gather supported by Catalyst."""
-    # TODO: Revisit scatter when Catalyst supports it without sorted/unique index guarantees.
+    # TODO: Revisit using qp.math.scatter instead when Catalyst supports it without sorted/unique index guarantees [sc-135792]
     num_entries = len(bijection)
     # Reverse the static mapping so each dense position selects its coefficient.
     # E.g., destinations [2, 0, 1] need coefficient indices [1, 2, 0].

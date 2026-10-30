@@ -347,7 +347,7 @@ def _one_body_block_encoding_resources(
     if n_neg > 0:
         compare = LeftClassicalComparator(
             x_wires=Wire[n_index],
-            L=n_neg,
+            value=n_neg,
             target_wire=Wire[1],
             work_wires=Wire[max(n_index - 1, 0)],
             comparator="<",
@@ -399,7 +399,7 @@ def _one_body_block_encoding_decomp(
         n_index = len(index_wires)
         compare_kwargs = {
             "x_wires": index_wires,
-            "L": n_neg,
+            "value": n_neg,
             "target_wire": work_wires[0],
             "work_wires": work_wires[1:n_index],
             "comparator": "<",

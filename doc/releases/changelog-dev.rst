@@ -847,6 +847,7 @@ New features since last release
   `(#9308) <https://github.com/PennyLaneAI/pennylane/pull/9308>`__
   `(#9554) <https://github.com/PennyLaneAI/pennylane/pull/9554>`__
   `(#10145) <https://github.com/PennyLaneAI/pennylane/pull/10145>`__
+  `(#10377) <https://github.com/PennyLaneAI/pennylane/pull/10377>`__
 
   .. code-block:: python
 
@@ -856,12 +857,12 @@ New features since last release
 
       @qp.set_shots(shots=1)
       @qp.qnode(dev)
-      def circuit(x_val, L_val):
+      def circuit(x_val, value):
           x_val_bin = qp.math.int_to_binary(x_val, 3)
           qp.BasisState(x_val_bin, wires=[0, 1, 2])
           qp.LeftClassicalComparator(
               x_wires=[0, 1, 2],
-              L=L_val,
+              value=value,
               target_wire=3,
               work_wires=[4, 5],
               comparator=">=",
@@ -877,6 +878,21 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* Added optional ``work_wires`` to :class:`~.TrotterCDF` to combine the four equal-angle
+  ``IsingZZ`` gates between each pair of distinct spatial orbitals. With one work
+  wire initialized to :math:`|0\rangle`, each uncontrolled two-body layer uses
+  :math:`N(N-1)/2` ``CRZ`` and :math:`N` ``RZ`` gates instead of
+  :math:`N(2N-1)` ``IsingZZ`` gates, where :math:`N` is the number of spatial orbitals.
+  The double-phase decomposition also needs one work wire and shares control CNOTs
+  across orbital pairs; standard single-qubit control needs two work wires and shares
+  one ``TemporaryAND`` computation across pairs with the same first orbital.
+  For :math:`m>1` standard controls, a registered decomposition reuses the single-control
+  implementation through the generic AND reduction when :math:`m-1` additional clean
+  work wires are supplied to :func:`~.ctrl` with ``work_wire_type="zeroed"``.
+  The reduction in rotations comes at the cost of additional ``TemporaryAND`` and CNOT gates.
+  The original decomposition is used when fewer work wires are supplied.
+  `(#10380) <https://github.com/PennyLaneAI/pennylane/pull/10380>`__
+  
 * Added a new decomposition rule, ``_single_excitation_ppr_crz``, to :class:`~.SingleExcitation`, that
   realizes the Givens rotation with a single arbitrary-angle ``CRZ`` gate and four Clifford operations.
   `(#10358) <https://github.com/PennyLaneAI/pennylane/pull/10358>`__
@@ -2235,8 +2251,13 @@ Documentation 📝
   operator's decomposition rules, with a circuit diagram and the resources the rule uses. 
   This change only applies to operators that are subclasses of ``Operator2``. 
   The tables are rendered by a new ``decomposition-table`` Sphinx directive, and their diagrams are
-  drawn with :func:`~pennylane.draw_mpl`.
+  drawn with :func:`~pennylane.draw_mpl`. Symbolic decomposition rules for operators (i.e., 
+  ``"Adjoint(Operator)"``, ``"Controlled(Operator)"``, and ``"Pow(Operator)"``) are also displayed
+  and marked by the region type with `:region: adjoint/controlled/pow`.
   `(#10381) <https://github.com/PennyLaneAI/pennylane/pull/10381>`__
+  `(#10382) <https://github.com/PennyLaneAI/pennylane/pull/10382>`__
+  `(#10383) <https://github.com/PennyLaneAI/pennylane/pull/10383>`__
+  `(#10416) <https://github.com/PennyLaneAI/pennylane/pull/10416>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
