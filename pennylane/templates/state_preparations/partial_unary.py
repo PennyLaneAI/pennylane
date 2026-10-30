@@ -816,6 +816,29 @@ class PartialUnaryStatePreparation(Operator2):
     We used just ``160`` ``QROM``\ s instead of ``1207``, and as their size is dictated only by the
     number of indices :math:`|L|`, it is the same between the two decompositions.
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PartialUnaryStatePreparation
+            :symbols: :math:`D = |L| \geq 2` entries in ``indices`` and a subspace register of
+                :math:`m = \lceil \log_2 D \rceil` wires
+            :example: the first state above, :math:`D=10`
+
+            .. decomposition-rule:: _partial_unary_state_prep
+                :image: /_static/decomposition_thumbnails/partial_unary_state_prep.svg
+                :where: :math:`N_P`, :math:`N_F`, :math:`N_S` and :math:`N_T` are the numbers of
+                    partial unary iterators, fan-outs, SWAPs and Toffolis in the isometry circuit
+                    found by :class:`~.PUIsometryFinder` (data dependent). If the indices form an
+                    affine subspace, the isometry instead consists of :class:`~.X`,
+                    :class:`~.CNOT` and :class:`~.SWAP` gates only
+
+                :class:`~.MultiplexerStatePreparation` on :math:`m` wires | :math:`1` | 1
+                :class:`~.QROM` | :math:`N_P` | 5
+                :class:`~.MultiX` | :math:`2 N_P + 2 N_T` | 10
+                :class:`~.MultiX` with 1 control | :math:`N_F` | 10
+                :class:`~.SWAP` | :math:`N_S` | 0
+                :class:`~.MultiControlledX` with 2 controls | :math:`N_T` | 0
+
     """
 
     dynamic_argnames = ("coefficients",)
