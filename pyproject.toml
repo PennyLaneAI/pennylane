@@ -45,8 +45,6 @@ classifiers = [
 ]
 [dependency-groups]
 ci = [
-    "cvxpy",
-    "cvxopt~=1.3.0; python_version < '3.14'",
     "matplotlib",
     "rich",
     "pandas",
@@ -119,7 +117,9 @@ external-libraries = [
     "qualtran",
     "openqasm3",
     "antlr4_python3_runtime",
-    "pennylane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master"
+    "pennylane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master",
+    # ibm-cloud-sdk-core (via qiskit-ibm-runtime) caps python-dateutil<3; dateutil 3.0.0 (2026-10-21) breaks resolution
+    "python-dateutil<3",
 ]
 qchem = [
     "openfermionpyscf",
@@ -148,9 +148,6 @@ email = "software@xanadu.ai"
 
 [project.urls]
 repository = "https://github.com/PennyLaneAI/pennylane"
-
-[project.optional-dependencies]
-kernels = ["cvxpy", "cvxopt"]
 
 [project.scripts]
 pl-device-test = "pennylane.devices.tests:cli"

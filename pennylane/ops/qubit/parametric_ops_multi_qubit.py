@@ -1008,6 +1008,7 @@ def _decompose_pcphase(phi: TensorLike, dim: int, wires: WiresLike):
 
 
 add_decomps(PCPhase, _decompose_pcphase)
+add_decomps("Adjoint(PCPhase)", adjoint_rotation2)
 
 
 class IsingXX(Operator2):

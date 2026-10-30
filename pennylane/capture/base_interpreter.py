@@ -94,7 +94,7 @@ def _fill_in_shape_with_dyn_shape(dyn_shape: tuple[jax.core.Tracer], shape: tupl
         else:  # pragma: no cover
             # pull from iterable of dynamic shapes
             next_s = next(dyn_shape_iter)
-            if not qp.math.is_abstract(next_s):
+            if not qp.math.is_tracer(next_s):
                 # may need to cast to a built-in integer if possible
                 next_s = int(next_s)
             new_shape.append(next_s)
@@ -474,14 +474,14 @@ def _iota_primitive(self, *dyn_shape, dimension, dtype, shape, sharding):
 
 
 @PlxprInterpreter.register_primitive(adjoint_transform_prim)
-def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
+def handle_adjoint_transform(self, *invals, jaxpr, n_consts):
     """Interpret an adjoint transform primitive."""
     consts = invals[:n_consts]
     args = invals[n_consts:]
     jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
     return adjoint_transform_prim.bind(
-        *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
+        *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, n_consts=len(jaxpr.consts)
     )
 
 
@@ -791,7 +791,7 @@ def flattened_cond(
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices, strict=True):
         consts = invals[const_slice]
-        if math.is_abstract(pred):
+        if math.is_tracer(pred):
             raise NotImplementedError(
                 f"{self} does not yet support jitting cond with abstract conditions."
             )

@@ -200,7 +200,7 @@ class SProd(ScalarSymbolicOp):
         then the scalar product operator is hermitian."""
         if not self.base.is_verified_hermitian:
             return False
-        if math.is_abstract(self.scalar):
+        if math.is_tracer(self.scalar):
             return not math.is_complex_dtype(self.scalar)
         return not math.iscomplex(self.scalar)
 
@@ -330,10 +330,10 @@ class SProd(ScalarSymbolicOp):
 
     @property
     def has_decomposition(self):
-        return not math.is_abstract(self.scalar) and math.allclose(math.abs(self.scalar), 1)
+        return not math.is_tracer(self.scalar) and math.allclose(math.abs(self.scalar), 1)
 
     def decomposition(self):
-        if math.is_abstract(self.scalar) or not math.allclose(math.abs(self.scalar), 1):
+        if math.is_tracer(self.scalar) or not math.allclose(math.abs(self.scalar), 1):
             raise DecompositionUndefinedError(
                 "Decompositins of SProd are only defined for scalars with norm 1."
             )

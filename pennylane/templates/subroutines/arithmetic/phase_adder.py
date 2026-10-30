@@ -143,7 +143,7 @@ class PhaseAdder(Operation):
 
         num_work_wires = len(work_wire)
 
-        if not math.is_abstract(mod):
+        if not math.is_tracer(mod):
             if mod is None:
                 mod = 2 ** len(x_wires)
             elif mod != 2 ** len(x_wires) and num_work_wires != 1:
@@ -157,7 +157,7 @@ class PhaseAdder(Operation):
                     "PhaseAdder must have enough x_wires to represent mod. The maximum mod "
                     f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
                 )
-            abstract_wires = any(math.is_abstract(w) for w in work_wire)
+            abstract_wires = any(math.is_tracer(w) for w in work_wire)
             if num_work_wires != 0 and not abstract_wires:
                 if any(wire in work_wire for wire in x_wires):
                     raise ValueError(

@@ -24,12 +24,13 @@ from functools import partial
 from typing import Literal, override
 
 import numpy as np
+from scipy import sparse
 from scipy.linalg import block_diag
 
 import pennylane as qp
 from pennylane import math
 from pennylane.allocation import allocate
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
@@ -76,6 +77,23 @@ from .decompositions.controlled_decompositions import (
     single_ctrl_decomp_zyz_rule,
 )
 from .pow2 import pow_involutory as pow_involutory2
+
+__all__ = [
+    "ControlledQubitUnitary",
+    "CH",
+    "CY",
+    "CZ",
+    "CSWAP",
+    "CCZ",
+    "CNOT",
+    "Toffoli",
+    "MultiControlledX",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "CRot",
+    "ControlledPhaseShift",
+]
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -254,6 +272,24 @@ add_decomps(
     controlled_two_qubit_unitary_rule,
     _to_general_c_qu,
 )
+
+
+def _conj_transpose(U):
+    return U.conjugate().transpose() if sparse.issparse(U) else math.moveaxis(math.conj(U), -2, -1)
+
+
+@register_resources(lambda base: {abstractify(base): 1})
+def _adjoint_controlled_qubit_unitary(base):
+    ControlledQubitUnitary(
+        _conj_transpose(base.U),
+        wires=base.wires,
+        control_values=base.control_values,
+        work_wires=base.work_wires,
+        work_wire_type=base.work_wire_type,
+    )
+
+
+add_decomps("Adjoint(ControlledQubitUnitary)", _adjoint_controlled_qubit_unitary)
 
 
 class CH(Controlled2):
@@ -1363,7 +1399,7 @@ class MultiControlledX(Controlled2):
         ctrl_values = self.control_values
         # Same convention as ``Controlled2.__repr__``: trivial (all-``True``) control values and
         # the absence of work wires are not shown.
-        if isinstance(ctrl_values, AbstractArray) or math.is_abstract(ctrl_values):
+        if isinstance(ctrl_values, AbstractArray) or math.is_tracer(ctrl_values):
             params.append(f"control_values={ctrl_values}")
         elif not all(ctrl_values):
             params.append(f"control_values={ctrl_values.tolist()}")
@@ -2193,7 +2229,7 @@ add_decomps("Adjoint(CRot)", _adjoint_crot)
 
 
 class ControlledPhaseShift(Controlled2):
-    r"""A qubit controlled phase shift.
+    r"""A qubit controlled phase shift. Also accessible as :class:`~.CPhase`.
 
     .. math:: CR_\phi(\phi) = \begin{bmatrix}
                 1 & 0 & 0 & 0 \\
@@ -2215,6 +2251,10 @@ class ControlledPhaseShift(Controlled2):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+
+    .. seealso::
+
+        ``ControlledPhaseShift`` is also available as :class:`~.CPhase`.
 
     """
 
