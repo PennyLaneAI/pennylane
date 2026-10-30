@@ -33,7 +33,7 @@ its general resources.
 Each content line of a rule is a gate, its count, and optionally its count in the example circuit,
 all inline reStructuredText, separated by `` | ``.
 
-A rule registered for the operator inside an adjoint, controlled or power region (e.g.
+A rule registered for the operator inside an adjoint, controlled or pow region (e.g.
 ``add_decomps("C(Hadamard)", ...)``) is marked with ``:region: adjoint``, ``:region: controlled``
 or ``:region: pow``.
 Such rules are listed after the regular rules, below a divider explaining how to access them.
