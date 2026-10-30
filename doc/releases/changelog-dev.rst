@@ -878,6 +878,11 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* Added ``pennylane.core.get_op_class_by_name`` and ``pennylane.core.OperatorRegistry``
+  to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
+  automatically registered when they are defined.
+  `(#10430) <https://github.com/PennyLaneAI/pennylane/pull/10430>`__
+
 * Added optional ``work_wires`` to :class:`~.TrotterCDF` to combine the four equal-angle
   ``IsingZZ`` gates between each pair of distinct spatial orbitals. With one work
   wire initialized to :math:`|0\rangle`, each uncontrolled two-body layer uses
