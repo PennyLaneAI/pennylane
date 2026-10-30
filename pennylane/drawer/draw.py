@@ -294,14 +294,6 @@ def draw(
         1: ─├I─┤
         2: ─╰●─┤
 
-        A controlled :class:`~.GlobalPhase` is rewritten as a :class:`~.PhaseShift`
-        on the control wire:
-
-        >>> print(qp.draw(qp.ctrl(qp.GlobalPhase, control=[2]), **draw_kwargs)(phi=0.5))
-        0: ─╭GlobalPhase(0.50)─┤
-        1: ─├GlobalPhase(0.50)─┤
-        2: ─╰●─────────────────┤
-
     """
     qnode, partial_args, partial_kwargs = _unwrap_partial(qnode)
 

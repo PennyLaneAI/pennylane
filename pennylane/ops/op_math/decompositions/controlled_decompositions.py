@@ -912,22 +912,18 @@ def _ctrl_decomp_bisect_general(U, wires):
 
     # The component
     ops.QubitUnitary(c2t, wires[-1])
-    ops.MultiControlledX(
-        concatenate_wires(ctrl_k2, wires[-1:]), work_wires=ctrl_k1, work_wire_type="borrowed"
-    )
+    mcx_wires_k2 = concatenate_wires(ctrl_k2, wires[-1:])
+    ops.MultiControlledX(mcx_wires_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
     ops.adjoint(ops.QubitUnitary(c1, wires[-1]))
 
     # Cancel the two identity controlled X gates
     _ctrl_decomp_bisect_od(d, wires, skip_initial_cx=True)
 
     # Adjoint of the component
-    ops.MultiControlledX(
-        concatenate_wires(ctrl_k1, wires[-1:]), work_wires=ctrl_k2, work_wire_type="borrowed"
-    )
+    mcx_wires_k1 = concatenate_wires(ctrl_k1, wires[-1:])
+    ops.MultiControlledX(mcx_wires_k1, work_wires=ctrl_k2, work_wire_type="borrowed")
     ops.QubitUnitary(c1, wires[-1])
-    ops.MultiControlledX(
-        concatenate_wires(ctrl_k2, wires[-1:]), work_wires=ctrl_k1, work_wire_type="borrowed"
-    )
+    ops.MultiControlledX(mcx_wires_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
     ops.adjoint(ops.QubitUnitary(c2t, wires[-1]))
 
 
@@ -950,24 +946,18 @@ def _ctrl_decomp_bisect_od(U, wires, skip_initial_cx=False):
     mid = len(wires) // 2  # for odd n, make control_k1 bigger
     ctrl_k1 = wires[:mid]
     ctrl_k2 = wires[mid:-1]
+    mcx_wires_k1 = concatenate_wires(ctrl_k1, wires[-1:])
+    mcx_wires_k2 = concatenate_wires(ctrl_k2, wires[-1:])
 
     if not skip_initial_cx:
-        ops.MultiControlledX(
-            concatenate_wires(ctrl_k1, wires[-1:]), work_wires=ctrl_k2, work_wire_type="borrowed"
-        )
+        ops.MultiControlledX(mcx_wires_k1, work_wires=ctrl_k2, work_wire_type="borrowed")
 
     ops.QubitUnitary(a, wires[-1])
-    ops.MultiControlledX(
-        concatenate_wires(ctrl_k2, wires[-1:]), work_wires=ctrl_k1, work_wire_type="borrowed"
-    )
+    ops.MultiControlledX(mcx_wires_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
     ops.adjoint(ops.QubitUnitary(a, wires[-1]))
-    ops.MultiControlledX(
-        concatenate_wires(ctrl_k1, wires[-1:]), work_wires=ctrl_k2, work_wire_type="borrowed"
-    )
+    ops.MultiControlledX(mcx_wires_k1, work_wires=ctrl_k2, work_wire_type="borrowed")
     ops.QubitUnitary(a, wires[-1])
-    ops.MultiControlledX(
-        concatenate_wires(ctrl_k2, wires[-1:]), work_wires=ctrl_k1, work_wire_type="borrowed"
-    )
+    ops.MultiControlledX(mcx_wires_k2, work_wires=ctrl_k1, work_wire_type="borrowed")
     ops.adjoint(ops.QubitUnitary(a, wires[-1]))
 
 
