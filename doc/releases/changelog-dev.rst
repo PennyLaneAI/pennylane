@@ -2251,8 +2251,13 @@ Documentation 📝
   operator's decomposition rules, with a circuit diagram and the resources the rule uses. 
   This change only applies to operators that are subclasses of ``Operator2``. 
   The tables are rendered by a new ``decomposition-table`` Sphinx directive, and their diagrams are
-  drawn with :func:`~pennylane.draw_mpl`.
+  drawn with :func:`~pennylane.draw_mpl`. Symbolic decomposition rules for operators (i.e., 
+  ``"Adjoint(Operator)"``, ``"Controlled(Operator)"``, and ``"Pow(Operator)"``) are also displayed
+  and marked by the region type with `:region: adjoint/controlled/pow`.
   `(#10381) <https://github.com/PennyLaneAI/pennylane/pull/10381>`__
+  `(#10382) <https://github.com/PennyLaneAI/pennylane/pull/10382>`__
+  `(#10383) <https://github.com/PennyLaneAI/pennylane/pull/10383>`__
+  `(#10416) <https://github.com/PennyLaneAI/pennylane/pull/10416>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
