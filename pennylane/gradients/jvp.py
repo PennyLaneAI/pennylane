@@ -330,6 +330,14 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
     except (AttributeError, TypeError):
         pass
 
+    from pennylane.gradients.gradient_transform import trainable_tape_batching
+
+    if trainable_tape_batching(tape):
+        raise NotImplementedError(
+            "Computing the JVP of broadcasted tapes with respect to the broadcasted "
+            "parameters is currently not supported. See #4462 for details."
+        )
+
     gradient_kwargs = gradient_kwargs or {}
     gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
 
