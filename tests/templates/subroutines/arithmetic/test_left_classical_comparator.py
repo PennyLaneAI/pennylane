@@ -77,9 +77,7 @@ class TestLeftClassicalComparator:
             qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
             qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             qp.CNOT([11, 12])
-            qp.adjoint(
-                lambda: qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
-            )()
+            qp.adjoint(qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator))
             qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
             return qp.sample(wires=[12]), qp.sample(wires=work_wires), qp.sample(wires=x_wires)
 
