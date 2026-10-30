@@ -1,363 +1,354 @@
 .. _contributing_operators:
 
-Adding new operators
-====================
+Adding new quantum operators
+============================
 
-The following steps will help you to create custom operators, and to
-potentially add them to PennyLane.
-
-Note that in PennyLane, a circuit ansatz consisting of multiple gates is also an operator --- one whose
-action is defined by specifying a representation as a combination of other operators.
-For historical reasons, you find circuit ansaetze in the ``pennylane/template/`` folder,
-while all other operations are found in ``pennylane/ops/``.
-
-The base classes to construct new operators, :class:`~.Operator` and
-corresponding subclasses, are found in ``pennylane/operations.py``.
+This page will outline the steps to help create custom quantum operators that
+can either be formally added to PennyLane2 or just used locally.
 
 .. note::
 
-  Check :doc:`/code/qp_measurements` for documentation on how to create new measurements.
+    The term "quantum operators" encompasses anything that can be programmed
+    onto a quantum device. This includes
+    :doc:`gates </introduction/operations>`, elaborate
+    :doc:`subroutines </introduction/subroutines>`, and mid-circuit
+    measurements.
 
-Abstraction
-###########
+Important classes and functions
+###############################
 
-Operators in quantum mechanics are maps that act on vector spaces, and in differentiable quantum computing, these
-maps can depend on a set of trainable parameters. The :class:`~.Operator` class
-serves as the main abstraction of such objects, and all operators (such as gates, channels, observables)
-inherit from it.
+Decomposition and resource estimation
+-------------------------------------
 
->>> from jax import numpy as jnp
->>> op = qp.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
->>> isinstance(op, qp.operation.Operator)
-True
+Adding a custom operator is often convenient because it represents some
+self-contained block that not only will be used repetitively, but also because
+it could be *implemented* (or decomposed into elementary gates) differently
+ways.
 
-The basic components of operators are the following:
+PennyLane2 offers a robust and modularized decomposition algorithm, wherein any
+quantum operator can define different decompositions in terms of other
+operators. Creating new decomposition rules involves the following functions and
+modules.
 
-#. **The name of the operator** (:attr:`.Operator.name`), which may have a canonical, universally known interpretation (such as a "Hadamard" gate),
-   or could be a name specific to PennyLane.
+.. autosummary::
 
-   >>> op.name
-   Rot
+    ~pennylane.register_resources
+    ~pennylane.add_decomps
+    ~pennylane.typing
 
-#. **The subsystems that the operator addresses** (:attr:`.Operator.wires`), which mathematically speaking defines the subspace that it acts on.
+The decomposition algorithm in PennyLane2 bases its output on the resources
+required to compile a circuit into a target gate set. The
+:func:`~pennylane.register_resources` function is the avenue to specifying
+an individual decomposition rule's quantum resources. An example will be
+provided further down this page that uses :func:`~pennylane.register_resources`,
+:func:`~pennylane.add_decomps`, and the :mod:`~pennylane.typing` module.
 
-   >>> op.wires
-   Wires(['a'])
+Operator creation
+-----------------
 
-#. **Trainable parameters** (:attr:`.Operator.parameters`) that the map depends on, such as a rotation angle,
-   which can be fed to the operator as tensor-like objects. For example, since we used jax arrays to
-   specify the three rotation angles of ``op``, the parameters are jax ``Arrays``.
+Creating new operators in PennyLane2 can be done using one of the two items
+below.
 
-   >>> op.parameters
-   [Array(0.1, dtype=float32, weak_type=True),
-    Array(0.2, dtype=float32, weak_type=True),
-    Array(0.3, dtype=float32, weak_type=True)]
+.. autosummary::
 
-#. **Non-trainable hyperparameters** (:attr:`.Operator.hyperparameters`) that influence the action of the operator.
-   Not every operator has hyperparameters.
+    ~pennylane.subcircuit
+    ~pennylane.core.operator.Operator2
 
-   >>> op.hyperparameters
-   {}
+The :func:`~pennylane.subcircuit` function and the
+:class:`~pennylane.core.operator.Operator2` only differ syntactically; using
+either will result in a valid quantum operator that is agnostic to how it
+originated.
 
-#. Possible **symbolic or numerical representations** of the operator, which can be used by PennyLane's
-   devices to interpret the map. Examples are:
+For most cases, :func:`~pennylane.subcircuit` is recommended for its ease of
+use. Utilizing the :class:`~pennylane.core.operator.Operator2` class is
+recommended for the utmost customization.
 
-   * Representation as a **product of operators** (:meth:`.Operator.decomposition`):
+.. _operator_argument_types:
 
-     >>> op = qp.Rot(0.1, 0.2, 0.3, wires=["a"])
-     >>> op.decomposition()
-     [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
+Operator argument types
+#######################
 
-   * Representation as a **linear combination of operators** (:meth:`.Operator.terms`):
+When creating a new quantum operator in PennyLane2, the input arguments to the
+operator must be accurately binned into the following categories for
+compatibility with the :func:`~pennylane.qjit` compiler.
 
-     >>> op = qp.Hamiltonian([1., 2.], [qp.PauliX(0), qp.PauliZ(0)])
-     >>> op.terms()
-     ((1.0, 2.0), [PauliX(wires=[0]), PauliZ(wires=[0])])
+* ``wire_argnames`` : The names of arguments corresponding to wires. For
+  example, :class:`~pennylane.MultiControlledX`'s ``wires`` and ``work_wires``
+  arguments belong in ``wire_argnames``.
 
-   * Representation via the **eigenvalue decomposition** specified by eigenvalues (for the diagonal matrix, :meth:`.Operator.eigvals`)
-     and diagonalizing gates (for the unitaries :meth:`.Operator.diagonalizing_gates`):
+* ``dynamic_argnames`` : The names of arguments that are scalars, arrays, or
+  castable to arrays. These arguments can be treated by the
+  :func:`~pennylane.qjit` compiler as *dynamic*. For example, the ``bitstrings``
+  argument in :class:`~pennylane.QROM` is an array of integer values (``0`` and
+  ``1``), and can therefore be in ``dynamic_argnames``.
 
-     >>> op = qp.PauliX(0)
-     >>> op.diagonalizing_gates()
-     [H(0)]
-     >>> op.eigvals()
-     [ 1 -1]
+* ``static_argnames`` : The names of arguments whose concrete values are known
+  at compile time, but that do not need to be accessible to the
+  :func:`~pennylane.qjit` compiler. For example, the ``partial`` argument in
+  :class:`~pennylane.Select` is a Boolean flag that only changes how the
+  operator is decomposed, and therefore belongs in ``static_argnames``.
 
-   * Representation as a **matrix** (:meth:`.Operator.matrix`), as specified by a global wire order that tells us where the
-     wires are found on a register:
+* ``compilable_argnames`` : The names of arguments whose concrete values are
+  known at compile time and *are* visible to the :func:`~pennylane.qjit`
+  compiler. These can be numbers, strings, and lists, tuples, or dictionaries of
+  them. For example, the ``pauli_word`` argument in :class:`~pennylane.PauliRot`
+  is a string (e.g., ``"XYZ"``), and can therefore be in
+  ``compilable_argnames``. An operator can specify either
+  ``compilable_argnames`` or ``static_argnames`` and ``hybrid_argnames``, but
+  not both.
 
-     >>> op = qp.PauliRot(0.2, "X", wires=["b"])
-     >>> op.matrix(wire_order=["a", "b"])
-     [[9.95e-01-2.26e-18j 2.72e-17-9.98e-02j, 0+0j, 0+0j]
-      [2.72e-17-9.98e-02j 9.95e-01-2.26e-18j, 0+0j, 0+0j]
-      [0+0j, 0+0j, 9.95e-01-2.26e-18j 2.72e-17-9.98e-02j]
-      [0+0j, 0+0j, 2.72e-17-9.98e-02j 9.95e-01-2.26e-18j]]
+* ``hybrid_argnames`` : The names of arguments that hold dynamic data wrapped in
+  static structures (Pytrees), such as other operators or collections of wires
+  or arrays. These names cannot appear in ``dynamic_argnames``,
+  ``static_argnames``, or ``compilable_argnames``, but they can appear in
+  ``wire_argnames`` when the argument contains nested structures of wires. For
+  example, the ``ops`` argument in :class:`~pennylane.Select` is a list of
+  operators, and therefore belongs in ``hybrid_argnames``.
 
-   * Representation as a **sparse matrix** (:meth:`.Operator.sparse_matrix`):
+An example
+##########
 
-     >>> from scipy.sparse.coo import coo_matrix
-     >>> row = np.array([0, 1])
-     >>> col = np.array([1, 0])
-     >>> data = np.array([1, -1])
-     >>> mat = coo_matrix((data, (row, col)), shape=(4, 4))
-     >>> op = qp.SparseHamiltonian(mat, wires=["a"])
-     >>> op.sparse_matrix(wire_order=["a"])
-     (0, 1)   1
-     (1, 0) - 1
+Creating a custom operator using both :func:`~pennylane.subcircuit` and
+:class:`~pennylane.core.operator.Operator2` will be shown in this section.
 
-New operators can be created by applying arithmetic functions to operators, such as addition, scalar multiplication,
-multiplication, taking the adjoint, or controlling an operator. At the moment, such arithmetic is only implemented for
-specific subclasses.
+The following is an example for a two-wire gate called ``FlipAndRotate``. This
+operator flips a wire, measures another wire (a mid-circuit measurement) and
+conditionally applies a different :class:`~pennylane.CNOT` gate given the
+mid-circuit measurement result.
 
-* Operators inheriting from :class:`~.Operator` support addition and scalar multiplication:
+First, its input arguments need to be binned into the proper categories. Its
+call signature is ``FlipAndRotate(angle, rot_axes, wires)``.
 
-  >>> op = qp.PauliX(0) + 0.1 * qp.PauliZ(0)
-  >>> op.name
-  Hamiltonian
-  >>> op
-    (0.1) [Z0]
-  + (1.0) [X0]
+* ``angle`` : the angle of rotation (a ``float``). This can go in
+  ``dynamic_argnames``.
+* ``rot_axes`` : a length-2 list of some combination of ``"X"``, ``"Y"``, and
+  ``"Z"``, representing an axis of rotation. Depending on the measurement result
+  of ``wires[0]``, the wire that gets flipped, a rotation gate corresponding to
+  the axis of rotation is applied to ``wires[1]``. This can go in
+  ``compilable_argnames``.
+* ``wires`` : the wires the operator acts on. The first wire gets flipped, the
+  other is rotated. This can go in ``wire_argnames``.
 
-* Operators may define a hermitian conjugate:
+Using the qp.subcircuit function
+--------------------------------
 
-  >>> qp.RX(1., wires=0).adjoint()
-  RX(-1.0, wires=[0])
-
-Creating custom operators
-#########################
-
-A custom operator can be created by inheriting from :class:`~.Operator` or one of its subclasses.
-
-The following is an example for a custom gate that possibly flips a qubit and then rotates another qubit.
-The custom operator defines a decomposition, which the devices can use (since it is unlikely that a device
-knows a native implementation for ``FlipAndRotate``). It also defines an adjoint operator.
+We can define ``FlipAndRotate`` as a quantum function and turn it into a proper
+quantum operator by decorating with :func:`~pennylane.subcircuit`. Before
+decorating with :func:`~pennylane.subcircuit`, however, the quantum resources
+associated with the implementation of ``FlipAndRotate`` need to be declared
+with :func:`~pennylane.register_resources`.
 
 .. code-block:: python
 
     import pennylane as qp
 
+    # The resource function must have the same signature as the operator
+    def flip_rotate_resources(angle, rot_axes, wires):
+        return {
+            # Declare the resources of BOTH conditional branches
+            qp.PauliRot(qp.typing.Float, rot_axes[0], wires=qp.typing.Wire): 1,
+            qp.PauliRot(qp.typing.Float, rot_axes[1], wires=qp.typing.Wire): 1,
+            qp.X: 1,
+            qp.ops.mid_measure.MidMeasure(qp.typing.Wire): 1
+        }
 
-    class FlipAndRotate(qp.operation.Operation):
+    @qp.subcircuit(
+        dynamic_argnames=("angle",),
+        compilable_argnames=("rot_axes",),
+        wire_argnames=("wires",),
+    )
+    @qp.register_resources(flip_rotate_resources)
+    def FlipAndRotate(angle, rot_axes, wires):
+        qp.X(wires[0])
+        m = qp.measure(1)
 
-        # This attribute tells PennyLane what differentiation method to use. Here
-        # we request parameter-shift (or "analytic") differentiation.
-        grad_method = "A"
+        def true_fn():
+            qp.PauliRot(2 * angle, rot_axes[0], wires=wires[1])
 
-        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False):
+        def false_fn():
+            qp.PauliRot(2 * angle, rot_axes[1], wires=wires[1])
 
-            # checking the inputs --------------
+        qp.cond(m, true_fn, false_fn)()
 
-            if do_flip and wire_flip is None:
-                raise ValueError("Expected a wire to flip; got None.")
+.. note::
 
-            # note: we use the framework-agnostic math library since
-            # trainable inputs could be tensors of different types
-            shape = qp.math.shape(angle)
-            if len(shape) > 1:
-                raise ValueError(f"Expected a scalar angle; got angle of shape {shape}.")
+    - Resource functions and decomposition rule definitions must have the same
+      signature as the operator.
 
-            #------------------------------------
+    - Resources declared in the resource function must cover *all* operators
+      contained within every conditional branch, not just one branch.
 
-            # do_flip is not trainable but influences the action of the operator,
-            # which is why we define it to be a hyperparameter
-            self._hyperparameters = {
-                "do_flip": do_flip
-            }
-
-            # we extract all wires that the operator acts on,
-            # relying on the Wire class arithmetic
-            all_wires = qp.wires.Wires(wire_rot) + qp.wires.Wires(wire_flip)
-
-            # The parent class expects all trainable parameters to be fed as positional
-            # arguments, and all wires acted on fed as a keyword argument.
-            super().__init__(angle, wires=all_wires)
-
-        @property
-        def num_params(self):
-            # if it is known before creation, define the number of parameters to expect here,
-            # which makes sure an error is raised if the wrong number was passed
-            return 1
-
-        @staticmethod
-        def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
-            # Overwriting this method defines the decomposition of the new gate, as it is
-            # called by Operator.decomposition().
-            # The general signature of this function is (*parameters, wires, **hyperparameters).
-            op_list = []
-            if do_flip:
-                op_list.append(qp.PauliX(wires=wires[1]))
-            op_list.append(qp.RX(angle, wires=wires[0]))
-            return op_list
-
-        def adjoint(self):
-            # the adjoint operator of this gate simply negates the angle
-            return FlipAndRotate(-self.parameters[0], self.wires[0], self.wires[1], do_flip=self.hyperparameters["do_flip"])
-
-        @classmethod
-        def _unflatten(cls, data, metadata):
-            # as the class differs from the standard `__init__` call signature of
-            # (*data, wires=wires, **hyperparameters), the _unflatten method that
-            # must be defined as well
-            # _unflatten recreates an operation from the serialized data and metadata of ``Operator._flatten``
-            # copied_op = type(op)._unflatten(*op._flatten())
-            wires = metadata[0]
-            hyperparams = dict(metadata[1])
-            return cls(data[0], wire_rot=wires[0], wire_flip=wires[1], do_flip=hyperparams['do_flip'])
+    - Some operators have arguments that affect their resource usage, like the
+      ``pauli_word`` of :class:`~pennylane.PauliRot` and the number of wires
+      that it acts on. Every unique instance of such an operator must be
+      declared in the resources function, where abstract argument types in the
+      :mod:`~pennylane.typing` module can be used as placeholder values.
 
 
-The new gate can now be created as follows:
+In defining ``FlipAndRotate`` this way, it is an ``Operator2`` subclass
 
->>> op = FlipAndRotate(0.1, wire_rot="q3", wire_flip="q1", do_flip=True)
->>> op
-FlipAndRotate(0.1, wires=['q3', 'q1'])
->>> op.decomposition()
-[PauliX(wires=['q1']), RX(0.1, wires=['q3'])]
->>> op.adjoint()
-FlipAndRotate(-0.1, wires=['q3', 'q1'])
+>>> from pennylane.core.operator import Operator2
+>>> op = FlipAndRotate(0.1, ("X", "Y"), wires=(0, 1))
+>>> isinstance(op, Operator2)
+True
 
-Once the class has been created, you can run a suite of validation checks using :func:`~.testing.assert_valid`.
-This function will warn you of some common errors in custom operators.
-
->>> qp.testing.assert_valid(op)
-
-If the above operator omitted the ``_unflatten`` custom definition, it would raise:
-
-.. code-block::
-
-
-    TypeError: FlipAndRotate.__init__() got an unexpected keyword argument 'wires'
-
-
-    The above exception was the direct cause of the following exception:
-
-    AssertionError: FlipAndRotate._unflatten must be able to reproduce the original operation
-    from (0.1,) and (Wires(['q3', 'q1']), (('do_flip', True),)). You may need to override
-    either the _unflatten or _flatten method. 
-    For local testing, try type(op)._unflatten(*op._flatten())
-
-
-The new gate can be used with PennyLane devices.
-
-``DefaultQubit`` first checks if the operator has a matrix using the :attr:`~.Operator.has_matrix` property.
-
-- If the device registers support for an operation with the same name,
-  PennyLane leaves the gate implementation up to the device. The device
-  might have a hardcoded implementation, *or* it may refer to one of the
-  numerical representations of the operator (such as :meth:`.Operator.matrix`).
-  
-- If the device does not support an operation, PennyLane will automatically
-  decompose the gate using :meth:`.Operator.decomposition`.
+and the implementation provided in the quantum function body is registered as a
+decomposition rule that integrates as expected with :func:`~pennylane.decompose`
+and resource estimation.
 
 .. code-block:: python
 
-    from pennylane import numpy as np
+    dev = qp.device("lightning.qubit", wires=2)
 
-    dev = qp.device("default.qubit", wires=["q1", "q2", "q3"])
-
+    @qp.qjit(capture=True)
+    @qp.decompose(gate_set={"PauliX", "MidMeasureMP", "PauliRot"})
     @qp.qnode(dev)
-    def circuit(angle):
-        FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
-        return qp.expval(qp.PauliZ("q1"))
+    def circuit(a):
+        FlipAndRotate(a, ("X", "Y"), wires=[0, 1])
+        return qp.expval(qp.Z(1)), qp.expval(qp.X(1))
 
->>> a = np.array(3.14)
->>> circuit(a)
--0.9999987318946099
+>>> qp.list_decomps(FlipAndRotate)
+Available Decomposition Rules:
+0: FlipAndRotate_decomp
+>>> qp.analyze(circuit, level=1)(0.1).resources.quantum_operations
+{'MidCircuitMeasure': 1, 'PauliRot': 1, 'PauliX': 1}
+>>> qp.estimate(circuit, target={"PauliX", "MidMeasureMP", "PauliRot"})(0.1).resources.quantum_operations
+{'MidCircuitMeasure': 1, 'PauliRot': 1, 'PauliX': 1}
+>>> qp.track(circuit)(0.1)[1].resources.quantum_operations
+{'MidCircuitMeasure': 1, 'PauliRot-Phi-w1': 1, 'PauliX': 1}
 
-If all gates used in the decomposition have gradient recipes defined,
-we can even compute gradients of circuits that use the new gate without any extra effort.
+Note that the decomposition rule name given by default is
+``qfunc.name + "_decomp"`` (i.e., the name of the quantum function plus
+"_decomp").
 
->>> qp.grad(circuit)(a)
--0.0015926529164868282
+Subclassing Operator2
+---------------------
 
-.. note::
+The exact same result as what is shown above with using
+:func:`~pennylane.subcircuit` can be achieved by creating a new class that
+inherits from :class:`~pennylane.core.operator.Operator2`. The benefits to
+doing so are mostly related to testing, like being able to easily validate
+input types and shapes.
 
-    The example of ``FlipAndRotate`` is simple enough that one could write a function
+.. code-block:: python
 
-    .. code-block:: python
+    from pennylane.core.operator import Operator2
 
-        def FlipAndRotate(angle, wire_rot, wire_flip=None, do_flip=False):
-            if do_flip:
-                qp.PauliX(wires=wire_flip)
-            qp.RX(angle, wires=wire_rot)
+    class FlipAndRotate(Operator2):
 
-    and call it in the quantum function *as if it was a gate*.
-    However, classes allow much more functionality, such as defining the adjoint gate above,
-    defining the shape expected for the trainable parameter(s), or specifying gradient rules.
+        dynamic_argnames = ("angle",)
+        compilable_argnames = ("rot_axes",)
+        wire_argnames = ("wires",)
 
-Defining special properties of an operator
-##########################################
+        def __init__(self, angle, rot_axes, wires):
+            rot_axes = tuple(rot_axes)
+            if len(rot_axes) != 2 or any(ax not in ("I", "X", "Y", "Z") for ax in rot_axes):
+                raise ValueError(f"rot_axes must be two of 'I', 'X', 'Y', 'Z'; got {rot_axes}.")
+            super().__init__(angle, rot_axes, wires)
 
-Apart from the main :class:`~.Operator` class, operators with special methods or representations
-are implemented as subclasses :class:`~.Operation` and :class:`~.Channel`.
 
-However, unlike many other frameworks, PennyLane does not use class
-inheritance to define fine-grained properties of operators,
-such as whether it is its own self-inverse, if it is diagonal,
-or whether it can be decomposed into Pauli rotations. This avoids changing the inheritance structure
-every time an application needs to query a new property.
+    # The resource function and decomposition rule must have the same signature as the operator
+    def _flip_and_rotate_resources(angle, rot_axes, wires):
+        # Declare the resources of BOTH conditional branches
+        return {
+            qp.X: 1,
+            qp.ops.MidMeasure(Wire[1]): 1,
+            qp.PauliRot(qp.typing.Float, pauli_word=rot_axes[0], wires=qp.typing.Wire[1]): 1,
+            qp.PauliRot(qp.typing.Float, pauli_word=rot_axes[1], wires=qp.typing.Wire[1]): 1,
+        }
 
-Instead, PennyLane uses "attributes", which are bookkeeping classes that list operators
-which fulfill a specific property.
 
-For example, we can create a new attribute, ``pauli_ops``, like so:
+    @qp.register_resources(_flip_and_rotate_resources)
+    def FlipAndRotate_decomp(angle, rot_axes, wires):
+        qp.X(wires[0])
+        m = qp.measure(wires[0])
 
->>> from pennylane.ops.qubits.attributes import Attribute
->>> pauli_ops = Attribute(["PauliX", "PauliY", "PauliZ"])
+        def true_fn():
+            qp.PauliRot(2 * angle, rot_axes[0], wires=wires[1])
 
-We can check either a string or an Operation for inclusion in this set:
+        def false_fn():
+            qp.PauliRot(2 * angle, rot_axes[1], wires=wires[1])
 
->>> qp.PauliX(0) in pauli_ops
-True
->>> "Hadamard" in pauli_ops
-False
+        qp.cond(m, true_fn, false_fn)()
 
-We can also dynamically add operators to the sets at runtime. This is useful
-for adding custom operations to the attributes such as ``composable_rotations``
-and ``self_inverses`` that are used in compilation transforms. For example,
-suppose you have created a new operation ``MyGate``, which you know to be its
-own inverse. Adding it to the set, like so
 
->>> from pennylane.ops.qubits.attributes import self_inverses
->>> self_inverses.add("MyGate")
-
-Attributes can also be queried by devices to use special tricks that allow more efficient
-implementations. The onus is on the contributors of new operators to add them to the right attributes.
-
-.. note::
-
-    The attributes for qubit gates are currently found in ``pennylane/ops/qubit/attributes.py``.
-    
-    Included attributes are listed in the ``Operation``
-    `documentation <https://pennylane.readthedocs.io/en/latest/code/qp_operation.html#operation-attributes>`__.
+    qp.add_decomps(FlipAndRotate, FlipAndRotate_decomp)
 
 Adding your new operator to PennyLane
 #####################################
 
-If you want PennyLane to natively support your new operator, you have to make a Pull Request that adds it
-to the appropriate folder in ``pennylane/ops/``. The
-tests are added to a file of a similar name and location in ``tests/ops/``. If your operator defines an
-ansatz, add it to the appropriate subfolder in ``pennylane/templates/``.
+If you want PennyLane to natively support your new operator, you have to make a
+Pull Request that adds it to the appropriate folder in ``pennylane/``. The tests
+are added to a file of a similar name and location in ``tests/``. Generally, the
+new operator should also be imported in the module's ``__init__.py`` file in
+order for users to import the operator directly from ``pennylane``.
 
-The new operation may have to be imported in the module's ``__init__.py`` file in order to be imported correctly.
+Ensure that the operator's decomposition rules are displayed at the end of
+its docstring with a ``decomposition-table`` directive inside an "Available
+decompositions" ``details`` block. Add one nested ``decomposition-rule`` per
+rule, giving the rule's name, a circuit thumbnail saved under
+``doc/_static/decomposition_thumbnails/``, and one ``gate | count`` line per
+gate in its resources. If a decomposition rule has certain constraints (e.g., it
+needs work wires), say so with ``:requires:``.
 
-Make sure that all hyperparameters and errors are tested, and that the parameters can be passed as
-tensors from all supported autodifferentiation frameworks.
+If the resources depend on the operator's arguments (e.g., the number of
+wires), write the counts as symbolic expressions and add:
 
-Don't forget to also add the new operator to the documentation in the ``docs/introduction/operations.rst`` file, or to
-the template gallery if it is an ansatz. The latter is done by adding a ``gallery-item``
-to the correct section in ``doc/introduction/templates.rst``:
+* ``:symbols:`` to ``decomposition-table``, defining each symbol used in the
+  counts;
+* ``:example:`` to ``decomposition-table``, giving the symbol values used to draw
+  the thumbnail;
+* a third column on each line, giving the count in the example circuit;
+* optionally, ``:where:`` to ``decomposition-rule``, defining any shorthand used
+  in that rule's counts.
 
-.. code-block::
+.. code-block:: rst
 
-  .. gallery-item::
-    :link: ../code/api/pennylane.templates.<templ_type>.MyNewTemplate.html
-    :description: MyNewTemplate
-    :figure: ../_static/templates/<templ_type>/my_new_template.png
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.MyNewOperator
+            :symbols: :math:`n` wires
+            :example: :math:`n=4`
+
+            .. decomposition-rule:: _my_new_operator_decomp
+                :image: /_static/decomposition_thumbnails/my_new_operator_decomp.svg
+                :requires: :math:`n - 2` work wires
+                :where: :math:`m = 2(n - 1)`
+
+                :class:`~.CNOT` | :math:`m` | 6
+                :class:`~.RZ` | :math:`n` | 4
+
+For operators with fixed resources, omit these and use only ``gate | count``
+lines.
+
+You can generate thumbnails by drawing the decomposition rule with
+:func:`~pennylane.draw_mpl` and the ``"pennylane"`` style, calling it with the
+example's argument values, and saving the figure as an SVG:
+
+.. code-block:: python
+
+    fig, ax = qp.draw_mpl(_my_new_operator_decomp, style="pennylane")(wires=range(4))
+    fig.savefig("doc/_static/decomposition_thumbnails/my_new_operator_decomp.svg")
+
+Don't forget to also add the new operator to the documentation in the
+``doc/introduction/operations.rst`` file, or to
+``doc/introduction/subroutines.rst`` if it falls under that category. The latter
+is done by adding an entry, consisting of the subroutine and the path to a
+thumbnail image, to the ``subroutine-table`` in the correct section of
+``doc/introduction/subroutines.rst``:
+
+.. code-block:: rst
+
+  .. subroutine-table::
+      :nosignatures:
+
+      ~pennylane.MyNewSubroutine    /_static/templates/<subroutine_type>/my_new_subroutine.png
 
 .. note::
 
-  This loads the image of the template added to ``doc/_static/templates/test_<templ_type>/``. Make sure that
-  this image has the same dimensions and style as other template icons in the folder.
+  The table displays the first line of the subroutine's docstring, so make sure
+  that it is a concise summary of what the subroutine does.
 
 Here are a few more tips for adding operators:
 
@@ -366,7 +357,7 @@ Here are a few more tips for adding operators:
   be added soon in a different context.
 
 * *Write good docstrings.* Explain what your operator does in a clear docstring with ample examples.
-  You find more about Pennylane standards in the guidelines on :doc:`/development/guide/documentation`.
+  You find more about our standards in the guidelines on :doc:`/development/guide/documentation`.
 
 * *Efficient representations.* Try to implement representations as efficiently as possible, since they may
   be constructed several times.
@@ -374,3 +365,93 @@ Here are a few more tips for adding operators:
 * *Input checks.* Checking the inputs of the operation introduces an overhead and clashes with tools like
   just-in-time compilation. Find a balance of adding meaningful sanity checks (such as for the shape of tensors),
   but keeping them to a minimum.
+
+Technical notes
+###############
+
+The :class:`~pennylane.core.operator.Operator2` class serves as the main
+abstraction of such objects in PennyLane2, and is designed for compatibility
+with the :func:`~pennylane.qjit` compiler. Gates and subroutines must inherit
+from it.
+
+>>> from pennylane.core.operator import Operator2
+>>> op = qp.Rot(0.1, 0.2, 0.3, wires=0)
+>>> isinstance(op, Operator2)
+True
+
+The basic components of operators are the following:
+
+#. **The name of the operator** (:attr:`~.Operator2.name`), which is the name of
+   its class.
+
+   >>> op.name
+   'Rot'
+
+#. **The wires that the operator acts on** (:attr:`~.Operator2.wires`), which
+   mathematically speaking define the subspace that it acts on. These are
+   collected from the arguments in ``wire_argnames``, in the order in which they
+   are listed. Work wires (``work_wires``) are *not* included.
+
+   >>> op.wires
+   Wires(0)
+
+#. **The arguments of the operator** (:attr:`~.Operator2.arguments`), a
+   dictionary mapping each argument name to its value. Every argument is also
+   accessible as an attribute.
+
+   >>> op.arguments
+   {'phi': 0.1, 'theta': 0.2, 'omega': 0.3, 'wires': Wires(0)}
+   >>> op.phi
+   0.1
+
+   Each argument belongs to one of the categories described in
+   :ref:`Operator argument types <operator_argument_types>`, which are declared
+   as class variables. The arguments of each category can be accessed with
+   :attr:`~.Operator2.wire_args`, :attr:`~.Operator2.dynamic_args`,
+   :attr:`~.Operator2.static_args`, :attr:`~.Operator2.compilable_args`, and
+   :attr:`~.Operator2.hybrid_args`:
+
+   >>> qp.Rot.dynamic_argnames
+   ('phi', 'theta', 'omega')
+   >>> op = qp.Select([qp.X(0), qp.Z(0)], control=[1], partial=True)
+   >>> op.hybrid_args
+   {'ops': [X(0), Z(0)]}
+   >>> op.static_args
+   {'partial': True}
+   >>> op.wire_args
+   {'control': Wires([1]), 'work_wires': Wires([])}
+
+#. Possible **symbolic or numerical representations** of the operator, which can
+   be used by PennyLane2's devices and compiler to interpret the map. Examples
+   are:
+
+   * Representation via the **eigenvalue decomposition** specified by
+     eigenvalues (for the diagonal matrix, :meth:`~.Operator2.eigvals`) and
+     diagonalizing gates (for the unitaries,
+     :meth:`~.Operator2.diagonalizing_gates`):
+
+     >>> op = qp.X(0)
+     >>> op.diagonalizing_gates()
+     [H(0)]
+     >>> op.eigvals()
+     array([ 1., -1.])
+
+   * Representation as a **matrix** (:meth:`~.Operator2.matrix`), as specified
+     by a global wire order that tells us where the wires are found on a
+     register:
+
+     >>> op = qp.PauliRot(0.2, "X", wires=["b"])
+     >>> qp.math.round(op.matrix(wire_order=["a", "b"]), 3)
+     array([[0.995+0.j , 0.   -0.1j, 0.   +0.j , 0.   +0.j ],
+            [0.   -0.1j, 0.995+0.j , 0.   +0.j , 0.   +0.j ],
+            [0.   +0.j , 0.   +0.j , 0.995+0.j , 0.   -0.1j],
+            [0.   +0.j , 0.   +0.j , 0.   -0.1j, 0.995+0.j ]])
+
+   * Representation via a **generator** (:meth:`~.Operator2.generator`):
+
+     >>> qp.RX(0.5, wires=0).generator()
+     -0.5 * X(0)
+
+   Whether a representation is defined can be checked with the class properties
+   :attr:`~.Operator2.has_decomposition`, :attr:`~.Operator2.has_matrix`, and so
+   on.

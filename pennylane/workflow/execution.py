@@ -103,8 +103,7 @@ def execute(
         mcm_method (Optional[str]): Strategy to use when executing circuits with mid-circuit measurements.
             ``"deferred"`` is ignored. If mid-circuit measurements are found in the circuit,
             the device will use ``"tree-traversal"`` if specified and the ``"one-shot"`` method
-            otherwise. For usage details, please refer to the
-            :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
+            otherwise.
         gradient_kwargs (Optional[dict]): dictionary of keyword arguments to pass when
             determining the gradients of tapes.
         executor_backend (Optional[str | ExecBackends]): concurrent task-based executor for function dispatch.

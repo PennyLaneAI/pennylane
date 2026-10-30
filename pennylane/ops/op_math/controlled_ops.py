@@ -77,6 +77,23 @@ from .decompositions.controlled_decompositions import (
 )
 from .pow2 import pow_involutory as pow_involutory2
 
+__all__ = [
+    "ControlledQubitUnitary",
+    "CH",
+    "CY",
+    "CZ",
+    "CSWAP",
+    "CCZ",
+    "CNOT",
+    "Toffoli",
+    "MultiControlledX",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "CRot",
+    "ControlledPhaseShift",
+]
+
 INV_SQRT2 = 1 / math.sqrt(2)
 
 stack_last = partial(math.stack, axis=-1)
