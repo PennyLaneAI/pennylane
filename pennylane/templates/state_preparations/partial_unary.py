@@ -967,6 +967,22 @@ def _branch_probs(circuit):
     return type_probs, batch_probs
 
 
+def _partial_unary_dense_state(coefficients, bijection, n_subspace):
+    """Place coefficients in the dense subspace using a gather supported by Catalyst."""
+    # TODO: Revisit scatter when Catalyst supports it without sorted/unique index guarantees.
+    num_entries = len(bijection)
+    # Reverse the static mapping so each dense position selects its coefficient.
+    # E.g., destinations [2, 0, 1] need coefficient indices [1, 2, 0].
+    inverse = {bijection[i]: i for i in range(num_entries)}
+
+    # Unoccupied positions select the appended zero at index num_entries.
+    padded_coefficients = math.concatenate([coefficients, math.zeros_like(coefficients[:1])])
+    gather_indices = [inverse.get(i, num_entries) for i in range(2**n_subspace)]
+
+    # E.g., [a, b, c, 0] gathered at [1, 2, 0, 3] gives [b, c, a, 0].
+    return math.take(padded_coefficients, gather_indices, axis=0)
+
+
 def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
     """Compute the decomposition of the partial unary iteration state preparation technique.
     This core method is used by the two rules below, which only differ by the work
@@ -993,15 +1009,7 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
     nonsubspace_wires = Wires(wires[n_subspace:])
 
     # Step 1: Dense state preparation
-    # Invert the static bijection so that dynamic coefficients only need a gather.
-    # Unoccupied entries select the appended zero. This preserves the coefficient
-    # ordering without requiring a runtime scatter with sorted/unique indices.
-    inverse = {bijection[i]: i for i in range(num_entries)}
-    dense_state = math.take(
-        math.concatenate([coefficients, math.zeros_like(coefficients[:1])]),
-        [inverse.get(i, num_entries) for i in range(2**n_subspace)],
-        axis=0,
-    )
+    dense_state = _partial_unary_dense_state(coefficients, bijection, n_subspace)
     _, cast_dtype = math.get_abstract_and_cast_dtype(coefficients)
     qp.MultiplexerStatePreparation(math.cast(dense_state, cast_dtype), subspace_wires)
 
