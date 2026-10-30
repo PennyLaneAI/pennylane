@@ -161,8 +161,9 @@ def _get_specific_bit(value, i):
     return (value >> i) & 1
 
 
-def _left_classical_comparator_resources(x_wires, comparator, **_):
-    """Bound the gate counts without knowing the runtime threshold."""
+def _left_classical_comparator_resources(x_wires, value, target_wire, work_wires, comparator, **_):
+    """Return conservative worst-case gate counts without knowing the runtime threshold."""
+    # pylint: disable=unused-argument
     n = len(x_wires)
     # Count every conditional gate: two Xs for bit 0, four per remaining low bit,
     # and one for bit n. The final negation depends only on the comparator.
@@ -184,18 +185,6 @@ def _left_classical_comparator(x_wires, value, target_wire, work_wires, comparat
         value += 1
 
     used_work_wires = Wires.all_wires([work_wires[: len(x_wires) - 1], target_wire])
-
-    # Concrete-``value`` fast path: when ``value`` is a known Python integer equal to ``2 ** n`` the
-    # inequality ``x < 2 ** n`` is statically ``True`` for every representable ``x``, so we
-    # emit a single ``X`` writing the constant result onto the target wire instead of running
-    # the elbow-based comparator on the (all-zero) low bits of ``value``. This is guarded by
-    # ``is_tracer`` so it is skipped under qjit/capture, where ``value`` is a traced value that
-    # cannot be branched on in Python; there the general construction below is used, whose
-    # trailing conditional ``X`` (controlled on bit ``n`` of ``value``) handles this bound.
-    if not math.is_tracer(value) and value == 2 ** len(x_wires):
-        X(wires=target_wire)
-        cond(comparator.startswith(">"), _negate_output)()
-        return
 
     bit = _get_specific_bit(value, 0)
     cond(bit, X)(wires=[x_wires[0]])

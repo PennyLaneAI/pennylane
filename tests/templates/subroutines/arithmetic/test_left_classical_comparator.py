@@ -222,11 +222,15 @@ class TestLeftClassicalComparator:
 
 @pytest.mark.parametrize("n", [1, 2, 3])
 @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
-def test_resource_upper_bound(n, comparator):
+@pytest.mark.parametrize("positional", [False, True])
+def test_resource_upper_bound(n, comparator, positional):
     """Worst-case estimates must cover each gate count for every valid threshold, including endpoints."""
     rule = _left_classical_comparator
     abstract_op = qp.LeftClassicalComparator(Wire[n], Int, Wire[1], Wire[n - 1], comparator)
-    estimates = rule.compute_resources(**abstract_op.arguments).gate_counts
+    if positional:
+        estimates = rule.compute_resources(*abstract_op.arguments.values()).gate_counts
+    else:
+        estimates = rule.compute_resources(**abstract_op.arguments).gate_counts
     assert not rule.exact_resources
     max_value = 2 ** n if comparator in ["<", ">="] else 2**n - 1
     for threshold in range(max_value + 1):
