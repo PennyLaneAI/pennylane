@@ -41,7 +41,6 @@ Such rules are listed after the regular rules, below a divider explaining how to
 
 from docutils import nodes
 from docutils.parsers.rst import directives
-from sphinx import addnodes
 from sphinx.util.docutils import SphinxDirective
 
 # for each region, the symbolic operator name used in the fixed_decomps key, e.g.
@@ -122,27 +121,19 @@ class DecompositionRule(SphinxDirective):
         return [rule_node, *parsing_messages]
 
 
-def _region_row(operator_name, region, docname):
-    """A full-width divider row explaining how to access the rules for ``region``."""
+def _region_row(operator_name, region, state, lineno, parsing_messages):
+    """A full-width divider row explaining how to access the rules for ``region``. Messages from
+    parsing its text are added to ``parsing_messages``."""
     region_name, region_func = REGIONS[region]
-    base_name = f"({operator_name.rsplit('.', maxsplit=1)[-1]})"
-    region_key = region_name + base_name
-    # the region name links to the function that creates the region, e.g. qp.adjoint
-    region_link = addnodes.pending_xref(
-        "",
-        nodes.Text(region_name),
-        refdomain="py",
-        reftype="func",
-        reftarget=region_func,
-        refexplicit=True,
-        refdoc=docname,
+    region_key = f"{region_name}({operator_name.rsplit('.', maxsplit=1)[-1]})"
+    # e.g. Adjoint(RZ) links to the function that creates the region, qp.adjoint
+    inline_nodes, messages = state.inline_text(
+        f"The following rules are for :func:`{region_key} <{region_func}>`, "
+        "and they can be accessed with:",
+        lineno,
     )
-    region_text = nodes.paragraph(
-        "",
-        "The following rules are for ",
-        nodes.literal("", "", region_link, nodes.Text(base_name)),
-        nodes.Text(", and they can be accessed with:"),
-    )
+    parsing_messages.extend(messages)
+    region_text = nodes.paragraph("", "", *inline_nodes)
     usage_code = f'qp.decompose(gate_set=..., fixed_decomps={{"{region_key}": "<name>"}})'
     usage = nodes.literal_block(usage_code, usage_code, language="python")
     region_row = nodes.row(classes=["decomp-region-row"])
@@ -211,7 +202,9 @@ class DecompositionTable(SphinxDirective):
         for rule_node in rule_nodes:
             if rule_node["region"] != current_region:
                 current_region = rule_node["region"]
-                table_body += _region_row(operator_name, current_region, self.env.docname)
+                table_body += _region_row(
+                    operator_name, current_region, self.state, self.lineno, parsing_messages
+                )
 
             rule_name = nodes.literal(
                 rule_node["name"], rule_node["name"], classes=["decomp-access-name"]
