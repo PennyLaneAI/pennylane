@@ -1427,7 +1427,10 @@ class TestModifiedTemplates:
         qp.assert_equal(op, qp.Incrementer(**kwargs))
 
     def test_left_classical_comparator(self):
-        """The threshold is captured as an operand and can change at evaluation time."""
+        """Test the primitive bind call of LeftClassicalComparator. 
+        
+        NOTE: The threshold is captured as an operand and can change at evaluation time.
+        """
 
         kwargs = {
             "x_wires": [0, 1, 2],
