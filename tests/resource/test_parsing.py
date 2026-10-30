@@ -15,15 +15,17 @@
 
 import copy
 from dataclasses import dataclass
+from typing import ClassVar
 
 import pytest
 
 import pennylane as qp
-from pennylane.resource import PBCSpecsResources, SpecsResources
+from pennylane.resource import PBCDepthResourceExtension, ResourceExtension, SpecsResources
 from pennylane.resource.expression import Expression
 from pennylane.resource.parsing import (
-    _convert_to_subclass,
+    _convert_resources,
     _generate_display_name_for_symbolic_var,
+    _handle_extended_fields,
     _mlir_resources_to_specs_resources,
     parse_resources_json,
 )
@@ -299,14 +301,12 @@ class TestAnalysisPassConversion:
         """Test that PBC depth information is correctly extracted from the analysis pass result."""
         example_loop_analysis_pass_result["for_loop_2"]["extended_fields"] = {
             "pbc_depth": {
-                "display_name": "PBC Depth",
                 "any_commuting_depth": 5,
                 "qubit_disjoint_depth": 0,
             }
         }
         example_loop_analysis_pass_result["for_loop_1"]["extended_fields"] = {
             "pbc_depth": {
-                "display_name": "PBC Depth",
                 "any_commuting_depth": 2,
                 "qubit_disjoint_depth": 3,
             }
@@ -317,12 +317,15 @@ class TestAnalysisPassConversion:
         var = _generate_display_name_for_symbolic_var("a", {})
 
         expected = [
-            PBCSpecsResources(
+            SpecsResources(
                 counts={"Hadamard": 3, "PauliX": Expression({(var,): 2}), "PauliZ": 6},
                 measurement_processes={"expval(PauliZ)": 1},
                 num_wires=10,
-                any_commuting_depth=22,
-                qubit_disjoint_depth=18,
+                extra={
+                    "pbc_depth": PBCDepthResourceExtension(
+                        any_commuting_depth=22, qubit_disjoint_depth=18
+                    )
+                },
             ),
         ]
 
@@ -352,58 +355,112 @@ class TestAnalysisPassConversion:
         assert res[0].extra["unknown_field"]["foo"] == 15
 
 
-class TestConvertToSubclass:
-    """Unit tests for the _convert_to_subclass function."""
+class TestConvertResources:
+    """Unit tests for the _convert_resources function."""
 
-    def test_convert_registered_subclass(self, monkeypatch):
-        """Test that converter maps its own fields without changing the input resources."""
+    def test_convert_preserves_registered_extensions(self, monkeypatch):
+        """Handlers combine numeric and boolean fields without changing the resource type."""
 
         @dataclass(frozen=True, kw_only=True)
-        class ExtraSpecsResources(SpecsResources):
-            extra_depth: int
+        class ExtraMetrics(ResourceExtension):
+            display_name: ClassVar[str] = "Extra metrics"
+            depth: int | Expression
 
-            @classmethod
-            def from_resources(cls, resources):
-                extra = resources.extra.copy()
-                depth = extra.pop("extra_depth")
-                return cls(
-                    counts=resources.counts,
-                    measurement_processes=resources.measurement_processes,
-                    num_wires=resources.num_wires,
-                    circuit_depth=resources.circuit_depth,
-                    extra=extra,
-                    extra_depth=depth["depth"],
-                )
+            @staticmethod
+            def aggregate(total, incoming, call_count):
+                total = {} if total is None else total
+                total["depth"] = total.get("depth", 0) + call_count * incoming.pop("depth")
+                return total
 
-        monkeypatch.setattr(qp.resource.parsing, "_RESOURCE_CONVERTERS", {})
-        qp.resource.register_specs_resources("plugin_depth", ExtraSpecsResources.from_resources)
+            def display(self):
+                return {"Value": self.depth}
+
+        @dataclass(frozen=True, kw_only=True)
+        class ExtraFlags(ResourceExtension):
+            display_name: ClassVar[str] = "Extra flags"
+            enabled: bool
+
+            @staticmethod
+            def aggregate(total, incoming, call_count):
+                return {"enabled": (total or {}).get("enabled", False) or incoming["enabled"]}
+
+            def display(self):
+                return {"Value": self.enabled}
+
+        monkeypatch.setattr(qp.resource.parsing, "_RESOURCE_EXTENSIONS", {})
+        qp.resource.register_resource_extension("extra_metrics", ExtraMetrics)
+        qp.resource.register_resource_extension("extra_flags", ExtraFlags)
         extra_data = {
-            "extra_metrics": {"display_name": "Extra Metrics", "depth": 22},
+            "extra_metrics": {"depth": 22},
+            "extra_flags": {"enabled": False},
             "unregistered": {"value": 1.5},
         }
+        callee = SpecsResources(
+            counts={},
+            measurement_processes={},
+            num_wires=0,
+            extra={"extra_metrics": {"depth": 3}, "extra_flags": {"enabled": True}},
+        )
+        original_callee = copy.deepcopy(callee)
+        aggregated = copy.deepcopy(extra_data)
+        _handle_extended_fields(aggregated, 0, callee)
+        assert aggregated["extra_metrics"] == extra_data["extra_metrics"]
+        assert aggregated["extra_flags"] == {"enabled": True}
+        _handle_extended_fields(aggregated, Expression({("a",): 1}), callee)
+        original = copy.deepcopy(aggregated)
 
         res = SpecsResources(
             counts={"Hadamard": 3, "PauliX": 2, "PauliZ": 6},
             measurement_processes={"expval(PauliZ)": 1},
             num_wires=10,
             circuit_depth=5,
-            extra=copy.deepcopy(extra_data),
+            extra=aggregated,
         )
 
-        converted = _convert_to_subclass(res)
+        converted = _convert_resources(res)
 
-        assert isinstance(converted, ExtraSpecsResources)
+        assert type(converted) is SpecsResources
         assert converted.counts == res.counts
         assert converted.measurement_processes == res.measurement_processes
         assert converted.num_wires == res.num_wires
         assert converted.circuit_depth == res.circuit_depth
-        assert converted.extra_depth == 22
-        assert converted.extra == {"unregistered": {"value": 1.5}}
+        assert converted.extra == {
+            "extra_metrics": ExtraMetrics(depth=Expression({(): 22, ("a",): 3})),
+            "extra_flags": ExtraFlags(enabled=True),
+            "unregistered": {"value": 1.5},
+        }
+        assert converted.vars == frozenset({"a"})
+        substituted = converted.subs(a=2)
+        assert not substituted.is_symbolic
+        assert substituted.extra["extra_metrics"].depth == 28
+        assert substituted.extra["extra_flags"].enabled is True
+        assert substituted.to_dict()["extra"]["extra_metrics"] == {"depth": 28}
+        assert "Extra metrics:\n- Value: 28" in str(substituted)
+        assert "| Value | True |" in substituted._repr_markdown_()
 
-        assert res.extra == extra_data
+        specs = qp.resource.CircuitSpecs(
+            level={0: "before", 1: "after"},
+            resources={
+                0: SpecsResources(
+                    counts={},
+                    measurement_processes={},
+                    num_wires=0,
+                    extra={"extra_flags": ExtraFlags(enabled=False)},
+                ),
+                1: substituted,
+            },
+        )
+        table = specs._to_markdown_tabular()
+        assert "| **Extra flags** |  |  |\n| Value | False | True |" in table
+        assert "| **Extra metrics** |  |  |\n| Value | N/A | 28 |" in table
+
+        assert res.extra == original
+        assert callee == original_callee
+        with pytest.raises(ValueError, match="already registered"):
+            qp.resource.register_resource_extension("extra_metrics", ExtraMetrics)
 
     def test_convert_rounds_floats(self):
-        """Test that _convert_to_subclass rounds float counts and measurement processes to integers."""
+        """Test that _convert_resources rounds float counts and measurement processes to integers."""
         res = SpecsResources(
             counts={"Hadamard": Expression({("x",): 1.2, (): 1.5}), "PauliX": 2.2, "PauliZ": 6.9},
             measurement_processes={"expval(PauliZ)": 1.5},
@@ -411,7 +468,7 @@ class TestConvertToSubclass:
             circuit_depth=5.9,
         )
 
-        converted = _convert_to_subclass(res)
+        converted = _convert_resources(res)
 
         assert isinstance(converted, SpecsResources)
         assert converted.counts == {

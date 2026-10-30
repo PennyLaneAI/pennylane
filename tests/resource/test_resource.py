@@ -26,10 +26,10 @@ import pytest
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
+from pennylane.resource import PBCDepthResourceExtension
 from pennylane.resource.expression import Expression
 from pennylane.resource.resource import (
     CircuitSpecs,
-    PBCSpecsResources,
     Resources,
     SpecsResources,
     _collect_vars,
@@ -858,17 +858,20 @@ class TestSpecsResources:
         assert s.to_dict() == expected
 
 
-class TestPBCSpecsResources:
-    """Separate class for testing PBC depth counting since it will be refactor soon."""
+class TestPBCDepthResourceExtension:
+    """PBC extensions share the SpecsResources container and display paths."""
 
     @pytest.fixture
     def example_resource(self):
-        return PBCSpecsResources(
+        return SpecsResources(
             counts={"Hadamard": 1, "CNOT": 2},
             measurement_processes={"expval(PauliZ)": 1},
             num_wires=2,
-            any_commuting_depth=3,
-            qubit_disjoint_depth=6,
+            extra={
+                "pbc_depth": PBCDepthResourceExtension(
+                    any_commuting_depth=3, qubit_disjoint_depth=6
+                )
+            },
         )
 
     def test_pbc_depths_required(self):
@@ -877,11 +880,7 @@ class TestPBCSpecsResources:
             TypeError,
             match="missing 2 required keyword-only arguments: 'any_commuting_depth' and 'qubit_disjoint_depth'",
         ):
-            PBCSpecsResources(
-                counts={"Hadamard": 1, "CNOT": 2},
-                measurement_processes={"expval(PauliZ)": 1},
-                num_wires=2,
-            )
+            PBCDepthResourceExtension()
 
     def test_str_pbc_depth(self, example_resource):
         """Test the string representation of a SpecsResources instance with PBC depth."""
@@ -895,6 +894,7 @@ class TestPBCSpecsResources:
             Measurement processes:
             - expval(PauliZ): 1
             Total wires: 2
+            Circuit Depth: Not computed
             PBC Depths:
             - Any commuting depth: 3
             - Qubit disjoint depth: 6
@@ -914,6 +914,7 @@ class TestPBCSpecsResources:
             | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
             | **Total wires** | 2 |
+            | **Circuit depth** | Not computed |
             | **PBC Depths** | |
             | Any commuting depth | 3 |
             | Qubit disjoint depth | 6 |
@@ -1001,20 +1002,27 @@ class TestPBCSpecsResources:
 
     def test_symbolic_pbc_depth_subs(self):
         """Test that symbolic PBC depth is correctly displayed in the string representation."""
-        s = PBCSpecsResources(
+        s = SpecsResources(
             counts={"Hadamard": Expression({("x",): 2})},
             measurement_processes={"expval(PauliZ)": 1},
             num_wires=2,
-            any_commuting_depth=Expression({("x",): 3}),
-            qubit_disjoint_depth=Expression({("x",): 6}),
+            extra={
+                "pbc_depth": PBCDepthResourceExtension(
+                    any_commuting_depth=Expression({("x",): 3}),
+                    qubit_disjoint_depth=Expression({("x",): 6}),
+                )
+            },
         )
 
-        assert s.subs({"x": 2}) == PBCSpecsResources(
+        assert s.subs({"x": 2}) == SpecsResources(
             counts={"Hadamard": 4},
             measurement_processes={"expval(PauliZ)": 1},
             num_wires=2,
-            any_commuting_depth=6,
-            qubit_disjoint_depth=12,
+            extra={
+                "pbc_depth": PBCDepthResourceExtension(
+                    any_commuting_depth=6, qubit_disjoint_depth=12
+                )
+            },
         )
 
     def test_symbolic_pbc_depth_str(self):
@@ -1025,12 +1033,16 @@ class TestPBCSpecsResources:
             shots=Shots(1000),
             level={1: "l1"},
             resources={
-                1: PBCSpecsResources(
+                1: SpecsResources(
                     counts={"Hadamard": Expression({("x",): 2})},
                     measurement_processes={"expval(PauliZ)": 1},
                     num_wires=2,
-                    any_commuting_depth=Expression({("x",): 3}),
-                    qubit_disjoint_depth=Expression({("x",): 6}),
+                    extra={
+                        "pbc_depth": PBCDepthResourceExtension(
+                            any_commuting_depth=Expression({("x",): 3}),
+                            qubit_disjoint_depth=Expression({("x",): 6}),
+                        )
+                    },
                 )
             },
         )
@@ -1071,12 +1083,15 @@ class TestPBCSpecsResources:
                     num_wires=2,
                     circuit_depth=2,
                 ),
-                2: PBCSpecsResources(
+                2: SpecsResources(
                     counts={"Hadamard": 2},
                     measurement_processes={"expval(PauliZ)": 1},
                     num_wires=2,
-                    any_commuting_depth=2,
-                    qubit_disjoint_depth=4,
+                    extra={
+                        "pbc_depth": PBCDepthResourceExtension(
+                            any_commuting_depth=2, qubit_disjoint_depth=4
+                        )
+                    },
                 ),
             },
         )
@@ -1119,12 +1134,15 @@ class TestPBCSpecsResources:
                     num_wires=2,
                     circuit_depth=2,
                 ),
-                2: PBCSpecsResources(
+                2: SpecsResources(
                     counts={"Hadamard": 2},
                     measurement_processes={"expval(PauliZ)": 1},
                     num_wires=2,
-                    any_commuting_depth=2,
-                    qubit_disjoint_depth=4,
+                    extra={
+                        "pbc_depth": PBCDepthResourceExtension(
+                            any_commuting_depth=2, qubit_disjoint_depth=4
+                        )
+                    },
                 ),
             },
         )
@@ -1160,26 +1178,35 @@ class TestPBCSpecsResources:
         assert s._repr_markdown_(collapsible=False) == expected
 
     def test_eq(self):
-        s1 = PBCSpecsResources(
+        s1 = SpecsResources(
             counts={"Hadamard": Expression({("x,"): 1})},
             measurement_processes={"expval(PauliZ)": 1},
             num_wires=1,
-            any_commuting_depth=2,
-            qubit_disjoint_depth=1,
+            extra={
+                "pbc_depth": PBCDepthResourceExtension(
+                    any_commuting_depth=2, qubit_disjoint_depth=1
+                )
+            },
         )
-        s2 = PBCSpecsResources(
+        s2 = SpecsResources(
             counts={"Hadamard": Expression({("x,"): 1})},
             measurement_processes={"expval(PauliZ)": 1},
             num_wires=1,
-            any_commuting_depth=2,
-            qubit_disjoint_depth=1,
+            extra={
+                "pbc_depth": PBCDepthResourceExtension(
+                    any_commuting_depth=2, qubit_disjoint_depth=1
+                )
+            },
         )
-        s3 = PBCSpecsResources(
+        s3 = SpecsResources(
             counts={"Hadamard": Expression({("x,"): 1})},
             measurement_processes={"expval(PauliZ)": 1},
             num_wires=1,
-            any_commuting_depth=2,
-            qubit_disjoint_depth=11,
+            extra={
+                "pbc_depth": PBCDepthResourceExtension(
+                    any_commuting_depth=2, qubit_disjoint_depth=11
+                )
+            },
         )
 
         assert s1 == s2
@@ -1769,13 +1796,16 @@ class TestIPythonDisplays:
         )
 
     @pytest.fixture
-    def example_pbc_specs_resource(self) -> PBCSpecsResources:
-        return PBCSpecsResources(
+    def example_pbc_specs_resource(self) -> SpecsResources:
+        return SpecsResources(
             counts={"Hadamard": 1, "CNOT": 100_001},
             measurement_processes={"expval(PauliZ)": 1},
             num_wires=2,
-            any_commuting_depth=2,
-            qubit_disjoint_depth=3,
+            extra={
+                "pbc_depth": PBCDepthResourceExtension(
+                    any_commuting_depth=2, qubit_disjoint_depth=3
+                )
+            },
         )
 
     def test_specs_resources_ipython_display(self, example_specs_resource):
@@ -1826,6 +1856,7 @@ class TestIPythonDisplays:
             | **Measurement processes:** | |
             | expval(PauliZ) | 1 |
             | **Total wires** | 2 |
+            | **Circuit depth** | Not computed |
             | **PBC Depths** | |
             | Any commuting depth | 2 |
             | Qubit disjoint depth | 3 |

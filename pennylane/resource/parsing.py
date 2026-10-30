@@ -24,49 +24,51 @@ import itertools
 import math
 import warnings
 from collections import defaultdict
-from collections.abc import Callable
 from typing import Any
 
+from pennylane.pytrees import is_pytree, register_pytree
+
 from .expression import Expression
-from .resource import PBCSpecsResources, SpecsResources, num_to_letters
+from .extension import PBCDepthResourceExtension, ResourceExtension
+from .resource import SpecsResources, num_to_letters
 
 # Tolerance (in number of decimal digits) for floating point precision issues
 _FLOAT_PRECISION_PLACES = 4
 
-_RESOURCE_CONVERTERS: dict[str, Callable[[SpecsResources], SpecsResources]] = {}
+_RESOURCE_EXTENSIONS: dict[str, type[ResourceExtension]] = {}
 
 
-def register_specs_resources(
-    extension_name: str, converter: Callable[[SpecsResources], SpecsResources]
+def register_resource_extension(
+    extension_name: str, extension_type: type[ResourceExtension]
 ) -> None:
-    """Register a converter for a named Catalyst resource extension.
+    """Register an independent resource extension for a Catalyst JSON key.
 
-    The name must match a key in Catalyst's ``extended_fields`` JSON object.
-    Importing a plugin's Python package should register its converter before
-    calling :func:`~pennylane.specs` or :func:`~pennylane.analyze`.
+    Importing a plugin should register its extension dataclasses before requesting specs.
+    Each key in ``extended_fields`` selects its own extension within ``resources.extra``.
+    All compiler levels return :class:`~.resource.SpecsResources` containers.
 
     Args:
         extension_name (str): The backend extension name.
-        converter (Callable[[SpecsResources], SpecsResources]): A function or class method
-            accepting aggregated resources and returning a :class:`~.resource.SpecsResources`
-            subclass instance. Standard counts have already been rounded; extension values
-            in ``resources.extra`` retain their numeric, symbolic, or unavailable values.
-            The converter receives an independent copy and owns its field mapping.
+        extension_type (type[ResourceExtension]): A dataclass implementing aggregation
+            and display, with ``from_dict`` mapping the aggregated backend data to fields.
+            Registration enables symbolic discovery and substitution in those fields.
 
     Raises:
         ValueError: If the extension name is already registered.
 
-    Unregistered fields remain in ``extra``. If no registered extension is present,
-    parsing returns ordinary ``SpecsResources``. Multiple matching registrations
-    raise ``ValueError`` instead of selecting a converter by registration order.
-    A converter may consume several extension groups; register it once against
-    the group that identifies its result type. PBC is registered under ``"pbc_depth"``.
+    Unknown groups remain raw in ``extra``. Unknown callee groups are skipped with a
+    warning because their aggregation rules are undefined.
     """
-    if extension_name in _RESOURCE_CONVERTERS:
-        raise ValueError(
-            f"A specs resource converter is already registered for '{extension_name}'."
+    if extension_name in _RESOURCE_EXTENSIONS:
+        raise ValueError(f"A resource extension is already registered for '{extension_name}'.")
+    if not is_pytree(extension_type):
+        register_pytree(
+            extension_type,
+            extension_type.flatten,
+            extension_type.unflatten,
+            namespace=f"pennylane.resource.{extension_name}",
         )
-    _RESOURCE_CONVERTERS[extension_name] = converter
+    _RESOURCE_EXTENSIONS[extension_name] = extension_type
 
 
 def _safe_ceil(value: int | float | Expression) -> int | Expression:
@@ -124,15 +126,8 @@ def _mlir_resources_to_specs_resources(
     with the appropriate multiplicative factors. Builds out `fn_resources`, a mapping from
     function name to the corresponding :class:`~pennylane.resource.SpecsResources` object.
 
-    .. warning::
-
-        The resulting :class:`~.resource.SpecsResources` objects will always be of the :class:`~.resource.SpecsResources`
-        type, even if they should be instances of a subclass. This is necessary to preserve the
-        format of the ``extended_fields`` attribute, which may contain additional fields from the
-        original JSON.
-
-        It is the responsibility of the caller to convert to a subclass after calling this function
-        if needed.
+    Extension groups remain raw during call resolution. They are converted independently
+    after aggregation, so handlers always receive the backend schema.
 
     Args:
         all_data (dict[str, Any]): the full JSON representation of the resource data
@@ -222,36 +217,6 @@ def _mlir_resources_to_specs_resources(
     )
 
 
-def _sum_scaled_extended_field(total: Any, value: Any, factor: int | float | Expression) -> Any:
-    """Add a called function's numeric extension data, preserving nested dictionaries.
-
-    Numeric leaves follow the same additive call semantics as instruction counts.
-    ``None`` denotes an unavailable metric and propagates instead of producing a
-    partial total. ``display_name`` is preserved as category metadata.
-    Other nonnumeric metadata has no defined aggregation rule.
-    """
-    if factor == 0:
-        return copy.deepcopy(total)
-    if isinstance(total, dict) and isinstance(value, dict):
-        result = copy.deepcopy(total)
-        for key, item in value.items():
-            if key == "display_name" and isinstance(item, str):
-                result.setdefault(key, item)
-                continue
-            default = {} if isinstance(item, dict) else 0
-            result[key] = _sum_scaled_extended_field(result.get(key, default), item, factor)
-        return result
-    numeric_types = (int, float, Expression)
-    if any(
-        item is not None and (isinstance(item, bool) or not isinstance(item, numeric_types))
-        for item in (total, value)
-    ):
-        raise TypeError("Only numeric extension leaves can be accumulated.")
-    if total is None or value is None:
-        return None
-    return total + factor * value
-
-
 def _handle_extended_fields(
     extended_fields: dict[str, Any],
     call_count: int | float | Expression,
@@ -268,13 +233,13 @@ def _handle_extended_fields(
     """
     unknown_fields = []
     for field_name, value in called_fn_resources.extra.items():
-        default = {} if isinstance(value, dict) else 0
-        try:
-            extended_fields[field_name] = _sum_scaled_extended_field(
-                extended_fields.get(field_name, default), value, call_count
-            )
-        except TypeError:
+        extension_type = _RESOURCE_EXTENSIONS.get(field_name)
+        if extension_type is None:
             unknown_fields.append(field_name)
+            continue
+        extended_fields[field_name] = extension_type.aggregate(
+            copy.deepcopy(extended_fields.get(field_name)), copy.deepcopy(value), call_count
+        )
 
     if unknown_fields:
         warnings.warn(
@@ -284,9 +249,9 @@ def _handle_extended_fields(
         )
 
 
-def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
+def _convert_resources(res: SpecsResources) -> SpecsResources:
     """
-    Converts a :class:`~.resource.SpecsResources` instance using a registered converter.
+    Round standard counts and construct each registered extension independently.
 
     Ensures that all counts are rounded up to the nearest integer, as required by the
     :class:`~.resource.SpecsResources` class.
@@ -295,8 +260,7 @@ def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
         res (SpecsResources): The :class:`~.resource.SpecsResources` object to convert.
 
     Returns:
-        SpecsResources: A :class:`~.resource.SpecsResources` object, potentially of
-            a subclass type if the original object contained the appropriate extra data.
+        SpecsResources: A container with registered extensions in ``extra``.
     """
     kwargs = {
         "counts": {op: _safe_ceil(count) for op, count in res.counts.items()},
@@ -306,13 +270,11 @@ def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
         "num_wires": _safe_ceil(res.num_wires) if res.num_wires is not None else None,
         "circuit_depth": _safe_ceil(res.circuit_depth) if res.circuit_depth is not None else None,
     }
-    resources = SpecsResources(**kwargs, extra=copy.deepcopy(res.extra))
-    matches = [name for name in _RESOURCE_CONVERTERS if name in resources.extra]
-    if len(matches) > 1:
-        raise ValueError(f"Multiple registered specs resource extensions match: {matches}.")
-    if matches:
-        return _RESOURCE_CONVERTERS[matches[0]](resources)
-    return resources
+    extra = copy.deepcopy(res.extra)
+    for name, data in extra.items():
+        if extension_type := _RESOURCE_EXTENSIONS.get(name):
+            extra[name] = extension_type.from_dict(data)
+    return SpecsResources(**kwargs, extra=extra)
 
 
 def parse_resources_json(
@@ -342,26 +304,10 @@ def parse_resources_json(
 
     # Only include information about qnodes, ignoring any extra functions
     return [
-        _convert_to_subclass(resource_data[fn])
+        _convert_resources(resource_data[fn])
         for fn, data in all_data.items()
         if data["metadata"]["qnode"]
     ]
 
 
-# Register the default SpecsResources converters, such as PBCSpecsResources.
-def _convert_pbc_resources(res: SpecsResources) -> PBCSpecsResources:
-    """Map Catalyst's nested PBC depth group to the existing PBC resource class."""
-    extra = res.extra.copy()
-    pbc_depth = extra.pop("pbc_depth")
-    return PBCSpecsResources(
-        counts=res.counts,
-        measurement_processes=res.measurement_processes,
-        num_wires=res.num_wires,
-        circuit_depth=res.circuit_depth,
-        any_commuting_depth=_safe_ceil(pbc_depth["any_commuting_depth"]),
-        qubit_disjoint_depth=_safe_ceil(pbc_depth["qubit_disjoint_depth"]),
-        extra=extra,
-    )
-
-
-register_specs_resources("pbc_depth", _convert_pbc_resources)
+register_resource_extension("pbc_depth", PBCDepthResourceExtension)

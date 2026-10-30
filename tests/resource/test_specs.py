@@ -20,7 +20,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.shots import Shots
-from pennylane.resource import CircuitSpecs, PBCSpecsResources, SpecsResources
+from pennylane.resource import CircuitSpecs, PBCDepthResourceExtension, SpecsResources
 
 # pylint: disable=invalid-sequence-index
 from pennylane.typing import Float, Wire
@@ -775,12 +775,15 @@ class TestSpecsWithPPR:
             num_device_wires=2,
             shots=Shots(None),
             level="to-ppr",
-            resources=PBCSpecsResources(
+            resources=SpecsResources(
                 counts={"GlobalPhase": 2, "PPR-pi/4-w1": 3, "PPR-pi/8-w1": 1},
                 measurement_processes={},
                 num_wires=2,
-                any_commuting_depth=3,
-                qubit_disjoint_depth=4,
+                extra={
+                    "pbc_depth": PBCDepthResourceExtension(
+                        any_commuting_depth=3, qubit_disjoint_depth=4
+                    )
+                },
             ),
         )
 
@@ -802,7 +805,7 @@ class TestSpecsWithPPR:
             num_device_wires=3,
             shots=Shots(None),
             level="decompose-arbitrary-ppr",
-            resources=PBCSpecsResources(
+            resources=SpecsResources(
                 counts={
                     "pbc.prepare": 1,
                     "PPM-w3": 1,
@@ -813,8 +816,11 @@ class TestSpecsWithPPR:
                 },
                 measurement_processes={},
                 num_wires=4,
-                any_commuting_depth=4,
-                qubit_disjoint_depth=4,
+                extra={
+                    "pbc_depth": PBCDepthResourceExtension(
+                        any_commuting_depth=4, qubit_disjoint_depth=4
+                    )
+                },
             ),
         )
 
