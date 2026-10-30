@@ -50,12 +50,7 @@ class TestLeftClassicalComparator:
     @pytest.mark.parametrize(
         "qjit",
         [
-            pytest.param(
-                True,
-                marks=pytest.mark.xfail(
-                    reason="Dynamic L requires https://github.com/PennyLaneAI/pennylane/pull/10377"
-                ),
-            ),
+            True,
             False,
         ],
     )
@@ -81,7 +76,11 @@ class TestLeftClassicalComparator:
             qp.CNOT([11, 12])
             qp.adjoint(qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator))
             qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
-            return qp.sample(wires=[12]), qp.sample(wires=work_wires), qp.sample(wires=x_wires)
+            return (
+                qp.sample(wires=[12]),
+                qp.sample(wires=work_wires),
+                qp.sample(wires=x_wires),
+            )
 
         if qjit:
             circuit = qp.qjit(circuit)
