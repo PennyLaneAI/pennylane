@@ -170,6 +170,19 @@ class SingleExcitation(Operator2):
                 :class:`PPR_4(1, "XX") <.PPR_4>` | :math:`1`
                 :class:`PPR_4(-1, "XX") <.PPR_4>` | :math:`1`
                 :class:`~.RZ` | :math:`2`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/singleexcitation_adjoint.svg
+                :region: adjoint
+
+                :class:`~.SingleExcitation` | :math:`1`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/singleexcitation_pow.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+
+                :class:`~.SingleExcitation` | :math:`1`
     """
 
     dynamic_argnames = "phi"

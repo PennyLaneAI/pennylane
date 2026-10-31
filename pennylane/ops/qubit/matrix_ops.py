@@ -192,6 +192,26 @@ class QubitUnitary(Operator2):
                 :class:`~.QubitUnitary` on :math:`n-1` wires | :math:`4`
                 :class:`~.SelectPauliRot` (:math:`Z`) with :math:`n-1` controls | :math:`2`
                 :class:`~.SelectPauliRot` (:math:`Y`) with :math:`n-1` controls | :math:`1`
+
+            .. decomposition-rule:: _adjoint_qubit_unitary
+                :image: /_static/decomposition_thumbnails/qubit_unitary_adjoint.svg
+                :region: adjoint
+
+                :class:`~.QubitUnitary` | :math:`1`
+
+            .. decomposition-rule:: _controlled_qubit_unitary
+                :image: /_static/decomposition_thumbnails/qubit_unitary_controlled.svg
+                :region: controlled
+                :where: the circuit shows :math:`c = 2` control wires
+
+                :class:`~.ControlledQubitUnitary` | :math:`1`
+
+            .. decomposition-rule:: _pow_qubit_unitary
+                :image: /_static/decomposition_thumbnails/qubit_unitary_pow.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+
+                :class:`~.QubitUnitary` | :math:`1`
     """
 
     dynamic_argnames = ("U",)
@@ -538,6 +558,19 @@ class DiagonalQubitUnitary(Operator2):
                 :requires: :math:`w \geq 1` work wire
 
                 :class:`~.SelectPauliRot` (:math:`Z`) with :math:`n` controls | :math:`1` | 1
+
+            .. decomposition-rule:: _adjoint_diagonal_unitary
+                :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_adjoint.svg
+                :region: adjoint
+
+                :class:`~.DiagonalQubitUnitary` | :math:`1`
+
+            .. decomposition-rule:: _pow_diagonal_unitary
+                :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_pow.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+
+                :class:`~.DiagonalQubitUnitary` | :math:`1`
     """
 
     dynamic_argnames = ("D",)
