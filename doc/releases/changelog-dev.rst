@@ -2408,6 +2408,10 @@ Bug fixes 🐛
   arithmetic operations performed on mid-circuit measurement values.
   `(#10028) <https://github.com/PennyLaneAI/pennylane/pull/10028>`__
 
+* Fixed a bug where :func:`~pennylane.math.relative_entropy` returned ``inf`` or ``nan`` for
+  rank-deficient states that are not diagonal in the computational basis, such as pure states.
+  `(#10348) <https://github.com/PennyLaneAI/pennylane/pull/10348>`__
+
 * Fixed :func:`~pennylane.backline.css_bp_decoder` so the X- and Z-specialized Triton decoders
   stay distinct when bundled behind one dispatcher, and, for the same reason, updated
   :func:`~pennylane.backline.triton_decoder` to own jitting of the raw Triton decoder functions.
@@ -2575,6 +2579,7 @@ Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
 Korbinian Kottmann,
+G. Karthik Koundinya,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,
