@@ -99,6 +99,31 @@ class Hadamard(Operator2):
                 :class:`PPR_2(1, "Z") <.PPR_2>` | :math:`1`
                 :class:`PPR_4(1, "Y") <.PPR_4>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: decompose_to_base
+                :image: /_static/decomposition_thumbnails/hadamard_adjoint.svg
+                :region: adjoint
+
+                :class:`~.Hadamard` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_hadamard)
+                :image: /_static/decomposition_thumbnails/hadamard_controlled.svg
+                :region: controlled
+                :where: :math:`c \geq 2` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.RY` | :math:`2`
+                :class:`~.MultiControlledX` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/hadamard_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+
+                :class:`Pow(Hadamard) <.Hadamard>` with power :math:`z \bmod 2` | :math:`1`
     """
 
     is_verified_hermitian = True
@@ -376,6 +401,43 @@ class PauliX(Operator2):
 
                 :class:`PPR_2(1, "X") <.PPR_2>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: decompose_to_base
+                :image: /_static/decomposition_thumbnails/paulix_adjoint.svg
+                :region: adjoint
+
+                :class:`~.PauliX` | :math:`1`
+
+            .. decomposition-rule:: _ctrl_x_to_mcx
+                :image: /_static/decomposition_thumbnails/paulix_controlled.svg
+                :region: controlled
+                :where: the circuit shows :math:`c = 2` control wires
+
+                :class:`~.MultiControlledX` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/paulix_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+
+                :class:`Pow(PauliX) <.PauliX>` with power :math:`z \bmod 2` | :math:`1`
+
+            .. decomposition-rule:: _pow_x_to_rx
+                :image: /_static/decomposition_thumbnails/paulix_pow_to_rx.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 0.5`
+
+                :class:`~.RX` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _pow_x_to_sx
+                :image: /_static/decomposition_thumbnails/paulix_pow_to_sx.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 2 = 1/2`, and the
+                    circuit shows :math:`z = 0.5`
+
+                :class:`~.SX` | :math:`1`
     """
 
     wire_sizes = (1,)
@@ -644,6 +706,39 @@ class PauliY(Operator2):
 
                 :class:`PPR_2(1, "Y") <.PPR_2>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: decompose_to_base
+                :image: /_static/decomposition_thumbnails/pauliy_adjoint.svg
+                :region: adjoint
+
+                :class:`~.PauliY` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_y_decomp)
+                :image: /_static/decomposition_thumbnails/pauliy_controlled.svg
+                :region: controlled
+                :where: :math:`c \geq 2` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.S` | :math:`1`
+                :class:`Adjoint(S) <.S>` | :math:`1`
+                :class:`~.MultiControlledX` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/pauliy_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+
+                :class:`Pow(PauliY) <.PauliY>` with power :math:`z \bmod 2` | :math:`1`
+
+            .. decomposition-rule:: _pow_y
+                :image: /_static/decomposition_thumbnails/pauliy_pow_to_ry.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 0.5`
+
+                :class:`~.RY` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
     """
 
     arg_specs = {"wires": Wire[1]}
@@ -900,6 +995,53 @@ class PauliZ(Operator2):
 
                 :class:`PPR_2(1, "Z") <.PPR_2>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: decompose_to_base
+                :image: /_static/decomposition_thumbnails/pauliz_adjoint.svg
+                :region: adjoint
+
+                :class:`~.PauliZ` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_z_decomp)
+                :image: /_static/decomposition_thumbnails/pauliz_controlled.svg
+                :region: controlled
+                :where: :math:`c \geq 3` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 3`
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.MultiControlledX` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/pauliz_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+
+                :class:`Pow(PauliZ) <.PauliZ>` with power :math:`z \bmod 2` | :math:`1`
+
+            .. decomposition-rule:: _pow_z
+                :image: /_static/decomposition_thumbnails/pauliz_pow_to_phaseshift.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 0.5`
+
+                :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: _pow_z_to_s
+                :image: /_static/decomposition_thumbnails/pauliz_pow_to_s.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 2 = 1/2`, and the
+                    circuit shows :math:`z = 0.5`
+
+                :class:`~.S` | :math:`1`
+
+            .. decomposition-rule:: _pow_z_to_t
+                :image: /_static/decomposition_thumbnails/pauliz_pow_to_t.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 2 = 1/4`, and the
+                    circuit shows :math:`z = 0.25`
+
+                :class:`~.T` | :math:`1`
     """
 
     arg_specs = {"wires": Wire[1]}
@@ -1190,6 +1332,37 @@ class S(Operator2):
 
                 :class:`PPR_4(1, "Z") <.PPR_4>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/s_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 4` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 5`
+
+                :class:`Pow(S) <.S>` with power :math:`z \bmod 4` | :math:`1`
+
+            .. decomposition-rule:: _pow_s
+                :image: /_static/decomposition_thumbnails/s_pow_to_phaseshift.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 0.5`
+
+                :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: _pow_s_to_t
+                :image: /_static/decomposition_thumbnails/s_pow_to_t.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 4 = 1/2`, and the
+                    circuit shows :math:`z = 0.5`
+
+                :class:`~.T` | :math:`1`
+
+            .. decomposition-rule:: _pow_s_to_z
+                :image: /_static/decomposition_thumbnails/s_pow_to_z.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 4 = 2`, and the
+                    circuit shows :math:`z = 2`
+
+                :class:`~.PauliZ` | :math:`1`
     """
 
     wire_sizes = (1,)
@@ -1359,6 +1532,21 @@ class T(Operator2):
 
                 :class:`PPR_8(1, "Z") <.PPR_8>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/t_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 8` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 9`
+
+                :class:`Pow(T) <.T>` with power :math:`z \bmod 8` | :math:`1`
+
+            .. decomposition-rule:: _pow_t
+                :image: /_static/decomposition_thumbnails/t_pow_to_phaseshift.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 0.5`
+
+                :class:`~.PhaseShift` | :math:`1`
     """
 
     wire_sizes = (1,)
@@ -1503,6 +1691,30 @@ class SX(Operator2):
 
             .. decomposition-rule:: _sx_to_rx
                 :image: /_static/decomposition_thumbnails/sx_to_rx.svg
+
+                :class:`~.RX` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/sx_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 4` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 5`
+
+                :class:`Pow(SX) <.SX>` with power :math:`z \bmod 4` | :math:`1`
+
+            .. decomposition-rule:: _pow_sx_to_x
+                :image: /_static/decomposition_thumbnails/sx_pow_to_x.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 4 = 2`, and the
+                    circuit shows :math:`z = 2`
+
+                :class:`~.PauliX` | :math:`1`
+
+            .. decomposition-rule:: _pow_sx
+                :image: /_static/decomposition_thumbnails/sx_pow_to_rx.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 0.5`
 
                 :class:`~.RX` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
@@ -1658,6 +1870,30 @@ class SWAP(Operator2):
                 :class:`PPR_4(1, "YY") <.PPR_4>` | :math:`1`
                 :class:`PPR_4(1, "ZZ") <.PPR_4>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: decompose_to_base
+                :image: /_static/decomposition_thumbnails/swap_adjoint.svg
+                :region: adjoint
+
+                :class:`~.SWAP` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_swap_decomp)
+                :image: /_static/decomposition_thumbnails/swap_controlled.svg
+                :region: controlled
+                :where: :math:`c \geq 2` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.CNOT` | :math:`2`
+                :class:`~.MultiControlledX` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/swap_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+
+                :class:`Pow(SWAP) <.SWAP>` with power :math:`z \bmod 2` | :math:`1`
     """
 
     wire_sizes = (2,)
@@ -1861,6 +2097,20 @@ class ECR(Operator2):
                 :class:`~.SX` | :math:`1`
                 :class:`~.RX` | :math:`2`
                 :class:`~.RY` | :math:`1`
+
+            .. decomposition-rule:: decompose_to_base
+                :image: /_static/decomposition_thumbnails/ecr_adjoint.svg
+                :region: adjoint
+
+                :class:`~.ECR` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/ecr_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+
+                :class:`Pow(ECR) <.ECR>` with power :math:`z \bmod 2` | :math:`1`
     """
 
     wire_sizes = (2,)
@@ -2016,6 +2266,30 @@ class ISWAP(Operator2):
 
                 :class:`PPR_4(-1, "XX") <.PPR_4>` | :math:`1`
                 :class:`PPR_4(-1, "YY") <.PPR_4>` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/iswap_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 4` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 5`
+
+                :class:`Pow(ISWAP) <.ISWAP>` with power :math:`z \bmod 4` | :math:`1`
+
+            .. decomposition-rule:: _pow_iswap_to_zz
+                :image: /_static/decomposition_thumbnails/iswap_pow_to_zz.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 4 = 2`, and the
+                    circuit shows :math:`z = 2`
+
+                :class:`~.PauliZ` | :math:`2`
+
+            .. decomposition-rule:: _pow_iswap_to_siswap
+                :image: /_static/decomposition_thumbnails/iswap_pow_to_siswap.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 4 = 1/2`, and the
+                    circuit shows :math:`z = 0.5`
+
+                :class:`~.SISWAP` | :math:`1`
     """
 
     wire_sizes = (2,)
@@ -2188,6 +2462,30 @@ class SISWAP(Operator2):
 
                 :class:`PPR_8(-1, "XX") <.PPR_8>` | :math:`1`
                 :class:`PPR_8(-1, "YY") <.PPR_8>` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/siswap_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 8` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 9`
+
+                :class:`Pow(SISWAP) <.SISWAP>` with power :math:`z \bmod 8` | :math:`1`
+
+            .. decomposition-rule:: _pow_siswap_to_zz
+                :image: /_static/decomposition_thumbnails/siswap_pow_to_zz.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 8 = 4`, and the
+                    circuit shows :math:`z = 4`
+
+                :class:`~.PauliZ` | :math:`2`
+
+            .. decomposition-rule:: _pow_siswap_to_iswap
+                :image: /_static/decomposition_thumbnails/siswap_pow_to_iswap.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 8 = 2`, and the
+                    circuit shows :math:`z = 2`
+
+                :class:`~.ISWAP` | :math:`1`
     """
 
     wire_sizes = (2,)
@@ -2502,6 +2800,12 @@ class PPR_2(_FixedAnglePPR):
                 :class:`~.Y` | :math:`y` | 1
                 :class:`~.Z` | :math:`z` | 1
                 :class:`~.GlobalPhase` | :math:`1` | 1
+
+            .. decomposition-rule:: _adjoint_ppr_flip_sign
+                :image: /_static/decomposition_thumbnails/ppr2_adjoint.svg
+                :region: adjoint
+
+                :class:`~.PPR_2` with sign :math:`-s` | :math:`1`
     """
 
     _denominator = 2
@@ -2578,6 +2882,12 @@ class PPR_4(_FixedAnglePPR):
                 :class:`Adjoint(S) <.S>` | :math:`y + [k > 0,\ s = -1]` | 1
                 :class:`~.CNOT` | :math:`2\max(k - 1, 0)` | 4
                 :class:`~.GlobalPhase` | :math:`1` | 1
+
+            .. decomposition-rule:: _adjoint_ppr_flip_sign
+                :image: /_static/decomposition_thumbnails/ppr4_adjoint.svg
+                :region: adjoint
+
+                :class:`~.PPR_4` with sign :math:`-s` | :math:`1`
     """
 
     _denominator = 4
@@ -2656,6 +2966,12 @@ class PPR_8(_FixedAnglePPR):
                 :class:`Adjoint(T) <.T>` | :math:`[k > 0,\ s = -1]` | 0
                 :class:`~.CNOT` | :math:`2\max(k - 1, 0)` | 4
                 :class:`~.GlobalPhase` | :math:`1` | 1
+
+            .. decomposition-rule:: _adjoint_ppr_flip_sign
+                :image: /_static/decomposition_thumbnails/ppr8_adjoint.svg
+                :region: adjoint
+
+                :class:`~.PPR_8` with sign :math:`-s` | :math:`1`
     """
 
     _denominator = 8
