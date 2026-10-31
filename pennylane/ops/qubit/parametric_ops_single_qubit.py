@@ -113,6 +113,30 @@ class RX(Operator2):
 
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.RZ` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/rx_adjoint.svg
+                :region: adjoint
+
+                :class:`~.RX` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rx_decomp)
+                :image: /_static/decomposition_thumbnails/rx_controlled.svg
+                :region: controlled
+                :where: :math:`c \geq 2` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.RZ` | :math:`2`
+                :class:`~.MultiControlledX` | :math:`2`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/rx_pow.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+
+                :class:`~.RX` | :math:`1`
     """
 
     num_wires = 1
@@ -356,6 +380,29 @@ class RY(Operator2):
                 :class:`~.S` | :math:`1`
                 :class:`Adjoint(S) <.S>` | :math:`1`
                 :class:`~.RZ` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/ry_adjoint.svg
+                :region: adjoint
+
+                :class:`~.RY` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_ry_decomp)
+                :image: /_static/decomposition_thumbnails/ry_controlled.svg
+                :region: controlled
+                :where: :math:`c \geq 2` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.RY` | :math:`2`
+                :class:`~.MultiControlledX` | :math:`2`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/ry_pow.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+
+                :class:`~.RY` | :math:`1`
     """
 
     num_wires = 1
@@ -621,6 +668,23 @@ class RZ(Operator2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/rz_adjoint.svg
                 :region: adjoint
+
+                :class:`~.RZ` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rz_decomp)
+                :image: /_static/decomposition_thumbnails/rz_controlled.svg
+                :region: controlled
+                :where: :math:`c \geq 2` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.RZ` | :math:`2`
+                :class:`~.MultiControlledX` | :math:`2`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/rz_pow.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
 
                 :class:`~.RZ` | :math:`1`
     """
@@ -904,6 +968,30 @@ class PhaseShift(Operator2):
 
                 :class:`~.RZ` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/phaseshift_adjoint.svg
+                :region: adjoint
+
+                :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_phase_shift_decomp)
+                :image: /_static/decomposition_thumbnails/phaseshift_controlled.svg
+                :region: controlled
+                :where: :math:`c \geq 2` is the number of control wires, :math:`\binom{c+1}{k}` of
+                    the :class:`~.PauliRot` gates act on :math:`k` wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.PauliRot` | :math:`2^{c+1} - 1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/phaseshift_pow.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+
+                :class:`~.PhaseShift` | :math:`1`
     """
 
     num_wires = 1
@@ -1130,12 +1218,13 @@ class Rot(Operator2):
             .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rot_decomp)
                 :image: /_static/decomposition_thumbnails/rot_controlled.svg
                 :region: controlled
-                :where: :math:`c` is the number of control wires, and the circuit shows :math:`c = 2`
+                :where: :math:`c \geq 2` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
 
-                :class:`~.CRot` | :math:`1` if :math:`c = 1`
-                :class:`~.RZ` | :math:`3` if :math:`c \geq 2`
-                :class:`~.RY` | :math:`2` if :math:`c \geq 2`
-                :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
+                :class:`~.RZ` | :math:`3`
+                :class:`~.RY` | :math:`2`
+                :class:`~.MultiControlledX` | :math:`2`
     """
 
     ndim_params = (0, 0, 0)
@@ -1330,6 +1419,19 @@ class U1(Operator2):
                 :image: /_static/decomposition_thumbnails/u1_to_phaseshift.svg
 
                 :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/u1_adjoint.svg
+                :region: adjoint
+
+                :class:`~.U1` | :math:`1`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/u1_pow.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+
+                :class:`~.U1` | :math:`1`
     """
 
     num_wires = 1
@@ -1464,6 +1566,12 @@ class U2(Operator2):
 
                 :class:`~.Rot` | :math:`1`
                 :class:`~.PhaseShift` | :math:`2`
+
+            .. decomposition-rule:: _adjoint_u2
+                :image: /_static/decomposition_thumbnails/u2_adjoint.svg
+                :region: adjoint
+
+                :class:`~.U2` | :math:`1`
     """
 
     num_wires = 1
@@ -1605,6 +1713,12 @@ class U3(Operator2):
 
                 :class:`~.Rot` | :math:`1`
                 :class:`~.PhaseShift` | :math:`2`
+
+            .. decomposition-rule:: _adjoint_u3
+                :image: /_static/decomposition_thumbnails/u3_adjoint.svg
+                :region: adjoint
+
+                :class:`~.U3` | :math:`1`
     """
 
     num_wires = 1
