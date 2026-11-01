@@ -32,6 +32,7 @@ from pennylane.ops.op_math import Controlled, ControlledOp
 from pennylane.pytrees import flatten, unflatten
 
 from .expression import Expression
+from .extension import _RESOURCE_EXTENSIONS
 
 # The threshold after which integers in the resource class are displayed in scientific notation.
 # This is used in the __str__ and _repr_markdown_ methods of the Resources class.
@@ -95,6 +96,44 @@ def _flatten_dict(data: dict, prefix: str = "", sep: str = ".") -> dict:
         else:
             flattened[full_key] = value
     return flattened
+
+
+def _extra_resource_rows(resources):
+    """Align registered display rows across resource columns, retaining group headings."""
+    groups = {}
+
+    def add_rows(values, column, rows):
+        for label, value in values.items():
+            is_group = isinstance(value, dict)
+            _, entries = rows.setdefault(label, (is_group, {}))
+            if is_group:
+                add_rows(value, column, entries)
+            else:
+                entries[column] = value
+
+    def flatten_rows(rows):
+        for label, (is_group, entries) in rows.items():
+            yield label, None if is_group else entries
+            if is_group:
+                yield from flatten_rows(entries)
+
+    for column, resource in resources.items():
+        for name, data in resource.extra.items():
+            if handler := _RESOURCE_EXTENSIONS.get(name):
+                add_rows(handler.display(data), column, groups.setdefault(name, {}))
+    return [row for rows in groups.values() for row in flatten_rows(rows)]
+
+
+def _format_extra_value(value, *, extra_compact=False, markdown_safe=False):
+    """Format an extension value, preserving unavailable estimates and text labels."""
+    if value is None:
+        return "Not computed"
+    if isinstance(value, (int, float, Expression)) and not isinstance(value, bool):
+        return _count_to_str(value, extra_compact=extra_compact, markdown_safe=markdown_safe)
+    text = str(value)
+    if markdown_safe:
+        return text.replace("|", r"\|").replace("*", r"\*").replace("\n", "<br>")
+    return text.replace("\n", " ")
 
 
 def _collect_vars(obj: Any) -> Generator[str]:
@@ -556,6 +595,13 @@ class SpecsResources(Resources):
             )
             lines.append(f"{prefix}Circuit Depth: {depth_str}")
 
+        for label, values in _extra_resource_rows({0: self}):
+            lines.append(
+                f"{prefix}{label}:"
+                if values is None
+                else f"{prefix}- {label}: {_format_extra_value(values[0])}"
+            )
+
         return "\n".join(lines)
 
     def _repr_markdown_(self) -> str:
@@ -600,6 +646,14 @@ class SpecsResources(Resources):
                 else "Not computed"
             )
             lines.append(f"| **Circuit depth** | {depth_str} |")
+
+        for label, values in _extra_resource_rows({0: self}):
+            label = _format_extra_value(label, markdown_safe=True)
+            lines.append(
+                f"| **{label}** | |"
+                if values is None
+                else f"| {label} | {_format_extra_value(values[0], markdown_safe=True)} |"
+            )
 
         return "\n".join(lines)
 
@@ -871,6 +925,14 @@ class CircuitSpecs:
                 len(_count_to_str(res.total_quantum_operations, extra_compact=True)) + 1,
             )
 
+        for label, values in _extra_resource_rows(flat_resources):
+            max_metric_length = max(max_metric_length, len(label) + 2)
+            if values is not None:
+                max_column_size = max(
+                    max_column_size,
+                    *(len(_format_extra_value(v, extra_compact=True)) + 1 for v in values.values()),
+                )
+
         return max_metric_length, max_column_size, all_quantum_operations, all_meas_types
 
     def _to_pretty_str_tabular(self) -> str:
@@ -977,6 +1039,23 @@ class CircuitSpecs:
                     for r in flat_resources.values()
                 )
             )
+
+        for label, values in _extra_resource_rows(flat_resources):
+            if values is None:
+                lines.append(f"{label}:".ljust(max_metric_length) + " |")
+            else:
+                lines.append(
+                    f"- {label}".ljust(max_metric_length)
+                    + " |"
+                    + " |".join(
+                        (
+                            _format_extra_value(values[column], extra_compact=True)
+                            if column in values
+                            else "-"
+                        ).rjust(max_column_size)
+                        for column in flat_resources
+                    )
+                )
 
         return "\n".join(lines).rstrip("\n")
 
@@ -1114,6 +1193,24 @@ class CircuitSpecs:
                             else "N/A"
                         )
                         for r in flat_resources.values()
+                    ],
+                )
+            )
+
+        for label, values in _extra_resource_rows(flat_resources):
+            label = _format_extra_value(label, markdown_safe=True)
+            lines.append(
+                data_row(f"**{label}**", [""] * len(levels))
+                if values is None
+                else data_row(
+                    label,
+                    [
+                        (
+                            _format_extra_value(values[column], markdown_safe=True)
+                            if column in values
+                            else "N/A"
+                        )
+                        for column in levels
                     ],
                 )
             )

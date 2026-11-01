@@ -27,6 +27,7 @@ from collections import defaultdict
 from typing import Any
 
 from .expression import Expression
+from .extension import _RESOURCE_EXTENSIONS
 from .resource import PBCSpecsResources, SpecsResources, num_to_letters
 
 # Tolerance (in number of decimal digits) for floating point precision issues
@@ -206,6 +207,13 @@ def _handle_extended_fields(
     unknown_fields = []
 
     for field_name in called_fn_resources.extra:
+        if handler := _RESOURCE_EXTENSIONS.get(field_name):
+            extended_fields[field_name] = handler.aggregate(
+                extended_fields.get(field_name),
+                called_fn_resources.extra[field_name],
+                call_count,
+            )
+            continue
         match field_name:
             case "pbc_depth":
                 pbc_depth = extended_fields.get("pbc_depth", None)
