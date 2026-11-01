@@ -40,7 +40,7 @@ class NoiseModel:
         For each key-value pair of ``model_map`` and ``meas_map``:
 
         - The ``conditional`` should be either a function decorated with :class:`~.BooleanFn`,
-          a callable object built via :ref:`constructor functions <intro_boolean_fn>` in
+          a callable object built via constructor functions in
           the ``qp.noise`` module, or their bitwise combination.
         - The definition of ``noise_fn(Union[op, mp], **kwargs)`` should have the operations
           in the same order in which they are to be queued for an operation ``op`` or

@@ -140,7 +140,6 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         If performance and memory usage is a concern, and the queueing capabilities of this class are not
         crucial to your use case, we recommend using the :class:`~.QuantumScript` class instead,
         which is a drop-in replacement with a similar interface.
-        For more information, check :ref:`tape-vs-script`.
 
     **Example**
 
