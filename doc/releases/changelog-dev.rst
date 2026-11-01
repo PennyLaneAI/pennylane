@@ -4,6 +4,7 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* Native parameter-shift differentiation is now supported for tapes with trainable broadcasted (batched) parameters on analytic, single expectation-value measurements. ``qml.jacobian`` and ``qml.grad`` return the diagonal batch Jacobian, matching backpropagation, and the PyTorch and Autograd interfaces propagate gradients through batched inputs correctly. Other measurement types and the JVP remain unsupported and raise informative errors. `(#4462) <https://github.com/PennyLaneAI/pennylane/issues/4462>`__
 * :func:`~.transforms.gridsynth` has a new ``method`` keyword argument with two randomized
   synthesis methods from `arXiv:2203.10064 <https://arxiv.org/abs/2203.10064>`__, which reduce the
   T-count at the same accuracy of the channel averaged over executions.
@@ -2583,6 +2584,7 @@ William Maxwell,
 Anton Naim Ibrahim,
 Mudit Pandey,
 Andrija Paurevic,
+Tousif Bin Parves,
 Francesco Pernice Botta,
 David D.W. Ren,
 Jay Soni,

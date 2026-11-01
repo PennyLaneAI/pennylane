@@ -48,7 +48,12 @@ def _compute_vjps(jacs, dys, tapes):
             shot_vjps = [f[multi](d, j) for d, j in zip(dy, jac, strict=True)]
             vjps.append(qp.math.sum(qp.math.stack(shot_vjps), axis=0))
         else:
-            vjps.append(f[multi](dy, jac))
+            if multi:
+                vjps.append(f[multi](dy, jac))
+            else:
+                from pennylane.gradients.vjp import _batched_vjp_metadata
+
+                vjps.append(f[multi](dy, jac, batched_params=_batched_vjp_metadata(t, jac, dy)))
     return tuple(vjps)
 
 
@@ -69,6 +74,13 @@ def _compute_jvps(jacs, tangents, tapes):
 
     jvps = []
     for jac, dx, t in zip(jacs, tangents, tapes, strict=True):
+        from pennylane.gradients.vjp import _supports_batched_vjp
+
+        if _supports_batched_vjp(t):
+            raise NotImplementedError(
+                "Computing the JVP of broadcasted tapes with respect to the broadcasted "
+                "parameters is currently not supported. See #4462 for details."
+            )
         multi = len(t.measurements) > 1
         if len(t.trainable_params) == 0:
             jvps.append(_zero_jvp(t))

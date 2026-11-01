@@ -22,6 +22,7 @@ import autograd
 import numpy as np
 
 from pennylane import math
+from pennylane.measurements import ExpectationMP
 
 
 def _convert(jac, dy_row):
@@ -52,7 +53,83 @@ def _all_close_to_zero(dy):
     return all(_all_close_to_zero(dy_) for dy_ in dy)
 
 
-def compute_vjp_single(dy, jac, num=None):
+def _supports_batched_vjp(tape):
+    """Whether the tape admits the batched-parameter VJP handling.
+
+    True for analytic tapes with a batch size, exactly one expectation-value
+    measurement, and at least one trainable parameter carrying the batch.
+    """
+    if tape.batch_size is None:
+        return False
+    if len(tape.measurements) != 1 or tape.shots.total_shots is not None:
+        return False
+    if not isinstance(tape.measurements[0], ExpectationMP):
+        return False
+
+    from pennylane.gradients.gradient_transform import trainable_tape_batching
+
+    return bool(trainable_tape_batching(tape))
+
+
+def _batched_vjp_metadata(tape, jac, dy):
+    """Return the indices of the trainable parameters carrying the tape batch
+    if the tape and the provided jacobian are consistent with the
+    batched-parameter VJP handling (single expectation-value measurement,
+    analytic, per-parameter leaves of shape ``(B,)``); ``None`` otherwise.
+    """
+    if not _supports_batched_vjp(tape):
+        return None
+
+    b = tape.batch_size
+    dy_row = math.reshape(dy, [-1])
+    if tuple(math.shape(dy_row)) != (b,):
+        return None
+
+    leaves = jac if isinstance(jac, (tuple, list, autograd.builtins.SequenceBox)) else (jac,)
+    if len(leaves) != len(tape.trainable_params):
+        return None
+    for leaf in leaves:
+        if tuple(math.shape(leaf)) != (b,):
+            return None
+
+    from pennylane.gradients.gradient_transform import trainable_tape_batching
+
+    return tuple(trainable_tape_batching(tape))
+
+
+def _batched_vjp_single(dy_row, jac, num, batched_params):
+    """VJP for tapes with batched (broadcasted) trainable parameters.
+
+    Every per-parameter jacobian leaf of such a tape has shape ``(B,)``:
+    for a batched trainable parameter it holds the diagonal batch gradient,
+    and for a scalar trainable parameter the derivative of each batch
+    element. The VJP is therefore elementwise in the batch for batched
+    parameters and a sum over the batch for scalar parameters.
+    """
+    leaves = jac if isinstance(jac, (tuple, list, autograd.builtins.SequenceBox)) else (jac,)
+
+    if len(leaves) < max(batched_params) + 1:
+        raise NotImplementedError(
+            "The batched-parameter metadata does not match the jacobian "
+            "structure; see #4462 for details."
+        )
+
+    res = []
+    for idx, leaf in enumerate(leaves):
+        leaf_row = math.reshape(leaf, [-1])
+        if tuple(math.shape(leaf_row)) != (num,):
+            raise NotImplementedError(
+                "The batched-parameter VJP is only supported for single "
+                "expectation-value measurements; see #4462 for details."
+            )
+        if idx in batched_params:
+            res.append(dy_row * leaf_row)
+        else:
+            res.append(math.sum(dy_row * leaf_row))
+    return res
+
+
+def compute_vjp_single(dy, jac, num=None, batched_params=None):
     """Convenience function to compute the vector-Jacobian product for a given
     vector of gradient outputs and a Jacobian for a single measurement tape.
 
@@ -122,6 +199,9 @@ def compute_vjp_single(dy, jac, num=None):
         hasattr(jac, "dtype") and getattr(jac, "dtype", None) == object
     )
 
+    if batched_params:
+        return _batched_vjp_single(dy_row, jac, num, batched_params)
+
     # Single measurement with a single param
     if not isinstance(jac, (tuple, list, autograd.builtins.SequenceBox)):
         # No trainable parameters
@@ -156,7 +236,7 @@ def compute_vjp_single(dy, jac, num=None):
     return res
 
 
-def compute_vjp_multi(dy, jac, num=None):
+def compute_vjp_multi(dy, jac, num=None, batched_params=None):
     """Convenience function to compute the vector-Jacobian product for a given
     vector of gradient outputs and a Jacobian for a tape with multiple measurements.
 
@@ -194,6 +274,13 @@ def compute_vjp_multi(dy, jac, num=None):
     """
     if jac is None:
         return None
+
+    if batched_params:
+        raise NotImplementedError(
+            "Computing the VJP of broadcasted tapes with multiple measurements "
+            "with respect to the broadcasted parameters is currently not "
+            "supported. See #4462 for details."
+        )
 
     # Single parameter
     if not isinstance(jac[0], (tuple, autograd.builtins.SequenceBox)):
@@ -338,6 +425,14 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
             # and we can avoid a quantum computation.
 
             def func(_, num=None):  # pylint: disable=unused-argument
+                if _supports_batched_vjp(tape):
+                    # Zero-dy VJPs of batched-parameter tapes keep the
+                    # per-parameter structure (parameter-shaped zeros).
+                    params = tape.get_parameters(trainable_only=True)
+                    return [
+                        math.cast_like(math.convert_like(np.zeros(math.shape(p)), dy), dy)
+                        for p in params
+                    ]
                 res = math.convert_like(np.zeros([num_params]), dy)
                 multi = len(tape.measurements) > 1
                 if multi:
@@ -360,7 +455,9 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
         comp_vjp_fn = compute_vjp_multi if multi else compute_vjp_single
 
         if not tape.shots.has_partitioned_shots:
-            return comp_vjp_fn(dy, jac, num=num)
+            return comp_vjp_fn(
+                dy, jac, num=num, batched_params=_batched_vjp_metadata(tape, jac, dy)
+            )
 
         vjp_ = [comp_vjp_fn(dy_, jac_, num=num) for dy_, jac_ in zip(dy, jac, strict=True)]
         return math.sum(math.stack(vjp_), 0)

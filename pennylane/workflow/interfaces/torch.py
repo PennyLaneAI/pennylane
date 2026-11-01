@@ -190,7 +190,15 @@ class ExecuteTapes(torch.autograd.Function):
         # split tensor into separate entries
         unpacked_vjps = []
         for vjp_slice in vjps:
-            if vjp_slice is not None and np.squeeze(vjp_slice).shape != (0,):
+            if vjp_slice is None:
+                continue
+            if isinstance(vjp_slice, (list, tuple)):
+                # Batched-parameter VJPs: one entry per trainable parameter,
+                # each shaped like its parameter.
+                for entry in vjp_slice:
+                    if entry is not None and np.squeeze(entry).shape != (0,):
+                        unpacked_vjps.append(_res_to_torch(entry, ctx))
+            elif np.squeeze(vjp_slice).shape != (0,):
                 unpacked_vjps.extend(_res_to_torch(vjp_slice, ctx))
         vjps = tuple(unpacked_vjps)
         # The output of backward must match the input of forward.
