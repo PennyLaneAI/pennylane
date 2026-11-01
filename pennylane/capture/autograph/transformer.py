@@ -21,7 +21,6 @@ Python control flow and other imperative expressions rather than the functional 
 by PennyLane.
 """
 
-import copy
 import inspect
 import warnings
 from contextlib import ContextDecorator
@@ -29,10 +28,10 @@ from contextlib import ContextDecorator
 from malt.core import ag_ctx, converter
 from malt.impl.api import PyToPy
 
-import pennylane as qp
 from pennylane.exceptions import AutoGraphError, AutoGraphWarning
 
 from . import ag_primitives
+from .wrappers import get_autograph_wrapper
 
 
 class PennyLaneTransformer(PyToPy):
@@ -45,17 +44,20 @@ class PennyLaneTransformer(PyToPy):
         self._extra_locals = None
 
     def transform(self, obj, user_context):
-        """Launch the transformation process. Typically, this only works on function objects.
-        Here we also allow QNodes to be transformed."""
+        """Transform a function or the function inside a registered wrapper."""
 
-        # By default, AutoGraph will only convert function or method objects, not arbitrary classes
-        # such as QNode objects. Here we handle them explicitly, but we might need a more general
-        # way to handle these in the future.
-        # We may also need to check how this interacts with other common function decorators.
+        adapter = get_autograph_wrapper(obj)
+        if adapter is not None:
+            target, rebuild = adapter
+            new_target, module, source_map = self.transform(target, user_context)
+            if new_target is not target:
+                new_target.ag_module = module
+                new_target.ag_source_map = source_map
+                new_target.ag_unconverted = target
+            return rebuild(new_target), module, source_map
+
         fn = obj
-        if isinstance(obj, qp.QNode):
-            fn = obj.func
-        elif inspect.isfunction(fn) or inspect.ismethod(fn):
+        if inspect.isfunction(fn) or inspect.ismethod(fn):
             pass
         elif callable(obj):
             # pylint: disable=unnecessary-lambda,unnecessary-lambda-assignment
@@ -85,13 +87,7 @@ class PennyLaneTransformer(PyToPy):
                         " Please define the condition using a named function rather than a lambda function."
                     ) from e
 
-        new_obj = new_fn
-
-        if isinstance(obj, qp.QNode):
-            new_obj = copy.copy(obj)
-            new_obj.func = new_fn
-
-        return new_obj, module, source_map
+        return new_fn, module, source_map
 
     def get_extra_locals(self):
         """Here we can provide any extra names that the converted function should have access to.
@@ -198,10 +194,6 @@ def run_autograph(fn):
 
     new_fn, module, source_map = TRANSFORMER.transform(fn, user_context)
 
-    # needed for autograph_source when examining a converted QNode
-    if isinstance(new_fn, qp.QNode):
-        new_fn.func.ag_unconverted = fn.func
-
     new_fn.ag_module = module
     new_fn.ag_source_map = source_map
     new_fn.ag_unconverted = fn
@@ -274,13 +266,14 @@ def autograph_source(fn):
             return fscope.ret(retval_, do_return)
     """
 
-    # Handle directly converted objects.
+    adapter = get_autograph_wrapper(fn)
+    while adapter is not None:
+        fn, _ = adapter
+        adapter = get_autograph_wrapper(fn)
+
+    # Handle directly converted functions.
     if hasattr(fn, "ag_unconverted"):
         return inspect.getsource(fn)
-
-    # Unwrap known objects to get the function actually transformed by autograph.
-    if isinstance(fn, qp.QNode):
-        fn = fn.func
 
     if TRANSFORMER.has_cache(fn):
         new_fn = TRANSFORMER.get_cached_function(fn)

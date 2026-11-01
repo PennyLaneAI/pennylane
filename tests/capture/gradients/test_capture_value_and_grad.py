@@ -17,6 +17,8 @@ Tests for capturing value_and_grad into jaxpr.
 Note some tests on the errors exist in test_capture_diff.py
 """
 
+from functools import partial
+
 import pytest
 
 import pennylane as qp
@@ -27,7 +29,8 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 # pylint: disable=wrong-import-position
-from pennylane.capture.primitives import value_and_grad_prim
+from pennylane.capture.autograph import autograph_source, disable_autograph, run_autograph
+from pennylane.capture.primitives import cond_prim, qnode_prim, value_and_grad_prim
 
 
 def test_value_and_grad_error_with_non_scalar_function():
@@ -187,3 +190,165 @@ def test_pytree_input(argnums):
     # Assert that the output from the manual evaluation is flat
     assert grad_out_tree == jax.tree_util.tree_flatten(grad_out_flat)[1]
     assert qp.math.allclose(jax_out_flat, grad_out_flat)
+
+
+class TestAutograph:
+    """Tests for AutoGraph conversion of value_and_grad wrappers."""
+
+    @pytest.mark.parametrize("nested", [False, True])
+    @pytest.mark.parametrize("condition", [True, False])
+    def test_existing_instance(self, nested, condition):
+        """Existing wrappers convert dynamic control flow and preserve differentiation settings."""
+
+        def function(predicate, data):
+            if predicate:
+                result = data**2
+            else:
+                result = data**3
+            return result
+
+        original = qp.value_and_grad(function, argnums=1, method="fd", h=0.125)
+
+        if nested:
+
+            def caller(predicate, data):
+                return original(predicate, data)
+
+            converted = run_autograph(caller)
+        else:
+            converted = run_autograph(original)
+            assert isinstance(converted, qp.value_and_grad)
+
+        jaxpr = jax.make_jaxpr(converted)(condition, 2.0)
+        equation = jaxpr.eqns[0]
+        assert equation.primitive == value_and_grad_prim
+        assert equation.params["argnums"] == (1,)
+        assert equation.params["method"] == "fd"
+        assert equation.params["h"] == 0.125
+        assert len(equation.outvars) == 2
+        assert cond_prim in [eqn.primitive for eqn in equation.params["jaxpr"].eqns]
+        assert original.func is function
+        assert not hasattr(function, "ag_unconverted")
+        assert "ag__.if_stmt" in autograph_source(original)
+        if not nested:
+            assert "ag__.if_stmt" in autograph_source(converted)
+
+    @pytest.mark.parametrize("condition", [True, False])
+    def test_multiple_arguments(self, condition):
+        """Capture preserves the conditional value and gradients for multiple arguments."""
+
+        def function(predicate, data, scale):
+            if predicate:
+                result = scale * data**2
+            else:
+                result = scale * data**3
+            return result
+
+        converted = run_autograph(qp.value_and_grad(function, argnums=(1, 2)))
+        jaxpr = jax.make_jaxpr(converted)(condition, 2.0, 3.0)
+        equation = jaxpr.eqns[0]
+        assert equation.primitive == value_and_grad_prim
+        assert equation.params["argnums"] == (1, 2)
+        assert len(equation.outvars) == 3
+        assert all(var.aval.shape == () for var in equation.outvars)
+        assert cond_prim in [eqn.primitive for eqn in equation.params["jaxpr"].eqns]
+        value = jax.core.eval_jaxpr(equation.params["jaxpr"], [], condition, 2.0, 3.0)
+        assert qp.math.allclose(value, [12.0 if condition else 24.0])
+
+    @pytest.mark.parametrize("nested", [False, True])
+    def test_qnode(self, nested):
+        """Conversion follows a value_and_grad wrapper into its QNode's quantum function."""
+
+        @qp.qnode(qp.device("lightning.qubit", wires=1), diff_method="parameter-shift")
+        def circuit(condition, data):
+            if condition:
+                qp.RY(data, wires=0)
+            return qp.expval(qp.Z(0))
+
+        original = qp.value_and_grad(circuit, argnums=1)
+        original_function = circuit.func
+
+        if nested:
+
+            def caller(condition, data):
+                return original(condition, data)
+
+            converted = run_autograph(caller)
+        else:
+            converted = run_autograph(original)
+            assert converted.func is not circuit
+            assert converted.func.device is circuit.device
+            assert converted.func.diff_method == circuit.diff_method
+
+        jaxpr = jax.make_jaxpr(converted)(True, 0.5)
+        equation = jaxpr.eqns[0]
+        assert equation.primitive == value_and_grad_prim
+        assert len(equation.outvars) == 2
+        qnode_eqn = equation.params["jaxpr"].eqns[0]
+        assert qnode_eqn.primitive == qnode_prim
+        assert cond_prim in [eqn.primitive for eqn in qnode_eqn.params["qfunc_jaxpr"].eqns]
+        assert circuit.func is original_function
+        assert original.func is circuit
+        assert not hasattr(original_function, "ag_unconverted")
+        assert "ag__.if_stmt" in autograph_source(original)
+
+    def test_decorator_stack(self):
+        """AutoGraph outside the value_and_grad and QNode decorators converts conditionals."""
+
+        @run_autograph
+        @partial(qp.value_and_grad, argnums=1)
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
+        def circuit(condition, data):
+            if condition:
+                qp.RY(data, wires=0)
+            return qp.expval(qp.Z(0))
+
+        jaxpr = jax.make_jaxpr(circuit)(True, 0.5)
+        equation = jaxpr.eqns[0]
+        assert equation.primitive == value_and_grad_prim
+        qnode_eqn = equation.params["jaxpr"].eqns[0]
+        assert qnode_eqn.primitive == qnode_prim
+        assert cond_prim in [eqn.primitive for eqn in qnode_eqn.params["qfunc_jaxpr"].eqns]
+        assert "ag__.if_stmt" in autograph_source(circuit)
+
+    def test_constructor_in_converted_function(self):
+        """A wrapper constructed by converted code converts its target when called afterwards."""
+
+        def function(condition, data):
+            if condition:
+                result = data**2
+            else:
+                result = data**3
+            return result
+
+        @run_autograph
+        def factory():
+            return qp.value_and_grad(function, argnums=1)
+
+        derivative = factory()
+        jaxpr = jax.make_jaxpr(derivative)(True, 2.0)
+        equation = jaxpr.eqns[0]
+        assert equation.primitive == value_and_grad_prim
+        assert equation.params["argnums"] == (1,)
+        assert cond_prim in [eqn.primitive for eqn in equation.params["jaxpr"].eqns]
+        assert "ag__.if_stmt" in autograph_source(function)
+
+    def test_disabled_conversion(self):
+        """Existing wrapper calls respect the disabled AutoGraph context."""
+
+        def function(condition, data):
+            if condition:
+                result = data**2
+            else:
+                result = data**3
+            return result
+
+        derivative = qp.value_and_grad(function, argnums=1)
+
+        @run_autograph
+        def caller(condition, data):
+            with disable_autograph:
+                return derivative(condition, data)
+
+        with pytest.raises(jax.errors.TracerBoolConversionError):
+            jax.make_jaxpr(caller)(True, 2.0)

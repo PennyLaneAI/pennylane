@@ -111,7 +111,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(
             of operators requiring that many bits. Defaults to ``None``.
 
     Returns:
-        func: decomposition rule to be used within :func:`~.pennylane.decompose`.
+        pennylane.decomposition.DecompositionRule: decomposition rule to be used within
+        :func:`~.pennylane.decompose`.
 
     .. seealso:: :func:`~.make_rz_to_phase_gradient_decomp`
 
