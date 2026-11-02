@@ -61,12 +61,11 @@ class TestAQFT:
         with pytest.raises(ValueError, match="Order can not be less than 0"):
             qp.AQFT(order=order, wires=range(5))
 
-    @pytest.mark.parametrize("order", [1.2, 4.6])
+    @pytest.mark.parametrize("order", [1.2, np.int32(41)])
     def test_float_order(self, order):
-        """Test if float order is handled correctly"""
-        with pytest.warns(UserWarning, match="The order should be an integer"):
-            op = qp.AQFT(order=order, wires=range(9))
-            assert op.hyperparameters["order"] == round(order)
+        """Test that only Python integers are accepted as order."""
+        with pytest.raises(ValueError, match="The order must be an integer"):
+            qp.AQFT(order=order, wires=range(2))
 
     @pytest.mark.parametrize("order", [5, 6])
     def test_higher_order(self, order):
