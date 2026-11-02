@@ -612,6 +612,7 @@ class SelectTHC(Operator2):
 
             .. decomposition-rule:: _select_thc_decomp
                 :image: /_static/decomposition_thumbnails/select_thc_double_factorized.svg
+                :lightbox:
 
                 :class:`~.QROM` | :math:`2B` | 2
                 :class:`Adjoint(QROM) <.QROM>` | :math:`2B` | 2

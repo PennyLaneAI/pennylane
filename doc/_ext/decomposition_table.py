@@ -40,11 +40,16 @@ A rule registered for the operator inside an adjoint, controlled or pow region (
 ``add_decomps("C(Hadamard)", ...)``) is marked with ``:region: adjoint``, ``:region: controlled``
 or ``:region: pow``.
 Such rules are listed after the regular rules, below a divider explaining how to access them.
+
+A rule with the ``:lightbox:`` flag has its circuit image open enlarged in a lightbox when clicked,
+which suits circuits too large to read in the table.
 """
 
 from docutils import nodes
 from docutils.parsers.rst import directives
 from sphinx.util.docutils import SphinxDirective
+from sphinx.writers.html5 import HTML5Translator
+from sphinxcontrib import lightbox2
 
 # for each region, the symbolic operator name used in the fixed_decomps key, e.g.
 # "Adjoint(Hadamard)", and the PennyLane function that creates such a region
@@ -77,6 +82,8 @@ class DecompositionRule(SphinxDirective):
         # when dealing with rules registered for the operator inside an adjoint, controlled or power
         # region, we can specify what kind of region from the given tuple of values
         "region": lambda arg: directives.choice(arg, tuple(REGIONS)),
+        # a large circuit image can be opened enlarged in a lightbox when clicked
+        "lightbox": directives.flag,
     }
 
     def _parse_paragraph(self, text):
@@ -89,6 +96,8 @@ class DecompositionRule(SphinxDirective):
         rule_name = self.arguments[0]
         rule_node = decomposition_rule(name=rule_name, region=self.options.get("region"))
         rule_node["image"] = nodes.image(uri=self.options["image"], alt=rule_name)
+        if "lightbox" in self.options:
+            rule_node["image"]["classes"].append("decomp-lightbox")
 
         parsing_messages = []
         requirements = None
@@ -248,8 +257,27 @@ class DecompositionTable(SphinxDirective):
         return [caption, usage, table, *other_nodes, *parsing_messages]
 
 
+def _visit_image(self, node):
+    """Wrap images marked with ``:lightbox:`` in a lightbox link, leaving all others as is."""
+    if "decomp-lightbox" in node["classes"]:
+        lightbox2.html_visit_image(self, node)
+    else:
+        HTML5Translator.visit_image(self, node)
+
+
+def _depart_image(self, node):
+    """Close the lightbox link opened by ``_visit_image``."""
+    if "decomp-lightbox" in node["classes"]:
+        lightbox2.html_depart_image(self, node)
+    else:
+        HTML5Translator.depart_image(self, node)
+
+
 def setup(app):
     """Sphinx entry point for this extension."""
+    # sphinxcontrib.lightbox2 wraps every image in the docs, so only marked ones are kept wrapped
+    app.setup_extension("sphinxcontrib.lightbox2")
+    app.add_node(nodes.image, override=True, html=(_visit_image, _depart_image))
     app.add_node(decomposition_rule)
     app.add_directive("decomposition-rule", DecompositionRule)
     app.add_directive("decomposition-table", DecompositionTable)
