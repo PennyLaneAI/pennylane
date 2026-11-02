@@ -173,17 +173,13 @@ def _mlir_resources_to_specs_resources(
 
     pbc_depth = extended_fields.get("pbc_depth", {})
     if (depth_total := pbc_depth.get("qubit_disjoint_depth_total")) is not None:
-        # The total includes calls and loops. Apply it before caching this function
-        # so callers without their own total still use the corrected child depth.
-        pbc_depth["qubit_disjoint_depth"] = depth_total
-        commuting_depth = pbc_depth["any_commuting_depth"]
-        # A disjoint schedule also bounds commuting depth. A symbolic estimate
-        # cannot be ordered against the total, so use the known numeric bound.
-        pbc_depth["any_commuting_depth"] = (
-            min(commuting_depth, depth_total)
-            if isinstance(commuting_depth, (int, float))
-            else depth_total
-        )
+        # Keep the existing estimate when conservative call/alias reservations
+        # produce a worse candidate. Select before caching so parents retain
+        # improvements found in children even if their own candidate is worse.
+        # Symbolic estimates cannot be ordered against a numeric candidate.
+        for name in ("qubit_disjoint_depth", "any_commuting_depth"):
+            if isinstance(pbc_depth[name], (int, float)):
+                pbc_depth[name] = min(pbc_depth[name], depth_total)
 
     # Construct final specs resource objects
     # NOTE: Sorting these dicts by key ensures that the resulting SpecsResources objects have a

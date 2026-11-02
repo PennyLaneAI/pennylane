@@ -327,7 +327,8 @@ class TestAnalysisPassConversion:
             (None, 10, (22, 23)),
             (12, None, (12, 12)),
             (12, 10, (12, 12)),
-            (30, 10, (22, 30)),
+            (30, 10, (22, 23)),
+            (30, 30, (24, 29)),
             (12.25, 10, (13, 13)),
         ],
     )
@@ -338,7 +339,7 @@ class TestAnalysisPassConversion:
         child_total,
         expected_depths,
     ):
-        """Inclusive depths replace local-plus-call sums without changing other resources."""
+        """Inclusive candidates improve estimates without replacing them with worse values."""
         data = example_loop_analysis_pass_result
         for name, commuting, disjoint, total in [
             ("circuit", 2, 3, root_total),
@@ -386,7 +387,7 @@ class TestAnalysisPassConversion:
 
         actual = parse_resources_json(data)[0]
 
-        expected_depth = 20 if has_root_total else Expression({("a",): 6})
+        expected_depth = Expression({("a",): 6})
         assert actual.any_commuting_depth == expected_depth
         assert actual.qubit_disjoint_depth == expected_depth
         assert actual.counts == {
@@ -394,6 +395,32 @@ class TestAnalysisPassConversion:
             "PauliX": Expression({("a",): 2}),
             "PauliZ": 6,
         }
+
+    @pytest.mark.parametrize("root_total", [0, 1, 10, 30, 100])
+    @pytest.mark.parametrize("child_total", [0, 1, 10, 30, 100])
+    def test_parallel_candidates_never_increase_depth(
+        self, example_loop_analysis_pass_result, root_total, child_total
+    ):
+        """Optimization stays monotonic across nested calls for better and worse candidates."""
+        data = example_loop_analysis_pass_result
+        for name, depth in (("circuit", 3), ("for_loop_2", 7), ("for_loop_1", 3)):
+            data[name]["extended_fields"]["pbc_depth"] = {
+                "any_commuting_depth": depth,
+                "qubit_disjoint_depth": depth,
+            }
+        original = parse_resources_json(data)[0]
+        data["circuit"]["extended_fields"]["pbc_depth"]["qubit_disjoint_depth_total"] = root_total
+        data["for_loop_2"]["extended_fields"]["pbc_depth"][
+            "qubit_disjoint_depth_total"
+        ] = child_total
+
+        optimized = parse_resources_json(data)[0]
+
+        assert optimized.qubit_disjoint_depth <= original.qubit_disjoint_depth
+        assert optimized.any_commuting_depth <= original.any_commuting_depth
+        assert optimized.counts == original.counts
+        assert optimized.measurement_processes == original.measurement_processes
+        assert optimized.num_wires == original.num_wires
 
     def test_zero_inclusive_depth(self, example_loop_analysis_pass_result):
         """A zero total is available and must not be mistaken for an absent estimate."""
