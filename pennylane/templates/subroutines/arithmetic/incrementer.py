@@ -31,7 +31,7 @@ from .temporary_and import TemporaryAND
 
 
 class Incrementer(Operator2):
-    """
+    r"""
     Increment the input ``wires`` by one, using zeroed ``work_wires``.
 
     Args:
@@ -65,6 +65,49 @@ class Incrementer(Operator2):
     array([0, 1, 1])
 
     The result incremented the binary value in the non-work wires by 1: :math:`(010)_2 + (001)_2 = (011)_2`.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.Incrementer
+            :symbols: :math:`n \geq 2` ``wires`` and :math:`w` ``work_wires``
+            :example: :math:`n=4`
+
+            .. decomposition-rule:: _incrementer_decomposition
+                :image: /_static/decomposition_thumbnails/incrementer_elbow_ladder.svg
+                :requires: :math:`w \geq n - 1` work wires
+
+                :class:`~.TemporaryAND` | :math:`n - 2` | 2
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`n - 2` | 2
+                :class:`~.CNOT` | :math:`n - 1` | 3
+                :class:`~.X` | :math:`1` | 1
+
+            .. decomposition-rule:: _incrementer_fallback_decomposition
+                :image: /_static/decomposition_thumbnails/incrementer_multi_controlled_x.svg
+                :requires: :math:`w < n - 1` work wires
+
+                :class:`~.MultiControlledX` with :math:`1, \dots, n-1` controls | :math:`n-1` | 3
+                :class:`~.X` | :math:`1` | 1
+
+            .. decomposition-rule:: _adjoint_incrementer_decomposition
+                :image: /_static/decomposition_thumbnails/incrementer_adjoint.svg
+                :region: adjoint
+
+                :class:`~.MultiX` on :math:`n` wires | :math:`2`
+                :class:`~.Incrementer` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_incrementer_decomposition)
+                :image: /_static/decomposition_thumbnails/incrementer_controlled.svg
+                :region: controlled
+                :requires: :math:`n + c - 1` work wires in total, from ``work_wires`` and the
+                    work wires of the controlled operator
+                :where: :math:`c` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.TemporaryAND` | :math:`n + c - 2`
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`n + c - 2`
+                :class:`~.CNOT` | :math:`n`
 
     .. details::
         :title: Decomposition
