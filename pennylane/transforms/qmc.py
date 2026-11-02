@@ -340,11 +340,9 @@ def quantum_monte_carlo(
         It is also possible to explore the resources required to perform the quantum Monte Carlo
         algorithm
 
-        .. TODO: Remove these skips once CI uses Catalyst's adjoint API without ``lazy``.
-
-        >>> specs = qp.specs(qp.qjit(qmc), level="device")()  # doctest: +SKIP
+        >>> specs = qp.specs(qp.qjit(qmc), level="device")()
         >>> from pprint import pprint
-        >>> pprint(specs)  # doctest: +SKIP
+        >>> pprint(specs)
         CircuitSpecs(device_name='lightning.qubit',
                      num_device_wires=12,
                      shots=Shots(total_shots=None, shot_vector=()),
