@@ -1277,7 +1277,7 @@ class MultiControlledX(Controlled2):
     **Details:**
 
     * Number of wires: Any (the operation can act on any number of wires)
-    * Number of parameters: 0
+    * Number of parameters: 1 (the non-differentiable ``control_values``)
     * Gradient recipe: None
 
     Args:
@@ -1319,11 +1319,11 @@ class MultiControlledX(Controlled2):
 
     """
 
-    num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
+    num_params = 1
+    """int: Number of dynamic parameters that the operator depends on."""
 
     ndim_params = (1,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+    """tuple[int]: Number of dimensions per dynamic parameter that the operator depends on."""
 
     dynamic_argnames = ("control_values",)
 

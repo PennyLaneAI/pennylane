@@ -344,7 +344,6 @@ def _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j):
             target = wire_manager.portR(n_k - 1, p >> 1)
         bit = bitstrings[p, j]
         cond(bit, PauliZ)(wires=target)
-    return []
 
 
 @register_resources(_bucket_brigade_qram_resources, exact=False)
