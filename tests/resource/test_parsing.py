@@ -320,6 +320,95 @@ class TestAnalysisPassConversion:
 
         assert actual == expected
 
+    @pytest.mark.parametrize(
+        ("root_total", "child_total", "expected_depths"),
+        [
+            (None, None, (24, 29)),
+            (None, 10, (22, 23)),
+            (12, None, (12, 12)),
+            (12, 10, (12, 12)),
+            (30, 10, (22, 30)),
+            (12.25, 10, (13, 13)),
+        ],
+    )
+    def test_inclusive_depth(
+        self,
+        example_loop_analysis_pass_result,
+        root_total,
+        child_total,
+        expected_depths,
+    ):
+        """Inclusive depths replace local-plus-call sums without changing other resources."""
+        data = example_loop_analysis_pass_result
+        for name, commuting, disjoint, total in [
+            ("circuit", 2, 3, root_total),
+            ("for_loop_2", 5, 7, child_total),
+            ("for_loop_1", 2, 3, 2),
+        ]:
+            data[name]["extended_fields"]["pbc_depth"] = {
+                "any_commuting_depth": commuting,
+                "qubit_disjoint_depth": disjoint,
+            }
+            if total is not None:
+                data[name]["extended_fields"]["pbc_depth"]["qubit_disjoint_depth_total"] = total
+        original = copy.deepcopy(data)
+
+        actual = parse_resources_json(data)
+
+        assert actual == [
+            PBCSpecsResources(
+                counts={"Hadamard": 3, "PauliX": Expression({("a",): 2}), "PauliZ": 6},
+                measurement_processes={"expval(PauliZ)": 1},
+                num_wires=10,
+                any_commuting_depth=expected_depths[0],
+                qubit_disjoint_depth=expected_depths[1],
+            )
+        ]
+        assert data == original
+
+    @pytest.mark.parametrize("has_root_total", [False, True])
+    def test_inclusive_depth_with_symbolic_calls(
+        self, example_loop_analysis_pass_result, has_root_total
+    ):
+        """Dynamic callers multiply corrected child depths without comparing expressions."""
+        data = example_loop_analysis_pass_result
+        data["dyn_for_loop_1"]["extended_fields"]["pbc_depth"] = {
+            "any_commuting_depth": 5,
+            "qubit_disjoint_depth": 7,
+            "qubit_disjoint_depth_total": 3,
+        }
+        if has_root_total:
+            data["circuit"]["extended_fields"]["pbc_depth"] = {
+                "any_commuting_depth": 0,
+                "qubit_disjoint_depth": 0,
+                "qubit_disjoint_depth_total": 20,
+            }
+
+        actual = parse_resources_json(data)[0]
+
+        expected_depth = 20 if has_root_total else Expression({("a",): 6})
+        assert actual.any_commuting_depth == expected_depth
+        assert actual.qubit_disjoint_depth == expected_depth
+        assert actual.counts == {
+            "Hadamard": 3,
+            "PauliX": Expression({("a",): 2}),
+            "PauliZ": 6,
+        }
+
+    def test_zero_inclusive_depth(self, example_loop_analysis_pass_result):
+        """A zero total is available and must not be mistaken for an absent estimate."""
+        data = example_loop_analysis_pass_result
+        data["circuit"]["extended_fields"]["pbc_depth"] = {
+            "any_commuting_depth": 0,
+            "qubit_disjoint_depth": 0,
+            "qubit_disjoint_depth_total": 0,
+        }
+
+        actual = parse_resources_json(data)[0]
+
+        assert actual.any_commuting_depth == 0
+        assert actual.qubit_disjoint_depth == 0
+
     def test_unknown_extended_fields(self, example_loop_analysis_pass_result):
         """Test that unknown extended fields are ignored with a warning."""
         example_loop_analysis_pass_result["for_loop_2"]["extended_fields"]["unknown_field"] = {

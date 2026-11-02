@@ -171,6 +171,20 @@ def _mlir_resources_to_specs_resources(
         # Helper function to handle merging extended fields
         _handle_extended_fields(extended_fields, call_count, called_fn_resources)
 
+    pbc_depth = extended_fields.get("pbc_depth", {})
+    if (depth_total := pbc_depth.get("qubit_disjoint_depth_total")) is not None:
+        # The total includes calls and loops. Apply it before caching this function
+        # so callers without their own total still use the corrected child depth.
+        pbc_depth["qubit_disjoint_depth"] = depth_total
+        commuting_depth = pbc_depth["any_commuting_depth"]
+        # A disjoint schedule also bounds commuting depth. A symbolic estimate
+        # cannot be ordered against the total, so use the known numeric bound.
+        pbc_depth["any_commuting_depth"] = (
+            min(commuting_depth, depth_total)
+            if isinstance(commuting_depth, (int, float))
+            else depth_total
+        )
+
     # Construct final specs resource objects
     # NOTE: Sorting these dicts by key ensures that the resulting SpecsResources objects have a
     # deterministic order, which is helpful for testing and readability
