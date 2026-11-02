@@ -1403,7 +1403,6 @@ class IsingZZ(Operator2):
         wires (int): the subsystem the gate acts on
 
     .. details::
-
         :title: Available decompositions
 
         .. decomposition-table:: qp.IsingZZ
