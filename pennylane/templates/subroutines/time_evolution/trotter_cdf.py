@@ -136,12 +136,17 @@ class TrotterCDF(Operator2):
 
             .. decomposition-rule:: _trotter_cdf_decomposition
                 :image: /_static/decomposition_thumbnails/trotter_cdf_second_order.svg
-                :where: the counts are upper bounds, as basis rotations that are the identity are
-                    skipped
+                :where: :math:`B = (2L-1)n + 1` two-body blocks and :math:`w` work wires. The
+                    counts are upper bounds, as basis rotations that are the identity are
+                    skipped. The circuit shows :math:`w = 0`
 
                 :class:`~.BasisRotation` on :math:`N` wires | :math:`4Ln + 4` | 8
-                :class:`~.IsingZZ` | :math:`((2L-1)n + 1)\, N(2N-1)` | 12
-                :class:`~.RZ` | :math:`2Nn` | 4
+                :class:`~.IsingZZ` | :math:`BN(2N-1)` if :math:`w = 0` | 12
+                :class:`~.RZ` | :math:`2Nn` if :math:`w = 0`, :math:`2Nn + BN` if :math:`w \geq 1` | 4
+                :class:`~.CRZ` | :math:`BN(N-1)/2` if :math:`w \geq 1` | 0
+                :class:`~.CNOT` | :math:`BN(N+1)` if :math:`w \geq 1` | 0
+                :class:`~.TemporaryAND` | :math:`BN(N-1)/2` if :math:`w \geq 1` | 0
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`BN(N-1)/2` if :math:`w \geq 1` | 0
                 :class:`~.GlobalPhase` | :math:`1` | 1
 
     .. details ::
