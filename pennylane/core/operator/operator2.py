@@ -110,7 +110,7 @@ class OperatorRegistry:
             )
 
 
-def get_op_class_by_name(name):
+def get_op_class_by_name(name : str) -> type[Operator2]:
     """
     Helper to get an operator class by name using a function call.
 
