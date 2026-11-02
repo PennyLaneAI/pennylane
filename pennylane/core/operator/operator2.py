@@ -125,7 +125,7 @@ def get_op_class_by_name(name):
 
     .. code-block:: python
 
-        from pennylane import Operator2
+        from pennylane.core.operator import Operator2
 
         class MyNamedOp(Operator2):
             static_argnames = ("label",)

@@ -109,6 +109,7 @@ class TestOperatorRegistry:
             match=r"More than one operator class by the same name \(RegistryDuplicateOp\)",
         ):
 
+            # pylint: disable-next=function-redefined
             class RegistryDuplicateOp(Operator2):
                 """A different operator with the same name."""
 
