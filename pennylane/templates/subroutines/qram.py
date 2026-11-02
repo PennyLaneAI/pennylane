@@ -17,10 +17,25 @@ from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from pennylane import capture, math, ops
+from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.ops import (
+    CH,
+    CSWAP,
+    CZ,
+    RY,
+    SWAP,
+    BasisState,
+    Hadamard,
+    MultiControlledX,
+    PauliX,
+    PauliZ,
+    adjoint,
+    cond,
+    ctrl,
+)
 from pennylane.typing import Bool, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, concatenate_wires
 
@@ -263,18 +278,18 @@ def _bucket_brigade_qram_resources(num_controls, num_target_wires):
     Calculates the resources, assuming the worst case where bitstrings are all ones.
     """
     n_k = num_controls
-    _ctrl_swap = ops.ctrl(ops.SWAP(Wire[2]), Wire[1], Bool[1])
+    _ctrl_swap = ctrl(SWAP(Wire[2]), Wire[1], Bool[1])
     n_address_swaps = (1 << n_k) - 1 + n_k
     n_routing_swaps = ((1 << n_k) - 1) * num_target_wires + (1 << n_k) - 1 - n_k
     return {
-        ops.SWAP: n_address_swaps + num_target_wires * 2,
-        ops.adjoint(ops.SWAP(Wire[2])): n_address_swaps,
-        ops.CSWAP: n_routing_swaps,
-        ops.adjoint(ops.CSWAP(Wire[3])): n_routing_swaps,
+        SWAP: n_address_swaps + num_target_wires * 2,
+        adjoint(SWAP(Wire[2])): n_address_swaps,
+        CSWAP: n_routing_swaps,
+        adjoint(CSWAP(Wire[3])): n_routing_swaps,
         _ctrl_swap: n_routing_swaps,
-        ops.adjoint(_ctrl_swap): n_routing_swaps,
-        ops.Hadamard: num_target_wires * 2,
-        ops.PauliZ: (1 << n_k) * num_target_wires,
+        adjoint(_ctrl_swap): n_routing_swaps,
+        Hadamard: num_target_wires * 2,
+        PauliZ: (1 << n_k) * num_target_wires,
     }
 
 
@@ -286,13 +301,13 @@ def _mark_routers_via_bus(wire_manager, n_k):
       2) Route bus down k levels (CSWAPs controlled by routers at levels < k)
       3) At node (k, path-prefix), SWAP(bus, dir[k, path-prefix])
     """
-    ops.SWAP([wire_manager.control_wires[0], wire_manager.bus_wire[0]])
-    ops.SWAP([wire_manager.bus_wire[0], wire_manager.router(0, 0)])
+    SWAP([wire_manager.control_wires[0], wire_manager.bus_wire[0]])
+    SWAP([wire_manager.bus_wire[0], wire_manager.router(0, 0)])
     for k in range(1, n_k):
         # 1) load a_k into the bus
         origin = wire_manager.control_wires[k]
         target = wire_manager.bus_wire[0]
-        ops.SWAP(wires=[origin, target])
+        SWAP(wires=[origin, target])
         # 2) route down k levels
         _route_bus_down_first_k_levels(wire_manager, k)
         # 3) deposit at level-k node on the active path
@@ -303,7 +318,7 @@ def _mark_routers_via_bus(wire_manager, n_k):
                 wire_manager.portL_wires[parent] if p % 2 == 0 else wire_manager.portR_wires[parent]
             )
             target = wire_manager.router(k, p)
-            ops.SWAP(wires=[origin, target])
+            SWAP(wires=[origin, target])
 
 
 def _route_bus_down_first_k_levels(wire_manager, k_levels):
@@ -315,9 +330,9 @@ def _route_bus_down_first_k_levels(wire_manager, k_levels):
             R = wire_manager.portR(ell, p)
             d = wire_manager.router(ell, p)
             # dir==1 ⇒ SWAP(in, R)
-            ops.CSWAP(wires=[d, in_w, R])
+            CSWAP(wires=[d, in_w, R])
             # dir==0 ⇒ SWAP(in, L)
-            ops.ctrl(ops.SWAP(wires=[in_w, L]), control=[d], control_values=[0])
+            ctrl(SWAP(wires=[in_w, L]), control=[d], control_values=[0])
 
 
 def _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j):
@@ -328,7 +343,7 @@ def _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j):
         else:
             target = wire_manager.portR(n_k - 1, p >> 1)
         bit = bitstrings[p, j]
-        ops.cond(bit, ops.PauliZ)(wires=target)
+        cond(bit, PauliZ)(wires=target)
     return []
 
 
@@ -343,15 +358,15 @@ def _bucket_brigade_qram_decomposition(
     _mark_routers_via_bus(wire_manager, n_k)
     # 2) For each target bit: load→route down→leaf op→route up→restore (reuse the route bus function)
     for j, tw in enumerate(wire_manager.target_wires):
-        ops.Hadamard(wires=[tw])
-        ops.SWAP(wires=[tw, bus_wire[0]])
+        Hadamard(wires=[tw])
+        SWAP(wires=[tw, bus_wire[0]])
         _route_bus_down_first_k_levels(wire_manager, len(control_wires))
         _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j)
-        ops.adjoint(_route_bus_down_first_k_levels)(wire_manager, len(control_wires))
-        ops.SWAP(wires=[tw, bus_wire[0]])
-        ops.Hadamard(wires=[tw])
+        adjoint(_route_bus_down_first_k_levels)(wire_manager, len(control_wires))
+        SWAP(wires=[tw, bus_wire[0]])
+        Hadamard(wires=[tw])
     # 3) address unloading
-    ops.adjoint(_mark_routers_via_bus)(wire_manager, n_k)
+    adjoint(_mark_routers_via_bus)(wire_manager, n_k)
 
 
 add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
@@ -570,12 +585,12 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
     resources = defaultdict(int)
     num_blocks = 1 << num_select_wires
 
-    resources[ops.PauliX] += (num_select_wires <= 0) * num_blocks * 2
+    resources[PauliX] += (num_select_wires <= 0) * num_blocks * 2
 
-    ctrl_swap = ops.CSWAP(Wire[3])
+    ctrl_swap = CSWAP(Wire[3])
     n_address_swaps = num_tree_control_wires + (1 << num_tree_control_wires) - 1
     resources[ctrl_swap] += (n_address_swaps + 2 * num_target_wires) * num_blocks
-    resources[ops.adjoint(ctrl_swap)] += n_address_swaps * num_blocks
+    resources[adjoint(ctrl_swap)] += n_address_swaps * num_blocks
 
     ccswap_count = (
         (
@@ -586,20 +601,18 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
         * 2
     )
 
-    resources[ops.ctrl(ops.SWAP(Wire[2]), Wire[2])] += ccswap_count // 2
-    resources[ops.adjoint(ops.ctrl(ops.SWAP(Wire[2]), Wire[2]))] += ccswap_count // 2
+    resources[ctrl(SWAP(Wire[2]), Wire[2])] += ccswap_count // 2
+    resources[adjoint(ctrl(SWAP(Wire[2]), Wire[2]))] += ccswap_count // 2
 
-    resources[ops.ctrl(ops.SWAP(Wire[2]), Wire[2], Bool[2])] += ccswap_count // 2
-    resources[ops.adjoint(ops.ctrl(ops.SWAP(Wire[2]), Wire[2], Bool[2]))] += ccswap_count // 2
+    resources[ctrl(SWAP(Wire[2]), Wire[2], Bool[2])] += ccswap_count // 2
+    resources[adjoint(ctrl(SWAP(Wire[2]), Wire[2], Bool[2]))] += ccswap_count // 2
 
-    resources[ops.CH] += num_target_wires * num_blocks * 2
+    resources[CH] += num_target_wires * num_blocks * 2
 
     if num_select_wires > 0:
-        cx_rep = ops.MultiControlledX(
-            Wire[num_select_wires + 1], control_values=Bool[num_select_wires]
-        )
+        cx_rep = MultiControlledX(Wire[num_select_wires + 1], control_values=Bool[num_select_wires])
         resources[cx_rep] += 2 * num_blocks
-    resources[ops.CZ] += (1 << num_tree_control_wires) * num_target_wires * num_blocks
+    resources[CZ] += (1 << num_tree_control_wires) * num_target_wires * num_blocks
 
     return resources
 
@@ -625,7 +638,7 @@ def _tree_leaf_ops_for_bit_block_ctrl(
         # Global address index: (block_index << n_tree) + p
         addr = (block_index << n_tree) + p
         bit = bitstrings[addr][j]
-        ops.cond(bit, ops.CZ)(wires=[signal, target])
+        cond(bit, CZ)(wires=[signal, target])
 
 
 def _tree_route_bus_down_first_k_levels_ctrl(k_levels, tree_wire_manager, signal):
@@ -639,11 +652,11 @@ def _tree_route_bus_down_first_k_levels_ctrl(k_levels, tree_wire_manager, signal
             d = tree_wire_manager.router(ell, p)
 
             # dir==1: CSWAP(d, in_w, R) — additionally controlled on signal
-            ops.ctrl(ops.SWAP(wires=[in_w, R]), control=[signal, d], control_values=[1, 1])
+            ctrl(SWAP(wires=[in_w, R]), control=[signal, d], control_values=[1, 1])
 
             # dir==0: SWAP(in_w, L) controlled on (d == 0) and signal == 1
-            ops.ctrl(
-                ops.SWAP(wires=[in_w, L]),
+            ctrl(
+                SWAP(wires=[in_w, L]),
                 control=[signal, d],
                 control_values=[1, 0],
             )
@@ -652,7 +665,7 @@ def _tree_route_bus_down_first_k_levels_ctrl(k_levels, tree_wire_manager, signal
 def _swap_controlled_on_signal(tree_wire_manager, signal, level, k):
     origin = tree_wire_manager.control_wires[k:][level]
     target = tree_wire_manager.bus_wire[0]
-    ops.CSWAP(wires=[signal, origin, target])
+    CSWAP(wires=[signal, origin, target])
 
 
 def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
@@ -665,7 +678,7 @@ def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
     _tree_route_bus_down_first_k_levels_ctrl(0, tree_wire_manager, signal)
 
     # deposit into dir[0, *] along active path
-    ops.CSWAP(wires=[signal, tree_wire_manager.bus_wire[0], tree_wire_manager.router(0, 0)])
+    CSWAP(wires=[signal, tree_wire_manager.bus_wire[0], tree_wire_manager.router(0, 0)])
 
     for level in range(1, n_tree):
         # SWAP(tree_control_wires[level], bus) controlled on signal
@@ -682,7 +695,7 @@ def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
             else:
                 origin = tree_wire_manager.portR_wires[parent]
             target = tree_wire_manager.router(level, p)
-            ops.CSWAP(wires=[signal, origin, target])
+            CSWAP(wires=[signal, origin, target])
 
 
 def _block_tree_query_ops(
@@ -696,10 +709,10 @@ def _block_tree_query_ops(
     # 2) per-target data phase, controlled on signal
     for j, tw in enumerate(tree_wire_manager.target_wires):
         # H on target
-        ops.CH(wires=[signal, tw])
+        CH(wires=[signal, tw])
 
         # Swap target <-> bus
-        ops.CSWAP(wires=[signal, tw, tree_wire_manager.bus_wire[0]])
+        CSWAP(wires=[signal, tw, tree_wire_manager.bus_wire[0]])
 
         # Route down tree
         _tree_route_bus_down_first_k_levels_ctrl(n_tree, tree_wire_manager, signal)
@@ -710,16 +723,16 @@ def _block_tree_query_ops(
         )
 
         # Route back up
-        ops.adjoint(_tree_route_bus_down_first_k_levels_ctrl)(n_tree, tree_wire_manager, signal)
+        adjoint(_tree_route_bus_down_first_k_levels_ctrl)(n_tree, tree_wire_manager, signal)
 
         # Swap back bus -> target
-        ops.CSWAP(wires=[signal, tw, tree_wire_manager.bus_wire[0]])
+        CSWAP(wires=[signal, tw, tree_wire_manager.bus_wire[0]])
 
         # Final H on target
-        ops.CH(wires=[signal, tw])
+        CH(wires=[signal, tw])
 
     # 3) address unloading for the tree (controlled on signal)
-    ops.adjoint(_tree_mark_routers_via_bus_ctrl)(tree_wire_manager, n_tree, k, signal)
+    adjoint(_tree_mark_routers_via_bus_ctrl)(tree_wire_manager, n_tree, k, signal)
 
 
 @register_resources(_hybrid_qram_resources, exact=False)
@@ -736,10 +749,10 @@ def _hybrid_qram_decomposition(
         if k > 0:
             sel_pattern = _bits(block_index, k)
             mcx_wires = concatenate_wires(select_wires, [signal])
-            ops.MultiControlledX(mcx_wires, control_values=sel_pattern)
+            MultiControlledX(mcx_wires, control_values=sel_pattern)
         else:
             # No select bits: just flip signal for all addresses
-            ops.PauliX(wires=signal)
+            PauliX(wires=signal)
 
         # Perform one tree query, driven by lower n_tree bits, controlled on signal
         _block_tree_query_ops(
@@ -754,9 +767,9 @@ def _hybrid_qram_decomposition(
         # Uncompute signal
         if k > 0:
             mcx_wires = concatenate_wires(select_wires, [signal])
-            ops.MultiControlledX(mcx_wires, control_values=sel_pattern)
+            MultiControlledX(mcx_wires, control_values=sel_pattern)
         else:
-            ops.PauliX(wires=signal)
+            PauliX(wires=signal)
 
 
 add_decomps(HybridQRAM, _hybrid_qram_decomposition)
@@ -956,7 +969,7 @@ def _select_only_qram_resources(
     n_total = num_control_wires + num_select_wires
 
     if select_value is not None and num_select_wires > 0:
-        resources[ops.BasisState(Bool[num_select_wires], Wire[num_select_wires])] += 1
+        resources[BasisState(Bool[num_select_wires], Wire[num_select_wires])] += 1
 
     for addr in range(2 ** (num_select_wires + num_control_wires)):
 
@@ -968,8 +981,8 @@ def _select_only_qram_resources(
             continue
 
         control_values = [(addr >> (n_total - 1 - i)) & 1 for i in range(n_total)]
-        resources[ops.PauliX] += control_values.count(0) * 2
-        x_rep = ops.MultiControlledX(Wire[n_total + 1]) if n_total else ops.PauliX
+        resources[PauliX] += control_values.count(0) * 2
+        x_rep = MultiControlledX(Wire[n_total + 1]) if n_total else PauliX
         resources[x_rep] += num_target_wires
 
     return resources
@@ -978,7 +991,7 @@ def _select_only_qram_resources(
 def _flip_controls(control_wires, control_vals):
     for i, control_value in enumerate(control_vals):
         if control_value == 0:
-            ops.PauliX(control_wires[i])
+            PauliX(control_wires[i])
 
 
 @register_resources(_select_only_qram_resources, exact=False)
@@ -988,10 +1001,10 @@ def _select_only_qram_decomposition(
     controls = select_wires + control_wires
     num_select = len(select_wires)
     n_total = num_select + len(control_wires)
-    gate = ops.MultiControlledX if n_total else ops.PauliX
+    gate = MultiControlledX if n_total else PauliX
 
     if select_value is not None and num_select > 0:
-        ops.BasisState(math.int_to_binary(select_value, num_select), wires=select_wires)
+        BasisState(math.int_to_binary(select_value, num_select), wires=select_wires)
 
     # Loop over all addresses (0 .. 2^(num_select+num_controls)-1)
     for addr, bits in enumerate(bitstrings):
@@ -1011,7 +1024,7 @@ def _select_only_qram_decomposition(
             # Multi-controlled X on target_wires[j],
             # controlled on controls matching `control_values`.
 
-            ops.cond(bits[j], gate)(wires=concatenate_wires(controls, [target_wires[j]]))
+            cond(bits[j], gate)(wires=concatenate_wires(controls, [target_wires[j]]))
 
         _flip_controls(controls, control_values)
 
@@ -1236,7 +1249,7 @@ def _flip_zero_bits(address_wires, addr_bits):
     Apply X gates to where the addr_bits is zero.
     """
     for wire, bit in zip(address_wires, addr_bits, strict=True):
-        ops.cond(bit == 0, ops.PauliX)(wires=wire)
+        cond(bit == 0, PauliX)(wires=wire)
 
 
 def _normalize_amplitudes(amplitudes):
@@ -1257,9 +1270,9 @@ def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
     - One controlled RY for each entry.
     """
     return {
-        ops.Hadamard: num_address_wires,
-        ops.PauliX: 2 * num_zero_bits,
-        ops.ctrl(ops.RY(Float, Wire[1]), Wire[num_address_wires]): num_entries,
+        Hadamard: num_address_wires,
+        PauliX: 2 * num_zero_bits,
+        ctrl(RY(Float, Wire[1]), Wire[num_address_wires]): num_entries,
     }
 
 
@@ -1282,7 +1295,7 @@ def _ffqram_decomposition(amplitudes, wires, address, **_):
 
     @for_loop(len(address_wires))
     def superposition_loop(i, wires):
-        ops.Hadamard(wires=wires[i])
+        Hadamard(wires=wires[i])
         return wires
 
     superposition_loop(address_wires)  # pylint: disable=no-value-for-parameter
@@ -1293,7 +1306,7 @@ def _ffqram_decomposition(amplitudes, wires, address, **_):
         # flip
         _flip_zero_bits(address_wires, addr_bits)
         # register
-        ops.ctrl(ops.RY(angles[j], wires=reg_wire), control=address_wires)
+        ctrl(RY(angles[j], wires=reg_wire), control=address_wires)
         # flop (unflip)
         _flip_zero_bits(address_wires, addr_bits)
         return addr
