@@ -15,7 +15,6 @@
 This submodule contains the template for AQFT.
 """
 
-import numbers
 import warnings
 
 import numpy as np
@@ -118,16 +117,14 @@ class AQFT(Operator2):
         if order < 0:
             raise ValueError("Order can not be less than 0")
 
-        if not isinstance(order, numbers.Integral):
-            warnings.warn(
-                f"The order should be an integer, got {order}; using order = {round(order)} instead."
-            )
-            order = round(order)
+        if not isinstance(order, int):
+            raise ValueError("The order must be an integer. Got {order} of type {type(order)}.")
 
         if order >= num_wires:
             warnings.warn(
-                f"The order ({order}) is larger than or equal to the number of wires "
-                f"({num_wires}). Using order = {num_wires - 1} instead."
+                f"The order ({order}) in AQFT is larger than or equal to the number of wires "
+                f"({num_wires}). Using order = {num_wires - 1} instead. Pass an order of "
+                f"{num_wires - 1} or less to silence this warning."
             )
             order = num_wires - 1
 
