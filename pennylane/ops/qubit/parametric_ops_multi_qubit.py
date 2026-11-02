@@ -1404,24 +1404,11 @@ class IsingZZ(Operator2):
 
     .. details::
 
-        :title: Available controlled decompositions
-
-        .. decomposition-table:: "C(IsingZZ)"
-            :symbols: :math:`c` control wires, :math:`z` controls on :math:`0`
-            :example: :math:`c=1`, :math:`z=0`
-
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_ising_zz)
-                :image: /_static/decomposition_thumbnails/controlled_ising_zz.svg
-
-                :class:`~.CNOT` | :math:`2` | 2
-                :class:`Controlled(RZ) <.Controlled>` | :math:`1` | 1
-                :class:`~.PauliX` | :math:`2z` | 0
-
-        The CNOT gates compute and uncompute the parity of the two target wires.
-        Only the RZ rotation requires the :math:`c` control wires. Controls on
-        :math:`0` are flipped with X gates before and after the decomposition.
+        :title: Available decompositions
 
         .. decomposition-table:: qp.IsingZZ
+            :symbols: :math:`c` control wires, :math:`z` controls on :math:`0`
+            :example: :math:`c=1`, :math:`z=0`
 
             .. decomposition-rule:: _isingzz_to_cnot_rz_cnot
                 :image: /_static/decomposition_thumbnails/isingzz_cnot_rz.svg
@@ -1433,6 +1420,17 @@ class IsingZZ(Operator2):
                 :image: /_static/decomposition_thumbnails/isingzz_ppr.svg
 
                 :class:`PauliRot("ZZ") <.PauliRot>` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_ising_zz)
+                :image: /_static/decomposition_thumbnails/controlled_ising_zz.svg
+                :region: controlled
+                :where: The CNOT gates compute and uncompute the parity of the two target wires. 
+                Only the RZ rotation requires the :math:`c` control wires. Controls on 
+                :math:`0` are flipped with X gates before and after the decomposition.
+
+                :class:`~.CNOT` | :math:`2` | 2
+                :class:`Controlled(RZ) <.Controlled>` | :math:`1` | 1
+                :class:`~.PauliX` | :math:`2z` | 0
     """
 
     dynamic_argnames = ("phi",)
