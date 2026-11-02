@@ -2211,7 +2211,7 @@ Documentation 📝
 * The docstring of :func:`~.workflow.get_compile_pipeline` is now the single reference for the
   ``level`` argument, and the ``level`` documentation of :func:`~.analyze`, :func:`~.estimate`,
   and :func:`~.track` refers to it instead of repeating the available options.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10441) <https://github.com/PennyLaneAI/pennylane/pull/10441>`__
 
 * The docstring for :class:`~.ControlledPhaseShift` now mentions that :class:`~.CPhase` is an alias.
   `(#10405) <https://github.com/PennyLaneAI/pennylane/pull/10405>`__
