@@ -460,25 +460,23 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         max_op_min_work_wires = 0
         for op in decomp_resource.gate_counts:
 
-            # Revisiting an in-progress controlled operator with more control wires would yield
-            # infinite recursion with growing control register.
-            ctrl_cycle = self._base_in_progress(op)
-
-            # Revisiting an in-progress work-wire dependent operator with a new work wire budget
-            # would add a new node on every pass through the cycle, recursing indefinitely.
+            # Revisiting an in-progress operator with a grown control register or a new work
+            # wire budget would add a new node on every pass through the cycle, recursing
+            # indefinitely. Revisiting an existing node is safe and keeps the cycle's exits.
             next_budget = num_used_work_wires + work_wire_spec.total
-            work_wire_cycle = (
-                op in self._work_wire_dependent_ops
-                and op in self._in_progress
-                and _OperatorNode(op, next_budget, True) not in self._all_op_indices
+            known_work_wire_dependent = op in self._work_wire_dependent_ops
+            cycle = self._base_in_progress(op) or (
+                known_work_wire_dependent and op in self._in_progress
             )
-
-            if ctrl_cycle or work_wire_cycle:
+            if cycle and (
+                _OperatorNode(op, next_budget, known_work_wire_dependent)
+                not in self._all_op_indices
+            ):
                 d_node.reachable = False
                 self._graph.add_edge(d_node_idx, op_idx, 0)
                 return d_node
 
-            op_node_idx = self._add_op_node(op, num_used_work_wires + work_wire_spec.total)
+            op_node_idx = self._add_op_node(op, next_budget)
             self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
             # If any of the operators in the decomposition depends on work wires, this
             # decomposition is also dependent on work wires, even it itself does not use
@@ -673,6 +671,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
 
 def _get_base_and_n_ctrls(op: AbstractOperatorLike) -> tuple[AbstractOperatorLike, int] | None:
+    # The control register may also grow beneath an adjoint.
+    if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Adjoint:
+        op = resource_rep(op.params["base_class"], **op.params["base_params"])
+    elif isinstance(op, qp.ops.Adjoint2):
+        op = abstractify(op.base)
     if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Controlled:
         base_class, base_params = op.params["base_class"], op.params["base_params"]
         return resource_rep(base_class, **base_params), op.params["num_control_wires"]
