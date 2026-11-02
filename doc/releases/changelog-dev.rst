@@ -879,6 +879,10 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* Callable :func:`~.ctrl` now captures work-wire labels as operands, supporting
+  traced work wires.
+  `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
+
 * Added ``pennylane.core.get_op_class_by_name``
   to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
   automatically registered when they are defined.
@@ -1464,11 +1468,6 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
-
-* The ``ctrl_transform`` primitive now passes all work-wire labels as operands after
-  control values. Custom interpreters must use the static ``n_work_wires`` count
-  instead of the removed ``work_wires`` parameter.
-  `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
 
 * The ``pennylane.kernels`` module has been removed. This includes ``kernel_matrix``,
   ``square_kernel_matrix``, ``polarity``, ``target_alignment``, ``threshold_matrix``,

@@ -396,8 +396,9 @@ class TestCtrlQfunc:
             assert eqn.invars[-2] == plxpr.jaxpr.invars[-1]
             assert eqn.invars[-1].val == 4
 
-        with qp.queuing.AnnotatedQueue() as queue:
-            jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.7, 5, 6, False, 7)
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts, 0.7, 5, 6, False, 7)
+        (op,) = collector.state["ops"]
 
         expected = qp.ctrl(
             qp.RX(0.7, 5),
@@ -406,8 +407,8 @@ class TestCtrlQfunc:
             work_wires=[7, 4],
             work_wire_type=work_wire_type,
         )
-        assert isinstance(queue.queue[0], qp.ops.Controlled2)
-        qp.assert_equal(queue.queue[0], expected)
+        assert isinstance(op, qp.ops.Controlled2)
+        qp.assert_equal(op, expected)
         tape = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, 0.7, 5, 6, False, 7)
         qp.assert_equal(tape[0], expected)
 
@@ -424,11 +425,12 @@ class TestCtrlQfunc:
         with jax.checking_leaks():
             plxpr = jax.make_jaxpr(circuit)(0.2, 4)
 
-        with qp.queuing.AnnotatedQueue() as queue:
-            jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.7, 5)
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts, 0.7, 5)
+        (op,) = collector.state["ops"]
 
         expected = qp.ctrl(qp.RX(0.7, 0), [3, 1, 2], work_wires=[5], work_wire_type=work_wire_type)
-        qp.assert_equal(queue.queue[0], expected)
+        qp.assert_equal(op, expected)
 
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     def test_controlled2_rule_forwards_work_wires(self, work_wire_type):
@@ -469,10 +471,11 @@ class TestCtrlQfunc:
         assert "work_wires" not in eqn.params
         assert eqn.invars[-1] == plxpr.jaxpr.invars[-1]
 
-        with qp.queuing.AnnotatedQueue() as queue:
-            jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.7, 4)
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts, 0.7, 4)
+        (op,) = collector.state["ops"]
         expected = qp.ctrl(qp.RX(0.7, 0), [1, 2], work_wires=[4], work_wire_type=work_wire_type)
-        qp.assert_equal(queue.queue[0], expected)
+        qp.assert_equal(op, expected)
 
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     def test_work_wire_type(self, work_wire_type):
