@@ -88,16 +88,22 @@ class LeftClassicalComparator(Operator2):
 
             .. decomposition-rule:: _left_classical_comparator
                 :image: /_static/decomposition_thumbnails/left_classical_comparator_elbow_ladder.svg
-                :where: :math:`L' = L + [c \in \{\leq, >\}]`, :math:`b_0 = L' \bmod 2`,
-                    :math:`N = \mathrm{wt}(\lfloor L'/2 \rfloor)`, with :math:`\mathrm{wt}` the
-                    number of ones in the binary representation, and
-                    :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise. The counts
-                    hold for :math:`L' < 2^n`; for :math:`L' = 2^n`, the rule only applies
-                    :math:`1 + [c \in \{>, \geq\}]` :class:`~.X` gates
+                :where: :math:`L' = L + [c \in \{\leq, >\}]`, and :math:`[\cdot]` is 1 if the
+                    condition holds and 0 otherwise. Conditional gates are applied depending on
+                    the bits of :math:`L'`, and as :math:`L` can be dynamic, their counts are the
+                    worst case. For a known :math:`L`, the rule applies :math:`b_0` of the
+                    conditional :class:`~.CNOT` gates and :math:`2b_0 + 4N + [L' = 2^n]` of the
+                    conditional :class:`~.X` gates, where :math:`b_0 = L' \bmod 2` and :math:`N`
+                    is the number of ones in the binary representation of
+                    :math:`\lfloor L'/2 \rfloor \bmod 2^{n-1}`. The circuit shows the gates
+                    applied for :math:`L = 6`: no conditional :class:`~.CNOT` and 8 conditional
+                    :class:`~.X` gates
 
                 :class:`~.TemporaryAND` | :math:`n - 1` | 2
-                :class:`~.CNOT` | :math:`n - 1 + b_0` | 2
-                :class:`~.X` | :math:`2b_0 + 4N + [c \in \{>, \geq\}]` | 8
+                :class:`~.CNOT` | :math:`n - 1` | 2
+                :class:`~.CNOT` (conditional) | :math:`1` | 1
+                :class:`~.X` (conditional) | :math:`4n - 1` | 11
+                :class:`~.X` | :math:`[c \in \{>, \geq\}]` | 0
     """
 
     wire_argnames = ("x_wires", "target_wire", "work_wires")
