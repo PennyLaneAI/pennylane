@@ -891,6 +891,16 @@ Improvements 🛠
   :class:`~.MultiX`, realizing the identity :math:`x-1 = \overline{(\overline{x}+1)}`.
   `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
 
+* Refined the warnings raised by :class:`~.AQFT`:
+
+  - No warning for ``order=0``, as it is a valid approximation.
+  - Instead of rounding non-integer ``order`` values, an error is raised.
+  - No warning for ``order=len(wires)-1``, as it is an equivalent realization of :class:`~.QFT`.
+  - The warning for ``order>=len(wires)`` now recommends reducing the ``order`` to the equivalent
+    ``len(wires)-1``, instead of switching to :class:`~.QFT`.
+
+  `(#10415) <https://github.com/PennyLaneAI/pennylane/pull/10415>`__
+
 * Added optional ``work_wires`` to :class:`~.TrotterCDF` to combine the four equal-angle
   ``IsingZZ`` gates between each pair of distinct spatial orbitals. With one work
   wire initialized to :math:`|0\rangle`, each uncontrolled two-body layer uses
