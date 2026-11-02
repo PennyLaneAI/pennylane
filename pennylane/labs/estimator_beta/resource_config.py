@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""This module contains the LabsResourceConfig class, which tracks the configuration for resource estimation"""
 
+from functools import partial
+
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resource_config import ResourceConfig
 
@@ -104,9 +106,11 @@ class LabsResourceConfig(ResourceConfig):
 
     def __init__(self):
         super().__init__()
+        self.resource_op_precisions[qre.ParityPhaseLayer] = {"precision": None}
 
         # Add modified decomps here:
         custom_decomps = {
+            qre.ParityPhaseLayer: partial(qre.ParityPhaseLayer.resource_decomp, config=self),
             qre.CH: ch_resource_decomp,
             qre.MultiControlledX: mcx_one_clean_aux_resource_decomp,
             qre.AQFT: aqft_resource_decomp,

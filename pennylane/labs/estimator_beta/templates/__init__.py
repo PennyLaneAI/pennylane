@@ -40,3 +40,4 @@ from .state_prep import (
     LabsMottonenStatePreparation,
     LabsSumOfSlatersPrep,
 )
+from .tcdq_sampling import ParityPhaseLayer, SumPhaseLayer
