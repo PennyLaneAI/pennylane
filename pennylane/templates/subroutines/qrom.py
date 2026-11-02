@@ -178,8 +178,7 @@ class QROM(Operator2):
 
                 :class:`~.QROM` | :math:`2` | 2
                 :class:`~.Hadamard` | :math:`2b` | 4
-                :class:`~.CSWAP` | :math:`2b(\lambda - 1)` | 4
-                :class:`Adjoint(CSWAP) <.CSWAP>` | :math:`2b(\lambda - 1)` | 4
+                :class:`~.CSWAP` | :math:`4b(\lambda - 1)` | 8
 
             .. decomposition-rule:: _qrom_unary_iteration
                 :image: /_static/decomposition_thumbnails/qrom_unary_iteration.svg
