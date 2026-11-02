@@ -165,7 +165,6 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
 class TestOutSquare:
     """Test the OutSquare template."""
 
-    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("output_wires_zeroed", [False, True])
@@ -297,13 +296,7 @@ class TestOutSquare:
     @pytest.mark.parametrize(
         "use_jit",
         [
-            pytest.param(
-                True,
-                marks=(
-                    pytest.mark.catalyst,
-                    pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]"),
-                ),
-            ),
+            pytest.param(True, marks=pytest.mark.catalyst),
             False,
         ],
     )

@@ -309,7 +309,6 @@ class TestAliasSamplingTHC:
                 1,
             )
 
-    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     def test_qjit_operation_result(self):
         """Test the compiler-specific decomposition branches."""
