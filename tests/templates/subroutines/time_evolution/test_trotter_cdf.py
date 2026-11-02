@@ -38,10 +38,12 @@ from pennylane.exceptions import CaptureWarning
 from pennylane.numeric_hamiltonians import CDFHamiltonian
 from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
     _apply_system_basis_rotation,
+    _apply_two_body_diagonal_with_work_wires,
     _cdf_resource_counts,
     _controlled_trotter_cdf_decomp,
     _energy_shift,
     _merge_leaves,
+    _multi_controlled_trotter_cdf_decomp,
     _trotter_cdf_decomposition,
 )
 from pennylane.testing import assert_decomposable
@@ -233,13 +235,38 @@ class TestInitialization:
         assert (
             qp.TrotterCDF(0.3, 5, ham, wires, double_phase=True).arguments["double_phase"] is True
         )
+        assert op.arguments["work_wires"] == Wires(())
 
-    def test_abstractify(self, toy_hamiltonian_cdf_abstract):
+    @pytest.mark.parametrize("num_work_wires", [0, 1, 2])
+    def test_abstractify(self, toy_hamiltonian_cdf_abstract, num_work_wires):
         """Test that an abstract instance (e.g. for resource-rep purposes) can be built."""
 
         ham, num_orbitals = toy_hamiltonian_cdf_abstract
-        op = abstractify(qp.TrotterCDF(Float, 5, ham, Wire[2 * num_orbitals]))
+        op = abstractify(
+            qp.TrotterCDF(Float, 5, ham, Wire[2 * num_orbitals], work_wires=Wire[num_work_wires])
+        )
         assert op.is_fully_abstract
+
+    def test_work_wires_and_mapping(self, toy_hamiltonian_cdf_concrete):
+        """System and work registers remain distinct when mapping heterogeneous wire labels."""
+        ham, _ = toy_hamiltonian_cdf_concrete
+        wires = ["alpha0", "beta0", "alpha1", "beta1"]
+        op = qp.TrotterCDF(0.3, 2, ham, wires, work_wires=["and", "controlled_and"])
+
+        assert op.wires == Wires(wires)
+        assert op.arguments["work_wires"] == Wires(["and", "controlled_and"])
+        mapped = op.map_wires({"alpha0": 10, "beta0": 11, "alpha1": 12, "beta1": 13, "and": 20})
+        assert mapped.wires == Wires([10, 11, 12, 13])
+        assert mapped.arguments["work_wires"] == Wires([20, "controlled_and"])
+        assert np.array_equal(mapped.arguments["hamiltonian"].core_tensors, ham.core_tensors)
+        assert np.array_equal(mapped.arguments["hamiltonian"].leaf_tensors, ham.leaf_tensors)
+        assert mapped.arguments["hamiltonian"].nuc_constant == ham.nuc_constant
+
+    def test_work_wires_overlap(self, toy_hamiltonian_cdf_concrete):
+        """A clean work wire cannot also belong to the system register."""
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
+        with pytest.raises(ValueError, match="wires and work_wires must not overlap"):
+            qp.TrotterCDF(0.3, 2, ham, range(2 * num_orbitals), work_wires=[0])
 
     def test_input_hamiltonian_type(self):
         """Test that anything but a CDFHamiltonian being given to the hamiltonian argument throws
@@ -254,11 +281,12 @@ class TestInitialization:
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_assert_valid(toy_hamiltonian_cdf_concrete):
+@pytest.mark.parametrize("work_wires", [(), (99, 100)])
+def test_assert_valid(toy_hamiltonian_cdf_concrete, work_wires):
     """Run qp.testing.assert_valid on a concrete CDF instance."""
     ham, num_orbitals = toy_hamiltonian_cdf_concrete
     wires = list(range(2 * num_orbitals))
-    op = qp.TrotterCDF(0.1, 3, ham, wires)
+    op = qp.TrotterCDF(0.1, 3, ham, wires, work_wires=work_wires)
     # Differentiating through the (non-trainable) hamiltonian dict is not supported.
     qp.testing.assert_valid(op, skip_differentiation=True)
 
@@ -291,11 +319,91 @@ class TestCDFScheme:
         assert list(tape.operations[1].wires) == wires[1::2]
 
 
+class TestTwoBodyWorkWireDecomposition:
+    """Check the clean-work-wire two-body layer independently of Trotter and basis rotations."""
+
+    @pytest.mark.catalyst
+    def test_analyze_concrete_resources(self):
+        """Tests that the compiler preserves fractional loop hints, which assert_valid does not exercise."""
+        core = jax.numpy.ones((3, 3))
+        wires = jax.numpy.arange(6)
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.qnode(qp.device("null.qubit", wires=9))
+        def circuit():
+            _apply_two_body_diagonal_with_work_wires(core, wires, 0.1, [6], False, [7, 8])
+            return qp.expval(qp.Z(0))
+
+        resources = qp.analyze(circuit, level=0)().resources
+        assert not resources.is_symbolic
+        assert resources.counts == {
+            "CNOT": 12,
+            "CRZ": 6,
+            "TemporaryAND": 5,
+            "Adjoint(TemporaryAND)": 5,
+        }
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_rejects_multiple_controls(self):
+        """The optimized helper requires at most one external control wire."""
+        with pytest.raises(AssertionError, match="supports at most one control wire"):
+            _apply_two_body_diagonal_with_work_wires(
+                qp.math.ones((2, 2)), [0, 1, 2, 3], 0.1, [4, 5], False, [6, 7]
+            )
+
+    @pytest.mark.parametrize(
+        ("num_orbitals", "has_control", "double_phase", "time_step"),
+        [
+            (1, False, False, 0.31),
+            (2, False, False, 0.31),
+            (3, False, False, -0.47),
+            (2, True, False, -0.47),
+            (3, True, False, -0.47),
+            (1, True, True, -0.47),
+            (2, True, True, 0.31),
+            (3, True, True, -0.47),
+        ],
+    )
+    def test_matches_two_body_generator(
+        self, seed, num_orbitals, has_control, double_phase, time_step
+    ):
+        """The clean-ancilla subspace realizes every ZZ term, including p=q, with exact phases."""
+        rng = np.random.default_rng(seed)
+        core = rng.normal(size=(num_orbitals, num_orbitals))
+        core = (core + core.T) / 2
+        wires = list(range(2 * num_orbitals))
+        control_wires = ["control"] if has_control else []
+        work_wires = ["and", "controlled_and"] if has_control and not double_phase else ["and"]
+        tape = qp.tape.make_qscript(_apply_two_body_diagonal_with_work_wires)(
+            core, wires, time_step, control_wires, double_phase, work_wires
+        )
+
+        dim = 2 ** len(wires)
+        z = 1 - 2 * ((np.arange(dim)[:, None] >> np.arange(len(wires) - 1, -1, -1)) & 1)
+        energy = sum(
+            core[i // 2, j // 2] * z[:, i] * z[:, j] / 4
+            for i in range(len(wires))
+            for j in range(i + 1, len(wires))
+        )
+        phases = np.exp(-1j * time_step * energy)
+        if has_control:
+            phases = np.concatenate(
+                [phases, phases.conj()] if double_phase else [np.ones(dim), phases]
+            )
+        matrix = qp.matrix(tape, wire_order=control_wires + wires + work_wires)
+        work_dim = 2 ** len(work_wires)
+        expected = qp.math.kron(qp.math.diag(phases), qp.math.eye(work_dim)[:, :1])
+        assert qp.math.allclose(matrix[:, ::work_dim], expected, atol=1e-10, rtol=0)
+
+
 class TestResourceRule:
     """Direct unit tests for the registered resource functions, following the
     graph-based decomposition testing convention."""
 
-    def test_num_trotter_steps_zero_has_no_resources(self, toy_hamiltonian_cdf_concrete):
+    @pytest.mark.parametrize("work_wires", [(), ("and",)])
+    def test_num_trotter_steps_zero_has_no_resources(
+        self, toy_hamiltonian_cdf_concrete, work_wires
+    ):
         """Test that zero Trotter steps require zero resources."""
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
@@ -306,45 +414,72 @@ class TestResourceRule:
             hamiltonian=ham,
             wires=wires,
             double_phase=False,
+            work_wires=work_wires,
         )
         assert resources == Resources({})
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_controlled_zero_steps_empty_decomposition(self, toy_hamiltonian_cdf_concrete):
+    @pytest.mark.parametrize("double_phase", [False, True])
+    @pytest.mark.parametrize("work_wires", [(), ("and", "controlled_and")])
+    def test_controlled_zero_steps_empty_decomposition(
+        self, toy_hamiltonian_cdf_concrete, double_phase, work_wires
+    ):
         """Test that C(TrotterCDF) with zero steps emits no gates."""
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
-        op = qp.TrotterCDF(1.0, 0, ham, wires=wires)
-        assert qp.ctrl(op, control=[99]).decomposition() == []
+        op = qp.TrotterCDF(
+            1.0, 0, ham, wires=wires, double_phase=double_phase, work_wires=work_wires
+        )
+        controlled = qp.ctrl(op, control=[99])
+        assert controlled.decomposition() == []
+        assert _controlled_trotter_cdf_decomp.compute_resources(
+            **controlled.arguments
+        ) == Resources({})
 
     @pytest.mark.parametrize("num_steps", [1, 4])
     @pytest.mark.parametrize("num_fragments", [1, 3])
     @pytest.mark.parametrize(
-        ("has_control", "double_phase"), [(False, False), (True, False), (True, True)]
+        ("num_orbitals", "has_control", "double_phase", "num_work_wires"),
+        [
+            (2, False, False, 0),
+            (2, False, False, 1),
+            (2, True, False, 0),
+            (2, True, False, 1),
+            (2, True, False, 2),
+            (3, True, False, 2),
+            (2, True, True, 0),
+            (2, True, True, 1),
+            (3, True, True, 1),
+        ],
     )
     @pytest.mark.capture
     def test_merged_resource_counts_match_traced_decomposition(
-        self, num_steps, num_fragments, has_control, double_phase
+        self, num_steps, num_fragments, num_orbitals, has_control, double_phase, num_work_wires
     ):
-        """Resource counts match the traced decomposition after merging H1 half blocks."""
-        num_orbitals = 2
+        """Check exact counts after H1 merging; assert_valid only checks gate kinds here."""
         core = np.zeros((num_fragments + 1, num_orbitals, num_orbitals))
         leaf = np.stack([np.eye(num_orbitals)] * (num_fragments + 1))
         ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.0)
-        resources = _cdf_resource_counts(num_steps, ham, has_control, double_phase)
+        resources = _cdf_resource_counts(num_steps, ham, has_control, double_phase, num_work_wires)
         num_system_wires = 2 * num_orbitals
-        trace_wires = tuple(range(num_system_wires + int(has_control)))
+        trace_wires = tuple(range(num_system_wires + int(has_control) + num_work_wires))
 
         def circuit(t, *wires):
             system_wires = list(wires[:num_system_wires])
+            work_wires = list(wires[num_system_wires + int(has_control) :])
             if not has_control:
-                _trotter_cdf_decomposition(t, num_steps, ham, system_wires, False)
+                _trotter_cdf_decomposition(t, num_steps, ham, system_wires, False, work_wires)
                 return
             with qp.capture.pause():
-                base = qp.TrotterCDF(t, num_steps, ham, system_wires, double_phase=double_phase)
-            _controlled_trotter_cdf_decomp(
-                base, list(wires[num_system_wires:]), [1], [], "borrowed"
-            )
+                base = qp.TrotterCDF(
+                    t,
+                    num_steps,
+                    ham,
+                    system_wires,
+                    double_phase=double_phase,
+                    work_wires=work_wires,
+                )
+            _controlled_trotter_cdf_decomp(base, [wires[num_system_wires]], [1], [], "borrowed")
 
         args = (jax.numpy.array(0.4), *trace_wires)
         with warnings.catch_warnings():
@@ -375,6 +510,64 @@ class TestDecomposition:
         u = qp.matrix(qp.TrotterCDF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
         expected = expm(-1j * cdf_reference_hamiltonian(ham) * t)
         assert np.allclose(u, expected, atol=1e-9)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(("num_fragments", "num_steps"), [(1, 1), (2, 3)])
+    @pytest.mark.parametrize(
+        ("has_control", "double_phase", "control_value", "num_work_wires"),
+        [
+            (False, False, 1, 1),
+            (True, False, 1, 2),
+            (True, False, 0, 2),
+            (True, True, 1, 1),
+            (True, True, 0, 1),
+            (True, False, 1, 1),
+        ],
+    )
+    def test_work_wires_preserve_full_trotter_evolution(
+        self,
+        seed,
+        num_fragments,
+        num_steps,
+        has_control,
+        double_phase,
+        control_value,
+        num_work_wires,
+    ):
+        """The optimized layer and its controlled fallback preserve phases across fragment boundaries."""
+        rng = np.random.default_rng(seed)
+        num_orbitals = 2
+        core = rng.normal(size=(num_fragments + 1, num_orbitals, num_orbitals)) * 0.4
+        core = (core + np.transpose(core, (0, 2, 1))) / 2
+        leaf = np.stack([random_orthogonal(num_orbitals, rng) for _ in range(num_fragments + 1)])
+        ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
+        wires = list(range(2 * num_orbitals))
+        work_wires = list(range(10, 10 + num_work_wires))
+        time = -0.7
+        expected = cdf_second_order_trotter_matrix(ham, time, num_steps)
+        op = qp.TrotterCDF(
+            time, num_steps, ham, wires, double_phase=double_phase, work_wires=work_wires
+        )
+        control_wires = []
+        if has_control:
+            control_wires = [99]
+            op = qp.ctrl(op, control_wires, control_values=[control_value])
+            dim = expected.shape[0]
+            branches = [expected, expected.conj().T] if double_phase else [np.eye(dim), expected]
+            if control_value == 0:
+                branches.reverse()
+            expected = np.zeros((2 * dim, 2 * dim), dtype=complex)
+            expected[:dim, :dim], expected[dim:, dim:] = branches
+        assert_decomposable(op)
+        # TrotterCDF has no matrix implementation, so compare the clean-work-wire
+        # columns with an independent reference in addition to assert_decomposable.
+        tape = qp.tape.QuantumScript(op.decomposition())
+        matrix = qp.matrix(tape, wire_order=control_wires + wires + work_wires)
+        work_dim = 2 ** len(work_wires)
+        expected = qp.math.kron(expected, qp.math.eye(work_dim)[:, :1])
+        assert qp.math.allclose(matrix[:, ::work_dim], expected, atol=1e-10, rtol=0)
+        optimized = not has_control or double_phase or num_work_wires >= 2
+        assert any(isinstance(gate, qp.TemporaryAND) for gate in tape.operations) == optimized
 
     @pytest.mark.parametrize("num_fragments", [1, 3])
     def test_endpoint_block_angles_and_counts(self, num_fragments):
@@ -634,6 +827,127 @@ class TestControlledDecomposition:
         assert np.allclose(block0, np.eye(dim), atol=1e-9)
         assert np.allclose(block1, expected, atol=1e-9)
 
+    @pytest.mark.parametrize(
+        ("control_values", "num_cdf_work_wires"), [([1, 0], 2), ([0, 1, 0], 0)]
+    )
+    def test_multiple_controls_preserve_evolution(
+        self, toy_hamiltonian_cdf_concrete, control_values, num_cdf_work_wires
+    ):
+        """Multiple controls reuse the specialized evolution and restore both work registers."""
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
+        wires = list(range(2 * num_orbitals))
+        control_wires = list(range(4, 4 + len(control_values)))
+        control_work_wires = list(range(7, 6 + len(control_values)))
+        cdf_work_wires = list(range(9, 9 + num_cdf_work_wires))
+        base = qp.TrotterCDF(0.3, 1, ham, wires, work_wires=cdf_work_wires)
+        controlled = qp.ctrl(
+            base,
+            control=control_wires,
+            control_values=control_values,
+            work_wires=control_work_wires,
+            work_wire_type="zeroed",
+        )
+        assert_decomposable(controlled)
+        operations = controlled.decomposition()
+        [inner] = [op for op in operations if op.name == "C(TrotterCDF)"]
+        qp.assert_equal(inner, qp.ctrl(base, control=control_work_wires[-1]))
+        inner_operations = inner.decomposition()
+        specialized = qp.testing.decomp_rule_to_tape(inner, _controlled_trotter_cdf_decomp)
+        for actual, expected_op in zip(inner_operations, specialized.operations, strict=True):
+            qp.assert_equal(actual, expected_op)
+        if num_cdf_work_wires:
+            assert any(isinstance(op, qp.TemporaryAND) for op in inner_operations)
+            assert any(isinstance(op, qp.CRZ) for op in inner_operations)
+
+        expected_base = cdf_second_order_trotter_matrix(ham, 0.3, 1)
+        dim = expected_base.shape[0]
+        expected = qp.math.eye(dim * 2 ** len(control_values), dtype=complex)
+        start = int("".join(str(value) for value in control_values), 2) * dim
+        expected[start : start + dim, start : start + dim] = expected_base
+        work_wires = control_work_wires + cdf_work_wires
+        tape = qp.tape.QuantumScript(operations)
+        matrix = qp.matrix(tape, wire_order=control_wires + wires + work_wires)
+        work_dim = 2 ** len(work_wires)
+        expected = qp.math.kron(expected, qp.math.eye(work_dim)[:, :1])
+        assert qp.math.allclose(matrix[:, ::work_dim], expected, atol=1e-10, rtol=0)
+
+    @pytest.mark.parametrize("num_controls", [1, 2, 3])
+    @pytest.mark.parametrize("double_phase", [False, True])
+    def test_control_rule_requires_single_control(
+        self, toy_hamiltonian_cdf_concrete, num_controls, double_phase
+    ):
+        """The specialized evolution itself accepts only one control."""
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
+        base = qp.TrotterCDF(0.3, 1, ham, range(2 * num_orbitals), double_phase=double_phase)
+        op = qp.ctrl(
+            base,
+            control=list(range(4, 4 + num_controls)),
+            work_wires=list(range(7, 6 + num_controls)),
+            work_wire_type="zeroed",
+        )
+        assert _controlled_trotter_cdf_decomp.is_applicable(**op.arguments) == (num_controls == 1)
+
+    @pytest.mark.parametrize(
+        ("num_controls", "double_phase", "num_work_wires", "work_wire_type", "applicable"),
+        [
+            (1, False, 0, "zeroed", False),
+            (2, False, 1, "zeroed", True),
+            (3, False, 2, "zeroed", True),
+            (2, True, 1, "zeroed", False),
+            (3, False, 1, "zeroed", False),
+            (2, False, 1, "borrowed", False),
+        ],
+    )
+    def test_multiple_control_rule_conditions(
+        self,
+        toy_hamiltonian_cdf_concrete,
+        num_controls,
+        double_phase,
+        num_work_wires,
+        work_wire_type,
+        applicable,
+    ):
+        """Reducing the controls requires standard control and enough clean auxiliaries."""
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
+        base = qp.TrotterCDF(0.3, 1, ham, range(2 * num_orbitals), double_phase=double_phase)
+        op = qp.ctrl(
+            base,
+            control=list(range(4, 4 + num_controls)),
+            work_wires=list(range(7, 7 + num_work_wires)),
+            work_wire_type=work_wire_type,
+        )
+        assert _multi_controlled_trotter_cdf_decomp.is_applicable(**op.arguments) == applicable
+
+    @pytest.mark.capture
+    def test_multiple_control_rule_capture_resources(self, toy_hamiltonian_cdf_concrete):
+        """The captured reduction preserves resource metadata with mixed control values."""
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
+        base = qp.TrotterCDF(0.3, 1, ham, range(2 * num_orbitals), work_wires=[9, 10])
+        op = qp.ctrl(
+            base,
+            control=[4, 5, 6],
+            control_values=[0, 1, 0],
+            work_wires=[7, 8],
+            work_wire_type="zeroed",
+        )
+        qp.testing.assert_valid_decomp_rule(op, _multi_controlled_trotter_cdf_decomp)
+
+    def test_control_auxiliaries_cannot_overlap_cdf_work_wires(self, toy_hamiltonian_cdf_concrete):
+        """Intermediate control auxiliaries must remain distinct from the CDF work register."""
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
+        base = qp.TrotterCDF(0.3, 1, ham, range(2 * num_orbitals), work_wires=[7, 9])
+        with pytest.raises(ValueError, match="control_work_wires and work_wires must not overlap"):
+            qp.ctrl(
+                base, control=[4, 5, 6], work_wires=[7, 8], work_wire_type="zeroed"
+            ).decomposition()
+
+    def test_control_cannot_overlap_clean_work_wire(self, toy_hamiltonian_cdf_concrete):
+        """The controlled decomposition must reject a control used as a clean work wire."""
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
+        op = qp.TrotterCDF(0.3, 2, ham, range(2 * num_orbitals), work_wires=[99, 100])
+        with pytest.raises(ValueError, match="control_wires and work_wires must not overlap"):
+            qp.ctrl(op, control=99).decomposition()
+
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestDoublePhaseControlledDecomposition:
@@ -708,16 +1022,79 @@ class TestIntegration:
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("t, num_steps", [(1.0, 0), (0.0, 10)])
-    def test_identity_edge_cases(self, toy_hamiltonian_cdf_concrete, t, num_steps):
+    @pytest.mark.parametrize("work_wires", [(), (99,)])
+    def test_identity_edge_cases(self, toy_hamiltonian_cdf_concrete, t, num_steps, work_wires):
         """Test that zero Trotter steps, or zero evolution time, produce the identity."""
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
 
-        def _circuit():
-            qp.TrotterCDF(t, num_steps, ham, wires)
+        op = qp.TrotterCDF(t, num_steps, ham, wires, work_wires=work_wires)
+        assert_decomposable(op)
+        matrix = qp.matrix(op, wire_order=wires + list(work_wires))
+        work_dim = 2 ** len(work_wires)
+        expected = qp.math.kron(qp.math.eye(2 ** len(wires)), qp.math.eye(work_dim)[:, :1])
+        assert qp.math.allclose(matrix[:, ::work_dim], expected, atol=1e-10, rtol=0)
 
-        U = qp.matrix(_circuit, wire_order=wires)()
-        assert np.allclose(U, np.eye(2 ** len(wires), dtype=complex), atol=1e-12)
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize(
+        "mode", ["uncontrolled", "standard_control", "double_phase", "multiple_controls"]
+    )
+    def test_work_wire_decomposition_catalyst(self, toy_hamiltonian_cdf_concrete, mode):
+        """Compile the optimized layer with separate CDF and control work registers."""
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
+        num_system = 2 * num_orbitals
+        system_wires = list(range(num_system))
+        num_controls = 2 if mode == "multiple_controls" else 1
+        control_wires = list(range(num_system, num_system + num_controls))
+        work_wires = [num_system + num_controls, num_system + num_controls + 1]
+        num_wires = num_system + 2 * num_controls + 1
+        control_work_wires = list(range(work_wires[-1] + 1, num_wires))
+        control_values = [1, 0] if mode == "multiple_controls" else [1]
+        gate_set = CATALYST_GATE_SET_GENUINE | {
+            "Cond",
+            "CRZ",
+            "IsingZZ",
+            "GlobalPhase",
+            "HybridAdjoint",
+            "Toffoli",
+            "PauliX",
+        }
+
+        def circuit(t, clean_wires):
+            for wire in system_wires:
+                qp.H(wire)
+            if mode != "uncontrolled":
+                for wire in control_wires:
+                    qp.H(wire)
+            op = qp.TrotterCDF(
+                t,
+                2,
+                ham,
+                system_wires,
+                double_phase=mode == "double_phase",
+                work_wires=clean_wires,
+            )
+            if mode != "uncontrolled":
+                qp.ctrl(
+                    op,
+                    control=control_wires,
+                    control_values=control_values,
+                    work_wires=control_work_wires if clean_wires else [],
+                    work_wire_type="zeroed",
+                )
+            return qp.state()
+
+        @qp.qjit
+        @qp.transforms._tape_decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
+        def optimized(t):
+            return circuit(t, work_wires)
+
+        @qp.qnode(qp.device("default.qubit", wires=num_wires))
+        def reference(t):
+            return circuit(t, ())
+
+        assert qp.math.allclose(optimized(0.31), reference(0.31), atol=1e-9, rtol=0)
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize(

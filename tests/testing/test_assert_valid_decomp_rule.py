@@ -145,8 +145,7 @@ class TestAssertValidDecompositionRule:
             assert_valid_decomp_rule(op, rule)
 
     def test_bad_new_decomposition_rule_exact(self):
-        """Test that an informative error is raised if the
-        claimed-to-be-exact resources of a decomposition rule are not correct."""
+        """Exact estimates must match each gate count; unused gates may have a zero count."""
 
         class MyOp(Operator):
             num_wires = 2
@@ -171,9 +170,10 @@ class TestAssertValidDecompositionRule:
         assert_valid_decomp_rule(op, rule_zero_count)
 
     def test_bad_new_decomposition_rule_inexact(self):
-        """Test that an informative error is raised if the
-        decomposition contains an operator type that is not accounted for in
-        the resource function even when exact=False."""
+        """Even inexact estimates must include every gate type used by the decomposition.
+
+        This test checks for missing gate types, not underestimated gate counts.
+        """
 
         class MyOp(Operator):
             num_wires = 2
