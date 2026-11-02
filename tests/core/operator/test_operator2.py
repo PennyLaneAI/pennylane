@@ -129,7 +129,9 @@ class TestOperatorRegistry:
         with pytest.raises(KeyError) as exc_info:
             lookup("RegistryUnknownOp")
 
-        assert exc_info.value.args == ("RegistryUnknownOp",)
+        assert exc_info.value.args == (
+            "No defined Operator2 with the name RegistryUnknownOp found.",
+        )
 
 
 # pylint: disable=too-many-public-methods
