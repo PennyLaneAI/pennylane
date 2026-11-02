@@ -127,19 +127,18 @@ def _adjoint_transform_prim(self, *invals, jaxpr, n_consts):
 
 
 @CollectOpsandMeas.register_primitive(ctrl_transform_prim)
-def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, n_work=0, **params):
+def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, n_work_wires, **params):
     """Handle a control transform primitive by collecting the operations in the jaxpr,
     and then applying their controlled versions.
     """
-    work_start = len(invals) - n_work
+    work_start = len(invals) - n_work_wires
     values_start = work_start - n_control
     controls_start = values_start - n_control
     consts = invals[:n_consts]
     args = invals[n_consts:controls_start]
     control = math.array(invals[controls_start:values_start])
     control_values = invals[values_start:work_start]
-    if n_work:
-        params["work_wires"] = math.array(invals[work_start:])
+    work_wires = math.array(invals[work_start:])
 
     child = CollectOpsandMeas()
     child.eval(jaxpr, consts, *args)
@@ -148,7 +147,13 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, n_work=0, **
     for op in child.state["ops"]:
         with pause():
             self.state["ops"].append(
-                ops.ctrl(op, control=control, control_values=control_values, **params)
+                ops.ctrl(
+                    op,
+                    control=control,
+                    control_values=control_values,
+                    work_wires=work_wires,
+                    **params,
+                )
             )
 
     return []

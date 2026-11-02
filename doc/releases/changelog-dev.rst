@@ -1460,6 +1460,11 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* The ``ctrl_transform`` primitive now passes all work-wire labels as operands after
+  control values. Custom interpreters must use the static ``n_work_wires`` count
+  instead of the removed ``work_wires`` parameter.
+  `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
+
 * The ``pennylane.kernels`` module has been removed. This includes ``kernel_matrix``,
   ``square_kernel_matrix``, ``polarity``, ``target_alignment``, ``threshold_matrix``,
   ``displace_matrix``, ``flip_matrix``, ``closest_psd_matrix`` and
@@ -2274,8 +2279,8 @@ Bug fixes 🐛
 ~~~~~~~~~~~~
 
 * Fixed tracer leaks when passing traced work-wire labels to :func:`~.ctrl`
-  applied to a callable during program capture. Concrete work-wire labels,
-  including strings, retain their existing behavior.
+  applied to a callable during program capture. Concrete work-wire labels retain
+  their existing behaviour.
   `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
 
 * Fixed a bug where :class:`~.BasisRotation` for real-valued matrices :math:`u` implemented the

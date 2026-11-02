@@ -438,21 +438,20 @@ def _ctrl_transform_impl(
     *args,
     n_control,
     jaxpr,
-    work_wires,
     n_consts,
-    n_work=0,
+    n_work_wires,
     work_wire_type="borrowed",
 ):
     # pylint: disable=import-outside-toplevel
     from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
-    work_start = len(args) - n_work
+    work_start = len(args) - n_work_wires
     values_start = work_start - n_control
     controls_start = values_start - n_control
     consts = args[:n_consts]
     control_wires = args[controls_start:values_start]
     control_values = args[values_start:work_start]
-    work_wires = math.array(args[work_start:]) if n_work else work_wires
+    work_wires = math.array(args[work_start:])
     args = args[n_consts:controls_start]
 
     collector = CollectOpsandMeas()
@@ -479,8 +478,7 @@ def _capture_ctrl_transform(
 ) -> Callable:
     """Capture a callable control.
 
-    Operands are constants, body arguments, control wires, control values, then ``n_work``
-    work-wire labels. Concrete work wires retain the static form, including string labels.
+    Operands are constants, body arguments, control wires, control values, then work wires.
     """
     # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
 
@@ -492,26 +490,19 @@ def _capture_ctrl_transform(
         )
         flat_args = jax.tree_util.tree_leaves(args)
         control_wires = qp.wires.Wires(control)  # make sure is iterable
-        # Keep static metadata for backward compatibility, including string work-wire labels.
-        static_work_wires = qp.wires.Wires(work_wires) if work_wires is not None else None
-        dynamic_work_wires = ()
-        if static_work_wires and any(math.is_tracer(w) for w in static_work_wires):
-            # Traced labels must be operands so they remain connected to the enclosing trace.
-            dynamic_work_wires = tuple(static_work_wires)
-            static_work_wires = None
+        work_wire_labels = qp.wires.Wires([] if work_wires is None else work_wires)
         ctrl_transform_prim.bind(
             *jaxpr.consts,
             *abstract_shapes,
             *flat_args,
             *control_wires,
             *(math.cast(value, dtype=bool) for value in control_values),
-            *dynamic_work_wires,
+            *work_wire_labels,
             jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),
-            work_wires=static_work_wires,
+            n_work_wires=len(work_wire_labels),
             work_wire_type=work_wire_type,
             n_consts=len(jaxpr.consts),
-            **({"n_work": len(dynamic_work_wires)} if dynamic_work_wires else {}),
         )
 
     return new_qfunc
