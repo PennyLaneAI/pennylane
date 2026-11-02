@@ -2275,7 +2275,7 @@ Bug fixes 🐛
 * Resource reports now use Catalyst's inclusive qubit-disjoint PBC depth when available,
   avoiding repeated addition of subroutine depths and preserving parallel work on disjoint qubits.
   Reports from older Catalyst versions retain their existing behavior.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10440) <https://github.com/PennyLaneAI/pennylane/pull/10440>`__
 
 * Fixed a bug where :class:`~.BasisRotation` for real-valued matrices :math:`u` implemented the
   rotation for :math:`S u S` instead of :math:`u`, with :math:`S=\operatorname{diag}((-1)^p)`,
