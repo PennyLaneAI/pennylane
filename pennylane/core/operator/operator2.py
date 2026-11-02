@@ -99,7 +99,10 @@ class OperatorRegistry:
         return cls._instance
 
     def __getitem__(self, index):
-        return self.registry[index]
+        try:
+            return self.registry[index]
+        except KeyError as e:
+            raise KeyError(f"No defined Operator2 with the name {index} found.") from e
 
     def __setitem__(self, index, value):
         if index not in self.registry:
