@@ -149,7 +149,7 @@ class TrotterVibronic(Operator2):
             :symbols: :math:`F` position fragments, :math:`M` modes with :math:`k` wires each,
                 :math:`n` electronic wires, :math:`b` coefficient and phase gradient wires, and
                 :math:`r` = ``num_trotter_steps``
-            :example: the Hamiltonian above, :math:`F=1`, :math:`M=1`, :math:`k=1`, :math:`n=1`,
+            :example: :math:`F=1`, :math:`M=1`, :math:`k=1`, :math:`n=1`,
                 :math:`b=1`, :math:`r=1`
 
             .. decomposition-rule:: _trotter_vibronic_decomposition
