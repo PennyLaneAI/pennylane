@@ -113,7 +113,6 @@ class OperatorRegistry:
 def get_op_class_by_name(name):
     """
     Helper to get an operator class by name using a function call.
-    To use indexing syntax instead, use `OperatorRegistry` directly.
 
     Args:
         name (str): the name of the class to retrieve.
@@ -136,10 +135,6 @@ def get_op_class_by_name(name):
     >>> from pennylane.core import get_op_class_by_name
     >>> get_op_class_by_name("MyNamedOp")("my-label", [0, 1])
     MyNamedOp(label=my-label, wires=[0, 1])
-
-    >>> from pennylane.core import OperatorRegistry
-    >>> OperatorRegistry()["MyNamedOp"]("my-second-label", [0, 1])
-    MyNamedOp(label=my-second-label, wires=[0, 1])
     """
     return OperatorRegistry()[name]
 

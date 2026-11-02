@@ -122,7 +122,6 @@ from .operator import (
     StatePrepBase,
     StatePrepBase2,
     abstractify,
-    OperatorRegistry,
     get_op_class_by_name,
 )
 from .measurements import (
@@ -150,7 +149,6 @@ __all__ = [
     "Operator2",
     "Operation",
     "abstractify",
-    "OperatorRegistry",
     "get_op_class_by_name",
     "Channel",
     "StatePrepBase",
