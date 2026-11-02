@@ -87,61 +87,6 @@ ARGNAME_CATEGORIES = (
 )
 
 
-class OperatorRegistry:
-    """A Singleton class that keeps track of all the Operator2 operators (including user-defined operators) defined."""
-
-    _instance = None
-    registry = {}
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
-    def __getitem__(self, index):
-        try:
-            return self.registry[index]
-        except KeyError as e:
-            raise KeyError(f"No defined Operator2 with the name {index} found.") from e
-
-    def __setitem__(self, index, value):
-        if index not in self.registry:
-            self.registry[index] = value
-        elif self.registry[index] is not value:
-            warnings.warn(
-                f"More than one operator class by the same name ({index}) has been defined."
-            )
-
-
-def get_op_class_by_name(name : str) -> type[Operator2]:
-    """
-    Helper to get an operator class by name using a function call.
-
-    Args:
-        name (str): the name of the class to retrieve.
-
-    Returns:
-        The class with the provided name.
-
-    **Example**
-
-    .. code-block:: python
-
-        from pennylane.core.operator import Operator2
-
-        class MyNamedOp(Operator2):
-            static_argnames = ("label",)
-
-            def __init__(self, label, wires):
-                super().__init__(label, wires=wires)
-
-    >>> from pennylane.core import get_op_class_by_name
-    >>> get_op_class_by_name("MyNamedOp")("my-label", [0, 1])
-    MyNamedOp(label=my-label, wires=[0, 1])
-    """
-    return OperatorRegistry()[name]
-
-
 class Operator2(metaclass=OperatorMeta):
     r"""Base class representing quantum operators that are designed for compatibility with
     :func:`~.qjit`.
@@ -1687,6 +1632,66 @@ class Operator2(metaclass=OperatorMeta):
 
         if cls.has_fixed_sig:
             qp.decomposition.register_signature(cls)
+
+
+# ---------------------------------------------------------------------------------
+# ------------------------- Operator registry -------------------------------------
+# ---------------------------------------------------------------------------------
+
+
+class OperatorRegistry:
+    """A Singleton class that keeps track of all the Operator2 operators (including user-defined operators) defined."""
+
+    _instance = None
+    registry = {}
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __getitem__(self, index):
+        try:
+            return self.registry[index]
+        except KeyError as e:
+            raise KeyError(f"No defined Operator2 with the name {index} found.") from e
+
+    def __setitem__(self, index, value):
+        if index not in self.registry:
+            self.registry[index] = value
+        elif self.registry[index] is not value:
+            warnings.warn(
+                f"More than one operator class by the same name ({index}) has been defined."
+            )
+
+
+def get_op_class_by_name(name : str) -> type[Operator2]:
+    """
+    Helper to get an operator class by name using a function call.
+
+    Args:
+        name (str): the name of the class to retrieve.
+
+    Returns:
+        The class with the provided name.
+
+    **Example**
+
+    .. code-block:: python
+
+        from pennylane.core.operator import Operator2
+
+        class MyNamedOp(Operator2):
+            static_argnames = ("label",)
+
+            def __init__(self, label, wires):
+                super().__init__(label, wires=wires)
+
+    >>> from pennylane.core import get_op_class_by_name
+    >>> get_op_class_by_name("MyNamedOp")("my-label", [0, 1])
+    MyNamedOp(label=my-label, wires=[0, 1])
+    """
+    return OperatorRegistry()[name]
 
 
 # ---------------------------------------------------------------------------------
