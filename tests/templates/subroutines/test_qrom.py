@@ -42,7 +42,10 @@ from pennylane.testing import assert_decomposable
 from pennylane.typing import Bool, Wire
 
 xfail_catalyst_ctrl = pytest.mark.xfail(
-    reason="Pending Catalyst work-wire operand support: <CATALYST_PR>.",
+    reason=(
+        "Pending Catalyst work-wire operand support: "
+        "https://github.com/PennyLaneAI/catalyst/pull/3428"
+    ),
     strict=True,
 )
 

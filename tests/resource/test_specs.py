@@ -164,7 +164,10 @@ class TestDeviceLevelSpecs:
         )
 
     @pytest.mark.xfail(
-        reason="Pending Catalyst work-wire operand support: <CATALYST_PR>.",
+        reason=(
+            "Pending Catalyst work-wire operand support: "
+            "https://github.com/PennyLaneAI/catalyst/pull/3428"
+        ),
         strict=True,
     )
     def test_complex(self):
