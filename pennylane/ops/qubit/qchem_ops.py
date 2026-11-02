@@ -170,6 +170,20 @@ class SingleExcitation(Operator2):
                 :class:`PPR_4(1, "XX") <.PPR_4>` | :math:`1`
                 :class:`PPR_4(-1, "XX") <.PPR_4>` | :math:`1`
                 :class:`~.RZ` | :math:`2`
+           .. decomposition-rule:: _single_excitation_ppr_rz
+               :image: /_static/decomposition_thumbnails/singleexcitation_ppr_rz.svg
+
+               :class:`PPR_4(1, "XX") <.PPR_4>` | :math:`1`
+               :class:`PPR_4(-1, "XX") <.PPR_4>` | :math:`1`
+               :class:`~.RZ` | :math:`2`
+
+           .. decomposition-rule:: _single_excitation_ppr_crz
+               :image: /_static/decomposition_thumbnails/singleexcitation_ppr_crz.svg
+
+               :class:`PPR_4(1, "XX") <.PPR_4>` | :math:`1`
+               :class:`PPR_4(-1, "XX") <.PPR_4>` | :math:`1`
+               :class:`~.CNOT` | :math:`2`
+               :class:`~.CRZ` | :math:`1`
 
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/singleexcitation_adjoint.svg
