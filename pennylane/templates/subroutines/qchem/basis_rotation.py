@@ -112,7 +112,7 @@ class BasisRotation(Operator2):
                 :image: /_static/decomposition_thumbnails/basis_rotation_complex_givens.svg
                 :requires: complex-valued :math:`u`
 
-                :class:`~.PhaseShift` | :math:`N(N+1)/2` | 6
+                :class:`~.PhaseShift` | :math:`\leq N(N+1)/2` | 6
                 :class:`~.SingleExcitation` | :math:`N(N-1)/2` | 3
 
     .. details::
