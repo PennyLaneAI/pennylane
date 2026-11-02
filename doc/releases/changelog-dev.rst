@@ -63,9 +63,10 @@ New features since last release
   :func:`~.while_loop` to specify a heuristic number of times the loop will iterate, and on
   :func:`~.cond` to specify heuristic branch probabilities. This provides more concrete and accurate
   resource estimates with :func:`~.analyze`.
-  [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
-  [(#10297)](https://github.com/PennyLaneAI/pennylane/pull/10297)
-  [(#10251)](https://github.com/PennyLaneAI/pennylane/pull/10251)
+  `(#10230) <https://github.com/PennyLaneAI/pennylane/pull/10230>`__
+  `(#10297) <https://github.com/PennyLaneAI/pennylane/pull/10297>`__
+  `(#10251) <https://github.com/PennyLaneAI/pennylane/pull/10251>`__
+  `(#10428) <https://github.com/PennyLaneAI/pennylane/pull/10428>`__
 
   By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, reosurce profiling with
   :func:`~.analyze` can heuristically specify the number of iterations, leading to concrete
