@@ -45,8 +45,14 @@ class PhaseGradientStatePrep(StatePrepBase2):
     catalytic resource state for implementing rotation gates.
     See the `compilation hub <https://pennylane.ai/compilation/phase-gradient>`__ for more details.
 
-    .. seealso:: Compiling :class:`~.RZ` gates to phase gradient operations with
+    .. seealso::
+
+        Compiling :class:`~.RZ` gates to phase-gradient operations with
         :func:`~.transforms.rz_phase_gradient`.
+
+        Preparation of this state with Clifford gates, adders, and mid-circuit measurements via
+        `Jones distillation <https://arxiv.org/abs/1303.3066>`__ with
+        :func:`~.transforms.decompositions.make_phase_gradient_distillation_decomp`.
 
     .. note::
 
@@ -76,6 +82,23 @@ class PhaseGradientStatePrep(StatePrepBase2):
     The decomposition is supported on up to 30 wires and consists of :class:`~.PPR_8` gates,
     at most one :class:`~.PPR_2` or :class:`~.PPR_4` gate per wire, and a :class:`~.GlobalPhase`.
 
+    Alternatively, the Jones distillation rule uses Clifford gates, :class:`~.SemiAdder`, and
+    mid-circuit measurements and supports any number of wires. Construct it and pass it to
+    ``fixed_decomps``:
+
+    >>> qp.decomposition.enable_graph()
+    >>> registers = qp.registers({"grad": 5, "aux": 5, "work": 4})
+    >>> rule = qp.transforms.decompositions.make_phase_gradient_distillation_decomp(
+    ...     registers["aux"], registers["work"], mode="postselect"
+    ... )
+    >>> @qp.transforms.decompose(
+    ...     gate_set={"Hadamard", "PauliZ", "Adjoint(S)", "SemiAdder", "MidMeasureMP"},
+    ...     fixed_decomps={qp.PhaseGradientStatePrep: rule},
+    ... )
+    ... @qp.qnode(qp.device("null.qubit", wires=14))
+    ... def distilled_circuit():
+    ...     qp.PhaseGradientStatePrep(registers["grad"])
+    ...     return qp.state()
     """
 
     arg_specs = {"wires": Wire[-1]}
