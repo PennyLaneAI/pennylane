@@ -1660,7 +1660,7 @@ class Operator2(metaclass=OperatorMeta):
 
     def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
         cls._sig = signature(cls)
-        
+
         OperatorRegistry()[cls.__name__] = cls
 
         if is_baseclass:
@@ -1684,6 +1684,7 @@ class Operator2(metaclass=OperatorMeta):
 
         if cls.has_fixed_sig:
             qp.decomposition.register_signature(cls)
+
 
 # ---------------------------------------------------------------------------------
 # ------------------------- Instance construction helpers -------------------------
