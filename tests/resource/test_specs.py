@@ -570,7 +570,7 @@ class TestPassByPassSpecs:
 
         with pytest.warns(
             UserWarning,
-            match="Specs was unable to determine the branch of a conditional or switch statement.",
+            match="Resource analysis was unable to determine the branch of a conditional or switch statement.",
         ):
             actual = qp.specs(circuit, level=0)(3)
         expected = CircuitSpecs(
