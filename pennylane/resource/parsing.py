@@ -312,8 +312,9 @@ def parse_resources_json(
 
     if any(resources["metadata"]["has_branches"] for resources in all_data.values()):
         warnings.warn(
-            "Resource analysis was unable to determine the branch of a conditional or switch statement."
-            " The results will take the maximum resources across all possible branches, serving as an upper bound.",
+            "Resource analysis could not resolve a conditional or switch branch for operation "
+            "and measurement counts. Unresolved counts use the maximum across possible "
+            "branches as an upper bound.",
             UserWarning,
         )
 

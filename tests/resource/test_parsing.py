@@ -152,6 +152,27 @@ class TestAnalysisPassConversion:
         with pytest.warns(UserWarning, match="branches"):
             parse_resources_json(example_loop_analysis_pass_result)
 
+    def test_branch_warning_does_not_describe_exact_depth_as_an_estimate(
+        self, example_loop_analysis_pass_result
+    ):
+        """Unresolved legacy counts do not make a separately certified depth approximate."""
+        data = example_loop_analysis_pass_result
+        expected = parse_resources_json(data)[0]
+        data["circuit"]["metadata"]["has_branches"] = True
+        data["circuit"]["extended_fields"]["pbc_depth"] = {
+            "qubit_disjoint_depth_status": "exact",
+            "qubit_disjoint_depth_total": 17,
+        }
+
+        with pytest.warns(UserWarning, match="operation and measurement counts") as caught:
+            actual = parse_resources_json(data)[0]
+
+        assert len(caught) == 1
+        assert "depth" not in str(caught[0].message)
+        assert actual.qubit_disjoint_depth == 17
+        assert actual.counts == expected.counts
+        assert actual.measurement_processes == expected.measurement_processes
+
     def test_parse_resources_json_warns_for_self_recursion(self, example_loop_analysis_pass_result):
         example_loop_analysis_pass_result["circuit"]["function_calls"]["static"]["circuit"] = 1
 

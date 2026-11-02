@@ -2272,10 +2272,14 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
-* Resource reports now consume exact inclusive qubit-disjoint PBC depths from Catalyst.
+* Resource reports now use the exact qubit-disjoint depth of the logical PBC
+  dependency graph supplied by Catalyst.
   When the compiler cannot determine the depth, reports preserve that uncertainty
-  instead of substituting an additive estimate. Reports from older Catalyst versions
-  retain their existing behavior.
+  instead of substituting an additive estimate. Analysis also loads Catalyst's
+  classical evaluator so known inputs can determine conditional paths. Warnings
+  about unresolved operation and measurement counts distinguish those counts from
+  the separately reported depth. Reports from older Catalyst versions retain their
+  existing behavior.
   `(#10440) <https://github.com/PennyLaneAI/pennylane/pull/10440>`__
 
 * Fixed a bug where :class:`~.BasisRotation` for real-valued matrices :math:`u` implemented the
