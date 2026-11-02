@@ -161,12 +161,12 @@ class TrotterVibronic(Operator2):
 
                 :class:`~.Hadamard` | :math:`\leq 2P` | 0
                 :class:`~.CNOT` | :math:`\leq 2P(n-1) + PM(2+2k+2b) + PK(2+4k+2b)` | 12
-                :class:`~.QROM` | :math:`P(2 + 2M + K)` | 8
+                :class:`~.QROM` | :math:`P(2 + 2M + K)` | 6
                 :class:`~.SemiAdder` | :math:`P` | 2
-                :class:`~.OutMultiplier` | :math:`P(2M + K) + rM` | 5
+                :class:`~.OutMultiplier` | :math:`P(2M + K) + rM` | 3
                 :class:`~.Incrementer` with 1 control | :math:`2P(M + K)` | 4
-                :class:`~.SignedOutSquare` | :math:`PM + rM` | 3
-                :class:`Adjoint(SignedOutSquare) <.SignedOutSquare>` | :math:`PM + rM` | 3
+                :class:`~.SignedOutSquare` | :math:`PM + rM` | 1
+                :class:`Adjoint(SignedOutSquare) <.SignedOutSquare>` | :math:`PM + rM` | 1
                 :class:`~.SignedOutMultiplier` | :math:`PK` | 0
                 :class:`Adjoint(SignedOutMultiplier) <.SignedOutMultiplier>` | :math:`PK` | 0
                 :class:`~.MultiX` | :math:`2rM` | 2
