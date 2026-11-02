@@ -39,16 +39,18 @@ _SCIENTIFIC_NOTATION_THRESHOLD = 100_000
 
 
 def _count_to_str(
-    count: int | float | Expression, extra_compact: bool = False, markdown_safe: bool = False
+    count: int | float | Expression | None, extra_compact: bool = False, markdown_safe: bool = False
 ) -> str:
     """
     Helper for printing counts, converts large counts to scientific notation and standardizes printing of expressions.
 
     Args:
-        count (int | float | Expression): the count to convert to a string
+        count (int | float | Expression | None): the count to convert to a string
         extra_compact (bool): whether to remove spaces from expressions for compactness
         markdown_safe (bool): whether to escape asterisks for markdown tables
     """
+    if count is None:
+        return "-"
     if isinstance(count, Expression):
         if count.vars:
             retval = str(count)
@@ -633,11 +635,17 @@ class PBCSpecsResources(SpecsResources):
 
     Args:
         any_commuting_depth (int | Expression | None): The any commuting depth of the circuit.
+            ``None`` when unavailable.
         qubit_disjoint_depth (int | Expression | None): The qubit disjoint depth of the circuit.
+            When ``extra["qubit_disjoint_depth_status"]`` is ``"exact"``, this is the exact
+            depth of the logical PBC dependency graph. ``None`` when the status is
+            ``"unavailable"``. Data without a status retains the legacy depth calculation.
     """
 
-    any_commuting_depth: int | Expression = field(metadata={"display_name": "Any commuting depth"})
-    qubit_disjoint_depth: int | Expression = field(
+    any_commuting_depth: int | Expression | None = field(
+        metadata={"display_name": "Any commuting depth"}
+    )
+    qubit_disjoint_depth: int | Expression | None = field(
         metadata={"display_name": "Qubit disjoint depth"}
     )
 
