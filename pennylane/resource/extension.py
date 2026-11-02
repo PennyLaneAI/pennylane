@@ -67,3 +67,26 @@ def register_resource_extension(
     if name in _RESOURCE_EXTENSIONS and _RESOURCE_EXTENSIONS[name] != handler:
         raise ValueError(f"A resource extension is already registered for '{name}'.")
     _RESOURCE_EXTENSIONS[name] = handler
+
+
+# Register PBC depth aggregation and display functions
+
+def _aggregate_pbc_depth(total, incoming, call_count):
+    """Combine PBC depths without modifying inputs or rounding intermediate values."""
+    result = {} if total is None else total.copy()
+    for name in ("any_commuting_depth", "qubit_disjoint_depth"):
+        result[name] = result.get(name, 0) + call_count * incoming[name]
+    return result
+
+
+def _display_pbc_depth(data):
+    """Group the PBC depth metrics for resource reports."""
+    return {
+        "PBC Depths": {
+            "Any commuting depth": data["any_commuting_depth"],
+            "Qubit disjoint depth": data["qubit_disjoint_depth"],
+        }
+    }
+
+
+register_resource_extension("pbc_depth", aggregate=_aggregate_pbc_depth, display=_display_pbc_depth)

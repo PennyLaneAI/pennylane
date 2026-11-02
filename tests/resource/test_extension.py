@@ -122,6 +122,68 @@ def test_fractional_and_zero_calls(calls):
     assert isinstance(resource, qp.resource.SpecsResources)
 
 
+@pytest.mark.parametrize(
+    ("total", "expected"),
+    [
+        (None, {"any_commuting_depth": 0.75, "qubit_disjoint_depth": 1.5}),
+        (
+            {"any_commuting_depth": 1, "qubit_disjoint_depth": 2},
+            {"any_commuting_depth": 1.75, "qubit_disjoint_depth": 3.5},
+        ),
+    ],
+)
+def test_pbc_callback_preserves_inputs(total, expected):
+    """The built-in PBC callback accepts missing totals and does not mutate shared data."""
+    incoming = {"any_commuting_depth": 3, "qubit_disjoint_depth": 6}
+    before = copy.deepcopy((total, incoming))
+    result = _RESOURCE_EXTENSIONS["pbc_depth"].aggregate(total, incoming, 0.25)
+    assert result == expected
+    assert (total, incoming) == before
+
+
+def test_pbc_rounds_after_nested_calls():
+    """Fractional PBC depths are rounded only after all call multipliers are applied."""
+    depths = {"any_commuting_depth": 3, "qubit_disjoint_depth": 6}
+    data = {
+        "main": function_record({}, qnode=True, static={"middle": 4}),
+        "middle": function_record({}, static={"helper": 0.25}),
+        "helper": function_record({"pbc_depth": depths}),
+    }
+    (resource,) = parse_resources_json(data)
+    assert isinstance(resource, qp.resource.PBCSpecsResources)
+    assert resource.any_commuting_depth == 3
+    assert resource.qubit_disjoint_depth == 6
+
+
+@pytest.mark.parametrize("multi_level", [False, True])
+def test_pbc_extension_display(multi_level):
+    """PBC data in extra uses the registered display callback in each report format."""
+    a = qp.resource.Expression({("a",): 1})
+    resource = qp.resource.SpecsResources(
+        counts={},
+        measurement_processes={},
+        num_wires=0,
+        extra={"pbc_depth": {"any_commuting_depth": a, "qubit_disjoint_depth": 2 * a}},
+    )
+    before = copy.deepcopy(resource.extra)
+    concrete = resource.subs(a=3)
+    report = (
+        qp.resource.CircuitSpecs(
+            level={0: "symbolic", 1: "concrete"},
+            resources={0: resource, 1: concrete},
+        )
+        if multi_level
+        else concrete
+    )
+    for render in (str, methodcaller("_repr_markdown_")):
+        text = render(report)
+        assert text.count("PBC Depths") == 1
+        assert "Any commuting depth" in text
+        assert "Qubit disjoint depth" in text
+        assert "3" in text and "6" in text
+    assert resource.extra == before
+
+
 def test_unregistered_fields():
     """Unknown local data survives, while unknown callee data keeps its warning."""
     data = {

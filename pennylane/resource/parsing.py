@@ -213,26 +213,8 @@ def _handle_extended_fields(
                 called_fn_resources.extra[field_name],
                 call_count,
             )
-            continue
-        match field_name:
-            case "pbc_depth":
-                pbc_depth = extended_fields.get("pbc_depth", None)
-                if pbc_depth is None:
-                    extended_fields["pbc_depth"] = {
-                        "any_commuting_depth": call_count
-                        * called_fn_resources.extra["pbc_depth"]["any_commuting_depth"],
-                        "qubit_disjoint_depth": call_count
-                        * called_fn_resources.extra["pbc_depth"]["qubit_disjoint_depth"],
-                    }
-                else:
-                    pbc_depth["any_commuting_depth"] += (
-                        call_count * called_fn_resources.extra["pbc_depth"]["any_commuting_depth"]
-                    )
-                    pbc_depth["qubit_disjoint_depth"] += (
-                        call_count * called_fn_resources.extra["pbc_depth"]["qubit_disjoint_depth"]
-                    )
-            case _:
-                unknown_fields.append(field_name)
+        else:
+            unknown_fields.append(field_name)
 
     if unknown_fields:
         warnings.warn(
