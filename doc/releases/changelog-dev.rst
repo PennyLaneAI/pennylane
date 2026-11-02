@@ -878,7 +878,7 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
-* Added ``pennylane.core.get_op_class_by_name`` and ``pennylane.core.OperatorRegistry``
+* Added ``pennylane.core.get_op_class_by_name``
   to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
   automatically registered when they are defined.
   `(#10430) <https://github.com/PennyLaneAI/pennylane/pull/10430>`__
