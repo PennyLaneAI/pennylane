@@ -970,11 +970,10 @@ Improvements 🛠
 
 * Added decompositions of :class:`~.SemiAdder` and its controlled versions using Pauli
   product rotations and measurements. The controlled rule supports multiple controls
-  on both zero and one and preserves superpositions of the controls. These rules are
-  available with program capture or an active compiler and require respectively
-  ``len(y_wires) + 1`` and ``len(y_wires) + m + 1`` zeroed work wires for ``m`` controls,
-  allocated as needed and returned to :math:`|0\rangle`. The documentation explains both
-  decompositions with ASCII circuits, measurement corrections, and resource requirements.
+  on both zero and one. These rules require program capture or an active compiler.
+  They use ``len(y_wires) + 1`` zeroed work wires without controls and
+  ``len(y_wires) + m + 1`` with ``m`` controls,
+  allocated as needed and returned to :math:`|0\rangle`.
   `(#10099) <https://github.com/PennyLaneAI/pennylane/pull/10099>`__
 
 * Sorts the gate counts in the display of resources produced from decompositions.

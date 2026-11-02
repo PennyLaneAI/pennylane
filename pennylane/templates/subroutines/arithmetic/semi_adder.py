@@ -178,8 +178,10 @@ class SemiAdder(Operator2):
 
     .. math::
 
-        \text{SemiAdder} |x \rangle | y \rangle = |x \rangle | x + y  \rangle,
+        \text{SemiAdder} |x \rangle | y \rangle = |x \rangle | (x + y) \bmod 2^n \rangle,
 
+    where ``n = len(y_wires)``. Both registers are ordered from the most significant
+    bit to the least significant bit, and ``x_wires`` is left unchanged.
     This operation is also referred to as semi-out-place addition or quantum-quantum in-place addition in the literature.
 
     The implementation is based on `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
@@ -190,12 +192,9 @@ class SemiAdder(Operator2):
         y_wires (Sequence[int]): The wires that store the integer :math:`y`. The number of wires must be sufficient to
             represent :math:`y` in binary. These wires are also used
             to encode the integer :math:`x+y` which is computed modulo :math:`2^{\text{len(y_wires)}}` in the computational basis.
-        work_wires (Optional(Sequence[int])): The auxiliary wires to use for the addition,
-            initialized to zero and restored afterwards. The original decomposition uses
-            ``len(y_wires) - 1`` work wires; the PPM decompositions use ``len(y_wires) + 1``
-            without controls or ``len(y_wires) + m + 1`` with ``m`` controls. Missing work wires
-            are dynamically allocated when supported by the compiler. See the PPM
-            decomposition details below.
+        work_wires (Optional(Sequence[int])): Auxiliary wires initialized and returned to
+            :math:`|0\rangle`. The standard decomposition uses ``len(y_wires) - 1``;
+            see below for the PPM requirements.
 
     **Example**
 
@@ -256,17 +255,14 @@ class SemiAdder(Operator2):
     .. details::
         :title: Pauli product measurement decompositions
 
-        ``SemiAdder`` and its controlled versions have alternative decompositions in
-        terms of Pauli product rotations (PPRs) and Pauli product measurements (PPMs).
-        They perform the same coherent addition as the usual gate decomposition, but
-        replace CNOT networks and carry uncomputation with joint measurements and
-        corrections determined by their outcomes.
+        The PPM decompositions of ``SemiAdder`` and its controlled versions follow
+        the carry ladders in Figures 2 and 4 of
+        `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
 
         **Computing the sum**
 
-        Like classical binary addition, the circuit works from the least significant
-        bit towards the most significant bit. For input bits :math:`x_k, y_k` and an
-        incoming carry :math:`c_k`, the sum and next carry are
+        For input bits :math:`x_k, y_k` and an incoming carry :math:`c_k`, the sum
+        and next carry are
 
         .. math::
 
@@ -274,76 +270,12 @@ class SemiAdder(Operator2):
             c_{k+1} = (x_k \land y_k) \oplus
                       \bigl(c_k \land (x_k \oplus y_k)\bigr).
 
-        Here, :math:`c_0=0`. The next carry is one precisely when at least two of the
-        three input bits are one. The circuit stores the carries in work qubits,
-        writes the sum into ``y_wires``, and erases the carries in reverse order.
-        No carry beyond the last output bit is computed, giving addition modulo
-        :math:`2^n`, where ``n = len(y_wires)``. ``x_wires`` is restored unchanged.
-
-        The nonlinear part of each carry block uses four :class:`~.PPR_8` rotations,
-        obtained from a temporary logical AND. Combining the surrounding CNOTs with
-        those rotations changes their Pauli axes; it does not require more rotations.
-        The remaining parity updates use the measurement gadget below.
-
-        **Replacing CNOTs with joint measurements**
-
-        A PPM measures one product of Pauli operators, such as :math:`Z_c X_a`.
-        It returns a single parity bit, rather than measuring the individual Pauli
-        operators separately. Write the outcome as ``m = 0`` for eigenvalue +1 and
-        ``m = 1`` for eigenvalue -1.
-
-        For commuting Pauli products :math:`P` and :math:`Q`, the following gadget
-        implements a Pauli-controlled Pauli: apply :math:`Q` when :math:`P` has
-        eigenvalue -1, and do nothing when it has eigenvalue +1. A CNOT is the case
-        :math:`P=Z_c, Q=X_t`.
-
-        .. code-block:: text
-
-            control: ----[P]------------------------[P^m2]----------
-                          |
-            aux |0>: ----[X]----[Z]----[MX:m3]-------[Z^m3]--- |+>
-                                 |
-            target: ------------[Q]-----------------[Q^(m1 xor m3)]-
-                         M1:m1  M2:m2
-
-        The connected boxes denote joint measurements: ``M1`` measures :math:`P X_a`,
-        ``M2`` measures :math:`Z_a Q`, and ``MX`` measures :math:`X_a` on the auxiliary.
-        The boxes on the right are outcome-dependent Pauli corrections; an exponent
-        of zero means no correction. The implementation also cancels the overall
-        sign :math:`(-1)^{m_2(m_1\oplus m_3)}`.
-
-        Before these corrections, the measurement outcomes specify which extra Pauli
-        operations accompany the desired gate. Applying the corrections removes that
-        randomness: every outcome gives the same logical operation, even on a
-        superposition of inputs. The auxiliary ends in :math:`|+\rangle`. A companion
-        gadget starts in :math:`|+\rangle` and ends in :math:`|0\rangle`, so consecutive
-        gadgets can reuse the same qubit. The Pauli products may also span several
-        data qubits, allowing several parity updates to be combined into one gadget.
-        The diagram shows separate control and target registers, but the same
-        construction works for overlapping Pauli products as long as they commute.
-
-        **Erasing carries without reversing the AND gates**
-
-        Once a carry has been used, it can be erased by measuring its work qubit in
-        the X basis and correcting the data. For example, the following is a logical
-        AND followed by measurement-based uncomputation. ``o`` is a control, the
-        first ``X`` is the AND target, and the controlled Z is applied only if ``m=1``.
-
-        .. code-block:: text
-
-            u: ----------o----------------o---------------------
-                         |                |  if m=1
-            v: ----------o----------------Z---------------------
-                         |
-            work |0>: ---X----[MX:m]---[reset]---------- |0>
-
-        The work qubit stores :math:`u\land v`. Measuring it in the X basis returns
-        a random bit independent of that stored value, but adds the relative phase
-        :math:`(-1)^{m(u\land v)}` to the data. A controlled Z for ``m=1`` cancels
-        exactly that phase. Thus the measurement does not reveal the input bits, and
-        the correction preserves their quantum coherence. The carry blocks use the
-        same idea with the appropriate parity-dependent Clifford corrections, also
-        implemented using PPMs. Finally, the work qubits are reset to :math:`|0\rangle`.
+        Here, :math:`c_0=0`. The circuit stores the carries in work qubits, writes
+        the sum into ``y_wires``, and erases the carries in reverse order.
+        Commuting the carry fan-out CNOTs through the temporary logical AND gives
+        one ``Y`` and three ``ZZY`` :class:`~.PPR_8` rotations per carry block.
+        The remaining parity updates and carry erasure use PPMs. The last output
+        bit needs only one parity update, since its two CNOTs share a target.
 
         **Controlled addition**
 
@@ -354,29 +286,21 @@ class SemiAdder(Operator2):
             |q\rangle|x\rangle|y\rangle \longmapsto
             |q\rangle|x\rangle|(y+qx)\bmod 2^n\rangle.
 
-        The controlled PPM rule computes the carries without measuring the control.
-        It then updates each output bit only when :math:`q=1`, using a temporary AND
-        of :math:`q` and the parity :math:`c_k\oplus x_k`. Each such update needs four
-        additional ``PPR_8`` rotations. The temporary AND and the carries are erased
-        with measurement-dependent corrections. Those corrections preserve relative
-        phases between the control branches, so a superposition or an entangled
-        control remains coherent. A control on zero is handled by flipping the
-        control before and after the controlled-on-one circuit.
+        The controlled rule computes the carries while leaving the input bits
+        unchanged. Each output update uses a temporary AND of :math:`q` and the
+        parity :math:`c_k\oplus x_k`, costing four additional ``PPR_8`` rotations
+        per output bit. In the reverse pass, each carry is erased before updating
+        its corresponding output bit, so its correction acts on the original data.
 
-        With ``m`` controls, the rule first computes their logical AND into a chain
-        of ``m-1`` work qubits. The final flag controls the same addition circuit.
-        Afterwards, the flags are erased in reverse order using X-basis measurements
-        and outcome-dependent corrections, preserving coherence between all control
-        states. Each additional control needs one zeroed work qubit, four ``PPR_8``
-        rotations and at most four direct PPMs. The X flips described above allow
-        any combination of controls on zero and one.
+        Multiple controls use a standard ladder of temporary ANDs, uncomputed
+        after the addition. Controls on zero are handled with surrounding X gates.
 
-        **Resources and selection**
+        **Resources**
 
-        The requirements below apply to these PPM rules with nonempty input registers.
-        PPM counts are upper bounds, taking the correction branch at every carry or
-        temporary-AND readout. They count direct measurements before converting
-        ``PPR_8`` rotations or Pauli corrections into further measurements.
+        For nonempty input registers, ``n = len(y_wires)`` and ``m`` controls, the
+        requirements are as follows. Direct PPM counts are upper bounds, taking
+        the correction branch at each carry or temporary-AND readout, before any
+        further decomposition of ``PPR_8`` rotations or Pauli corrections.
 
         .. list-table::
             :header-rows: 1
@@ -398,19 +322,10 @@ class SemiAdder(Operator2):
               - :math:`8n+4m-8`
               - :math:`14n+4m-10`
 
-        The uncontrolled rule uses ``n-1`` carry qubits, one shared measurement
-        auxiliary, and one qubit held at zero for padding. The controlled rule needs
-        one more temporary-AND target and ``m-1`` control flags. All these qubits must start in
-        :math:`|0\rangle` and are returned to that state.
-
-        These rules require program capture or an active compiler. They are registered
-        alongside the original decompositions, so the decomposition graph selects
-        between them according to the target gate set and its costs. They need not
-        reduce the number of non-Clifford rotations; their benefit is in the Clifford
-        and measurement operations and potentially the circuit depth.
-
-        To select them explicitly, pass the following dictionary as ``fixed_decomps``
-        to :func:`~.decompose`:
+        These rules require program capture or an active compiler. Missing work wires
+        are allocated as needed when supported by the compiler. To select the PPM
+        rules explicitly, pass the following dictionary as ``fixed_decomps`` to
+        :func:`~.decompose`:
 
         .. code-block:: python
 
@@ -419,11 +334,6 @@ class SemiAdder(Operator2):
                 "C(SemiAdder)": "flip_zero_ctrl_values(_controlled_semi_adder_ppm)",
             }
 
-        Supply the required number of zeroed ``work_wires`` explicitly when the
-        compiler cannot allocate additional work qubits during decomposition.
-        With automatic selection, insufficient work wires can cause the PPM rule to be
-        excluded in favour of the original rule. Selecting a rule explicitly with
-        ``fixed_decomps`` does not remove its work-wire requirements.
     """
 
     grad_method = None
@@ -444,14 +354,8 @@ class SemiAdder(Operator2):
 
     @property
     def wires(self):
-        """All wires involved in the operation."""
+        """Input, output and work wires, in register order."""
         return self.x_wires + self.y_wires + self.work_wires
-
-
-# Native decomposition signatures group wire arguments alphabetically. Operator2 sorts the
-# class declaration into constructor order, so set the compilation order after class creation.
-# The wires property above preserves the public x/y/work order.
-SemiAdder.wire_argnames = ("work_wires", "x_wires", "y_wires")
 
 
 def _effective_skip_input_pos(num_x_wires, num_y_wires, skip_input_pos):
