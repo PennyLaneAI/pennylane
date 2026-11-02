@@ -87,6 +87,32 @@ ARGNAME_CATEGORIES = (
 )
 
 
+class OperatorRegistry:
+    """A Singleton class that keeps track of all the Operator2 operators (including user-defined operators) defined."""
+
+    _instance = None
+    registry = {}
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __getitem__(self, index):
+        try:
+            return self.registry[index]
+        except KeyError as e:
+            raise KeyError(f"No defined Operator2 with the name {index} found.") from e
+
+    def __setitem__(self, index, value):
+        if index not in self.registry:
+            self.registry[index] = value
+        elif self.registry[index] is not value:
+            warnings.warn(
+                f"More than one operator class by the same name ({index}) has been defined."
+            )
+
+
 class Operator2(metaclass=OperatorMeta):
     r"""Base class representing quantum operators that are designed for compatibility with
     :func:`~.qjit`.
@@ -1635,37 +1661,11 @@ class Operator2(metaclass=OperatorMeta):
 
 
 # ---------------------------------------------------------------------------------
-# ------------------------- Operator registry -------------------------------------
+# ------------------------- Operator registry helper ------------------------------
 # ---------------------------------------------------------------------------------
 
 
-class OperatorRegistry:
-    """A Singleton class that keeps track of all the Operator2 operators (including user-defined operators) defined."""
-
-    _instance = None
-    registry = {}
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
-    def __getitem__(self, index):
-        try:
-            return self.registry[index]
-        except KeyError as e:
-            raise KeyError(f"No defined Operator2 with the name {index} found.") from e
-
-    def __setitem__(self, index, value):
-        if index not in self.registry:
-            self.registry[index] = value
-        elif self.registry[index] is not value:
-            warnings.warn(
-                f"More than one operator class by the same name ({index}) has been defined."
-            )
-
-
-def get_op_class_by_name(name : str) -> type[Operator2]:
+def get_op_class_by_name(name: str) -> type[Operator2]:
     """
     Helper to get an operator class by name using a function call.
 
