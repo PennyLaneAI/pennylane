@@ -4,7 +4,7 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* A new decomposition for ``C(IsingZZ)`` has been added.
+* A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
   `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
 
 * :func:`~.transforms.gridsynth` has a new ``method`` keyword argument with two randomized
