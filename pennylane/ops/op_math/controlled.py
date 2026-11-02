@@ -482,6 +482,8 @@ def _capture_ctrl_transform(
     """
     # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
 
+    work_wires = qp.wires.Wires([] if work_wires is None else work_wires)
+
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
         abstracted_axes, abstract_shapes = qp.capture.determine_abstracted_axes(args)
@@ -490,17 +492,16 @@ def _capture_ctrl_transform(
         )
         flat_args = jax.tree_util.tree_leaves(args)
         control_wires = qp.wires.Wires(control)  # make sure is iterable
-        work_wire_labels = qp.wires.Wires([] if work_wires is None else work_wires)
         ctrl_transform_prim.bind(
             *jaxpr.consts,
             *abstract_shapes,
             *flat_args,
             *control_wires,
             *(math.cast(value, dtype=bool) for value in control_values),
-            *work_wire_labels,
+            *work_wires,
             jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),
-            n_work_wires=len(work_wire_labels),
+            n_work_wires=len(work_wires),
             work_wire_type=work_wire_type,
             n_consts=len(jaxpr.consts),
         )
