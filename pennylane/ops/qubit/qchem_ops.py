@@ -185,18 +185,18 @@ class SingleExcitation(Operator2):
                :class:`~.CNOT` | :math:`2`
                :class:`~.CRZ` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
-                :image: /_static/decomposition_thumbnails/singleexcitation_adjoint.svg
-                :region: adjoint
+           .. decomposition-rule:: adjoint_rotation
+               :image: /_static/decomposition_thumbnails/singleexcitation_adjoint.svg
+               :region: adjoint
 
-                :class:`~.SingleExcitation` | :math:`1`
+               :class:`~.SingleExcitation` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
-                :image: /_static/decomposition_thumbnails/singleexcitation_pow.svg
-                :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+           .. decomposition-rule:: pow_rotation
+               :image: /_static/decomposition_thumbnails/singleexcitation_pow.svg
+               :region: pow
+               :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
 
-                :class:`~.SingleExcitation` | :math:`1`
+               :class:`~.SingleExcitation` | :math:`1`
     """
 
     dynamic_argnames = "phi"
