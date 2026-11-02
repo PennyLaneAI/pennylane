@@ -2276,6 +2276,9 @@ Bug fixes 🐛
 * Fixed decomposition graph construction discarding a reachable symbolic adjoint when an
   alternative decomposition revisits its base, which could overestimate required work wires.
   `(#10371) <https://github.com/PennyLaneAI/pennylane/pull/10371>`__
+
+* Fixed infinite recursion in the construction of ``DecompositionGraph`` when a cycle of work-wire
+  dependent operators uses additional work wires on every pass through the cycle.
   `(#10423) <https://github.com/PennyLaneAI/pennylane/pull/10423>`__
 
 * The resource estimate of the measurement-based decomposition of :class:`~.QROM` now declares
