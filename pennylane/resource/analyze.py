@@ -106,24 +106,11 @@ def analyze(
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the (qjit'd) QNode for which to estimate resources.
             ``functools.partial`` wrappers around supported callables are also accepted.
-        level (str | int | Iterable[int | str]): The level of compilation at which to estimate
-            resources. Defaults to ``"user"``.
-
-            ``level`` accepts the following types:
-
-            * ``int``: The number of transforms to apply before analyzing resources.
-            * ``str``: One of the presets listed below, or the ``label`` of a :func:`~.marker`.
-            * ``iterable``: A ``list``, ``tuple``, or similar containing ``int`` or ``str`` values.
-              These should be sorted in ascending transform order with no duplicates. Resources will be analyzed for each provided level in the ``iterable``.
-
-            The following ``str`` presets are provided for ease of use:
-
-            * ``"top"``: Equivalent to ``0``; to analyze resources before any transforms have been applied.
-            * ``"user"``: To analyze resources after the user-specified transforms have been applied.
-            * ``"device"``: To analyze resources after the user-specified transforms and device preprocessing transforms have been applied.
-            * ``"all-user"``: To analyze resources at each stage of compilation with respect to user-specified transforms.
-            * ``"all"``: To analyze resources at each stage of compilation with respect
-              to user-specified and device preprocessing transforms.
+        level (str | int | slice | Sequence[str | int]): The compile pipeline(s) to apply before
+            analyzing resources. Accepts any value supported by
+            :func:`~.workflow.get_compile_pipeline`; see its documentation for the available
+            options. If ``level`` is a ``Sequence``, ``"all-user"``, or ``"all"``, resources are
+            analyzed for each level. Defaults to ``"user"``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
