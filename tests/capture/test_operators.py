@@ -24,11 +24,74 @@ import pennylane as qp
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import AbstractOperator, operator_p
+from pennylane.capture.primitives import AbstractOperator, barrier_p, operator_p
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.testing import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
+
+
+class TestBarrierPrimitive:
+    """Capture and reconstruct barriers using their dedicated primitive."""
+
+    @pytest.mark.parametrize("wires", [(), (0,), (0, 2)])
+    @pytest.mark.parametrize("only_visual", [False, True])
+    def test_capture(self, wires, only_visual):
+        """Preserve wires and visual metadata through primitive reconstruction."""
+        def circuit():
+            qp.Barrier(wires=wires, only_visual=only_visual)
+
+        closed = jax.make_jaxpr(circuit)()
+        assert len(closed.eqns) == 1
+        eqn = closed.eqns[0]
+        assert eqn.primitive is barrier_p
+        assert barrier_p.prim_type == "operator"
+        assert isinstance(eqn.outvars[0].aval, AbstractOperator)
+        assert eqn.params["op_cls"] is qp.Barrier
+        assert eqn.params["wire_lens"] == (len(wires),)
+        op = barrier_p.impl(*wires, **eqn.params)
+        assert isinstance(op, qp.Barrier)
+        assert tuple(op.wires) == wires
+        assert op.only_visual is only_visual
+
+    def test_dynamic_wire(self):
+        """Wire indices remain dynamic operands."""
+        def circuit(wire):
+            qp.Barrier(wires=[0, wire])
+
+        closed = jax.make_jaxpr(circuit)(2)
+        eqn = closed.eqns[-1]
+        assert eqn.primitive is barrier_p
+        assert eqn.invars[1] is closed.jaxpr.invars[0]
+        collector = CollectOpsandMeas()
+        collector.eval(closed.jaxpr, closed.consts, 3)
+        assert len(collector.state["ops"]) == 1
+        assert tuple(collector.state["ops"][0].wires) == (0, 3)
+
+    def test_interpreter_roundtrip(self):
+        """Reinterpreting a circuit retains its barrier and operation order."""
+        def circuit():
+            qp.X(0)
+            qp.Barrier(wires=[0, 1])
+            qp.Y(1)
+
+        closed = jax.make_jaxpr(qp.capture.PlxprInterpreter()(circuit))()
+        assert [eqn.primitive for eqn in closed.eqns] == [
+            operator_p, barrier_p, operator_p
+        ]
+
+    def test_returned_barrier(self):
+        """Returning a barrier treats it as operator data, not a gate."""
+        closed = jax.make_jaxpr(lambda: qp.Barrier(wires=[0, 1]))()
+        collector = CollectOpsandMeas()
+        collector.eval(closed.jaxpr, closed.consts)
+        assert collector.state["ops"] == []
+
+    def test_capture_disabled(self):
+        """Ordinary construction does not bind a primitive."""
+        with qp.capture.pause():
+            op = qp.Barrier(wires=[0, 1])
+        assert op.tracer is None
 
 
 def test_abstract_operator():
