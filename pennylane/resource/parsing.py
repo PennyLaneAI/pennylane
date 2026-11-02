@@ -118,7 +118,7 @@ def _mlir_resources_to_specs_resources(
     num_wires = resources["num_qubits"]["total"]
     if resources["metadata"].get("auto_qubit_management", False):
         warnings.warn(
-            f"Specs detected that function '{focus}' uses automatic qubit management. "
+            f"Resource analysis detected that function '{focus}' uses automatic qubit management. "
             "The number of qubits allocated by this function will not be known at this time, so "
             "the final allocation counts may be inaccurate.",
         )
@@ -154,7 +154,7 @@ def _mlir_resources_to_specs_resources(
         called_fn_resources = fn_resources[called_fn]
         if called_fn_resources is None:
             warnings.warn(
-                f"Specs detected recursion during resolution of JSON resource data. "
+                f"Resource analysis detected recursion during resolution of JSON resource data. "
                 f"Function '{focus}' calls '{called_fn}' which is already being resolved. "
                 "This recursive call will not be counted, so final results may be inaccurate."
             )
@@ -228,7 +228,7 @@ def _handle_extended_fields(
 
     if unknown_fields:
         warnings.warn(
-            f"Specs detected unknown extended fields in the resource data: {unknown_fields}. "
+            f"Resource analysis detected unknown extended fields in the resource data: {unknown_fields}. "
             "These fields will not be propagated correctly, so final results may be inaccurate.",
             UserWarning,
         )
@@ -292,7 +292,7 @@ def parse_resources_json(
 
     if any(resources["metadata"]["has_branches"] for resources in all_data.values()):
         warnings.warn(
-            "Specs was unable to determine the branch of a conditional or switch statement."
+            "Resource analysis was unable to determine the branch of a conditional or switch statement."
             " The results will take the maximum resources across all possible branches, serving as an upper bound.",
             UserWarning,
         )

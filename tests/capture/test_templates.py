@@ -1427,28 +1427,30 @@ class TestModifiedTemplates:
         qp.assert_equal(op, qp.Incrementer(**kwargs))
 
     def test_left_classical_comparator(self):
-        """Test the primitive bind call of LeftClassicalComparator."""
+        """Test the primitive bind call of LeftClassicalComparator.
+
+        NOTE: The threshold is captured as an operand and can change at evaluation time.
+        """
 
         kwargs = {
             "x_wires": [0, 1, 2],
-            "L": 3,
             "target_wire": 3,
             "work_wires": [4, 5],
             "comparator": "<",
         }
 
-        def qfunc():
-            return qp.LeftClassicalComparator(**kwargs).tracer
+        def qfunc(threshold):
+            return qp.LeftClassicalComparator(value=threshold, **kwargs).tracer
 
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = jax.make_jaxpr(qfunc)(3)
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(eqn, qp.LeftClassicalComparator)
 
-        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-        qp.assert_equal(op, qp.LeftClassicalComparator(**kwargs))
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 5)
+        qp.assert_equal(op, qp.LeftClassicalComparator(value=5, **kwargs))
 
     def test_left_quantum_comparator(self):
         """Test the primitive bind call of LeftQuantumComparator."""
@@ -1876,7 +1878,8 @@ class TestModifiedTemplates:
 
         qp.assert_equal(op, qp.GQSP(unitary, angles, control=0))
 
-    def test_trotter_cdf(self):
+    @pytest.mark.parametrize("work_wires", [(), (4,), (4, 5)])
+    def test_trotter_cdf(self, work_wires):
         """Test TrotterCDF with program capture."""
 
         from pennylane.numeric_hamiltonians import (  # pylint: disable=import-outside-toplevel
@@ -1891,7 +1894,9 @@ class TestModifiedTemplates:
         wires = [0, 1, 2, 3]
 
         def qfunc(evolution_time):
-            return qp.TrotterCDF(evolution_time, 3, hamiltonian, wires).tracer
+            return qp.TrotterCDF(
+                evolution_time, 3, hamiltonian, wires, work_wires=work_wires
+            ).tracer
 
         # Validate inputs
         qfunc(1.0)
@@ -1904,7 +1909,7 @@ class TestModifiedTemplates:
         assert_eqn_matches_op(eqn, qp.TrotterCDF)
 
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0)
-        qp.assert_equal(op, qp.TrotterCDF(1.0, 3, hamiltonian, wires))
+        qp.assert_equal(op, qp.TrotterCDF(1.0, 3, hamiltonian, wires, work_wires=work_wires))
 
     def test_trotter_cgf(self):
         """Test TrotterCGF with program capture."""
