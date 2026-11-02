@@ -291,6 +291,16 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._in_progress = []
         self._num_ctrl_wires_in_progress = defaultdict(list)
 
+        # Breaking a cycle drops a decomposition rule, so the nodes explored on top of the
+        # in-progress op that caused the cut are only complete while that op is in progress.
+        # For each in-progress op, we track the highest in-progress op below it that a cut
+        # in its exploration relied on (-1 if none). Once that op is finished, the affected
+        # nodes are no longer reused, and later visits explore them again.
+        self._cut_frames: list[int] = []
+        self._truncated_nodes: dict[int, int] = {}
+        self._pending_outdated: dict[int, list[int]] = defaultdict(list)
+        self._outdated_nodes: set[int] = set()
+
         # Update the global decomposition library using alt_decomps and fixed_decomps in a local
         # context manager (which restores it to the original state upon exit), so that list_decomps
         # will always return the modified collection of decomposition rules. This is important
@@ -337,17 +347,20 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # work-wire dependent. We have overridden __hash__ and __eq__ of the node class so
         # that when we have a work-wire-independent operator with a different work wire
         # budget from the existing one in the graph, the difference is ignored.
+        if (op_node_idx := self._existing_op_node_idx(op, num_used_work_wires)) is not None:
+            self._record_cut(self._truncated_nodes.get(op_node_idx, -1))
+            return op_node_idx
+
         known_work_wire_dependent = op in self._work_wire_dependent_ops
         op_node = _OperatorNode(op, num_used_work_wires, known_work_wire_dependent)
-
-        if op_node in self._all_op_indices:
-            return self._all_op_indices[op_node]
-
         if op in self._gate_set_weights:
             op_node = replace(op_node, reachable=True)
 
         op_node_idx = self._graph.add_node(op_node)
+        # Replace an outdated node for the same operator, if there is one.
+        self._all_op_indices.pop(op_node, None)
         self._all_op_indices[op_node] = op_node_idx
+        self._op_to_op_nodes[op].discard(op_node)
         self._op_to_op_nodes[op].add(op_node)
 
         if op in self._gate_set_weights:
@@ -363,7 +376,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             # this op unless there is no other choice.
             self._gate_set_weights |= GateSet({to_name(op): math.inf})
             self._graph.add_edge(self._start, op_node_idx, math.inf)
-            self._pop_in_progress(op)
+            self._pop_in_progress(op, op_node_idx)
             return op_node_idx
 
         work_wire_dependent = known_work_wire_dependent
@@ -394,20 +407,70 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             # identify it as work-wire dependent.
             self._work_wire_dependent_ops.add(op_node.op)
 
-        self._pop_in_progress(op)
+        self._pop_in_progress(op, op_node_idx)
+        return op_node_idx
+
+    def _existing_op_node_idx(
+        self, op: AbstractOperatorLike, num_used_work_wires: int
+    ) -> int | None:
+        """Returns the index of the node that represents ``op`` with the given work wire budget,
+        if it exists and can be reused."""
+        known_work_wire_dependent = op in self._work_wire_dependent_ops
+        op_node = _OperatorNode(op, num_used_work_wires, known_work_wire_dependent)
+        op_node_idx = self._all_op_indices.get(op_node)
+        if op_node_idx in self._outdated_nodes:
+            return None
         return op_node_idx
 
     def _push_in_progress(self, op):
         self._in_progress.append(op)
+        self._cut_frames.append(-1)
         if unwrapped := _get_base_and_n_ctrls(op):
             base_rep, num_control_wires = unwrapped
             self._num_ctrl_wires_in_progress[base_rep].append(num_control_wires)
 
-    def _pop_in_progress(self, op):
+    def _pop_in_progress(self, op, op_node_idx: int):
+        frame = len(self._in_progress) - 1
+        for idx in self._pending_outdated.pop(frame, []):
+            del self._truncated_nodes[idx]
+            self._outdated_nodes.add(idx)
         self._in_progress.pop()
+        if (cut_frame := self._cut_frames.pop()) >= 0:
+            self._truncated_nodes[op_node_idx] = cut_frame
+            self._pending_outdated[cut_frame].append(op_node_idx)
+            self._record_cut(cut_frame)
         if unwrapped := _get_base_and_n_ctrls(op):
             base_rep, _ = unwrapped
             self._num_ctrl_wires_in_progress[base_rep].pop()
+
+    def _record_cut(self, frame: int) -> None:
+        """Records that the exploration of the innermost in-progress op relies on the op at
+        position ``frame`` of the in-progress stack still being in progress."""
+        top = len(self._in_progress) - 1
+        if frame < top:
+            self._cut_frames[top] = max(self._cut_frames[top], frame)
+
+    def _cycle_frame(self, op: AbstractOperatorLike) -> int:
+        """Returns the position of the innermost in-progress op that makes ``op`` a cycle."""
+        unwrapped = _get_base_and_n_ctrls(op)
+
+        def closes_cycle(in_progress):
+            if in_progress == op:
+                return True
+            if unwrapped is None:
+                return False
+            base, num_control_wires = unwrapped
+            if in_progress == base:
+                return True
+            in_progress_unwrapped = _get_base_and_n_ctrls(in_progress)
+            return (
+                in_progress_unwrapped is not None
+                and in_progress_unwrapped[0] == base
+                and num_control_wires >= in_progress_unwrapped[1]
+            )
+
+        frames = range(len(self._in_progress) - 1, -1, -1)
+        return next(frame for frame in frames if closes_cycle(self._in_progress[frame]))
 
     def _replace_node(self, idx: int, new_node: _OperatorNode) -> None:
         original_node = self._graph[idx]
@@ -460,12 +523,21 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         max_op_min_work_wires = 0
         for op in decomp_resource.gate_counts:
 
-            if self._base_in_progress(op):
+            # A cycle back to an in-progress operator, its base, or a version of it with
+            # more control wires or fewer available work wires would add a new node on every
+            # pass through the cycle, recursing indefinitely. Revisiting an existing node is
+            # safe and keeps the cycle's exits.
+            next_budget = num_used_work_wires + work_wire_spec.total
+            cycle = self._base_in_progress(op) or (
+                op in self._work_wire_dependent_ops and op in self._in_progress
+            )
+            if cycle and self._existing_op_node_idx(op, next_budget) is None:
+                self._record_cut(self._cycle_frame(op))
                 d_node.reachable = False
                 self._graph.add_edge(d_node_idx, op_idx, 0)
                 return d_node
 
-            op_node_idx = self._add_op_node(op, num_used_work_wires + work_wire_spec.total)
+            op_node_idx = self._add_op_node(op, next_budget)
             self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
             # If any of the operators in the decomposition depends on work wires, this
             # decomposition is also dependent on work wires, even it itself does not use
@@ -660,6 +732,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
 
 def _get_base_and_n_ctrls(op: AbstractOperatorLike) -> tuple[AbstractOperatorLike, int] | None:
+    # The control register may also grow beneath an adjoint.
+    if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Adjoint:
+        op = resource_rep(op.params["base_class"], **op.params["base_params"])
+    elif isinstance(op, qp.ops.Adjoint2):
+        op = abstractify(op.base)
     if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Controlled:
         base_class, base_params = op.params["base_class"], op.params["base_params"]
         return resource_rep(base_class, **base_params), op.params["num_control_wires"]
