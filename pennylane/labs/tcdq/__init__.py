@@ -380,6 +380,14 @@ Circuit construction utilities
     ~create_random_gates
     ~generate_pauli_observables
 
+Resource estimation
+~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~shot_resources
+
 """
 
 from .expval_functions import (
@@ -390,6 +398,7 @@ from .qudit_expval_functions import (
     QuditCircuitConfig,
     build_qudit_expval_func,
 )
+from .resources import shot_resources
 from .mmd_loss_pauli import MMDConfig, build_mmd_loss_pauli, median_heuristic
 from .mmd_loss_hw import QuditMMDConfig, build_mmd_loss_hw
 from .training import BatchResult, TrainingOptions, TrainingResult, train, training_iterator
@@ -416,6 +425,7 @@ __all__ = [
     "TrainingResult",
     "train",
     "training_iterator",
+    "shot_resources",
     "create_lattice_gates",
     "create_local_gates",
     "create_random_gates",

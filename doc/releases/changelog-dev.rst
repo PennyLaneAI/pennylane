@@ -4,6 +4,21 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* Added :func:`~.labs.tcdq.shot_resources`, which returns a resource operator for one
+  computational-basis shot of the circuit described by a :class:`~.labs.tcdq.CircuitConfig` or
+  :class:`~.labs.tcdq.QuditCircuitConfig`, to be priced with
+  :func:`~.labs.estimator_beta.estimate`. It is built from the new resource operators
+  :class:`~.labs.estimator_beta.templates.IQPSamplingShot`,
+  :class:`~.labs.estimator_beta.templates.QuditSamplingShot`,
+  :class:`~.labs.estimator_beta.templates.ParityPhaseLayer` and
+  :class:`~.labs.estimator_beta.templates.QuditFourierTransform`. A trainable phase layer is
+  priced through the ``phase_op`` argument, e.g. with the new
+  :class:`~.labs.estimator_beta.templates.SumPhaseLayer` for phase functions of the digit sum.
+  Passing the trained parameters (``params`` of ``shot_resources``, or ``gates_params`` of the
+  shot operators) prices small rotation angles with the angle-dependent Clifford+T synthesis of
+  [arXiv:2605.31544](https://arxiv.org/abs/2605.31544).
+  [(#10412)](https://github.com/PennyLaneAI/pennylane/pull/10412)
+
 * :func:`~.transforms.gridsynth` has a new ``method`` keyword argument with two randomized
   synthesis methods from `arXiv:2203.10064 <https://arxiv.org/abs/2203.10064>`__, which reduce the
   T-count at the same accuracy of the channel averaged over executions.
