@@ -1313,6 +1313,24 @@ class IsingZZ(Operator2):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
+
+    .. details::
+        :title: Available controlled decompositions
+
+        .. decomposition-table:: "C(IsingZZ)"
+            :symbols: :math:`c` control wires, :math:`z` controls on :math:`0`
+            :example: :math:`c=1`, :math:`z=0`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_ising_zz)
+                :image: /_static/decomposition_thumbnails/controlled_ising_zz.svg
+
+                :class:`~.CNOT` | :math:`2` | 2
+                :class:`Controlled(RZ) <.Controlled>` | :math:`1` | 1
+                :class:`~.PauliX` | :math:`2z` | 0
+
+        The CNOT gates compute and uncompute the parity of the two target wires.
+        Only the RZ rotation requires the :math:`c` control wires. Controls on
+        :math:`0` are flipped with X gates before and after the decomposition.
     """
 
     dynamic_argnames = ("phi",)
