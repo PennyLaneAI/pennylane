@@ -2235,6 +2235,11 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed tracer leaks when passing traced work-wire labels to :func:`~.ctrl`
+  applied to a callable during program capture. Concrete work-wire labels,
+  including strings, retain their existing behavior.
+  `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
+
 * Fixed a bug where :class:`~.BasisRotation` for real-valued matrices :math:`u` implemented the
   rotation for :math:`S u S` instead of :math:`u`, with :math:`S=\operatorname{diag}((-1)^p)`,
   and handled matrices with determinant :math:`-1` inconsistently. It now implements
