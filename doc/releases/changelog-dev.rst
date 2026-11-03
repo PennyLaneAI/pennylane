@@ -4,6 +4,9 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
+  `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
+
 * :func:`~.transforms.gridsynth` has a new ``method`` keyword argument with two randomized
   synthesis methods from `arXiv:2203.10064 <https://arxiv.org/abs/2203.10064>`__, which reduce the
   T-count at the same accuracy of the channel averaged over executions.
@@ -878,6 +881,18 @@ New features since last release
 
 Improvements 🛠
 ~~~~~~~~~~~~~~
+
+* :class:`~.TrotterVibronic` has a new ``branch_probs`` argument, a dictionary with the
+  probabilities for the Hamiltonian terms to be applied rather than skipped for vanishing 
+  coefficients. The decomposition uses them as resource hints.
+  If ``branch_probs`` is not provided, it is computed from the ``hamiltonian``
+  data and the ``evolution_time`` at construction, as long as both are concrete.
+  `(#10401) <https://github.com/PennyLaneAI/pennylane/pull/10401>`__
+
+* Added ``pennylane.core.get_op_class_by_name``
+  to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
+  automatically registered when they are defined.
+  `(#10430) <https://github.com/PennyLaneAI/pennylane/pull/10430>`__
 
 * Refined the warnings raised by :class:`~.AQFT`:
 
@@ -2289,7 +2304,10 @@ Bug fixes 🐛
   `(#10371) <https://github.com/PennyLaneAI/pennylane/pull/10371>`__
 
 * Fixed infinite recursion in the construction of ``DecompositionGraph`` when a cycle of work-wire
-  dependent operators uses additional work wires on every pass through the cycle.
+  dependent operators uses additional work wires on every pass through the cycle. Also fixed
+  ``DecompositionGraph`` reusing operator nodes that were only partially explored because a cycle
+  was cut, which made results depend on exploration order and could mark decompositions as
+  unreachable or overestimate their cost.
   `(#10423) <https://github.com/PennyLaneAI/pennylane/pull/10423>`__
 
 * The resource estimate of the measurement-based decomposition of :class:`~.QROM` now declares

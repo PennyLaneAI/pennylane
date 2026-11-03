@@ -685,6 +685,45 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("angle", [0.0, -0.1234, 0.6931])
+    @pytest.mark.parametrize("control_values", [[True], [False], [True, True], [False, True]])
+    @pytest.mark.parametrize(
+        "work_wires, work_wire_type", [([], "borrowed"), ([5], "borrowed"), ([5], "zeroed")]
+    )
+    def test_controlled_isingzz_decomposition(
+        self, angle, control_values, work_wires, work_wire_type
+    ):
+        """Test the controlled IsingZZ rule's gates, matrix, and resource counts."""
+        from pennylane.ops.qubit.parametric_ops_multi_qubit import controlled_ising_zz
+
+        control_wires = list(range(len(control_values)))
+        op = qp.ctrl(
+            qp.IsingZZ(angle, wires=[3, 2]),
+            control=control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+        rule = qp.list_decomps("C(IsingZZ)")[controlled_ising_zz.name]
+        tape = decomp_rule_to_tape(op, rule)
+        flips = [qp.X(wire) for wire, value in zip(control_wires, control_values) if not value]
+        expected = [
+            *flips,
+            qp.CNOT(wires=[3, 2]),
+            qp.ctrl(
+                qp.RZ(angle, wires=2),
+                control=control_wires,
+                work_wires=work_wires,
+                work_wire_type=work_wire_type,
+            ),
+            qp.CNOT(wires=[3, 2]),
+            *flips,
+        ]
+        assert len(tape.operations) == len(expected)
+        for actual, expected_op in zip(tape.operations, expected):
+            qp.assert_equal(actual, expected_op)
+        assert_valid_decomp_rule(op, rule)
+
     @pytest.mark.integration
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_isingzz_decomposition_graph(self):
