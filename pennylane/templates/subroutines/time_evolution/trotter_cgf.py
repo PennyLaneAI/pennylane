@@ -149,7 +149,7 @@ class TrotterCGF(Operator2):
                     skipped
 
                 :class:`~.BasisRotation` on :math:`N` wires | :math:`M(2Ln + 2)` | 8
-                :class:`~.IsingZZ` | :math:`((2L-1)n + 1)\, \frac{M(M-1)}{2} N^2` | 18
+                :class:`~.IsingZZ` | :math:`((2L-1)n + 1)\, \frac{M(M-1)}{2} N^2 + nMN` | 18
                 :class:`~.RZ` | :math:`nMN` | 6
                 :class:`~.GlobalPhase` | :math:`1` | 1
 

@@ -458,7 +458,7 @@ class AliasSamplingTHC(Operator2):
         .. decomposition-table:: qp.AliasSamplingTHC
             :stacked:
             :symbols: :math:`n = \lceil \log_2(M+1) \rceil` wires per index register and
-                :math:`\aleph` = ``aleph`` bits
+                :math:`\aleph` = ``aleph`` bits, and :math:`M` is the THC rank.
             :example: :math:`M=1`, :math:`N=2`, :math:`\aleph=1` (:math:`n=1`)
 
             .. decomposition-rule:: _alias_sampling_thc_decomp
