@@ -669,20 +669,20 @@ class TestDecomposition:
         assert_resources_match_decomposition(op)
 
     @pytest.mark.parametrize(
-        "branch_probs, num_visits, expected",
+        "branch_probs, use_key, num_visits, expected",
         [
-            (None, 10, 10),
-            ((("constant", 0.5),), 10, 10),
-            ((("linear", 0.25),), 10, 3),
-            ((("linear", 0.7),), 10, 7),
-            ((("linear", 0.0),), 10, 1),
-            ((("linear", 0.0),), 0, 0),
+            (None, "linear", 10, 10),
+            ((("constant", 0.5),), "linear", 10, 10),
+            ((("linear", 0.25),), "linear", 10, 3),
+            ((("quadratic", 0.7),), "quadratic", 10, 7),
+            ((("bilinear", 0.0),), "bilinear", 10, 1),
+            ((("kinetic", 0.0),), "kinetic", 0, 0),
         ],
     )
-    def test_num_applied_terms(self, branch_probs, num_visits, expected):
+    def test_num_applied_terms(self, branch_probs, use_key, num_visits, expected):
         """Test that the number of applied terms is weighted with the probability of the term,
         rounded up and at least one for visited terms, and unweighted without probability."""
-        assert _num_applied_terms(branch_probs, "linear", num_visits) == expected
+        assert _num_applied_terms(branch_probs, use_key, num_visits) == expected
 
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp", "enable_and_disable_capture")

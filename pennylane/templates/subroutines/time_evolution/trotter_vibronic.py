@@ -13,7 +13,6 @@
 # limitations under the License.
 """Contains the ``TrotterVibronic`` template for vibronic Hamiltonian time evolution."""
 
-import warnings
 from collections import defaultdict
 from functools import reduce
 
@@ -38,19 +37,6 @@ from ..arithmetic.signed_out_multiplier import SignedOutMultiplier, _twos_comple
 from ..arithmetic.signed_out_square import SignedOutSquare
 from ..multix import MultiX
 from ..qrom import QROM
-
-
-def _aqft(order, wires):
-    """Construct an :class:`~.AQFT`, suppressing its "use QFT instead" advisory.
-
-    ``TrotterVibronic`` uses the AQFT as its position <-> momentum transform and deliberately
-    allows the full order (``aqft_order=None`` resolves to ``k - 1``), which always trips AQFT's
-    advice to use ``QFT`` instead. That advisory is not actionable here, so it is silenced.
-    """
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", message=".*QFT class is recommended.*")
-        return AQFT(order=order, wires=wires)
-
 
 _BRANCH_TERMS = ("constant", "linear", "quadratic", "bilinear", "kinetic")
 
@@ -103,22 +89,8 @@ class TrotterVibronic(Operator2):
             position and momentum space. If ``None`` (default), no approximation is made
             (``aqft_order = k - 1``).
         branch_probs (dict[str, float]): probabilities for the fragment terms to be applied rather
-            than skipped for vanishing coefficients. They are only used for resource estimation
-            and do not affect the circuit, see the note below. If ``None`` (default), they are
-            computed from ``hamiltonian`` and ``evolution_time`` if both are concrete, and omitted
-            otherwise.
-
-    .. note::
-
-        The keys of ``branch_probs`` are ``"constant"``, ``"linear"``, ``"quadratic"``,
-        ``"bilinear"`` and ``"kinetic"``. The probabilities are attached as ``"branch-prob"``
-        hints via :func:`~.hint` to the conditionals that skip the respective terms. In addition,
-        they weight the gate counts of the terms in the resources of the decomposition rule, and
-        thus affect the weight of this rule in the graph-based decomposition system.
-
-        Providing ``branch_probs`` replaces the probabilities computed from ``hamiltonian`` and
-        ``evolution_time`` entirely, rather than updating them. Terms missing from
-        ``branch_probs`` are left unhinted and counted at every visit.
+            than skipped for vanishing coefficients, used as resource hints.
+            See note below for details.
 
     **Example**
 
@@ -173,6 +145,22 @@ class TrotterVibronic(Operator2):
 
     >>> qp.specs(circuit)().resources.quantum_operations  # doctest: +SKIP
     {'PhaseGradientStatePrep': 1, 'QROM': 6, 'SemiAdder': 2, 'CNOT': 24, 'C(Incrementer)': 4, 'OutMultiplier': 3, 'MultiX': 2, 'AQFT': 1, 'SignedOutSquare': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(AQFT)': 1}
+
+    .. note::
+
+        The keys of ``branch_probs`` are ``"constant"``, ``"linear"``, ``"quadratic"``,
+        ``"bilinear"`` and ``"kinetic"``. The probabilities are attached as ``"branch-prob"``
+        hints via :func:`~.hint` to the conditionals that skip the respective terms, and thus
+        only expect resource accounting but not the circuit itself. In addition,
+        they weight the gate counts of the terms in the resources of the decomposition rule, and
+        thus affect the weight of this rule in the graph-based decomposition system.
+
+        If ``branch_probs=None`` (default), the probablities are computed from ``hamiltonian``
+        and ``evolution_time`` if both are concrete, and omitted otherwise.
+
+        Providing ``branch_probs`` replaces the probabilities computed from ``hamiltonian`` and
+        ``evolution_time`` entirely, rather than updating them. Terms missing from
+        ``branch_probs`` are left unhinted and counted at every visit.
 
     .. details::
         :title: Register Sizes
@@ -558,7 +546,7 @@ def _trotter_vibronic_resources(
     )
     # Mirror the decomposition's resolution of ``aqft_order`` (``k - 1`` when unset) so the
     # resource estimate and the emitted circuit agree.
-    aqft = _aqft(order=(aqft_order if aqft_order is not None else k - 1), wires=Wire[k])
+    aqft = AQFT(order=(aqft_order if aqft_order is not None else k - 1), wires=Wire[k])
 
     # The compute/uncompute pairs are emitted as ``adjoint(...)`` wrappers in the decomposition, so
     # they must be declared as such (not as their bare base ops) for the graph to find a path.
@@ -1335,11 +1323,11 @@ def _trotter_step_second_order(
                 # Negated for the same phase-gradient sign convention as ``_load_coefficients``.
                 bitstring = math.binary_decimals(-_coeffs, precision, unit=2 * np.pi)
                 MultiX(bitstring, registers["coefficients"])
-                _aqft(order=aqft_order, wires=mode_registers[k])
+                AQFT(order=aqft_order, wires=mode_registers[k])
                 SignedOutSquare(**square_wires, output_wires_zeroed=True)
                 OutMultiplier(**mult_wires)
                 adjoint(SignedOutSquare(**square_wires, output_wires_zeroed=True))
-                adjoint(_aqft(order=aqft_order, wires=mode_registers[k]))
+                adjoint(AQFT(order=aqft_order, wires=mode_registers[k]))
                 # ``MultiX`` is self-adjoint, so the unload is the same call.
                 MultiX(bitstring, registers["coefficients"])
 

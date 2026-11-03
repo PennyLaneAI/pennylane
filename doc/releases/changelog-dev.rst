@@ -4,6 +4,9 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
+  `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
+
 * :func:`~.transforms.gridsynth` has a new ``method`` keyword argument with two randomized
   synthesis methods from `arXiv:2203.10064 <https://arxiv.org/abs/2203.10064>`__, which reduce the
   T-count at the same accuracy of the channel averaged over executions.
@@ -63,9 +66,10 @@ New features since last release
   :func:`~.while_loop` to specify a heuristic number of times the loop will iterate, and on
   :func:`~.cond` to specify heuristic branch probabilities. This provides more concrete and accurate
   resource estimates with :func:`~.analyze`.
-  [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
-  [(#10297)](https://github.com/PennyLaneAI/pennylane/pull/10297)
-  [(#10251)](https://github.com/PennyLaneAI/pennylane/pull/10251)
+  `(#10230) <https://github.com/PennyLaneAI/pennylane/pull/10230>`__
+  `(#10297) <https://github.com/PennyLaneAI/pennylane/pull/10297>`__
+  `(#10251) <https://github.com/PennyLaneAI/pennylane/pull/10251>`__
+  `(#10428) <https://github.com/PennyLaneAI/pennylane/pull/10428>`__
 
   By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, reosurce profiling with
   :func:`~.analyze` can heuristically specify the number of iterations, leading to concrete
@@ -343,6 +347,7 @@ New features since last release
   `(#9847) <https://github.com/PennyLaneAI/pennylane/pull/9847>`__
   `(#10008) <https://github.com/PennyLaneAI/pennylane/pull/10008>`__
   `(#10053) <https://github.com/PennyLaneAI/pennylane/pull/10053>`__
+  `(#10414) <https://github.com/PennyLaneAI/pennylane/pull/10414>`__
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
   want to prepare, the template is simple to call. Consider the following example:
@@ -846,6 +851,7 @@ New features since last release
   `(#9308) <https://github.com/PennyLaneAI/pennylane/pull/9308>`__
   `(#9554) <https://github.com/PennyLaneAI/pennylane/pull/9554>`__
   `(#10145) <https://github.com/PennyLaneAI/pennylane/pull/10145>`__
+  `(#10377) <https://github.com/PennyLaneAI/pennylane/pull/10377>`__
 
   .. code-block:: python
 
@@ -855,12 +861,12 @@ New features since last release
 
       @qp.set_shots(shots=1)
       @qp.qnode(dev)
-      def circuit(x_val, L_val):
+      def circuit(x_val, value):
           x_val_bin = qp.math.int_to_binary(x_val, 3)
           qp.BasisState(x_val_bin, wires=[0, 1, 2])
           qp.LeftClassicalComparator(
               x_wires=[0, 1, 2],
-              L=L_val,
+              value=value,
               target_wire=3,
               work_wires=[4, 5],
               comparator=">=",
@@ -877,18 +883,45 @@ Improvements 🛠
 ~~~~~~~~~~~~~~
 
 * :class:`~.TrotterVibronic` has a new ``branch_probs`` argument, a dictionary with the
-  probabilities for the ``"constant"``, ``"linear"``, ``"quadratic"``, ``"bilinear"`` and
-  ``"kinetic"`` terms to be applied rather than skipped for vanishing coefficients. The
-  decomposition uses them as ``branch-prob`` hints for the conditionals that skip these terms,
-  replacing their worst-case resource counts by the average counts when compiling with Catalyst.
-  The resource function of the decomposition rule, and thus its weight in the graph-based
-  decomposition system, uses the same average counts. The probabilities do not affect the
-  circuit itself. If ``branch_probs`` is not provided, it is computed from the ``hamiltonian``
-  data and the ``evolution_time`` at construction, as long as both are concrete. For traced or
-  abstract inputs, e.g., when passing the Hamiltonian as an argument to a
-  :func:`~.qjit`-compiled function, the probabilities can be provided manually, and the
-  conditionals are left unhinted otherwise.
+  probabilities for the Hamiltonian terms to be applied rather than skipped for vanishing 
+  coefficients. The decomposition uses them as resource hints.
+  If ``branch_probs`` is not provided, it is computed from the ``hamiltonian``
+  data and the ``evolution_time`` at construction, as long as both are concrete.
   `(#10401) <https://github.com/PennyLaneAI/pennylane/pull/10401>`__
+
+* Added ``pennylane.core.get_op_class_by_name``
+  to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
+  automatically registered when they are defined.
+  `(#10430) <https://github.com/PennyLaneAI/pennylane/pull/10430>`__
+
+* Refined the warnings raised by :class:`~.AQFT`:
+
+  - No warning for ``order=0``, as it is a valid approximation.
+  - Instead of rounding non-integer ``order`` values, an error is raised.
+  - No warning for ``order=len(wires)-1``, as it is an equivalent realization of :class:`~.QFT`.
+  - The warning for ``order>=len(wires)`` now recommends reducing the ``order`` to the equivalent
+    ``len(wires)-1``, instead of switching to :class:`~.QFT`.
+
+  `(#10415) <https://github.com/PennyLaneAI/pennylane/pull/10415>`__
+
+* Added optional ``work_wires`` to :class:`~.TrotterCDF` to combine the four equal-angle
+  ``IsingZZ`` gates between each pair of distinct spatial orbitals. With one work
+  wire initialized to :math:`|0\rangle`, each uncontrolled two-body layer uses
+  :math:`N(N-1)/2` ``CRZ`` and :math:`N` ``RZ`` gates instead of
+  :math:`N(2N-1)` ``IsingZZ`` gates, where :math:`N` is the number of spatial orbitals.
+  The double-phase decomposition also needs one work wire and shares control CNOTs
+  across orbital pairs; standard single-qubit control needs two work wires and shares
+  one ``TemporaryAND`` computation across pairs with the same first orbital.
+  For :math:`m>1` standard controls, a registered decomposition reuses the single-control
+  implementation through the generic AND reduction when :math:`m-1` additional clean
+  work wires are supplied to :func:`~.ctrl` with ``work_wire_type="zeroed"``.
+  The reduction in rotations comes at the cost of additional ``TemporaryAND`` and CNOT gates.
+  The original decomposition is used when fewer work wires are supplied.
+  `(#10380) <https://github.com/PennyLaneAI/pennylane/pull/10380>`__
+  
+* Added a new decomposition rule, ``_single_excitation_ppr_crz``, to :class:`~.SingleExcitation`, that
+  realizes the Givens rotation with a single arbitrary-angle ``CRZ`` gate and four Clifford operations.
+  `(#10358) <https://github.com/PennyLaneAI/pennylane/pull/10358>`__
 
 * The phase gradient decomposition rule factories :func:`~.make_rz_to_phase_gradient_decomp`,
   :func:`~.make_crz_to_phase_gradient_decomp` and
@@ -1468,6 +1501,7 @@ Breaking changes 💔
   inverse (for example, ``qp.RX(-theta, wires=0)``) or explicitly simplify with
   ``qp.simplify(qp.adjoint(op))``.
   `(#10371) <https://github.com/PennyLaneAI/pennylane/pull/10371>`__
+  `(#10394) <https://github.com/PennyLaneAI/pennylane/pull/10394>`__
 
 * ``qp.tape.plxpr_to_tape`` and ``qp.tape.plxpr_conversion.plxpr_to_tape`` have been removed.
   Use :func:`~.testing.plxpr_to_tape` instead.
@@ -2243,8 +2277,13 @@ Documentation 📝
   operator's decomposition rules, with a circuit diagram and the resources the rule uses. 
   This change only applies to operators that are subclasses of ``Operator2``. 
   The tables are rendered by a new ``decomposition-table`` Sphinx directive, and their diagrams are
-  drawn with :func:`~pennylane.draw_mpl`.
+  drawn with :func:`~pennylane.draw_mpl`. Symbolic decomposition rules for operators (i.e., 
+  ``"Adjoint(Operator)"``, ``"Controlled(Operator)"``, and ``"Pow(Operator)"``) are also displayed
+  and marked by the region type with `:region: adjoint/controlled/pow`.
   `(#10381) <https://github.com/PennyLaneAI/pennylane/pull/10381>`__
+  `(#10382) <https://github.com/PennyLaneAI/pennylane/pull/10382>`__
+  `(#10383) <https://github.com/PennyLaneAI/pennylane/pull/10383>`__
+  `(#10416) <https://github.com/PennyLaneAI/pennylane/pull/10416>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~

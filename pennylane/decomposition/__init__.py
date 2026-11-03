@@ -178,9 +178,7 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
         qp.IsingXX(0.5, wires=[0, 1])
         return qp.state()
 
-.. TODO: Remove this skip once CI uses Catalyst's adjoint API without ``lazy``.
-
->>> qp.specs(qp.qjit(circuit))()["resources"].quantum_operations  # doctest: +SKIP
+>>> qp.specs(qp.qjit(circuit))()["resources"].quantum_operations
 {'GlobalPhase': 6, 'CZ': 3, 'RX': 7, 'RZ': 12}
 
 To register alternative decomposition rules under an operator to be used globally, use
