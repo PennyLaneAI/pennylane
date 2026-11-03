@@ -481,6 +481,113 @@ class TestDecompGraphConstruction:
         solution = graph.solve()
         assert solution.decomposition(ctrl_another) is _ctrl_another_to_ctrl_custom
 
+    @pytest.mark.parametrize("entry_first", [False, True])
+    def test_reuse_of_op_under_exploration_does_not_depend_on_operator_order(self, entry_first):
+        """Tests that an operator that reuses an operator which is still being explored is
+        explored again when it is visited after a cycle cut in that exploration is resolved."""
+
+        class EntryOp(Operation):
+            """An operation that decomposes into ``HubOp``."""
+
+        class HubOp(Operation):
+            """An operation with a cheap decomposition through the controlled ``EntryOp``."""
+
+        class LoopOp(Operation):
+            """An operation that decomposes into ``HubOp``."""
+
+        @qp.register_resources({HubOp: 1})
+        def _to_hub(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.Z: 1})
+        def _hub_to_z(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({_ctrl_abstract(EntryOp, Wire[1]): 1})
+        def _hub_to_ctrl_entry(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({LoopOp: 1})
+        def _hub_to_loop(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.X: 1})
+        def _ctrl_entry_to_x(*_, **__):
+            raise NotImplementedError
+
+        ops = [EntryOp(0), LoopOp(0)]
+        if not entry_first:
+            ops.reverse()
+
+        graph = DecompositionGraph(
+            ops,
+            gate_set={qp.X: 1.0, qp.Z: 100.0},
+            alt_decomps={
+                EntryOp: [_to_hub],
+                HubOp: [_hub_to_z, _hub_to_ctrl_entry, _hub_to_loop],
+                LoopOp: [_to_hub],
+                "C(EntryOp)": [_ctrl_entry_to_x],
+            },
+        )
+        solution = graph.solve()
+        assert solution.resource_estimate(LoopOp(0)) == to_resources({qp.X: 1})
+
+    @pytest.mark.parametrize("entry_first", [False, True])
+    def test_cuts_against_several_in_progress_ops(self, entry_first):
+        """Tests that an operator is explored again when it is visited after a cycle cut in its
+        exploration is resolved, even if another cut in its exploration closed a cycle back to it.
+        """
+
+        class EntryOp(Operation):
+            """An operation that decomposes into ``HubOp``."""
+
+        class HubOp(Operation):
+            """An operation that decomposes into ``LeafOp``."""
+
+        class LeafOp(Operation):
+            """An operation with a cheap decomposition through the controlled ``EntryOp``."""
+
+        @qp.register_resources({HubOp: 1})
+        def _entry_to_hub(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({LeafOp: 1})
+        def _hub_to_leaf(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.Z: 1})
+        def _leaf_to_z(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({_ctrl_abstract(EntryOp, Wire[1]): 1})
+        def _leaf_to_ctrl_entry(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({_ctrl_abstract(HubOp, Wire[1]): 1})
+        def _leaf_to_ctrl_hub(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.X: 1})
+        def _ctrl_entry_to_x(*_, **__):
+            raise NotImplementedError
+
+        ops = [EntryOp(0), HubOp(0)]
+        if not entry_first:
+            ops.reverse()
+
+        graph = DecompositionGraph(
+            ops,
+            gate_set={qp.X: 1.0, qp.Z: 100.0},
+            alt_decomps={
+                EntryOp: [_entry_to_hub],
+                HubOp: [_hub_to_leaf],
+                LeafOp: [_leaf_to_z, _leaf_to_ctrl_entry, _leaf_to_ctrl_hub],
+                "C(EntryOp)": [_ctrl_entry_to_x],
+            },
+        )
+        solution = graph.solve()
+        assert solution.resource_estimate(HubOp(0)) == to_resources({qp.X: 1})
+
 
 @pytest.mark.unit
 @patch("pennylane.decomposition.decomposition_rule._decompositions_var", decompositions)
