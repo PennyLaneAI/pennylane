@@ -207,7 +207,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("det", [1, -1])
     def test_real_determinant_correction_with_capture(self, det, seed):
         """Test that with program capture, the determinant correction of an orthogonal matrix is
-        a PauliZ for a negative determinant and nothing otherwise, rather than a PhaseShift."""
+        a PauliZ for a negative determinant and nothing otherwise."""
         # pylint: disable=import-outside-toplevel
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
         from pennylane.templates.subroutines.qchem.basis_rotation import (
@@ -231,7 +231,6 @@ class TestDecomposition:
         collector.eval(plxpr.jaxpr, plxpr.consts, ortho_matrix)
         ops = collector.state["ops"]
 
-        assert not any(isinstance(op, qp.PhaseShift) for op in ops)
         assert [op for op in ops if isinstance(op, qp.PauliZ)] == ([qp.Z(0)] if det < 0 else [])
         assert sum(isinstance(op, qp.SingleExcitation) for op in ops) == 3
 

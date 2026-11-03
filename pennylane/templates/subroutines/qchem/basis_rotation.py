@@ -38,8 +38,7 @@ def _adjust_determinant(matrix):
         matrix (array): orthogonal matrix to adjust the determinant of.
 
     Returns:
-        tuple[bool, array]: Whether the determinant was negative, in which case a PauliZ on the
-        first wire performs the adjustment on the quantum circuit level, as well as the new
+        tuple[bool, array]: Whether the determinant was negative, as well as the new
         matrix with determinant :math:`+1`.
 
     """
@@ -47,17 +46,17 @@ def _adjust_determinant(matrix):
 
     mat = matrix
     if math.is_tracer(det):
-        is_negative = det < 0
-        mat = math.set_index(mat, 0, math.where(is_negative, -mat[0], mat[0]))
-        return is_negative, mat
+        was_negative = det < 0
+        mat = math.set_index(mat, 0, math.where(was_negative, -mat[0], mat[0]))
+        return was_negative, mat
 
-    is_negative = bool(det < 0)
-    if is_negative:
+    was_negative = bool(det < 0)
+    if was_negative:
         if math.get_interface(mat) != "jax":
             mat = math.toarray(mat).copy()
         mat = math.set_index(mat, 0, -mat[0])
 
-    return is_negative, mat
+    return was_negative, mat
 
 
 class BasisRotation(Operator2):
@@ -362,13 +361,13 @@ def _real_basis_rotation_decomp(unitary_matrix, wires, **_):
 
     unitary, wires = _prepare_args(unitary_matrix, wires)
 
-    is_negative, unitary = _adjust_determinant(unitary)
+    was_negative, unitary = _adjust_determinant(unitary)
 
-    if _is_jax_jit(is_negative):
+    if _is_jax_jit(was_negative):
         # Plain jax.jit cannot branch on the traced determinant, so apply PauliZ as PhaseShift(pi).
-        PhaseShift(math.where(is_negative, np.pi, 0.0), wires[0])
+        PhaseShift(math.where(was_negative, np.pi, 0.0), wires[0])
     else:
-        cond(is_negative, PauliZ)(wires[0])
+        cond(was_negative, PauliZ)(wires[0])
 
     _, givens_list = math.decomposition.givens_decomposition(unitary)
     givens_matrices, givens_ids = zip(*givens_list, strict=True)
