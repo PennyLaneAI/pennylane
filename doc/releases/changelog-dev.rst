@@ -4,6 +4,9 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
+  `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
+
 * :func:`~.transforms.gridsynth` has a new ``method`` keyword argument with two randomized
   synthesis methods from `arXiv:2203.10064 <https://arxiv.org/abs/2203.10064>`__, which reduce the
   T-count at the same accuracy of the channel averaged over executions.
@@ -63,9 +66,10 @@ New features since last release
   :func:`~.while_loop` to specify a heuristic number of times the loop will iterate, and on
   :func:`~.cond` to specify heuristic branch probabilities. This provides more concrete and accurate
   resource estimates with :func:`~.analyze`.
-  [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
-  [(#10297)](https://github.com/PennyLaneAI/pennylane/pull/10297)
-  [(#10251)](https://github.com/PennyLaneAI/pennylane/pull/10251)
+  `(#10230) <https://github.com/PennyLaneAI/pennylane/pull/10230>`__
+  `(#10297) <https://github.com/PennyLaneAI/pennylane/pull/10297>`__
+  `(#10251) <https://github.com/PennyLaneAI/pennylane/pull/10251>`__
+  `(#10428) <https://github.com/PennyLaneAI/pennylane/pull/10428>`__
 
   By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, reosurce profiling with
   :func:`~.analyze` can heuristically specify the number of iterations, leading to concrete
@@ -890,6 +894,11 @@ Improvements 🛠
 * Added a decomposition for ``Adjoint(Incrementer)`` into :class:`~.Incrementer` sandwiched by
   :class:`~.MultiX`, realizing the identity :math:`x-1 = \overline{(\overline{x}+1)}`.
   `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
+
+* Added ``pennylane.core.get_op_class_by_name``
+  to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
+  automatically registered when they are defined.
+  `(#10430) <https://github.com/PennyLaneAI/pennylane/pull/10430>`__
 
 * Refined the warnings raised by :class:`~.AQFT`:
 

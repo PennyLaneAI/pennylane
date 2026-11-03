@@ -110,16 +110,16 @@ def test_correct(wires, init_state, expected, work_wires):
     assert np.allclose(result, 0)
 
 
-@pytest.mark.parametrize("wires, init_state, expected, work_wires", _INCREMENT_CASES)
-def test_adjoint_decomposition_correct(wires, init_state, expected, work_wires):
+@pytest.mark.parametrize("wires, init_state, forward_output, work_wires", _INCREMENT_CASES)
+def test_adjoint_decomposition_correct(wires, init_state, forward_output, work_wires):
     """Validates that the ``Adjoint(Incrementer)`` decomposition subtracts one, mapping the
-    expected output of each increment case back to its input."""
+    forward output of each increment case back to its input."""
     dev = device("default.qubit", wires=wires + work_wires)
     base = Incrementer(wires, work_wires)
 
     @qnode(dev)
     def decrement():
-        BasisEmbedding(expected, wires)
+        BasisEmbedding(forward_output, wires)
         _adjoint_incrementer_decomposition(base)
         return state()
 
