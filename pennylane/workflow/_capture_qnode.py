@@ -345,6 +345,7 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
             flat_fn, abstracted_axes=abstracted_axes, static_argnums=qnode.static_argnums
         )(*args, **kwargs)
     except (
+        jax.errors.TracerArrayConversionError,
         jax.errors.TracerIntegerConversionError,
         jax.errors.TracerBoolConversionError,
     ) as exc:

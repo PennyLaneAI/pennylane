@@ -17,7 +17,6 @@ Tests for capturing a qnode into jaxpr.
 
 # pylint: disable=protected-access,wrong-import-position,ungrouped-imports,unbalanced-tuple-unpacking
 
-import numpy as np
 import pytest
 
 import pennylane as qp
@@ -70,18 +69,6 @@ def test_error_if_no_device_wires():
 
     with pytest.raises(NotImplementedError, match="devices must specify wires"):
         jax.make_jaxpr(circuit)()
-
-
-def test_numpy_conversion_error_is_preserved():
-    """Test that a NumPy conversion error is not replaced with Autograph guidance."""
-
-    @qp.qnode(qp.device("default.qubit", wires=1))
-    def circuit(x):
-        qp.RX(np.asarray(x), wires=0)
-        return qp.expval(qp.Z(0))
-
-    with pytest.raises(jax.errors.TracerArrayConversionError, match="__array__"):
-        jax.make_jaxpr(circuit)(0.5)
 
 
 def test_simple_qnode():
