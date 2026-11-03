@@ -180,8 +180,8 @@ class TrotterVibronic(Operator2):
                     skipped, and the :class:`~.Hadamard` and :class:`~.CNOT` counts also depend
                     on each fragment's electronic diagonalization
 
-                :class:`~.Hadamard` | :math:`\leq 2P` | 0
-                :class:`~.CNOT` | :math:`\leq 2P(n-1) + PM(2+2k+2b) + PK(2+4k+2b)` | 12
+                :class:`~.Hadamard` | :math:`2P` | 0
+                :class:`~.CNOT` | :math:`2P(n-1) + PM(2+2k+2b) + PK(2+4k+2b)` | 12
                 :class:`~.QROM` | :math:`P(2 + 2M + K)` | 6
                 :class:`~.SemiAdder` | :math:`P` | 2
                 :class:`~.OutMultiplier` | :math:`P(2M + K) + rM` | 3
