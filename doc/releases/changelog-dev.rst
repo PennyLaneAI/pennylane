@@ -2278,7 +2278,10 @@ Bug fixes 🐛
   `(#10371) <https://github.com/PennyLaneAI/pennylane/pull/10371>`__
 
 * Fixed infinite recursion in the construction of ``DecompositionGraph`` when a cycle of work-wire
-  dependent operators uses additional work wires on every pass through the cycle.
+  dependent operators uses additional work wires on every pass through the cycle. Also fixed
+  ``DecompositionGraph`` reusing operator nodes that were only partially explored because a cycle
+  was cut, which made results depend on exploration order and could mark decompositions as
+  unreachable or overestimate their cost.
   `(#10423) <https://github.com/PennyLaneAI/pennylane/pull/10423>`__
 
 * The resource estimate of the measurement-based decomposition of :class:`~.QROM` now declares
