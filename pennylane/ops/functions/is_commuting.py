@@ -180,6 +180,11 @@ def intersection(wires1, wires2):
     return len(qp.wires.Wires.shared_wires([wires1, wires2])) != 0
 
 
+def _is_single_controlled_rot(op):
+    """Recognize both named and symbolic Rot operators with one control wire."""
+    return isinstance(op, Controlled) and isinstance(op.base, qp.Rot) and len(op.control_wires) == 1
+
+
 def check_commutation_two_non_simplified_crot(operation1, operation2):
     r"""Check commutation for two CRot that were not simplified.
 
@@ -191,12 +196,8 @@ def check_commutation_two_non_simplified_crot(operation1, operation2):
         bool: True if commutation, False otherwise.
     """
     # Two non simplified CRot
-    target_wires_1 = qp.wires.Wires(
-        [w for w in operation1.wires if w not in operation1.control_wires]
-    )
-    target_wires_2 = qp.wires.Wires(
-        [w for w in operation2.wires if w not in operation2.control_wires]
-    )
+    target_wires_1 = Wires([w for w in operation1.wires if w not in operation1.control_wires])
+    target_wires_2 = Wires([w for w in operation2.wires if w not in operation2.control_wires])
 
     control_control = intersection(operation1.control_wires, operation2.control_wires)
     target_target = intersection(target_wires_1, target_wires_2)
@@ -229,22 +230,18 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
         bool: True if commutation, False otherwise, None if not two rotations.
     """
 
-    op1_control_wires = (
-        operation1.control_wires if isinstance(operation1, Controlled) else Wires([])
-    )
-    target_wires_1 = qp.wires.Wires([w for w in operation1.wires if w not in op1_control_wires])
-    op2_control_wires = (
-        operation2.control_wires if isinstance(operation2, Controlled) else Wires([])
-    )
-    target_wires_2 = qp.wires.Wires([w for w in operation2.wires if w not in op2_control_wires])
+    op1_ctrl_wires = operation1.control_wires if isinstance(operation1, Controlled) else Wires([])
+    target_wires_1 = qp.wires.Wires([w for w in operation1.wires if w not in op1_ctrl_wires])
+    op2_ctrl_wires = operation2.control_wires if isinstance(operation2, Controlled) else Wires([])
+    target_wires_2 = qp.wires.Wires([w for w in operation2.wires if w not in op2_ctrl_wires])
 
-    if operation1.name == "CRot":
+    if _is_single_controlled_rot(operation1):
         if intersection(target_wires_1, operation2.wires):
             op1_rot = qp.Rot(*operation1.data, wires=target_wires_1)
             return _check_mat_commutation(op1_rot, operation2)
         return _commutes(operation2.name, "ctrl")
 
-    if operation2.name == "CRot":
+    if _is_single_controlled_rot(operation2):
         if intersection(target_wires_2, operation1.wires):
             op2_rot = qp.Rot(*operation2.data, wires=target_wires_2)
             return _check_mat_commutation(op2_rot, operation1)
@@ -312,13 +309,19 @@ def is_commuting(operation1, operation2):
     # Arithmetic non-disjoint operations only contain Pauli words
     _check_opmath_operations(operation1, operation2)
 
-    # Two CRot that cannot be simplified
-    if operation1.name == "CRot" and operation2.name == "CRot":
+    # Two single-controlled Rot operators that cannot be simplified
+    is_crot_1 = _is_single_controlled_rot(operation1)
+    is_crot_2 = _is_single_controlled_rot(operation2)
+    if is_crot_1 and is_crot_2:
         return check_commutation_two_non_simplified_crot(operation1, operation2)
 
     # Check if operations are non simplified rotations and return commutation if it is the case.
     op_set = {"U2", "U3", "Rot", "CRot"}
-    if operation1.name in op_set and operation2.name in op_set:
+    
+    def _is_non_simplified_rot(op):
+        return op.name in op_set or _is_single_controlled_rot(op)
+
+    if _is_non_simplified_rot(operation1) and _is_non_simplified_rot(operation2):
         return check_commutation_two_non_simplified_rotations(operation1, operation2)
 
     ctrl_base_1 = _get_target_name(operation1)
