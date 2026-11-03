@@ -2268,6 +2268,7 @@ Documentation 📝
   `(#10382) <https://github.com/PennyLaneAI/pennylane/pull/10382>`__
   `(#10383) <https://github.com/PennyLaneAI/pennylane/pull/10383>`__
   `(#10416) <https://github.com/PennyLaneAI/pennylane/pull/10416>`__
+  `(#10420) <https://github.com/PennyLaneAI/pennylane/pull/10420>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
