@@ -73,6 +73,15 @@ class TestCompile:
         with pytest.raises(ValueError, match="Number of passes must be an integer"):
             transformed_qnode(0.1, 0.2, 0.3)
 
+    def test_compile_invalid_basis_set(self):
+        """Test that error is raised for an invalid basis_set."""
+        qfunc = build_qfunc([0, 1, 2])
+        transformed_qfunc = compile(qfunc, basis_set=[qp.RX, "RY"])
+        transformed_qnode = qp.QNode(transformed_qfunc, dev_3wires)
+
+        with pytest.raises(ValueError, match="basis_set must be a sequence of strings representing operation names"):
+            transformed_qnode(0.1, 0.2, 0.3)
+
     def test_compile_mixed_tape_qfunc_transform(self):
         """Test that we can interchange tape and qfunc transforms."""
 

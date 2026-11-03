@@ -900,3 +900,18 @@ class TestCommutingFunction:
 
         res = qp.is_commuting(qp.PauliX(wires=0), qp.QFT(wires=[1, 0]))
         assert res is False
+
+    @pytest.mark.parametrize(
+        "op1, op2, res",
+        [
+            (qp.CZ(wires=[0, 1]), qp.SWAP(wires=[0, 1]), True),
+            (qp.CCZ(wires=[0, 1, 2]), qp.SWAP(wires=[0, 1]), True),
+            (qp.IsingXX(0.1, wires=[0, 1]), qp.SWAP(wires=[0, 1]), True),
+            (qp.CZ(wires=[0, 1]), qp.SWAP(wires=[1, 2]), False),
+            (qp.CCZ(wires=[0, 1, 2]), qp.SWAP(wires=[1, 3]), False),
+        ],
+    )
+    def test_swap_with_symmetric_ops(self, op1, op2, res):
+        """Test commutation between SWAP and symmetric operations."""
+        assert qp.is_commuting(op1, op2) == res
+        assert qp.is_commuting(op2, op1) == res
