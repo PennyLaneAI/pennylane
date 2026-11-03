@@ -155,8 +155,8 @@ class TrotterVibronic(Operator2):
         they weight the gate counts of the terms in the resources of the decomposition rule, and
         thus affect the weight of this rule in the graph-based decomposition system.
 
-        If ``branch_probs=None`` (default), the probablities are computed from ``hamiltonian``
-        and ``evolution_time`` if both are concrete, and omitted otherwise.
+        If ``branch_probs=None`` (default), the probabilities are computed from ``hamiltonian``
+        and ``evolution_time`` when the coefficients can be evaluated concretely, and omitted otherwise.
 
         Providing ``branch_probs`` replaces the probabilities computed from ``hamiltonian`` and
         ``evolution_time`` entirely, rather than updating them. Terms missing from
@@ -1057,7 +1057,7 @@ def _branch_probs(hamiltonian, evolution_time, num_trotter_steps):
     The coefficients are scaled by the time steps as in :func:`_trotter_step_second_order`,
     because the skip conditions compare the scaled coefficients against a fixed tolerance.
 
-    Returns ``None`` if the Hamiltonian data or the evolution time are not concrete, or if the
+    Returns ``None`` if the inputs or preprocessed coefficients are not concrete, or if the
     Hamiltonian has more position fragments than the XOR scheme on the electronic register allows.
     """
     data = (evolution_time, *hamiltonian.tensors)
@@ -1070,6 +1070,8 @@ def _branch_probs(hamiltonian, evolution_time, num_trotter_steps):
     time_step = evolution_time / num_trotter_steps
     coeffs, _ = _preprocess_data(time_step, hamiltonian, n_elec, n_states, n_modes)
     kinetic = (_momentum_coefficients(hamiltonian.kinetic) * time_step)[:, None]
+    if any(math.is_tracer(c) for c in (*coeffs, kinetic)):
+        return None
     return {term: _applied_fraction(c) for term, c in zip(_BRANCH_TERMS, (*coeffs, kinetic))}
 
 

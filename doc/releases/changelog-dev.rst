@@ -886,8 +886,10 @@ Improvements 🛠
   probabilities for the Hamiltonian terms to be applied rather than skipped for vanishing 
   coefficients. The decomposition uses them as resource hints.
   If ``branch_probs`` is not provided, it is computed from the ``hamiltonian``
-  data and the ``evolution_time`` at construction, as long as both are concrete.
+  data and the ``evolution_time`` at construction when the preprocessed coefficients are concrete.
+  Automatic probabilities are omitted if the inputs or preprocessed coefficients are traced.
   `(#10401) <https://github.com/PennyLaneAI/pennylane/pull/10401>`__
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
 
 * Added ``pennylane.core.get_op_class_by_name``
   to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
@@ -2287,6 +2289,10 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* QNode capture now preserves JAX array-conversion errors instead of replacing them
+  with unrelated Autograph guidance.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
 
 * Fixed a bug where :class:`~.BasisRotation` for real-valued matrices :math:`u` implemented the
   rotation for :math:`S u S` instead of :math:`u`, with :math:`S=\operatorname{diag}((-1)^p)`,

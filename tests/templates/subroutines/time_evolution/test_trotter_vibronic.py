@@ -831,6 +831,26 @@ class TestDecomposition:
         assert hint_helpers.cond_hints(plxpr.jaxpr) == expected
 
     @pytest.mark.capture
+    @pytest.mark.parametrize("interface", ["numpy", "jax"])
+    def test_branch_probs_with_closed_over_hamiltonian(self, interface, seed):
+        """Test that tracing concrete inputs omits hints when preprocessing becomes traced."""
+        hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=seed))
+        hamiltonian = replace(
+            hamiltonian,
+            **{
+                name: qp.math.asarray(getattr(hamiltonian, name), like=interface)
+                for name in ("constant", "linear", "quadratic", "kinetic")
+            },
+        )
+        wires = make_wires(2, 2)
+
+        def circuit():
+            op = make_op(hamiltonian, wires)
+            assert op.arguments["branch_probs"] is None
+
+        jax.make_jaxpr(circuit)()
+
+    @pytest.mark.capture
     def test_branch_probs_argument(self, seed):
         """Test that ``branch_probs`` is computed from a concrete Hamiltonian and evolution time,
         omitted if either is traced, and that provided values are used as ``branch-prob`` hints."""
