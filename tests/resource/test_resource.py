@@ -36,6 +36,7 @@ from pennylane.resource.resource import (
     _collect_vars,
     _count_to_str,
     _flatten_dict,
+    _format_extra_value,
     _subs_pytree,
     num_to_letters,
     resources_from_tape,
@@ -862,8 +863,9 @@ class TestSpecsResources:
 class TestResourceExtensionDisplay:
     """Test registered extension fields alongside the standard resource display."""
 
-    @pytest.fixture
-    def example_specs(self):
+    @pytest.fixture(scope="class")
+    @classmethod
+    def example_specs(cls):
         """Complete reports with registered and unregistered extension data."""
         original = _RESOURCE_EXTENSIONS.copy()
         qp.resource.register_resource_extension(
@@ -880,7 +882,10 @@ class TestResourceExtensionDisplay:
                     measurement_processes={"expval(PauliZ)": 2},
                     num_wires=2,
                     circuit_depth=3,
-                    extra={"example_count": {"count": n}, "unknown": {"hidden_count": 7}},
+                    extra={
+                        "example_count": {"count": n, "unavailable_count": None},
+                        "unknown": {"hidden_count": 7},
+                    },
                 )
                 for n in range(2)
             },
@@ -901,6 +906,7 @@ class TestResourceExtensionDisplay:
             Circuit Depth: 3
             Example resources:
             - count: 1
+            - unavailable_count: Not computed
         """).strip()
 
         assert str(example_specs.resources[1]) == expected
@@ -920,6 +926,7 @@ class TestResourceExtensionDisplay:
             | **Circuit depth** | 3 |
             | **Example resources** | |
             | count | 1 |
+            | unavailable_count | Not computed |
         """).strip()
 
         assert example_specs.resources[1]._repr_markdown_().strip() == expected
@@ -946,6 +953,7 @@ class TestResourceExtensionDisplay:
             Circuit depth          |  3 |  3
             Example resources:     |
             - count                |  0 |  1
+            - unavailable_count    |  - |  -
         """).strip()
 
         assert str(example_specs) == expected
@@ -981,6 +989,7 @@ class TestResourceExtensionDisplay:
             | **Circuit depth** | 3 | 3 |
             | **Example resources** |  |  |
             | count | 0 | 1 |
+            | unavailable_count | N/A | N/A |
 
             </details>
         """).strip()

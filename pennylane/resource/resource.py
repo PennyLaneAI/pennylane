@@ -125,15 +125,10 @@ def _extra_resource_rows(resources):
 
 
 def _format_extra_value(value, *, extra_compact=False, markdown_safe=False):
-    """Format an extension value, preserving unavailable estimates and text labels."""
-    if value is None:
-        return "Not computed"
-    if isinstance(value, (int, float, Expression)) and not isinstance(value, bool):
+    """Format extension counts with the standard formatter and preserve other values as text."""
+    if isinstance(value, (int, float, Expression)):
         return _count_to_str(value, extra_compact=extra_compact, markdown_safe=markdown_safe)
-    text = str(value)
-    if markdown_safe:
-        return text.replace("|", r"\|").replace("*", r"\*").replace("\n", "<br>")
-    return text.replace("\n", " ")
+    return str(value)
 
 
 def _collect_vars(obj: Any) -> Generator[str]:
@@ -596,11 +591,13 @@ class SpecsResources(Resources):
             lines.append(f"{prefix}Circuit Depth: {depth_str}")
 
         for label, values in _extra_resource_rows({0: self}):
-            lines.append(
-                f"{prefix}{label}:"
-                if values is None
-                else f"{prefix}- {label}: {_format_extra_value(values[0])}"
-            )
+            if values is None:
+                lines.append(f"{prefix}{label}:")
+            else:
+                value_str = (
+                    _format_extra_value(values[0]) if values[0] is not None else "Not computed"
+                )
+                lines.append(f"{prefix}- {label}: {value_str}")
 
         return "\n".join(lines)
 
@@ -648,12 +645,15 @@ class SpecsResources(Resources):
             lines.append(f"| **Circuit depth** | {depth_str} |")
 
         for label, values in _extra_resource_rows({0: self}):
-            label = _format_extra_value(label, markdown_safe=True)
-            lines.append(
-                f"| **{label}** | |"
-                if values is None
-                else f"| {label} | {_format_extra_value(values[0], markdown_safe=True)} |"
-            )
+            if values is None:
+                lines.append(f"| **{label}** | |")
+            else:
+                value_str = (
+                    _format_extra_value(values[0], markdown_safe=True)
+                    if values[0] is not None
+                    else "Not computed"
+                )
+                lines.append(f"| {label} | {value_str} |")
 
         return "\n".join(lines)
 
@@ -928,10 +928,12 @@ class CircuitSpecs:
         for label, values in _extra_resource_rows(flat_resources):
             max_metric_length = max(max_metric_length, len(label) + 2)
             if values is not None:
-                max_column_size = max(
-                    max_column_size,
-                    *(len(_format_extra_value(v, extra_compact=True)) + 1 for v in values.values()),
-                )
+                for value in values.values():
+                    if value is not None:
+                        max_column_size = max(
+                            max_column_size,
+                            len(_format_extra_value(value, extra_compact=True)) + 1,
+                        )
 
         return max_metric_length, max_column_size, all_quantum_operations, all_meas_types
 
@@ -1050,7 +1052,7 @@ class CircuitSpecs:
                     + " |".join(
                         (
                             _format_extra_value(values[column], extra_compact=True)
-                            if column in values
+                            if values.get(column) is not None
                             else "-"
                         ).rjust(max_column_size)
                         for column in flat_resources
@@ -1198,7 +1200,6 @@ class CircuitSpecs:
             )
 
         for label, values in _extra_resource_rows(flat_resources):
-            label = _format_extra_value(label, markdown_safe=True)
             lines.append(
                 data_row(f"**{label}**", [""] * len(levels))
                 if values is None
@@ -1207,7 +1208,7 @@ class CircuitSpecs:
                     [
                         (
                             _format_extra_value(values[column], markdown_safe=True)
-                            if column in values
+                            if values.get(column) is not None
                             else "N/A"
                         )
                         for column in levels
