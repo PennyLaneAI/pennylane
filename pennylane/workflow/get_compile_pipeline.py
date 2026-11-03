@@ -77,7 +77,7 @@ def get_compile_pipeline(
     qnode: QNode,
     level: str | int | slice = "user",
 ) -> Callable[P, CompilePipeline]:
-    """Retrieve the :class:`~.CompilePipeline`\\ (s) of a QNode at the designated level(s).
+    """Extract :class:`~.CompilePipeline`\\ (s) from a :class:`~.QNode`.
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): The (qjit'd) QNode to get the compile pipeline for.
