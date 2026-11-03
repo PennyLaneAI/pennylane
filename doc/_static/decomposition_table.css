@@ -107,6 +107,8 @@ table.decomposition-table.decomp-two-cols td.decomp-circuit img {
 
 /* which instance of the rule the circuit shows */
 table.decomposition-table p.decomp-example {
+  /* the theme keeps the text of a row's first cell on one line, which here is the circuit cell */
+  white-space: normal;
   margin-top: 6px;
   font-size: 0.8rem;
   color: #555;
