@@ -388,7 +388,7 @@ class DefaultTensor(Device):
         c_dtype=np.complex128,
         **kwargs,
     ) -> None:
-        if not has_quimb:
+        if not has_quimb and not qp.capture.enabled():
             raise ImportError(
                 "This feature requires quimb, a library for tensor network manipulations. "
                 "It can be installed with:\n\npip install quimb"
@@ -471,6 +471,8 @@ class DefaultTensor(Device):
         Returns:
             CircuitMPS or Circuit: The initial quimb instance of a circuit.
         """
+        if qp.capture.enabled():
+            return None
 
         if not _accepted_gate_contract(self._contract, self.method):
             raise ValueError(
