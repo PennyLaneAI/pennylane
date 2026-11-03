@@ -35,7 +35,7 @@ def restore_registry():
 
 @pytest.fixture(name="resource_data", params=[2, 3, 5])
 def resource_data_fixture(request):
-    """Complete main and helper records for extension parsing tests."""
+    """Data for extension parsing tests."""
     return {
         "main": {
             "metadata": {"qnode": True, "has_branches": False},
@@ -60,7 +60,7 @@ def resource_data_fixture(request):
 
 
 def test_weighted_sum():
-    """Missing totals and disjoint fields are supported without mutating inputs."""
+    """Test weighted sum aggregation."""
     incoming = {"Hadamard": 4}
     total = {"CNOT": 2}
     assert weighted_sum({}, incoming, 3) == {"Hadamard": 12}
@@ -70,7 +70,7 @@ def test_weighted_sum():
 
 
 def test_aggregation_and_substitution(resource_data):
-    """Extensions aggregate integer and symbolic calls without modifying inputs."""
+    """Test aggregation and substitution of extended fields."""
     qp.resource.register_resource_extension(
         "example_count", aggregate=weighted_sum, display_name="Example resources"
     )
@@ -85,7 +85,7 @@ def test_aggregation_and_substitution(resource_data):
 
 
 def test_unregistered_fields(resource_data):
-    """Unknown local data survives with warning but not aggregated."""
+    """Unknown extended fields survive with warning but not aggregated."""
     with pytest.warns(UserWarning, match="unknown extended fields"):
         resource, _ = parse_resources_json(resource_data)
     assert resource.extra == {"example_count": {"count": 2}}
