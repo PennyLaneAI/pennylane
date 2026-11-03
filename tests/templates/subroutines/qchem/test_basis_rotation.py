@@ -164,7 +164,8 @@ class TestDecomposition:
         gate_ops, gate_angles, gate_wires = [], [], []
 
         for indices, angle in givens[::-1]:
-            g_op = qp.PhaseShift if len(indices) == 1 else qp.SingleExcitation
+            # The PhaseShift(pi) of a negative determinant is applied as PauliZ.
+            g_op = qp.PauliZ if len(indices) == 1 else qp.SingleExcitation
             gate_ops.append(g_op)
             gate_angles.append(qp.numpy.array(angle))
             gate_wires.append(list(indices))
@@ -173,11 +174,12 @@ class TestDecomposition:
         queue = op.decomposition()
 
         assert len(queue) == len(gate_ops)  # number of gates
-        assert [type(op) for op in queue].count(qp.PhaseShift) <= 1  # at most one phase shift
+        assert [type(op) for op in queue].count(qp.PauliZ) <= 1  # at most one phase flip
 
         for idx, _op in enumerate(queue):
             assert isinstance(_op, gate_ops[idx])  # gate operation
-            assert np.allclose(_op.parameters[0], gate_angles[idx])  # gate parameter
+            if _op.num_params:
+                assert np.allclose(_op.parameters[0], gate_angles[idx])  # gate parameter
             assert list(_op.wires) == gate_wires[idx]  # gate wires
 
     @pytest.mark.parametrize("num_wires", [2, 3, 4])
@@ -200,6 +202,35 @@ class TestDecomposition:
             wire_order=wires,
         )
         assert np.allclose(mat_real, mat_complex)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("det", [1, -1])
+    def test_real_determinant_correction_with_capture(self, det, seed):
+        """Test that with program capture, the determinant correction of an orthogonal matrix is
+        a PauliZ for a negative determinant and nothing otherwise, rather than a PhaseShift."""
+        # pylint: disable=import-outside-toplevel
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.templates.subroutines.qchem.basis_rotation import (
+            _real_basis_rotation_decomp,
+        )
+
+        rng = np.random.default_rng(seed)
+        q, r = np.linalg.qr(rng.normal(size=(3, 3)))
+        ortho_matrix = q * np.sign(np.diag(r))
+        if np.linalg.det(ortho_matrix) * det < 0:
+            ortho_matrix[:, 0] *= -1
+
+        def circuit(unitary_matrix):
+            _real_basis_rotation_decomp(unitary_matrix, wires=[0, 1, 2])
+
+        plxpr = qp.capture.make_plxpr(circuit)(ortho_matrix)
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts, ortho_matrix)
+        ops = collector.state["ops"]
+
+        assert not any(isinstance(op, qp.PhaseShift) for op in ops)
+        assert [op for op in ops if isinstance(op, qp.PauliZ)] == ([qp.Z(0)] if det < 0 else [])
+        assert sum(isinstance(op, qp.SingleExcitation) for op in ops) == 3
 
     @pytest.mark.parametrize(
         "unitary_matrix",
