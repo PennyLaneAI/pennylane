@@ -136,6 +136,8 @@ def _mlir_resources_to_specs_resources(
 
     # Extract extended fields
     extended_fields = copy.deepcopy(resources["extended_fields"])
+    if extended_fields.get("pbc_depth", {}) is None:
+        extended_fields.pop("pbc_depth")
 
     # Process function calls (both static and dynamic)
     # Recurses through all function calls and combines resources with the appropriate multiplicative factors
@@ -208,21 +210,21 @@ def _handle_extended_fields(
     for field_name in called_fn_resources.extra:
         match field_name:
             case "pbc_depth":
-                pbc_depth = extended_fields.get("pbc_depth", None)
-                if pbc_depth is None:
-                    extended_fields["pbc_depth"] = {
-                        "any_commuting_depth": call_count
-                        * called_fn_resources.extra["pbc_depth"]["any_commuting_depth"],
-                        "qubit_disjoint_depth": call_count
-                        * called_fn_resources.extra["pbc_depth"]["qubit_disjoint_depth"],
-                    }
-                else:
-                    pbc_depth["any_commuting_depth"] += (
-                        call_count * called_fn_resources.extra["pbc_depth"]["any_commuting_depth"]
-                    )
-                    pbc_depth["qubit_disjoint_depth"] += (
-                        call_count * called_fn_resources.extra["pbc_depth"]["qubit_disjoint_depth"]
-                    )
+                child_depth = called_fn_resources.extra["pbc_depth"]
+                pbc_depth = extended_fields.setdefault(
+                    "pbc_depth", {"any_commuting_depth": 0, "qubit_disjoint_depth": 0}
+                )
+                if child_depth.get("qubit_disjoint_depth_status") is not None:
+                    # A child's exact depth does not determine its caller's depth.
+                    pbc_depth.setdefault("qubit_disjoint_depth_status", "unavailable")
+                if pbc_depth.get("qubit_disjoint_depth_status") is not None:
+                    continue
+                for name in ("any_commuting_depth", "qubit_disjoint_depth"):
+                    child_value = child_depth.get(name)
+                    if pbc_depth.get(name) is None or child_value is None:
+                        pbc_depth[name] = None
+                    else:
+                        pbc_depth[name] += call_count * child_value
             case _:
                 unknown_fields.append(field_name)
 
@@ -261,8 +263,26 @@ def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
 
     if "pbc_depth" in extra:
         pbc_depth = extra.pop("pbc_depth")
-        kwargs["any_commuting_depth"] = _safe_ceil(pbc_depth.pop("any_commuting_depth"))
-        kwargs["qubit_disjoint_depth"] = _safe_ceil(pbc_depth.pop("qubit_disjoint_depth"))
+        if (status := pbc_depth.get("qubit_disjoint_depth_status")) is not None:
+            # Only Catalyst can certify the complete logical PBC dependency graph.
+            # A sum of child depths or an older unlabelled total is not an exact depth.
+            depth_total = pbc_depth.get("qubit_disjoint_depth_total")
+            if (
+                status == "exact"
+                and isinstance(depth_total, int)
+                and not isinstance(depth_total, bool)
+                and depth_total >= 0
+            ):
+                pbc_depth["qubit_disjoint_depth"] = depth_total
+            else:
+                status = "unavailable"
+                pbc_depth["qubit_disjoint_depth"] = None
+            # The exact disjoint schedule does not certify the commuting-depth estimate.
+            pbc_depth["any_commuting_depth"] = None
+            extra["qubit_disjoint_depth_status"] = status
+        for name in ("any_commuting_depth", "qubit_disjoint_depth"):
+            depth = pbc_depth.get(name)
+            kwargs[name] = _safe_ceil(depth) if depth is not None else None
         # Pylint gets confused by the dynamic updates to kwargs here
         # pylint: disable=missing-kwoa
         return PBCSpecsResources(
@@ -292,14 +312,23 @@ def parse_resources_json(
 
     if any(resources["metadata"]["has_branches"] for resources in all_data.values()):
         warnings.warn(
-            "Resource analysis was unable to determine the branch of a conditional or switch statement."
-            " The results will take the maximum resources across all possible branches, serving as an upper bound.",
+            "Resource analysis could not resolve a conditional or switch branch for operation "
+            "and measurement counts. Unresolved counts use the maximum across possible "
+            "branches as an upper bound.",
             UserWarning,
         )
 
     # Only include information about qnodes, ignoring any extra functions
-    return [
+    results = [
         _convert_to_subclass(resource_data[fn])
         for fn, data in all_data.items()
         if data["metadata"]["qnode"]
     ]
+    if any(result.extra.get("qubit_disjoint_depth_status") == "unavailable" for result in results):
+        warnings.warn(
+            "Exact qubit-disjoint depth is unavailable for one or more QNodes: Catalyst could "
+            "not resolve the complete logical PBC dependency graph. The depth is reported as "
+            "None instead of substituting an estimate. Other resource counts are preserved.",
+            UserWarning,
+        )
+    return results

@@ -883,6 +883,23 @@ class TestPBCSpecsResources:
                 num_wires=2,
             )
 
+    @pytest.mark.parametrize("depth", [17, None])
+    def test_unavailable_depth_display(self, depth):
+        """Unavailable depths display as missing values in text and Markdown."""
+        resource = PBCSpecsResources(
+            counts={"Hadamard": 3},
+            measurement_processes={"expval(PauliZ)": 1},
+            num_wires=10,
+            any_commuting_depth=None,
+            qubit_disjoint_depth=depth,
+        )
+        displayed_depth = "-" if depth is None else str(depth)
+
+        assert "- Any commuting depth: -" in resource.to_pretty_str()
+        assert f"- Qubit disjoint depth: {displayed_depth}" in resource.to_pretty_str()
+        assert "| Any commuting depth | - |" in resource._repr_markdown_()
+        assert f"| Qubit disjoint depth | {displayed_depth} |" in resource._repr_markdown_()
+
     def test_str_pbc_depth(self, example_resource):
         """Test the string representation of a SpecsResources instance with PBC depth."""
         s = example_resource

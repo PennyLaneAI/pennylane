@@ -14,6 +14,7 @@
 """Unit tests for the JSON parsing helpers for the specs transform"""
 
 import copy
+import warnings
 
 import pytest
 
@@ -150,6 +151,27 @@ class TestAnalysisPassConversion:
 
         with pytest.warns(UserWarning, match="branches"):
             parse_resources_json(example_loop_analysis_pass_result)
+
+    def test_branch_warning_does_not_describe_exact_depth_as_an_estimate(
+        self, example_loop_analysis_pass_result
+    ):
+        """Unresolved legacy counts do not make a separately certified depth approximate."""
+        data = example_loop_analysis_pass_result
+        expected = parse_resources_json(data)[0]
+        data["circuit"]["metadata"]["has_branches"] = True
+        data["circuit"]["extended_fields"]["pbc_depth"] = {
+            "qubit_disjoint_depth_status": "exact",
+            "qubit_disjoint_depth_total": 17,
+        }
+
+        with pytest.warns(UserWarning, match="operation and measurement counts") as caught:
+            actual = parse_resources_json(data)[0]
+
+        assert len(caught) == 1
+        assert "depth" not in str(caught[0].message)
+        assert actual.qubit_disjoint_depth == 17
+        assert actual.counts == expected.counts
+        assert actual.measurement_processes == expected.measurement_processes
 
     def test_parse_resources_json_warns_for_self_recursion(self, example_loop_analysis_pass_result):
         example_loop_analysis_pass_result["circuit"]["function_calls"]["static"]["circuit"] = 1
@@ -320,6 +342,169 @@ class TestAnalysisPassConversion:
 
         assert actual == expected
 
+    @pytest.mark.parametrize("total", [0, 1, 100, 2**60 + 3])
+    @pytest.mark.parametrize("child_status", ["exact", "unavailable"])
+    def test_exact_depth_is_authoritative(
+        self, example_loop_analysis_pass_result, total, child_status
+    ):
+        """Only the certified caller total determines its exact logical depth."""
+        data = example_loop_analysis_pass_result
+        expected_counts = parse_resources_json(data)[0]
+        data["circuit"]["extended_fields"]["pbc_depth"] = {
+            "any_commuting_depth": 2,
+            "qubit_disjoint_depth": 3,
+            "qubit_disjoint_depth_total": total,
+            "qubit_disjoint_depth_status": "exact",
+        }
+        data["for_loop_2"]["extended_fields"]["pbc_depth"] = {
+            "any_commuting_depth": 5,
+            "qubit_disjoint_depth": 7,
+            "qubit_disjoint_depth_total": 20,
+            "qubit_disjoint_depth_status": child_status,
+        }
+        original = copy.deepcopy(data)
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            actual = parse_resources_json(data)[0]
+
+        assert not caught
+        assert actual.qubit_disjoint_depth == total
+        assert actual.any_commuting_depth is None
+        assert actual.extra == {"qubit_disjoint_depth_status": "exact"}
+        assert actual.counts == expected_counts.counts
+        assert actual.measurement_processes == expected_counts.measurement_processes
+        assert actual.num_wires == expected_counts.num_wires
+        assert data == original
+
+    @pytest.mark.parametrize("total", [0, 1, 100])
+    def test_uncertified_totals_do_not_replace_legacy_depth(
+        self, example_loop_analysis_pass_result, total
+    ):
+        """Totals from older experimental compilers cannot certify an exact depth."""
+        data = example_loop_analysis_pass_result
+        for name, depth in (("circuit", 3), ("for_loop_2", 7), ("for_loop_1", 2)):
+            data[name]["extended_fields"]["pbc_depth"] = {
+                "any_commuting_depth": depth,
+                "qubit_disjoint_depth": depth,
+            }
+        expected = parse_resources_json(data)
+        for name in ("circuit", "for_loop_2", "for_loop_1"):
+            data[name]["extended_fields"]["pbc_depth"]["qubit_disjoint_depth_total"] = total
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            actual = parse_resources_json(data)
+
+        assert not caught
+        assert actual == expected
+        assert "qubit_disjoint_depth_status" not in actual[0].extra
+
+    @pytest.mark.parametrize(
+        ("function", "status"),
+        [
+            ("circuit", "unavailable"),
+            ("for_loop_2", "exact"),
+            ("for_loop_2", "unavailable"),
+            ("for_loop_1", "exact"),
+            ("for_loop_1", "unavailable"),
+            ("dyn_for_loop_1", "exact"),
+            ("dyn_for_loop_1", "unavailable"),
+        ],
+    )
+    def test_unavailable_caller_depth_propagates(
+        self, example_loop_analysis_pass_result, function, status
+    ):
+        """Neither estimates nor sums of exact children establish an exact caller depth."""
+        data = example_loop_analysis_pass_result
+        for name in data:
+            data[name]["extended_fields"]["pbc_depth"] = {
+                "any_commuting_depth": 3,
+                "qubit_disjoint_depth": 5,
+            }
+        expected_counts = parse_resources_json(data)[0]
+        data[function]["extended_fields"]["pbc_depth"].update(
+            qubit_disjoint_depth_status=status,
+            qubit_disjoint_depth_total=11,
+        )
+        if function != "circuit":
+            del data["circuit"]["extended_fields"]["pbc_depth"]
+
+        with pytest.warns(UserWarning, match="Exact qubit-disjoint depth is unavailable") as caught:
+            actual = parse_resources_json(data)[0]
+
+        assert len(caught) == 1
+        assert actual.qubit_disjoint_depth is None
+        assert actual.any_commuting_depth is None
+        assert actual.extra == {"qubit_disjoint_depth_status": "unavailable"}
+        assert actual.counts == expected_counts.counts
+        assert actual.measurement_processes == expected_counts.measurement_processes
+        assert actual.num_wires == expected_counts.num_wires
+
+    @pytest.mark.parametrize("total", [None, -1, 1.25, True])
+    def test_exact_status_requires_a_nonnegative_integer(
+        self, example_loop_analysis_pass_result, total
+    ):
+        """Missing or non-integer exact totals are unavailable rather than rounded estimates."""
+        data = example_loop_analysis_pass_result
+        data["circuit"]["extended_fields"]["pbc_depth"] = {
+            "any_commuting_depth": 2,
+            "qubit_disjoint_depth": 3,
+            "qubit_disjoint_depth_status": "exact",
+        }
+        if total is not None:
+            data["circuit"]["extended_fields"]["pbc_depth"]["qubit_disjoint_depth_total"] = total
+
+        with pytest.warns(UserWarning, match="Exact qubit-disjoint depth is unavailable"):
+            actual = parse_resources_json(data)[0]
+
+        assert actual.qubit_disjoint_depth is None
+        assert actual.extra["qubit_disjoint_depth_status"] == "unavailable"
+
+    def test_warning_once_for_multiple_unavailable_qnodes(self, example_loop_analysis_pass_result):
+        """A parse reports unavailable returned QNodes once, not once per nested function."""
+        data = example_loop_analysis_pass_result
+        data["circuit"]["extended_fields"]["pbc_depth"] = {
+            "any_commuting_depth": 2,
+            "qubit_disjoint_depth": 3,
+            "qubit_disjoint_depth_status": "unavailable",
+        }
+        data["second_circuit"] = copy.deepcopy(data["circuit"])
+
+        with pytest.warns(UserWarning, match="Exact qubit-disjoint depth is unavailable") as caught:
+            results = parse_resources_json(data)
+
+        assert len(results) == 2
+        assert len(caught) == 1
+        assert all(result.qubit_disjoint_depth is None for result in results)
+
+    def test_unused_unavailable_helper_does_not_warn(self, example_loop_analysis_pass_result):
+        """An unrelated helper cannot make a returned QNode's depth unavailable."""
+        data = example_loop_analysis_pass_result
+        expected = parse_resources_json(data)
+        data["unused"] = copy.deepcopy(data["for_loop_1"])
+        data["unused"]["extended_fields"]["pbc_depth"] = {
+            "any_commuting_depth": 2,
+            "qubit_disjoint_depth": 3,
+            "qubit_disjoint_depth_status": "unavailable",
+        }
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            actual = parse_resources_json(data)
+
+        assert not caught
+        assert actual == expected
+
+    def test_null_depth_is_absent(self, example_loop_analysis_pass_result):
+        """A null extension from a function without PBC operations is absent depth data."""
+        data = example_loop_analysis_pass_result
+        expected = parse_resources_json(data)
+        for function in data.values():
+            function["extended_fields"]["pbc_depth"] = None
+
+        assert parse_resources_json(data) == expected
+
     def test_unknown_extended_fields(self, example_loop_analysis_pass_result):
         """Test that unknown extended fields are ignored with a warning."""
         example_loop_analysis_pass_result["for_loop_2"]["extended_fields"]["unknown_field"] = {
@@ -373,6 +558,30 @@ class TestConvertToSubclass:
         assert "qubit_disjoint_depth" not in converted.extra
 
         assert res.extra == pbc_data  # Ensure the original extra data is unchanged
+
+    @pytest.mark.parametrize(("status", "depth"), [("exact", 17), ("unavailable", None)])
+    def test_convert_certified_depth(self, status, depth):
+        """Depth status and unavailable values survive conversion and storage."""
+        res = SpecsResources(
+            counts={"Hadamard": 3},
+            measurement_processes={"expval(PauliZ)": 1},
+            num_wires=10,
+            extra={
+                "pbc_depth": {
+                    "any_commuting_depth": None,
+                    "qubit_disjoint_depth": depth,
+                    "qubit_disjoint_depth_total": depth,
+                    "qubit_disjoint_depth_status": status,
+                }
+            },
+        )
+
+        converted = _convert_to_subclass(res)
+
+        assert converted.any_commuting_depth is None
+        assert converted.qubit_disjoint_depth == depth
+        assert converted.extra == {"qubit_disjoint_depth_status": status}
+        assert converted.to_dict()["extra"]["qubit_disjoint_depth_status"] == status
 
     def test_convert_rounds_floats(self):
         """Test that _convert_to_subclass rounds float counts and measurement processes to integers."""

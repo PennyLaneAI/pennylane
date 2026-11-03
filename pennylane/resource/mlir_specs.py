@@ -18,6 +18,7 @@ import json
 import os
 import tempfile
 import time
+from importlib import import_module
 from pathlib import Path
 
 from pennylane.core.transforms import CompilePipeline, transform
@@ -69,6 +70,11 @@ def resources_from_analysis_pass(
     # pylint: disable=protected-access,too-many-arguments,too-many-statements
     from catalyst import QJIT  # pylint: disable=import-outside-toplevel
 
+    try:
+        analysis_options = import_module("catalyst.utils.pbc_classical").resource_analysis_options()
+    except ImportError:
+        analysis_options = {}
+
     iter_pipeline = copy.deepcopy(original_qnode._compile_pipeline)
     new_compile_pipeline = CompilePipeline()
     new_post_device_pipeline = CompilePipeline()
@@ -96,7 +102,7 @@ def resources_from_analysis_pass(
                 ", ".join(level_to_markers[0]) if 0 in level_to_markers else "Before MLIR Passes"
             )
             new_compile_pipeline += transform(pass_name="resource-analysis")(
-                output_json=True, output_fname=fname
+                output_json=True, output_fname=fname, **analysis_options
             )
 
         for i, comp_pass in enumerate(iter_pipeline, start=1):
@@ -114,7 +120,7 @@ def resources_from_analysis_pass(
                 fname_to_level[fname] = i
                 level_to_name[i] = level_name
                 new_compile_pipeline += transform(pass_name="resource-analysis")(
-                    output_json=True, output_fname=fname
+                    output_json=True, output_fname=fname, **analysis_options
                 )
 
         compile_options = copy.deepcopy(qjit.compile_options)
@@ -127,7 +133,7 @@ def resources_from_analysis_pass(
                 "Device Preprocessing", frozenset(level_to_name.values())
             )
             new_post_device_pipeline += transform(pass_name="resource-analysis")(
-                output_json=True, output_fname=fname
+                output_json=True, output_fname=fname, **analysis_options
             )
         else:
             # If device level not requested, skip device preprocessing
