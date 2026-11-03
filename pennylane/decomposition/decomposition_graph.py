@@ -29,7 +29,7 @@ import math
 import warnings
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Set
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
@@ -159,6 +159,33 @@ class _DecompositionNode:  # pylint: disable=too-many-instance-attributes
         return num_work_wires - self.num_work_wire_not_available >= self.work_wire_spec.total
 
 
+@dataclass
+class _Expansion:  # pylint: disable=too-many-instance-attributes
+    """The exploration of the decomposition rules of an operator node during graph construction.
+
+    Breaking a decomposition cycle drops a decomposition rule, so an expansion that relies on such
+    a cut is only complete while the operator that the cut closed a cycle with is in progress.
+    Dependencies on in-progress expansions are recorded by their positions in the in-progress stack.
+    """
+
+    op: AbstractOperatorLike
+    node_idx: int
+    frame: int
+    in_progress: bool = True
+    outdated: bool = False
+    # Expansions that a cut in this expansion closed a cycle with. This expansion is outdated
+    # once any of them is finished.
+    cuts: set[int] = field(default_factory=set)
+    # Expansions that this expansion reused before they were finished. Once they are finished,
+    # this expansion inherits what they rely on.
+    waits: set[int] = field(default_factory=set)
+    # Node indices of the finished expansions that rely on this in-progress expansion.
+    dependents: set[int] = field(default_factory=set)
+
+    def __post_init__(self):
+        self.base_and_n_ctrls = _get_base_and_n_ctrls(self.op)
+
+
 class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-few-public-methods
     """A graph that models a decomposition problem.
 
@@ -284,12 +311,16 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._min_work_wires = 0
         self._start = self._graph.add_node(None)
 
-        # The purpose of the following two "in_progress" variables is to keep track of which
-        # operators we're still exploring decomposition paths for during **graph construction**.
-        # If we loop back to an op that we're still exploring (e.g., if we find ourselves
-        # exploring decomposition rules for C(RX) during exploration of RX itself), we stop.
-        self._in_progress = []
-        self._num_ctrl_wires_in_progress = defaultdict(list)
+        # Keeps track of which operators we're still exploring decomposition paths for during
+        # **graph construction**. If we loop back to an op that we're still exploring (e.g., if
+        # we find ourselves exploring decomposition rules for C(RX) during exploration of RX
+        # itself), we stop.
+        self._in_progress: list[_Expansion] = []
+
+        # Maps operator node indices to their expansions. An outdated expansion relied on a cut
+        # against an operator that has been finished since, so its operator is explored again
+        # on the next visit.
+        self._expansions: dict[int, _Expansion] = {}
 
         # Update the global decomposition library using alt_decomps and fixed_decomps in a local
         # context manager (which restores it to the original state upon exit), so that list_decomps
@@ -337,24 +368,27 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # work-wire dependent. We have overridden __hash__ and __eq__ of the node class so
         # that when we have a work-wire-independent operator with a different work wire
         # budget from the existing one in the graph, the difference is ignored.
+        if (op_node_idx := self._existing_op_node_idx(op, num_used_work_wires)) is not None:
+            self._rely_on(op_node_idx)
+            return op_node_idx
+
         known_work_wire_dependent = op in self._work_wire_dependent_ops
         op_node = _OperatorNode(op, num_used_work_wires, known_work_wire_dependent)
-
-        if op_node in self._all_op_indices:
-            return self._all_op_indices[op_node]
-
         if op in self._gate_set_weights:
             op_node = replace(op_node, reachable=True)
 
         op_node_idx = self._graph.add_node(op_node)
+        # Replace an outdated node for the same operator, if there is one.
+        self._all_op_indices.pop(op_node, None)
         self._all_op_indices[op_node] = op_node_idx
+        self._op_to_op_nodes[op].discard(op_node)
         self._op_to_op_nodes[op].add(op_node)
 
         if op in self._gate_set_weights:
             self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op])
             return op_node_idx
 
-        self._push_in_progress(op)
+        self._push_in_progress(op, op_node_idx)
         rules = self._get_decompositions(op)
 
         # Treat ops that do not have a decomposition as supported if strict=False
@@ -363,7 +397,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             # this op unless there is no other choice.
             self._gate_set_weights |= GateSet({to_name(op): math.inf})
             self._graph.add_edge(self._start, op_node_idx, math.inf)
-            self._pop_in_progress(op)
+            self._pop_in_progress()
             return op_node_idx
 
         work_wire_dependent = known_work_wire_dependent
@@ -394,20 +428,93 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             # identify it as work-wire dependent.
             self._work_wire_dependent_ops.add(op_node.op)
 
-        self._pop_in_progress(op)
+        self._pop_in_progress()
         return op_node_idx
 
-    def _push_in_progress(self, op):
-        self._in_progress.append(op)
-        if unwrapped := _get_base_and_n_ctrls(op):
-            base_rep, num_control_wires = unwrapped
-            self._num_ctrl_wires_in_progress[base_rep].append(num_control_wires)
+    def _existing_op_node_idx(
+        self, op: AbstractOperatorLike, num_used_work_wires: int
+    ) -> int | None:
+        """Returns the index of the node that represents ``op`` with the given work wire budget,
+        if it exists and can be reused."""
+        known_work_wire_dependent = op in self._work_wire_dependent_ops
+        op_node = _OperatorNode(op, num_used_work_wires, known_work_wire_dependent)
+        op_node_idx = self._all_op_indices.get(op_node)
+        expansion = self._expansions.get(op_node_idx)
+        if expansion is not None and expansion.outdated:
+            return None
+        return op_node_idx
 
-    def _pop_in_progress(self, op):
-        self._in_progress.pop()
-        if unwrapped := _get_base_and_n_ctrls(op):
-            base_rep, _ = unwrapped
-            self._num_ctrl_wires_in_progress[base_rep].pop()
+    def _push_in_progress(self, op: AbstractOperatorLike, op_node_idx: int) -> None:
+        expansion = _Expansion(op, op_node_idx, frame=len(self._in_progress))
+        self._in_progress.append(expansion)
+        self._expansions[op_node_idx] = expansion
+
+    def _pop_in_progress(self) -> None:
+        finished = self._in_progress.pop()
+        finished.in_progress = False
+        for idx in finished.dependents:
+            dependent = self._expansions[idx]
+            if dependent.outdated:
+                continue
+            if finished.frame in dependent.cuts:
+                dependent.outdated = True
+                continue
+            dependent.waits.discard(finished.frame)
+            self._inherit(dependent, finished)
+            self._register(dependent)
+        finished.dependents.clear()
+        self._register(finished)
+        if self._in_progress:
+            self._inherit(self._in_progress[-1], finished)
+
+    @staticmethod
+    def _inherit(expansion: _Expansion, finished: _Expansion) -> None:
+        """Makes ``expansion`` rely on the in-progress expansions that ``finished`` relies on."""
+        expansion.cuts.update(frame for frame in finished.cuts if frame < expansion.frame)
+        expansion.waits.update(frame for frame in finished.waits if frame < expansion.frame)
+
+    def _register(self, finished: _Expansion) -> None:
+        """Registers a finished expansion with the in-progress expansions that it relies on."""
+        for frame in finished.cuts | finished.waits:
+            self._in_progress[frame].dependents.add(finished.node_idx)
+
+    def _rely_on(self, op_node_idx: int) -> None:
+        """Records that the innermost in-progress expansion reuses an existing operator node."""
+        if not self._in_progress or (reused := self._expansions.get(op_node_idx)) is None:
+            return
+        top = self._in_progress[-1]
+        if not reused.in_progress:
+            self._inherit(top, reused)
+        elif reused.frame < top.frame:
+            top.waits.add(reused.frame)
+
+    def _record_cut(self, frame: int) -> None:
+        """Records that a cut in the innermost in-progress expansion closed a cycle with the
+        in-progress expansion at position ``frame``."""
+        top = self._in_progress[-1]
+        if frame < top.frame:
+            top.cuts.add(frame)
+
+    def _cycle_frame(self, op: AbstractOperatorLike) -> int | None:
+        """Returns the position of the innermost in-progress expansion that ``op`` closes an
+        unbounded cycle with, or ``None`` if there is none."""
+        work_wire_dependent = op in self._work_wire_dependent_ops
+        unwrapped = _get_base_and_n_ctrls(op)
+        if not work_wire_dependent and unwrapped is None:
+            return None
+        for expansion in reversed(self._in_progress):
+            if work_wire_dependent and expansion.op == op:
+                return expansion.frame
+            if unwrapped is None:
+                continue
+            base, num_control_wires = unwrapped
+            if expansion.op == base:
+                return expansion.frame
+            if (in_progress := expansion.base_and_n_ctrls) is not None and (
+                in_progress[0] == base and num_control_wires >= in_progress[1]
+            ):
+                return expansion.frame
+        return None
 
     def _replace_node(self, idx: int, new_node: _OperatorNode) -> None:
         original_node = self._graph[idx]
@@ -460,12 +567,19 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         max_op_min_work_wires = 0
         for op in decomp_resource.gate_counts:
 
-            if self._base_in_progress(op):
+            # A cycle back to an in-progress operator, its base, or a version of it with
+            # more control wires or fewer available work wires would add a new node on every
+            # pass through the cycle, recursing indefinitely. Revisiting an existing node is
+            # safe and keeps the cycle's exits.
+            next_budget = num_used_work_wires + work_wire_spec.total
+            frame = self._cycle_frame(op)
+            if frame is not None and self._existing_op_node_idx(op, next_budget) is None:
+                self._record_cut(frame)
                 d_node.reachable = False
                 self._graph.add_edge(d_node_idx, op_idx, 0)
                 return d_node
 
-            op_node_idx = self._add_op_node(op, num_used_work_wires + work_wire_spec.total)
+            op_node_idx = self._add_op_node(op, next_budget)
             self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
             # If any of the operators in the decomposition depends on work wires, this
             # decomposition is also dependent on work wires, even it itself does not use
@@ -481,17 +595,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         self._graph.add_edge(d_node_idx, op_idx, 0)
         return d_node
-
-    def _base_in_progress(self, op):
-        unwrapped = _get_base_and_n_ctrls(op)
-        if unwrapped is None:
-            return False
-        base, num_control_wires = unwrapped
-        if base in self._in_progress:
-            return True
-        if not (ctrl_wires_in_progress := self._num_ctrl_wires_in_progress[base]):
-            return False
-        return num_control_wires >= ctrl_wires_in_progress[-1]
 
     def _get_decompositions(self, op: AbstractOperatorLike) -> Iterable[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
@@ -660,6 +763,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
 
 def _get_base_and_n_ctrls(op: AbstractOperatorLike) -> tuple[AbstractOperatorLike, int] | None:
+    # The control register may also grow beneath an adjoint.
+    if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Adjoint:
+        op = resource_rep(op.params["base_class"], **op.params["base_params"])
+    elif isinstance(op, qp.ops.Adjoint2):
+        op = abstractify(op.base)
     if isinstance(op, CompressedResourceOp) and op.op_type is qp.ops.Controlled:
         base_class, base_params = op.params["base_class"], op.params["base_params"]
         return resource_rep(base_class, **base_params), op.params["num_control_wires"]

@@ -4,6 +4,9 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
+  `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
+
 * :func:`~.transforms.gridsynth` has a new ``method`` keyword argument with two randomized
   synthesis methods from `arXiv:2203.10064 <https://arxiv.org/abs/2203.10064>`__, which reduce the
   T-count at the same accuracy of the channel averaged over executions.
@@ -884,6 +887,13 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* :class:`~.TrotterVibronic` has a new ``branch_probs`` argument, a dictionary with the
+  probabilities for the Hamiltonian terms to be applied rather than skipped for vanishing 
+  coefficients. The decomposition uses them as resource hints.
+  If ``branch_probs`` is not provided, it is computed from the ``hamiltonian``
+  data and the ``evolution_time`` at construction, as long as both are concrete.
+  `(#10401) <https://github.com/PennyLaneAI/pennylane/pull/10401>`__
+
 * Added ``pennylane.core.get_op_class_by_name``
   to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
   automatically registered when they are defined.
@@ -930,6 +940,13 @@ Improvements 🛠
 * ``qp.gate_sets.ALL_QUBIT_OPS`` now includes the in-build controlled gates like :class:`~.CNOT`,
   :class:`~.CRZ`, and others.
   `(#10396) <https://github.com/PennyLaneAI/pennylane/pull/10396/>`__
+
+* :class:`~.BasisRotation` with a real-valued matrix now applies its determinant correction as a
+  :class:`~.PauliZ` instead of a :class:`~.PhaseShift` with angle :math:`\pi`, so its
+  decomposition contains no rotations beyond the Givens rotations. This also stops static resource
+  estimates under :func:`~.qjit` or program capture, where the determinant is only known at
+  runtime, from counting a rotation per call.
+  `(#10442) <https://github.com/PennyLaneAI/pennylane/pull/10442>`__
 
 * :func:`~pennylane.estimate` and :func:`~.analyze` are now faster on qjit-compiled workflows. They use
   Catalyst's new ``user-transform-stage`` pipeline, which stops compiling right after the user
@@ -2298,6 +2315,13 @@ Bug fixes 🐛
   alternative decomposition revisits its base, which could overestimate required work wires.
   `(#10371) <https://github.com/PennyLaneAI/pennylane/pull/10371>`__
 
+* Fixed infinite recursion in the construction of ``DecompositionGraph`` when a cycle of work-wire
+  dependent operators uses additional work wires on every pass through the cycle. Also fixed
+  ``DecompositionGraph`` reusing operator nodes that were only partially explored because a cycle
+  was cut, which made results depend on exploration order and could mark decompositions as
+  unreachable or overestimate their cost.
+  `(#10423) <https://github.com/PennyLaneAI/pennylane/pull/10423>`__
+
 * The resource estimate of the measurement-based decomposition of :class:`~.QROM` now declares
   every gate type that the decomposition uses and upper-bounds every count except the split of
   X-type measurements across widths, which is assumed to follow a binomial distribution
@@ -2480,6 +2504,7 @@ Bug fixes 🐛
 * Fixed a bug where the construction of ``DecompositionGraph`` enters infinite recursion when a decomposition path
   exists from an operator to a controlled/adjoint version of itself.
   `(#9457) <https://github.com/PennyLaneAI/pennylane/pull/9457>`__
+  `(#10423) <https://github.com/PennyLaneAI/pennylane/pull/10423>`__
 
 * Fixed a bug in ``MPSPrep`` where passing ``work_wires`` as a NumPy array or an integer caused initialization errors.
   `(#9448) <https://github.com/PennyLaneAI/pennylane/pull/9448>`__
