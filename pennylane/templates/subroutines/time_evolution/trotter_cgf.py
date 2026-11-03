@@ -141,7 +141,7 @@ class TrotterCGF(Operator2):
             :stacked:
             :symbols: :math:`M` modes with :math:`N` modals each, :math:`L` two-body fragments and
                 :math:`n` = ``num_trotter_steps``
-            :example: the Hamiltonian above, :math:`M=2`, :math:`N=3`, :math:`L=1`, :math:`n=1`
+            :example: the Hamiltonian above, :math:`M=2`, :math:`N=3`, :math:`L=1`, :math:`n=1`. Note that all expressions below assume :math:`n \gt 0`
 
             .. decomposition-rule:: _trotter_cgf_decomposition
                 :image: /_static/decomposition_thumbnails/trotter_cgf_second_order.svg
