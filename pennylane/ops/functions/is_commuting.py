@@ -317,7 +317,7 @@ def is_commuting(operation1, operation2):
 
     # Check if operations are non simplified rotations and return commutation if it is the case.
     op_set = {"U2", "U3", "Rot", "CRot"}
-    
+
     def _is_non_simplified_rot(op):
         return op.name in op_set or _is_single_controlled_rot(op)
 
