@@ -1018,6 +1018,30 @@ class TestUnaryIterator:
 class TestSelectWithWorkWire:
     """Tests for the 1 work-wire decomposition of Select."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        "ops, expected_resources",
+        [([], {}), ([qp.RX(0.123, 0)], {qp.RX: 1})],
+        ids=["empty", "single"],
+    )
+    def test_zero_controls(self, ops, expected_resources, partial):
+        """With no controls, emit only the target operation and leave work wires unused."""
+        op = qp.Select(ops, control=[], work_wires=[1, 2], partial=partial)
+        rule = qp.list_decomps(qp.Select)["_select_decomp_multi_control_work_wire"]
+
+        tape = qp.testing.decomp_rule_to_tape(op, rule)
+        assert len(tape.operations) == len(ops)
+        for actual, expected in zip(tape.operations, ops, strict=True):
+            qp.assert_equal(actual, expected)
+
+        resources = rule.compute_resources(
+            ops=tuple(abstractify(target) for target in ops),
+            control=Wire[0],
+            work_wires=Wire[2],
+            partial=partial,
+        )
+        assert resources == to_resources(expected_resources)
+
     @pytest.mark.parametrize("num_controls", [0, 1, 2, 3])
     def test_no_ops(self, num_controls, partial):
         """Test that the decomposition does not return any operators for an empty list
