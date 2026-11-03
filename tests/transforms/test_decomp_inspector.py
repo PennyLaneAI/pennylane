@@ -122,7 +122,8 @@ class TestInspectDecompGraph:
             5: ─╰●─────────┤
             Estimated First-Level Expansion Gates: {Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
-            Missing Ops: {Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool))}
+            Full Expansion Gates: {CNOT: 46, GlobalPhase: 22, RX: 20, RZ: 22}
+            Weighted Cost: 88.0
 
             CHOSEN: Decomposition 3 (name: controlled(_multi_rz_decomposition))
             0: ─╭(X)@RZ(0.50)@(X)─┤
@@ -164,11 +165,15 @@ class TestInspectDecompGraph:
             | :--- | :--- | :--- |
             | Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)) | 1 | 1 |
             | PauliX | 3 | 0 |
-            </details>
 
-            | Missing Ops |
-            | :--- |
-            | Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)) |
+            | Full Expansion | Count |
+            | :--- | :--- |
+            | CNOT | 46 |
+            | GlobalPhase | 22 |
+            | RX | 20 |
+            | RZ | 22 |
+            | **Weighted Cost** | 88.0 |
+            </details>
 
             ---
 
@@ -240,8 +245,8 @@ class TestInspectDecompGraph:
             5: ─╰●─────────┤
             Estimated First-Level Expansion Gates: {Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled(PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZZ, wires=AbstractWires(2)), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
-            Full Expansion Gates: {CNOT: 26, GlobalPhase: 71, MidMeasure: 2, RX: 23, RY: 10, RZ: 42}
-            Weighted Cost: 3778.0
+            Full Expansion Gates: {CNOT: 46, GlobalPhase: 22, RX: 20, RZ: 22}
+            Weighted Cost: 2146.0
 
             CHOSEN: Decomposition 3 (name: controlled(_multi_rz_decomposition))
             0: ─╭(X)@RZ(0.50)@(X)─┤
@@ -315,13 +320,11 @@ class TestInspectDecompGraph:
 
             | Full Expansion | Count |
             | :--- | :--- |
-            | CNOT | 26 |
-            | GlobalPhase | 71 |
-            | MidMeasure | 2 |
-            | RX | 23 |
-            | RY | 10 |
-            | RZ | 42 |
-            | **Weighted Cost** | 3778.0 |
+            | CNOT | 46 |
+            | GlobalPhase | 22 |
+            | RX | 20 |
+            | RZ | 22 |
+            | **Weighted Cost** | 2146.0 |
             </details>
 
             ---
@@ -379,7 +382,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
             Weighted Cost: 2374.0
 
-            Decomposition 2 (name: one_zeroed_worker)
+            CHOSEN: Decomposition 2 (name: one_zeroed_worker)
             0: ───────╭●─────●╮────┤
             1: ───────├●─────●┤────┤
             2: ───────│──╭●───│────┤
@@ -409,7 +412,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
             Weighted Cost: 2374.0
 
-            CHOSEN: Decomposition 6 (name: many_zeroed_workers)
+            Decomposition 6 (name: many_zeroed_workers)
             0: ──────────╭●────────┤
             1: ───────╭●─│───●╮────┤
             2: ───────├●─│───●┤────┤
