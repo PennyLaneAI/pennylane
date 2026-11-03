@@ -882,18 +882,16 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
-* Added a decomposition to :class:`~.ControlledPhaseShift` using one clean work wire and a single
+* Efficient decomposition rules for :class:`~.ControlledPhaseShift`, :class:`~.OutMultiplier`, and :class:`Adjoint(Incrementer) <~.Incrementer>` have been added.
+  `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
+
+  - :class:`~.ControlledPhaseShift`: using one clean work wire and a single
   :class:`~.PhaseShift` gate.
-  `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
-
-* Added a decomposition for :class:`~.OutMultiplier` with longer ``x_wires`` input than ``y_wires``
-  input into a new ``OutMultiplier`` with swapped input registers. This is computationally
+  - :class:`~.OutMultiplier`: with longer ``x_wires`` input than ``y_wires`` as
+  input, it decomposes into an ``OutMultiplier`` instance with swapped input registers. This is computationally
   equivalent but makes the multiplication cheaper.
-  `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
-
-* Added a decomposition for ``Adjoint(Incrementer)`` into :class:`~.Incrementer` sandwiched by
-  :class:`~.MultiX`, realizing the identity :math:`x-1 = \overline{(\overline{x}+1)}`.
-  `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
+  - :class:`Adjoint(Incrementer) <~.Incrementer>`: sandwiching an :class:`~.Incrementer` with
+  :class:`~.MultiX` gates, realizing the identity :math:`x-1 = \overline{(\overline{x}+1)}`.
 
 * Added ``pennylane.core.get_op_class_by_name``
   to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
