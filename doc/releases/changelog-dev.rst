@@ -934,7 +934,7 @@ Improvements 🛠
   decomposition contains no rotations beyond the Givens rotations. This also stops static resource
   estimates under :func:`~.qjit` or program capture, where the determinant is only known at
   runtime, from counting a rotation per call.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10442) <https://github.com/PennyLaneAI/pennylane/pull/10442>`__
 
 * :func:`~pennylane.estimate` and :func:`~.analyze` are now faster on qjit-compiled workflows. They use
   Catalyst's new ``user-transform-stage`` pipeline, which stops compiling right after the user
