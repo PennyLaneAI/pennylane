@@ -887,7 +887,6 @@ Improvements 🛠
   coefficients. The decomposition uses them as resource hints.
   If ``branch_probs`` is not provided, it is computed from the ``hamiltonian``
   data and the ``evolution_time`` at construction when the preprocessed coefficients are concrete.
-  Automatic probabilities are omitted if the inputs or preprocessed coefficients are traced.
   `(#10401) <https://github.com/PennyLaneAI/pennylane/pull/10401>`__
   `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
 
