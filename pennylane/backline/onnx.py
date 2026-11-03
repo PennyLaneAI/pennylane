@@ -101,6 +101,13 @@ def _onnxruntime_library_in(package: Path | None, platform: str) -> str:
     return str(libraries[0])
 
 
+def _onnxruntime_providers(ort_lib: str) -> tuple[str, ...]:
+    """The onnxruntime execution provider libraries beside ``ort_lib``, which onnxruntime loads
+    from its own directory."""
+    lib = Path(ort_lib)
+    return tuple(str(p) for p in sorted(lib.parent.glob("libonnxruntime_providers*")) if p != lib)
+
+
 def _check_count(name: str, value, minimum: int) -> None:
     """Raise if ``value`` is not an int of at least ``minimum``."""
     if isinstance(value, bool) or not isinstance(value, int):
@@ -181,11 +188,10 @@ def onnx_decoder(
         a provider fails to attach). ``"cpu"`` and ``"migraphx"`` have been tested to work, whereas
         ``"cuda"`` and ``"tensorrt"`` are experimental and currently untested.
 
-        **In-process only.** The model and onnxruntime paths are resolved on the compiling
-        machine, so the coprocessor runs in the compiling process: it takes neither
-        :attr:`~.Node.executor_options` nor :attr:`~.Node.executor`, and so cannot set
-        :attr:`~.Node.remote`. Catalyst rejects a coprocessor running this function that has
-        either.
+        **On another machine.** The model, onnxruntime and its provider libraries are files on
+        this machine. A coprocessor on another machine (``remote=True``) gets them deployed beside
+        it, so that machine needs the same operating system and processor architecture as this
+        one, and the GPU libraries the provider uses.
     """
     model = Path(model).resolve()
     if not model.is_file():
@@ -212,7 +218,9 @@ def _onnx_function(
     """Catalyst's ONNX coprocessor function, running ``model`` through the onnxruntime shared
     library ``ort_lib``, with ``message_bytes`` as its ``(in_bytes, out_bytes)``. Each of
     ``options``, such as ``provider``, becomes a ``key=value`` config entry, in the order given.
-    Raises if a path contains ``;``, which separates config entries."""
+    The model and ``ort_lib`` are declared as files, and the provider libraries beside ``ort_lib``
+    as extra files, so a coprocessor on another machine gets them deployed beside it. Raises if a
+    path contains ``;``, which separates config entries."""
     entries = [f"model={model}", f"ort_lib={ort_lib}"]
     entries += [f"{key}={value}" for key, value in options.items()]
     if any(";" in entry for entry in entries):
@@ -222,4 +230,6 @@ def _onnx_function(
         config=";".join(entries),
         per_message=True,
         message_bytes=message_bytes,
+        files=("model", "ort_lib"),
+        extra_files=_onnxruntime_providers(ort_lib),
     )
