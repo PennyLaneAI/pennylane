@@ -90,10 +90,10 @@ def get_compile_pipeline(
               A marker label includes all transforms up to the location of that marker.
             * ``int``: The number of transforms to include from the start of the pipeline. Must
               be non-negative, e.g. ``level=0`` is empty and ``level=2`` contains the first two
-              transforms. The device preprocessing counts as a single level, placed after all
-              user-applied transforms.
+              transforms (``[0]`` and ``[1]``). The device preprocessing counts as a single
+              level, placed after all user-applied transforms.
             * ``slice``: A range of transforms, using standard Python slicing with non-negative
-              bounds, e.g. ``level=slice(1, 3)`` contains the second and third transforms.
+              bounds, e.g. ``level=slice(1, 3)`` contains transforms ``[1]`` and ``[2]``.
             * ``Sequence``: A ``list``, ``tuple``, or similar containing ``int`` or ``str``
               values, sorted in ascending order with no duplicates. One compile pipeline is
               returned per entry. A ``Sequence`` rather than an arbitrary iterable is required
@@ -142,9 +142,9 @@ def get_compile_pipeline(
 
     >>> print(get_compile_pipeline(circuit)) # or level="user"
     CompilePipeline(
-      [1] cancel_inverses(),
+      [0] cancel_inverses(),
        ├─▶ checkpoint
-      [2] merge_rotations()
+      [1] merge_rotations()
     )
 
     .. details::
@@ -157,10 +157,10 @@ def get_compile_pipeline(
 
         >>> print(get_compile_pipeline(circuit, level="device"))
         CompilePipeline(
-          [1] cancel_inverses(),
+          [0] cancel_inverses(),
            ├─▶ checkpoint
-          [2] merge_rotations(),
-          [3] Device Preprocessing
+          [1] merge_rotations(),
+          [2] Device Preprocessing
         )
 
         We can also retrieve the compile pipeline up to a specific stage indicated by the name
@@ -168,7 +168,7 @@ def get_compile_pipeline(
 
         >>> print(get_compile_pipeline(circuit, level="checkpoint"))
         CompilePipeline(
-          [1] cancel_inverses()
+          [0] cancel_inverses()
         )
 
         If ``level`` is ``"top"`` or ``0``, an empty compile pipeline is returned:
@@ -183,7 +183,7 @@ def get_compile_pipeline(
 
         >>> print(get_compile_pipeline(circuit, level=1))
         CompilePipeline(
-          [1] cancel_inverses()
+          [0] cancel_inverses()
         )
 
         A ``slice`` extracts a specific range of transforms from the compile pipeline. For
@@ -192,7 +192,7 @@ def get_compile_pipeline(
         >>> print(get_compile_pipeline(circuit, level=slice(1, 2)))
         CompilePipeline(
            ├─▶ checkpoint
-          [1] merge_rotations()
+          [0] merge_rotations()
         )
 
         Note that the ``"checkpoint"`` marker is still in the pipeline, as it marks a location
@@ -205,12 +205,12 @@ def get_compile_pipeline(
         >>> for pipeline in get_compile_pipeline(circuit, level=[1, 2]):
         ...     print(pipeline)
         CompilePipeline(
-          [1] cancel_inverses()
+          [0] cancel_inverses()
         )
         CompilePipeline(
-          [1] cancel_inverses(),
+          [0] cancel_inverses(),
            ├─▶ checkpoint
-          [2] merge_rotations()
+          [1] merge_rotations()
         )
 
         The ``"all-user"`` and ``"all"`` presets return the compile pipeline at every stage

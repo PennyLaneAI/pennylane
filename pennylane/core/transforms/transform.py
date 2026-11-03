@@ -89,8 +89,8 @@ def generic_apply_transform(obj, transform, *targs, **tkwargs):
     >>> from pennylane.transforms import _tape_decompose, merge_rotations
     >>> _tape_decompose(gate_set=qp.gate_sets.ALL_OPS) + merge_rotations(1e-6)
     CompilePipeline(
-      [1] <_tape_decompose(gate_set=All PennyLane Gates)>,
-      [2] <merge_rotations(1e-06)>
+      [0] <_tape_decompose(gate_set=All PennyLane Gates)>,
+      [1] <merge_rotations(1e-06)>
     )
 
     where transforms are called with just configuration parameters and combined into a CompilePipeline.
@@ -200,7 +200,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
     >>> print(transformed_qnode.compile_pipeline)
     CompilePipeline(
-      [1] my_quantum_transform()
+      [0] my_quantum_transform()
     )
 
     If we apply ``dispatched_transform`` a second time to the :class:`pennylane.QNode`, we would add
@@ -209,8 +209,8 @@ class Transform:  # pylint: disable=too-many-instance-attributes
     >>> transformed_qnode = dispatched_transform(transformed_qnode)
     >>> print(transformed_qnode.compile_pipeline)
     CompilePipeline(
-      [1] my_quantum_transform(),
-      [2] my_quantum_transform()
+      [0] my_quantum_transform(),
+      [1] my_quantum_transform()
     )
 
     When a transformed QNode is executed, the QNode's compile pipeline is applied to the generated tape
@@ -777,9 +777,9 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
 
     >>> print(bound_t * 3)
     CompilePipeline(
+      [0] merge_rotations(atol=0.0001),
       [1] merge_rotations(atol=0.0001),
-      [2] merge_rotations(atol=0.0001),
-      [3] merge_rotations(atol=0.0001)
+      [2] merge_rotations(atol=0.0001)
     )
 
     And it can be used in conjunction with both individual transforms, bound transforms, and
@@ -787,14 +787,14 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
 
     >>> print(bound_t + qp.transforms.cancel_inverses)
     CompilePipeline(
-      [1] merge_rotations(atol=0.0001),
-      [2] cancel_inverses()
+      [0] merge_rotations(atol=0.0001),
+      [1] cancel_inverses()
     )
     >>> print(bound_t + qp.transforms.cancel_inverses + bound_t)
     CompilePipeline(
-      [1] merge_rotations(atol=0.0001),
-      [2] cancel_inverses(),
-      [3] merge_rotations(atol=0.0001)
+      [0] merge_rotations(atol=0.0001),
+      [1] cancel_inverses(),
+      [2] merge_rotations(atol=0.0001)
     )
 
     """
