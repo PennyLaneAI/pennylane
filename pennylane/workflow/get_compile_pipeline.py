@@ -77,32 +77,29 @@ def get_compile_pipeline(
     qnode: QNode,
     level: str | int | slice = "user",
 ) -> Callable[P, CompilePipeline]:
-    """Retrieve the compile pipeline(s) of a QNode at the designated level(s).
-
-    This function is the reference for the ``level`` argument accepted by
-    :func:`~.analyze`, :func:`~.estimate`, and :func:`~.track`: in each of those, ``level``
-    selects the compile pipeline(s) returned here, which are applied before the function does
-    its work.
+    """Retrieve the :class:`~.CompilePipeline`\\ (s) of a QNode at the designated level(s).
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): The (qjit'd) QNode to get the compile pipeline for.
-        level (str | int | slice | Sequence[str | int]): Specifies the stage(s) at which to
-            retrieve the compile pipeline. Defaults to ``"user"``.
+        level (str | int | slice | Sequence[str | int]): The portion(s) of the
+            :class:`~.CompilePipeline` to retrieve. Defaults to ``"user"``.
 
             ``level`` accepts the following types:
 
             * ``str``: One of the presets listed below, or the ``label`` of a :func:`~.marker`.
               A marker label includes all transforms up to the location of that marker.
-            * ``int``: The number of transforms to include from the start of the pipeline,
-              e.g. ``level=0`` is empty and ``level=2`` contains the first two transforms.
-              The device preprocessing counts as a single level, placed after all
+            * ``int``: The number of transforms to include from the start of the pipeline. Must
+              be non-negative, e.g. ``level=0`` is empty and ``level=2`` contains the first two
+              transforms. The device preprocessing counts as a single level, placed after all
               user-applied transforms.
-            * ``slice``: A specific range of levels, using standard 0-based Pythonic indexing,
-              e.g. ``level=slice(1, 3)`` contains the second and third transforms.
+            * ``slice``: A range of transforms, using standard Python slicing with non-negative
+              bounds, e.g. ``level=slice(1, 3)`` contains the second and third transforms.
             * ``Sequence``: A ``list``, ``tuple``, or similar containing ``int`` or ``str``
               values, sorted in ascending order with no duplicates. One compile pipeline is
               returned per entry. A ``Sequence`` rather than an arbitrary iterable is required
               so that its length and ordering can be validated up front, without consuming it.
+              The ``"all"`` and ``"all-user"`` presets are not allowed inside a ``Sequence``,
+              since they already correspond to multiple levels.
 
             The following ``str`` presets are provided for ease of use:
 
@@ -201,12 +198,20 @@ def get_compile_pipeline(
         Note that the ``"checkpoint"`` marker is still in the pipeline, as it marks a location
         in the pipeline rather than being attached to a particular transform.
 
-        To retrieve several compile pipelines at once, provide a ``Sequence`` of levels. One
-        compile pipeline is returned per entry:
+        To retrieve several compile pipelines at once, provide a ``Sequence`` of levels. Unlike
+        a ``slice``, which returns a single range of transforms, one compile pipeline is
+        returned per entry, each containing all transforms up to that level:
 
-        >>> pipelines = get_compile_pipeline(circuit, level=[0, "checkpoint", "device"])
-        >>> [len(pipeline) for pipeline in pipelines]
-        [0, 1, 3]
+        >>> for pipeline in get_compile_pipeline(circuit, level=[1, 2]):
+        ...     print(pipeline)
+        CompilePipeline(
+          [1] cancel_inverses()
+        )
+        CompilePipeline(
+          [1] cancel_inverses(),
+           ├─▶ checkpoint
+          [2] merge_rotations()
+        )
 
         The ``"all-user"`` and ``"all"`` presets return the compile pipeline at every stage
         of compilation:

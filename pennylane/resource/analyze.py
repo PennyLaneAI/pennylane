@@ -99,18 +99,19 @@ def analyze(
     r"""Provides a compile-time resource estimate of a quantum circuit, obtained by analyzing its
     intermediate representation at the specified compilation level.
 
-    This transform converts a QNode into a callable that compiles the circuit up to ``level``
-    and inspects the resulting representation, without executing the circuit or unrolling its
+    This transform converts a QNode into a callable that compiles the circuit with the
+    portion(s) of its :class:`~.CompilePipeline` selected by ``level``, and inspects the
+    resulting representation, without executing the circuit or unrolling its
     control flow. The resource information is therefore subject to compile-time constraints.
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the (qjit'd) QNode for which to estimate resources.
             ``functools.partial`` wrappers around supported callables are also accepted.
-        level (str | int | slice | Sequence[str | int]): The compile pipeline(s) to apply before
-            analyzing resources. Accepts any value supported by
-            :func:`~.workflow.get_compile_pipeline`; see its documentation for the available
-            options. If ``level`` is a ``Sequence``, ``"all-user"``, or ``"all"``, resources are
-            analyzed for each level. Defaults to ``"user"``.
+        level (str | int | slice | Sequence[str | int]): The portion(s) of the
+            :class:`~.CompilePipeline` to apply before analyzing resources. Accepts the same
+            values as :func:`~.workflow.get_compile_pipeline`. If ``level`` is a
+            ``Sequence``, ``"all-user"``, or ``"all"``, resources are analyzed after each
+            portion. Defaults to ``"user"``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a

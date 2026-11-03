@@ -108,10 +108,10 @@ def track(
             ``functools.partial`` wrappers around supported callables are also accepted.
 
     Keyword Args:
-        level (str | int | slice | Sequence[str | int]): The compile pipeline(s) to apply before
-            executing the circuit and tracking its resources. Accepts any value supported by
-            :func:`~.workflow.get_compile_pipeline`; see its documentation for the available
-            options. Currently, only ``"device"`` is supported. Defaults to ``"device"``.
+        level (str | int | slice | Sequence[str | int]): The portion(s) of the
+            :class:`~.CompilePipeline` to apply before executing the circuit and tracking its
+            resources. Accepts the same values as :func:`~.workflow.get_compile_pipeline`.
+            Currently, only ``"device"`` is supported. Defaults to ``"device"``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a

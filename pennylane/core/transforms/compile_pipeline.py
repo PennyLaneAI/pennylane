@@ -163,8 +163,9 @@ class CompilePipeline:
         # Add a marker for inspectability
         pipeline.add_marker("no-transforms", 0)
 
+        @qp.qjit
         @pipeline
-        @qp.qnode(qp.device("default.qubit"))
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
         def circuit(x, y):
             qp.CNOT([1, 0])
             qp.X(0)
@@ -177,7 +178,7 @@ class CompilePipeline:
             return qp.expval(qp.Z(1))
 
     >>> from pennylane.workflow import get_compile_pipeline
-    >>> print(get_compile_pipeline(circuit)(0.1, 0.2))
+    >>> print(get_compile_pipeline(circuit))
     CompilePipeline(
        ├─▶ no-transforms
       [1] commute_controlled(),

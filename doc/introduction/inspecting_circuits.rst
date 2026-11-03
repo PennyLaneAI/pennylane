@@ -88,7 +88,8 @@ Resources are tracked by mock-executing the circuit on ``null.qubit``, so ``resu
 shape and dtype of the real result, but not its values.
 
 The :func:`~pennylane.analyze` transform instead estimates the resources without executing the
-circuit, by analyzing the compiled program at a given stage of compilation (``level``).
+circuit, by analyzing the program after applying a given portion of its
+:class:`~.CompilePipeline` (``level``, see :func:`~.workflow.get_compile_pipeline`).
 This makes it possible to see how each transform changes the circuit:
 
 .. code-block:: python
