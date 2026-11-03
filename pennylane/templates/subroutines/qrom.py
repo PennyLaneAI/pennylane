@@ -39,8 +39,46 @@ from .arithmetic import TemporaryAND
 from .multix import MultiX
 
 
+def preprocess_qrom_inputs(bitstrings, control_wires, target_wires, work_wires):
+    """Pre-process and validated the inputs to :class:`~.QROM` or :class:`~.QROMLoad` (excluding
+    ``clean`` for the latter).
+    """
+    control_wires = Wires(control_wires)
+    target_wires = Wires(target_wires)
+    work_wires = Wires(() if work_wires is None else work_wires)
+
+    if not isinstance(bitstrings, AbstractArray):
+        if isinstance(bitstrings[0], str):
+            bitstrings = [[int(bit) for bit in bitstring] for bitstring in bitstrings]
+
+        if isinstance(bitstrings, (list, tuple)):
+            bitstrings = math.array(bitstrings, dtype=bool)
+
+        else:
+            bitstrings = bitstrings.astype(bool)
+
+    wire_args = {
+        "control_wires": control_wires,
+        "target_wires": target_wires,
+        "work_wires": work_wires,
+    }
+    validate_no_wire_overlaps(wire_args)
+
+    if 2 ** len(control_wires) < bitstrings.shape[0]:
+        raise ValueError(
+            f"Not enough control wires ({len(control_wires)}) for the desired number of "
+            f"bitstrings ({bitstrings.shape[0]}). At least {ceil_log2(bitstrings.shape[0])} "
+            "control wires are required."
+        )
+
+    if bitstrings.shape[1] != len(target_wires):
+        raise ValueError("Bitstring length must match the number of target wires.")
+
+    return bitstrings, control_wires, target_wires, work_wires
+
+
 class QROM(Operator2):
-    r"""Applies the QROM operator to an arbitrary target wire state.
+    r"""Applies the QROM operator to a target register in an arbitrary state.
 
     This operator applies bit flips encoded by bitstrings that depend on the computational basis
     state of a control register:
@@ -133,39 +171,8 @@ class QROM(Operator2):
         target_wires: WiresLike,
         work_wires: WiresLike,
     ):
-
-        control_wires = Wires(control_wires)
-        target_wires = Wires(target_wires)
-        work_wires = Wires(() if work_wires is None else work_wires)
-
-        if not isinstance(bitstrings, AbstractArray):
-            if isinstance(bitstrings[0], str):
-                bitstrings = [[int(bit) for bit in bitstring] for bitstring in bitstrings]
-
-            if isinstance(bitstrings, (list, tuple)):
-                bitstrings = math.array(bitstrings, dtype=bool)
-
-            else:
-                bitstrings = bitstrings.astype(bool)
-
-        wire_args = {
-            "control_wires": control_wires,
-            "target_wires": target_wires,
-            "work_wires": work_wires,
-        }
-        validate_no_wire_overlaps(wire_args)
-
-        if 2 ** len(control_wires) < bitstrings.shape[0]:
-            raise ValueError(
-                f"Not enough control wires ({len(control_wires)}) for the desired number of "
-                f"bitstrings ({bitstrings.shape[0]}). At least {ceil_log2(bitstrings.shape[0])} "
-                "control wires are required."
-            )
-
-        if bitstrings.shape[1] != len(target_wires):
-            raise ValueError("Bitstring length must match the number of target wires.")
-
-        super().__init__(bitstrings, control_wires, target_wires, work_wires)
+        args = (bitstrings, control_wires, target_wires, work_wires)
+        super().__init__(*preprocess_qrom_inputs(*args))
 
     @property
     def wires(self):

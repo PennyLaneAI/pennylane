@@ -28,13 +28,12 @@ from pennylane.decomposition import (
     register_condition,
     register_resources,
 )
-from pennylane.math import ceil_log2
 from pennylane.ops import SWAP, H, ctrl
-from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.typing import Bool, TensorLike, Wire
+from pennylane.wires import Wires, WiresLike
 
 from .multix import MultiX
-from .qrom import QROM
+from .qrom import QROM, preprocess_qrom_inputs
 
 
 class QROMLoad(Operator2):
@@ -55,7 +54,7 @@ class QROMLoad(Operator2):
             :math:`|i\rangle` controlling which bit string is loaded. Must contain
             at least ``ceil_log2(bitstrings.shape[0])`` wires.
         target_wires (Sequence[int]): the wires into which the bitstrings are loaded. Must contain
-            ``bitstrings.shape[1]`` wires.
+            ``bitstrings.shape[1]`` wires in the state :math:`|0\rangle`.
         work_wires (Sequence[int]): the auxiliary wires used for the computation. Must start in the
             state :math:`|0\rangle`.
         clean (bool): whether the ``work_wires`` are returned to the state :math:`|0\rangle`.
@@ -69,10 +68,8 @@ class QROMLoad(Operator2):
 
     **Example**
 
-    In this example, the QROM operator is applied to encode the third bitstring, associated
+    In this example, the ``QROMLoad`` operator is applied to load the third bitstring, associated
     with index 2, in the target wires.
-
-    TODO: NICER EXAMPLE THAT USES NONZERO TARGET WIRES
 
     .. code-block:: python
 
@@ -83,16 +80,17 @@ class QROMLoad(Operator2):
 
         @qp.qnode(dev, shots=1)
         def circuit():
+            # encode the third index in the control wires [0, 1]
+            qp.BasisState([1, 0], wires = [0, 1])
 
-            # the third index is encoded in the control wires [0, 1]
-            qp.BasisState([1, 0], wires = [0,1])
+            qp.QROMLoad(
+                bitstrings = bitstrings,
+                control_wires = [0, 1],
+                target_wires = [2, 3, 4],
+                work_wires = [5, 6, 7],
+            )
 
-            qp.QROM(bitstrings = bitstrings,
-                    control_wires = [0,1],
-                    target_wires = [2,3,4],
-                    work_wires = [5,6,7])
-
-            return qp.sample(wires = [2,3,4])
+            return qp.sample(wires = [2, 3, 4])
 
     >>> print(circuit())
     [[1 1 0]]
@@ -100,10 +98,8 @@ class QROMLoad(Operator2):
     If the number of bitstrings :math:`L` is smaller than ``2**len(control_wires)`` ,
     the operator acts as the identity on the ``target_wires`` for the states :math:`|i\rangle`
     of the ``control_wires`` with :math:`i\geq L`. This means that a :math:`|0\rangle`-controlled
-    ``QROM`` is equivalent to ``QROM`` with the same ``bitstrings`` if the additional control
+    ``QROMLoad`` is equivalent to ``QROMLoad`` with the same ``bitstrings`` if the additional control
     wires are inserted at the beginning of ``control_wires``.
-
-    TODO ADD CODE EXAMPLE OR PSEUDO-FORMULA OR SO
 
     .. note::
 
@@ -131,39 +127,8 @@ class QROMLoad(Operator2):
         work_wires: WiresLike,
         clean: bool = True,
     ):  # pylint: disable=too-many-arguments
-
-        control_wires = Wires(control_wires)
-        target_wires = Wires(target_wires)
-        work_wires = Wires(() if work_wires is None else work_wires)
-
-        if not isinstance(bitstrings, AbstractArray):
-            if isinstance(bitstrings[0], str):
-                bitstrings = [[int(bit) for bit in bitstring] for bitstring in bitstrings]
-
-            if isinstance(bitstrings, (list, tuple)):
-                bitstrings = math.array(bitstrings, dtype=bool)
-
-            else:
-                bitstrings = bitstrings.astype(bool)
-
-        wire_args = {
-            "control_wires": control_wires,
-            "target_wires": target_wires,
-            "work_wires": work_wires,
-        }
-        validate_no_wire_overlaps(wire_args)
-
-        if 2 ** len(control_wires) < bitstrings.shape[0]:
-            raise ValueError(
-                f"Not enough control wires ({len(control_wires)}) for the desired number of "
-                f"bitstrings ({bitstrings.shape[0]}). At least {ceil_log2(bitstrings.shape[0])} "
-                "control wires are required."
-            )
-
-        if bitstrings.shape[1] != len(target_wires):
-            raise ValueError("Bitstring length must match the number of target wires.")
-
-        super().__init__(bitstrings, control_wires, target_wires, work_wires, clean)
+        args = (bitstrings, control_wires, target_wires, work_wires)
+        super().__init__(*preprocess_qrom_inputs(*args), clean)
 
     @property
     def wires(self):
@@ -184,15 +149,11 @@ def _select_ops(
 
     num_targets_select = depth * num_targets
     new_bitstrings = bitstrings.reshape((num_columns, num_targets_select))
-    # Make sure we do not create a QROM with Select-SWAP option, because that would yield invalid
-    # decompositions.
-    num_work_wires_select = max(0, len(select_control_wires) - 1)
     QROM(
         new_bitstrings,
         control_wires=select_control_wires,
         target_wires=swap_wires[:num_targets_select],
-        work_wires=select_work_wires[:num_work_wires_select],
-        clean=False,
+        work_wires=select_work_wires,
     )
 
 
@@ -322,13 +283,11 @@ def _select_swap_resources(
     num_columns = int(np.ceil(num_bitstrings / depth))
     # Select block (implemented as a nested QROM over concatenated columns)
     num_targets_select = depth * num_targets
-    # TODO: WHICH QROM HERE?
     bigger_qrom = QROM(
         Bool[num_columns, num_targets_select],
         Wire[num_control_wires_select],
         Wire[num_targets_select],
         Wire[num_work_wires_select],
-        False,
     )
 
     # Swap block
