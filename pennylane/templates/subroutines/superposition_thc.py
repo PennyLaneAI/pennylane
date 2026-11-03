@@ -19,18 +19,9 @@ import numpy as np
 from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import (
-    RY,
-    GlobalPhase,
-    Hadamard,
-    MultiControlledX,
-    X,
-    Z,
-    adjoint,
-    ctrl,
-)
+from pennylane.ops import RY, GlobalPhase, Hadamard, MultiControlledX, X, Z, adjoint, ctrl
 from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
 
 from .arithmetic.left_classical_comparator import LeftClassicalComparator
 from .arithmetic.left_quantum_comparator import LeftQuantumComparator
@@ -391,7 +382,7 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     TemporaryAND(work_wires[3:6])
     X(wires=work_wires[5])
     MultiControlledX(
-        wires=work_wires[1:3] + work_wires[5:7],
+        wires=concatenate_wires(work_wires[1:3], work_wires[5:7]),
         work_wires=extra_work,
         work_wire_type="zeroed",
     )

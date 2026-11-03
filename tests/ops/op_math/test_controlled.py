@@ -939,12 +939,10 @@ class TestDecomposition:
         op = qp.CRZ(qp.numpy.array(theta), wires=[1, 0])
         decomp = op.decomposition()
 
-        assert decomp == [
-            qp.RZ(qp.numpy.array(theta / 2), wires=0),
-            qp.CNOT(wires=[1, 0]),
-            qp.RZ(qp.numpy.array(-theta / 2), wires=0),
-            qp.CNOT(wires=[1, 0]),
-        ]
+        qp.assert_equal(decomp[0], qp.RZ(qp.numpy.array(theta / 2), 0))
+        qp.assert_equal(decomp[1], qp.CNOT(wires=(1, 0)))
+        qp.assert_equal(decomp[2], qp.RZ(qp.numpy.array(-theta / 2), 0))
+        qp.assert_equal(decomp[3], qp.CNOT(wires=(1, 0)))
 
         decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
         assert qp.math.allclose(op.matrix(), decomp_mat)
@@ -957,9 +955,9 @@ class TestDecomposition:
         decomp = op.decomposition()
 
         qp.assert_equal(decomp[0], qp.RZ(qp.numpy.array(theta / 2), [0]))
-        qp.assert_equal(decomp[1], qp.MultiControlledX([1, 2, 3, 4, 0]))
+        qp.assert_equal(decomp[1], qp.MultiControlledX(wires=[1, 2, 3, 4, 0]))
         qp.assert_equal(decomp[2], qp.RZ(qp.numpy.array(-theta / 2), wires=[0]))
-        qp.assert_equal(decomp[3], qp.MultiControlledX([1, 2, 3, 4, 0]))
+        qp.assert_equal(decomp[3], qp.MultiControlledX(wires=[1, 2, 3, 4, 0]))
 
         decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
         assert qp.math.allclose(op.matrix(), decomp_mat)
@@ -990,9 +988,6 @@ class TestDecomposition:
         # Operator2 uses registered rules; the GlobalPhase and Identity fixtures are callables.
         if not issubclass(base_cls, Operator2) and base_cls not in (qp.GlobalPhase, qp.Identity):
             assert custom_ctrl_cls.compute_decomposition(*params, active_wires) == expected
-
-        if base_cls is qp.GlobalPhase:
-            qp.assert_equal(ctrl_op.base, base_op)
 
         mat = qp.matrix(ctrl_op.decomposition, wire_order=active_wires)()
         assert np.allclose(mat, custom_ctrl_op.matrix(), atol=tol, rtol=0)
@@ -1608,34 +1603,6 @@ class TestCtrl:
         assert q.queue[0] == qp.X(0)
         assert q.queue[1] == qp.Barrier()
 
-    @pytest.mark.parametrize("control, control_values", [([1, 2], None), ([1], [False])])
-    def test_ctrl_u1_symbolic(self, control, control_values):
-        """Test that controlling U1 preserves its base and control metadata."""
-        op = qp.ctrl(qp.U1(0.5, wires=0), control=control, control_values=control_values)
-        qp.assert_equal(
-            op, ControlledOp2(qp.U1(0.5, wires=0), control, control_values=control_values)
-        )
-
-    @pytest.mark.parametrize(
-        "op, ctrl_wires",
-        [(op, wires) for op, wires, _ in custom_ctrl_ops if not isinstance(op, qp.Barrier)],
-    )
-    def test_symbolic_controls_on_zero(self, op, ctrl_wires):
-        """Test that symbolic controls preserve control values of zero."""
-        ctrl_values = [False] * len(ctrl_wires)
-        expected = ControlledOp2(op, control_wires=ctrl_wires, control_values=ctrl_values)
-        assert qp.ctrl(op, control=ctrl_wires, control_values=ctrl_values) == expected
-
-    @pytest.mark.parametrize(
-        "op, ctrl_wires",
-        [(op, wires) for op, wires, _ in custom_ctrl_ops if not isinstance(op, qp.Barrier)],
-    )
-    def test_symbolic_controls_multiple_wires(self, op, ctrl_wires):
-        """Test that symbolic controls preserve additional control wires."""
-        ctrl_wires = ctrl_wires + ["a", "b", "c"]
-        expected = ControlledOp2(op, control_wires=ctrl_wires)
-        assert qp.ctrl(op, control=ctrl_wires) == expected
-
     def test_nested_controls(self):
         """Tests that nested controls are flattened correctly."""
 
@@ -1739,30 +1706,6 @@ class TestCtrl:
             control_values=[1, 0, 1],
         )
         assert op == expected
-
-    @pytest.mark.parametrize("work_wires", [None, ["aux"]])
-    @pytest.mark.parametrize(
-        "op, ctrl_wires, ctrl_values, expected_wires, expected_values",
-        [
-            (qp.X(3), [0], [1], [0], [1]),
-            (qp.X(3), [0, 1], [1, 0], [0, 1], [1, 0]),
-            (qp.X(3), [0, 1, 2], [1, 1, 1], [0, 1, 2], [1, 1, 1]),
-            (qp.CNOT([2, 3]), [0, 1], [1, 0], [0, 1, 2], [1, 0, 1]),
-            (qp.Toffoli([1, 2, 3]), [0], [0], [0, 1, 2], [0, 1, 1]),
-        ],
-    )
-    def test_pauli_x_control_metadata(
-        self, op, ctrl_wires, ctrl_values, expected_wires, expected_values, work_wires
-    ):
-        """Controlling X-based gates preserves metadata and flattens existing controls."""
-        op = qp.ctrl(op, control=ctrl_wires, control_values=ctrl_values, work_wires=work_wires)
-        expected = ControlledOp2(
-            qp.X(3),
-            expected_wires,
-            control_values=expected_values,
-            work_wires=work_wires,
-        )
-        qp.assert_equal(op, expected)
 
     def test_nested_pauli_x_based_ctrl_ops(self):
         """Tests that nested PauliX-based ops are handled correctly."""

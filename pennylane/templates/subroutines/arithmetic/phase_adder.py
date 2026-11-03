@@ -326,7 +326,6 @@ def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire, **__):
         ops.CNOT(wires=[aux_k, work_wire[0]]),
         QFT(wires=x_wires),
     )
-
     ops.ctrl(_add_k_fourier_loop, control=work_wire)(mod)
     ops.change_op_basis(
         prod(

@@ -985,7 +985,6 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
         return []
 
     if partial:
-
         if len(ops) == 1:
             MultiControlledX(
                 [*control, work_wires[0]],
@@ -1014,7 +1013,6 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
         MultiControlledX(mcx_wires, control_values=ctrl_state, work_wires=work_wires[1:])
         ctrl(op, control=work_wires[:1], work_wires=work_wires[1:])
         MultiControlledX(mcx_wires, control_values=ctrl_state, work_wires=work_wires[1:])
-
     return []
 
 

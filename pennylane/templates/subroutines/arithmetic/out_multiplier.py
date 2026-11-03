@@ -550,7 +550,8 @@ def _c_add_sub_resources(num_x_wires, num_y_wires):
         ctrl_basis_rep = ctrl(MultiX(Bool[num_x_wires - 1], Wire[num_x_wires - 1]), Wire[1])
         resources[ctrl_basis_rep] += 2
 
-    resources[MultiControlledX(Wire[2], control_values=Bool[1])] += 2 + 2 * (num_y_wires > 1)
+    cnot_on_0_rep = MultiControlledX(Wire[2], control_values=Bool[1])
+    resources[cnot_on_0_rep] += 2 * (1 + int(num_y_wires > 1))
 
     for key, value in _semi_adder_resources(Wire[num_x_wires], Wire[num_y_wires]).items():
         resources[key] += value

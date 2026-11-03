@@ -109,15 +109,6 @@ Control Decompositions
     ~ctrl_decomp_zyz
     ~ctrl_decomp_bisect
 
-Other Functions
-~~~~~~~~~~~~~~~
-
-.. currentmodule:: pennylane.ops.op_math
-
-.. autosummary::
-    :toctree: api
-
-
 """
 
 from .adjoint import Adjoint, adjoint
