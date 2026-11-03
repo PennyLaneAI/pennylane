@@ -888,7 +888,7 @@ Improvements 🛠
   If ``branch_probs`` is not provided, it is computed from the ``hamiltonian``
   data and the ``evolution_time`` at construction when the preprocessed coefficients are concrete.
   `(#10401) <https://github.com/PennyLaneAI/pennylane/pull/10401>`__
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10444) <https://github.com/PennyLaneAI/pennylane/pull/10444>`__
 
 * Added ``pennylane.core.get_op_class_by_name``
   to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
