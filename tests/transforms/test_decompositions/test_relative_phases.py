@@ -42,9 +42,9 @@ class TestMultiControlledPhaseXGate:
     def test_multiple_matches(self):
         def qfunc():
             qp.ctrl(qp.S(wires=[2]), control=[0, 1])
-            qp.ctrl(qp.X(3), control=[0, 1, 2])
+            qp.MultiControlledX(wires=[0, 1, 2, 3])
             qp.ctrl(qp.S(wires=[2]), control=[0, 1])
-            qp.ctrl(qp.X(3), control=[0, 1, 2])
+            qp.MultiControlledX(wires=[0, 1, 2, 3])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 2)
@@ -83,7 +83,7 @@ class TestMultiControlledPhaseXGate:
             qp.PauliX(wires=3)
             qp.ctrl(qp.S(wires=[2]), control=[0, 1])
             qp.PauliZ(wires=5)
-            qp.ctrl(qp.X(3), control=[0, 1, 2])
+            qp.MultiControlledX(wires=[0, 1, 2, 3])
             qp.PauliZ(wires=0)
             qp.Hadamard(wires=2)
             qp.PauliX(wires=3)
@@ -115,21 +115,33 @@ class TestMultiControlledPhaseXGate:
 
     def test_incomplete_pattern(self):
         def qfunc():
-            qp.ctrl(qp.X(3), control=[0, 1, 2])
+            qp.MultiControlledX(wires=[0, 1, 2, 3])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 2)
 
         tape = qp.tape.make_qscript(transformed_qfunc)()
-        # The complementary pattern costs more than the original symbolic controlled X.
-        assert tape.operations == [qp.ctrl(qp.X(3), control=[0, 1, 2])]
+        assert len(tape.operations) == 11
+        assert tape.operations == [
+            qp.H(3),
+            qp.adjoint(qp.T(3)),
+            qp.CNOT(wires=[2, 3]),
+            qp.T(3),
+            qp.ctrl(qp.X(3), control=[0, 1]),
+            qp.adjoint(qp.T(3)),
+            qp.CNOT(wires=[2, 3]),
+            qp.T(3),
+            qp.ctrl(qp.X(3), control=[0, 1]),
+            qp.H(3),
+            qp.adjoint(qp.ctrl(qp.S(2), control=[0, 1])),
+        ]
 
     def test_wire_permutations(self):
         for first, second, third, fourth in permutations([0, 1, 2, 3]):
 
             def qfunc(one, two, three, four):
                 qp.ctrl(qp.S(wires=[three]), control=[one, two])
-                qp.ctrl(qp.X(four), control=[one, two, three])
+                qp.MultiControlledX(wires=[one, two, three, four])
                 return qp.expval(qp.Z(one))
 
             func = partial(qfunc, first, second, third, fourth)
@@ -155,7 +167,7 @@ class TestMultiControlledPhaseXGate:
         def qfunc():
             qp.ctrl(qp.S(wires=[2]), control=[0, 1])
             qp.PauliX(4)  # change it to five and it breaks! A bug?
-            qp.ctrl(qp.X(3), control=[0, 1, 2])
+            qp.MultiControlledX(wires=[0, 1, 2, 3])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 2)
@@ -176,10 +188,15 @@ class TestMultiControlledPhaseXGate:
             qp.PauliX(wires=4),
         ]
 
-    def test_basic_transform(self):
+    @pytest.mark.parametrize(
+        "controlled_x",
+        [qp.MultiControlledX, lambda wires: qp.ctrl(qp.X(wires[-1]), control=wires[:-1])],
+        ids=["named", "symbolic"],
+    )
+    def test_basic_transform(self, controlled_x):
         def qfunc():
             qp.ctrl(qp.S(wires=[2]), control=[0, 1])
-            qp.ctrl(qp.X(3), control=[0, 1, 2])
+            controlled_x(wires=[0, 1, 2, 3])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 2)
@@ -198,6 +215,10 @@ class TestMultiControlledPhaseXGate:
             qp.ctrl(qp.X(3), control=[0, 1]),
             qp.Hadamard(wires=3),
         ]
+        assert qp.math.allclose(
+            qp.matrix(tape, wire_order=[0, 1, 2, 3]),
+            qp.matrix(qfunc, wire_order=[0, 1, 2, 3])(),
+        )
 
 
 class TestPhaseXGate:
@@ -205,9 +226,9 @@ class TestPhaseXGate:
     def test_multiple_matches(self):
         def qfunc():
             qp.ctrl(qp.S(wires=[1]), control=[0])
-            qp.ctrl(qp.X(2), control=[0, 1])
+            qp.Toffoli(wires=[0, 1, 2])
             qp.ctrl(qp.S(wires=[1]), control=[0])
-            qp.ctrl(qp.X(2), control=[0, 1])
+            qp.Toffoli(wires=[0, 1, 2])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 1)
@@ -246,7 +267,7 @@ class TestPhaseXGate:
             qp.PauliX(wires=3)
             qp.ctrl(qp.S(wires=[1]), control=[0])
             qp.PauliZ(wires=5)
-            qp.ctrl(qp.X(2), control=[0, 1])
+            qp.Toffoli(wires=[0, 1, 2])
             qp.PauliZ(wires=0)
             qp.Hadamard(wires=2)  # cancels with H in the replacement
             qp.PauliX(wires=3)
@@ -276,7 +297,7 @@ class TestPhaseXGate:
 
     def test_incomplete_pattern(self):
         def qfunc():
-            qp.ctrl(qp.X(2), control=[0, 1])
+            qp.Toffoli(wires=[0, 1, 2])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 1)
@@ -302,7 +323,7 @@ class TestPhaseXGate:
 
             def qfunc(one, two, three):
                 qp.ctrl(qp.S(wires=[two]), control=[one])
-                qp.ctrl(qp.X(three), control=[one, two])
+                qp.Toffoli(wires=[one, two, three])
                 return qp.expval(qp.Z(one))
 
             func = partial(qfunc, one=first, two=second, three=third)
@@ -328,7 +349,7 @@ class TestPhaseXGate:
         def qfunc():
             qp.ctrl(qp.S(wires=[1]), control=[0])
             qp.PauliX(3)
-            qp.ctrl(qp.X(2), control=[0, 1])
+            qp.Toffoli(wires=[0, 1, 2])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 1)
@@ -349,10 +370,15 @@ class TestPhaseXGate:
             qp.PauliX(wires=3),
         ]
 
-    def test_basic_transform(self):
+    @pytest.mark.parametrize(
+        "controlled_x",
+        [qp.Toffoli, lambda wires: qp.ctrl(qp.X(wires[-1]), control=wires[:-1])],
+        ids=["named", "symbolic"],
+    )
+    def test_basic_transform(self, controlled_x):
         def qfunc():
             qp.ctrl(qp.S(wires=[1]), control=[0])
-            qp.ctrl(qp.X(2), control=[0, 1])
+            controlled_x(wires=[0, 1, 2])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 1)
@@ -371,6 +397,10 @@ class TestPhaseXGate:
             qp.ctrl(qp.X(2), control=[0]),
             qp.Hadamard(wires=2),
         ]
+        assert qp.math.allclose(
+            qp.matrix(tape, wire_order=[0, 1, 2]),
+            qp.matrix(qfunc, wire_order=[0, 1, 2])(),
+        )
 
 
 class TestRelativePhaseToffoli:

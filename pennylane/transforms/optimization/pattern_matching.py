@@ -1512,6 +1512,14 @@ class SubstitutionConfig:  # pylint: disable=too-many-arguments, too-few-public-
         self.pred_block = pred_block
 
 
+def _controlled_x_cost(op):
+    """Use the named-gate cost when symbolic controlled X can lower to CNOT or Toffoli."""
+    num_controls = len(op.control_wires)
+    if num_controls in (1, 2) and all(op.control_values):
+        return 2 if num_controls == 1 else 21
+    return 2 * 4 * num_controls**2
+
+
 class TemplateSubstitution:  # pylint: disable=too-few-public-methods
     """Class to run the substitution algorithm from the list of maximal matches."""
 
@@ -1558,7 +1566,7 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                 # the quantum cost of a MultiControlledX gate scales as 4n^2, where n is the number of control wires
                 # see exercise 4.29 in Nielsen and Chuang
                 "MultiControlledX": lambda op: 2 * 4 * len(op.control_wires) ** 2,
-                "C(PauliX)": lambda op: 2 * 4 * len(op.control_wires) ** 2,
+                "C(PauliX)": _controlled_x_cost,
             }
 
     def _pred_block(self, circuit_sublist, index):
