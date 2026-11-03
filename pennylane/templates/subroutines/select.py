@@ -71,8 +71,8 @@ def _partial_select(K, control):
 
 
 class Select(Operator2):
-    r"""The ``Select`` operator, also available as :class:`~.Multiplexer` and :class:`~.Multiplexor`,
-    applies different operations depending on the state of designated control wires.
+    r"""The ``Select`` operator applies different operations depending on the state of
+    designated control wires.
 
     .. math:: Select|i\rangle \otimes |\psi\rangle = |i\rangle \otimes U_i |\psi\rangle
 
@@ -999,12 +999,8 @@ add_decomps(Select, _select_decomp_multi_control_work_wire)
 
 Multiplexer = Select
 r"""Multiplexer(ops, control, work_wires=None, partial=False)
-
-Alias for :class:`~.Select`.
 """
 
 Multiplexor = Select
 r"""Multiplexor(ops, control, work_wires=None, partial=False)
-
-Alias for :class:`~.Select`.
 """

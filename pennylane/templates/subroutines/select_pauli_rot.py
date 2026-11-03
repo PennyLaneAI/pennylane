@@ -35,8 +35,8 @@ class SelectPauliRot(Operator2):
     r"""Applies individual single-qubit Pauli rotations depending on the state of
     designated control qubits.
 
-    This operator, also available as :class:`~.MultiplexedRotation` and :class:`~.UniformlyControlledRotation`,
-    applies a sequence of multi-controlled rotations about the same axis to a single target qubit.
+    This operator applies a sequence of multi-controlled rotations about the same axis to a
+    single target qubit.
     The rotation angles are selected based on the state of the control qubits.
     Its definition is given by:
 
@@ -202,12 +202,8 @@ add_decomps(SelectPauliRot, decompose_select_pauli_rot)
 
 MultiplexedRotation = SelectPauliRot
 r"""MultiplexedRotation(angles, control_wires, target_wire, rot_axis="Z")
-
-Alias for :class:`~.SelectPauliRot`.
 """
 
 UniformlyControlledRotation = SelectPauliRot
 r"""UniformlyControlledRotation(angles, control_wires, target_wire, rot_axis="Z")
-
-Alias for :class:`~.SelectPauliRot`.
 """
