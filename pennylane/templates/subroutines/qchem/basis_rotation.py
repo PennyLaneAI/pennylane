@@ -365,8 +365,7 @@ def _real_basis_rotation_decomp(unitary_matrix, wires, **_):
     is_negative, unitary = _adjust_determinant(unitary)
 
     if _is_jax_jit(is_negative):
-        # Plain jax.jit cannot branch on the traced determinant. PhaseShift(pi) is PauliZ, with pi
-        # at full precision rather than that of the matrix.
+        # Plain jax.jit cannot branch on the traced determinant, so apply PauliZ as PhaseShift(pi).
         PhaseShift(math.where(is_negative, np.pi, 0.0), wires[0])
     else:
         cond(is_negative, PauliZ)(wires[0])
