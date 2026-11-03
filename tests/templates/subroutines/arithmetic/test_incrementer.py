@@ -25,7 +25,7 @@ from pennylane.measurements import state
 from pennylane.ops import CNOT, PauliX
 from pennylane.templates import BasisEmbedding, TemporaryAND
 from pennylane.templates.subroutines.arithmetic.incrementer import (
-    _adjoint_incrementer_decomposition,
+    _adjoint_incrementer_bit_flips,
     _decompose_mcxs,
 )
 from pennylane.testing import assert_decomposable, assert_valid, plxpr_to_tape
@@ -120,7 +120,7 @@ def test_adjoint_decomposition_correct(wires, init_state, forward_output, work_w
     @qnode(dev)
     def decrement():
         BasisEmbedding(forward_output, wires)
-        _adjoint_incrementer_decomposition(base)
+        _adjoint_incrementer_bit_flips(base)
         return state()
 
     result = np.array(decrement())
