@@ -887,7 +887,7 @@ class TestDecomposition:
             assert make_op(hamiltonian, wires).arguments["branch_probs"] == expected
             return 0
 
-        jax.make_jaxpr(circuit)()
+        _ = jax.make_jaxpr(circuit)()
 
 
 # ---------------------------------------------------------------------------
