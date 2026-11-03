@@ -462,11 +462,18 @@ def _compare_operation_without_qubits(node_1, node_2):
     Return:
         Bool: True if similar operation (no qubits comparison) and False otherwise.
     """
-    return (
-        (node_1.op.name == node_2.op.name)
-        and len(node_1.wires) == len(node_2.wires)
-        and qp.math.allclose(node_1.op.data, node_2.op.data)
-    )
+
+    if len(node_1.wires) != len(node_2.wires):
+        return False
+
+    if isinstance(node_1.op, Controlled) and isinstance(node_2.op, Controlled):
+        return _compare_ops_without_qubits(node_1.op.base, node_2.op.base)
+
+    return _compare_ops_without_qubits(node_1.op, node_2.op)
+
+
+def _compare_ops_without_qubits(op1, op2):
+    return op1.name == op2.name and qp.math.allclose(op1.data, op2.data)
 
 
 def _not_fixed_qubits(n_qubits_circuit, exclude, length):
@@ -888,11 +895,9 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
                 node_pattern = self.pattern_dag.get_node(i)
 
                 # Necessary but not sufficient conditions for a match to happen.
-                if (
-                    len(self.wires[label]) != len(node_pattern.wires)
-                    or set(self.wires[label]) != set(node_pattern.wires)
-                    or node_circuit.op.name != node_pattern.op.name
-                ):
+                if len(self.wires[label]) != len(node_pattern.wires) or set(
+                    self.wires[label]
+                ) != set(node_pattern.wires):
                     continue
 
                 # Compare two operations
@@ -1190,11 +1195,7 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
                 target_wires2 = self.pattern_dag.get_node(pattern_id).target_wires
 
                 # Necessary but not sufficient conditions for a match to happen.
-                if (
-                    len(wires1) != len(wires2)
-                    or set(wires1) != set(wires2)
-                    or node_circuit.op.name != node_pattern.op.name
-                ):
+                if len(wires1) != len(wires2) or set(wires1) != set(wires2):
                     continue
                 # Compare two operations
                 if _compare_operation_without_qubits(node_circuit, node_pattern):
