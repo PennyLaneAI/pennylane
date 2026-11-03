@@ -120,7 +120,7 @@ def _extra_resource_rows(resources):
     for column, resource in resources.items():
         for name, data in resource.extra.items():
             if handler := _RESOURCE_EXTENSIONS.get(name):
-                add_rows(handler.display(data), column, groups.setdefault(name, {}))
+                add_rows({handler.display_name: data}, column, groups.setdefault(name, {}))
     return [row for rows in groups.values() for row in flatten_rows(rows)]
 
 

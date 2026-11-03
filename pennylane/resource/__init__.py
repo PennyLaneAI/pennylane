@@ -55,9 +55,9 @@ from .resource import (
     resources_from_tape,
 )
 from .expression import Expression
-from .extension import register_resource_extension
 from .analyze import analyze
 from .estimate import estimate
+from .extension import register_resource_extension
 from .specs import specs
 from .track import track
 

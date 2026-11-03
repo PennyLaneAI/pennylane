@@ -11,82 +11,127 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Callbacks for compiler resource extensions stored in ``SpecsResources.extra``."""
+"""Aggregation and headings for resource extensions stored in ``SpecsResources.extra``."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypeVar, cast
 
 from .expression import Expression
+
+Count = int | float | Expression
+ExtensionData = TypeVar("ExtensionData", bound=dict[str, Any])
+AggregateCallback = Callable[[ExtensionData, ExtensionData, Count], ExtensionData]
 
 
 @dataclass(frozen=True)
 class _ResourceHandler:
-    """Aggregation and display rules for one backend extension key."""
+    """Aggregation and a report heading for one backend extension key."""
 
-    aggregate: Callable[[Any, Any, int | float | Expression], Any]
-    display: Callable[[Any], dict[str, Any]]
+    aggregate: AggregateCallback[Any]
+    display_name: str
 
 
 _RESOURCE_EXTENSIONS: dict[str, _ResourceHandler] = {}
 
 
+def weighted_sum(
+    total: Mapping[str, Count],
+    incoming: Mapping[str, Count],
+    call_count: Count,
+) -> dict[str, Count]:
+    """
+    Helper for aggregating dictionaries of using weighted sums.
+
+    Each incoming count is multiplied by ``call_count`` and added to the total.
+    Missing counts start at zero. Fractional and symbolic values are preserved.
+
+    Args:
+        total (Mapping[str, Count]): Accumulated counts, or an empty dictionary
+            when the caller has no data for this extension.
+        incoming (Mapping[str, Count]): Counts from a called function.
+        call_count (Count): Number of calls, possibly estimated or symbolic.
+
+    Returns:
+        dict[str, Count]: Combined counts in a new dictionary.
+
+    **Example**
+
+    >>> from pennylane.resource.extension import weighted_sum
+    >>> weighted_sum({}, {"Hadamard": 4}, 3)
+    {'Hadamard': 12}
+    >>> weighted_sum({"Hadamard": 1}, {"Hadamard": 4, "CNOT": 2}, 3)
+    {'Hadamard': 13, 'CNOT': 6}
+    """
+    result = dict(total)
+    for name, value in incoming.items():
+        result[name] = cast(Count, result.get(name, 0) + call_count * value)
+    return result
+
+
 def register_resource_extension(
     name: str,
-    aggregate: Callable[[Any, Any, int | float | Expression], Any],
-    display: Callable[[Any], dict[str, Any]],
+    aggregate: AggregateCallback[ExtensionData],
+    *,
+    display_name: str,
 ) -> None:
-    """Register plugin-owned rules for a compiler resource extension.
+    """Register aggregation and a report heading for a compiler resource extension.
 
     .. warning::
 
-        The ``aggregate`` and ``display`` callbacks must not modify their input data,
-        including nested values. Inputs are passed without copying, so mutations can
-        affect subsequent aggregations or reports.
+        The ``aggregate`` callback must not modify its input data, including nested values.
+        Inputs are passed without copying, so mutations can affect subsequent aggregations
+        or reports.
 
     Args:
         name (str): Key in the compiler's ``extended_fields`` and in
             :attr:`~pennylane.resource.SpecsResources.extra`.
-        aggregate (Callable): Called with the caller's data (``None`` if absent),
-            the callee's data, and its numeric or symbolic call count. Return the
-            combined data without rounding fractional estimates.
-        display (Callable): Called with the aggregated data after any substitutions.
-            Return an ordered mapping of labels to values; nested mappings introduce
-            group headings.
+        aggregate (AggregateCallback): ``aggregate(total, incoming, call_count)``
+            receives the caller's data (an empty dictionary if absent), the callee's data, and
+            its numeric or symbolic call count. Return combined data with the same
+            structure.
+        display_name (str): Heading shown above the extension's fields in reports.
+    Raises:
+        ValueError: If the name is already registered with different rules.
 
-    Register before requesting compiled resource analysis. Data remains in ``extra``;
-    no result subclass or conversion is required. Existing symbolic discovery and
-    substitution work with expressions nested in dictionaries, lists, and tuples.
-    The display callback is shared by individual and multi-level text/Markdown output.
+    Register before requesting compiled resource analysis. Unregistered callee extensions
+    retain the parser's warning and are not aggregated.
 
-    Registering the same callbacks again is harmless. Registering different callbacks
-    for an existing name raises ``ValueError``. Unregistered callee extensions retain
-    the parser's warning and are not aggregated.
+    **Example**
+
+    Register a count dictionary without writing callbacks:
+
+    >>> from pennylane.resource import register_resource_extension
+    >>> from pennylane.resource.extension import weighted_sum
+    >>> register_resource_extension(
+    ...     "example_gates",
+    ...     aggregate=weighted_sum,
+    ...     display_name="Example gates",
+    ... )
+
+    A payload such as ``{"Hadamard": 7}`` appears as a ``Hadamard`` row under
+    ``Example gates`` in individual and comparison reports.
+
+    For example, a custom callback can also combine a numeric count with a Boolean flag:
+
+    >>> def aggregate(total, incoming, call_count):
+    ...     return {
+    ...         "count": total.get("count", 0) + call_count * incoming["count"],
+    ...         "flag": total.get("flag", False)
+    ...         or (call_count != 0 and incoming["flag"]),
+    ...     }
+    >>> combined = aggregate({"count": 1}, {"count": 2, "flag": True}, 3)
+    >>> combined
+    {'count': 7, 'flag': True}
+    >>> register_resource_extension(
+    ...     "example_metadata", aggregate=aggregate, display_name="Example metadata"
+    ... )
     """
-    handler = _ResourceHandler(aggregate, display)
+    handler = _ResourceHandler(aggregate, display_name)
     if name in _RESOURCE_EXTENSIONS and _RESOURCE_EXTENSIONS[name] != handler:
         raise ValueError(f"A resource extension is already registered for '{name}'.")
     _RESOURCE_EXTENSIONS[name] = handler
 
 
-# Register PBC depth aggregation and display functions
-
-def _aggregate_pbc_depth(total, incoming, call_count):
-    """Combine PBC depths without modifying inputs or rounding intermediate values."""
-    result = {} if total is None else total.copy()
-    for name in ("any_commuting_depth", "qubit_disjoint_depth"):
-        result[name] = result.get(name, 0) + call_count * incoming[name]
-    return result
-
-
-def _display_pbc_depth(data):
-    """Group the PBC depth metrics for resource reports."""
-    return {
-        "PBC Depths": {
-            "Any commuting depth": data["any_commuting_depth"],
-            "Qubit disjoint depth": data["qubit_disjoint_depth"],
-        }
-    }
-
-
-register_resource_extension("pbc_depth", aggregate=_aggregate_pbc_depth, display=_display_pbc_depth)
+# Register the PBC depth extension
+register_resource_extension("pbc_depth", aggregate=weighted_sum, display_name="PBC Depths")

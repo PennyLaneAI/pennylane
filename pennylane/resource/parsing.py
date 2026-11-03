@@ -209,7 +209,7 @@ def _handle_extended_fields(
     for field_name in called_fn_resources.extra:
         if handler := _RESOURCE_EXTENSIONS.get(field_name):
             extended_fields[field_name] = handler.aggregate(
-                extended_fields.get(field_name),
+                extended_fields.get(field_name, {}),
                 called_fn_resources.extra[field_name],
                 call_count,
             )
