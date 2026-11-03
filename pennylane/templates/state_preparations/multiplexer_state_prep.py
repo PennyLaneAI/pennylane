@@ -60,6 +60,11 @@ class MultiplexerStatePreparation(Operator2):
         >>> np.round(circuit(), 2)
         array([0.5 , 0.  , 0.25, 0.25])
 
+    .. seealso::
+
+        :class:`~.SelectPauliRot` for a description of the main building blocks used to
+        implement this operation.
+
     .. details::
         :title: Available decompositions
 
@@ -84,11 +89,6 @@ class MultiplexerStatePreparation(Operator2):
 
                 :class:`~.SelectPauliRot` (:math:`R_Y`) | :math:`n` | 3
                 :class:`~.DiagonalQubitUnitary` | :math:`1` | 1
-
-    .. seealso::
-
-        :class:`~.SelectPauliRot` for a description of the main building blocks used to
-        implement this operation.
 
     """
 
