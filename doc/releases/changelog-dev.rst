@@ -2575,6 +2575,10 @@ Bug fixes 🐛
   the gates produced by the captured decomposition.
   `(#10351) <https://github.com/PennyLaneAI/pennylane/pull/10351>`__
 
+* Fixed a bug where :class:`~.ops.op_math.Evolution` included the parameters of its base generator
+  as trainable PyTree leaves and caused :func:`~.bind_new_parameters` (and parameter-shift
+  differentiation) to raise an ``IndexError`` when the generator had parameters.
+
 Contributors ✍️
 ~~~~~~~~~~~~~~~
 
@@ -2610,6 +2614,7 @@ Anton Naim Ibrahim,
 Mudit Pandey,
 Andrija Paurevic,
 Francesco Pernice Botta,
+Praising Harris Ratnam,
 David D.W. Ren,
 Jay Soni,
 Jaume Villasante,

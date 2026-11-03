@@ -82,6 +82,22 @@ class TestEvolution:  # pylint: disable=too-many-public-methods
 
         assert base_op.num_params == 1
         assert op.num_params == 1
+        assert qp.pytrees.flatten(op)[0] == [1.23]
+        qp.testing.assert_valid(op, skip_differentiation=True)
+
+    @pytest.mark.autograd
+    def test_parametric_base_parameter_shift_grad(self):
+        """Test that Evolution with a parametric base can be differentiated via parameter-shift (#6514)."""
+        dev = qp.device("default.qubit", wires=1)
+
+        @qp.qnode(dev, diff_method="parameter-shift")
+        def circuit(x):
+            qp.evolve(0.5 * qp.PauliX(0), x)
+            return qp.expval(qp.PauliZ(0))
+
+        x = np.array(0.5, requires_grad=True)
+        grad = qp.grad(circuit)(x)
+        assert qp.math.allclose(grad, -np.sin(x))
 
     def test_data(self):
         """Test initializing and accessing the data property."""
