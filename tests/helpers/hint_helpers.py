@@ -19,7 +19,8 @@ Pytest helper functions for inspecting captured programs.
 def _collect_hints(jaxpr, primitive_names, param_name, skip_none):
     hints = []
     for eqn in jaxpr.eqns:
-        if eqn.primitive.name in primitive_names:
+        # JAX-native primitives, such as ``lax.cond``, may share the name but carry no hints
+        if eqn.primitive.name in primitive_names and param_name in eqn.params:
             hint = eqn.params[param_name]
             if not (skip_none and hint is None):
                 hints.append(hint)
