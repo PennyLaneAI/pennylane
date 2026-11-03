@@ -848,7 +848,7 @@ class TestDecomposition:
             op = make_op(hamiltonian, wires)
             assert op.arguments["branch_probs"] is None
 
-        jax.make_jaxpr(circuit)()
+        _ = jax.make_jaxpr(circuit)()
 
     @pytest.mark.capture
     def test_branch_probs_argument(self, seed):
