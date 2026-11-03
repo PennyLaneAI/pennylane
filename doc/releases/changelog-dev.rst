@@ -2310,6 +2310,13 @@ Bug fixes 🐛
   alternative decomposition revisits its base, which could overestimate required work wires.
   `(#10371) <https://github.com/PennyLaneAI/pennylane/pull/10371>`__
 
+* Fixed infinite recursion in the construction of ``DecompositionGraph`` when a cycle of work-wire
+  dependent operators uses additional work wires on every pass through the cycle. Also fixed
+  ``DecompositionGraph`` reusing operator nodes that were only partially explored because a cycle
+  was cut, which made results depend on exploration order and could mark decompositions as
+  unreachable or overestimate their cost.
+  `(#10423) <https://github.com/PennyLaneAI/pennylane/pull/10423>`__
+
 * The resource estimate of the measurement-based decomposition of :class:`~.QROM` now declares
   every gate type that the decomposition uses and upper-bounds every count except the split of
   X-type measurements across widths, which is assumed to follow a binomial distribution
@@ -2492,6 +2499,7 @@ Bug fixes 🐛
 * Fixed a bug where the construction of ``DecompositionGraph`` enters infinite recursion when a decomposition path
   exists from an operator to a controlled/adjoint version of itself.
   `(#9457) <https://github.com/PennyLaneAI/pennylane/pull/9457>`__
+  `(#10423) <https://github.com/PennyLaneAI/pennylane/pull/10423>`__
 
 * Fixed a bug in ``MPSPrep`` where passing ``work_wires`` as a NumPy array or an integer caused initialization errors.
   `(#9448) <https://github.com/PennyLaneAI/pennylane/pull/9448>`__
