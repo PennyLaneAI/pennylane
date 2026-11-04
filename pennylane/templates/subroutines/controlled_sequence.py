@@ -96,11 +96,12 @@ class ControlledSequence(SymbolicOp2, Operator2):
 
     def __init__(self, base, control):
         control_wires = Wires(control)
+        base_wires = getattr(base, "wires", None)
 
         if (
-            isinstance(base.wires, Wires)
+            isinstance(base_wires, Wires)
             and isinstance(control_wires, Wires)
-            and len(Wires.shared_wires([base.wires, control_wires])) != 0
+            and len(Wires.shared_wires([base_wires, control_wires])) != 0
         ):
             raise ValueError("The control wires must be different from the base operation wires.")
 
@@ -116,10 +117,6 @@ class ControlledSequence(SymbolicOp2, Operator2):
                 hash(self.base),
             )
         )
-
-    @property
-    def wires(self):
-        return self.control + self.base.wires
 
     @property
     def data(self):
