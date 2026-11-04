@@ -823,13 +823,14 @@ class PartialUnaryStatePreparation(Operator2):
             :stacked:
             :symbols: :math:`D = |L| \geq 2` entries in ``indices`` and a subspace register of
                 :math:`m = \lceil \log_2 D \rceil` wires
-            :example: the first state above, :math:`D=10`
+            :example: the ``coefficients`` and ``indices`` used above with :math:`D=10`
 
             .. decomposition-rule:: _partial_unary_state_prep
                 :image: /_static/decomposition_thumbnails/partial_unary_state_prep.svg
+                :lightbox:
                 :where: :math:`N_P`, :math:`N_F`, :math:`N_S` and :math:`N_T` are the numbers of
                     partial unary iterators, fan-outs, SWAPs and Toffolis in the isometry circuit
-                    found by :class:`~.PUIsometryFinder` (data dependent). If the indices form an
+                    found by :class:`~.PUIsometryFinder` (data dependent), respectively. If the indices form an
                     affine subspace, the isometry instead consists of :class:`~.X`,
                     :class:`~.CNOT` and :class:`~.SWAP` gates only
 

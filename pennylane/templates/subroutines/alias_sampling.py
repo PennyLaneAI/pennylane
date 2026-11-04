@@ -93,6 +93,7 @@ class UniformPrep(Operator2):
 
             .. decomposition-rule:: _uniform_prep_decomp
                 :image: /_static/decomposition_thumbnails/uniform_prep_amplification.svg
+                :lightbox:
                 :requires: :math:`\ell` work wires
                 :where: :math:`\delta = 1` if :math:`L > 1` and :math:`\delta = 0` otherwise. The
                     controlled :class:`~.GlobalPhase` is controlled on :math:`|0\rangle`

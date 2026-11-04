@@ -93,7 +93,7 @@ class IQPEmbedding(Operator2):
             :stacked:
             :symbols: :math:`n` wires, :math:`r` repetitions (``n_repeats``) and :math:`K`
                 entanglers (``len(pattern)``, :math:`n(n-1)/2` by default)
-            :example: :math:`n=3`, :math:`r=1`, default ``pattern``
+            :example: :math:`n=3`, :math:`r=1`, default ``pattern`` (:math:`K = \tfrac{n(n-1)}{2} = 3`)
 
             .. decomposition-rule:: _iqp_embedding_decomposition
                 :image: /_static/decomposition_thumbnails/iqp_embedding_multirz.svg

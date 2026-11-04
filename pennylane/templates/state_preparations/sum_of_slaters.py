@@ -839,12 +839,13 @@ class SumOfSlatersPrep(Operator2):
         .. decomposition-table:: qp.SumOfSlatersPrep
             :stacked:
             :symbols: :math:`D \geq 2` entries in ``indices``, :math:`d = \lceil \log_2 D \rceil`
-                enumeration wires and :math:`m` identification bits (the number of rows of the
+                enumeration wires and :math:`m` encoding qubits (the number of rows of the
                 encoding computed by :func:`~.compute_sos_encoding`)
             :example: ``indices=(0, 1, 2, 4)`` on three wires, :math:`D=4`, :math:`m=3`, :math:`u=0`
 
             .. decomposition-rule:: _sos_state_prep
                 :image: /_static/decomposition_thumbnails/sum_of_slaters_prep.svg
+                :lightbox:
                 :where: :math:`u` is the number of ones in the encoding matrix (:math:`u=0` for an
                     identity encoding), :math:`\mathrm{wt}(k)` the number of ones in the binary
                     representation of :math:`k`, and :math:`N_X` the number of bit flips between

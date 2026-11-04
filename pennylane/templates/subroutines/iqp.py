@@ -86,8 +86,9 @@ class IQP(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.IQP
+            :stacked:
             :symbols: :math:`n` wires and :math:`G` generators in total in ``pattern``
-            :example: :math:`n=2`, ``pattern=[[[0]], [[1]], [[0, 1]]]``, ``spin_sym=True``
+            :example: :math:`n=2`, ``pattern=[[[0]], [[1]], [[0, 1]]]`` (meaning the number of generators :math:`G = 3`), ``spin_sym=True``
 
             .. decomposition-rule:: _instantaneous_quantum_polynomial_decomposition
                 :image: /_static/decomposition_thumbnails/iqp_multirz.svg

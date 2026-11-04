@@ -58,6 +58,7 @@ class QuantumPhaseEstimation(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.QuantumPhaseEstimation
+            :stacked:
             :symbols: :math:`U=` ``unitary`` and :math:`n` estimation wires
             :example: :math:`n=3`
 

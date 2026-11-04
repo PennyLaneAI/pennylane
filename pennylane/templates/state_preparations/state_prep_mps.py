@@ -292,6 +292,7 @@ class MPSPrep(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.MPSPrep
+            :stacked:
             :symbols: :math:`n` MPS tensors (one per wire), :math:`w` work wires and maximal bond
                 dimension :math:`\chi`
             :example: :math:`n=3`, :math:`w=1`
