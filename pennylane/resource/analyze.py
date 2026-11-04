@@ -107,11 +107,11 @@ def analyze(
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the (qjit'd) QNode for which to estimate resources.
             ``functools.partial`` wrappers around supported callables are also accepted.
-        level (str | int | slice | Sequence[str | int]): The portion(s) of the
+        level (str | int | slice | Sequence[str | int]): The portion of the
             :class:`~.CompilePipeline` to apply before analyzing resources. Accepts the same
-            values as :func:`~.workflow.get_compile_pipeline`. If ``level`` is a
-            ``Sequence``, ``"all-user"``, or ``"all"``, resources are analyzed after each
-            portion. Defaults to ``"user"``.
+            values as :func:`~.workflow.get_compile_pipeline`. If ``level`` is a ``Sequence``,
+            ``"all-user"``, or ``"all"``, resources are analyzed independently for each
+            provided case. Defaults to ``"user"``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
