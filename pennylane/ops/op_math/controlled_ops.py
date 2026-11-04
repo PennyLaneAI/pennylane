@@ -176,7 +176,7 @@ class ControlledQubitUnitary(Controlled2):
                 :class:`~.QubitUnitary` | :math:`4`
                 :class:`Adjoint(QubitUnitary) <.QubitUnitary>` | :math:`4`
                 :class:`~.Hadamard` | :math:`2`
-                :class:`Controlled(GlobalPhase) <.GlobalPhase>` with :math:`c` controls | :math:`1`
+                :class:`~.PhaseShift` with :math:`c - 1` controls | :math:`1`
                 :class:`~.MultiControlledX` with :math:`\lceil c/2 \rceil` controls | :math:`6` if :math:`c` is even, :math:`2` if odd
                 :class:`~.MultiControlledX` with :math:`\lfloor c/2 \rfloor` controls | :math:`4` if :math:`c` is odd
 
@@ -188,7 +188,7 @@ class ControlledQubitUnitary(Controlled2):
                 :class:`~.RZ` | :math:`3`
                 :class:`~.RY` | :math:`2`
                 :class:`~.CNOT` | :math:`2`
-                :class:`Controlled(GlobalPhase) <.GlobalPhase>` with :math:`1` control | :math:`1`
+                :class:`~.PhaseShift` | :math:`1`
 
             .. decomposition-rule:: multi_control_decomp_zyz_rule
                 :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_multi_ctrl_zyz.svg
@@ -199,7 +199,7 @@ class ControlledQubitUnitary(Controlled2):
                 :class:`~.CRZ` | :math:`3`
                 :class:`~.CRY` | :math:`2`
                 :class:`~.MultiControlledX` with :math:`c - 1` controls | :math:`2`
-                :class:`Controlled(GlobalPhase) <.GlobalPhase>` with :math:`c` controls | :math:`1`
+                :class:`~.PhaseShift` with :math:`c - 1` controls | :math:`1`
 
             .. decomposition-rule:: controlled_two_qubit_unitary_rule
                 :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_two_qubit.svg
@@ -211,7 +211,7 @@ class ControlledQubitUnitary(Controlled2):
                 :class:`~.MultiControlledX` with :math:`c + 1` controls | :math:`3`
                 :class:`Controlled(RZ) <.RZ>` with :math:`c` controls | :math:`1`
                 :class:`Controlled(RY) <.RY>` with :math:`c` controls | :math:`2`
-                :class:`Controlled(GlobalPhase) <.GlobalPhase>` with :math:`c` controls | :math:`1`
+                :class:`~.PhaseShift` with :math:`c - 1` controls | :math:`1`
 
             .. decomposition-rule:: _to_general_c_qu
                 :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_to_general.svg
@@ -222,6 +222,7 @@ class ControlledQubitUnitary(Controlled2):
             .. decomposition-rule:: _adjoint_controlled_qubit_unitary
                 :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_adjoint.svg
                 :region: adjoint
+                :where: the adjoint of the input unitary matrix is used
 
                 :class:`~.ControlledQubitUnitary` | :math:`1`
 
@@ -761,16 +762,19 @@ class CSWAP(Controlled2):
             .. decomposition-rule:: decompose_to_base
                 :image: /_static/decomposition_thumbnails/cswap_adjoint.svg
                 :region: adjoint
+                :where: :class:`~.CSWAP` is self-adjoint
 
                 :class:`~.CSWAP` | :math:`1`
 
             .. decomposition-rule:: _impl
                 :image: /_static/decomposition_thumbnails/cswap_pow_period.svg
                 :region: pow
-                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
-                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+                :where: :class:`~.CSWAP` is its own inverse, so only :math:`z \bmod 2` matters, the
+                    rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
+                    :math:`z = 3`
 
-                :class:`Pow(CSWAP) <.CSWAP>` with power :math:`z \bmod 2` | :math:`1`
+                :class:`~.CSWAP` | :math:`1` if :math:`z` is odd
+                :class:`Pow(CSWAP) <.CSWAP>` with power :math:`z \bmod 2` | :math:`1` if :math:`z` is not an integer
 
     """
 
@@ -953,16 +957,19 @@ class CCZ(Controlled2):
             .. decomposition-rule:: decompose_to_base
                 :image: /_static/decomposition_thumbnails/ccz_adjoint.svg
                 :region: adjoint
+                :where: :class:`~.CCZ` is self-adjoint
 
                 :class:`~.CCZ` | :math:`1`
 
             .. decomposition-rule:: _impl
                 :image: /_static/decomposition_thumbnails/ccz_pow_period.svg
                 :region: pow
-                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
-                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+                :where: :class:`~.CCZ` is its own inverse, so only :math:`z \bmod 2` matters, the
+                    rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
+                    :math:`z = 3`
 
-                :class:`Pow(CCZ) <.CCZ>` with power :math:`z \bmod 2` | :math:`1`
+                :class:`~.CCZ` | :math:`1` if :math:`z` is odd
+                :class:`Pow(CCZ) <.CCZ>` with power :math:`z \bmod 2` | :math:`1` if :math:`z` is not an integer
 
     """
 
@@ -1318,6 +1325,7 @@ class Toffoli(Controlled2):
             .. decomposition-rule:: decompose_to_base
                 :image: /_static/decomposition_thumbnails/toffoli_adjoint.svg
                 :region: adjoint
+                :where: :class:`~.Toffoli` is self-adjoint
 
                 :class:`~.Toffoli` | :math:`1`
 
@@ -1332,10 +1340,12 @@ class Toffoli(Controlled2):
             .. decomposition-rule:: _impl
                 :image: /_static/decomposition_thumbnails/toffoli_pow_period.svg
                 :region: pow
-                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
-                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+                :where: :class:`~.Toffoli` is its own inverse, so only :math:`z \bmod 2` matters, the
+                    rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
+                    :math:`z = 3`
 
-                :class:`Pow(Toffoli) <.Toffoli>` with power :math:`z \bmod 2` | :math:`1`
+                :class:`~.Toffoli` | :math:`1` if :math:`z` is odd
+                :class:`Pow(Toffoli) <.Toffoli>` with power :math:`z \bmod 2` | :math:`1` if :math:`z` is not an integer
 
     """
 
@@ -1559,9 +1569,9 @@ class MultiControlledX(Controlled2):
 
             .. decomposition-rule:: mcx_to_cnot_or_toffoli
                 :image: /_static/decomposition_thumbnails/mcx_to_cnot_or_toffoli.svg
-                :where: :math:`c \leq 2`, the circuit shows :math:`c = 2`, and each control wire
-                    with control value :math:`0` adds two :class:`~.PauliX` gates, not included in
-                    the counts
+                :where: :math:`c \leq 2`, the circuit shows :math:`c = 2`, and a control value of
+                    :math:`0` adds :class:`~.PauliX` gates, not included in the counts: one on the target
+                    if :math:`c = 1`, and two per such control wire if :math:`c = 2`
 
                 :class:`~.CNOT` | :math:`1` if :math:`c = 1`
                 :class:`~.Toffoli` | :math:`1` if :math:`c = 2`
@@ -1580,14 +1590,15 @@ class MultiControlledX(Controlled2):
             .. decomposition-rule:: decompose_mcx_many_workers
                 :image: /_static/decomposition_thumbnails/mcx_many_workers.svg
                 :requires: :math:`w \geq c - 2` work wires
-                :where: :math:`c \geq 3`, counts are for zeroed / borrowed work wires, the circuit
-                    shows :math:`c = 4`, with 2 zeroed work wires, and each control wire with
-                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
-                    counts
+                :where: :math:`c \geq 3`, :math:`s = [w > c - 2]` is 1 if :math:`w > c - 2` and 0
+                    otherwise, counts are for zeroed / borrowed work wires, the circuit shows
+                    :math:`c = 4`, with 2 zeroed work wires, and each control wire with control value
+                    :math:`0` adds two :class:`~.PauliX` gates, not included in the counts
 
                 :class:`~.TemporaryAND` | :math:`c - 2` / :math:`0`
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`c - 2` / :math:`0`
-                :class:`~.Toffoli` | :math:`1` / :math:`4(c - 2)`
+                :class:`~.Toffoli` | :math:`1 - s` / :math:`4(c - 2) - s`
+                :class:`~.MultiControlledX` with :math:`2` controls | :math:`s` / :math:`s`
 
             .. decomposition-rule:: decompose_mcx_two_workers
                 :image: /_static/decomposition_thumbnails/mcx_two_workers.svg
@@ -1627,7 +1638,7 @@ class MultiControlledX(Controlled2):
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.QubitUnitary` | :math:`2`
                 :class:`Adjoint(QubitUnitary) <.QubitUnitary>` | :math:`2`
-                :class:`Controlled(GlobalPhase) <.GlobalPhase>` with :math:`c` controls | :math:`1`
+                :class:`~.PhaseShift` with :math:`c - 1` controls | :math:`1`
                 :class:`~.MultiControlledX` with :math:`\lceil c/2 \rceil` controls | :math:`2`
                 :class:`~.MultiControlledX` with :math:`\lfloor c/2 \rfloor` controls | :math:`2`
 
@@ -1699,6 +1710,7 @@ class MultiControlledX(Controlled2):
             .. decomposition-rule:: decompose_to_base
                 :image: /_static/decomposition_thumbnails/mcx_adjoint.svg
                 :region: adjoint
+                :where: :class:`~.MultiControlledX` is self-adjoint
 
                 :class:`~.MultiControlledX` | :math:`1`
 
@@ -1713,10 +1725,12 @@ class MultiControlledX(Controlled2):
             .. decomposition-rule:: _impl
                 :image: /_static/decomposition_thumbnails/mcx_pow_period.svg
                 :region: pow
-                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
-                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+                :where: :class:`~.MultiControlledX` is its own inverse, so only :math:`z \bmod 2` matters, the
+                    rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
+                    :math:`z = 3`
 
-                :class:`Pow(MultiControlledX) <.MultiControlledX>` with power :math:`z \bmod 2` | :math:`1`
+                :class:`~.MultiControlledX` | :math:`1` if :math:`z` is odd
+                :class:`Pow(MultiControlledX) <.MultiControlledX>` with power :math:`z \bmod 2` | :math:`1` if :math:`z` is not an integer
 
     """
 
@@ -2633,7 +2647,7 @@ class ControlledPhaseShift(Controlled2):
 
             .. decomposition-rule:: _cphase_to_single_phase
                 :image: /_static/decomposition_thumbnails/cphase_to_single_phase.svg
-                :requires: 1 work wire
+                :requires: 1 zeroed work wire
 
                 :class:`~.TemporaryAND` | :math:`1`
                 :class:`~.PhaseShift` | :math:`1`
@@ -2642,16 +2656,17 @@ class ControlledPhaseShift(Controlled2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/cphase_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` changes sign
 
                 :class:`~.ControlledPhaseShift` | :math:`1`
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/cphase_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: ``phi`` is multiplied by the power :math:`z`
 
                 :class:`~.ControlledPhaseShift` | :math:`1`
-                
+
     """
 
     wire_sizes = (2,)
