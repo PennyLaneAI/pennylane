@@ -152,8 +152,6 @@ def _ctrl_seq_decomposition_resources(base, control) -> dict:
 # pylint: disable=no-value-for-parameter
 @register_resources(_ctrl_seq_decomposition_resources)
 def _ctrl_seq_decomposition(*_, base=None, control=None, **__):
-    control = Wires(control)
-
     if compiler.active() or capture.enabled():
         control = math.array(control, like="jax")
 
