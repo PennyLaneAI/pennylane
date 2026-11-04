@@ -80,6 +80,7 @@ class LeftQuantumComparator(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.LeftQuantumComparator
+            :stacked:
             :symbols: :math:`n` ``x_wires``, :math:`n` ``y_wires`` and ``comparator`` :math:`c`
             :example: :math:`n=2`, :math:`c={\leq}`
 

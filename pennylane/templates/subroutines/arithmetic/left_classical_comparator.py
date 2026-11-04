@@ -83,6 +83,7 @@ class LeftClassicalComparator(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.LeftClassicalComparator
+            :stacked:
             :symbols: :math:`n` ``x_wires``, the constant :math:`L` and ``comparator`` :math:`c`
             :example: :math:`n=3`, :math:`L=6`, :math:`c={<}`
 

@@ -162,6 +162,7 @@ class QROM(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.QROM
+            :stacked:
             :symbols: :math:`K` bitstrings of length :math:`b`, :math:`c \geq 2` control wires,
                 :math:`w` work wires and ``clean=True``
             :example: :math:`K=4`, :math:`b=2`, :math:`c=2`, :math:`w=2`, bitstrings

@@ -156,6 +156,7 @@ class Select(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.Select
+            :stacked:
             :symbols: :math:`K` operators :math:`U_j=` ``ops[j]``, :math:`c\geq 2` control wires,
                 :math:`w` work wires and ``partial=False``
             :example: :math:`K=4`, :math:`c=2`
