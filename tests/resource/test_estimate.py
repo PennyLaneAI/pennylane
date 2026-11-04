@@ -479,6 +479,77 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         assert resources.quantum_operations == {"Hadamard": 2, "CNOT": 1}
         assert resources.num_wires == 4
 
+    def test_subroutine_in_adjoint(self):
+        """Test that a subroutine called both inside and outside an adjoint region has its
+        operators counted once in each context."""
+
+        @qp.capture.subroutine
+        def helper(wire):
+            qp.Hadamard(wire)
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def circuit():
+            qp.adjoint(helper)(0)
+            helper(0)
+            return qp.state()
+
+        resources = qp.estimate(circuit, target=qp.gate_sets.CLIFFORD_T)().resources
+
+        assert resources.quantum_operations == {"Adjoint(Hadamard)": 1, "Hadamard": 1}
+
+    def test_nested_subroutine_in_adjoint(self):
+        """Test that an adjoint applied to a subroutine also applies to the subroutines it
+        calls."""
+
+        @qp.capture.subroutine
+        def inner(wire):
+            qp.S(wire)
+
+        @qp.capture.subroutine
+        def outer(wire):
+            inner(wire)
+            qp.T(wire)
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def circuit():
+            qp.adjoint(outer)(0)
+            outer(0)
+            return qp.state()
+
+        resources = qp.estimate(circuit, target=qp.gate_sets.CLIFFORD_T)().resources
+
+        assert resources.quantum_operations == {"Adjoint(S)": 1, "Adjoint(T)": 1, "S": 1, "T": 1}
+
+    def test_subroutine_in_ctrl(self):
+        """Test that a subroutine called both inside and outside a control region has its
+        operators counted once in each context."""
+
+        @qp.capture.subroutine
+        def helper(wire):
+            qp.X(wire)
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def circuit():
+            qp.ctrl(helper, control=(1, 2))(0)
+            helper(0)
+            helper(1)
+            return qp.state()
+
+        resources = qp.estimate(circuit, target=qp.gate_sets.CLIFFORD_T)().resources
+
+        # The doubly-controlled X becomes a Toffoli plus two PauliX, which the MultiControlledX
+        # rule counts as an average-case estimate for flipping zero-valued controls.
+        assert resources.quantum_operations == {
+            "Adjoint(T)": 3,
+            "CNOT": 6,
+            "Hadamard": 2,
+            "PauliX": 4,
+            "T": 4,
+        }
+
 
 @pytest.mark.usefixtures("disable_capture")
 @pytest.mark.parametrize("capture", [False, "global"])
