@@ -400,6 +400,7 @@ class AliasSampling(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.AliasSampling
+            :stacked:
             :symbols: :math:`L` weights in ``probs``, :math:`\ell = \lceil \log_2 L \rceil` and
                 :math:`\mu` = ``mu`` bits
             :example: :math:`L=4`, :math:`\mu=2`
