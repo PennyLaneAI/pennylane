@@ -59,7 +59,7 @@ class OutMultiplier(Operator2):
     .. math::
         \text{OutMultiplier}(mod) |x \rangle |y \rangle |z \rangle = |x \rangle |y \rangle |z + x \cdot y \; \text{mod} \; mod \rangle,
 
-    There are three implementations available, which differ in the auxiliary wires
+    There are five implementations available, which differ in the auxiliary wires
     and in the gate counts they require, and in whether or not they support arbitrary values for
     the modulus ``mod``. See the usage details for more information.
 
@@ -161,6 +161,13 @@ class OutMultiplier(Operator2):
                 :class:`~.SemiAdder` | :math:`1` | 1
                 :class:`Adjoint(OutMultiplier) <.OutMultiplier>` | :math:`1` | 1
 
+            .. decomposition-rule:: _out_multiplier_swapped
+                :image: /_static/decomposition_thumbnails/out_multiplier_swapped.svg
+                :requires: :math:`n > m`
+                :where: the circuit shows :math:`n=2`, :math:`m=1` and :math:`k=3`
+
+                :class:`~.OutMultiplier` with ``x_wires`` and ``y_wires`` swapped | :math:`1`
+
     .. details::
         :title: Usage Details
 
@@ -223,10 +230,10 @@ class OutMultiplier(Operator2):
 
         **Different decompositions**
 
-        There are three decompositions, which differ in the required number of work wires and
+        There are five decompositions, which differ in the required number of work wires and
         gates, and in whether they support ``mod!=2**len(output_wires)``.
 
-        - The first implementation is based on the quantum Fourier transform (QFT) method presented
+        - The first decomposition is based on the quantum Fourier transform (QFT) method presented
           in `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. We nest
           :class:`~.ControlledSequence` around :class:`~.PhaseAdder` to create doubly-controlled
           in place phase addition in the output register, which is then transformed into
@@ -234,15 +241,15 @@ class OutMultiplier(Operator2):
           wires for ``mod=2**len(output_wires)`` (for other values of ``mod``)
           Any value for ``mod`` is supported, subject to the description above.
 
-        - The second implementation uses controlled :class:`~.SemiAdder`\ s to realize the
+        - The second decomposition uses controlled :class:`~.SemiAdder`\ s to realize the
           multiplication. For :math:`n` ``x_wires``, :math:`m` ``y_wires`` and :math:`k`
           ``output_wires``, we need :math:`L = \min(k, n)` adders with usually varying sizes
-          :math:`\min(k - i, m + 1)` for :math:`0\leq i<L`. The implementation is shown in
+          :math:`\min(k - i, m + 1)` for :math:`0\leq i<L`. The decomposition is shown in
           Fig. 2a) (for :math:`k=2m=2n`) and Fig. 2c) (for :math:`k=m=n`) in
           `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__.
 
-        - The third implementation uses controlled addition/subtraction to replace the controlled
-          ``SemiAdder``\ s from the previous implementation, based on Litinski's
+        - The third decomposition uses controlled addition/subtraction to replace the controlled
+          ``SemiAdder``\ s from the previous decomposition, based on Litinski's
           `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__.
           For :math:`n` ``x_wires``, :math:`m` ``y_wires`` and :math:`k`
           ``output_wires``, we need :math:`L=\min(k, n)` controlled add/subtract operations
@@ -250,7 +257,18 @@ class OutMultiplier(Operator2):
           three ``SemiAdder``\ s of sizes :math:`\min(k + 1 - m, n + 1)`,
           :math:`\min(k + 1 - n, m + 1)` and :math:`k+1`, as well as an incrementer on
           :math:`\min(k + 1, n + m)` qubits and Pauli gates. For :math:`n=m` and
-          :math:`k=2n`, this implementation is shown in Fig. 2b), for :math:`k=n=m` in Fig. 2d).
+          :math:`k=2n`, this decomposition is shown in Fig. 2b), for :math:`k=n=m` in Fig. 2d).
+
+        - The fourth decomposition uses additional work wires as cache in order to implement
+          the multiplier with ``output_wires_zeroed=False`` via a multiplier with
+          ``output_wires_zeroed=True``. For this, the latter computes the product into the
+          additional cache register, which is then added with a simple :class:`~.SemiAdder` to
+          the actual target register. Finally, the cache is uncomputed.
+
+        - The fifth decomposition simply switches the two input registers of the multiplier if
+          the ``x_wires`` register is larger than ``y_wires``. This is a valid decomposition
+          because multiplication is commutative, and it saves resources because the cost of
+          other decompositions is not symmetric with respect to the input register sizes.
 
     """
 
@@ -775,10 +793,52 @@ def _out_multiplier_with_cache(
     )
 
 
+def _out_multiplier_swapped_condition(x_wires, y_wires, **_):
+    """Condition for swapping the two input registers of OutMultiplier. It only is reasonable
+    to switch if x_wires is larger than y_wires. This also prevents the decomposition from
+    switching back and forth in the case of equal cost of both orderings."""
+    return len(x_wires) > len(y_wires)
+
+
+def _out_multiplier_swapped_resources(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=too-many-arguments
+    swapped = OutMultiplier(
+        Wire[len(y_wires)],
+        Wire[len(x_wires)],
+        Wire[len(output_wires)],
+        mod=mod,
+        work_wires=Wire[len(work_wires)],
+        output_wires_zeroed=output_wires_zeroed,
+    )
+    return {swapped: 1}
+
+
+@register_condition(_out_multiplier_swapped_condition)
+@register_resources(_out_multiplier_swapped_resources)
+def _out_multiplier_swapped(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
+):  # pylint: disable=too-many-arguments
+    """Swap the factors of an ``OutMultiplier`` so that ``x_wires`` is the shorter register.
+    The schoolbook ``OutMultiplier`` rules perform one controlled addition per bit of ``x_wires``,
+    so multiplying a short register into a long one is cheaper than the other way around.
+    Computationally, both paths are equivalent because multiplication is commutative.
+    """
+    OutMultiplier(
+        y_wires,
+        x_wires,
+        output_wires,
+        mod=mod,
+        work_wires=work_wires,
+        output_wires_zeroed=output_wires_zeroed,
+    )
+
+
 add_decomps(
     OutMultiplier,
     _out_multiplier_with_qft,
     _out_multiplier_with_adder,
     _out_multiplier_with_caddsub,
     _out_multiplier_with_cache,
+    _out_multiplier_swapped,
 )
