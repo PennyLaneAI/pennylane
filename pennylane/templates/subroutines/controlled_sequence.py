@@ -22,7 +22,7 @@ from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math import SymbolicOp2, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
-from pennylane.wires import Wires
+from pennylane.wires import Wires, validate_no_wire_overlaps
 
 
 class ControlledSequence(SymbolicOp2):
@@ -96,11 +96,7 @@ class ControlledSequence(SymbolicOp2):
         control_wires = Wires(control)
         base_wires = getattr(base, "wires", None)
 
-        if (
-            isinstance(base_wires, Wires)
-            and isinstance(control_wires, Wires)
-            and len(Wires.shared_wires([base_wires, control_wires])) != 0
-        ):
+        if validate_no_wire_overlaps(base_wires, control_wires):
             raise ValueError("The control wires must be different from the base operation wires.")
 
         self._name = "ControlledSequence"
