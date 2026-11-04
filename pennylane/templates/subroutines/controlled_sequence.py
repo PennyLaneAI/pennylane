@@ -96,7 +96,7 @@ class ControlledSequence(SymbolicOp2):
         control_wires = Wires(control)
         base_wires = getattr(base, "wires", None)
 
-        if validate_no_wire_overlaps(base_wires, control_wires):
+        if validate_no_wire_overlaps([base_wires, control_wires]):
             raise ValueError("The control wires must be different from the base operation wires.")
 
         self._name = "ControlledSequence"
