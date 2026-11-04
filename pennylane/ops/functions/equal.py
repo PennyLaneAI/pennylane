@@ -810,6 +810,11 @@ def _equal_controlled_sequence(op1: ControlledSequence, op2: ControlledSequence,
     if isinstance(control_equal_check, str):
         return control_equal_check
 
+    depth1 = getattr(op1, "arithmetic_depth", None)
+    depth2 = getattr(op2, "arithmetic_depth", None)
+    if depth1 is not None and depth2 is not None and depth1 != depth2:
+        return f"op1 and op2 have different arithmetic depths. Got {depth1} and {depth2}"
+
     base_equal_check = _equal(op1.base, op2.base, **kwargs)
     if isinstance(base_equal_check, str):
         return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + base_equal_check
