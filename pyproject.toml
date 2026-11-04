@@ -86,6 +86,7 @@ docs = [
     "sphinx-automodapi==0.22",
     "sphinx-copybutton",
     "sphinxcontrib-bibtex==2.6.3",
+    "sphinxcontrib-lightbox2==0.6.0",
     "sphinxcontrib-applehelp==2.0.0",
     "sphinxcontrib-devhelp==2.0.0",
     "sphinxcontrib-qthelp==2.0.0",

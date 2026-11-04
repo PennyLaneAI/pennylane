@@ -236,6 +236,29 @@ class OneBodyBlockEncoding(Operator2):
     >>> print(np.round(circuit()[0], 3))
     0.25
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.OneBodyBlockEncoding
+            :stacked:
+            :symbols: :math:`K` = ``norbs`` spatial orbitals and :math:`\nu` negative
+                eigenvalues of ``op_matrix``
+            :example: the operator above with ``alias_sampling_nbits=1``, :math:`K=2`, :math:`\nu=1`
+
+            .. decomposition-rule:: _one_body_block_encoding_decomp
+                :image: /_static/decomposition_thumbnails/one_body_block_encoding_lcu.svg
+                :where: :math:`\delta = 1` if :math:`\nu > 0` and :math:`\delta = 0` otherwise
+
+                :class:`~.AliasSampling` | :math:`1` | 1
+                :class:`Adjoint(AliasSampling) <.AliasSampling>` | :math:`1` | 1
+                :class:`~.Hadamard` | :math:`4K + 2` | 10
+                :class:`~.BasisRotation` on :math:`K` wires | :math:`4` | 4
+                :class:`~.LeftClassicalComparator` | :math:`\delta` | 1
+                :class:`Adjoint(LeftClassicalComparator) <.LeftClassicalComparator>` | :math:`\delta` | 1
+                :class:`~.Z` | :math:`\delta` | 1
+                :class:`~.QROM` | :math:`1` | 1
+                :class:`~.GlobalPhase` | :math:`1` | 1
+
     """
 
     wire_argnames = ("prep_wires", "system_wires", "work_wires")
