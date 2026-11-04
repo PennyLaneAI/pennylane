@@ -143,7 +143,7 @@ def make_wires(n_states, n_modes, k=3, b=3):
         "cache": 2 * k,
         "coefficients": b,
         "phase_gradient": b,
-        "work": max(n - 1, 2 * k, 2 * b + 2),
+        "work": max(n - 1, b + 2, 2 * k + 2),
     }
     return qp.registers(sizes)
 
@@ -490,10 +490,10 @@ class TestConstruction:
             "cache": [1, 2, 3, 4],
             "coefficients": [5],
             "phase_gradient": [6],
-            "work": [7, 8, 9, 10],
+            "work": [7, 8, 9, 10, 11, 12],
         }
         # The first mode has two wires while the second has one, which is invalid.
-        mode_registers = [[11, 12], [13]]
+        mode_registers = [[13, 14], [15]]
         with pytest.raises(ValueError, match="same size"):
             _validate_registers(registers, mode_registers, n_modes=2, n_states=2)
 
@@ -512,9 +512,9 @@ class TestConstruction:
             "cache": [1, 2, 3, 4],
             "coefficients": [5],
             "phase_gradient": [6],
-            "work": [7, 8, 9, 10],
+            "work": [7, 8, 9, 10, 11, 12],
         }
-        mode_registers = [[11, 12], [13, 14]]
+        mode_registers = [[13, 14], [15, 16]]
         with pytest.raises(ValueError, match="electronic states"):
             _validate_registers(registers, mode_registers, n_modes=2, n_states=4)
 
@@ -634,6 +634,37 @@ class TestDecomposition:
         hamiltonian = build_hamiltonian(fragments)
         queue = decomposition_queue(make_op(hamiltonian, make_wires(2, 3), evolution_time=0.1))
         assert count_ops(queue, SignedOutMultiplier) > 0
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize("k, b", [(2, 5), (3, 2)])
+    def test_required_work_wires_are_tight(self, k, b):
+        """Test that ``max(n - 1, b + 2, 2k + 2)`` work wires suffice to decompose the arithmetic
+        without allocating further qubits, and that one fewer does not. For ``(k, b) = (2, 5)``,
+        the half-signed multipliers set the size (``b + 2``), for ``(3, 2)`` the bilinear
+        ``SignedOutMultiplier`` does (``2k + 2``)."""
+        hamiltonian = build_hamiltonian(sparse_fragment_list(2, 2, seed=0))
+        wires = make_wires(2, 2, k=k, b=b)
+        gate_set = {
+            "TemporaryAND",
+            "Adjoint(TemporaryAND)",
+            "CNOT",
+            "PauliX",
+            "Hadamard",
+            "ControlledPhaseShift",
+            "SWAP",
+        }
+
+        def decompose(op):
+            tape = qp.tape.QuantumScript([op])
+            # pylint: disable-next=protected-access
+            return qp.transforms._tape_decompose(tape, gate_set=gate_set, num_work_wires=0)
+
+        (tape,), _ = decompose(make_op(hamiltonian, wires, evolution_time=0.1))
+        assert count_ops(tape.operations, qp.TemporaryAND) > 0
+
+        wires["work"] = wires["work"][:-1]
+        with pytest.raises(qp.exceptions.DecompositionError, match="work wires"):
+            decompose(make_op(hamiltonian, wires, evolution_time=0.1))
 
     def test_resource_function_is_graph_compatible(self):
         """Test that ``compute_resources`` succeeds with abstractifiable operator keys."""
@@ -912,7 +943,7 @@ def test_default_qubit_execution():
             "cache": 2 * k,
             "coefficients": b,
             "phase_gradient": b,
-            "work": max(n - 1, 2 * k, 2 * b + 2),
+            "work": max(n - 1, b + 2, 2 * k + 2),
         }
     )
     num_wires = max(w for reg in wires.values() for w in reg) + 1

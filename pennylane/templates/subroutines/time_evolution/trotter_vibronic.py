@@ -77,14 +77,16 @@ class TrotterVibronic(Operator2):
             one per mode, via ``np.array(vib_wires).reshape(M, -1)``.
         phase_gradient_wires (WiresLike): at least :math:`b` wires holding the `phase-gradient
             resource state <https://pennylane.ai/compilation/phase-gradient>`__, assumed to be
-            prepared upfront. Extra wires beyond :math:`b` add unused precision headroom.
+            prepared upfront. Extra wires beyond :math:`b` add unused precision headroom, and
+            each of them requires one more work wire.
         coefficient_wires (WiresLike): the :math:`b` wires of the Hamiltonian-coefficient
             register. If omitted (default), they are dynamically allocated in the decomposition,
             with :math:`b` equal to ``len(phase_gradient_wires)``.
         cache_wires (WiresLike): the :math:`2k` cache wires for squared/multiplied mode registers.
             If omitted (default), they are dynamically allocated in the decomposition.
-        work_wires (WiresLike): the :math:`\max(n-1, 2k, 2b+2)` work wires for data loading and
-            arithmetic. If omitted (default), they are dynamically allocated in the decomposition.
+        work_wires (WiresLike): the :math:`\max(n-1, b+2, 2k+2)` work wires for data loading and
+            arithmetic, with :math:`b` replaced by ``len(phase_gradient_wires)`` if larger. If
+            omitted (default), they are dynamically allocated in the decomposition.
         aqft_order (int): approximation order of the :class:`~.AQFT` used to transform between
             position and momentum space. If ``None`` (default), no approximation is made
             (``aqft_order = k - 1``).
@@ -125,7 +127,7 @@ class TrotterVibronic(Operator2):
 
         wires = qp.registers({
             "electronic": n, "vib_wires": n_modes * k, "cache": 2 * k,
-            "coefficients": b, "phase_gradient": b, "work": max(n - 1, 2 * k, 2 * b + 2),
+            "coefficients": b, "phase_gradient": b, "work": max(n - 1, b + 2, 2 * k + 2),
         })
         all_wires = qp.wires.Wires.all_wires(list(wires.values()))
 
@@ -225,7 +227,7 @@ class TrotterVibronic(Operator2):
              - :math:`\ge b`
              - phase-gradient state (unsigned)
            * - ``work_wires``
-             - :math:`\max(n-1, 2k, 2b+2)`
+             - :math:`\max(n-1, b+2, 2k+2)`
              - data-loading/arithmetic scratch
 
     .. details::
@@ -519,7 +521,7 @@ def _trotter_vibronic_resources(
     k = len(vib_wires) // n_modes
     # ``work_wires`` may be dynamically allocated (empty here), in which case fall back to the
     # required size so the sub-operations are counted consistently with the decomposition.
-    n_work = len(work_wires) if len(work_wires) > 0 else max(n_elec - 1, 2 * k, 2 * b + 2)
+    n_work = len(work_wires) if len(work_wires) > 0 else _required_work_size(n_elec, k, n_pg)
     num_pairs = n_modes * (n_modes - 1) // 2
 
     # Each Trotter step visits every position fragment twice (forward + backward).
@@ -658,13 +660,24 @@ def _coefficient_register_size(coefficient_wires, phase_gradient_wires):
     return len(coefficient_wires) if len(coefficient_wires) > 0 else len(phase_gradient_wires)
 
 
-def _required_work_wire_sizes(hamiltonian, vib_wires, b):
+def _required_work_size(n, k, n_pg):
+    """Required size of the ``work`` register for ``n`` electronic qubits, ``k`` qubits per mode
+    and ``n_pg`` phase-gradient qubits.
+
+    The largest requirements come from the QROM (``n - 1``), the half-signed multipliers into the
+    phase-gradient register (one sign wire plus ``n_pg + 1`` for the ``OutMultiplier``), and the
+    ``SignedOutMultiplier`` of two mode registers for the bilinear terms (``2k + 2``).
+    """
+    return max(n - 1, n_pg + 2, 2 * k + 2)
+
+
+def _required_work_wire_sizes(hamiltonian, vib_wires, n_pg):
     """Required ``(cache, work)`` register sizes for the vibronic Trotter circuit."""
     n_states = hamiltonian.num_states
     n_modes = hamiltonian.num_modes
     k = len(vib_wires) // n_modes
     n = math.ceil_log2(n_states)
-    return 2 * k, max(n - 1, 2 * k, 2 * b + 2)
+    return 2 * k, _required_work_size(n, k, n_pg)
 
 
 # pylint: disable-next=too-many-arguments
@@ -674,7 +687,9 @@ def _trotter_vibronic_work_wires(
     """Number of zeroed work wires allocated when ``coefficient_wires``/``cache_wires``/
     ``work_wires`` are omitted."""
     b = _coefficient_register_size(coefficient_wires, phase_gradient_wires)
-    cache_size, work_size = _required_work_wire_sizes(hamiltonian, vib_wires, b)
+    cache_size, work_size = _required_work_wire_sizes(
+        hamiltonian, vib_wires, len(phase_gradient_wires)
+    )
     num_alloc = 0
     if len(coefficient_wires) == 0:
         num_alloc += b
@@ -739,7 +754,9 @@ def _trotter_vibronic_decomposition(
 
     # Dynamically allocate ``coefficient_wires``/``cache_wires``/``work_wires`` when omitted.
     b = _coefficient_register_size(coefficient_wires, phase_gradient_wires)
-    cache_size, work_size = _required_work_wire_sizes(hamiltonian, vib_wires, b)
+    cache_size, work_size = _required_work_wire_sizes(
+        hamiltonian, vib_wires, len(phase_gradient_wires)
+    )
     coefficients = coefficient_wires
     cache = cache_wires
     work = work_wires
@@ -1451,7 +1468,7 @@ def _validate_registers(registers, mode_registers, n_modes, n_states):
     b = len(registers["coefficients"])
     k = len(mode_registers[0])
     n = math.ceil_log2(n_states)
-    needed_work_wires = max(n - 1, 2 * k, 2 * b + 2)
+    needed_work_wires = _required_work_size(n, k, len(registers["phase_gradient"]))
 
     if len(registers["electronic"]) != n:
         raise ValueError(

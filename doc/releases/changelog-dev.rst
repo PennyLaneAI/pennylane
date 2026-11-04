@@ -2603,6 +2603,11 @@ Bug fixes 🐛
   the gates produced by the captured decomposition.
   `(#10351) <https://github.com/PennyLaneAI/pennylane/pull/10351>`__
 
+* :class:`~.TrotterVibronic` now requires :math:`\max(n-1, b+2, 2k+2)` work wires instead of
+  :math:`\max(n-1, 2k, 2b+2)`, for :math:`b` phase-gradient wires. The previous size requested
+  :math:`b` unused wires for :math:`b \geq k`, and two wires too few for :math:`k > b`.
+  `(#XXXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXXX>`__
+
 Contributors ✍️
 ~~~~~~~~~~~~~~~
 
