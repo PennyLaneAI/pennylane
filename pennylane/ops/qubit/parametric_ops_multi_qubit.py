@@ -93,13 +93,14 @@ class MultiRZ(Operator2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/multirz_adjoint.svg
                 :region: adjoint
+                :where: ``theta`` changes sign
 
                 :class:`~.MultiRZ` | :math:`1`
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/multirz_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: ``theta`` is multiplied by the power :math:`z`
 
                 :class:`~.MultiRZ` | :math:`1`
     """
@@ -325,13 +326,14 @@ class PauliRot(Operator2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/paulirot_adjoint.svg
                 :region: adjoint
+                :where: ``theta`` changes sign
 
                 :class:`~.PauliRot` | :math:`1`
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/paulirot_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: ``theta`` is multiplied by the power :math:`z`
 
                 :class:`~.PauliRot` | :math:`1`
     """
@@ -717,6 +719,7 @@ class PCPhase(Operator2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/pcphase_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` changes sign
 
                 :class:`~.PCPhase` | :math:`1`
 
@@ -1148,13 +1151,14 @@ class IsingXX(Operator2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/isingxx_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` changes sign
 
                 :class:`~.IsingXX` | :math:`1`
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/isingxx_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: ``phi`` is multiplied by the power :math:`z`
 
                 :class:`~.IsingXX` | :math:`1`
     """
@@ -1308,13 +1312,14 @@ class IsingYY(Operator2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/isingyy_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` changes sign
 
                 :class:`~.IsingYY` | :math:`1`
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/isingyy_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: ``phi`` is multiplied by the power :math:`z`
 
                 :class:`~.IsingYY` | :math:`1`
     """
@@ -1490,13 +1495,14 @@ class IsingZZ(Operator2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/isingzz_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` changes sign
 
                 :class:`~.IsingZZ` | :math:`1`
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/isingzz_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: ``phi`` is multiplied by the power :math:`z`
 
                 :class:`~.IsingZZ` | :math:`1`
 
@@ -1728,13 +1734,14 @@ class IsingXY(Operator2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/isingxy_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` changes sign
 
                 :class:`~.IsingXY` | :math:`1`
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/isingxy_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: ``phi`` is multiplied by the power :math:`z`
 
                 :class:`~.IsingXY` | :math:`1`
     """
