@@ -125,6 +125,30 @@ class TrotterCDF(Operator2):
     The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing
     further on ``lightning.qubit``.
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.TrotterCDF
+            :stacked:
+            :symbols: :math:`N` orbitals, :math:`L` two-body fragments and :math:`n` =
+                ``num_trotter_steps``
+            :example: the Hamiltonian above, :math:`N=2`, :math:`L=1`, :math:`n=1`. Note that all expressions below assume :math:`n \gt 0`
+
+            .. decomposition-rule:: _trotter_cdf_decomposition
+                :image: /_static/decomposition_thumbnails/trotter_cdf_second_order.svg
+                :where: :math:`B = (2L-1)n + 1` two-body blocks and :math:`w` work wires. The
+                    counts are upper bounds, as basis rotations that are the identity are
+                    skipped. The circuit shows :math:`w = 0`
+
+                :class:`~.BasisRotation` on :math:`N` wires | :math:`4Ln + 4` | 8
+                :class:`~.IsingZZ` | :math:`BN(2N-1)` if :math:`w = 0` | 12
+                :class:`~.RZ` | :math:`2Nn` if :math:`w = 0`, :math:`2Nn + BN` if :math:`w \geq 1` | 4
+                :class:`~.CRZ` | :math:`BN(N-1)/2` if :math:`w \geq 1` | 0
+                :class:`~.CNOT` | :math:`BN(N+1)` if :math:`w \geq 1` | 0
+                :class:`~.TemporaryAND` | :math:`BN(N-1)/2` if :math:`w \geq 1` | 0
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`BN(N-1)/2` if :math:`w \geq 1` | 0
+                :class:`~.GlobalPhase` | :math:`1` | 1
+
     .. details ::
         :title: Usage Details
 
