@@ -94,15 +94,14 @@ class ControlledSequence(SymbolicOp2):
 
     def __init__(self, base, control):
         control_wires = Wires(control)
-        base_wires = getattr(base, "wires", None)
+        base_wires = getattr(base, "wires", ())
 
         wire_args = {
             "base.wires": base_wires,
             "control_wires": control_wires,
         }
 
-        if validate_no_wire_overlaps(wire_args):
-            raise ValueError("The control wires must be different from the base operation wires.")
+        validate_no_wire_overlaps(wire_args)
 
         self._name = "ControlledSequence"
 
