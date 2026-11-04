@@ -60,6 +60,7 @@ class TestAnalyze:
 
         dev = CapabilitiesDevice(wires=2)
         dev.capabilities = DeviceCapabilities(
+            operations={op: OperatorProperties() for op in qp.gate_sets.ALL_QUBIT_OPS},
             non_commuting_observables=True,
             operations={
                 "RX": OperatorProperties(),
