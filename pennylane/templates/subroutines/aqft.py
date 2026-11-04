@@ -69,6 +69,7 @@ class AQFT(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.AQFT
+            :stacked:
             :symbols: :math:`n` wires and order :math:`m \leq n-1`
             :example: :math:`n=4`, :math:`m=1`
 

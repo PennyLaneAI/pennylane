@@ -90,6 +90,7 @@ class IQPEmbedding(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.IQPEmbedding
+            :stacked:
             :symbols: :math:`n` wires, :math:`r` repetitions (``n_repeats``) and :math:`K`
                 entanglers (``len(pattern)``, :math:`n(n-1)/2` by default)
             :example: :math:`n=3`, :math:`r=1`, default ``pattern``

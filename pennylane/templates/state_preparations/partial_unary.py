@@ -820,6 +820,7 @@ class PartialUnaryStatePreparation(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.PartialUnaryStatePreparation
+            :stacked:
             :symbols: :math:`D = |L| \geq 2` entries in ``indices`` and a subspace register of
                 :math:`m = \lceil \log_2 D \rceil` wires
             :example: the first state above, :math:`D=10`

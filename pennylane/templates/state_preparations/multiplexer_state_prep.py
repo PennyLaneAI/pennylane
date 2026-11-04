@@ -69,6 +69,7 @@ class MultiplexerStatePreparation(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.MultiplexerStatePreparation
+            :stacked:
             :symbols: :math:`n` wires
             :example: :math:`n=3`
 

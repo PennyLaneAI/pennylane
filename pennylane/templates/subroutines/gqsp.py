@@ -98,6 +98,7 @@ class GQSP(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.GQSP
+            :stacked:
             :symbols: :math:`U=` ``unitary``, polynomial degree :math:`d` (``angles`` of shape
                 ``(3, d+1)``) and shift :math:`s`
             :example: :math:`d=1`, :math:`s=0`

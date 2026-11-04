@@ -86,6 +86,7 @@ class UniformPrep(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.UniformPrep
+            :stacked:
             :symbols: :math:`n_\text{states} = 2^k L` with :math:`L` odd, and
                 :math:`\ell = \lceil \log_2 L \rceil`
             :example: :math:`n_\text{states}=5` (:math:`k=0`, :math:`L=5`, :math:`\ell=3`)

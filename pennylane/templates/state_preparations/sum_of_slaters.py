@@ -837,6 +837,7 @@ class SumOfSlatersPrep(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.SumOfSlatersPrep
+            :stacked:
             :symbols: :math:`D \geq 2` entries in ``indices``, :math:`d = \lceil \log_2 D \rceil`
                 enumeration wires and :math:`m` identification bits (the number of rows of the
                 encoding computed by :func:`~.compute_sos_encoding`)
