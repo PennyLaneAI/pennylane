@@ -866,6 +866,29 @@ class TestDecomposition:
         expected_hints = [*position_hints, (0.75, 0.25), *position_hints]
         assert hint_helpers.cond_hints(plxpr.jaxpr) == expected_hints
 
+    @pytest.mark.capture
+    @pytest.mark.parametrize("interface", ["numpy", "jax"])
+    def test_branch_probs_with_closed_over_hamiltonian(self, interface, seed):
+        """Test that ``branch_probs`` is computed from a concrete Hamiltonian that is closed over
+        while tracing, e.g., in a captured circuit, and matches the value computed eagerly."""
+        hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=seed))
+        hamiltonian = replace(
+            hamiltonian,
+            **{
+                name: qp.math.asarray(getattr(hamiltonian, name), like=interface)
+                for name in ("constant", "linear", "quadratic", "kinetic")
+            },
+        )
+        wires = make_wires(2, 2)
+        expected = make_op(hamiltonian, wires).arguments["branch_probs"]
+        assert expected is not None
+
+        def circuit():
+            assert make_op(hamiltonian, wires).arguments["branch_probs"] == expected
+            return 0
+
+        _ = jax.make_jaxpr(circuit)()
+
 
 # ---------------------------------------------------------------------------
 # ------------------------------- Execution ---------------------------------
