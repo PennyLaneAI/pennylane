@@ -160,71 +160,6 @@ class ControlledQubitUnitary(Controlled2):
     >>> qp.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[False, True, True])
     ControlledQubitUnitary(U=[[ 0.94877869  0.31594146]
      [-0.31594146  0.94877869]], wires=[0, 1, 2, 3], control_values=[False  True  True], work_wires=[], work_wire_type=borrowed, unitary_check=False)
-
-    .. details::
-        :title: Available decompositions
-
-        .. decomposition-table:: qp.ControlledQubitUnitary
-            :symbols: :math:`n` target wires and :math:`c` control wires
-
-            .. decomposition-rule:: ctrl_decomp_bisect_rule
-                :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_bisect.svg
-                :where: :math:`n = 1` and :math:`c \geq 2`, the circuit shows :math:`c = 3`, and
-                    each control wire with control value :math:`0` adds two :class:`~.PauliX` gates,
-                    not included in the counts
-
-                :class:`~.QubitUnitary` | :math:`4`
-                :class:`Adjoint(QubitUnitary) <.QubitUnitary>` | :math:`4`
-                :class:`~.Hadamard` | :math:`2`
-                :class:`Controlled(GlobalPhase) <.GlobalPhase>` with :math:`c` controls | :math:`1`
-                :class:`~.MultiControlledX` with :math:`\lceil c/2 \rceil` controls | :math:`6` if :math:`c` is even, :math:`2` if odd
-                :class:`~.MultiControlledX` with :math:`\lfloor c/2 \rfloor` controls | :math:`4` if :math:`c` is odd
-
-            .. decomposition-rule:: single_ctrl_decomp_zyz_rule
-                :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_single_ctrl_zyz.svg
-                :where: :math:`n = 1` and :math:`c = 1`, and each control wire with control value
-                    :math:`0` adds two :class:`~.PauliX` gates, not included in the counts
-
-                :class:`~.RZ` | :math:`3`
-                :class:`~.RY` | :math:`2`
-                :class:`~.CNOT` | :math:`2`
-                :class:`Controlled(GlobalPhase) <.GlobalPhase>` with :math:`1` control | :math:`1`
-
-            .. decomposition-rule:: multi_control_decomp_zyz_rule
-                :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_multi_ctrl_zyz.svg
-                :where: :math:`n = 1` and :math:`c \geq 2`, the circuit shows :math:`c = 3`, and
-                    each control wire with control value :math:`0` adds two :class:`~.PauliX` gates,
-                    not included in the counts
-
-                :class:`~.CRZ` | :math:`3`
-                :class:`~.CRY` | :math:`2`
-                :class:`~.MultiControlledX` with :math:`c - 1` controls | :math:`2`
-                :class:`Controlled(GlobalPhase) <.GlobalPhase>` with :math:`c` controls | :math:`1`
-
-            .. decomposition-rule:: controlled_two_qubit_unitary_rule
-                :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_two_qubit.svg
-                :where: :math:`n = 2`, the circuit shows :math:`c = 1`, and each control wire with
-                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
-                    counts
-
-                :class:`~.ControlledQubitUnitary` on :math:`1` target wire with :math:`c` controls | :math:`4`
-                :class:`~.MultiControlledX` with :math:`c + 1` controls | :math:`3`
-                :class:`Controlled(RZ) <.RZ>` with :math:`c` controls | :math:`1`
-                :class:`Controlled(RY) <.RY>` with :math:`c` controls | :math:`2`
-                :class:`Controlled(GlobalPhase) <.GlobalPhase>` with :math:`c` controls | :math:`1`
-
-            .. decomposition-rule:: _to_general_c_qu
-                :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_to_general.svg
-                :where: :math:`n \geq 3`, and the circuit shows :math:`c = 1`
-
-                :class:`Controlled(QubitUnitary) <.QubitUnitary>` with :math:`c` controls | :math:`1`
-
-            .. decomposition-rule:: _adjoint_controlled_qubit_unitary
-                :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_adjoint.svg
-                :region: adjoint
-
-                :class:`~.ControlledQubitUnitary` | :math:`1`
-
     """
 
     dynamic_argnames = ("U", "control_values")
@@ -853,44 +788,6 @@ class CSWAP(Controlled2):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
-
-    .. details::
-        :title: Available decompositions
-
-        .. decomposition-table:: qp.CSWAP
-
-            .. decomposition-rule:: _cswap
-                :image: /_static/decomposition_thumbnails/cswap_decomp.svg
-
-                :class:`~.CNOT` | :math:`2`
-                :class:`~.Toffoli` | :math:`1`
-
-            .. decomposition-rule:: _cswap_to_ppr
-                :image: /_static/decomposition_thumbnails/cswap_to_ppr.svg
-
-                :class:`PPR_8(-1, "ZZZ") <.PPR_8>` | :math:`1`
-                :class:`PPR_8(-1, "ZYY") <.PPR_8>` | :math:`1`
-                :class:`PPR_8(-1, "ZXX") <.PPR_8>` | :math:`1`
-                :class:`PPR_8(1, "ZZ") <.PPR_8>` | :math:`1`
-                :class:`PPR_8(1, "YY") <.PPR_8>` | :math:`1`
-                :class:`PPR_8(1, "XX") <.PPR_8>` | :math:`1`
-                :class:`PPR_8(1, "Z") <.PPR_8>` | :math:`1`
-                :class:`~.GlobalPhase` | :math:`1`
-
-            .. decomposition-rule:: decompose_to_base
-                :image: /_static/decomposition_thumbnails/cswap_adjoint.svg
-                :region: adjoint
-
-                :class:`~.CSWAP` | :math:`1`
-
-            .. decomposition-rule:: _impl
-                :image: /_static/decomposition_thumbnails/cswap_pow_period.svg
-                :region: pow
-                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
-                    :math:`z < 0`, and the circuit shows :math:`z = 3`
-
-                :class:`Pow(CSWAP) <.CSWAP>` with power :math:`z \bmod 2` | :math:`1`
-
     """
 
     wire_argnames = ("wires",)
@@ -1049,39 +946,6 @@ class CCZ(Controlled2):
     2: ──H─╰Z──H─┤ ╰Sample
     >>> circuit()
     array([[1, 1, 1]])
-
-    .. details::
-        :title: Available decompositions
-
-        .. decomposition-table:: qp.CCZ
-
-            .. decomposition-rule:: _ccz
-                :image: /_static/decomposition_thumbnails/ccz_decomp.svg
-
-                :class:`~.Hadamard` | :math:`2`
-                :class:`~.CNOT` | :math:`6`
-                :class:`~.T` | :math:`4`
-                :class:`Adjoint(T) <.T>` | :math:`3`
-
-            .. decomposition-rule:: _ccz_to_toffoli
-                :image: /_static/decomposition_thumbnails/ccz_to_toffoli.svg
-
-                :class:`~.Hadamard` | :math:`2`
-                :class:`~.Toffoli` | :math:`1`
-
-            .. decomposition-rule:: decompose_to_base
-                :image: /_static/decomposition_thumbnails/ccz_adjoint.svg
-                :region: adjoint
-
-                :class:`~.CCZ` | :math:`1`
-
-            .. decomposition-rule:: _impl
-                :image: /_static/decomposition_thumbnails/ccz_pow_period.svg
-                :region: pow
-                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
-                    :math:`z < 0`, and the circuit shows :math:`z = 3`
-
-                :class:`Pow(CCZ) <.CCZ>` with power :math:`z \bmod 2` | :math:`1`
 
     """
 
@@ -1454,59 +1318,6 @@ class Toffoli(Controlled2):
     >>> circuit()
     array([[1, 1, 1]])
 
-    .. details::
-        :title: Available decompositions
-
-        .. decomposition-table:: qp.Toffoli
-
-            .. decomposition-rule:: _toffoli
-                :image: /_static/decomposition_thumbnails/toffoli_decomp.svg
-
-                :class:`~.Hadamard` | :math:`2`
-                :class:`~.CNOT` | :math:`6`
-                :class:`~.T` | :math:`4`
-                :class:`Adjoint(T) <.T>` | :math:`3`
-
-            .. decomposition-rule:: _toffoli_to_ppr
-                :image: /_static/decomposition_thumbnails/toffoli_to_ppr.svg
-
-                :class:`PPR_8(-1, "ZZ") <.PPR_8>` | :math:`1`
-                :class:`PPR_8(-1, "ZX") <.PPR_8>` | :math:`2`
-                :class:`PPR_8(1, "ZZX") <.PPR_8>` | :math:`1`
-                :class:`PPR_8(1, "X") <.PPR_8>` | :math:`1`
-                :class:`PPR_8(1, "Z") <.PPR_8>` | :math:`2`
-                :class:`~.GlobalPhase` | :math:`1`
-
-            .. decomposition-rule:: _toffoli_elbow
-                :image: /_static/decomposition_thumbnails/toffoli_elbow.svg
-                :requires: 1 zeroed work wire
-
-                :class:`~.TemporaryAND` | :math:`1`
-                :class:`~.CNOT` | :math:`1`
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1`
-
-            .. decomposition-rule:: decompose_to_base
-                :image: /_static/decomposition_thumbnails/toffoli_adjoint.svg
-                :region: adjoint
-
-                :class:`~.Toffoli` | :math:`1`
-
-            .. decomposition-rule:: _ctrl_toffoli_to_mcx
-                :image: /_static/decomposition_thumbnails/toffoli_controlled.svg
-                :region: controlled
-                :where: :math:`c` is the number of added control wires, and the circuit shows
-                    :math:`c = 2`
-
-                :class:`~.MultiControlledX` with :math:`c + 2` controls | :math:`1`
-
-            .. decomposition-rule:: _impl
-                :image: /_static/decomposition_thumbnails/toffoli_pow_period.svg
-                :region: pow
-                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
-                    :math:`z < 0`, and the circuit shows :math:`z = 3`
-
-                :class:`Pow(Toffoli) <.Toffoli>` with power :math:`z \bmod 2` | :math:`1`
-
     """
 
     wire_argnames = ("wires",)
@@ -1720,173 +1531,6 @@ class MultiControlledX(Controlled2):
 
         Note that the state of the work wires before and after the decomposition takes place is
         unchanged.
-
-    .. details::
-        :title: Available decompositions
-
-        .. decomposition-table:: qp.MultiControlledX
-            :symbols: :math:`c` control wires and :math:`w` work wires
-
-            .. decomposition-rule:: mcx_to_cnot_or_toffoli
-                :image: /_static/decomposition_thumbnails/mcx_to_cnot_or_toffoli.svg
-                :where: :math:`c \leq 2`, the circuit shows :math:`c = 2`, and each control wire
-                    with control value :math:`0` adds two :class:`~.PauliX` gates, not included in
-                    the counts
-
-                :class:`~.CNOT` | :math:`1` if :math:`c = 1`
-                :class:`~.Toffoli` | :math:`1` if :math:`c = 2`
-
-            .. decomposition-rule:: decompose_mcx_two_controls_elbows
-                :image: /_static/decomposition_thumbnails/mcx_two_controls_elbows.svg
-                :requires: :math:`w \geq 1` zeroed work wire
-                :where: :math:`c = 2`, the circuit shows :math:`c = 2`, with 1 zeroed work wire, and
-                    each control wire with control value :math:`0` adds two :class:`~.PauliX` gates,
-                    not included in the counts
-
-                :class:`~.TemporaryAND` | :math:`1`
-                :class:`~.CNOT` | :math:`1`
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1`
-
-            .. decomposition-rule:: decompose_mcx_many_workers
-                :image: /_static/decomposition_thumbnails/mcx_many_workers.svg
-                :requires: :math:`w \geq c - 2` work wires
-                :where: :math:`c \geq 3`, counts are for zeroed / borrowed work wires, the circuit
-                    shows :math:`c = 4`, with 2 zeroed work wires, and each control wire with
-                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
-                    counts
-
-                :class:`~.TemporaryAND` | :math:`c - 2` / :math:`0`
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`c - 2` / :math:`0`
-                :class:`~.Toffoli` | :math:`1` / :math:`4(c - 2)`
-
-            .. decomposition-rule:: decompose_mcx_two_workers
-                :image: /_static/decomposition_thumbnails/mcx_two_workers.svg
-                :requires: :math:`w \geq 2` work wires, or :math:`w = 1` if :math:`c < 6`
-                :where: :math:`c \geq 3`, :math:`s = [c < 6]` is 1 if :math:`c < 6` and 0 otherwise,
-                    counts are for zeroed / borrowed work wires, the circuit shows :math:`c = 4`,
-                    with 2 zeroed work wires, and each control wire with control value :math:`0`
-                    adds two :class:`~.PauliX` gates, not included in the counts
-
-                :class:`~.Toffoli` | :math:`c - 3 + s` / :math:`2c - 2s`
-                :class:`Adjoint(Toffoli) <.Toffoli>` | :math:`c - 4 + s` / :math:`2(c - 4 + s)`
-                :class:`~.PauliX` | :math:`c - 4 + s` / :math:`2(c - 4 + s)`
-                :class:`Adjoint(PauliX) <.PauliX>` | :math:`c - 4 + s` / :math:`2(c - 4 + s)`
-                :class:`~.TemporaryAND` | :math:`2 - s` / :math:`0`
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`2 - s` / :math:`0`
-
-            .. decomposition-rule:: decompose_mcx_one_worker
-                :image: /_static/decomposition_thumbnails/mcx_one_worker.svg
-                :requires: :math:`w = 1` work wire
-                :where: :math:`c \geq 3`, counts are for zeroed / borrowed work wires, the circuit
-                    shows :math:`c = 4`, with 1 zeroed work wire, and each control wire with control
-                    value :math:`0` adds two :class:`~.PauliX` gates, not included in the counts
-
-                :class:`~.Toffoli` | :math:`c - 2` / :math:`2c - 2`
-                :class:`Adjoint(Toffoli) <.Toffoli>` | :math:`c - 3` / :math:`2(c - 3)`
-                :class:`~.PauliX` | :math:`c - 3` / :math:`2(c - 3)`
-                :class:`Adjoint(PauliX) <.PauliX>` | :math:`c - 3` / :math:`2(c - 3)`
-                :class:`~.TemporaryAND` | :math:`1` / :math:`0`
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1` / :math:`0`
-
-            .. decomposition-rule:: decompose_mcx_with_no_worker
-                :image: /_static/decomposition_thumbnails/mcx_no_worker.svg
-                :where: :math:`c \geq 3` and :math:`w = 0`, the circuit shows :math:`c = 4`, and
-                    each control wire with control value :math:`0` adds two :class:`~.PauliX` gates,
-                    not included in the counts
-
-                :class:`~.Hadamard` | :math:`2`
-                :class:`~.QubitUnitary` | :math:`2`
-                :class:`Adjoint(QubitUnitary) <.QubitUnitary>` | :math:`2`
-                :class:`Controlled(GlobalPhase) <.GlobalPhase>` with :math:`c` controls | :math:`1`
-                :class:`~.MultiControlledX` with :math:`\lceil c/2 \rceil` controls | :math:`2`
-                :class:`~.MultiControlledX` with :math:`\lfloor c/2 \rfloor` controls | :math:`2`
-
-            .. decomposition-rule:: use_allocation(decompose_mcx_two_controls_elbows)
-                :image: /_static/decomposition_thumbnails/mcx_alloc_two_controls_elbows.svg
-                :requires: 1 zeroed work wire, allocated by the rule
-                :where: :math:`c = 2` and :math:`w = 0`, the circuit shows :math:`c = 2`, and each
-                    control wire with control value :math:`0` adds two :class:`~.PauliX` gates, not
-                    included in the counts
-
-                :class:`~.TemporaryAND` | :math:`1`
-                :class:`~.CNOT` | :math:`1`
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1`
-
-            .. decomposition-rule:: two_zeroed_workers
-                :image: /_static/decomposition_thumbnails/mcx_alloc_two_zeroed_workers.svg
-                :requires: 2 zeroed work wires, allocated by the rule
-                :where: :math:`c \geq 3` and :math:`w = 0`, :math:`s = [c < 6]` is 1 if
-                    :math:`c < 6` and 0 otherwise, the circuit shows :math:`c = 4`, and each control
-                    wire with control value :math:`0` adds two :class:`~.PauliX` gates, not included
-                    in the counts
-
-                :class:`~.Toffoli` | :math:`c - 3 + s`
-                :class:`Adjoint(Toffoli) <.Toffoli>` | :math:`c - 4 + s`
-                :class:`~.PauliX` | :math:`c - 4 + s`
-                :class:`Adjoint(PauliX) <.PauliX>` | :math:`c - 4 + s`
-                :class:`~.TemporaryAND` | :math:`2 - s`
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`2 - s`
-
-            .. decomposition-rule:: two_borrowed_workers
-                :image: /_static/decomposition_thumbnails/mcx_alloc_two_borrowed_workers.svg
-                :requires: 2 borrowed work wires, allocated by the rule
-                :where: :math:`c \geq 3` and :math:`w = 0`, :math:`s = [c < 6]` is 1 if
-                    :math:`c < 6` and 0 otherwise, the circuit shows :math:`c = 4`, and each control
-                    wire with control value :math:`0` adds two :class:`~.PauliX` gates, not included
-                    in the counts
-
-                :class:`~.Toffoli` | :math:`2c - 2s`
-                :class:`Adjoint(Toffoli) <.Toffoli>` | :math:`2(c - 4 + s)`
-                :class:`~.PauliX` | :math:`2(c - 4 + s)`
-                :class:`Adjoint(PauliX) <.PauliX>` | :math:`2(c - 4 + s)`
-
-            .. decomposition-rule:: one_zeroed_worker
-                :image: /_static/decomposition_thumbnails/mcx_alloc_one_zeroed_worker.svg
-                :requires: 1 zeroed work wire, allocated by the rule
-                :where: :math:`c \geq 3` and :math:`w = 0`, the circuit shows :math:`c = 4`, and
-                    each control wire with control value :math:`0` adds two :class:`~.PauliX` gates,
-                    not included in the counts
-
-                :class:`~.Toffoli` | :math:`c - 2`
-                :class:`Adjoint(Toffoli) <.Toffoli>` | :math:`c - 3`
-                :class:`~.PauliX` | :math:`c - 3`
-                :class:`Adjoint(PauliX) <.PauliX>` | :math:`c - 3`
-                :class:`~.TemporaryAND` | :math:`1`
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1`
-
-            .. decomposition-rule:: one_borrowed_worker
-                :image: /_static/decomposition_thumbnails/mcx_alloc_one_borrowed_worker.svg
-                :requires: 1 borrowed work wire, allocated by the rule
-                :where: :math:`c \geq 3` and :math:`w = 0`, the circuit shows :math:`c = 4`, and
-                    each control wire with control value :math:`0` adds two :class:`~.PauliX` gates,
-                    not included in the counts
-
-                :class:`~.Toffoli` | :math:`2c - 2`
-                :class:`Adjoint(Toffoli) <.Toffoli>` | :math:`2(c - 3)`
-                :class:`~.PauliX` | :math:`2(c - 3)`
-                :class:`Adjoint(PauliX) <.PauliX>` | :math:`2(c - 3)`
-
-            .. decomposition-rule:: decompose_to_base
-                :image: /_static/decomposition_thumbnails/mcx_adjoint.svg
-                :region: adjoint
-
-                :class:`~.MultiControlledX` | :math:`1`
-
-            .. decomposition-rule:: _ctrl_mcx_to_mcx
-                :image: /_static/decomposition_thumbnails/mcx_controlled.svg
-                :region: controlled
-                :where: :math:`c'` is the number of added control wires, and the circuit shows
-                    :math:`c' = 2`
-
-                :class:`~.MultiControlledX` with :math:`c + c'` controls | :math:`1`
-
-            .. decomposition-rule:: _impl
-                :image: /_static/decomposition_thumbnails/mcx_pow_period.svg
-                :region: pow
-                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
-                    :math:`z < 0`, and the circuit shows :math:`z = 3`
-
-                :class:`Pow(MultiControlledX) <.MultiControlledX>` with power :math:`z \bmod 2` | :math:`1`
 
     """
 
@@ -2931,20 +2575,6 @@ class ControlledPhaseShift(Controlled2):
                 :class:`~.TemporaryAND` | :math:`1`
                 :class:`~.PhaseShift` | :math:`1`
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1`
-
-            .. decomposition-rule:: adjoint_rotation
-                :image: /_static/decomposition_thumbnails/cphase_adjoint.svg
-                :region: adjoint
-
-                :class:`~.ControlledPhaseShift` | :math:`1`
-
-            .. decomposition-rule:: pow_rotation
-                :image: /_static/decomposition_thumbnails/cphase_pow.svg
-                :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
-
-                :class:`~.ControlledPhaseShift` | :math:`1`
-                
     """
 
     wire_sizes = (2,)
