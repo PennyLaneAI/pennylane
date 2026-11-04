@@ -47,15 +47,40 @@ def test_label():
     assert op.label(base_label="grad") == "grad"
 
 
+RULES = [
+    pytest.param(_phase_gradient_state_prep_ppr_decomposition, id="ppr"),
+    pytest.param(_phase_gradient_state_prep_clifford_t_decomposition, id="clifford_t"),
+]
+
+GATE_SETS = {
+    _phase_gradient_state_prep_ppr_decomposition: {"PPR_2", "PPR_4", "PPR_8", "GlobalPhase"},
+    _phase_gradient_state_prep_clifford_t_decomposition: {
+        "Hadamard",
+        "S",
+        "T",
+        "PauliX",
+        "PauliY",
+        "PauliZ",
+        "GlobalPhase",
+    },
+}
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
     @pytest.mark.parametrize("use_qjit", [False, pytest.param(True, marks=pytest.mark.catalyst)])
+    @pytest.mark.parametrize("rule", RULES)
     @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 7])
-    def test_decomposition_prepares_state(self, num_wires, use_qjit):
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_decomposition_prepares_state(self, rule, num_wires, use_qjit):
         """Test that executing the decomposition prepares the phase gradient state."""
 
-        gate_set = {"PPR_2", "PPR_4", "PPR_8", "GlobalPhase"}
+        gate_set = GATE_SETS[rule]
+        decompose_kwargs = {
+            "gate_set": gate_set,
+            "fixed_decomps": {qp.PhaseGradientStatePrep: rule},
+        }
 
         @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
         def circuit():
@@ -63,12 +88,12 @@ class TestDecomposition:
             return qp.state()
 
         if use_qjit:
-            circuit = qp.transforms.to_ppr(qp.decompose(circuit, gate_set=gate_set))
+            circuit = qp.transforms.to_ppr(qp.decompose(circuit, **decompose_kwargs))
             circuit = qp.qjit(circuit, capture=True)
 
         else:
             # pylint: disable-next=protected-access
-            circuit = qp.transforms._tape_decompose(circuit, gate_set=gate_set)
+            circuit = qp.transforms._tape_decompose(circuit, **decompose_kwargs)
             tape = qp.workflow.construct_tape(circuit)()
             assert all(op.name in gate_set for op in tape.operations)
         assert np.allclose(circuit(), _expected_state(num_wires))
@@ -89,34 +114,15 @@ class TestDecomposition:
         assert np.allclose(circuit(), circuit2())
 
 
-RULES = [
-    pytest.param(_phase_gradient_state_prep_ppr_decomposition, id="ppr"),
-    pytest.param(_phase_gradient_state_prep_clifford_t_decomposition, id="clifford_t"),
-]
-
-
 class TestHardcodedDecompositions:
     """Tests for the hardcoded decompositions into Pauli product rotations and Clifford+T gates."""
 
-    @pytest.mark.parametrize(
-        "rule, gate_set",
-        [
-            pytest.param(
-                _phase_gradient_state_prep_ppr_decomposition,
-                {"PPR_2", "PPR_4", "PPR_8", "GlobalPhase"},
-                id="ppr",
-            ),
-            pytest.param(
-                _phase_gradient_state_prep_clifford_t_decomposition,
-                {"Hadamard", "S", "T", "PauliX", "PauliY", "PauliZ", "GlobalPhase"},
-                id="clifford_t",
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("rule", RULES)
     @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 7, 10, 14, 16])
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_prepares_state(self, rule, gate_set, num_wires):
+    def test_prepares_state(self, rule, num_wires):
         """Test that decomposing with the rule prepares the phase gradient state."""
+        gate_set = GATE_SETS[rule]
 
         # pylint: disable-next=protected-access
         @qp.transforms._tape_decompose(

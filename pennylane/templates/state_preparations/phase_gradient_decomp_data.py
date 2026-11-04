@@ -52,20 +52,20 @@ The sequence, and the preceding Hadamard, is processed into a pure π/8 PPR sequ
 leading Clifford PPR.
 
 The Clifford+T sequences are obtained from the PPR sequences by commuting all Clifford gates to the
-end of each wire, mapping each π/8 PPR to a T gate preceded by nothing, H or SH. The remaining
+end of each wire, mapping each π/8 PPR to a T gate preceded by H or SH. The remaining
 Clifford is appended as a shortest word in H, S, X, Y and Z, and leading S gates, which act
 trivially on |0>, are dropped. The number of T gates on each wire equals its number of π/8 PPRs.
 """
 
 # fmt: off
-INITIAL_PPRS: tuple[tuple[int, str]] = (
+INITIAL_PPRS: tuple[tuple[int, str] | None, ...] = (
     (-4, "Y"), (4, "X"), (4, "X"), (2, "X"), (4, "X"), (4, "Y"), (4, "X"), (-4, "X"), (2, "X"),
     (-4, "X"), (-4, "X"), (4, "Y"), (4, "X"), (-4, "Y"), (-4, "X"), None, (2, "X"), (-4, "X"),
     (2, "X"), (4, "Y"), (-4, "Y"), (4, "X"), (4, "Y"), (4, "X"), (2, "X"), (4, "X"), None,
     (4, "Y"), (4, "X"), (2, "X"),
 )
 
-PI_OVER_8_PPRS: tuple[str] = (
+PI_OVER_8_PPRS: tuple[str, ...] = (
     "",
     "",
     "Z",
@@ -98,7 +98,7 @@ PI_OVER_8_PPRS: tuple[str] = (
     "xYxZxZxyxzyzXyXyzXyzyzyxzyzXyXyzXyzXzXzXyzXyzyxyxyxyxyxyZxZYZYZXZXZXYXYXzXyzXzYzxzyzXzYzxYzYzxzyzyzyzXzYzxzyzXyzyxzxzyzXzYzYXzXyX",
 )
 
-GLOBAL_PHASES: tuple[float] = (
+GLOBAL_PHASES: tuple[float, ...] = (
     0.0, 0.0, -0.39269908169872414, 0.19634954085053827, 2.4543692606172054, -1.9144080232811331,
     1.5953400194010237, 0.7976700097031784, -0.7792622402458426, -3.138524692014499,
     -0.7838641826095573, -3.1408256631960407, 1.5711798219926387, -0.785206415798946,
@@ -108,7 +108,7 @@ GLOBAL_PHASES: tuple[float] = (
     -2.748893548484341, -2.7488935601876974, 2.7488935777426624, -1.5707963238689968,
 )
 
-CLIFFORD_T_SEQUENCES: tuple[str] = (
+CLIFFORD_T_SEQUENCES: tuple[str, ...] = (
     "HZ",
     "HSH",
     "HTX",
@@ -141,7 +141,7 @@ CLIFFORD_T_SEQUENCES: tuple[str] = (
     "HTHTSHTSHTSHTSHTHTHTSHTSHTHTSHTSHTHTSHTHTHTHTSHTHTSHTHTSHTHTSHTHTSHTSHTHTSHTHTHTHTSHTHTHTHTSHTSHTHTHTHTSHTHTHTHTHTSHTHTSHTSHTHTSHTSHTHTSHTHTSHTSHTHTHTSHTSHTSHTSHTSHTHTSHTHTHTSHTSHTSHTSHTHTSHTHTSHTSHTSHTHTHTHTSHTSHTSHTHTHTHTHTSHTSHTSHTSHTSHTHTHTSHTSHTHTSHTHTHTHTSHTSHTSHTHTHTHTHTSHTSHTHTSHTSHTSHTSHTSHTHTHTHTSHTHTHTHTHTHTSHTSHX",
 )
 
-CLIFFORD_T_GLOBAL_PHASES: tuple[float] = (
+CLIFFORD_T_GLOBAL_PHASES: tuple[float, ...] = (
     0.0, 0.7853981633974483, 0.7853981633974482, -1.767145867643088, -2.6507188014662133,
     2.012582793706103, -1.938951715887499, -1.5585244804891705, -2.350058567040744,
     2.751961533466359, -1.961961427705736, -1.962728418099874, -3.141209158392056,
