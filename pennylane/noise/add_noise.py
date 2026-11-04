@@ -51,7 +51,7 @@ def add_noise(tape, noise_model, level="user"):
         noise_model (~pennylane.NoiseModel): noise model according to which noise has to be inserted.
         level (str, int, slice): An indication of which stage in the compile pipeline the
             noise model should be applied to. Only relevant when transforming a ``QNode``. More details
-            on the following permissible values can be found in the :func:`~.workflow.get_compile_pipeline` -
+            on the following permissible values can be found in :func:`~.workflow.construct_batch` -
 
             * ``str``: acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``.
             * ``int``: how many transforms to include, starting from the front of the program.
@@ -142,22 +142,17 @@ def add_noise(tape, noise_model, level="user"):
             noisy_circuit = qp.noise.add_noise(circuit, noise_model)
 
         >>> from pennylane.workflow import get_compile_pipeline
-        >>> print(get_compile_pipeline(circuit, level="device")(1,2,3,4))
-         CompilePipeline(
+        >>> print(get_compile_pipeline(circuit, level="device"))
+        CompilePipeline(
           [0] cancel_inverses(),
           [1] merge_rotations(),
           [2] undo_swaps(),
           [3] _expand_metric_tensor(device_wires=[0, 1, 2]),
           [4] metric_tensor(device_wires=[0, 1, 2]),
-          [5] defer_measurements(allow_postselect=False),
-          [6] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
-          [7] no_sampling(name=backprop + default.mixed),
-          [8] validate_device_wires([0, 1, 2], name=default.mixed),
-          [9] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
-          [10] validate_observables(stopping_condition=..., name=default.mixed)
+          [5] Device Preprocessing
         )
 
-        >>> print(get_compile_pipeline(noisy_circuit, level="device")(1,2,3,4))
+        >>> print(get_compile_pipeline(noisy_circuit, level="device"))
         CompilePipeline(
           [0] cancel_inverses(),
           [1] merge_rotations(),
@@ -165,17 +160,12 @@ def add_noise(tape, noise_model, level="user"):
           [3] _expand_metric_tensor(device_wires=[0, 1, 2]),
           [4] metric_tensor(device_wires=[0, 1, 2]),
           [5] add_noise(...),
-          [6] defer_measurements(allow_postselect=False),
-          [7] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
-          [8] no_sampling(name=backprop + default.mixed),
-          [9] validate_device_wires([0, 1, 2], name=default.mixed),
-          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
-          [11] validate_observables(stopping_condition=..., name=default.mixed)
+          [6] Device Preprocessing
         )
 
         However, one can request to insert the ``add_noise`` transform at any specific point in the compile pipeline. By specifying the ``level`` keyword argument while
-        transforming a ``QNode``, this transform can be added at a designated level within the compile pipeline, as determined using the
-        :func:`get_compile_pipeline<pennylane.workflow.get_compile_pipeline>`. For example, specifying ``None`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
+        transforming a ``QNode``, this transform can be added at a designated level within the compile pipeline, using the same levels as
+        :func:`~.workflow.construct_batch`. For example, specifying ``None`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
 
         >>> print(qp.noise.add_noise(circuit, noise_model, level="device").compile_pipeline)
         CompilePipeline(

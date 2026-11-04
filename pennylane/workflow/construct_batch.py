@@ -141,15 +141,24 @@ def construct_batch(qnode: QNode, level: str | int | slice = "user") -> Callable
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
         level (str, int, slice): An indication of what transforms to apply before
-            drawing. Check :func:`~.workflow.get_compile_pipeline` for more
-            information on the allowed values and usage details of this argument.
+            constructing the batch. Defaults to ``"user"``.
+
+            * ``"top"``: No transforms are applied.
+            * ``"user"``: Only the transforms manually applied by the user.
+            * ``"gradient"``: The user-applied transforms, followed by the transform that
+              expands the trainable operations for the gradient method, if any.
+            * ``"device"``: All the transforms, including the gradient and device preprocessing
+              transforms, i.e. the tapes that the device executes.
+            * ``str``: The ``label`` of a :func:`~.marker`, to apply all transforms up to the
+              location of that marker.
+            * ``int``: The number of transforms to apply from the start of the transform program,
+              e.g. ``level=0`` applies no transforms.
+            * ``slice``: A specific range of transforms, using standard 0-based Pythonic indexing.
 
     Returns:
         Callable:
             A function with the same call signature as the initial quantum function.
             This function returns a batch (tuple) of tapes and postprocessing function.
-
-    .. seealso:: :func:`pennylane.workflow.get_compile_pipeline` to inspect the contents of the transform program for a specified level.
 
     .. details::
         :title: Usage Details

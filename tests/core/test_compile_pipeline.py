@@ -23,6 +23,7 @@ import rustworkx as rx
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.transforms.compile_pipeline import (
+    _DEVICE_PREPROCESSING,
     CotransformCache,
     ProtectedLevel,
     _apply_postprocessing_stack,
@@ -741,8 +742,19 @@ class TestCompilePipelineDunders:
         compile_pipeline.append(transform2)
 
         pipeline_repr = repr(compile_pipeline)
-        expected_repr = f"CompilePipeline(\n  [1] {repr(transform1)},\n  [2] {repr(transform2)}\n)"
+        expected_repr = f"CompilePipeline(\n  [0] {repr(transform1)},\n  [1] {repr(transform2)}\n)"
         assert pipeline_repr == expected_repr
+
+    def test_str_and_repr_device_preprocessing(self):
+        """Test that the device preprocessing placeholder is printed by name."""
+        compile_pipeline = CompilePipeline(qp.transforms.cancel_inverses) + _DEVICE_PREPROCESSING
+
+        assert str(compile_pipeline) == (
+            "CompilePipeline(\n  [0] cancel_inverses(),\n  [1] Device Preprocessing\n)"
+        )
+        assert repr(compile_pipeline) == (
+            "CompilePipeline(\n  [0] <cancel_inverses()>,\n  [1] <Device Preprocessing>\n)"
+        )
 
     def test_ipython_display(self, capsys):
         """Test that the ipython display prints the string representation of a CompilePipeline instance."""
@@ -775,7 +787,7 @@ class TestCompilePipelineDunders:
 
         pipeline_str = str(compile_pipeline)
         expected_str = (
-            "CompilePipeline(\n  [1] first_valid_transform(),\n  [2] cancel-inverses()\n)"
+            "CompilePipeline(\n  [0] first_valid_transform(),\n  [1] cancel-inverses()\n)"
         )
         assert pipeline_str == expected_str
 
@@ -800,7 +812,7 @@ class TestCompilePipelineDunders:
             )
         )
 
-        expected_str = "CompilePipeline(\n  [1] verbose_transform(xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx, verbose_kwarg=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)\n)"
+        expected_str = "CompilePipeline(\n  [0] verbose_transform(xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx, verbose_kwarg=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)\n)"
         assert str(compile_pipeline) == expected_str
 
         compile_pipeline = CompilePipeline()
@@ -812,7 +824,7 @@ class TestCompilePipelineDunders:
             )
         )
 
-        expected_str = "CompilePipeline(\n  [1] verbose_transform(..., verbose_kwarg=...)\n)"
+        expected_str = "CompilePipeline(\n  [0] verbose_transform(..., verbose_kwarg=...)\n)"
         assert str(compile_pipeline) == expected_str
 
     def test_equality(self):
@@ -1837,6 +1849,21 @@ class TestMarkers:
         assert pipeline.get_marker_level("initial") == 0
         assert pipeline.get_marker_level("test") == 1
 
+    def test_level_to_markers(self):
+        """Tests that each level is mapped to the markers placed at that level."""
+
+        pipeline = CompilePipeline()
+        pipeline.add_marker("m0")
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_marker("m1")
+        pipeline.add_marker("m2")
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_transform(transform(second_valid_transform))
+        pipeline.add_marker("m3")
+
+        # pylint: disable=protected-access
+        assert pipeline._level_to_markers() == {0: ["m0"], 1: ["m1", "m2"], 3: ["m3"]}
+
     def test_remove_marker(self):
         """Tests that remove_marker method works."""
 
@@ -2008,7 +2035,7 @@ class TestMarkers:
         pipeline_str = str(compile_pipeline)
         assert (
             pipeline_str
-            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [1] first_valid_transform()\n   └─▶ marker2\n)"
+            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [0] first_valid_transform()\n   └─▶ marker2\n)"
         )
 
         compile_pipeline.add_transform(transform(second_valid_transform))
@@ -2018,7 +2045,7 @@ class TestMarkers:
         pipeline_str = str(compile_pipeline)
         assert (
             pipeline_str
-            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [1] first_valid_transform(),\n   ├─▶ marker2\n  [2] second_valid_transform()\n   └─▶ marker3\n)"
+            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [0] first_valid_transform(),\n   ├─▶ marker2\n  [1] second_valid_transform()\n   └─▶ marker3\n)"
         )
 
     def test_repr_pipeline_with_markers(self):
@@ -2045,7 +2072,7 @@ class TestMarkers:
         pipeline_repr = repr(compile_pipeline)
         assert (
             pipeline_repr
-            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [1] <first_valid_transform()>\n   └─▶ marker2\n)"
+            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [0] <first_valid_transform()>\n   └─▶ marker2\n)"
         )
         compile_pipeline.add_transform(transform(second_valid_transform))
         compile_pipeline.add_marker("marker3")
@@ -2053,7 +2080,7 @@ class TestMarkers:
         pipeline_repr = repr(compile_pipeline)
         assert (
             pipeline_repr
-            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [1] <first_valid_transform()>,\n   ├─▶ marker2\n  [2] <second_valid_transform()>\n   └─▶ marker3\n)"
+            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [0] <first_valid_transform()>,\n   ├─▶ marker2\n  [1] <second_valid_transform()>\n   └─▶ marker3\n)"
         )
 
     def test_copy_preserves_markers(self):

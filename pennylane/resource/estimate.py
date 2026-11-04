@@ -17,20 +17,15 @@ from __future__ import annotations
 
 import copy
 import re
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from functools import partial
 
 from pennylane import capture
 from pennylane.core.transforms import CompilePipeline
 from pennylane.transforms import decompose
+from pennylane.workflow.get_compile_pipeline import _is_single_level, _levels_to_numbers
 
-from ._utils import (
-    apply_partial_args,
-    build_circuit_specs,
-    preprocess_level_input,
-    unwrap_partial,
-    unwrap_qjit_qnode,
-)
+from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial, unwrap_qjit_qnode
 from .mlir_specs import resources_from_analysis_pass
 from .resource import CircuitSpecs
 
@@ -56,8 +51,11 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
 
     if level == "device":
         raise NotImplementedError("qp.estimate does not support level='device' yet.")
-    levels = preprocess_level_input(level, original_qnode.compile_pipeline)
-    if levels != [0] or not isinstance(level, (int, str)) or level == "all":
+    if (
+        isinstance(level, slice)
+        or _levels_to_numbers(level, original_qnode.compile_pipeline) != [0]
+        or not _is_single_level(level)
+    ):
         raise NotImplementedError(
             f"qp.estimate only supports level='top' or level=0, instead got: {level!r}."
         )
@@ -98,7 +96,7 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
 
 def estimate(
     qnode,
-    level: str | int = "top",
+    level: str | int | slice | Sequence[str | int] = "top",
     *,
     target: str | Iterable[type | str] | dict[type | str, float],
 ) -> Callable[..., CircuitSpecs]:

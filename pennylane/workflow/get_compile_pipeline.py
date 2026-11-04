@@ -15,72 +15,167 @@
 
 from __future__ import annotations
 
-from functools import wraps
-from typing import TYPE_CHECKING, ParamSpec
+import warnings
+from collections.abc import Sequence
+from numbers import Integral
 
 from pennylane.core.transforms import CompilePipeline
-from pennylane.workflow import construct_execution_config
-from pennylane.workflow._setup_transform_program import _setup_transform_program
+from pennylane.core.transforms.compile_pipeline import _DEVICE_PREPROCESSING
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from pennylane.devices.execution_config import ExecutionConfig
-    from pennylane.workflow import QNode
-
-P = ParamSpec("P")
+from .qnode import QNode
 
 
 def _is_qjit(obj):
     """A method checking whether the object is compiled by catalyst.qjit"""
-    return obj.__class__.__name__ == "QJIT" and hasattr(obj, "user_function")
+    return obj.__class__.__name__ == "QJIT" and hasattr(obj, "original_function")
 
 
-def _find_level(program: CompilePipeline, level: str) -> int:
-    """Retrieve the numerical level associated to a marker."""
-    found_level = program.get_marker_level(level)
-    if found_level is not None:
+def _is_int_level(level) -> bool:
+    """Whether ``level`` is an integer level, such as an ``int`` or a NumPy integer, excluding
+    ``bool``."""
+    return isinstance(level, Integral) and not isinstance(level, bool)
+
+
+def _is_single_level(level) -> bool:
+    """Whether ``level`` selects a single compile pipeline, rather than a list of them."""
+    if isinstance(level, str):
+        return level not in ("all-user", "all")
+    return isinstance(level, slice) or _is_int_level(level)
+
+
+def _device_level(pipeline: CompilePipeline) -> int:
+    """The level number right after the device preprocessing, which counts as a single transform
+    after the user-applied transforms of ``pipeline``.
+
+    This is also the number of transforms, including the device preprocessing."""
+    return len(pipeline) + 1
+
+
+def _level_to_number(level: str | int, pipeline: CompilePipeline) -> int:
+    """Convert a single ``str`` or ``int`` level to its level number, which is the number of
+    transforms of ``pipeline``, followed by the device preprocessing, applied at that level."""
+    device_level = _device_level(pipeline)
+
+    if isinstance(level, str):
+        presets = {"top": 0, "user": len(pipeline), "device": device_level}
+        if level in presets:
+            return presets[level]
+        if level == "gradient":
+            raise ValueError("The level 'gradient' is no longer supported.")
+        found_level = pipeline.get_marker_level(level)
+        if found_level is None:
+            raise ValueError(
+                f"Marker name '{level}' not found in the compile pipeline. Builtin levels are "
+                f"'top', 'user', 'device', 'all-user', and 'all'. Markers are {pipeline.markers}."
+            )
         return found_level
+
+    if _is_int_level(level):
+        level = int(level)
+        if not 0 <= level <= device_level:
+            raise ValueError(
+                f"The 'level' argument is out of bounds, got {level}. Levels range from 0 to "
+                f"{device_level}, the device level."
+            )
+        return level
+
     raise ValueError(
-        f"level {level} not found in compile pipeline. "
-        "Builtin options are 'top', 'user', 'device', and 'gradient'."
-        f" Custom levels are {program.markers}."
+        f"Invalid level {level!r}, expected an int, str, slice, or a Sequence of int and str."
     )
 
 
-def _resolve_level(
-    level: str | int | slice,
-    full_pipeline: CompilePipeline,
-    num_user: int,
-    config: ExecutionConfig | None,
-) -> slice:
-    """Resolve level to a slice."""
+def _levels_to_numbers(
+    level: str | int | Sequence[str | int], pipeline: CompilePipeline
+) -> list[int]:
+    """Convert ``level``, other than a ``slice``, to the sorted list of level numbers it selects.
 
-    if level == "top":
-        level = slice(0, 0)
-    elif level == "user":
-        level = slice(0, num_user)
-    elif level == "gradient":
-        level = slice(0, num_user + int(hasattr(config.gradient_method, "expand_transform")))
-    elif level == "device":
-        # Captures everything: user + gradient + device
-        level = slice(0, None)
-    elif isinstance(level, str):
-        level = slice(0, _find_level(full_pipeline, level))
-    elif isinstance(level, int):
-        level = slice(0, level)
+    A ``Sequence`` of levels is sorted, with duplicates removed.
+    """
+    # The ``isinstance`` checks avoid elementwise comparisons, e.g. with NumPy arrays
+    if isinstance(level, str) and level == "all-user":
+        # From level 0 up to the user level, included
+        return list(range(len(pipeline) + 1))
+    if isinstance(level, str) and level == "all":
+        # From level 0 up to the device level, included
+        return list(range(_device_level(pipeline) + 1))
+    if isinstance(level, str) or _is_int_level(level):
+        return [_level_to_number(level, pipeline)]
 
-    return level
+    # ``bytes`` and ``bytearray`` are a ``Sequence`` of ``int``, but not a sequence of levels
+    if not isinstance(level, Sequence) or isinstance(level, (bytes, bytearray)):
+        raise ValueError(
+            f"Invalid level {level!r}, expected an int, str, slice, or a Sequence of int and str."
+        )
+    if not level:
+        raise ValueError(f"Invalid level {level!r}, which does not select any level.")
+
+    for lvl in level:
+        if not (isinstance(lvl, str) or _is_int_level(lvl)) or lvl in ("all-user", "all"):
+            raise ValueError(
+                f"Invalid level {lvl!r} in the level Sequence, expected an int, or a str other "
+                "than 'all-user' and 'all'."
+            )
+
+    level_numbers = [_level_to_number(lvl, pipeline) for lvl in level]
+    sorted_level_numbers = sorted(set(level_numbers))
+    if level_numbers != sorted_level_numbers:
+        warnings.warn(
+            "The 'level' argument has been sorted to be in ascending order with no duplicate "
+            "levels.",
+            UserWarning,
+        )
+    return sorted_level_numbers
+
+
+def _levels_to_slices(level, pipeline: CompilePipeline) -> list[slice]:
+    """Convert ``level`` to a list of slices of ``pipeline``, followed by the device
+    preprocessing, with one slice per compile pipeline that ``level`` selects."""
+    if isinstance(level, slice):
+        return [level]
+    return [slice(0, number) for number in _levels_to_numbers(level, pipeline)]
+
+
+def _pipeline_at_slice(pipeline: CompilePipeline, level_slice: slice) -> CompilePipeline:
+    """Return the compile pipeline selected by ``level_slice`` from ``pipeline`` followed by the
+    device preprocessing."""
+    if any(bound is not None and bound < 0 for bound in (level_slice.start, level_slice.stop)):
+        raise ValueError(
+            f"Invalid level {level_slice!r}, the bounds of a slice must be non-negative."
+        )
+    if level_slice.step is not None and level_slice.step < 1:
+        raise ValueError(
+            f"Invalid level {level_slice!r}, the step of a slice must be positive, since the "
+            "device preprocessing is applied after the other transforms."
+        )
+    if level_slice.step is not None and level_slice.step > 1:
+        warnings.warn(
+            f"The level {level_slice!r} has a step greater than 1, so it skips transforms of the "
+            "compile pipeline.",
+            UserWarning,
+        )
+
+    # Slicing the user-applied transforms directly keeps a marker placed after the last of them
+    if level_slice.indices(len(pipeline) + 1)[1] <= len(pipeline):
+        return pipeline[level_slice]
+    return (pipeline + _DEVICE_PREPROCESSING)[level_slice]
 
 
 def get_compile_pipeline(
-    qnode: QNode,
-    level: str | int | slice = "user",
-) -> Callable[P, CompilePipeline]:
+    qnode,
+    level: str | int | slice | Sequence[str | int] = "user",
+) -> CompilePipeline | list[CompilePipeline]:
     """Extract :class:`~.CompilePipeline`\\ (s) from a :class:`~.QNode`.
 
+    .. note::
+
+        The device preprocessing is represented by a single ``Device Preprocessing`` placeholder,
+        since the device applies its own transforms when the QNode is executed. The placeholder
+        cannot be applied to a QNode. The individual device preprocessing transforms can be
+        inspected with ``qnode.device.preprocess_transforms()``.
+
     Args:
-        qnode (:class:`~catalyst.jit.QJIT`): The (qjit'd) QNode to get the compile pipeline for.
+        qnode (:class:`~.QNode` | :class:`~catalyst.jit.QJIT`): The QNode, or qjit'd QNode, to
+            get the compile pipeline for.
         level (str | int | slice | Sequence[str | int]): The portion(s) of the
             :class:`~.CompilePipeline` to retrieve. Defaults to ``"user"``.
 
@@ -93,9 +188,10 @@ def get_compile_pipeline(
               transforms (``[0]`` and ``[1]``). The device preprocessing counts as a single
               level, placed after all user-applied transforms.
             * ``slice``: A range of transforms, using standard Python slicing with non-negative
-              bounds, e.g. ``level=slice(1, 3)`` contains transforms ``[1]`` and ``[2]``.
-            * ``Sequence``: A ``list``, ``tuple``, or similar containing ``int`` or ``str``
-              values, sorted in ascending order with no duplicates. One compile pipeline is
+              bounds and a positive step, e.g. ``level=slice(1, 3)`` contains transforms ``[1]``
+              and ``[2]``. A step greater than ``1`` skips transforms, and raises a warning.
+            * ``Sequence``: A non-empty ``list``, ``tuple``, or similar containing ``int`` or
+              ``str`` values, sorted in ascending order with no duplicates. One compile pipeline is
               returned per entry. A ``Sequence`` rather than an arbitrary iterable is required
               so that its length and ordering can be validated up front, without consuming it.
               The ``"all"`` and ``"all-user"`` presets are not allowed inside a ``Sequence``,
@@ -222,48 +318,17 @@ def get_compile_pipeline(
         4
 
     """
-
-    if not isinstance(level, (int, slice, str)):
+    if _is_qjit(qnode):
+        qnode = qnode.original_function
+    if not isinstance(qnode, QNode):
         raise ValueError(
-            f"'level={level}' of type '{type(level)}' is not supported. Please provide an integer, slice or a string as input."
+            "Can only retrieve the compile pipeline of a QNode or a qjit'd QNode, instead got: "
+            f"{qnode}."
         )
 
-    is_qjit_qnode = False
-    if _is_qjit(qnode):
-        qnode = qnode.user_function
-        if not hasattr(qnode, "compile_pipeline"):
-            raise ValueError(
-                "Can only retrieve the compilation pipeline if the QJIT'd object is a QNode."
-            )
-        is_qjit_qnode = True
-
-    @wraps(qnode)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> CompilePipeline:
-        full_compile_pipeline = CompilePipeline()
-        full_compile_pipeline += qnode.compile_pipeline
-
-        if level == "user":
-            return full_compile_pipeline
-
-        # NOTE: Anything past user applied transforms
-        # doesn't make sense for a QJIT'd QNode.
-        resolved_config = None
-        if not is_qjit_qnode:
-            # NOTE: Gradient + device transforms are *not* applied to qnodes that contain informative transforms
-            resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
-            if not qnode.compile_pipeline.is_informative:
-                outer_pipeline, inner_pipeline = _setup_transform_program(
-                    qnode.device, resolved_config
-                )
-                full_compile_pipeline += outer_pipeline + inner_pipeline
-
-        if is_qjit_qnode and isinstance(level, str) and level in ("gradient", "device"):
-            raise NotImplementedError(f"'level={level}' is not supported for QJIT'd QNodes.")
-
-        num_user = len(qnode.compile_pipeline)
-        level_slice: slice = _resolve_level(level, full_compile_pipeline, num_user, resolved_config)
-        resolved_pipeline = full_compile_pipeline[level_slice]
-
-        return resolved_pipeline
-
-    return wrapper
+    pipeline = qnode.compile_pipeline
+    pipelines = [
+        _pipeline_at_slice(pipeline, level_slice)
+        for level_slice in _levels_to_slices(level, pipeline)
+    ]
+    return pipelines[0] if _is_single_level(level) else pipelines

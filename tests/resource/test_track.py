@@ -114,7 +114,19 @@ class TestTrack:
         assert results.shape == (4,)
         assert specs.resources.counts == {"RX": 1, "RY": 1, "CNOT": 1}
 
-    @pytest.mark.parametrize("level", [0, None, "top", "user", "all"])
+    def test_device_level_number(self, circuit):
+        """Test that the device level number is equivalent to level='device'."""
+
+        # The circuit has no user transforms, so the device level is 1
+        results, specs = qp.track(circuit, level=1)(0.1, 0.2)
+        expected_results, expected_specs = qp.track(circuit, level="device")(0.1, 0.2)
+
+        assert qp.math.allclose(results, expected_results)
+        assert specs == expected_specs
+
+    @pytest.mark.parametrize(
+        "level", [0, None, "top", "user", "all", [1], ["device"], slice(0, None)]
+    )
     def test_unsupported_level(self, circuit, level):
         """Test that a helpful error message is raised for levels other than 'device'."""
 

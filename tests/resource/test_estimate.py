@@ -288,12 +288,20 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         with pytest.raises(NotImplementedError, match="qp.estimate only supports level='top'"):
             qp.estimate(circuit, level="end", target=TARGET)(0.5)
 
-    @pytest.mark.parametrize("level", [1, "user", "all", [0]])
+    @pytest.mark.parametrize("level", [1, "user", "all", [0], slice(0, 1), slice(1, 2)])
     def test_unsupported_level(self, circuit, level):
         """Test that an error is raised for levels other than "top"."""
 
         with pytest.raises(NotImplementedError, match="qp.estimate only supports level='top'"):
             qp.estimate(circuit, level=level, target=TARGET)(0.5)
+
+    @pytest.mark.parametrize("level", ["all-user", ["top"]])
+    def test_multiple_levels_without_transforms(self, qnode, level):
+        """Test that several levels are not supported, even if they all are level 0 because the
+        QNode has no transforms."""
+
+        with pytest.raises(NotImplementedError, match="qp.estimate only supports level='top'"):
+            qp.estimate(qp.qjit(qnode), level=level, target=TARGET)(0.5)
 
     def test_device_level(self, circuit):
         """Test that an error is raised for level="device"."""

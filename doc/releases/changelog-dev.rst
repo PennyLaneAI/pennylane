@@ -1333,11 +1333,11 @@ Improvements 🛠
   `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
 
 * :func:`~.workflow.get_compile_pipeline` now supports ``level="device"``, ``"all-user"``,
-  ``"all"``, and a ``Sequence`` of levels for :func:`~.qjit`'d QNodes. The ``level`` argument
-  of :func:`~.analyze`, :func:`~.estimate`, and :func:`~.track` accepts the same values,
-  including ``slice``, and is documented in a single place in
-  :func:`~.workflow.get_compile_pipeline`.
-  `(#10441) <https://github.com/PennyLaneAI/pennylane/pull/10441>`__
+  ``"all"``, and a ``Sequence`` of levels, for QNodes with or without :func:`~.qjit`. The
+  ``level`` argument of :func:`~.analyze` accepts the same values, including ``slice``, and
+  those of :func:`~.estimate` and :func:`~.track` are interpreted in the same way. The levels are
+  documented in a single place in :func:`~.workflow.get_compile_pipeline`.
+  `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
 Labs: a place for unified and rapid prototyping of research software 🧪
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1471,6 +1471,22 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
+
+* :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly, so
+  ``get_compile_pipeline(qnode, level)(*args, **kwargs)`` becomes
+  ``get_compile_pipeline(qnode, level)``. The gradient and device preprocessing transforms are
+  no longer listed individually, but shown as a single ``Device Preprocessing`` level, and
+  ``level="gradient"`` is no longer supported. The individual device preprocessing transforms
+  can be inspected with ``qnode.device.preprocess_transforms()``.
+  `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
+
+* Printed :class:`~.CompilePipeline` transforms are now numbered from ``[0]``, and
+  ``"all-user"`` can no longer be used as a marker label.
+  `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
+
+* Several levels passed to :func:`~.analyze` must now be a ``Sequence``, such as a ``list`` or
+  a ``tuple``.
+  `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
 * The ``pennylane.kernels`` module has been removed. This includes ``kernel_matrix``,
   ``square_kernel_matrix``, ``polarity``, ``target_alignment``, ``threshold_matrix``,
@@ -1750,12 +1766,6 @@ Breaking changes 💔
   :mod:`pennylane.core.apply` module, and is no longer importable from
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
-
-* :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly, instead
-  of a function that returns them, so ``get_compile_pipeline(qnode, level)(*args, **kwargs)``
-  becomes ``get_compile_pipeline(qnode, level)``. Support for non-``qjit``'d QNodes and the
-  ``level="gradient"`` option has been removed.
-  `(#10441) <https://github.com/PennyLaneAI/pennylane/pull/10441>`__
 
 Deprecations 👋
 ~~~~~~~~~~~~~~~
@@ -2225,6 +2235,11 @@ Internal changes ⚙️
 
 Documentation 📝
 ~~~~~~~~~~~~~~~~
+
+* The ``level`` argument of :func:`~.drawer.draw`, :func:`~.drawer.draw_mpl`,
+  :func:`~.workflow.construct_tape` and :func:`~.noise.add_noise` is now documented in
+  :func:`~.workflow.construct_batch`.
+  `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
 * The docstring for :class:`~.ControlledPhaseShift` now mentions that :class:`~.CPhase` is an alias.
   `(#10405) <https://github.com/PennyLaneAI/pennylane/pull/10405>`__

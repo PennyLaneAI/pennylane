@@ -47,6 +47,21 @@ class ProtectedLevel(StrEnum):
     GRADIENT = "gradient"
     DEVICE = "device"
     ALL = "all"
+    ALL_USER = "all-user"
+
+
+def _device_preprocessing(tape):
+    """Placeholder for the device preprocessing in the compile pipelines returned by
+    :func:`~.workflow.get_compile_pipeline`."""
+    raise TransformError(
+        "The device preprocessing in a compile pipeline returned by get_compile_pipeline is a "
+        "placeholder and cannot be applied. The device applies its preprocessing when the QNode "
+        "is executed."
+    )
+
+
+_DEVICE_PREPROCESSING = BoundTransform(Transform(_device_preprocessing))
+"""BoundTransform: The device preprocessing, which counts as a single level of a compile pipeline."""
 
 
 def _batch_postprocessing(
@@ -305,7 +320,7 @@ class CompilePipeline:
            └─▶ final-transform, after-merge-rotations
         )
 
-        A marker's level (the index of the transform it follows) can be retrieved with,
+        A marker's level (the number of transforms before it) can be retrieved with,
 
         >>> print(pipeline.get_marker_level("final-transform"))
         3
@@ -368,7 +383,7 @@ class CompilePipeline:
            └─▶ after-merge-rotations
         )
 
-        >>> pipeline[1:] # Get everything after the second transform
+        >>> pipeline[1:] # Get everything after the first transform
         CompilePipeline(
            ├─▶ after-commute-controlled
           [0] <cancel_inverses()>
@@ -608,9 +623,7 @@ class CompilePipeline:
             return "..." if len(val_str) > _CHAR_THRESHOLD else val_str
 
         lines = []
-        inv_marker_map = defaultdict(list)
-        for label, index in self._markers.items():
-            inv_marker_map[index].append(label)
+        inv_marker_map = self._level_to_markers()
 
         if marker := inv_marker_map.get(0):
             symbol = "├─▶" if self else "└─▶"
@@ -627,7 +640,9 @@ class CompilePipeline:
                 else transform.pass_name
             )
             transform_str = f"{transform_name}({args_str}{sep}{kwargs_str})"
-            lines.append(f"  [{i + 1}] {transform_str}" + "," * bool(i != len(self) - 1))
+            if transform == _DEVICE_PREPROCESSING:
+                transform_str = "Device Preprocessing"
+            lines.append(f"  [{i}] {transform_str}" + "," * bool(i != len(self) - 1))
 
             if marker := inv_marker_map.get(i + 1):
                 symbol = "├─▶" if i != len(self) - 1 else "└─▶"
@@ -642,16 +657,17 @@ class CompilePipeline:
         """The detailed string representation of the compile pipeline."""
 
         lines = []
-        inv_marker_map = defaultdict(list)
-        for label, index in self._markers.items():
-            inv_marker_map[index].append(label)
+        inv_marker_map = self._level_to_markers()
 
         if marker := inv_marker_map.get(0):
             symbol = "├─▶" if self else "└─▶"
             lines.append(f"   {symbol} {', '.join(marker)}")
 
         for i, transform in enumerate(self):
-            lines.append(f"  [{i + 1}] {repr(transform)}" + "," * bool(i != len(self) - 1))
+            transform_str = (
+                "<Device Preprocessing>" if transform == _DEVICE_PREPROCESSING else repr(transform)
+            )
+            lines.append(f"  [{i}] {transform_str}" + "," * bool(i != len(self) - 1))
             if marker := inv_marker_map.get(i + 1):
                 symbol = "├─▶" if i != len(self) - 1 else "└─▶"
                 lines.append(f"   {symbol} {', '.join(marker)}")
@@ -806,6 +822,13 @@ class CompilePipeline:
     def get_marker_level(self, label: str) -> int | None:
         """Retrieve the level corresponding to a marker label."""
         return self._markers.get(label)
+
+    def _level_to_markers(self) -> defaultdict[int, list[str]]:
+        """Map each level to the labels of the markers placed at that level."""
+        level_to_markers = defaultdict(list)
+        for label, level in self._markers.items():
+            level_to_markers[level].append(label)
+        return level_to_markers
 
     def add_transform(self, transform: Transform, *targs, **tkwargs):
         """Add a transform to the end of the program.
