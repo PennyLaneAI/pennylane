@@ -327,16 +327,19 @@ class CH(Controlled2):
             .. decomposition-rule:: decompose_to_base
                 :image: /_static/decomposition_thumbnails/ch_adjoint.svg
                 :region: adjoint
+                :where: :class:`~.CH` is self-adjoint
 
                 :class:`~.CH` | :math:`1`
 
             .. decomposition-rule:: _impl
                 :image: /_static/decomposition_thumbnails/ch_pow_period.svg
                 :region: pow
-                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
-                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+                :where: :class:`~.CH` is its own inverse, so only :math:`z \bmod 2` matters, the
+                    rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
+                    :math:`z = 3`
 
-                :class:`Pow(CH) <.CH>` with power :math:`z \bmod 2` | :math:`1`
+                :class:`~.CH` | :math:`1` if :math:`z` is odd
+                :class:`Pow(CH) <.CH>` with power :math:`z \bmod 2` | :math:`1` if :math:`z` is not an integer
 
     """
 
@@ -467,16 +470,19 @@ class CY(Controlled2):
             .. decomposition-rule:: decompose_to_base
                 :image: /_static/decomposition_thumbnails/cy_adjoint.svg
                 :region: adjoint
+                :where: :class:`~.CY` is self-adjoint
 
                 :class:`~.CY` | :math:`1`
 
             .. decomposition-rule:: _impl
                 :image: /_static/decomposition_thumbnails/cy_pow_period.svg
                 :region: pow
-                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
-                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+                :where: :class:`~.CY` is its own inverse, so only :math:`z \bmod 2` matters, the
+                    rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
+                    :math:`z = 3`
 
-                :class:`Pow(CY) <.CY>` with power :math:`z \bmod 2` | :math:`1`
+                :class:`~.CY` | :math:`1` if :math:`z` is odd
+                :class:`Pow(CY) <.CY>` with power :math:`z \bmod 2` | :math:`1` if :math:`z` is not an integer
 
     """
 
@@ -653,16 +659,19 @@ class CZ(Controlled2):
             .. decomposition-rule:: decompose_to_base
                 :image: /_static/decomposition_thumbnails/cz_adjoint.svg
                 :region: adjoint
+                :where: :class:`~.CZ` is self-adjoint
 
                 :class:`~.CZ` | :math:`1`
 
             .. decomposition-rule:: _impl
                 :image: /_static/decomposition_thumbnails/cz_pow_period.svg
                 :region: pow
-                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
-                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+                :where: :class:`~.CZ` is its own inverse, so only :math:`z \bmod 2` matters, the
+                    rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
+                    :math:`z = 3`
 
-                :class:`Pow(CZ) <.CZ>` with power :math:`z \bmod 2` | :math:`1`
+                :class:`~.CZ` | :math:`1` if :math:`z` is odd
+                :class:`Pow(CZ) <.CZ>` with power :math:`z \bmod 2` | :math:`1` if :math:`z` is not an integer
 
     """
 
@@ -1126,6 +1135,7 @@ class CNOT(Controlled2):
             .. decomposition-rule:: decompose_to_base
                 :image: /_static/decomposition_thumbnails/cnot_adjoint.svg
                 :region: adjoint
+                :where: :class:`~.CNOT` is self-adjoint
 
                 :class:`~.CNOT` | :math:`1`
 
@@ -1140,10 +1150,12 @@ class CNOT(Controlled2):
             .. decomposition-rule:: _impl
                 :image: /_static/decomposition_thumbnails/cnot_pow_period.svg
                 :region: pow
-                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
-                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+                :where: :class:`~.CNOT` is its own inverse, so only :math:`z \bmod 2` matters, the
+                    rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
+                    :math:`z = 3`
 
-                :class:`Pow(CNOT) <.CNOT>` with power :math:`z \bmod 2` | :math:`1`
+                :class:`~.CNOT` | :math:`1` if :math:`z` is odd
+                :class:`Pow(CNOT) <.CNOT>` with power :math:`z \bmod 2` | :math:`1` if :math:`z` is not an integer
 
     """
 
@@ -1871,13 +1883,14 @@ class CRX(Controlled2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/crx_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` changes sign
 
                 :class:`~.CRX` | :math:`1`
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/crx_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: ``phi`` is multiplied by the power :math:`z`
 
                 :class:`~.CRX` | :math:`1`
 
@@ -2059,13 +2072,14 @@ class CRY(Controlled2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/cry_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` changes sign
 
                 :class:`~.CRY` | :math:`1`
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/cry_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: ``phi`` is multiplied by the power :math:`z`
 
                 :class:`~.CRY` | :math:`1`
 
@@ -2226,13 +2240,14 @@ class CRZ(Controlled2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/crz_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` changes sign
 
                 :class:`~.CRZ` | :math:`1`
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/crz_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: ``phi`` is multiplied by the power :math:`z`
 
                 :class:`~.CRZ` | :math:`1`
 
@@ -2415,6 +2430,7 @@ class CRot(Controlled2):
             .. decomposition-rule:: _adjoint_crot
                 :image: /_static/decomposition_thumbnails/crot_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` and ``omega`` swap, and all three angles change sign
 
                 :class:`~.CRot` | :math:`1`
 
