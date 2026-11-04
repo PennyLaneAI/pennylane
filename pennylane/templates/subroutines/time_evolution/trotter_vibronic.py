@@ -1370,14 +1370,14 @@ def _trotter_step_second_order(
                 )
                 # Negated for the same phase-gradient sign convention as ``_load_coefficients``.
                 bitstring = math.binary_decimals(-_coeffs, precision, unit=2 * np.pi)
-                MultiX(bitstring, registers["coefficients"])
                 AQFT(order=aqft_order, wires=mode_registers[k])
+                MultiX(bitstring, registers["coefficients"])
                 SignedOutSquare(**square_wires, output_wires_zeroed=True)
                 OutMultiplier(**mult_wires)
                 adjoint(SignedOutSquare(**square_wires, output_wires_zeroed=True))
-                adjoint(AQFT(order=aqft_order, wires=mode_registers[k]))
                 # ``MultiX`` is self-adjoint, so the unload is the same call.
                 MultiX(bitstring, registers["coefficients"])
+                adjoint(AQFT(order=aqft_order, wires=mode_registers[k]))
 
             cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
