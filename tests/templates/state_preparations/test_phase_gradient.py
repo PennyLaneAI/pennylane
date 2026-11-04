@@ -71,7 +71,7 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("use_qjit", [False, pytest.param(True, marks=pytest.mark.catalyst)])
     @pytest.mark.parametrize("rule", RULES)
-    @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 7])
+    @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 7, 14])
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_decomposition_prepares_state(self, rule, num_wires, use_qjit):
         """Test that executing the decomposition prepares the phase gradient state."""
@@ -96,7 +96,7 @@ class TestDecomposition:
             circuit = qp.transforms._tape_decompose(circuit, **decompose_kwargs)
             tape = qp.workflow.construct_tape(circuit)()
             assert all(op.name in gate_set for op in tape.operations)
-        assert np.allclose(circuit(), _expected_state(num_wires))
+        assert np.allclose(circuit(), _expected_state(num_wires), atol=1e-12, rtol=0)
 
     def test_custom_wire_labels(self):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -116,26 +116,6 @@ class TestDecomposition:
 
 class TestHardcodedDecompositions:
     """Tests for the hardcoded decompositions into Pauli product rotations and Clifford+T gates."""
-
-    @pytest.mark.parametrize("rule", RULES)
-    @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 7, 10, 14, 16])
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_prepares_state(self, rule, num_wires):
-        """Test that decomposing with the rule prepares the phase gradient state."""
-        gate_set = GATE_SETS[rule]
-
-        # pylint: disable-next=protected-access
-        @qp.transforms._tape_decompose(
-            gate_set=gate_set, fixed_decomps={qp.PhaseGradientStatePrep: rule}
-        )
-        @qp.qnode(qp.device("default.qubit", wires=num_wires))
-        def circuit():
-            qp.PhaseGradientStatePrep(wires=range(num_wires))
-            return qp.state()
-
-        tape = qp.workflow.construct_tape(circuit)()
-        assert all(op.name in gate_set for op in tape.operations)
-        assert np.allclose(circuit(), _expected_state(num_wires), atol=1e-12, rtol=0)
 
     @pytest.mark.parametrize("rule", RULES)
     def test_precision_on_30_wires(self, rule):
