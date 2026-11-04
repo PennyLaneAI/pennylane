@@ -753,7 +753,7 @@ class TestIntegration:
         )
         registers = qp.registers({"hadamard": 1, "system": M * N})
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         # pylint: disable-next=protected-access
         @qp.transforms._tape_decompose(gate_set=target_gates)
         @qp.qnode(qp.device("lightning.qubit"))

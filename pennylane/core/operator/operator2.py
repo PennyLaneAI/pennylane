@@ -32,9 +32,9 @@ from jax.core import ShapedArray
 from scipy.sparse import issparse, spmatrix
 
 import pennylane as qp
-from pennylane import math
+from pennylane import capture, math
 from pennylane._class_property import classproperty
-from pennylane.capture import enabled, pause, symbolic_array
+from pennylane.capture import pause, symbolic_array
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core.apply import apply
@@ -1577,7 +1577,7 @@ class Operator2(metaclass=OperatorMeta):
         """Bind the operator plxpr primitive."""
 
         # Skip if program capture is disabled
-        if not enabled():
+        if not capture.enabled():
             return
 
         # Substitute AbstractArray and AbstractWires for symbolic arrays.
