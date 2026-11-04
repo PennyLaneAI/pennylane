@@ -597,7 +597,7 @@ class TestOutMultiplier:
         work_wires = [5, 10]
         dev = qp.device("lightning.qubit")
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():

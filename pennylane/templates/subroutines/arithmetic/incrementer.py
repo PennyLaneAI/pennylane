@@ -13,8 +13,8 @@
 # limitations under the License.
 """Contains the implementation of the Incrementer template."""
 
-from pennylane import compiler, math
-from pennylane.capture import enabled, hint
+from pennylane import capture, compiler, math
+from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
@@ -262,7 +262,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         wires = wires[::-1]
         num_controls = 0
     else:
-        if compiler.active() or enabled() and control_wires.shape[0] > 0:
+        if compiler.active() or capture.enabled() and control_wires.shape[0] > 0:
             wires = math.concatenate([wires, math.atleast_1d(control_wires)])
         else:
             wires = wires + control_wires
@@ -273,7 +273,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
         # Construct the wires on which the ladder will act.
         interleaved = _interleave_controls(wires, work_wires)
         triples = [interleaved[2 * i : 2 * i + 3] for i in range(len(wires) - 2)]
-        if compiler.active() or enabled():
+        if compiler.active() or capture.enabled():
             interleaved = math.array(interleaved, like="jax")
             triples = math.array(triples, like="jax")
 
@@ -341,7 +341,7 @@ def _incrementer_multicontrolledx(wires, work_wires, **_):
 @register_condition(_work_wire_condition)
 @register_resources(_incrementer_resources, name="incrementer_elbow_ladder")
 def _incrementer_elbow_ladder(wires, work_wires, **_):
-    if compiler.active() or enabled():
+    if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
 
     _decompose_mcxs(wires, work_wires)
@@ -364,7 +364,7 @@ def _ctrl_incrementer_elbow_ladder(base, control_wires, work_wires, **_):
     wires = base.increment_wires
     base_work_wires = base.work_wires
 
-    if compiler.active() or enabled():
+    if compiler.active() or capture.enabled():
         wires, work_wires, control_wires = (
             math.array(wires, like="jax"),
             math.array(work_wires, like="jax"),
