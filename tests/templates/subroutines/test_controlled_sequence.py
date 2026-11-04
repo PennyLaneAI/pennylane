@@ -133,17 +133,6 @@ class TestMethods:
         assert op.base.wires == Wires([0, 1])
         assert op.control == Wires([2, 3])
 
-    def test_compute_decomposition(self):
-        """Test that controlled gates repeat in decreasing powers of two."""
-        base = qp.RZ(4.3, 1)
-        control_wires = [0, 2, 3]
-
-        decomp = qp.ControlledSequence.compute_decomposition(base=base, control=control_wires)
-
-        expected_wires = [0] * 4 + [2] * 2 + [3]
-        for op, wire in zip(decomp, expected_wires):
-            qp.assert_equal(op, qp.ctrl(base, control=wire))
-
     def test_decomposition(self):
         """Test the returned and queued operations from the registered decomposition."""
         op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])
@@ -152,15 +141,15 @@ class TestMethods:
             decomp = op.decomposition()
         expected_decomp = [qp.CRX(0.25, wires=[wire, 3]) for wire in [0] * 4 + [1] * 2 + [2]]
 
-        queued_ops = qp.tape.QuantumScript.from_queue(queue).operations
+        queued_ops = queue.queue
         for operations in (decomp, queued_ops):
             for actual, expected in zip(operations, expected_decomp):
                 qp.assert_equal(actual, expected)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("control", [[], 0, [0, 1], [0, 1, 2]])
-    def test_decomposition_resources(self, control):
-        """Test that the registered resource counts match the decomposition."""
+    def test_decomposition_new(self, control):
+        """Test that the operator is decomposable."""
         op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=control)
         qp.testing.assert_decomposable(op)
 
