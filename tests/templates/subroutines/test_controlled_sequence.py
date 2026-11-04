@@ -42,7 +42,7 @@ class TestInitialization:
         control = [0, 1, 2]
 
         with pytest.raises(
-            ValueError, match="The control wires must be different from the base operation wires."
+            ValueError, match="base.wires and control_wires must not overlap"
         ):
             _ = qp.ControlledSequence(base, control)
 
