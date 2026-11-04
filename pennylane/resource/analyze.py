@@ -20,7 +20,7 @@ from collections.abc import Callable, Sequence
 from functools import partial
 from typing import TYPE_CHECKING
 
-from pennylane.capture import enabled
+from pennylane import capture
 from pennylane.core.transforms.compile_pipeline import _DEVICE_PREPROCESSING
 from pennylane.workflow.get_compile_pipeline import (
     _device_level,
@@ -83,7 +83,7 @@ def _run_resource_analysis(func, original_qnode, level, *args, **kwargs) -> tupl
     has_device_level: bool = _device_level(compile_pipeline) in level_numbers
     if has_device_level:
         if not func.compile_options.capture or (
-            func.compile_options.capture == "global" and not enabled()
+            func.compile_options.capture == "global" and not capture.enabled()
         ):
             raise ValueError("Device level is only supported when capture is enabled.")
 
