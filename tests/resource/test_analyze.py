@@ -61,6 +61,11 @@ class TestAnalyze:
         dev = CapabilitiesDevice(wires=2)
         dev.capabilities = DeviceCapabilities(
             non_commuting_observables=True,
+            operations={
+                "RX": OperatorProperties(),
+                "PauliX": OperatorProperties(),
+                "CNOT": OperatorProperties(),
+            },
             observables={
                 "PauliX": OperatorProperties(),
                 "PauliY": OperatorProperties(),
