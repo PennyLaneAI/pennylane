@@ -22,7 +22,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import register_condition
-from pennylane.ops import PhaseShift, SingleExcitation, cond
+from pennylane.ops import PauliZ, PhaseShift, SingleExcitation, cond
 from pennylane.typing import Wire
 from pennylane.wires import Wires
 
@@ -32,34 +32,31 @@ def _qjit_or_capture():
 
 
 def _adjust_determinant(matrix):
-    """Given an orthogonal (real-valued unitary) matrix, adjust its determinant to be 1
-    and queue a phase shift that is equivalent to this adjustment in the context of BasisRotation.
+    """Given an orthogonal (real-valued unitary) matrix, adjust its determinant to be 1.
 
     Args:
         matrix (array): orthogonal matrix to adjust the determinant of.
 
     Returns:
-        tuple[float, array]: The angle to be passed into a PhaseShift gate on the first
-        wire to perform the determinant adjustment on the quantum circuit level,
-        as well as the new matrix with adjusted determinant :math:`+1`.
+        tuple[bool, array]: Whether the determinant was negative, as well as the new
+        matrix with determinant :math:`+1`.
 
     """
     det = math.linalg.det(matrix)
 
     mat = matrix
     if math.is_tracer(det):
-        is_negative = det < 0
-        mat = math.set_index(mat, 0, math.where(is_negative, -mat[0], mat[0]))
-        angle = math.where(is_negative, math.ones_like(det) * np.pi, math.zeros_like(det))
-        return angle, mat
+        was_negative = det < 0
+        mat = math.set_index(mat, 0, math.where(was_negative, -mat[0], mat[0]))
+        return was_negative, mat
 
-    if det < 0:
+    was_negative = bool(det < 0)
+    if was_negative:
         if math.get_interface(mat) != "jax":
             mat = math.toarray(mat).copy()
         mat = math.set_index(mat, 0, -mat[0])
-        return math.ones_like(det) * np.pi, mat
 
-    return np.array(0.0), mat
+    return was_negative, mat
 
 
 class BasisRotation(Operator2):
@@ -79,7 +76,6 @@ class BasisRotation(Operator2):
     `Optica, 3, 1460 (2016) <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_\ .
     For real-valued, i.e., orthogonal :math:`u`, only ``SingleExcitation`` gates are required,
     except for a :class:`~.PauliZ` phase flip for :math:`\operatorname{det}(u)=-1`.
-    This can be expressed concisely by applying ``PhaseShift((1-det(u)) * π / 2)``.
 
     .. seealso:: :func:`~.math.decomposition.givens_decomposition` for the underlying matrix factorization.
 
@@ -134,7 +130,7 @@ class BasisRotation(Operator2):
         1: ──Rϕ(1.62)──╰G(1.38)────────────┤
 
         For real-valued matrices, the decomposition only consists of ``SingleExcitation`` gates,
-        except for one phase gate to account for negative determinants:
+        except for one ``PauliZ`` gate to account for negative determinants:
 
         >>> from scipy.stats import ortho_group
         >>> O = ortho_group.rvs(4, random_state=51)
@@ -142,10 +138,10 @@ class BasisRotation(Operator2):
         ... def circ():
         ...     qp.BasisRotation(wires=range(4), unitary_matrix=O)
         >>> print(qp.draw(circ)())
-        0: ──Rϕ(3.14)─╭G(-3.19)───────────╭G(2.63)──┤
-        1: ─╭G(3.13)──╰G(-3.19)─╭G(-2.68)─╰G(2.63)──┤
-        2: ─╰G(3.13)──╭G(2.98)──╰G(-2.68)─╭G(-5.70)─┤
-        3: ───────────╰G(2.98)────────────╰G(-5.70)─┤
+        0: ──Z───────╭G(-3.19)───────────╭G(2.63)──┤
+        1: ─╭G(3.13)─╰G(-3.19)─╭G(-2.68)─╰G(2.63)──┤
+        2: ─╰G(3.13)─╭G(2.98)──╰G(-2.68)─╭G(-5.70)─┤
+        3: ──────────╰G(2.98)────────────╰G(-5.70)─┤
 
     .. details::
         :title: Theory
@@ -349,12 +345,14 @@ def _real_basis_rotation_resources(unitary_matrix, wires, check=False):
     """Upper bound on the gates emitted by '_real_basis_rotation_decomp'.
 
     - SingleExcitation: Exact count of N(N-1)/2 for Givens rotation.
-    - PhaseShift: *At most* one for determinant correction; skipped if det = +1.
+    - PauliZ: *At most* one for determinant correction; skipped if det = +1. Under ``jax.jit``
+      without qjit or program capture, this is a PhaseShift instead.
 
     """
     dim = math.shape(unitary_matrix)[0]
+    correction = PhaseShift if _is_jax_jit(unitary_matrix) else PauliZ
 
-    return {PhaseShift: 1, SingleExcitation: dim * (dim - 1) // 2}
+    return {correction: 1, SingleExcitation: dim * (dim - 1) // 2}
 
 
 @register_condition(lambda unitary_matrix, **_: not math.is_complex_dtype(unitary_matrix))
@@ -363,12 +361,13 @@ def _real_basis_rotation_decomp(unitary_matrix, wires, **_):
 
     unitary, wires = _prepare_args(unitary_matrix, wires)
 
-    angle, unitary = _adjust_determinant(unitary)
+    was_negative, unitary = _adjust_determinant(unitary)
 
-    if _is_jax_jit(angle):
-        PhaseShift(angle, wires[0])
+    if _is_jax_jit(was_negative):
+        # Plain jax.jit cannot branch on the traced determinant, so apply PauliZ as PhaseShift(pi).
+        PhaseShift(math.where(was_negative, np.pi, 0.0), wires[0])
     else:
-        cond(math.logical_not(math.allclose(angle, 0.0)), PhaseShift)(angle, wires[0])
+        cond(was_negative, PauliZ)(wires[0])
 
     _, givens_list = math.decomposition.givens_decomposition(unitary)
     givens_matrices, givens_ids = zip(*givens_list, strict=True)
