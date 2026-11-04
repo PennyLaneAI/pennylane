@@ -15,8 +15,6 @@ r"""
 Contains the ControlledSequence template.
 """
 
-from copy import copy
-
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2, abstractify
@@ -64,10 +62,10 @@ class ControlledSequence(SymbolicOp2, Operator2):
             return qp.state()
 
     >>> print(qp.draw(circuit, wire_order=[0,1,2,3])())
-    0: ─╭●────────────────────────────┤ ╭State
-    1: ─│─────────╭●──────────────────┤ ├State
-    2: ─│─────────│─────────╭●────────┤ ├State
-    3: ─╰RX(1.00)─╰RX(0.50)─╰RX(0.25)─┤ ╰State
+    0: ─╭●────────╭●────────╭●────────╭●──────────────────────────────────────┤ ╭State
+    1: ─│─────────│─────────│─────────│─────────╭●────────╭●──────────────────┤ ├State
+    2: ─│─────────│─────────│─────────│─────────│─────────│─────────╭●────────┤ ├State
+    3: ─╰RX(0.25)─╰RX(0.25)─╰RX(0.25)─╰RX(0.25)─╰RX(0.25)─╰RX(0.25)─╰RX(0.25)─┤ ╰State
 
     .. code-block:: python
 
