@@ -127,7 +127,8 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
     if use_jit:
         circuit = qp.qjit(
             # pylint: disable-next=protected-access
-            qp.transforms._tape_decompose(circuit, max_expansion=2)
+            qp.transforms._tape_decompose(circuit, max_expansion=2),
+            capture=False,
         )
 
     rng = np.random.default_rng(seed)
@@ -185,7 +186,7 @@ class TestOutSquare:
 
         fixed_decomps = {"C(SemiAdder)": qp.list_decomps("C(SemiAdder)")[0]}
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.set_shots(1)
         # pylint: disable-next=protected-access
         @qp.transforms._tape_decompose(max_expansion=2, fixed_decomps=fixed_decomps)
