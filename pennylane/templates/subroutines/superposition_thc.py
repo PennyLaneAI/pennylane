@@ -165,7 +165,7 @@ class SuperpositionTHC(Operator2):
                 :class:`~.X` with 3 controls | :math:`1` | 1
                 :class:`~.TemporaryAND` | :math:`2` | 2
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`2` | 2
-                :class:`~.Z` with 3 controls | :math:`1` | 1
+                :class:`~.CZ` with 3 controls | :math:`1` | 1
                 :class:`~.FlipSign` on :math:`2n + 1` wires | :math:`1` | 1
                 :class:`~.GlobalPhase` | :math:`1` | 1
     """

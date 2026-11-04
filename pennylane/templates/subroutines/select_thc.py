@@ -625,8 +625,8 @@ class SelectTHC(Operator2):
                 :class:`~.MultiX` with 1 control | :math:`16P` | 16
                 :class:`~.SemiAdder` | :math:`4P` | 4
                 :class:`Adjoint(SemiAdder) <.SemiAdder>` | :math:`4P` | 4
-                :class:`~.Z` with 1 control | :math:`1` | 1
-                :class:`~.Z` with 2 controls | :math:`1` | 1
+                :class:`~.CZ` with 1 control | :math:`1` | 1
+                :class:`~.CZ` with 2 controls | :math:`1` | 1
                 :class:`~.X` | :math:`3` | 3
 
     """
