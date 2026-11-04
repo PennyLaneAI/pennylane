@@ -163,6 +163,38 @@ class TrotterVibronic(Operator2):
         ``branch_probs`` are left unhinted and counted at every visit.
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.TrotterVibronic
+            :stacked:
+            :symbols: :math:`F` position fragments, :math:`M` modes with :math:`k` wires each,
+                :math:`n` electronic wires, :math:`b` coefficient and phase gradient wires, and
+                :math:`r` = ``num_trotter_steps``
+            :example: :math:`F=1`, :math:`M=1`, :math:`k=1`, :math:`n=1`,
+                :math:`b=1`, :math:`r=1`
+
+            .. decomposition-rule:: _trotter_vibronic_decomposition
+                :image: /_static/decomposition_thumbnails/trotter_vibronic_phase_gradient.svg
+                :where: :math:`P = 2Fr` position-fragment visits and :math:`K = M(M-1)/2` mode
+                    pairs. All counts are upper bounds: terms with zero coefficients are
+                    skipped, and the :class:`~.Hadamard` and :class:`~.CNOT` counts also depend
+                    on each fragment's electronic diagonalization
+
+                :class:`~.Hadamard` | :math:`2P` | 0
+                :class:`~.CNOT` | :math:`2P(n-1) + PM(2+2k+2b) + PK(2+4k+2b)` | 12
+                :class:`~.QROM` | :math:`P(2 + 2M + K)` | 6
+                :class:`~.SemiAdder` | :math:`P` | 2
+                :class:`~.OutMultiplier` | :math:`P(2M + K) + rM` | 3
+                :class:`~.Incrementer` with 1 control | :math:`2P(M + K)` | 4
+                :class:`~.SignedOutSquare` | :math:`PM + rM` | 1
+                :class:`Adjoint(SignedOutSquare) <.SignedOutSquare>` | :math:`PM + rM` | 1
+                :class:`~.SignedOutMultiplier` | :math:`PK` | 0
+                :class:`Adjoint(SignedOutMultiplier) <.SignedOutMultiplier>` | :math:`PK` | 0
+                :class:`~.MultiX` | :math:`2rM` | 2
+                :class:`~.AQFT` | :math:`rM` | 1
+                :class:`Adjoint(AQFT) <.AQFT>` | :math:`rM` | 1
+
+    .. details::
         :title: Register Sizes
         :href: register-sizes
 
