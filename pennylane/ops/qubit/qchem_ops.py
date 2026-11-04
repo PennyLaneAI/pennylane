@@ -188,13 +188,14 @@ class SingleExcitation(Operator2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/singleexcitation_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` changes sign
 
                 :class:`~.SingleExcitation` | :math:`1`
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/singleexcitation_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: ``phi`` is multiplied by the power :math:`z`
 
                 :class:`~.SingleExcitation` | :math:`1`
     """

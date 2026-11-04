@@ -176,7 +176,7 @@ class QubitUnitary(Operator2):
                 :image: /_static/decomposition_thumbnails/qubit_unitary_two_qubit.svg
                 :requires: a two-qubit matrix
                 :where: the counts are the worst case, a matrix that needs 3 :class:`~.CNOT` gates:
-                    matrices that need 0 or 1 (or, without program capture, 2) use fewer gates, and
+                    matrices that need 0 or 1 use fewer gates, and
                     the :class:`~.GlobalPhase` is skipped when its phase is zero
 
                 :class:`~.QubitUnitary` on 1 wire | :math:`4`
@@ -196,6 +196,7 @@ class QubitUnitary(Operator2):
             .. decomposition-rule:: _adjoint_qubit_unitary
                 :image: /_static/decomposition_thumbnails/qubit_unitary_adjoint.svg
                 :region: adjoint
+                :where: the adjoint of the input unitary matrix is used
 
                 :class:`~.QubitUnitary` | :math:`1`
 
@@ -209,7 +210,7 @@ class QubitUnitary(Operator2):
             .. decomposition-rule:: _pow_qubit_unitary
                 :image: /_static/decomposition_thumbnails/qubit_unitary_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: the input unitary matrix is raised to the power, :math:`z`
 
                 :class:`~.QubitUnitary` | :math:`1`
     """
@@ -562,13 +563,14 @@ class DiagonalQubitUnitary(Operator2):
             .. decomposition-rule:: _adjoint_diagonal_unitary
                 :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_adjoint.svg
                 :region: adjoint
+                :where: the adjoint of the diagonal entries is taken
 
                 :class:`~.DiagonalQubitUnitary` | :math:`1`
 
             .. decomposition-rule:: _pow_diagonal_unitary
                 :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: diagonal entries are raised to the power, :math:`z`
 
                 :class:`~.DiagonalQubitUnitary` | :math:`1`
     """
