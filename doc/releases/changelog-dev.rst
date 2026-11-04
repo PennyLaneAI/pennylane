@@ -2606,7 +2606,9 @@ Bug fixes 🐛
 * :class:`~.TrotterVibronic` now requires :math:`\max(n-1, b+2, 2k+2)` work wires instead of
   :math:`\max(n-1, 2k, 2b+2)`, for :math:`b` phase-gradient wires. The previous size requested
   :math:`b` unused wires for :math:`b \geq k`, and two wires too few for :math:`k > b`.
-  `(#XXXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXXX>`__
+  Also swapped the ordering of :class:`~.AQFT` and coefficient encoding in the kinetic fragments
+  to avoid a latent bug when using the template with the phase gradient technique.
+  `(#10450) <https://github.com/PennyLaneAI/pennylane/pull/10450>`__
 
 Contributors ✍️
 ~~~~~~~~~~~~~~~
