@@ -89,3 +89,14 @@ def test_unregistered_fields(resource_data):
     with pytest.warns(UserWarning, match="unknown extended fields"):
         resource, _ = parse_resources_json(resource_data)
     assert resource.extra == {"example_count": {"count": 2}}
+
+
+def test_duplicate_registration():
+    """Test that registering the same extension name twice raises an error."""
+    qp.resource.register_resource_extension(
+        "example_count", aggregate=weighted_sum, display_name="Example resources"
+    )
+    with pytest.raises(ValueError, match="already registered for 'example_count'"):
+        qp.resource.register_resource_extension(
+            "example_count", aggregate=weighted_sum, display_name="Other resources"
+        )

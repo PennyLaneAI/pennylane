@@ -36,7 +36,6 @@ from pennylane.resource.resource import (
     _collect_vars,
     _count_to_str,
     _flatten_dict,
-    _format_extra_value,
     _subs_pytree,
     num_to_letters,
     resources_from_tape,
@@ -883,7 +882,10 @@ class TestResourceExtensionDisplay:
                     num_wires=2,
                     circuit_depth=3,
                     extra={
-                        "example_count": {"count": n, "unavailable_count": None},
+                        "example_count": {
+                            "count": str(n) if n == 0 else n,
+                            "unavailable_count": None,
+                        },
                         "unknown": {"hidden_count": 7},
                     },
                 )
