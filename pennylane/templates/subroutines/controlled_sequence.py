@@ -25,7 +25,7 @@ from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 
-class ControlledSequence(SymbolicOp2, Operator2):
+class ControlledSequence(SymbolicOp2):
     r"""Creates a sequence of controlled gates raised to decreasing powers of 2. Can be used as
     a sub-block in building a `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
