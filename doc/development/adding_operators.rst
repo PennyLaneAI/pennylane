@@ -21,9 +21,8 @@ Decomposition and resource estimation
 -------------------------------------
 
 Adding a custom operator is often convenient because it represents some
-self-contained block that not only will be used repetitively, but also because
-it could be *implemented* (or decomposed into elementary gates) differently
-ways.
+self-contained block that not only will be used repetitively, but also
+*implemented* differently (i.e., different decompositions).
 
 PennyLane2 offers a robust and modularized decomposition algorithm, wherein any
 quantum operator can define different decompositions in terms of other
@@ -61,7 +60,7 @@ originated.
 
 For most cases, :func:`~pennylane.subcircuit` is recommended for its ease of
 use. Utilizing the :class:`~pennylane.core.operator.Operator2` class is
-recommended for the utmost customization.
+recommended for the utmost customization, testing, and validation.
 
 .. _operator_argument_types:
 
@@ -111,21 +110,23 @@ An example
 Creating a custom operator using both :func:`~pennylane.subcircuit` and
 :class:`~pennylane.core.operator.Operator2` will be shown in this section.
 
-The following is an example for a two-wire gate called ``FlipAndRotate``. This
+The following is an example for a fictitious two-wire gate called ``FlipAndRotate``. This
 operator flips a wire, measures another wire (a mid-circuit measurement) and
 conditionally applies a different :class:`~pennylane.CNOT` gate given the
 mid-circuit measurement result.
 
-First, its input arguments need to be binned into the proper categories. Its
-call signature is ``FlipAndRotate(angle, rot_axes, wires)``.
+First, the input arguments need to be binned into the proper categories. Its
+call signature will be ``FlipAndRotate(angle, rot_axes, wires)``, so the
+``angle``, ``rot_axes``, and ``wires`` arguments need to be categorized into
+``wire/dynamic/static/compilable/hybrid_argnames``.
 
-* ``angle`` : the angle of rotation (a ``float``). This can go in
+* ``angle`` : the angle of rotation will be a ``float``, so this can go in
   ``dynamic_argnames``.
 * ``rot_axes`` : a length-2 list of some combination of ``"X"``, ``"Y"``, and
   ``"Z"``, representing an axis of rotation. Depending on the measurement result
   of ``wires[0]``, the wire that gets flipped, a rotation gate corresponding to
-  the axis of rotation is applied to ``wires[1]``. This can go in
-  ``compilable_argnames``.
+  the axis of rotation is applied to ``wires[1]``. It is a string argument, so
+  this can go in ``compilable_argnames``.
 * ``wires`` : the wires the operator acts on. The first wire gets flipped, the
   other is rotated. This can go in ``wire_argnames``.
 
@@ -137,6 +138,20 @@ quantum operator by decorating with :func:`~pennylane.subcircuit`. Before
 decorating with :func:`~pennylane.subcircuit`, however, the quantum resources
 associated with the implementation of ``FlipAndRotate`` need to be declared
 with :func:`~pennylane.register_resources`.
+
+.. note::
+
+    - Resource functions and decomposition rule definitions must have the same
+      signature as the operator.
+
+    - Resources declared in the resource function must cover *all* operators
+      contained within every conditional branch, not just one branch.
+
+    - Some operators have arguments that affect their resource usage, like the
+      ``pauli_word`` of :class:`~pennylane.PauliRot` and the number of wires
+      that it acts on. Every unique instance of such an operator must be
+      declared in the resources function, where abstract argument types in the
+      :mod:`~pennylane.typing` module can be used as placeholder values.
 
 .. code-block:: python
 
@@ -169,21 +184,6 @@ with :func:`~pennylane.register_resources`.
             qp.PauliRot(2 * angle, rot_axes[1], wires=wires[1])
 
         qp.cond(m, true_fn, false_fn)()
-
-.. note::
-
-    - Resource functions and decomposition rule definitions must have the same
-      signature as the operator.
-
-    - Resources declared in the resource function must cover *all* operators
-      contained within every conditional branch, not just one branch.
-
-    - Some operators have arguments that affect their resource usage, like the
-      ``pauli_word`` of :class:`~pennylane.PauliRot` and the number of wires
-      that it acts on. Every unique instance of such an operator must be
-      declared in the resources function, where abstract argument types in the
-      :mod:`~pennylane.typing` module can be used as placeholder values.
-
 
 In defining ``FlipAndRotate`` this way, it is an ``Operator2`` subclass
 
@@ -227,8 +227,7 @@ Subclassing Operator2
 The exact same result as what is shown above with using
 :func:`~pennylane.subcircuit` can be achieved by creating a new class that
 inherits from :class:`~pennylane.core.operator.Operator2`. The benefits to
-doing so are mostly related to testing, like being able to easily validate
-input types and shapes.
+doing so are for testing, validation, and utmost customization.
 
 .. code-block:: python
 
@@ -278,7 +277,8 @@ Adding your new operator to PennyLane
 #####################################
 
 If you want PennyLane to natively support your new operator, you have to make a
-Pull Request that adds it to the appropriate folder in ``pennylane/``. The tests
+`Pull Request <https://github.com/PennyLaneAI/pennylane/compare>`` that adds it
+to the appropriate folder in ``pennylane/``. The tests
 are added to a file of a similar name and location in ``tests/``. Generally, the
 new operator should also be imported in the module's ``__init__.py`` file in
 order for users to import the operator directly from ``pennylane``.
@@ -288,7 +288,7 @@ its docstring with a ``decomposition-table`` directive inside an "Available
 decompositions" ``details`` block. Add one nested ``decomposition-rule`` per
 rule, giving the rule's name, a circuit thumbnail saved under
 ``doc/_static/decomposition_thumbnails/``, and one ``gate | count`` line per
-gate in its resources. If a decomposition rule has certain constraints (e.g., it
+gate in its required resources. If a decomposition rule has certain constraints (e.g., it
 needs work wires), say so with ``:requires:``.
 
 If the resources depend on the operator's arguments (e.g., the number of
@@ -321,15 +321,6 @@ wires), write the counts as symbolic expressions and add:
 
 For operators with fixed resources, omit these and use only ``gate | count``
 lines.
-
-You can generate thumbnails by drawing the decomposition rule with
-:func:`~pennylane.draw_mpl` and the ``"pennylane"`` style, calling it with the
-example's argument values, and saving the figure as an SVG:
-
-.. code-block:: python
-
-    fig, ax = qp.draw_mpl(_my_new_operator_decomp, style="pennylane")(wires=range(4))
-    fig.savefig("doc/_static/decomposition_thumbnails/my_new_operator_decomp.svg")
 
 Don't forget to also add the new operator to the documentation in the
 ``doc/introduction/operations.rst`` file, or to

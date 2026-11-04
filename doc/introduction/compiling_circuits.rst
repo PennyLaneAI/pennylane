@@ -79,7 +79,7 @@ passes on a QNode:
         qp.RX(y, wires=0)
         return qp.expval(qp.Z(0))
 
->>> qp.analyze(circuit)(0.1, 0.2).resources.quantum_operations
+>>> qp.analyze(circuit, level="all")(0.1, 0.2)
 Device: lightning.qubit
 Device wires: 1
 Shots: Shots(total=None)
@@ -178,7 +178,7 @@ Briefly, the :func:`~pennylane.decompose` compilation pass works by constructing
 a weighted graph and finding the "shortest" (least resource-intensive) path
 between source nodes (original operators in the circuit) and target nodes
 (operators in the target gate set). This algorithm can be influenced in several
-ways:
+ways, including:
 
 * :func:`qp.decompose(..., exclude_decomps={...}) <~pennylane.decompose>`:
   The ``exclude_decomps`` argument excludes given decomposition rules from the
@@ -190,8 +190,8 @@ ways:
   the target gate set).
 * **Target gate set weights**: It is typical for certain gates to be more costly
   than others (e.g., :class:`~pennylane.T` and :class:`~pennylane.Toffoli` gates
-  are more expensive than :class:`~pennylane.H`). Gate-by-gate costs can be
-  given to target gates to influence the resource intensiveness of certain
+  are typically more expensive than :class:`~pennylane.H`). Gate-by-gate costs
+  can be given to target gates to influence the resource intensiveness of certain
   decomposition pathways. In the example below, the :class:`~pennylane.H` gate
   is decomposed into :class:`~pennylane.RZ` :math:`\otimes` :class:`~pennylane.RY`
   instead of :class:`~pennylane.RZ` :math:`\otimes` :class:`~pennylane.RX`
@@ -213,3 +213,5 @@ ways:
 
 >>> qp.analyze(circuit)().resources.quantum_operations
 {'GlobalPhase': 1, 'RY': 1, 'RZ': 1, 'Toffoli': 1}
+
+
