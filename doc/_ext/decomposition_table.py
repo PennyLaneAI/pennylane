@@ -33,15 +33,23 @@ its general resources.
 Each content line of a rule is a gate, its count, and optionally its count in the example circuit,
 all inline reStructuredText, separated by `` | ``.
 
+With the ``:stacked:`` flag, each circuit is drawn across the full width with its resources below,
+instead of side by side. This suits wide circuits, such as those of templates.
+
 A rule registered for the operator inside an adjoint, controlled or pow region (e.g.
 ``add_decomps("C(Hadamard)", ...)``) is marked with ``:region: adjoint``, ``:region: controlled``
 or ``:region: pow``.
 Such rules are listed after the regular rules, below a divider explaining how to access them.
+
+A rule with the ``:lightbox:`` flag has its circuit image open enlarged in a lightbox when clicked,
+which suits circuits too large to read in the table.
 """
 
 from docutils import nodes
 from docutils.parsers.rst import directives
 from sphinx.util.docutils import SphinxDirective
+from sphinx.writers.html5 import HTML5Translator
+from sphinxcontrib import lightbox2
 
 # for each region, the symbolic operator name used in the fixed_decomps key, e.g.
 # "Adjoint(Hadamard)", and the PennyLane function that creates such a region
@@ -74,6 +82,8 @@ class DecompositionRule(SphinxDirective):
         # when dealing with rules registered for the operator inside an adjoint, controlled or power
         # region, we can specify what kind of region from the given tuple of values
         "region": lambda arg: directives.choice(arg, tuple(REGIONS)),
+        # a large circuit image can be opened enlarged in a lightbox when clicked
+        "lightbox": directives.flag,
     }
 
     def _parse_paragraph(self, text):
@@ -86,6 +96,8 @@ class DecompositionRule(SphinxDirective):
         rule_name = self.arguments[0]
         rule_node = decomposition_rule(name=rule_name, region=self.options.get("region"))
         rule_node["image"] = nodes.image(uri=self.options["image"], alt=rule_name)
+        if "lightbox" in self.options:
+            rule_node["image"]["classes"].append("decomp-lightbox")
 
         parsing_messages = []
         requirements = None
@@ -148,7 +160,11 @@ class DecompositionTable(SphinxDirective):
     required_arguments = 1
     has_content = True
     # symbol def'ns and example values for them are optional and left as text
-    option_spec = {"symbols": directives.unchanged, "example": directives.unchanged}
+    option_spec = {
+        "symbols": directives.unchanged,
+        "example": directives.unchanged,
+        "stacked": directives.flag,
+    }
 
     def run(self):
         """Build a caption and a two-column table from the nested rule directives."""
@@ -189,6 +205,9 @@ class DecompositionTable(SphinxDirective):
             # marks when all rules in the table have two columns,
             # as opposed to decomp-cols-2 which marks that an individual rule has two
             table["classes"].append("decomp-two-cols")
+        stacked = "stacked" in self.options
+        if stacked:
+            table["classes"].append("decomp-stacked")
         column_group = nodes.tgroup(cols=2)
         table += column_group
         for column_width in (60, 40) if two_cols else (40, 60):
@@ -213,7 +232,6 @@ class DecompositionTable(SphinxDirective):
             name_row += nodes.entry("", nodes.paragraph("", "", rule_name), morecols=1)
             table_body += name_row
 
-            detail_row = nodes.row(classes=["decomp-body-row"])
             circuit_cell = nodes.entry("", rule_node["image"], classes=["decomp-circuit"])
             if "example" in self.options:
                 inline_nodes, messages = self.state.inline_text(
@@ -221,20 +239,45 @@ class DecompositionTable(SphinxDirective):
                 )
                 circuit_cell += nodes.paragraph("", "", *inline_nodes, classes=["decomp-example"])
                 parsing_messages.extend(messages)
-            detail_row += circuit_cell
             resources_cell = nodes.entry("")
             if rule_node["requires"] is not None:
                 resources_cell += rule_node["requires"]
             resources_cell += rule_node["resources"]
-            detail_row += resources_cell
-            table_body += detail_row
+            if stacked:
+                # the circuit spans the full width, with the resources in a row below it
+                circuit_cell["morecols"] = resources_cell["morecols"] = 1
+                table_body += nodes.row("", circuit_cell, classes=["decomp-circuit-row"])
+                table_body += nodes.row("", resources_cell, classes=["decomp-body-row"])
+            else:
+                table_body += nodes.row(
+                    "", circuit_cell, resources_cell, classes=["decomp-body-row"]
+                )
         column_group += table_body
 
         return [caption, usage, table, *other_nodes, *parsing_messages]
 
 
+def _visit_image(self, node):
+    """Wrap images marked with ``:lightbox:`` in a lightbox link, leaving all others as is."""
+    if "decomp-lightbox" in node["classes"]:
+        lightbox2.html_visit_image(self, node)
+    else:
+        HTML5Translator.visit_image(self, node)
+
+
+def _depart_image(self, node):
+    """Close the lightbox link opened by ``_visit_image``."""
+    if "decomp-lightbox" in node["classes"]:
+        lightbox2.html_depart_image(self, node)
+    else:
+        HTML5Translator.depart_image(self, node)
+
+
 def setup(app):
     """Sphinx entry point for this extension."""
+    # sphinxcontrib.lightbox2 wraps every image in the docs, so only marked ones are kept wrapped
+    app.setup_extension("sphinxcontrib.lightbox2")
+    app.add_node(nodes.image, override=True, html=(_visit_image, _depart_image))
     app.add_node(decomposition_rule)
     app.add_directive("decomposition-rule", DecompositionRule)
     app.add_directive("decomposition-table", DecompositionTable)
