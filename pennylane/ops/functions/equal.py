@@ -720,8 +720,10 @@ def _equal_prod_and_sum(op1, op2, **kwargs):
 def _equal_controlled2(op1: Controlled2, op2: Controlled2, **kwargs):
     """Determine whether two Controlled2 or ControlledOp2 objects are equal"""
 
-    if op1.arithmetic_depth != op2.arithmetic_depth:
-        return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
+    depth1 = getattr(op1, "arithmetic_depth", None)
+    depth2 = getattr(op2, "arithmetic_depth", None)
+    if depth1 is not None and depth2 is not None and depth1 != depth2:
+        return f"op1 and op2 have different arithmetic depths. Got {depth1} and {depth2}"
 
     wire_comparison = _check_wire_value("work_wires", op1.work_wires, op2.work_wires)
     if isinstance(wire_comparison, str):
