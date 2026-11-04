@@ -1062,13 +1062,6 @@ def _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes):
     # ``k < ell`` matches bilinear_coeffs, populated only in the upper triangle.
     bilinear_indices = np.array(np.triu_indices(n_modes, 1))
 
-    if compiler.active() or capture.enabled():
-        all_constant = math.array(all_constant, like="jax")
-        all_linear = math.array(all_linear, like="jax")
-        all_quadratic = math.array(all_quadratic, like="jax")
-        all_bilinear = math.array(all_bilinear, like="jax")
-        bilinear_indices = math.array(bilinear_indices, like="jax")
-
     return (all_constant, all_linear, all_quadratic, all_bilinear), bilinear_indices
 
 
@@ -1099,7 +1092,10 @@ def _branch_probs(hamiltonian, evolution_time, num_trotter_steps):
     n_elec = math.ceil_log2(n_states)
     if hamiltonian.num_fragments > 2**n_elec:
         return None
-    time_step = evolution_time / num_trotter_steps
+    # Compute on NumPy copies: within an active JAX trace, e.g., while capturing a circuit, JAX
+    # operations return tracers even for concrete inputs.
+    hamiltonian = VibronicHamiltonian(*(math.toarray(t) for t in hamiltonian.tensors))
+    time_step = float(evolution_time) / num_trotter_steps
     coeffs, _ = _preprocess_data(time_step, hamiltonian, n_elec, n_states, n_modes)
     kinetic = (_momentum_coefficients(hamiltonian.kinetic) * time_step)[:, None]
     return {term: _applied_fraction(c) for term, c in zip(_BRANCH_TERMS, (*coeffs, kinetic))}
@@ -1227,6 +1223,9 @@ def _trotter_step_second_order(
     branch_probs = dict(branch_probs or ())
     precision = len(registers["phase_gradient"])
     all_coeffs, bilinear_indices = _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes)
+    if compiler.active() or capture.enabled():
+        all_coeffs = tuple(math.array(c, like="jax") for c in all_coeffs)
+        bilinear_indices = math.array(bilinear_indices, like="jax")
     all_constant, all_linear, all_quadratic, all_bilinear = all_coeffs
     qrom_wires = _extract_registers(registers, mode_registers, "QROM")
     num_position_fragments = hamiltonian.num_fragments
