@@ -167,12 +167,15 @@ New features since last release
   `(#10227) <https://github.com/PennyLaneAI/pennylane/pull/10227>`__
   `(#10245) <https://github.com/PennyLaneAI/pennylane/pull/10245>`__
   `(#10264) <https://github.com/PennyLaneAI/pennylane/pull/10264>`__
+  `(#10446) <https://github.com/PennyLaneAI/pennylane/pull/10446>`__
 
   The operation has a gridsynth-based decomposition into Pauli product rotations on up to
   30 wires, consisting of :class:`~.PPR_8` operators, at most one :class:`~.PPR_2` or
   :class:`~.PPR_4` operator per wire, and a
   :class:`~.GlobalPhase`. It approximates the phase gradient state on 30 wires to
   precision :math:`10^{-12}` (in 2-norm).
+  A second decomposition with the same precision uses :class:`~.Hadamard`, :class:`~.S`,
+  :class:`~.T`, and Pauli gates instead, with one :class:`~.T` gate per :class:`~.PPR_8` operator.
 
 * Added a ``qp.math.floor_log2`` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
   in analogy to the existing ``qp.math.ceil_log2``.
@@ -882,12 +885,24 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* Efficient decomposition rules for :class:`~.ControlledPhaseShift`, :class:`~.OutMultiplier`, and :class:`Adjoint(Incrementer) <~.Incrementer>` have been added.
+  `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
+
+  - :class:`~.ControlledPhaseShift`: using one clean work wire and a single
+  :class:`~.PhaseShift` gate.
+  - :class:`~.OutMultiplier`: with longer ``x_wires`` input than ``y_wires`` as
+  input, it decomposes into an ``OutMultiplier`` instance with swapped input registers. This is computationally
+  equivalent but makes the multiplication cheaper.
+  - :class:`Adjoint(Incrementer) <~.Incrementer>`: sandwiching an :class:`~.Incrementer` with
+  :class:`~.MultiX` gates, realizing the identity :math:`x-1 = \overline{(\overline{x}+1)}`.
+
 * :class:`~.TrotterVibronic` has a new ``branch_probs`` argument, a dictionary with the
   probabilities for the Hamiltonian terms to be applied rather than skipped for vanishing 
   coefficients. The decomposition uses them as resource hints.
   If ``branch_probs`` is not provided, it is computed from the ``hamiltonian``
   data and the ``evolution_time`` at construction, as long as both are concrete.
   `(#10401) <https://github.com/PennyLaneAI/pennylane/pull/10401>`__
+  `(#10445) <https://github.com/PennyLaneAI/pennylane/pull/10445>`__
 
 * Added ``pennylane.core.get_op_class_by_name``
   to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
@@ -2280,8 +2295,8 @@ Documentation 📝
   `(#10284) <https://github.com/PennyLaneAI/pennylane/pull/10284>`__
 
 * Operator documentation now has an "Available decompositions" table listing each of the
-  operator's decomposition rules, with a circuit diagram and the resources the rule uses. 
-  This change only applies to operators that are subclasses of ``Operator2``. 
+  operator's decomposition rules, with a circuit diagram and the resources the rule uses.
+  This change only applies to operators that are subclasses of ``Operator2``.
   The tables are rendered by a new ``decomposition-table`` Sphinx directive, and their diagrams are
   drawn with :func:`~pennylane.draw_mpl`. Symbolic decomposition rules for operators (i.e., 
   ``"Adjoint(Operator)"``, ``"Controlled(Operator)"``, and ``"Pow(Operator)"``) are also displayed
@@ -2290,6 +2305,7 @@ Documentation 📝
   `(#10382) <https://github.com/PennyLaneAI/pennylane/pull/10382>`__
   `(#10383) <https://github.com/PennyLaneAI/pennylane/pull/10383>`__
   `(#10416) <https://github.com/PennyLaneAI/pennylane/pull/10416>`__
+  `(#10421) <https://github.com/PennyLaneAI/pennylane/pull/104121>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
