@@ -51,7 +51,23 @@ class ControlledSequence(SymbolicOp2, Operator2):
 
     .. seealso:: :class:`~.QuantumPhaseEstimation`
 
-    **Example**
+    **Examples**
+
+    .. code-block:: python
+
+        dev = qp.device("default.qubit")
+        op = qp.ControlledSequence(qp.RX(0.25, wires = 3), control = [0, 1, 2])
+
+        @qp.qnode(dev)
+        def circuit():
+            op.decomposition()
+            return qp.state()
+
+    >>> print(qp.draw(circuit, wire_order=[0,1,2,3])())
+    0: ─╭●────────────────────────────┤ ╭State
+    1: ─│─────────╭●──────────────────┤ ├State
+    2: ─│─────────│─────────╭●────────┤ ├State
+    3: ─╰RX(1.00)─╰RX(0.50)─╰RX(0.25)─┤ ╰State
 
     .. code-block:: python
 
