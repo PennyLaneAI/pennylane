@@ -18,18 +18,20 @@ from pennylane.capture import enabled, hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.ops import CNOT, MultiControlledX, PauliX, X, adjoint, cond
+from pennylane.ops import CNOT, MultiControlledX, PauliX, X, adjoint, change_op_basis, cond
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
-from pennylane.typing import Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit
 
+from ..multix import MultiX
 from ..qrom import _interleave_controls
 from .temporary_and import TemporaryAND
 
 
 class Incrementer(Operator2):
-    """
+    r"""
     Increment the input ``wires`` by one, using zeroed ``work_wires``.
 
     Args:
@@ -63,6 +65,49 @@ class Incrementer(Operator2):
     array([0, 1, 1])
 
     The result incremented the binary value in the non-work wires by 1: :math:`(010)_2 + (001)_2 = (011)_2`.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.Incrementer
+            :symbols: :math:`n \geq 2` ``wires`` and :math:`w` ``work_wires``
+            :example: :math:`n=4`
+
+            .. decomposition-rule:: incrementer_elbow_ladder
+                :image: /_static/decomposition_thumbnails/incrementer_elbow_ladder.svg
+                :requires: :math:`w \geq n - 1` work wires
+
+                :class:`~.TemporaryAND` | :math:`n - 2` | 2
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`n - 2` | 2
+                :class:`~.CNOT` | :math:`n - 1` | 3
+                :class:`~.X` | :math:`1` | 1
+
+            .. decomposition-rule:: incrementer_multicontrolledx
+                :image: /_static/decomposition_thumbnails/incrementer_multi_controlled_x.svg
+                :requires: :math:`w < n - 1` work wires
+
+                :class:`~.MultiControlledX` with :math:`1, \dots, n-1` controls | :math:`n-1` | 3
+                :class:`~.X` | :math:`1` | 1
+
+            .. decomposition-rule:: adjoint_incrementer_bit_flips
+                :image: /_static/decomposition_thumbnails/incrementer_adjoint.svg
+                :region: adjoint
+
+                :class:`~.MultiX` on :math:`n` wires | :math:`2`
+                :class:`~.Incrementer` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(ctrl_incrementer_elbow_ladder)
+                :image: /_static/decomposition_thumbnails/incrementer_controlled.svg
+                :region: controlled
+                :requires: :math:`n + c - 1` work wires in total, from ``work_wires`` and the
+                    work wires of the controlled operator
+                :where: :math:`c` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.TemporaryAND` | :math:`n + c - 2`
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`n + c - 2`
+                :class:`~.CNOT` | :math:`n`
 
     .. details::
         :title: Decomposition
@@ -275,8 +320,8 @@ def _incrementer_fallback_resources(wires, work_wires):
 
 
 @register_condition(_work_wire_inverse_condition)
-@register_resources(_incrementer_fallback_resources)
-def _incrementer_fallback_decomposition(wires, work_wires, **_):
+@register_resources(_incrementer_fallback_resources, name="incrementer_multicontrolledx")
+def _incrementer_multicontrolledx(wires, work_wires, **_):
     # This loop is intentionally a plain Python loop rather than a ``qp.for_loop``: each
     # iteration emits a ``MultiControlledX`` with a different number of controls (``i - 1``),
     # so the loop body has no fixed structure and cannot be traced as a dynamic loop. Keeping
@@ -294,8 +339,8 @@ def _incrementer_fallback_decomposition(wires, work_wires, **_):
 
 
 @register_condition(_work_wire_condition)
-@register_resources(_incrementer_resources)
-def _incrementer_decomposition(wires, work_wires, **_):
+@register_resources(_incrementer_resources, name="incrementer_elbow_ladder")
+def _incrementer_elbow_ladder(wires, work_wires, **_):
     if compiler.active() or enabled():
         wires = math.array(wires, like="jax")
 
@@ -314,8 +359,8 @@ def _controlled_incrementer_resources(base, control_wires, **_):
 
 
 @register_condition(_ctrl_work_wire_condition)
-@register_resources(_controlled_incrementer_resources)
-def _controlled_incrementer_decomposition(base, control_wires, work_wires, **_):
+@register_resources(_controlled_incrementer_resources, name="ctrl_incrementer_elbow_ladder")
+def _ctrl_incrementer_elbow_ladder(base, control_wires, work_wires, **_):
     wires = base.increment_wires
     base_work_wires = base.work_wires
 
@@ -337,6 +382,25 @@ def _controlled_incrementer_decomposition(base, control_wires, work_wires, **_):
     _decompose_mcxs(wires, work_wires, control_wires)
 
 
-add_decomps(Incrementer, _incrementer_decomposition)
-add_decomps(Incrementer, _incrementer_fallback_decomposition)
-add_decomps("C(Incrementer)", flip_zero_control2(_controlled_incrementer_decomposition))
+def _adjoint_incrementer_resources(base):
+    num_wires = len(base.increment_wires)
+    multix = MultiX(Bool[num_wires], Wire[num_wires])
+    incrementer = Incrementer(Wire[num_wires], work_wires=Wire[len(base.work_wires)])
+    return {_change_op_basis_abstract(multix, incrementer, multix): 1}
+
+
+@register_resources(_adjoint_incrementer_resources, name="adjoint_incrementer_bit_flips")
+def _adjoint_incrementer_bit_flips(base):
+    """Decompose a decrement into an increment conjugated by bit flips, ``x - 1 = ~(~x + 1)``."""
+    wires = base.increment_wires
+    ones = [1] * len(wires)
+    change_op_basis(
+        MultiX(ones, wires),
+        Incrementer(wires, work_wires=base.work_wires),
+        MultiX(ones, wires),
+    )
+
+
+add_decomps(Incrementer, _incrementer_elbow_ladder, _incrementer_multicontrolledx)
+add_decomps("C(Incrementer)", flip_zero_control2(_ctrl_incrementer_elbow_ladder))
+add_decomps("Adjoint(Incrementer)", _adjoint_incrementer_bit_flips)
