@@ -26,8 +26,6 @@ from pennylane.templates.state_preparations.phase_gradient import (
 )
 from pennylane.templates.state_preparations.phase_gradient_decomp_data import PI_OVER_8_PPRS
 
-CLIFFORD_T_GATES = (qp.Hadamard, qp.S, qp.T, qp.X, qp.Y, qp.Z)
-
 
 def _expected_state(num_wires):
     dim = 2**num_wires
@@ -91,34 +89,56 @@ class TestDecomposition:
         assert np.allclose(circuit(), circuit2())
 
 
-class TestPPRDecomposition:
-    """Tests for the decomposition into Pauli product rotations."""
+RULES = [
+    pytest.param(_phase_gradient_state_prep_ppr_decomposition, id="ppr"),
+    pytest.param(_phase_gradient_state_prep_clifford_t_decomposition, id="clifford_t"),
+]
 
+
+class TestHardcodedDecompositions:
+    """Tests for the hardcoded decompositions into Pauli product rotations and Clifford+T gates."""
+
+    @pytest.mark.parametrize(
+        "rule, gate_set",
+        [
+            pytest.param(
+                _phase_gradient_state_prep_ppr_decomposition,
+                {"PPR_2", "PPR_4", "PPR_8", "GlobalPhase"},
+                id="ppr",
+            ),
+            pytest.param(
+                _phase_gradient_state_prep_clifford_t_decomposition,
+                {"Hadamard", "S", "T", "PauliX", "PauliY", "PauliZ", "GlobalPhase"},
+                id="clifford_t",
+            ),
+        ],
+    )
     @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 7, 10, 14, 16])
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_prepares_state(self, num_wires):
-        """Test that decomposing into PPRs prepares the phase gradient state."""
+    def test_prepares_state(self, rule, gate_set, num_wires):
+        """Test that decomposing with the rule prepares the phase gradient state."""
 
         # pylint: disable-next=protected-access
-        @qp.transforms._tape_decompose(gate_set={"PPR_2", "PPR_4", "PPR_8", "GlobalPhase"})
+        @qp.transforms._tape_decompose(
+            gate_set=gate_set, fixed_decomps={qp.PhaseGradientStatePrep: rule}
+        )
         @qp.qnode(qp.device("default.qubit", wires=num_wires))
         def circuit():
             qp.PhaseGradientStatePrep(wires=range(num_wires))
             return qp.state()
 
         tape = qp.workflow.construct_tape(circuit)()
-        assert all(
-            isinstance(op, (qp.PPR_2, qp.PPR_4, qp.PPR_8, qp.GlobalPhase)) for op in tape.operations
-        )
+        assert all(op.name in gate_set for op in tape.operations)
         assert np.allclose(circuit(), _expected_state(num_wires), atol=1e-12, rtol=0)
 
-    def test_precision_on_30_wires(self):
+    @pytest.mark.parametrize("rule", RULES)
+    def test_precision_on_30_wires(self, rule):
         """Test that the decomposition prepares the phase gradient state on 30 wires up to an
         error of 1e-12 in the 2-norm. The error of the product state is bounded by combining
         the single-wire errors (up to phase) in quadrature and adding the global phase error."""
         num_wires = 30
         with qp.queuing.AnnotatedQueue() as q:
-            _phase_gradient_state_prep_ppr_decomposition(wires=range(num_wires))
+            rule(wires=range(num_wires))
 
         squared_errors = []
         phase = -q.queue[-1].data[0]
@@ -133,8 +153,8 @@ class TestPPRDecomposition:
         assert np.sqrt(np.sum(squared_errors)) + phase_error < 1e-12
 
     @pytest.mark.parametrize("num_wires", [1, 3, 8, 20, 30])
-    def test_gate_types(self, num_wires):
-        """Test that the decomposition consists of pi/8 PPRs, at most one other PPR per wire,
+    def test_ppr_gate_types(self, num_wires):
+        """Test that the PPR decomposition consists of pi/8 PPRs, at most one other PPR per wire,
         and a global phase."""
         with qp.queuing.AnnotatedQueue() as q:
             _phase_gradient_state_prep_ppr_decomposition(wires=range(num_wires))
@@ -145,72 +165,26 @@ class TestPPRDecomposition:
             wire_ops = [op for op in q.queue if op.wires == qp.wires.Wires(wire)]
             assert sum(not isinstance(op, qp.PPR_8) for op in wire_ops) <= 1
 
-    def test_condition(self):
-        """Test that the decomposition is only applicable to up to 30 wires."""
-        assert _phase_gradient_state_prep_ppr_decomposition.is_applicable(wires=range(30))
-        assert not _phase_gradient_state_prep_ppr_decomposition.is_applicable(wires=range(31))
-
-
-class TestCliffordTDecomposition:
-    """Tests for the decomposition into Clifford+T gates."""
-
-    @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 7, 10, 14, 16])
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_prepares_state(self, num_wires):
-        """Test that decomposing into Clifford+T gates prepares the phase gradient state."""
-
-        # pylint: disable-next=protected-access
-        @qp.transforms._tape_decompose(
-            gate_set={"Hadamard", "S", "T", "PauliX", "PauliY", "PauliZ", "GlobalPhase"}
-        )
-        @qp.qnode(qp.device("default.qubit", wires=num_wires))
-        def circuit():
-            qp.PhaseGradientStatePrep(wires=range(num_wires))
-            return qp.state()
-
-        tape = qp.workflow.construct_tape(circuit)()
-        assert all(isinstance(op, (*CLIFFORD_T_GATES, qp.GlobalPhase)) for op in tape.operations)
-        assert np.allclose(circuit(), _expected_state(num_wires), atol=1e-12, rtol=0)
-
-    def test_precision_on_30_wires(self):
-        """Test that the decomposition prepares the phase gradient state on 30 wires up to an
-        error of 1e-12 in the 2-norm. The error of the product state is bounded by combining
-        the single-wire errors (up to phase) in quadrature and adding the global phase error."""
-        num_wires = 30
-        with qp.queuing.AnnotatedQueue() as q:
-            _phase_gradient_state_prep_clifford_t_decomposition(wires=range(num_wires))
-
-        squared_errors = []
-        phase = -q.queue[-1].data[0]
-        for j in range(num_wires):
-            wire_ops = [op for op in q.queue if op.wires == qp.wires.Wires(j)]
-            state = qp.matrix(wire_ops, wire_order=[j])[:, 0]
-            target = np.array([1, np.exp(-1j * np.pi / 2**j)]) / np.sqrt(2)
-            overlap = np.vdot(target, state)
-            squared_errors.append(np.linalg.norm(state - overlap / np.abs(overlap) * target) ** 2)
-            phase += np.angle(overlap)
-        phase_error = np.abs(np.angle(np.exp(1j * phase)))
-        assert np.sqrt(np.sum(squared_errors)) + phase_error < 1e-12
-
     @pytest.mark.parametrize("num_wires", [1, 3, 8, 20, 30])
-    def test_gate_types(self, num_wires):
-        """Test that the decomposition consists of Clifford+T gates and a global phase, with
-        as many T gates on each wire as there are pi/8 PPRs in the PPR decomposition."""
+    def test_clifford_t_gate_types(self, num_wires):
+        """Test that the Clifford+T decomposition consists of Clifford+T gates and a global phase,
+        with as many T gates on each wire as there are pi/8 PPRs in the PPR decomposition."""
         with qp.queuing.AnnotatedQueue() as q:
             _phase_gradient_state_prep_clifford_t_decomposition(wires=range(num_wires))
 
-        assert all(isinstance(op, CLIFFORD_T_GATES) for op in q.queue[:-1])
+        assert all(
+            isinstance(op, (qp.Hadamard, qp.S, qp.T, qp.X, qp.Y, qp.Z)) for op in q.queue[:-1]
+        )
         assert isinstance(q.queue[-1], qp.GlobalPhase)
         for wire in range(num_wires):
             wire_ops = [op for op in q.queue if op.wires == qp.wires.Wires(wire)]
             assert sum(isinstance(op, qp.T) for op in wire_ops) == len(PI_OVER_8_PPRS[wire])
 
-    def test_condition(self):
+    @pytest.mark.parametrize("rule", RULES)
+    def test_condition(self, rule):
         """Test that the decomposition is only applicable to up to 30 wires."""
-        assert _phase_gradient_state_prep_clifford_t_decomposition.is_applicable(wires=range(30))
-        assert not _phase_gradient_state_prep_clifford_t_decomposition.is_applicable(
-            wires=range(31)
-        )
+        assert rule.is_applicable(wires=range(30))
+        assert not rule.is_applicable(wires=range(31))
 
 
 class TestStateVector:
