@@ -24,7 +24,6 @@ from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
-from pennylane.ops.op_math import prod
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import AbstractArray, Float, Int, Wire
@@ -161,67 +160,6 @@ class PhaseAdder(Operator2):
         super().__init__(k=k, x_wires=x_wires, mod=mod, work_wire=work_wire)
         if not isinstance(self.k, AbstractArray):
             self.arguments["k"] = self.k % mod
-
-    @staticmethod
-    def compute_decomposition(
-        k, x_wires: WiresLike, mod=None, work_wire: WiresLike = ()
-    ):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators.
-
-        Args:
-            k (int): the number that needs to be added
-            x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough
-                for a binary representation of the value being targeted, :math:`x`. In some cases an additional
-                wire is needed, see usage details below. The number of wires also limits the maximum
-                value for `mod`.
-            mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
-            work_wire (Sequence[int]): the auxiliary wire to use for the addition. Optional
-                when `mod` is :math:`2^{len(x\_wires)}`.
-        Returns:
-            list[.Operator]: Decomposition of the operator
-
-        **Example**
-
-        >>> qp.PhaseAdder.compute_decomposition(k = 2, x_wires = [0, 1, 2], mod = 8, work_wire = ())
-        [PhaseShift(6.28..., wires=[0]), PhaseShift(3.141..., wires=[1]), PhaseShift(1.57..., wires=[2])]
-        """
-        if mod is None:
-            mod = 2 ** len(x_wires)
-        op_list = []
-
-        if mod == 2 ** len(x_wires):
-            op_list.extend(_add_k_fourier(k, x_wires))
-        else:
-            aux_k = x_wires[0]
-            op_list.extend(_add_k_fourier(k, x_wires))
-
-            for op in reversed(_add_k_fourier(mod, x_wires)):
-                op_list.append(ops.adjoint(op))
-
-            op_list.append(
-                ops.change_op_basis(
-                    ops.adjoint(QFT)(wires=x_wires),
-                    ops.CNOT(wires=[aux_k, work_wire[0]]),
-                    QFT(wires=x_wires),
-                )
-            )
-
-            op_list.extend(ops.ctrl(op, control=work_wire) for op in _add_k_fourier(mod, x_wires))
-
-            op_list.append(
-                ops.change_op_basis(
-                    prod(
-                        ops.X(aux_k),
-                        ops.adjoint(QFT)(wires=x_wires),
-                        *[ops.adjoint(op) for op in _add_k_fourier(k, x_wires)],
-                    ),
-                    ops.CNOT(wires=[aux_k, work_wire[0]]),
-                    prod(*_add_k_fourier(k, x_wires)[::-1], QFT(wires=x_wires), ops.X(aux_k)),
-                )
-            )
-
-        return op_list
-
 
 def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
     num_x_wires = len(x_wires)

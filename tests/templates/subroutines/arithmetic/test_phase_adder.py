@@ -233,14 +233,14 @@ class TestPhaseAdder:
             qp.PhaseAdder(k, x_wires, mod, work_wire)
 
     def test_decomposition(self):
-        """Test that compute_decomposition and decomposition work as expected."""
+        """Test that the inherited graph-based decomposition works as expected."""
 
         k = 4
         x_wires = [1, 2, 3]
         mod = 7
         work_wire = [0]
 
-        phase_adder_decomp = qp.PhaseAdder.compute_decomposition(k, x_wires, mod, work_wire)
+        phase_adder_decomp = qp.PhaseAdder(k, x_wires, mod, work_wire).decomposition()
         cob_index = len(_add_k_fourier(k, x_wires)) + len(_add_k_fourier(mod, x_wires))
         cob_decomp1 = phase_adder_decomp[cob_index].decomposition()
         cob_decomp2 = phase_adder_decomp[-1].decomposition()
