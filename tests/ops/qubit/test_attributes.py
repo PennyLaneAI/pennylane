@@ -22,6 +22,7 @@ import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qp
+from pennylane.core.operator import Operator2
 from pennylane.ops.qubit.attributes import Attribute, has_unitary_generator
 
 # Dummy attribute
@@ -187,9 +188,8 @@ class TestSupportsBroadcasting:
         par = np.array([0.25, 2.1, -0.42])
         cls = getattr(qp, name)
 
-        # Provide up to 6 wires and take as many as the class requires
-        # This assumes that the class does *not* have `num_wires=qp.operation.None`
-        wires = ["wire0", 5, 41, "aux_wire", -1, 9][: cls.num_wires]
+        num_wires = cls.wire_sizes[0] if issubclass(cls, Operator2) else cls.num_wires
+        wires = ["wire0", 5, 41, "aux_wire", -1, 9][:num_wires]
         op = cls(par, wires=wires)
 
         mat1 = op.matrix()

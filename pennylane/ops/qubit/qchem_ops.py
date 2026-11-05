@@ -1424,6 +1424,10 @@ class FermionicSWAP(Operator2):
     arg_specs = {"phi": Float, "wires": Wire[2]}
     wire_sizes = (2,)
 
+    num_wires = 2
+    num_params = 1
+    ndim_params = (0,)
+
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
