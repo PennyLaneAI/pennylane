@@ -52,7 +52,7 @@ def _select_pauli_rot_phase_gradient(
             binary_int,
             control_wires,
             angle_wires,
-            work_wires=work_wires[: len(control_wires) - 1],  # This forces Λ=1 in Select-Swap
+            work_wires=work_wires[: len(control_wires) - 1],
         )
         for wire in phase_grad_wires:
             qp.ctrl(qp.X(wire), control=target_wire, control_values=[0])
@@ -61,7 +61,7 @@ def _select_pauli_rot_phase_gradient(
         qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
 
     def inner_cob():
-        # uncompute=compute is only valid for Λ=1, because QROM creates complex phases otherwise.
+        # uncompute=compute is valid because QROM is self-inverse.
         return change_op_basis(compute_fn, target_fn, compute_fn)
 
     match rot_axis:
@@ -277,7 +277,6 @@ def make_selectpaulirot_to_phase_gradient_decomp(
             control_wires=Wire[num_control_wires],
             target_wires=Wire[p],
             work_wires=Wire[num_control_wires - 1],
-            clean=True,
         )
 
         # 2. ctrl(X, control=target_wire, control_values=[0])

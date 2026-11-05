@@ -1163,7 +1163,6 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
             control_wires=Wire[d],
             target_wires=Wire[num_wires],
             work_wires=Wire[d - 1],
-            clean=True,
         )
     ] += 1
 
