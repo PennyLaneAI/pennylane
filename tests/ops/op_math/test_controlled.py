@@ -1248,7 +1248,6 @@ class TestControlledSupportsBroadcasting:
         "DoubleExcitationPlus",
         "DoubleExcitationMinus",
         "OrbitalRotation",
-        "FermionicSWAP",
     ]
 
     two_scalar_single_wire_ops = [
@@ -1267,6 +1266,7 @@ class TestControlledSupportsBroadcasting:
     # When adding an operation to the following list, you
     # actually need to write a new test!
     separately_tested_ops = [
+        "FermionicSWAP",
         "QubitUnitary",
         "ControlledQubitUnitary",
         "PauliRot",
@@ -1313,6 +1313,18 @@ class TestControlledSupportsBroadcasting:
         single_mats = [Controlled(cls(p, wires=wires), "wire1").matrix() for p in par]
 
         assert qp.math.allclose(mat, single_mats)
+
+    def test_controlled_fermionic_swap(self):
+        """Test parameter broadcasting for a controlled FermionicSWAP."""
+        par = pnp.array([0.25, 2.1, -0.42])
+        wires = ["wire0", 5]
+        op = qp.ctrl(qp.FermionicSWAP(par, wires=wires), control="wire1")
+        single_mats = [
+            qp.ctrl(qp.FermionicSWAP(p, wires=wires), control="wire1").matrix() for p in par
+        ]
+
+        assert isinstance(op, ControlledOp2)
+        assert qp.math.allclose(op.matrix(), single_mats)
 
     @pytest.mark.parametrize("name", two_scalar_single_wire_ops)
     def test_controlled_two_scalar_single_wire_ops(self, name):

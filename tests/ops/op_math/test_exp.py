@@ -504,10 +504,13 @@ class TestDecomposition:
 
         phi = 1.23
 
-        try:
-            wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
-        except TypeError:
-            wires = [0, 1, 2]
+        if op_class is qp.FermionicSWAP:
+            wires = [0, 1]
+        else:
+            try:
+                wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+            except TypeError:
+                wires = [0, 1, 2]
         if str_wires:
             alphabet = ("a", "b", "c", "d", "e", "f", "g")
             wires = [alphabet[w] for w in wires]

@@ -1421,8 +1421,8 @@ class FermionicSWAP(Operator2):
     dynamic_argnames = ("phi",)
     wire_argnames = ("wires",)
 
-    arg_specs = {"phi": Float, "wires": Wire[-1]}
-    wire_sizes = (None,)
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+    wire_sizes = (2,)
 
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
@@ -1501,7 +1501,7 @@ class FermionicSWAP(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "FSWAP", cache=cache)
 
 
-def _fermionic_swap_decomp_resources():
+def _fermionic_swap_decomp_resources(phi: TensorLike = None, wires: WiresLike = None):
     return {
         qp.Hadamard: 4,
         qp.MultiRZ(Float, Wire[2]): 2,
@@ -1530,5 +1530,5 @@ def _fermionic_swap_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(FermionicSWAP, _fermionic_swap_decomp)
-add_decomps("Adjoint(FermionicSWAP)", adjoint_rotation)
-add_decomps("Pow(FermionicSWAP)", pow_rotation)
+add_decomps("Adjoint(FermionicSWAP)", adjoint_rotation2)
+add_decomps("Pow(FermionicSWAP)", pow_rotation2)

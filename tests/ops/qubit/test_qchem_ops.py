@@ -1096,6 +1096,20 @@ class TestOrbitalRotation:
 
 
 class TestFermionicSWAP:
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_assert_valid(self):
+        """Test that FermionicSWAP satisfies the operator interface."""
+        qp.testing.assert_valid(qp.FermionicSWAP(0.123, wires=[0, 1]))
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
+    @pytest.mark.parametrize("wires", [[0, 1], [2, 0]])
+    def test_decomposition_rule(self, phi, wires):
+        """Test the registered decomposition matrix and resource counts."""
+        op = qp.FermionicSWAP(phi, wires=wires)
+        rule = qp.list_decomps(qp.FermionicSWAP)["_fermionic_swap_decomp"]
+        qp.testing.assert_valid_decomp_rule(op, rule)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_fermionic_swap_matrix(self, phi):
         """Tests that the FermionicSWAP operation calculates the correct matrix"""
