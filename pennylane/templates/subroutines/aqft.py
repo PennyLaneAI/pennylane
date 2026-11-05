@@ -24,8 +24,7 @@ from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard, PhaseShift
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -65,6 +64,20 @@ class AQFT(Operator2):
     array([ 0.5 +0.j  , -0.25-0.25j,  0.  +0.j  , -0.25+0.25j,  0.5 +0.j  ,
         -0.25-0.25j,  0.  +0.j  , -0.25+0.25j])
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.AQFT
+            :stacked:
+            :symbols: :math:`n` wires and order :math:`m \leq n-1`
+            :example: :math:`n=4`, :math:`m=1`
+
+            .. decomposition-rule:: _AQFT_decomposition
+                :image: /_static/decomposition_thumbnails/aqft_cphase_swap.svg
+
+                :class:`~.Hadamard` | :math:`n` | 4
+                :class:`~.ControlledPhaseShift` | :math:`m(2n-m-1)/2` | 3
+                :class:`~.SWAP` | :math:`\lfloor n/2 \rfloor` | 2
 
     .. details::
         :title: Usage Details
@@ -136,7 +149,7 @@ def _AQFT_resources(order, wires):
     num_ctrl_ps = sum(min(num_wires - 1 - i, order) for i in range(num_wires))
     return {
         Hadamard: num_wires,
-        _ctrl_abstract(PhaseShift, Wire[1]): num_ctrl_ps,
+        ControlledPhaseShift: num_ctrl_ps,
         SWAP: num_wires // 2,
     }
 

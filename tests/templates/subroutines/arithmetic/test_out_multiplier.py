@@ -492,6 +492,23 @@ class TestOutMultiplier:
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("mod", [4, 3])
+    @pytest.mark.parametrize("output_wires_zeroed", [False, True])
+    def test_decomposition_qft_rule(self, mod, output_wires_zeroed):
+        """Test the QFT decomposition and its declared resources."""
+        op = OutMultiplier(
+            x_wires=[0, 1],
+            y_wires=[2, 3],
+            output_wires=[4, 5],
+            mod=mod,
+            work_wires=[6, 7],
+            output_wires_zeroed=output_wires_zeroed,
+        )
+
+        assert _out_multiplier_with_qft.is_applicable(**op.arguments)
+        assert_valid_decomp_rule(op, _out_multiplier_with_qft)
+
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "applicable_rules"),
         _DECOMP_NEW_OUTPUT_WIRES_ZEROED_CASES,
@@ -597,7 +614,7 @@ class TestOutMultiplier:
         work_wires = [5, 10]
         dev = qp.device("lightning.qubit")
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():
