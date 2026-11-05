@@ -40,7 +40,7 @@ from .multix import MultiX
 
 
 def preprocess_qrom_inputs(bitstrings, control_wires, target_wires, work_wires):
-    """Pre-process and validated the inputs to :class:`~.QROM` or :class:`~.QROMLoad` (excluding
+    """Pre-process and validate the inputs to :class:`~.QROM` or :class:`~.QROMLoad` (excluding
     ``clean`` for the latter).
     """
     control_wires = Wires(control_wires)
@@ -78,79 +78,75 @@ def preprocess_qrom_inputs(bitstrings, control_wires, target_wires, work_wires):
 
 
 class QROM(Operator2):
-    r"""Applies the QROM operator to a target register in an arbitrary state.
+    r"""Flip bits of a target register, depending on the index stored in a control register.
 
-    This operator applies bit flips encoded by bitstrings that depend on the computational basis
-    state of a control register:
+    For :math:`L` classical bitstrings :math:`b_0,\dots,b_{L-1}`, ``QROM`` reads the index
+    :math:`i` from the control register and XORs :math:`b_i` onto the target register:
 
     .. math::
-        \text{QROM}|i\rangle|t\rangle = |i\rangle |t \oplus b_i\rangle,
 
-    where :math:`t` is the target wire state before the operation, :math:`b_i` is the bitstring
-    associated with control register index :math:`i`, and the XOR operation :math:`\oplus` is
-    applied qubit-wise.
+        \text{QROM}|i\rangle|t\rangle = \begin{cases}
+            |i\rangle|t\oplus b_i\rangle & \text{if } i < L,\\
+            |i\rangle|t\rangle & \text{otherwise.}
+        \end{cases}
+
+    The target register can be in any state, including superpositions. ``QROM`` is
+    its own inverse, so applying it a second time uncomputes the data again.
+
+    If you know that the target register starts out in :math:`|0\rangle`, use :class:`~.QROMLoad`
+    instead. Given enough work wires, it switches to a cheaper decomposition, which ``QROM``
+    can't do. The same goes for uncomputation: if the target is known to end up in
+    :math:`|0\rangle`, use the adjoint of :class:`~.QROMLoad`.
+
+    .. seealso:: :class:`~.QROMLoad`, :class:`~.BBQRAM`, :class:`~.QROMStatePreparation`
 
     Args:
-        bitstrings (TensorLike): the bitstrings encoding the bit flips. ``bitstrings[i]`` contains
-            the bit flip mask that is applied controlled on the state :math:`|i\rangle`.
-        control_wires (WiresLike): the control register that stores the index state
-            :math:`|i\rangle` controlling which bit string is used as bit flip mask. Must contain
-            at least ``ceil_log2(bitstrings.shape[0])``.
-        target_wires (Sequence[int]): the wires to which the bit flips are applied. Must contain
-            ``bitstrings.shape[1]`` wires.
-        work_wires (Sequence[int]): the auxiliary wires used for the computation.
-
-    .. seealso:: :class:`~.BBQRAM`, :class:`~.QROMStatePreparation`, :class:`~.QROMLoad`.
+        bitstrings (TensorLike | Sequence[str]): the :math:`L` bitstrings, either as a 2D array of
+            bits or as a sequence of strings like ``"0110"``. ``bitstrings[i]`` is XORed onto the
+            target register if the control register is in the state :math:`|i\rangle`.
+        control_wires (WiresLike): the control register holding the index :math:`i`, most
+            significant bit first. Requires at least :math:`\lceil\log_2 L\rceil` wires.
+        target_wires (WiresLike): the target register, with one wire per bit of the bitstrings.
+        work_wires (WiresLike): auxiliary wires, which need to start in :math:`|0\rangle` and are
+            returned to it. Up to ``len(control_wires) - 1`` work wires make the decomposition
+            cheaper; more are not used.
 
     .. note::
-        QRAM and QROM, though similar, have different applications and purposes. QRAM is intended
-        for read-and-write capabilities, where the stored data can be loaded and changed. QROM is
-        designed to only load stored data into a quantum register.
+
+        QROM and QRAM sound alike, but QRAM is about reading *and* writing data stored in a
+        quantum memory, whereas QROM only reads classical data that is hardcoded into the circuit.
 
     **Example**
 
-    In this example, the QROM operator is applied to encode the third bitstring, associated
-    with index 2, in the target wires.
-
-    TODO: NICER EXAMPLE THAT USES NONZERO TARGET WIRES
+    Let's take four 3-bit strings, store the index :math:`i=2` in the control register, and
+    prepare the target register in some basis state :math:`|t\rangle=|101\rangle`:
 
     .. code-block:: python
 
-        # a list of bitstrings is defined
-        bitstrings = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
+        bitstrings = ["010", "111", "110", "000"]
 
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev, shots=1)
+        @qp.qnode(qp.device("default.qubit"), shots=1)
         def circuit():
-
-            # the third index is encoded in the control wires [0, 1]
-            qp.BasisState([1, 0], wires = [0,1])
-
-            qp.QROM(bitstrings = bitstrings,
-                    control_wires = [0,1],
-                    target_wires = [2,3,4],
-                    work_wires = [5,6,7])
-
-            return qp.sample(wires = [2,3,4])
+            qp.BasisState([1, 0], wires=[0, 1])
+            qp.BasisState([1, 0, 1], wires=[2, 3, 4])
+            qp.QROM(bitstrings, control_wires=[0, 1], target_wires=[2, 3, 4], work_wires=[5])
+            return qp.sample(wires=[2, 3, 4])
 
     >>> print(circuit())
-    [[1 1 0]]
+    [[0 1 1]]
 
-    If the number of bitstrings :math:`L` is smaller than ``2**len(control_wires)`` ,
-    the operator acts as the identity on the ``target_wires`` for the states :math:`|i\rangle`
-    of the ``control_wires`` with :math:`i\geq L`. This means that a :math:`|0\rangle`-controlled
-    ``QROM`` is equivalent to ``QROM`` with the same ``bitstrings`` if the additional control
-    wires are inserted at the beginning of ``control_wires``.
+    That's the prepared target register state XORed with the :math:`i=2` bitstring,
+    :math:`101\oplus 110=011`, as expected.
 
-    TODO ADD CODE EXAMPLE OR PSEUDO-FORMULA OR SO
+    Since indices :math:`i\geq L` leave the target untouched, a ``QROM`` controlled on
+    :math:`|0\rangle` is just a ``QROM`` with an additional control wire in front:
 
-    .. note::
-
-        If the ``target_wires`` are guaranteed to start out in the state :math:`|0\rangle`, use
-        :class:`~.QROMLoad` instead to reduce quantum resources. The same holds for
-        ``Adjoint(QROM)`` if the ``target_wires`` are guaranteed to end up in the state
-        :math:`|0\rangle`.
+    >>> bitstrings = ["01", "11", "10"]
+    >>> op = qp.QROM(bitstrings, control_wires=[0, 1, 2], target_wires=[3, 4], work_wires=[])
+    >>> base = qp.QROM(bitstrings, control_wires=[1, 2], target_wires=[3, 4], work_wires=[])
+    >>> ctrl_op = qp.ctrl(base, control=0, control_values=0)
+    >>> np.allclose(qp.matrix(op), qp.matrix(ctrl_op, wire_order=op.wires))
+    True
 
     """
 
@@ -178,61 +174,6 @@ class QROM(Operator2):
     def wires(self):
         """All wires involved in the operation."""
         return self.control_wires + self.target_wires + self.work_wires
-
-
-def _calculate_select_swap_sizes(
-    num_bitstrings, num_control_wires, num_targets, num_work_wires, **_
-):
-    """Calculates the register sizes for the Select-SWAP decomposition.
-
-    This utility function determines how many auxiliary wires from the total pool
-    should be allocated to the Select operation versus the SWAP network.
-
-    Args:
-        num_bitstrings (int): number of bitstrings/entries in the data
-        num_control_wires (int): number of control wires
-        num_targets (int): number of target wires (bitstring length)
-        num_work_wires (int): total number of available work wires
-
-    Returns:
-        tuple[int]: ``(num_control_wires_select, num_work_wires_select, num_work_wires_swap,
-        num_work_wires_cswap, depth)`` — control and work wires assigned to the Select component,
-        work wires assigned to the SWAP network, and the number of bitstrings loaded in parallel.
-    """
-
-    if num_work_wires < num_control_wires - 1:
-        return num_control_wires, num_work_wires, 0, 0, 1
-
-    # Initialize available swap space using total work wires
-    num_work_wires_swap = num_work_wires
-    num_wires_swap = num_targets + num_work_wires_swap
-
-    # Calculate depth: how many bitstrings we can load in parallel (power of 2)
-    depth = num_wires_swap // num_targets
-    depth = 1 << math.floor_log2(min(depth, num_bitstrings))
-
-    # Recalculate actual wires used by SWAP and the remaining for Select
-    num_work_wires_swap = num_targets * depth - num_targets
-    num_work_wires_select = num_work_wires - num_work_wires_swap
-
-    # Adjust depth if Select doesn't have enough work wires for the required control logic
-    num_control_wires_select = num_control_wires - int(math.floor_log2(depth))
-    while num_work_wires_select < num_control_wires_select - 1:
-        depth = depth // 2
-        num_work_wires_swap = num_targets * (depth - 1)
-        num_work_wires_select = num_work_wires - num_work_wires_swap
-        num_control_wires_select = num_control_wires - int(math.floor_log2(depth))
-
-    # As soon as there is an excess work wire for Select, reroute it to the CSWAPs themselves.
-    num_work_wires_cswap = int(num_work_wires_select - max(0, num_control_wires_select - 1) >= 1)
-
-    return (
-        num_control_wires_select,
-        num_work_wires_select,
-        num_work_wires_swap,
-        num_work_wires_cswap,
-        depth,
-    )
 
 
 def _measurement_uncompute(work_wire, ctrl_wires, targets, product):

@@ -37,74 +37,78 @@ from .qrom import QROM, preprocess_qrom_inputs
 
 
 class QROMLoad(Operator2):
-    r"""Apply a bitstring-loading QROM to a zeroed target register.
+    r"""Load bitstrings into a zeroed target register, depending on the index stored in a control
+    register.
 
-    This operator loads bitstrings depending on the computational basis state of a control register
-    into a target register that starts in the state :math:`|0\rangle`:
+    For :math:`L` classical bitstrings :math:`b_0,\dots,b_{L-1}`, ``QROMLoad`` reads the index
+    :math:`i` from the control register and writes :math:`b_i` into the target register, which
+    has to start out in :math:`|0\rangle`:
 
     .. math::
-        \text{QROM}|i\rangle|0\rangle = |i\rangle | b_i\rangle,
 
-    where :math:`b_i` is the bitstring associated with control register index :math:`i`.
+        \text{QROMLoad}|i\rangle|0\rangle = \begin{cases}
+            |i\rangle|b_i\rangle & \text{if } i < L,\\
+            |i\rangle|0\rangle & \text{otherwise.}
+        \end{cases}
+
+    So this is :class:`~.QROM` with the promise of a zeroed target, and that promise unlocks
+    reduced quantum resources: given enough work wires to hold additional copies of the target
+    register, ``QROMLoad`` is decomposed with `Select-SWAP <https://arxiv.org/abs/1812.00954>`__.
+    It loads several bitstrings in parallel and then swaps the right one into the target register,
+    trading qubits for fewer T gates. With fewer work wires, it simply falls back to ``QROM``.
+
+    To unload the data again, apply ``qp.adjoint`` of ``QROMLoad``.
+
+    .. warning::
+
+        If the target register does not start out in :math:`|0\rangle`, the result depends on the
+        decomposition and generally is *not* the XOR you would get from :class:`~.QROM`. Use
+        :class:`~.QROM` if you cannot assume a zeroed target.
+
+    .. seealso:: :class:`~.QROM`, :class:`~.BBQRAM`, :class:`~.QROMStatePreparation`
 
     Args:
-        bitstrings (TensorLike): the bitstrings to be loaded. ``bitstrings[i]`` contains
-            the bitstring that is loaded controlled on the state :math:`|i\rangle`.
-        control_wires (WiresLike): the control register that stores the index state
-            :math:`|i\rangle` controlling which bit string is loaded. Must contain
-            at least ``ceil_log2(bitstrings.shape[0])`` wires.
-        target_wires (Sequence[int]): the wires into which the bitstrings are loaded. Must contain
-            ``bitstrings.shape[1]`` wires in the state :math:`|0\rangle`.
-        work_wires (Sequence[int]): the auxiliary wires used for the computation. Must start in the
-            state :math:`|0\rangle`.
-        clean (bool): whether the ``work_wires`` are returned to the state :math:`|0\rangle`.
-
-    .. seealso:: :class:`~.QROM`, :class:`~.BBQRAM`, :class:`~.QROMStatePreparation`.
-
-    .. note::
-        QRAM and QROM, though similar, have different applications and purposes. QRAM is intended
-        for read-and-write capabilities, where the stored data can be loaded and changed. QROM is
-        designed to only load stored data into a quantum register.
+        bitstrings (TensorLike | Sequence[str]): the :math:`L` bitstrings, either as a 2D array of
+            bits or as a sequence of strings like ``"0110"``. ``bitstrings[i]`` is loaded if the
+            control register is in the state :math:`|i\rangle`.
+        control_wires (WiresLike): the control register holding the index :math:`i`, most
+            significant bit first. Requires at least :math:`\lceil\log_2 L\rceil` wires.
+        target_wires (WiresLike): the target register, with one wire per bit of the bitstrings.
+            Needs to start in :math:`|0\rangle`.
+        work_wires (WiresLike): auxiliary wires, which need to start in :math:`|0\rangle`. The more
+            work wires, the more bitstrings Select-SWAP can load in parallel.
+        clean (bool): whether to return the ``work_wires`` to :math:`|0\rangle`. With
+            ``clean=False``, they are left in a garbage state, which cuts the cost of Select-SWAP
+            by more than half. Defaults to ``True``.
 
     **Example**
 
-    In this example, the ``QROMLoad`` operator is applied to load the third bitstring, associated
-    with index 2, in the target wires.
+    Consider four 3-bit strings, store the index :math:`i=2` in the control register, and
+    apply ``QROMLoad``:
 
     .. code-block:: python
 
-        # a list of bitstrings is defined
-        bitstrings = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
+        bitstrings = ["010", "111", "110", "000"]
 
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev, shots=1)
+        @qp.qnode(qp.device("default.qubit"), shots=1)
         def circuit():
-            # encode the third index in the control wires [0, 1]
-            qp.BasisState([1, 0], wires = [0, 1])
-
-            qp.QROMLoad(
-                bitstrings = bitstrings,
-                control_wires = [0, 1],
-                target_wires = [2, 3, 4],
-                work_wires = [5, 6, 7],
-            )
-
-            return qp.sample(wires = [2, 3, 4])
+            qp.BasisState([1, 0], wires=[0, 1])
+            qp.QROMLoad(bitstrings, control_wires=[0, 1], target_wires=[2, 3, 4])
+            return qp.sample(wires=[2, 3, 4])
 
     >>> print(circuit())
     [[1 1 0]]
 
-    If the number of bitstrings :math:`L` is smaller than ``2**len(control_wires)`` ,
-    the operator acts as the identity on the ``target_wires`` for the states :math:`|i\rangle`
-    of the ``control_wires`` with :math:`i\geq L`. This means that a :math:`|0\rangle`-controlled
-    ``QROMLoad`` is equivalent to ``QROMLoad`` with the same ``bitstrings`` if the additional control
-    wires are inserted at the beginning of ``control_wires``.
+    This is exactly ``bitstrings[2]``, loaded into the target register.
 
-    .. note::
+    **Cheaper decomposition with Select-SWAP**
 
-        If the ``target_wires`` are not guaranteed to start out in the state :math:`|0\rangle`,
-        :class:`~.QROMLoad` may not implement the intended operation. Use :class:`~.QROM` instead.
+    For the example above, we could just have used :class:`~.QROM` instead, and without work
+    wires ``QROMLoad`` even falls back to ``QROM`` itself.
+    To demonstrate the savings we can get from additional work space if the
+    target wires are guaranteed to start in the state :math:`|0\rangle`, let us
+    compare the two operators on a larger example:
+
 
     """
 
