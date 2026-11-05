@@ -410,7 +410,7 @@ class AliasSampling(Operator2):
 
                 :class:`~.UniformPrep` | :math:`1` | 1
                 :class:`~.Hadamard` | :math:`\mu` | 2
-                :class:`~.QROM` | :math:`1` | 1
+                :class:`~.QROMLoad` | :math:`1` | 1
                 :class:`~.LeftQuantumComparator` | :math:`1` | 1
                 :class:`~.CSWAP` | :math:`\ell` | 2
     """
