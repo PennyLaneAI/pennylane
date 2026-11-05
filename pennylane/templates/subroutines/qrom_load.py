@@ -34,7 +34,7 @@ from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .multix import MultiX
-from .qrom import QROM, preprocess_qrom_inputs
+from .qrom import QROM, _unary_iteration_num_elbows, preprocess_qrom_inputs
 
 
 class QROMLoad(Operator2):
@@ -56,7 +56,8 @@ class QROMLoad(Operator2):
     reduced quantum resources: given enough work wires to hold additional copies of the target
     register, ``QROMLoad`` is decomposed with `Select-SWAP <https://arxiv.org/abs/1812.00954>`__.
     It loads several bitstrings in parallel and then swaps the right one into the target register,
-    trading qubits for fewer T gates. With fewer work wires, it simply falls back to ``QROM``.
+    trading qubits for fewer T gates. With fewer work wires, or if loading in parallel does not pay
+    off, it simply falls back to ``QROM``.
 
     To unload the data again, apply ``qp.adjoint`` of ``QROMLoad``.
 
@@ -77,7 +78,8 @@ class QROMLoad(Operator2):
         target_wires (WiresLike): the target register, with one wire per bit of the bitstrings.
             Needs to start in :math:`|0\rangle`.
         work_wires (WiresLike): auxiliary wires, which need to start in :math:`|0\rangle`. The more
-            work wires, the more bitstrings Select-SWAP can load in parallel.
+            work wires, the more bitstrings Select-SWAP can load in parallel. It only uses as many
+            as pay off, though, so not all work wires are necessarily used.
         clean (bool): whether to return the ``work_wires`` to :math:`|0\rangle`. With
             ``clean=False``, they are left in a garbage state, which cuts the cost of Select-SWAP
             by more than half. Defaults to ``True``.
@@ -166,7 +168,9 @@ class QROMLoad(Operator2):
         requested bitstring with controlled ``SWAP`` gates, moving it into the target register.
         In general, loading :math:`k` bitstrings of length :math:`n` in parallel divides the number
         of entries in the ``QROM`` block by :math:`k`, at the price of :math:`n(k-1)` controlled
-        ``SWAP`` gates.
+        ``SWAP`` gates. ``QROMLoad`` weighs the two against each other and picks the :math:`k`
+        that minimizes the combined cost, among the powers of two that fit into the work wires.
+        Here, eight bitstrings in parallel would not fit, and two would be more expensive than four.
 
     """
 
@@ -259,19 +263,38 @@ def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires, ad
     outer_loop(outer)()
 
 
+def _select_swap_cost(num_bitstrings, num_control_wires, num_targets, log_depth, clean):
+    """Number of Toffoli-like gates, i.e., elbows of the Select component and controlled SWAPs,
+    of the Select-SWAP decomposition loading ``2**log_depth`` bitstrings in parallel. For
+    ``log_depth=0``, this is the cost of a single plain ``QROM``, irrespective of ``clean``."""
+    num_control_wires_select = num_control_wires - log_depth
+    num_columns = -(-num_bitstrings // 2**log_depth)
+    num_elbows = 0
+    if num_control_wires_select >= 2:
+        num_elbows = _unary_iteration_num_elbows(num_control_wires_select, num_columns)
+    num_cswaps = num_targets * (2**log_depth - 1)
+    if clean and log_depth > 0:
+        return 2 * num_elbows + 4 * num_cswaps
+    return num_elbows + num_cswaps
+
+
 def _calculate_select_swap_sizes(
-    num_bitstrings, num_control_wires, num_targets, num_work_wires, **_
+    num_bitstrings, num_control_wires, num_targets, num_work_wires, clean=True, **_
 ):
     """Calculates the register sizes for the Select-SWAP decomposition.
 
-    This utility function determines how many auxiliary wires from the total pool
-    should be allocated to the Select operation versus the SWAP network.
+    This utility function determines how many bitstrings to load in parallel, and how many
+    auxiliary wires from the total pool should be allocated to the Select operation versus the
+    SWAP network. Among all depths that fit into the work wires, the one with the lowest cost
+    according to ``_select_swap_cost`` is chosen, preferring smaller depths in case of a tie.
 
     Args:
         num_bitstrings (int): number of bitstrings/entries in the data
         num_control_wires (int): number of control wires
         num_targets (int): number of target wires (bitstring length)
         num_work_wires (int): total number of available work wires
+        clean (bool): whether the work wires are returned to the zero state, which changes the
+            cost of the decomposition
 
     Returns:
         tuple[int]: ``(num_control_wires_select, num_work_wires_select, num_work_wires_swap,
@@ -283,26 +306,25 @@ def _calculate_select_swap_sizes(
     if num_work_wires < num_control_wires - 1:
         return num_control_wires, num_work_wires, 0, 0, 1
 
-    # Initialize available swap space using total work wires
-    num_work_wires_swap = num_work_wires
-    num_wires_swap = num_targets + num_work_wires_swap
-
-    # Calculate depth: how many bitstrings we can load in parallel (power of 2)
-    depth = num_wires_swap // num_targets
-    depth = 1 << math.floor_log2(min(depth, num_bitstrings))
-
-    # Recalculate actual wires used by SWAP and the remaining for Select
-    num_work_wires_swap = num_targets * depth - num_targets
+    num_bitstrings = int(num_bitstrings)
+    # Work wires for the SWAP network, and for the unary iteration of the Select component
+    log_depths = [
+        log_depth
+        for log_depth in range(num_control_wires + 1)
+        if num_targets * (2**log_depth - 1) + max(0, num_control_wires - log_depth - 1)
+        <= num_work_wires
+    ]
+    log_depth = min(
+        log_depths,
+        key=lambda j: (
+            _select_swap_cost(num_bitstrings, num_control_wires, num_targets, j, clean),
+            j,
+        ),
+    )
+    depth = 2**log_depth
+    num_control_wires_select = num_control_wires - log_depth
+    num_work_wires_swap = num_targets * (depth - 1)
     num_work_wires_select = num_work_wires - num_work_wires_swap
-
-    # Adjust depth if Select doesn't have enough work wires for the required control logic
-    num_control_wires_select = num_control_wires - int(math.floor_log2(depth))
-    while num_work_wires_select < num_control_wires_select - 1:
-        depth = depth // 2
-        num_work_wires_swap = num_targets * (depth - 1)
-        num_work_wires_select = num_work_wires - num_work_wires_swap
-        num_control_wires_select = num_control_wires - int(math.floor_log2(depth))
-
     num_work_wires_cswap = int(num_work_wires_select >= 1)
 
     return (
@@ -317,7 +339,8 @@ def _calculate_select_swap_sizes(
 def _select_swap_condition(bitstrings, control_wires, target_wires, work_wires, clean):
     # pylint: disable=unused-argument
     """We use Select-SWAP only when there are enough work wires for unary iteration on the
-    nested select QROM and an actual SWAP network is used on top, i.e. for depth > 1."""
+    nested select QROM and an actual SWAP network is used on top, i.e. for depth > 1. If the
+    cost-optimal depth is 1, the plain QROM fallback is the better decomposition."""
     num_control_wires = len(control_wires)
     num_work_wires = len(work_wires)
 
@@ -325,7 +348,7 @@ def _select_swap_condition(bitstrings, control_wires, target_wires, work_wires, 
         return False
 
     *_, depth = _calculate_select_swap_sizes(
-        len(bitstrings), num_control_wires, len(target_wires), num_work_wires
+        len(bitstrings), num_control_wires, len(target_wires), num_work_wires, clean
     )
     return depth > 1
 
@@ -340,7 +363,7 @@ def _select_swap_resources(
     num_work_wires = len(work_wires)
 
     num_control_wires_select, _, _, num_work_wires_cswap, depth = _calculate_select_swap_sizes(
-        num_bitstrings, num_control_wires, num_targets, num_work_wires
+        num_bitstrings, num_control_wires, num_targets, num_work_wires, clean
     )
     num_work_wires_select = max(0, num_control_wires_select - 1)
     num_columns = int(np.ceil(num_bitstrings / depth))
@@ -381,7 +404,7 @@ def _select_swap(
 
     num_control_wires_select, _, num_work_wires_swap, num_work_wires_cswap, depth = (
         _calculate_select_swap_sizes(
-            len(bitstrings), len(control_wires), len(target_wires), len(work_wires)
+            len(bitstrings), len(control_wires), len(target_wires), len(work_wires), clean
         )
     )
 

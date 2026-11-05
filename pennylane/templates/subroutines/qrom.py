@@ -591,6 +591,28 @@ def _unary_iteration_split(num_control_wires, num_work_wires):
     return num_control_wires_tree, num_control_wires - num_control_wires_tree
 
 
+def _unary_iteration_num_elbows(num_control_wires_tree, num_blocks):
+    """Number of elbows for unary iteration over ``num_blocks`` slots with a tree spanning
+    ``num_control_wires_tree >= 2`` control wires."""
+    # The number of elbows required for non-partial unary iteration over K slots with c control
+    # nodes is given by
+    # N(c, K) = c + K - 2 - ‖K-1‖_H - int(K>2^{c-1}),
+    # where ‖.‖_H denotes the Hamming weight, or bit count.
+    # To see this, note that adding a control node to a given unary iteration is done by using the
+    # given iteration, and replacing each "slot" (controlled unitary) by a construction that
+    # yields two new "slots" and requires one elbow. Consequently, the addition of a control
+    # node uses the given iteration with ⌈K/2⌉ slots, and ⌈K/2⌉ additional elbows, leading to the
+    # recursion relation
+    # N(c+1, K) = N(c, ⌈K/2⌉) + ⌈K/2⌉
+    # In addition, we know that for two control nodes, just a single elbow is required:
+    # N(2, K) = 1
+    # The formula at the top is the solution to this recursion relation. An alternative expression
+    # for the same is
+    # N(c,K)=1+∑_{j=1}^{c−2} ⌈K⋅2^{−j}⌉
+    more_than_half = int(num_blocks > 2 ** (num_control_wires_tree - 1))
+    return num_control_wires_tree + num_blocks - 2 - (num_blocks - 1).bit_count() - more_than_half
+
+
 def _qrom_unary_iteration_resources(
     bitstrings,
     control_wires,
@@ -621,26 +643,8 @@ def _qrom_unary_iteration_resources(
     # The tree iterates over blocks of ``2**num_control_wires_extra`` bitstrings rather than over single
     # bitstrings, so the elbow count below is in terms of the number of blocks.
     num_blocks = -(-K // (1 << num_control_wires_extra))
-
-    # The number of elbows required for non-partial unary iteration over K slots with c control
-    # nodes is given by
-    # N(c, K) = c + K - 2 - ‖K-1‖_H - int(K>2^{c-1}),
-    # where ‖.‖_H denotes the Hamming weight, or bit count.
-    # To see this, note that adding a control node to a given unary iteration is done by using the
-    # given iteration, and replacing each "slot" (controlled unitary) by a construction that
-    # yields two new "slots" and requires one elbow. Consequently, the addition of a control
-    # node uses the given iteration with ⌈K/2⌉ slots, and ⌈K/2⌉ additional elbows, leading to the
-    # recursion relation
-    # N(c+1, K) = N(c, ⌈K/2⌉) + ⌈K/2⌉
-    # In addition, we know that for two control nodes, just a single elbow is required:
-    # N(2, K) = 1
-    # The formula at the top is the solution to this recursion relation. An alternative expression
-    # for the same is
-    # N(c,K)=1+∑_{j=1}^{c−2} ⌈K⋅2^{−j}⌉
     more_than_half = int(num_blocks > 2 ** (num_control_wires_tree - 1))
-    num_elbows = (
-        num_control_wires_tree + num_blocks - 2 - (num_blocks - 1).bit_count() - more_than_half
-    )
+    num_elbows = _unary_iteration_num_elbows(num_control_wires_tree, num_blocks)
     return {
         TemporaryAND: num_elbows,
         qp_ops.adjoint(TemporaryAND(Wire[3])): num_elbows,
