@@ -95,7 +95,7 @@ class QROM(Operator2):
 
     If you know that the target register starts out in :math:`|0\rangle`, use :class:`~.QROMLoad`
     instead. Given enough work wires, it switches to a cheaper decomposition, which ``QROM``
-    can't do. The same goes for uncomputation: if the target is known to end up in
+    cannot do. The same goes for uncomputation: if the target is known to end up in
     :math:`|0\rangle`, use the adjoint of :class:`~.QROMLoad`.
 
     .. seealso:: :class:`~.QROMLoad`, :class:`~.BBQRAM`, :class:`~.QROMStatePreparation`
@@ -118,7 +118,7 @@ class QROM(Operator2):
 
     **Example**
 
-    Let's take four 3-bit strings, store the index :math:`i=2` in the control register, and
+    Let us take four 3-bit strings, store the index :math:`i=2` in the control register, and
     prepare the target register in some basis state :math:`|t\rangle=|101\rangle`:
 
     .. code-block:: python
@@ -135,7 +135,7 @@ class QROM(Operator2):
     >>> print(circuit())
     [[0 1 1]]
 
-    That's the prepared target register state XORed with the :math:`i=2` bitstring,
+    This is the prepared target register state XORed with the :math:`i=2` bitstring,
     :math:`101\oplus 110=011`, as expected.
 
     Since indices :math:`i\geq L` leave the target untouched, a ``QROM`` controlled on

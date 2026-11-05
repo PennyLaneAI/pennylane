@@ -21,6 +21,7 @@ from functools import partial
 import numpy as np
 
 from pennylane import capture, compiler, math
+from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
@@ -93,7 +94,7 @@ class QROMLoad(Operator2):
         @qp.qnode(qp.device("default.qubit"), shots=1)
         def circuit():
             qp.BasisState([1, 0], wires=[0, 1])
-            qp.QROMLoad(bitstrings, control_wires=[0, 1], target_wires=[2, 3, 4])
+            qp.QROMLoad(bitstrings, control_wires=[0, 1], target_wires=[2, 3, 4], work_wires=[5])
             return qp.sample(wires=[2, 3, 4])
 
     >>> print(circuit())
@@ -101,14 +102,71 @@ class QROMLoad(Operator2):
 
     This is exactly ``bitstrings[2]``, loaded into the target register.
 
-    **Cheaper decomposition with Select-SWAP**
+    .. details::
+        :title: Cheaper decomposition with Select-SWAP
 
-    For the example above, we could just have used :class:`~.QROM` instead, and without work
-    wires ``QROMLoad`` even falls back to ``QROM`` itself.
-    To demonstrate the savings we can get from additional work space if the
-    target wires are guaranteed to start in the state :math:`|0\rangle`, let us
-    compare the two operators on a larger example:
+        For the example above, we could just have used :class:`~.QROM` instead, and without work
+        wires ``QROMLoad`` even falls back to ``QROM`` itself. To demonstrate the savings we can
+        get from additional work space if the target wires are guaranteed to start in the state
+        :math:`|0\rangle`, let us compare the two operators on a larger example: 256 bitstrings
+        of length 2, with 11 work wires. We let :func:`~.estimate` count the T gates in their
+        decompositions into Clifford+T gates:
 
+        .. code-block:: python
+
+            bitstrings = np.random.default_rng(42).integers(0, 2, size=(256, 2))
+            reg = qp.registers({"control": 8, "target": 2, "work": 11})
+            args = (bitstrings, reg["control"], reg["target"], reg["work"])
+
+            def t_count(op_type, **kwargs):
+                @qp.qjit(capture=True)
+                @qp.qnode(qp.device("null.qubit", wires=21))
+                def circuit():
+                    op_type(*args, **kwargs)
+                    return qp.probs()
+
+                counts = qp.estimate(circuit, target=qp.gate_sets.CLIFFORD_T)().resources
+                return counts.quantum_operations["T"] + counts.quantum_operations["Adjoint(T)"]
+
+        >>> t_count(qp.QROM), t_count(qp.QROMLoad), t_count(qp.QROMLoad, clean=False)
+        (1012, 656, 286)
+
+        So ``QROMLoad`` saves more than a third of the T gates, and if we do not mind garbage on the
+        work wires, ``clean=False`` saves more than two thirds. To see where the savings come from,
+        let us draw the Select-SWAP decomposition with ``clean=False``:
+
+        >>> op = qp.QROMLoad(*args, clean=False)
+        >>> rule = qp.list_decomps(qp.QROMLoad)["_select_swap"]
+        >>> print(qp.draw(rule, show_matrices=False)(**op.arguments))
+         0: ─╭◑────────────────────────────────────────────┤
+         1: ─├◑────────────────────────────────────────────┤
+         2: ─├◑────────────────────────────────────────────┤
+         3: ─├◑────────────────────────────────────────────┤
+         4: ─├◑────────────────────────────────────────────┤
+         5: ─├◑────────────────────────────────────────────┤
+         6: ─│─────────╭●────╭●────╭●────╭●────────────────┤
+         7: ─│─────────│─────│─────│─────│─────╭●────╭●────┤
+         8: ─├QROM(M0)─│─────│─────├SWAP─│─────├SWAP─│─────┤
+         9: ─├QROM(M0)─│─────│─────│─────├SWAP─│─────├SWAP─┤
+        10: ─├QROM(M0)─├SWAP─│─────│─────│─────╰SWAP─│─────┤
+        11: ─├QROM(M0)─│─────├SWAP─│─────│───────────╰SWAP─┤
+        12: ─├QROM(M0)─│─────│─────╰SWAP─│─────────────────┤
+        13: ─├QROM(M0)─│─────│───────────╰SWAP─────────────┤
+        14: ─├QROM(M0)─╰SWAP─│─────────────────────────────┤
+        15: ─├QROM(M0)───────╰SWAP─────────────────────────┤
+        16: ─├work─────────────────────────────────────────┤
+        17: ─├work─────────────────────────────────────────┤
+        18: ─├work─────────────────────────────────────────┤
+        19: ─├work─────────────────────────────────────────┤
+        20: ─╰work─────────────────────────────────────────┤
+
+        The inner ``QROM`` only reads the first six control wires, so it has 64 instead of 256
+        entries. Each entry stacks four bitstrings, which are loaded onto the target wires 8 and 9
+        *and* the work wires 10 to 15 at once. The two remaining control wires then pick the
+        requested bitstring with controlled ``SWAP`` gates, moving it into the target register.
+        In general, loading :math:`k` bitstrings of length :math:`n` in parallel divides the number
+        of entries in the ``QROM`` block by :math:`k`, at the price of :math:`n(k-1)` controlled
+        ``SWAP`` gates.
 
     """
 
@@ -195,7 +253,8 @@ def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires, ad
 
             layer_loop(swap_layer)()
 
-        inner_loop(inner)()
+        # The average of 2**i over all i, so that resource estimates count all SWAPs exactly
+        hint(inner_loop(inner), {"num-iters": (2**n_iters - 1) / n_iters})()
 
     outer_loop(outer)()
 
@@ -217,7 +276,8 @@ def _calculate_select_swap_sizes(
     Returns:
         tuple[int]: ``(num_control_wires_select, num_work_wires_select, num_work_wires_swap,
         num_work_wires_cswap, depth)`` — control and work wires assigned to the Select component,
-        work wires assigned to the SWAP network, and the number of bitstrings loaded in parallel.
+        work wires assigned to the SWAP network, work wires borrowed from the Select component by
+        the CSWAPs, and the number of bitstrings loaded in parallel.
     """
 
     if num_work_wires < num_control_wires - 1:
@@ -243,8 +303,7 @@ def _calculate_select_swap_sizes(
         num_work_wires_select = num_work_wires - num_work_wires_swap
         num_control_wires_select = num_control_wires - int(math.floor_log2(depth))
 
-    # As soon as there is an excess work wire for Select, reroute it to the CSWAPs themselves.
-    num_work_wires_cswap = int(num_work_wires_select - max(0, num_control_wires_select - 1) >= 1)
+    num_work_wires_cswap = int(num_work_wires_select >= 1)
 
     return (
         num_control_wires_select,
@@ -327,8 +386,12 @@ def _select_swap(
     )
 
     swap_work_wires = work_wires[:num_work_wires_swap]
-    select_work_wires = work_wires[num_work_wires_swap : len(work_wires) - num_work_wires_cswap]
-    cswap_work_wires = work_wires[len(work_wires) - num_work_wires_cswap :]
+    num_work_wires_select = max(0, num_control_wires_select - 1)
+    select_work_wires = work_wires[
+        num_work_wires_swap : num_work_wires_swap + num_work_wires_select
+    ]
+    # The Select block returns its work wires to |0>, so the CSWAPs can borrow one of them.
+    cswap_work_wires = work_wires[num_work_wires_swap : num_work_wires_swap + num_work_wires_cswap]
     swap_wires = Wires(target_wires) + Wires(swap_work_wires)
 
     select_control_wires = control_wires[:num_control_wires_select]
