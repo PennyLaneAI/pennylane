@@ -608,7 +608,7 @@ def test_too_many_work_wires_case():
         assert qrom_op.control_wires == qp.wires.Wires([])
         assert qrom_op.target_wires == qp.wires.Wires([2, 3, 4, 5])
 
-    for few, many in zip(gates_few_work[1:], gates_many_work[1:]):
+    for few, many in zip(gates_few_work[1:], gates_many_work[1:], strict=True):
         assert few.work_wires == qp.wires.Wires([])
         assert many.work_wires == qp.wires.Wires([16])
         qp.assert_equal(
