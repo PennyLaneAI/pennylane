@@ -15,7 +15,6 @@
 
 from __future__ import annotations
 
-import copy
 import re
 from collections.abc import Callable, Iterable, Sequence
 from functools import partial
@@ -23,15 +22,9 @@ from functools import partial
 from pennylane import capture
 from pennylane.core.transforms import CompilePipeline
 from pennylane.transforms import decompose
-from pennylane.workflow.get_compile_pipeline import _is_single_level, _levels_to_numbers
+from pennylane.workflow._levels import is_single_level, level_to_number, validate_level
 
-from ._utils import (
-    apply_partial_args,
-    build_circuit_specs,
-    check_no_tape_transforms,
-    unwrap_partial,
-    unwrap_qjit_qnode,
-)
+from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial, unwrap_qjit_qnode
 from .mlir_specs import resources_from_analysis_pass
 from .resource import CircuitSpecs
 
@@ -51,20 +44,20 @@ def _decomps_from_pipeline(pipeline: CompilePipeline) -> dict:
 
 def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
     """Decompose a qjit'd QNode at ``level`` into the ``target`` gate set and return its specs."""
-    # pylint: disable=import-outside-toplevel,protected-access,no-value-for-parameter
+    # pylint: disable=import-outside-toplevel,no-value-for-parameter
     original_qnode = unwrap_qjit_qnode(func, fn_name="qp.estimate")
     from catalyst.utils.exceptions import CompileError
 
     compile_pipeline = original_qnode.compile_pipeline
-    check_no_tape_transforms(compile_pipeline)
+    validate_level(level, compile_pipeline)
 
     # The ``isinstance`` check avoids elementwise comparisons, e.g. with NumPy arrays
     if isinstance(level, str) and level == "device":
         raise NotImplementedError("qp.estimate does not support level='device' yet.")
     if (
-        isinstance(level, slice)
-        or _levels_to_numbers(level, compile_pipeline) != [0]
-        or not _is_single_level(level)
+        not is_single_level(level)
+        or isinstance(level, slice)
+        or level_to_number(level, compile_pipeline) != 0
     ):
         raise NotImplementedError(
             f"qp.estimate only supports level='top' or level=0, instead got: {level!r}."
@@ -84,9 +77,9 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
         )
 
     # At level="top", the user transforms are skipped and only the decomposition is applied
-    estimate_qnode = copy.copy(original_qnode)
-    estimate_qnode._compile_pipeline = CompilePipeline(
-        decompose(gate_set=target, **_decomps_from_pipeline(original_qnode.compile_pipeline))
+    estimate_qnode = original_qnode.update_pipelines(
+        CompilePipeline(decompose(gate_set=target, **_decomps_from_pipeline(compile_pipeline))),
+        post_device_pipeline=original_qnode.post_device_pipeline,
     )
 
     try:

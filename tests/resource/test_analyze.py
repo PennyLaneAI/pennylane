@@ -51,7 +51,7 @@ class CapabilitiesDevice(qp.devices.NullQubit):
         return self._capabilities
 
 
-class TestAnalyze:
+class TestAnalyze:  # pylint: disable=too-many-public-methods
     """Test qp.analyze() with capture enabled and disabled."""
 
     @pytest.fixture
@@ -285,12 +285,14 @@ class TestAnalyze:
         ],
     )
     def test_slice_level_from_start(self, circuit, level_slice, level):
-        """Test that a slice from the start of the compile pipeline gives the same resources as
-        the level at the end of the slice."""
+        """Test that a slice from the start of the compile pipeline gives the same resources and
+        level name as the level at the end of the slice."""
 
         specs = qp.analyze(circuit, level=level_slice)(0.1)
+        expected = qp.analyze(circuit, level=level)(0.1)
 
-        assert specs.resources == qp.analyze(circuit, level=level)(0.1).resources
+        assert specs.level == expected.level
+        assert specs.resources == expected.resources
 
     def test_slice_level_with_negative_bounds(self, circuit):
         """Test that a slice with negative bounds is rejected, as in get_compile_pipeline."""
@@ -364,6 +366,25 @@ class TestAnalyze:
             "transforms are no longer supported.",
         ):
             qp.analyze(circuit, level="all-user")()
+
+    @pytest.mark.parametrize("level", [0, slice(0, 0)])
+    def test_tape_transforms_after_level(self, level):
+        """Test that tape transforms after the analyzed level are allowed, since they are not
+        applied."""
+
+        @qp.transform
+        def dummy_transform(tape):
+            """Returns a tape-only transform that can be used for testing"""
+            return (tape,), lambda res: res[0]
+
+        @qp.qjit
+        @dummy_transform
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def circuit():
+            qp.Hadamard(0)
+            return qp.expval(qp.Z(0))
+
+        assert qp.analyze(circuit, level=level)().resources.counts == {"Hadamard": 1}
 
     def test_error_with_non_qjit(self):
         """Test that a helpful error message is raised if the input is not QJIT'd."""

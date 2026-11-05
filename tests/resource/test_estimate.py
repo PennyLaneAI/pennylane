@@ -14,6 +14,7 @@
 """Unit tests for the estimate transform"""
 
 import importlib
+import warnings
 from functools import partial
 
 import numpy as np
@@ -295,6 +296,15 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         with pytest.raises(NotImplementedError, match="qp.estimate only supports level='top'"):
             qp.estimate(circuit, level=level, target=TARGET)(0.5)
 
+    def test_unsorted_sequence_does_not_warn(self, circuit):
+        """Test that an unsupported unsorted Sequence of levels raises an error without warning
+        about sorting it."""
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings("error", message="The 'level' argument has been sorted")
+            with pytest.raises(NotImplementedError, match="qp.estimate only supports"):
+                qp.estimate(circuit, level=[1, 0], target=TARGET)(0.5)
+
     @pytest.mark.parametrize("level", ["all-user", ["top"]])
     def test_multiple_levels_without_transforms(self, qnode, level):
         """Test that several levels are not supported, even if they all are level 0 because the
@@ -309,28 +319,29 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         with pytest.raises(NotImplementedError, match="does not support level='device' yet"):
             qp.estimate(circuit, level="device", target=TARGET)(0.5)
 
-    @pytest.mark.parametrize("level", [0.0, False, np.array([0, 1])])
+    @pytest.mark.parametrize(
+        "level",
+        [0.0, False, np.array([0]), np.zeros((1, 2), dtype=int), [], [0.5], slice(-1, None)],
+    )
     def test_invalid_level(self, circuit, level):
-        """Test that levels that are neither int nor str are rejected."""
+        """Test that invalid levels are rejected, even if they are of an unsupported type such as
+        a Sequence or a slice."""
 
         with pytest.raises(ValueError, match="Invalid level"):
             qp.estimate(circuit, level=level, target=TARGET)(0.5)
 
     def test_tape_transforms(self, qnode):
-        """Test that an error is raised if the user has applied tape transforms, as in
-        qp.analyze."""
+        """Test that tape transforms are allowed, since the user transforms are not applied at
+        level="top"."""
 
         @qp.transform
         def dummy_transform(tape):
             """Returns a tape-only transform that can be used for testing"""
             return (tape,), lambda res: res[0]
 
-        with pytest.raises(
-            ValueError,
-            match=r"Encountered the following tape transforms: .*dummy_transform.*\. Tape "
-            "transforms are no longer supported.",
-        ):
-            qp.estimate(qp.qjit(dummy_transform(qnode)), target=TARGET)(0.5)
+        specs = qp.estimate(qp.qjit(dummy_transform(qnode)), target=TARGET)(0.5)
+
+        assert specs.resources.counts == {"Hadamard": 4, "CNOT": 1, "RX": 1}
 
     @pytest.mark.parametrize("target", ["device", "user"])
     def test_unsupported_target(self, circuit, target):

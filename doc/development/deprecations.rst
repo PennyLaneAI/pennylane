@@ -233,7 +233,8 @@ Completed deprecation cycles
 
 * The :func:`~pennylane.workflow.get_transform_program` function has been removed.
   Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the compile pipeline
-  of a QNode, in which the device preprocessing is a single placeholder level. The tapes produced by the individual
+  of a QNode, in which the device preprocessing is a single placeholder level. The device preprocessing transforms can
+  be retrieved with :meth:`~pennylane.devices.Device.preprocess_transforms`, and the tapes produced by the individual
   gradient and device preprocessing transforms can be inspected with :func:`~pennylane.workflow.construct_batch`.
 
   - Deprecated in v0.45

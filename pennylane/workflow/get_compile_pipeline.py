@@ -15,149 +15,17 @@
 
 from __future__ import annotations
 
-import warnings
 from collections.abc import Sequence
-from numbers import Integral
 
 from pennylane.core.transforms import CompilePipeline
-from pennylane.core.transforms.compile_pipeline import _DEVICE_PREPROCESSING
 
+from ._levels import is_single_level, levels_to_slices, pipeline_at_slice
 from .qnode import QNode
 
 
 def _is_qjit(obj):
     """A method checking whether the object is compiled by catalyst.qjit"""
     return obj.__class__.__name__ == "QJIT" and hasattr(obj, "original_function")
-
-
-def _is_int_level(level) -> bool:
-    """Whether ``level`` is an integer level, such as an ``int`` or a NumPy integer, excluding
-    ``bool``."""
-    return isinstance(level, Integral) and not isinstance(level, bool)
-
-
-def _is_single_level(level) -> bool:
-    """Whether ``level`` selects a single compile pipeline, rather than a list of them."""
-    if isinstance(level, str):
-        return level not in ("all-user", "all")
-    return isinstance(level, slice) or _is_int_level(level)
-
-
-def _device_level(pipeline: CompilePipeline) -> int:
-    """The level number right after the device preprocessing, which counts as a single transform
-    after the user-applied transforms of ``pipeline``.
-
-    This is also the number of transforms, including the device preprocessing."""
-    return len(pipeline) + 1
-
-
-def _level_to_number(level: str | int, pipeline: CompilePipeline) -> int:
-    """Convert a single ``str`` or ``int`` level to its level number, which is the number of
-    transforms of ``pipeline``, followed by the device preprocessing, applied at that level."""
-    device_level = _device_level(pipeline)
-
-    if isinstance(level, str):
-        presets = {"top": 0, "user": len(pipeline), "device": device_level}
-        if level in presets:
-            return presets[level]
-        if level == "gradient":
-            raise ValueError("The level 'gradient' is no longer supported.")
-        found_level = pipeline.get_marker_level(level)
-        if found_level is None:
-            raise ValueError(
-                f"Marker name '{level}' not found in the compile pipeline. Builtin levels are "
-                f"'top', 'user', 'device', 'all-user', and 'all'. Markers are {pipeline.markers}."
-            )
-        return found_level
-
-    if _is_int_level(level):
-        level = int(level)
-        if not 0 <= level <= device_level:
-            raise ValueError(
-                f"The 'level' argument is out of bounds, got {level}. Levels range from 0 to "
-                f"{device_level}, the device level."
-            )
-        return level
-
-    raise ValueError(
-        f"Invalid level {level!r}, expected an int, str, slice, or a Sequence of int and str."
-    )
-
-
-def _levels_to_numbers(
-    level: str | int | Sequence[str | int], pipeline: CompilePipeline
-) -> list[int]:
-    """Convert ``level``, other than a ``slice``, to the sorted list of level numbers it selects.
-
-    A ``Sequence`` of levels is sorted, with duplicates removed.
-    """
-    # The ``isinstance`` checks avoid elementwise comparisons, e.g. with NumPy arrays
-    if isinstance(level, str) and level == "all-user":
-        # From level 0 up to the user level, included
-        return list(range(len(pipeline) + 1))
-    if isinstance(level, str) and level == "all":
-        # From level 0 up to the device level, included
-        return list(range(_device_level(pipeline) + 1))
-    if isinstance(level, str) or _is_int_level(level):
-        return [_level_to_number(level, pipeline)]
-
-    # ``bytes`` and ``bytearray`` are a ``Sequence`` of ``int``, but not a sequence of levels
-    if not isinstance(level, Sequence) or isinstance(level, (bytes, bytearray)):
-        raise ValueError(
-            f"Invalid level {level!r}, expected an int, str, slice, or a Sequence of int and str."
-        )
-    if not level:
-        raise ValueError(f"Invalid level {level!r}, which does not select any level.")
-
-    for lvl in level:
-        if not (isinstance(lvl, str) or _is_int_level(lvl)) or lvl in ("all-user", "all"):
-            raise ValueError(
-                f"Invalid level {lvl!r} in the level Sequence, expected an int, or a str other "
-                "than 'all-user' and 'all'."
-            )
-
-    level_numbers = [_level_to_number(lvl, pipeline) for lvl in level]
-    sorted_level_numbers = sorted(set(level_numbers))
-    if level_numbers != sorted_level_numbers:
-        warnings.warn(
-            "The 'level' argument has been sorted to be in ascending order with no duplicate "
-            "levels.",
-            UserWarning,
-        )
-    return sorted_level_numbers
-
-
-def _levels_to_slices(level, pipeline: CompilePipeline) -> list[slice]:
-    """Convert ``level`` to a list of slices of ``pipeline``, followed by the device
-    preprocessing, with one slice per compile pipeline that ``level`` selects."""
-    if isinstance(level, slice):
-        return [level]
-    return [slice(0, number) for number in _levels_to_numbers(level, pipeline)]
-
-
-def _pipeline_at_slice(pipeline: CompilePipeline, level_slice: slice) -> CompilePipeline:
-    """Return the compile pipeline selected by ``level_slice`` from ``pipeline`` followed by the
-    device preprocessing."""
-    if any(bound is not None and bound < 0 for bound in (level_slice.start, level_slice.stop)):
-        raise ValueError(
-            f"Invalid level {level_slice!r}, the bounds of a slice must be non-negative."
-        )
-    if level_slice.step is not None and level_slice.step < 1:
-        raise ValueError(
-            f"Invalid level {level_slice!r}, the step of a slice must be positive, since the "
-            "device preprocessing is applied after the other transforms."
-        )
-    if level_slice.step is not None and level_slice.step > 1:
-        warnings.warn(
-            f"The level {level_slice!r} has a step greater than 1, so it skips transforms of the "
-            "compile pipeline.",
-            UserWarning,
-        )
-
-    # Slicing the user-applied transforms directly keeps a marker placed after the last of them
-    if level_slice.indices(len(pipeline) + 1)[1] <= len(pipeline):
-        return pipeline[level_slice]
-    return (pipeline + _DEVICE_PREPROCESSING)[level_slice]
 
 
 def get_compile_pipeline(
@@ -169,11 +37,19 @@ def get_compile_pipeline(
     .. note::
 
         The device preprocessing is represented by a single ``Device Preprocessing`` placeholder,
-        since the device applies its own transforms when the QNode is executed. The placeholder
-        cannot be applied to a QNode. For a QNode that is not qjit'd, the tapes produced by the
-        individual gradient and device preprocessing transforms can be inspected with
-        :func:`~.workflow.construct_batch`, whose levels count each of these transforms
+        since the device applies its own transforms when the QNode is executed. For a QNode that
+        is not qjit'd, the placeholder also covers the transforms required by the gradient
+        method. The placeholder cannot be applied to a QNode.
+
+        The device preprocessing transforms can be retrieved with
+        :meth:`~.devices.Device.preprocess_transforms`. For a QNode that is not qjit'd, the tapes
+        produced by the individual gradient and device preprocessing transforms can be inspected
+        with :func:`~.workflow.construct_batch`, whose levels count each of these transforms
         separately.
+
+        A QNode with an informative transform, such as :func:`~.adjoint_metric_tensor`, is not
+        executed on the device, so there is no device preprocessing, and ``"device"`` is the same
+        as ``"user"``.
 
     Args:
         qnode (:class:`~.QNode` | :class:`~catalyst.jit.QJIT`): The QNode, or qjit'd QNode, to
@@ -190,16 +66,20 @@ def get_compile_pipeline(
               transforms (``[0]`` and ``[1]``). The device preprocessing counts as a single
               level, placed after all user-applied transforms.
             * ``slice``: A range of transforms, using standard Python slicing with non-negative
-              bounds and a positive step, e.g. ``level=slice(1, 3)`` contains transforms ``[1]``
-              and ``[2]``. A step greater than ``1`` skips transforms, and raises a warning.
+              ``int`` bounds and a positive step, e.g. ``level=slice(1, 3)`` contains transforms
+              ``[1]`` and ``[2]``. The start cannot exceed the device level. Since the device
+              preprocessing is the last level, a slice without a stop, such as
+              ``slice(1, None)``, includes the device preprocessing. To exclude it, give an
+              explicit stop, e.g. ``slice(1, 2)`` for a pipeline with two user-applied
+              transforms. A step greater than ``1`` skips transforms, and emits a warning.
             * ``Sequence``: A non-empty ``list``, ``tuple``, or similar containing ``int`` or
               ``str`` values. One compile pipeline is returned per level, in ascending order. If
               the levels are not in ascending order, or contain duplicates, they are sorted and
-              deduplicated, with a warning. A ``Sequence`` rather than an arbitrary iterable is
-              required so that its length and ordering can be validated up front, without
-              consuming it.
-              The ``"all"`` and ``"all-user"`` presets are not allowed inside a ``Sequence``,
-              since they already correspond to multiple levels.
+              deduplicated, with a warning. The ``"all"`` and ``"all-user"`` presets are not
+              allowed inside a ``Sequence``, since they already correspond to multiple levels.
+
+            The markers placed at the start or the end of the selected transforms are kept,
+            except with a ``slice`` with a step greater than ``1``, which drops all markers.
 
             The following ``str`` presets are provided for ease of use:
 
@@ -269,6 +149,7 @@ def get_compile_pipeline(
         >>> print(get_compile_pipeline(circuit, level="checkpoint"))
         CompilePipeline(
           [0] cancel_inverses()
+           └─▶ checkpoint
         )
 
         If ``level`` is ``"top"`` or ``0``, an empty compile pipeline is returned:
@@ -284,6 +165,7 @@ def get_compile_pipeline(
         >>> print(get_compile_pipeline(circuit, level=1))
         CompilePipeline(
           [0] cancel_inverses()
+           └─▶ checkpoint
         )
 
         A ``slice`` extracts a specific range of transforms from the compile pipeline. For
@@ -306,6 +188,7 @@ def get_compile_pipeline(
         ...     print(pipeline)
         CompilePipeline(
           [0] cancel_inverses()
+           └─▶ checkpoint
         )
         CompilePipeline(
           [0] cancel_inverses(),
@@ -332,7 +215,7 @@ def get_compile_pipeline(
 
     pipeline = qnode.compile_pipeline
     pipelines = [
-        _pipeline_at_slice(pipeline, level_slice)
-        for level_slice in _levels_to_slices(level, pipeline)
+        pipeline_at_slice(pipeline, level_slice)
+        for level_slice in levels_to_slices(level, pipeline)
     ]
-    return pipelines[0] if _is_single_level(level) else pipelines
+    return pipelines[0] if is_single_level(level) else pipelines

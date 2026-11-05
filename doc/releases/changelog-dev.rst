@@ -1367,8 +1367,8 @@ Improvements 🛠
 * :func:`~.workflow.get_compile_pipeline` now supports ``level="device"``, ``"all-user"``,
   ``"all"``, and a ``Sequence`` of levels, for QNodes with or without :func:`~.qjit`. The
   ``level`` argument of :func:`~.analyze` accepts the same values, including ``slice``, and
-  those of :func:`~pennylane.estimate` and :func:`~.track` are interpreted in the same way. The levels are
-  documented in a single place in :func:`~.workflow.get_compile_pipeline`.
+  those of :func:`~pennylane.estimate` and :func:`~.track` are interpreted in the same way. The
+  levels are documented in a single place in :func:`~.workflow.get_compile_pipeline`.
   `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
 Labs: a place for unified and rapid prototyping of research software 🧪
@@ -1508,13 +1508,17 @@ Breaking changes 💔
   ``get_compile_pipeline(qnode, level)(*args, **kwargs)`` becomes
   ``get_compile_pipeline(qnode, level)``. The gradient and device preprocessing transforms are
   no longer listed individually, but shown as a single ``Device Preprocessing`` level, and
-  ``level="gradient"`` is no longer supported. The tapes produced by the individual gradient
-  and device preprocessing transforms can still be inspected with
+  ``level="gradient"`` is no longer supported. The device preprocessing transforms can be
+  retrieved with :meth:`~.devices.Device.preprocess_transforms`, and the tapes produced by the
+  individual gradient and device preprocessing transforms can still be inspected with
   :func:`~.workflow.construct_batch`.
   `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
 * Printed :class:`~.CompilePipeline` transforms are now numbered from ``[0]``, and
-  ``"all-user"`` can no longer be used as a marker label.
+  ``"all-user"`` can no longer be used as a marker label. Applying a :class:`~.CompilePipeline`
+  to no arguments, to numbers or arrays, or to a sequence that is not a batch of tapes now
+  raises a ``TypeError``, so that the previous ``get_compile_pipeline(qnode, level)(*args)``
+  usage fails with an informative error.
   `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
 * Several levels passed to :func:`~.analyze` must now be a ``Sequence``, such as a ``list`` or

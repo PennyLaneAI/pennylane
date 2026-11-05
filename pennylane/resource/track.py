@@ -25,10 +25,11 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
-from pennylane.workflow.get_compile_pipeline import (
-    _device_level,
-    _is_single_level,
-    _levels_to_numbers,
+from pennylane.workflow._levels import (
+    device_level,
+    is_single_level,
+    level_to_number,
+    validate_level,
 )
 
 from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial, unwrap_qjit_qnode
@@ -90,10 +91,11 @@ def _track_qjit(func, level, *args, **kwargs) -> tuple[Any, CircuitSpecs]:
     original_qnode = unwrap_qjit_qnode(func, fn_name="qp.track")
 
     compile_pipeline = original_qnode.compile_pipeline
+    validate_level(level, compile_pipeline)
     if (
-        not _is_single_level(level)
+        not is_single_level(level)
         or isinstance(level, slice)
-        or _levels_to_numbers(level, compile_pipeline) != [_device_level(compile_pipeline)]
+        or level_to_number(level, compile_pipeline) != device_level(compile_pipeline)
     ):
         raise NotImplementedError(f"qp.track only supports level='device', instead got: {level!r}.")
 

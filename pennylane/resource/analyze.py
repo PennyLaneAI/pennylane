@@ -15,18 +15,17 @@
 
 from __future__ import annotations
 
-import copy
 from collections.abc import Callable, Sequence
 from functools import partial
 from typing import TYPE_CHECKING
 
 from pennylane import capture
-from pennylane.core.transforms.compile_pipeline import _DEVICE_PREPROCESSING
-from pennylane.workflow.get_compile_pipeline import (
-    _device_level,
-    _is_single_level,
-    _levels_to_numbers,
-    _pipeline_at_slice,
+from pennylane.workflow._levels import (
+    device_level,
+    is_single_level,
+    levels_to_numbers,
+    pipeline_at_slice,
+    split_device_preprocessing,
 )
 
 from ._utils import (
@@ -47,16 +46,12 @@ def _qnode_at_slice(qnode: QNode, level: slice) -> tuple[QNode, int]:
     """Return a copy of ``qnode`` that only applies the compile pipeline selected by ``level``,
     as given by :func:`~.workflow.get_compile_pipeline`, along with the level at which to analyze
     the resources of the copy."""
-    pipeline = _pipeline_at_slice(qnode.compile_pipeline, level)
-    # The slice has a positive step, so the device preprocessing can only be the last transform
-    has_device_preprocessing = bool(pipeline) and pipeline[-1] == _DEVICE_PREPROCESSING
-    if has_device_preprocessing:
-        # The device applies its preprocessing itself, after the other transforms
-        pipeline = pipeline[:-1]
-
-    sliced_qnode = copy.copy(qnode)
-    sliced_qnode._compile_pipeline = pipeline  # pylint: disable=protected-access
-    return sliced_qnode, _device_level(pipeline) if has_device_preprocessing else len(pipeline)
+    # The device applies its preprocessing itself, after the other transforms
+    pipeline, has_device_preprocessing = split_device_preprocessing(
+        pipeline_at_slice(qnode.compile_pipeline, level)
+    )
+    sliced_qnode = qnode.update_pipelines(pipeline, post_device_pipeline=qnode.post_device_pipeline)
+    return sliced_qnode, device_level(pipeline) if has_device_preprocessing else len(pipeline)
 
 
 def _run_resource_analysis(func, original_qnode, level, *args, **kwargs) -> tuple[
@@ -73,11 +68,11 @@ def _run_resource_analysis(func, original_qnode, level, *args, **kwargs) -> tupl
 
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
-    check_no_tape_transforms(compile_pipeline)
+    level_numbers = levels_to_numbers(level, compile_pipeline)
+    # Only the transforms up to the highest level are applied
+    check_no_tape_transforms(compile_pipeline[: max(level_numbers)])
 
-    level_numbers = _levels_to_numbers(level, compile_pipeline)
-
-    has_device_level: bool = _device_level(compile_pipeline) in level_numbers
+    has_device_level: bool = device_level(compile_pipeline) in level_numbers
     if has_device_level:
         if not func.compile_options.capture or (
             func.compile_options.capture == "global" and not capture.enabled()
@@ -85,7 +80,7 @@ def _run_resource_analysis(func, original_qnode, level, *args, **kwargs) -> tupl
             raise ValueError("Device level is only supported when capture is enabled.")
 
     # Levels with markers are named after them
-    level_to_markers = compile_pipeline._level_to_markers()  # pylint: disable=protected-access
+    markers_by_level = compile_pipeline._level_to_markers()  # pylint: disable=protected-access
 
     level_to_name: dict[int, str] = {}
 
@@ -94,14 +89,14 @@ def _run_resource_analysis(func, original_qnode, level, *args, **kwargs) -> tupl
         func,
         original_qnode,
         level_numbers,
-        level_to_markers,
+        markers_by_level,
         level_to_name,
         *args,
         **kwargs,
     )
 
     # Unpack dictionary to single item if only 1 level was given as input
-    if _is_single_level(level):
+    if is_single_level(level):
         resources = next(iter(resources.values()))
         level_to_name = next(iter(level_to_name.values()))
 

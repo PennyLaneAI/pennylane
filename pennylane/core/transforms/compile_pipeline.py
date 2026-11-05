@@ -23,6 +23,7 @@ from collections.abc import Sequence
 from copy import copy
 from enum import StrEnum
 from functools import partial
+from numbers import Number
 from typing import TYPE_CHECKING, Any, overload
 
 import jax
@@ -60,8 +61,19 @@ def _device_preprocessing(tape):
     )
 
 
-_DEVICE_PREPROCESSING = BoundTransform(Transform(_device_preprocessing))
-"""BoundTransform: The device preprocessing, which counts as a single level of a compile pipeline."""
+class _DevicePreprocessing(BoundTransform):
+    """The placeholder for the device preprocessing, displayed as ``Device Preprocessing``."""
+
+    def __repr__(self):
+        return "<Device Preprocessing>"
+
+
+DEVICE_PREPROCESSING = _DevicePreprocessing(Transform(_device_preprocessing))
+"""BoundTransform: The device preprocessing, which counts as a single level of a compile pipeline.
+
+It is a placeholder that cannot be applied, since the device applies its preprocessing when the
+QNode is executed.
+"""
 
 
 def _batch_postprocessing(
@@ -178,9 +190,8 @@ class CompilePipeline:
         # Add a marker for inspectability
         pipeline.add_marker("no-transforms", 0)
 
-        @qp.qjit
         @pipeline
-        @qp.qnode(qp.device("lightning.qubit", wires=2))
+        @qp.qnode(qp.device("default.qubit"))
         def circuit(x, y):
             qp.CNOT([1, 0])
             qp.X(0)
@@ -639,9 +650,11 @@ class CompilePipeline:
                 if transform.tape_transform
                 else transform.pass_name
             )
-            transform_str = f"{transform_name}({args_str}{sep}{kwargs_str})"
-            if transform == _DEVICE_PREPROCESSING:
-                transform_str = "Device Preprocessing"
+            transform_str = (
+                "Device Preprocessing"
+                if isinstance(transform, _DevicePreprocessing)
+                else f"{transform_name}({args_str}{sep}{kwargs_str})"
+            )
             lines.append(f"  [{i}] {transform_str}" + "," * bool(i != len(self) - 1))
 
             if marker := inv_marker_map.get(i + 1):
@@ -664,10 +677,7 @@ class CompilePipeline:
             lines.append(f"   {symbol} {', '.join(marker)}")
 
         for i, transform in enumerate(self):
-            transform_str = (
-                "<Device Preprocessing>" if transform == _DEVICE_PREPROCESSING else repr(transform)
-            )
-            lines.append(f"  [{i}] {transform_str}" + "," * bool(i != len(self) - 1))
+            lines.append(f"  [{i}] {repr(transform)}" + "," * bool(i != len(self) - 1))
             if marker := inv_marker_map.get(i + 1):
                 symbol = "├─▶" if i != len(self) - 1 else "└─▶"
                 lines.append(f"   {symbol} {', '.join(marker)}")
@@ -1039,15 +1049,38 @@ class CompilePipeline:
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
 
     def __call__(self, *args, **kwargs):
+        if not args:
+            raise TypeError(_invalid_call_message("no arguments"))
         first_arg = args[0]
 
         # Sequence of QuantumScripts: QuantumScriptBatch
         if isinstance(first_arg, (QuantumScript, Sequence)):
+            if isinstance(first_arg, str) or (
+                isinstance(first_arg, Sequence)
+                and not all(isinstance(tape, QuantumScript) for tape in first_arg)
+            ):
+                raise TypeError(_invalid_call_message(repr(first_arg)))
             return self.__call_tapes(*args, **kwargs)
+
+        # Numbers and arrays are circuit arguments, which cannot be transformed
+        if isinstance(first_arg, Number) or (
+            hasattr(first_arg, "shape") and hasattr(first_arg, "dtype")
+        ):
+            raise TypeError(_invalid_call_message(repr(first_arg)))
 
         # For any other object (QNode, device, callable, etc.),
         # chain-apply each transform using the generic dispatch system
         return self.__call_generic(first_arg)
+
+
+def _invalid_call_message(got: str) -> str:
+    """The error message for a ``CompilePipeline`` applied to an object it cannot transform."""
+    # TODO: Remove the note about get_compile_pipeline in 0.47 release
+    return (
+        "A CompilePipeline can only be applied to a QNode, a quantum function, a device, or a "
+        f"batch of tapes, instead got {got}. Note that get_compile_pipeline(qnode, level) now "
+        "returns the CompilePipeline directly, rather than a function of the QNode arguments."
+    )
 
 
 @Transform.generic_register

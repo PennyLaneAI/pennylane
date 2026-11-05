@@ -23,7 +23,7 @@ import rustworkx as rx
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.transforms.compile_pipeline import (
-    _DEVICE_PREPROCESSING,
+    DEVICE_PREPROCESSING,
     CotransformCache,
     ProtectedLevel,
     _apply_postprocessing_stack,
@@ -747,7 +747,7 @@ class TestCompilePipelineDunders:
 
     def test_str_and_repr_device_preprocessing(self):
         """Test that the device preprocessing placeholder is printed by name."""
-        compile_pipeline = CompilePipeline(qp.transforms.cancel_inverses) + _DEVICE_PREPROCESSING
+        compile_pipeline = CompilePipeline(qp.transforms.cancel_inverses) + DEVICE_PREPROCESSING
 
         assert str(compile_pipeline) == (
             "CompilePipeline(\n  [0] cancel_inverses(),\n  [1] Device Preprocessing\n)"
@@ -1310,6 +1310,30 @@ class TestClassicalCotransfroms:
 
 class TestCompilePipelineCall:
     """Tests for calling a CompilePipeline on a batch of quantum tapes."""
+
+    @pytest.mark.parametrize(
+        "args, got",
+        [
+            ((), "no arguments"),
+            ((0.5,), "0.5"),
+            (([0.5, 0.1],), r"\[0.5, 0.1\]"),
+            (("abc",), "'abc'"),
+        ],
+    )
+    def test_call_on_invalid_object(self, args, got):
+        """Tests that applying a pipeline to an object that it cannot transform, such as the
+        arguments of a QNode, raises an informative error."""
+
+        pipeline = CompilePipeline(qp.transforms.cancel_inverses)
+
+        with pytest.raises(TypeError, match=f"instead got {got}.*returns the CompilePipeline"):
+            pipeline(*args)
+
+    def test_call_on_empty_batch(self):
+        """Tests that an empty batch of tapes is still accepted."""
+
+        new_batch, _ = CompilePipeline(qp.transforms.cancel_inverses)(())
+        assert new_batch == ()
 
     def test_call_on_empty_pipeline(self):
         """Tests that an empty pipeline returns input tapes with the null postprocessing function."""

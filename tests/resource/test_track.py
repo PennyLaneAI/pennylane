@@ -124,13 +124,19 @@ class TestTrack:
         assert qp.math.allclose(results, expected_results)
         assert specs == expected_specs
 
-    @pytest.mark.parametrize(
-        "level", [0, None, "top", "user", "all", [1], ["device"], slice(0, None)]
-    )
+    @pytest.mark.parametrize("level", [0, "top", "user", "all", [1], ["device"], slice(0, None)])
     def test_unsupported_level(self, circuit, level):
         """Test that a helpful error message is raised for levels other than 'device'."""
 
         with pytest.raises(NotImplementedError, match="qp.track only supports level='device'"):
+            qp.track(circuit, level=level)(0.1, 0.2)
+
+    @pytest.mark.parametrize("level", [None, 0.5, [], ["typo"], slice(-1, None)])
+    def test_invalid_level(self, circuit, level):
+        """Test that invalid levels are rejected, even if they are of an unsupported type such as
+        a Sequence or a slice."""
+
+        with pytest.raises(ValueError, match="Invalid level|Marker name 'typo' not found"):
             qp.track(circuit, level=level)(0.1, 0.2)
 
     def test_error_with_non_qjit(self):

@@ -151,9 +151,17 @@ def construct_batch(qnode: QNode, level: str | int | slice = "user") -> Callable
               transforms, i.e. the tapes that the device executes.
             * ``str``: The ``label`` of a :func:`~.marker`, to apply all transforms up to the
               location of that marker.
-            * ``int``: The number of transforms to apply from the start of the transform program,
+            * ``int``: The number of transforms to apply from the start of the compile pipeline,
               e.g. ``level=0`` applies no transforms.
             * ``slice``: A specific range of transforms, using standard 0-based Pythonic indexing.
+
+            .. note::
+
+                These levels count each gradient and device preprocessing transform separately,
+                and support ``"gradient"``. This differs from :func:`~.workflow.get_compile_pipeline`,
+                :func:`~.analyze`, :func:`~.estimate` and :func:`~.track`, where the device
+                preprocessing is a single level. Therefore, an ``int`` or ``slice`` level past the
+                user-applied transforms can select different transforms in these functions.
 
     Returns:
         Callable:
