@@ -675,7 +675,7 @@ def _cdf_resource_counts(
         one_body_rotation = two_body_rotation = IsingZZ
         resources[RZ] += 1
     else:
-        one_body_rotation = ctrl(RZ(Float, wires=Wire[1]), control=Wire[1])
+        one_body_rotation = CRZ
         two_body_rotation = ctrl(IsingZZ(Float, wires=Wire[2]), control=Wire[1])
         resources[PhaseShift] += 1
     resources[one_body_rotation] += num_onebody_rotations
@@ -687,7 +687,7 @@ def _cdf_resource_counts(
         if has_control and double_phase:
             resources[CNOT] += 2 * num_twobody_blocks * (num_cas - 1)
         resources[one_body_rotation] += num_same_orbital_rotations
-        resources[one_body_rotation if standard_control else CRZ] += num_pairs
+        resources[CRZ] += num_pairs
         resources[CNOT] += 2 * num_twobody_blocks * num_cas + 2 * num_pairs
         num_ands = num_pairs
         if standard_control:

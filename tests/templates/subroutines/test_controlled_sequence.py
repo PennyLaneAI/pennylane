@@ -137,7 +137,7 @@ class TestMethods:
 
         with qp.queuing.AnnotatedQueue() as queue:
             decomp = op.decomposition()
-        expected_decomp = [qp.CRX(0.25, wires=[wire, 3]) for wire in [0] * 4 + [1] * 2 + [2]]
+        expected_decomp = [qp.ops.ControlledOp2(qp.RX(0.25, wires=[3]), wire) for wire in [0] * 4 + [1] * 2 + [2]]
 
         queued_ops = queue.queue
         for operations in (decomp, queued_ops):
