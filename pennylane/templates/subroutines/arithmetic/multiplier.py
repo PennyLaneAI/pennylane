@@ -21,14 +21,13 @@ from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
-    resource_rep,
 )
 from pennylane.ops import SWAP, adjoint, change_op_basis, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.typing import Wire
+from pennylane.typing import Int, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
@@ -263,7 +262,7 @@ def _multiplier_decomposition_resources(
 ) -> dict:
     num_wires_aux = num_work_wires - 1 if mod != 2**num_x_wires else num_x_wires
     controlled_sequence_rep = ControlledSequence(
-        base=resource_rep(PhaseAdder, num_x_wires=num_wires_aux, mod=mod),
+        base=PhaseAdder(Int, Wire[num_wires_aux], mod, Wire[int(mod != 2**num_wires_aux)]),
         control=Wire[num_x_wires],
     )
     target_op_rep = prod(*[SWAP(Wire[2]) for _ in range(num_x_wires)])

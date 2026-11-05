@@ -22,13 +22,12 @@ from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
-from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import CNOT, MultiControlledX, PauliX
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint import adjoint
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.typing import Wire
+from pennylane.typing import Int, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
@@ -238,7 +237,7 @@ def _adder_decomposition_resources(num_x_wires, mod) -> dict:
     resources = {
         _change_op_basis_abstract(
             _compute_op,
-            resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
+            PhaseAdder(Int, Wire[num_qft_wires], mod, Wire[int(mod != 2**num_qft_wires)]),
             adjoint(_compute_op),
         ): 1,
     }

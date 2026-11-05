@@ -19,14 +19,13 @@ from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
-    resource_rep,
 )
 from pennylane.ops import Prod2, change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.typing import Wire
+from pennylane.typing import Int, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
@@ -293,11 +292,11 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
     num_qft_wires = num_output_wires if mod == 2**num_output_wires else num_output_wires + 1
     target_ops = [
         ControlledSequence(
-            base=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
+            base=PhaseAdder(Int, Wire[num_qft_wires], mod, Wire[int(mod != 2**num_qft_wires)]),
             control=Wire[num_y_wires],
         ),
         ControlledSequence(
-            base=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
+            base=PhaseAdder(Int, Wire[num_qft_wires], mod, Wire[int(mod != 2**num_qft_wires)]),
             control=Wire[num_x_wires],
         ),
     ]
