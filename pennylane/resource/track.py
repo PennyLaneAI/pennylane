@@ -29,6 +29,8 @@ from pennylane.workflow._levels import (
     device_level,
     is_single_level,
     level_to_number,
+    pipeline_at_slice,
+    unpack_single_entry,
     validate_level,
 )
 
@@ -92,11 +94,17 @@ def _track_qjit(func, level, *args, **kwargs) -> tuple[Any, CircuitSpecs]:
 
     compile_pipeline = original_qnode.compile_pipeline
     validate_level(level, compile_pipeline)
-    if (
-        not is_single_level(level)
-        or isinstance(level, slice)
-        or level_to_number(level, compile_pipeline) != device_level(compile_pipeline)
-    ):
+    single_level = unpack_single_entry(level)
+    if isinstance(single_level, slice):
+        # A slice that selects all the transforms, including the device preprocessing
+        is_device = pipeline_at_slice(compile_pipeline, single_level) == pipeline_at_slice(
+            compile_pipeline, slice(0, None)
+        )
+    else:
+        is_device = is_single_level(single_level) and level_to_number(
+            single_level, compile_pipeline
+        ) == device_level(compile_pipeline)
+    if not is_device:
         raise NotImplementedError(f"qp.track only supports level='device', instead got: {level!r}.")
 
     results, resources = _run_with_resource_tracking(
@@ -133,7 +141,7 @@ def track(
         :class:`~.resource.CircuitSpecs` object containing the ``qnode`` specifications,
         including gate and measurement data, total wires, device information, shots, and more.
 
-    .. seealso:: :func:`~.estimate`, :func:`~.analyze`
+    .. seealso:: :func:`~pennylane.estimate`, :func:`~.analyze`
 
     .. note::
 

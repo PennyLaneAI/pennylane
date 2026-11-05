@@ -159,7 +159,7 @@ def construct_batch(qnode: QNode, level: str | int | slice = "user") -> Callable
 
                 These levels count each gradient and device preprocessing transform separately,
                 and support ``"gradient"``. This differs from :func:`~.workflow.get_compile_pipeline`,
-                :func:`~.analyze`, :func:`~.estimate` and :func:`~.track`, where the device
+                :func:`~.analyze`, :func:`~pennylane.estimate` and :func:`~.track`, where the device
                 preprocessing is a single level. Therefore, an ``int`` or ``slice`` level past the
                 user-applied transforms can select different transforms in these functions.
 

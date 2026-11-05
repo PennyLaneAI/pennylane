@@ -124,7 +124,20 @@ class TestTrack:
         assert qp.math.allclose(results, expected_results)
         assert specs == expected_specs
 
-    @pytest.mark.parametrize("level", [0, "top", "user", "all", [1], ["device"], slice(0, None)])
+    @pytest.mark.parametrize("level", [["device"], [1], ("device",), slice(0, None), slice(0, 1)])
+    def test_levels_equivalent_to_device(self, circuit, level):
+        """Test that a single-entry Sequence of the device level, and a slice that selects all
+        the transforms including the device preprocessing, are the same as level='device'."""
+
+        results, specs = qp.track(circuit, level=level)(0.1, 0.2)
+        expected_results, expected_specs = qp.track(circuit, level="device")(0.1, 0.2)
+
+        assert qp.math.allclose(results, expected_results)
+        assert specs == expected_specs
+
+    @pytest.mark.parametrize(
+        "level", [0, "top", "user", "all", [0], ["user"], (0, 1), slice(0, 0), slice(1, None)]
+    )
     def test_unsupported_level(self, circuit, level):
         """Test that a helpful error message is raised for levels other than 'device'."""
 

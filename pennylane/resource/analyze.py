@@ -20,6 +20,7 @@ from functools import partial
 from typing import TYPE_CHECKING
 
 from pennylane import capture
+from pennylane.core.transforms import CompilePipeline
 from pennylane.workflow._levels import (
     device_level,
     is_single_level,
@@ -50,7 +51,9 @@ def _qnode_at_slice(qnode: QNode, level: slice) -> tuple[QNode, int]:
     pipeline, has_device_preprocessing = split_device_preprocessing(
         pipeline_at_slice(qnode.compile_pipeline, level)
     )
-    sliced_qnode = qnode.update_pipelines(pipeline, post_device_pipeline=qnode.post_device_pipeline)
+    sliced_qnode = qnode.update_pipelines(
+        pipeline, post_device_pipeline=CompilePipeline(qnode.post_device_pipeline)
+    )
     return sliced_qnode, device_level(pipeline) if has_device_preprocessing else len(pipeline)
 
 
@@ -139,7 +142,7 @@ def analyze(
         including gate and measurement data, wire allocations, device information, shots, and
         more.
 
-    .. seealso:: :func:`~.estimate`, :func:`~.track`
+    .. seealso:: :func:`~pennylane.estimate`, :func:`~.track`
 
     **Example**
 

@@ -22,7 +22,13 @@ from functools import partial
 from pennylane import capture
 from pennylane.core.transforms import CompilePipeline
 from pennylane.transforms import decompose
-from pennylane.workflow._levels import is_single_level, level_to_number, validate_level
+from pennylane.workflow._levels import (
+    is_single_level,
+    level_to_number,
+    pipeline_at_slice,
+    unpack_single_entry,
+    validate_level,
+)
 
 from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial, unwrap_qjit_qnode
 from .mlir_specs import resources_from_analysis_pass
@@ -50,15 +56,19 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
 
     compile_pipeline = original_qnode.compile_pipeline
     validate_level(level, compile_pipeline)
+    single_level = unpack_single_entry(level)
 
     # The ``isinstance`` check avoids elementwise comparisons, e.g. with NumPy arrays
-    if isinstance(level, str) and level == "device":
+    if isinstance(single_level, str) and single_level == "device":
         raise NotImplementedError("qp.estimate does not support level='device' yet.")
-    if (
-        not is_single_level(level)
-        or isinstance(level, slice)
-        or level_to_number(level, compile_pipeline) != 0
-    ):
+    if isinstance(single_level, slice):
+        # A slice that selects no transforms is the same as level 0
+        is_top = not pipeline_at_slice(compile_pipeline, single_level)
+    else:
+        is_top = (
+            is_single_level(single_level) and level_to_number(single_level, compile_pipeline) == 0
+        )
+    if not is_top:
         raise NotImplementedError(
             f"qp.estimate only supports level='top' or level=0, instead got: {level!r}."
         )
@@ -79,7 +89,7 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
     # At level="top", the user transforms are skipped and only the decomposition is applied
     estimate_qnode = original_qnode.update_pipelines(
         CompilePipeline(decompose(gate_set=target, **_decomps_from_pipeline(compile_pipeline))),
-        post_device_pipeline=original_qnode.post_device_pipeline,
+        post_device_pipeline=CompilePipeline(original_qnode.post_device_pipeline),
     )
 
     try:

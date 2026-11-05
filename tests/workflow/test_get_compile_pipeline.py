@@ -26,6 +26,7 @@ from pennylane.core.transforms.compile_pipeline import DEVICE_PREPROCESSING
 from pennylane.exceptions import TransformError
 from pennylane.workflow import get_compile_pipeline
 from pennylane.workflow._levels import (
+    level_to_number,
     levels_to_numbers,
     split_device_preprocessing,
     validate_level,
@@ -78,11 +79,12 @@ class TestValidation:
         ):
             get_compile_pipeline(inc)
 
-    def test_gradient_level(self):
-        """Tests that the 'gradient' level is no longer supported."""
+    @pytest.mark.parametrize("level", ["gradient", "all-mlir"])
+    def test_removed_level(self, level):
+        """Tests that the 'gradient' and 'all-mlir' levels are no longer supported."""
 
-        with pytest.raises(ValueError, match="The level 'gradient' is no longer supported."):
-            get_compile_pipeline(_circuit_with_marker(), level="gradient")
+        with pytest.raises(ValueError, match=f"The level '{level}' is no longer supported."):
+            get_compile_pipeline(_circuit_with_marker(), level=level)
 
     @pytest.mark.parametrize(
         "level", [0.5, True, None, {0, 1}, iter([0, 1]), b"\x01", bytearray(b"\x01")]
@@ -467,20 +469,59 @@ def test_device_preprocessing_repr():
     assert "[2] <Device Preprocessing>" in repr(cp)
 
 
-def test_device_preprocessing_cannot_be_applied():
-    """Tests that the device preprocessing placeholder cannot be applied to a QNode."""
+class TestDevicePreprocessingCannotBeApplied:
+    """Tests that the device preprocessing placeholder raises an error when it is applied, rather
+    than when the transformed QNode is executed."""
 
-    circuit = _circuit_with_marker()
-    device_pipeline = get_compile_pipeline(circuit, level="device")
+    @staticmethod
+    def _qnode():
+        @qp.qnode(qp.device("default.qubit", wires=1))
+        def circuit(x):
+            qp.RX(x, wires=0)
+            return qp.expval(qp.Z(0))
 
-    @device_pipeline
-    @qp.qnode(qp.device("default.qubit", wires=1))
-    def new_circuit(x):
-        qp.RX(x, wires=0)
-        return qp.expval(qp.Z(0))
+        return circuit
 
-    with pytest.raises(TransformError, match="placeholder and cannot be applied"):
-        new_circuit(0.5)
+    def test_decorator(self):
+        """Tests applying the compile pipeline as a decorator."""
+
+        device_pipeline = get_compile_pipeline(_circuit_with_marker(), level="device")
+
+        with pytest.raises(TransformError, match="placeholder and cannot be applied"):
+
+            @device_pipeline
+            @qp.qnode(qp.device("default.qubit", wires=1))
+            def _(x):
+                qp.RX(x, wires=0)
+                return qp.expval(qp.Z(0))
+
+    def test_qnode(self):
+        """Tests applying the compile pipeline to a QNode."""
+
+        device_pipeline = get_compile_pipeline(_circuit_with_marker(), level="device")
+
+        with pytest.raises(TransformError, match="placeholder and cannot be applied"):
+            device_pipeline(self._qnode())
+
+    def test_tapes(self):
+        """Tests applying the compile pipeline to tapes."""
+
+        device_pipeline = get_compile_pipeline(_circuit_with_marker(), level="device")
+        tape = qp.tape.QuantumScript([qp.RX(0.5, wires=0)], [qp.expval(qp.Z(0))])
+
+        with pytest.raises(TransformError, match="placeholder and cannot be applied"):
+            device_pipeline([tape])
+
+    @pytest.mark.catalyst
+    def test_qjit(self):
+        """Tests that, with qjit, the error is about the placeholder rather than about a missing
+        pass name."""
+
+        circuit = qp.qjit(_circuit_with_marker(), capture=True)
+        device_pipeline = get_compile_pipeline(circuit, level="device")
+
+        with pytest.raises(TransformError, match="placeholder and cannot be applied"):
+            qp.qjit(device_pipeline(self._qnode()), capture=True)
 
 
 @pytest.mark.parametrize(
@@ -544,6 +585,13 @@ def test_validate_level_accepts_valid_levels(level):
     with warnings.catch_warnings():
         warnings.simplefilter("error")
         validate_level(level, USER_PIPELINE)
+
+
+def test_level_to_number_invalid_type():
+    """Tests that a single level that is neither a str nor an int is rejected."""
+
+    with pytest.raises(ValueError, match="Invalid level 1.5"):
+        level_to_number(1.5, USER_PIPELINE)
 
 
 def test_split_device_preprocessing():

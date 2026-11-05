@@ -41,10 +41,13 @@ def get_compile_pipeline(
         is not qjit'd, the placeholder also covers the transforms required by the gradient
         method. The placeholder cannot be applied to a QNode.
 
-        The device preprocessing transforms can be retrieved with
-        :meth:`~.devices.Device.preprocess_transforms`. For a QNode that is not qjit'd, the tapes
-        produced by the individual gradient and device preprocessing transforms can be inspected
-        with :func:`~.workflow.construct_batch`, whose levels count each of these transforms
+        For a QNode that is not qjit'd, the device preprocessing transforms that are applied on
+        execution can be retrieved with ``qnode.device.preprocess_transforms(config)``, where
+        ``config = qp.workflow.construct_execution_config(qnode)(*args, **kwargs)``. The
+        transform required by the gradient method, if any, is
+        ``config.gradient_method.expand_transform``. The tapes produced by the individual
+        gradient and device preprocessing transforms can be inspected with
+        :func:`~.workflow.construct_batch`, whose levels count each of these transforms
         separately.
 
         A QNode with an informative transform, such as :func:`~.adjoint_metric_tensor`, is not

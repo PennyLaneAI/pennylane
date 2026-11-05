@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Internal helpers resolving the ``level`` argument of :func:`~.workflow.get_compile_pipeline`,
-:func:`~.analyze`, :func:`~.estimate` and :func:`~.track`.
+:func:`~.analyze`, :func:`~pennylane.estimate` and :func:`~.track`.
 
 .. warning::
 
@@ -44,6 +44,13 @@ def is_single_level(level) -> bool:
     return isinstance(level, slice) or is_int_level(level)
 
 
+def unpack_single_entry(level):
+    """Return the entry of a ``Sequence`` of levels with a single entry, and ``level`` otherwise."""
+    if isinstance(level, Sequence) and not isinstance(level, str) and len(level) == 1:
+        return level[0]
+    return level
+
+
 def _has_device_preprocessing(pipeline: CompilePipeline) -> bool:
     """Whether the device preprocessing is applied after ``pipeline``, which is not the case for an
     informative pipeline, since the device does not execute it."""
@@ -68,8 +75,8 @@ def level_to_number(level: str | int, pipeline: CompilePipeline) -> int:
         presets = {"top": 0, "user": len(pipeline), "device": dev_level}
         if level in presets:
             return presets[level]
-        if level == "gradient":
-            raise ValueError("The level 'gradient' is no longer supported.")
+        if level in ("gradient", "all-mlir"):
+            raise ValueError(f"The level '{level}' is no longer supported.")
         found_level = pipeline.get_marker_level(level)
         if found_level is None:
             raise ValueError(

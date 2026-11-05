@@ -51,18 +51,24 @@ class ProtectedLevel(StrEnum):
     ALL_USER = "all-user"
 
 
+_DEVICE_PREPROCESSING_ERROR = (
+    "The device preprocessing in a compile pipeline returned by get_compile_pipeline is a "
+    "placeholder and cannot be applied. The device applies its preprocessing when the QNode "
+    "is executed."
+)
+
+
 def _device_preprocessing(tape):
     """Placeholder for the device preprocessing in the compile pipelines returned by
     :func:`~.workflow.get_compile_pipeline`."""
-    raise TransformError(
-        "The device preprocessing in a compile pipeline returned by get_compile_pipeline is a "
-        "placeholder and cannot be applied. The device applies its preprocessing when the QNode "
-        "is executed."
-    )
+    raise TransformError(_DEVICE_PREPROCESSING_ERROR)
 
 
 class _DevicePreprocessing(BoundTransform):
     """The placeholder for the device preprocessing, displayed as ``Device Preprocessing``."""
+
+    def __call__(self, obj):
+        raise TransformError(_DEVICE_PREPROCESSING_ERROR)
 
     def __repr__(self):
         return "<Device Preprocessing>"
