@@ -293,10 +293,9 @@ class TestPhaseAdder:
         assert wires == qp.wires.Wires([1, 2])
 
     @pytest.mark.parametrize("mod, num_work_wires", [(8, 0), (7, 1)])
-    @pytest.mark.parametrize("k", [Int, int])
-    def test_abstract_inputs(self, mod, num_work_wires, k):
+    def test_abstract_inputs(self, mod, num_work_wires):
         """Abstract inputs retain the register sizes needed by decomposition resources."""
-        op = qp.PhaseAdder(k, Wire[3], mod, Wire[num_work_wires])
+        op = qp.PhaseAdder(Int, Wire[3], mod, Wire[num_work_wires])
         assert isinstance(op, Operator2)
         assert op.is_fully_abstract
         assert len(op.x_wires) == 3

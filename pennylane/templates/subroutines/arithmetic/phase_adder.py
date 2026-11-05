@@ -158,8 +158,6 @@ class PhaseAdder(Operator2):
                 f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
             )
         validate_no_wire_overlaps({"x_wires": x_wires, "work_wire": work_wire})
-        if k is int:
-            k = Int
         super().__init__(k=k, x_wires=x_wires, mod=mod, work_wire=work_wire)
         if not isinstance(self.k, AbstractArray):
             self.arguments["k"] = self.k % mod
