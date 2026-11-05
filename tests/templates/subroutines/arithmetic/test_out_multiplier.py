@@ -150,17 +150,23 @@ class TestBuildingBlocks:
             _caddsub_multiplication(
                 x_wires, y_wires, output_wires, work_wires, output_wires_zeroed, x_signed=True
             )
-            return qp.sample(wires=output_wires + work_wires)
+            return qp.sample(wires=x_wires + y_wires + output_wires + work_wires)
+
+        def to_int(bits):
+            return int("".join(str(int(s)) for s in bits), 2)
 
         mod = 2**num_output_wires
         z_values = [0] if output_wires_zeroed else [0, mod - 3]
+        num_inputs = num_x_wires + num_y_wires
         for x in range(-(2 ** (num_x_wires - 1)), 2 ** (num_x_wires - 1)):
             for y in range(2**num_y_wires):
                 for z in z_values:
                     sample = node(x, y, z)[0]
-                    out = int("".join(str(int(s)) for s in sample[:num_output_wires]), 2)
+                    assert to_int(sample[:num_x_wires]) == x % 2**num_x_wires
+                    assert to_int(sample[num_x_wires:num_inputs]) == y
+                    out = to_int(sample[num_inputs : num_inputs + num_output_wires])
                     assert out == (z + x * y) % mod
-                    assert not any(sample[num_output_wires:])
+                    assert not any(sample[num_inputs + num_output_wires :])
 
 
 @pytest.mark.parametrize(

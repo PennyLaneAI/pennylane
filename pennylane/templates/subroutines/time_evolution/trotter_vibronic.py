@@ -376,9 +376,9 @@ class TrotterVibronic(Operator2):
         The half-signed multiply uses the controlled add/subtract decomposition of
         :class:`~.OutMultiplier` (`arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__), with
         the bits of the signed register controlling the add/subtract steps. Flipping its sign bit
-        turns the addition step for the sign bit into a subtraction step, which accounts for the
-        weight :math:`-2^{m-1}` of the sign bit in an :math:`m`-bit two's-complement register and
-        makes the final correction step of the unsigned multiplication obsolete. Its gates are
+        swaps the add and subtract branches of the sign bit's step, which accounts for the
+        negative weight of the sign bit in two's complement and makes the final correction step
+        of the unsigned multiplication obsolete. Its gates are
         applied directly, without an :class:`~.OutMultiplier` wrapper.
         :math:`Q_r^2` uses the low :math:`2k-1` ``cache_wires`` and :math:`Q_r Q_s` all
         :math:`2k`, and each square/product is uncomputed after use. See the
@@ -933,7 +933,7 @@ def _half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
 
     The multiplication uses the controlled add/subtract decomposition of
     :class:`~.OutMultiplier`, with the bits of ``y`` controlling the add/subtract steps. Flipping
-    the sign bit of ``y`` turns its addition step into a subtraction step, which makes one of
+    the sign bit of ``y`` swaps the add and subtract branches of its step, which makes one of
     the correction steps of the unsigned multiplication obsolete. It requires
     ``len(output_wires) + 1`` work wires.
     """

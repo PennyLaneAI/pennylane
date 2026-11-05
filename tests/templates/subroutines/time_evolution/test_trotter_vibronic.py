@@ -360,24 +360,27 @@ class TestCoefficientReadout:
 )
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 def test_half_signed_out_multiplier(sizes, x, y, z):
-    """Test that the half-signed multiplier computes ``(z + x*y) mod 2^k`` for a signed ``y``."""
+    """Test that the half-signed multiplier computes ``(z + x*y) mod 2^k`` for a signed ``y``,
+    restores the input registers and leaves the work wires clean."""
     num_x, num_y, num_out = sizes
     x_wires, y_wires = list(range(num_x)), list(range(num_x, num_x + num_y))
     output_wires = list(range(num_x + num_y, num_x + num_y + num_out))
     work_wires = list(range(num_x + num_y + num_out, num_x + num_y + 2 * num_out + 1))
+    y_unsigned = y % 2**num_y
     expected = (z + x * y) % 2**num_out
     dev = qp.device("default.qubit")
 
     @qp.qnode(dev)
     def circuit():
         qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
-        qp.BasisState(qp.math.int_to_binary(y % (2 ** len(y_wires)), len(y_wires)), wires=y_wires)
+        qp.BasisState(qp.math.int_to_binary(y_unsigned, len(y_wires)), wires=y_wires)
         qp.BasisState(qp.math.int_to_binary(z, len(output_wires)), wires=output_wires)
         _half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires)
-        return qp.probs(wires=output_wires)
+        return qp.probs(wires=x_wires + y_wires + output_wires + work_wires)
 
     # the circuit permutes basis states, so the output is a single basis state
-    assert int(np.argmax(circuit())) == expected
+    expected_state = ((x * 2**num_y + y_unsigned) * 2**num_out + expected) * 2 ** len(work_wires)
+    assert int(np.argmax(circuit())) == expected_state
 
 
 # ---------------------------------------------------------------------------
