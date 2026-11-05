@@ -20,7 +20,6 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.core.operator import Operator2
 from pennylane.exceptions import (
     DecompositionUndefinedError,
     GeneratorUndefinedError,
@@ -505,15 +504,10 @@ class TestDecomposition:
 
         phi = 1.23
 
-        if issubclass(op_class, Operator2):
-            wire_sizes = op_class.wire_sizes
-            num_wires = None if any(size is None for size in wire_sizes) else sum(wire_sizes)
-            wires = [0, 1, 2] if num_wires is None else list(range(num_wires))
-        else:
-            try:
-                wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
-            except TypeError:
-                wires = [0, 1, 2]
+        try:
+            wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+        except TypeError:
+            wires = [0, 1, 2]
         if str_wires:
             alphabet = ("a", "b", "c", "d", "e", "f", "g")
             wires = [alphabet[w] for w in wires]
