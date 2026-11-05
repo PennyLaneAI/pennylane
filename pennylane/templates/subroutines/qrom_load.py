@@ -59,7 +59,8 @@ class QROMLoad(Operator2):
     trading qubits for fewer T gates. With fewer work wires, or if loading in parallel does not pay
     off, it simply falls back to ``QROM``.
 
-    To unload the data again, apply ``qp.adjoint`` of ``QROMLoad``.
+    To unload the data again, apply ``qp.adjoint`` of ``QROMLoad``. For ``clean=False``, this
+    requires the garbage state of the work wires to be left untouched in the meantime.
 
     .. warning::
 
@@ -190,10 +191,11 @@ class QROMLoad(Operator2):
         requested bitstring with controlled ``SWAP`` gates, moving it into the target register.
         Each controlled ``SWAP`` is a Toffoli gate between two ``CNOT`` gates, and the Toffoli
         borrows the idle work wire 16 to be applied as an elbow pair, which costs four instead of
-        seven T gates. In general, loading :math:`k` bitstrings of length :math:`n` in parallel divides the number
-        of entries in the ``QROM`` block by :math:`k`, at the price of :math:`n(k-1)` controlled
-        ``SWAP`` gates. ``QROMLoad`` weighs the two against each other and picks the :math:`k`
-        that minimizes the combined cost, among the powers of two that fit into the work wires.
+        seven T gates. In general, loading :math:`k` bitstrings of length :math:`n` in parallel
+        divides the number of entries in the ``QROM`` block by :math:`k`, at the price of
+        :math:`n(k-1)` controlled ``SWAP`` gates. ``QROMLoad`` weighs the two against each other
+        and picks the :math:`k` that minimizes the combined cost, among the powers of two that fit
+        into the work wires.
         Here, eight bitstrings in parallel would not fit, and two would be more expensive than four.
 
     """
@@ -308,7 +310,7 @@ def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires, ad
 
 
 def _calculate_select_swap_sizes(
-    num_bitstrings, num_control_wires, num_targets, num_work_wires, clean=True, **_
+    num_bitstrings, num_control_wires, num_targets, num_work_wires, clean=True
 ):
     """Calculates the register sizes for the Select-SWAP decomposition.
 
@@ -327,9 +329,10 @@ def _calculate_select_swap_sizes(
 
     Returns:
         tuple[int]: ``(num_control_wires_select, num_work_wires_select, num_work_wires_swap,
-        num_work_wires_cswap, depth)`` — control and work wires assigned to the Select component,
-        work wires assigned to the SWAP network, work wires borrowed from the Select component by
-        the CSWAPs, and the number of bitstrings loaded in parallel.
+        num_work_wires_cswap, depth)`` — control wires of the Select component, work wires left
+        for the Select component (of which it uses one fewer than its control wires), work wires
+        assigned to the SWAP network, work wires borrowed from the Select component by the
+        CSWAPs, and the number of bitstrings loaded in parallel.
     """
 
     if num_work_wires < num_control_wires - 1:
@@ -500,6 +503,15 @@ def _qrom_load_to_qrom_resources(bitstrings, control_wires, target_wires, work_w
     }
 
 
+def _qrom_load_to_qrom_condition(bitstrings, control_wires, target_wires, work_wires, clean):
+    """For ``clean=False``, the final state of the work wires depends on the decomposition. Only
+    one rule may be applicable, so that loading and unloading with the adjoint always match."""
+    return clean or not _select_swap_condition(
+        bitstrings, control_wires, target_wires, work_wires, clean
+    )
+
+
+@register_condition(_qrom_load_to_qrom_condition)
 @register_resources(_qrom_load_to_qrom_resources)
 def _qrom_load_to_qrom(bitstrings, control_wires, target_wires, work_wires, clean):
     # pylint: disable=unused-argument

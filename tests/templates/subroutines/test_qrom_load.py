@@ -247,6 +247,17 @@ class TestQROMLoad:
 
         assert np.isclose(circuit()[0], 1.0)
 
+    @pytest.mark.parametrize("clean", [True, False])
+    def test_fallback_not_applicable_with_garbage(self, clean, seed):
+        """Test that the plain QROM fallback is not applicable for ``clean=False`` if Select-SWAP
+        is. The two rules leave different garbage on the work wires, so the graph could otherwise
+        decompose ``QROMLoad`` and its adjoint differently, which would not unload the data."""
+        bitstrings = np.random.default_rng(seed).integers(0, 2, size=(32, 1))
+        wires = qp.registers({"control_wires": 5, "target_wires": 1, "work_wires": 5})
+        op = qp.QROMLoad(bitstrings, **wires, clean=clean)
+        assert _select_swap.is_applicable(**op.arguments)
+        assert _qrom_load_to_qrom.is_applicable(**op.arguments) == clean
+
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
         bitstrings = [[(i // 3) % 2] for i in range(32)]
@@ -574,9 +585,10 @@ def test_select_swap_t_count(sizes, clean, seed):
     gate_set = {"T", "Adjoint(T)", "H", "S", "Adjoint(S)", "CNOT", "X", "Z", "CZ", "GlobalPhase"}
     gate_set |= {"MidMeasure"}
 
-    def t_count(rule):
-        graph = DecompositionGraph([op], gate_set, fixed_decomps={qp.QROMLoad: rule})
+    def t_count(op, fixed_decomps=None):
+        graph = DecompositionGraph([op], gate_set, fixed_decomps=fixed_decomps)
         counts = graph.solve().resource_estimate(op).gate_counts
         return sum(num for gate, num in counts.items() if str(gate) in {"T", "Adjoint(T)"})
 
-    assert 0 < t_count(_select_swap) < t_count(_qrom_load_to_qrom)
+    select_swap_t_count = t_count(op, fixed_decomps={qp.QROMLoad: _select_swap})
+    assert 0 < select_swap_t_count < t_count(qp.QROM(bitstrings, **wires))
