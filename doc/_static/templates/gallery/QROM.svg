@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">QROM</title>
+  <desc id="description">An address selects a fixed table entry and loads its stored bit pattern into a register.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="58" y="111" width="60" height="58" rx="12" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="78" cy="139" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="98" cy="139" r="6" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <path d="M118 141 H165 V127 H222" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M210 119 L223 127 L210 135" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="231" y="66" width="110" height="130" rx="12" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <rect x="240" y="74" width="92" height="22" rx="4" fill="#D5F0FD" stroke="none" stroke-width="4" />
+    <circle cx="256" cy="85" r="4" fill="#151515" stroke="none" stroke-width="0" />
+    <circle cx="281" cy="85" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="306" cy="85" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <rect x="240" y="103" width="92" height="22" rx="4" fill="#FFB5F1" stroke="none" stroke-width="4" />
+    <circle cx="256" cy="114" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="281" cy="114" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="306" cy="114" r="4" fill="#151515" stroke="none" stroke-width="0" />
+    <rect x="240" y="132" width="92" height="22" rx="4" fill="#D5F0FD" stroke="none" stroke-width="4" />
+    <circle cx="256" cy="143" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="281" cy="143" r="4" fill="#151515" stroke="none" stroke-width="0" />
+    <circle cx="306" cy="143" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <rect x="240" y="161" width="92" height="22" rx="4" fill="#D5F0FD" stroke="none" stroke-width="4" />
+    <circle cx="256" cy="172" r="4" fill="#151515" stroke="none" stroke-width="0" />
+    <circle cx="281" cy="172" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="306" cy="172" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <path d="M285 206 V226 H157" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M171 218 L156 226 L171 234" fill="none" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

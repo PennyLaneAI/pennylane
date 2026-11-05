@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">TrotterVibronic</title>
+  <desc id="description">Coupled electronic potential wells with vibrational levels and a phase rotation indicate vibronic evolution.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M53 70 Q135 304 218 70" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M183 70 Q261 304 345 70" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M107 171 L167 171" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M94 141 L180 141" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M82 111 L192 111" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M241 186 L278 186" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M222 157 L297 157" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M207 128 L314 128" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="137" cy="166" r="9" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="259" cy="181" r="9" fill="#FFE08A" stroke="#151515" stroke-width="3" />
+    <path d="M162 155 L231 171" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M222.71 162.33 L231 171 L219.74 175.14" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M231 196 L161 181" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M169.44 189.53 L161 181 L172.19 176.67" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="201" cy="68" r="25" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <path d="M186.9 63.0 L187.6 61.4 L188.4 59.8 L189.5 58.4 L190.7 57.1 L192.0 56.0 L193.5 55.0 L195.1 54.2 L196.7 53.6 L198.4 53.2 L200.2 53.0 L201.9 53.0 L203.7 53.2 L205.4 53.7 L207.1 54.3 L208.6 55.1 L210.1 56.1 L211.4 57.2 L212.6 58.5 L213.6 59.9 L214.5 61.5 L215.2 63.1 L215.7 64.8 L215.9 66.5 L216.0 68.3 L215.9 70.1 L215.5 71.8 L215.0 73.5 L214.2 75.1 L213.3 76.6 L212.2 77.9 L211.0 79.2 L209.6 80.3 L208.1 81.2 L206.5 82.0 L204.8 82.5 L203.1 82.9 L201.3 83.0 L199.6 82.9 L197.8 82.7 L196.2 82.2" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M197.8481123763656 82.66511521973081 L196.15065649704746 82.19450131531121" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M204.07 91.21 L196.15065649704746 82.19450131531121 L207.58 78.54" fill="none" stroke="#0074E0" stroke-width="3" />
+  </g>
+</svg>

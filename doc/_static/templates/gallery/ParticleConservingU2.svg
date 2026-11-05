@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">ParticleConservingU2</title>
+  <desc id="description">A neighboring-orbital exchange moves one electron, followed by local phase rotations that preserve particle number.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M55 103 L345 103" fill="none" stroke="#88A5B5" stroke-width="4" />
+    <path d="M55 187 L345 187" fill="none" stroke="#88A5B5" stroke-width="4" />
+    <path d="M101 103 C155 103 154 187 207 187 M101 187 C155 187 154 103 207 103" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="88" cy="103" r="22" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="88" cy="103" r="9" fill="#0074E0" stroke="#151515" stroke-width="3" />
+    <circle cx="88" cy="187" r="22" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="217" cy="103" r="22" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="217" cy="187" r="22" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="217" cy="187" r="9" fill="#0074E0" stroke="#151515" stroke-width="3" />
+    <circle cx="308" cy="103" r="25" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <circle cx="308" cy="187" r="25" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <path d="M300 113 A13 13 0 1 1 318 110" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M310 109 L318 111 L320 103" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M300 197 A13 13 0 1 1 318 194" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M310 193 L318 195 L320 187" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M245 103 L277 103" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M266.96 96.42 L277 103 L266.96 109.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M245 187 L277 187" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M266.96 180.42 L277 187 L266.96 193.58" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

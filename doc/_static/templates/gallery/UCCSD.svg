@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">UCCSD</title>
+  <desc id="description">Coupled single and double excitations lift electrons from molecular orbitals inside a unitary evolution loop.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(127 182) rotate(0) scale(0.73)"><path d="M0 0 C-21 -40 -74 -38 -69 0 C-64 36 -22 32 0 0" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M0 0 C21 -40 74 -38 69 0 C64 36 22 32 0 0" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="0" cy="0" r="6" fill="#151515" stroke="#151515" stroke-width="0" />
+    </g><g transform="translate(275 182) rotate(0) scale(0.73)"><path d="M0 0 C-21 -40 -74 -38 -69 0 C-64 36 -22 32 0 0" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M0 0 C21 -40 74 -38 69 0 C64 36 22 32 0 0" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="0" cy="0" r="6" fill="#151515" stroke="#151515" stroke-width="0" />
+    </g><circle cx="110" cy="184" r="9" fill="#0074E0" stroke="#151515" stroke-width="3" />
+    <circle cx="258" cy="184" r="9" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="288" cy="184" r="9" fill="#0074E0" stroke="#151515" stroke-width="3" />
+    <path d="M78 75 L174 75" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M227 75 L323 75" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M126 148 L126 82" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M119.42 92.04 L126 82 L132.58 92.04" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M262 146 L262 82" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M255.42 92.04 L262 82 L268.58 92.04" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M289 146 L289 82" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M282.42 92.04 L289 82 L295.58 92.04" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M62 139 C42 75 83 45 122 45 L300 45 C335 45 356 91 337 130" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M330 118 L337 131 L348 122" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

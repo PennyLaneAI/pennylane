@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">SelectPauliRot</title>
+  <desc id="description">An address selects a Pauli-axis rotation from a family of phase operations.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="51" y="108" width="57" height="61" rx="10" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="80" cy="139" r="7" fill="#0074E0" stroke="none" stroke-width="0" />
+    <path d="M108 139 Q157 139 171 77" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <circle cx="198" cy="77" r="26" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <path d="M182 77 L214 77" fill="none" stroke="#88A5B5" stroke-width="2" />
+    <path d="M198 61 L198 93" fill="none" stroke="#88A5B5" stroke-width="2" />
+    <path d="M186.9 66.9 L188.0 65.9 L189.1 65.0 L190.2 64.2 L191.5 63.5 L192.8 62.9 L194.2 62.5 L195.5 62.2 L197.0 62.0 L198.4 62.0 L199.8 62.1 L201.2 62.3 L202.6 62.7 L203.9 63.2 L205.2 63.8 L206.4 64.6 L207.6 65.4 L208.6 66.4 L209.6 67.5 L210.4 68.6 L211.2 69.8 L211.8 71.1 L212.3 72.4 L212.7 73.8 L212.9 75.2 L213.0 76.6 L213.0 78.0 L212.8 79.5 L212.5 80.9 L212.1 82.2 L211.5 83.5 L210.8 84.8 L210.0 86.0 L209.1 87.1 L208.1 88.1 L207.0 89.0 L205.9 89.8 L204.6 90.5 L203.3 91.0 L201.9 91.5 L200.5 91.8" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M201.94016571064822 91.47325444302808 L200.5495071435036 91.7817459498269" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M211.77 96.03 L200.5495071435036 91.7817459498269 L208.92 83.19" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M108 139 Q157 139 260 139" fill="none" stroke="#0074E0" stroke-width="3" />
+    <circle cx="287" cy="139" r="26" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M271 139 L303 139" fill="none" stroke="#88A5B5" stroke-width="2" />
+    <path d="M287 123 L287 155" fill="none" stroke="#88A5B5" stroke-width="2" />
+    <path d="M275.9 128.9 L277.0 127.9 L278.1 127.0 L279.2 126.2 L280.5 125.5 L281.8 124.9 L283.2 124.5 L284.5 124.2 L286.0 124.0 L287.4 124.0 L288.8 124.1 L290.2 124.3 L291.6 124.7 L292.9 125.2 L294.2 125.8 L295.4 126.6 L296.6 127.4 L297.6 128.4 L298.6 129.5 L299.4 130.6 L300.2 131.8 L300.8 133.1 L301.3 134.4 L301.7 135.8 L301.9 137.2 L302.0 138.6 L302.0 140.0 L301.8 141.5 L301.5 142.9 L301.1 144.2 L300.5 145.5 L299.8 146.8 L299.0 148.0 L298.1 149.1 L297.1 150.1 L296.0 151.0 L294.9 151.8 L293.6 152.5 L292.3 153.0 L290.9 153.5 L289.5 153.8" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M290.9401657106482 153.47325444302808 L289.5495071435036 153.7817459498269" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M300.77 158.03 L289.5495071435036 153.7817459498269 L297.92 145.19" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M108 139 Q157 139 171 205" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <circle cx="198" cy="205" r="26" fill="#FFE08A" stroke="#151515" stroke-width="3" />
+    <path d="M182 205 L214 205" fill="none" stroke="#88A5B5" stroke-width="2" />
+    <path d="M198 189 L198 221" fill="none" stroke="#88A5B5" stroke-width="2" />
+    <path d="M186.9 194.9 L188.0 193.9 L189.1 193.0 L190.2 192.2 L191.5 191.5 L192.8 190.9 L194.2 190.5 L195.5 190.2 L197.0 190.0 L198.4 190.0 L199.8 190.1 L201.2 190.3 L202.6 190.7 L203.9 191.2 L205.2 191.8 L206.4 192.6 L207.6 193.4 L208.6 194.4 L209.6 195.5 L210.4 196.6 L211.2 197.8 L211.8 199.1 L212.3 200.4 L212.7 201.8 L212.9 203.2 L213.0 204.6 L213.0 206.0 L212.8 207.5 L212.5 208.9 L212.1 210.2 L211.5 211.5 L210.8 212.8 L210.0 214.0 L209.1 215.1 L208.1 216.1 L207.0 217.0 L205.9 217.8 L204.6 218.5 L203.3 219.0 L201.9 219.5 L200.5 219.8" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M201.94016571064822 219.47325444302808 L200.5495071435036 219.7817459498269" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M211.77 224.03 L200.5495071435036 219.7817459498269 L208.92 211.19" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M313 139 L348 139" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M337.96 132.42 L348 139 L337.96 145.58" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

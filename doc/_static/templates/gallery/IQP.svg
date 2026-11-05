@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">IQP</title>
+  <desc id="description">Commuting phase interactions inside a shared diagonal layer between Hadamard operations.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M48 82 L352 82" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M48 140 L352 140" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M48 198 L352 198" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <rect x="52.0" y="64.0" width="36" height="36" rx="9" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <path d="M63 72 L63 92" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M77 72 L77 92" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M63 82 L77 82" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="52.0" y="122.0" width="36" height="36" rx="9" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <path d="M63 130 L63 150" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M77 130 L77 150" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M63 140 L77 140" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="52.0" y="180.0" width="36" height="36" rx="9" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <path d="M63 188 L63 208" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M77 188 L77 208" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M63 198 L77 198" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="312.0" y="64.0" width="36" height="36" rx="9" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <path d="M323 72 L323 92" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M337 72 L337 92" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M323 82 L337 82" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="312.0" y="122.0" width="36" height="36" rx="9" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <path d="M323 130 L323 150" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M337 130 L337 150" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M323 140 L337 140" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="312.0" y="180.0" width="36" height="36" rx="9" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <path d="M323 188 L323 208" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M337 188 L337 208" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M323 198 L337 198" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="110" y="54" width="180" height="172" rx="20" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="145" cy="83" r="13" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M145 64 L145 102" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="205" cy="140" r="16" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <path d="M205 118 L205 162" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="257" cy="197" r="13" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M257 178 L257 216" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M145 99 V177 Q145 197 163 197 H241" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M161 83 H237 Q257 83 257 103 V177" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M205 80 L205 120" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M205 160 L205 200" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

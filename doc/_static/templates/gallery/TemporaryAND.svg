@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">TemporaryAND</title>
+  <desc id="description">Two control values compute a temporary logical AND into an auxiliary target, with a return path for uncomputation.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M58 93 L158 93" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M58 183 L158 183" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="73" cy="93" r="11" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="73" cy="183" r="11" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M158 77 H193 A62 62 0 0 1 193 201 H158 Z" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M255 139 L324 139" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M313.96 132.42 L324 139 L313.96 145.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="333" cy="139" r="15" fill="#FFE08A" stroke="#151515" stroke-width="3" />
+    <path d="M325 139 L341 139" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M333 131 L333 147" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M301 183 Q218 263 124 210" fill="none" stroke="#88A5B5" stroke-width="3" stroke-dasharray="6 8"/>
+    <path d="M133 225 L121 208 L140 209" fill="none" stroke="#88A5B5" stroke-width="3" />
+  </g>
+</svg>

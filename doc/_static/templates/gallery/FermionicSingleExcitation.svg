@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">FermionicSingleExcitation</title>
+  <desc id="description">One occupied orbital transfers to an empty orbital while conserving particle number.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M55 86 L345 86" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <ellipse cx="86" cy="86" rx="22" ry="11" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <ellipse cx="195" cy="86" rx="22" ry="11" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <ellipse cx="310" cy="86" rx="22" ry="11" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <path d="M55 195 L345 195" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <ellipse cx="86" cy="195" rx="22" ry="11" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <ellipse cx="195" cy="195" rx="22" ry="11" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <ellipse cx="310" cy="195" rx="22" ry="11" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="86" cy="86" r="10" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="310" cy="195" r="10" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M96 77 C159 35 246 65 297 176" fill="none" stroke="#0074E0" stroke-width="5" />
+    <path d="M282 170 L299 180 L301 161" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="310" cy="86" r="10" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="86" cy="195" r="10" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

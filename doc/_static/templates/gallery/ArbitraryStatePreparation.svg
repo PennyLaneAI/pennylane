@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">ArbitraryStatePreparation</title>
+  <desc id="description">A reference state is transformed into a freely chosen target state on a Bloch-sphere motif.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="239" cy="141" r="72" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <ellipse cx="239" cy="141" rx="72" ry="19" fill="none" stroke="#88A5B5" stroke-width="2.5" />
+    <ellipse cx="239" cy="141" rx="22" ry="72" fill="none" stroke="#88A5B5" stroke-width="2.5" />
+    <path d="M239 56 L239 226" fill="none" stroke="#88A5B5" stroke-width="2.5" />
+    <path d="M239 141 L271 100" fill="none" stroke="#0074E0" stroke-width="5" />
+    <path d="M259.64 103.87 L271 100 L270.01 111.96" fill="none" stroke="#0074E0" stroke-width="5" />
+    <circle cx="239" cy="141" r="4" fill="#151515" stroke="none" stroke-width="0" />
+    <circle cx="75" cy="142" r="25" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="75" cy="142" r="6" fill="#151515" stroke="none" stroke-width="0" />
+    <path d="M111 142 L145 142" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M134.96 135.42 L145 142 L134.96 148.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="315" cy="212" r="10" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+  </g>
+</svg>

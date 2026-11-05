@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">PhaseAdder</title>
+  <desc id="description">A phase dial turns through an added angle, illustrating addition in the Fourier basis.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="200" cy="139" r="76" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <ellipse cx="200" cy="139" rx="76" ry="28" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M200 63 A76 76 0 0 1 268 105 L200 139 Z" fill="#FFB5F1" stroke="none" stroke-width="4" />
+    <path d="M200 139 L200 73" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M200 139 L261 105" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M249.03 104.14 L261 105 L255.43 115.63" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="200" cy="139" r="7" fill="#151515" stroke="none" stroke-width="0" />
+    <path d="M183 80 A64 64 0 0 1 246 82" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M235 73 L247 82 L234 88" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="292" cy="194" r="29" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <path d="M281 194 L303 194" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M292 183 L292 205" fill="none" stroke="#151515" stroke-width="4" />
+    <rect x="56" y="181" width="92" height="42" rx="12" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="79.0" cy="202" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="102.0" cy="202" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="125.0" cy="202" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

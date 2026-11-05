@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">MPS</title>
+  <desc id="description">A linear chain of tensors, each with one open physical leg, illustrates a matrix product state network.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M68 143 L156 143" fill="none" stroke="#151515" stroke-width="5" />
+    <path d="M156 143 L244 143" fill="none" stroke="#151515" stroke-width="5" />
+    <path d="M244 143 L332 143" fill="none" stroke="#151515" stroke-width="5" />
+    <path d="M68 143 L68 208" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="45" y="120" width="46" height="46" rx="10" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="68" cy="208" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+    <path d="M156 143 L156 208" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="133" y="120" width="46" height="46" rx="10" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="156" cy="208" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+    <path d="M244 143 L244 208" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="221" y="120" width="46" height="46" rx="10" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="244" cy="208" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+    <path d="M332 143 L332 208" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="309" y="120" width="46" height="46" rx="10" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <circle cx="332" cy="208" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+  </g>
+</svg>

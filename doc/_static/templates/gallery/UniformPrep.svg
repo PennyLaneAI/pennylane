@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">UniformPrep</title>
+  <desc id="description">Equal-height amplitudes represent a uniform superposition over the selected computational states.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M56 213 L344 213" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="65" y="107" width="26" height="106" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="105" y="107" width="26" height="106" rx="5" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="145" y="107" width="26" height="106" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="185" y="107" width="26" height="106" rx="5" fill="#FFE08A" stroke="#151515" stroke-width="3" />
+    <rect x="225" y="107" width="26" height="106" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="265" y="107" width="26" height="106" rx="5" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="305" y="107" width="26" height="106" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <path d="M68 75 L331 75" fill="none" stroke="#0074E0" stroke-width="3" stroke-dasharray="5 9"/>
+  </g>
+</svg>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">TrotterCGF</title>
+  <desc id="description">Coupled vibrational modes grouped into colored fragments for Christiansen-greedy-fragmentation evolution.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="60" y="64" width="66" height="151" rx="16" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M93 76 L93 91" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M93 91 l-12 9 l24 12 l-24 12 l24 12 l-24 12 l12 9" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="93" cy="181" r="15" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <rect x="168" y="64" width="66" height="151" rx="16" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M201 76 L201 91" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M201 91 l-12 9 l24 12 l-24 12 l24 12 l-24 12 l12 9" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="201" cy="181" r="15" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <rect x="276" y="64" width="66" height="151" rx="16" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <path d="M309 76 L309 91" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M309 91 l-12 9 l24 12 l-24 12 l24 12 l-24 12 l12 9" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="309" cy="181" r="15" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <path d="M127 141 L167 141" fill="none" stroke="#0074E0" stroke-width="5" />
+    <path d="M235 141 L275 141" fill="none" stroke="#0074E0" stroke-width="5" />
+    <path d="M107 51 Q202 34 294 52" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M281 42 L297 53 L281 56" fill="none" stroke="#0074E0" stroke-width="3" />
+  </g>
+</svg>

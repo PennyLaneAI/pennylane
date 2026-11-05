@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">MultiplexerStatePreparation</title>
+  <desc id="description">A coherent selector combines conditional preparation paths into a target quantum state.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M144 69 L252 96 L252 184 L144 211 Z" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M55 87 L144 87" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="69" cy="87" r="13" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M55 140 L144 140" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="69" cy="140" r="13" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <path d="M55 193 L144 193" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="69" cy="193" r="13" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M254 140 L331 140" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M320.96 133.42 L331 140 L320.96 146.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="331" cy="140" r="14" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M201 48 L201 81" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="201" cy="48" r="7" fill="#0074E0" stroke="none" stroke-width="0" />
+  </g>
+</svg>

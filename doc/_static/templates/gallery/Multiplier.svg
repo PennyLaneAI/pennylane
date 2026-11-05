@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">Multiplier</title>
+  <desc id="description">A constant multiplier updates a quantum register, shown by a multiplication symbol and return loop.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="122" y="170" width="156" height="42" rx="12" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="153.2" cy="191" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="184.4" cy="191" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="215.6" cy="191" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="246.8" cy="191" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="200" cy="108" r="39" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M184 92 L216 124" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M184 124 L216 92" fill="none" stroke="#151515" stroke-width="4" />
+    <rect x="81" y="75" width="44" height="44" rx="10" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <circle cx="97" cy="97" r="4" fill="#151515" stroke="#151515" stroke-width="0" />
+    <circle cx="109" cy="97" r="4" fill="#151515" stroke="#151515" stroke-width="0" />
+    <path d="M128 97 L156 104" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M147.86 95.19 L156 104 L144.67 107.95" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M200 149 L200 166" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M206.58 155.96 L200 166 L193.42 155.96" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M287 191 C348 191 343 76 268 76" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M279 68 L267 76 L278 84" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

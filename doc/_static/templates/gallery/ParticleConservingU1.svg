@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">ParticleConservingU1</title>
+  <desc id="description">Two electrons exchange among neighboring orbital sites while the number of particles stays fixed.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M91 142 Q142 68 199 142 Q256 216 310 142" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M91 142 Q142 216 199 142 Q256 68 310 142" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="91" cy="142" r="32" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="199" cy="142" r="32" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="310" cy="142" r="32" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="91" cy="142" r="9" fill="#0074E0" stroke="#151515" stroke-width="3" />
+    <circle cx="310" cy="142" r="9" fill="#0074E0" stroke="#151515" stroke-width="3" />
+    <path d="M132 91 L145 89 L140 102" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M251 91 L264 93 L255 104" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M131 192 L144 194 L139 181" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M251 193 L264 191 L255 180" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

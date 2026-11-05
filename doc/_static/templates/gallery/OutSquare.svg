@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">OutSquare</title>
+  <desc id="description">A square array represents multiplying a register value by itself, with a separate output.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="89" y="72" width="117" height="117" rx="9" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M128.0 72 L128.0 189" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M89 111.0 L206 111.0" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M167.0 72 L167.0 189" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M89 150.0 L206 150.0" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M96 157 L198 157 L198 183 L96 183 Z" fill="#FFB5F1" stroke="none" stroke-width="4" />
+    <path d="M128 74 L128 188" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M167 74 L167 188" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M91 150 L204 150" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M89 214 L206 214" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M89 207 L89 221" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M206 207 L206 221" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M142 228 L154 240" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M142 240 L154 228" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M224 131 L250 131" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M239.96 124.42 L250 131 L239.96 137.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="258" y="110" width="89" height="42" rx="12" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <circle cx="280.25" cy="131" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="302.5" cy="131" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="324.75" cy="131" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

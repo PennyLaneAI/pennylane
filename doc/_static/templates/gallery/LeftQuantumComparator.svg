@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">LeftQuantumComparator</title>
+  <desc id="description">Two quantum registers feed an inequality comparison whose result is stored in a target qubit.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="59" y="75" width="110" height="42" rx="12" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="86.5" cy="96" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="114.0" cy="96" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="141.5" cy="96" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <rect x="59" y="181" width="110" height="42" rx="12" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="86.5" cy="202" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="114.0" cy="202" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="141.5" cy="202" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <path d="M171 96 L201 126" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M198.55 114.25 L201 126 L189.25 123.55" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M171 202 L201 172" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M189.25 174.45 L201 172 L198.55 183.75" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M241.5 124 L216.5 149 L241.5 174" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M216 183 L242 183" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M262 149 L283 149" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M272.96 142.42 L283 149 L272.96 155.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="315" cy="149" r="23" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <circle cx="315" cy="149" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+  </g>
+</svg>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">BasisEmbedding</title>
+  <desc id="description">A binary input pattern selects which qubits are flipped to prepare a computational basis state.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="66" y="70" width="76" height="142" rx="15" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <circle cx="104" cy="102" r="13" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M104 125 L104 151" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M110.58 140.96 L104 151 L97.42 140.96" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="85.0" y="163.0" width="38" height="38" rx="9" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <rect x="158" y="70" width="76" height="142" rx="15" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <circle cx="196" cy="102" r="13" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M196 125 L196 151" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M202.58 140.96 L196 151 L189.42 140.96" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="177.0" y="163.0" width="38" height="38" rx="9" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M188 174 L204 190" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M188 190 L204 174" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="250" y="70" width="76" height="142" rx="15" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <circle cx="288" cy="102" r="13" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M288 125 L288 151" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M294.58 140.96 L288 151 L281.42 140.96" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="269.0" y="163.0" width="38" height="38" rx="9" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M280 174 L296 190" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M280 190 L296 174" fill="none" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">HybridQRAM</title>
+  <desc id="description">A direct address selection feeds a smaller bucket-brigade tree shared by memory banks.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="51" y="107" width="56" height="67" rx="10" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="69" cy="140" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="88" cy="140" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="2" />
+    <path d="M107 140 L156 140" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="166" cy="140" r="12" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M178 134 L233 88" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M178 146 L233 194" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <circle cx="242" cy="81" r="13" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="242" cy="202" r="13" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <path d="M255 77 L286 67" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M255 86 L286 107" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M255 197 L286 176" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M255 207 L286 219" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <rect x="289" y="52" width="56" height="28" rx="6" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <circle cx="307" cy="66" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="326" cy="66" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <rect x="289" y="93" width="56" height="28" rx="6" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="307" cy="107" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="326" cy="107" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <rect x="289" y="162" width="56" height="28" rx="6" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <circle cx="307" cy="176" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="326" cy="176" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <rect x="289" y="205" width="56" height="28" rx="6" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <circle cx="307" cy="219" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="326" cy="219" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+  </g>
+</svg>

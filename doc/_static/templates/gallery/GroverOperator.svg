@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">GroverOperator</title>
+  <desc id="description">Amplitude bars reflected about a blue mean line illustrate Grover diffusion.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M52 202 L352 202" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M52 130 L348 130" fill="none" stroke="#0074E0" stroke-width="3" stroke-dasharray="7 8"/>
+    <rect x="67" y="118" width="18" height="84" rx="4" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="96" y="118" width="18" height="84" rx="4" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="125" y="166" width="18" height="36" rx="4" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="154" y="118" width="18" height="84" rx="4" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <path d="M188 163 L220 163" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M209.96 156.42 L220 163 L209.96 169.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="239" y="142" width="18" height="60" rx="4" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="267" y="142" width="18" height="60" rx="4" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="295" y="94" width="18" height="108" rx="4" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="323" y="142" width="18" height="60" rx="4" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <path d="M92 92 Q193 45 294 91" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M283 80 L295 92 L279 94" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

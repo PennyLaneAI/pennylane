@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">GateFabric</title>
+  <desc id="description">Overlapping local blocks interlace four orbital wires into a particle- and spin-preserving fabric.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M57 69 L343 69" fill="none" stroke="#88A5B5" stroke-width="4" />
+    <path d="M57 115 L343 115" fill="none" stroke="#88A5B5" stroke-width="4" />
+    <path d="M57 161 L343 161" fill="none" stroke="#88A5B5" stroke-width="4" />
+    <path d="M57 207 L343 207" fill="none" stroke="#88A5B5" stroke-width="4" />
+    <rect x="78" y="50" width="72" height="177" rx="21" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <rect x="251" y="50" width="72" height="177" rx="21" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <rect x="162" y="87" width="76" height="104" rx="21" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M100 71 C138 93 90 114 128 136 C90 157 138 182 100 207" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="114" cy="69" r="5" fill="#151515" stroke="none" stroke-width="0" />
+    <circle cx="114" cy="115" r="5" fill="#151515" stroke="none" stroke-width="0" />
+    <circle cx="114" cy="161" r="5" fill="#151515" stroke="none" stroke-width="0" />
+    <circle cx="114" cy="207" r="5" fill="#151515" stroke="none" stroke-width="0" />
+    <path d="M273 71 C311 93 263 114 301 136 C263 157 311 182 273 207" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="287" cy="69" r="5" fill="#151515" stroke="none" stroke-width="0" />
+    <circle cx="287" cy="115" r="5" fill="#151515" stroke="none" stroke-width="0" />
+    <circle cx="287" cy="161" r="5" fill="#151515" stroke="none" stroke-width="0" />
+    <circle cx="287" cy="207" r="5" fill="#151515" stroke="none" stroke-width="0" />
+    <path d="M179 111 C216 116 180 161 219 167" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M219 111 C180 116 216 161 179 167" fill="none" stroke="#151515" stroke-width="4" />
+    <circle cx="200" cy="139" r="8" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+  </g>
+</svg>

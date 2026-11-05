@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">FlipSign</title>
+  <desc id="description">The highlighted negative basis amplitude flips above zero while other amplitudes remain unchanged.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M52 140 L350 140" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <rect x="60" y="99" width="17" height="41" rx="4" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="88" y="79" width="17" height="61" rx="4" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="116" y="140" width="17" height="47" rx="4" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="144" y="105" width="17" height="35" rx="4" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <path d="M181 140 L218 140" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M207.96 133.42 L218 140 L207.96 146.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="235" y="99" width="17" height="41" rx="4" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="263" y="79" width="17" height="61" rx="4" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="291" y="93" width="17" height="47" rx="4" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="319" y="105" width="17" height="35" rx="4" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <path d="M126 204 Q214 257 300 204" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M286 204 L302 203 L294 218" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

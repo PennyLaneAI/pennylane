@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">IQPEmbedding</title>
+  <desc id="description">Hadamard preparation followed by commuting phase interactions encodes features and their correlations.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M48 82 L352 82" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M48 140 L352 140" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M48 198 L352 198" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <rect x="68.0" y="63.0" width="38" height="38" rx="9" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M80 72 L80 92" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M94 72 L94 92" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M80 82 L94 82" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="68.0" y="121.0" width="38" height="38" rx="9" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M80 130 L80 150" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M94 130 L94 150" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M80 140 L94 140" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="68.0" y="179.0" width="38" height="38" rx="9" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M80 188 L80 208" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M94 188 L94 208" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M80 198 L94 198" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="147" y="54" width="111" height="174" rx="16" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M174 86 L232 195" fill="none" stroke="#0074E0" stroke-width="3.5" />
+    <path d="M174 195 L232 86" fill="none" stroke="#0074E0" stroke-width="3.5" />
+    <circle cx="174" cy="86" r="7" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="174" cy="195" r="7" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="232" cy="86" r="7" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="232" cy="195" r="7" fill="#0074E0" stroke="none" stroke-width="0" />
+    <rect x="282.0" y="120.0" width="40" height="40" rx="9" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <circle cx="302" cy="140" r="10" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M302 125 L302 155" fill="none" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">TTN</title>
+  <desc id="description">A branching binary tree groups four physical sites into progressively larger tensor blocks.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M200 60 L121 133" fill="none" stroke="#151515" stroke-width="3.5" />
+    <path d="M200 60 L279 133" fill="none" stroke="#151515" stroke-width="3.5" />
+    <path d="M121 133 L65 213" fill="none" stroke="#151515" stroke-width="3.5" />
+    <path d="M121 133 L155 213" fill="none" stroke="#151515" stroke-width="3.5" />
+    <path d="M279 133 L245 213" fill="none" stroke="#151515" stroke-width="3.5" />
+    <path d="M279 133 L335 213" fill="none" stroke="#151515" stroke-width="3.5" />
+    <circle cx="200" cy="60" r="15" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="121" cy="133" r="15" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="279" cy="133" r="15" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="65" cy="213" r="15" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <circle cx="155" cy="213" r="15" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <circle cx="245" cy="213" r="15" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <circle cx="335" cy="213" r="15" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+  </g>
+</svg>

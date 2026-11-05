@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">FABLE</title>
+  <desc id="description">A compact matrix is block-encoded through a structured network of controlled rotations.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="62" y="92" width="27" height="27" rx="4" fill="#0074E0" stroke="none" stroke-width="3" />
+    <rect x="94" y="92" width="27" height="27" rx="4" fill="#D5F0FD" stroke="none" stroke-width="3" />
+    <rect x="126" y="92" width="27" height="27" rx="4" fill="#FFB5F1" stroke="none" stroke-width="3" />
+    <rect x="62" y="124" width="27" height="27" rx="4" fill="#D5F0FD" stroke="none" stroke-width="3" />
+    <rect x="94" y="124" width="27" height="27" rx="4" fill="#FFB5F1" stroke="none" stroke-width="3" />
+    <rect x="126" y="124" width="27" height="27" rx="4" fill="#D5F0FD" stroke="none" stroke-width="3" />
+    <rect x="62" y="156" width="27" height="27" rx="4" fill="#FFB5F1" stroke="none" stroke-width="3" />
+    <rect x="94" y="156" width="27" height="27" rx="4" fill="#D5F0FD" stroke="none" stroke-width="3" />
+    <rect x="126" y="156" width="27" height="27" rx="4" fill="#0074E0" stroke="none" stroke-width="3" />
+    <path d="M55 87 H48 V188 H55" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M160 87 H167 V188 H160" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M177 138 L211 138" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M200.96 131.42 L211 138 L200.96 144.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M238 94 L337 94" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M238 144 L337 144" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M238 194 L337 194" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M252 94 L252 194" fill="none" stroke="#0074E0" stroke-width="3" />
+    <circle cx="252" cy="94" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="252" cy="194" r="16" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M251.7 185.0 L252.5 185.0 L253.4 185.1 L254.1 185.3 L254.9 185.5 L255.7 185.8 L256.4 186.1 L257.1 186.6 L257.7 187.1 L258.3 187.6 L258.9 188.2 L259.4 188.8 L259.8 189.5 L260.2 190.2 L260.5 191.0 L260.7 191.8 L260.9 192.6 L261.0 193.4 L261.0 194.2 L260.9 195.0 L260.8 195.8 L260.6 196.6 L260.4 197.3 L260.0 198.1 L259.6 198.8 L259.2 199.4 L258.6 200.1 L258.1 200.6 L257.5 201.2 L256.8 201.6 L256.1 202.0 L255.3 202.4 L254.6 202.6 L253.8 202.8 L253.0 202.9 L252.2 203.0 L251.4 203.0 L250.6 202.9 L249.8 202.7 L249.0 202.5 L248.3 202.2" fill="none" stroke="#151515" stroke-width="2" />
+    <path d="M249.0053737888724 202.4871793816101 L248.25467847107572 202.18367684143112" fill="none" stroke="#151515" stroke-width="2" />
+    <path d="M255.1 212.04 L248.25467847107572 202.18367684143112 L260.03 199.85" fill="none" stroke="#151515" stroke-width="2" />
+    <path d="M310 144 L310 194" fill="none" stroke="#0074E0" stroke-width="3" />
+    <circle cx="310" cy="144" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="310" cy="194" r="16" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M309.7 185.0 L310.5 185.0 L311.4 185.1 L312.1 185.3 L312.9 185.5 L313.7 185.8 L314.4 186.1 L315.1 186.6 L315.7 187.1 L316.3 187.6 L316.9 188.2 L317.4 188.8 L317.8 189.5 L318.2 190.2 L318.5 191.0 L318.7 191.8 L318.9 192.6 L319.0 193.4 L319.0 194.2 L318.9 195.0 L318.8 195.8 L318.6 196.6 L318.4 197.3 L318.0 198.1 L317.6 198.8 L317.2 199.4 L316.6 200.1 L316.1 200.6 L315.5 201.2 L314.8 201.6 L314.1 202.0 L313.3 202.4 L312.6 202.6 L311.8 202.8 L311.0 202.9 L310.2 203.0 L309.4 203.0 L308.6 202.9 L307.8 202.7 L307.0 202.5 L306.3 202.2" fill="none" stroke="#151515" stroke-width="2" />
+    <path d="M307.0053737888724 202.4871793816101 L306.2546784710757 202.18367684143112" fill="none" stroke="#151515" stroke-width="2" />
+    <path d="M313.1 212.04 L306.2546784710757 202.18367684143112 L318.03 199.85" fill="none" stroke="#151515" stroke-width="2" />
+    <rect x="224" y="74" width="127" height="144" rx="16" fill="none" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>
