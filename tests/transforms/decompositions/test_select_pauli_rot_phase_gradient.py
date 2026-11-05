@@ -124,7 +124,9 @@ def test_select_swap_data_loading(seed):
     tape = qp.testing.decomp_rule_to_tape(op, rule)
     ops = phase_gradient_helpers.leaf_ops(tape.operations)
     load = next(o for o in ops if isinstance(o, qp.QROMLoad))
-    assert any(isinstance(o, qp.CSWAP) for o in load.decomposition())
+    # Select-SWAP loads several angles in parallel with a QROM over fewer control wires
+    nested_qrom = next(o for o in load.decomposition() if isinstance(o, qp.QROM))
+    assert len(nested_qrom.control_wires) < len(load.control_wires)
     phase_gradient_helpers.assert_decomp_realizes_op(op, tape, [1], seed)
 
 
