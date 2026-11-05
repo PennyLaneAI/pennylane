@@ -70,6 +70,20 @@ class QFT(Operator2):
            -0.3536+0.j,  0.3536+0.j, -0.3536+0.j])
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.QFT
+            :symbols: :math:`n` wires
+            :example: :math:`n=3`
+
+            .. decomposition-rule:: _qft_decomposition
+                :image: /_static/decomposition_thumbnails/qft_cphase_swap.svg
+
+                :class:`~.Hadamard` | :math:`n` | 3
+                :class:`~.ControlledPhaseShift` | :math:`n(n-1)/2` | 3
+                :class:`~.SWAP` | :math:`\lfloor n/2 \rfloor` | 1
+
+    .. details::
         :title: Semiclassical Quantum Fourier transform
 
         If the QFT is the last subroutine applied within a circuit, it can be
