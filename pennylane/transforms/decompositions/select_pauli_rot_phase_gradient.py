@@ -167,9 +167,9 @@ def make_selectpaulirot_to_phase_gradient_decomp(
 
     >>> wire_order = [0, 1, 2, 3] + angle_wires + phase_grad_wires + work_wires
     >>> print(qp.draw(circuit, wire_order=wire_order, show_matrices=False)(angles))
-         0: ─╭QROMLoad(M0)──────────────────────────────╭QROMLoad(M0)†─┤ ╭State
-         1: ─├QROMLoad(M0)──────────────────────────────├QROMLoad(M0)†─┤ ├State
-         2: ─├QROMLoad(M0)──────────────────────────────├QROMLoad(M0)†─┤ ├State
+         0: ─╭◑─────────────────────────────────────────╭◑─────────────┤ ╭State
+         1: ─├◑─────────────────────────────────────────├◑─────────────┤ ├State
+         2: ─├◑─────────────────────────────────────────├◑─────────────┤ ├State
          3: ─│─────────────╭○─╭○─╭○────────────╭○─╭○─╭○─│──────────────┤ ├State
      aux_0: ─├QROMLoad(M0)─│──│──│──╭SemiAdder─│──│──│──├QROMLoad(M0)†─┤ ├State
      aux_1: ─├QROMLoad(M0)─│──│──│──├SemiAdder─│──│──│──├QROMLoad(M0)†─┤ ├State
@@ -177,8 +177,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(
      phg_0: ─│─────────────╰X─│──│──├SemiAdder─╰X─│──│──│──────────────┤ ├State
      phg_1: ─│────────────────╰X─│──├SemiAdder────╰X─│──│──────────────┤ ├State
      phg_2: ─│───────────────────╰X─├SemiAdder───────╰X─│──────────────┤ ├State
-    work_0: ─├QROMLoad(M0)──────────├SemiAdder──────────├QROMLoad(M0)†─┤ ├State
-    work_1: ─╰QROMLoad(M0)──────────╰SemiAdder──────────╰QROMLoad(M0)†─┤ ╰State
+    work_0: ─├work──────────────────├SemiAdder──────────├work──────────┤ ├State
+    work_1: ─╰work──────────────────╰SemiAdder──────────╰work──────────┤ ╰State
 
     .. details::
         :title: Usage details
@@ -233,16 +233,16 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         >>> precision_stats
         {2: 1, 3: 1}
         >>> print(qp.draw(truncated_circuit, wire_order=wire_order, show_matrices=False)(angles[0]))
-             0: ─╭QROMLoad(M0)────────────────────────╭QROMLoad(M0)†─┤ ╭State
-             1: ─├QROMLoad(M0)────────────────────────├QROMLoad(M0)†─┤ ├State
-             2: ─├QROMLoad(M0)────────────────────────├QROMLoad(M0)†─┤ ├State
+             0: ─╭◑───────────────────────────────────╭◑─────────────┤ ╭State
+             1: ─├◑───────────────────────────────────├◑─────────────┤ ├State
+             2: ─├◑───────────────────────────────────├◑─────────────┤ ├State
              3: ─│─────────────╭○─╭○────────────╭○─╭○─│──────────────┤ ├State
          aux_0: ─├QROMLoad(M0)─│──│──╭SemiAdder─│──│──├QROMLoad(M0)†─┤ ├State
          aux_1: ─├QROMLoad(M0)─│──│──├SemiAdder─│──│──├QROMLoad(M0)†─┤ ├State
          phg_0: ─│─────────────╰X─│──├SemiAdder─╰X─│──│──────────────┤ ├State
          phg_1: ─│────────────────╰X─├SemiAdder────╰X─│──────────────┤ ├State
-        work_0: ─├QROMLoad(M0)───────├SemiAdder───────├QROMLoad(M0)†─┤ ├State
-        work_1: ─╰QROMLoad(M0)───────╰SemiAdder───────╰QROMLoad(M0)†─┤ ╰State
+        work_0: ─├work───────────────├SemiAdder───────├work──────────┤ ├State
+        work_1: ─╰work───────────────╰SemiAdder───────╰work──────────┤ ╰State
 
         Finally, keep the following in mind when using ``precision_stats``:
 
