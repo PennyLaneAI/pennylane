@@ -83,7 +83,9 @@ class QROMLoad(Operator2):
             as pay off, though, so not all work wires are necessarily used.
         clean (bool): whether to return the ``work_wires`` to :math:`|0\rangle`. With
             ``clean=False``, they are left in a garbage state, which cuts the cost of Select-SWAP
-            by more than half. Defaults to ``True``.
+            by more than half. As this garbage state depends on the decomposition, Select-SWAP is
+            then always used where it pays off, irrespective of the target gate set. Defaults to
+            ``True``.
 
     **Example**
 
