@@ -17,7 +17,7 @@ Contains the PhaseAdder template.
 
 import numpy as np
 
-from pennylane import ops
+from pennylane import capture, compiler, math, ops
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
@@ -199,6 +199,9 @@ def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
 # pylint: disable=no-value-for-parameter
 @register_resources(_phase_adder_decomposition_resources)
 def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire):
+
+    if compiler.active() or capture.enabled():
+        x_wires = math.array(x_wires, like="jax")
 
     n_wires = len(x_wires)
 
