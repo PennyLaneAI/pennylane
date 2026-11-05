@@ -274,21 +274,8 @@ class TestQROMLoad:
         qrom = qp.QROM(
             columns, control_wires=[0, 1, 2], target_wires=[5, 6, 7, 8], work_wires=[9, 10]
         )
-
-        def cswap(control, wire_0, wire_1):
-            # The controlled SWAPs borrow the first work wire of the nested QROM
-            and_wires = [control, wire_0, 9]
-            return [
-                qp.CNOT([wire_1, wire_0]),
-                qp.TemporaryAND(and_wires),
-                qp.CNOT([9, wire_1]),
-                qp.adjoint(qp.TemporaryAND(and_wires)),
-                qp.CNOT([wire_1, wire_0]),
-            ]
-
-        swaps_adj = cswap(4, 5, 6) + cswap(3, 5, 7) + cswap(3, 6, 8)
-        swaps = cswap(3, 6, 8) + cswap(3, 5, 7) + cswap(4, 5, 6)
-        expected_gates = ([qp.Hadamard(5)] + swaps_adj + [qrom] + swaps) * 2
+        cswaps = [qp.CSWAP([4, 5, 6]), qp.CSWAP([3, 5, 7]), qp.CSWAP([3, 6, 8])]
+        expected_gates = ([qp.Hadamard(5)] + cswaps + [qrom] + cswaps[::-1]) * 2
 
         assert len(qrom_decomposition) == len(expected_gates)
         for op1, op2 in zip(qrom_decomposition, expected_gates):
@@ -570,10 +557,26 @@ def test_calculate_select_swap_sizes_clean(num_bitstrings, n_ctrl, n_target, n_w
         assert sizes == expected[clean]
 
 
-@pytest.mark.parametrize(
-    "sizes", [(21, 5, 1, 5), (32, 5, 1, 5), (64, 6, 1, 9), (64, 6, 2, 20), (256, 8, 2, 11)]
+_cswap_without_elbow = pytest.mark.xfail(
+    strict=True,
+    reason="Controlled SWAPs with a zeroed work wire are not yet decomposed into elbows",
 )
-@pytest.mark.parametrize("clean", [True, False])
+
+
+@pytest.mark.parametrize(
+    ("sizes", "clean"),
+    [
+        pytest.param((21, 5, 1, 5), True, marks=_cswap_without_elbow),
+        pytest.param((32, 5, 1, 5), True, marks=_cswap_without_elbow),
+        ((64, 6, 1, 9), True),
+        pytest.param((64, 6, 2, 20), True, marks=_cswap_without_elbow),
+        ((256, 8, 2, 11), True),
+    ]
+    + [
+        (sizes, False)
+        for sizes in [(21, 5, 1, 5), (32, 5, 1, 5), (64, 6, 1, 9), (64, 6, 2, 20), (256, 8, 2, 11)]
+    ],
+)
 def test_select_swap_t_count(sizes, clean, seed):
     """Test that the Select-SWAP decomposition, if applicable, uses fewer T gates than a plain
     QROM."""

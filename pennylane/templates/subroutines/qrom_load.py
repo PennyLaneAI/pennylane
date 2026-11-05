@@ -19,7 +19,6 @@ from collections.abc import Sequence
 from functools import partial
 
 from pennylane import capture, compiler, math
-from pennylane import ops as qp_ops
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
@@ -28,11 +27,10 @@ from pennylane.decomposition import (
     register_condition,
     register_resources,
 )
-from pennylane.ops import CNOT, CSWAP, H
+from pennylane.ops import SWAP, H, ctrl
 from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
-from .arithmetic import TemporaryAND
 from .multix import MultiX
 from .qrom import QROM, _unary_iteration_num_elbows, preprocess_qrom_inputs
 
@@ -134,70 +132,45 @@ class QROMLoad(Operator2):
                 return counts.quantum_operations["T"] + counts.quantum_operations["Adjoint(T)"]
 
         >>> t_count(qp.QROM), t_count(qp.QROMLoad), t_count(qp.QROMLoad, clean=False)
-        (1012, 584, 268)
+        (1012, 656, 286)
 
-        So ``QROMLoad`` saves more than 40 percent of the T gates, and if we do not mind garbage on
-        the work wires, ``clean=False`` saves almost three quarters. To see where the savings come from,
+        So ``QROMLoad`` saves more than a third of the T gates, and if we do not mind garbage on the
+        work wires, ``clean=False`` saves more than two thirds. To see where the savings come from,
         let us draw the Select-SWAP decomposition with ``clean=False``:
 
         >>> op = qp.QROMLoad(*args, clean=False)
         >>> rule = qp.list_decomps(qp.QROMLoad)["_select_swap"]
         >>> print(qp.draw(rule, show_matrices=False)(**op.arguments))
-         0: ─╭◑─────────────────────────────────────────────────────────────────────────────────────── ···
-         1: ─├◑─────────────────────────────────────────────────────────────────────────────────────── ···
-         2: ─├◑─────────────────────────────────────────────────────────────────────────────────────── ···
-         3: ─├◑─────────────────────────────────────────────────────────────────────────────────────── ···
-         4: ─├◑─────────────────────────────────────────────────────────────────────────────────────── ···
-         5: ─├◑─────────────────────────────────────────────────────────────────────────────────────── ···
-         6: ─│────────────╭●─────●╮───────╭●─────●╮───────╭●─────●╮───────╭●─────●╮─────────────────── ···
-         7: ─│────────────│───────│───────│───────│───────│───────│───────│───────│───────╭●─────●╮─── ···
-         8: ─├QROM(M0)────│───────│───────│───────│────╭X─├●─────●┤─╭X────│───────│────╭X─├●─────●┤─╭X ···
-         9: ─├QROM(M0)────│───────│───────│───────│────│──│───────│─│──╭X─├●─────●┤─╭X─│──│───────│─│─ ···
-        10: ─├QROM(M0)─╭X─├●─────●┤─╭X────│───────│────│──│───────│─│──│──│───────│─│──╰●─│──╭X───│─╰● ···
-        11: ─├QROM(M0)─│──│───────│─│──╭X─├●─────●┤─╭X─│──│───────│─│──│──│───────│─│─────│──│────│─── ···
-        12: ─├QROM(M0)─│──│───────│─│──│──│───────│─│──╰●─│──╭X───│─╰●─│──│───────│─│─────│──│────│─── ···
-        13: ─├QROM(M0)─│──│───────│─│──│──│───────│─│─────│──│────│────╰●─│──╭X───│─╰●────│──│────│─── ···
-        14: ─├QROM(M0)─╰●─│──╭X───│─╰●─│──│───────│─│─────│──│────│───────│──│────│───────│──│────│─── ···
-        15: ─├QROM(M0)────│──│────│────╰●─│──╭X───│─╰●────│──│────│───────│──│────│───────│──│────│─── ···
-        16: ─├work────────╰⊕─╰●──⊕╯───────╰⊕─╰●──⊕╯───────╰⊕─╰●──⊕╯───────╰⊕─╰●──⊕╯───────╰⊕─╰●──⊕╯─── ···
-        17: ─├work──────────────────────────────────────────────────────────────────────────────────── ···
-        18: ─├work──────────────────────────────────────────────────────────────────────────────────── ···
-        19: ─├work──────────────────────────────────────────────────────────────────────────────────── ···
-        20: ─╰work──────────────────────────────────────────────────────────────────────────────────── ···
-        <BLANKLINE>
-         0: ··· ─────────────────┤
-         1: ··· ─────────────────┤
-         2: ··· ─────────────────┤
-         3: ··· ─────────────────┤
-         4: ··· ─────────────────┤
-         5: ··· ─────────────────┤
-         6: ··· ─────────────────┤
-         7: ··· ────╭●─────●╮────┤
-         8: ··· ────│───────│────┤
-         9: ··· ─╭X─├●─────●┤─╭X─┤
-        10: ··· ─│──│───────│─│──┤
-        11: ··· ─╰●─│──╭X───│─╰●─┤
-        12: ··· ────│──│────│────┤
-        13: ··· ────│──│────│────┤
-        14: ··· ────│──│────│────┤
-        15: ··· ────│──│────│────┤
-        16: ··· ────╰⊕─╰●──⊕╯────┤
-        17: ··· ─────────────────┤
-        18: ··· ─────────────────┤
-        19: ··· ─────────────────┤
-        20: ··· ─────────────────┤
+         0: ─╭◑────────────────────────────────────────────┤
+         1: ─├◑────────────────────────────────────────────┤
+         2: ─├◑────────────────────────────────────────────┤
+         3: ─├◑────────────────────────────────────────────┤
+         4: ─├◑────────────────────────────────────────────┤
+         5: ─├◑────────────────────────────────────────────┤
+         6: ─│─────────╭●────╭●────╭●────╭●────────────────┤
+         7: ─│─────────│─────│─────│─────│─────╭●────╭●────┤
+         8: ─├QROM(M0)─│─────│─────├SWAP─│─────├SWAP─│─────┤
+         9: ─├QROM(M0)─│─────│─────│─────├SWAP─│─────├SWAP─┤
+        10: ─├QROM(M0)─├SWAP─│─────│─────│─────╰SWAP─│─────┤
+        11: ─├QROM(M0)─│─────├SWAP─│─────│───────────╰SWAP─┤
+        12: ─├QROM(M0)─│─────│─────╰SWAP─│─────────────────┤
+        13: ─├QROM(M0)─│─────│───────────╰SWAP─────────────┤
+        14: ─├QROM(M0)─╰SWAP─│─────────────────────────────┤
+        15: ─├QROM(M0)───────╰SWAP─────────────────────────┤
+        16: ─├work─────────────────────────────────────────┤
+        17: ─├work─────────────────────────────────────────┤
+        18: ─├work─────────────────────────────────────────┤
+        19: ─├work─────────────────────────────────────────┤
+        20: ─╰work─────────────────────────────────────────┤
 
         The inner ``QROM`` only reads the first six control wires, so it has 64 instead of 256
         entries. Each entry stacks four bitstrings, which are loaded onto the target wires 8 and 9
         *and* the work wires 10 to 15 at once. The two remaining control wires then pick the
         requested bitstring with controlled ``SWAP`` gates, moving it into the target register.
-        Each controlled ``SWAP`` is a Toffoli gate between two ``CNOT`` gates, and the Toffoli
-        borrows the idle work wire 16 to be applied as an elbow pair, which costs four instead of
-        seven T gates. In general, loading :math:`k` bitstrings of length :math:`n` in parallel
-        divides the number of entries in the ``QROM`` block by :math:`k`, at the price of
-        :math:`n(k-1)` controlled ``SWAP`` gates. ``QROMLoad`` weighs the two against each other
-        and picks the :math:`k` that minimizes the combined cost, among the powers of two that fit
-        into the work wires.
+        In general, loading :math:`k` bitstrings of length :math:`n` in parallel divides the number
+        of entries in the ``QROM`` block by :math:`k`, at the price of :math:`n(k-1)` controlled
+        ``SWAP`` gates. ``QROMLoad`` weighs the two against each other and picks the :math:`k`
+        that minimizes the combined cost, among the powers of two that fit into the work wires.
         Here, eight bitstrings in parallel would not fit, and two would be more expensive than four.
 
     """
@@ -251,26 +224,6 @@ def _select_ops(
     )
 
 
-def _cswap(control_wire, wire_0, wire_1, cswap_work_wires):
-    """Controlled SWAP. With a zeroed work wire, its Toffoli is replaced by an elbow, which halves
-    the T count."""
-    if len(cswap_work_wires) == 0:
-        CSWAP([control_wire, wire_0, wire_1])
-        return
-    and_wires = [control_wire, wire_0, cswap_work_wires[0]]
-    CNOT([wire_1, wire_0])
-    TemporaryAND(and_wires)
-    CNOT([cswap_work_wires[0], wire_1])
-    qp_ops.adjoint(TemporaryAND)(and_wires)
-    CNOT([wire_1, wire_0])
-
-
-def _cswap_resources(num_cswap_work_wires):
-    if num_cswap_work_wires == 0:
-        return {CSWAP: 1}
-    return {CNOT: 3, TemporaryAND: 1, qp_ops.adjoint(TemporaryAND(Wire[3])): 1}
-
-
 def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires, adjoint=False):
 
     n_targets = len(target_wires)
@@ -296,11 +249,11 @@ def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires, ad
             layer_loop = for_loop(n_targets - 1, -1, -1) if adjoint else for_loop(0, n_targets)
 
             def swap_layer(k):
-                _cswap(
-                    swap_control_wires[-i - 1],
-                    swap_wires[j][k],
-                    swap_wires[j + 2**i][k],
-                    cswap_work_wires,
+                ctrl(
+                    SWAP([swap_wires[j][k], swap_wires[j + 2**i][k]]),
+                    control=swap_control_wires[-i - 1],
+                    work_wires=cswap_work_wires,
+                    work_wire_type="zeroed",
                 )
 
             layer_loop(swap_layer)()
@@ -311,6 +264,21 @@ def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires, ad
     outer_loop(outer)()
 
 
+def _select_swap_cost(num_bitstrings, num_control_wires, num_targets, log_depth, clean):
+    """Number of Toffoli-like gates, i.e., elbows of the Select component and controlled SWAPs,
+    of the Select-SWAP decomposition loading ``2**log_depth`` bitstrings in parallel. For
+    ``log_depth=0``, this is the cost of a single plain ``QROM``, irrespective of ``clean``."""
+    num_control_wires_select = num_control_wires - log_depth
+    num_columns = -(-num_bitstrings // 2**log_depth)
+    num_elbows = 0
+    if num_control_wires_select >= 2:
+        num_elbows = _unary_iteration_num_elbows(num_control_wires_select, num_columns)
+    num_cswaps = num_targets * (2**log_depth - 1)
+    if clean and log_depth > 0:
+        return 2 * num_elbows + 4 * num_cswaps
+    return num_elbows + num_cswaps
+
+
 def _calculate_select_swap_sizes(
     num_bitstrings, num_control_wires, num_targets, num_work_wires, clean=True
 ):
@@ -318,8 +286,8 @@ def _calculate_select_swap_sizes(
 
     This utility function determines how many bitstrings to load in parallel, and how many
     auxiliary wires from the total pool should be allocated to the Select operation versus the
-    SWAP network. Among all depths that fit into the work wires, the one with the lowest T count
-    is chosen, preferring smaller depths in case of a tie.
+    SWAP network. Among all depths that fit into the work wires, the one with the lowest cost
+    according to ``_select_swap_cost`` is chosen, preferring smaller depths in case of a tie.
 
     Args:
         num_bitstrings (int): number of bitstrings/entries in the data
@@ -341,23 +309,6 @@ def _calculate_select_swap_sizes(
         return num_control_wires, num_work_wires, 0, 0, 1
 
     num_bitstrings = int(num_bitstrings)
-
-    def t_count(log_depth):
-        """T count when loading ``2**log_depth`` bitstrings in parallel. Elbows cost 4 T gates,
-        and so do controlled SWAPs if they can borrow a work wire, otherwise they cost 7. For
-        ``log_depth=0``, this is a single plain ``QROM``, irrespective of ``clean``."""
-        num_control_wires_select = num_control_wires - log_depth
-        num_elbows = 0
-        if num_control_wires_select >= 2:
-            num_columns = -(-num_bitstrings // 2**log_depth)
-            num_elbows = _unary_iteration_num_elbows(num_control_wires_select, num_columns)
-        num_cswaps = num_targets * (2**log_depth - 1)
-        # The SWAP network occupies as many work wires as it has controlled SWAPs
-        cswap_t_count = 4 if num_work_wires > num_cswaps else 7
-        if clean and log_depth > 0:
-            return 8 * num_elbows + 4 * cswap_t_count * num_cswaps
-        return 4 * num_elbows + cswap_t_count * num_cswaps
-
     # Work wires for the SWAP network, and for the unary iteration of the Select component
     log_depths = [
         log_depth
@@ -365,7 +316,13 @@ def _calculate_select_swap_sizes(
         if num_targets * (2**log_depth - 1) + max(0, num_control_wires - log_depth - 1)
         <= num_work_wires
     ]
-    log_depth = min(log_depths, key=lambda j: (t_count(j), j))
+    log_depth = min(
+        log_depths,
+        key=lambda j: (
+            _select_swap_cost(num_bitstrings, num_control_wires, num_targets, j, clean),
+            j,
+        ),
+    )
     depth = 2**log_depth
     num_control_wires_select = num_control_wires - log_depth
     num_work_wires_swap = num_targets * (depth - 1)
@@ -425,15 +382,17 @@ def _select_swap_resources(
     num_control_wires_swap = num_control_wires - num_control_wires_select
     num_cswaps_per_block = num_targets * (2**num_control_wires_swap - 1)
 
-    num_cswaps = num_cswaps_per_block if not clean else 4 * num_cswaps_per_block
-    resources = {
-        op: count * num_cswaps for op, count in _cswap_resources(num_work_wires_cswap).items()
-    }
+    cswap_rep = ctrl(
+        SWAP(Wire[2]),
+        control=Wire[1],
+        work_wires=Wire[num_work_wires_cswap],
+        work_wire_type="zeroed",
+    )
 
     if not clean:
-        return resources | {bigger_qrom: 1}
+        return {bigger_qrom: 1, cswap_rep: num_cswaps_per_block}
 
-    return resources | {bigger_qrom: 2, H: 2 * num_targets}
+    return {bigger_qrom: 2, cswap_rep: 4 * num_cswaps_per_block, H: 2 * num_targets}
 
 
 @register_condition(_select_swap_condition)

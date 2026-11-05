@@ -414,7 +414,7 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. gallery-item::
     :description: :doc:`QROMLoad <../code/api/pennylane.QROMLoad>`
-    :figure: _static/templates/qrom/qrom_thumbnail.png
+    :figure: _static/templates/qrom/qrom_load_thumbnail.png
 
 .. gallery-item::
     :description: :doc:`Bucket Brigade QRAM <../code/api/pennylane.BBQRAM>`
