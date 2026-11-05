@@ -1028,7 +1028,7 @@ class TestFullMetricTensor:
 
         x = jax.numpy.array([1.0, 2.0, 3.0, 4.0])
 
-        qjit_res = qp.qjit(qp.metric_tensor(circuit))(x)
+        qjit_res = qp.qjit(qp.metric_tensor(circuit), capture=False)(x)
 
         cost_autograd = autodiff_metric_tensor(ansatz, num_wires=3)(qp.numpy.array(x))
 

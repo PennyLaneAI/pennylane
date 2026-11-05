@@ -27,9 +27,8 @@ from pennylane.decomposition.resources import (
     resource_rep,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import _pow_abstract
-from pennylane.typing import Float, Wire
+from pennylane.typing import Bool, Float, Wire
 
 
 class DummyRX(Operator1):  # pylint: disable=too-few-public-methods
@@ -267,7 +266,7 @@ class TestCompressedResourceOp:
         [
             (abstractify(DummyRX), "DummyRX"),
             (_adjoint_abstract(DummyRX), "Adjoint(DummyRX)"),
-            (_ctrl_abstract(qp.T, Wire[1]), "C(T)"),
+            (qp.ctrl(qp.T(Wire[1]), control=Wire[1], control_values=Bool[1]), "C(T)"),
             (pow_resource_rep(DummyRX, {}, 2), "Pow(DummyRX)"),
         ],
     )

@@ -720,7 +720,15 @@ class TestUnaryIterator:
         "c, K, expected_ops, expected_ops_partial",
         [
             (1, 1, [qp.ctrl(qp.SWAP([0, 1]), ["c0"], [0])], [qp.SWAP([0, 1])]),
-            (1, 2, [qp.ctrl(qp.SWAP([0, 1]), ["c0"], [0]), qp.CY(["c0", 1])], None),
+            (
+                1,
+                2,
+                [
+                    qp.ctrl(qp.SWAP([0, 1]), ["c0"], [0]),
+                    qp.ops.ControlledOp2(qp.Y(1), control_wires=["c0"]),
+                ],
+                None,
+            ),
             (
                 2,
                 1,
@@ -737,8 +745,8 @@ class TestUnaryIterator:
                 [
                     qp.Elbow(["c0", "c1", "w0"], (0, 0)),
                     qp.ctrl(qp.SWAP([0, 1]), ["w0"]),
-                    qp.ctrl(qp.X("w0"), control="c0", control_values=[0]),
-                    qp.CY(["w0", 1]),
+                    qp.MultiControlledX(["c0", "w0"], control_values=[0]),
+                    qp.ops.ControlledOp2(qp.Y(1), control_wires=["w0"]),
                     qp.adjoint(qp.Elbow(["c0", "c1", "w0"], (0, 1))),
                 ],
                 [
@@ -752,8 +760,8 @@ class TestUnaryIterator:
                 [
                     qp.Elbow(["c0", "c1", "w0"], (0, 0)),
                     qp.ctrl(qp.SWAP([0, 1]), ["w0"]),
-                    qp.ctrl(qp.X("w0"), control="c0", control_values=[0]),
-                    qp.CY(["w0", 1]),
+                    qp.MultiControlledX(["c0", "w0"], control_values=[0]),
+                    qp.ops.ControlledOp2(qp.Y(1), control_wires=["w0"]),
                     qp.CNOT(["c0", "w0"]),
                     qp.CNOT(["c1", "w0"]),
                     qp.ctrl(qp.CRZ(0.4, [1, 0]), ["w0"], [1]),
@@ -762,8 +770,8 @@ class TestUnaryIterator:
                 [
                     qp.Elbow(["c0", "c1", "w0"], (0, 0)),
                     qp.ctrl(qp.SWAP([0, 1]), ["w0"]),
-                    qp.ctrl(qp.X("w0"), control="c0", control_values=[0]),
-                    qp.CY(["w0", 1]),
+                    qp.MultiControlledX(["c0", "w0"], control_values=[0]),
+                    qp.ops.ControlledOp2(qp.Y(1), control_wires=["w0"]),
                     qp.adjoint(qp.Elbow(["c0", "c1", "w0"], (0, 1))),
                     qp.ctrl(qp.CRZ(0.4, [1, 0]), ["c0"]),
                 ],
@@ -774,13 +782,13 @@ class TestUnaryIterator:
                 [
                     qp.Elbow(["c0", "c1", "w0"], (0, 0)),
                     qp.ctrl(qp.SWAP([0, 1]), ["w0"]),
-                    qp.ctrl(qp.X("w0"), control="c0", control_values=[0]),
-                    qp.CY(["w0", 1]),
+                    qp.MultiControlledX(["c0", "w0"], control_values=[0]),
+                    qp.ops.ControlledOp2(qp.Y(1), control_wires=["w0"]),
                     qp.CNOT(["c0", "w0"]),
                     qp.CNOT(["c1", "w0"]),
                     qp.ctrl(qp.CRZ(0.4, [1, 0]), ["w0"], [1]),
                     qp.CNOT(["c0", "w0"]),
-                    qp.CNOT(["w0", 0]),
+                    qp.ops.ControlledOp2(qp.X(0), control_wires=["w0"]),
                     qp.adjoint(qp.Elbow(["c0", "c1", "w0"], (1, 1))),
                 ],
                 None,
@@ -793,24 +801,24 @@ class TestUnaryIterator:
                     qp.Elbow(["w0", "c2", "w1"], (1, 0)),
                     qp.ctrl(qp.SWAP([0, 1]), ["w1"]),
                     qp.CNOT(["w0", "w1"]),
-                    qp.CY(["w1", 1]),
+                    qp.ops.ControlledOp2(qp.Y(1), control_wires=["w1"]),
                     qp.adjoint(qp.Elbow(["w0", "c2", "w1"], (1, 1))),
-                    qp.ctrl(qp.X("w0"), control="c0", control_values=[0]),
+                    qp.MultiControlledX(["c0", "w0"], control_values=[0]),
                     qp.Elbow(["w0", "c2", "w1"], (1, 0)),
                     qp.ctrl(qp.CRZ(0.4, [1, 0]), ["w1"]),
                     qp.CNOT(["w0", "w1"]),
-                    qp.CNOT(["w1", 0]),
+                    qp.ops.ControlledOp2(qp.X(0), control_wires=["w1"]),
                     qp.adjoint(qp.Elbow(["w0", "c2", "w1"], (1, 1))),
                     qp.CNOT(["c0", "w0"]),
                     qp.CNOT(["c1", "w0"]),
                     qp.Elbow(["w0", "c2", "w1"], (1, 0)),
-                    qp.CZ(["w1", 1]),
+                    qp.ops.ControlledOp2(qp.Z(1), control_wires=["w1"]),
                     qp.CNOT(["w0", "w1"]),
                     qp.ctrl(qp.X(0) @ qp.Z(1), ["w1"]),
                     qp.adjoint(qp.Elbow(["w0", "c2", "w1"])),
                     qp.CNOT(["c0", "w0"]),
                     qp.Elbow(["w0", "c2", "w1"], (1, 0)),
-                    qp.CH(["w1", 1]),
+                    qp.ops.ControlledOp2(qp.H(1), control_wires=["w1"]),
                     qp.adjoint(qp.Elbow(["w0", "c2", "w1"], (1, 0))),
                     qp.adjoint(qp.Elbow(["c0", "c1", "w0"], (1, 1))),
                 ],
@@ -819,23 +827,23 @@ class TestUnaryIterator:
                     qp.Elbow(["w0", "c2", "w1"], (1, 0)),
                     qp.ctrl(qp.SWAP([0, 1]), ["w1"]),
                     qp.CNOT(["w0", "w1"]),
-                    qp.CY(["w1", 1]),
+                    qp.ops.ControlledOp2(qp.Y(1), control_wires=["w1"]),
                     qp.adjoint(qp.Elbow(["w0", "c2", "w1"], (1, 1))),
-                    qp.ctrl(qp.X("w0"), control="c0", control_values=[0]),
+                    qp.MultiControlledX(["c0", "w0"], control_values=[0]),
                     qp.Elbow(["w0", "c2", "w1"], (1, 0)),
                     qp.ctrl(qp.CRZ(0.4, [1, 0]), ["w1"]),
                     qp.CNOT(["w0", "w1"]),
-                    qp.CNOT(["w1", 0]),
+                    qp.ops.ControlledOp2(qp.X(0), control_wires=["w1"]),
                     qp.adjoint(qp.Elbow(["w0", "c2", "w1"], (1, 1))),
                     qp.CNOT(["c0", "w0"]),
                     qp.CNOT(["c1", "w0"]),
                     qp.Elbow(["w0", "c2", "w1"], (1, 0)),
-                    qp.CZ(["w1", 1]),
+                    qp.ops.ControlledOp2(qp.Z(1), control_wires=["w1"]),
                     qp.CNOT(["w0", "w1"]),
                     qp.ctrl(qp.X(0) @ qp.Z(1), ["w1"]),
                     qp.adjoint(qp.Elbow(["w0", "c2", "w1"])),
                     qp.CNOT(["c0", "w0"]),
-                    qp.CH(["w0", 1]),
+                    qp.ops.ControlledOp2(qp.H(1), control_wires=["w0"]),
                     qp.adjoint(qp.Elbow(["c0", "c1", "w0"], (1, 1))),
                 ],
             ),
@@ -1009,6 +1017,30 @@ class TestUnaryIterator:
 @pytest.mark.parametrize("partial", [False, True])
 class TestSelectWithWorkWire:
     """Tests for the 1 work-wire decomposition of Select."""
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        "ops, expected_resources",
+        [([], {}), ([qp.RX(0.123, 0)], {qp.RX: 1})],
+        ids=["empty", "single"],
+    )
+    def test_zero_controls(self, ops, expected_resources, partial):
+        """With no controls, emit only the target operation and leave work wires unused."""
+        op = qp.Select(ops, control=[], work_wires=[1, 2], partial=partial)
+        rule = qp.list_decomps(qp.Select)["_select_decomp_multi_control_work_wire"]
+
+        tape = qp.testing.decomp_rule_to_tape(op, rule)
+        assert len(tape.operations) == len(ops)
+        for actual, expected in zip(tape.operations, ops, strict=True):
+            qp.assert_equal(actual, expected)
+
+        resources = rule.compute_resources(
+            ops=tuple(abstractify(target) for target in ops),
+            control=Wire[0],
+            work_wires=Wire[2],
+            partial=partial,
+        )
+        assert resources == to_resources(expected_resources)
 
     @pytest.mark.parametrize("num_controls", [0, 1, 2, 3])
     def test_no_ops(self, num_controls, partial):

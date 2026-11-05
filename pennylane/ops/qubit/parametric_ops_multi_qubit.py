@@ -37,10 +37,10 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.controlled2 import flip_zero_control
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.op_math.prod2 import Prod2
-from pennylane.typing import Float, TensorLike, Wire
+from pennylane.typing import Bool, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -887,15 +887,15 @@ class PCPhase(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "∏_ϕ", cache=cache)
 
 
-def _ctrl_phase_shift_resource(subspace, n_control_wires, n_zero_control_values, n_work_wires):
+def _ctrl_phase_shift_resource(subspace, n_control_wires, n_work_wires):
     if n_control_wires == 0:
         return {qp.PhaseShift: 1}
     return {
-        _ctrl_abstract(
-            qp.PhaseShift,
-            Wire[n_control_wires],
-            Wire[n_work_wires],
-            num_zero_control_values=n_zero_control_values,
+        qp.ctrl(
+            qp.PhaseShift(Float, Wire[1]),
+            control=Wire[n_control_wires],
+            work_wires=Wire[n_work_wires],
+            control_values=Bool[n_control_wires],
         ): 1,
         qp.X: 2 * (1 - subspace),
     }
@@ -981,7 +981,6 @@ def _decompose_pcphase_resource(phi: TensorLike, dim: int, wires: WiresLike):
     sigma = (-1) ** flipped
     powers_of_two = [sigma * val for val in powers_of_two]
 
-    n_zero_control_values = 0
     for i, c_i in enumerate(powers_of_two):
         if c_i != 0:
             subspace = int(c_i < 0)
@@ -991,19 +990,9 @@ def _decompose_pcphase_resource(phi: TensorLike, dim: int, wires: WiresLike):
                 _ctrl_phase_shift_resource(
                     subspace,
                     n_control_wires=i,
-                    n_zero_control_values=n_zero_control_values,
                     n_work_wires=num_wires - i - 1,
                 )
             )
-
-        d_i = next(iter(val for val in powers_of_two[i + 1 :] if val != 0), None)
-        next_cval = d_i == 1
-        if c_i == 0:
-            next_cval = not next_cval
-        if flipped:
-            next_cval = not next_cval
-        if not next_cval:
-            n_zero_control_values += 1
 
     gate_count[qp.GlobalPhase] += 1
     return dict(gate_count)
@@ -1406,6 +1395,8 @@ class IsingZZ(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.IsingZZ
+            :symbols: :math:`c` control wires, :math:`z` controls on :math:`0`
+            :example: :math:`c=1`, :math:`z=0`
 
             .. decomposition-rule:: _isingzz_to_cnot_rz_cnot
                 :image: /_static/decomposition_thumbnails/isingzz_cnot_rz.svg
@@ -1417,6 +1408,15 @@ class IsingZZ(Operator2):
                 :image: /_static/decomposition_thumbnails/isingzz_ppr.svg
 
                 :class:`PauliRot("ZZ") <.PauliRot>` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_ising_zz)
+                :image: /_static/decomposition_thumbnails/controlled_ising_zz.svg
+                :region: controlled
+                :where: The CNOT gates compute and uncompute the parity of the two target wires. Only the RZ rotation requires the :math:`c` control wires. Controls on :math:`0` are flipped with X gates before and after the decomposition.
+
+                :class:`~.CNOT` | :math:`2` | 2
+                :class:`Controlled(RZ) <.Controlled>` | :math:`1` | 1
+                :class:`~.PauliX` | :math:`2z` | 0
     """
 
     dynamic_argnames = ("phi",)
@@ -1547,9 +1547,44 @@ def _isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
     qp.PauliRot(phi, "ZZ", wires=wires)
 
 
+def _controlled_ising_zz_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    return {
+        qp.CNOT: 2,
+        qp.ctrl(
+            qp.RZ(Float, wires=Wire[1]),
+            control=Wire[len(control_wires)],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
+        ): 1,
+    }
+
+
+@qp.register_resources(_controlled_ising_zz_resource)
+def _controlled_ising_zz(base, control_wires, control_values, work_wires, work_wire_type):
+    r"""``ctrl_c[IsingZZ(phi)_{a,b}] = CNOT_{a,b} ctrl_c[RZ(phi)_b] CNOT_{a,b}``.
+
+    ``IsingZZ(phi)`` phases the parity of its two wires, so copying that parity onto ``b`` with
+    a CNOT turns it into a single-qubit ``RZ(phi)``. The CNOTs need no control: they cancel on
+    the ``|0>_c`` branch. Verified exactly (to 0.0) against ``qp.ctrl(qp.IsingZZ(...))`` for one
+    and two control wires.
+    """
+    a, b = base.wires
+    qp.CNOT(wires=[a, b])
+    qp.ctrl(
+        qp.RZ(base.data[0], wires=b),
+        control=control_wires,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+    qp.CNOT(wires=[a, b])
+
+
+controlled_ising_zz = flip_zero_control(_controlled_ising_zz)
+
 add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot, _isingzz_to_ppr)
 add_decomps("Adjoint(IsingZZ)", adjoint_rotation2)
 add_decomps("Pow(IsingZZ)", pow_rotation2)
+add_decomps("C(IsingZZ)", controlled_ising_zz)
 
 
 class IsingXY(Operator2):
