@@ -77,6 +77,10 @@ def test_graph_ctx():
         ("Z", "PauliZ"),
         ("I", "Identity"),
         ("H", "Hadamard"),
+        ("measure", "MidMeasure"),
+        ("MidMeasure", "MidMeasure"),
+        ("MidMeasureMP", "MidMeasure"),
+        ("MidCircuitMeasure", "MidMeasure"),
     ],
 )
 def test_translate_op_alias(base_op_alias, expected_op_name):
