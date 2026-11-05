@@ -17,7 +17,7 @@ Contains the ControlledSequence template.
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math import SymbolicOp2, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -54,7 +54,7 @@ class ControlledSequence(SymbolicOp2):
     .. code-block:: python
 
         dev = qp.device("default.qubit")
-        
+
         @qp.transforms._tape_decompose(max_expansion=1)
         @qp.qnode(dev)
         def circuit():

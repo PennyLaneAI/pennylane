@@ -41,9 +41,7 @@ class TestInitialization:
         base = qp.PauliX(1)
         control = [0, 1, 2]
 
-        with pytest.raises(
-            ValueError, match="base.wires and control_wires must not overlap"
-        ):
+        with pytest.raises(ValueError, match="base.wires and control_wires must not overlap"):
             _ = qp.ControlledSequence(base, control)
 
     def test_name(self):
