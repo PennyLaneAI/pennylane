@@ -25,7 +25,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core import queuing
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -52,16 +52,9 @@ def _get_has_generator_types(num_wires):
     for op_name in qp.ops.qubit.__all__:
         op_class = getattr(qp.ops.qubit, op_name)
         if op_class not in {qp.PauliRot, qp.PCPhase} and op_class.has_generator:
-            if issubclass(op_class, Operator2):
-                wire_sizes = op_class.wire_sizes
-                candidate_num_wires = (
-                    None if any(size is None for size in wire_sizes) else sum(wire_sizes)
-                )
-            else:
-                candidate_num_wires = op_class.num_wires
-            if candidate_num_wires == num_wires:
+            if op_class.num_wires == num_wires:
                 has_generator_types.append(op_class)
-            elif candidate_num_wires is None:
+            elif op_class.num_wires is None:
                 any_wires_types.append(op_class)
 
     # prioritize types with that exact number of wires over types with any number of wires
