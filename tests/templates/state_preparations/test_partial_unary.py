@@ -450,7 +450,9 @@ def assert_pui_correctness(rule, coefficients, indices, wire_specs):
                 "MultiControlledX",
                 "QROM",
             }
-            func = qp.qjit(catalyst_decompose(func, capabilities=None, target_gates=gate_set))
+            func = qp.qjit(
+                catalyst_decompose(func, capabilities=None, target_gates=gate_set), capture=False
+            )
 
         out_state = func()
         # We infer the total and aux wire counts from the state shape, because small-scale

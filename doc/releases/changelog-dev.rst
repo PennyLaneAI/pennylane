@@ -2305,10 +2305,14 @@ Documentation 📝
   `(#10382) <https://github.com/PennyLaneAI/pennylane/pull/10382>`__
   `(#10383) <https://github.com/PennyLaneAI/pennylane/pull/10383>`__
   `(#10416) <https://github.com/PennyLaneAI/pennylane/pull/10416>`__
+  `(#10420) <https://github.com/PennyLaneAI/pennylane/pull/10420>`__
   `(#10421) <https://github.com/PennyLaneAI/pennylane/pull/104121>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed a bug where AutoGraph raised an error for empty ``for`` loops.
+  `(#10448) <https://github.com/PennyLaneAI/pennylane/pull/10448>`__
 
 * Fixed a bug where :class:`~.BasisRotation` for real-valued matrices :math:`u` implemented the
   rotation for :math:`S u S` instead of :math:`u`, with :math:`S=\operatorname{diag}((-1)^p)`,
