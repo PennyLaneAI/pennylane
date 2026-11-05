@@ -1363,7 +1363,7 @@ add_decomps("Adjoint(OrbitalRotation)", adjoint_rotation)
 add_decomps("Pow(OrbitalRotation)", pow_rotation)
 
 
-class FermionicSWAP(Operation):
+class FermionicSWAP(Operator2):
     r"""Fermionic SWAP rotation.
 
     .. math:: U(\phi) = \begin{bmatrix}
@@ -1418,26 +1418,14 @@ class FermionicSWAP(Operation):
                0.00249792-0.04991671j, 0.        +0.j        ])
     """
 
-    num_wires = 2
-    """int: Number of wires that the operator acts on."""
+    dynamic_argnames = ("phi",)
+    wire_argnames = ("wires",)
 
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
+    arg_specs = {"phi": Float, "wires": Wire[-1]}
+    wire_sizes = (None,)
 
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    grad_method = "A"
-    """Gradient computation method."""
-
-    parameter_frequencies = [(1,)]
-    """Frequencies of the operation parameter with respect to an expectation value."""
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     def generator(self) -> "qp.Hamiltonian":
         w1, w2 = self.wires
@@ -1452,11 +1440,11 @@ class FermionicSWAP(Operation):
             ],
         )
 
-    def __init__(self, phi: TensorLike, wires: WiresLike):
-        super().__init__(phi, wires=wires)
-
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_matrix(
+        phi: TensorLike, wires: WiresLike = None
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1467,6 +1455,7 @@ class FermionicSWAP(Operation):
 
         Args:
           phi (tensor_like or float): rotation angle
+          wires (Sequence[int]): the wires the operation acts on
 
         Returns:
           tensor_like: canonical matrix
@@ -1495,57 +1484,6 @@ class FermionicSWAP(Operation):
             [zeros, zeros, zeros, p],
         ]
         return qp.math.stack([stack_last(row) for row in rows], axis=-2)
-
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.FermionicSWAP.decomposition`.
-
-        Args:
-            phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.FermionicSWAP.compute_decomposition(0.2, wires=(0, 1))
-        [H(0),
-         H(1),
-         MultiRZ(0.1, wires=[0, 1]),
-         H(0),
-         H(1),
-         RX(1.5707963267948966, wires=[0]),
-         RX(1.5707963267948966, wires=[1]),
-         MultiRZ(0.1, wires=[0, 1]),
-         RX(-1.5707963267948966, wires=[0]),
-         RX(-1.5707963267948966, wires=[1]),
-         RZ(0.1, wires=[0]),
-         RZ(0.1, wires=[1]),
-         Exp(0.1j Identity)]
-        """
-        decomp_ops = [
-            qp.Hadamard(wires=wires[0]),
-            qp.Hadamard(wires=wires[1]),
-            qp.MultiRZ(phi / 2, wires=[wires[0], wires[1]]),
-            qp.Hadamard(wires=wires[0]),
-            qp.Hadamard(wires=wires[1]),
-            qp.RX(np.pi / 2, wires=wires[0]),
-            qp.RX(np.pi / 2, wires=wires[1]),
-            qp.MultiRZ(phi / 2, wires=[wires[0], wires[1]]),
-            qp.RX(-np.pi / 2, wires=wires[0]),
-            qp.RX(-np.pi / 2, wires=wires[1]),
-            qp.RZ(phi / 2, wires=wires[0]),
-            qp.RZ(phi / 2, wires=wires[1]),
-            # for correcting global phase
-            qp.exp(qp.Identity(wires=[wires[0], wires[1]]), 0.5j * phi),
-        ]
-        return decomp_ops
 
     def adjoint(self) -> "FermionicSWAP":
         (phi,) = self.parameters

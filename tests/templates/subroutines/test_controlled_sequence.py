@@ -83,7 +83,7 @@ class TestProperties:
             assert hash(op) != hash(other_op)
 
     def test_control(self):
-        """Test that the control property returns control wires"""
+        """Test that the control property preserves mixed wire labels and their order."""
         op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=["a", 1, "blue"])
         assert op.control == Wires(["a", 1, "blue"])
 
@@ -185,7 +185,7 @@ class TestIntegration:
         return qp.probs(wires=range(4))
 
     x = np.array(0.25)
-    # not calculated analytically, we are only ensuring that the results are consistent accross interfaces
+    # not calculated analytically, we are only ensuring that the results are consistent across interfaces
     exp_result = np.array([0, 0, 0.9835, 0.0165, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     exp_jac = np.array([0, 0, -0.12342829, 0.12342829, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
