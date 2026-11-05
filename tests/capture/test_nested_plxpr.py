@@ -336,7 +336,7 @@ class TestCtrlQfunc:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1, 2, 3)
 
         assert out == []
-        expected = qp.Toffoli(wires=(2, 3, 1))
+        expected = qp.ops.ControlledOp2(qp.X(1), control_wires=[2, 3])
         qp.assert_equal(q.queue[0], expected)
         assert len(q) == 1
 
