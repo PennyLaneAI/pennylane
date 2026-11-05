@@ -129,7 +129,7 @@ def test_change_op_basis_concrete_legacy_operand_capture():
     # Building with capture paused yields a concrete legacy operator rather than a tracer, so
     # ``_apply_op_or_func`` takes the ``isinstance(op, Operator)`` -> ``apply`` branch.
     with qp.capture.pause():
-        legacy_op = qp.ControlledSequence(qp.RX(0.1, 0), control=1)
+        legacy_op = qp.AngleEmbedding(np.array([0.1]), wires=[0])
 
     def circuit():
         qp.change_op_basis(legacy_op, qp.X(2), qp.X(2))
@@ -137,7 +137,7 @@ def test_change_op_basis_concrete_legacy_operand_capture():
     jaxpr = jax.make_jaxpr(circuit)()
 
     names = [eqn.primitive.name for eqn in jaxpr.eqns]
-    assert names.count("ControlledSequence") == 1
+    assert names.count("AngleEmbedding") == 1
 
 
 @pytest.mark.capture
@@ -150,13 +150,13 @@ def test_change_op_basis_abstract_legacy_operand_capture():
     # ``_apply_op_or_func`` takes the ``_is_abstract_operator`` -> ``pass`` branch (the equation is
     # already in the jaxpr from construction and must not be re-emitted).
     def circuit():
-        legacy_op = qp.ControlledSequence(qp.RX(0.1, 0), control=1)
+        legacy_op = qp.AngleEmbedding(np.array([0.1]), wires=[0])
         qp.change_op_basis(legacy_op, qp.X(2), qp.X(2))
 
     jaxpr = jax.make_jaxpr(circuit)()
 
     names = [eqn.primitive.name for eqn in jaxpr.eqns]
-    assert names.count("ControlledSequence") == 1
+    assert names.count("AngleEmbedding") == 1
 
 
 @pytest.mark.capture

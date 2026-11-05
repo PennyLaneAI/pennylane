@@ -56,7 +56,11 @@ def test_mid_circuit_measurement_preprocessing():
     # Check that mid-circuit measurements have been deferred
     mid_measure_ops = [op for op in processed_tape.operations if isinstance(op, qp.ops.MidMeasure)]
     assert len(mid_measure_ops) == 0, "Mid-circuit measurements were not deferred properly."
-    assert processed_tape.circuit == [qp.CNOT([0, 1]), qp.CNOT([1, 0]), qp.expval(qp.Z(0))]
+    assert processed_tape.circuit == [
+        qp.CNOT([0, 1]),
+        qp.MultiControlledX([1, 0]),
+        qp.expval(qp.Z(0)),
+    ]
 
 
 class NoMatOp(qp.operation.Operation):

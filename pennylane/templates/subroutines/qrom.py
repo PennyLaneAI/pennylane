@@ -32,7 +32,7 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.math import ceil_log2
-from pennylane.ops import CNOT, CZ, X, Z, cond, ctrl, pauli_measure
+from pennylane.ops import CNOT, CZ, MultiControlledX, X, Z, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -515,7 +515,7 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):
     _measurement_qrom_inner(child_controls, targets, bitstrings[:k0])
 
     # --- Q0 -> Q1 transition ---
-    ctrl(X(controls[2]), control=controls[0], control_values=[0])
+    MultiControlledX([controls[0], controls[2]], control_values=[0])
     diff_q1 = math.bitwise_xor(bitstrings[0], bitstrings[k0])
 
     # --- Q1 ---
@@ -611,7 +611,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
         # two explicit base corrections.
         num_ands = _count_tempAND_in_measurement_qrom(L)
         num_cnots = 3 + max(L // 2 - 4, 0) + 2 * num_targets
-        resources = {load: 1, ctrl(X(Wire[1]), control=Wire[1], control_values=Bool[1]): 1}
+        resources = {load: 1, MultiControlledX(Wire[2], control_values=Bool[1]): 1}
 
     # Each of the ``num_ands`` uncomputations performs one Z measurement on the work wire and
     # one X-type joint measurement on the work wire plus the ``w`` target wires flipped by the XOR
