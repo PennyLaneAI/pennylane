@@ -41,6 +41,7 @@ from pennylane.templates.subroutines.time_evolution.trotter_vibronic import (
     _validate_registers,
     _wires_are_concrete,
 )
+from pennylane.transforms.decompositions import make_rz_to_phase_gradient_decomp
 from pennylane.typing import AbstractWires
 
 # ---------------------------------------------------------------------------
@@ -134,7 +135,7 @@ def sparse_fragment_list(n_states, n_modes, seed):
     return fragments
 
 
-def make_wires(n_states, n_modes, k=3, b=3):
+def make_wires(n_states, n_modes, k=3, b=3, num_extra_pg_wires=0):
     """Create the wire registers required by :class:`~.TrotterVibronic`."""
     n = int(qp.math.ceil_log2(n_states))
     sizes = {
@@ -142,7 +143,7 @@ def make_wires(n_states, n_modes, k=3, b=3):
         "vib_wires": n_modes * k,
         "cache": 2 * k,
         "coefficients": b,
-        "phase_gradient": b,
+        "phase_gradient": b + num_extra_pg_wires,
         "work": max(n - 1, b + 2, 2 * k + 2),
     }
     return qp.registers(sizes)
@@ -1041,14 +1042,16 @@ class TestNumericalCorrectness:
         expected = (2 * _binary_decimals_int(-lam / 2, b) * q) % (2**b)
         assert got == expected == (-2 * m * q) % (2**b)
 
+    @pytest.mark.parametrize("num_extra_pg_wires", [0, 2])
     @pytest.mark.parametrize("mode_value", [0, 1, 2])
-    def test_sign_matches_exact_evolution(self, mode_value):
+    def test_sign_matches_exact_evolution(self, mode_value, num_extra_pg_wires):
         """With a genuine phase-gradient state the template realizes ``e^{-iHt}`` (not
         ``e^{+iHt}``): the global sign that the integer-accumulation tests above cannot see.
 
         A single position fragment (kinetic zero) is diagonal, so one Trotter step is exact and
         the electronic register picks up the diagonal phase ``e^{-i theta_a}`` per electronic
         state ``a``. Comparing the measured relative phase against the exact one pins the sign.
+        Phase-gradient wires beyond the first ``b`` must not change the result.
         """
         n_states, n_modes, k, b = 2, 1, 3, 3
         t = 1.0
@@ -1068,7 +1071,7 @@ class TestNumericalCorrectness:
             quadratic=quadratic,
             kinetic=np.zeros((n_states, n_states, n_modes, n_modes)),
         )
-        wires = make_wires(n_states, n_modes, k=k, b=b)
+        wires = make_wires(n_states, n_modes, k=k, b=b, num_extra_pg_wires=num_extra_pg_wires)
         num_wires = max(w for reg in wires.values() for w in reg) + 1
         dev = qp.device("default.qubit", wires=num_wires)
 
@@ -1091,6 +1094,66 @@ class TestNumericalCorrectness:
 
         expected = -(theta(1) - theta(0))  # arg(e^{-i theta_1} conj(e^{-i theta_0}))
         assert np.isclose(np.exp(1j * measured), np.exp(1j * expected))
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_kinetic_aqft_with_phase_gradient_rotations(self):
+        """Test that the ``AQFT`` of the kinetic fragment may be decomposed into phase-gradient
+        rotations that reuse the coefficient wires as angle wires, which requires the coefficient
+        register to be zeroed during the ``AQFT``."""
+        n_states, n_modes, k, b = 2, 1, 2, 4
+        # The kinetic coefficient loads the bitstring 0101 into the coefficient register. For most
+        # other bitstrings, a coefficient register that is occupied during the ``AQFT`` leads to a
+        # global phase or to an error that commutes with the kinetic evolution, and thus would
+        # not be detected.
+        kinetic = 2 * np.pi * 11 / 2**b
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=np.zeros((1, n_states, n_states)),
+            linear=np.zeros((1, n_states, n_states, n_modes)),
+            quadratic=np.zeros((1, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.einsum("ab,cd->abcd", np.eye(n_states), np.diag([kinetic])),
+        )
+        wires = make_wires(n_states, n_modes, k=k, b=b)
+        num_wires = max(w for reg in wires.values() for w in reg) + 1
+        rz_rule = make_rz_to_phase_gradient_decomp(
+            wires["coefficients"], wires["phase_gradient"], wires["work"][: b - 1]
+        )
+        gate_set = {
+            "Hadamard",
+            "SWAP",
+            "CNOT",
+            "PauliX",
+            "RX",
+            "RY",
+            "GlobalPhase",
+            "MultiX",
+            "C(MultiX)",
+            "SemiAdder",
+            "QROM",
+            "OutMultiplier",
+            "SignedOutSquare",
+            "Adjoint(SignedOutSquare)",
+            "PhaseGradientStatePrep",
+        }
+
+        @qp.qnode(qp.device("default.qubit", wires=num_wires))
+        def circuit():
+            mode_0, mode_1 = wires["vib_wires"]
+            qp.Hadamard(mode_0)
+            qp.Hadamard(mode_1)
+            qp.RY(0.4, mode_1)
+            qp.RX(0.7, mode_0)
+            qp.CNOT([mode_0, mode_1])
+            qp.PhaseGradientStatePrep(wires["phase_gradient"])
+            make_op(hamiltonian, wires, evolution_time=1.0, num_trotter_steps=1)
+            return qp.state()
+
+        expected = circuit()
+        # pylint: disable-next=protected-access
+        pg_circuit = qp.transforms._tape_decompose(
+            circuit, gate_set=gate_set, fixed_decomps={qp.RZ: rz_rule}
+        )
+        assert count_ops(qp.workflow.construct_tape(pg_circuit)().operations, SemiAdder) > 0
+        assert np.isclose(np.abs(np.vdot(expected, pg_circuit())), 1.0)
 
 
 # ---------------------------------------------------------------------------

@@ -209,6 +209,7 @@ New features since last release
   `(#10138) <https://github.com/PennyLaneAI/pennylane/pull/10138>`__
   `(#10120) <https://github.com/PennyLaneAI/pennylane/pull/10120>`__
   `(#10340) <https://github.com/PennyLaneAI/pennylane/pull/10340>`__
+  `(#10450) <https://github.com/PennyLaneAI/pennylane/pull/10450>`__
 
 * Three new operators called :class:`pennylane.PPR_2`, :class:`pennylane.PPR_4` and
   :class:`pennylane.PPR_8` have been added, which represent the Pauli product rotations
@@ -2602,13 +2603,6 @@ Bug fixes 🐛
   :class:`~.ChangeOpBasis` operators that are nested in other ``ChangeOpBasis`` operators, matching
   the gates produced by the captured decomposition.
   `(#10351) <https://github.com/PennyLaneAI/pennylane/pull/10351>`__
-
-* :class:`~.TrotterVibronic` now requires :math:`\max(n-1, b+2, 2k+2)` work wires instead of
-  :math:`\max(n-1, 2k, 2b+2)`, for :math:`b` phase-gradient wires. The previous size requested
-  :math:`b` unused wires for :math:`b \geq k`, and two wires too few for :math:`k > b`.
-  Also swapped the ordering of :class:`~.AQFT` and coefficient encoding in the kinetic fragments
-  to avoid a latent bug when using the template with the phase gradient technique.
-  `(#10450) <https://github.com/PennyLaneAI/pennylane/pull/10450>`__
 
 Contributors ✍️
 ~~~~~~~~~~~~~~~
