@@ -41,19 +41,22 @@ Circuit Specification Classes and Utilities
     ~Expression
     ~Resources
     ~SpecsResources
-    ~PBCSpecsResources
+    ~ResourceExtension
+    ~PBCDepthResourceExtension
 
     ~resources_from_tape
+    ~register_resource_extension
 """
 
 from .resource import (
     Resources,
     SpecsResources,
-    PBCSpecsResources,
     CircuitSpecs,
     resources_from_tape,
 )
 from .expression import Expression
+from .extension import PBCDepthResourceExtension, ResourceExtension
+from .parsing import register_resource_extension
 from .analyze import analyze
 from .estimate import estimate
 from .specs import specs
@@ -62,9 +65,11 @@ from .track import track
 __all__ = [
     "Resources",
     "SpecsResources",
-    "PBCSpecsResources",
+    "ResourceExtension",
+    "PBCDepthResourceExtension",
     "CircuitSpecs",
     "resources_from_tape",
+    "register_resource_extension",
     "Expression",
     "analyze",
     "estimate",

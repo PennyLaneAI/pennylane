@@ -32,6 +32,7 @@ from pennylane.ops.op_math import Controlled, ControlledOp
 from pennylane.pytrees import flatten, unflatten
 
 from .expression import Expression
+from .extension import ResourceExtension
 
 # The threshold after which integers in the resource class are displayed in scientific notation.
 # This is used in the __str__ and _repr_markdown_ methods of the Resources class.
@@ -95,6 +96,37 @@ def _flatten_dict(data: dict, prefix: str = "", sep: str = ".") -> dict:
         else:
             flattened[full_key] = value
     return flattened
+
+
+def _format_extra_value(value, *, extra_compact=False, markdown_safe=False):
+    """Format extension values, distinguishing unavailable estimates from missing rows."""
+    if value is None:
+        text = "Not computed"
+    elif isinstance(value, bool):
+        text = str(value)
+    elif isinstance(value, (int, float, Expression)):
+        text = _count_to_str(value, extra_compact=extra_compact, markdown_safe=markdown_safe)
+    else:
+        text = str(value)
+    return text.replace("|", "\\|").replace("\n", "<br>") if markdown_safe else text
+
+
+def _extra_resource_rows(resources):
+    """Align extension display rows across results by group key and metric label."""
+    groups = {}
+    for column, res in resources.items():
+        for key, extension in res.extra.items():
+            if isinstance(extension, ResourceExtension):
+                heading, values = extension.display_name, extension.display()
+            else:
+                heading = key
+                values = extension if isinstance(extension, dict) else {key: extension}
+            _, rows = groups.setdefault(key, (heading, {}))
+            for label, value in _flatten_dict(values).items():
+                rows.setdefault(label, {})[column] = value
+    for heading, rows in groups.values():
+        yield heading, None
+        yield from rows.items()
 
 
 def _collect_vars(obj: Any) -> Generator[str]:
@@ -418,6 +450,9 @@ class SpecsResources(Resources):
         num_wires (int): The number of unique wires. For circuits that do not use
           dynamic wires, this should be equal to the number of device wires.
         circuit_depth (int | None): The depth of the circuit, or None if not computed. Defaults to ``None``.
+        extra (dict): Independent :class:`~.resource.ResourceExtension` instances keyed by
+            backend group name. Unknown groups may remain raw dictionaries. Extensions
+            are displayed in individual results and multi-level tables.
 
     .. seealso::
 
@@ -544,17 +579,17 @@ class SpecsResources(Resources):
 
         lines.append(f"{prefix}Total wires: {_count_to_str(self.num_wires)}")
 
-        if (
-            self.circuit_depth is not None
-            or type(self) == SpecsResources  # pylint: disable=unidiomatic-typecheck
-        ):
-            # Do not include circuit depth in the output for derived classes
-            depth_str = (
-                _count_to_str(self.circuit_depth)
-                if self.circuit_depth is not None
-                else "Not computed"
+        depth_str = (
+            _count_to_str(self.circuit_depth) if self.circuit_depth is not None else "Not computed"
+        )
+        lines.append(f"{prefix}Circuit Depth: {depth_str}")
+
+        for label, values in _extra_resource_rows({0: self}):
+            lines.append(
+                f"{prefix}{label}:"
+                if values is None
+                else f"{prefix}- {label}: {_format_extra_value(values[0])}"
             )
-            lines.append(f"{prefix}Circuit Depth: {depth_str}")
 
         return "\n".join(lines)
 
@@ -589,17 +624,20 @@ class SpecsResources(Resources):
 
         lines.append(f"| **Total wires** | {_count_to_str(self.num_wires, markdown_safe=True)} |")
 
-        if (
-            self.circuit_depth is not None
-            or type(self) == SpecsResources  # pylint: disable=unidiomatic-typecheck
-        ):
-            # Do not include circuit depth in the output for derived classes
-            depth_str = (
-                _count_to_str(self.depth, markdown_safe=True)
-                if self.depth is not None
-                else "Not computed"
+        depth_str = (
+            _count_to_str(self.depth, markdown_safe=True)
+            if self.depth is not None
+            else "Not computed"
+        )
+        lines.append(f"| **Circuit depth** | {depth_str} |")
+
+        for label, values in _extra_resource_rows({0: self}):
+            label = _format_extra_value(label, markdown_safe=True)
+            lines.append(
+                f"| **{label}** | |"
+                if values is None
+                else f"| {label} | {_format_extra_value(values[0], markdown_safe=True)} |"
             )
-            lines.append(f"| **Circuit depth** | {depth_str} |")
 
         return "\n".join(lines)
 
@@ -614,78 +652,6 @@ class SpecsResources(Resources):
         del d["counts"]
 
         return d
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)
-class PBCSpecsResources(SpecsResources):
-    """
-    Class for storing resource information for a quantum circuit with additional
-    PBC (Pauli-Based Computation) information.
-
-    .. seealso::
-
-        :class:`~.resource.SpecsResources` for the base class and its fields.
-
-    .. warning::
-
-        This class is intended to be immutable. Modifying the attributes after creation may
-        lead to unexpected behaviour.
-
-    Args:
-        any_commuting_depth (int | Expression | None): The any commuting depth of the circuit.
-        qubit_disjoint_depth (int | Expression | None): The qubit disjoint depth of the circuit.
-    """
-
-    any_commuting_depth: int | Expression = field(metadata={"display_name": "Any commuting depth"})
-    qubit_disjoint_depth: int | Expression = field(
-        metadata={"display_name": "Qubit disjoint depth"}
-    )
-
-    def to_pretty_str(self, preindent: int = 0) -> str:
-        """
-        Pretty string representation of this :class:`~.resource.PBCSpecsResources` object.
-
-        Args:
-            preindent (int): Number of spaces to prepend to each line.
-
-        Returns:
-            str: A pretty representation of this object.
-        """
-        # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
-        # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
-        # pylint: disable=super-with-arguments
-        s = super(PBCSpecsResources, self).to_pretty_str(preindent=preindent)
-
-        s += (
-            "\nPBC Depths:\n"
-            f"{' ' * preindent}- Any commuting depth: {_count_to_str(self.any_commuting_depth)}\n"
-            f"{' ' * preindent}- Qubit disjoint depth: {_count_to_str(self.qubit_disjoint_depth)}"
-        )
-
-        return s
-
-    def _repr_markdown_(self) -> str:
-        """
-        Return a Markdown table representation of the :class:`~.resource.PBCSpecsResources` for Jupyter notebook display.
-
-        .. seealso::
-
-            https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
-        """
-
-        # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
-        # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
-        # pylint: disable=super-with-arguments
-        s = super(PBCSpecsResources, self)._repr_markdown_()
-
-        s += (
-            "\n"
-            "| **PBC Depths** | |\n"
-            f"| Any commuting depth | {_count_to_str(self.any_commuting_depth, markdown_safe=True)} |\n"
-            f"| Qubit disjoint depth | {_count_to_str(self.qubit_disjoint_depth, markdown_safe=True)} |"
-        )
-
-        return s
 
 
 @dataclass(frozen=True)
@@ -871,6 +837,17 @@ class CircuitSpecs:
                 len(_count_to_str(res.total_quantum_operations, extra_compact=True)) + 1,
             )
 
+        for label, values in _extra_resource_rows(flat_resources):
+            max_metric_length = max(max_metric_length, len(label) + (1 if values is None else 2))
+            if values:
+                max_column_size = max(
+                    max_column_size,
+                    max(
+                        len(_format_extra_value(value, extra_compact=True)) + 1
+                        for value in values.values()
+                    ),
+                )
+
         return max_metric_length, max_column_size, all_quantum_operations, all_meas_types
 
     def _to_pretty_str_tabular(self) -> str:
@@ -951,30 +928,20 @@ class CircuitSpecs:
                 )
             )
 
-        if any(isinstance(r, PBCSpecsResources) for r in flat_resources.values()):
-            lines.append("PBC Depths:".ljust(max_metric_length) + " |")
+        for label, values in _extra_resource_rows(flat_resources):
+            if values is None:
+                lines.append(f"{label}:".ljust(max_metric_length) + " |")
+                continue
             lines.append(
-                "- Any commuting depth".ljust(max_metric_length)
+                f"- {label}".ljust(max_metric_length)
                 + " |"
                 + " |".join(
                     (
-                        _count_to_str(r.any_commuting_depth, extra_compact=True)
-                        if isinstance(r, PBCSpecsResources)
+                        _format_extra_value(values[column], extra_compact=True)
+                        if column in values
                         else "-"
                     ).rjust(max_column_size)
-                    for r in flat_resources.values()
-                )
-            )
-            lines.append(
-                "- Qubit disjoint depth".ljust(max_metric_length)
-                + " |"
-                + " |".join(
-                    (
-                        _count_to_str(r.qubit_disjoint_depth, extra_compact=True)
-                        if isinstance(r, PBCSpecsResources)
-                        else "-"
-                    ).rjust(max_column_size)
-                    for r in flat_resources.values()
+                    for column in flat_resources
                 )
             )
 
@@ -1089,31 +1056,21 @@ class CircuitSpecs:
                 )
             )
 
-        if any(isinstance(r, PBCSpecsResources) for r in flat_resources.values()):
-            lines.append(data_row("**PBC Depths**", [""] * len(levels)))
+        for label, values in _extra_resource_rows(flat_resources):
+            label = _format_extra_value(label, markdown_safe=True)
+            if values is None:
+                lines.append(data_row(f"**{label}**", [""] * len(levels)))
+                continue
             lines.append(
                 data_row(
-                    "Any commuting depth",
+                    label,
                     [
                         (
-                            _count_to_str(r.any_commuting_depth, markdown_safe=True)
-                            if isinstance(r, PBCSpecsResources)
+                            _format_extra_value(values[level], markdown_safe=True)
+                            if level in values
                             else "N/A"
                         )
-                        for r in flat_resources.values()
-                    ],
-                )
-            )
-            lines.append(
-                data_row(
-                    "Qubit disjoint depth",
-                    [
-                        (
-                            _count_to_str(r.qubit_disjoint_depth, markdown_safe=True)
-                            if isinstance(r, PBCSpecsResources)
-                            else "N/A"
-                        )
-                        for r in flat_resources.values()
+                        for level in levels
                     ],
                 )
             )
