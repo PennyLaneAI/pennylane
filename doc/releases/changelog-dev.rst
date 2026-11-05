@@ -1500,7 +1500,7 @@ Breaking changes 💔
 * ``qp.ops.MidMeasure.name`` now returns ``"MidMeasure"`` instead of ``"MidMeasureMP"``.
   Decomposition resources and device gate sets use the same canonical name. The legacy
   ``"MidMeasureMP"`` gate-set spelling remains an alias for ``"MidMeasure"``.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10457) <https://github.com/PennyLaneAI/pennylane/pull/10457>`__
 
 * ``qp.ctrl`` now constructs symbolic controlled operators without dispatching to specialized
   gates such as ``CNOT`` or ``CRX``. Decomposition rules have been updated accordingly.
