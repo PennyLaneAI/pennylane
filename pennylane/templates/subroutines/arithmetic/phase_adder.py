@@ -17,8 +17,7 @@ Contains the PhaseAdder template.
 
 import numpy as np
 
-from pennylane import capture, compiler, math, ops
-from pennylane.control_flow import for_loop
+from pennylane import ops
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
@@ -170,7 +169,7 @@ def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
     basis_op1 = ops.prod(
         ops.X(Wire[1]),
         ops.adjoint(QFT(Wire[num_x_wires])),
-        *(ops.adjoint(ops.PhaseShift(Float, Wire[1])) for _ in range(num_x_wires)),
+        *(ops.PhaseShift(Float, Wire[1]) for _ in range(num_x_wires)),
     )
     basis_op2 = ops.prod(
         *(ops.PhaseShift(Float, Wire[1]) for _ in range(num_x_wires)),
@@ -179,8 +178,7 @@ def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
     )
 
     resources = {
-        ops.PhaseShift: num_x_wires,
-        ops.adjoint(ops.PhaseShift(Float, Wire[1])): num_x_wires,
+        ops.PhaseShift: 2 * num_x_wires,
         _change_op_basis_abstract(
             ops.adjoint(QFT(Wire[num_x_wires])),
             ops.CNOT,
@@ -200,39 +198,31 @@ def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
 @register_resources(_phase_adder_decomposition_resources)
 def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire):
 
-    if compiler.active() or capture.enabled():
-        x_wires = math.array(x_wires, like="jax")
-
     n_wires = len(x_wires)
 
-    @for_loop(n_wires)
-    def _add_k_fourier_loop(i, _k):
-        ops.PhaseShift(_k * np.pi / (2**i), wires=x_wires[i])
-        return _k
-
+    _add_k_fourier(k, x_wires)
     if mod == 2**n_wires:
-        _add_k_fourier_loop(k)
         return
 
     aux_k = x_wires[0]
-    _add_k_fourier_loop(k)
-    ops.adjoint(_add_k_fourier_loop)(mod)
+    _add_k_fourier(-mod, x_wires)
     ops.change_op_basis(
         ops.adjoint(QFT(wires=x_wires)),
         ops.CNOT(wires=[aux_k, work_wire[0]]),
         QFT(wires=x_wires),
     )
-    ops.ctrl(_add_k_fourier_loop, control=work_wire)(mod)
+    for op in _add_k_fourier(mod, x_wires):
+        ops.ctrl(op, control=work_wire)
 
     def compute():
-        ops.adjoint(_add_k_fourier_loop)(k)
+        _add_k_fourier(-k, x_wires)
         ops.adjoint(QFT(wires=x_wires))
         ops.X(aux_k)
 
     def uncompute():
         ops.X(aux_k)
         QFT(wires=x_wires)
-        _add_k_fourier_loop(k)
+        _add_k_fourier(k, x_wires)
 
     ops.change_op_basis(compute, ops.CNOT(wires=[aux_k, work_wire[0]]), uncompute)
 

@@ -255,7 +255,7 @@ class TestPhaseAdder:
         op_list = []
         base_list_ops1 = [
             qp.adjoint(qp.QFT)(wires=x_wires),
-            *[qp.adjoint(op) for op in _add_k_fourier(k, x_wires)],
+            *reversed(_add_k_fourier(-k, x_wires)),
         ]
         base_list_ops2 = [*_add_k_fourier(k, x_wires)[::-1], qp.QFT(wires=x_wires)]
 
@@ -264,7 +264,7 @@ class TestPhaseAdder:
         else:
             aux_k = x_wires[0]
             op_list.extend(_add_k_fourier(k, x_wires))
-            op_list.extend(qp.adjoint(_add_k_fourier)(mod, x_wires))
+            op_list.extend(_add_k_fourier(-mod, x_wires))
             op_list.append(qp.adjoint(qp.QFT)(wires=x_wires))
             op_list.append(qp.CNOT([aux_k, work_wire[0]]))
             op_list.append(qp.QFT(wires=x_wires))
