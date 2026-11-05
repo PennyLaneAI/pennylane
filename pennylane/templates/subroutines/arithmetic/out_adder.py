@@ -15,15 +15,13 @@
 Contains the OutAdder template.
 """
 
-from collections import defaultdict
-
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
     resource_rep,
 )
-from pennylane.ops import Prod, change_op_basis
+from pennylane.ops import Prod2, change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
@@ -293,27 +291,22 @@ class OutAdder(Operation):
 
 def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wires, mod) -> dict:
     num_qft_wires = num_output_wires if mod == 2**num_output_wires else num_output_wires + 1
-    target_resources = defaultdict(int)
-    target_resources[
-        resource_rep(
-            ControlledSequence,
-            base_rep=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
-            num_control_wires=num_x_wires,
-        )
-    ] += 1
-    target_resources[
-        resource_rep(
-            ControlledSequence,
-            base_rep=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
-            num_control_wires=num_y_wires,
-        )
-    ] += 1
+    target_ops = [
+        ControlledSequence(
+            base=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
+            control=Wire[num_y_wires],
+        ),
+        ControlledSequence(
+            base=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
+            control=Wire[num_x_wires],
+        ),
+    ]
 
     _compute_op = QFT(Wire[num_qft_wires])
     resources = {
         _change_op_basis_abstract(
             _compute_op,
-            resource_rep(Prod, resources=target_resources),
+            Prod2(target_ops),
             _adjoint_abstract(_compute_op),
         ): 1
     }

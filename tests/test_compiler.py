@@ -90,7 +90,7 @@ class TestCatalyst:
             return qp.expval(qp.PauliZ(0))
 
         assert jnp.allclose(circuit(jnp.pi, jnp.pi / 2), 1.0)
-        assert jnp.allclose(qp.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
+        assert jnp.allclose(qp.qjit(circuit, capture=False)(jnp.pi, jnp.pi / 2), -1.0)
 
     def test_active(self):
         """Test `qp.compiler.active` inside a simple circuit"""
@@ -105,7 +105,7 @@ class TestCatalyst:
             return qp.expval(qp.PauliZ(0))
 
         assert jnp.allclose(circuit(jnp.pi, jnp.pi / 2), 1.0)
-        assert jnp.allclose(qp.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
+        assert jnp.allclose(qp.qjit(circuit, capture=False)(jnp.pi, jnp.pi / 2), -1.0)
 
     @pytest.mark.usefixtures("preserve_jax_x64")
     @pytest.mark.parametrize("jax_enable_x64", [False, True])
@@ -310,7 +310,7 @@ class TestCatalyst:
         control_wire = [0]
         work_wires_ctrl = [9]
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         def func():
             return qp.ctrl(
                 qp.SemiAdder(
@@ -374,7 +374,7 @@ class TestCatalystControlFlow:
     def test_while_loop_dynamic_shapes(self):
         """Test that while loops work with default args."""
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.qnode(qp.device("lightning.qubit", wires=4))
         def f(sz):
             x = jnp.ones([sz], dtype=float)
@@ -411,7 +411,7 @@ class TestCatalystControlFlow:
         """Test nested while loops."""
         dev = qp.device("lightning.qubit", wires=1)
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.qnode(dev)
         def circuit(n, m):
             @qp.while_loop(lambda i, _: i < n)
@@ -885,7 +885,7 @@ class TestCatalystSample:
 
         dev = qp.device("lightning.qubit", wires=1)
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit(x):
@@ -944,7 +944,7 @@ class TestCatalystMCMs:
 
         dev = qp.device("lightning.qubit", wires=2)
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.set_shots(shots)
         @qp.qnode(dev, mcm_method="one-shot")
         def func(x, y):
