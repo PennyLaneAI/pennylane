@@ -492,6 +492,7 @@ class TestOutMultiplier:
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("mod", [4, 3])
     @pytest.mark.parametrize("output_wires_zeroed", [False, True])
     def test_decomposition_qft_rule(self, mod, output_wires_zeroed):
