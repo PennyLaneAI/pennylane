@@ -167,12 +167,15 @@ New features since last release
   `(#10227) <https://github.com/PennyLaneAI/pennylane/pull/10227>`__
   `(#10245) <https://github.com/PennyLaneAI/pennylane/pull/10245>`__
   `(#10264) <https://github.com/PennyLaneAI/pennylane/pull/10264>`__
+  `(#10446) <https://github.com/PennyLaneAI/pennylane/pull/10446>`__
 
   The operation has a gridsynth-based decomposition into Pauli product rotations on up to
   30 wires, consisting of :class:`~.PPR_8` operators, at most one :class:`~.PPR_2` or
   :class:`~.PPR_4` operator per wire, and a
   :class:`~.GlobalPhase`. It approximates the phase gradient state on 30 wires to
   precision :math:`10^{-12}` (in 2-norm).
+  A second decomposition with the same precision uses :class:`~.Hadamard`, :class:`~.S`,
+  :class:`~.T`, and Pauli gates instead, with one :class:`~.T` gate per :class:`~.PPR_8` operator.
 
 * Added a ``qp.math.floor_log2`` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
   in analogy to the existing ``qp.math.ceil_log2``.
@@ -2304,10 +2307,14 @@ Documentation 📝
   `(#10382) <https://github.com/PennyLaneAI/pennylane/pull/10382>`__
   `(#10383) <https://github.com/PennyLaneAI/pennylane/pull/10383>`__
   `(#10416) <https://github.com/PennyLaneAI/pennylane/pull/10416>`__
+  `(#10420) <https://github.com/PennyLaneAI/pennylane/pull/10420>`__
   `(#10421) <https://github.com/PennyLaneAI/pennylane/pull/104121>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed a bug where AutoGraph raised an error for empty ``for`` loops.
+  `(#10448) <https://github.com/PennyLaneAI/pennylane/pull/10448>`__
 
 * Fixed a bug where :class:`~.BasisRotation` for real-valued matrices :math:`u` implemented the
   rotation for :math:`S u S` instead of :math:`u`, with :math:`S=\operatorname{diag}((-1)^p)`,

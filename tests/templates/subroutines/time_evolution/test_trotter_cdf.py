@@ -1084,7 +1084,7 @@ class TestIntegration:
                 )
             return qp.state()
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.transforms._tape_decompose(gate_set=gate_set)
         @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
         def optimized(t):
@@ -1116,7 +1116,7 @@ class TestIntegration:
         )
         registers = qp.registers({"hadamard": 1, "system": 2 * N})
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         # pylint: disable-next=protected-access
         @qp.transforms._tape_decompose(gate_set=target_gates)
         @qp.qnode(qp.device("lightning.qubit"))

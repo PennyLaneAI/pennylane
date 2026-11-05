@@ -750,7 +750,7 @@ class TestInterfaces:
         gate_set = {"BasisState", "PhaseShift", "SingleExcitation"}
         # pylint: disable-next=protected-access
         circuit_dec = qp.transforms._tape_decompose(circuit, gate_set=gate_set)
-        specs = qp.specs(catalyst.qjit(circuit_dec), level="device")(unitary_matrix)
+        specs = qp.specs(catalyst.qjit(circuit_dec, capture=False), level="device")(unitary_matrix)
         assert all(res in gate_set for res in specs.resources.quantum_operations)
 
     @pytest.mark.torch
