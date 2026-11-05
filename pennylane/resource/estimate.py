@@ -25,7 +25,13 @@ from pennylane.core.transforms import CompilePipeline
 from pennylane.transforms import decompose
 from pennylane.workflow.get_compile_pipeline import _is_single_level, _levels_to_numbers
 
-from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial, unwrap_qjit_qnode
+from ._utils import (
+    apply_partial_args,
+    build_circuit_specs,
+    check_no_tape_transforms,
+    unwrap_partial,
+    unwrap_qjit_qnode,
+)
 from .mlir_specs import resources_from_analysis_pass
 from .resource import CircuitSpecs
 
@@ -49,11 +55,15 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
     original_qnode = unwrap_qjit_qnode(func, fn_name="qp.estimate")
     from catalyst.utils.exceptions import CompileError
 
-    if level == "device":
+    compile_pipeline = original_qnode.compile_pipeline
+    check_no_tape_transforms(compile_pipeline)
+
+    # The ``isinstance`` check avoids elementwise comparisons, e.g. with NumPy arrays
+    if isinstance(level, str) and level == "device":
         raise NotImplementedError("qp.estimate does not support level='device' yet.")
     if (
         isinstance(level, slice)
-        or _levels_to_numbers(level, original_qnode.compile_pipeline) != [0]
+        or _levels_to_numbers(level, compile_pipeline) != [0]
         or not _is_single_level(level)
     ):
         raise NotImplementedError(

@@ -69,6 +69,16 @@ def unwrap_qjit_qnode(qjit, *, fn_name: str) -> QNode:
     raise ValueError(f"{fn_name} can only be applied to a qjit'd QNode, instead got: {qjit}")
 
 
+def check_no_tape_transforms(compile_pipeline) -> None:
+    """Raise an error if ``compile_pipeline`` contains tape transforms, which have no
+    ``pass_name``."""
+    if trans := [pass_ for pass_ in compile_pipeline if pass_.pass_name is None]:
+        raise ValueError(
+            f"Encountered the following tape transforms: {trans}."
+            " Tape transforms are no longer supported."
+        )
+
+
 def build_circuit_specs(original_qnode, resources, level) -> CircuitSpecs:
     """Assemble the ``CircuitSpecs`` describing a qjit'd QNode at a given level."""
     return CircuitSpecs(

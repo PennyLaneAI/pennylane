@@ -32,6 +32,7 @@ from pennylane.workflow.get_compile_pipeline import (
 from ._utils import (
     apply_partial_args,
     build_circuit_specs,
+    check_no_tape_transforms,
     unwrap_partial,
     unwrap_qjit_qnode,
 )
@@ -72,11 +73,7 @@ def _run_resource_analysis(func, original_qnode, level, *args, **kwargs) -> tupl
 
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
-    if trans := [pass_ for pass_ in compile_pipeline if pass_.pass_name is None]:
-        raise ValueError(
-            f"Encountered the following tape transforms: {trans}."
-            " Tape transforms are no longer supported."
-        )
+    check_no_tape_transforms(compile_pipeline)
 
     level_numbers = _levels_to_numbers(level, compile_pipeline)
 

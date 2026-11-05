@@ -170,8 +170,10 @@ def get_compile_pipeline(
 
         The device preprocessing is represented by a single ``Device Preprocessing`` placeholder,
         since the device applies its own transforms when the QNode is executed. The placeholder
-        cannot be applied to a QNode. The individual device preprocessing transforms can be
-        inspected with ``qnode.device.preprocess_transforms()``.
+        cannot be applied to a QNode. For a QNode that is not qjit'd, the tapes produced by the
+        individual gradient and device preprocessing transforms can be inspected with
+        :func:`~.workflow.construct_batch`, whose levels count each of these transforms
+        separately.
 
     Args:
         qnode (:class:`~.QNode` | :class:`~catalyst.jit.QJIT`): The QNode, or qjit'd QNode, to
@@ -191,9 +193,11 @@ def get_compile_pipeline(
               bounds and a positive step, e.g. ``level=slice(1, 3)`` contains transforms ``[1]``
               and ``[2]``. A step greater than ``1`` skips transforms, and raises a warning.
             * ``Sequence``: A non-empty ``list``, ``tuple``, or similar containing ``int`` or
-              ``str`` values, sorted in ascending order with no duplicates. One compile pipeline is
-              returned per entry. A ``Sequence`` rather than an arbitrary iterable is required
-              so that its length and ordering can be validated up front, without consuming it.
+              ``str`` values. One compile pipeline is returned per level, in ascending order. If
+              the levels are not in ascending order, or contain duplicates, they are sorted and
+              deduplicated, with a warning. A ``Sequence`` rather than an arbitrary iterable is
+              required so that its length and ordering can be validated up front, without
+              consuming it.
               The ``"all"`` and ``"all-user"`` presets are not allowed inside a ``Sequence``,
               since they already correspond to multiple levels.
 

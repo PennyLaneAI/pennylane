@@ -309,12 +309,28 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         with pytest.raises(NotImplementedError, match="does not support level='device' yet"):
             qp.estimate(circuit, level="device", target=TARGET)(0.5)
 
-    @pytest.mark.parametrize("level", [0.0, False])
+    @pytest.mark.parametrize("level", [0.0, False, np.array([0, 1])])
     def test_invalid_level(self, circuit, level):
         """Test that levels that are neither int nor str are rejected."""
 
         with pytest.raises(ValueError, match="Invalid level"):
             qp.estimate(circuit, level=level, target=TARGET)(0.5)
+
+    def test_tape_transforms(self, qnode):
+        """Test that an error is raised if the user has applied tape transforms, as in
+        qp.analyze."""
+
+        @qp.transform
+        def dummy_transform(tape):
+            """Returns a tape-only transform that can be used for testing"""
+            return (tape,), lambda res: res[0]
+
+        with pytest.raises(
+            ValueError,
+            match=r"Encountered the following tape transforms: .*dummy_transform.*\. Tape "
+            "transforms are no longer supported.",
+        ):
+            qp.estimate(qp.qjit(dummy_transform(qnode)), target=TARGET)(0.5)
 
     @pytest.mark.parametrize("target", ["device", "user"])
     def test_unsupported_target(self, circuit, target):

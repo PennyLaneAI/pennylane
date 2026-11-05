@@ -1508,8 +1508,9 @@ Breaking changes 💔
   ``get_compile_pipeline(qnode, level)(*args, **kwargs)`` becomes
   ``get_compile_pipeline(qnode, level)``. The gradient and device preprocessing transforms are
   no longer listed individually, but shown as a single ``Device Preprocessing`` level, and
-  ``level="gradient"`` is no longer supported. The individual device preprocessing transforms
-  can be inspected with ``qnode.device.preprocess_transforms()``.
+  ``level="gradient"`` is no longer supported. The tapes produced by the individual gradient
+  and device preprocessing transforms can still be inspected with
+  :func:`~.workflow.construct_batch`.
   `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
 * Printed :class:`~.CompilePipeline` transforms are now numbered from ``[0]``, and
