@@ -413,6 +413,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/qrom/qrom_thumbnail.png
 
 .. gallery-item::
+    :description: :doc:`QROMLoad <../code/api/pennylane.QROMLoad>`
+    :figure: _static/templates/qrom/qrom_thumbnail.png
+
+.. gallery-item::
     :description: :doc:`Bucket Brigade QRAM <../code/api/pennylane.BBQRAM>`
     :figure: _static/templates/qram/bbqram_thumbnail.png
 
