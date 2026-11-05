@@ -145,9 +145,7 @@ class PhaseAdder(Operator2):
         if mod is None:
             mod = 2 ** len(x_wires)
         elif mod != 2 ** len(x_wires) and len(work_wire) != 1:
-            raise ValueError(
-                f"If mod is not 2^{len(x_wires)}, one work wire should be provided."
-            )
+            raise ValueError(f"If mod is not 2^{len(x_wires)}, one work wire should be provided.")
         if not isinstance(mod, int):
             raise ValueError("Both k and mod must be integers")
         if mod > 2 ** len(x_wires):
@@ -160,6 +158,8 @@ class PhaseAdder(Operator2):
         if not isinstance(self.k, AbstractArray):
             self.arguments["k"] = self.k % mod
 
+
+# pylint: disable-next=unused-argument
 def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
     num_x_wires = len(x_wires)
 
