@@ -20,7 +20,7 @@ from functools import lru_cache
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import SparseMatrixUndefinedError
@@ -388,7 +388,6 @@ def _controlled_g_phase_resource(
     base, control_wires, control_values, work_wires, work_wire_type
 ):  # pylint: disable=unused-argument
     num_control_wires = len(control_wires)
-    num_work_wires = len(work_wires)
 
     resources = {}
 
@@ -404,13 +403,14 @@ def _controlled_g_phase_resource(
         resources[qp.ControlledPhaseShift] = 1
         return resources
 
-    resources[
-        qp.ctrl(
-            abstractify(qp.PhaseShift),
-            control=Wire[num_control_wires - 1],
-            work_wires=Wire[num_work_wires],
-        )
-    ] = 1
+    # pylint: disable-next=import-outside-toplevel
+    from pennylane.ops.qubit.parametric_ops_single_qubit import _mc_phase_shift_counts
+
+    # a multi-controlled phase shift made of ControlledPhaseShift and MultiControlledX gates only
+    # (instead of a controlled PhaseShift with ``num_control_wires - 1`` controls, which would
+    # make the decomposition graph reach a controlled version of every gate for each smaller
+    # number of controls)
+    resources.update(_mc_phase_shift_counts(num_control_wires - 1))
 
     return resources
 
@@ -463,10 +463,13 @@ def _controlled_g_phase_decomp(
     base,
     control_wires,
     control_values,
-    work_wires,
-    work_wire_type,
+    work_wires,  # pylint: disable=unused-argument
+    work_wire_type,  # pylint: disable=unused-argument
 ):
-    """The decomposition rule for a controlled global phase."""
+    """The decomposition rule for a controlled global phase.
+
+    Work wires are not needed: the multi-controlled phase shift borrows its target wire.
+    """
 
     if qp.compiler.active() or qp.capture.enabled():
         control_wires = qp.math.array(control_wires, like="jax")
@@ -488,12 +491,12 @@ def _controlled_g_phase_decomp(
     def _x_flips(i):
         qp.cond(qp.math.logical_not(control_values[i]), qp.X)(control_wires[i])
 
+    # pylint: disable-next=import-outside-toplevel
+    from pennylane.ops.qubit.parametric_ops_single_qubit import _mc_phase_shift
+
     _x_flips()  # pylint: disable=no-value-for-parameter
-    qp.ctrl(
-        qp.PhaseShift(-base.phi, wires=control_wires[-1]),
-        control=control_wires[:-1],
-        work_wires=work_wires,
-        work_wire_type=work_wire_type,
+    _mc_phase_shift(
+        -base.phi, [control_wires[i] for i in range(len(control_wires) - 1)], control_wires[-1]
     )
     _x_flips()  # pylint: disable=no-value-for-parameter
 

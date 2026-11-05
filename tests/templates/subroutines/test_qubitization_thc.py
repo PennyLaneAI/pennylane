@@ -158,6 +158,7 @@ class TestQubitizationTHC:
 
     # pylint: disable=too-few-public-methods
 
+    @pytest.mark.capture
     @pytest.mark.parametrize("num_batches", [1, 2])
     def test_standard_validity(self, seed, num_batches):
         """Test standard validity of the QubitizationTHC operator with assert_valid."""

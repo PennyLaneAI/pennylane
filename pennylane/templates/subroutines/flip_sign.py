@@ -15,14 +15,16 @@ r"""
 Contains the FlipSign template.
 """
 
+import collections
 from collections.abc import Sequence
 
+import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CZ, X, Z, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import AbstractArray, Wire
+from pennylane.typing import AbstractArray, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -158,4 +160,60 @@ def _flip_sign_decomposition(state: tuple[int], wires: WiresLike, work_wires: Wi
         X(wires[-1])
 
 
-add_decomps(FlipSign, _flip_sign_decomposition)
+# FlipSign through a MultiControlledX node that carries the work wires.
+#
+# PennyLane's FlipSign rule goes through ``ctrl(Z, work_wires=..., work_wire_type="zeroed")``. Catalyst's
+# controlled-operator nodes (``63C(PauliZ)``) have no work-wire field, so the wires are lost and the
+# MultiControlledX further down is solved with ``work_wires:0``, which falls into the exponential
+# ``decompose_mcx_with_no_worker`` recursion (solver cost ~1e33 for 64 wires). A MultiControlledX
+# node does carry its work wires, so emit it directly (Z = H X H on the target). With enough zeroed
+# work wires PennyLane's elbow ladder applies, without allocating any wire.
+def _flip_sign_mcx_resources(state, wires, work_wires):
+    num_ctrl = len(wires) - 1
+    res = collections.Counter()
+    if num_ctrl == 0:
+        res[qp.Z] = 1
+    elif num_ctrl == 1 and state[0]:
+        res[qp.CZ] = 1
+    else:
+        res[qp.X] += 2 * (num_ctrl - sum(state[:-1]))  # flip the zero-valued controls and back
+        res[qp.H] += 2
+        res[
+            qp.MultiControlledX(
+                Wire[num_ctrl + 1],
+                control_values=Bool[num_ctrl],
+                work_wires=Wire[len(work_wires)],
+                work_wire_type="zeroed",
+            )
+        ] += 1
+    if state[-1] == 0:
+        res[qp.X] += 2
+    return dict(res)
+
+
+@qp.register_resources(_flip_sign_mcx_resources)
+def flip_sign_mcx_decomp(state, wires, work_wires):
+    """FlipSign as (X on zero controls) H MCX(work_wires zeroed) H (X on zero controls)."""
+    if state[-1] == 0:
+        qp.X(wires[-1])
+
+    if len(wires) == 1:
+        qp.Z(wires[0])
+    elif len(wires) == 2 and state[0]:
+        qp.CZ(wires)
+    else:
+        for i, bit in enumerate(state[:-1]):
+            if bit == 0:
+                qp.X(wires[i])
+        qp.H(wires[-1])
+        qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type="zeroed")
+        qp.H(wires[-1])
+        for i, bit in enumerate(state[:-1]):
+            if bit == 0:
+                qp.X(wires[i])
+
+    if state[-1] == 0:
+        qp.X(wires[-1])
+
+
+add_decomps(FlipSign, flip_sign_mcx_decomp)
