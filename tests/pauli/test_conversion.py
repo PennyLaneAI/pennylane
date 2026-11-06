@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops import Identity, PauliX, PauliY, PauliZ
+from pennylane.ops import Identity, PauliX, PauliY, PauliZ, _pauli_utils
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.conversion import (
     _check_hermitian_sparse,
@@ -768,6 +768,16 @@ class TestPhasedDecomposition:
             assert qp.math.allclose(grad_numpy, qp.math.conjugate(grad_torch))
 
 
+@pytest.mark.parametrize(
+    "name",
+    ("pauli_sentence", "is_pauli_word", "pauli_word_to_string", "string_to_pauli_word"),
+)
+def test_operator_conversion_reexports(name):
+    """The public Pauli helpers share their implementation with ops."""
+    assert getattr(qp.pauli, name) is getattr(_pauli_utils, name)
+    assert getattr(qp.ops, name) is getattr(_pauli_utils, name)
+
+
 class TestPauliSentence:
     """Test the pauli_sentence function."""
 
@@ -781,6 +791,7 @@ class TestPauliSentence:
     @pytest.mark.parametrize("op, ps", pauli_op_ps)
     def test_pauli_ops(self, op, ps):
         """Test that PL Pauli ops are properly cast to a PauliSentence."""
+        assert qp.pauli.conversion.is_pauli_sentence(op)
         assert pauli_sentence(op) == ps
 
     tensor_ps = (
@@ -862,7 +873,7 @@ class TestPauliSentence:
     def test_operator_private_ps(self, op, ps):
         """Test that a correct pauli sentence is computed when passing an arithmetic operator and not
         relying on the saved op.pauli_rep attribute."""
-        assert qp.pauli.conversion._pauli_sentence(op) == ps  # pylint: disable=protected-access
+        assert _pauli_utils._pauli_sentence(op) == ps  # pylint: disable=protected-access
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -876,6 +887,7 @@ class TestPauliSentence:
     def test_error_not_linear_comb_pauli_words(self, op):
         """Test that a ValueError is raised when trying to cast operators to a PauliSentence
         which are not linear combinations of Pauli words."""
+        assert not qp.pauli.conversion.is_pauli_sentence(op)
         with pytest.raises(
             ValueError, match="Op must be a linear combination of Pauli operators only, got:"
         ):
