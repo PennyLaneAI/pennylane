@@ -31,7 +31,19 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
 )
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
-from pennylane.ops import U2, U3, CRot, OrbitalRotation, PauliRot, Prod, Rot, SingleExcitation, prod
+from pennylane.ops import (
+    U2,
+    U3,
+    CRot,
+    OrbitalRotation,
+    DoubleExcitation,
+    FermionicSWAP,
+    PauliRot,
+    Prod,
+    Rot,
+    SingleExcitation,
+    prod,
+)
 from pennylane.ops.functions import eigvals, generator
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
@@ -1350,6 +1362,15 @@ def _handle_single_excitation(op: SingleExcitation):
 @parameter_frequencies.register
 def _handle_orbital_rotation(op: OrbitalRotation):
     return [(0.5, 1.0, 1.5, 2.0)]
+
+
+def _handle_double_excitation(op: DoubleExcitation):
+    return [(0.5, 1.0)]
+
+
+@parameter_frequencies.register
+def _handle_fermionic_swap(op: FermionicSWAP):
+    return [(1,)]
 
 
 @parameter_frequencies.register
