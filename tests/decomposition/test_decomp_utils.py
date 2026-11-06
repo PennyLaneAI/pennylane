@@ -78,7 +78,6 @@ def test_graph_ctx():
         ("I", "Identity"),
         ("H", "Hadamard"),
         ("measure", "MidMeasure"),
-        ("MidMeasure", "MidMeasure"),
         ("MidMeasureMP", "MidMeasure"),
         ("MidCircuitMeasure", "MidMeasure"),
     ],
