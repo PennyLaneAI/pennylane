@@ -755,6 +755,9 @@ class DoubleExcitation(Operator2):
     arg_specs = {"phi": Float, "wires": Wire[4]}
     wire_sizes = (4,)
 
+    num_wires = 4
+    """int: Number of wires that the operator acts on."""
+
     def generator(self) -> "qp.Hamiltonian":
         w0, w1, w2, w3 = self.wires
         return qp.Hamiltonian(
