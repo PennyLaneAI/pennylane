@@ -1011,9 +1011,12 @@ Improvements 🛠
   unhinted conditionals by the exact average counts when compiling them with Catalyst.
   `(#10311) <https://github.com/PennyLaneAI/pennylane/pull/10311>`__
 
-* The so-called Select-SWAP decomposition, now of :class:`~.QROMLoad`, no longer uses
-  :class:`~.Select`, but instead expresses the Select block as a :class:`~.QROM` with fewer
-  controls and more target qubits. This allows for scalable compilation of this decomposition rule.
+* The Select-SWAP decomposition previously attributed to :class:`~.QROM`
+  (``qp.list_decomps(qp.QROM)["_qrom_decomposition"]``) is now attributed to :class:`~.QROMLoad`
+  (``qp.list_decomps(qp.QROMLoad)["_select_swap"]``). Additionally, this decomposition rule no
+  longer uses :class:`~.Select`, but instead expresses the Select block as a :class:`~.QROM` with
+  fewer controls and more target qubits. This allows for scalable compilation of this decomposition
+  rule.
   `(#10207) <https://github.com/PennyLaneAI/pennylane/pull/10207>`__
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
 
