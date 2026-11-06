@@ -21,6 +21,7 @@ from pennylane import math
 from pennylane.core.operator import Operator
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import DecompositionUndefinedError, TermsUndefinedError
+from pennylane.ops._pauli_conversion import to_operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.typing import TensorLike
@@ -309,7 +310,7 @@ class SProd(ScalarSymbolicOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return pr.operation(wire_order=self.wires)
+            return to_operator(pr, wire_order=self.wires)
 
         if self.scalar == 1:
             return self.base.simplify()

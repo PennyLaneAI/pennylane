@@ -230,7 +230,7 @@ def batched_pauli_decompose(H: TensorLike, tol: float | None = None, pauli: bool
         if pauli:
             H_ops.append(sentence)
         else:
-            H_ops.append(sentence.operation())
+            H_ops.append(qp.pauli.to_operator(sentence))
 
     if single_H:
         return H_ops[0]

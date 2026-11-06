@@ -406,7 +406,9 @@ class TestArithmeticReturn:
         """Test a generator that returns a Hermitian observable
         is correct"""
         gen = qp.generator(HermitianOp, format="arithmetic")(0.5, wires=0)
-        expected = qp.pauli_decompose(HermitianOp.H, hide_identity=True, pauli=True).operation()
+        expected = qp.pauli.to_operator(
+            qp.pauli_decompose(HermitianOp.H, hide_identity=True, pauli=True)
+        )
 
         assert not isinstance(gen, qp.Hamiltonian)
         assert np.allclose(
@@ -418,9 +420,9 @@ class TestArithmeticReturn:
         """Test a generator that returns a SparseHamiltonian observable
         is correct"""
         gen = qp.generator(SparseOp, format="arithmetic")(0.5, wires=0)
-        expected = qp.pauli_decompose(
-            SparseOp.H.toarray(), hide_identity=True, pauli=True
-        ).operation()
+        expected = qp.pauli.to_operator(
+            qp.pauli_decompose(SparseOp.H.toarray(), hide_identity=True, pauli=True)
+        )
 
         assert not isinstance(gen, qp.Hamiltonian)
         assert np.allclose(
