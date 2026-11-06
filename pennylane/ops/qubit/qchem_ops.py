@@ -1235,6 +1235,9 @@ class OrbitalRotation(Operator2):
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
     def generator(self) -> "qp.Hamiltonian":
         w0, w1, w2, w3 = self.wires
         return qp.Hamiltonian(
