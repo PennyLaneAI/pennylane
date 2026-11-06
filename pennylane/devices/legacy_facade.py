@@ -219,8 +219,9 @@ class LegacyDeviceFacade(Device):  # pylint: disable=abstract-method
 
     @property
     def shots(self) -> Shots:
-        if self._device._shot_vector:  # pylint: disable=protected-access
-            return Shots(self._device._raw_shot_sequence)  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        if self._device._shot_vector:
+            return Shots(self._device._raw_shot_sequence)
         return Shots(self._device.shots)
 
     @property

@@ -921,9 +921,7 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
             .CircuitGraph: the circuit graph object
         """
         # pylint: disable-next=import-outside-toplevel
-        from pennylane.circuit_graph import (  # tach-ignore
-            CircuitGraph,
-        )
+        from pennylane.circuit_graph import CircuitGraph  # tach-ignore
 
         if self._graph is None:
             self._graph = CircuitGraph(
