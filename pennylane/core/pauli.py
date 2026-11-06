@@ -54,6 +54,24 @@ anticom_map = {
 
 
 @lru_cache
+def pauli_eigs(n):
+    r"""Eigenvalues for :math:`A^{\otimes n}`, where :math:`A` is
+    Pauli operator, or shares its eigenvalues.
+
+    As an example if n==2, then the eigenvalues of a tensor product consisting
+    of two matrices sharing the eigenvalues with Pauli matrices is returned.
+
+    Args:
+        n (int): the number of qubits the matrix acts on
+    Returns:
+        list: the eigenvalues of the specified observable
+    """
+    if n == 1:
+        return np.array([1.0, -1.0])
+    return np.concatenate([pauli_eigs(n - 1), -pauli_eigs(n - 1)])
+
+
+@lru_cache
 def _cached_sparse_data(op):
     """Returns the sparse data and indices of a Pauli operator."""
     if op == "I":

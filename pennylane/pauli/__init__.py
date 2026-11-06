@@ -15,7 +15,7 @@
 
 from pennylane.ops._pauli_conversion import to_operator
 
-from pennylane.core.pauli import PauliWord, PauliSentence
+from pennylane.core.pauli import PauliWord, PauliSentence, pauli_eigs
 
 from .utils import (
     is_pauli_word,
@@ -35,7 +35,6 @@ from .utils import (
     diagonalize_pauli_word,
     diagonalize_qwc_pauli_words,
     diagonalize_qwc_groupings,
-    pauli_eigs,
 )
 
 from .pauli_interface import pauli_word_prefactor

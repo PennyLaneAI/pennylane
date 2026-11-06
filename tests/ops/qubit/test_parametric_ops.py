@@ -3143,7 +3143,7 @@ class TestMultiRZ:
 
         qp.assert_equal(gen, qp.Hamiltonian([-0.5], [expected_gen]))
 
-        spy = mocker.spy(qp.pauli.utils, "pauli_eigs")
+        spy = mocker.spy(qp.ops.qubit.parametric_ops_multi_qubit, "pauli_eigs")
 
         op.generator()
         spy.assert_not_called()

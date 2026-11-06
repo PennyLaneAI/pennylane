@@ -406,6 +406,14 @@ path = "pennylane.ops.functions.dot"
 cannot_depend_on = ["pennylane.pauli", "pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
+path = "pennylane.ops.qubit.non_parametric_ops"
+cannot_depend_on = ["pennylane.pauli", "pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.ops.qubit.parametric_ops_multi_qubit"
+cannot_depend_on = ["pennylane.pauli", "pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
 path = "pennylane.tape"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
