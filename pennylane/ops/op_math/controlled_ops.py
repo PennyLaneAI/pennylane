@@ -160,6 +160,7 @@ class ControlledQubitUnitary(Controlled2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.ControlledQubitUnitary
+            :stacked:
             :symbols: :math:`n` target wires and :math:`c` control wires
 
             .. decomposition-rule:: ctrl_decomp_bisect_rule
@@ -915,7 +916,7 @@ class CCZ(Controlled2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.CCZ
-
+            :stacked:
             .. decomposition-rule:: _ccz
                 :image: /_static/decomposition_thumbnails/ccz_decomp.svg
 
@@ -1260,6 +1261,7 @@ class Toffoli(Controlled2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.Toffoli
+            :stacked:
 
             .. decomposition-rule:: _toffoli
                 :image: /_static/decomposition_thumbnails/toffoli_decomp.svg
@@ -1521,6 +1523,7 @@ class MultiControlledX(Controlled2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.MultiControlledX
+            :stacked:
             :symbols: :math:`c` control wires and :math:`w` work wires
 
             .. decomposition-rule:: mcx_to_cnot_or_toffoli
