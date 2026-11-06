@@ -34,7 +34,7 @@ of a QNode:
 
     import pennylane as qp
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.qnode(qp.device("lightning.qubit", wires=2))
     def my_quantum_function(x, y):
         qp.RZ(x, wires=0)
@@ -45,19 +45,11 @@ of a QNode:
 Below are example outputs from the circuit above when varying the terminal
 measurement function.
 
-.. raw:: html
-
-    <style>
-        table.measurements-table { border-collapse: collapse; }
-        table.measurements-table th,
-        table.measurements-table td { border: 1px solid #ccc !important; padding: 6px 10px; }
-    </style>
-
 .. list-table::
    :header-rows: 1
    :widths: 24 52 12 12
    :align: center
-   :class: measurements-table
+   :class: docstable
 
    * - Measurement
      - Example output
@@ -101,7 +93,7 @@ directly applied to a QNode.
 
     dev = qp.device("lightning.qubit", wires=1)
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.set_shots(shots=10)
     @qp.qnode(dev)
     def circuit(x, y):
@@ -118,7 +110,7 @@ Mid-circuit measurements
 A wire can also be measured in the middle of a circuit with
 :func:`~pennylane.measure` (a mid-circuit measurement, MCM), and subsequent
 operations can be conditioned on the outcome with :func:`~pennylane.cond`.
-Two MCM methods are supported with ``qp.qjit(capture=True)``:
+Two MCM methods are supported with ``qp.qjit``:
 
 * ``"one-shot"`` (default): the circuit is executed once per shot, each shot
   sampling its own outcomes, and the results are combined. It requires
@@ -139,13 +131,14 @@ MCM:
 
     dev = qp.device("lightning.qubit", wires=2)
 
-    @qp.qjit(capture=True, seed=37)
+    @qp.qjit(autograph=True, seed=37)
     @qp.set_shots(shots=1000)
     @qp.qnode(dev, mcm_method="one-shot")
     def circuit(x):
         qp.RY(x, wires=0)
         m = qp.measure(0)
-        qp.cond(m, qp.X)(wires=1)
+        if m:
+            qp.X(wires=1)
         return qp.expval(qp.Z(1)), qp.probs(op=m)
 
 >>> circuit(1.2)
@@ -156,13 +149,14 @@ the single branch sampled for ``m``:
 
 .. code-block:: python
 
-    @qp.qjit(capture=True, seed=37)
+    @qp.qjit(autograph=True, seed=37)
     @qp.set_shots(shots=1000)
     @qp.qnode(dev, mcm_method="single-branch-statistics")
     def single_branch(x):
         qp.RY(x, wires=0)
         m = qp.measure(0)
-        qp.cond(m, qp.X)(wires=1)
+        if m:
+            qp.X(wires=1)
         return qp.expval(qp.Z(1))
 
 >>> single_branch(1.2)

@@ -48,7 +48,7 @@ with :func:`~pennylane.qjit`:
 
     dev = qp.device("lightning.qubit", wires=1)
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.transforms.gridsynth(epsilon=1e-4)
     @qp.qnode(dev)
     def circuit(x):
@@ -66,7 +66,7 @@ passes on a QNode:
 
     dev = qp.device("lightning.qubit", wires=1)
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.transforms.merge_rotations
     @qp.transforms.cancel_inverses
     @qp.qnode(device=dev)
@@ -109,7 +109,7 @@ compilation pipelines with :class:`~.CompilePipeline`.
         qp.transforms.merge_rotations,
     )
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @pipeline
     @qp.qnode(qp.device("lightning.qubit", wires=2))
     def circuit(x, y):
@@ -141,7 +141,7 @@ a pre-defined set of gates:
     dev = qp.device("lightning.qubit", wires=3)
     allowed_gates = {qp.Toffoli, qp.RX, qp.RZ, qp.GlobalPhase}
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.decompose(gate_set=allowed_gates)
     @qp.qnode(dev)
     def circuit():
@@ -161,7 +161,7 @@ decomposes a ``Toffoli`` gate into a subset of Clifford + T gates:
 
 .. code-block:: python
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.decompose(gate_set={"H", "T", "Adjoint(T)", "CNOT"})
     @qp.qnode(dev)
     def circuit():
@@ -203,7 +203,7 @@ ways, including:
     dev = qp.device("lightning.qubit", wires=3)
     allowed_gates = {qp.Toffoli: 1, qp.RX: 100, qp.RY: 1, qp.RZ: 1, qp.GlobalPhase: 1}
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.decompose(gate_set=allowed_gates)
     @qp.qnode(dev)
     def circuit():

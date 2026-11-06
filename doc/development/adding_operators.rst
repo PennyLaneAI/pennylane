@@ -200,7 +200,7 @@ and resource estimation.
 
     dev = qp.device("lightning.qubit", wires=2)
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.decompose(gate_set={"PauliX", "MidMeasureMP", "PauliRot"})
     @qp.qnode(dev)
     def circuit(a):

@@ -11,6 +11,11 @@ The PennyLane2 framework is powered by the
 which enables just-in-time compilation of quantum-classical hybrid programs via
 the :func:`~pennylane.qjit` decorator.
 
+The :doc:`compiling_circuits` page provides an overview of quantum circuit
+transformations. Here, "compilation" means *just-in-time compilation* of the
+entire quantum-classical program, which translates Python code into an optimized
+executable, rather than transforming the quantum circuit itself.
+
 Benefits of qjit
 ----------------
 
@@ -61,7 +66,7 @@ compile your hybrid workflows:
         return qp.expval(qp.Z(1))
 
 >>> params = jnp.array([0.1, 0.2])
->>> qp.qjit(circuit, capture=True)(params)
+>>> qp.qjit(circuit)(params)
 Array(0.884, dtype=float64)
 
 .. note::
@@ -75,7 +80,7 @@ functions that include both quantum and classical processing.
 
 .. code-block:: python
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     def hybrid_function(params, x):
         grad = qp.grad(circuit)(params)
         return jnp.abs(grad - x) ** 2
@@ -90,14 +95,17 @@ in quantum machine learning workflows.
 
 .. note::
 
-    Differentiation of :func:`~pennylane.qjit`'d workflows is supported with the
-    ``optax`` package, which comes out-of-the-box with PennyLane2.
+    Optimization of :func:`~pennylane.qjit`'d workflows is supported with the
+    ``optax`` package, which does not come with PennyLane2 and must be installed
+    separately. See the
+    `optax installation instructions <https://optax.readthedocs.io/en/latest/#installation>`_
+    for details.
 
 .. code-block:: python
 
     import optax
 
-    @qp.qjit(capture=True)
+    @qp.qjit(autograph=True)
     def optimization():
         # initial parameter
         params = jnp.array([0.54, 0.3154])
@@ -111,14 +119,61 @@ in quantum machine learning workflows.
             params = optax.apply_updates(params, updates)
             return params, opt_state
 
-        @qp.for_loop(0, 10_000, 1)
-        def loop(_, params, opt_state):
+        for _ in range(10_000):
             params, _ = update_step(params, opt_state)
-            return params, opt_state
-
-        params, _ = loop(params, opt_state)
 
         return params
 
 >>> optimization()
 Array([1.73811307, 3.91381022], dtype=float64)
+
+Static and dynamic arguments
+----------------------------
+
+By default, the arguments of a :func:`~pennylane.qjit`'d function are
+*dynamic*: the function is traced with placeholder values that only carry a
+shape and type, compiled once, and the compiled program is reused for any new
+argument values. Since Python code like ``print`` only runs during tracing, it
+shows when compilation happens:
+
+.. code-block:: python
+
+    dev = qp.device("lightning.qubit", wires=2)
+
+    @qp.qjit
+    @qp.qnode(dev)
+    def circuit(x):
+        print("Compiling...")
+        qp.RX(x, wires=0)
+        return qp.expval(qp.Z(0))
+
+    circuit(0.1)  # prints "Compiling..."
+    circuit(0.2)  # new value: compiled program is reused, nothing is printed
+
+Calling the function with an argument of a different shape or type (e.g., an
+array of a different length) triggers recompilation.
+
+Arguments listed in ``static_argnums`` (or ``static_argnames``) are instead
+*static*: their Python values are fixed in the compiled program, so they can
+drive Python control flow such as the number of layers. Static arguments must
+be hashable, and the function is recompiled whenever their value changes:
+
+.. code-block:: python
+
+    @qp.qjit(static_argnums=1)
+    @qp.qnode(dev)
+    def circuit(x, n_layers):
+        print(f"Compiling for n_layers={n_layers}")
+        for _ in range(n_layers):
+            qp.RX(x, wires=0)
+            qp.CNOT(wires=[0, 1])
+        return qp.expval(qp.Z(1))
+
+    circuit(0.1, 2)  # prints "Compiling for n_layers=2"
+    circuit(0.5, 2)  # only the dynamic argument changed: no recompilation
+    circuit(0.1, 3)  # prints "Compiling for n_layers=3"
+
+A Python ``if`` or ``for`` that depends on a *dynamic* argument cannot be
+evaluated during tracing; use ``@qp.qjit(autograph=True)`` to convert it into
+compiled control flow. See the Catalyst
+:doc:`sharp bits <catalyst:dev/sharp_bits>` page for more details.

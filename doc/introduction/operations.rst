@@ -155,7 +155,7 @@ For example,
 
     import pennylane as qp
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.qnode(qp.device("lightning.qubit", wires=2))
     def circuit(x):
         qp.adjoint(qp.S)(wires=0)

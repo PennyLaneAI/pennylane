@@ -107,7 +107,12 @@ function,
 >>> circuit(0.1, 0.2)
 Array(0.98006658, dtype=float64)
 
-or inspected with, say, :func:`~pennylane.analyze` for fast resource analysis.
+By default, a QNode is executed analytically. To use a finite number of shots,
+decorate it with :func:`@qp.set_shots(shots=1000) <~pennylane.set_shots>`,
+placed between ``@qp.qjit`` and ``@qp.qnode`` (see :ref:`intro_ref_meas` for
+more details).
+
+The circuit can also be inspected with, say, :func:`~pennylane.analyze` for fast resource analysis.
 
 >>> qp.analyze(circuit)(0.1, 0.2).resources
 SpecsResources(counts={'CNOT': 1, 'RY': 1, 'RZ': 1}, measurement_processes={'expval(PauliZ)': 1}, num_wires=2, circuit_depth=None, total_quantum_operations=3)

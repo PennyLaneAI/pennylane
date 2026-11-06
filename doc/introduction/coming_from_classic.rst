@@ -25,7 +25,7 @@ and drawing all work on that tape.
 
 PennyLane2 compiles your program to a single program representation, MLIR, with
 the :doc:`Catalyst compiler <qjit>`. Every workflow is decorated with
-:func:`@qp.qjit(capture=True) <pennylane.qjit>`, and compilation, analysis and
+:func:`@qp.qjit <pennylane.qjit>`, and compilation, analysis and
 execution all work on the compiled program rather than on a tape. This keeps
 control flow and dynamic values intact, so programs scale to hundreds of qubits
 and every tool sees the same program.
@@ -42,13 +42,14 @@ The table below summarizes the most common changes.
     * - Running a circuit
       - Call the QNode directly.
       - Decorate the QNode, or a function that calls it, with
-        ``@qp.qjit(capture=True)``.
+        ``@qp.qjit``.
     * - Devices
       - Any PennyLane device, including Python devices such as
         ``default.qubit``.
       - Devices that Catalyst supports, such as ``lightning.qubit``,
         ``lightning.kokkos`` and ``lightning.gpu``. Devices must be given
-        ``wires``.
+        ``wires``. Plugin devices must support PennyLane2 (see
+        :ref:`classic_plugin_devices`).
     * - Arrays
       - ``pennylane.numpy`` (Autograd), PyTorch, JAX or TensorFlow.
       - ``jax.numpy`` or NumPy. See :doc:`sharp_bits`.
@@ -56,7 +57,7 @@ The table below summarizes the most common changes.
       - Python ``for``, ``while`` and ``if``, unrolled into the tape.
       - :func:`~pennylane.for_loop`, :func:`~pennylane.while_loop` and
         :func:`~pennylane.cond`, or Python control flow with
-        ``qp.qjit(capture=True, autograph=True)``. Loops stay loops in the
+        ``qp.qjit(autograph=True)``. Loops stay loops in the
         compiled program.
     * - Transforms
       - Tape transforms, including your own written with
@@ -114,7 +115,7 @@ And here is the same workflow in PennyLane2:
 
     dev = qp.device("lightning.qubit", wires=2)
 
-    @qp.qjit(capture=True, autograph=True)
+    @qp.qjit(autograph=True)
     @qp.qnode(dev, shots=1000)
     def circuit(params, n_layers):
         for i in range(n_layers):
@@ -129,7 +130,7 @@ And here is the same workflow in PennyLane2:
 
 The changes are:
 
-#. **Decorate with qjit.** ``@qp.qjit(capture=True)`` compiles the QNode.
+#. **Decorate with qjit.** ``@qp.qjit`` compiles the QNode.
    You can also decorate a function that calls one or more QNodes, which
    compiles your classical processing too.
 
@@ -172,6 +173,17 @@ can't be applied to a compiled program: ``qjit`` raises an error saying the
 transform doesn't have a ``pass_name``. Check whether a built-in pass does what
 you need (see :doc:`compiling_circuits`). If not, please
 `tell us <https://discuss.pennylane.ai>`__ what your transform does.
+
+.. _classic_plugin_devices:
+
+Plugin devices
+^^^^^^^^^^^^^^
+
+Devices from plugins built on the PennyLane Classic device API, such as
+third-party hardware and simulator plugins, don't work with PennyLane2 as they
+are. If you use one, keep using PennyLane Classic
+(``pip install pennylane==0.45.1``) until the plugin supports PennyLane2. If you
+develop one, see :doc:`/development/plugins` to make it work with PennyLane2.
 
 .. _classic_custom_operators:
 
@@ -259,7 +271,7 @@ with :func:`~pennylane.decompose`:
 
     dev = qp.device("lightning.qubit", wires=2)
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.decompose(gate_set={"RX", "PauliX"})
     @qp.qnode(dev)
     def circuit(angle):
@@ -358,7 +370,7 @@ The following features of PennyLane Classic are not available in PennyLane2.
         ``level="all-mlir"`` options, and ``QuantumScript.specs``
       - :func:`~pennylane.specs` on a ``qjit``-compiled QNode.
     * - Plxpr transforms, and running plxpr without ``qjit``
-      - ``qp.qjit(capture=True)``.
+      - ``qp.qjit``.
     * - ``qp.decomposition.reconstruct``
       - None.
     * - Python 3.11
