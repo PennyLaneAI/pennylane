@@ -22,13 +22,11 @@ from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
-from pennylane.decomposition.resources import resource_rep
-from pennylane.ops import CNOT, MultiControlledX, X
+from pennylane.ops import CNOT, ChangeOpBasis2, MultiControlledX, PauliX
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint import adjoint
-from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.typing import Wire
+from pennylane.typing import Int, Wire
 from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
 
 from .phase_adder import PhaseAdder
@@ -47,7 +45,7 @@ def _increment(wires, control=()):
     for i in range(n):
         controls = wires[i + 1 :] + control
         if len(controls) == 0:
-            X(wires[i])
+            PauliX(wires[i])
         else:
             MultiControlledX(
                 wires=controls + wires[i : i + 1],
@@ -199,9 +197,9 @@ def _adder_decomposition_resources(
     num_qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
     _compute_op = QFT(Wire[num_qft_wires])
     resources = {
-        _change_op_basis_abstract(
+        ChangeOpBasis2(
             _compute_op,
-            resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
+            PhaseAdder(Int, Wire[num_qft_wires], mod, Wire[int(mod != 2**num_qft_wires)]),
             adjoint(_compute_op),
         ): 1,
     }
@@ -224,7 +222,7 @@ def _increment_resources(num_wires: int, num_control: int = 0) -> dict:
     for i in range(num_wires):
         num_controls = (num_wires - 1 - i) + num_control
         if num_controls == 0:
-            counts[X] += 1
+            counts[PauliX] += 1
         else:
             counts[MultiControlledX(Wire[num_controls + 1], work_wires=Wire[i])] += 1
     return dict(counts)
@@ -261,7 +259,7 @@ def _adder_arithmetic_resources(
     for rep, count in _add_constant_resources(aug, num_control=1).items():
         counts[rep] += count
     counts[CNOT] += 2
-    counts[X] += 2
+    counts[PauliX] += 2
     return dict(counts)
 
 
@@ -289,9 +287,9 @@ def _adder_arithmetic_decomposition(k: int, x_wires: WiresLike, mod: int, work_w
     CNOT(wires=msb + flag)  # flag = 1 iff x + k < mod
     _add_constant(mod, aug, control=flag)  # add mod back when flag is set
     _add_constant(-k, aug)  # re-expose the branch in msb ...
-    X(msb[0])
+    PauliX(msb[0])
     CNOT(wires=msb + flag)  # ... to reset flag to 0
-    X(msb[0])
+    PauliX(msb[0])
     _add_constant(k, aug)  # aug <- (x + k) mod mod, work wires restored
 
 
