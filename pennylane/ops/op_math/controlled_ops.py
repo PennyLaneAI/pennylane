@@ -320,8 +320,8 @@ class CH(Controlled2):
                     rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
                     :math:`z = 3`
 
-                :class:`~.CH` | :math:`1` if :math:`z` is odd
-                :class:`Pow(CH) <.CH>` with power :math:`z \bmod 2` | :math:`1` if :math:`z` is not an integer
+                :class:`~.CH` (odd :math:`z`) | :math:`1`
+                :class:`Pow(CH) <.CH>` with power :math:`z \bmod 2` (non-integer :math:`z`) | :math:`1`
 
     """
 
@@ -463,8 +463,8 @@ class CY(Controlled2):
                     rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
                     :math:`z = 3`
 
-                :class:`~.CY` | :math:`1` if :math:`z` is odd
-                :class:`Pow(CY) <.CY>` with power :math:`z \bmod 2` | :math:`1` if :math:`z` is not an integer
+                :class:`~.CY` (odd :math:`z`) | :math:`1`
+                :class:`Pow(CY) <.CY>` with power :math:`z \bmod 2` (non-integer :math:`z`) | :math:`1`
 
     """
 
@@ -652,8 +652,8 @@ class CZ(Controlled2):
                     rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
                     :math:`z = 3`
 
-                :class:`~.CZ` | :math:`1` if :math:`z` is odd
-                :class:`Pow(CZ) <.CZ>` with power :math:`z \bmod 2` | :math:`1` if :math:`z` is not an integer
+                :class:`~.CZ` (odd :math:`z`) | :math:`1`
+                :class:`Pow(CZ) <.CZ>` with power :math:`z \bmod 2` (non-integer :math:`z`) | :math:`1`
 
     """
 
@@ -1129,8 +1129,8 @@ class CNOT(Controlled2):
                     rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
                     :math:`z = 3`
 
-                :class:`~.CNOT` | :math:`1` if :math:`z` is odd
-                :class:`Pow(CNOT) <.CNOT>` with power :math:`z \bmod 2` | :math:`1` if :math:`z` is not an integer
+                :class:`~.CNOT` (odd :math:`z`) | :math:`1`
+                :class:`Pow(CNOT) <.CNOT>` with power :math:`z \bmod 2` (non-integer :math:`z`) | :math:`1`
 
     """
 
