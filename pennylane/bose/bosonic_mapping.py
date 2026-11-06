@@ -19,7 +19,7 @@ from functools import singledispatch
 import numpy as np
 
 from pennylane import math
-from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.pauli import PauliSentence, PauliWord, to_operator
 
 from .bosonic import BoseSentence, BoseWord
 
@@ -82,7 +82,7 @@ def binary_mapping(
     wires = list(bose_operator.wires) or [0]
     identity_wire = wires[0]
     if not ps:
-        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
+        qubit_operator = to_operator(qubit_operator, wire_order=[identity_wire])
 
     if wire_map:
         return qubit_operator.map_wires(wire_map)
@@ -211,7 +211,7 @@ def unary_mapping(
     wires = list(bose_operator.wires) or [0]
     identity_wire = wires[0]
     if not ps:
-        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
+        qubit_operator = to_operator(qubit_operator, wire_order=[identity_wire])
 
     if wire_map:
         return qubit_operator.map_wires(wire_map)
@@ -354,7 +354,7 @@ def christiansen_mapping(
     wires = list(bose_operator.wires) or [0]
     identity_wire = wires[0]
     if not ps:
-        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
+        qubit_operator = to_operator(qubit_operator, wire_order=[identity_wire])
 
     if wire_map:
         return qubit_operator.map_wires(wire_map)

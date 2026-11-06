@@ -121,7 +121,7 @@ def _check_clifford_op(op, use_decomposition=False):
         qp.pauli.pauli_sentence(qp.prod(*pauli))
         for pauli in product(*(pauli_group(idx) for idx in op.wires))
     ]
-    pauli_ops = (pauli_sen.operation(wire_order=op.wires) for pauli_sen in pauli_sens)
+    pauli_ops = (qp.pauli.to_operator(pauli_sen, wire_order=op.wires) for pauli_sen in pauli_sens)
 
     # Perform U@P@U^\dagger and check if the result exists in set P
     for pauli_prod in product([pauli_terms], pauli_ops, [pauli_terms_adj]):

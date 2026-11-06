@@ -46,6 +46,7 @@ from pennylane.exceptions import (
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
+from pennylane.ops._pauli_conversion import to_operator
 from pennylane.ops.op_math import adjoint
 
 from .adjoint import Adjoint
@@ -313,7 +314,7 @@ class Pow2(SymbolicOp2):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return pr.operation(wire_order=self.wires)
+            return to_operator(pr, wire_order=self.wires)
 
         base = self.base if capture.enabled() else self.base.simplify()
         try:

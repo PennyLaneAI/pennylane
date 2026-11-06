@@ -33,7 +33,7 @@ pw_id = PauliWord({})
 
 def _pauli_to_op(p):
     """convert PauliWord or PauliSentence to Operator"""
-    return p.operation()
+    return qp.pauli.to_operator(p)
 
 
 def _pw_to_ps(p):
@@ -220,7 +220,9 @@ class TestcommPauliFalse:
 
     def test_paulis_used_when_ever_possible(self, mocker):
         """Test that pauli_rep is used whenever possible even when ``pauli=False``"""
-        spy = mocker.spy(PauliSentence, "operation")
+        spy = mocker.patch(
+            "pennylane.ops.functions.commutator.to_operator", wraps=qp.pauli.to_operator
+        )
         op1 = qp.PauliX(0) @ qp.PauliX(1)
         op2 = qp.PauliY(0) + qp.PauliY(1)
         res = qp.commutator(op1, op2, pauli=False)

@@ -1501,6 +1501,10 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* ``PauliWord.operation()`` and ``PauliSentence.operation()`` have been replaced by
+  :func:`~pennylane.pauli.to_operator`. Use ``qp.pauli.to_operator(value, wire_order=...)``
+  to construct the corresponding operator.
+
 * ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of
   ``"MidMeasureMP"``. Update raw device operation names and comparisons; the deprecated
   Python import and ``GateSet`` alias remain supported.
