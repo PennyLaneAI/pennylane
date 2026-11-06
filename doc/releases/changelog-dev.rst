@@ -2316,6 +2316,12 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* :func:`~pennylane.is_commuting` no longer reports two SWAP-like operations, such as
+  :class:`~.CSWAP` or :class:`~.Permute`, as commuting when their target wires only partially
+  overlap. Previously, ``qp.is_commuting(qp.CSWAP([0, 1, 2]), qp.CSWAP([3, 1, 4]))`` returned
+  ``True``, which let :func:`~.pattern_matching_optimization` cancel gates that do not commute.
+  `(#10175) <https://github.com/PennyLaneAI/pennylane/pull/10175>`__
+
 * Fixed a bug where AutoGraph raised an error for empty ``for`` loops.
   `(#10448) <https://github.com/PennyLaneAI/pennylane/pull/10448>`__
 
@@ -2640,6 +2646,7 @@ Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
 Korbinian Kottmann,
+Anish Kunda,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,
