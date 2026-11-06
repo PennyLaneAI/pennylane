@@ -1982,9 +1982,10 @@ Internal changes ⚙️
 
   - Quantum chemistry operators are ported:
 
-    - :class:`~.SingleExcitation`
+    - :class:`~.SingleExcitation`, :class:`~.FermionicSWAP`
 
     `(#9944) <https://github.com/PennyLaneAI/pennylane/pull/9944>`__
+    `(#10458) <https://github.com/PennyLaneAI/pennylane/pull/10458>`__
 
   - Miscelleneous operators are ported:
 
@@ -2309,7 +2310,8 @@ Documentation 📝
   `(#10383) <https://github.com/PennyLaneAI/pennylane/pull/10383>`__
   `(#10416) <https://github.com/PennyLaneAI/pennylane/pull/10416>`__
   `(#10420) <https://github.com/PennyLaneAI/pennylane/pull/10420>`__
-  `(#10421) <https://github.com/PennyLaneAI/pennylane/pull/104121>`__
+  `(#10421) <https://github.com/PennyLaneAI/pennylane/pull/10421>`__
+  `(#10436) <https://github.com/PennyLaneAI/pennylane/pull/10436>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
