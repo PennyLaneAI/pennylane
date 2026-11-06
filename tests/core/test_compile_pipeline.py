@@ -50,9 +50,9 @@ def first_valid_transform(
     return [tape], lambda x: x
 
 
-def expand_transform(
+def expand_transform(  # pylint: disable=unused-argument
     tape: QuantumScript,
-    index: int,  # pylint: disable=unused-argument
+    index: int,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """A valid expand transform."""
     return [tape], lambda x: x

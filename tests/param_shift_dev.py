@@ -87,11 +87,10 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
         jacs = fn(all_results[len(circuits) :])
         return (results[0], jacs[0]) if is_single_circuit else (results, jacs)
 
-    def compute_jvp(
+    def compute_jvp(  # pylint: disable=unused-argument
         self,
         circuits,
         tangents,
-        # pylint: disable-next=unused-argument
         execution_config: qp.devices.ExecutionConfig | None = None,
     ):
         is_single_circuit = False
@@ -108,11 +107,10 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
         results = self.execute(batch)
         return fn(results)[0] if is_single_circuit else fn(results)
 
-    def execute_and_compute_jvp(
+    def execute_and_compute_jvp(  # pylint: disable=unused-argument
         self,
         circuits,
         tangents,
-        # pylint: disable-next=unused-argument
         execution_config: qp.devices.ExecutionConfig | None = None,
     ):
         is_single_circuit = False
@@ -137,11 +135,10 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
         jvps = fn(all_results[len(circuits) :])
         return (results[0], jvps[0]) if is_single_circuit else results, jvps
 
-    def compute_vjp(
+    def compute_vjp(  # pylint: disable=unused-argument
         self,
         circuits,
         cotangents,
-        # pylint: disable-next=unused-argument
         execution_config: qp.devices.ExecutionConfig | None = None,
     ):
         is_single_circuit = False
@@ -158,11 +155,10 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
         results = self.execute(batch)
         return fn(results)[0] if is_single_circuit else fn(results)
 
-    def execute_and_compute_vjp(
+    def execute_and_compute_vjp(  # pylint: disable=unused-argument
         self,
         circuits,
         cotangents,
-        # pylint: disable-next=unused-argument
         execution_config: qp.devices.ExecutionConfig | None = None,
     ):
         is_single_circuit = False

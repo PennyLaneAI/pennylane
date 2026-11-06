@@ -379,14 +379,14 @@ def _kupccgsd_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
 
 
 @register_resources(_kupccgsd_resources)
-def _kupccgsd_decomposition(
+def _kupccgsd_decomposition(  # pylint: disable=unused-argument
     weights: list,
     wires: WiresLike,
     s_wires: list,
     d_wires: list,
     k: int,
     init_state: tuple[int],
-    delta_sz: int = None,  # pylint: disable=unused-argument
+    delta_sz: int = None,
 ):
     BasisState(init_state, wires=wires)
 

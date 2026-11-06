@@ -342,12 +342,12 @@ class SignedOutMultiplier(Operator2):
         return self.x_wires + self.y_wires + self.output_wires + self.work_wires
 
 
-def _zeroed_signed_out_multiplier_resources(
+def _zeroed_signed_out_multiplier_resources(  # pylint: disable=unused-argument
     x_wires,
     y_wires,
     output_wires,
     work_wires,
-    output_wires_zeroed=False,  # pylint: disable=unused-argument
+    output_wires_zeroed=False,
 ):
     """
     Computes the resources for the SignedOutMultiplier.
@@ -382,12 +382,12 @@ def _zeroed_signed_out_multiplier_resources(
     return dict(resources)
 
 
-def _not_zeroed_signed_out_multiplier_resources(
+def _not_zeroed_signed_out_multiplier_resources(  # pylint: disable=unused-argument
     x_wires,
     y_wires,
     output_wires,
     work_wires,
-    output_wires_zeroed=False,  # pylint: disable=unused-argument
+    output_wires_zeroed=False,
 ):
     """
     Computes the resources for the SignedOutMultiplier.
@@ -482,12 +482,12 @@ def _not_zeroed_condition(x_wires, y_wires, output_wires, work_wires, output_wir
 @register_condition(_zeroed_condition)
 @register_condition(_zeroed_work_wire_condition)
 @register_resources(_zeroed_signed_out_multiplier_resources)
-def _signed_out_multiplier_decomposition_zeroed(
+def _signed_out_multiplier_decomposition_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    output_wires_zeroed=False,  # pylint: disable=unused-argument
+    output_wires_zeroed=False,
 ):
     """Computes the decomposition of the operator as a product of other operators when the output wires are zeroed."""
     if capture.enabled():
@@ -539,12 +539,12 @@ def _signed_out_multiplier_decomposition_zeroed(
 @register_condition(_not_zeroed_condition)
 @register_condition(_not_zeroed_work_wire_condition)
 @register_resources(_not_zeroed_signed_out_multiplier_resources)
-def _signed_out_multiplier_decomposition_not_zeroed(
+def _signed_out_multiplier_decomposition_not_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    output_wires_zeroed=False,  # pylint: disable=unused-argument
+    output_wires_zeroed=False,
 ):
     """Computes the decomposition of the operator as a product of other operators."""
 

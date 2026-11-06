@@ -522,8 +522,8 @@ def _up_to_last_layer(
 
 
 @register_resources(_hilbert_schmidt_resources)
-def _hilbert_schmidt_decomposition(
-    *params: TensorLike,  # pylint: disable=unused-argument
+def _hilbert_schmidt_decomposition(  # pylint: disable=unused-argument
+    *params: TensorLike,
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
@@ -544,8 +544,8 @@ def _hilbert_schmidt_decomposition(
 
 
 @register_resources(_local_hilbert_schmidt_resources)
-def _local_hilbert_schmidt_decomposition(
-    *params: TensorLike,  # pylint: disable=unused-argument
+def _local_hilbert_schmidt_decomposition(  # pylint: disable=unused-argument
+    *params: TensorLike,
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],

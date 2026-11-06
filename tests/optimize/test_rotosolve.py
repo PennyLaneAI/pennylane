@@ -198,10 +198,10 @@ all_substep_kwargs = [
     list(zip(substep_optimizers, all_substep_kwargs)),
 )
 class TestWithClassicalFunction:
-    def test_number_of_function_calls(
+    def test_number_of_function_calls(  # pylint: disable=unused-argument
         self,
         fun,
-        x_min,  # pylint: disable=unused-argument
+        x_min,
         param,
         nums_freq,
         exp_num_calls,
@@ -232,13 +232,13 @@ class TestWithClassicalFunction:
         opt.step(_fun, *param, nums_frequency=nums_freq)
         assert num_calls == exp_num_calls
 
-    def test_single_step_convergence(
+    def test_single_step_convergence(  # pylint: disable=unused-argument
         self,
         fun,
         x_min,
         param,
         nums_freq,
-        exp_num_calls,  # pylint: disable=unused-argument
+        exp_num_calls,
         substep_optimizer,
         substep_kwargs,
     ):

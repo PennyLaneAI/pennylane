@@ -98,11 +98,11 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def autograd_execute(
+def autograd_execute(  # pylint: disable=unused-argument
     tapes: QuantumScriptBatch,
     execute_fn: ExecuteFn,
     jpc: qp.workflow.jacobian_products.JacobianProductCalculator,
-    device=None,  # pylint: disable=unused-argument
+    device=None,
 ):
     """Execute a batch of tapes with Autograd parameters on a device.
 

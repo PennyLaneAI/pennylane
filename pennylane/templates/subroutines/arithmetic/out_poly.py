@@ -503,8 +503,8 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
 
 
 @register_resources(_out_poly_decomposition_resources)
-def _out_poly_decomposition(
-    polynomial_function,  # pylint: disable=unused-argument
+def _out_poly_decomposition(  # pylint: disable=unused-argument
+    polynomial_function,
     input_registers,
     output_wires: WiresLike,
     mod=None,

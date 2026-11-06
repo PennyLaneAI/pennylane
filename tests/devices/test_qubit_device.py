@@ -189,9 +189,9 @@ class TestOperations:
             dev = mock_qubit_device()
             dev.op_queue  # pylint: disable=pointless-statement
 
-    def test_op_queue_is_filled_during_execution(
+    def test_op_queue_is_filled_during_execution(  # pylint: disable=redefined-outer-name
         self,
-        mock_qubit_device_with_paulis_and_methods,  # pylint: disable=redefined-outer-name
+        mock_qubit_device_with_paulis_and_methods,
         monkeypatch,
     ):
         """Tests that the op_queue is correctly filled when apply is called and that accessing
@@ -253,9 +253,9 @@ class TestOperations:
 
     @pytest.mark.parametrize("observables", observables)
     @pytest.mark.parametrize("queue", numeric_queues)
-    def test_passing_keyword_arguments_to_execute(
+    def test_passing_keyword_arguments_to_execute(  # pylint: disable=redefined-outer-name
         self,
-        mock_qubit_device_with_paulis_rotations_and_methods,  # pylint: disable=redefined-outer-name
+        mock_qubit_device_with_paulis_rotations_and_methods,
         monkeypatch,
         queue,
         observables,
@@ -307,9 +307,9 @@ class TestObservables:
             dev = mock_qubit_device_with_paulis_and_methods()
             dev.execute(tape)
 
-    def test_unsupported_observable_return_type_raise_error(
+    def test_unsupported_observable_return_type_raise_error(  # pylint: disable=redefined-outer-name
         self,
-        mock_qubit_device_with_paulis_and_methods,  # pylint: disable=redefined-outer-name
+        mock_qubit_device_with_paulis_and_methods,
         monkeypatch,
     ):
         """Check that an error is raised if the return type of an observable is unsupported"""
@@ -626,9 +626,9 @@ class TestExpval:
 
         assert res == (obs.eigvals() @ probs).real
 
-    def test_analytic_expval_broadcasted(
+    def test_analytic_expval_broadcasted(  # pylint: disable=redefined-outer-name
         self,
-        mock_qubit_device_with_original_statistics,  # pylint: disable=redefined-outer-name
+        mock_qubit_device_with_original_statistics,
         monkeypatch,
     ):
         """Tests expval method when the analytic attribute is True and using broadcasting
@@ -711,9 +711,9 @@ class TestVar:
 
         assert res == (obs.eigvals() ** 2) @ probs - (obs.eigvals() @ probs).real ** 2
 
-    def test_analytic_var_broadcasted(
+    def test_analytic_var_broadcasted(  # pylint: disable=redefined-outer-name
         self,
-        mock_qubit_device_with_original_statistics,  # pylint: disable=redefined-outer-name
+        mock_qubit_device_with_original_statistics,
         monkeypatch,
     ):
         """Tests var method when the analytic attribute is True and using broadcasting
@@ -798,8 +798,8 @@ class TestSample:
 
         assert np.array_equal(res, np.array([-1, 1]))
 
-    def test_sample_with_no_observable_and_no_wires(
-        self, mock_qubit_device_with_original_statistics  # pylint: disable=redefined-outer-name
+    def test_sample_with_no_observable_and_no_wires(  # pylint: disable=redefined-outer-name
+        self, mock_qubit_device_with_original_statistics
     ):
         """Test that when we sample a device without providing an observable or wires then it
         will return the raw samples"""
@@ -811,8 +811,8 @@ class TestSample:
         res = dev.sample(obs)
         assert np.array_equal(res, generated_samples)
 
-    def test_sample_with_no_observable_and_with_wires(
-        self, mock_qubit_device_with_original_statistics  # pylint: disable=redefined-outer-name
+    def test_sample_with_no_observable_and_with_wires(  # pylint: disable=redefined-outer-name
+        self, mock_qubit_device_with_original_statistics
     ):
         """Test that when we sample a device without providing an observable but we specify
         wires then it returns the generated samples for only those wires"""
@@ -873,8 +873,8 @@ class TestSampleWithBroadcasting:
 
         assert np.array_equal(res, np.array([[-1, 1], [-1, 1], [-1, -1]]))
 
-    def test_sample_with_no_observable_and_no_wires(
-        self, mock_qubit_device_with_original_statistics  # pylint: disable=redefined-outer-name
+    def test_sample_with_no_observable_and_no_wires(  # pylint: disable=redefined-outer-name
+        self, mock_qubit_device_with_original_statistics
     ):
         """Test that when we sample a device without providing an observable or wires then it
         will return the raw samples when using broadcasting"""
@@ -886,8 +886,8 @@ class TestSampleWithBroadcasting:
         res = dev.sample(obs)
         assert np.array_equal(res, generated_samples)
 
-    def test_sample_with_no_observable_and_with_wires(
-        self, mock_qubit_device_with_original_statistics  # pylint: disable=redefined-outer-name
+    def test_sample_with_no_observable_and_with_wires(  # pylint: disable=redefined-outer-name
+        self, mock_qubit_device_with_original_statistics
     ):
         """Test that when we sample a device without providing an observable but we specify wires
         then it returns the generated samples for only those wires when using broadcasting"""
@@ -927,11 +927,11 @@ class TestEstimateProb:
     @pytest.mark.parametrize(
         "wires, expected", [([0], [0.5, 0.5]), (None, [0.5, 0, 0, 0.5]), ([0, 1], [0.5, 0, 0, 0.5])]
     )
-    def test_estimate_probability(
+    def test_estimate_probability(  # pylint: disable=redefined-outer-name
         self,
         wires,
         expected,
-        mock_qubit_device_with_original_statistics,  # pylint: disable=redefined-outer-name
+        mock_qubit_device_with_original_statistics,
         monkeypatch,
     ):
         """Tests the estimate_probability method"""
@@ -952,11 +952,11 @@ class TestEstimateProb:
             ([0, 1], [[0.0, 0.5], [0, 0], [0, 0.5], [1.0, 0]]),
         ],
     )
-    def test_estimate_probability_with_binsize(
+    def test_estimate_probability_with_binsize(  # pylint: disable=redefined-outer-name
         self,
         wires,
         expected,
-        mock_qubit_device_with_original_statistics,  # pylint: disable=redefined-outer-name
+        mock_qubit_device_with_original_statistics,
         monkeypatch,
     ):
         """Tests the estimate_probability method with a bin size"""
@@ -978,11 +978,11 @@ class TestEstimateProb:
             ([0, 1], [[0, 0, 0.25, 0.75], [0.5, 0, 0, 0.5], [0.25, 0, 0.25, 0.5]]),
         ],
     )
-    def test_estimate_probability_with_broadcasting(
+    def test_estimate_probability_with_broadcasting(  # pylint: disable=redefined-outer-name
         self,
         wires,
         expected,
-        mock_qubit_device_with_original_statistics,  # pylint: disable=redefined-outer-name
+        mock_qubit_device_with_original_statistics,
         monkeypatch,
     ):
         """Tests the estimate_probability method with parameter broadcasting"""
@@ -1034,9 +1034,9 @@ class TestEstimateProb:
         self,
         wires,
         expected,
-        mock_qubit_device_with_original_statistics,  # pylint: disable=redefined-outer-name
+        mock_qubit_device_with_original_statistics,
         monkeypatch,
-    ):
+    ):  # pylint: disable=redefined-outer-name
         """Tests the estimate_probability method with a bin size and parameter broadcasting"""
         dev = mock_qubit_device_with_original_statistics(wires=2)
         bin_size = 2
@@ -1073,9 +1073,9 @@ class TestMarginalProb:
             (Wires([0, 1, 2]), []),
         ],
     )
-    def test_correct_arguments_for_marginals(
+    def test_correct_arguments_for_marginals(  # pylint: disable=redefined-outer-name
         self,
-        mock_qubit_device_with_original_statistics,  # pylint: disable=redefined-outer-name
+        mock_qubit_device_with_original_statistics,
         mocker,
         wires,
         inactive_wires,
@@ -1128,9 +1128,9 @@ class TestMarginalProb:
     ]
 
     @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
-    def test_correct_marginals_returned(
+    def test_correct_marginals_returned(  # pylint: disable=redefined-outer-name
         self,
-        mock_qubit_device_with_original_statistics,  # pylint: disable=redefined-outer-name
+        mock_qubit_device_with_original_statistics,
         probs,
         marginals,
         wires,

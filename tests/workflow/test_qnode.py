@@ -1536,10 +1536,10 @@ class TestNewDeviceIntegration:
             def supports_derivatives(self, execution_config=None, circuit=None):
                 return getattr(execution_config, "gradient_method", None) == "hello"
 
-            def setup_execution_config(
+            def setup_execution_config(  # pylint: disable=unused-argument
                 self,
                 config: qp.devices.ExecutionConfig | None = None,
-                circuit=None,  # pylint: disable=unused-argument
+                circuit=None,
             ):
                 if config.gradient_method in {"best", "hello"}:
                     return replace(config, gradient_method="hello", use_device_gradient=True)

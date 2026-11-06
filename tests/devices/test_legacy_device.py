@@ -273,10 +273,10 @@ class TestDeviceSupportedLogic:
     @pytest.mark.parametrize("obs_type", [qp.ops.LinearCombination, qp.Hamiltonian])
     def test_all_multi_term_obs_supported_linear_combination(
         self,
-        mock_device,  # pylint: disable=redefined-outer-name
+        mock_device,
         supported_multi_term_obs,
         obs_type,
-    ):
+    ):  # pylint: disable=redefined-outer-name
         """Test that LinearCombination is supported when the device supports either
         LinearCombination or Hamiltonian."""
         dev = mock_device()
@@ -478,11 +478,11 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
             (1, [qp.PauliX(wires=0), qp.PauliX(wires=1)]),
         ],
     )
-    def test_device_default_expand_ops(
+    def test_device_default_expand_ops(  # pylint: disable=redefined-outer-name
         self,
         depth,
         expanded_ops,
-        mock_device_with_paulis_hamiltonian_and_methods,  # pylint: disable=redefined-outer-name
+        mock_device_with_paulis_hamiltonian_and_methods,
     ):
         """Test that the default expand method can selectively expand operations
         without expanding measurements."""
@@ -645,9 +645,9 @@ class TestOperations:
         ):
             dev.op_queue  # pylint: disable=pointless-statement
 
-    def test_op_queue_is_filled_at_pre_measure(
+    def test_op_queue_is_filled_at_pre_measure(  # pylint: disable=redefined-outer-name
         self,
-        mock_device_with_paulis_and_methods,  # pylint: disable=redefined-outer-name
+        mock_device_with_paulis_and_methods,
         monkeypatch,
     ):
         """Tests that the op_queue is correctly filled when pre_measure is called and that accessing
@@ -676,9 +676,9 @@ class TestOperations:
 
         assert queue_at_pre_measure == queue
 
-    def test_op_queue_is_filled_during_execution(
+    def test_op_queue_is_filled_during_execution(  # pylint: disable=redefined-outer-name
         self,
-        mock_device_with_paulis_and_methods,  # pylint: disable=redefined-outer-name
+        mock_device_with_paulis_and_methods,
         monkeypatch,
     ):
         """Tests that the operations are properly applied and queued"""
@@ -776,9 +776,9 @@ class TestObservables:
         ):
             dev.obs_queue  # pylint: disable=pointless-statement
 
-    def test_obs_queue_is_filled_at_pre_measure(
+    def test_obs_queue_is_filled_at_pre_measure(  # pylint: disable=redefined-outer-name
         self,
-        mock_device_with_paulis_and_methods,  # pylint: disable=redefined-outer-name
+        mock_device_with_paulis_and_methods,
         monkeypatch,
     ):
         """Tests that the op_queue is correctly filled when pre_measure is called and that accessing
@@ -807,10 +807,10 @@ class TestObservables:
 
         assert queue_at_pre_measure == observables
 
-    def test_obs_queue_is_filled_during_execution(
+    def test_obs_queue_is_filled_during_execution(  # pylint: disable=redefined-outer-name
         self,
         monkeypatch,
-        mock_device_with_paulis_and_methods,  # pylint: disable=redefined-outer-name
+        mock_device_with_paulis_and_methods,
     ):
         """Tests that the operations are properly applied and queued"""
         dev = mock_device_with_paulis_and_methods(wires=3)
@@ -851,8 +851,8 @@ class TestObservables:
         with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.execute(queue, observables)
 
-    def test_unsupported_observable_return_type_raise_error(
-        self, mock_device_with_paulis_and_methods  # pylint: disable=redefined-outer-name
+    def test_unsupported_observable_return_type_raise_error(  # pylint: disable=redefined-outer-name
+        self, mock_device_with_paulis_and_methods
     ):
         """Check that an error is raised if the return type of an observable is unsupported"""
         dev = mock_device_with_paulis_and_methods()

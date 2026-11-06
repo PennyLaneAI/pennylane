@@ -850,12 +850,12 @@ def _unary_iteration_split(num_control_wires, num_work_wires):
     return num_control_wires_tree, num_control_wires - num_control_wires_tree
 
 
-def _qrom_unary_iteration_resources(
+def _qrom_unary_iteration_resources(  # pylint: disable=unused-argument
     bitstrings,
     control_wires,
     target_wires,
     work_wires,
-    clean=True,  # pylint: disable=unused-argument
+    clean=True,
 ):
     c = len(control_wires)
     K = len(bitstrings)

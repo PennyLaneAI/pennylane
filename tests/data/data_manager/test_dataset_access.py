@@ -308,10 +308,10 @@ class TestLoadInteractive:
         self,
         mock_input,
         _mock_sleep,
-        mock_load,  # pylint: disable=redefined-outer-name,unused-argument
+        mock_load,
         side_effect,
         error_message,
-    ):
+    ):  # pylint: disable=redefined-outer-name,unused-argument
         """Test that load_interactive raises errors as expected."""
         mock_input.side_effect = side_effect
         with pytest.raises(ValueError, match=error_message):

@@ -619,8 +619,8 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
         info = self.par_info[t_idx]
         return info["op"], info["op_idx"], info["p_idx"]
 
-    def get_parameters(
-        self,  # pylint: disable=unused-argument
+    def get_parameters(  # pylint: disable=unused-argument
+        self,
         trainable_only: bool = True,
         operations_only: bool = False,
         **kwargs,

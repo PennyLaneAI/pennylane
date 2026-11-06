@@ -1114,11 +1114,11 @@ class Rot(Operator2):
 
     @staticmethod
     @override
-    def compute_matrix(
+    def compute_matrix(  # pylint: disable=unused-argument
         phi: TensorLike,
         theta: TensorLike,
         omega: TensorLike,
-        wires: WiresLike | None = None,  # pylint: disable=unused-argument
+        wires: WiresLike | None = None,
     ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1577,11 +1577,11 @@ class U3(Operator2):
         super().__init__(theta, phi, delta, wires=wires)
 
     @staticmethod
-    def compute_matrix(
+    def compute_matrix(  # pylint: disable=unused-argument
         theta: TensorLike,
         phi: TensorLike,
         delta: TensorLike,
-        wires: WiresLike = None,  # pylint: disable=unused-argument
+        wires: WiresLike = None,
     ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 

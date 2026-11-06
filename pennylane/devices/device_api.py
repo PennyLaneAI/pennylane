@@ -624,10 +624,10 @@ class Device(abc.ABC):
         """
         raise NotImplementedError
 
-    def supports_derivatives(
+    def supports_derivatives(  # pylint: disable=unused-argument
         self,
         execution_config: ExecutionConfig | None = None,
-        circuit: QuantumScript | None = None,  # pylint: disable=unused-argument
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Determine whether or not a device provided derivative is potentially available.
 

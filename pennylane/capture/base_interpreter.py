@@ -772,13 +772,13 @@ FlattenedHigherOrderPrimitives[while_loop_prim] = flatten_while_loop
 
 
 @FlattenedInterpreter.register_primitive(cond_prim)
-def flattened_cond(
+def flattened_cond(  # pylint: disable=unused-argument
     self,
     *invals,
     jaxpr_branches,
     consts_slices,
     args_slice,
-    estimated_probabilities,  # pylint: disable=unused-argument
+    estimated_probabilities,
 ):
     """Handle the cond primitive by a flattened python strategy."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)

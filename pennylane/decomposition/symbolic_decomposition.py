@@ -385,9 +385,9 @@ def _to_controlled_qu_condition(base_class, **__):
     return base_class.has_matrix and base_class.num_wires == 1
 
 
-def _to_controlled_qu_resource(
+def _to_controlled_qu_resource(  # pylint: disable=unused-argument
     num_control_wires,
-    num_zero_control_values,  # pylint: disable=unused-argument
+    num_zero_control_values,
     num_work_wires,
     work_wire_type,
     **__,

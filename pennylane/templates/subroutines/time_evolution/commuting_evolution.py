@@ -214,10 +214,10 @@ def _commuting_evolution_resources(words: tuple[PauliWord]):
 
 
 @register_resources(_commuting_evolution_resources)
-def _commuting_evolution_decomposition(
+def _commuting_evolution_decomposition(  # pylint: disable=unused-argument
     time: list,
     *_,
-    wires: WiresLike,  # pylint: disable=unused-argument
+    wires: WiresLike,
     hamiltonian: Hamiltonian,
     **__,
 ):

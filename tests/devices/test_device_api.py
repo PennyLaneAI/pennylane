@@ -168,11 +168,11 @@ class TestSetupExecutionConfig:
         ],
         indirect=("create_temporary_toml_file",),
     )
-    def test_mcm_method_validation(
+    def test_mcm_method_validation(  # pylint: disable=unused-argument
         self,
         mcm_method,
         shots,
-        expected_transform,  # pylint: disable=unused-argument
+        expected_transform,
         expected_error,
         request,
     ):
@@ -183,7 +183,7 @@ class TestSetupExecutionConfig:
 
             config_filepath = request.node.toml_file
 
-            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
+            def execute(self, circuits, execution_config=None):
                 return (0,)
 
         dev = DeviceWithMCM()
@@ -736,9 +736,9 @@ def test_device_with_ambiguous_preprocess():
             ) -> ExecutionConfig:
                 return ExecutionConfig()
 
-            def preprocess_transforms(
+            def preprocess_transforms(  # pylint: disable=unused-argument
                 self,
-                execution_config: ExecutionConfig | None = None,  # pylint: disable=unused-argument
+                execution_config: ExecutionConfig | None = None,
             ) -> CompilePipeline:
                 return CompilePipeline()
 

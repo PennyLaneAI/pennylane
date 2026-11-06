@@ -271,8 +271,8 @@ def _out_square_with_adder_zeroed_condition(
     return len(work_wires) >= OutSquare._min_work_wires(n, m, output_wires_zeroed)
 
 
-def _out_square_with_adder_zeroed_resources(
-    x_wires, output_wires, work_wires, output_wires_zeroed=False  # pylint: disable=unused-argument
+def _out_square_with_adder_zeroed_resources(  # pylint: disable=unused-argument
+    x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> dict:
     n = len(x_wires)
     m = len(output_wires)
@@ -298,11 +298,11 @@ def _out_square_with_adder_zeroed_resources(
 
 @register_condition(_out_square_with_adder_zeroed_condition)
 @register_resources(_out_square_with_adder_zeroed_resources, name="out_square_with_adder")
-def _out_square_with_adder_zeroed(
+def _out_square_with_adder_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    output_wires_zeroed: bool = False,  # pylint: disable=unused-argument
+    output_wires_zeroed: bool = False,
 ):
     n = len(x_wires)
     m = len(output_wires)
