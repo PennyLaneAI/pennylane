@@ -78,6 +78,33 @@ class LeftClassicalComparator(Operator2):
 
     >>> print(circuit())
     [0. 1.]
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.LeftClassicalComparator
+            :stacked:
+            :symbols: :math:`n` ``x_wires``, the constant :math:`L` and ``comparator`` :math:`c`
+            :example: :math:`n=3`, :math:`L=6`, :math:`c={<}`
+
+            .. decomposition-rule:: _left_classical_comparator
+                :image: /_static/decomposition_thumbnails/left_classical_comparator_elbow_ladder.svg
+                :where: :math:`L' = L + [c \in \{\leq, >\}]`, and :math:`[\cdot]` is 1 if the
+                    condition holds and 0 otherwise. Conditional gates are applied depending on
+                    the bits of :math:`L'`, and as :math:`L` can be dynamic, their counts are the
+                    worst case. For a known :math:`L`, the rule applies :math:`b_0` of the
+                    conditional :class:`~.CNOT` gates and :math:`2b_0 + 4N + [L' = 2^n]` of the
+                    conditional :class:`~.X` gates, where :math:`b_0 = L' \bmod 2` and :math:`N`
+                    is the number of ones in the binary representation of
+                    :math:`\lfloor L'/2 \rfloor \bmod 2^{n-1}`. The circuit shows the gates
+                    applied for :math:`L = 6`: no conditional :class:`~.CNOT` and 8 conditional
+                    :class:`~.X` gates
+
+                :class:`~.TemporaryAND` | :math:`n - 1` | 2
+                :class:`~.CNOT` | :math:`n - 1` | 2
+                :class:`~.CNOT` (conditional) | :math:`1` | 1
+                :class:`~.X` (conditional) | :math:`4n - 1` | 11
+                :class:`~.X` | :math:`[c \in \{>, \geq\}]` | 0
     """
 
     wire_argnames = ("x_wires", "target_wire", "work_wires")
