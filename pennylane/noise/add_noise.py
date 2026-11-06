@@ -162,7 +162,7 @@ def add_noise(tape, noise_model, level="user"):
 
         However, one can request to insert the ``add_noise`` transform at any specific point in the compile pipeline. By specifying the ``level`` keyword argument while
         transforming a ``QNode``, this transform can be added at a designated level within the compile pipeline, using the same levels as
-        :func:`~.workflow.construct_batch`. For example, specifying ``None`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
+        :func:`~.workflow.construct_batch`. For example, specifying ``"device"`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
 
         >>> print(qp.noise.add_noise(circuit, noise_model, level="device").compile_pipeline)
         CompilePipeline(

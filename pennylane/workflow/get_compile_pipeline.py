@@ -207,6 +207,12 @@ def get_compile_pipeline(
         4
 
     """
+    if isinstance(qnode, QNode):
+        raise ValueError(
+            "get_compile_pipeline can only be applied to a qjit'd QNode. For a QNode that is not "
+            "qjit'd, use qnode.compile_pipeline for the user transforms, or "
+            "qp.workflow.construct_batch to inspect the tapes at the gradient or device level."
+        )
     pipeline = unwrap_qjit_qnode(qnode, fn_name="get_compile_pipeline").compile_pipeline
     pipelines = [
         pipeline_at_slice(pipeline, level_slice)

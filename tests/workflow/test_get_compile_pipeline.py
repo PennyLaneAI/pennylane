@@ -50,6 +50,15 @@ def _circuit_with_marker():
 USER_PIPELINE = CompilePipeline(qp.transforms.cancel_inverses, qp.transforms.merge_rotations)
 
 
+def test_input_is_not_qjit():
+    """Tests that a QNode that is not qjit'd raises an error pointing to the alternatives."""
+
+    with pytest.raises(
+        ValueError, match=r"applied to a qjit'd QNode.*qnode\.compile_pipeline.*construct_batch"
+    ):
+        get_compile_pipeline(_circuit_with_marker())
+
+
 @pytest.mark.catalyst
 class TestValidation:
     """Tests for validation errors."""
@@ -64,14 +73,6 @@ class TestValidation:
             ValueError, match="get_compile_pipeline can only be applied to a qjit'd QNode"
         ):
             get_compile_pipeline(circuit)
-
-    def test_input_is_not_qjit(self):
-        """Tests that an error is raised when the input is a QNode that is not qjit'd."""
-
-        with pytest.raises(
-            ValueError, match="get_compile_pipeline can only be applied to a qjit'd QNode"
-        ):
-            get_compile_pipeline(_circuit_with_marker())
 
     def test_input_is_not_qjit_qnode(self):
         """Tests when the input is QJIT'd but not a QNode."""

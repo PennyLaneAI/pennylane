@@ -1512,7 +1512,9 @@ Breaking changes 💔
   and ``"all-user"`` can no longer be used as a marker label. The ``level`` argument of
   :func:`~.analyze`, :func:`~pennylane.estimate` and :func:`~.track` now follows
   :func:`~.workflow.get_compile_pipeline`. :func:`~.workflow.get_compile_pipeline` now only
-  accepts :func:`~.qjit`'d QNodes; for a QNode that is not qjit'd, use ``qnode.compile_pipeline``.
+  accepts :func:`~.qjit`'d QNodes; for a QNode that is not qjit'd, use ``qnode.compile_pipeline``
+  for the user transforms, or :func:`~.workflow.construct_batch` to inspect the tapes at the
+  gradient or device level.
   `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
 * ``qp.ctrl`` now constructs symbolic controlled operators without dispatching to specialized
