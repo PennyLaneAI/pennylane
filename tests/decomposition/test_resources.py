@@ -118,6 +118,10 @@ class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
 class TestCompressedResourceOp:
     """Unit tests for the CompressedResourceOp data structure."""
 
+    def test_mid_measure_name(self):
+        """The resource name agrees with the operator's canonical name."""
+        assert CompressedResourceOp(qp.ops.MidMeasure).name == "MidMeasure"
+
     def test_initialization(self):
         """Tests creating a CompressedResourceOp object."""
 
