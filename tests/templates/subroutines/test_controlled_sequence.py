@@ -25,7 +25,6 @@ from pennylane.wires import Wires
 # pylint: disable=unidiomatic-typecheck, cell-var-from-loop
 
 
-@pytest.mark.xfail_if_capture(reason="come back to this when it's ported to Op2 [sc-128372]")
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
@@ -42,9 +41,7 @@ class TestInitialization:
         base = qp.PauliX(1)
         control = [0, 1, 2]
 
-        with pytest.raises(
-            ValueError, match="The control wires must be different from the base operation wires."
-        ):
+        with pytest.raises(ValueError, match="base.wires and control_wires must not overlap"):
             _ = qp.ControlledSequence(base, control)
 
     def test_name(self):
@@ -56,6 +53,18 @@ class TestInitialization:
 
 
 class TestProperties:
+
+    @pytest.mark.parametrize("angle", [0.25, np.array([0.25, 0.5])])
+    def test_base_parameter_properties(self, angle):
+        """Test that base parameters remain visible to differentiation and broadcasting."""
+        base = qp.RX(angle, wires=3)
+        op = qp.ControlledSequence(base, control=[0, 1, 2])
+
+        assert op.data == base.data
+        assert op.num_params == base.num_params
+        assert op.ndim_params == base.ndim_params
+        assert op.batch_size == base.batch_size
+        assert op.grad_method is None
 
     def test_hash(self):
         """Test that hash(op) uniquely describes a ControlledSequence"""
@@ -89,6 +98,12 @@ class TestProperties:
         assert op.has_matrix is False
         assert op.base.has_matrix is True
 
+    def test_has_sparse_matrix(self):
+        """Test that the sequence has no sparse matrix even when its base does."""
+        op = qp.ControlledSequence(qp.PauliX(0), control=[1])
+        assert op.has_sparse_matrix is False
+        assert op.base.has_sparse_matrix is True
+
 
 class TestMethods:
 
@@ -113,50 +128,50 @@ class TestMethods:
         assert new_op.base.wires == Wires(["a", "b"])
         assert new_op.control == Wires(["c", "d"])
 
-    def test_compute_decomposition_lazy(self):
-        """Test compute_decomposition with lazy=True"""
-        base = qp.RZ(4.3, 1)
-        control_wires = [0, 2, 3]
-
-        decomp = qp.ControlledSequence.compute_decomposition(
-            base=base, control_wires=control_wires, lazy=True
-        )
-
-        assert len(decomp) == len(control_wires)
-        for i, op in enumerate(decomp):
-            qp.assert_equal(op.base.base, base)
-            assert isinstance(op, qp.ops.Pow)
-            assert op.z == 2 ** (len(control_wires) - i - 1)
-
-        for op, w in zip(decomp, control_wires):
-            assert op.base.control_wires == Wires(w)
-
-    def test_compute_decomposition_not_lazy(self):
-        """Test compute_decomposition with lazy=False"""
-        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=["a", 1, "blue"])
-
-        decomp = op.compute_decomposition(base=op.base, control_wires=op.control, lazy=False)
-        expected_decomp = [
-            qp.ops.ControlledOp2(qp.RX(0.25 * 4, wires=3), ["a"]),
-            qp.ops.ControlledOp2(qp.RX(0.25 * 2, wires=3), [1]),
-            qp.ops.ControlledOp2(qp.RX(0.25 * 1, wires=3), ["blue"]),
-        ]
-
-        for op1, op2 in zip(decomp, expected_decomp):
-            assert op1 == op2
+        assert op.base.wires == Wires([0, 1])
+        assert op.control == Wires([2, 3])
 
     def test_decomposition(self):
-        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=["a", 1, "blue"])
+        """Test the returned and queued operations from the registered decomposition."""
+        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])
 
-        decomp = op.decomposition()
+        with qp.queuing.AnnotatedQueue() as queue:
+            decomp = op.decomposition()
         expected_decomp = [
-            qp.ops.ControlledOp2(qp.RX(0.25 * 4, wires=3), ["a"]),
-            qp.ops.ControlledOp2(qp.RX(0.25 * 2, wires=3), [1]),
-            qp.ops.ControlledOp2(qp.RX(0.25 * 1, wires=3), ["blue"]),
+            qp.ops.ControlledOp2(qp.RX(0.25, wires=[3]), wire) for wire in [0] * 4 + [1] * 2 + [2]
         ]
 
-        for op1, op2 in zip(decomp, expected_decomp):
-            assert op1 == op2
+        queued_ops = queue.queue
+        for operations in (decomp, queued_ops):
+            for actual, expected in zip(operations, expected_decomp):
+                qp.assert_equal(actual, expected)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("control", [[], 0, [0, 1], [0, 1, 2]])
+    def test_decomposition_new(self, control):
+        """Test that the operator is decomposable."""
+        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=control)
+        qp.testing.assert_decomposable(op)
+
+    @pytest.mark.capture
+    def test_nested_loop_capture(self):
+        """Test that both loops remain structured during capture."""
+        import jax
+
+        rule = qp.list_decomps(qp.ControlledSequence)[0]
+
+        def circuit():
+            rule(base=qp.RX(0.25, wires=3), control=[0, 1, 2])
+
+        plxpr = jax.make_jaxpr(circuit)()
+        outer_loops = [eqn for eqn in plxpr.jaxpr.eqns if eqn.primitive.name == "for_loop"]
+        assert len(outer_loops) == 1
+        inner_loops = [
+            eqn
+            for eqn in outer_loops[0].params["jaxpr_body_fn"].eqns
+            if eqn.primitive.name == "for_loop"
+        ]
+        assert len(inner_loops) == 1
 
 
 class TestIntegration:

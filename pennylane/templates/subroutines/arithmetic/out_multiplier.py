@@ -353,15 +353,15 @@ def _out_multiplier_with_qft_resources(
         compute_rep = QFT(Wire[num_qft_wires])
 
     uncompute_rep = adjoint(QFT(Wire[num_qft_wires]))
-    target_rep = resource_rep(
-        ControlledSequence,
-        base_rep=resource_rep(
-            ControlledSequence,
-            base_rep=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
-            num_control_wires=num_x_wires,
+    target_rep = ControlledSequence(
+        base=ControlledSequence(
+            base=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
+            control=Wire[num_x_wires],
         ),
-        num_control_wires=num_y_wires,
+        control=Wire[num_y_wires],
     )
+    if output_wires_zeroed:
+        return {prod(uncompute_rep, target_rep, compute_rep): 1}
     resources = {_change_op_basis_abstract(compute_rep, target_rep, uncompute_rep): 1}
     return resources
 
@@ -369,8 +369,6 @@ def _out_multiplier_with_qft_resources(
 def _out_multiplier_with_qft_condition(
     x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
 ):  # pylint: disable=unused-argument, too-many-arguments
-    if capture.enabled():
-        return False  # TODO: ControlledSequence cannot take tracer wires [sc-128372]
     return mod == 2 ** len(output_wires) or len(work_wires) >= 2
 
 
@@ -403,11 +401,7 @@ def _out_multiplier_with_qft(
         work_wire = output_wires[:0]
 
     if output_wires_zeroed:
-
-        def compute_op():
-            for w in qft_output_wires:
-                H(w)
-
+        compute_op = prod(*[H(w) for w in qft_output_wires])
     else:
         compute_op = QFT(qft_output_wires)
 
@@ -417,7 +411,12 @@ def _out_multiplier_with_qft(
         ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
         control=y_wires,
     )
-    change_op_basis(compute_op, target_op, uncompute_op)
+    if output_wires_zeroed:
+        # Hadamards match QFT only on the zero state, so inverse QFT does not undo
+        # this computation. Use a product so its adjoint reverses all three factors.
+        prod(uncompute_op, target_op, compute_op)
+    else:
+        change_op_basis(compute_op, target_op, uncompute_op)
 
 
 def _out_multiplier_with_adder_resources(

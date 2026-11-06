@@ -675,7 +675,7 @@ def test_make_controlled_decomp_closes_over_compilable_args():
     op = CompilableOp(True, wires=[0])
     rule = _make_controlled_decomp(_some_decomp)
 
-    @qp.qjit
+    @qp.qjit(capture=False)
     @qp.qnode(qp.device("lightning.qubit", wires=2))
     def f():
         rule(

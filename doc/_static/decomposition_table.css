@@ -134,6 +134,8 @@ table.decomposition-table.decomp-stacked .decomp-resources {
 
 /* which instance of the rule the circuit shows */
 table.decomposition-table p.decomp-example {
+  /* the theme keeps the text of a row's first cell on one line, which here is the circuit cell */
+  white-space: normal;
   margin-top: 6px;
   font-size: 0.8rem;
   color: #555;
@@ -142,7 +144,9 @@ table.decomposition-table p.decomp-example {
 /* resources: a small table of gates and their counts, with a header row */
 table.decomposition-table .decomp-resources {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
+  /* the gate column fits its content, but long gate descriptions wrap rather than push the counts
+     out of the cell */
+  grid-template-columns: fit-content(70%) minmax(0, 1fr);
   column-gap: 12px;
   row-gap: 4px;
   align-items: baseline;

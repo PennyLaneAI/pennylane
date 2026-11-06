@@ -20,7 +20,6 @@ import numpy as np
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
     register_resources,
     resource_rep,
 )
@@ -263,22 +262,22 @@ def _multiplier_decomposition_resources(
     num_work_wires,
 ) -> dict:
     num_wires_aux = num_work_wires - 1 if mod != 2**num_x_wires else num_x_wires
-    cs_base_params = {
-        "base_rep": resource_rep(PhaseAdder, num_x_wires=num_wires_aux, mod=mod),
-        "num_control_wires": num_x_wires,
-    }
+    controlled_sequence_rep = ControlledSequence(
+        base=resource_rep(PhaseAdder, num_x_wires=num_wires_aux, mod=mod),
+        control=Wire[num_x_wires],
+    )
     target_op_rep = prod(*[SWAP(Wire[2]) for _ in range(num_x_wires)])
     _compute_op = QFT(Wire[num_wires_aux])
     resources = {
         _change_op_basis_abstract(
             _compute_op,
-            resource_rep(ControlledSequence, **cs_base_params),
+            controlled_sequence_rep,
             adjoint(_compute_op),
         ): 1,
         target_op_rep: 1,
         _change_op_basis_abstract(
             _compute_op,
-            adjoint_resource_rep(ControlledSequence, cs_base_params),
+            adjoint(controlled_sequence_rep),
             _adjoint_abstract(_compute_op),
         ): 1,
     }
