@@ -26,24 +26,24 @@ trainable parameters, and they may be constructed from repeated layers.
 
 .. gallery-item::
     :description: :doc:`AmplitudeEmbedding <../code/api/pennylane.AmplitudeEmbedding>`
-    :figure: _static/templates/embeddings/amplitude.png
+    :figure: _static/templates/gallery/AmplitudeEmbedding.svg
 
 .. gallery-item::
     :description: :doc:`AngleEmbedding <../code/api/pennylane.AngleEmbedding>`
-    :figure: _static/templates/embeddings/angle.png
+    :figure: _static/templates/gallery/AngleEmbedding.svg
 
 .. gallery-item::
     :description: :doc:`BasisEmbedding <../code/api/pennylane.BasisEmbedding>`
-    :figure: _static/templates/embeddings/basis.png
+    :figure: _static/templates/gallery/BasisEmbedding.svg
 
 
 .. gallery-item::
     :description: :doc:`IQPEmbedding <../code/api/pennylane.IQPEmbedding>`
-    :figure: _static/templates/embeddings/iqp.png
+    :figure: _static/templates/gallery/IQPEmbedding.svg
 
 .. gallery-item::
     :description: :doc:`QAOAEmbedding <../code/api/pennylane.QAOAEmbedding>`
-    :figure: _static/templates/embeddings/qaoa.png
+    :figure: _static/templates/gallery/QAOAEmbedding.svg
 
 .. raw:: html
 
@@ -60,19 +60,19 @@ neural network. Note that arbitrary templates or operations can also be repeated
 
 .. gallery-item::
     :description: :doc:`RandomLayers <../code/api/pennylane.RandomLayers>`
-    :figure: _static/templates/layers/random.png
+    :figure: _static/templates/gallery/RandomLayers.svg
 
 .. gallery-item::
     :description: :doc:`StronglyEntanglingLayers <../code/api/pennylane.StronglyEntanglingLayers>`
-    :figure: _static/templates/layers/strongly_entangling.png
+    :figure: _static/templates/gallery/StronglyEntanglingLayers.svg
 
 .. gallery-item::
     :description: :doc:`SimplifiedTwoDesign <../code/api/pennylane.SimplifiedTwoDesign>`
-    :figure: _static/templates/layers/simplified_two_design.png
+    :figure: _static/templates/gallery/SimplifiedTwoDesign.svg
 
 .. gallery-item::
     :description: :doc:`BasicEntanglerLayers <../code/api/pennylane.BasicEntanglerLayers>`
-    :figure: _static/templates/layers/basic_entangler.png
+    :figure: _static/templates/gallery/BasicEntanglerLayers.svg
 
 .. raw:: html
 
@@ -89,47 +89,47 @@ state preparation is typically used as the first operation.
 
 .. gallery-item::
     :description: :doc:`MottonenStatePreparation <../code/api/pennylane.MottonenStatePreparation>`
-    :figure: _static/templates/state_preparations/mottonen.png
+    :figure: _static/templates/gallery/MottonenStatePreparation.svg
 
 .. gallery-item::
     :description: :doc:`ArbitraryStatePreparation <../code/api/pennylane.ArbitraryStatePreparation>`
-    :figure: _static/templates/subroutines/arbitrarystateprep.png
+    :figure: _static/templates/gallery/ArbitraryStatePreparation.svg
 
 .. gallery-item::
     :description: :doc:`CosineWindow <../code/api/pennylane.CosineWindow>`
-    :figure: _static/templates/state_preparations/thumbnail_cosine_window.png
+    :figure: _static/templates/gallery/CosineWindow.svg
 
 .. gallery-item::
     :description: :doc:`QROMStatePreparation <../code/api/pennylane.QROMStatePreparation>`
-    :figure: _static/templates/state_preparations/thumbnail_qrom.png
+    :figure: _static/templates/gallery/QROMStatePreparation.svg
 
 .. gallery-item::
     :description: :doc:`MPSPrep <../code/api/pennylane.MPSPrep>`
-    :figure: _static/templates/tensornetworks/MPS_template.png
+    :figure: _static/templates/gallery/MPSPrep.svg
 
 .. gallery-item::
     :description: :doc:`MultiplexerStatePreparation <../code/api/pennylane.MultiplexerStatePreparation>`
-    :figure: _static/templates/state_preparations/multiplexerSP_template.png
+    :figure: _static/templates/gallery/MultiplexerStatePreparation.svg
 
 .. gallery-item::
     :description: :doc:`SumOfSlatersPrep <../code/api/pennylane.SumOfSlatersPrep>`
-    :figure: _static/templates/state_preparations/sumofslatersprep_template.png
+    :figure: _static/templates/gallery/SumOfSlatersPrep.svg
 
 .. gallery-item::
     :description: :doc:`PartialUnaryStatePreparation <../code/api/pennylane.PartialUnaryStatePreparation>`
-    :figure: _static/templates/state_preparations/partialunarystatepreparation_template.png
+    :figure: _static/templates/gallery/PartialUnaryStatePreparation.svg
 
 .. gallery-item::
     :description: :doc:`UniformPrep <../code/api/pennylane.UniformPrep>`
-    :figure: _static/templates/state_preparations/uniformprep.png
+    :figure: _static/templates/gallery/UniformPrep.svg
 
 .. gallery-item::
     :description: :doc:`AliasSampling <../code/api/pennylane.AliasSampling>`
-    :figure: _static/templates/state_preparations/aliassampling.png
+    :figure: _static/templates/gallery/AliasSampling.svg
 
 .. gallery-item::
     :description: :doc:`PhaseGradientStatePrep <../code/api/pennylane.PhaseGradientStatePrep>`
-    :figure: _static/templates/state_preparations/phasegradientstateprep_template.png
+    :figure: _static/templates/gallery/PhaseGradientStatePrep.svg
 
 
 .. raw:: html
@@ -146,63 +146,63 @@ as addition, multiplication and exponentiation.
 
 .. gallery-item::
     :description: :doc:`PhaseAdder <../code/api/pennylane.PhaseAdder>`
-    :figure: _static/templates/arithmetic/phaseadder.png
+    :figure: _static/templates/gallery/PhaseAdder.svg
 
 .. gallery-item::
     :description: :doc:`Adder <../code/api/pennylane.Adder>`
-    :figure: _static/templates/arithmetic/adder.png
+    :figure: _static/templates/gallery/Adder.svg
 
 .. gallery-item::
     :description: :doc:`SemiAdder <../code/api/pennylane.SemiAdder>`
-    :figure: _static/templates/arithmetic/semiadder.png
+    :figure: _static/templates/gallery/SemiAdder.svg
 
 .. gallery-item::
     :description: :doc:`Incrementer <../code/api/pennylane.Incrementer>`
-    :figure: _static/templates/arithmetic/adder.png
+    :figure: _static/templates/gallery/Incrementer.svg
 
 .. gallery-item::
     :description: :doc:`OutAdder <../code/api/pennylane.OutAdder>`
-    :figure: _static/templates/arithmetic/outadder.png
+    :figure: _static/templates/gallery/OutAdder.svg
 
 .. gallery-item::
     :description: :doc:`Multiplier <../code/api/pennylane.Multiplier>`
-    :figure: _static/templates/arithmetic/multiplier.png
+    :figure: _static/templates/gallery/Multiplier.svg
 
 .. gallery-item::
     :description: :doc:`OutMultiplier <../code/api/pennylane.OutMultiplier>`
-    :figure: _static/templates/arithmetic/outmultiplier.png
+    :figure: _static/templates/gallery/OutMultiplier.svg
 
 .. gallery-item::
     :description: :doc:`SignedOutMultiplier <../code/api/pennylane.SignedOutMultiplier>`
-    :figure: _static/templates/arithmetic/signedoutmultiplier.png
+    :figure: _static/templates/gallery/SignedOutMultiplier.svg
 
 .. gallery-item::
     :description: :doc:`OutSquare <../code/api/pennylane.OutSquare>`
-    :figure: _static/templates/arithmetic/outsquare.png
+    :figure: _static/templates/gallery/OutSquare.svg
 
 .. gallery-item::
     :description: :doc:`SignedOutSquare <../code/api/pennylane.SignedOutSquare>`
-    :figure: _static/templates/arithmetic/signedoutsquare.png
+    :figure: _static/templates/gallery/SignedOutSquare.svg
 
 .. gallery-item::
     :description: :doc:`ModExp <../code/api/pennylane.ModExp>`
-    :figure: _static/templates/arithmetic/modexp.png
+    :figure: _static/templates/gallery/ModExp.svg
 
 .. gallery-item::
     :description: :doc:`IntegerComparator <../code/api/pennylane.IntegerComparator>`
-    :figure: _static/templates/arithmetic/integercomparator.png
+    :figure: _static/templates/gallery/IntegerComparator.svg
 
 .. gallery-item::
     :description: :doc:`LeftClassicalComparator <../code/api/pennylane.LeftClassicalComparator>`
-    :figure: _static/templates/arithmetic/leftclassicalcomparator.png
+    :figure: _static/templates/gallery/LeftClassicalComparator.svg
 
 .. gallery-item::
     :description: :doc:`LeftQuantumComparator <../code/api/pennylane.LeftQuantumComparator>`
-    :figure: _static/templates/arithmetic/leftquantumcomparator.png
+    :figure: _static/templates/gallery/LeftQuantumComparator.svg
 
 .. gallery-item::
     :description: :doc:`OutPoly <../code/api/pennylane.OutPoly>`
-    :figure: _static/templates/arithmetic/outpoly.png
+    :figure: _static/templates/gallery/OutPoly.svg
 
 
 .. raw:: html
@@ -217,31 +217,31 @@ like VQE to perform quantum chemistry simulations.
 
 .. gallery-item::
     :description: :doc:`AllSinglesDoubles <../code/api/pennylane.AllSinglesDoubles>`
-    :figure: _static/templates/subroutines/all_singles_doubles.png
+    :figure: _static/templates/gallery/AllSinglesDoubles.svg
 
 .. gallery-item::
     :description: :doc:`Basis Rotation <../code/api/pennylane.BasisRotation>`
-    :figure: _static/templates/subroutines/basis_rotation.jpeg
+    :figure: _static/templates/gallery/BasisRotation.svg
 
 .. gallery-item::
     :description: :doc:`GateFabric <../code/api/pennylane.GateFabric>`
-    :figure: _static/templates/layers/gate_fabric_layer.png
+    :figure: _static/templates/gallery/GateFabric.svg
 
 .. gallery-item::
     :description: :doc:`UCCSD <../code/api/pennylane.UCCSD>`
-    :figure: _static/templates/subroutines/uccsd.png
+    :figure: _static/templates/gallery/UCCSD.svg
 
 .. gallery-item::
     :description: :doc:`k-UpCCGSD <../code/api/pennylane.kUpCCGSD>`
-    :figure: _static/templates/subroutines/kupccgsd.png
+    :figure: _static/templates/gallery/kUpCCGSD.svg
 
 .. gallery-item::
     :description: :doc:`ParticleConservingU1 <../code/api/pennylane.ParticleConservingU1>`
-    :figure: _static/templates/layers/particle_conserving_u1_thumbnail.png
+    :figure: _static/templates/gallery/ParticleConservingU1.svg
 
 .. gallery-item::
     :description: :doc:`ParticleConservingU2 <../code/api/pennylane.ParticleConservingU2>`
-    :figure: _static/templates/layers/particle_conserving_u2.png
+    :figure: _static/templates/gallery/ParticleConservingU2.svg
 
 .. raw:: html
 
@@ -257,15 +257,15 @@ can be broadcast with the shape and connectivity of tensor networks.
 
 .. gallery-item::
     :description: :doc:`Matrix Product State <../code/api/pennylane.MPS>`
-    :figure: _static/templates/tensornetworks/MPS_template.png
+    :figure: _static/templates/gallery/MPS.svg
 
 .. gallery-item::
     :description: :doc:`Tree Tensor Network <../code/api/pennylane.TTN>`
-    :figure: _static/templates/tensornetworks/TTN_template.png
+    :figure: _static/templates/gallery/TTN.svg
 
 .. gallery-item::
     :description: :doc:`Multi-scale Entanglement Renormalization Ansatz <../code/api/pennylane.MERA>`
-    :figure: _static/templates/tensornetworks/MERA_template.png
+    :figure: _static/templates/gallery/MERA.svg
 
 .. raw:: html
 
@@ -279,7 +279,7 @@ circuit depth for carrying out all pair-wise interactions between qubits.
 
 .. gallery-item::
     :description: :doc:`Canonical 2-Complete Linear Swap Network <../code/api/pennylane.TwoLocalSwapNetwork>`
-    :figure: _static/templates/swap_networks/ccl2.jpeg
+    :figure: _static/templates/gallery/TwoLocalSwapNetwork.svg
 
 .. raw:: html
 
@@ -294,151 +294,151 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. gallery-item::
     :description: :doc:`Instantaneous Quantum Polynomial Circuit (IQP) <../code/api/pennylane.IQP>`
-    :figure: _static/templates/subroutines/iqp.png
+    :figure: _static/templates/gallery/IQP.svg
 
 .. gallery-item::
     :description: :doc:`Grover Diffusion Operator <../code/api/pennylane.GroverOperator>`
-    :figure: _static/templates/subroutines/grover.svg
+    :figure: _static/templates/gallery/GroverOperator.svg
 
 .. gallery-item::
     :description: :doc:`Reflection Operator <../code/api/pennylane.Reflection>`
-    :figure: _static/templates/subroutines/reflection.png
+    :figure: _static/templates/gallery/Reflection.svg
 
 .. gallery-item::
     :description: :doc:`Amplitude Amplification <../code/api/pennylane.AmplitudeAmplification>`
-    :figure: _static/templates/subroutines/ampamp.png
+    :figure: _static/templates/gallery/AmplitudeAmplification.svg
 
 .. gallery-item::
     :description: :doc:`FermionicSingleExcitation <../code/api/pennylane.FermionicSingleExcitation>`
-    :figure: _static/templates/subroutines/single_excitation_unitary.png
+    :figure: _static/templates/gallery/FermionicSingleExcitation.svg
 
 .. gallery-item::
     :description: :doc:`FermionicDoubleExcitation <../code/api/pennylane.FermionicDoubleExcitation>`
-    :figure: _static/templates/subroutines/double_excitation_unitary.png
+    :figure: _static/templates/gallery/FermionicDoubleExcitation.svg
 
 .. gallery-item::
     :description: :doc:`ArbitraryUnitary <../code/api/pennylane.ArbitraryUnitary>`
-    :figure: _static/templates/subroutines/arbitraryunitary.png
+    :figure: _static/templates/gallery/ArbitraryUnitary.svg
 
 .. gallery-item::
   :description: :doc:`ApproxTimeEvolution <../code/api/pennylane.ApproxTimeEvolution>`
-  :figure: _static/templates/subroutines/approx_time_evolution.png
+  :figure: _static/templates/gallery/ApproxTimeEvolution.svg
 
 .. gallery-item::
   :description: :doc:`QDrift <../code/api/pennylane.QDrift>`
-  :figure: _static/templates/subroutines/qdrift.png
+  :figure: _static/templates/gallery/QDrift.svg
 
 .. gallery-item::
   :description: :doc:`TrotterProduct <../code/api/pennylane.TrotterProduct>`
-  :figure: _static/templates/subroutines/trotter_product.png
+  :figure: _static/templates/gallery/TrotterProduct.svg
 
 .. gallery-item::
   :description: :doc:`TrotterCDF <../code/api/pennylane.TrotterCDF>`
-  :figure: _static/templates/subroutines/trotter_product.png
+  :figure: _static/templates/gallery/TrotterCDF.svg
 
 .. gallery-item::
   :description: :doc:`TrotterCGF <../code/api/pennylane.TrotterCGF>`
-  :figure: _static/templates/subroutines/trotter_product.png
+  :figure: _static/templates/gallery/TrotterCGF.svg
 
 .. gallery-item::
   :description: :doc:`TrotterVibronic <../code/api/pennylane.TrotterVibronic>`
-  :figure: _static/templates/subroutines/trotter_product.png
+  :figure: _static/templates/gallery/TrotterVibronic.svg
 
 .. gallery-item::
   :description: :doc:`Permute <../code/api/pennylane.Permute>`
-  :figure: _static/templates/subroutines/permute.png
+  :figure: _static/templates/gallery/Permute.svg
 
 .. gallery-item::
   :description: :doc:`QuantumPhaseEstimation <../code/api/pennylane.QuantumPhaseEstimation>`
-  :figure: _static/templates/subroutines/qpe.svg
+  :figure: _static/templates/gallery/QuantumPhaseEstimation.svg
 
 .. gallery-item::
   :description: :doc:`QuantumMonteCarlo <../code/api/pennylane.QuantumMonteCarlo>`
-  :figure: _static/templates/subroutines/qmc.svg
+  :figure: _static/templates/gallery/QuantumMonteCarlo.svg
 
 .. gallery-item::
     :description: :doc:`QuantumFourierTransform <../code/api/pennylane.QFT>`
-    :figure: _static/templates/subroutines/qft.svg
+    :figure: _static/templates/gallery/QFT.svg
 
 .. gallery-item::
     :description: :doc:`Approximate QFT<../code/api/pennylane.AQFT>`
-    :figure: _static/templates/subroutines/aqft.png
+    :figure: _static/templates/gallery/AQFT.svg
 
 .. gallery-item::
     :description: :doc:`CommutingEvolution <../code/api/pennylane.CommutingEvolution>`
-    :figure: _static/templates/subroutines/commuting_evolution.png
+    :figure: _static/templates/gallery/CommutingEvolution.svg
 
 .. gallery-item::
     :description: :doc:`HilbertSchmidt <../code/api/pennylane.HilbertSchmidt>`
-    :figure: _static/templates/subroutines/hst.png
+    :figure: _static/templates/gallery/HilbertSchmidt.svg
 
 .. gallery-item::
     :description: :doc:`LocalHilbertSchmidt <../code/api/pennylane.LocalHilbertSchmidt>`
-    :figure: _static/templates/subroutines/lhst.png
+    :figure: _static/templates/gallery/LocalHilbertSchmidt.svg
 
 .. gallery-item::
     :description: :doc:`FlipSign operator<../code/api/pennylane.FlipSign>`
-    :figure: _static/templates/subroutines/flip_sign.png
+    :figure: _static/templates/gallery/FlipSign.svg
 
 .. gallery-item::
     :description: :doc:`QSVT<../code/api/pennylane.QSVT>`
-    :figure: _static/templates/subroutines/qsvt.png
+    :figure: _static/templates/gallery/QSVT.svg
 
 .. gallery-item::
     :description: :doc:`GQSP<../code/api/pennylane.GQSP>`
-    :figure: _static/templates/subroutines/gqsp.png
+    :figure: _static/templates/gallery/GQSP.svg
 
 .. gallery-item::
     :description: :doc:`Select<../code/api/pennylane.Select>`
-    :figure: _static/templates/subroutines/select_cropped.png
+    :figure: _static/templates/gallery/Select.svg
 
 .. gallery-item::
     :description: :doc:`ControlledSequence<../code/api/pennylane.ControlledSequence>`
-    :figure: _static/templates/subroutines/small_ctrl.png
+    :figure: _static/templates/gallery/ControlledSequence.svg
 
 .. gallery-item::
     :description: :doc:`FABLE <../code/api/pennylane.FABLE>`
-    :figure: _static/templates/subroutines/fable.png
+    :figure: _static/templates/gallery/FABLE.svg
 
 .. gallery-item::
     :description: :doc:`Qubitization <../code/api/pennylane.Qubitization>`
-    :figure: _static/templates/qubitization/thumbnail_qubitization.png
+    :figure: _static/templates/gallery/Qubitization.svg
 
 .. gallery-item::
     :description: :doc:`OneBodyBlockEncoding <../code/api/pennylane.OneBodyBlockEncoding>`
-    :figure: _static/templates/subroutines/onebodyblockencoding.png
+    :figure: _static/templates/gallery/OneBodyBlockEncoding.svg
 
 .. gallery-item::
     :description: :doc:`QROM <../code/api/pennylane.QROM>`
-    :figure: _static/templates/qrom/qrom_thumbnail.png
+    :figure: _static/templates/gallery/QROM.svg
 
 .. gallery-item::
     :description: :doc:`Bucket Brigade QRAM <../code/api/pennylane.BBQRAM>`
-    :figure: _static/templates/qram/bbqram_thumbnail.png
+    :figure: _static/templates/gallery/BBQRAM.svg
 
 .. gallery-item::
     :description: :doc:`Select Only QRAM <../code/api/pennylane.SelectOnlyQRAM>`
-    :figure: _static/templates/qram/select_qram_thumbnail.png
+    :figure: _static/templates/gallery/SelectOnlyQRAM.svg
 
 .. gallery-item::
     :description: :doc:`Hybrid QRAM <../code/api/pennylane.HybridQRAM>`
-    :figure: _static/templates/qram/hybrid_qram_thumbnail.png
+    :figure: _static/templates/gallery/HybridQRAM.svg
 
 .. gallery-item::
     :description: :doc:`Flip Flop QRAM <../code/api/pennylane.FFQRAM>`
-    :figure: _static/templates/qram/ffqram_thumbnail.png
+    :figure: _static/templates/gallery/FFQRAM.svg
 
 .. gallery-item::
     :description: :doc:`PrepSelPrep <../code/api/pennylane.PrepSelPrep>`
-    :figure: _static/templates/prepselprep/prepselprep.png
+    :figure: _static/templates/gallery/PrepSelPrep.svg
 
 .. gallery-item::
     :description: :doc:`SelectPauliRot <../code/api/pennylane.SelectPauliRot>`
-    :figure: _static/templates/subroutines/select_pauli_rot_cropped.png
+    :figure: _static/templates/gallery/SelectPauliRot.svg
 
 .. gallery-item::
     :description: :doc:`TemporaryAND <../code/api/pennylane.TemporaryAND>`
-    :figure: _static/templates/subroutines/temporary_and.png
+    :figure: _static/templates/gallery/TemporaryAND.svg
 
 .. raw:: html
 

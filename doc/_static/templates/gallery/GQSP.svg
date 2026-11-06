@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">GQSP</title>
+  <desc id="description">Complex phases on the unit circle map to a polynomial-transformed contour.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="105" cy="140" r="53" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <path d="M46 140 L164 140" fill="none" stroke="#88A5B5" stroke-width="2" />
+    <path d="M105 81 L105 199" fill="none" stroke="#88A5B5" stroke-width="2" />
+    <circle cx="131.37126553826153" cy="94.0265690435171" r="8" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="156.21866884112922" cy="153.62526925028422" r="8" fill="#0074E0" stroke="#151515" stroke-width="3" />
+    <circle cx="68.90403833312092" cy="178.80826653360333" r="8" fill="#FFE08A" stroke="#151515" stroke-width="3" />
+    <path d="M177 141 L213 141" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M202.96 134.42 L213 141 L202.96 147.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M247 91 C282 37 345 88 338 134 C380 202 293 239 263 189 C220 180 212 126 247 91 Z" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="279" cy="74" r="8" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="342" cy="157" r="8" fill="#0074E0" stroke="#151515" stroke-width="3" />
+    <circle cx="249" cy="176" r="8" fill="#FFE08A" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

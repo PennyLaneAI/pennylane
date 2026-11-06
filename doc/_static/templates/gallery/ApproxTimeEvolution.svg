@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">ApproxTimeEvolution</title>
+  <desc id="description">A smooth time-evolution trajectory approximated by a sequence of short straight steps.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M58 211 C82 98 216 215 335 67" fill="none" stroke="#88A5B5" stroke-width="4" />
+    <path d="M58 211 L91 158" fill="none" stroke="#0074E0" stroke-width="5" />
+    <circle cx="58" cy="211" r="7" fill="#0074E0" stroke="none" stroke-width="0" />
+    <path d="M91 158 L151 149" fill="none" stroke="#151515" stroke-width="5" />
+    <circle cx="91" cy="158" r="7" fill="#FFB5F1" stroke="none" stroke-width="0" />
+    <path d="M151 149 L215 140" fill="none" stroke="#0074E0" stroke-width="5" />
+    <circle cx="151" cy="149" r="7" fill="#0074E0" stroke="none" stroke-width="0" />
+    <path d="M215 140 L277 113" fill="none" stroke="#151515" stroke-width="5" />
+    <circle cx="215" cy="140" r="7" fill="#FFB5F1" stroke="none" stroke-width="0" />
+    <path d="M277 113 L335 67" fill="none" stroke="#0074E0" stroke-width="5" />
+    <circle cx="277" cy="113" r="7" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="335" cy="67" r="8" fill="#FFB5F1" stroke="none" stroke-width="0" />
+    <path d="M295 210 L341 210" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M330.96 203.42 L341 210 L330.96 216.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M65 230 L343 230" fill="none" stroke="#88A5B5" stroke-width="3" />
+  </g>
+</svg>

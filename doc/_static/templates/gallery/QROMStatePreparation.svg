@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">QROMStatePreparation</title>
+  <desc id="description">Values loaded from a read-only quantum memory define the amplitudes of a prepared state.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="55" y="62" width="94" height="156" rx="13" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <rect x="67" y="77" width="18" height="22" rx="4" fill="#FFB5F1" stroke="none" stroke-width="0" />
+    <rect x="92" y="77" width="18" height="22" rx="4" fill="#D5F0FD" stroke="none" stroke-width="0" />
+    <rect x="117" y="77" width="18" height="22" rx="4" fill="#D5F0FD" stroke="none" stroke-width="0" />
+    <rect x="67" y="110" width="18" height="22" rx="4" fill="#D5F0FD" stroke="none" stroke-width="0" />
+    <rect x="92" y="110" width="18" height="22" rx="4" fill="#FFB5F1" stroke="none" stroke-width="0" />
+    <rect x="117" y="110" width="18" height="22" rx="4" fill="#FFB5F1" stroke="none" stroke-width="0" />
+    <rect x="67" y="143" width="18" height="22" rx="4" fill="#FFB5F1" stroke="none" stroke-width="0" />
+    <rect x="92" y="143" width="18" height="22" rx="4" fill="#FFB5F1" stroke="none" stroke-width="0" />
+    <rect x="117" y="143" width="18" height="22" rx="4" fill="#D5F0FD" stroke="none" stroke-width="0" />
+    <rect x="67" y="176" width="18" height="22" rx="4" fill="#D5F0FD" stroke="none" stroke-width="0" />
+    <rect x="92" y="176" width="18" height="22" rx="4" fill="#D5F0FD" stroke="none" stroke-width="0" />
+    <rect x="117" y="176" width="18" height="22" rx="4" fill="#FFB5F1" stroke="none" stroke-width="0" />
+    <path d="M161 141 L196 141" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M185.96 134.42 L196 141 L185.96 147.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="212" y="166" width="24" height="48" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="246" y="99" width="24" height="115" rx="5" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="280" y="136" width="24" height="78" rx="5" fill="#0074E0" stroke="#151515" stroke-width="3" />
+    <rect x="314" y="71" width="24" height="143" rx="5" fill="#FFE08A" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

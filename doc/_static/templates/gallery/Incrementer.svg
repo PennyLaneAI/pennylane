@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">Incrementer</title>
+  <desc id="description">A plus-one step sends a carry along a binary register.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="66" y="167" width="268" height="42" rx="12" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="119.6" cy="188" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="173.2" cy="188" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="226.8" cy="188" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="280.4" cy="188" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="200" cy="89" r="34" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M179 89 L197 89" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M188 80 L188 98" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M208 80 L213 75 L213 103" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M304 162 L304 137 Q304 126 293 126 L111 126 Q96 126 96 142 L96 159" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M88 149 L96 160 L104 149" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="300" cy="188" r="8" fill="#0074E0" stroke="none" stroke-width="0" />
+  </g>
+</svg>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">PrepSelPrep</title>
+  <desc id="description">Mirrored preparation and inverse-preparation funnels surround a controlled operator selection.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M49 140 L349 140" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M58 98 L119 119 V161 L58 182 Z" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M342 98 L281 119 V161 L342 182 Z" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M76 140 L105 140" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M94.96 133.42 L105 140 L94.96 146.58" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M324 140 L295 140" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M305.04 146.58 L295 140 L305.04 133.42" fill="none" stroke="#0074E0" stroke-width="3" />
+    <rect x="151" y="80" width="98" height="122" rx="15" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M165 106 L182 106" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="211" cy="106" r="10" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <path d="M223 106 L236 106" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M165 140 L182 140" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="211" cy="140" r="10" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <path d="M223 140 L236 140" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M165 174 L182 174" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="211" cy="174" r="10" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <path d="M223 174 L236 174" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M131 120 V64 H271 V120" fill="none" stroke="#0074E0" stroke-width="3" />
+    <circle cx="131" cy="120" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="271" cy="120" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+  </g>
+</svg>

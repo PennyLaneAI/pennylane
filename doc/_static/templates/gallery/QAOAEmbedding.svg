@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">QAOAEmbedding</title>
+  <desc id="description">Alternating feature-encoding and trainable mixer blocks represent a QAOA embedding.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M48 84 L352 84" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M48 140 L352 140" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M48 196 L352 196" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <rect x="70" y="51" width="66" height="178" rx="15" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="85.5" y="66.5" width="35" height="35" rx="9" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <circle cx="103" cy="84" r="10" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M103 69 L103 99" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="85.5" y="122.5" width="35" height="35" rx="9" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <circle cx="103" cy="140" r="10" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M103 125 L103 155" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="85.5" y="178.5" width="35" height="35" rx="9" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <circle cx="103" cy="196" r="10" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M103 181 L103 211" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="167" y="51" width="66" height="178" rx="15" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="182.5" y="66.5" width="35" height="35" rx="9" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <path d="M209 88 A10 10 0 1 1 203 75" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M202 69 L205 76 L197 78" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="182.5" y="122.5" width="35" height="35" rx="9" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <path d="M209 144 A10 10 0 1 1 203 131" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M202 125 L205 132 L197 134" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="182.5" y="178.5" width="35" height="35" rx="9" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <path d="M209 200 A10 10 0 1 1 203 187" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M202 181 L205 188 L197 190" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="264" y="51" width="66" height="178" rx="15" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="279.5" y="66.5" width="35" height="35" rx="9" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <circle cx="297" cy="84" r="10" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M297 69 L297 99" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="279.5" y="122.5" width="35" height="35" rx="9" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <circle cx="297" cy="140" r="10" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M297 125 L297 155" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="279.5" y="178.5" width="35" height="35" rx="9" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <circle cx="297" cy="196" r="10" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M297 181 L297 211" fill="none" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

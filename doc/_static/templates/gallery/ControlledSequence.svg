@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">ControlledSequence</title>
+  <desc id="description">Three controls apply a sequence of increasingly large unitary rotations.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M58 70 L346 70" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M58 183 L346 183" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M100 70 L100 183" fill="none" stroke="#0074E0" stroke-width="3" />
+    <circle cx="100" cy="70" r="7" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="100" cy="183" r="23" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <path d="M100.3 170.0 L100.9 170.0 L101.4 170.1 L102.0 170.2 L102.6 170.3 L103.2 170.4 L103.7 170.5 L104.3 170.7 L104.8 170.9 L105.4 171.2 L105.9 171.4 L106.4 171.7 L106.9 172.0 L107.4 172.3 L107.9 172.7 L108.3 173.0 L108.8 173.4 L109.2 173.8 L109.6 174.2 L110.0 174.7 L110.3 175.1 L110.7 175.6 L111.0 176.1 L111.3 176.6 L111.6 177.1 L111.8 177.6 L112.1 178.2 L112.3 178.7 L112.5 179.3 L112.6 179.8 L112.7 180.4 L112.8 181.0 L112.9 181.6 L113.0 182.2 L113.0 182.7 L113.0 183.3 L113.0 183.9 L112.9 184.5 L112.8 185.1 L112.7 185.6 L112.6 186.2" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M112.72779279875357 185.6463730787621 L112.59586148223838 186.2162514703088" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M121.27 177.92 L112.59586148223838 186.2162514703088 L108.45 174.95" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M199 70 L199 183" fill="none" stroke="#0074E0" stroke-width="3" />
+    <circle cx="199" cy="70" r="7" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="199" cy="183" r="30" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M199.4 163.0 L201.1 163.1 L202.7 163.3 L204.3 163.7 L205.9 164.2 L207.4 164.8 L208.9 165.6 L210.3 166.5 L211.6 167.5 L212.8 168.5 L214.0 169.7 L215.0 171.0 L215.9 172.4 L216.8 173.8 L217.5 175.3 L218.0 176.9 L218.5 178.4 L218.8 180.1 L219.0 181.7 L219.0 183.3 L218.9 185.0 L218.7 186.6 L218.3 188.2 L217.8 189.8 L217.2 191.3 L216.4 192.8 L215.6 194.2 L214.6 195.5 L213.5 196.8 L212.3 197.9 L211.0 199.0 L209.7 199.9 L208.2 200.7 L206.8 201.4 L205.2 202.0 L203.6 202.5 L202.0 202.8 L200.4 203.0 L198.7 203.0 L197.1 202.9 L195.4 202.7" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M197.06893957375027 202.90655685019817 L195.43507888701015 202.67971893747875" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M204.47 210.57 L195.43507888701015 202.67971893747875 L206.28 197.55" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M310 70 L310 183" fill="none" stroke="#0074E0" stroke-width="3" />
+    <circle cx="310" cy="70" r="7" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="310" cy="183" r="39" fill="#FFE08A" stroke="#151515" stroke-width="3" />
+    <path d="M310.6 154.0 L314.3 154.3 L317.9 155.1 L321.4 156.3 L324.7 158.0 L327.7 160.1 L330.5 162.5 L333.0 165.3 L335.0 168.3 L336.7 171.6 L337.9 175.1 L338.7 178.7 L339.0 182.4 L338.8 186.1 L338.2 189.8 L337.1 193.3 L335.6 196.6 L333.6 199.8 L331.3 202.7 L328.6 205.2 L325.7 207.4 L322.4 209.2 L319.0 210.6 L315.4 211.5 L311.8 211.9 L308.1 211.9 L304.4 211.5 L300.8 210.5 L297.4 209.1 L294.2 207.3 L291.2 205.1 L288.6 202.5 L286.3 199.7 L284.3 196.5 L282.8 193.1 L281.8 189.6 L281.1 185.9 L281.0 182.2 L281.3 178.6 L282.1 175.0 L283.4 171.5" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M282.1366755194756 174.96040119825565 L283.385119326978 171.48270314870717" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M273.8 178.71 L283.385119326978 171.48270314870717 L286.18 183.15" fill="none" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">HilbertSchmidt</title>
+  <desc id="description">The shared region of two operator spaces represents their global Hilbert-Schmidt overlap.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="156" cy="141" r="73" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="244" cy="141" r="73" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M200 83 A73 73 0 0 1 200 199 A73 73 0 0 1 200 83 Z" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <path d="M118 119 L151 152" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M118 152 L151 119" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M248 122 Q273 157 289 122" fill="none" stroke="#151515" stroke-width="4" />
+    <circle cx="200" cy="117" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="200" cy="141" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="200" cy="165" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+  </g>
+</svg>

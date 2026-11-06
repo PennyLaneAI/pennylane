@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">kUpCCGSD</title>
+  <desc id="description">A stack of repeated layers transfers an electron pair between orbitals, representing generalized paired coupled-cluster excitations.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="102" y="48" width="216" height="151" rx="17" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <rect x="83" y="65" width="216" height="151" rx="17" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <rect x="64" y="82" width="216" height="151" rx="17" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <path d="M90 185 L142 185" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M201 133 L253 133" fill="none" stroke="#151515" stroke-width="4" />
+    <circle cx="103" cy="174" r="9" fill="#0074E0" stroke="#151515" stroke-width="3" />
+    <circle cx="128" cy="174" r="9" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="214" cy="122" r="9" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="240" cy="122" r="9" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <path d="M145 169 L197 135" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M185.0 134.99 L197 135 L192.2 146.0" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M145 181 L205 143" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M193.0 142.81 L205 143 L200.04 153.93" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M304 212 C358 187 360 106 324 81" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M324 94 L323 79 L337 83" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

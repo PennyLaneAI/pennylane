@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">SemiAdder</title>
+  <desc id="description">One register remains unchanged while its value is added into a second register.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="57" y="70" width="98" height="42" rx="12" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="81.5" cy="91" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="106.0" cy="91" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="130.5" cy="91" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <rect x="57" y="174" width="98" height="42" rx="12" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="81.5" cy="195" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="106.0" cy="195" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="130.5" cy="195" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <rect x="250" y="70" width="98" height="42" rx="12" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="274.5" cy="91" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="299.0" cy="91" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="323.5" cy="91" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <rect x="250" y="174" width="98" height="42" rx="12" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <circle cx="274.5" cy="195" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="299.0" cy="195" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="323.5" cy="195" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <path d="M158 91 L246 91" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M235.96 84.42 L246 91 L235.96 97.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M200 92 L200 147" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M156 195 L174 195" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M163.96 188.42 L174 195 L163.96 201.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M226 195 L246 195" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M235.96 188.42 L246 195 L235.96 201.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="200" cy="195" r="26" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M188 195 L212 195" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M200 183 L200 207" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M200 150 L200 166" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M206.58 155.96 L200 166 L193.42 155.96" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

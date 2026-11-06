@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">PhaseGradientStatePrep</title>
+  <desc id="description">Successive phase dials rotate by a regular increment to illustrate a phase-gradient state.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="69" cy="179" r="23" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <path d="M69 179 L69.0 163.0" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M62.42 173.04 L69.0 163.0 L75.58 173.04" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M95 174 L107 165" fill="none" stroke="#88A5B5" stroke-width="2" />
+    <circle cx="135" cy="157" r="23" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M135 157 L146.31 145.69" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M134.56 148.14 L146.31 145.69 L143.86 157.44" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M161 152 L173 143" fill="none" stroke="#88A5B5" stroke-width="2" />
+    <circle cx="201" cy="135" r="23" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <path d="M201 135 L217.0 135.0" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M206.96 128.42 L217.0 135.0 L206.96 141.58" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M227 130 L239 121" fill="none" stroke="#88A5B5" stroke-width="2" />
+    <circle cx="267" cy="113" r="23" fill="#FFE08A" stroke="#151515" stroke-width="3" />
+    <path d="M267 113 L278.31 124.31" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M275.86 112.56 L278.31 124.31 L266.56 121.86" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M293 108 L305 99" fill="none" stroke="#88A5B5" stroke-width="2" />
+    <circle cx="333" cy="91" r="23" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <path d="M333 91 L333.0 107.0" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M339.58 96.96 L333.0 107.0 L326.42 96.96" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M60 225 Q202 224 344 150" fill="none" stroke="#0074E0" stroke-width="3" stroke-dasharray="5 9"/>
+  </g>
+</svg>

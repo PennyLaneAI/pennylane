@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">ModExp</title>
+  <desc id="description">A rising sequence of multiplications wraps around a cycle, suggesting modular exponentiation.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="72" y="160" width="58" height="54" rx="11" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M90 176 L112 198" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M90 198 L112 176" fill="none" stroke="#151515" stroke-width="4" />
+    <rect x="165" y="111" width="58" height="54" rx="11" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M183 127 L205 149" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M183 149 L205 127" fill="none" stroke="#151515" stroke-width="4" />
+    <rect x="258" y="62" width="58" height="54" rx="11" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <path d="M276 78 L298 100" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M276 100 L298 78" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M136 175 L159 160" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M147.0 159.97 L159 160 L154.18 170.99" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M228 126 L252 111" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M240.0 110.74 L252 111 L246.97 121.9" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M318 132 C365 211 208 252 143 216" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M155 212 L142 216 L147 229" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M85 130 C57 65 139 43 191 57" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M181 48 L193 57 L180 63" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

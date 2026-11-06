@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">AllSinglesDoubles</title>
+  <desc id="description">One-electron and paired two-electron promotions connect occupied and virtual orbital levels.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M61 205 L161 205" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M61 79 L161 79" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M221 205 L340 205" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M221 79 L340 79" fill="none" stroke="#151515" stroke-width="4" />
+    <circle cx="108" cy="192" r="9" fill="#0074E0" stroke="#151515" stroke-width="3" />
+    <circle cx="108" cy="66" r="9" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <path d="M108 172 L108 95" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M101.42 105.04 L108 95 L114.58 105.04" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="251" cy="192" r="9" fill="#0074E0" stroke="#151515" stroke-width="3" />
+    <circle cx="307" cy="192" r="9" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="251" cy="66" r="9" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="307" cy="66" r="9" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <path d="M238 111 Q278 90 320 111 L320 169 Q278 187 238 169 Z" fill="#FFB5F1" stroke="none" stroke-width="4" />
+    <path d="M251 174 L251 96" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M244.42 106.04 L251 96 L257.58 106.04" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M307 174 L307 96" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M300.42 106.04 L307 96 L313.58 106.04" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

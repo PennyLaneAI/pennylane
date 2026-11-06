@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">CosineWindow</title>
+  <desc id="description">A smooth cosine-shaped amplitude profile is sampled into a quantum register.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M58 216 L343 216" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="62" y="204" width="16" height="12" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="83" y="177" width="16" height="39" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="104" y="144" width="16" height="72" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="125" y="112" width="16" height="104" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="146" y="84" width="16" height="132" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="167" y="67" width="16" height="149" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="188" y="62" width="16" height="154" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="209" y="67" width="16" height="149" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="230" y="84" width="16" height="132" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="251" y="112" width="16" height="104" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="272" y="144" width="16" height="72" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="293" y="177" width="16" height="39" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="314" y="204" width="16" height="12" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <path d="M70 204 C108 157 126 58 196 60 C266 58 286 157 322 204" fill="none" stroke="#0074E0" stroke-width="5" />
+    <circle cx="196" cy="60" r="9" fill="#FFB5F1" stroke="none" stroke-width="0" />
+  </g>
+</svg>

@@ -2254,6 +2254,10 @@ Internal changes ⚙️
 Documentation 📝
 ~~~~~~~~~~~~~~~~
 
+* Refreshed every illustration in the template gallery with consistent, scalable
+  artwork using PennyLane's colours and a distinct motif for each template.
+  `(#10456) <https://github.com/PennyLaneAI/pennylane/pull/10456>`__
+
 * The docstring for :class:`~.ControlledPhaseShift` now mentions that :class:`~.CPhase` is an alias.
   `(#10405) <https://github.com/PennyLaneAI/pennylane/pull/10405>`__
 

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">QuantumMonteCarlo</title>
+  <desc id="description">Samples beneath a smooth probability distribution contribute to an estimated expectation.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M58 213 V60 M58 213 H342" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M66 209 C102 210 108 192 133 129 C171 22 232 65 253 130 C282 210 307 210 338 209 L338 213 H66 Z" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="87" cy="193" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="117" cy="167" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="137" cy="172" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="153" cy="125" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="172" cy="169" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="184" cy="92" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="202" cy="140" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="221" cy="114" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="239" cy="191" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="255" cy="165" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="277" cy="201" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="314" cy="201" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <path d="M202 83 L202 217" fill="none" stroke="#0074E0" stroke-width="3" stroke-dasharray="6 7"/>
+    <circle cx="202" cy="70" r="11" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

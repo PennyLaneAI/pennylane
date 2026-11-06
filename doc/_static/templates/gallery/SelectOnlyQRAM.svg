@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">SelectOnlyQRAM</title>
+  <desc id="description">Address-controlled selections access memory entries directly along a shared bus.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M59 73 L341 73" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M87 73 L87 114" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <circle cx="87" cy="73" r="7" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <rect x="59" y="96" width="56" height="36" rx="8" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <circle cx="76" cy="114" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="98" cy="114" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <path d="M162 73 L162 151" fill="none" stroke="#0074E0" stroke-width="3" />
+    <circle cx="162" cy="73" r="7" fill="#0074E0" stroke="#151515" stroke-width="3" />
+    <rect x="134" y="133" width="56" height="36" rx="8" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="151" cy="151" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="173" cy="151" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <path d="M237 73 L237 186" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <circle cx="237" cy="73" r="7" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <rect x="209" y="168" width="56" height="36" rx="8" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <circle cx="226" cy="186" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="248" cy="186" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <path d="M312 73 L312 216" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <circle cx="312" cy="73" r="7" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <rect x="284" y="198" width="56" height="36" rx="8" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <circle cx="301" cy="216" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="323" cy="216" r="4" fill="#0074E0" stroke="none" stroke-width="0" />
+    <path d="M58 237 H342" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M162 170 L162 237" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

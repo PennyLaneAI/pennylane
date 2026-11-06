@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">Select</title>
+  <desc id="description">A control register routes to one operator among three available branches.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="82" cy="141" r="25" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <circle cx="82" cy="141" r="7" fill="#0074E0" stroke="none" stroke-width="0" />
+    <path d="M107 141 C169 141 176 74 242 74" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <rect x="249" y="50" width="86" height="48" rx="11" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <circle cx="292" cy="74" r="12" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M292 57 L292 91" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M107 141 C169 141 176 141 242 141" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="249" y="117" width="86" height="48" rx="11" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="292" cy="141" r="12" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M292 124 L292 158" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M107 141 C169 141 176 208 242 208" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <rect x="249" y="184" width="86" height="48" rx="11" fill="#FFE08A" stroke="#151515" stroke-width="3" />
+    <circle cx="292" cy="208" r="12" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M292 191 L292 225" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M110 141 H239" fill="none" stroke="#0074E0" stroke-width="6" />
+  </g>
+</svg>

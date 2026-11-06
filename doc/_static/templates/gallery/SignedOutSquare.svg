@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">SignedOutSquare</title>
+  <desc id="description">Positive and negative input values feed the same unsigned square output.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="79" cy="80" r="25" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M69 80 L89 80" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M79 70 L79 90" fill="none" stroke="#151515" stroke-width="4" />
+    <circle cx="79" cy="200" r="25" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M69 200 L89 200" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M109 88 L150 116" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M145.42 104.91 L150 116 L138.0 115.77" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M109 192 L150 164" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M138.0 164.23 L150 164 L145.42 175.09" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="159" y="96" width="88" height="88" rx="9" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <path d="M188.33333333333334 96 L188.33333333333334 184" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M159 125.33333333333333 L247 125.33333333333333" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M217.66666666666666 96 L217.66666666666666 184" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M159 154.66666666666666 L247 154.66666666666666" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M255 140 L272 140" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M261.96 133.42 L272 140 L261.96 146.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="280" y="119" width="67" height="42" rx="12" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <circle cx="302.3333333333333" cy="140" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="324.6666666666667" cy="140" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

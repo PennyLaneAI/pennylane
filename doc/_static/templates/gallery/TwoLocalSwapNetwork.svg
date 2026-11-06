@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">TwoLocalSwapNetwork</title>
+  <desc id="description">Interleaved pairwise crossings route qubits through a linear swap network.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M55 66 C115 66 111 114 167 114 S223 162 276 162 L345 162" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M55 114 C115 114 111 66 167 66 S223 210 276 210 L345 210" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M55 162 C115 162 111 210 167 210 S223 66 276 66 L345 66" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M55 210 C115 210 111 162 167 162 S223 114 276 114 L345 114" fill="none" stroke="#151515" stroke-width="4" />
+    <circle cx="116" cy="90" r="13" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M111 85 L121 95" fill="none" stroke="#151515" stroke-width="2" />
+    <path d="M111 95 L121 85" fill="none" stroke="#151515" stroke-width="2" />
+    <circle cx="116" cy="186" r="13" fill="#FFE08A" stroke="#151515" stroke-width="3" />
+    <path d="M111 181 L121 191" fill="none" stroke="#151515" stroke-width="2" />
+    <path d="M111 191 L121 181" fill="none" stroke="#151515" stroke-width="2" />
+    <circle cx="225" cy="138" r="13" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M220 133 L230 143" fill="none" stroke="#151515" stroke-width="2" />
+    <path d="M220 143 L230 133" fill="none" stroke="#151515" stroke-width="2" />
+    <circle cx="55" cy="66" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="55" cy="114" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="55" cy="162" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="55" cy="210" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="345" cy="66" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="345" cy="114" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="345" cy="162" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="345" cy="210" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+  </g>
+</svg>

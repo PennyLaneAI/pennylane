@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">BasisRotation</title>
+  <desc id="description">Orbital lobes turn from one orientation into another, representing a change of fermionic basis.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(200 143) rotate(0) scale(1.35)"><path d="M0 0 C-21 -40 -74 -38 -69 0 C-64 36 -22 32 0 0" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M0 0 C21 -40 74 -38 69 0 C64 36 22 32 0 0" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="0" cy="0" r="6" fill="#151515" stroke="#151515" stroke-width="0" />
+    </g><g transform="translate(200 143) rotate(-48) scale(1.1)"><path d="M0 0 C-21 -40 -74 -38 -69 0 C-64 36 -22 32 0 0" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M0 0 C21 -40 74 -38 69 0 C64 36 22 32 0 0" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <circle cx="0" cy="0" r="6" fill="#151515" stroke="#151515" stroke-width="0" />
+    </g><path d="M125 77 A101 101 0 0 1 280 84" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M268 81 L282 85 L281 71" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M275 209 A101 101 0 0 1 122 203" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M134 207 L120 202 L121 216" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

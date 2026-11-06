@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">OneBodyBlockEncoding</title>
+  <desc id="description">A one-body orbital operator is embedded in the highlighted block of a larger matrix.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="98" cy="140" rx="43" ry="22" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <ellipse cx="98" cy="140" rx="22" ry="61" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="98" cy="140" r="10" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="119" cy="97" r="7" fill="#0074E0" stroke="none" stroke-width="0" />
+    <path d="M159 139 L194 139" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M183.96 132.42 L194 139 L183.96 145.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="217" y="72" width="127" height="138" rx="15" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <rect x="228" y="83" width="54" height="56" rx="7" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="239" y="94" width="13" height="13" rx="3" fill="#0074E0" stroke="none" stroke-width="4" />
+    <rect x="260" y="94" width="13" height="13" rx="3" fill="#FFB5F1" stroke="none" stroke-width="4" />
+    <rect x="239" y="117" width="13" height="13" rx="3" fill="#FFB5F1" stroke="none" stroke-width="4" />
+    <rect x="260" y="117" width="13" height="13" rx="3" fill="#0074E0" stroke="none" stroke-width="4" />
+    <path d="M291 97 L327 97" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M291 117 L327 117" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M234 162 L327 162" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M234 186 L327 186" fill="none" stroke="#88A5B5" stroke-width="3" />
+  </g>
+</svg>

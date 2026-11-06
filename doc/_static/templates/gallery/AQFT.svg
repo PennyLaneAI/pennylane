@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">AQFT</title>
+  <desc id="description">An approximate quantum Fourier transform retains larger controlled phase rotations and omits the small-angle rotation shown as a dashed connection.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M48 78 L352 78" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M48 140 L352 140" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M48 202 L352 202" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <rect x="57.0" y="59.0" width="38" height="38" rx="9" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M69 68 L69 88" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M83 68 L83 88" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M69 78 L83 78" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="214.0" y="121.0" width="38" height="38" rx="9" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M226 130 L226 150" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M240 130 L240 150" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M226 140 L240 140" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="312.0" y="183.0" width="38" height="38" rx="9" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M324 192 L324 212" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M338 192 L338 212" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M324 202 L338 202" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M142 78 L142 140" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="142" cy="140" r="7" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="142" cy="78" r="16" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M142 57 L142 99" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M284 140 L284 202" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="284" cy="202" r="7" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="284" cy="140" r="16" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M284 119 L284 161" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M196 96 L196 191" fill="none" stroke="#88A5B5" stroke-width="3" stroke-dasharray="6 8"/>
+    <circle cx="196" cy="78" r="14" fill="#FFFFFF" stroke="#88A5B5" stroke-width="3" stroke-dasharray="4 6"/>
+    <circle cx="196" cy="202" r="7" fill="#FFFFFF" stroke="#88A5B5" stroke-width="3" stroke-dasharray="4 5"/>
+    <path d="M192 66 L196 78 L203 70" fill="none" stroke="#88A5B5" stroke-width="3" />
+  </g>
+</svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">TrotterProduct</title>
+  <desc id="description">Three repeated ordered groups of Hamiltonian fragments form a Trotter product.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M53 142 L348 142" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <rect x="60" y="106" width="19" height="72" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="86" y="106" width="19" height="72" rx="5" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="112" y="106" width="19" height="72" rx="5" fill="#FFE08A" stroke="#151515" stroke-width="3" />
+    <rect x="162" y="106" width="19" height="72" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="188" y="106" width="19" height="72" rx="5" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="214" y="106" width="19" height="72" rx="5" fill="#FFE08A" stroke="#151515" stroke-width="3" />
+    <rect x="264" y="106" width="19" height="72" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="290" y="106" width="19" height="72" rx="5" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="316" y="106" width="19" height="72" rx="5" fill="#FFE08A" stroke="#151515" stroke-width="3" />
+    <path d="M76 85 Q200 24 324 85" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M313 71 L326 86 L306 85" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M76 201 Q200 257 324 201" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M91 202 L75 202 L82 217" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

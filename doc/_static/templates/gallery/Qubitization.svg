@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">Qubitization</title>
+  <desc id="description">Two reflections induce a walk rotation associated with the highlighted block of an encoded operator.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="201" cy="143" r="88" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <path d="M92 143 L310 143" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M151 229 L249 57" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M201 143 L278 103 A87 87 0 0 1 233 224 Z" fill="#D5F0FD" stroke="none" stroke-width="4" />
+    <path d="M201 143 L269 108" fill="none" stroke="#0074E0" stroke-width="5" />
+    <path d="M257.07 106.75 L269 108 L263.08 118.44" fill="none" stroke="#0074E0" stroke-width="5" />
+    <path d="M201 143 L232 217" fill="none" stroke="#151515" stroke-width="5" />
+    <path d="M234.19 205.2 L232 217 L222.06 210.28" fill="none" stroke="#151515" stroke-width="5" />
+    <path d="M252.7 116.7 L253.8 118.9 L254.7 121.1 L255.6 123.3 L256.3 125.6 L257.0 127.9 L257.6 130.2 L258.0 132.5 L258.4 134.9 L258.7 137.3 L258.9 139.7 L259.0 142.1 L259.0 144.4 L258.9 146.8 L258.7 149.2 L258.4 151.6 L258.0 154.0 L257.5 156.3 L256.9 158.6 L256.2 160.9 L255.4 163.2 L254.5 165.4 L253.5 167.6 L252.5 169.7 L251.3 171.8 L250.1 173.9 L248.8 175.9 L247.4 177.8 L245.9 179.7 L244.4 181.5 L242.7 183.3 L241.0 185.0 L239.3 186.6 L237.4 188.1 L235.6 189.6 L233.6 191.0 L231.6 192.3 L229.5 193.5 L227.4 194.6 L225.3 195.7 L223.1 196.6" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M225.2863382186495 195.6704260086186 L223.09363981327914 196.62714871966517" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M234.92 198.64 L223.09363981327914 196.62714871966517 L229.66 186.59" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="201" cy="143" r="9" fill="#FFB5F1" stroke="none" stroke-width="0" />
+    <rect x="56" y="58" width="44" height="44" rx="9" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="63" y="65" width="14" height="14" rx="3" fill="#0074E0" stroke="none" stroke-width="0" />
+  </g>
+</svg>

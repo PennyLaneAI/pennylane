@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">AliasSampling</title>
+  <desc id="description">An uneven distribution is reorganized into equal-size probability buckets with alternate outcomes.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="55" y="158" width="28" height="53" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="94" y="81" width="28" height="130" rx="5" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="133" y="124" width="28" height="87" rx="5" fill="#0074E0" stroke="#151515" stroke-width="3" />
+    <path d="M176 142 L209 142" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M198.96 135.42 L209 142 L198.96 148.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="228" y="82" width="30" height="130" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="228" y="171" width="30" height="41" rx="4" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="267" y="82" width="30" height="130" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="267" y="120" width="30" height="92" rx="4" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="306" y="82" width="30" height="130" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="306" y="148" width="30" height="64" rx="4" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M229 61 L337 61" fill="none" stroke="#0074E0" stroke-width="3" />
+  </g>
+</svg>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">OutMultiplier</title>
+  <desc id="description">Two quantum registers are multiplied into a separate output register.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="65" y="60" width="104" height="42" rx="12" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="91.0" cy="81" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="117.0" cy="81" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="143.0" cy="81" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <rect x="231" y="60" width="104" height="42" rx="12" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="257.0" cy="81" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="283.0" cy="81" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="309.0" cy="81" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <path d="M118 105 L166 130" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M160.14 119.53 L166 130 L154.06 131.2" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M283 105 L235 130" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M246.94 131.2 L235 130 L240.86 119.53" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="200" cy="145" r="30" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <path d="M188 133 L212 157" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M188 157 L212 133" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M200 179 L200 197" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M206.58 186.96 L200 197 L193.42 186.96" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="135" y="201" width="130" height="42" rx="12" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <circle cx="161.0" cy="222" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="187.0" cy="222" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="213.0" cy="222" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="239.0" cy="222" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

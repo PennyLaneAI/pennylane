@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">Reflection</title>
+  <desc id="description">A state vector and its mirror image reflected across a horizontal axis.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="202" cy="143" r="81" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <path d="M202 143 L275 104 A82 82 0 0 1 275 182 Z" fill="#D5F0FD" stroke="none" stroke-width="4" />
+    <path d="M79 143 L326 143" fill="none" stroke="#88A5B5" stroke-width="3" stroke-dasharray="6 8"/>
+    <path d="M202 143 L266 96" fill="none" stroke="#0074E0" stroke-width="5" />
+    <path d="M254.02 96.64 L266 96 L261.8 107.24" fill="none" stroke="#0074E0" stroke-width="5" />
+    <path d="M202 143 L266 190" fill="none" stroke="#151515" stroke-width="5" />
+    <path d="M261.8 178.76 L266 190 L254.02 189.36" fill="none" stroke="#151515" stroke-width="5" />
+    <path d="M245.3 110.8 L246.3 112.2 L247.3 113.6 L248.2 115.1 L249.1 116.5 L249.9 118.1 L250.7 119.6 L251.4 121.2 L252.1 122.8 L252.7 124.4 L253.3 126.0 L253.8 127.7 L254.2 129.3 L254.7 131.0 L255.0 132.7 L255.3 134.4 L255.6 136.1 L255.8 137.8 L255.9 139.5 L256.0 141.3 L256.0 143.0 L256.0 144.7 L255.9 146.5 L255.8 148.2 L255.6 149.9 L255.3 151.6 L255.0 153.3 L254.7 155.0 L254.2 156.7 L253.8 158.3 L253.3 160.0 L252.7 161.6 L252.1 163.2 L251.4 164.8 L250.7 166.4 L249.9 167.9 L249.1 169.5 L248.2 170.9 L247.3 172.4 L246.3 173.8 L245.3 175.2" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M246.32277408614388 173.84625904884825 L245.3131709257518 175.2485538335692" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M256.51 170.95 L245.3131709257518 175.2485538335692 L245.84 163.26" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="202" cy="143" r="8" fill="#FFB5F1" stroke="none" stroke-width="0" />
+  </g>
+</svg>

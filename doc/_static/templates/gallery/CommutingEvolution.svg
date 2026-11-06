@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">CommutingEvolution</title>
+  <desc id="description">Two orders of commuting evolution take a state to the same destination.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M92 195 L92 84" fill="none" stroke="#0074E0" stroke-width="5" />
+    <path d="M85.42 94.04 L92 84 L98.58 94.04" fill="none" stroke="#0074E0" stroke-width="5" />
+    <path d="M109 68 L296 68" fill="none" stroke="#151515" stroke-width="5" />
+    <path d="M285.96 61.42 L296 68 L285.96 74.58" fill="none" stroke="#151515" stroke-width="5" />
+    <path d="M92 212 L279 212" fill="none" stroke="#151515" stroke-width="5" />
+    <path d="M268.96 205.42 L279 212 L268.96 218.58" fill="none" stroke="#151515" stroke-width="5" />
+    <path d="M308 197 L308 86" fill="none" stroke="#0074E0" stroke-width="5" />
+    <path d="M301.42 96.04 L308 86 L314.58 96.04" fill="none" stroke="#0074E0" stroke-width="5" />
+    <circle cx="92" cy="212" r="14" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="92" cy="68" r="14" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <circle cx="308" cy="212" r="14" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <circle cx="308" cy="68" r="14" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M177 126 L222 126" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M177 151 L222 151" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>
