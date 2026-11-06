@@ -18,6 +18,7 @@ This file contains the implementation of the commutator function in PennyLane
 import pennylane as qp
 from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.ops._pauli_conversion import to_operator
+from pennylane.ops._pauli_utils import pauli_sentence
 
 
 def commutator(op1, op2, pauli=False):
@@ -111,9 +112,9 @@ def commutator(op1, op2, pauli=False):
 
     if pauli or both_have_pauli_rep:
         if not isinstance(op1, PauliSentence):
-            op1 = qp.pauli.pauli_sentence(op1)
+            op1 = pauli_sentence(op1)
         if not isinstance(op2, PauliSentence):
-            op2 = qp.pauli.pauli_sentence(op2)
+            op2 = pauli_sentence(op2)
         res = op1.commutator(op2)
         return res if pauli else to_operator(res, wire_order=res.wires)
 

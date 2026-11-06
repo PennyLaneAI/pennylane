@@ -1830,6 +1830,9 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* Moved operator-to-Pauli and operator/string conversion helpers into ``pennylane.ops``.
+  Existing ``pennylane.pauli`` import paths remain available.
+
 * :func:`~.specs`, :func:`~.analyze` and :func:`~pennylane.estimate` now compile QJIT-compiled
   QNodes up to the MLIR passes with Catalyst's ``target="mlir_opt"``, instead of reproducing part
   of ``QJIT.jit_compile``.
