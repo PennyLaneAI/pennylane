@@ -168,6 +168,71 @@ def test_wires_runtime_error():
         dev.execute(tape)
 
 
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+@pytest.mark.parametrize("method", ["mps", "tn"])
+class TestDeviceWireOrder:
+    """Test that the order of the device wires fixes the layout of the tensor network."""
+
+    @staticmethod
+    def _out_of_order_circuit():
+        qp.RX(0.4, wires=1)
+        qp.Hadamard(wires=2)
+        qp.CNOT(wires=[2, 0])
+        qp.RY(0.7, wires=0)
+        return qp.state()
+
+    @pytest.mark.parametrize("wires", [[0, 1, 2], [2, 0, 1], ["a", "b", "c"]])
+    def test_state_follows_device_wire_order(self, method, wires):
+        """Test that the returned state is ordered by the device wires, not by the order in
+        which the wires appear in the circuit."""
+        wire_map = dict(zip([0, 1, 2], wires))
+        circuit = qp.map_wires(self._out_of_order_circuit, wire_map)
+
+        result = qp.QNode(circuit, qp.device("default.tensor", wires=wires, method=method))()
+        expected = qp.QNode(circuit, qp.device("default.qubit", wires=wires))()
+
+        assert np.allclose(result, expected)
+
+    def test_state_prep_with_custom_wire_labels(self, method):
+        """Test that a state can be prepared on a device with non-integer wire labels."""
+        state = np.array([0, 1, 0, 0])
+
+        @qp.qnode(qp.device("default.tensor", wires=["a", "b"], method=method))
+        def circuit():
+            qp.StatePrep(state, wires=["a", "b"])
+            return qp.expval(qp.Z("a")), qp.expval(qp.Z("b"))
+
+        assert np.allclose(circuit(), [1.0, -1.0])
+
+    def test_device_wire_order_sets_mps_layout(self, method):
+        """Test that reordering the device wires changes which qubits are adjacent in the
+        tensor network, so a truncated MPS can represent long-range pairs exactly."""
+        if method != "mps":
+            pytest.skip("Bond dimension truncation is specific to the MPS method.")
+
+        def circuit():
+            for i in range(8):
+                qp.RY(0.3 * (i + 1), wires=i)
+            for i in range(4):
+                qp.CNOT(wires=[i, 7 - i])
+            return qp.expval(qp.Z(0) @ qp.Z(7))
+
+        exact = qp.QNode(circuit, qp.device("default.qubit", wires=8))()
+        natural = qp.QNode(
+            circuit, qp.device("default.tensor", wires=8, method="mps", max_bond_dim=2)
+        )()
+        paired = qp.QNode(
+            circuit,
+            qp.device(
+                "default.tensor", wires=[0, 7, 1, 6, 2, 5, 3, 4], method="mps", max_bond_dim=2
+            ),
+        )()
+
+        # With the natural order every pair is long-range and the truncation is lossy.
+        assert not np.allclose(natural, exact)
+        assert np.allclose(paired, exact)
+
+
 @pytest.mark.parametrize("max_bond_dim", [None, 10])
 @pytest.mark.parametrize("cutoff", [1e-16, 1e-12])
 def test_kwargs_mps(max_bond_dim, cutoff):
