@@ -14,14 +14,12 @@
 """Unit tests for the Snapshot operation."""
 
 import numpy as np
-
-# pylint: disable=protected-access
 import pytest
 
 import pennylane as qp
 from pennylane import Snapshot
 from pennylane.decomposition import gate_sets
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 
 
 class TestBarrier:
@@ -240,7 +238,8 @@ class TestSnapshot:
 
     def test_control(self):
         """Test the _controlled method for the Snapshot operation."""
-        assert isinstance(Snapshot()._controlled(0), Snapshot)
+        assert isinstance(Snapshot()._controlled(0), Snapshot)  # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         assert Snapshot("my_label")._controlled(0).tag == Snapshot("my_label").tag
 
     def test_adjoint(self):
@@ -269,7 +268,6 @@ class TestSnapshot:
         qp.assert_equal(target_mp, new_op.hyperparameters["measurement"])
         assert new_op.tag == "my tag"
 
-    # pylint: disable=unused-argument
     @pytest.mark.capture
     @pytest.mark.parametrize("measurement", (None, "state"))
     def test_capture_measurement(self, measurement):
@@ -286,8 +284,11 @@ class TestSnapshot:
         jaxpr = jax.make_jaxpr(f)()
 
         if measurement is None:
+            # pylint: disable-next=protected-access
             assert jaxpr.eqns[0].primitive == qp.Snapshot._primitive
         else:
+            # pylint: disable-next=protected-access
             assert jaxpr.eqns[0].primitive == qp.measurements.StateMP._wires_primitive
+            # pylint: disable-next=protected-access
             assert jaxpr.eqns[1].primitive == qp.Snapshot._primitive
             assert jaxpr.eqns[1].invars[0] == jaxpr.eqns[0].outvars[0]

@@ -15,7 +15,9 @@ r"""
 Contains the UCCSD template.
 """
 
-# pylint: disable-msg=too-many-arguments,protected-access,too-many-positional-arguments
+# pylint: disable=too-many-arguments
+
+
 import copy
 from collections import Counter
 from collections.abc import Sequence
@@ -250,11 +252,12 @@ class UCCSD(Operation):
 
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)
+        # pylint: disable-next=protected-access
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["s_wires"] = tuple(
+        new_op._hyperparameters["s_wires"] = tuple(  # pylint: disable=protected-access
             tuple(wire_map.get(w, w) for w in wires) for wires in self._hyperparameters["s_wires"]
         )
-        new_op._hyperparameters["d_wires"] = tuple(
+        new_op._hyperparameters["d_wires"] = tuple(  # pylint: disable=protected-access
             tuple(tuple(wire_map.get(w, w) for w in _wires) for _wires in wires)
             for wires in self._hyperparameters["d_wires"]
         )
@@ -276,9 +279,8 @@ class UCCSD(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(
-        weights, wires, s_wires, d_wires, init_state, n_repeats
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(weights, wires, s_wires, d_wires, init_state, n_repeats):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

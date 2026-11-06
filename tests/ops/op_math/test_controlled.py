@@ -34,16 +34,10 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
 from pennylane.ops.op_math.controlled2 import ControlledOp2
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp
-
-# pylint: disable=too-few-public-methods
-# pylint: disable=protected-access
-# pylint: disable=pointless-statement
-# pylint: disable=expression-not-assigned
-# pylint: disable=too-many-arguments
 
 
 def equal_list(lhs, rhs):
@@ -54,15 +48,15 @@ def equal_list(lhs, rhs):
     return len(lhs) == len(rhs) and all(qp.equal(l, r) for l, r in zip(lhs, rhs))
 
 
-class TempOperator(Operator):
+class TempOperator(Operator):  # pylint: disable=too-few-public-methods
     num_wires = 1
 
 
-class TempOperation(Operation):
+class TempOperation(Operation):  # pylint: disable=too-few-public-methods
     num_wires = 1
 
 
-class OpWithDecomposition(Operation):
+class OpWithDecomposition(Operation):  # pylint: disable=too-few-public-methods
     @staticmethod
     def compute_decomposition(*params, wires=None, **_):
         return [
@@ -90,7 +84,7 @@ class TestControlledInheritance:
         """When the operation inherits from `Operation`, then a `ControlledOp` should
         be created instead and the Controlled should now have Operation functionality."""
 
-        class CustomOp(Operation):
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
             num_wires = 1
             num_params = 1
 
@@ -167,7 +161,7 @@ class TestControlledInit:
         assert op.name == "C(TempOperator)"
 
         assert op.num_params == 0
-        assert op.parameters == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert op.parameters == []
         assert op.data == ()
 
         assert op.num_wires == 3
@@ -240,8 +234,7 @@ class TestControlledInit:
         qp.testing.assert_valid(op)
 
 
-# pylint: disable=too-few-public-methods
-class DummyHadamard(qp.operation.Operator):
+class DummyHadamard(qp.operation.Operator):  # pylint: disable=too-few-public-methods
     resource_keys = set({})
     num_wires = 1
 
@@ -288,13 +281,13 @@ class TestControlledProperties:
     def test_control_int(self, val, arr):
         """Test private `_control_int` property converts control_values to integer representation."""
         op = Controlled(TempOperator(5), (0, 1, 2), control_values=arr)
-        assert op._control_int == val
+        assert op._control_int == val  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("value", (True, False))
     def test_has_matrix(self, value):
         """Test that Controlled defers has_matrix to base operator."""
 
-        class DummyOp(Operator):
+        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             has_matrix = value
 
@@ -368,7 +361,7 @@ class TestControlledProperties:
     def test_has_adjoint(self, value):
         """Test that Controlled defers has_adjoint to base operator."""
 
-        class DummyOp(Operator):
+        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             has_adjoint = value
 
@@ -379,7 +372,7 @@ class TestControlledProperties:
     def test_has_diagonalizing_gates(self, value):
         """Test that Controlled defers has_diagonalizing_gates to base operator."""
 
-        class DummyOp(Operator):
+        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             has_diagonalizing_gates = value
 
@@ -390,7 +383,7 @@ class TestControlledProperties:
     def test_is_hermitian(self, value):
         """Test that Controlled defers `is_hermitian` to base operator."""
 
-        class DummyOp(Operator):
+        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             is_verified_hermitian = value
 
@@ -440,7 +433,7 @@ class TestControlledMiscMethods:
 
         op = Controlled(target, control_wires, control_values=control_values, work_wires=work_wires)
 
-        data, metadata = op._flatten()
+        data, metadata = op._flatten()  # pylint: disable=protected-access
         assert data[0] is target
         assert len(data) == 1
 
@@ -449,8 +442,9 @@ class TestControlledMiscMethods:
         # make sure metadata is hashable
         assert hash(metadata)
 
-        new_op = type(op)._unflatten(*op._flatten())
+        new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
         qp.assert_equal(op, new_op)
+        # pylint: disable-next=protected-access
         assert new_op._name == "C(S)"  # make sure initialization was called
 
     def test_copy(self):
@@ -590,13 +584,11 @@ class TestControlledMiscMethods:
 class TestControlledOperationProperties:
     """Test ControlledOp specific properties."""
 
-    # pylint:disable=no-member
-
     @pytest.mark.parametrize("gm", (None, "A", "F"))
     def test_grad_method(self, gm):
         """Check grad_method defers to that of the base operation."""
 
-        class DummyOp(Operation):
+        class DummyOp(Operation):  # pylint: disable=too-few-public-methods
             num_wires = 1
             grad_method = gm
 
@@ -607,7 +599,7 @@ class TestControlledOperationProperties:
     def test_basis(self):
         """Test that controlled mimics the basis attribute of the base op."""
 
-        class DummyOp(Operation):
+        class DummyOp(Operation):  # pylint: disable=too-few-public-methods
             num_wires = 1
             basis = "Z"
 
@@ -773,8 +765,10 @@ class TestMatrix:
 
         mat = op.matrix()
         with qp.queuing.AnnotatedQueue() as q:
+            # pylint: disable-next=expression-not-assigned
             [qp.PauliX(w) for w, val in zip(control_wires, control_values) if not val]
             Controlled(base, control_wires, control_values=[1, 1, 1])
+            # pylint: disable-next=expression-not-assigned
             [qp.PauliX(w) for w, val in zip(control_wires, control_values) if not val]
         tape = qp.tape.QuantumScript.from_queue(q)
         decomp_mat = qp.matrix(tape, wire_order=op.wires)
@@ -962,12 +956,11 @@ class TestDecomposition:
         decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
         assert qp.math.allclose(op.matrix(), decomp_mat)
 
-    # pylint: disable=too-many-positional-arguments
     @pytest.mark.parametrize(
         "base_cls, params, base_wires, ctrl_wires, custom_ctrl_cls, expected",
         custom_ctrl_op_decomps,
     )
-    def test_decomposition_custom_ops(
+    def test_decomposition_custom_ops(  # pylint: disable=too-many-arguments
         self,
         base_cls,
         params,
@@ -997,7 +990,7 @@ class TestDecomposition:
         "base_cls, params, base_wires, ctrl_wires, custom_ctrl_cls, expected",
         special_par_op_decomps,
     )
-    def test_decomposition_custom_par_ops_broadcasted(
+    def test_decomposition_custom_par_ops_broadcasted(  # pylint: disable=too-many-arguments
         self,
         base_cls,
         params,
@@ -1106,7 +1099,7 @@ class TestArithmetic:
     def test_adjoint(self):
         """Test the adjoint method for Controlled Operators."""
 
-        class DummyOp(Operator):
+        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
             def adjoint(self):
@@ -1127,7 +1120,7 @@ class TestArithmetic:
     def test_pow(self, z):
         """Test the pow method for Controlled Operators."""
 
-        class DummyOp(Operator):
+        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
             def pow(self, z):
@@ -1186,7 +1179,7 @@ class TestDifferentiation:
 
         b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
-        loss.backward()  # pylint:disable=no-member
+        loss.backward()
 
         res = b.grad.detach()
         expected = pnp.sin(b.detach() / 2) / 2
@@ -2150,7 +2143,7 @@ class TestCtrlTransformDifferentiation:
 
         b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
-        loss.backward()  # pylint:disable=no-member
+        loss.backward()
 
         res = b.grad.detach()
         expected = pnp.sin(b.detach() / 2) / 2

@@ -320,7 +320,7 @@ def create_controlled_op(op, control, control_values, work_wires, work_wire_type
     return _ctrl_transform(op, control, control_values, work_wires, work_wire_type, one_controlled)
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _ctrl_transform(op, control, control_values, work_wires, work_wire_type, one_controlled):
 
     @wraps(op)
@@ -378,7 +378,6 @@ ctrl_transform_prim.multiple_results = True
 ctrl_transform_prim.prim_type = "higher_order"
 
 
-# pylint: disable=too-many-arguments
 @ctrl_transform_prim.def_impl
 def _ctrl_transform_impl(
     *args,
@@ -388,7 +387,7 @@ def _ctrl_transform_impl(
     n_consts,
     work_wire_type="borrowed",
 ):
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable-next=import-outside-toplevel
     from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
     values_start = len(args) - n_control
@@ -447,8 +446,7 @@ def _capture_ctrl_transform(
     return new_qfunc
 
 
-# pylint: disable=too-many-arguments, too-many-public-methods
-class Controlled(SymbolicOp):
+class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
     r"""Symbolic operator denoting a controlled operator.
 
     Args:
@@ -563,9 +561,8 @@ class Controlled(SymbolicOp):
             work_wire_type=metadata[3],
         )
 
-    # pylint: disable=no-self-argument
     @classproperty
-    def __signature__(cls):  # pragma: no cover
+    def __signature__(cls):  # pragma: no cover  # pylint: disable=no-self-argument
         # this method is defined so inspect.signature returns __init__ signature
         # instead of __new__ signature
         # See PEP 362
@@ -585,7 +582,6 @@ class Controlled(SymbolicOp):
             return True
         return NotImplemented
 
-    # pylint: disable=unused-argument
     def __new__(cls, *args, **kwargs):
         """
             Choose the concrete class to allocate for a controlled operator.
@@ -604,9 +600,8 @@ class Controlled(SymbolicOp):
             return object.__new__(ControlledOp)
         return object.__new__(Controlled)
 
-    # pylint: disable=arguments-differ, too-many-positional-arguments
     @classmethod
-    def _primitive_bind_call(
+    def _primitive_bind_call(  # pylint: disable=arguments-differ
         cls,
         base,
         control_wires,
@@ -626,7 +621,6 @@ class Controlled(SymbolicOp):
             work_wire_type=work_wire_type,
         )
 
-    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         base,
@@ -699,7 +693,6 @@ class Controlled(SymbolicOp):
             )
         )
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return self.base.has_matrix
@@ -823,7 +816,7 @@ class Controlled(SymbolicOp):
         return math.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     @property
-    def has_sparse_matrix(self):
+    def has_sparse_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_sparse_matrix or self.base.has_matrix
 
     def sparse_matrix(self, wire_order=None, format="csr"):
@@ -862,6 +855,7 @@ class Controlled(SymbolicOp):
         return math.concatenate([ones, base_eigvals])
 
     @property
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
@@ -921,9 +915,8 @@ class Controlled(SymbolicOp):
         ]
         return d
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_generator(self):
+    def has_generator(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_generator
 
     def generator(self):
@@ -937,7 +930,7 @@ class Controlled(SymbolicOp):
         return qp.prod(*projectors, sub_gen)
 
     @property
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_adjoint
 
     def adjoint(self):
@@ -999,7 +992,6 @@ def _is_single_qubit_special_unitary(op):
     return math.allclose(det, 1)
 
 
-# pylint: disable=too-many-return-statements
 def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
     """Custom handling for decomposing a controlled operation"""
 
@@ -1083,7 +1075,6 @@ class ControlledOp(Controlled, Operation):
         # overrides dispatch behaviour of ``Controlled``
         return object.__new__(cls)
 
-    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         base,

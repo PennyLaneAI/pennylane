@@ -30,18 +30,15 @@ from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
-# pylint:disable=unused-argument,too-few-public-methods,unused-variable,protected-access,too-many-arguments
-
 
 def test_execute_method_abstract():
     """Test that a device can't be instantiated without an execute method."""
 
-    # pylint: disable=too-few-public-methods
-    class BadDevice(Device):
+    class BadDevice(Device):  # pylint: disable=too-few-public-methods
         """A bad device"""
 
     with pytest.raises(TypeError, match=r"instantiate abstract class BadDevice"):
-        BadDevice()  # pylint: disable=abstract-class-instantiated
+        BadDevice()
 
 
 EXAMPLE_TOML_FILE = """
@@ -78,12 +75,12 @@ class TestDeviceCapabilities:
     def test_device_capabilities(self, request):
         """Tests that the device capabilities object is correctly initialized"""
 
-        class DeviceWithCapabilities(Device):
+        class DeviceWithCapabilities(Device):  # pylint: disable=too-few-public-methods
             """A device with a capabilities config file defined."""
 
             config_filepath = request.node.toml_file
 
-            def execute(self, circuits, execution_config=None):
+            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
                 return (0,)
 
         dev = DeviceWithCapabilities()
@@ -94,10 +91,12 @@ class TestDeviceCapabilities:
 
         with pytest.raises(FileNotFoundError):
 
+            # pylint: disable-next=too-few-public-methods,unused-variable
             class DeviceWithInvalidCapabilities(Device):
 
                 config_filepath = "nonexistent_file.toml"
 
+                # pylint: disable-next=unused-argument
                 def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                     return (0,)
 
@@ -112,10 +111,10 @@ class TestSetupExecutionConfig:
 
         class CustomDevice(Device):
 
-            def preprocess(self, execution_config=None):
+            def preprocess(self, execution_config=None):  # pylint: disable=unused-argument
                 return CompilePipeline(), default_execution_config
 
-            def execute(self, circuits, execution_config=None):
+            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
                 return (0,)
 
         dev = CustomDevice()
@@ -125,9 +124,9 @@ class TestSetupExecutionConfig:
     def test_device_no_capabilities(self):
         """Tests if the device does not declare capabilities."""
 
-        class DeviceNoCapabilities(Device):
+        class DeviceNoCapabilities(Device):  # pylint: disable=too-few-public-methods
 
-            def execute(self, circuits, execution_config=None):
+            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
                 return (0,)
 
         dev = DeviceNoCapabilities()
@@ -139,7 +138,6 @@ class TestSetupExecutionConfig:
         config = dev.setup_execution_config(initial_config)
         assert config.gradient_method == "device"
 
-    # pylint: disable=too-many-positional-arguments
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file, mcm_method, shots, expected_transform, expected_error",
@@ -170,12 +168,17 @@ class TestSetupExecutionConfig:
         ],
         indirect=("create_temporary_toml_file",),
     )
-    def test_mcm_method_validation(
-        self, mcm_method, shots, expected_transform, expected_error, request
+    def test_mcm_method_validation(  # pylint: disable=unused-argument
+        self,
+        mcm_method,
+        shots,
+        expected_transform,
+        expected_error,
+        request,
     ):
         """Tests that the requested MCM method is validated."""
 
-        class DeviceWithMCM(Device):
+        class DeviceWithMCM(Device):  # pylint: disable=too-few-public-methods
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -206,9 +209,10 @@ class TestSetupExecutionConfig:
     def test_mcm_method_validation_without_capabilities(self, mcm_method, shots, expected_error):
         """Tests that the requested mcm method is validated without device capabilities"""
 
-        class CustomDevice(Device):
+        class CustomDevice(Device):  # pylint: disable=too-few-public-methods
             """A device with only a dummy execute method provided."""
 
+            # pylint: disable-next=unused-argument
             def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return (0,)
 
@@ -239,12 +243,12 @@ class TestSetupExecutionConfig:
     def test_mcm_method_resolution(self, request, shots, expected_method):
         """Tests that an MCM method is chosen if not specified."""
 
-        class CustomDevice(qp.devices.Device):
+        class CustomDevice(qp.devices.Device):  # pylint: disable=too-few-public-methods
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
 
-            def execute(self, circuit, **kwargs):
+            def execute(self, circuit, **kwargs):  # pylint: disable=unused-argument
                 """The execute method for the custom device."""
                 return 0
 
@@ -264,10 +268,10 @@ class TestPreprocessTransforms:
 
         class CustomDevice(Device):
 
-            def preprocess(self, execution_config=None):
+            def preprocess(self, execution_config=None):  # pylint: disable=unused-argument
                 return default_compile_pipeline, ExecutionConfig()
 
-            def execute(self, circuits, execution_config=None):
+            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
                 return (0,)
 
         dev = CustomDevice()
@@ -277,9 +281,9 @@ class TestPreprocessTransforms:
     def test_device_no_capabilities(self):
         """Tests if the device does not declare capabilities."""
 
-        class DeviceNoCapabilities(Device):
+        class DeviceNoCapabilities(Device):  # pylint: disable=too-few-public-methods
 
-            def execute(self, circuits, execution_config=None):
+            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
                 return (0,)
 
         dev = DeviceNoCapabilities()
@@ -296,7 +300,7 @@ class TestPreprocessTransforms:
     def test_deferred_allow_postselect(self, request, supports_projector):
         """Tests that the deferred measurements transform validates postselection."""
 
-        class CustomDevice(Device):
+        class CustomDevice(Device):  # pylint: disable=too-few-public-methods
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -306,7 +310,7 @@ class TestPreprocessTransforms:
                 if supports_projector:
                     self.capabilities.operations["Projector"] = OperatorProperties()
 
-            def execute(
+            def execute(  # pylint: disable=unused-argument
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
@@ -331,7 +335,7 @@ class TestPreprocessTransforms:
     def test_decomposition(self, request, shots):
         """Tests that decomposition acts correctly with or without shots."""
 
-        class CustomDevice(Device):
+        class CustomDevice(Device):  # pylint: disable=too-few-public-methods
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -349,7 +353,7 @@ class TestPreprocessTransforms:
                     }
                 )
 
-            def execute(
+            def execute(  # pylint: disable=unused-argument
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
@@ -375,7 +379,7 @@ class TestPreprocessTransforms:
     def test_validation(self, request, shots):
         """Tests that observable and measurement validation works correctly."""
 
-        class CustomDevice(Device):
+        class CustomDevice(Device):  # pylint: disable=too-few-public-methods
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -402,7 +406,7 @@ class TestPreprocessTransforms:
                     }
                 )
 
-            def execute(
+            def execute(  # pylint: disable=unused-argument
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
@@ -467,7 +471,7 @@ class TestPreprocessTransforms:
         if overlapping_obs and sum_support:
             pytest.skip("The support for Sum doesn't matter here")
 
-        class CustomDevice(Device):
+        class CustomDevice(Device):  # pylint: disable=too-few-public-methods
 
             config_filepath = request.node.toml_file
 
@@ -478,6 +482,7 @@ class TestPreprocessTransforms:
                 if sum_support:
                     self.capabilities.observables.update({"Sum": OperatorProperties()})
 
+            # pylint: disable-next=unused-argument
             def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return (0,)
 
@@ -488,15 +493,21 @@ class TestPreprocessTransforms:
             assert qp.transforms.split_non_commuting in program
             assert qp.transforms.split_to_single_terms not in program
             for transform_container in program:
+                # pylint: disable-next=protected-access
                 if transform_container._transform is qp.transforms.split_non_commuting:
+                    # pylint: disable-next=protected-access
                     assert "grouping_strategy" in transform_container._kwargs
+                    # pylint: disable-next=protected-access
                     assert transform_container._kwargs["grouping_strategy"] == "wires"
         elif not non_commuting_obs:
             assert qp.transforms.split_non_commuting in program
             assert qp.transforms.split_to_single_terms not in program
             for transform_container in program:
+                # pylint: disable-next=protected-access
                 if transform_container._transform is qp.transforms.split_non_commuting:
+                    # pylint: disable-next=protected-access
                     assert "grouping_strategy" in transform_container._kwargs
+                    # pylint: disable-next=protected-access
                     assert transform_container._kwargs["grouping_strategy"] == "qwc"
         elif not sum_support:
             assert qp.transforms.split_to_single_terms in program
@@ -512,7 +523,7 @@ class TestPreprocessTransforms:
     def test_diagonalize_measurements(self, request, non_commuting_obs, all_obs_support):
         """Tests that the diagonalize_measurements transform is applied correctly."""
 
-        class CustomDevice(Device):
+        class CustomDevice(Device):  # pylint: disable=too-few-public-methods
 
             config_filepath = request.node.toml_file
 
@@ -538,6 +549,7 @@ class TestPreprocessTransforms:
                         }
                     )
 
+            # pylint: disable-next=unused-argument
             def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return (0,)
 
@@ -550,20 +562,19 @@ class TestPreprocessTransforms:
         else:
             assert qp.transforms.diagonalize_measurements in program
             for transform_container in program:
+                # pylint: disable-next=protected-access
                 if transform_container._transform is qp.transforms.diagonalize_measurements:
-                    assert transform_container._kwargs["supported_base_obs"] == {
-                        qp.Z,
-                        qp.X,
-                        qp.Y,
-                    }
+                    # pylint: disable-next=protected-access
+                    assert transform_container._kwargs["supported_base_obs"] == {qp.Z, qp.X, qp.Y}
 
 
 class TestMinimalDevice:
     """Tests for a device with only a minimal execute provided."""
 
-    class MinimalDevice(Device):
+    class MinimalDevice(Device):  # pylint: disable=too-few-public-methods
         """A device with only a dummy execute method provided."""
 
+        # pylint: disable-next=unused-argument
         def execute(self, circuits, execution_config: ExecutionConfig | None = None):
             return (0,)
 
@@ -704,7 +715,7 @@ class TestMinimalDevice:
     def test_wires_are_read_only(self):
         """Test that device wires cannot be set after device initialization."""
         with pytest.raises(AttributeError):
-            self.dev.wires = [0, 1]  # pylint:disable=attribute-defined-outside-init
+            self.dev.wires = [0, 1]  # pylint: disable=attribute-defined-outside-init
 
 
 def test_device_with_ambiguous_preprocess():
@@ -712,24 +723,26 @@ def test_device_with_ambiguous_preprocess():
 
     with pytest.raises(ValueError, match="A device should implement either"):
 
-        class InvalidDevice(Device):
+        class InvalidDevice(Device):  # pylint: disable=unused-variable
             """A device with ambiguous preprocess."""
 
-            def preprocess(self, execution_config=None):
+            def preprocess(self, execution_config=None):  # pylint: disable=unused-argument
                 return CompilePipeline(), ExecutionConfig()
 
-            def setup_execution_config(
+            def setup_execution_config(  # pylint: disable=unused-argument
                 self,
                 config: ExecutionConfig | None = None,
                 circuit: QuantumScript | None = None,
             ) -> ExecutionConfig:
                 return ExecutionConfig()
 
-            def preprocess_transforms(
-                self, execution_config: ExecutionConfig | None = None
+            def preprocess_transforms(  # pylint: disable=unused-argument
+                self,
+                execution_config: ExecutionConfig | None = None,
             ) -> CompilePipeline:
                 return CompilePipeline()
 
+            # pylint: disable-next=unused-argument
             def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return (0,)
 
@@ -743,10 +756,11 @@ class TestProvidingDerivatives:
         class WithDerivative(Device):
             """A device with a derivative."""
 
-            # pylint: disable=unused-argument
+            # pylint: disable-next=unused-argument
             def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return "a"
 
+            # pylint: disable-next=unused-argument
             def compute_derivatives(self, circuits, execution_config: ExecutionConfig = None):
                 return ("b",)
 
@@ -763,13 +777,14 @@ class TestProvidingDerivatives:
     def test_provided_jvp(self):
         """Tests default logic for a device with a jvp provided."""
 
-        # pylint: disable=unused-argnument
         class WithJvp(Device):
             """A device with a jvp."""
 
+            # pylint: disable-next=unused-argument
             def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return "a"
 
+            # pylint: disable-next=unused-argument
             def compute_jvp(self, circuits, tangents, execution_config: ExecutionConfig = None):
                 return ("c",)
 
@@ -783,19 +798,15 @@ class TestProvidingDerivatives:
     def test_provided_vjp(self):
         """Tests default logic for a device with a vjp provided."""
 
-        # pylint: disable=unused-argnument
         class WithVjp(Device):
             """A device with a vjp."""
 
+            # pylint: disable-next=unused-argument
             def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return "a"
 
-            def compute_vjp(
-                self,
-                circuits,
-                cotangents,
-                execution_config: ExecutionConfig = None,
-            ):
+            # pylint: disable-next=unused-argument
+            def compute_vjp(self, circuits, cotangents, execution_config: ExecutionConfig = None):
                 return ("c",)
 
         dev = WithVjp()

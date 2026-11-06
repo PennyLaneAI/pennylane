@@ -16,8 +16,6 @@ Tests for the MERA template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -108,7 +106,6 @@ def circuit3_MERA(weights, wires):
     qp.StronglyEntanglingLayers(SELWeights5, wires=[wires[0], wires[1]])
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Tests the flatten and unflatten methods."""
 
@@ -128,7 +125,7 @@ def test_flatten_unflatten():
 
     op = qp.MERA(wires, n_block_wires, block, n_params_block, template_weights)
 
-    data, metadata = op._flatten()
+    data, metadata = op._flatten()  # pylint: disable=protected-access
     assert len(data) == 1
     assert qp.math.allclose(data[0], template_weights)
 
@@ -138,8 +135,9 @@ def test_flatten_unflatten():
     # make sure metadata hashable
     assert hash(metadata)
 
-    new_op = qp.MERA._unflatten(*op._flatten())
+    new_op = qp.MERA._unflatten(*op._flatten())  # pylint: disable=protected-access
     qp.assert_equal(new_op, op)
+    # pylint: disable-next=protected-access
     assert new_op._name == "MERA"  # make sure acutally initialized
     assert new_op is not op
 
@@ -296,7 +294,7 @@ class TestTemplateInputs:
             ),
         ],
     )
-    def test_exception_wrong_weight_shape(
+    def test_exception_wrong_weight_shape(  # pylint: disable=too-many-arguments
         self, block, n_params_block, wires, n_block_wires, block_weights, msg_match
     ):
         """Verifies that an exception is raised if the weights shape is incorrect."""
@@ -401,7 +399,7 @@ class TestAttributes:
             qp.MERA.get_n_blocks(wires, n_block_wires)
 
 
-class TestDifferentiability:
+class TestDifferentiability:  # pylint: disable=too-few-public-methods
     """Test that the template is differentiable."""
 
     @pytest.mark.parametrize(
@@ -465,7 +463,7 @@ class TestTemplateOutputs:
             ),
         ],
     )
-    def test_output(
+    def test_output(  # pylint: disable=too-many-arguments
         self, block, n_params_block, wires, n_block_wires, template_weights, expected_circuit
     ):
         """Verifies that the output of the circuits is correct."""

@@ -28,8 +28,6 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.templates import HybridQRAM, SelectOnlyQRAM
 from pennylane.wires import Wires
 
-# pylint: disable=no-self-use,too-many-arguments
-
 
 class TestResourceOutOfPlaceSquare:
     """Test the OutOfPlaceSquare class."""
@@ -193,7 +191,7 @@ class TestHybridQRAM:
             ),
         ],
     )
-    def test_resource_params(
+    def test_resource_params(  # pylint: disable=too-many-arguments
         self,
         num_wires,
         data,
@@ -322,7 +320,7 @@ class TestHybridQRAM:
             ),
         ),
     )
-    def test_resources(
+    def test_resources(  # pylint: disable=too-many-arguments
         self,
         data,
         num_wires,
@@ -420,7 +418,7 @@ class TestSelectOnlyQRAM:
             ([[1], [0], [1], [0]], 7, 2, 3, (0, 1), (2, 3, 4), (5, 6), 0),
         ],
     )
-    def test_resource_params(
+    def test_resource_params(  # pylint: disable=too-many-arguments
         self,
         data,
         num_wires,
@@ -513,7 +511,7 @@ class TestSelectOnlyQRAM:
             ),
         ),
     )
-    def test_resources(
+    def test_resources(  # pylint: disable=too-many-arguments
         self,
         data,
         num_wires,
@@ -536,8 +534,7 @@ class TestSelectOnlyQRAM:
 
         dev = qp.device("lightning.qubit")
 
-        # pylint: disable-next=protected-access
-        @qp.transforms._tape_decompose
+        @qp.transforms._tape_decompose  # pylint: disable=protected-access
         @qp.qnode(dev)
         def circuit():
             SelectOnlyQRAM(
@@ -640,7 +637,7 @@ class TestBBQRAM:
             ),
         ],
     )
-    def test_resource_params(
+    def test_resource_params(  # pylint: disable=too-many-arguments
         self,
         num_wires,
         num_bitstrings,
@@ -2149,7 +2146,7 @@ class TestResourceQROM:
             ),
         ),
     )
-    def test_resources(
+    def test_resources(  # pylint: disable=too-many-arguments
         self, num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res
     ):
         """Test that the resources are correct."""
@@ -2164,17 +2161,14 @@ class TestResourceQROM:
             == expected_res
         )
 
-    # pylint: disable=protected-access
     def test_t_select_swap_width(self):
         """Test that the private function doesn't give negative or
         fractional values for the depth"""
         num_bitstrings = 8
         size_bitstring = 17
 
-        opt_width = qre.QROM._t_optimized_select_swap_width(
-            num_bitstrings,
-            size_bitstring,
-        )
+        # pylint: disable-next=protected-access
+        opt_width = qre.QROM._t_optimized_select_swap_width(num_bitstrings, size_bitstring)
         assert opt_width == 1
 
     @pytest.mark.parametrize(
@@ -2257,7 +2251,7 @@ class TestResourceQROM:
             ),
         ),
     )
-    def test_single_controlled_res_decomp(
+    def test_single_controlled_res_decomp(  # pylint: disable=too-many-arguments
         self, num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res
     ):
         """Test that the resources computed by single_controlled_res_decomp are correct."""
@@ -2338,7 +2332,7 @@ class TestResourceQROM:
             ),
         ),
     )
-    def test_controlled_res_decomp(
+    def test_controlled_res_decomp(  # pylint: disable=too-many-arguments
         self,
         num_ctrl_wires,
         num_zero_ctrl,
@@ -2489,7 +2483,7 @@ class TestResourceQROM:
             ),
         ),
     )
-    def test_adjoint_resources(
+    def test_adjoint_resources(  # pylint: disable=too-many-arguments
         self, num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res
     ):
         """Test that the resources are correct."""
@@ -3322,7 +3316,7 @@ class TestResourceReflection:
             ),
         ),
     )
-    def test_controlled_resources(
+    def test_controlled_resources(  # pylint: disable=too-many-arguments
         self, num_ctrl_wires, num_zero_ctrl, num_wires, cmpr_U, alpha, expected_res
     ):
         """Test that the controlled resources are correct."""

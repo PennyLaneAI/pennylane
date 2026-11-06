@@ -168,8 +168,7 @@ class Adjoint2(SymbolicOp2):
         assert len(eqns) <= 1, f"Expected at most one plxpr equation for {self.base}."
 
         if len(eqns) == 0:
-            # pylint: disable=protected-access
-            self.base._bind_primitive()
+            self.base._bind_primitive()  # pylint: disable=protected-access
             if self.base.tracer is None:
                 # If the base's tracer is `None` after explicitly re-binding the primitive,
                 # it means we're not in a tracing context, so we don't need to (and cannot)
@@ -241,18 +240,16 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
 
     def _wrap_work_wire_spec(base_rule):
 
-        # pylint: disable=protected-access
-        if isinstance(base_rule._work_wire_spec, dict):
-            return base_rule._work_wire_spec
+        if isinstance(base_rule._work_wire_spec, dict):  # pylint: disable=protected-access
+            return base_rule._work_wire_spec  # pylint: disable=protected-access
 
         def _wrapper(base, *_, **__):
-            return base_rule._work_wire_spec(**base.arguments)
+            return base_rule._work_wire_spec(**base.arguments)  # pylint: disable=protected-access
 
         return _wrapper
 
     base_source = base_rule._source
 
-    # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
@@ -261,9 +258,8 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
         name=f"adjoint({base_rule.name})",
     )
     def _impl(base):
-        # pylint: disable=protected-access
         non_traced_args, traced_args = get_traced_and_non_traced_args(base)
-        impl = partial(base_rule._impl, **non_traced_args)
+        impl = partial(base_rule._impl, **non_traced_args)  # pylint: disable=protected-access
         qp.adjoint(impl)(**traced_args)
 
     _impl._source = (

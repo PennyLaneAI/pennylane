@@ -16,7 +16,8 @@ This module defines the QuantumScript object responsible for storing quantum ope
 executed by a device.
 """
 
-# pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods
+# pylint: disable=protected-access
+
 
 import contextlib
 import copy
@@ -81,7 +82,7 @@ def process_queue(
     return ops, measurements
 
 
-class QuantumScript:
+class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
     r"""The operations and measurements that represent instructions for
     execution on a quantum device.
 
@@ -617,11 +618,11 @@ class QuantumScript:
         info = self.par_info[t_idx]
         return info["op"], info["op_idx"], info["p_idx"]
 
-    def get_parameters(
+    def get_parameters(  # pylint: disable=unused-argument
         self,
         trainable_only: bool = True,
         operations_only: bool = False,
-        **kwargs,  # pylint:disable=unused-argument
+        **kwargs,
     ) -> list[TensorLike]:
         """Return the parameters incident on the quantum script operations.
 
@@ -722,10 +723,8 @@ class QuantumScript:
         [-0.1, 0.2, 0.5]
         """
 
-        # pylint: disable=import-outside-toplevel # tach-ignore
-        from pennylane.ops.functions import (
-            bind_new_parameters,
-        )
+        # pylint: disable-next=import-outside-toplevel # tach-ignore
+        from pennylane.ops.functions import bind_new_parameters
 
         if len(params) != len(indices):
             raise ValueError("Number of provided parameters does not match number of indices")
@@ -885,7 +884,7 @@ class QuantumScript:
         Returns:
             ~.QuantumScript: the adjointed script
         """
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable-next=import-outside-toplevel
         from pennylane.ops.op_math.adjoint import _adjoint_eager  # tach-ignore
 
         warnings.warn(
@@ -921,7 +920,8 @@ class QuantumScript:
         Returns:
             .CircuitGraph: the circuit graph object
         """
-        from pennylane.circuit_graph import (  # pylint: disable=import-outside-toplevel # tach-ignore
+        # pylint: disable-next=import-outside-toplevel
+        from pennylane.circuit_graph import (  # tach-ignore
             CircuitGraph,
         )
 
@@ -936,7 +936,6 @@ class QuantumScript:
 
         return self._graph
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def draw(
         self,
         wire_order: Iterable[Hashable] | None = None,

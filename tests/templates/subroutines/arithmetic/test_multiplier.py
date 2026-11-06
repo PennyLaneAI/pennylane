@@ -78,9 +78,7 @@ class TestMultiplier:
             ),
         ],
     )
-    def test_operation_result(
-        self, k, x_wires, mod, work_wires, x
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_result(self, k, x_wires, mod, work_wires, x):
         """Test the correctness of the Multiplier template output."""
         dev = qp.device("default.qubit")
 
@@ -95,7 +93,6 @@ class TestMultiplier:
         if mod is None:
             mod = 2 ** len(x_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)[0, :]))), (x * k) % mod
         )
@@ -104,8 +101,7 @@ class TestMultiplier:
         """Test that compute_decomposition and decomposition work as expected."""
         k, x_wires, mod, work_wires = 4, [0, 1, 2], 7, [3, 4, 5, 6, 7]
         multiplier_decomposition = (
-            # pylint: disable-next=protected-access
-            qp.transforms._tape_decompose(
+            qp.transforms._tape_decompose(  # pylint: disable=protected-access
                 qp.tape.QuantumScript([qp.Multiplier(k, x_wires, mod, work_wires)]), max_expansion=2
             )[0][0].operations
         )
@@ -165,7 +161,6 @@ class TestMultiplier:
             qp.Multiplier(k, x_wires, mod, work_wires)
             return qp.sample(wires=x_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))), (x * k) % mod
         )
@@ -179,9 +174,7 @@ class TestMultiplierUnit:
     @pytest.mark.parametrize(
         ("k", "x_wire", "mod", "work_wires"), [(3, [1], 1, [2, 3, 4]), (3, [1], 2, [2, 3, 4])]
     )
-    def test_decomposition_new(
-        self, k, x_wire, mod, work_wires
-    ):  # pylint: disable=too-many-arguments
+    def test_decomposition_new(self, k, x_wire, mod, work_wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.Multiplier(k, x_wire, mod, work_wires)
         assert_decomposable(op)
@@ -240,9 +233,7 @@ class TestMultiplierUnit:
             ),
         ],
     )
-    def test_operation_and_wires_error(
-        self, k, x_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_and_wires_error(self, k, x_wires, mod, work_wires, msg_match):
         """Test an error is raised when k or mod don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qp.Multiplier(k, x_wires, mod, work_wires)

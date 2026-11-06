@@ -64,9 +64,8 @@ class TestLeftClassicalComparator:
             ([0, 3, 6], 5, 11, [2, 5], 2),
         ],
     )
-    def test_operation_result(
-        self, x_wires, value, target_wire, work_wires, x, comparator, qjit
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_operation_result(self, x_wires, value, target_wire, work_wires, x, comparator, qjit):
         """Test that the LeftClassicalComparator template produces the correct output."""
 
         @qp.qnode(qp.device("lightning.qubit", wires=range(13)), shots=1)
@@ -137,9 +136,8 @@ class TestLeftClassicalComparator:
             ),
         ],
     )
-    def test_wires_error(
-        self, target_wire, x_wires, value, work_wires, comparator, msg_match
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_wires_error(self, target_wire, x_wires, value, work_wires, comparator, msg_match):
         """Test that an error is raised when some work_wires don't meet the requirements."""
         with pytest.raises(ValueError, match=msg_match):
             qp.LeftClassicalComparator(
@@ -156,9 +154,8 @@ class TestLeftClassicalComparator:
         ],
     )
     @pytest.mark.parametrize("seed", [42, 123])
-    def test_no_phase_errors(  # pylint: disable=too-many-arguments
-        self, x_wires, value, target_wire, work_wires, comparator, seed
-    ):
+    # pylint: disable-next=too-many-arguments
+    def test_no_phase_errors(self, x_wires, value, target_wire, work_wires, comparator, seed):
         """Test that the comparator introduces no complex phases.
         A correct classical reversible circuit is a real permutation matrix,
         so a real positive input must produce a real positive output."""

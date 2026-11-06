@@ -37,7 +37,7 @@ def _identity_matrix(n_wires):
 
 
 @lru_cache
-def _identity_sparse_matrix(n_wires, format):  # pylint: disable=redefined-builtin
+def _identity_sparse_matrix(n_wires, format):
     """Cached sparse identity matrix, keyed on the number of wires rather than the wire labels."""
     return sparse.eye(int(2**n_wires), format=format)
 
@@ -264,7 +264,7 @@ class GlobalPhase(Operator2):
     wire_argnames = ()
     arg_specs = {"phi": Float}
 
-    def __init__(self, phi):  # pylint: disable=unused-argument
+    def __init__(self, phi):
         super().__init__(phi)
 
     @staticmethod
@@ -335,9 +335,8 @@ class GlobalPhase(Operator2):
         return qp.math.exp(-1j * phi) * sparse.eye(2**n_wires, format=format)
 
     @staticmethod
-    def compute_diagonalizing_gates(
-        phi, wires=()
-    ):  # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_diagonalizing_gates(phi, wires=()):
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -383,9 +382,8 @@ class GlobalPhase(Operator2):
         return qp.s_prod(-1, qp.I())
 
 
-def _controlled_g_phase_resource(
-    base, control_wires, control_values, work_wires, work_wire_type
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _controlled_g_phase_resource(base, control_wires, control_values, work_wires, work_wire_type):
     num_control_wires = len(control_wires)
     num_work_wires = len(work_wires)
 

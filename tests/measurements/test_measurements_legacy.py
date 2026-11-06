@@ -30,10 +30,8 @@ from pennylane.measurements import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=too-few-public-methods, unused-argument, protected-access
 
-
-class NotValidMeasurement(MeasurementProcess):
+class NotValidMeasurement(MeasurementProcess):  # pylint: disable=too-few-public-methods
     _shortname = "NotValidReturnType"
 
 
@@ -44,10 +42,11 @@ class TestSampleMeasurement:
         """Test the execution of a custom sampled measurement."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
+            # pylint: disable-next=unused-argument
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qp.math.sum(samples[..., self.wires])
 
+            # pylint: disable-next=unused-argument
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
@@ -65,10 +64,11 @@ class TestSampleMeasurement:
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
+            # pylint: disable-next=unused-argument
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qp.math.sum(samples[..., self.wires])
 
+            # pylint: disable-next=unused-argument
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
@@ -95,7 +95,9 @@ class TestSampleMeasurement:
             qp.PauliX(0)
             return qp.sample(wires=[0]), qp.sample(wires=[1])
 
+        # pylint: disable-next=protected-access
         circuit.device._device.measurement_map[SampleMP] = "test_method"
+        # pylint: disable-next=protected-access
         circuit.device._device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
         assert qp.math.allequal(circuit(), [2, 2])
@@ -107,8 +109,8 @@ class TestStateMeasurement:
     def test_custom_state_measurement(self):
         """Test the execution of a custom state measurement."""
 
-        class MyMeasurement(StateMeasurement):
-            def process_state(self, state, wire_order):
+        class MyMeasurement(StateMeasurement):  # pylint: disable=too-few-public-methods
+            def process_state(self, state, wire_order):  # pylint: disable=unused-argument
                 return qp.math.sum(state)
 
         dev = DefaultQubitLegacy(wires=2)
@@ -122,8 +124,8 @@ class TestStateMeasurement:
     def test_sample_measurement_with_shots(self):
         """Test that executing a state measurement with shots raises a warning."""
 
-        class MyMeasurement(StateMeasurement):
-            def process_state(self, state, wire_order):
+        class MyMeasurement(StateMeasurement):  # pylint: disable=too-few-public-methods
+            def process_state(self, state, wire_order):  # pylint: disable=unused-argument
                 return qp.math.sum(state)
 
         dev = DefaultQubitLegacy(wires=2)
@@ -148,7 +150,9 @@ class TestStateMeasurement:
         def circuit():
             return qp.state()
 
+        # pylint: disable-next=protected-access
         circuit.device._device.measurement_map[StateMP] = "test_method"
+        # pylint: disable-next=protected-access
         circuit.device._device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
         assert circuit() == 2
@@ -160,7 +164,7 @@ class TestMeasurementTransform:
     def test_custom_measurement(self):
         """Test the execution of a custom measurement."""
 
-        class MyMeasurement(MeasurementTransform):
+        class MyMeasurement(MeasurementTransform):  # pylint: disable=too-few-public-methods
             def process(self, tape, device):
                 return {device.shots: len(tape)}
 
@@ -171,7 +175,7 @@ class TestMeasurementTransform:
         def circuit():
             return MyMeasurement()
 
-        assert circuit() == {1000: 1}  # pylint:disable=protected-access
+        assert circuit() == {1000: 1}
 
     def test_method_overridden_by_device(self):
         """Test that the device can override a measurement process."""
@@ -183,7 +187,8 @@ class TestMeasurementTransform:
         def circuit():
             return qp.classical_shadow(wires=0)
 
+        # pylint: disable-next=protected-access
         circuit.device._device.measurement_map[ClassicalShadowMP] = "test_method"
-        circuit.device._device.test_method = lambda tape: 2
+        circuit.device._device.test_method = lambda tape: 2  # pylint: disable=protected-access
 
         assert circuit() == 2

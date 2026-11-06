@@ -13,8 +13,6 @@
 # limitations under the License.
 """Unit tests for the Clifford+T transform."""
 
-# pylint: disable=too-many-public-methods
-
 import math
 from functools import reduce
 
@@ -41,8 +39,7 @@ INVSQ2 = 1 / math.sqrt(2)
 PI = math.pi
 
 
-# pylint: disable=too-few-public-methods
-class CustomOneQubitOperation(qp.operation.Operation):
+class CustomOneQubitOperation(qp.operation.Operation):  # pylint: disable=too-few-public-methods
     num_wires = 1
 
     @staticmethod
@@ -50,8 +47,7 @@ class CustomOneQubitOperation(qp.operation.Operation):
         return qp.math.conj(qp.math.transpose(qp.S.compute_matrix()))
 
 
-# pylint: disable=too-few-public-methods
-class CustomTwoQubitOperation(qp.operation.Operation):
+class CustomTwoQubitOperation(qp.operation.Operation):  # pylint: disable=too-few-public-methods
     num_wires = 2
 
     @staticmethod
@@ -548,7 +544,6 @@ class TestCliffordCompile:
         ):
             decomposed_qfunc()
 
-    # pylint: disable= import-outside-toplevel
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("method, kwargs", [("sk", {"max_depth": 3}), ("gridsynth", {})])
     def test_clifford_decompose_interfaces(self, method, kwargs):
@@ -633,13 +628,12 @@ class TestCliffordCompile:
 class TestCliffordCached:
     """Unit tests for clifford caching function."""
 
-    # pylint: disable=protected-access, import-outside-toplevel, reimported
     def test_clifford_cached(self):
         """Test that the cached version of the circuit is equivalent to the original one."""
 
         import pennylane.transforms.decompositions.clifford_t_transform as clt2
 
-        clt2._CLIFFORD_T_CACHE = None
+        clt2._CLIFFORD_T_CACHE = None  # pylint: disable=protected-access
 
         num_angles = 1
         rand_angles = qp.math.random.rand(num_angles)
@@ -649,8 +643,9 @@ class TestCliffordCached:
         old_tape = qp.tape.make_qscript(circuit_9)(num_repeat, rand_angles)
         _ = clifford_t_decomposition(old_tape, epsilon=10)
 
+        # pylint: disable-next=protected-access
         assert isinstance(clt2._CLIFFORD_T_CACHE, _CachedCallable)
-        cache_info = clt2._CLIFFORD_T_CACHE.query.cache_info()
+        cache_info = clt2._CLIFFORD_T_CACHE.query.cache_info()  # pylint: disable=protected-access
         assert cache_info.misses == 2 * num_angles
         assert cache_info.hits == 2 * num_angles * (num_repeat - 1)
 
@@ -658,8 +653,9 @@ class TestCliffordCached:
         old_tape = qp.tape.make_qscript(circuit_9)(num_repeat, rand_angles)
         _ = clifford_t_decomposition(old_tape, epsilon=10)
 
+        # pylint: disable-next=protected-access
         assert isinstance(clt2._CLIFFORD_T_CACHE, _CachedCallable)
-        cache_info = clt2._CLIFFORD_T_CACHE.query.cache_info()
+        cache_info = clt2._CLIFFORD_T_CACHE.query.cache_info()  # pylint: disable=protected-access
         assert cache_info.misses == 2 * num_angles
         assert cache_info.hits == 2 * num_angles * (2 * num_repeat - 1)
 
@@ -667,8 +663,9 @@ class TestCliffordCached:
         old_tape = qp.tape.make_qscript(circuit_9)(num_repeat, rand_angles)
         _ = clifford_t_decomposition(old_tape, cache_size=100)
 
+        # pylint: disable-next=protected-access
         assert isinstance(clt2._CLIFFORD_T_CACHE, _CachedCallable)
-        cache_info = clt2._CLIFFORD_T_CACHE.query.cache_info()
+        cache_info = clt2._CLIFFORD_T_CACHE.query.cache_info()  # pylint: disable=protected-access
         assert cache_info.misses == 2 * num_angles
         assert cache_info.hits == 2 * num_angles * (num_repeat - 1)
         assert cache_info.maxsize == 100
@@ -687,14 +684,13 @@ class TestCliffordCached:
         assert _map_wires.cache_info().hits == 5
         assert _map_wires.cache_info().misses == 10
 
-    # pylint: disable=protected-access, import-outside-toplevel, reimported
     def test_cached_with_rtol(self):
         """Test that caches are correctly identified as compatible or
         incompatible with a relative threshold for epsilon."""
 
         import pennylane.transforms.decompositions.clifford_t_transform as clt2
 
-        clt2._CLIFFORD_T_CACHE = None
+        clt2._CLIFFORD_T_CACHE = None  # pylint: disable=protected-access
 
         cache1 = _CachedCallable(method="gridsynth", epsilon=1e-5, cache_size=100)
 
@@ -714,7 +710,6 @@ class TestCliffordCached:
 class TestCatalyst:
     """Unit tests for catalyst integration."""
 
-    # pylint: disable=import-outside-toplevel
     @pytest.mark.catalyst
     def test_catalyst_integration(self):
         """Test that the catalyst integration is working correctly."""

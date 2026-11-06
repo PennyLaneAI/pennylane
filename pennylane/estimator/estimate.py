@@ -37,8 +37,6 @@ from .resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from .resources_base import DefaultGateSet, Resources
 from .wires_manager import Allocate, Deallocate, WireResourceManager
 
-# pylint: disable=too-many-arguments
-
 _SYMBOLIC_DECOMP_MAP = {
     Adjoint: ("adj_custom_decomps", "adjoint_resource_decomp"),
     Controlled: ("ctrl_custom_decomps", "controlled_resource_decomp"),
@@ -46,7 +44,7 @@ _SYMBOLIC_DECOMP_MAP = {
 }
 
 
-def estimate(
+def estimate(  # pylint: disable=too-many-arguments
     workflow: Callable | ResourceOperator | Resources | QNode,
     gate_set: set[str] | None = None,
     zeroed_wires: int = 0,
@@ -280,7 +278,7 @@ def estimate(
 
 
 @singledispatch
-def _estimate_resources_dispatch(
+def _estimate_resources_dispatch(  # pylint: disable=too-many-arguments
     workflow: Callable | ResourceOperator | Resources | QNode,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
@@ -295,7 +293,7 @@ def _estimate_resources_dispatch(
 
 
 @_estimate_resources_dispatch.register
-def _resources_from_qfunc(
+def _resources_from_qfunc(  # pylint: disable=too-many-arguments
     workflow: Callable,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
@@ -346,7 +344,7 @@ def _resources_from_qfunc(
 
 
 @_estimate_resources_dispatch.register
-def _resources_from_resource(
+def _resources_from_resource(  # pylint: disable=too-many-arguments
     workflow: Resources,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
@@ -378,7 +376,7 @@ def _resources_from_resource(
 
 
 @_estimate_resources_dispatch.register
-def _resources_from_resource_operator(
+def _resources_from_resource_operator(  # pylint: disable=too-many-arguments
     workflow: ResourceOperator,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
@@ -399,7 +397,7 @@ def _resources_from_resource_operator(
 
 
 @_estimate_resources_dispatch.register
-def _resources_from_pl_ops(
+def _resources_from_pl_ops(  # pylint: disable=too-many-arguments
     workflow: Operation,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
@@ -514,7 +512,7 @@ def _get_symbolic_resource_decomposition(
     )
 
 
-def _update_counts_from_compressed_res_op(
+def _update_counts_from_compressed_res_op(  # pylint: disable=too-many-arguments
     comp_res_op: CompressedResourceOp,
     gate_counts_dict: dict,
     wire_manager: WireResourceManager,

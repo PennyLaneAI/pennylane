@@ -24,8 +24,6 @@ from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
-# pylint: disable=useless-parent-delegation,too-few-public-methods
-
 
 class TestAbstractifyBasics:
     """Tests simple inputs to 'abstractify'."""
@@ -228,17 +226,17 @@ class TestAbstractifyOperatorInstances:
     def test_arg_specs_integration_with_nested_ops(self):
         """Tests how abstractify plays in with arg_specs validation."""
 
-        class AnotherOp2(Operator2):
+        class AnotherOp2(Operator2):  # pylint: disable=too-few-public-methods
             dynamic_argnames = ("theta",)
 
             wire_argnames = ("wires",)
 
             arg_specs = {"theta": Float, "wires": Wire[1]}
 
-            def __init__(self, theta, wires):
+            def __init__(self, theta, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(theta, wires)
 
-        class CustomOp2(Operator2):
+        class CustomOp2(Operator2):  # pylint: disable=too-few-public-methods
             dynamic_argnames = ("params",)
 
             wire_argnames = ("wires",)
@@ -247,6 +245,7 @@ class TestAbstractifyOperatorInstances:
 
             arg_specs = {"params": Float[...], "wires": Wire[3]}
 
+            # pylint: disable-next=useless-parent-delegation
             def __init__(self, params, wires, inner_op):
                 super().__init__(params, wires, inner_op)
 
@@ -297,7 +296,7 @@ class TestAbstractifyOperatorClasses:
     def test_operator_subclass_with_complete_arg_specs(self):
         """Tests that an operator subclass with a complete arg_specs correctly."""
 
-        class FixedSigOp(Operator2):
+        class FixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "ctrl_wires")
             arg_specs = {
@@ -317,7 +316,7 @@ class TestAbstractifyOperatorClasses:
     def test_operator_subclass_with_incomplete_arg_specs(self):
         """Tests that an error is raised if an operator subclass is used without a complete arg_specs."""
 
-        class FixedSigOp(Operator2):
+        class FixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "ctrl_wires")
 
@@ -337,7 +336,7 @@ class TestAbstractifyOperator1:
     def test_abstractify_op_type(self):
         """Tests abstractifying an operator type."""
 
-        class CustomOp(Operator1):
+        class CustomOp(Operator1):  # pylint: disable=too-few-public-methods
             pass
 
         rep = abstractify(CustomOp)
@@ -348,7 +347,7 @@ class TestAbstractifyOperator1:
     def test_abstractify_op_instance(self):
         """Tests abstractifying operator instance."""
 
-        class CustomOp2(Operator1):
+        class CustomOp2(Operator1):  # pylint: disable=too-few-public-methods
 
             resource_keys = {"num_wires"}
 

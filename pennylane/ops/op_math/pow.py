@@ -242,20 +242,19 @@ class Pow(ScalarSymbolicOp):
 
         return fractional_matrix_power(mat, scalar)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
         return self.base.has_sparse_matrix and isinstance(self.z, int)
 
-    # pylint: disable=arguments-differ
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_sparse_matrix(*params, base=None, z=0, format="csr"):
         if isinstance(z, int):
             base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
             return (base_matrix**z).asformat(format)
         raise SparseMatrixUndefinedError
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
         if isinstance(self.z, int) and self.z > 0:
@@ -286,6 +285,7 @@ class Pow(ScalarSymbolicOp):
             raise DecompositionUndefinedError from e
 
     @property
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
@@ -323,9 +323,8 @@ class Pow(ScalarSymbolicOp):
         complex_dtype = "complex64" if is_single_precision else "complex128"
         return math.cast(base_eigvals, complex_dtype) ** self.z
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_generator(self):
+    def has_generator(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_generator
 
     def generator(self):
@@ -345,9 +344,8 @@ class Pow(ScalarSymbolicOp):
     def pow(self, z):
         return [Pow(base=self.base, z=self.z * z)]
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return isinstance(self.z, int)
 
     def adjoint(self):

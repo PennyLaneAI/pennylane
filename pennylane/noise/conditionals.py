@@ -40,8 +40,6 @@ from pennylane.ops.functions import map_wires, simplify
 from pennylane.templates import ControlledSequence
 from pennylane.wires import Wires
 
-# pylint: disable = too-many-branches
-
 
 class WiresIn(BooleanFn):
     """A conditional for evaluating if the wires of an operation exist in a specified set of wires.
@@ -334,7 +332,6 @@ def _get_ops(val):
 
 def _check_arithmetic_ops(op1, op2):
     """Helper method for comparing two arithmetic operators based on type check of the bases"""
-    # pylint: disable = unnecessary-lambda-assignment
 
     if isinstance(op1, (Adjoint, Controlled, ControlledSequence)) or isinstance(
         op2, (Adjoint, Controlled, ControlledSequence)
@@ -345,6 +342,7 @@ def _check_arithmetic_ops(op1, op2):
             and _get_ops(op1.base) == _get_ops(op2.base)
         )
 
+    # pylint: disable-next=unnecessary-lambda-assignment
     lc_cop = lambda op: LinearCombination(*op.terms())
 
     if isinstance(op1, Exp) or isinstance(op2, Exp):
@@ -501,9 +499,7 @@ class MeasEq(BooleanFn):
             self.condition.append(mp)
             self._cmps.append(mp if isclass(mp) else mp.__class__)
 
-        mp_ops = list(
-            getattr(op, "__name__", op.__class__.__name__) for op in self.condition
-        )  # pylint: disable=protected_access
+        mp_ops = list(getattr(op, "__name__", op.__class__.__name__) for op in self.condition)
         mp_names = [
             repr(op) if not isinstance(op, property) else repr(self.condition[idx].__name__)
             for idx, op in enumerate(mp_ops)
@@ -729,7 +725,7 @@ def partial_wires(operation, *args, **kwargs):
     op_name = _process_name(op_class, parameters, arg_params)
 
     @_rename(op_name)
-    def _partial(wires=None, **partial_kwargs):
+    def _partial(wires=None, **partial_kwargs):  # pylint: disable=too-many-branches
         """Wrapper function for partial_wires"""
         op_args = arg_params
         op_args["wires"] = wires or arg_wires
@@ -760,6 +756,7 @@ def partial_wires(operation, *args, **kwargs):
         if issubclass(op_class, Operation):
             num_wires = getattr(op_class, "num_wires", None)
             if "wires" in op_args and isinstance(num_wires, int):
+                # pylint: disable-next=chained-comparison
                 if num_wires < len(op_args["wires"]) and num_wires == 1:
                     op_wires = op_args.pop("wires")
                     return tuple(operation(**op_args, wires=wire) for wire in op_wires)

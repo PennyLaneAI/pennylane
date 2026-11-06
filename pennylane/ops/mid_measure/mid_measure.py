@@ -127,7 +127,7 @@ class MidMeasure(Operator2):
         return "MidMeasureMP"
 
     @staticmethod
-    def compute_diagonalizing_gates(*args, **kwargs) -> list:  # pylint: disable=unused-argument
+    def compute_diagonalizing_gates(*args, **kwargs) -> list:
         return []
 
     @override

@@ -263,7 +263,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     return CompressedResourceOp(op_type, params)
 
 
-def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+def controlled_resource_rep(  # pylint: disable=too-many-arguments
     base_class: type[Operator],
     base_params: dict,
     num_control_wires: int,
@@ -344,7 +344,7 @@ def change_op_basis_resource_rep(
         uncompute_op: the compressed resource representation of the uncompute operator
 
     """
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable-next=import-outside-toplevel
     from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 
     compute_op = abstractify(compute_op)

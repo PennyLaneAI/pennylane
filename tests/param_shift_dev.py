@@ -20,7 +20,6 @@ import dataclasses
 import pennylane as qp
 
 
-# pylint: disable=unused-argument
 class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
     """This device provides derivatives via parameter shift."""
 
@@ -41,11 +40,13 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
         program.add_transform(qp.transform(qp.gradients.param_shift.expand_transform))
         return program
 
+    # pylint: disable-next=unused-argument
     def supports_derivatives(self, execution_config=None, circuit=None):
         if execution_config is None:
             return True
         return execution_config.gradient_method in {"device", "parameter-shift"}
 
+    # pylint: disable-next=unused-argument
     def compute_derivatives(self, circuits, execution_config=None):
         is_single_circuit = False
         if isinstance(circuits, qp.tape.QuantumScript):
@@ -62,6 +63,7 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
         jacs = fn(diff_results)
         return jacs[0] if is_single_circuit else jacs
 
+    # pylint: disable-next=unused-argument
     def execute_and_compute_derivatives(self, circuits, execution_config=None):
         is_single_circuit = False
         if isinstance(circuits, qp.tape.QuantumScript):
@@ -85,8 +87,11 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
         jacs = fn(all_results[len(circuits) :])
         return (results[0], jacs[0]) if is_single_circuit else (results, jacs)
 
-    def compute_jvp(
-        self, circuits, tangents, execution_config: qp.devices.ExecutionConfig | None = None
+    def compute_jvp(  # pylint: disable=unused-argument
+        self,
+        circuits,
+        tangents,
+        execution_config: qp.devices.ExecutionConfig | None = None,
     ):
         is_single_circuit = False
         if isinstance(circuits, qp.tape.QuantumScript):
@@ -102,8 +107,11 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
         results = self.execute(batch)
         return fn(results)[0] if is_single_circuit else fn(results)
 
-    def execute_and_compute_jvp(
-        self, circuits, tangents, execution_config: qp.devices.ExecutionConfig | None = None
+    def execute_and_compute_jvp(  # pylint: disable=unused-argument
+        self,
+        circuits,
+        tangents,
+        execution_config: qp.devices.ExecutionConfig | None = None,
     ):
         is_single_circuit = False
         if isinstance(circuits, qp.tape.QuantumScript):
@@ -127,8 +135,11 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
         jvps = fn(all_results[len(circuits) :])
         return (results[0], jvps[0]) if is_single_circuit else results, jvps
 
-    def compute_vjp(
-        self, circuits, cotangents, execution_config: qp.devices.ExecutionConfig | None = None
+    def compute_vjp(  # pylint: disable=unused-argument
+        self,
+        circuits,
+        cotangents,
+        execution_config: qp.devices.ExecutionConfig | None = None,
     ):
         is_single_circuit = False
         if isinstance(circuits, qp.tape.QuantumScript):
@@ -144,8 +155,11 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
         results = self.execute(batch)
         return fn(results)[0] if is_single_circuit else fn(results)
 
-    def execute_and_compute_vjp(
-        self, circuits, cotangents, execution_config: qp.devices.ExecutionConfig | None = None
+    def execute_and_compute_vjp(  # pylint: disable=unused-argument
+        self,
+        circuits,
+        cotangents,
+        execution_config: qp.devices.ExecutionConfig | None = None,
     ):
         is_single_circuit = False
         if isinstance(circuits, qp.tape.QuantumScript):

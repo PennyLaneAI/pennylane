@@ -16,8 +16,6 @@
 import warnings
 from collections.abc import Iterable
 from copy import copy
-
-# pylint: disable=too-many-arguments
 from itertools import product
 
 import numpy as np
@@ -40,7 +38,7 @@ from pennylane.wires import Wires
 _LINEAR_DEPENDENCE_TOL = 1e-10
 
 
-def lie_closure(
+def lie_closure(  # pylint: disable=too-many-arguments
     generators: Iterable[PauliWord | PauliSentence | Operator | TensorLike],
     *,  # force non-positional kwargs of the following
     max_iterations: int = 10000,

@@ -15,7 +15,6 @@
 Unit tests for functions needed for two-electron integral tensor factorization.
 """
 
-# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qp
@@ -393,7 +392,7 @@ def test_empty_error(two_tensor):
         ),
     ],
 )
-def test_basis_rotation_output(
+def test_basis_rotation_output(  # pylint: disable=too-many-arguments
     one_matrix, two_tensor, tol_factor, coeffs_ref, ops_ref, eigvecs_ref
 ):
     r"""Test that basis_rotation function returns the correct values."""
@@ -778,18 +777,20 @@ def test_chemist_transform(
 ):
     r"""Test that `_chemist_transform` builds correct two-body tensors in
     chemist notation with correct one-body corrections"""
-    # pylint: disable=protected-access
+    # pylint: disable-next=protected-access
     one_body_corr, chemist_two_body = qp.qchem.factorization._chemist_transform(
         two_body_tensor=two_body_tensor, spatial_basis=spatial_basis
     )
     assert np.allclose(one_body_corr, one_body_correction)
     assert np.allclose(chemist_two_body, chemist_two_body_coeffs)
 
+    # pylint: disable-next=protected-access
     (chemist_one_body,) = qp.qchem.factorization._chemist_transform(
         one_body_tensor=one_body_correction, spatial_basis=spatial_basis
     )
     assert np.allclose(chemist_one_body, one_body_correction)
 
+    # pylint: disable-next=protected-access
     chemist_one_body, chemist_two_body = qp.qchem.factorization._chemist_transform(
         one_body_tensor=one_body_correction,
         two_body_tensor=two_body_tensor,
@@ -840,7 +841,7 @@ def test_symmetry_shift(core_shifted, one_body_shifted, two_body_shifted):
     mol = qp.qchem.Molecule(symbols, geometry, charge=1, basis_name="STO-3G")
     core, one, two = qp.qchem.electron_integrals(mol)()
 
-    # pylint: disable=protected-access
+    # pylint: disable-next=protected-access
     cone, ctwo = qp.qchem.factorization._chemist_transform(one, two, spatial_basis=True)
     score, sone, stwo = qp.qchem.symmetry_shift(core, cone, ctwo, n_elec=mol.n_electrons)
 

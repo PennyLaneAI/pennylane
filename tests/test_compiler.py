@@ -15,7 +15,6 @@
 Unit tests for the compiler subpackage.
 """
 
-# pylint: disable=import-outside-toplevel
 from functools import partial
 from unittest.mock import patch
 
@@ -33,10 +32,8 @@ jax = pytest.importorskip("jax")
 
 pytestmark = pytest.mark.catalyst
 
-from jax import numpy as jnp  # pylint:disable=wrong-import-order, wrong-import-position
-from jax.core import ShapedArray  # pylint:disable=wrong-import-order, wrong-import-position
-
-# pylint: disable=too-few-public-methods, too-many-public-methods
+from jax import numpy as jnp  # pylint: disable=wrong-import-position,wrong-import-order
+from jax.core import ShapedArray  # pylint: disable=wrong-import-position,wrong-import-order
 
 
 @pytest.fixture
@@ -616,11 +613,11 @@ class TestCatalystControlFlow:
                 return (x + 1) ** 2
 
             @conditional.else_if(x < -2)
-            def conditional_elif():  # pylint: disable=unused-variable
+            def conditional_elif():
                 return x + 1
 
             @conditional.otherwise
-            def conditional_false_fn():  # pylint: disable=unused-variable
+            def conditional_false_fn():
                 return -(x + 1)
 
             return conditional()
@@ -877,7 +874,7 @@ class TestCatalystGrad:
         assert jnp.allclose(res[1], jnp.array([-0.43750208, 0.07000001]))
 
 
-class TestCatalystSample:
+class TestCatalystSample:  # pylint: disable=too-few-public-methods
     """Test qp.sample with Catalyst."""
 
     def test_sample_measure(self):
@@ -898,7 +895,7 @@ class TestCatalystSample:
         assert circuit(jnp.pi) == 1
 
 
-class TestCatalystMCMs:
+class TestCatalystMCMs:  # pylint: disable=too-few-public-methods
     """Test dynamic_one_shot with Catalyst."""
 
     @pytest.mark.parametrize(

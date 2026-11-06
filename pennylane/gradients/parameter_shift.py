@@ -34,7 +34,7 @@ from pennylane.measurements import ExpectationMP, VarianceMP, expval
 from pennylane.ops import U2, U3, CRot, PauliRot, Prod, Rot, SingleExcitation, prod
 from pennylane.ops.functions import eigvals, generator
 from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.transforms import split_to_single_terms
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
@@ -60,9 +60,6 @@ from .gradient_transform import (
     find_and_validate_gradient_methods,
     reorder_grads,
 )
-
-# pylint: disable=too-many-arguments,unused-argument
-
 
 NONINVOLUTORY_OBS = {
     "Hermitian": lambda obs: obs.__class__(obs.matrix() @ obs.matrix(), wires=obs.wires),
@@ -339,8 +336,7 @@ def _make_zero_rep(g, single_measure, has_partitioned_shots, par_shapes=None):
     return tuple(tuple(map(zero_entry, shot_comp_g)) for shot_comp_g in g)
 
 
-# pylint: disable=too-many-positional-arguments
-def expval_param_shift(
+def expval_param_shift(  # pylint: disable=too-many-arguments
     tape, argnum=None, shifts=None, gradient_recipes=None, f0=None, broadcast=False
 ):
     r"""Generate the parameter-shift tapes and postprocessing methods required
@@ -593,8 +589,7 @@ def _single_variance_gradient(tape, var_mask, pdA2, f0, pdA):
     return tuple(var_grad)
 
 
-# pylint: disable=too-many-positional-arguments
-def _create_variance_proc_fn(
+def _create_variance_proc_fn(  # pylint: disable=too-many-arguments
     tape, var_mask, var_indices, pdA_fn, pdA2_fn, tape_boundary, non_involutory_indices
 ):
     """Auxiliary function to define the processing function for computing the
@@ -666,7 +661,7 @@ def _get_non_involuntory_indices(tape, var_indices):
     return non_involutory_indices
 
 
-# pylint: disable=too-many-positional-arguments
+# pylint: disable-next=too-many-arguments
 def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, broadcast=False):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to a
@@ -790,8 +785,7 @@ def _inplace_set_trainable_params(tape):
     tape.trainable_params = math.get_trainable_indices(params)
 
 
-# pylint: disable=too-many-positional-arguments
-def _expand_transform_param_shift(
+def _expand_transform_param_shift(  # pylint: disable=too-many-arguments,unused-argument
     tape: QuantumScript,
     argnum=None,
     shifts=None,
@@ -828,8 +822,7 @@ def _expand_transform_param_shift(
     classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
-# pylint: disable=too-many-positional-arguments
-def param_shift(
+def param_shift(  # pylint: disable=too-many-arguments
     tape: QuantumScript,
     argnum=None,
     shifts=None,

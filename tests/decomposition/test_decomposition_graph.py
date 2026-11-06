@@ -39,10 +39,8 @@ from tests.core.operator.operator2_utils import (
 )
 from tests.decomposition.conftest import decompositions, to_resources
 
-# pylint: disable=protected-access,too-few-public-methods,useless-parent-delegation,unused-argument
 
-
-class CustomOp(Operation):
+class CustomOp(Operation):  # pylint: disable=too-few-public-methods
     """A custom operation."""
 
     resource_keys = set()
@@ -52,7 +50,7 @@ class CustomOp(Operation):
         return {}
 
 
-class MultiWireOp(Operation):
+class MultiWireOp(Operation):  # pylint: disable=too-few-public-methods
     """A custom op"""
 
     resource_keys = {"num_wires"}
@@ -62,12 +60,12 @@ class MultiWireOp(Operation):
         return {"num_wires": len(self.wires)}
 
 
-class MultiWireRot(Operation):
+class MultiWireRot(Operation):  # pylint: disable=too-few-public-methods
     """A custom op"""
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, phi, wires):
+    def __init__(self, phi, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(phi, wires)
 
     @property
@@ -75,7 +73,7 @@ class MultiWireRot(Operation):
         return {"num_wires": len(self.wires)}
 
 
-class AnotherOp(Operation):
+class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
     """A custom operation."""
 
     resource_keys = set()
@@ -130,7 +128,9 @@ class TestDecompGraphConstruction:
 
         graph = DecompositionGraph(operations=[qp.Hadamard(0)], gate_set={"RX", "RY", "RZ"})
         assert (
-            graph._get_decompositions(h_rep)._decomps == decompositions.get()["Hadamard"]._decomps
+            # pylint: disable-next=protected-access
+            graph._get_decompositions(h_rep)._decomps
+            == decompositions.get()["Hadamard"]._decomps  # pylint: disable=protected-access
         )
 
         graph = DecompositionGraph(
@@ -141,8 +141,8 @@ class TestDecompGraphConstruction:
         with qp.decomposition.local_decomps():
             _fix_decomp(qp.Hadamard, custom_hadamard)
             assert (
-                graph._get_decompositions(h_rep)._decomps
-                == DecompCollection([custom_hadamard])._decomps
+                graph._get_decompositions(h_rep)._decomps  # pylint: disable=protected-access
+                == DecompCollection([custom_hadamard])._decomps  # pylint: disable=protected-access
             )
 
         alt_dec = DecompCollection([custom_hadamard, custom_hadamard_2])
@@ -154,6 +154,7 @@ class TestDecompGraphConstruction:
         exp_dec = alt_dec + decompositions.get()["Hadamard"]
         with qp.decomposition.local_decomps():
             qp.add_decomps(qp.Hadamard, custom_hadamard, custom_hadamard_2)
+            # pylint: disable-next=protected-access
             assert graph._get_decompositions(h_rep)._decomps == exp_dec._decomps
 
     def test_both_fixed_and_alt_decomps(self):
@@ -178,9 +179,10 @@ class TestDecompGraphConstruction:
             alt_decomps={qp.Hadamard: alt_dec},
             fixed_decomps={qp.Hadamard: custom_hadamard},
         )
+        # pylint: disable-next=protected-access
         op_node = list(graph._op_to_op_nodes[abstractify(qp.H)])[0]
-        op_node_idx = graph._all_op_indices[op_node]
-        decomp_nodes = graph._graph.predecessors(op_node_idx)
+        op_node_idx = graph._all_op_indices[op_node]  # pylint: disable=protected-access
+        decomp_nodes = graph._graph.predecessors(op_node_idx)  # pylint: disable=protected-access
         assert len(decomp_nodes) == 1
         assert decomp_nodes[0].rule is custom_hadamard
 
@@ -213,16 +215,18 @@ class TestDecompGraphConstruction:
         )
 
         # check adjoint
+        # pylint: disable-next=protected-access
         adjoint_op_node = list(graph._op_to_op_nodes[abstractify(adjoint_op)])[0]
-        adjoint_op_idx = graph._all_op_indices[adjoint_op_node]
-        decomp_nodes = graph._graph.predecessors(adjoint_op_idx)
+        adjoint_op_idx = graph._all_op_indices[adjoint_op_node]  # pylint: disable=protected-access
+        decomp_nodes = graph._graph.predecessors(adjoint_op_idx)  # pylint: disable=protected-access
         assert len(decomp_nodes) == 1
         assert decomp_nodes[0].rule is _custom_adjoint
 
         # check ctrl
+        # pylint: disable-next=protected-access
         ctrl_op_node = list(graph._op_to_op_nodes[abstractify(ctrl_op)])[0]
-        ctrl_op_idx = graph._all_op_indices[ctrl_op_node]
-        decomp_nodes = graph._graph.predecessors(ctrl_op_idx)
+        ctrl_op_idx = graph._all_op_indices[ctrl_op_node]  # pylint: disable=protected-access
+        decomp_nodes = graph._graph.predecessors(ctrl_op_idx)  # pylint: disable=protected-access
         assert len(decomp_nodes) == 1
         assert decomp_nodes[0].rule is _custom_ctrl
 
@@ -259,18 +263,18 @@ class TestDecompGraphConstruction:
         graph = DecompositionGraph([op], gate_set={"RX": 1.0, "RZ": 1.0, "GlobalPhase": 1.0})
 
         # 5 ops and 3 decompositions (2 for Hadamard and 1 for RY) and 1 dummy starting node
-        assert len(graph._graph.nodes()) == 9
+        assert len(graph._graph.nodes()) == 9  # pylint: disable=protected-access
         # 8 edges from ops to decompositions, 3 from decompositions to ops, and 3 from the
         # dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 14
+        assert len(graph._graph.edges()) == 14  # pylint: disable=protected-access
 
         # Check that graph construction stops at gates in the target gate set.
         graph2 = DecompositionGraph(operations=[op], gate_set={"RY", "RZ", "GlobalPhase"})
         # 5 ops and 2 decompositions (RY is in the target gate set now), and the dummy starting node
-        assert len(graph2._graph.nodes()) == 8
+        assert len(graph2._graph.nodes()) == 8  # pylint: disable=protected-access
         # 6 edges from ops to decompositions and 2 from decompositions to ops,
         # and 3 from the dummy starting node to the target gate set.
-        assert len(graph2._graph.edges()) == 11
+        assert len(graph2._graph.edges()) == 11  # pylint: disable=protected-access
 
     def test_graph_construction_non_applicable_rules(self):
         """Tests rules which are not applicable are not skipped."""
@@ -294,11 +298,11 @@ class TestDecompGraphConstruction:
             alt_decomps={MultiWireOp: [some_rule, some_other_rule]},
         )
         # 3 ops (MultiWireOp, CNOT, RZ), 2 decompositions, and the dummy starting node
-        assert len(graph._graph.nodes()) == 6
+        assert len(graph._graph.nodes()) == 6  # pylint: disable=protected-access
         # 2 edges from ops to decompositions, 2 from decompositions to ops, and 2 from
         # the dummy starting node to the target gate set note that the non-applicable
         # decomposition rule itself is included in the graph but not expanded.
-        assert len(graph._graph.edges()) == 6
+        assert len(graph._graph.edges()) == 6  # pylint: disable=protected-access
 
     def test_gate_set(self):
         """Tests that graph construction stops at the target gate set."""
@@ -328,10 +332,10 @@ class TestDecompGraphConstruction:
 
         # 1 node for CustomOp, 1 decomposition node, 5 for the ops in the decomposition,
         # and the dummy starting node.
-        assert len(graph._graph.nodes()) == 8
+        assert len(graph._graph.nodes()) == 8  # pylint: disable=protected-access
         # 5 edges from ops to decompositions, 1 edge from decompositions to ops, and 5
         # edges from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 11
+        assert len(graph._graph.edges()) == 11  # pylint: disable=protected-access
 
         solution = graph.solve()
 
@@ -486,13 +490,13 @@ class TestDecompGraphConstruction:
         """Tests that an operator that reuses an operator which is still being explored is
         explored again when it is visited after a cycle cut in that exploration is resolved."""
 
-        class EntryOp(Operation):
+        class EntryOp(Operation):  # pylint: disable=too-few-public-methods
             """An operation that decomposes into ``HubOp``."""
 
-        class HubOp(Operation):
+        class HubOp(Operation):  # pylint: disable=too-few-public-methods
             """An operation with a cheap decomposition through the controlled ``EntryOp``."""
 
-        class LoopOp(Operation):
+        class LoopOp(Operation):  # pylint: disable=too-few-public-methods
             """An operation that decomposes into ``HubOp``."""
 
         @qp.register_resources({HubOp: 1})
@@ -538,13 +542,13 @@ class TestDecompGraphConstruction:
         exploration is resolved, even if another cut in its exploration closed a cycle back to it.
         """
 
-        class EntryOp(Operation):
+        class EntryOp(Operation):  # pylint: disable=too-few-public-methods
             """An operation that decomposes into ``HubOp``."""
 
-        class HubOp(Operation):
+        class HubOp(Operation):  # pylint: disable=too-few-public-methods
             """An operation that decomposes into ``LeafOp``."""
 
-        class LeafOp(Operation):
+        class LeafOp(Operation):  # pylint: disable=too-few-public-methods
             """An operation with a cheap decomposition through the controlled ``EntryOp``."""
 
         @qp.register_resources({HubOp: 1})
@@ -634,7 +638,7 @@ class TestDecompGraphSolver:
     def test_operator2_integration(self):
         """Tests constructing and solving a graph from an Operator2."""
 
-        def _resource_fn(params, wires, op):
+        def _resource_fn(params, wires, op):  # pylint: disable=unused-argument
             return {qp.CNOT: 2 * len(wires), OneWireDynOp: 1, qp.RX: 2 * (len(wires) - 1)}
 
         @qp.register_resources(_resource_fn)
@@ -831,10 +835,10 @@ class TestDecompGraphSolver:
         # 10 ops (MultiWireRot, MultiWireOp(4), MultiWireOp(3), CNOT, CZ, RX, RY, RZ, Hadamard, GlobalPhase)
         # 7 decompositions (1 for CustomOp, 1 for each MultiWireOp, 1 for CNOT, 2 for Hadamard, and 1 for RY)
         # and the dummy starting node
-        assert len(graph._graph.nodes()) == 18
+        assert len(graph._graph.nodes()) == 18  # pylint: disable=protected-access
         # 16 edges from ops to decompositions and 7 from decompositions to ops,
         # and 4 edges from the dummy starting node to the target gate set
-        assert len(graph._graph.edges()) == 27
+        assert len(graph._graph.edges()) == 27  # pylint: disable=protected-access
 
         solution = graph.solve()
         assert solution.resource_estimate(op) == to_resources(
@@ -916,8 +920,8 @@ class TestDecompGraphWorkWireBudgeting:
         # 1 node for LargerOp, 2 nodes for CustomOp, 1 for Toffoli, 1 for CRot, 1 for RZ,
         # 1 for RY, 1 for CNOT, and 1 dummy starting node, 1 decomposition from CRot,
         # node, 2 decomposition nodes from LargerOp, 2 decompositions from each CustomOp
-        assert len(graph._graph.nodes()) == 16
-        assert len(graph._graph.edges()) == 26
+        assert len(graph._graph.nodes()) == 16  # pylint: disable=protected-access
+        assert len(graph._graph.edges()) == 26  # pylint: disable=protected-access
 
         solution = graph.solve(num_work_wires=0)
         assert solution.decomposition(op) is _decomp2_without_work_wire
@@ -951,7 +955,7 @@ class TestDecompGraphWorkWireBudgeting:
         """Tests that ops that are not work-wire dependent are not affected by work-wire
         dependent decomposition rules upstream."""
 
-        class SimpleOp(Operation):
+        class SimpleOp(Operation):  # pylint: disable=too-few-public-methods
             """A simple operation that does not depend on work wires."""
 
         @qp.register_resources({qp.X: 1})
@@ -978,7 +982,7 @@ class TestDecompGraphWorkWireBudgeting:
         """Tests that a cycle of work-wire dependent ops that uses more work wires on every cycle
         iteration does not recurse indefinitely."""
 
-        class WrapperOp(Operation):
+        class WrapperOp(Operation):  # pylint: disable=too-few-public-methods
             """An operation that decomposes into ``CustomOp`` using a work wire."""
 
         @qp.register_resources({CustomOp: 1})
@@ -1013,7 +1017,7 @@ class TestDecompGraphWorkWireBudgeting:
         """Tests that a work-wire dependent op that decomposes into itself using an additional
         work wire does not recurse indefinitely."""
 
-        class WrapperOp(Operation):
+        class WrapperOp(Operation):  # pylint: disable=too-few-public-methods
             """An operation that decomposes into ``CustomOp`` using a work wire."""
 
         @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1})
@@ -1043,10 +1047,10 @@ class TestDecompGraphWorkWireBudgeting:
         """Tests that a cycle of work-wire dependent ops that does not use additional work wires
         is not pruned, so that it remains available to the solver."""
 
-        class WrapperOp(Operation):
+        class WrapperOp(Operation):  # pylint: disable=too-few-public-methods
             """An operation that decomposes into ``CustomOp`` using a work wire."""
 
-        class OuterOp(Operation):
+        class OuterOp(Operation):  # pylint: disable=too-few-public-methods
             """An operation that decomposes into ``AnotherOp`` using a work wire."""
 
         @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1})
@@ -1092,10 +1096,10 @@ class TestDecompGraphWorkWireBudgeting:
         """Tests that an operator whose decomposition rule was cut to break a cycle of work-wire
         dependent ops is explored again when it is visited outside of that cycle."""
 
-        class WrapperOp(Operation):
+        class WrapperOp(Operation):  # pylint: disable=too-few-public-methods
             """An operation that decomposes into ``CustomOp`` using a work wire."""
 
-        class ConsumerOp(Operation):
+        class ConsumerOp(Operation):  # pylint: disable=too-few-public-methods
             """An operation that decomposes into ``AnotherOp`` using two work wires."""
 
         @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1})
@@ -1139,7 +1143,7 @@ class TestDecompGraphWorkWireBudgeting:
     def test_min_work_wires(self):
         """Tests that the graph tracks the minimum number of work wires."""
 
-        class SimpleOp(Operation):
+        class SimpleOp(Operation):  # pylint: disable=too-few-public-methods
             """A simple operation that does not depend on work wires."""
 
         @qp.register_resources({qp.X: 4})
@@ -1167,7 +1171,7 @@ class TestDecompGraphWorkWireBudgeting:
                 AnotherOp: [_another_decomp, _yet_another_decomp],
             },
         )
-        assert graph._min_work_wires == 3
+        assert graph._min_work_wires == 3  # pylint: disable=protected-access
         with pytest.raises(DecompositionError, match="at least 3 work wires"):
             graph.solve(num_work_wires=2)
 
@@ -1180,7 +1184,7 @@ class TestDecompGraphWorkWireBudgeting:
     def test_min_work_wires_unreacheable_rule(self):
         """Tests that unrecheable rules are excluded when computing minimum work wires."""
 
-        class SimpleOp(Operation):
+        class SimpleOp(Operation):  # pylint: disable=too-few-public-methods
             """A simple operation that does not depend on work wires."""
 
         @qp.register_resources({qp.X: 4})
@@ -1210,7 +1214,7 @@ class TestDecompGraphWorkWireBudgeting:
                 AnotherOp: [_another_decomp, _yet_another_decomp],
             },
         )
-        assert graph._min_work_wires == 4
+        assert graph._min_work_wires == 4  # pylint: disable=protected-access
 
 
 @pytest.mark.unit
@@ -1230,8 +1234,8 @@ class TestControlledDecompositions:
             [op1, op2],
             gate_set={"ControlledPhaseShift", "PhaseShift", "GlobalPhase", "X"},
         )
-        assert len(graph._graph.nodes()) == 17
-        assert len(graph._graph.edges()) == 22
+        assert len(graph._graph.nodes()) == 17  # pylint: disable=protected-access
+        assert len(graph._graph.edges()) == 22  # pylint: disable=protected-access
 
         # Verify the decompositions
         solution = graph.solve()
@@ -1257,7 +1261,7 @@ class TestControlledDecompositions:
             qp.Z(wires=wires[0])
             qp.GlobalPhase(np.pi / 2)
 
-        class CustomControlledOp(Operation):
+        class CustomControlledOp(Operation):  # pylint: disable=too-few-public-methods
             """A custom operation."""
 
             resource_keys = set()
@@ -1282,8 +1286,8 @@ class TestControlledDecompositions:
                 CustomControlledOp: [custom_controlled_decomp],
             },
         )
-        assert len(graph._graph.nodes()) == 83
-        assert len(graph._graph.edges()) == 137
+        assert len(graph._graph.nodes()) == 83  # pylint: disable=protected-access
+        assert len(graph._graph.edges()) == 137  # pylint: disable=protected-access
 
         solution = graph.solve()
 
@@ -1353,6 +1357,7 @@ class TestControlledDecompositions:
             alt_decomps={CustomOp: [_custom_rule]},
             gate_set={"PauliX", "MidMeasure"},
         )
+        # pylint: disable-next=protected-access
         rules = [node.rule for node in graph._graph.nodes() if isinstance(node, _DecompositionNode)]
         assert all("_custom_rule" not in rule.name for rule in rules)
 
@@ -1378,8 +1383,8 @@ class TestSymbolicDecompositions:
         graph = DecompositionGraph(operations=[op], gate_set={"LegacyRX"})
         # 2 operator nodes (Adjoint(Adjoint(RX)) and RX), and 1 decomposition node.
         # and the dummy starting node
-        assert len(graph._graph.nodes()) == 4
-        assert len(graph._graph.edges()) == 3
+        assert len(graph._graph.nodes()) == 4  # pylint: disable=protected-access
+        assert len(graph._graph.edges()) == 3  # pylint: disable=protected-access
 
         solution = graph.solve()
         kwargs = op.hyperparameters
@@ -1389,15 +1394,15 @@ class TestSymbolicDecompositions:
         assert q.queue == [LegacyRX(0.5, wires=[0])]
         assert solution.resource_estimate(op) == to_resources({LegacyRX: 1})
 
-    def test_adjoint_custom(self, mocker):
+    def test_adjoint_custom(self, mocker):  # pylint: disable=unused-argument
         """Tests adjoint of an operator that defines its own adjoint."""
 
         op = qp.adjoint(LegacyRX(0.5, wires=[0]))
 
         graph = DecompositionGraph(operations=[op], gate_set={"LegacyRX"})
         # 2 operator nodes (Adjoint(RX) and RX), and 1 decomposition node, and 1 dummy starting node
-        assert len(graph._graph.nodes()) == 4
-        assert len(graph._graph.edges()) == 3
+        assert len(graph._graph.nodes()) == 4  # pylint: disable=protected-access
+        assert len(graph._graph.edges()) == 3  # pylint: disable=protected-access
 
         solution = graph.solve()
         kwargs = op.hyperparameters
@@ -1407,7 +1412,7 @@ class TestSymbolicDecompositions:
         assert q.queue == [LegacyRX(-0.5, wires=[0])]
         assert solution.resource_estimate(op) == to_resources({LegacyRX: 1})
 
-    def test_adjoint_general(self, mocker):
+    def test_adjoint_general(self, mocker):  # pylint: disable=unused-argument
         """Tests decomposition of a generalized adjoint operation."""
 
         @qp.register_resources({qp.H: 1, qp.CNOT: 2, LegacyRX: 1, qp.T: 1})
@@ -1428,10 +1433,10 @@ class TestSymbolicDecompositions:
         # A(PhaseShift), PhaseShift, A(RZ), A(GlobalPhase).
         # 7 decomposition nodes for: A(CustomOp), A(H), A(CNOT), A(RX), A(T), and A(PhaseShift)
         # 1 dummy starting node
-        assert len(graph._graph.nodes()) == 20
+        assert len(graph._graph.nodes()) == 20  # pylint: disable=protected-access
         # 11 edges from ops to decompositions and 7 edges from decompositions to ops,
         # and 4 edges from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 22
+        assert len(graph._graph.edges()) == 22  # pylint: disable=protected-access
 
         solution = graph.solve()
         kwargs = op.hyperparameters
@@ -1457,11 +1462,11 @@ class TestSymbolicDecompositions:
         # 3 operator nodes: Pow(Pow(H)), Pow(H), and H
         # 2 decomposition nodes for Pow(Pow(H)) and 2 nodes for Pow(H)
         # and the dummy starting node
-        assert len(graph._graph.nodes()) == 7
+        assert len(graph._graph.nodes()) == 7  # pylint: disable=protected-access
         # 4 edges from decompositions to ops and 2 edge from ops to decompositions
         # and 1 edge from the dummy starting node to the target gate set. Note that
         # H**6 decomposes to nothing, so H isn't counted.
-        assert len(graph._graph.edges()) == 7
+        assert len(graph._graph.edges()) == 7  # pylint: disable=protected-access
 
         solution = graph.solve()
         with qp.queuing.AnnotatedQueue() as q:
@@ -1542,11 +1547,11 @@ class TestSymbolicDecompositions:
         # 3 operator nodes: Pow(CustomOp, 0), Pow(CustomOp, 1), and CustomOp
         # 1 decomposition node for Pow(CustomOp, 0) and 1 node for Pow(CustomOp, 1)
         # and the dummy starting node
-        assert len(graph._graph.nodes()) == 6
+        assert len(graph._graph.nodes()) == 6  # pylint: disable=protected-access
         # 2 edges from decompositions to ops and 1 edge from ops to decompositions
         # and 1 edge from the dummy starting node to the target gate set.
         # and 1 edge from the dummy starting node to the empty decomposition.
-        assert len(graph._graph.edges()) == 5
+        assert len(graph._graph.edges()) == 5  # pylint: disable=protected-access
 
         op1 = qp.pow(CustomOp(0), 0)
         op2 = qp.pow(CustomOp(1), 1)
@@ -1573,10 +1578,10 @@ class TestSymbolicDecompositions:
         # 5 operator nodes: Pow(CustomOp), Pow(Adjoint(CustomOp)), Adjoint(Pow(CustomOp)),
         # Adjoint(CustomOp), CustomOp, and the dummy starting node
         # 3 decomposition nodes for each of Pow(CustomOp), Pow(Adjoint(CustomOp)), Adjoint(Pow(CustomOp))
-        assert len(graph._graph.nodes()) == 9
+        assert len(graph._graph.nodes()) == 9  # pylint: disable=protected-access
         # 3 edges from decompositions to ops and 3 edges from ops to decompositions
         # and 2 edges from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 8
+        assert len(graph._graph.edges()) == 8  # pylint: disable=protected-access
 
         op1 = qp.pow(CustomOp(0), 2)
         op2 = qp.pow(qp.adjoint(CustomOp(1)), 2)
@@ -1612,6 +1617,7 @@ class TestSymbolicDecompositions:
             alt_decomps={CustomOp: [_custom_rule, _another_rule]},
             gate_set={"PauliX", "MidMeasure"},
         )
+        # pylint: disable-next=protected-access
         rules = [node.rule for node in graph._graph.nodes() if isinstance(node, _DecompositionNode)]
         assert all("_custom_rule" not in rule.name for rule in rules)
         assert all("_another_rule" not in rule.name for rule in rules)

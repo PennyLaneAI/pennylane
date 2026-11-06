@@ -240,9 +240,7 @@ class TrotterProduct(Operation):
         # accepts no wires, so bypasses the wire processing.
         return cls._primitive.bind(*args, **kwargs)
 
-    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        self, hamiltonian, time, n=1, order=1, check_hermitian=True
-    ):
+    def __init__(self, hamiltonian, time, n=1, order=1, check_hermitian=True):
         r"""Initialize the TrotterProduct class"""
 
         if order <= 0 or order != 1 and order % 2 != 0:
@@ -297,11 +295,12 @@ class TrotterProduct(Operation):
         }
 
     def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
+        # pylint: disable-next=protected-access
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        # pylint: disable-next=protected-access
         new_op._hyperparameters["base"] = qp_ops.functions.map_wires(
-            new_op._hyperparameters["base"], wire_map
+            new_op._hyperparameters["base"], wire_map  # pylint: disable=protected-access
         )
         return new_op
 
@@ -546,7 +545,6 @@ class TrotterizedQfunc(Operation):
 
     """
 
-    # pylint: disable = too-many-arguments
     def __init__(
         self,
         time,

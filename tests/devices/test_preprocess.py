@@ -39,13 +39,10 @@ from pennylane.devices.preprocess import (
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import CountsMP, SampleMP
 
-# pylint: disable=too-few-public-methods
-
 
 class NoMatOp(Operation):
     """Dummy operation for expanding circuit."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
@@ -54,17 +51,16 @@ class NoMatOp(Operation):
         return [qp.PauliX(self.wires), qp.PauliY(self.wires)]
 
 
-class NoMatNoDecompOp(Operation):
+class NoMatNoDecompOp(Operation):  # pylint: disable=too-few-public-methods
     """Dummy operation for checking check_validity throws error when
     expected."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
 
 
-class InfiniteOp(qp.operation.Operation):
+class InfiniteOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
     """An op with an infinite decomposition."""
 
     num_wires = 1
@@ -114,7 +110,7 @@ class TestPrivateHelpers:
         def stopping_condition(op):
             return op.has_matrix
 
-        class RaggedDecompositionOp(Operation):
+        class RaggedDecompositionOp(Operation):  # pylint: disable=too-few-public-methods
             """class with a ragged decomposition."""
 
             num_wires = 1
@@ -399,8 +395,7 @@ def dummy_rz_decomp_1(phi, wires):
 
 
 @qp.register_resources({qp.H: 1}, work_wires={"zeroed": 1})
-def dummy_rz_decomp_2(phi, wires):
-    # pylint: disable=unused-argument
+def dummy_rz_decomp_2(phi, wires):  # pylint: disable=unused-argument
     qp.H(wires)
 
 
@@ -601,7 +596,6 @@ class TestDecomposeTransformations:
     ):
         """Test that decompose works correctly when passing through ``fixed_decomps``
         and/or ``alt_decomps`` with the graph-based decomposer."""
-        # pylint: disable=too-many-arguments
         if not qp.decomposition.enabled_graph():
             pytest.skip("This test only is expected to work with the graph-based system.")
 
@@ -691,7 +685,7 @@ class TestDecomposeTransformations:
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
-class TestGraphModeExclusiveFeatures:
+class TestGraphModeExclusiveFeatures:  # pylint: disable=too-few-public-methods
     """Tests that only work when graph mode is enabled."""
 
     def test_work_wire_unavailability_causes_fallback(self):
@@ -751,7 +745,6 @@ class TestMeasurementsFromCountsOrSamples:
         ):
             meas_transform(tape)
 
-    # pylint: disable=unnecessary-lambda, too-many-arguments
     @pytest.mark.parametrize(
         "meas_transform", (measurements_from_counts, measurements_from_samples)
     )

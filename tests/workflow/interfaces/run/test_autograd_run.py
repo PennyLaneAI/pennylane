@@ -21,8 +21,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-
-# pylint: disable=no-name-in-module
 from conftest import atol_for_shots, get_device, test_matrix
 from pennylane import numpy as pnp
 from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
@@ -86,7 +84,7 @@ class TestAutogradRun:
             res = qp.jacobian(lambda x: qp.math.hstack(cost(x)))(a)
         else:
             res = qp.jacobian(cost)(a)
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qp.math.sin(a)
 

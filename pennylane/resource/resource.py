@@ -394,7 +394,7 @@ class Resources:
                 getattr(self, obj_field.name), substitutions_copy
             )
 
-        return type(self)(**new_values)  # pylint: disable=missing-kwoa
+        return type(self)(**new_values)
 
     @property
     def is_symbolic(self) -> bool:
@@ -484,7 +484,7 @@ class SpecsResources(Resources):
 
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
-        # pylint: disable=super-with-arguments
+        # pylint: disable-next=super-with-arguments
         super(SpecsResources, self).__post_init__()  # Fall through to parent post init
 
     def __getitem__(self, key):
@@ -498,8 +498,7 @@ class SpecsResources(Resources):
 
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
-        # pylint: disable=super-with-arguments
-        return super(SpecsResources, self).__getitem__(key)
+        return super(SpecsResources, self).__getitem__(key)  # pylint: disable=super-with-arguments
 
     @property
     def quantum_operations(self):
@@ -544,10 +543,8 @@ class SpecsResources(Resources):
 
         lines.append(f"{prefix}Total wires: {_count_to_str(self.num_wires)}")
 
-        if (
-            self.circuit_depth is not None
-            or type(self) == SpecsResources  # pylint: disable=unidiomatic-typecheck
-        ):
+        # pylint: disable-next=unidiomatic-typecheck
+        if self.circuit_depth is not None or type(self) == SpecsResources:
             # Do not include circuit depth in the output for derived classes
             depth_str = (
                 _count_to_str(self.circuit_depth)
@@ -589,10 +586,8 @@ class SpecsResources(Resources):
 
         lines.append(f"| **Total wires** | {_count_to_str(self.num_wires, markdown_safe=True)} |")
 
-        if (
-            self.circuit_depth is not None
-            or type(self) == SpecsResources  # pylint: disable=unidiomatic-typecheck
-        ):
+        # pylint: disable-next=unidiomatic-typecheck
+        if self.circuit_depth is not None or type(self) == SpecsResources:
             # Do not include circuit depth in the output for derived classes
             depth_str = (
                 _count_to_str(self.depth, markdown_safe=True)
@@ -653,7 +648,7 @@ class PBCSpecsResources(SpecsResources):
         """
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
-        # pylint: disable=super-with-arguments
+        # pylint: disable-next=super-with-arguments
         s = super(PBCSpecsResources, self).to_pretty_str(preindent=preindent)
 
         s += (
@@ -675,8 +670,7 @@ class PBCSpecsResources(SpecsResources):
 
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
-        # pylint: disable=super-with-arguments
-        s = super(PBCSpecsResources, self)._repr_markdown_()
+        s = super(PBCSpecsResources, self)._repr_markdown_()  # pylint: disable=super-with-arguments
 
         s += (
             "\n"
@@ -1120,7 +1114,7 @@ class CircuitSpecs:
 
         return "\n".join(lines)
 
-    def _repr_markdown_(self, collapsible: bool = True) -> str:
+    def _repr_markdown_(self, collapsible: bool = True) -> str:  # pylint: disable=too-many-branches
         """
         Return a Markdown representation of the :class:`~.resource.CircuitSpecs` for Jupyter notebook display.
 
@@ -1134,7 +1128,6 @@ class CircuitSpecs:
 
             https://ipython.readthedocs.io/en/stable/config/integrating.html#custom-methods
         """
-        # pylint: disable=too-many-branches
         # Ignore pylint on this one, this is not better served by splitting into even
         # smaller functions than it already has
         lines = []
@@ -1293,7 +1286,6 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
     measurement_processes = defaultdict(int)
     for op in tape.operations:
         gate_name = op.name
-        # pylint: disable=unidiomatic-typecheck
         if type(op) in (Controlled, ControlledOp):
             n_ctrls = len(op.control_wires)
             if n_ctrls > 1:

@@ -16,8 +16,6 @@ Unit tests for the available qubit operations for quantum chemistry purposes.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods, unnecessary-lambda-assignment
 import pytest
 from gate_data import (
     DoubleExcitation,
@@ -50,7 +48,7 @@ PARAMETRIZED_QCHEM_OPERATIONS = [
 ]
 
 
-class TestParameterFrequencies:
+class TestParameterFrequencies:  # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize("op", PARAMETRIZED_QCHEM_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
@@ -404,8 +402,7 @@ class TestSingleExcitationDecompositions:
         tape = qp.tape.QuantumScript([op], [])
         expected_matrix = qp.matrix(tape, wire_order=[0, 1, control])
 
-        # pylint: disable-next=protected-access
-        [decomp], _ = qp.transforms._tape_decompose(
+        [decomp], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
             tape, gate_set={qp.CNOT, qp.RY, qp.RZ, qp.Hadamard, qp.GlobalPhase, qp.PauliX}
         )
         gates = decomp.operations

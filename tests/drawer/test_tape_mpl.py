@@ -17,7 +17,8 @@ See section on "Testing Matplotlib based code" in the "Software Tests"
 page in the developement guide.
 """
 
-# pylint: disable=protected-access, expression-not-assigned
+# pylint: disable=protected-access
+
 
 import warnings
 
@@ -408,7 +409,7 @@ class TestSpecialGates:
     def test_Prod(self):
         """Test Prod gets correct special call."""
         with qp.queuing.AnnotatedQueue() as q_tape:
-            qp.S(0) @ qp.T(0)
+            qp.S(0) @ qp.T(0)  # pylint: disable=expression-not-assigned
 
         tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
@@ -548,7 +549,6 @@ class TestControlledGates:
         """Test control_values get displayed correctly when they are provided as a list of bools."""
 
         with qp.queuing.AnnotatedQueue() as q_tape:
-            # pylint:disable=no-member
             qubit_unitary = qp.QubitUnitary(qp.RX.compute_matrix(0), wires=4)
             qp.ops.op_math.Controlled(qubit_unitary, (0, 1, 2, 3), [1, 0, 1, 0])
 

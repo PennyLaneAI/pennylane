@@ -4,6 +4,7 @@ Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 
 # pylint: disable=consider-using-with,unspecified-encoding
 
+
 from re import escape
 from unittest.mock import MagicMock
 
@@ -73,7 +74,7 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 @pytest.mark.external
-class TestBuiltIns:  # pylint: disable=too-few-public-methods
+class TestBuiltIns:
 
     VALID_BIT_TYPE_VAL = [
         ## Valid
@@ -712,13 +713,12 @@ class TestExpressions:
         )
 
         # comparison expressions
-        # pylint: disable=comparison-of-constants
-        assert context.vars["a"].val == (0 == 1)
-        assert context.vars["b"].val == (0 != 1)
-        assert context.vars["c"].val == (0 > 1)
-        assert context.vars["d"].val == (0 < 1)
-        assert context.vars["e"].val == (0 >= 1)
-        assert context.vars["f"].val == (0 <= 1)
+        assert context.vars["a"].val == (0 == 1)  # pylint: disable=comparison-of-constants
+        assert context.vars["b"].val == (0 != 1)  # pylint: disable=comparison-of-constants
+        assert context.vars["c"].val == (0 > 1)  # pylint: disable=comparison-of-constants
+        assert context.vars["d"].val == (0 < 1)  # pylint: disable=comparison-of-constants
+        assert context.vars["e"].val == (0 >= 1)  # pylint: disable=comparison-of-constants
+        assert context.vars["f"].val == (0 <= 1)  # pylint: disable=comparison-of-constants
 
         # bitwise operations
         assert context.vars["g"].val == 2 >> 1

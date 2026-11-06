@@ -151,10 +151,14 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
     return []
 
 
-# pylint: disable=unused-argument
 @CollectOpsandMeas.register_primitive(cond_prim)
-def _cond_primitive(
-    self, *all_args, jaxpr_branches, consts_slices, args_slice, estimated_probabilities
+def _cond_primitive(  # pylint: disable=unused-argument
+    self,
+    *all_args,
+    jaxpr_branches,
+    consts_slices,
+    args_slice,
+    estimated_probabilities,
 ):
     n_branches = len(jaxpr_branches)
     conditions = all_args[: n_branches - 1]
@@ -224,11 +228,17 @@ def _jvp_primitive(self, *invals, jaxpr, **params):
     raise NotImplementedError("CollectOpsandMeas cannot handle the jvp primitive")
 
 
-# pylint: disable=unused-argument
 @CollectOpsandMeas.register_primitive(qnode_prim)
-def _qnode_primitive(
-    self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, n_consts
-):  # pylint: disable=too-many-arguments
+def _qnode_primitive(  # pylint: disable=too-many-arguments,unused-argument
+    self,
+    *invals,
+    shots_len,
+    qnode,
+    device,
+    execution_config,
+    qfunc_jaxpr,
+    n_consts,
+):
     consts = invals[shots_len : shots_len + n_consts]
     args = invals[shots_len + n_consts :]
 
@@ -256,9 +266,8 @@ def _deallocate_primitive(self, *wires):
     return []
 
 
-# pylint: disable=unused-argument
 @CollectOpsandMeas.register_primitive(quantum_subroutine_prim)
-def _quantum_subroutine(self, *args, jaxpr, name, **kwargs):
+def _quantum_subroutine(self, *args, jaxpr, name, **kwargs):  # pylint: disable=unused-argument
     child = CollectOpsandMeas()
     with queuing.QueuingManager.stop_recording():
         out = child.eval(jaxpr.jaxpr, jaxpr.consts, *args)
@@ -269,28 +278,28 @@ def _quantum_subroutine(self, *args, jaxpr, name, **kwargs):
 
 
 @CollectOpsandMeas.register_primitive(jax.lax.convert_element_type_p)
-def _convert_element_type(self, operand, **kwargs):
+def _convert_element_type(self, operand, **kwargs):  # pylint: disable=unused-argument
     if isinstance(operand, MeasurementValue):
         return operand
     return jax.lax.convert_element_type_p.bind(operand, **kwargs)
 
 
 @CollectOpsandMeas.register_primitive(jax.lax.eq_p)
-def _equal(self, lhs, rhs):
+def _equal(self, lhs, rhs):  # pylint: disable=unused-argument
     if isinstance(lhs, MeasurementValue) or isinstance(rhs, MeasurementValue):
         return lhs == rhs
     return jax.lax.eq_p.bind(lhs, rhs)
 
 
 @CollectOpsandMeas.register_primitive(jax.lax.ne_p)
-def _not_equal(self, lhs, rhs):
+def _not_equal(self, lhs, rhs):  # pylint: disable=unused-argument
     if isinstance(lhs, MeasurementValue) or isinstance(rhs, MeasurementValue):
         return lhs != rhs
     return jax.lax.ne_p.bind(lhs, rhs)
 
 
 @CollectOpsandMeas.register_primitive(jax.lax.and_p)
-def _and(self, lhs, rhs):
+def _and(self, lhs, rhs):  # pylint: disable=unused-argument
     if isinstance(lhs, MeasurementValue) or isinstance(rhs, MeasurementValue):
         return lhs & rhs
     return jax.lax.and_p.bind(lhs, rhs)

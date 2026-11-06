@@ -24,7 +24,6 @@ from typing import Union
 from pennylane.concurrency.executors.base import ExtExec
 
 
-# pylint: disable=import-outside-toplevel
 class DaskExec(ExtExec):  # pragma: no cover
     """
     Dask distributed executor wrapper.
@@ -48,8 +47,8 @@ class DaskExec(ExtExec):  # pragma: no cover
     ):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)
         try:
-            from dask.distributed import LocalCluster
-            from dask.distributed.deploy import Cluster
+            from dask.distributed import LocalCluster  # pylint: disable=import-outside-toplevel
+            from dask.distributed.deploy import Cluster  # pylint: disable=import-outside-toplevel
         except ImportError as ie:
             raise RuntimeError(
                 "Dask Distributed cannot be found.\nPlease install via ``pip install dask distributed``"
@@ -106,6 +105,6 @@ class DaskExec(ExtExec):  # pragma: no cover
 
     @classmethod
     def _exec_backend(cls):
-        from dask.distributed import Client
+        from dask.distributed import Client  # pylint: disable=import-outside-toplevel
 
         return Client

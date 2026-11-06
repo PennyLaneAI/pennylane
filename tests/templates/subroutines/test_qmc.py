@@ -318,8 +318,7 @@ class TestQuantumMonteCarlo:
         queue_before_qpe = tape.operations[:2]
 
         # Build a new tape from all operations following the two QubitUnitary ops and expand it
-        # pylint: disable-next=protected-access
-        [tape], _ = qp.transforms._tape_decompose(
+        [tape], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
             qp.tape.QuantumScript(tape.operations[2:]),
             gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
             max_expansion=2,
@@ -343,8 +342,7 @@ class TestQuantumMonteCarlo:
             qp.QuantumPhaseEstimation(qp.QubitUnitary(Q, wires=target_wires), estimation_wires)
 
         qpe_tape = qp.tape.QuantumScript.from_queue(q_qpe_tape)
-        # pylint: disable-next=protected-access
-        [qpe_tape], _ = qp.transforms._tape_decompose(
+        [qpe_tape], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
             qpe_tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=2
         )
 
@@ -359,7 +357,6 @@ class TestQuantumMonteCarlo:
     def test_expected_value(self):
         """Test that the QuantumMonteCarlo template can correctly estimate the expectation value
         following the example in the usage details"""
-        # pylint: disable=cell-var-from-loop
         m = 5
         M = 2**m
 
@@ -385,9 +382,12 @@ class TestQuantumMonteCarlo:
             @qp.qnode(dev)
             def circuit():
                 qp.QuantumMonteCarlo(
-                    probs, func, target_wires=target_wires, estimation_wires=estimation_wires
+                    probs,
+                    func,
+                    target_wires=target_wires,  # pylint: disable=cell-var-from-loop
+                    estimation_wires=estimation_wires,  # pylint: disable=cell-var-from-loop
                 )
-                return qp.probs(estimation_wires)
+                return qp.probs(estimation_wires)  # pylint: disable=cell-var-from-loop
 
             phase_estimated = np.argmax(circuit()[: int(N / 2)]) / N
             mu_estimated = (1 - np.cos(np.pi * phase_estimated)) / 2
@@ -407,7 +407,6 @@ class TestQuantumMonteCarlo:
     def test_expected_value_jax_jit(self):
         """Test that the QuantumMonteCarlo template can correctly estimate the expectation value
         following the example in the usage details using JAX-JIT"""
-        # pylint: disable=cell-var-from-loop
         import jax
         from jax import numpy as jnp
 
@@ -437,9 +436,12 @@ class TestQuantumMonteCarlo:
             @qp.qnode(dev, interface="jax")
             def circuit():
                 qp.QuantumMonteCarlo(
-                    probs, func, target_wires=target_wires, estimation_wires=estimation_wires
+                    probs,
+                    func,
+                    target_wires=target_wires,  # pylint: disable=cell-var-from-loop
+                    estimation_wires=estimation_wires,  # pylint: disable=cell-var-from-loop
                 )
-                return qp.probs(estimation_wires)
+                return qp.probs(estimation_wires)  # pylint: disable=cell-var-from-loop
 
             phase_estimated = jnp.argmax(circuit()[: int(N / 2)]) / N
             mu_estimated = (1 - jnp.cos(np.pi * phase_estimated)) / 2

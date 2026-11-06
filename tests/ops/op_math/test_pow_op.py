@@ -27,14 +27,12 @@ from pennylane.ops.op_math.pow import Pow, PowOperation
 from pennylane.ops.op_math.pow2 import Pow2
 
 
-# pylint: disable=too-few-public-methods
-class TempOperator(qp.operation.Operator):
+class TempOperator(qp.operation.Operator):  # pylint: disable=too-few-public-methods
     """Dummy operator"""
 
     num_wires = 1
 
 
-# pylint: disable=unused-argument
 def pow_using_dunder_method(base, z):
     """Helper function which computes the base raised to the power invoking the __pow__ dunder
     method."""
@@ -89,15 +87,14 @@ class TestConstructor:
         """Test that when the simplification method returns a list of multiple operators,
         pow returns a list of multiple operators."""
 
-        # pylint: disable=too-few-public-methods
-        class Temp(qp.operation.Operator):
+        class Temp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
             def pow(self, z):  # pylint: disable=unused-argument
                 return [qp.S(0), qp.T(0)]
 
         new_op = qp.pow(Temp(0), 2, lazy=False)
-        assert isinstance(new_op, qp.ops.Prod)  # pylint:disable=no-member
+        assert isinstance(new_op, qp.ops.Prod)
         qp.assert_equal(new_op.operands[0], qp.S(0))
         qp.assert_equal(new_op.operands[1], qp.T(0))
 
@@ -114,7 +111,7 @@ class TestConstructor:
     def test_simplify_squared(self):
         """Test that an op without a special pow method can still be simplified when raised to an integer power."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             pass
 
         simplified = (DummyOp(0) ** 2).simplify()
@@ -143,7 +140,7 @@ class TestInheritanceMixins:
         """When the operation inherits from `Operation`, the `PowOperation` mixin should
         be added and the Pow should now have Operation functionality."""
 
-        class CustomOp(qp.operation.Operation):
+        class CustomOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             num_wires = 1
             num_params = 1
 
@@ -204,7 +201,7 @@ class TestInitialization:
         """Test pow initialization for a template."""
         rng = np.random.default_rng(seed=seed)
         shape = qp.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
-        params = rng.random(shape)  # pylint:disable=no-member
+        params = rng.random(shape)
 
         base = qp.StronglyEntanglingLayers(params, wires=[0, 1])
         op: Pow = power_method(base=base, z=2.67)
@@ -223,7 +220,6 @@ class TestInitialization:
         assert op.num_wires == 2
 
 
-# pylint: disable=too-many-public-methods
 @pytest.mark.parametrize("power_method", [pow_using_dunder_method, qp.pow])
 class TestProperties:
     """Test Pow properties."""
@@ -303,7 +299,7 @@ class TestProperties:
     def test_no_decomposition_batching_error(self, power_method):
         """Test that if an error occurs with a batched exponent, has_decomposition is False."""
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
 
             def pow(self, z):
                 return super().pow(z % 2)
@@ -317,7 +313,7 @@ class TestProperties:
     def test_error_raised_if_no_batching(self, power_method):
         """Test that if Operator.pow raises an error and no batching is present, the erorr is raised."""
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
 
             def pow(self, z):
                 raise ValueError
@@ -334,7 +330,7 @@ class TestProperties:
     def test_has_diagonalizing_gates(self, value, power_method):
         """Test that Pow defers has_diagonalizing_gates to base operator."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             has_diagonalizing_gates = value
 
@@ -345,7 +341,7 @@ class TestProperties:
     def test_is_hermitian(self, value, power_method):
         """Test that if the base is hermitian, then the power is hermitian."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             """Dummy operator."""
 
             num_wires = 1
@@ -455,7 +451,7 @@ class TestSimplify:
 
     def test_depth_property(self):
         """Test depth property."""
-        pow_op = Pow(base=qp.ops.Adjoint(qp.PauliX(0)), z=2)  # pylint:disable=no-member
+        pow_op = Pow(base=qp.ops.Adjoint(qp.PauliX(0)), z=2)
         assert pow_op.arithmetic_depth == 2
 
     def test_simplify_nested_pow_ops(self):
@@ -507,19 +503,18 @@ class TestMiscMethods:
         op = Pow(base, 2.5)
         assert repr(op) == "(RX(1, wires=[0]) + S(1))**2.5"
 
-    # pylint: disable=protected-access
     def test_flatten_unflatten(self):
         """Test the _flatten and _unflatten methods."""
 
         target = qp.H(0)
         z = -0.5
         op = Pow(target, z)
-        data, metadata = op._flatten()
+        data, metadata = op._flatten()  # pylint: disable=protected-access
 
         assert data == (target,)
         assert metadata == (z,)
 
-        new_op = type(op)._unflatten(data, metadata)
+        new_op = type(op)._unflatten(data, metadata)  # pylint: disable=protected-access
         assert new_op is not op
         qp.assert_equal(new_op, op)
 
@@ -903,7 +898,7 @@ class TestDecompositionExpand:
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qp.pow])
-class TestOperationProperties:
+class TestOperationProperties:  # pylint: disable=too-few-public-methods
     """Test Operation specific properties."""
 
     def test_basis(self, power_method):
@@ -967,17 +962,16 @@ class TestIntegration:
         circ()
 
 
-# pylint: disable-next=too-few-public-methods
-class TestCapture:
+class TestCapture:  # pylint: disable=too-few-public-methods
 
     @pytest.mark.jax
     def test_pow_eigvals_is_jittable(self):
         """Test that the eigvals method is jittable."""
-        import jax  # pylint: disable=import-outside-toplevel
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
-        import numpy as np  # pylint: disable=reimported,import-outside-toplevel,redefined-outer-name
+        import jax
+        import jax.numpy as jnp
+        import numpy as np  # pylint: disable=redefined-outer-name
 
-        import pennylane as qp  # pylint: disable=reimported,import-outside-toplevel,redefined-outer-name
+        import pennylane as qp  # pylint: disable=redefined-outer-name,reimported
 
         @jax.jit
         def f(x):

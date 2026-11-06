@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types and devices that define a shot vector."""
 
-# pylint:disable=use-implicit-booleaness-not-comparison,abstract-method
 from functools import partial
 
 import pytest
@@ -44,22 +43,19 @@ def grad_fn(tape, dev, fn=qp.gradients.param_shift, **kwargs):
     return fn(dev.execute(tapes))
 
 
-# pylint: disable=too-few-public-methods
-class RY_with_F(qp.RY):
+class RY_with_F(qp.RY):  # pylint: disable=too-few-public-methods
     """Custom variant of qp.RY with grad_method "F"."""
 
     grad_method = "F"
 
 
-# pylint: disable=too-few-public-methods
-class RX_with_F(qp.RX):
+class RX_with_F(qp.RX):  # pylint: disable=too-few-public-methods
     """Custom variant of qp.RX with grad_method "F"."""
 
     grad_method = "F"
 
 
-# pylint: disable=too-few-public-methods
-class RX_par_dep_recipe(qp.RX):
+class RX_par_dep_recipe(qp.RX):  # pylint: disable=too-few-public-methods
     """RX operation with a parameter-dependent grad recipe."""
 
     @property
@@ -345,7 +341,7 @@ class TestParamShift:
         """
         s = np.pi / 2
 
-        class RX(qp.RX):
+        class RX(qp.RX):  # pylint: disable=too-few-public-methods
             """RX operation with an additional term in the grad recipe.
             The grad_recipe no longer yields the derivative, but we account for this.
             For this test, the presence of the unshifted term (with non-vanishing coefficient)
@@ -464,7 +460,7 @@ class TestParamShift:
         """Test that an error is raised if no grad_recipe, no parameter_frequencies
         and no generator are found."""
 
-        class LegacyRX(qp.operation.Operation):
+        class LegacyRX(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             """This copy of RX overwrites parameter_frequencies to report
             missing information, disabling its differentiation."""
 
@@ -477,7 +473,7 @@ class TestParamShift:
                 """Raise an error instead of returning frequencies."""
                 raise qp.operation.ParameterFrequenciesUndefinedError
 
-        class NewOp(qp.operation.Operation):
+        class NewOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             """This new operation does not overwrite parameter_frequencies
             but does not have a generator, disabling its differentiation."""
 
@@ -505,20 +501,18 @@ class TestParamShift:
 
 
 # The first line of pylint disable is for cost1 through cost6
-# pylint: disable=no-self-argument, not-an-iterable
-# pylint: disable=too-many-public-methods
 @pytest.mark.slow
 @pytest.mark.parametrize("broadcast", [False, True])
-class TestParameterShiftRule:
+class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
     """Unit tests for the param_shift function used with a device that has a
     shot vector defined"""
 
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
     @pytest.mark.parametrize("G", [qp.RX, qp.RY, qp.RZ, qp.PhaseShift])
+    # pylint: disable-next=too-many-arguments
     def test_pauli_rotation_gradient(self, mocker, G, theta, shift, broadcast, seed):
         """Tests that the automatic gradients of Pauli rotations are correct."""
-        # pylint: disable=too-many-arguments
 
         spy = mocker.spy(qp.gradients.parameter_shift, "_get_operation_recipe")
         shot_vec = many_shots_shot_vector
@@ -563,9 +557,7 @@ class TestParameterShiftRule:
 
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
-    def test_Rot_gradient(
-        self, mocker, theta, shift, broadcast, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_Rot_gradient(self, mocker, theta, shift, broadcast, seed):
         """Tests that the automatic gradient of an arbitrary Euler-angle-parametrized gate is correct."""
         spy = mocker.spy(qp.gradients.parameter_shift, "_get_operation_recipe")
 
@@ -875,9 +867,7 @@ class TestParameterShiftRule:
             assert np.allclose(res[1], expval_expected[1], atol=finite_diff_tol)
 
     @pytest.mark.parametrize("RX, RY, argnum", [(RX_with_F, qp.RY, 0), (qp.RX, RY_with_F, 1)])
-    def test_fallback_probs(
-        self, RX, RY, argnum, mocker, broadcast
-    ):  # pylint:disable=too-many-arguments
+    def test_fallback_probs(self, RX, RY, argnum, mocker, broadcast):
         """Test that fallback gradient functions are correctly used with probs"""
         spy = mocker.spy(qp.gradients, "finite_diff")
         dev = qp.device("default.qubit", wires=3)
@@ -1847,34 +1837,34 @@ class TestParameterShiftRule:
         for gradF in all_gradF:
             assert gradF == pytest.approx(expected, abs=finite_diff_tol)
 
-    def cost1(x):
+    def cost1(x):  # pylint: disable=no-self-argument
         """Perform rotation and return a scalar expectation value."""
-        qp.Rot(*x, wires=0)
+        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
         return qp.expval(qp.PauliZ(0))
 
-    def cost2(x):
+    def cost2(x):  # pylint: disable=no-self-argument
         """Perform rotation and return an expectation value in a 1d array."""
-        qp.Rot(*x, wires=0)
+        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
         return [qp.expval(qp.PauliZ(0))]
 
-    def cost3(x):
+    def cost3(x):  # pylint: disable=no-self-argument
         """Perform rotation and return two expectation value in a 1d array."""
-        qp.Rot(*x, wires=0)
+        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
         return [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))]
 
-    def cost4(x):
+    def cost4(x):  # pylint: disable=no-self-argument
         """Perform rotation and return probabilities."""
-        qp.Rot(*x, wires=0)
+        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
         return qp.probs([0, 1])
 
-    def cost5(x):
+    def cost5(x):  # pylint: disable=no-self-argument
         """Perform rotation and return probabilities in a 2d object."""
-        qp.Rot(*x, wires=0)
+        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
         return [qp.probs([0, 1])]
 
-    def cost6(x):
+    def cost6(x):  # pylint: disable=no-self-argument
         """Perform rotation and return two sets of probabilities in a 2d object."""
-        qp.Rot(*x, wires=0)
+        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
         return [qp.probs([0, 1]), qp.probs([2, 3])]
 
     costs_and_expected_expval = [
@@ -1950,7 +1940,7 @@ class TestParameterShiftRule:
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
-        class SpecialObservable(qp.operation.Operator):
+        class SpecialObservable(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             """SpecialObservable"""
 
             def diagonalizing_gates(self):
@@ -1964,9 +1954,8 @@ class TestParameterShiftRule:
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
-            # pylint: disable=unused-argument
             @staticmethod
-            def _asarray(arr, dtype=None):
+            def _asarray(arr, dtype=None):  # pylint: disable=unused-argument
                 return np.array(arr)
 
             def __init__(self, *args, **kwargs):
