@@ -1510,6 +1510,7 @@ Breaking changes 💔
 * ``PauliWord.operation()`` and ``PauliSentence.operation()`` have been replaced by
   :func:`~pennylane.pauli.to_operator`. Use ``qp.pauli.to_operator(value, wire_order=...)``
   to construct the corresponding operator.
+  `(#10483) <https://github.com/PennyLaneAI/pennylane/pull/10483>`__
 
 * ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of
   ``"MidMeasureMP"``. Update raw device operation names and comparisons; the deprecated
@@ -2002,10 +2003,11 @@ Internal changes ⚙️
 
   - Quantum chemistry operators are ported:
 
-    - :class:`~.SingleExcitation`, :class:`~.FermionicSWAP`
+    - :class:`~.SingleExcitation`, :class:`~.FermionicSWAP`, :class:`~.DoubleExcitation`
 
     `(#9944) <https://github.com/PennyLaneAI/pennylane/pull/9944>`__
     `(#10458) <https://github.com/PennyLaneAI/pennylane/pull/10458>`__
+    `(#10463) <https://github.com/PennyLaneAI/pennylane/pull/10463>`__
 
   - Miscelleneous operators are ported:
 
@@ -2333,6 +2335,7 @@ Documentation 📝
   `(#10421) <https://github.com/PennyLaneAI/pennylane/pull/10421>`__
   `(#10433) <https://github.com/PennyLaneAI/pennylane/pull/10433>`__
   `(#10436) <https://github.com/PennyLaneAI/pennylane/pull/10436>`__
+  `(#10453) <https://github.com/PennyLaneAI/pennylane/pull/10453>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~

@@ -13,6 +13,7 @@ for Pauli-word partitioning functionality used in measurement optimization.
 .. currentmodule:: pennylane.pauli
 
 .. automodapi:: pennylane.pauli
+    :allowed-package-names: pennylane
     :no-heading:
     :no-main-docstr:
     :no-inherited-members:
