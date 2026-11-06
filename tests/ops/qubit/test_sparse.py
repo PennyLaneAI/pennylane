@@ -293,7 +293,8 @@ class TestSparse:
                     qp.PauliX(0),
                     qp.PauliX(1),
                     qp.DoubleExcitation(
-                        [0.22350048065138242, 0.22350048065138242], wires=[0, 1, 2, 3]
+                        np.array([0.22350048065138242, 0.22350048065138242]),
+                        wires=[0, 1, 2, 3],
                     ),
                 ],
                 H_hydrogen,
