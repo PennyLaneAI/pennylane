@@ -1498,6 +1498,10 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* ``qp.ctrl`` now constructs symbolic controlled operators without dispatching to specialized
+  gates such as ``CNOT`` or ``CRX``. Decomposition rules have been updated accordingly.
+  `(#10395) <https://github.com/PennyLaneAI/pennylane/pull/10395>`__
+
 * The ``pennylane.kernels`` module has been removed. This includes ``kernel_matrix``,
   ``square_kernel_matrix``, ``polarity``, ``target_alignment``, ``threshold_matrix``,
   ``displace_matrix``, ``flip_matrix``, ``closest_psd_matrix`` and
@@ -1934,7 +1938,7 @@ Internal changes ⚙️
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
       :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.QuantumPhaseEstimation`, :class:`~.IQP`,
-      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`, :class:`~.IQPEmbedding`
+      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`, :class:`~.IQPEmbedding`, :class:`~.ControlledSequence`
 
     `(#9896) <https://github.com/PennyLaneAI/pennylane/pull/9896>`__
     `(#10164) <https://github.com/PennyLaneAI/pennylane/pull/10164>`__
@@ -1973,12 +1977,14 @@ Internal changes ⚙️
     `(#10209) <https://github.com/PennyLaneAI/pennylane/pull/10209>`__
     `(#10226) <https://github.com/PennyLaneAI/pennylane/pull/10226>`__
     `(#10267) <https://github.com/PennyLaneAI/pennylane/pull/10267>`__
+    `(#10449) <https://github.com/PennyLaneAI/pennylane/pull/10449>`__
 
   - Quantum chemistry operators are ported:
 
-    - :class:`~.SingleExcitation`
+    - :class:`~.SingleExcitation`, :class:`~.FermionicSWAP`
 
     `(#9944) <https://github.com/PennyLaneAI/pennylane/pull/9944>`__
+    `(#10458) <https://github.com/PennyLaneAI/pennylane/pull/10458>`__
 
   - Miscelleneous operators are ported:
 
@@ -2226,11 +2232,6 @@ Internal changes ⚙️
   `(#9400) <https://github.com/PennyLaneAI/pennylane/pull/9400>`__
   `(#9541) <https://github.com/PennyLaneAI/pennylane/pull/9541>`__
 
-* The custom dispatch logic from general controlled operators to equivalent bespoke operators (e.g.,
-  from ``qp.ctrl(qp.X(0), control=[1, 2])`` to ``Toffoli(wires=[1, 2, 0])``) is re-written to use a
-  singledispatch function ``custom_ctrl_dispatch`` as opposed to relying on hard-coded logic.
-  `(#9798) <https://github.com/PennyLaneAI/pennylane/pull/9798>`__
-
 * ``capture.enable()``, ``capture.disable()`` are updated to use ``ContextVar`` for thread safety. A ``capture.toggle_ctx``
   context manager that temporarily enables or disables capture is added.
   `(#10016) <https://github.com/PennyLaneAI/pennylane/pull/10016>`__
@@ -2308,7 +2309,8 @@ Documentation 📝
   `(#10383) <https://github.com/PennyLaneAI/pennylane/pull/10383>`__
   `(#10416) <https://github.com/PennyLaneAI/pennylane/pull/10416>`__
   `(#10420) <https://github.com/PennyLaneAI/pennylane/pull/10420>`__
-  `(#10421) <https://github.com/PennyLaneAI/pennylane/pull/104121>`__
+  `(#10421) <https://github.com/PennyLaneAI/pennylane/pull/10421>`__
+  `(#10436) <https://github.com/PennyLaneAI/pennylane/pull/10436>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
