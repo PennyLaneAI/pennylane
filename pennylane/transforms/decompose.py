@@ -109,7 +109,7 @@ Args:
 
 To exclude a registered rule from this pass, supply its name or callable in
 ``exclude_decomps``, for example ``exclude_decomps={qp.CRX: ["_crx_to_h_crz"]}``.
-Use :func:`~.list_decomps` to inspect the available rules.
+Use :func:`~pennylane.decomposition.list_decomps` to inspect the available rules.
 
 """
 

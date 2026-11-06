@@ -220,7 +220,7 @@ def make_rz_to_phase_gradient_decomp(
     <https://pennylane.ai/compilation/phase-gradient/b-rotations>`__ are taken as inputs and
     bound into the created decomposition rule.
     This way, this function can be used in a workflow context that explicitly uses those wires
-    to generate this decomposition rule, which can then be registered with :func:`~.add_decomps`
+    to generate this decomposition rule, which can then be registered with :func:`~pennylane.decomposition.add_decomps`
     or supplied through ``fixed_decomps`` to :func:`~.pennylane.decompose`.
 
     Parameters:
@@ -359,7 +359,7 @@ def make_rz_to_phase_gradient_decomp(
           that the graph-based decomposition system accounts for the operators in all
           conditional branches. This over-reports the cost of the rule, so that the
           decomposition graph may prefer another rule over this one when it is registered with
-          :func:`~.add_decomps`. Use ``fixed_decomps`` to enforce this rule.
+          :func:`~pennylane.decomposition.add_decomps`. Use ``fixed_decomps`` to enforce this rule.
         * Angles that require more bits than the largest key in ``precision_stats`` fall back
           to the full precision. Unless ``len(angle_wires)`` is a key in ``precision_stats``,
           this fallback branch is hinted with probability ``0``, so that resource estimates
