@@ -1505,6 +1505,7 @@ Breaking changes 💔
   existing imports from ``pennylane.pauli`` remain available. Their ``commutator``
   methods now accept only Pauli words and sentences. For mixed operator inputs,
   use ``qp.commutator(pauli_value, operator, pauli=True)``.
+  `(#10484) <https://github.com/PennyLaneAI/pennylane/pull/10484>`__
 
 * ``PauliWord.operation()`` and ``PauliSentence.operation()`` have been replaced by
   :func:`~pennylane.pauli.to_operator`. Use ``qp.pauli.to_operator(value, wire_order=...)``
