@@ -25,15 +25,18 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.numeric_hamiltonians import VibronicHamiltonian
-from pennylane.ops import CNOT, Hadamard, adjoint, cond, ctrl
+from pennylane.ops import CNOT, Hadamard, adjoint, cond
 from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import Wires, WiresLike
 
 from ..aqft import AQFT
-from ..arithmetic.incrementer import Incrementer
-from ..arithmetic.out_multiplier import OutMultiplier
+from ..arithmetic.out_multiplier import (
+    OutMultiplier,
+    _caddsub_multiplication,
+    _caddsub_multiplication_resources,
+)
 from ..arithmetic.semi_adder import SemiAdder
-from ..arithmetic.signed_out_multiplier import SignedOutMultiplier, _twos_complement_helper
+from ..arithmetic.signed_out_multiplier import SignedOutMultiplier
 from ..arithmetic.signed_out_square import SignedOutSquare
 from ..multix import MultiX
 from ..qrom import QROM
@@ -77,13 +80,13 @@ class TrotterVibronic(Operator2):
             one per mode, via ``np.array(vib_wires).reshape(M, -1)``.
         phase_gradient_wires (WiresLike): at least :math:`b` wires holding the `phase-gradient
             resource state <https://pennylane.ai/compilation/phase-gradient>`__, assumed to be
-            prepared upfront. Extra wires beyond :math:`b` add unused precision headroom.
+            prepared upfront. Only the first :math:`b` wires are used.
         coefficient_wires (WiresLike): the :math:`b` wires of the Hamiltonian-coefficient
             register. If omitted (default), they are dynamically allocated in the decomposition,
             with :math:`b` equal to ``len(phase_gradient_wires)``.
         cache_wires (WiresLike): the :math:`2k` cache wires for squared/multiplied mode registers.
             If omitted (default), they are dynamically allocated in the decomposition.
-        work_wires (WiresLike): the :math:`\max(n-1, 2k, 2b+2)` work wires for data loading and
+        work_wires (WiresLike): the :math:`\max(n-1, b+1, 2k+2)` work wires for data loading and
             arithmetic. If omitted (default), they are dynamically allocated in the decomposition.
         aqft_order (int): approximation order of the :class:`~.AQFT` used to transform between
             position and momentum space. If ``None`` (default), no approximation is made
@@ -125,7 +128,7 @@ class TrotterVibronic(Operator2):
 
         wires = qp.registers({
             "electronic": n, "vib_wires": n_modes * k, "cache": 2 * k,
-            "coefficients": b, "phase_gradient": b, "work": max(n - 1, 2 * k, 2 * b + 2),
+            "coefficients": b, "phase_gradient": b, "work": max(n - 1, b + 1, 2 * k + 2),
         })
         all_wires = qp.wires.Wires.all_wires(list(wires.values()))
 
@@ -144,7 +147,7 @@ class TrotterVibronic(Operator2):
             return qp.probs(wires=wires["electronic"])
 
     >>> qp.specs(circuit)().resources.quantum_operations  # doctest: +SKIP
-    {'PhaseGradientStatePrep': 1, 'QROM': 6, 'SemiAdder': 2, 'CNOT': 24, 'C(Incrementer)': 4, 'OutMultiplier': 3, 'MultiX': 2, 'AQFT': 1, 'SignedOutSquare': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(AQFT)': 1}
+    {'PhaseGradientStatePrep': 1, 'QROM': 6, 'SemiAdder': 4, 'PauliX': 28, 'C(MultiX)': 8, 'MultiControlledX': 16, 'TemporaryAND': 10, 'CNOT': 48, 'Adjoint(TemporaryAND)': 10, 'AQFT': 1, 'MultiX': 2, 'SignedOutSquare': 1, 'OutMultiplier': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(AQFT)': 1}
 
     .. note::
 
@@ -176,16 +179,23 @@ class TrotterVibronic(Operator2):
             .. decomposition-rule:: _trotter_vibronic_decomposition
                 :image: /_static/decomposition_thumbnails/trotter_vibronic_phase_gradient.svg
                 :where: :math:`P = 2Fr` position-fragment visits and :math:`K = M(M-1)/2` mode
-                    pairs. All counts are upper bounds: terms with zero coefficients are
+                    pairs, and :math:`[b > 1]` is 1 if :math:`b > 1` and 0 otherwise.
+                    All counts are upper bounds: terms with zero coefficients are
                     skipped, and the :class:`~.Hadamard` and :class:`~.CNOT` counts also depend
-                    on each fragment's electronic diagonalization
+                    on each fragment's electronic diagonalization. The counts of the gates from
+                    the half-signed multipliers assume :math:`k \leq b`, and :math:`2k \leq b`
+                    if :math:`K > 0`
 
                 :class:`~.Hadamard` | :math:`2P` | 0
-                :class:`~.CNOT` | :math:`2P(n-1) + PM(2+2k+2b) + PK(2+4k+2b)` | 12
+                :class:`~.CNOT` | :math:`2P(n-1) + 3Pk(M(2b-k) + 4K(b-k))` | 6
+                :class:`~.X` | :math:`P(M + K)(2b + 8)` | 20
+                :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`4Pk(M + 2K)` | 8
+                :class:`~.MultiX` with 1 control on :math:`|0\rangle` | :math:`2Pk(M + 2K)\,[b > 1]` | 0
+                :class:`~.TemporaryAND` | :math:`\tfrac{Pk}{2}(M(2b-k+1) + 2K(2b-2k+1))` | 2
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`\tfrac{Pk}{2}(M(2b-k+1) + 2K(2b-2k+1))` | 2
                 :class:`~.QROM` | :math:`P(2 + 2M + K)` | 6
-                :class:`~.SemiAdder` | :math:`P` | 2
-                :class:`~.OutMultiplier` | :math:`P(2M + K) + rM` | 3
-                :class:`~.Incrementer` with 1 control | :math:`2P(M + K)` | 4
+                :class:`~.SemiAdder` | :math:`P(1 + M + K)` | 4
+                :class:`~.OutMultiplier` | :math:`PM + rM` | 1
                 :class:`~.SignedOutSquare` | :math:`PM + rM` | 1
                 :class:`Adjoint(SignedOutSquare) <.SignedOutSquare>` | :math:`PM + rM` | 1
                 :class:`~.SignedOutMultiplier` | :math:`PK` | 0
@@ -225,7 +235,7 @@ class TrotterVibronic(Operator2):
              - :math:`\ge b`
              - phase-gradient state (unsigned)
            * - ``work_wires``
-             - :math:`\max(n-1, 2k, 2b+2)`
+             - :math:`\max(n-1, b+1, 2k+2)`
              - data-loading/arithmetic scratch
 
     .. details::
@@ -363,9 +373,13 @@ class TrotterVibronic(Operator2):
         * :math:`\beta_{a,rs} Q_r Q_s` -- :class:`~.SignedOutMultiplier` then the same
           half-signed multiply as the linear term.
 
-        The half-signed multiply is a plain :class:`~.OutMultiplier` on the magnitudes, flanked by
-        extra sign-bit CNOTs and two controlled :class:`~.Incrementer` calls that apply the
-        two's-complement (visible as ``C(Incrementer)`` in the resource count above).
+        The half-signed multiply uses the controlled add/subtract decomposition of
+        :class:`~.OutMultiplier` (`arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__), with
+        the bits of the signed register controlling the add/subtract steps. Flipping its sign bit
+        swaps the add and subtract branches of the sign bit's step, which accounts for the
+        negative weight of the sign bit in two's complement and makes the final correction step
+        of the unsigned multiplication obsolete. Its gates are
+        applied directly, without an :class:`~.OutMultiplier` wrapper.
         :math:`Q_r^2` uses the low :math:`2k-1` ``cache_wires`` and :math:`Q_r Q_s` all
         :math:`2k`, and each square/product is uncomputed after use. See the
         demo's `potential step
@@ -515,11 +529,10 @@ def _trotter_vibronic_resources(
     # ``coefficient_wires`` may be dynamically allocated (empty here); fall back to
     # ``len(phase_gradient_wires)`` so the sub-operations are counted consistently.
     b = _coefficient_register_size(coefficient_wires, phase_gradient_wires)
-    n_pg = len(phase_gradient_wires)
     k = len(vib_wires) // n_modes
     # ``work_wires`` may be dynamically allocated (empty here), in which case fall back to the
     # required size so the sub-operations are counted consistently with the decomposition.
-    n_work = len(work_wires) if len(work_wires) > 0 else max(n_elec - 1, 2 * k, 2 * b + 2)
+    n_work = len(work_wires) if len(work_wires) > 0 else _required_work_size(n_elec, k, b)
     num_pairs = n_modes * (n_modes - 1) // 2
 
     # Each Trotter step visits every position fragment twice (forward + backward).
@@ -539,28 +552,20 @@ def _trotter_vibronic_resources(
         target_wires=Wire[b],
         work_wires=Wire[max(n_elec - 1, 0)],
     )
-    semi_adder = SemiAdder(x_wires=Wire[b], y_wires=Wire[n_pg], work_wires=Wire[n_work])
+    semi_adder = SemiAdder(x_wires=Wire[b], y_wires=Wire[b], work_wires=Wire[n_work])
 
-    # ``OutMultiplier`` appears with three different ``y`` register sizes: inside the half-signed
-    # multiplier for the linear terms (``y = k``, the mode register) and the bilinear terms
-    # (``y = 2k``, the cache register), and directly for the quadratic/kinetic terms
-    # (``y = 2k - 1``, the cache register minus its sign bit).
-    out_mult_linear = OutMultiplier(
-        x_wires=Wire[b],
-        y_wires=Wire[k],
-        output_wires=Wire[n_pg],
-        work_wires=Wire[max(n_work - 1, 0)],
+    # The half-signed multipliers are emitted as the gates of a controlled add/subtract multiplier,
+    # controlled by the ``k``-wire mode register (linear terms) or the ``2k``-wire cache register
+    # (bilinear terms).
+    half_signed_linear = _caddsub_multiplication_resources(k, b, b, n_work, False, x_signed=True)
+    half_signed_bilinear = _caddsub_multiplication_resources(
+        2 * k, b, b, n_work, False, x_signed=True
     )
-    out_mult_bilinear = OutMultiplier(
-        x_wires=Wire[b],
-        y_wires=Wire[2 * k],
-        output_wires=Wire[n_pg],
-        work_wires=Wire[max(n_work - 1, 0)],
-    )
+    # The quadratic/kinetic terms multiply with the cache register minus its sign bit
     out_mult_quad = OutMultiplier(
         x_wires=Wire[b],
         y_wires=Wire[max(2 * k - 1, 1)],
-        output_wires=Wire[n_pg],
+        output_wires=Wire[b],
         work_wires=Wire[n_work],
     )
     signed_out_mult = SignedOutMultiplier(
@@ -586,51 +591,39 @@ def _trotter_vibronic_resources(
     adj_signed_out_mult = adjoint(signed_out_mult)
     adj_aqft = adjoint(aqft)
 
-    # The sign-bit-controlled two's complement (compute + uncompute) acts on the ``k``-wire mode
-    # register (linear terms) and the ``2k``-wire cache register (bilinear terms).
-    ctrl_incrementer_linear = ctrl(Incrementer(Wire[k], Wire[max(n_work - 1, 0)]), Wire[1])
-    ctrl_incrementer_bilinear = ctrl(Incrementer(Wire[2 * k], Wire[max(n_work - 1, 0)]), Wire[1])
-
     resources = defaultdict(int)
 
     # -- Electronic diagonalization (forward + adjoint per visit) --
     resources[Hadamard(wires=Wire[1])] += 2 * position_visits
-
-    # -- CNOTs: electronic diagonalization plus the half-signed multipliers, which cache the sign
-    #    bit, invert the register for the two's complement, and apply the controlled output flips --
-    resources[CNOT(wires=Wire[2])] += (
-        2 * position_visits * max(n_elec - 1, 0)
-        + num_linear * (2 + 2 * k + 2 * n_pg)
-        + num_bilinear * (2 + 4 * k + 2 * n_pg)
-    )
+    resources[CNOT(wires=Wire[2])] += 2 * position_visits * max(n_elec - 1, 0)
 
     # -- Data loading: each applied constant/linear/quadratic/bilinear term + final unload --
     resources[qrom] += num_constant + num_linear + num_quadratic + num_bilinear + position_visits
     resources[semi_adder] += num_constant
 
-    # -- Linear terms: one half-signed multiplier each --
-    resources[out_mult_linear] += num_linear
-    resources[ctrl_incrementer_linear] += num_linear * 2
+    # -- Linear terms: one half-signed multiplier each. Bilinear terms: one half-signed multiplier
+    #    each, plus two SignedOutMultipliers (compute + uncompute) --
+    for half_signed, num_terms in (
+        (half_signed_linear, num_linear),
+        (half_signed_bilinear, num_bilinear),
+    ):
+        for rep, count in half_signed.items():
+            resources[rep] += num_terms * count
+    resources[signed_out_mult] += num_bilinear
+    resources[adj_signed_out_mult] += num_bilinear
 
     # -- Quadratic terms: two SignedOutSquares (compute + uncompute) and one OutMultiplier --
     resources[signed_square] += num_quadratic
     resources[adj_signed_square] += num_quadratic
     resources[out_mult_quad] += num_quadratic
 
-    # -- Bilinear terms: two SignedOutMultipliers (compute + uncompute) and one half-signed
-    #    multiplier --
-    resources[signed_out_mult] += num_bilinear
-    resources[adj_signed_out_mult] += num_bilinear
-    resources[out_mult_bilinear] += num_bilinear
-    resources[ctrl_incrementer_bilinear] += num_bilinear * 2
-
-    # -- Kinetic fragment (once per Trotter step): per mode, load the momentum coefficients as a
-    #    basis state (``MultiX``), then AQFT + SignedOutSquare + OutMultiplier and their
+    # -- Kinetic fragment (once per Trotter step): per mode, AQFT, then load the momentum
+    #    coefficients as a basis state (``MultiX``), then SignedOutSquare + OutMultiplier and their
     #    uncomputation --
-    multi_x = MultiX(np.zeros(b, dtype=bool), wires=Wire[b])
-    resources[multi_x] += num_kinetic * 2
     resources[aqft] += num_kinetic
     resources[adj_aqft] += num_kinetic
+    multi_x = MultiX(np.zeros(b, dtype=bool), wires=Wire[b])
+    resources[multi_x] += num_kinetic * 2
     resources[signed_square] += num_kinetic
     resources[adj_signed_square] += num_kinetic
     resources[out_mult_quad] += num_kinetic
@@ -658,13 +651,24 @@ def _coefficient_register_size(coefficient_wires, phase_gradient_wires):
     return len(coefficient_wires) if len(coefficient_wires) > 0 else len(phase_gradient_wires)
 
 
+def _required_work_size(n, k, b):
+    """Required size of the ``work`` register for ``n`` electronic qubits, ``k`` qubits per mode
+    and ``b`` coefficient (and used phase-gradient) qubits.
+
+    The largest requirements come from the QROM (``n - 1``), the multipliers into the
+    phase-gradient register (``b + 1`` for controlled add/subtract multiplication), and the
+    ``SignedOutMultiplier`` of two mode registers for the bilinear terms (``2k + 2``).
+    """
+    return max(n - 1, b + 1, 2 * k + 2)
+
+
 def _required_work_wire_sizes(hamiltonian, vib_wires, b):
     """Required ``(cache, work)`` register sizes for the vibronic Trotter circuit."""
     n_states = hamiltonian.num_states
     n_modes = hamiltonian.num_modes
     k = len(vib_wires) // n_modes
     n = math.ceil_log2(n_states)
-    return 2 * k, max(n - 1, 2 * k, 2 * b + 2)
+    return 2 * k, _required_work_size(n, k, b)
 
 
 # pylint: disable-next=too-many-arguments
@@ -720,7 +724,8 @@ def _trotter_vibronic_decomposition(
             "electronic": electronic_wires,
             "cache": cache,
             "coefficients": coefficients,
-            "phase_gradient": phase_gradient_wires,
+            # The first ``b`` wires of a phase-gradient state form a ``b``-wire phase-gradient state
+            "phase_gradient": phase_gradient_wires[:b],
             "work": work,
         }
         _validate_registers(registers, mode_registers, n_modes, n_states)
@@ -926,43 +931,15 @@ def _half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
     signed integer. This is a specialized primitive used by :class:`~.TrotterVibronic`; it is
     a plain quantum function that queues its constituent operations.
 
-    The sign bit of ``y`` is cached on the first work wire, the two's complement of ``y`` is
-    computed controlled on that cached bit, the (unsigned) magnitudes are multiplied into the
-    output register with a :class:`~.OutMultiplier` (with the output wires flipped before and
-    after the multiplication if ``y`` is negative), and finally the two's complement and the
-    cached sign bit are uncomputed.
+    The multiplication uses the controlled add/subtract decomposition of
+    :class:`~.OutMultiplier`, with the bits of ``y`` controlling the add/subtract steps. Flipping
+    the sign bit of ``y`` swaps the add and subtract branches of its step, which makes one of
+    the correction steps of the unsigned multiplication obsolete. It requires
+    ``len(output_wires) + 1`` work wires.
     """
-    y_aux, work_wires = work_wires[0], work_wires[1:]
-
-    if compiler.active() or capture.enabled():
-        output_arr = math.array(list(output_wires), like="jax")
-    else:
-        output_arr = list(output_wires)
-
-    def _flip_outputs():
-        # CNOT from the cached sign bit onto every output wire.
-        @for_loop(len(output_wires))
-        def _flip(w):
-            CNOT([y_aux, output_arr[w]])
-
-        # pylint: disable-next=no-value-for-parameter
-        _flip()
-
-    # Cache the sign bit of ``y`` on the auxiliary wire.
-    CNOT([y_wires[0], y_aux])
-
-    # Take the two's complement of ``y`` controlled on the cached sign bit.
-    _twos_complement_helper(y_wires, y_aux, work_wires)
-
-    # Multiply the magnitudes into the output register. If ``y`` was negative, flip all output
-    # qubits before and after the (unsigned) multiplication, effectively subtracting the product.
-    _flip_outputs()
-    OutMultiplier(x_wires, y_wires, output_wires, work_wires=work_wires, output_wires_zeroed=False)
-    _flip_outputs()
-
-    # Uncompute the two's complement and the cached sign bit.
-    _twos_complement_helper(y_wires, y_aux, work_wires)
-    CNOT([y_wires[0], y_aux])
+    _caddsub_multiplication(
+        y_wires, x_wires, output_wires, work_wires, output_wires_zeroed=False, x_signed=True
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1221,7 +1198,7 @@ def _trotter_step_second_order(
     :class:`~.TrotterVibronic`.
     """
     branch_probs = dict(branch_probs or ())
-    precision = len(registers["phase_gradient"])
+    precision = len(registers["coefficients"])
     all_coeffs, bilinear_indices = _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes)
     if compiler.active() or capture.enabled():
         all_coeffs = tuple(math.array(c, like="jax") for c in all_coeffs)
@@ -1353,14 +1330,14 @@ def _trotter_step_second_order(
                 )
                 # Negated for the same phase-gradient sign convention as ``_load_coefficients``.
                 bitstring = math.binary_decimals(-_coeffs, precision, unit=2 * np.pi)
-                MultiX(bitstring, registers["coefficients"])
                 AQFT(order=aqft_order, wires=mode_registers[k])
+                MultiX(bitstring, registers["coefficients"])
                 SignedOutSquare(**square_wires, output_wires_zeroed=True)
                 OutMultiplier(**mult_wires)
                 adjoint(SignedOutSquare(**square_wires, output_wires_zeroed=True))
-                adjoint(AQFT(order=aqft_order, wires=mode_registers[k]))
                 # ``MultiX`` is self-adjoint, so the unload is the same call.
                 MultiX(bitstring, registers["coefficients"])
+                adjoint(AQFT(order=aqft_order, wires=mode_registers[k]))
 
             cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
@@ -1451,7 +1428,7 @@ def _validate_registers(registers, mode_registers, n_modes, n_states):
     b = len(registers["coefficients"])
     k = len(mode_registers[0])
     n = math.ceil_log2(n_states)
-    needed_work_wires = max(n - 1, 2 * k, 2 * b + 2)
+    needed_work_wires = _required_work_size(n, k, b)
 
     if len(registers["electronic"]) != n:
         raise ValueError(

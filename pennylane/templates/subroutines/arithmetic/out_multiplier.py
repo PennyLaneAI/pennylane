@@ -506,10 +506,18 @@ def _out_multiplier_with_adder(
 def _out_multiplier_with_caddsub_resources(
     x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
 ):  # pylint: disable=unused-argument,too-many-arguments
-    n = len(x_wires)
-    m = len(y_wires)
-    k = len(output_wires) + 1  # augmented output register
-    num_work_wires = len(work_wires)
+    return _caddsub_multiplication_resources(
+        len(x_wires), len(y_wires), len(output_wires), len(work_wires), output_wires_zeroed
+    )
+
+
+def _caddsub_multiplication_resources(
+    num_x_wires, num_y_wires, num_output_wires, num_work_wires, output_wires_zeroed, x_signed=False
+):  # pylint: disable=too-many-arguments
+    """Resources for _caddsub_multiplication."""
+    n = num_x_wires
+    m = num_y_wires
+    k = num_output_wires + 1  # augmented output register
     num_passed_ww = num_work_wires - 1  # One work wire is used by the arithmetic logic itself.
 
     resources = defaultdict(int)
@@ -546,8 +554,12 @@ def _out_multiplier_with_caddsub_resources(
     resources[X] += k
 
     # Add 2^n y
-    if k > n:
+    if k > n and not x_signed:
         resources[SemiAdder(Wire[m], Wire[k - n], Wire[num_passed_ww])] += 1
+
+    # Flip the sign bit of x before and after the multiplication
+    if x_signed:
+        resources[X] += 2
 
     return dict(resources)
 
@@ -672,6 +684,14 @@ def _out_multiplier_with_caddsub(
     output_wires_zeroed: bool,
 ):  # pylint: disable=unused-argument, too-many-arguments
     """Implementation of improved Schoolbook multiplication via controlled add/subtract blocks,
+    see ``_caddsub_multiplication``."""
+    _caddsub_multiplication(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed)
+
+
+def _caddsub_multiplication(
+    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed, x_signed=False
+):  # pylint: disable=too-many-arguments
+    """Implementation of improved Schoolbook multiplication via controlled add/subtract blocks,
     combined with some correction steps. After appending a work wire to the output register,
     effectively multiplying it with two, we first have a bulk computation with n steps (where
     n is the size of x_wires):
@@ -694,7 +714,15 @@ def _out_multiplier_with_caddsub(
     - Add 2^n⋅y
     We are left with 2⋅(z+x⋅y), an even number, which we can divide by two by splitting off the
     least significant bit (which is exactly the one we appended initially) from the output register.
+
+    If ``x_signed=True``, x is a two's-complement signed integer with sign bit ``x_wires[0]``.
+    Flipping the sign bit maps x to the unsigned integer x'=x+2^(n-1), so that the bulk computation
+    and the first two correction steps (applied to x') leave 2⋅(z+x'⋅y)-2^n⋅y = 2⋅(z+x⋅y). The last
+    correction step is thus skipped.
     """
+    if x_signed:
+        X(x_wires[0])
+
     # We extend our output by one wire because we need to store 2x*y intermediately, instead
     # of x*y. This also multiplies the value stored in output_wires with two.
     output_wires = list(output_wires) + [work_wires[0]]
@@ -731,8 +759,11 @@ def _out_multiplier_with_caddsub(
     _ = [X(w) for w in output_wires]
 
     # Add (2^n·y) if 2^k > 2^n (otherwise it just vanishes in the modulus)
-    if k > n:
+    if k > n and not x_signed:
         SemiAdder(y_wires, output_wires[: k - n], work_wires)
+
+    if x_signed:
+        X(x_wires[0])
 
     # Note that dividing by two does not have to happen explicitly, because the registers are
     # not explicit return values.
