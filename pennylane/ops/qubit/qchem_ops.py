@@ -170,6 +170,27 @@ class SingleExcitation(Operator2):
                 :class:`PPR_4(1, "XX") <.PPR_4>` | :math:`1`
                 :class:`PPR_4(-1, "XX") <.PPR_4>` | :math:`1`
                 :class:`~.RZ` | :math:`2`
+            .. decomposition-rule:: _single_excitation_ppr_crz
+                :image: /_static/decomposition_thumbnails/singleexcitation_ppr_crz.svg
+
+                :class:`PPR_4(1, "XX") <.PPR_4>` | :math:`1`
+                :class:`PPR_4(-1, "XX") <.PPR_4>` | :math:`1`
+                :class:`~.CNOT` | :math:`2`
+                :class:`~.CRZ` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/singleexcitation_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.SingleExcitation` | :math:`1`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/singleexcitation_pow.svg
+                :region: pow
+                :where: ``phi`` is multiplied by the power :math:`z`
+
+                :class:`~.SingleExcitation` | :math:`1`
     """
 
     dynamic_argnames = "phi"
