@@ -261,6 +261,7 @@ class TestAnalyze:  # pylint: disable=too-many-public-methods
         "level, expected_level, expected_counts",
         [
             (slice(1, 2), "merge-rotations", MERGED_COUNTS),
+            (slice(1, 1), "Before MLIR Passes", TOP_COUNTS),
             (slice(1, None), "Device Preprocessing", MERGED_COUNTS),
             (slice(2, None), "Device Preprocessing", TOP_COUNTS),
         ],

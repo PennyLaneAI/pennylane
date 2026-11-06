@@ -51,6 +51,10 @@ def _qnode_at_slice(qnode: QNode, level: slice) -> tuple[QNode, int]:
     pipeline, has_device_preprocessing = split_device_preprocessing(
         pipeline_at_slice(qnode.compile_pipeline, level)
     )
+    if level.indices(device_level(qnode.compile_pipeline))[0] > 0:
+        # The markers describe the circuit after all the transforms before them, so they do not
+        # apply to a circuit where the transforms before the slice are skipped
+        pipeline = CompilePipeline(list(pipeline))
     sliced_qnode = qnode.update_pipelines(
         pipeline, post_device_pipeline=CompilePipeline(qnode.post_device_pipeline)
     )

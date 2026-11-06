@@ -41,19 +41,6 @@ def get_compile_pipeline(
         is not qjit'd, the placeholder also covers the transforms required by the gradient
         method. The placeholder cannot be applied to a QNode.
 
-        For a QNode that is not qjit'd, the device preprocessing transforms that are applied on
-        execution can be retrieved with ``qnode.device.preprocess_transforms(config)``, where
-        ``config = qp.workflow.construct_execution_config(qnode)(*args, **kwargs)``. The
-        transform required by the gradient method, if any, is
-        ``config.gradient_method.expand_transform``. The tapes produced by the individual
-        gradient and device preprocessing transforms can be inspected with
-        :func:`~.workflow.construct_batch`, whose levels count each of these transforms
-        separately.
-
-        A QNode with an informative transform, such as :func:`~.adjoint_metric_tensor`, is not
-        executed on the device, so there is no device preprocessing, and ``"device"`` is the same
-        as ``"user"``.
-
     Args:
         qnode (:class:`~.QNode` | :class:`~catalyst.jit.QJIT`): The QNode, or qjit'd QNode, to
             get the compile pipeline for.
@@ -206,6 +193,22 @@ def get_compile_pipeline(
         3
         >>> len(get_compile_pipeline(circuit, level="all"))
         4
+
+    .. details::
+        :title: Device preprocessing
+
+        For a QNode that is not qjit'd, the device preprocessing transforms that are applied on
+        execution can be retrieved with ``qnode.device.preprocess_transforms(config)``, where
+        ``config = qp.workflow.construct_execution_config(qnode)(*args, **kwargs)``. The
+        transform required by the gradient method, if any, is
+        ``config.gradient_method.expand_transform``. The tapes produced by the individual
+        gradient and device preprocessing transforms can be inspected with
+        :func:`~.workflow.construct_batch`, whose levels count each of these transforms
+        separately.
+
+        A QNode with an informative transform, such as :func:`~.adjoint_metric_tensor`, is not
+        executed on the device, so there is no device preprocessing, and ``"device"`` is the same
+        as ``"user"``.
 
     """
     if _is_qjit(qnode):
