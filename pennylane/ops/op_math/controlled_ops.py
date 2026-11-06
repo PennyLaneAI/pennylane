@@ -172,8 +172,9 @@ class ControlledQubitUnitary(Controlled2):
                 :class:`Adjoint(QubitUnitary) <.QubitUnitary>` | :math:`4`
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.PhaseShift` with :math:`c - 1` controls | :math:`1`
-                :class:`~.MultiControlledX` with :math:`\lceil c/2 \rceil` controls | :math:`6` if :math:`c` is even, :math:`2` if odd
-                :class:`~.MultiControlledX` with :math:`\lfloor c/2 \rfloor` controls | :math:`4` if :math:`c` is odd
+                :class:`~.MultiControlledX` with :math:`c/2` controls (even :math:`c`) | :math:`6`
+                :class:`~.MultiControlledX` with :math:`\lceil c/2 \rceil` controls (odd :math:`c`) | :math:`2`
+                :class:`~.MultiControlledX` with :math:`\lfloor c/2 \rfloor` controls (odd :math:`c`) | :math:`4`
 
             .. decomposition-rule:: single_ctrl_decomp_zyz_rule
                 :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_single_ctrl_zyz.svg
@@ -748,8 +749,8 @@ class CSWAP(Controlled2):
                     rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
                     :math:`z = 3`
 
-                :class:`~.CSWAP` | :math:`1` if :math:`z` is odd
-                :class:`Pow(CSWAP) <.CSWAP>` with power :math:`z \bmod 2` | :math:`1` if :math:`z` is not an integer
+                :class:`~.CSWAP` (odd :math:`z`) | :math:`1`
+                :class:`Pow(CSWAP) <.CSWAP>` with power :math:`z \bmod 2` (non-integer :math:`z`) | :math:`1`
 
     """
 
@@ -943,8 +944,8 @@ class CCZ(Controlled2):
                     rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
                     :math:`z = 3`
 
-                :class:`~.CCZ` | :math:`1` if :math:`z` is odd
-                :class:`Pow(CCZ) <.CCZ>` with power :math:`z \bmod 2` | :math:`1` if :math:`z` is not an integer
+                :class:`~.CCZ` (odd :math:`z`) | :math:`1`
+                :class:`Pow(CCZ) <.CCZ>` with power :math:`z \bmod 2` (non-integer :math:`z`) | :math:`1`
 
     """
 
@@ -1308,8 +1309,8 @@ class Toffoli(Controlled2):
                     rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
                     :math:`z = 3`
 
-                :class:`~.Toffoli` | :math:`1` if :math:`z` is odd
-                :class:`Pow(Toffoli) <.Toffoli>` with power :math:`z \bmod 2` | :math:`1` if :math:`z` is not an integer
+                :class:`~.Toffoli` (odd :math:`z`) | :math:`1`
+                :class:`Pow(Toffoli) <.Toffoli>` with power :math:`z \bmod 2` (non-integer :math:`z`) | :math:`1`
 
     """
 
@@ -1528,8 +1529,8 @@ class MultiControlledX(Controlled2):
                     :math:`0` adds :class:`~.PauliX` gates, not included in the counts: one on the target
                     if :math:`c = 1`, and two per such control wire if :math:`c = 2`
 
-                :class:`~.CNOT` | :math:`1` if :math:`c = 1`
-                :class:`~.Toffoli` | :math:`1` if :math:`c = 2`
+                :class:`~.CNOT` (:math:`c = 1`) | :math:`1`
+                :class:`~.Toffoli` (:math:`c = 2`) | :math:`1`
 
             .. decomposition-rule:: decompose_mcx_two_controls_elbows
                 :image: /_static/decomposition_thumbnails/mcx_two_controls_elbows.svg
@@ -1684,8 +1685,8 @@ class MultiControlledX(Controlled2):
                     rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
                     :math:`z = 3`
 
-                :class:`~.MultiControlledX` | :math:`1` if :math:`z` is odd
-                :class:`Pow(MultiControlledX) <.MultiControlledX>` with power :math:`z \bmod 2` | :math:`1` if :math:`z` is not an integer
+                :class:`~.MultiControlledX` (odd :math:`z`) | :math:`1`
+                :class:`Pow(MultiControlledX) <.MultiControlledX>` with power :math:`z \bmod 2` (non-integer :math:`z`) | :math:`1`
 
     """
 
