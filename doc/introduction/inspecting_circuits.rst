@@ -143,7 +143,7 @@ set will analyze decomposition pathways to that gate set on the uncompiled circu
 
 .. code-block:: python
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.transforms.cancel_inverses
     @qp.qnode(dev)
     def circuit(x):
