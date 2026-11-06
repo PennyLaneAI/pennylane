@@ -218,7 +218,6 @@ class TestOutAdder:
         for op1, op2 in zip(adder_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
-    @pytest.mark.xfail_if_capture(reason="Needs PhaseAdder to be Op2 [sc-130164]", strict=False)
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("mod", [7, 8])
     def test_decomposition_new(self, mod):
