@@ -836,10 +836,10 @@ class Device(abc.ABC):
             circuits, tangents, execution_config
         )
 
-    def supports_jvp(
+    def supports_jvp(  # pylint: disable=unused-argument
         self,
-        execution_config: ExecutionConfig | None = None,  # pylint: disable=unused-argument
-        circuit: QuantumScript | None = None,  # pylint: disable=unused-argument
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Whether or not a given device defines a custom jacobian vector product.
 
@@ -918,10 +918,10 @@ class Device(abc.ABC):
             circuits, cotangents, execution_config
         )
 
-    def supports_vjp(
+    def supports_vjp(  # pylint: disable=unused-argument
         self,
-        execution_config: ExecutionConfig | None = None,  # pylint: disable=unused-argument
-        circuit: QuantumScript | None = None,  # pylint: disable=unused-argument
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Whether or not a given device defines a custom vector jacobian product.
 

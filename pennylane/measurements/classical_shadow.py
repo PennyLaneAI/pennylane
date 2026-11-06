@@ -443,12 +443,7 @@ class ShadowExpvalMP(MeasurementTransform):
     def _unflatten(cls, data, metadata):
         return cls(data[0], **dict(metadata))
 
-    def __init__(
-        self,
-        H: Operator | Sequence[Operator],
-        seed: int | None = None,
-        k: int = 1,
-    ):
+    def __init__(self, H: Operator | Sequence[Operator], seed: int | None = None, k: int = 1):
         self.seed = seed
         self.H = H
         self.k = k

@@ -763,9 +763,7 @@ class TestDecomposition:
         same regardless of the number of position fragments."""
         from jax._src.core import ClosedJaxpr, Jaxpr
 
-        from pennylane.capture.primitives import (
-            for_loop_prim,
-        )
+        from pennylane.capture.primitives import for_loop_prim
 
         def count_for_loops(jaxpr):
             count = sum(eqn.primitive == for_loop_prim for eqn in jaxpr.eqns)

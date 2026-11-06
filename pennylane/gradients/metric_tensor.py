@@ -103,13 +103,13 @@ def _expand_nonunitary_gen_stop_at(obj):
     return len(obj.data) == 0 or (obj.has_generator and obj in has_unitary_generator)
 
 
-def _expand_metric_tensor(  # pylint: disable=too-many-arguments
+def _expand_metric_tensor(  # pylint: disable=too-many-arguments,unused-argument
     tape: QuantumScript,
-    argnum=None,  # pylint: disable=unused-argument
+    argnum=None,
     approx=None,
     allow_nonunitary=True,
-    aux_wire=None,  # pylint: disable=unused-argument
-    device_wires=None,  # pylint: disable=unused-argument
+    aux_wire=None,
+    device_wires=None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Set the metric tensor based on whether non-unitary gates are allowed."""
 

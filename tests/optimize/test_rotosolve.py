@@ -279,11 +279,7 @@ class TestWithClassicalFunction:
         )
 
         # Now with step_and_cost and trainable params
-        new_param_step_and_cost, old_cost = opt.step_and_cost(
-            fun,
-            *param,
-            nums_frequency=nums_freq,
-        )
+        new_param_step_and_cost, old_cost = opt.step_and_cost(fun, *param, nums_frequency=nums_freq)
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
             new_param_step_and_cost = (new_param_step_and_cost,)
@@ -296,13 +292,13 @@ class TestWithClassicalFunction:
         )
         assert np.isclose(old_cost, fun(*param))
 
-    def test_full_output(
+    def test_full_output(  # pylint: disable=unused-argument
         self,
         fun,
-        x_min,  # pylint: disable=unused-argument
+        x_min,
         param,
         nums_freq,
-        exp_num_calls,  # pylint: disable=unused-argument
+        exp_num_calls,
         substep_optimizer,
         substep_kwargs,
     ):
@@ -421,11 +417,7 @@ class TestDeactivatedTrainingWithClassicalFunctions:  # pylint: disable=too-few-
             atol=1e-5,
         )
 
-        new_param_step_and_cost, old_cost = opt.step_and_cost(
-            fun,
-            *param,
-            nums_frequency=num_freq,
-        )
+        new_param_step_and_cost, old_cost = opt.step_and_cost(fun, *param, nums_frequency=num_freq)
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
             new_param_step_and_cost = (new_param_step_and_cost,)

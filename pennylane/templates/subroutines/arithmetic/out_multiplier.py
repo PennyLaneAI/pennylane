@@ -338,12 +338,12 @@ class OutMultiplier(Operator2):
         return self.x_wires + self.y_wires + self.output_wires + self.work_wires
 
 
-def _out_multiplier_with_qft_resources(  # pylint: disable=too-many-arguments
+def _out_multiplier_with_qft_resources(  # pylint: disable=too-many-arguments,unused-argument
     x_wires,
     y_wires,
     output_wires,
     mod,
-    work_wires,  # pylint: disable=unused-argument
+    work_wires,
     output_wires_zeroed=False,
 ):
     num_output_wires = len(output_wires)
@@ -371,14 +371,13 @@ def _out_multiplier_with_qft_resources(  # pylint: disable=too-many-arguments
     return resources
 
 
-def _out_multiplier_with_qft_condition(  # pylint: disable=too-many-arguments
-    # pylint: disable-next=unused-argument
+def _out_multiplier_with_qft_condition(  # pylint: disable=too-many-arguments,unused-argument
     x_wires,
-    y_wires,  # pylint: disable=unused-argument
+    y_wires,
     output_wires,
     mod,
     work_wires,
-    output_wires_zeroed=False,  # pylint: disable=unused-argument
+    output_wires_zeroed=False,
 ):
     return mod == 2 ** len(output_wires) or len(work_wires) >= 2
 
@@ -430,11 +429,11 @@ def _out_multiplier_with_qft(  # pylint: disable=too-many-arguments
         change_op_basis(compute_op, target_op, uncompute_op)
 
 
-def _out_multiplier_with_adder_resources(  # pylint: disable=too-many-arguments
+def _out_multiplier_with_adder_resources(  # pylint: disable=too-many-arguments,unused-argument
     x_wires,
     y_wires,
     output_wires,
-    mod,  # pylint: disable=unused-argument
+    mod,
     work_wires,
     output_wires_zeroed=False,
 ):
@@ -457,8 +456,7 @@ def _out_multiplier_with_adder_resources(  # pylint: disable=too-many-arguments
     return dict(resources)
 
 
-def _out_multiplier_with_adder_condition(  # pylint: disable=too-many-arguments
-    # pylint: disable-next=unused-argument
+def _out_multiplier_with_adder_condition(  # pylint: disable=too-many-arguments,unused-argument
     x_wires,
     y_wires,
     output_wires,
@@ -480,11 +478,11 @@ def _out_multiplier_with_adder_condition(  # pylint: disable=too-many-arguments
 
 @register_condition(_out_multiplier_with_adder_condition)
 @register_resources(_out_multiplier_with_adder_resources)
-def _out_multiplier_with_adder(  # pylint: disable=too-many-arguments
+def _out_multiplier_with_adder(  # pylint: disable=too-many-arguments,unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
-    mod,  # pylint: disable=unused-argument
+    mod,
     work_wires: WiresLike,
     output_wires_zeroed: bool,
 ):
@@ -525,11 +523,11 @@ def _out_multiplier_with_adder(  # pylint: disable=too-many-arguments
         ctrl(SemiAdder(y_wires, out_wires, work_wires=work_wires), control=x_wire)
 
 
-def _out_multiplier_with_caddsub_resources(  # pylint: disable=too-many-arguments
+def _out_multiplier_with_caddsub_resources(  # pylint: disable=too-many-arguments,unused-argument
     x_wires,
     y_wires,
     output_wires,
-    mod,  # pylint: disable=unused-argument
+    mod,
     work_wires,
     output_wires_zeroed=False,
 ):
@@ -579,14 +577,13 @@ def _out_multiplier_with_caddsub_resources(  # pylint: disable=too-many-argument
     return dict(resources)
 
 
-def _out_multiplier_with_caddsub_condition(  # pylint: disable=too-many-arguments
-    # pylint: disable-next=unused-argument
+def _out_multiplier_with_caddsub_condition(  # pylint: disable=too-many-arguments,unused-argument
     x_wires,
-    y_wires,  # pylint: disable=unused-argument
+    y_wires,
     output_wires,
     mod,
     work_wires,
-    output_wires_zeroed=False,  # pylint: disable=unused-argument
+    output_wires_zeroed=False,
 ):
     # Adder sizes are (using n=len(x_wires), m=len(y_wires), k=len(output_wires)+1):
     # - min(k, m+1) # Largest size occurring in controlled add/sub loop
@@ -696,11 +693,11 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
 
 @register_condition(_out_multiplier_with_caddsub_condition)
 @register_resources(_out_multiplier_with_caddsub_resources)
-def _out_multiplier_with_caddsub(  # pylint: disable=too-many-arguments
+def _out_multiplier_with_caddsub(  # pylint: disable=too-many-arguments,unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
-    mod: None,  # pylint: disable=unused-argument
+    mod: None,
     work_wires: WiresLike,
     output_wires_zeroed: bool,
 ):
@@ -771,25 +768,24 @@ def _out_multiplier_with_caddsub(  # pylint: disable=too-many-arguments
     # not explicit return values.
 
 
-def _out_multiplier_with_cache_condition(  # pylint: disable=too-many-arguments
-    # pylint: disable-next=unused-argument
+def _out_multiplier_with_cache_condition(  # pylint: disable=too-many-arguments,unused-argument
     x_wires,
-    y_wires,  # pylint: disable=unused-argument
+    y_wires,
     output_wires,
-    mod,  # pylint: disable=unused-argument
+    mod,
     work_wires,
     output_wires_zeroed=False,
 ):
     return len(work_wires) >= 2 * len(output_wires) - 1 and not output_wires_zeroed
 
 
-def _out_multiplier_with_cache_resources(  # pylint: disable=too-many-arguments
+def _out_multiplier_with_cache_resources(  # pylint: disable=too-many-arguments,unused-argument
     x_wires,
     y_wires,
     output_wires,
     mod,
     work_wires,
-    output_wires_zeroed=False,  # pylint: disable=unused-argument
+    output_wires_zeroed=False,
 ):
     num_x_wires = len(x_wires)
     num_y_wires = len(y_wires)
@@ -815,13 +811,13 @@ def _out_multiplier_with_cache_resources(  # pylint: disable=too-many-arguments
 
 @register_condition(_out_multiplier_with_cache_condition)
 @register_resources(_out_multiplier_with_cache_resources)
-def _out_multiplier_with_cache(  # pylint: disable=too-many-arguments
+def _out_multiplier_with_cache(  # pylint: disable=too-many-arguments,unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
     mod: None,
     work_wires: WiresLike,
-    output_wires_zeroed,  # pylint: disable=unused-argument
+    output_wires_zeroed,
 ):
     r"""Decompose ``OutMultiplier`` with ``output_wires_zeroed=False`` into two ``OutMultiplier``\ s
     with ``output_wires_zeroed=True`` and one ``SemiAdder``, using additional work wires."""

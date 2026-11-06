@@ -556,12 +556,12 @@ def _trotter_cgf_decomposition(evolution_time, num_trotter_steps, hamiltonian, w
 add_decomps(TrotterCGF, _trotter_cgf_decomposition)
 
 
-def _controlled_trotter_cgf_resource(
+def _controlled_trotter_cgf_resource(  # pylint: disable=unused-argument
     base,
-    control_wires,  # pylint: disable=unused-argument
-    control_values,  # pylint: disable=unused-argument
-    work_wires,  # pylint: disable=unused-argument
-    work_wire_type,  # pylint: disable=unused-argument
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,
 ):
     return _cgf_resource_counts(
         base.arguments["num_trotter_steps"],

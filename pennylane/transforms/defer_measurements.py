@@ -96,11 +96,11 @@ def null_postprocessing(results):
 
 
 @transform
-def defer_measurements(  # pylint: disable=too-many-branches
+def defer_measurements(  # pylint: disable=too-many-branches,unused-argument
     tape: QuantumScript,
     reduce_postselected: bool = True,
     allow_postselect: bool = True,
-    num_wires: int | None = None,  # pylint: disable=unused-argument
+    num_wires: int | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.

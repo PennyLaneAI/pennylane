@@ -741,7 +741,7 @@ def _quantum_subroutine_eval(self, *invals, jaxpr, **params):  # pylint: disable
 
 
 @FlattenedInterpreter.register_primitive(while_loop_prim)
-def flatten_while_loop(  # pylint: disable=too-many-arguments
+def flatten_while_loop(  # pylint: disable=too-many-arguments,unused-argument
     self,
     *invals,
     jaxpr_body_fn,
@@ -749,7 +749,7 @@ def flatten_while_loop(  # pylint: disable=too-many-arguments
     body_slice,
     cond_slice,
     args_slice,
-    estimated_iterations,  # pylint: disable=unused-argument
+    estimated_iterations,
 ):
     """Handle the while loop by a flattened python strategy."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
@@ -804,7 +804,7 @@ FlattenedHigherOrderPrimitives[cond_prim] = flattened_cond
 
 
 @FlattenedInterpreter.register_primitive(for_loop_prim)
-def flattened_for(  # pylint: disable=too-many-arguments
+def flattened_for(  # pylint: disable=too-many-arguments,unused-argument
     self,
     start,
     stop,
@@ -814,7 +814,7 @@ def flattened_for(  # pylint: disable=too-many-arguments
     consts_slice,
     args_slice,
     abstract_shapes_slice,
-    estimated_iterations,  # pylint: disable=unused-argument
+    estimated_iterations,
 ):
     """Handle the for loop by a flattened python strategy."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)

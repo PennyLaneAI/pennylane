@@ -310,10 +310,10 @@ class TestPreprocessTransforms:
                 if supports_projector:
                     self.capabilities.operations["Projector"] = OperatorProperties()
 
-            def execute(
+            def execute(  # pylint: disable=unused-argument
                 self,
-                circuits: QuantumScriptOrBatch,  # pylint: disable=unused-argument
-                execution_config: ExecutionConfig = None,  # pylint: disable=unused-argument
+                circuits: QuantumScriptOrBatch,
+                execution_config: ExecutionConfig = None,
             ) -> Result | ResultBatch:
                 return (0,)
 
@@ -353,10 +353,10 @@ class TestPreprocessTransforms:
                     }
                 )
 
-            def execute(
+            def execute(  # pylint: disable=unused-argument
                 self,
-                circuits: QuantumScriptOrBatch,  # pylint: disable=unused-argument
-                execution_config: ExecutionConfig = None,  # pylint: disable=unused-argument
+                circuits: QuantumScriptOrBatch,
+                execution_config: ExecutionConfig = None,
             ) -> Result | ResultBatch:
                 return (0,)
 
@@ -406,10 +406,10 @@ class TestPreprocessTransforms:
                     }
                 )
 
-            def execute(
+            def execute(  # pylint: disable=unused-argument
                 self,
-                circuits: QuantumScriptOrBatch,  # pylint: disable=unused-argument
-                execution_config: ExecutionConfig = None,  # pylint: disable=unused-argument
+                circuits: QuantumScriptOrBatch,
+                execution_config: ExecutionConfig = None,
             ) -> Result | ResultBatch:
                 return (0,)
 
@@ -565,11 +565,7 @@ class TestPreprocessTransforms:
                 # pylint: disable-next=protected-access
                 if transform_container._transform is qp.transforms.diagonalize_measurements:
                     # pylint: disable-next=protected-access
-                    assert transform_container._kwargs["supported_base_obs"] == {
-                        qp.Z,
-                        qp.X,
-                        qp.Y,
-                    }
+                    assert transform_container._kwargs["supported_base_obs"] == {qp.Z, qp.X, qp.Y}
 
 
 class TestMinimalDevice:
@@ -733,10 +729,10 @@ def test_device_with_ambiguous_preprocess():
             def preprocess(self, execution_config=None):  # pylint: disable=unused-argument
                 return CompilePipeline(), ExecutionConfig()
 
-            def setup_execution_config(
+            def setup_execution_config(  # pylint: disable=unused-argument
                 self,
-                config: ExecutionConfig | None = None,  # pylint: disable=unused-argument
-                circuit: QuantumScript | None = None,  # pylint: disable=unused-argument
+                config: ExecutionConfig | None = None,
+                circuit: QuantumScript | None = None,
             ) -> ExecutionConfig:
                 return ExecutionConfig()
 

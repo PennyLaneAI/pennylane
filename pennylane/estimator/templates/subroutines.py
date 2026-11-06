@@ -364,10 +364,10 @@ class SelectOnlyQRAM(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(  # pylint: disable=arguments-differ
+    def resource_decomp(  # pylint: disable=arguments-differ,unused-argument
         cls,
         data,
-        num_wires,  # pylint: disable=unused-argument
+        num_wires,
         num_select_wires,
         num_control_wires,
         select_value=None,

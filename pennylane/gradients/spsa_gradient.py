@@ -64,18 +64,18 @@ def _stop_at_expand_invalid_trainable(obj):
     return not any(math.requires_grad(d) for d in obj.data) or obj.grad_method is not None
 
 
-def _expand_transform_spsa(  # pylint: disable=too-many-arguments
+def _expand_transform_spsa(  # pylint: disable=too-many-arguments,unused-argument
     tape: QuantumScript,
-    argnum=None,  # pylint: disable=unused-argument
-    h=1e-5,  # pylint: disable=unused-argument
-    approx_order=2,  # pylint: disable=unused-argument
-    n=1,  # pylint: disable=unused-argument
-    strategy="center",  # pylint: disable=unused-argument
-    f0=None,  # pylint: disable=unused-argument
-    validate_params=True,  # pylint: disable=unused-argument
-    num_directions=1,  # pylint: disable=unused-argument
-    sampler=_rademacher_sampler,  # pylint: disable=unused-argument
-    sampler_rng=None,  # pylint: disable=unused-argument
+    argnum=None,
+    h=1e-5,
+    approx_order=2,
+    n=1,
+    strategy="center",
+    f0=None,
+    validate_params=True,
+    num_directions=1,
+    sampler=_rademacher_sampler,
+    sampler_rng=None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before spsa gradient."""
     [expanded_tape], _ = decompose(

@@ -1145,12 +1145,12 @@ class TestMarginalProb:
     @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
     def test_correct_marginals_returned_wires_none(
         self,
-        mock_qubit_device_with_original_statistics,  # pylint: disable=redefined-outer-name
+        mock_qubit_device_with_original_statistics,
         probs,
-        marginals,  # pylint: disable=unused-argument
-        wires,  # pylint: disable=unused-argument
+        marginals,
+        wires,
         tol,
-    ):
+    ):  # pylint: disable=redefined-outer-name,unused-argument
         """Test that passing wires=None simply returns the original probability."""
         num_wires = int(np.log2(len(probs)))
         dev = mock_qubit_device_with_original_statistics(wires=num_wires)
@@ -1197,16 +1197,16 @@ class TestMarginalProb:
     ]
 
     @pytest.mark.parametrize("probs, marginals, wires, num_wires", broadcasted_marginal_test_data)
-    def test_correct_broadcasted_marginals_returned(  # pylint: disable=too-many-arguments
+    def test_correct_broadcasted_marginals_returned(
         self,
         monkeypatch,
-        mock_qubit_device_with_original_statistics,  # pylint: disable=redefined-outer-name
+        mock_qubit_device_with_original_statistics,
         probs,
         marginals,
         wires,
         num_wires,
         tol,
-    ):
+    ):  # pylint: disable=too-many-arguments,redefined-outer-name
         """Test that the correct marginals are returned by the marginal_prob method when
         broadcasting is used"""
         dev = mock_qubit_device_with_original_statistics(num_wires)
@@ -1217,16 +1217,15 @@ class TestMarginalProb:
         assert np.allclose(res, marginals, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("probs, marginals, wires, num_wires", broadcasted_marginal_test_data)
-    # pylint: disable-next=too-many-arguments
     def test_correct_broadcasted_marginals_returned_wires_none(
         self,
-        mock_qubit_device_with_original_statistics,  # pylint: disable=redefined-outer-name
+        mock_qubit_device_with_original_statistics,
         probs,
-        marginals,  # pylint: disable=unused-argument
-        wires,  # pylint: disable=unused-argument
+        marginals,
+        wires,
         num_wires,
         tol,
-    ):
+    ):  # pylint: disable=too-many-arguments,redefined-outer-name,unused-argument
         """Test that the correct marginals are returned by the marginal_prob method when
         broadcasting is used"""
         dev = mock_qubit_device_with_original_statistics(num_wires)

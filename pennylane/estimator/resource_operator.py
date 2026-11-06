@@ -297,9 +297,7 @@ class ResourceOperator(ABC):
                 of the target operator.
         """
         # pylint: disable-next=import-outside-toplevel
-        from pennylane.estimator.ops.op_math.symbolic import (
-            apply_adj,
-        )
+        from pennylane.estimator.ops.op_math.symbolic import apply_adj
 
         target_resource_params = target_resource_params or {}
         gate_lst = []
@@ -334,9 +332,7 @@ class ResourceOperator(ABC):
                 of the target operator.
         """
         # pylint: disable-next=import-outside-toplevel
-        from pennylane.estimator.ops.op_math.symbolic import (
-            apply_controlled,
-        )
+        from pennylane.estimator.ops.op_math.symbolic import apply_controlled
 
         target_resource_params = target_resource_params or {}
         gate_lst = []

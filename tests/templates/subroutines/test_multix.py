@@ -311,9 +311,7 @@ class TestDecomposition:
 
         import jax
 
-        from pennylane.capture.primitives import (
-            for_loop_prim,
-        )
+        from pennylane.capture.primitives import for_loop_prim
         from pennylane.testing import find_eqns
 
         bitstring = jax.numpy.array([1, 0, 1])

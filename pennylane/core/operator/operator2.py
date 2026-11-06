@@ -1971,13 +1971,13 @@ operator_p.prim_type = "operator"
 
 
 @operator_p.def_impl
-def _op_impl(  # pylint: disable=too-many-arguments
+def _op_impl(  # pylint: disable=too-many-arguments,unused-argument
     *all_args,
     op_cls,
     wire_lens,
     hybrid_lens,
     hybrid_trees,
-    forward_mask,  # pylint: disable=unused-argument
+    forward_mask,
     n_ctrls=0,
     n_ctrl_work_wires=0,
     ctrl_work_wire_type="borrowed",

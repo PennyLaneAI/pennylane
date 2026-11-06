@@ -309,10 +309,10 @@ class QubitUnitary(Operator2):
         return U
 
     @staticmethod
-    def compute_sparse_matrix(
+    def compute_sparse_matrix(  # pylint: disable=unused-argument
         U: TensorLike,
-        wires: WiresLike | None = None,  # pylint: disable=unused-argument
-        unitary_check: bool = False,  # pylint: disable=unused-argument
+        wires: WiresLike | None = None,
+        unitary_check: bool = False,
         format="csr",
     ):
         r"""Representation of the operator as a sparse matrix.

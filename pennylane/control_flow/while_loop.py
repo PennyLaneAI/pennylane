@@ -318,14 +318,14 @@ register_custom_staging_rule(
 
 
 @while_loop_prim.def_impl
-def _while_loop_impl(  # pylint: disable=too-many-arguments
+def _while_loop_impl(  # pylint: disable=too-many-arguments,unused-argument
     *args,
     jaxpr_body_fn,
     jaxpr_cond_fn,
     body_slice,
     cond_slice,
     args_slice,
-    estimated_iterations,  # pylint: disable=unused-argument
+    estimated_iterations,
 ):
     body_slice = slice(*body_slice)
     cond_slice = slice(*cond_slice)

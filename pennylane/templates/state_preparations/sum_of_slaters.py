@@ -1213,8 +1213,8 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     return resources
 
 
-def _sos_state_prep_work_wires(  # pylint: disable=too-many-arguments
-    coefficients,  # pylint: disable=unused-argument
+def _sos_state_prep_work_wires(  # pylint: disable=too-many-arguments,unused-argument
+    coefficients,
     wires,
     indices,
     enumeration_wires=(),

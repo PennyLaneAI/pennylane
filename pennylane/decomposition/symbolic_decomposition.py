@@ -322,8 +322,8 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
     return _impl
 
 
-def _flip_control_adjoint_resource(  # pylint: disable=too-many-arguments
-    base_class,  # pylint: disable=unused-argument
+def _flip_control_adjoint_resource(  # pylint: disable=too-many-arguments,unused-argument
+    base_class,
     base_params,
     num_control_wires,
     num_zero_control_values,

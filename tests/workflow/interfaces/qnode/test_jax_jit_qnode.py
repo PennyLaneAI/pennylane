@@ -2029,14 +2029,14 @@ class TestJIT:
         "ignore:Requested adjoint differentiation to be computed with finite shots."
     )
     @pytest.mark.parametrize("shots", [10, 1000])
-    def test_hermitian(
+    def test_hermitian(  # pylint: disable=unused-argument
         self,
         dev_name,
         diff_method,
         grad_on_execution,
         device_vjp,
-        shots,  # pylint: disable=unused-argument
-        jacobian,  # pylint: disable=unused-argument
+        shots,
+        jacobian,
         interface,
         seed,
     ):
@@ -2074,14 +2074,14 @@ class TestJIT:
         "ignore:Requested adjoint differentiation to be computed with finite shots."
     )
     @pytest.mark.parametrize("shots", [10, 1000])
-    def test_probs_obs_none(
+    def test_probs_obs_none(  # pylint: disable=unused-argument
         self,
         dev_name,
         diff_method,
         grad_on_execution,
         device_vjp,
-        shots,  # pylint: disable=unused-argument
-        jacobian,  # pylint: disable=unused-argument
+        shots,
+        jacobian,
         interface,
         seed,
     ):

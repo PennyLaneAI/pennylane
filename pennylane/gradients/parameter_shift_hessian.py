@@ -436,12 +436,12 @@ def contract_qjac_with_cjac(qhess, cjac, tape):
     return hessians[0] if has_single_arg else tuple(hessians)
 
 
-def _expand_transform_hessian(
+def _expand_transform_hessian(  # pylint: disable=unused-argument
     tape: QuantumScript,
-    argnum=None,  # pylint: disable=unused-argument
-    diagonal_shifts=None,  # pylint: disable=unused-argument
-    off_diagonal_shifts=None,  # pylint: disable=unused-argument
-    f0=None,  # pylint: disable=unused-argument
+    argnum=None,
+    diagonal_shifts=None,
+    off_diagonal_shifts=None,
+    f0=None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before parameter shift."""
     return _expand_transform_param_shift(tape)

@@ -559,12 +559,12 @@ def _count_tempAND_in_measurement_qrom(k):
     return k - 2
 
 
-def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
+def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-argument
     bitstrings=None,
     control_wires=None,
     target_wires=None,
-    work_wires=None,  # pylint: disable=unused-argument
-    clean=None,  # pylint: disable=unused-argument
+    work_wires=None,
+    clean=None,
     base=None,
 ):
     """Resource estimate for the measurement-based QROM decomposition.
@@ -652,12 +652,12 @@ def _flag_resources(num_control_wires_extra):
     }
 
 
-def _qrom_measurement_condition(  # pylint: disable=too-many-arguments
+def _qrom_measurement_condition(  # pylint: disable=too-many-arguments,unused-argument
     bitstrings=None,
     control_wires=None,
-    target_wires=None,  # pylint: disable=unused-argument
+    target_wires=None,
     work_wires=None,
-    clean=None,  # pylint: disable=unused-argument
+    clean=None,
     base=None,
 ):
 
@@ -737,12 +737,12 @@ def _build_flag(extra_wires, work_wires):
 
 @register_condition(_qrom_measurement_condition)
 @register_resources(_qrom_measurement_resources, exact=False)
-def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments
+def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,unused-argument
     bitstrings=None,
     control_wires=None,
     target_wires=None,
     work_wires=None,
-    clean=None,  # pylint: disable=unused-argument
+    clean=None,
     base=None,
 ):
     """QROM decomposition using measurement-based uncomputation.

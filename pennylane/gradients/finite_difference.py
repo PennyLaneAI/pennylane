@@ -276,16 +276,15 @@ def _finite_diff_stopping_condition(op) -> bool:
     return True
 
 
-def _expand_transform_finite_diff(  # pylint: disable=too-many-arguments
+def _expand_transform_finite_diff(  # pylint: disable=too-many-arguments,unused-argument
     tape: QuantumScript,
-    argnum=None,  # pylint: disable=unused-argument
-    h: float = 1e-7,  # pylint: disable=unused-argument
-    approx_order: int = 1,  # pylint: disable=unused-argument
-    n: int = 1,  # pylint: disable=unused-argument
-    # pylint: disable-next=unused-argument
+    argnum=None,
+    h: float = 1e-7,
+    approx_order: int = 1,
+    n: int = 1,
     strategy: Literal["forward", "backward", "center"] = "forward",
-    f0=None,  # pylint: disable=unused-argument
-    validate_params: bool = True,  # pylint: disable=unused-argument
+    f0=None,
+    validate_params: bool = True,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before finite difference."""
     [new_tape], postprocessing = decompose(

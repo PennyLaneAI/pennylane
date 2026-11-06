@@ -549,14 +549,14 @@ class AliasSamplingTHC(Operator2):
         return self.mu_wires + self.nu_wires + self.edge_flag + self.work_wires
 
 
-def _alias_sampling_thc_resources(  # pylint: disable=too-many-arguments
+def _alias_sampling_thc_resources(  # pylint: disable=too-many-arguments,unused-argument
     M,
     N,
     zeta,
     t_ell,
     mu_wires,
-    nu_wires,  # pylint: disable=unused-argument
-    edge_flag,  # pylint: disable=unused-argument
+    nu_wires,
+    edge_flag,
     work_wires,
     aleph,
 ):

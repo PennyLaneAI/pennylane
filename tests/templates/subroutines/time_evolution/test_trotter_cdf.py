@@ -54,10 +54,7 @@ from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
 from pennylane.testing import assert_decomposable
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
-from tests.templates.subroutines.time_evolution.fermi_tools import (
-    one_body_matrix,
-    permute_qubits,
-)
+from tests.templates.subroutines.time_evolution.fermi_tools import one_body_matrix, permute_qubits
 from tests.templates.subroutines.time_evolution.trotter_test_helpers import (
     CATALYST_GATE_SET_DOUBLE_PHASE,
     CATALYST_GATE_SET_GENUINE,

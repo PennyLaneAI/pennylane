@@ -1872,9 +1872,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
     def test_trotter_cdf(self, work_wires):
         """Test TrotterCDF with program capture."""
 
-        from pennylane.numeric_hamiltonians import (
-            CDFHamiltonian,
-        )
+        from pennylane.numeric_hamiltonians import CDFHamiltonian
 
         hamiltonian = CDFHamiltonian(
             core_tensors=np.random.rand(2, 2, 2),
@@ -1904,9 +1902,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
     def test_trotter_cgf(self):
         """Test TrotterCGF with program capture."""
 
-        from pennylane.numeric_hamiltonians import (
-            CGFHamiltonian,
-        )
+        from pennylane.numeric_hamiltonians import CGFHamiltonian
 
         hamiltonian = CGFHamiltonian(
             core_tensors=np.random.rand(2, 2, 2, 2, 2),

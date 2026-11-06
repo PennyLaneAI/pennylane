@@ -785,14 +785,14 @@ def _inplace_set_trainable_params(tape):
     tape.trainable_params = math.get_trainable_indices(params)
 
 
-def _expand_transform_param_shift(  # pylint: disable=too-many-arguments
+def _expand_transform_param_shift(  # pylint: disable=too-many-arguments,unused-argument
     tape: QuantumScript,
-    argnum=None,  # pylint: disable=unused-argument
-    shifts=None,  # pylint: disable=unused-argument
-    gradient_recipes=None,  # pylint: disable=unused-argument
-    fallback_fn=finite_diff,  # pylint: disable=unused-argument
-    f0=None,  # pylint: disable=unused-argument
-    broadcast=False,  # pylint: disable=unused-argument
+    argnum=None,
+    shifts=None,
+    gradient_recipes=None,
+    fallback_fn=finite_diff,
+    f0=None,
+    broadcast=False,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before parameter shift."""
     [new_tape], postprocessing = decompose(

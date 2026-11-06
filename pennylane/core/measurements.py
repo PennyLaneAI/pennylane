@@ -125,12 +125,12 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         return tuple(out) if isinstance(out, list) else out
 
     @classmethod
-    def _abstract_eval(
+    def _abstract_eval(  # pylint: disable=unused-argument
         cls,
-        n_wires: int | None = None,  # pylint: disable=unused-argument
-        has_eigvals=False,  # pylint: disable=unused-argument
-        shots: int | None = None,  # pylint: disable=unused-argument
-        num_device_wires: int = 0,  # pylint: disable=unused-argument
+        n_wires: int | None = None,
+        has_eigvals=False,
+        shots: int | None = None,
+        num_device_wires: int = 0,
     ) -> tuple[tuple, type]:
         """Calculate the shape and dtype that will be returned when a measurement is performed.
 

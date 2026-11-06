@@ -483,15 +483,15 @@ class TrotterVibronic(Operator2):
         )
 
 
-def _trotter_vibronic_resources(  # pylint: disable=too-many-arguments
-    evolution_time,  # pylint: disable=unused-argument
+def _trotter_vibronic_resources(  # pylint: disable=too-many-arguments,unused-argument
+    evolution_time,
     num_trotter_steps,
     hamiltonian,
     electronic_wires,
     vib_wires,
     coefficient_wires,
     phase_gradient_wires,
-    cache_wires,  # pylint: disable=unused-argument
+    cache_wires,
     work_wires,
     aqft_order,
     branch_probs,

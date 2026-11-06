@@ -543,10 +543,8 @@ class SpecsResources(Resources):
 
         lines.append(f"{prefix}Total wires: {_count_to_str(self.num_wires)}")
 
-        if (
-            self.circuit_depth is not None
-            or type(self) == SpecsResources  # pylint: disable=unidiomatic-typecheck
-        ):
+        # pylint: disable-next=unidiomatic-typecheck
+        if self.circuit_depth is not None or type(self) == SpecsResources:
             # Do not include circuit depth in the output for derived classes
             depth_str = (
                 _count_to_str(self.circuit_depth)
@@ -588,10 +586,8 @@ class SpecsResources(Resources):
 
         lines.append(f"| **Total wires** | {_count_to_str(self.num_wires, markdown_safe=True)} |")
 
-        if (
-            self.circuit_depth is not None
-            or type(self) == SpecsResources  # pylint: disable=unidiomatic-typecheck
-        ):
+        # pylint: disable-next=unidiomatic-typecheck
+        if self.circuit_depth is not None or type(self) == SpecsResources:
             # Do not include circuit depth in the output for derived classes
             depth_str = (
                 _count_to_str(self.depth, markdown_safe=True)

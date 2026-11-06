@@ -103,12 +103,12 @@ class TestQNode:
         assert isinstance(grad, jax.Array)
         assert grad.shape == ()
 
-    def test_changing_trainability(
+    def test_changing_trainability(  # pylint: disable=unused-argument
         self,
         dev_name,
         diff_method,
-        grad_on_execution,  # pylint: disable=unused-argument
-        device_vjp,  # pylint: disable=unused-argument
+        grad_on_execution,
+        device_vjp,
         interface,
         tol,
         seed,
@@ -269,12 +269,12 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_jacobian_options(
+    def test_jacobian_options(  # pylint: disable=unused-argument
         self,
         dev_name,
         diff_method,
-        grad_on_execution,  # pylint: disable=unused-argument
-        device_vjp,  # pylint: disable=unused-argument
+        grad_on_execution,
+        device_vjp,
         interface,
         seed,
     ):

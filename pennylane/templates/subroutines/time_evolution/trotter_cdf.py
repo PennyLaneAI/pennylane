@@ -700,13 +700,12 @@ def _cdf_resource_counts(
     return {op: count for op, count in resources.items() if count}
 
 
-def _trotter_cdf_resources(  # pylint: disable=too-many-arguments
-    # pylint: disable-next=unused-argument
+def _trotter_cdf_resources(  # pylint: disable=too-many-arguments,unused-argument
     evolution_time,
     num_trotter_steps,
     hamiltonian,
-    wires,  # pylint: disable=unused-argument
-    double_phase,  # pylint: disable=unused-argument
+    wires,
+    double_phase,
     work_wires=(),
 ):
     return _cdf_resource_counts(
@@ -715,12 +714,12 @@ def _trotter_cdf_resources(  # pylint: disable=too-many-arguments
 
 
 @register_resources(_trotter_cdf_resources, exact=False)
-def _trotter_cdf_decomposition(  # pylint: disable=too-many-arguments
+def _trotter_cdf_decomposition(  # pylint: disable=too-many-arguments,unused-argument
     evolution_time,
     num_trotter_steps,
     hamiltonian,
     wires,
-    double_phase,  # pylint: disable=unused-argument
+    double_phase,
     work_wires=(),
 ):
     # ``double_phase`` only affects the controlled decomposition; the base operator is
@@ -741,12 +740,12 @@ def _trotter_cdf_decomposition(  # pylint: disable=too-many-arguments
 add_decomps(TrotterCDF, _trotter_cdf_decomposition)
 
 
-def _controlled_trotter_cdf_resource(
+def _controlled_trotter_cdf_resource(  # pylint: disable=unused-argument
     base,
-    control_wires,  # pylint: disable=unused-argument
-    control_values,  # pylint: disable=unused-argument
-    work_wires,  # pylint: disable=unused-argument
-    work_wire_type,  # pylint: disable=unused-argument
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,
 ):
     return _cdf_resource_counts(
         base.arguments["num_trotter_steps"],

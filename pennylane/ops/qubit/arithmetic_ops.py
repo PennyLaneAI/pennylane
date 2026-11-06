@@ -484,8 +484,7 @@ class IntegerComparator(Operation):
         return base_label or f">={self.value}" if self.geq else f"<{self.value}"
 
     @staticmethod
-    def compute_matrix(  # pylint: disable=arguments-differ
-        # pylint: disable-next=unused-argument
+    def compute_matrix(  # pylint: disable=arguments-differ,unused-argument
         control_wires: WiresLike,
         value: int | None = None,
         geq: bool = True,
@@ -559,8 +558,8 @@ class IntegerComparator(Operation):
         return mat
 
     @staticmethod
-    def compute_decomposition(  # pylint: disable=arguments-differ
-        value: int,  # pylint: disable=unused-argument
+    def compute_decomposition(  # pylint: disable=arguments-differ,unused-argument
+        value: int,
         wires: WiresLike,
         geq: bool = True,
         work_wires: WiresLike | None = None,

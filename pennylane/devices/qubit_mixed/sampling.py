@@ -110,14 +110,14 @@ def _measure_with_samples_diagonalizing_gates(  # pylint: disable=too-many-argum
     return processed_samples[0]
 
 
-def _measure_classical_shadow(  # pylint: disable=too-many-arguments
+def _measure_classical_shadow(  # pylint: disable=too-many-arguments,unused-argument
     mp: list[ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
     rng=None,
-    prng_key=None,  # pylint: disable=unused-argument
-    readout_errors=None,  # pylint: disable=unused-argument
+    prng_key=None,
+    readout_errors=None,
 ):
     """
     Returns the result of a classical shadow measurement on the given state.

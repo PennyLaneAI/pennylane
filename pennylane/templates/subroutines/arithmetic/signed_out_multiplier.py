@@ -449,24 +449,22 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires):
     )
 
 
-def _not_zeroed_work_wire_condition(
-    # pylint: disable-next=unused-argument
+def _not_zeroed_work_wire_condition(  # pylint: disable=unused-argument
     x_wires,
-    y_wires,  # pylint: disable=unused-argument
+    y_wires,
     output_wires,
     work_wires,
-    output_wires_zeroed=False,  # pylint: disable=unused-argument
+    output_wires_zeroed=False,
 ):
     return len(work_wires) >= 2 * len(output_wires) + 1
 
 
-def _zeroed_work_wire_condition(
-    # pylint: disable-next=unused-argument
+def _zeroed_work_wire_condition(  # pylint: disable=unused-argument
     x_wires,
-    y_wires,  # pylint: disable=unused-argument
-    output_wires,  # pylint: disable=unused-argument
+    y_wires,
+    output_wires,
     work_wires,
-    output_wires_zeroed=False,  # pylint: disable=unused-argument
+    output_wires_zeroed=False,
 ):
     return len(work_wires) >= 2
 

@@ -389,7 +389,7 @@ register_custom_staging_rule(
 
 
 @for_loop_prim.def_impl
-def _for_loop_impl(  # pylint: disable=too-many-arguments
+def _for_loop_impl(  # pylint: disable=too-many-arguments,unused-argument
     start,
     stop,
     step,
@@ -398,7 +398,7 @@ def _for_loop_impl(  # pylint: disable=too-many-arguments
     consts_slice,
     args_slice,
     abstract_shapes_slice,
-    estimated_iterations,  # pylint: disable=unused-argument
+    estimated_iterations,
 ):
     # Convert tuples back to slices (tuples are used for JAX 0.7.1 hashability)
     consts_slice = slice(*consts_slice)

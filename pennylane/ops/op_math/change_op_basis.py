@@ -402,13 +402,13 @@ def _adjoint_change_op_basis_decomp(*_, base, **__):
 add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
 
 
-def _controlled_change_op_basis_resources(  # pylint: disable=too-many-arguments
+def _controlled_change_op_basis_resources(  # pylint: disable=too-many-arguments,unused-argument
     *_,
     num_control_wires,
     num_zero_control_values,
     num_work_wires,
     work_wire_type,
-    base_class,  # pylint: disable=unused-argument
+    base_class,
     base_params,
     **__,
 ):

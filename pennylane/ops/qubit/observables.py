@@ -633,8 +633,8 @@ class BasisStateProjector(Projector, Operation):
         return w
 
     @staticmethod
-    def compute_diagonalizing_gates(  # pylint: disable=arguments-differ
-        basis_state: TensorLike,  # pylint: disable=unused-argument
+    def compute_diagonalizing_gates(  # pylint: disable=arguments-differ,unused-argument
+        basis_state: TensorLike,
         wires: WiresLike,
     ) -> list["qp.operation.Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).

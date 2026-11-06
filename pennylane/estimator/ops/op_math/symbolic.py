@@ -927,12 +927,12 @@ class ChangeOpBasis(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(  # pylint: disable=arguments-differ
+    def resource_decomp(  # pylint: disable=arguments-differ,unused-argument
         cls,
         cmpr_compute_op: CompressedResourceOp,
         cmpr_target_op: CompressedResourceOp,
         cmpr_uncompute_op: CompressedResourceOp,
-        num_wires: int,  # pylint: disable=unused-argument
+        num_wires: int,
     ):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
@@ -1069,10 +1069,10 @@ def _(action: Deallocate):
 
 
 @singledispatch
-def apply_controlled(
+def apply_controlled(  # pylint: disable=unused-argument
     action: GateCount | Allocate | Deallocate,
-    num_ctrl_wires: int,  # pylint: disable=unused-argument
-    num_zero_ctrl: int,  # pylint: disable=unused-argument
+    num_ctrl_wires: int,
+    num_zero_ctrl: int,
 ) -> GateCount | Allocate | Deallocate:
     """Create the controlled version of a resource-tracking gate.
 

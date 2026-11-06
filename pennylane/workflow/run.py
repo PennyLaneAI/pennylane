@@ -110,9 +110,7 @@ def _construct_ml_execution_pipeline(
     return jpc, execute_fn
 
 
-def _get_ml_boundary_execute(
-    resolved_execution_config: ExecutionConfig,
-) -> Callable:
+def _get_ml_boundary_execute(resolved_execution_config: ExecutionConfig) -> Callable:
     """Imports and returns the function that handles the interface boundary for a given machine learning framework.
 
     Args:

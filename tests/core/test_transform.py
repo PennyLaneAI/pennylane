@@ -314,9 +314,7 @@ class TestTransformExtension:
             return (tape.copy(ops=tape.operations[:3]),), lambda x: x[0]
 
         @dummy_transform.register
-        def _(
-            tape: qp.tape.QuantumScript,
-        ):
+        def _(tape: qp.tape.QuantumScript):
             return (tape.copy(ops=tape.operations[:1]),), lambda x: x[0]
 
         input = qp.tape.QuantumScript([qp.X(0), qp.X(1), qp.X(2), qp.X(3), qp.X(4), qp.X(5)])

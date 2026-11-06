@@ -64,12 +64,11 @@ def _inplace_set_trainable_params(tape):
     tape.trainable_params = math.get_trainable_indices(params)
 
 
-def _expand_transform_hadamard(
+def _expand_transform_hadamard(  # pylint: disable=unused-argument
     tape: QuantumScript,
-    argnum=None,  # pylint: disable=unused-argument
-    aux_wire=None,  # pylint: disable=unused-argument
-    device_wires=None,  # pylint: disable=unused-argument
-    # pylint: disable-next=unused-argument
+    argnum=None,
+    aux_wire=None,
+    device_wires=None,
     mode: Literal["standard", "reversed", "direct", "reversed-direct", "auto"] = "auto",
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before hadamard gradient."""

@@ -203,9 +203,8 @@ class TestBasicCircuit:
         )
 
         dev = DefaultQubit(max_workers=max_workers)
-        config = ExecutionConfig(
-            device_options={"max_workers": dev._max_workers}  # pylint: disable=protected-access
-        )
+        # pylint: disable-next=protected-access
+        config = ExecutionConfig(device_options={"max_workers": dev._max_workers})
         result = dev.execute(qs, execution_config=config)
 
         assert isinstance(result, tuple)

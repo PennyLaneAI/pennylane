@@ -143,12 +143,12 @@ class TestAdjointDecompositionRules:
             @register_condition(_condition_fn)
             @register_resources(
                 _resource_fn,
-                work_wires=base_decomposition._work_wire_spec,
+                work_wires=base_decomposition._work_wire_spec,  # pylint: disable=protected-access
                 exact=base_decomposition.exact_resources,
                 name=f"adjoint({base_decomposition.name})",
             )
             def _impl(*params, wires, base):
-                # pylint: disable=protected-access
+                # pylint: disable-next=protected-access
                 qp.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
 
             where base_decomposition is defined as:
@@ -642,10 +642,11 @@ class TestControlledDecomposition:
             @register_condition(_condition_fn)
             @register_resources(
                 _resource_fn,
-                work_wires=base_decomposition._work_wire_spec,
+                work_wires=base_decomposition._work_wire_spec,  # pylint: disable=protected-access
                 exact=base_decomposition.exact_resources,
                 name=f"controlled({base_decomposition.name})",
             )
+            # pylint: disable-next=too-many-arguments
             def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
                 zero_control_wires = [
                     w for w, val in zip(control_wires, control_values, strict=True) if not val
@@ -1017,7 +1018,7 @@ class TestControlledDecomposition:
             @register_condition(_condition_fn)
             @register_resources(
                 _resource_fn,
-                work_wires=inner_decomp._work_wire_spec,
+                work_wires=inner_decomp._work_wire_spec,  # pylint: disable=protected-access
                 exact=inner_decomp.exact_resources,
                 name=name or f"flip_zero_ctrl_values({inner_decomp.name})",
             )

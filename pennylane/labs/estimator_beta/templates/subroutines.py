@@ -1505,12 +1505,12 @@ class LabsQROM(ResourceOperator):
         return cls.qrom_clean_auxiliary_adjoint_resource_decomp(target_resource_params)
 
     @staticmethod
-    def tracking_name(  # pylint: disable=arguments-differ
-        num_bitstrings: int,  # pylint: disable=unused-argument
-        size_bitstring: int,  # pylint: disable=unused-argument
-        num_bit_flips: int | None = None,  # pylint: disable=unused-argument
-        borrow_qubits: bool = True,  # pylint: disable=unused-argument
-        select_swap_depth: int | None = None,  # pylint: disable=unused-argument
+    def tracking_name(  # pylint: disable=arguments-differ,unused-argument
+        num_bitstrings: int,
+        size_bitstring: int,
+        num_bit_flips: int | None = None,
+        borrow_qubits: bool = True,
+        select_swap_depth: int | None = None,
     ):
         return "QROM"
 

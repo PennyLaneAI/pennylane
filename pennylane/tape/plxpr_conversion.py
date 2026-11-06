@@ -229,13 +229,13 @@ def _jvp_primitive(self, *invals, jaxpr, **params):
 
 
 @CollectOpsandMeas.register_primitive(qnode_prim)
-def _qnode_primitive(  # pylint: disable=too-many-arguments
+def _qnode_primitive(  # pylint: disable=too-many-arguments,unused-argument
     self,
     *invals,
     shots_len,
-    qnode,  # pylint: disable=unused-argument
-    device,  # pylint: disable=unused-argument
-    execution_config,  # pylint: disable=unused-argument
+    qnode,
+    device,
+    execution_config,
     qfunc_jaxpr,
     n_consts,
 ):

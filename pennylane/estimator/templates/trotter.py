@@ -222,12 +222,12 @@ class TrotterProduct(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(  # pylint: disable=arguments-differ
+    def resource_decomp(  # pylint: disable=arguments-differ,unused-argument
         cls,
         first_order_expansion: list,
         num_steps: int,
         order: int,
-        num_wires: int,  # pylint: disable=unused-argument
+        num_wires: int,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
