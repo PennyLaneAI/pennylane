@@ -784,7 +784,9 @@ class DoubleExcitation(Operator2):
     mask_s[12, 3] = 1
 
     @staticmethod
-    def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
+    def compute_matrix(
+        phi: TensorLike, wires: WiresLike = None  # pylint: disable=unused-argument
+    ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -814,7 +816,7 @@ class DoubleExcitation(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "G²", cache=cache)
 
 
-def _doublexcit_resource(phi, wires):
+def _doublexcit_resource(phi, wires):  # pylint: disable=unused-argument
     return {qp.CNOT: 14, qp.Hadamard: 6, qp.RY: 8}
 
 
@@ -850,7 +852,7 @@ def _doublexcit(phi: TensorLike, wires: WiresLike):
     qp.CNOT(wires=[wires[2], wires[3]])
 
 
-def _doublexcit_ppr_resource(phi, wires):
+def _doublexcit_ppr_resource(phi, wires):  # pylint: disable=unused-argument
     return {
         qp.PauliRot(Float, pauli_word="YYYX", wires=Wire[4]): 1,
         qp.PauliRot(Float, pauli_word="YYXY", wires=Wire[4]): 1,
