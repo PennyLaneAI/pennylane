@@ -152,7 +152,7 @@ class Adder(Operator2):
 
         - If :math:`mod = 2^{\text{len(x_wires)}}`, there will be no need for ``work_wires``, hence ``work_wires=()``. This is the case by default.
 
-        - If :math:`mod \neq 2^{\text{len(x_wires)}}`, two ``work_wires`` have to be provided.
+        - If :math:`mod \neq 2^{\text{len(x_wires)}}`, at least two ``work_wires`` have to be provided.
 
         Note that the ``Adder`` template allows us to perform modular addition in the computational basis. However if one just wants to perform standard addition (with no modulo), that would be equivalent to setting
         the modulo :math:`mod` to a large enough value to ensure that :math:`x+k < mod`.

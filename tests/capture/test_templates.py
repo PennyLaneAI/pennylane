@@ -1296,7 +1296,7 @@ class TestModifiedTemplates:
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        tape = plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
         assert len(tape) == 1
         qp.assert_equal(tape.operations[0], qp.PhaseAdder(**kwargs))
 
@@ -1324,7 +1324,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(eqn, qp.Adder)
 
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        tape = plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
         assert len(tape) == 1
         qp.assert_equal(tape.operations[0], qp.Adder(**kwargs))
 
