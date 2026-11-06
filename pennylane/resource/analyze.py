@@ -99,31 +99,19 @@ def analyze(
     r"""Provides a compile-time resource estimate of a quantum circuit, obtained by analyzing its
     intermediate representation at the specified compilation level.
 
-    This transform converts a QNode into a callable that compiles the circuit up to ``level``
-    and inspects the resulting representation, without executing the circuit or unrolling its
+    This transform converts a QNode into a callable that compiles the circuit with the
+    portion(s) of its :class:`~.CompilePipeline` selected by ``level``, and inspects the
+    resulting representation, without executing the circuit or unrolling its
     control flow. The resource information is therefore subject to compile-time constraints.
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the (qjit'd) QNode for which to estimate resources.
             ``functools.partial`` wrappers around supported callables are also accepted.
-        level (str | int | Iterable[int | str]): The level of compilation at which to estimate
-            resources. Defaults to ``"user"``.
-
-            ``level`` accepts the following types:
-
-            * ``int``: The number of transforms to apply before analyzing resources.
-            * ``str``: One of the presets listed below, or the ``label`` of a :func:`~.marker`.
-            * ``iterable``: A ``list``, ``tuple``, or similar containing ``int`` or ``str`` values.
-              These should be sorted in ascending transform order with no duplicates. Resources will be analyzed for each provided level in the ``iterable``.
-
-            The following ``str`` presets are provided for ease of use:
-
-            * ``"top"``: Equivalent to ``0``; to analyze resources before any transforms have been applied.
-            * ``"user"``: To analyze resources after the user-specified transforms have been applied.
-            * ``"device"``: To analyze resources after the user-specified transforms and device preprocessing transforms have been applied.
-            * ``"all-user"``: To analyze resources at each stage of compilation with respect to user-specified transforms.
-            * ``"all"``: To analyze resources at each stage of compilation with respect
-              to user-specified and device preprocessing transforms.
+        level (str | int | slice | Sequence[str | int]): The portion of the
+            :class:`~.CompilePipeline` to apply before analyzing resources. Accepts the same
+            values as :func:`~.workflow.get_compile_pipeline`. If ``level`` is a ``Sequence``,
+            ``"all-user"``, or ``"all"``, resources are analyzed independently for each
+            provided case. Defaults to ``"user"``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a

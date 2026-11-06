@@ -108,9 +108,10 @@ def track(
             ``functools.partial`` wrappers around supported callables are also accepted.
 
     Keyword Args:
-        level (str): The level at which to track resources. Only ``"device"`` is currently
-            supported, meaning that resources are counted after all user-specified transforms
-            and device preprocessing transforms have been applied.
+        level (str | int | slice | Sequence[str | int]): The portion of the
+            :class:`~.CompilePipeline` to apply before executing the circuit and tracking its
+            resources. Accepts the same values as :func:`~.workflow.get_compile_pipeline`.
+            Currently, only ``"device"`` is supported. Defaults to ``"device"``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a

@@ -163,8 +163,9 @@ class CompilePipeline:
         # Add a marker for inspectability
         pipeline.add_marker("no-transforms", 0)
 
+        @qp.qjit
         @pipeline
-        @qp.qnode(qp.device("default.qubit"))
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
         def circuit(x, y):
             qp.CNOT([1, 0])
             qp.X(0)
@@ -177,12 +178,12 @@ class CompilePipeline:
             return qp.expval(qp.Z(1))
 
     >>> from pennylane.workflow import get_compile_pipeline
-    >>> print(get_compile_pipeline(circuit)(0.1, 0.2))
+    >>> print(get_compile_pipeline(circuit))
     CompilePipeline(
        ├─▶ no-transforms
-      [1] commute_controlled(),
-      [2] cancel_inverses(recursive=True),
-      [3] merge_rotations()
+      [0] commute_controlled(),
+      [1] cancel_inverses(recursive=True),
+      [2] merge_rotations()
     )
 
     >>> print(qp.draw(circuit, level="no-transforms")(0.1, 0.2)) # or level=0
@@ -202,8 +203,8 @@ class CompilePipeline:
         >>> pipeline = qp.transforms.merge_rotations + qp.transforms.cancel_inverses(recursive=True)
         >>> print(pipeline)
         CompilePipeline(
-          [1] merge_rotations(),
-          [2] cancel_inverses(recursive=True)
+          [0] merge_rotations(),
+          [1] cancel_inverses(recursive=True)
         )
 
         Or multiplied by a scalar via ``*``:
@@ -211,10 +212,10 @@ class CompilePipeline:
         >>> pipeline += 2 * qp.transforms.commute_controlled
         >>> print(pipeline)
         CompilePipeline(
-          [1] merge_rotations(),
-          [2] cancel_inverses(recursive=True),
-          [3] commute_controlled(),
-          [4] commute_controlled()
+          [0] merge_rotations(),
+          [1] cancel_inverses(recursive=True),
+          [2] commute_controlled(),
+          [3] commute_controlled()
         )
 
         A compilation pipeline can also be easily modified using operations similar to Python lists, including
@@ -223,11 +224,11 @@ class CompilePipeline:
         >>> pipeline.insert(0, qp.transforms.remove_barrier)
         >>> print(pipeline)
         CompilePipeline(
-          [1] remove_barrier(),
-          [2] merge_rotations(),
-          [3] cancel_inverses(recursive=True),
-          [4] commute_controlled(),
-          [5] commute_controlled()
+          [0] remove_barrier(),
+          [1] merge_rotations(),
+          [2] cancel_inverses(recursive=True),
+          [3] commute_controlled(),
+          [4] commute_controlled()
         )
 
         Additionally, multiple compilation pipelines can be concatenated:
@@ -235,13 +236,13 @@ class CompilePipeline:
         >>> another_pipeline = qp.transforms._tape_decompose(gate_set={qp.RX, qp.RZ, qp.CNOT}) + qp.transforms.combine_global_phases
         >>> print(another_pipeline + pipeline)
         CompilePipeline(
-          [1] _tape_decompose(gate_set=...),
-          [2] combine_global_phases(),
-          [3] remove_barrier(),
-          [4] merge_rotations(),
-          [5] cancel_inverses(recursive=True),
-          [6] commute_controlled(),
-          [7] commute_controlled()
+          [0] _tape_decompose(gate_set=...),
+          [1] combine_global_phases(),
+          [2] remove_barrier(),
+          [3] merge_rotations(),
+          [4] cancel_inverses(recursive=True),
+          [5] commute_controlled(),
+          [6] commute_controlled()
         )
 
         We can create a new pipeline that will do multiple passes of the original with multiplication:
@@ -249,10 +250,10 @@ class CompilePipeline:
         >>> original = qp.transforms.merge_rotations + qp.transforms.cancel_inverses
         >>> print(2 * original)
         CompilePipeline(
-          [1] merge_rotations(),
-          [2] cancel_inverses(),
-          [3] merge_rotations(),
-          [4] cancel_inverses()
+          [0] merge_rotations(),
+          [1] cancel_inverses(),
+          [2] merge_rotations(),
+          [3] cancel_inverses()
         )
 
     .. details::
@@ -266,9 +267,9 @@ class CompilePipeline:
 
         >>> print(pipeline)
         CompilePipeline(
-          [1] commute_controlled(),
-          [2] cancel_inverses(),
-          [3] merge_rotations()
+          [0] commute_controlled(),
+          [1] cancel_inverses(),
+          [2] merge_rotations()
         )
 
         We can add markers (that act as checkpoints) in the pipeline to mark important positions,
@@ -276,19 +277,19 @@ class CompilePipeline:
         >>> pipeline.add_marker("final-transform")
         >>> print(pipeline)
         CompilePipeline(
-          [1] commute_controlled(),
-          [2] cancel_inverses(),
-          [3] merge_rotations()
+          [0] commute_controlled(),
+          [1] cancel_inverses(),
+          [2] merge_rotations()
            └─▶ final-transform
         )
 
         >>> pipeline.add_marker("after-commute-controlled", 1)
         >>> print(pipeline)
         CompilePipeline(
-          [1] commute_controlled(),
+          [0] commute_controlled(),
            ├─▶ after-commute-controlled
-          [2] cancel_inverses(),
-          [3] merge_rotations()
+          [1] cancel_inverses(),
+          [2] merge_rotations()
            └─▶ final-transform
         )
 
@@ -297,10 +298,10 @@ class CompilePipeline:
         >>> pipeline.add_marker("after-merge-rotations")
         >>> print(pipeline)
         CompilePipeline(
-          [1] commute_controlled(),
+          [0] commute_controlled(),
            ├─▶ after-commute-controlled
-          [2] cancel_inverses(),
-          [3] merge_rotations()
+          [1] cancel_inverses(),
+          [2] merge_rotations()
            └─▶ final-transform, after-merge-rotations
         )
 
@@ -324,11 +325,11 @@ class CompilePipeline:
 
             CompilePipeline(
                 ├─▶ markers for level 0 (no transforms)
-               [1] transform_1(),
+               [0] transform_1(),
                 ├─▶ markers for level 1 (after 1st transform)
-               [2] transform_2(),
+               [1] transform_2(),
                ...
-               [n] transform_n()
+               [n-1] transform_n()
                 └─▶ markers for level n (after nth transform)
             )
 
@@ -336,24 +337,24 @@ class CompilePipeline:
 
         >>> pipeline * 2 # Markers are not duplicated
         CompilePipeline(
-          [1] <commute_controlled()>,
+          [0] <commute_controlled()>,
            ├─▶ after-commute-controlled
-          [2] <cancel_inverses()>,
-          [3] <merge_rotations()>,
+          [1] <cancel_inverses()>,
+          [2] <merge_rotations()>,
            ├─▶ after-merge-rotations
-          [4] <commute_controlled()>,
-          [5] <cancel_inverses()>,
-          [6] <merge_rotations()>
+          [3] <commute_controlled()>,
+          [4] <cancel_inverses()>,
+          [5] <merge_rotations()>
         )
 
         >>> pipeline + qp.transforms.undo_swaps
         CompilePipeline(
-          [1] <commute_controlled()>,
+          [0] <commute_controlled()>,
            ├─▶ after-commute-controlled
-          [2] <cancel_inverses()>,
-          [3] <merge_rotations()>,
+          [1] <cancel_inverses()>,
+          [2] <merge_rotations()>,
            ├─▶ after-merge-rotations
-          [4] <undo_swaps()>
+          [3] <undo_swaps()>
         )
 
         >>> pipeline.pop()
@@ -361,16 +362,16 @@ class CompilePipeline:
 
         >>> print(pipeline)
         CompilePipeline(
-          [1] commute_controlled(),
+          [0] commute_controlled(),
            ├─▶ after-commute-controlled
-          [2] cancel_inverses()
+          [1] cancel_inverses()
            └─▶ after-merge-rotations
         )
 
         >>> pipeline[1:] # Get everything after the second transform
         CompilePipeline(
            ├─▶ after-commute-controlled
-          [1] <cancel_inverses()>
+          [0] <cancel_inverses()>
            └─▶ after-merge-rotations
         )
 
@@ -768,14 +769,14 @@ class CompilePipeline:
         >>> pipeline.add_marker("after-merge-rotations")
         >>> print(pipeline)
         CompilePipeline(
-          [1] merge_rotations()
+          [0] merge_rotations()
            └─▶ after-merge-rotations
         )
         >>> pipeline.add_marker("no-transforms", 0)
         >>> print(pipeline)
         CompilePipeline(
            ├─▶ no-transforms
-          [1] merge_rotations()
+          [0] merge_rotations()
            └─▶ after-merge-rotations
         )
         """

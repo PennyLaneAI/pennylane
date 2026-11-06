@@ -1364,6 +1364,13 @@ Improvements 🛠
   `(#10342) <https://github.com/PennyLaneAI/pennylane/pull/10342>`__
   `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
 
+* :func:`~.workflow.get_compile_pipeline` now supports ``level="device"``, ``"all-user"``,
+  ``"all"``, and a ``Sequence`` of levels for :func:`~.qjit`'d QNodes. The ``level`` argument
+  of :func:`~.analyze`, :func:`~.estimate`, and :func:`~.track` accepts the same values,
+  including ``slice``, and is documented in a single place in
+  :func:`~.workflow.get_compile_pipeline`.
+  `(#10441) <https://github.com/PennyLaneAI/pennylane/pull/10441>`__
+
 Labs: a place for unified and rapid prototyping of research software 🧪
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1784,6 +1791,12 @@ Breaking changes 💔
   :mod:`pennylane.core.apply` module, and is no longer importable from
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
+
+* :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly, instead
+  of a function that returns them, so ``get_compile_pipeline(qnode, level)(*args, **kwargs)``
+  becomes ``get_compile_pipeline(qnode, level)``. Support for non-``qjit``'d QNodes and the
+  ``level="gradient"`` option has been removed.
+  `(#10441) <https://github.com/PennyLaneAI/pennylane/pull/10441>`__
 
 Deprecations 👋
 ~~~~~~~~~~~~~~~
