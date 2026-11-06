@@ -806,10 +806,10 @@ class TestOrbitalRotation:
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     @pytest.mark.parametrize("wires", [[0, 1, 2, 3], [3, 1, 0, 2]])
     def test_decomposition_rule(self, phi, wires):
-        """Test the registered decomposition matrix and resource counts."""
+        """Test all registered decomposition matrices and resource counts."""
         op = qp.OrbitalRotation(phi, wires=wires)
-        rule = qp.list_decomps(qp.OrbitalRotation)["_orbital_rotation_decomp"]
-        qp.testing.assert_valid_decomp_rule(op, rule)
+        for rule in qp.list_decomps(qp.OrbitalRotation):
+            qp.testing.assert_valid_decomp_rule(op, rule)
 
     def grad_circuit_0(self, phi):
         qp.PauliX(1)

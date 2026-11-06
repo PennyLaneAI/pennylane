@@ -210,7 +210,7 @@ class SingleExcitation(Operator2):
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
-    # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
     @staticmethod
     def compute_matrix(
         phi: TensorLike, wires=None
@@ -255,7 +255,7 @@ class SingleExcitation(Operator2):
 
 
 # needs to be wrapped in function due to circular dependencies
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _single_excitation_resources(phi, wires):
     # ``Prod2`` takes its operands in matrix order, i.e. reversed relative to the order in which
     # the decomposition below applies them.
@@ -287,7 +287,7 @@ def _single_excitation_decomp(phi: TensorLike, wires: WiresLike):
     qp.change_op_basis(_to_basis, _rotations, _from_basis)
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _single_excitation_ppr_resource(phi, wires):
     return {
         qp.PauliRot(Float, pauli_word="XY", wires=Wire[2]): 1,
@@ -301,7 +301,7 @@ def _single_excitation_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(-phi / 2, "XY", wires=wires)
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _single_excitation_ppr_rz_resource(phi, wires):
     return {
         _change_op_basis_abstract(
@@ -321,7 +321,7 @@ def _single_excitation_ppr_rz(phi: TensorLike, wires: WiresLike):
     qp.change_op_basis(qp.PPR_4(1, "XX", wires=wires), _rotations, qp.PPR_4(-1, "XX", wires=wires))
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _single_excitation_ppr_crz_resource(phi, wires):
     compute = Prod2((qp.CNOT(Wire[2]), qp.PPR_4(1, "XX", wires=Wire[2])))
     return {
@@ -1327,7 +1327,8 @@ class OrbitalRotation(Operator2):
         return OrbitalRotation(-phi, wires=self.wires)
 
 
-def _orbital_rotation_decomposition_resources(phi: TensorLike = None, wires: WiresLike = None):
+# pylint: disable-next=unused-argument
+def _orbital_rotation_decomposition_resources(phi: TensorLike, wires: WiresLike):
     return {qp.FermionicSWAP: 2, qp.SingleExcitation: 2}
 
 
