@@ -141,33 +141,28 @@ def add_noise(tape, noise_model, level="user"):
 
             noisy_circuit = qp.noise.add_noise(circuit, noise_model)
 
-        >>> from pennylane.workflow import get_compile_pipeline
-        >>> print(get_compile_pipeline(circuit, level="device"))
+        >>> print(circuit.compile_pipeline)
         CompilePipeline(
           [0] cancel_inverses(),
           [1] merge_rotations(),
           [2] undo_swaps(),
           [3] _expand_metric_tensor(device_wires=[0, 1, 2]),
-          [4] metric_tensor(device_wires=[0, 1, 2]),
-          [5] Device Preprocessing
+          [4] metric_tensor(device_wires=[0, 1, 2])
         )
 
-        >>> print(get_compile_pipeline(noisy_circuit, level="device"))
+        >>> print(noisy_circuit.compile_pipeline)
         CompilePipeline(
           [0] cancel_inverses(),
           [1] merge_rotations(),
           [2] undo_swaps(),
           [3] _expand_metric_tensor(device_wires=[0, 1, 2]),
           [4] metric_tensor(device_wires=[0, 1, 2]),
-          [5] add_noise(...),
-          [6] Device Preprocessing
+          [5] add_noise(...)
         )
 
         However, one can request to insert the ``add_noise`` transform at any specific point in the compile pipeline. By specifying the ``level`` keyword argument while
         transforming a ``QNode``, this transform can be added at a designated level within the compile pipeline, using the same levels as
-        :func:`~.workflow.construct_batch`. Unlike in :func:`~.workflow.get_compile_pipeline`, these levels count each gradient and device
-        preprocessing transform separately, so the ``"device"`` level below lists the individual device transforms instead of a single
-        ``Device Preprocessing`` placeholder. For example, specifying ``None`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
+        :func:`~.workflow.construct_batch`. For example, specifying ``None`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
 
         >>> print(qp.noise.add_noise(circuit, noise_model, level="device").compile_pipeline)
         CompilePipeline(

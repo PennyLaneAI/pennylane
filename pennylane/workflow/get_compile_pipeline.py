@@ -23,27 +23,39 @@ from ._levels import is_single_level, levels_to_slices, pipeline_at_slice
 from .qnode import QNode
 
 
-def _is_qjit(obj):
-    """A method checking whether the object is compiled by catalyst.qjit"""
-    return obj.__class__.__name__ == "QJIT" and hasattr(obj, "original_function")
+def unwrap_qjit_qnode(qjit, *, fn_name: str) -> QNode:
+    """Return the QNode underlying a qjit'd workflow, raising a helpful error otherwise.
+
+    ``fn_name`` is the name of the public function to report in the error message.
+    """
+    # pylint: disable=import-outside-toplevel
+    # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
+    try:
+        from catalyst import QJIT
+    except ImportError as exc:  # pragma: no cover
+        raise ImportError(f"Catalyst must be installed to use {fn_name}.") from exc
+
+    # Unwrap the original QNode if any transforms have been applied
+    if isinstance(qjit, QJIT) and isinstance(qjit.original_function, QNode):
+        return qjit.original_function
+
+    raise ValueError(f"{fn_name} can only be applied to a qjit'd QNode, instead got: {qjit}")
 
 
 def get_compile_pipeline(
     qnode,
     level: str | int | slice | Sequence[str | int] = "user",
 ) -> CompilePipeline | list[CompilePipeline]:
-    """Extract :class:`~.CompilePipeline`\\ (s) from a :class:`~.QNode`.
+    """Extract :class:`~.CompilePipeline`\\ (s) from a :func:`~.qjit`'d :class:`~.QNode`.
 
     .. note::
 
         The device preprocessing is represented by a single ``Device Preprocessing`` placeholder,
-        since the device applies its own transforms when the QNode is executed. For a QNode that
-        is not qjit'd, the placeholder also covers the transforms required by the gradient
-        method. The placeholder cannot be applied to a QNode.
+        since the device applies its own transforms when the QNode is executed. The placeholder
+        cannot be applied to a QNode.
 
     Args:
-        qnode (:class:`~.QNode` | :class:`~catalyst.jit.QJIT`): The QNode, or qjit'd QNode, to
-            get the compile pipeline for.
+        qnode (:class:`~catalyst.jit.QJIT`): The qjit'd QNode to get the compile pipeline for.
         level (str | int | slice | Sequence[str | int]): The portion(s) of the
             :class:`~.CompilePipeline` to retrieve. Defaults to ``"user"``.
 
@@ -194,32 +206,8 @@ def get_compile_pipeline(
         >>> len(get_compile_pipeline(circuit, level="all"))
         4
 
-    .. details::
-        :title: Device preprocessing
-
-        For a QNode that is not qjit'd, the device preprocessing transforms that are applied on
-        execution can be retrieved with ``qnode.device.preprocess_transforms(config)``, where
-        ``config = qp.workflow.construct_execution_config(qnode)(*args, **kwargs)``. The
-        transform required by the gradient method, if any, is
-        ``config.gradient_method.expand_transform``. The tapes produced by the individual
-        gradient and device preprocessing transforms can be inspected with
-        :func:`~.workflow.construct_batch`, whose levels count each of these transforms
-        separately.
-
-        A QNode with an informative transform, such as :func:`~.adjoint_metric_tensor`, is not
-        executed on the device, so there is no device preprocessing, and ``"device"`` is the same
-        as ``"user"``.
-
     """
-    if _is_qjit(qnode):
-        qnode = qnode.original_function
-    if not isinstance(qnode, QNode):
-        raise ValueError(
-            "Can only retrieve the compile pipeline of a QNode or a qjit'd QNode, instead got: "
-            f"{qnode}."
-        )
-
-    pipeline = qnode.compile_pipeline
+    pipeline = unwrap_qjit_qnode(qnode, fn_name="get_compile_pipeline").compile_pipeline
     pipelines = [
         pipeline_at_slice(pipeline, level_slice)
         for level_slice in levels_to_slices(level, pipeline)

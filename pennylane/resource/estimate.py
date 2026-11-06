@@ -29,8 +29,9 @@ from pennylane.workflow._levels import (
     unpack_single_entry,
     validate_level,
 )
+from pennylane.workflow.get_compile_pipeline import unwrap_qjit_qnode
 
-from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial, unwrap_qjit_qnode
+from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial
 from .mlir_specs import resources_from_analysis_pass
 from .resource import CircuitSpecs
 

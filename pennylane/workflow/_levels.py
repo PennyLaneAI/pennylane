@@ -51,19 +51,12 @@ def unpack_single_entry(level):
     return level
 
 
-def _has_device_preprocessing(pipeline: CompilePipeline) -> bool:
-    """Whether the device preprocessing is applied after ``pipeline``, which is not the case for an
-    informative pipeline, since the device does not execute it."""
-    return not pipeline.is_informative
-
-
 def device_level(pipeline: CompilePipeline) -> int:
     """The level number right after the device preprocessing, which counts as a single transform
     after the user-applied transforms of ``pipeline``.
 
-    This is also the number of transforms, including the device preprocessing. Without device
-    preprocessing, the device level is the same as the user level."""
-    return len(pipeline) + 1 if _has_device_preprocessing(pipeline) else len(pipeline)
+    This is also the number of transforms, including the device preprocessing."""
+    return len(pipeline) + 1
 
 
 def level_to_number(level: str | int, pipeline: CompilePipeline) -> int:
@@ -198,9 +191,7 @@ def pipeline_at_slice(pipeline: CompilePipeline, level_slice: slice) -> CompileP
     """Return the compile pipeline selected by ``level_slice`` from ``pipeline`` followed by the
     device preprocessing."""
     _validate_slice(level_slice, pipeline)
-    full_pipeline = (
-        pipeline + DEVICE_PREPROCESSING if _has_device_preprocessing(pipeline) else pipeline
-    )
+    full_pipeline = pipeline + DEVICE_PREPROCESSING
 
     start, stop, step = level_slice.indices(len(full_pipeline))
     if step == 1:

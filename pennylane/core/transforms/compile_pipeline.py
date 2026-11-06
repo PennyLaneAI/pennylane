@@ -209,8 +209,7 @@ class CompilePipeline:
             qp.RX(y, wires=0)
             return qp.expval(qp.Z(1))
 
-    >>> from pennylane.workflow import get_compile_pipeline
-    >>> print(get_compile_pipeline(circuit))
+    >>> print(circuit.compile_pipeline)
     CompilePipeline(
        ├─▶ no-transforms
       [0] commute_controlled(),

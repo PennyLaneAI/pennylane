@@ -33,8 +33,9 @@ from pennylane.workflow._levels import (
     unpack_single_entry,
     validate_level,
 )
+from pennylane.workflow.get_compile_pipeline import unwrap_qjit_qnode
 
-from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial, unwrap_qjit_qnode
+from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial
 from .resource import CircuitSpecs, SpecsResources
 
 # Used for device-level qjit resource tracking

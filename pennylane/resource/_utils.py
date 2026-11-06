@@ -22,8 +22,6 @@ Common utility functions for processing resource information
 from collections.abc import Iterable
 from functools import partial, wraps
 
-from pennylane.workflow import QNode
-
 from .resource import CircuitSpecs
 
 
@@ -48,25 +46,6 @@ def apply_partial_args(fn, args, kwargs):
         return fn(*args, *call_args, **{**kwargs, **call_kwargs})
 
     return wrapper
-
-
-def unwrap_qjit_qnode(qjit, *, fn_name: str) -> QNode:
-    """Return the QNode underlying a qjit'd workflow, raising a helpful error otherwise.
-
-    ``fn_name`` is the name of the public function to report in the error message.
-    """
-    # pylint: disable=import-outside-toplevel
-    # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
-    try:
-        from catalyst import QJIT
-    except ImportError as exc:  # pragma: no cover
-        raise ImportError(f"Catalyst must be installed to use {fn_name}.") from exc
-
-    # Unwrap the original QNode if any transforms have been applied
-    if isinstance(qjit, QJIT) and isinstance(qjit.original_function, QNode):
-        return qjit.original_function
-
-    raise ValueError(f"{fn_name} can only be applied to a qjit'd QNode, instead got: {qjit}")
 
 
 def check_no_tape_transforms(compile_pipeline) -> None:
