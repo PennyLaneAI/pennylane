@@ -68,7 +68,7 @@ importing PennyLane in Python.
 
 .. note::
 
-    Due to the use of :ref:`entry points <installing_plugin>` to install
+    Due to the use of :ref:`entry points <registering_device>` to install
     plugins, changes to PennyLane device class locations or shortnames
     requires ``pip install -e .`` to be re-run in the plugin repository
     for the changes to take effect.

@@ -68,7 +68,7 @@ class TestSpecsTransform:
             qp.RZ(z, wires=0)
             return qp.expval(qp.Z(0))
 
-        specs = qp.specs(partial(circuit, 0.1, z=0.3), level="all")(0.2)
+        specs = qp.specs(partial(circuit, 0.1, z=0.3), level="all-user")(0.2)
 
         assert specs["level"] == {0: "Before MLIR Passes"}
         resources = specs["resources"]["Before MLIR Passes"]
@@ -347,7 +347,7 @@ class TestPassByPassSpecs:
             ValueError,
             match=r"Encountered the following tape transforms: .*dummy_transform.*\. Tape transforms are no longer supported.",
         ):
-            qp.specs(simple_circuit, level="all")()
+            qp.specs(simple_circuit, level="all-user")()
 
     def test_depth_warning(self, simple_circuit):
         """Test that a warning is raised if the user has requested circuit depth but the QNode has not been compiled."""
@@ -357,7 +357,7 @@ class TestPassByPassSpecs:
             UserWarning,
             match="Cannot calculate circuit depth before applying all transforms",
         ):
-            qp.specs(simple_circuit, level="all", compute_depth=True)()
+            qp.specs(simple_circuit, level="all-user", compute_depth=True)()
 
     def test_basic_passes_multi_level(self, simple_circuit):
         """Test that when passes are applied, the circuit resources are updated accordingly."""
@@ -399,7 +399,7 @@ class TestPassByPassSpecs:
             },
         )
 
-        actual = qp.specs(simple_circuit, level="all")()
+        actual = qp.specs(simple_circuit, level="all-user")()
 
         assert actual == expected
 
@@ -462,7 +462,7 @@ class TestPassByPassSpecs:
             },
         )
 
-        actual = qp.specs(simple_circuit, level="all")()
+        actual = qp.specs(simple_circuit, level="all-user")()
 
         assert actual == expected
 
@@ -486,7 +486,7 @@ class TestPassByPassSpecs:
 
         circ = qp.qjit(circ)
 
-        actual = qp.specs(circ, level="all")(3)
+        actual = qp.specs(circ, level="all-user")(3)
         expected = CircuitSpecs(
             device_name="lightning.qubit",
             num_device_wires=2,
@@ -973,7 +973,7 @@ class TestSymbolicSpecs:
                     qp.Hadamard(0)
             return qp.expval(qp.PauliX(0))
 
-        s = qp.specs(circuit, level="all")(3, 5)
+        s = qp.specs(circuit, level="all-user")(3, 5)
         assert s.level == {0: "Before MLIR Passes", 1: "cancel-inverses"}
         assert s.device_name == "lightning.qubit"
         all_res = s.resources
@@ -1390,7 +1390,7 @@ class TestMarkerIntegration:
         assert actual == expected
 
     def test_multi_marker_all(self, simple_circuit):
-        """Tests that markers work with level="all"."""
+        """Tests that markers work with level="all-user"."""
 
         simple_circuit = qp.marker(simple_circuit, "before")
         simple_circuit = qp.transforms.cancel_inverses(simple_circuit)
@@ -1426,7 +1426,7 @@ class TestMarkerIntegration:
             },
         )
 
-        actual = qp.specs(qjit_circuit, level="all")()
+        actual = qp.specs(qjit_circuit, level="all-user")()
 
         assert actual == expected
 

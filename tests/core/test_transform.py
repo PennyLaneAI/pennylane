@@ -17,6 +17,7 @@ import inspect
 from collections.abc import Callable, Sequence
 from functools import partial
 
+import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
@@ -340,25 +341,24 @@ class TestTransform:  # pylint: disable=too-many-public-methods
     """Test the transform function (validate and dispatch)."""
 
     @pytest.mark.catalyst
-    def test_error_on_qjit(self):
-        """Test that an error is raised on when applying a transform to a qjit object."""
+    def test_transform_on_qjit(self):
+        """Test that applying a transform to a qjit object transforms the wrapped workflow."""
 
-        pytest.importorskip("catalyst")
+        import catalyst
 
         @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=1))
         def cost():
             qp.RY(0.1, wires=0)
-            qp.RY(0.1, wires=0)
+            qp.RY(0.2, wires=0)
             return qp.expval(qp.Z(0))
 
         dispatched_transform = qp.transform(first_valid_transform)
+        transformed = dispatched_transform(cost, index=0)
 
-        with pytest.raises(
-            TransformError,
-            match=r"Functions that are wrapped / decorated with qjit cannot subsequently",
-        ):
-            dispatched_transform(cost)
+        assert isinstance(transformed, catalyst.QJIT)
+        assert np.allclose(transformed(), np.cos(0.2))
+        assert np.allclose(cost(), np.cos(0.3))
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_integration_dispatcher_with_valid_transform(self, valid_transform):

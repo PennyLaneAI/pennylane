@@ -1,3 +1,12 @@
+<img src="https://assets.cloud.pennylane.ai/pennylane_website/spotlights/Spotlight_PLSurvey_2024-03-05.png"
+     width="200px"
+     align="left" />
+
+Share your voice in the 2026 Unitary Foundation Survey to guide where open-source quantum software goes next (closes October 29, 2026). [Take the survey →](https://bit.ly/47BX7Oi)
+
+<br clear=left>
+<br>
+
 <p align="center">
   <!-- Tests (GitHub actions) -->
   <a href="https://github.com/PennyLaneAI/pennylane/actions?query=workflow%3ATests">

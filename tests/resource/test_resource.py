@@ -872,6 +872,7 @@ class TestPBCSpecsResources:
         )
 
     def test_pbc_depths_required(self):
+        # pylint: disable=missing-kwoa
         with pytest.raises(
             TypeError,
             match="missing 2 required keyword-only arguments: 'any_commuting_depth' and 'qubit_disjoint_depth'",

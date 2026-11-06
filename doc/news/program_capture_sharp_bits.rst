@@ -9,7 +9,7 @@ Program capture sharp bits
     Program capture is an experimental feature under active development.
     Bugs and unexpected behaviour may occur, and breaking changes are possible in future releases.
     Execution without Catalyst is no longer being developed or maintained; please use
-    program capture with Catalyst present only, which can be done with `qp.qjit(capture=True)`.
+    program capture with Catalyst present only, which can be done with `qp.qjit`.
 
 Program capture is a new feature of PennyLane that allows for compactly expressing 
 details about hybrid workflows, including quantum operations, classical processing, 
@@ -54,7 +54,7 @@ With program capture enabled, all devices that Catalyst supports require
 that ``wires`` be specified at device instantiation.
 
 >>> import pennylane as qp
->>> @qp.qjit(capture=True)
+>>> @qp.qjit
 ... @qp.qnode(qp.device('lightning.qubit'))
 ... def circuit():
 ...     qp.Hadamard(0)
@@ -67,7 +67,7 @@ NotImplementedError: devices must specify wires for integration with program cap
 
     import pennylane as qp
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.qnode(qp.device('lightning.qubit', wires=1))
     def circuit():
         qp.Hadamard(0)
@@ -96,7 +96,7 @@ please consult their respective documentation pages for information on gradient 
 
     dev = qp.device('lightning.qubit', wires=1)
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     def workflow(x):
 
         @qp.qnode(dev, diff_method="adjoint")
@@ -131,7 +131,7 @@ in quantum operations, and will result in an error:
 
     dev = qp.device('lightning.qubit', wires=["a", "b", "c"])
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.qnode(dev)
     def circuit():
         qp.MultiRZ(jnp.array(0.1), wires=["a", "b"])
@@ -148,7 +148,7 @@ TypeError: Argument 'a' of type <class 'str'> is not a valid JAX type
 
     dev = qp.device('lightning.qubit', wires=[0, 1, 2])
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.qnode(dev)
     def circuit():
         qp.MultiRZ(jnp.array(0.1), wires=[0, 1])
@@ -174,7 +174,7 @@ For example, the positional argument in ``qp.QubitUnitary`` can't be a ``list``:
 
     dev = qp.device('lightning.qubit', wires=2)
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.qnode(dev)
     def circuit():
         qp.QubitUnitary(my_unitary, wires=0)
@@ -194,7 +194,7 @@ But a ``list`` can be passed to ``qp.QubitUnitary`` as a keyword argument:
 
     dev = qp.device('lightning.qubit', wires=2)
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.qnode(dev)
     def circuit():
         qp.QubitUnitary(U=my_unitary, wires=0)
@@ -214,7 +214,7 @@ Using a ``jax.numpy.array`` as the positional argument gives expected behaviour:
 
     dev = qp.device('lightning.qubit', wires=2)
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.qnode(dev)
     def circuit():
         qp.QubitUnitary(my_unitary, wires=0)
@@ -241,7 +241,7 @@ For instance, consider this example with ``RZ``:
 
     dev = qp.device("lightning.qubit", wires=1)
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.qnode(dev)
     def circuit(angle):
         qp.RX(phi=angle, wires=0)
@@ -265,7 +265,7 @@ expected:
 
     dev = qp.device("lightning.qubit", wires=1)
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.qnode(dev)
     def circuit(angle):
         qp.RX(angle, wires=0)
@@ -284,7 +284,7 @@ program capture enabled, the representation of the program is fundamentally diff
 which will impact how you can manipulate and optimize circuits via transforms.
 
 In general, if a transform that is available in PennyLane only has a tape-compatible 
-definition, we do not recommend using it with ``@qjit(capture=True)``, though no 
+definition, we do not recommend using it with ``@qjit``, though no 
 errors may occur. Currently, this includes:
 
 * :func:`~.pennylane.transforms.combine_global_phases`
@@ -314,20 +314,20 @@ Drawing circuits
 Using :func:`~.pennylane.draw` or :func:`~.pennylane.draw_mpl` with program capture 
 and Catalyst may not produce correct results due to the dynamic nature of compiled
 programs. Instead, it is recommended to use :func:`catalyst.draw_graph`, which 
-will accurately depict the dynamicism of programs compiled with ``@qjit(capture=True)``.
+will accurately depict the dynamicism of programs compiled with ``@qjit``.
 
 Autograph and Pythonic control flow
 -----------------------------------
 
 Autograph is a feature that allows for users to use standard Pythonic control flow
 like ``for``, ``while``, etc., instead of :func:`~.pennylane.for_loop` and :func:`~.pennylane.while_loop` 
-and still have program structure preserved. This can be accessed with ``qjit(capture=True, autograph=True)``:
+and still have program structure preserved. This can be accessed with ``qjit(autograph=True)``:
 
 .. code-block:: python
 
     import pennylane as qp
 
-    @qp.qjit(capture=True, autograph=True)
+    @qp.qjit(autograph=True)
     @qp.qnode(qp.device("lightning.qubit", wires=2))
     def circuit():
         for _ in range(1000000):
@@ -379,7 +379,7 @@ Instead, it is best practice to `use jax.vmap <https://docs.jax.dev/en/latest/_a
 
     dev = qp.device("lightning.qubit", wires=1)
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.qnode(dev)
     def circuit(x):
         qp.RX(x, wires=0)
@@ -403,7 +403,7 @@ then a ``False`` branch much be provided that returns the same generic type:
 
     import pennylane as qp
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.qnode(qp.device("lightning.qubit", wires=2))
     def circuit():
 
@@ -425,7 +425,7 @@ is ``False``, a ``false_fn`` must be provided:
 
     import pennylane as qp
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.qnode(qp.device("lightning.qubit", wires=2))
     def circuit():
 
@@ -449,7 +449,7 @@ That, or the ``true_fn`` itself can be an operator type:
 
     import pennylane as qp
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.qnode(qp.device("lightning.qubit", wires=2))
     def circuit():
 
@@ -473,7 +473,7 @@ a QNode, and will raise an error:
 
     dev = qp.device("lightning.qubit", wires=1)
 
-    @qp.qjit(capture=True)
+    @qp.qjit
     @qp.qnode(dev)
     def circuit():
         mat = qp.matrix(qp.X(0))
