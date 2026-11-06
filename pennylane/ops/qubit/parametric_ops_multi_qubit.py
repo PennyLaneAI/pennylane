@@ -89,6 +89,20 @@ class MultiRZ(Operator2):
                 :image: /_static/decomposition_thumbnails/multirz_to_ppr.svg
 
                 :class:`PauliRot("Z...Z") <.PauliRot>` on :math:`n` wires | :math:`1` | 1
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/multirz_adjoint.svg
+                :region: adjoint
+                :where: ``theta`` changes sign
+
+                :class:`~.MultiRZ` | :math:`1`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/multirz_pow.svg
+                :region: pow
+                :where: ``theta`` is multiplied by the power :math:`z`
+
+                :class:`~.MultiRZ` | :math:`1`
     """
 
     dynamic_argnames = ("theta",)
@@ -308,6 +322,20 @@ class PauliRot(Operator2):
                 :class:`PPR_4(-1, "X") <.PPR_4>` | :math:`y` | 1
                 :class:`~.MultiRZ` on :math:`k` wires | :math:`[k > 0]` | 1
                 :class:`~.GlobalPhase` | :math:`[k = 0]` | 0
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/paulirot_adjoint.svg
+                :region: adjoint
+                :where: ``theta`` changes sign
+
+                :class:`~.PauliRot` | :math:`1`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/paulirot_pow.svg
+                :region: pow
+                :where: ``theta`` is multiplied by the power :math:`z`
+
+                :class:`~.PauliRot` | :math:`1`
     """
 
     num_params = 1
@@ -687,6 +715,13 @@ class PCPhase(Operator2):
                 :class:`~.PhaseShift` with :math:`i` controls | :math:`M` | 2
                 :class:`~.X` | :math:`2M_+` | 2
                 :class:`~.GlobalPhase` | :math:`1` | 1
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/pcphase_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.PCPhase` | :math:`1`
 
     .. details::
         :title: Decomposition
@@ -1101,6 +1136,20 @@ class IsingXX(Operator2):
                 :image: /_static/decomposition_thumbnails/isingxx_ppr.svg
 
                 :class:`PauliRot("XX") <.PauliRot>` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/isingxx_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.IsingXX` | :math:`1`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/isingxx_pow.svg
+                :region: pow
+                :where: ``phi`` is multiplied by the power :math:`z`
+
+                :class:`~.IsingXX` | :math:`1`
     """
 
     dynamic_argnames = ("phi",)
@@ -1248,6 +1297,20 @@ class IsingYY(Operator2):
                 :image: /_static/decomposition_thumbnails/isingyy_ppr.svg
 
                 :class:`PauliRot("YY") <.PauliRot>` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/isingyy_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.IsingYY` | :math:`1`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/isingyy_pow.svg
+                :region: pow
+                :where: ``phi`` is multiplied by the power :math:`z`
+
+                :class:`~.IsingYY` | :math:`1`
     """
 
     dynamic_argnames = ("phi",)
@@ -1417,6 +1480,21 @@ class IsingZZ(Operator2):
                 :class:`~.CNOT` | :math:`2` | 2
                 :class:`Controlled(RZ) <.Controlled>` | :math:`1` | 1
                 :class:`~.PauliX` | :math:`2z` | 0
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/isingzz_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.IsingZZ` | :math:`1`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/isingzz_pow.svg
+                :region: pow
+                :where: ``phi`` is multiplied by the power :math:`z`
+
+                :class:`~.IsingZZ` | :math:`1`
+
     """
 
     dynamic_argnames = ("phi",)
@@ -1641,6 +1719,20 @@ class IsingXY(Operator2):
                 :class:`~.CY` | :math:`2`
                 :class:`~.RY` | :math:`1`
                 :class:`~.RX` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/isingxy_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.IsingXY` | :math:`1`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/isingxy_pow.svg
+                :region: pow
+                :where: ``phi`` is multiplied by the power :math:`z`
+
+                :class:`~.IsingXY` | :math:`1`
     """
 
     dynamic_argnames = ("phi",)
