@@ -142,16 +142,21 @@ class PhaseAdder(Operator2):
         work_wire = Wires(() if work_wire is None else work_wire)
         x_wires = Wires(x_wires)
 
+        num_x_wires = len(x_wires)
+        max_mod = 2 ** num_x_wires
+
         if mod is None:
-            mod = 2 ** len(x_wires)
-        elif mod != 2 ** len(x_wires) and len(work_wire) != 1:
-            raise ValueError(f"If mod is not 2^{len(x_wires)}, one work wire should be provided.")
+            mod = max_mod
+        elif mod != max_mod and len(work_wire) != 1:
+            raise ValueError(f"If mod is not 2^{num_x_wires}, one work wire should be provided.")
+            
         if not isinstance(mod, int):
             raise ValueError("Both k and mod must be integers")
-        if mod > 2 ** len(x_wires):
+            
+        if mod > max_mod:
             raise ValueError(
                 "PhaseAdder must have enough x_wires to represent mod. The maximum mod "
-                f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
+                f"with len(x_wires)={num_x_wires} is {max_mod}, but received {mod}."
             )
         validate_no_wire_overlaps({"x_wires": x_wires, "work_wire": work_wire})
         super().__init__(k=k, x_wires=x_wires, mod=mod, work_wire=work_wire)
