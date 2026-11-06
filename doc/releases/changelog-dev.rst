@@ -213,7 +213,6 @@ New features since last release
   `(#10120) <https://github.com/PennyLaneAI/pennylane/pull/10120>`__
   `(#10340) <https://github.com/PennyLaneAI/pennylane/pull/10340>`__
   `(#10450) <https://github.com/PennyLaneAI/pennylane/pull/10450>`__
-  `(#XXXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXXX>`__
 
 * Three new operators called :class:`pennylane.PPR_2`, :class:`pennylane.PPR_4` and
   :class:`pennylane.PPR_8` have been added, which represent the Pauli product rotations
