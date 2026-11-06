@@ -4,12 +4,12 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* The new :class:`~.QROMLoad` loads bitstrings into a target register that starts in the zero
+* The new :class:`~.QROMLoad` operator loads bitstrings into a target register that starts in the all-zero
   state. Unlike :class:`~.QROM`, which XORs the bitstrings onto arbitrary target states, it can use
   extra work wires for the cheaper Select-SWAP decomposition. It picks the number of bitstrings to
   load in parallel that minimizes the cost, and its controlled ``SWAP`` gates borrow an idle work
   wire. Use its adjoint to unload the data again.
-  :func:`~pennylane.draw` renders ``QROMLoad`` and its adjoint like ``QROM``. The phase gradient
+  The phase gradient
   decomposition from :func:`~.make_selectpaulirot_to_phase_gradient_decomp` now loads the rotation
   angles with ``QROMLoad``.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
