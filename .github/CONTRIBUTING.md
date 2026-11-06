@@ -83,7 +83,7 @@ page for more information.
   agnostic. Users can switch a circuit's device to any other compatible device with barely any code
   changes. We would love to support even more devices and quantum frameworks. If you would like to
   write a PennyLane plugin, see the page on
-  ["Building a plugin"](https://pennylane.readthedocs.io/en/stable/development/plugins.html).
+  ["Building a device"](https://docs.pennylane.ai/en/stable/development/plugins.html).
 
 Did we catch your interest?
 
