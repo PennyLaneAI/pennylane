@@ -100,7 +100,7 @@ def level_to_number(level: str | int, pipeline: CompilePipeline) -> int:
 def _level_numbers(level: str | int | Sequence[str | int], pipeline: CompilePipeline) -> list[int]:
     """Convert ``level``, other than a ``slice``, to the numbers of the levels it selects, in the
     order of a ``Sequence``."""
-    # The ``isinstance`` checks avoid elementwise comparisons, e.g. with NumPy arrays
+    # The ``isinstance`` checks avoid elementwise comparisons
     if isinstance(level, str) and level == "all-user":
         # From level 0 up to the user level, included
         return list(range(len(pipeline) + 1))

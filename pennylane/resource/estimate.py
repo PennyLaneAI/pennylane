@@ -58,7 +58,7 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
     validate_level(level, compile_pipeline)
     single_level = unpack_single_entry(level)
 
-    # The ``isinstance`` check avoids elementwise comparisons, e.g. with NumPy arrays
+    # The ``isinstance`` check avoids elementwise comparisons
     if isinstance(single_level, str) and single_level == "device":
         raise NotImplementedError("qp.estimate does not support level='device' yet.")
     if isinstance(single_level, slice):

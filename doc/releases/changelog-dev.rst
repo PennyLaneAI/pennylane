@@ -1504,29 +1504,14 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
-* :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly, so
-  ``get_compile_pipeline(qnode, level)(*args, **kwargs)`` becomes
-  ``get_compile_pipeline(qnode, level)``. The gradient and device preprocessing transforms are
-  no longer listed individually, but shown as a single ``Device Preprocessing`` level, and
-  ``level="gradient"`` is no longer supported. The device preprocessing transforms that are
-  applied on execution can be retrieved with ``qnode.device.preprocess_transforms(config)``,
-  where ``config = qp.workflow.construct_execution_config(qnode)(*args, **kwargs)``, and the
-  transform required by the gradient method, if any, is
-  ``config.gradient_method.expand_transform``. The tapes produced by the individual gradient and
-  device preprocessing transforms can still be inspected with :func:`~.workflow.construct_batch`.
-  `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
-
-* Printed :class:`~.CompilePipeline` transforms are now numbered from ``[0]``, and
-  ``"all-user"`` can no longer be used as a marker label. Applying a :class:`~.CompilePipeline`
-  to no arguments, to numbers or arrays, or to a sequence that is not a batch of tapes now
-  raises a ``TypeError``, so that the previous ``get_compile_pipeline(qnode, level)(*args)``
-  usage fails with an informative error. Only calls with no arguments, or with a number, an
-  array, or a sequence as first argument are detected, so a QNode whose first argument is, for
-  example, a ``dict`` or a callable gets no such migration error.
-  `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
-
-* Several levels passed to :func:`~.analyze` must now be a ``Sequence``, such as a ``list`` or
-  a ``tuple``.
+* :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly: use
+  ``get_compile_pipeline(qnode, level)`` instead of
+  ``get_compile_pipeline(qnode, level)(*args, **kwargs)``. The gradient and device preprocessing
+  transforms are shown as a single ``Device Preprocessing`` level, and ``level="gradient"`` is
+  no longer supported. Printed :class:`~.CompilePipeline` transforms are numbered from ``[0]``,
+  and ``"all-user"`` can no longer be used as a marker label. The ``level`` argument of
+  :func:`~.analyze`, :func:`~pennylane.estimate` and :func:`~.track` now follows
+  :func:`~.workflow.get_compile_pipeline`.
   `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
 * ``qp.ctrl`` now constructs symbolic controlled operators without dispatching to specialized

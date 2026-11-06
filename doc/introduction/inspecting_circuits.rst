@@ -137,8 +137,8 @@ Total wires: 4
 Circuit Depth: Not computed
 
 The :func:`~pennylane.estimate` function provides fast resource estimates of a quantum circuit by
-analyzing decomposition pathways to a target gate set with respect to the specified level of
-compilation. In the following example, circuit compilation via the specified pipeline (just a
+analyzing decomposition pathways to a target gate set with respect to the specified ``level``
+(see :func:`~.workflow.get_compile_pipeline`). In the following example, circuit compilation via the specified pipeline (just a
 single :func:`~.cancel_inverses`) is bypassed with ``level=0``, and specifying a ``target`` gate
 set will analyze decomposition pathways to that gate set on the uncompiled circuit.
 
