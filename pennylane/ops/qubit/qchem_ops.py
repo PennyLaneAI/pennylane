@@ -210,11 +210,10 @@ class SingleExcitation(Operator2):
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
-    # pylint: disable-next=unused-argument
     @staticmethod
     def compute_matrix(
-        phi: TensorLike, wires=None
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+        phi: TensorLike, wires=None  
+    ) -> TensorLike:  # pylint: disable=arguments-differ, unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1238,6 +1237,9 @@ class OrbitalRotation(Operator2):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     def generator(self) -> "qp.Hamiltonian":
         w0, w1, w2, w3 = self.wires
         return qp.Hamiltonian(
@@ -1267,7 +1269,7 @@ class OrbitalRotation(Operator2):
     @staticmethod
     def compute_matrix(
         phi: TensorLike, wires: WiresLike = None
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    ) -> TensorLike:  # pylint: disable=arguments-differ, unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1430,7 +1432,7 @@ class FermionicSWAP(Operator2):
     # pylint: disable-next=unused-argument
     def compute_matrix(
         phi: TensorLike, wires: WiresLike = None
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    ) -> TensorLike:  # pylint: disable=arguments-differ, unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1487,6 +1489,7 @@ class FermionicSWAP(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "FSWAP", cache=cache)
 
 
+# pylint: disable-next=unused-argument
 def _fermionic_swap_decomp_resources(phi: TensorLike = None, wires: WiresLike = None):
     return {
         qp.Hadamard: 4,
