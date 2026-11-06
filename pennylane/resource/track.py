@@ -20,10 +20,19 @@ import json
 import os
 import tempfile
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from functools import partial
 from pathlib import Path
 from typing import Any
+
+from pennylane.workflow._levels import (
+    device_level,
+    is_single_level,
+    level_to_number,
+    pipeline_at_slice,
+    unpack_single_entry,
+    validate_level,
+)
 
 from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial, unwrap_qjit_qnode
 from .resource import CircuitSpecs, SpecsResources
@@ -83,19 +92,32 @@ def _track_qjit(func, level, *args, **kwargs) -> tuple[Any, CircuitSpecs]:
     """Execute a qjit'd QNode on ``null.qubit`` and return its result along with its specs."""
     original_qnode = unwrap_qjit_qnode(func, fn_name="qp.track")
 
-    if level != "device":
+    compile_pipeline = original_qnode.compile_pipeline
+    validate_level(level, compile_pipeline)
+    single_level = unpack_single_entry(level)
+    if isinstance(single_level, slice):
+        # A slice that selects all the transforms, including the device preprocessing
+        is_device = pipeline_at_slice(compile_pipeline, single_level) == pipeline_at_slice(
+            compile_pipeline, slice(0, None)
+        )
+    else:
+        is_device = is_single_level(single_level) and level_to_number(
+            single_level, compile_pipeline
+        ) == device_level(compile_pipeline)
+    if not is_device:
         raise NotImplementedError(f"qp.track only supports level='device', instead got: {level!r}.")
 
     results, resources = _run_with_resource_tracking(
         func, original_qnode, *args, compute_depth=True, **kwargs
     )
 
-    return results, build_circuit_specs(original_qnode, resources, level)
+    # TODO: report the actual level once levels other than the device level are supported
+    return results, build_circuit_specs(original_qnode, resources, "device")
 
 
 def track(
     qnode,
-    level: str = "device",
+    level: str | int | slice | Sequence[str | int] = "device",
 ) -> Callable[..., tuple[Any, CircuitSpecs]]:
     r"""Executes a quantum circuit and tracks the resources it uses.
 
@@ -108,9 +130,10 @@ def track(
             ``functools.partial`` wrappers around supported callables are also accepted.
 
     Keyword Args:
-        level (str): The level at which to track resources. Only ``"device"`` is currently
-            supported, meaning that resources are counted after all user-specified transforms
-            and device preprocessing transforms have been applied.
+        level (str | int | slice | Sequence[str | int]): The portion of the
+            :class:`~.CompilePipeline` to apply before executing the circuit and tracking its
+            resources. Accepts the same values as :func:`~.workflow.get_compile_pipeline`.
+            Currently, only ``"device"`` is supported. Defaults to ``"device"``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
@@ -118,7 +141,7 @@ def track(
         :class:`~.resource.CircuitSpecs` object containing the ``qnode`` specifications,
         including gate and measurement data, total wires, device information, shots, and more.
 
-    .. seealso:: :func:`~.estimate`, :func:`~.analyze`
+    .. seealso:: :func:`~pennylane.estimate`, :func:`~.analyze`
 
     .. note::
 

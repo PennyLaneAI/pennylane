@@ -23,6 +23,7 @@ from collections.abc import Sequence
 from copy import copy
 from enum import StrEnum
 from functools import partial
+from numbers import Number
 from typing import TYPE_CHECKING, Any, overload
 
 import jax
@@ -47,6 +48,38 @@ class ProtectedLevel(StrEnum):
     GRADIENT = "gradient"
     DEVICE = "device"
     ALL = "all"
+    ALL_USER = "all-user"
+
+
+_DEVICE_PREPROCESSING_ERROR = (
+    "The device preprocessing in a compile pipeline returned by get_compile_pipeline is a "
+    "placeholder and cannot be applied. The device applies its preprocessing when the QNode "
+    "is executed."
+)
+
+
+def _device_preprocessing(tape):
+    """Placeholder for the device preprocessing in the compile pipelines returned by
+    :func:`~.workflow.get_compile_pipeline`."""
+    raise TransformError(_DEVICE_PREPROCESSING_ERROR)
+
+
+class _DevicePreprocessing(BoundTransform):
+    """The placeholder for the device preprocessing, displayed as ``Device Preprocessing``."""
+
+    def __call__(self, obj):
+        raise TransformError(_DEVICE_PREPROCESSING_ERROR)
+
+    def __repr__(self):
+        return "<Device Preprocessing>"
+
+
+DEVICE_PREPROCESSING = _DevicePreprocessing(Transform(_device_preprocessing))
+"""BoundTransform: The device preprocessing, which counts as a single level of a compile pipeline.
+
+It is a placeholder that cannot be applied, since the device applies its preprocessing when the
+QNode is executed.
+"""
 
 
 def _batch_postprocessing(
@@ -177,12 +210,12 @@ class CompilePipeline:
             return qp.expval(qp.Z(1))
 
     >>> from pennylane.workflow import get_compile_pipeline
-    >>> print(get_compile_pipeline(circuit)(0.1, 0.2))
+    >>> print(get_compile_pipeline(circuit))
     CompilePipeline(
        ├─▶ no-transforms
-      [1] commute_controlled(),
-      [2] cancel_inverses(recursive=True),
-      [3] merge_rotations()
+      [0] commute_controlled(),
+      [1] cancel_inverses(recursive=True),
+      [2] merge_rotations()
     )
 
     >>> print(qp.draw(circuit, level="no-transforms")(0.1, 0.2)) # or level=0
@@ -202,8 +235,8 @@ class CompilePipeline:
         >>> pipeline = qp.transforms.merge_rotations + qp.transforms.cancel_inverses(recursive=True)
         >>> print(pipeline)
         CompilePipeline(
-          [1] merge_rotations(),
-          [2] cancel_inverses(recursive=True)
+          [0] merge_rotations(),
+          [1] cancel_inverses(recursive=True)
         )
 
         Or multiplied by a scalar via ``*``:
@@ -211,10 +244,10 @@ class CompilePipeline:
         >>> pipeline += 2 * qp.transforms.commute_controlled
         >>> print(pipeline)
         CompilePipeline(
-          [1] merge_rotations(),
-          [2] cancel_inverses(recursive=True),
-          [3] commute_controlled(),
-          [4] commute_controlled()
+          [0] merge_rotations(),
+          [1] cancel_inverses(recursive=True),
+          [2] commute_controlled(),
+          [3] commute_controlled()
         )
 
         A compilation pipeline can also be easily modified using operations similar to Python lists, including
@@ -223,11 +256,11 @@ class CompilePipeline:
         >>> pipeline.insert(0, qp.transforms.remove_barrier)
         >>> print(pipeline)
         CompilePipeline(
-          [1] remove_barrier(),
-          [2] merge_rotations(),
-          [3] cancel_inverses(recursive=True),
-          [4] commute_controlled(),
-          [5] commute_controlled()
+          [0] remove_barrier(),
+          [1] merge_rotations(),
+          [2] cancel_inverses(recursive=True),
+          [3] commute_controlled(),
+          [4] commute_controlled()
         )
 
         Additionally, multiple compilation pipelines can be concatenated:
@@ -235,13 +268,13 @@ class CompilePipeline:
         >>> another_pipeline = qp.transforms._tape_decompose(gate_set={qp.RX, qp.RZ, qp.CNOT}) + qp.transforms.combine_global_phases
         >>> print(another_pipeline + pipeline)
         CompilePipeline(
-          [1] _tape_decompose(gate_set=...),
-          [2] combine_global_phases(),
-          [3] remove_barrier(),
-          [4] merge_rotations(),
-          [5] cancel_inverses(recursive=True),
-          [6] commute_controlled(),
-          [7] commute_controlled()
+          [0] _tape_decompose(gate_set=...),
+          [1] combine_global_phases(),
+          [2] remove_barrier(),
+          [3] merge_rotations(),
+          [4] cancel_inverses(recursive=True),
+          [5] commute_controlled(),
+          [6] commute_controlled()
         )
 
         We can create a new pipeline that will do multiple passes of the original with multiplication:
@@ -249,10 +282,10 @@ class CompilePipeline:
         >>> original = qp.transforms.merge_rotations + qp.transforms.cancel_inverses
         >>> print(2 * original)
         CompilePipeline(
-          [1] merge_rotations(),
-          [2] cancel_inverses(),
-          [3] merge_rotations(),
-          [4] cancel_inverses()
+          [0] merge_rotations(),
+          [1] cancel_inverses(),
+          [2] merge_rotations(),
+          [3] cancel_inverses()
         )
 
     .. details::
@@ -266,9 +299,9 @@ class CompilePipeline:
 
         >>> print(pipeline)
         CompilePipeline(
-          [1] commute_controlled(),
-          [2] cancel_inverses(),
-          [3] merge_rotations()
+          [0] commute_controlled(),
+          [1] cancel_inverses(),
+          [2] merge_rotations()
         )
 
         We can add markers (that act as checkpoints) in the pipeline to mark important positions,
@@ -276,19 +309,19 @@ class CompilePipeline:
         >>> pipeline.add_marker("final-transform")
         >>> print(pipeline)
         CompilePipeline(
-          [1] commute_controlled(),
-          [2] cancel_inverses(),
-          [3] merge_rotations()
+          [0] commute_controlled(),
+          [1] cancel_inverses(),
+          [2] merge_rotations()
            └─▶ final-transform
         )
 
         >>> pipeline.add_marker("after-commute-controlled", 1)
         >>> print(pipeline)
         CompilePipeline(
-          [1] commute_controlled(),
+          [0] commute_controlled(),
            ├─▶ after-commute-controlled
-          [2] cancel_inverses(),
-          [3] merge_rotations()
+          [1] cancel_inverses(),
+          [2] merge_rotations()
            └─▶ final-transform
         )
 
@@ -297,14 +330,14 @@ class CompilePipeline:
         >>> pipeline.add_marker("after-merge-rotations")
         >>> print(pipeline)
         CompilePipeline(
-          [1] commute_controlled(),
+          [0] commute_controlled(),
            ├─▶ after-commute-controlled
-          [2] cancel_inverses(),
-          [3] merge_rotations()
+          [1] cancel_inverses(),
+          [2] merge_rotations()
            └─▶ final-transform, after-merge-rotations
         )
 
-        A marker's level (the index of the transform it follows) can be retrieved with,
+        A marker's level (the number of transforms before it) can be retrieved with,
 
         >>> print(pipeline.get_marker_level("final-transform"))
         3
@@ -324,11 +357,11 @@ class CompilePipeline:
 
             CompilePipeline(
                 ├─▶ markers for level 0 (no transforms)
-               [1] transform_1(),
+               [0] transform_1(),
                 ├─▶ markers for level 1 (after 1st transform)
-               [2] transform_2(),
+               [1] transform_2(),
                ...
-               [n] transform_n()
+               [n-1] transform_n()
                 └─▶ markers for level n (after nth transform)
             )
 
@@ -336,24 +369,24 @@ class CompilePipeline:
 
         >>> pipeline * 2 # Markers are not duplicated
         CompilePipeline(
-          [1] <commute_controlled()>,
+          [0] <commute_controlled()>,
            ├─▶ after-commute-controlled
-          [2] <cancel_inverses()>,
-          [3] <merge_rotations()>,
+          [1] <cancel_inverses()>,
+          [2] <merge_rotations()>,
            ├─▶ after-merge-rotations
-          [4] <commute_controlled()>,
-          [5] <cancel_inverses()>,
-          [6] <merge_rotations()>
+          [3] <commute_controlled()>,
+          [4] <cancel_inverses()>,
+          [5] <merge_rotations()>
         )
 
         >>> pipeline + qp.transforms.undo_swaps
         CompilePipeline(
-          [1] <commute_controlled()>,
+          [0] <commute_controlled()>,
            ├─▶ after-commute-controlled
-          [2] <cancel_inverses()>,
-          [3] <merge_rotations()>,
+          [1] <cancel_inverses()>,
+          [2] <merge_rotations()>,
            ├─▶ after-merge-rotations
-          [4] <undo_swaps()>
+          [3] <undo_swaps()>
         )
 
         >>> pipeline.pop()
@@ -361,16 +394,16 @@ class CompilePipeline:
 
         >>> print(pipeline)
         CompilePipeline(
-          [1] commute_controlled(),
+          [0] commute_controlled(),
            ├─▶ after-commute-controlled
-          [2] cancel_inverses()
+          [1] cancel_inverses()
            └─▶ after-merge-rotations
         )
 
-        >>> pipeline[1:] # Get everything after the second transform
+        >>> pipeline[1:] # Get everything after the first transform
         CompilePipeline(
            ├─▶ after-commute-controlled
-          [1] <cancel_inverses()>
+          [0] <cancel_inverses()>
            └─▶ after-merge-rotations
         )
 
@@ -607,9 +640,7 @@ class CompilePipeline:
             return "..." if len(val_str) > _CHAR_THRESHOLD else val_str
 
         lines = []
-        inv_marker_map = defaultdict(list)
-        for label, index in self._markers.items():
-            inv_marker_map[index].append(label)
+        inv_marker_map = self._level_to_markers()
 
         if marker := inv_marker_map.get(0):
             symbol = "├─▶" if self else "└─▶"
@@ -625,8 +656,12 @@ class CompilePipeline:
                 if transform.tape_transform
                 else transform.pass_name
             )
-            transform_str = f"{transform_name}({args_str}{sep}{kwargs_str})"
-            lines.append(f"  [{i + 1}] {transform_str}" + "," * bool(i != len(self) - 1))
+            transform_str = (
+                "Device Preprocessing"
+                if isinstance(transform, _DevicePreprocessing)
+                else f"{transform_name}({args_str}{sep}{kwargs_str})"
+            )
+            lines.append(f"  [{i}] {transform_str}" + "," * bool(i != len(self) - 1))
 
             if marker := inv_marker_map.get(i + 1):
                 symbol = "├─▶" if i != len(self) - 1 else "└─▶"
@@ -641,16 +676,14 @@ class CompilePipeline:
         """The detailed string representation of the compile pipeline."""
 
         lines = []
-        inv_marker_map = defaultdict(list)
-        for label, index in self._markers.items():
-            inv_marker_map[index].append(label)
+        inv_marker_map = self._level_to_markers()
 
         if marker := inv_marker_map.get(0):
             symbol = "├─▶" if self else "└─▶"
             lines.append(f"   {symbol} {', '.join(marker)}")
 
         for i, transform in enumerate(self):
-            lines.append(f"  [{i + 1}] {repr(transform)}" + "," * bool(i != len(self) - 1))
+            lines.append(f"  [{i}] {repr(transform)}" + "," * bool(i != len(self) - 1))
             if marker := inv_marker_map.get(i + 1):
                 symbol = "├─▶" if i != len(self) - 1 else "└─▶"
                 lines.append(f"   {symbol} {', '.join(marker)}")
@@ -768,14 +801,14 @@ class CompilePipeline:
         >>> pipeline.add_marker("after-merge-rotations")
         >>> print(pipeline)
         CompilePipeline(
-          [1] merge_rotations()
+          [0] merge_rotations()
            └─▶ after-merge-rotations
         )
         >>> pipeline.add_marker("no-transforms", 0)
         >>> print(pipeline)
         CompilePipeline(
            ├─▶ no-transforms
-          [1] merge_rotations()
+          [0] merge_rotations()
            └─▶ after-merge-rotations
         )
         """
@@ -805,6 +838,13 @@ class CompilePipeline:
     def get_marker_level(self, label: str) -> int | None:
         """Retrieve the level corresponding to a marker label."""
         return self._markers.get(label)
+
+    def _level_to_markers(self) -> defaultdict[int, list[str]]:
+        """Map each level to the labels of the markers placed at that level."""
+        level_to_markers = defaultdict(list)
+        for label, level in self._markers.items():
+            level_to_markers[level].append(label)
+        return level_to_markers
 
     def add_transform(self, transform: Transform, *targs, **tkwargs):
         """Add a transform to the end of the program.
@@ -1015,15 +1055,38 @@ class CompilePipeline:
     ) -> tuple[QuantumScriptBatch, BatchPostprocessingFn]: ...
 
     def __call__(self, *args, **kwargs):
+        if not args:
+            raise TypeError(_invalid_call_message("no arguments"))
         first_arg = args[0]
 
         # Sequence of QuantumScripts: QuantumScriptBatch
         if isinstance(first_arg, (QuantumScript, Sequence)):
+            if isinstance(first_arg, str) or (
+                isinstance(first_arg, Sequence)
+                and not all(isinstance(tape, QuantumScript) for tape in first_arg)
+            ):
+                raise TypeError(_invalid_call_message(repr(first_arg)))
             return self.__call_tapes(*args, **kwargs)
+
+        # Numbers and arrays are circuit arguments, which cannot be transformed
+        if isinstance(first_arg, Number) or (
+            hasattr(first_arg, "shape") and hasattr(first_arg, "dtype")
+        ):
+            raise TypeError(_invalid_call_message(repr(first_arg)))
 
         # For any other object (QNode, device, callable, etc.),
         # chain-apply each transform using the generic dispatch system
         return self.__call_generic(first_arg)
+
+
+def _invalid_call_message(got: str) -> str:
+    """The error message for a ``CompilePipeline`` applied to an object it cannot transform."""
+    # TODO: Remove the note about get_compile_pipeline in 0.47 release
+    return (
+        "A CompilePipeline can only be applied to a QNode, a quantum function, a device, or a "
+        f"batch of tapes, instead got {got}. Note that get_compile_pipeline(qnode, level) now "
+        "returns the CompilePipeline directly, rather than a function of the QNode arguments."
+    )
 
 
 @Transform.generic_register

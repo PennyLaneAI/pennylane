@@ -51,7 +51,7 @@ class CapabilitiesDevice(qp.devices.NullQubit):
         return self._capabilities
 
 
-class TestAnalyze:
+class TestAnalyze:  # pylint: disable=too-many-public-methods
     """Test qp.analyze() with capture enabled and disabled."""
 
     @pytest.fixture
@@ -254,7 +254,74 @@ class TestAnalyze:
 
         assert specs.resources.counts == self.USER_COUNTS
 
-    @pytest.mark.parametrize("level", ["all-user", "all", "device"])
+    # Only merge_rotations is applied, so the X gates are not cancelled
+    MERGED_COUNTS = {"RX": 1, "PauliX": 2, "CNOT": 1}
+
+    @pytest.mark.parametrize(
+        "level, expected_level, expected_counts",
+        [
+            (slice(1, 2), "merge-rotations", MERGED_COUNTS),
+            (slice(1, 1), "Before MLIR Passes", TOP_COUNTS),
+            (slice(1, None), "Device Preprocessing", MERGED_COUNTS),
+            (slice(2, None), "Device Preprocessing", TOP_COUNTS),
+        ],
+    )
+    def test_slice_level(self, circuit, level, expected_level, expected_counts):
+        """Test that a slice only applies that portion of the compile pipeline, and gives the
+        resources at the end of it."""
+
+        specs = qp.analyze(circuit, level=level)(0.1)
+
+        assert specs.level == expected_level
+        assert specs.resources.counts == expected_counts
+
+    @pytest.mark.parametrize(
+        "level_slice, level",
+        [
+            (slice(0, 0), "top"),
+            (slice(0, 1), 1),
+            (slice(0, 2), "user"),
+            (slice(0, None), "device"),
+            (slice(0, 100), "device"),
+        ],
+    )
+    def test_slice_level_from_start(self, circuit, level_slice, level):
+        """Test that a slice from the start of the compile pipeline gives the same resources and
+        level name as the level at the end of the slice."""
+
+        specs = qp.analyze(circuit, level=level_slice)(0.1)
+        expected = qp.analyze(circuit, level=level)(0.1)
+
+        assert specs.level == expected.level
+        assert specs.resources == expected.resources
+
+    def test_slice_level_with_negative_bounds(self, circuit):
+        """Test that a slice with negative bounds is rejected, as in get_compile_pipeline."""
+
+        with pytest.raises(ValueError, match="the bounds of a slice must be non-negative"):
+            qp.analyze(circuit, level=slice(-2, -1))(0.1)
+
+    def test_slice_level_with_negative_step(self, circuit):
+        """Test that a slice with a negative step is rejected, as in get_compile_pipeline."""
+
+        with pytest.raises(ValueError, match="the step of a slice must be positive"):
+            qp.analyze(circuit, level=slice(None, None, -1))(0.1)
+
+    def test_slice_level_with_step_greater_than_one(self, circuit):
+        """Test that a slice with a step greater than 1 skips transforms, with a warning."""
+
+        with pytest.warns(UserWarning, match="has a step greater than 1"):
+            specs = qp.analyze(circuit, level=slice(0, None, 2))(0.1)
+
+        assert specs.level == "Device Preprocessing"
+
+    def test_empty_sequence_level(self, circuit):
+        """Test that an empty Sequence of levels is rejected, as in get_compile_pipeline."""
+
+        with pytest.raises(ValueError, match="does not select any level"):
+            qp.analyze(circuit, level=[])(0.1)
+
+    @pytest.mark.parametrize("level", ["all-user", "all", "device", 1, slice(0, None)])
     def test_device_level_requires_capture(self, level):
         """Device-containing levels require capture"""
 
@@ -278,6 +345,47 @@ class TestAnalyze:
 
         with pytest.raises(ValueError, match="Invalid level"):
             qp.analyze(circuit, level=level)(0.1)
+
+    def test_tape_transforms(self):
+        """Test that an error is raised if the user has applied tape transforms."""
+
+        @qp.transform
+        def dummy_transform(tape):
+            """Returns a tape-only transform that can be used for testing"""
+            return (tape,), lambda res: res[0]
+
+        @qp.qjit
+        @dummy_transform
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def circuit():
+            qp.Hadamard(0)
+            return qp.expval(qp.Z(0))
+
+        with pytest.raises(
+            ValueError,
+            match=r"Encountered the following tape transforms: .*dummy_transform.*\. Tape "
+            "transforms are no longer supported.",
+        ):
+            qp.analyze(circuit, level="all-user")()
+
+    @pytest.mark.parametrize("level", [0, slice(0, 0)])
+    def test_tape_transforms_after_level(self, level):
+        """Test that tape transforms after the analyzed level are allowed, since they are not
+        applied."""
+
+        @qp.transform
+        def dummy_transform(tape):
+            """Returns a tape-only transform that can be used for testing"""
+            return (tape,), lambda res: res[0]
+
+        @qp.qjit
+        @dummy_transform
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def circuit():
+            qp.Hadamard(0)
+            return qp.expval(qp.Z(0))
+
+        assert qp.analyze(circuit, level=level)().resources.counts == {"Hadamard": 1}
 
     def test_error_with_non_qjit(self):
         """Test that a helpful error message is raised if the input is not QJIT'd."""

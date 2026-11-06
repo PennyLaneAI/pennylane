@@ -232,8 +232,12 @@ Completed deprecation cycles
     qp.fourier.mark(qp.RX(0.5, wires=0), "x0")
 
 * The :func:`~pennylane.workflow.get_transform_program` function has been removed.
-  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
-  of a QNode.
+  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the compile pipeline
+  of a QNode, in which the device preprocessing is a single placeholder level. The device preprocessing transforms that
+  are applied on execution can be retrieved with ``qnode.device.preprocess_transforms(config)``, where
+  ``config = qp.workflow.construct_execution_config(qnode)(*args, **kwargs)``, and the transform required by the
+  gradient method, if any, is ``config.gradient_method.expand_transform``. The tapes produced by the individual
+  gradient and device preprocessing transforms can be inspected with :func:`~pennylane.workflow.construct_batch`.
 
   - Deprecated in v0.45
   - Removed in v0.46

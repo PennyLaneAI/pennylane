@@ -1364,6 +1364,13 @@ Improvements 🛠
   `(#10342) <https://github.com/PennyLaneAI/pennylane/pull/10342>`__
   `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
 
+* :func:`~.workflow.get_compile_pipeline` now supports ``level="device"`` for :func:`~.qjit`'d
+  QNodes, and ``level="all-user"``, ``"all"``, and a ``Sequence`` of levels for all QNodes. The
+  ``level`` argument of :func:`~.analyze` accepts the same values, including ``slice``, and
+  those of :func:`~pennylane.estimate` and :func:`~.track` are interpreted in the same way. The
+  levels are documented in a single place in :func:`~.workflow.get_compile_pipeline`.
+  `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
+
 Labs: a place for unified and rapid prototyping of research software 🧪
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1496,6 +1503,16 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
+
+* :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly: use
+  ``get_compile_pipeline(qnode, level)`` instead of
+  ``get_compile_pipeline(qnode, level)(*args, **kwargs)``. The gradient and device preprocessing
+  transforms are shown as a single ``Device Preprocessing`` level, and ``level="gradient"`` is
+  no longer supported. Printed :class:`~.CompilePipeline` transforms are numbered from ``[0]``,
+  and ``"all-user"`` can no longer be used as a marker label. The ``level`` argument of
+  :func:`~.analyze`, :func:`~pennylane.estimate` and :func:`~.track` now follows
+  :func:`~.workflow.get_compile_pipeline`.
+  `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
 * ``qp.ctrl`` now constructs symbolic controlled operators without dispatching to specialized
   gates such as ``CNOT`` or ``CRX``. Decomposition rules have been updated accordingly.
@@ -2247,6 +2264,11 @@ Internal changes ⚙️
 
 Documentation 📝
 ~~~~~~~~~~~~~~~~
+
+* The ``level`` argument of :func:`~.drawer.draw`, :func:`~.drawer.draw_mpl`,
+  :func:`~.workflow.construct_tape` and :func:`~.noise.add_noise` is now documented in
+  :func:`~.workflow.construct_batch`.
+  `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
 * The docstring for :class:`~.ControlledPhaseShift` now mentions that :class:`~.CPhase` is an alias.
   `(#10405) <https://github.com/PennyLaneAI/pennylane/pull/10405>`__

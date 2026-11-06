@@ -15,22 +15,50 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Sequence
 from functools import partial
+from typing import TYPE_CHECKING
 
 from pennylane import capture
+from pennylane.core.transforms import CompilePipeline
+from pennylane.workflow._levels import (
+    device_level,
+    is_single_level,
+    levels_to_numbers,
+    pipeline_at_slice,
+    split_device_preprocessing,
+)
 
 from ._utils import (
     apply_partial_args,
     build_circuit_specs,
-    get_marker_level_map,
-    preprocess_level_input,
+    check_no_tape_transforms,
     unwrap_partial,
     unwrap_qjit_qnode,
 )
 from .mlir_specs import resources_from_analysis_pass
 from .resource import CircuitSpecs, SpecsResources
+
+if TYPE_CHECKING:
+    from pennylane.workflow import QNode
+
+
+def _qnode_at_slice(qnode: QNode, level: slice) -> tuple[QNode, int]:
+    """Return a copy of ``qnode`` that only applies the compile pipeline selected by ``level``,
+    as given by :func:`~.workflow.get_compile_pipeline`, along with the level at which to analyze
+    the resources of the copy."""
+    # The device applies its preprocessing itself, after the other transforms
+    pipeline, has_device_preprocessing = split_device_preprocessing(
+        pipeline_at_slice(qnode.compile_pipeline, level)
+    )
+    if level.indices(device_level(qnode.compile_pipeline))[0] > 0:
+        # The markers describe the circuit after all the transforms before them, so they do not
+        # apply to a circuit where the transforms before the slice are skipped
+        pipeline = CompilePipeline(list(pipeline))
+    sliced_qnode = qnode.update_pipelines(
+        pipeline, post_device_pipeline=CompilePipeline(qnode.post_device_pipeline)
+    )
+    return sliced_qnode, device_level(pipeline) if has_device_preprocessing else len(pipeline)
 
 
 def _run_resource_analysis(func, original_qnode, level, *args, **kwargs) -> tuple[
@@ -41,26 +69,25 @@ def _run_resource_analysis(func, original_qnode, level, *args, **kwargs) -> tupl
 
     Returns the resources found at each level along with the name of each level.
     """
+    if isinstance(level, slice):
+        # Only apply the portion of the compile pipeline selected by the slice
+        original_qnode, level = _qnode_at_slice(original_qnode, level)
+
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
+    level_numbers = levels_to_numbers(level, compile_pipeline)
+    # Only the transforms up to the highest level are applied
+    check_no_tape_transforms(compile_pipeline[: max(level_numbers)])
 
-    return_single_level: bool = isinstance(level, (int, str)) and level not in ("all", "all-user")
-
-    has_device_level: bool = level in ("device", "all")
+    has_device_level: bool = device_level(compile_pipeline) in level_numbers
     if has_device_level:
         if not func.compile_options.capture or (
             func.compile_options.capture == "global" and not capture.enabled()
         ):
             raise ValueError("Device level is only supported when capture is enabled.")
 
-    # Easier to assume level is always a sorted list of int levels
-    level = preprocess_level_input(level, compile_pipeline)
-
-    # Map to convert back and forth between marker name and int level
-    marker_to_level = get_marker_level_map(compile_pipeline)
-    level_to_markers = defaultdict(list)  # Multiple markers can correspond to the same level
-    for marker, lvl in marker_to_level.items():
-        level_to_markers[lvl].append(marker)
+    # Levels with markers are named after them
+    markers_by_level = compile_pipeline._level_to_markers()  # pylint: disable=protected-access
 
     level_to_name: dict[int, str] = {}
 
@@ -68,15 +95,15 @@ def _run_resource_analysis(func, original_qnode, level, *args, **kwargs) -> tupl
     resources = resources_from_analysis_pass(
         func,
         original_qnode,
-        level,
-        level_to_markers,
+        level_numbers,
+        markers_by_level,
         level_to_name,
         *args,
         **kwargs,
     )
 
     # Unpack dictionary to single item if only 1 level was given as input
-    if return_single_level:
+    if is_single_level(level):
         resources = next(iter(resources.values()))
         level_to_name = next(iter(level_to_name.values()))
 
@@ -94,36 +121,24 @@ def _analyze_qjit(func, level, *args, **kwargs) -> CircuitSpecs:
 
 def analyze(
     qnode,
-    level: str | int | Iterable[int | str] = "user",
+    level: str | int | slice | Sequence[str | int] = "user",
 ) -> Callable[..., CircuitSpecs]:
     r"""Provides a compile-time resource estimate of a quantum circuit, obtained by analyzing its
     intermediate representation at the specified compilation level.
 
-    This transform converts a QNode into a callable that compiles the circuit up to ``level``
-    and inspects the resulting representation, without executing the circuit or unrolling its
+    This transform converts a QNode into a callable that compiles the circuit with the
+    portion(s) of its :class:`~.CompilePipeline` selected by ``level``, and inspects the
+    resulting representation, without executing the circuit or unrolling its
     control flow. The resource information is therefore subject to compile-time constraints.
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the (qjit'd) QNode for which to estimate resources.
             ``functools.partial`` wrappers around supported callables are also accepted.
-        level (str | int | Iterable[int | str]): The level of compilation at which to estimate
-            resources. Defaults to ``"user"``.
-
-            ``level`` accepts the following types:
-
-            * ``int``: The number of transforms to apply before analyzing resources.
-            * ``str``: One of the presets listed below, or the ``label`` of a :func:`~.marker`.
-            * ``iterable``: A ``list``, ``tuple``, or similar containing ``int`` or ``str`` values.
-              These should be sorted in ascending transform order with no duplicates. Resources will be analyzed for each provided level in the ``iterable``.
-
-            The following ``str`` presets are provided for ease of use:
-
-            * ``"top"``: Equivalent to ``0``; to analyze resources before any transforms have been applied.
-            * ``"user"``: To analyze resources after the user-specified transforms have been applied.
-            * ``"device"``: To analyze resources after the user-specified transforms and device preprocessing transforms have been applied.
-            * ``"all-user"``: To analyze resources at each stage of compilation with respect to user-specified transforms.
-            * ``"all"``: To analyze resources at each stage of compilation with respect
-              to user-specified and device preprocessing transforms.
+        level (str | int | slice | Sequence[str | int]): The portion of the
+            :class:`~.CompilePipeline` to apply before analyzing resources. Accepts the same
+            values as :func:`~.workflow.get_compile_pipeline`. If ``level`` is a ``Sequence``,
+            ``"all-user"``, or ``"all"``, resources are analyzed independently for each
+            provided case. Defaults to ``"user"``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
@@ -131,7 +146,7 @@ def analyze(
         including gate and measurement data, wire allocations, device information, shots, and
         more.
 
-    .. seealso:: :func:`~.estimate`, :func:`~.track`
+    .. seealso:: :func:`~pennylane.estimate`, :func:`~.track`
 
     **Example**
 
@@ -195,6 +210,12 @@ def analyze(
 
     >>> all_specs.resources["cancel-inverses"].quantum_operations
     {'CNOT': 1, 'RX': 2}
+
+    A ``slice`` only applies that portion of the compile pipeline. For example, the resources
+    after applying ``merge_rotations``, but not ``cancel_inverses``, are given by:
+
+    >>> qp.analyze(circuit, level=slice(1, 2))(1.23).resources.quantum_operations
+    {'CNOT': 1, 'PauliX': 2, 'RX': 1}
 
     .. details::
         :title: Compile-time constraints of resource analysis
