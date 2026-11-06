@@ -23,7 +23,7 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
-from pennylane.ops import CNOT, MultiControlledX, X
+from pennylane.ops import CNOT, MultiControlledX, PauliX
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint import adjoint
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -224,7 +224,7 @@ def _increment_resources(num_wires: int, num_control: int = 0) -> dict:
     for i in range(num_wires):
         num_controls = (num_wires - 1 - i) + num_control
         if num_controls == 0:
-            counts[X] += 1
+            counts[PauliX] += 1
         else:
             counts[MultiControlledX(Wire[num_controls + 1], work_wires=Wire[i])] += 1
     return dict(counts)
