@@ -35,6 +35,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qp
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator2, StatePrepBase2, abstractify
+from pennylane.core.operator.operator2 import OperatorRegistry, get_op_class_by_name
 from pennylane.core.queuing import AnnotatedQueue
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -52,6 +53,85 @@ from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
 from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Int, Wire
 from pennylane.wires import Wires
+
+
+class TestOperatorRegistry:
+    """Tests that operator classes are registered when they are defined."""
+
+    @pytest.mark.parametrize("op_class", (qp.Hadamard, qp.PauliX, qp.GlobalPhase))
+    def test_builtin_subclasses(self, op_class):
+        """Built-in operators are registered under their class names."""
+        assert issubclass(op_class, Operator2)
+        assert OperatorRegistry()[op_class.__name__] is op_class
+        assert get_op_class_by_name(op_class.__name__) is op_class
+
+    def test_user_defined_subclass(self):
+        """A custom operator is registered without constructing an instance."""
+
+        class RegistryCustomOp(Operator2):
+            """A user-defined operator with a wire argument."""
+
+            def __init__(self, wires):
+                raise AssertionError("Registration must not instantiate the operator")
+
+        assert OperatorRegistry()["RegistryCustomOp"] is RegistryCustomOp
+        assert get_op_class_by_name("RegistryCustomOp") is RegistryCustomOp
+
+    def test_indirect_subclass(self):
+        """An inherited custom operator has its own registry entry."""
+
+        class RegistryParentOp(Operator2):
+            """A user-defined parent operator."""
+
+            def __init__(self, wires):
+                raise AssertionError("Registration must not instantiate the operator")
+
+        class RegistryChildOp(RegistryParentOp):
+            """An operator inheriting from a user-defined operator."""
+
+        registry = OperatorRegistry()
+        assert registry["RegistryParentOp"] is RegistryParentOp
+        assert registry["RegistryChildOp"] is RegistryChildOp
+        assert get_op_class_by_name("RegistryChildOp") is RegistryChildOp
+
+    def test_duplicate_name(self):
+        """Duplicate names warn and preserve the first registered class."""
+
+        class RegistryDuplicateOp(Operator2):
+            """The first operator registered under this name."""
+
+            def __init__(self, wires):
+                raise AssertionError("Registration must not instantiate the operator")
+
+        original_class = RegistryDuplicateOp
+        with pytest.warns(
+            UserWarning,
+            match=r"More than one operator class by the same name \(RegistryDuplicateOp\)",
+        ):
+
+            # pylint: disable-next=function-redefined
+            class RegistryDuplicateOp(Operator2):
+                """A different operator with the same name."""
+
+                def __init__(self, wires):
+                    raise AssertionError("Registration must not instantiate the operator")
+
+        assert RegistryDuplicateOp is not original_class
+        assert OperatorRegistry()["RegistryDuplicateOp"] is original_class
+        assert get_op_class_by_name("RegistryDuplicateOp") is original_class
+
+    @pytest.mark.parametrize(
+        "lookup", (get_op_class_by_name, lambda name: OperatorRegistry()[name])
+    )
+    def test_unknown_name(self, lookup):
+        """Both lookup interfaces raise KeyError for an unregistered name."""
+
+        with pytest.raises(KeyError) as exc_info:
+            lookup("RegistryUnknownOp")
+
+        assert exc_info.value.args == (
+            "No defined Operator2 with the name RegistryUnknownOp found.",
+        )
 
 
 # pylint: disable=too-many-public-methods
@@ -2352,17 +2432,15 @@ class TestGraphDecomposition:
             def compute_decomposition(phi, wires):
                 return [qp.RZ(phi, wires=wires[0])]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RX: 1})
+        def use_rx(phi, wires, **__):
+            qp.RX(phi, wires=wires[0])
 
-            @qp.register_resources({qp.RX: 1})
-            def use_rx(phi, wires, **__):
-                qp.RX(phi, wires=wires[0])
+        qp.add_decomps(Op, use_rx)
 
-            qp.add_decomps(Op, use_rx)
-
-            decomp = Op(0.5, wires=0).decomposition()
-            assert len(decomp) == 1
-            assert qp.equal(decomp[0], qp.RZ(0.5, wires=0))
+        decomp = Op(0.5, wires=0).decomposition()
+        assert len(decomp) == 1
+        assert qp.equal(decomp[0], qp.RZ(0.5, wires=0))
 
     def test_registered_rule_used_as_fallback(self):
         """Without an overridden ``compute_decomposition``, a registered rule is used."""
@@ -2373,21 +2451,19 @@ class TestGraphDecomposition:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RX: 1})
+        def use_rx(phi, wires, **__):
+            qp.RX(phi, wires=wires)
 
-            @qp.register_resources({qp.RX: 1})
-            def use_rx(phi, wires, **__):
-                qp.RX(phi, wires=wires)
+        qp.add_decomps(Op, use_rx)
 
-            qp.add_decomps(Op, use_rx)
+        decomp = Op(0.5, wires=0).decomposition()
+        assert len(decomp) == 1
+        assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
 
-            decomp = Op(0.5, wires=0).decomposition()
-            assert len(decomp) == 1
-            assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
-
-            decomp2 = Op.compute_decomposition(0.5, wires=0)
-            assert len(decomp2) == 1
-            assert qp.equal(decomp2[0], qp.RX(0.5, wires=0))
+        decomp2 = Op.compute_decomposition(0.5, wires=0)
+        assert len(decomp2) == 1
+        assert qp.equal(decomp2[0], qp.RX(0.5, wires=0))
 
     def test_rule_receives_full_argument_model(self):
         """The rule is invoked with ``**op.arguments`` (dynamic, static, and wires)."""
@@ -2400,19 +2476,17 @@ class TestGraphDecomposition:
             def __init__(self, phi, label, wires):
                 super().__init__(phi, label, wires=wires)
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RX: 1, qp.RY: 1})
+        def rule(phi, label, wires, **__):
+            captured["phi"] = phi
+            captured["label"] = label
+            captured["wires"] = wires
+            qp.RX(phi, wires=wires[0])
+            qp.RY(phi, wires=wires[0])
 
-            @qp.register_resources({qp.RX: 1, qp.RY: 1})
-            def rule(phi, label, wires, **__):
-                captured["phi"] = phi
-                captured["label"] = label
-                captured["wires"] = wires
-                qp.RX(phi, wires=wires[0])
-                qp.RY(phi, wires=wires[0])
+        qp.add_decomps(Op, rule)
 
-            qp.add_decomps(Op, rule)
-
-            decomp = Op(0.6, "spin", wires=2).decomposition()
+        decomp = Op(0.6, "spin", wires=2).decomposition()
 
         assert captured["phi"] == 0.6
         assert captured["label"] == "spin"
@@ -2443,18 +2517,16 @@ class TestGraphDecomposition:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RX: 1, qp.RY: 1})
+        def rule(phi, wires, **__):
+            qp.RX(phi, wires=wires[0])
+            qp.RY(phi, wires=wires[0])
 
-            @qp.register_resources({qp.RX: 1, qp.RY: 1})
-            def rule(phi, wires, **__):
-                qp.RX(phi, wires=wires[0])
-                qp.RY(phi, wires=wires[0])
+        qp.add_decomps(Op, rule)
 
-            qp.add_decomps(Op, rule)
-
-            op = Op(0.5, wires=0)
-            with AnnotatedQueue() as q:
-                decomp = op.decomposition()
+        op = Op(0.5, wires=0)
+        with AnnotatedQueue() as q:
+            decomp = op.decomposition()
 
         assert q.queue == decomp
         assert [type(o).__name__ for o in q.queue] == ["RX", "RY"]
@@ -2468,16 +2540,14 @@ class TestGraphDecomposition:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RX: 1})
+        def rule(phi, wires, **__):
+            qp.RX(phi, wires=wires[0])
 
-            @qp.register_resources({qp.RX: 1})
-            def rule(phi, wires, **__):
-                qp.RX(phi, wires=wires[0])
+        qp.add_decomps(Op, rule)
 
-            qp.add_decomps(Op, rule)
-
-            op = Op(0.5, wires=0)
-            decomp = op.decomposition()
+        op = Op(0.5, wires=0)
+        decomp = op.decomposition()
 
         assert len(decomp) == 1
         assert qp.equal(decomp[0], qp.RX(0.5, wires=0))
@@ -2496,16 +2566,14 @@ class TestGraphDecomposition:
         assert Op.has_decomposition is False
         assert Op(0.5, wires=0).has_decomposition is False
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RX: 1})
+        def rule(phi, wires, **__):
+            qp.RX(phi, wires=wires[0])
 
-            @qp.register_resources({qp.RX: 1})
-            def rule(phi, wires, **__):
-                qp.RX(phi, wires=wires[0])
+        qp.add_decomps(Op, rule)
 
-            qp.add_decomps(Op, rule)
-
-            assert Op.has_decomposition is True
-            assert Op(0.5, wires=0).has_decomposition is True
+        assert Op.has_decomposition is True
+        assert Op(0.5, wires=0).has_decomposition is True
 
 
 class TestStatePrepBase:

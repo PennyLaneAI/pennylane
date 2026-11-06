@@ -22,7 +22,7 @@ from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import expand_matrix
-from pennylane.ops import PPR, Hadamard, MultiRZ, PauliX
+from pennylane.ops import PPR_4, Hadamard, MultiRZ, PauliX
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -79,7 +79,26 @@ class IQP(Operator2):
     0: ─╭IQP─┤  <Z>
     1: ─╰IQP─┤  <Z>
 
-    .. seealso:: :doc:`IQP tutorial <demo:demos/tutorial_iqp_circuit_optimization_jax>`
+    .. seealso:: :func:`pennylane.math.iqp_expval`,
+        :doc:`IQP tutorial <demo:demos/tutorial_iqp_circuit_optimization_jax>`
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.IQP
+            :stacked:
+            :symbols: :math:`n` wires and :math:`G` generators in total in ``pattern``
+            :example: :math:`n=2`, ``pattern=[[[0]], [[1]], [[0, 1]]]`` (meaning the number of generators :math:`G = 3`), ``spin_sym=True``
+
+            .. decomposition-rule:: _instantaneous_quantum_polynomial_decomposition
+                :image: /_static/decomposition_thumbnails/iqp_multirz.svg
+                :where: the Pauli word ``"YX...X"`` acts on all :math:`n` wires: one Y, then
+                    :math:`n - 1` X's
+
+                :class:`PPR_4(1, "YX...X") <.PPR_4>` | :math:`1` if ``spin_sym=True`` | 1
+                :class:`~.Hadamard` | :math:`2n` | 4
+                :class:`~.MultiRZ` on the wires of a generator | :math:`G` (one per generator) | 3
+
     """
 
     dynamic_argnames = ("weights",)
@@ -120,7 +139,7 @@ class IQP(Operator2):
         layers = []
 
         if spin_sym:
-            pauli_mat = PPR.compute_matrix(4, "Y" + "X" * (num_wires - 1))
+            pauli_mat = PPR_4.compute_matrix(1, "Y" + "X" * (num_wires - 1))
             layers.append(pauli_mat)
 
         for par, gate in zip(weights, pattern, strict=True):
@@ -138,7 +157,7 @@ def _instantaneous_quantum_polynomial_resources(
     num_wires = len(wires)
     resources = defaultdict(int)
     if spin_sym:
-        resources[PPR(4, pauli_word="Y" + "X" * (num_wires - 1), wires=Wire[num_wires])] = 1
+        resources[PPR_4(1, pauli_word="Y" + "X" * (num_wires - 1), wires=Wire[num_wires])] = 1
 
     resources[Hadamard] = 2 * num_wires
 
@@ -154,7 +173,7 @@ def _instantaneous_quantum_polynomial_decomposition(weights, wires, pattern, spi
     num_wires = len(wires)
 
     if spin_sym:
-        PPR(4, "Y" + "X" * (num_wires - 1), wires=wires)
+        PPR_4(1, "Y" + "X" * (num_wires - 1), wires=wires)
 
     for i in range(num_wires):
         Hadamard(wires[i])

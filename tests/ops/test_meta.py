@@ -21,7 +21,7 @@ import pytest
 import pennylane as qp
 from pennylane import Snapshot
 from pennylane.decomposition import gate_sets
-from pennylane.transforms import decompose
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 
 class TestBarrier:
@@ -192,6 +192,19 @@ class TestBarrier:
         op = qp.Barrier(0)
         with pytest.raises(qp.operation.MatrixUndefinedError):
             op.matrix()
+
+    @pytest.mark.parametrize(
+        "op, expected",
+        [
+            (qp.Barrier(wires=[]), "Barrier(wires=[])"),
+            (qp.Barrier(wires=0), "Barrier(wires=[0])"),
+            (qp.Barrier(wires=(0, 1, 2)), "Barrier(wires=[0, 1, 2])"),
+            (qp.Barrier(wires=(0, 1), only_visual=True), "Barrier(wires=[0, 1])"),
+        ],
+    )
+    def test_repr(self, op, expected):
+        """Test that the repr hides ``only_visual`` and only reports the wires."""
+        assert repr(op) == expected
 
 
 class TestSnapshot:

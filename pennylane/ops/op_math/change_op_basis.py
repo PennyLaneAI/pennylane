@@ -22,10 +22,10 @@ from collections.abc import Callable
 from functools import reduce
 
 from pennylane import capture, math
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core import queuing
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
@@ -34,6 +34,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import adjoint, ctrl, prod
+from pennylane.ops.op_math.adjoint import _adjoint_eager
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -66,7 +67,7 @@ def _validate_callable(func: Callable) -> None:
 
 def _is_abstract_operator(op) -> bool:
     """Return whether ``op`` is an operator-valued JAX tracer."""
-    return math.is_abstract(op) and isinstance(op.aval, capture.AbstractOperator)
+    return math.is_tracer(op) and isinstance(op.aval, capture.AbstractOperator)
 
 
 def _apply_op_or_func(op_or_func):
@@ -145,7 +146,7 @@ def change_op_basis(
             )
             return qp.state()
 
-        circuit2 = qp.decompose(circuit, max_expansion=1)
+        circuit2 = qp.transforms._tape_decompose(circuit, max_expansion=1)
 
     When this circuit is decomposed, the ``compute_op`` and ``uncompute_op`` are not controlled,
     resulting in a much more resource-efficient decomposition:
@@ -180,7 +181,7 @@ def change_op_basis(
             qp.change_op_basis(compute, target)
             return qp.state()
 
-        circuit3 = qp.decompose(circuit, max_expansion=1)
+        circuit3 = qp.transforms._tape_decompose(circuit, max_expansion=1)
 
     >>> print(qp.draw(circuit3)())
     0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤ ╭State
@@ -368,7 +369,7 @@ class ChangeOpBasis(CompositeOp):
         return True
 
     def adjoint(self):
-        return ChangeOpBasis(*(adjoint(factor, lazy=False) for factor in self))
+        return ChangeOpBasis(*(_adjoint_eager(factor, update_queue=True) for factor in self))
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""

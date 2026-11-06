@@ -21,7 +21,7 @@ import pennylane as qp
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.queuing import AnnotatedQueue
 from pennylane.ftqc.operations import RotXZX
-from pennylane.ops.functions import assert_valid
+from pennylane.testing import assert_valid
 from pennylane.wires import Wires
 
 
@@ -71,7 +71,7 @@ class TestRotXZX:
         phi, theta, omega = np.pi / 4, 1.23, -0.5
 
         op = RotXZX(phi, theta, omega, wires=0)
-        adj_op = qp.adjoint(op, lazy=False)
+        adj_op = op.adjoint()
 
         assert isinstance(adj_op, RotXZX)
         assert adj_op.data == (-omega, -theta, -phi)

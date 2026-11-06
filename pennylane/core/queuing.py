@@ -193,6 +193,7 @@ from threading import RLock
 from typing import Optional
 
 from pennylane import capture
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.exceptions import QueuingError
 
 
@@ -440,15 +441,13 @@ class AnnotatedQueue(OrderedDict):
         return super().__contains__(key)
 
 
-def remove_from_program(op):
+def remove_from_program(*ops):
     """Removes an operator from the captured/queued program."""
     if QueuingManager.recording():
-        QueuingManager.remove(op)
+        for op in ops:
+            QueuingManager.remove(op)
     if capture.enabled():
-        # pylint: disable-next=import-outside-toplevel
-        from .operator.operator2 import pop_op_eqns  # tach-ignore
-
-        pop_op_eqns((op,))
+        pop_op_eqns(ops)
 
 
 __all__ = ["QueuingManager", "AnnotatedQueue", "remove_from_program"]

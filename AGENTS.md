@@ -31,7 +31,7 @@ New functionality and bug fixes need tests.
 
 Docstring/code-example tests collected by Sybil (see `conftest.py`); run by pointing pytest at source file, e.g. `pytest pennylane/path/to/file.py`.
 
-Validate new operator with `pennylane.ops.functions.assert_valid(op)`.
+Validate new operator with `pennylane.testing.assert_valid(op)`.
 
 # Linting and formatting
 
@@ -49,7 +49,7 @@ Config in `pyproject.toml` (`black`, `isort`, line length 100) and `.pylintrc` f
 
 # Changelog
 
-Add bullet to `doc/releases/changelog-dev.md` under proper section, ending with PR link on next line `  [(#XXXX)](...)`.
+Add bullet to `doc/releases/changelog-dev.rst` under proper section, ending with an RST PR link on the next line: ``  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__``.
 
 # Module architecture
 

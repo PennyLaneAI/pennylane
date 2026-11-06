@@ -28,7 +28,7 @@ from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.core.queuing import QueuingManager
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.math import is_abstract, isscalar, ndim, unwrap
+from pennylane.math import is_tracer, isscalar, ndim, unwrap
 from pennylane.ops.mid_measure import MeasurementValue, MidMeasure, measure
 from pennylane.ops.op_math import Conditional, adjoint
 from pennylane.ops.qubit import RX, RY, H, PhaseShift, S
@@ -376,7 +376,7 @@ class ParametricMidMeasure(MidMeasure):
 
     def __hash__(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
-        if is_abstract(self.angle):  # pragma: no cover
+        if is_tracer(self.angle):  # pragma: no cover
             # no unique value from tracer to values, hash based on object string
             param_hash = hashlib.sha256(str(self).encode()).digest()
         elif isscalar(self.angle) or ndim(self.angle) == 0:

@@ -112,7 +112,7 @@ class TestFromBloq:
 
         op = qp.FromBloq(cbloq, wires=range(24))
 
-        qp.ops.functions.assert_valid(op, skip_deepcopy=True, skip_pickle=True)
+        qp.testing.assert_valid(op, skip_deepcopy=True, skip_pickle=True)
 
     def test_wrong_wires_error(self):
         """Tests that FromBloq validates the length of wires as intended"""
@@ -929,7 +929,7 @@ class TestToBloqDecomposition:
                 qp.Select(ops=[qp.X(2), qp.QFT(wires=[2, 3, 4])], control=[0, 1]),
                 {
                     (qp.X(wires=[2]), True): 2,
-                    (qp.ctrl(qp.X(2), control=[0]), True): 1,
+                    (qp.CNOT([0, 2]), True): 1,
                     (qp.ctrl(qp.QFT(wires=[2, 3, 4]), control=[0]), True): 1,
                 },
             ),

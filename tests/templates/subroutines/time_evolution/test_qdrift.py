@@ -70,7 +70,7 @@ class TestInitialization:
         if seed is not None:
             # For seed = None, decomposition and compute_decomposition do not match because
             # compute_decomposition is stochastic
-            qp.ops.functions.assert_valid(op, skip_differentiation=True)
+            qp.testing.assert_valid(op, skip_differentiation=True)
 
         assert op.wires == h.wires
         assert op.parameters == [*h.data, time]

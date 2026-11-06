@@ -695,12 +695,11 @@ class TestGraphModeExclusiveFeatures:  # pylint: disable=too-few-public-methods
         def decomp_with_work_wire(wires):
             qp.PauliX(wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
+        qp.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
 
-            tape = qp.tape.QuantumScript([MyOp(0)], [qp.expval(qp.Z(0))])
-            dev = qp.device("default.tensor", wires=wires)
-            program = dev.preprocess_transforms()
-            (out_tape,), _ = program([tape])
+        tape = qp.tape.QuantumScript([MyOp(0)], [qp.expval(qp.Z(0))])
+        dev = qp.device("default.tensor", wires=wires)
+        program = dev.preprocess_transforms()
+        (out_tape,), _ = program([tape])
 
         assert len(out_tape.operations) == expected_program_len

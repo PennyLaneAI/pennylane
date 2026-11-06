@@ -19,8 +19,8 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.phase_adder import _add_k_fourier
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.xfail_if_capture(reason="Come back to this when we port it to Op2 [sc-130164]")
@@ -32,7 +32,7 @@ def test_standard_validity_Phase_Adder():
     x_wires = [0, 1, 2, 3]
     work_wire = [4]
     op = qp.PhaseAdder(k, x_wires=x_wires, mod=mod, work_wire=work_wire)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.xfail_if_capture(reason="Come back to this when we port it to Op2 [sc-130164]")
@@ -44,7 +44,7 @@ def test_falsy_zero_as_work_wire():
     x_wires = [1, 2, 3, 4]
     work_wire = 0
     op = qp.PhaseAdder(k, x_wires=x_wires, mod=mod, work_wire=work_wire)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_add_k_fourier():
@@ -266,7 +266,7 @@ class TestPhaseAdder:
             op_list.extend(_add_k_fourier(k, x_wires))
             op_list.extend(qp.adjoint(_add_k_fourier)(mod, x_wires))
             op_list.append(qp.adjoint(qp.QFT)(wires=x_wires))
-            op_list.append(qp.ctrl(qp.PauliX(work_wire), control=aux_k, control_values=1))
+            op_list.append(qp.CNOT([aux_k, work_wire[0]]))
             op_list.append(qp.QFT(wires=x_wires))
             op_list.extend(qp.ctrl(op, control=work_wire) for op in _add_k_fourier(mod, x_wires))
             op_list.append(qp.prod(qp.X(aux_k), *base_list_ops1))
@@ -286,8 +286,7 @@ class TestPhaseAdder:
         x_wires = [1, 2, 3]
         work_wire = [0]
         op = qp.PhaseAdder(k, x_wires, mod, work_wire)
-        for rule in qp.list_decomps(qp.PhaseAdder):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""

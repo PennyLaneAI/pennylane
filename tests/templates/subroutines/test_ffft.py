@@ -18,11 +18,11 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import FermionicSWAP, PauliZ, device, list_decomps, qnode
+from pennylane import FermionicSWAP, PauliZ, device, qnode
 from pennylane.measurements import state
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.ffft import FFFT, TwoWireFFT, _permute_and_apply_parallel
+from pennylane.testing import assert_decomposable
 from pennylane.wires import Wires
 
 dev = device("default.qubit")
@@ -49,8 +49,7 @@ def ffft(wires, input=None):
 def test_ffft_decomposition_new(wires):
     op = FFFT(wires)
 
-    for rule in list_decomps(FFFT):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 @pytest.mark.parametrize(
@@ -169,7 +168,7 @@ def test_ffft_num_iters_hints(n_wires):
         _permute_and_apply_parallel(wires, TwoWireFFT)
 
     plxpr = jax.make_jaxpr(permutation)()
-    ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+    ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
     num_fswaps = sum(isinstance(op, FermionicSWAP) for op in ops)
 
     num_layers = n_wires // 2 - 1

@@ -443,7 +443,7 @@ def _bind_qnode(qnode, *args, **kwargs):
             "devices must specify wires for integration with program capture."
         )
 
-    if any(math.is_abstract(w) for w in qnode.device.wires):
+    if any(math.is_tracer(w) for w in qnode.device.wires):
         raise NotImplementedError(
             "Dynamic device wires are not currently supported with program capture."
         )

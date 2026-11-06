@@ -19,11 +19,11 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.out_poly import (
     _get_polynomial,
     _mobius_inversion_of_zeta_transform,
 )
+from pennylane.testing import assert_decomposable
 
 
 def test_get_polynomial():
@@ -70,7 +70,7 @@ def test_standard_validity_OutPoly():
         output_wires=wires["output"],
     )
 
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestOutPoly:
@@ -202,8 +202,7 @@ class TestOutPoly:
     def test_decomposition_new(self, polynomial_function, input_registers, output_wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.OutPoly(polynomial_function, input_registers, output_wires)
-        for rule in qp.list_decomps(qp.OutPoly):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_compute_decomposition_no_coeffs_list(self):
         """Test that coeffs list is an optional argnument to compute_decomposition."""

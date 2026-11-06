@@ -30,7 +30,7 @@ def test_standard_validity():
 
     weights = np.array([[0.1, -2.1, 1.4]])
     op = qp.RandomLayers(weights, wires=(0, 1))
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_hyperparameters():

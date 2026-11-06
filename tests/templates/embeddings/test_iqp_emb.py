@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.typing import Wire
 
 
@@ -30,7 +30,7 @@ def test_standard_validity():
     features = (0.0, 1.0, 2.0)
 
     op = qp.IQPEmbedding(features, wires=(0, 1, 2))
-    qp.ops.functions.assert_valid(op, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_differentiation=True)
 
 
 class TestDecomposition:
@@ -182,8 +182,7 @@ class TestDecomposition:
     def test_decomposition_new(self, features, wires, num_repeats, pattern):
         op = qp.IQPEmbedding(features, wires, n_repeats=num_repeats, pattern=pattern)
 
-        for rule in qp.list_decomps(qp.IQPEmbedding):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 class TestInputs:

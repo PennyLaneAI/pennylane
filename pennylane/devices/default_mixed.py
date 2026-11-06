@@ -129,7 +129,9 @@ operations = {
     "ThermalRelaxationError",
     "ECR",
     "GlobalPhase",
-    "PPR",
+    "PPR_2",
+    "PPR_4",
+    "PPR_8",
 }
 
 DEFAULT_MIXED_GATES = operations | {"Snapshot"} | channels

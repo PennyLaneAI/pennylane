@@ -19,7 +19,7 @@ from jax.extend.core import ClosedJaxpr, Jaxpr, JaxprEqn, Primitive
 
 from pennylane.capture import pause
 from pennylane.capture.primitives import operator_p
-from pennylane.core import Operator2
+from pennylane.core.operator import Operator2
 from pennylane.core.qscript import QuantumScript
 from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas

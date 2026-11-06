@@ -230,7 +230,7 @@ def merge_rotations(
                 list_copy.pop(next_gate_idx + 1)
                 next_params = qp.math.stack(next_gate.parameters, like=interface)
                 # jax-jit does not support cast_like
-                if not qp.math.is_abstract(cumulative_angles):
+                if not qp.math.is_tracer(cumulative_angles):
                     next_params = qp.math.cast_like(next_params, cumulative_angles)
 
                 # The Rot gate must be treated separately
@@ -257,7 +257,7 @@ def merge_rotations(
         # apply the operation regardless of the angles. Otherwise, only apply if
         # the rotation angle is non-trivial.
         if (
-            qp.math.is_abstract(cumulative_angles)
+            qp.math.is_tracer(cumulative_angles)
             or qp.math.requires_grad(cumulative_angles)
             or not angles_cancel
         ):

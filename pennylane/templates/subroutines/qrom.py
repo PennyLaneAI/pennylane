@@ -15,6 +15,7 @@
 This submodule contains the template for QROM.
 """
 
+import math as builtin_math
 from collections.abc import Sequence
 from functools import partial
 
@@ -31,9 +32,9 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.math import ceil_log2
-from pennylane.ops import CNOT, CZ, X, cond, ctrl, pauli_measure
+from pennylane.ops import CNOT, CZ, MultiControlledX, X, Z, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
+from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic import TemporaryAND
@@ -65,28 +66,30 @@ def _select_ops(
     )
 
 
-def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires):
-    num_targets = len(target_wires)
+def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires, adjoint=False):
 
+    n_targets = len(target_wires)
     if capture.enabled() or compiler.active():
-        swap_wires = math.array(swap_wires, like="jax").reshape((-1, num_targets))
+        swap_wires = math.array(swap_wires, like="jax").reshape((-1, n_targets))
         swap_control_wires = math.array(swap_control_wires, like="jax")
     else:
         # Need to work with nested list here in order to not coerce (deprecated) string wire labels
         # to object-dtyped np.array. This forces manual "reshape" here and indexing via [j][k]
         # instead of [j, k] below.
-        num_columns = len(swap_wires) // num_targets
-        swap_wires = [
-            swap_wires[i * num_targets : (i + 1) * num_targets] for i in range(num_columns)
-        ]
+        num_columns = len(swap_wires) // n_targets
+        swap_wires = [swap_wires[i * n_targets : (i + 1) * n_targets] for i in range(num_columns)]
 
-    @for_loop(len(swap_control_wires) - 1, -1, -1)
+    n_iters = len(swap_control_wires)
+    outer_loop = for_loop(0, n_iters) if adjoint else for_loop(n_iters - 1, -1, -1)
+
     def outer(i):
 
-        @for_loop(2**i - 1, -1, -1)
+        inner_loop = for_loop(0, 2**i) if adjoint else for_loop(2**i - 1, -1, -1)
+
         def inner(j):
 
-            @for_loop(num_targets)
+            layer_loop = for_loop(n_targets - 1, -1, -1) if adjoint else for_loop(0, n_targets)
+
             def swap_layer(k):
                 ctrl(
                     qp_ops.SWAP([swap_wires[j][k], swap_wires[j + 2**i][k]]),
@@ -95,11 +98,11 @@ def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires):
                     work_wire_type="zeroed",
                 )
 
-            swap_layer()  # pylint: disable=no-value-for-parameter
+            layer_loop(swap_layer)()
 
-        inner()  # pylint: disable=no-value-for-parameter
+        inner_loop(inner)()
 
-    outer()  # pylint: disable=no-value-for-parameter
+    outer_loop(outer)()
 
 
 class QROM(Operator2):
@@ -202,7 +205,7 @@ class QROM(Operator2):
     compilable_argnames = ("clean",)
 
     arg_specs = {
-        "bitstrings": Int[-1, -1],
+        "bitstrings": Bool[-1, -1],
         "control_wires": Wire[-1],
         "target_wires": Wire[-1],
         "work_wires": Wire[-1],
@@ -226,10 +229,10 @@ class QROM(Operator2):
                 bitstrings = [[int(bit) for bit in bitstring] for bitstring in bitstrings]
 
             if isinstance(bitstrings, (list, tuple)):
-                bitstrings = math.array(bitstrings, dtype=int)
+                bitstrings = math.array(bitstrings, dtype=bool)
 
             else:
-                bitstrings = bitstrings.astype(int)
+                bitstrings = bitstrings.astype(bool)
 
         wire_args = {
             "control_wires": control_wires,
@@ -344,7 +347,7 @@ def _select_swap_resources(
     # Select block (implemented as a nested QROM over concatenated columns)
     num_targets_select = depth * num_targets
     bigger_qrom = QROM(
-        Int[num_columns, num_targets_select],
+        Bool[num_columns, num_targets_select],
         Wire[num_control_wires_select],
         Wire[num_targets_select],
         Wire[num_work_wires_select],
@@ -412,7 +415,7 @@ def _select_swap(
 
         cswaps = partial(_swap_ops, swap_control_wires, swap_wires, target_wires, cswap_work_wires)
 
-        qp_ops.adjoint(cswaps, lazy=False)()
+        cswaps(adjoint=True)
         _select_ops(
             bitstrings, depth, target_wires, swap_wires, select_control_wires, select_work_wires
         )
@@ -435,6 +438,8 @@ def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
     m1 = pauli_measure("X" + "X" * len(x_wires), [work_wire, *x_wires])
 
     cond(m1 == 1, CZ)(wires=ctrl_wires)
+    # Without this, the reset below would leave a global phase of -1 if both outcomes are 1
+    cond(m1 == 1, Z)(wires=work_wire)
 
     m2 = pauli_measure("Z", [work_wire])
     cond(m2 == 1, X)(wires=work_wire)
@@ -510,7 +515,7 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):
     _measurement_qrom_inner(child_controls, targets, bitstrings[:k0])
 
     # --- Q0 -> Q1 transition ---
-    ctrl(X(controls[2]), control=controls[0], control_values=[0])
+    MultiControlledX([controls[0], controls[2]], control_values=[0])
     diff_q1 = math.bitwise_xor(bitstrings[0], bitstrings[k0])
 
     # --- Q1 ---
@@ -565,8 +570,12 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
 
     Each TemporaryAND is uncomputed via _measurement_uncompute which produces:
       - 2 PauliMeasure (one X-type joint measurement, one Z measurement)
-      - 1 CZ (phase correction conditioned on X measurement)
+      - 1 CZ and 1 Z (phase corrections conditioned on X measurement)
       - conditional X gates on work + targets
+
+    Only the shape of ``bitstrings`` is known, so counts that depend on the bitstring data are
+    estimated: CNOTs use the worst case, and the widths of the X-type measurements follow the
+    distribution expected for uniformly random data.
     """
     # When called for Adjoint(QROM), extract params from the base parameters
     if base is not None:
@@ -584,61 +593,62 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
     # L = num_bitstrings
     # TODO: allowing partial QROM will reduce this term
     L = 2 ** ceil_log2(num_bitstrings)
+    load = MultiX(Bool[num_targets], Wire[num_targets])
 
-    if L <= 1 and num_control_wires_extra == 0:
-        return {MultiX(Bool[num_targets], Wire[num_targets]): 1}
+    if num_control_wires_extra > 0:
+        # Flag-gated load followed by the binary inner iterator over all ``L`` entries.
+        num_ands = L - 1
+        num_cnots = max(L // 2 - 1, 0)
+        resources = _flag_resources(num_control_wires_extra)
+        resources[ctrl(load, Wire[1])] = 1
+    elif L <= 1:
+        return {load: 1}
+    elif L == 2:
+        return {load: 1, ctrl(load, Wire[1]): 1}
+    else:
+        # Base load followed by the 4-quarter outer iterator. Its CNOTs are 3 structural ones,
+        # one per inner-iterator split in the quarters, and up to ``num_targets`` for each of the
+        # two explicit base corrections.
+        num_ands = _count_tempAND_in_measurement_qrom(L)
+        num_cnots = 3 + max(L // 2 - 4, 0) + 2 * num_targets
+        resources = {load: 1, MultiControlledX(Wire[2], control_values=Bool[1]): 1}
 
-    if L == 2 and num_control_wires_extra == 0:
-        return {
-            MultiX(Bool[num_targets], Wire[num_targets]): 1,
-            ctrl(MultiX(Bool[num_targets], Wire[num_targets]), Wire[1]): 1,
-        }
-
-    # Without extra wires the load uses the cheaper 4-quarter outer iterator; with extra wires
-    # it uses the flag-gated binary inner iterator, which needs ``L - 1`` AND gates.
-    num_ands = L - 1 if num_control_wires_extra > 0 else _count_tempAND_in_measurement_qrom(L)
-    num_cz = num_ands  # CZ correction per uncomputation
-
-    # TemporaryAND counts are exact
-    # CNOTs, PauliX gates and MultiX ops are an approximation
-    flag = _flag_resources(num_control_wires_extra, num_targets)
-    resources = {
-        TemporaryAND: num_ands + flag.get(TemporaryAND, 0),
-        # Each of the ``num_ands`` uncomputations performs one Z measurement on the work wire and
-        # one X-type joint measurement on the work wire plus the target wires flipped by that
-        # bitstring. The joint measurement's size (``1 + len(x_wires)``) varies per bitstring, so
-        # the worst case (all ``num_targets`` flipped) is used for this approximate estimate.
+    # Each of the ``num_ands`` uncomputations performs one Z measurement on the work wire and
+    # one X-type joint measurement on the work wire plus the ``w`` target wires flipped by the XOR
+    # of two bitstrings. For uniformly random data, ``w`` is binomially distributed, so the
+    # measurements are spread over all widths accordingly. Rounding up makes every width appear
+    # and overestimates the total number of X-type measurements by at most ``num_targets``.
+    uncompute = {
+        TemporaryAND: num_ands,
         PauliMeasure("Z", wires=Wire[1]): num_ands,
-        PauliMeasure("X" * (num_targets + 1), wires=Wire[num_targets + 1]): num_ands,
-        CZ: num_cz,
-        CNOT: L - 1,
-        MultiX(Bool[num_targets], Wire[num_targets]): L,
-        X: L + flag.get(X, 0),
-        ctrl(X(Wire[1]), control=Wire[1], control_values=Bool[1]): 1,
+        CZ: num_ands,
+        Z: num_ands,
+        X: num_ands,
+        load: num_ands,
+        CNOT: num_cnots,
     }
-    # Merge the remaining flag-only resource types (controlled-X load, adjoint ANDs).
-    for rep, count in flag.items():
-        if rep not in resources:
-            resources[rep] = count
+    for w in range(num_targets + 1):
+        x_measure = PauliMeasure("X" * (w + 1), wires=Wire[w + 1])
+        uncompute[x_measure] = -(-num_ands * builtin_math.comb(num_targets, w) // 2**num_targets)
+    for rep, count in uncompute.items():
+        if count:
+            resources[rep] = resources.get(rep, 0) + count
     return resources
 
 
-def _flag_resources(num_control_wires_extra, num_targets):
-    """Return the resources for the flag that gates the load on extra control wires.
+def _flag_resources(num_control_wires_extra):
+    """Return the resources for building and uncomputing the flag on extra control wires.
 
-    A single extra wire uses two X gates; two or more use a ladder of ``num_control_wires_extra - 1`` AND gates,
-    all later uncomputed by the same number of adjoints. In both cases the base load is gated,
-    adding up to ``num_targets`` controlled-X gates.
+    A single extra wire is flipped with an X gate and restored with its adjoint; two or more use a
+    ladder of ``num_control_wires_extra - 1`` AND gates, all later uncomputed by the same number
+    of adjoints.
     """
-    if num_control_wires_extra < 1:
-        return {}
-    resources = {ctrl(X(Wire[1]), control=Wire[1]): num_targets}
     if num_control_wires_extra == 1:
-        resources[X] = 2
-        return resources
-    resources[TemporaryAND] = num_control_wires_extra - 1
-    resources[qp_ops.adjoint(TemporaryAND(Wire[3]))] = num_control_wires_extra - 1
-    return resources
+        return {X: 1, qp_ops.adjoint(X(Wire[1])): 1}
+    return {
+        TemporaryAND: num_control_wires_extra - 1,
+        qp_ops.adjoint(TemporaryAND(Wire[3])): num_control_wires_extra - 1,
+    }
 
 
 def _qrom_measurement_condition(
@@ -908,7 +918,7 @@ def _load_block(block, address_wires, target_wires, flag=None):
     ctrl_sequence()  # pylint: disable=no-value-for-parameter
 
 
-def flip_iteration_bit(a, triples, top_not_flipped):
+def _flip_iteration_bit(a, triples, top_not_flipped, quarter_prob, mid_prob):
     """Update the unary iteration tree by flipping the most significant bit that differs between
     subsequent addresses (the central remains of merging a temporary AND uncomputation
     ladder and the next temporary AND computation ladder).
@@ -919,21 +929,21 @@ def flip_iteration_bit(a, triples, top_not_flipped):
             control and auxiliary wires.
         top_not_flipped (bool): whether the last loaded address is in the first half of
             the total capacity given by the number of control wires.
+        quarter_prob (float): probability for ``a == 1`` and ``top_not_flipped`` to be true
+        mid_prob (float): probability for ``a == 0`` to be true
 
     """
     flip_first_control = math.logical_and(a == 1, top_not_flipped)
 
-    # Once resource hints are merged, use those estimates:
-    # cond(flip_first_control, X, estimated_probability=quarter_prob)(triples[0][0])
-    # cond(a > 0, CNOT, estimated_probability=1 - mid_prob)(triples[a - 1][::2])
-    # cond(flip_first_control, X, estimated_probability=quarter_prob)(triples[0][0])
-    # cond(a == 0, CNOT, estimated_probability=mid_prob)(triples[0][::2])
-    # cond(a == 0, CNOT, estimated_probability=mid_prob)(triples[0][1:])
-    cond(flip_first_control, X)(triples[0][0])
-    cond(a > 0, CNOT)(triples[a - 1][::2])
-    cond(flip_first_control, X)(triples[0][0])
-    cond(a == 0, CNOT)(triples[0][::2])
-    cond(a == 0, CNOT)(triples[0][1:])
+    quarter_x = hint(X, {"branch-prob": quarter_prob})
+    mid_cnot = hint(CNOT, {"branch-prob": mid_prob})
+    non_mid_cnot = hint(CNOT, {"branch-prob": 1 - mid_prob})
+
+    cond(flip_first_control, quarter_x)(triples[0][0])
+    cond(a > 0, non_mid_cnot)(triples[a - 1][::2])
+    cond(flip_first_control, quarter_x)(triples[0][0])
+    cond(a == 0, mid_cnot)(triples[0][::2])
+    cond(a == 0, mid_cnot)(triples[0][1:])
 
 
 def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control_wires):
@@ -958,11 +968,6 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
     for i in range(1, len(triples)):
         TemporaryAND(triples[i], (1, 0))
 
-    # [dwierichs] todo: Once resource hints for cond are merged, use those estimates:
-    # [sc-129627]
-    # quarter_prob = int(num_blocks > (1 << (c - 2))) / (num_blocks - 1)
-    # mid_prob = int(num_blocks > (1 << (c - 1))) / (num_blocks - 1)
-
     # Loop over all blocks but the last one. Skip entirely when there is only one block:
     # ``blocks`` then has shape ``(0, ...)``, and Catalyst's ``for_loop(0)`` still traces the
     # body, which would index into that empty axis.
@@ -975,6 +980,10 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
         more_than_half = int(num_blocks > 2 ** (c - 1))
         num_elbows = c + num_blocks - 2 - (num_blocks - 1).bit_count() - more_than_half
         average_ladder_len = (num_elbows - len(triples)) / (num_blocks - 1)
+        # Out of all k, a single one leads to a == 1 within the first half, if it is reached, and
+        # a single one leads to a == 0, if the second half is reached.
+        quarter_prob = int(num_blocks > 2 ** (c - 2)) / (num_blocks - 1)
+        mid_prob = more_than_half / (num_blocks - 1)
 
         def loop(k):
             # 1. load the k-th block, controlled on the flag circuit
@@ -998,7 +1007,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
             # Whether we are in the first half of the iteration, so that the top bit
             # has not been flipped yet
             top_not_flipped = k < (1 << (c - 1))
-            flip_iteration_bit(a, triples, top_not_flipped)
+            _flip_iteration_bit(a, triples, top_not_flipped, quarter_prob, mid_prob)
 
             # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
             @hint({"num-iters": average_ladder_len})

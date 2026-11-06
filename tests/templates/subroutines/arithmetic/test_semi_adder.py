@@ -22,7 +22,6 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops import CNOT, adjoint
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.semi_adder import (
     _controlled_semi_adder,
     _effective_skip_input_pos,
@@ -30,6 +29,7 @@ from pennylane.templates.subroutines.arithmetic.semi_adder import (
     _semi_adder_resources,
 )
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
+from pennylane.testing import assert_decomposable
 from pennylane.typing import Wire
 
 
@@ -40,7 +40,7 @@ def test_standard_validity_SemiAdder():
     y_wires = [3, 4, 5]
     work_wires = [6, 7]
     op = qp.SemiAdder(x_wires, y_wires, work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestSemiAdder:
@@ -169,8 +169,7 @@ class TestSemiAdder:
     def test_decomposition_rule(self, x_wires, work_wires):
         """Tests that SemiAdder is decomposed properly."""
 
-        for rule in qp.list_decomps(qp.SemiAdder):
-            _test_decomposition_rule(qp.SemiAdder(x_wires, [5, 6, 7, 8], work_wires), rule)
+        assert_decomposable(qp.SemiAdder(x_wires, [5, 6, 7, 8], work_wires))
 
     @pytest.mark.capture
     @pytest.mark.parametrize(

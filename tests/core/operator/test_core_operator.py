@@ -642,15 +642,13 @@ class TestHasReprProperties:
         class SomeRandomName(qp.operation.Operator):
             pass
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.X: 1})
+        def decomp(x, wires):
+            qp.RX(x, wires)
 
-            @qp.register_resources({qp.X: 1})
-            def decomp(x, wires):
-                qp.RX(x, wires)
+        qp.add_decomps(SomeRandomName, decomp)
 
-            qp.add_decomps(SomeRandomName, decomp)
-
-            assert SomeRandomName(0.5, wires=0).has_decomposition
+        assert SomeRandomName(0.5, wires=0).has_decomposition
 
     def test_has_decomposition_graph_decomp_multiple_conditions(self):
         """Test that operators with multiple decompositions and conditions have
@@ -671,12 +669,11 @@ class TestHasReprProperties:
         def decomp2(x, wires):
             qp.CRX(x, wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(MNBV, decomp1, decomp2)
+        qp.add_decomps(MNBV, decomp1, decomp2)
 
-            assert MNBV(0.5, wires=0).has_decomposition
-            assert MNBV(0.5, wires=(0, 1)).has_decomposition
-            assert not MNBV(0.5, wires=(0, 1, 2)).has_decomposition
+        assert MNBV(0.5, wires=0).has_decomposition
+        assert MNBV(0.5, wires=(0, 1)).has_decomposition
+        assert not MNBV(0.5, wires=(0, 1, 2)).has_decomposition
 
     def test_has_decomposition_false(self):
         """Test has_decomposition property defaults to false if neither
@@ -1340,18 +1337,17 @@ class TestDefaultRepresentations:
         def decomp2(x, wires):
             qp.RZ(x, wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(OpWithACustomName98786, decomp1, decomp2)
+        qp.add_decomps(OpWithACustomName98786, decomp1, decomp2)
 
-            [out] = OpWithACustomName98786(0.5, wires=0).decomposition()
-            qp.assert_equal(out, qp.RX(0.5, wires=0))
+        [out] = OpWithACustomName98786(0.5, wires=0).decomposition()
+        qp.assert_equal(out, qp.RX(0.5, wires=0))
 
-            op = OpWithACustomName98786(0.5, wires=0)
-            with qp.queuing.AnnotatedQueue() as q:
-                op.decomposition()
+        op = OpWithACustomName98786(0.5, wires=0)
+        with qp.queuing.AnnotatedQueue() as q:
+            op.decomposition()
 
-            assert len(q.queue) == 1
-            qp.assert_equal(q.queue[0], qp.RX(0.5, wires=0))
+        assert len(q.queue) == 1
+        qp.assert_equal(q.queue[0], qp.RX(0.5, wires=0))
 
     def test_graph_decomposition_fallback_conditions(self):
         """Test the graph decomposition fallback is sensitive to conditions."""
@@ -1375,16 +1371,15 @@ class TestDefaultRepresentations:
         def decomp2(x, wires):
             qp.CRX(x, wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(BVCX, decomp1, decomp2)
+        qp.add_decomps(BVCX, decomp1, decomp2)
 
-            [op1] = BVCX(0.5, wires=0).decomposition()
-            qp.assert_equal(op1, qp.RX(0.5, wires=0))
-            [op2] = BVCX(0.5, wires=(0, 1)).decomposition()
-            qp.assert_equal(op2, qp.CRX(0.5, wires=(0, 1)))
+        [op1] = BVCX(0.5, wires=0).decomposition()
+        qp.assert_equal(op1, qp.RX(0.5, wires=0))
+        [op2] = BVCX(0.5, wires=(0, 1)).decomposition()
+        qp.assert_equal(op2, qp.CRX(0.5, wires=(0, 1)))
 
-            with pytest.raises(qp.exceptions.DecompositionUndefinedError):
-                BVCX(0.5, wires=(0, 1, 2)).decomposition()
+        with pytest.raises(qp.exceptions.DecompositionUndefinedError):
+            BVCX(0.5, wires=(0, 1, 2)).decomposition()
 
     def test_matrix_undefined(self):
         """Tests that custom error is raised in the default matrix representation."""

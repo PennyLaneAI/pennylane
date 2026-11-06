@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import math
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.wires import Wires
 
 
@@ -28,7 +28,7 @@ from pennylane.wires import Wires
 def test_standard_checks(work_wires):
     """Run standard checks with the assert_valid function."""
     op = qp.FlipSign([0, 1], wires=(0, 1), work_wires=work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_repr():
@@ -196,5 +196,4 @@ class TestFlipSign:
         """Tests the decomposition rule implemented with the new system."""
         op = qp.FlipSign(state, wires=wires, work_wires=work_wires)
 
-        for rule in qp.list_decomps(qp.FlipSign):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)

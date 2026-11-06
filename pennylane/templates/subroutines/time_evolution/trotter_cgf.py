@@ -22,11 +22,11 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.numeric_hamiltonians import CGFHamiltonian
-from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ, PhaseShift
+from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math import ctrl
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
-from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import WiresLike
 
 from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
@@ -101,8 +101,8 @@ class TrotterCGF(Operator2):
         gate_set = {"Hadamard", "BasisRotation", "RZ", "CNOT", "PhaseShift", "ForLoop"}
 
         @qp.qjit
-        @qp.transforms.decompose(gate_set=gate_set)
-        @qp.qnode(qp.device("lightning.qubit"))
+        @qp.transforms._tape_decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("lightning.qubit", wires=1 + M * N))
         def trotter_circuit():
             qp.H(registers["hadamard"])
 
@@ -123,8 +123,7 @@ class TrotterCGF(Operator2):
 
     Or check the quantum resources required for this task. Because the (default) controlled
     decomposition is a genuine controlled unitary, each diagonal rotation is individually
-    controlled via ``ctrl(RZ(...))`` and ``ctrl(IsingZZ(...))`` (showing up here as
-    :class:`~.CRZ` and controlled :class:`~.IsingZZ`). Note that the order of the keys in
+    controlled via :class:`~.CRZ` and ``ctrl(IsingZZ(...))``. Note that the order of the keys in
     the ``quantum_operations`` dictionary is not guaranteed, so we sort it before printing:
 
     >>> specs = qp.specs(trotter_circuit)()["resources"].quantum_operations
@@ -133,6 +132,25 @@ class TrotterCGF(Operator2):
 
     The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing into
     :class:`~.PhaseShift` and :class:`~.SingleExcitation` on ``lightning.qubit``.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.TrotterCGF
+            :stacked:
+            :symbols: :math:`M` modes with :math:`N` modals each, :math:`L` two-body fragments and
+                :math:`n` = ``num_trotter_steps``
+            :example: the Hamiltonian above, :math:`M=2`, :math:`N=3`, :math:`L=1`, :math:`n=1`. Note that all expressions below assume :math:`n \gt 0`
+
+            .. decomposition-rule:: _trotter_cgf_decomposition
+                :image: /_static/decomposition_thumbnails/trotter_cgf_second_order.svg
+                :where: the counts are upper bounds, as basis rotations that are the identity are
+                    skipped
+
+                :class:`~.BasisRotation` on :math:`N` wires | :math:`M(2Ln + 2)` | 8
+                :class:`~.IsingZZ` | :math:`((2L-1)n + 1)\, \frac{M(M-1)}{2} N^2 + nMN` | 18
+                :class:`~.RZ` | :math:`nMN` | 6
+                :class:`~.GlobalPhase` | :math:`1` | 1
 
     .. details ::
         :title: Usage Details
@@ -228,9 +246,8 @@ class TrotterCGF(Operator2):
         :class:`~.BasisRotation`, so only one basis rotation is emitted per mode per boundary. The
         leaves are assumed real orthogonal (they are merged by transpose, not adjoint). Each leaf is
         first normalized to determinant :math:`+1` (negating one orbital line, a no-op on
-        :math:`\tilde{n}_{lp}`) so that :class:`~.BasisRotation`'s real-orthogonal sign gauge is
-        consistent across fragments; otherwise leaves with mixed determinants realize a different
-        Hamiltonian.
+        :math:`\tilde{n}_{lp}`) so that no :class:`~.BasisRotation` needs a determinant-correcting
+        phase flip.
 
         **3. One-body diagonal**
         The one-body generator is :math:`D_0 = \sum_{l,p} \epsilon_{lp}\, n_{lp}`, with
@@ -344,7 +361,7 @@ def _apply_system_basis_rotation(U, wires):
     for l in range(num_modes):
         U_l = math.swapaxes(U[l], -2, -1)
         mode_wires = wires[l * n_states : (l + 1) * n_states]
-        if math.is_abstract(U_l) or not np.allclose(U_l, np.eye(n_states)):
+        if math.is_tracer(U_l) or not np.allclose(U_l, np.eye(n_states)):
             BasisRotation(unitary_matrix=U_l, wires=mode_wires)
 
 
@@ -490,7 +507,7 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
     num_onebody_rotations = num_onebody_blocks * num_modes * n_states
 
     # NOTE: 'BasisRotation' decomposes differently depending on the dtype of the unitary matrix.
-    dtype_leaf = Complex if math.get_dtype_name(leaf_tensors).startswith("complex") else Float
+    dtype_leaf, _ = math.get_abstract_and_cast_dtype(leaf_tensors)
     sysrot_key = BasisRotation(dtype_leaf[n_states, n_states], wires=Wire[n_states])
     resources[sysrot_key] += num_modes * num_sysrot_calls
 
@@ -506,9 +523,9 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
         resources[CNOT] += num_twobody_blocks * num_pairs * 2 * n_states
         resources[RZ] += 1
     else:
-        # Genuine controlled: one-body ``ctrl(RZ(...))``, two-body ``ctrl(IsingZZ(...))``; the
+        # Genuine controlled: one-body ``CRZ(...)``, two-body ``ctrl(IsingZZ(...))``; the
         # global phase becomes a PhaseShift on the control wire. There are no bare IsingZZ/RZ gates.
-        resources[ctrl(RZ(Float, wires=Wire[1]), control=Wire[1])] += num_onebody_rotations
+        resources[CRZ] += num_onebody_rotations
         resources[ctrl(IsingZZ(Float, wires=Wire[2]), control=Wire[1])] += num_twobody_rotations
         resources[PhaseShift] += 1
 

@@ -190,7 +190,7 @@ class CSignature:
         symbol (str): the C symbol name, as exported by the runtime library
         params (tuple[CType]): parameter types, in the order the C entry point takes them
         result (CType): the return type; :attr:`CType.VOID` if the entry point returns nothing
-        library (str | None): the shared library exporting this symbol, for a local in-process
+        library (str | None): the shared library exporting this symbol, for a direct local C ABI
             call. It is recorded on the compiled module so the driver links against it. ``None``
             for a dispatched symbol, or one already loaded in the calling process.
 
@@ -310,11 +310,11 @@ def declare(symbol: str, spec: str, library: str | None = None) -> CSignature:
         qp.runtime_declare("example_declared_rounds", "(ptr, u32) -> i32")
 
         # ...and a local symbol, from a shared library the program is linked against:
-        qp.runtime_declare("example_local", "(buf, u64) -> i32", library="/path/liblocal.so")
+        qp.runtime_declare("example_local", "(i32, i32) -> i32", library="/path/liblocal.so")
 
-        def program(session, data):
+        def program(session, lhs, rhs):
             qp.runtime_call("example_declared_rounds", session, 1000, address="board:9000")
-            return qp.runtime_call("example_local", data, data.size)
+            return qp.runtime_call("example_local", lhs, rhs)
 
     .. seealso:: :func:`~pennylane.runtime_call`
     """

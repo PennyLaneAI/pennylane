@@ -32,7 +32,8 @@ jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
 # pylint: disable=wrong-import-position,no-name-in-module
-from pennylane.testing import assert_eqn_matches_op, plxpr_to_tape
+from pennylane.capture.primitives import operator_p
+from pennylane.testing import assert_eqn_matches_op, find_eqns, plxpr_to_tape
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qp.operation.Operator._primitive_bind_call.__code__
@@ -412,13 +413,7 @@ class TestModifiedTemplates:
 
         jaxpr = jax.make_jaxpr(f)()
 
-        relevant_eqns = [
-            eqn for eqn in jaxpr.eqns if eqn.primitive == qp.AmplitudeEmbedding._primitive
-        ]
-
-        # Should be only one eqn for AmplitudeEmbedding
-        assert len(relevant_eqns) == 1
-        eqn = relevant_eqns[0]
+        [eqn] = find_eqns(jaxpr, qp.AmplitudeEmbedding._primitive)
 
         # Check kwargs
         expected_wires = kwargs["wires"] if isinstance(kwargs["wires"], list) else [kwargs["wires"]]
@@ -599,41 +594,31 @@ class TestModifiedTemplates:
     def test_controlled_sequence(self):
         """Test the primitive bind call of ControlledSequence."""
 
-        assert (
-            qp.ControlledSequence._primitive_bind_call.__code__
-            == qp.ops.op_math.SymbolicOp._primitive_bind_call.__code__
-        )
-
         base = qp.RX(0.5, 0)
         control = [1, 5]
 
-        def fn(base):
-            qp.ControlledSequence(base, control=control)
+        def fn(base, control):
+            return qp.ControlledSequence(base, control=control).tracer
 
         # Validate inputs
-        fn(base)
+        fn(base, control)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(fn)(base)
+        jaxpr = jax.make_jaxpr(fn)(base, control)
 
-        assert len(jaxpr.eqns) == 2
-        assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
+        assert len(jaxpr.eqns) == 1
 
-        eqn = jaxpr.eqns[1]
-        assert eqn.primitive == qp.ControlledSequence._primitive
-        assert eqn.invars == jaxpr.eqns[0].outvars
-        # JAX 0.7.0 converts lists to tuples for hashability
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(
-            {"control": control}
-        )
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == operator_p
+        assert_eqn_matches_op(eqn, qp.ControlledSequence)
+        assert eqn.invars == jaxpr.jaxpr.invars[2:] + jaxpr.jaxpr.invars[:2]
         assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert eqn.outvars == jaxpr.jaxpr.outvars
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5, 0)
+        flattened_base, _ = qp.pytrees.flatten(base)
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *flattened_base, *control)
 
-        assert len(q) == 1  # One for each control
-        assert q.queue[0] == qp.ControlledSequence(base, control)
+        qp.assert_equal(op, qp.ControlledSequence(base, control))
 
     def test_fermionic_double_excitation(self):
         """Test the primitive bind call of FermionicDoubleExcitation."""
@@ -1425,28 +1410,30 @@ class TestModifiedTemplates:
         qp.assert_equal(op, qp.Incrementer(**kwargs))
 
     def test_left_classical_comparator(self):
-        """Test the primitive bind call of LeftClassicalComparator."""
+        """Test the primitive bind call of LeftClassicalComparator.
+
+        NOTE: The threshold is captured as an operand and can change at evaluation time.
+        """
 
         kwargs = {
             "x_wires": [0, 1, 2],
-            "L": 3,
             "target_wire": 3,
             "work_wires": [4, 5],
             "comparator": "<",
         }
 
-        def qfunc():
-            return qp.LeftClassicalComparator(**kwargs).tracer
+        def qfunc(threshold):
+            return qp.LeftClassicalComparator(value=threshold, **kwargs).tracer
 
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = jax.make_jaxpr(qfunc)(3)
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(eqn, qp.LeftClassicalComparator)
 
-        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-        qp.assert_equal(op, qp.LeftClassicalComparator(**kwargs))
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 5)
+        qp.assert_equal(op, qp.LeftClassicalComparator(value=5, **kwargs))
 
     def test_left_quantum_comparator(self):
         """Test the primitive bind call of LeftQuantumComparator."""
@@ -1874,7 +1861,8 @@ class TestModifiedTemplates:
 
         qp.assert_equal(op, qp.GQSP(unitary, angles, control=0))
 
-    def test_trotter_cdf(self):
+    @pytest.mark.parametrize("work_wires", [(), (4,), (4, 5)])
+    def test_trotter_cdf(self, work_wires):
         """Test TrotterCDF with program capture."""
 
         from pennylane.numeric_hamiltonians import (  # pylint: disable=import-outside-toplevel
@@ -1889,7 +1877,9 @@ class TestModifiedTemplates:
         wires = [0, 1, 2, 3]
 
         def qfunc(evolution_time):
-            return qp.TrotterCDF(evolution_time, 3, hamiltonian, wires).tracer
+            return qp.TrotterCDF(
+                evolution_time, 3, hamiltonian, wires, work_wires=work_wires
+            ).tracer
 
         # Validate inputs
         qfunc(1.0)
@@ -1902,7 +1892,7 @@ class TestModifiedTemplates:
         assert_eqn_matches_op(eqn, qp.TrotterCDF)
 
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0)
-        qp.assert_equal(op, qp.TrotterCDF(1.0, 3, hamiltonian, wires))
+        qp.assert_equal(op, qp.TrotterCDF(1.0, 3, hamiltonian, wires, work_wires=work_wires))
 
     def test_trotter_cgf(self):
         """Test TrotterCGF with program capture."""

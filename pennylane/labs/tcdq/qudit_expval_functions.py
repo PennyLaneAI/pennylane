@@ -29,14 +29,20 @@ of the technical notes.
 """
 
 import itertools
+import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from functools import partial
 from typing import NamedTuple
 
 import jax
 import jax.numpy as jnp
 import numpy as np
 from jax.typing import ArrayLike
+
+_REAL_DTYPE = jnp.float32
+_COMPLEX_DTYPE = jnp.complex64
+_INDEX_DTYPE = jnp.int32
 
 
 @dataclass
@@ -71,13 +77,15 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
             every qudit, or a sequence of length ``n_qudits`` giving a distinct
             dimension :math:`d_j` per qudit.
         n_qudits (int): Number of qudits in the circuit.
-        gates (dict[int, list[list[int]]]): Circuit structure mapping each
-            trainable-parameter index to a list of generator vectors. Each
-            generator vector has length ``n_qudits`` with integer entries in
-            :math:`\{0, \ldots, d_j-1\}` that specify the power of :math:`Z` on
-            each qudit. For example, with ``d=3`` and ``n_qudits=2``,
-            ``{0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]}`` defines three gates:
-            :math:`Z^1` on qudit 0, :math:`Z^1` on qudit 1, and
+        gates (dict[int, list[dict[int, int]]]): Circuit structure mapping each
+            trainable-parameter index to a list of gates. Each gate is a sparse
+            generator given as a ``dict`` mapping a qudit index to the power of
+            :math:`Z` applied on that qudit; qudits that are not listed are
+            acted on trivially. Powers are reduced modulo the local dimension
+            :math:`d_j`, and entries that reduce to zero are dropped. For
+            example, with ``dims=3`` and ``n_qudits=2``,
+            ``{0: [{0: 1}], 1: [{1: 1}], 2: [{0: 1, 1: 1}]}`` defines three
+            gates: :math:`Z^1` on qudit 0, :math:`Z^1` on qudit 1, and
             :math:`Z^1 \otimes Z^1` on both.
         n_samples (int): Number of random dit-strings drawn for the
             estimation.
@@ -100,6 +108,9 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
             :math:`D'(\mathbf{\xi})` is given by a ``Callable`` with signature ``(params: ArrayLike, z: ArrayLike) -> scalar``
             where ``z`` is a dit-string of shape ``(n_qudits, )`` with entries in :math:`\{0, \dots, d-1\}` and
             ``params`` has shape matching :math:`\mathbf{\xi}`.
+        max_memory (float | None): Upper bound, in gigabytes (1 GB = 1024**3 bytes), on the
+            temporary memory used by the phase-difference computation. If ``None`` (default),
+            memory is unbounded.
 
     **Example**
 
@@ -107,9 +118,9 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     >>> import jax.numpy as jnp
     >>> from pennylane.labs.tcdq import QuditCircuitConfig
     >>> config = QuditCircuitConfig(
-    ...     d=3,
+    ...     dims=3,
     ...     n_qudits=4,
-    ...     gates={0: [[1, 0, 0, 0]], 1: [[0, 1, 0, 0]], 2: [[1, 1, 0, 0]]},
+    ...     gates={0: [{0: 1}], 1: [{1: 1}], 2: [{0: 1, 1: 1}]},
     ...     observables=(
     ...         jnp.array([[1, 0, 0, 0], [0, 1, 0, 0]], dtype=jnp.int32),
     ...         jnp.zeros((2, 4), dtype=jnp.int32),
@@ -123,8 +134,8 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     dims: int | Sequence[int] = None
     #: Number of qudits in the circuit.
     n_qudits: int = None
-    #: Circuit structure mapping parameter indices to generator vectors.
-    gates: dict[int, list[list[int]]] = None
+    #: Circuit structure mapping parameter indices to sparse gates ``{qudit: power}``.
+    gates: dict[int, list[dict[int, int]]] = None
     #: Number of random dit-strings drawn for the estimation.
     n_samples: int = None
     #: JAX PRNG key for random dit-string generation.
@@ -137,6 +148,8 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     init_state_amps: ArrayLike | None = None
     #: Learnable phase layer
     phase_fn: Callable | None = None
+    #: Memory budget in GB for the blocked phase-difference computation, or ``None`` for unbounded.
+    max_memory: float | None = None
 
 
 def _dims_to_numpy(dims: int | Sequence[int], n_qudits: int) -> np.ndarray:
@@ -162,44 +175,110 @@ def _dims_to_numpy(dims: int | Sequence[int], n_qudits: int) -> np.ndarray:
     return normalized_dims
 
 
-def _parse_qudit_generator_dict(circuit_def: dict[int, list[list[int]]], n_qudits: int):
-    """Convert a qudit gate dictionary into a generator matrix and parameter map.
-
-    Unlike the qubit version, generator vectors are provided explicitly (not as wire
-    indices), so each inner list must already have length ``n_qudits`` with integer entries
-    in ``{0, ..., d-1}``.
+class SparseGateGroup(NamedTuple):
+    """Gates of equal weight :math:`\\omega` stored in sparse ``(support, power)`` form.
 
     Args:
-        circuit_def (dict[int, list[list[int]]]): Maps parameter indices to lists of
-            generator vectors of length ``n_qudits``.
-        n_qudits (int): Number of qudits.
+        omega (int): Number of active qudits shared by every gate in the group.
+        supports (np.ndarray): Active qudit indices, shape ``(n_gates, omega)``,
+            sorted in increasing order along the last axis.
+        powers (np.ndarray): Power of :math:`Z` at each support position, shape
+            ``(n_gates, omega)``, with entries in ``{1, ..., d_j - 1}``.
+        param_indices (jnp.ndarray): Index into ``gates_params`` for each gate,
+            shape ``(n_gates,)``.
+    """
 
-    Returns:
-        tuple[jnp.ndarray, jnp.ndarray]: Tuple containing:
-            - Integer generator matrix of shape ``(n_gates, n_qudits)``.
-            - Integer array mapping each gate to its parameter index.
+    #: Number of active qudits per gate in this group.
+    omega: int
+    #: Active qudit indices, shape ``(n_gates, omega)``.
+    supports: np.ndarray
+    #: Power of :math:`Z` at each support position, shape ``(n_gates, omega)``.
+    powers: np.ndarray
+    #: Parameter index of each gate, shape ``(n_gates,)``.
+    param_indices: jnp.ndarray
+
+
+def _normalize_sparse_gate(
+    gate: dict[int, int], n_qudits: int, dims: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """Validate one sparse gate and return its sorted ``(support, powers)`` arrays.
 
     Raises:
-        ValueError: If any generator vector has length != ``n_qudits``.
+        TypeError: If ``gate`` is not a ``dict`` (e.g. a dense length-``n_qudits`` vector).
+        IndexError: If a qudit index is outside ``[-n_qudits, n_qudits)``.
     """
-    flat_gates = []
-    param_indices = []
+    if not isinstance(gate, dict):
+        raise TypeError(
+            "Each qudit gate must be a dict mapping qudit index to Z power, e.g. {0: 1, 2: 2}; "
+        )
+
+    support: list[int] = []
+    powers: list[int] = []
+    for qudit, power in gate.items():
+        q = int(qudit)
+        if q >= n_qudits or q < 0:
+            raise IndexError(f"Qudit index {q} out of range for a {n_qudits}-qudit circuit.")
+        # q = q % n_qudits
+        p = int(power) % int(dims[q])
+        if p == 0:
+            continue
+        support.append(q)
+        powers.append(p)
+
+    order = np.argsort(support, kind="stable")
+    return np.asarray(support, dtype=int)[order], np.asarray(powers, dtype=int)[order]
+
+
+def _parse_qudit_gate_dict(
+    circuit_def: dict[int, list[dict[int, int]]], n_qudits: int, dims: ArrayLike
+) -> list[SparseGateGroup]:
+    """Convert a sparse qudit gate dictionary into weight-grouped support/power arrays.
+
+    Args:
+        circuit_def (dict[int, list[dict[int, int]]]): Maps parameter indices to lists
+            of sparse gates ``{qudit_index: z_power}``.
+        n_qudits (int): Number of qudits.
+        dims (ArrayLike): Per-qudit dimensions, shape ``(n_qudits,)``.
+
+    Returns:
+        list[SparseGateGroup]: One group per distinct non-zero weight, sorted by weight.
+
+    Raises:
+        TypeError: If a gate is not a ``dict``.
+        IndexError: If a qudit index is out of range.
+    """
+    dims = np.asarray(dims, dtype=int)
+    buckets: dict[int, tuple[list[np.ndarray], list[np.ndarray], list[int]]] = {}
 
     for param_idx in sorted(circuit_def.keys()):
+
+        if not isinstance(param_idx, int):
+            raise TypeError(f"Qudit indices must be type int, got type {type(param_idx)} instead.")
+
+        if param_idx < 0:
+            raise ValueError(
+                f"Qudit indices must be non-negative integers, got index {param_idx} instead."
+            )
+
         for gate in circuit_def[param_idx]:
-            if len(gate) != n_qudits:
-                raise ValueError(f"Generator has length {len(gate)}, expected {n_qudits}.")
-            flat_gates.append(gate)
-            param_indices.append(param_idx)
+            support, powers = _normalize_sparse_gate(gate, n_qudits, dims)
+            omega = support.size
+            if omega == 0:
+                continue
+            sup_list, pow_list, pidx_list = buckets.setdefault(omega, ([], [], []))
+            sup_list.append(support)
+            pow_list.append(powers)
+            pidx_list.append(int(param_idx))
 
-    n_gates = len(flat_gates)
-    if n_gates == 0:
-        generators = np.zeros((0, n_qudits), dtype=int)
-    else:
-        generators = np.array(flat_gates, dtype=int)
-
-    param_map = jnp.array(param_indices, dtype=int)
-    return jnp.array(generators), param_map
+    return [
+        SparseGateGroup(
+            omega=omega,
+            supports=np.stack(sup_list),
+            powers=np.stack(pow_list),
+            param_indices=jnp.array(pidx_list, dtype=_INDEX_DTYPE),
+        )
+        for omega, (sup_list, pow_list, pidx_list) in sorted(buckets.items())
+    ]
 
 
 def _compute_qudit_samples(
@@ -207,150 +286,42 @@ def _compute_qudit_samples(
 ) -> jnp.ndarray:
     """Generates uniformly random dit-strings from the product Z_{d_1} x ... x Z_{d_n}."""
 
-    maxval = jnp.asarray(dims, dtype=jnp.int32)[jnp.newaxis, :]  # (1, n_qudits)
-    return jax.random.randint(key, shape=(num_samples, n_qudits), minval=0, maxval=maxval)
+    maxval = jnp.asarray(dims, dtype=_INDEX_DTYPE)[jnp.newaxis, :]  # (1, n_qudits)
+    samples = jax.random.randint(key, shape=(num_samples, n_qudits), minval=0, maxval=maxval)
+    return samples.astype(_INDEX_DTYPE)
 
 
-class WeightGroupData(NamedTuple):
-    """Precomputed factor matrices for gates sharing the same weight (number of active qudits).
-
-    Gates are grouped by weight :math:`\\omega` (number of non-zero entries in
-    the generator vector) so that the :math:`2^\\omega`-term angle-addition
-    expansion can be vectorised over gates within each group.
-
-    Args:
-        param_indices (jnp.ndarray): Maps each gate in this group to its parameter
-            index in the global ``gates_params`` array, shape ``(n_gates,)``.
-        samples_matrices (list[jnp.ndarray]): :math:`2^\\omega` matrices of shape
-            ``(n_gates, n_samples)`` giving the sample-side factor for each
-            angle-addition term.
-        obs_matrices (list[jnp.ndarray]): :math:`2^\\omega` matrices of shape
-            ``(n_gates, n_obs)`` giving the observable-side factor for each
-            angle-addition term.
-    """
-
-    #: Maps each gate to its parameter index, shape ``(n_gates,)``.
-    param_indices: jnp.ndarray
-    #: Sample-side factor matrices for each angle-addition term.
-    samples_matrices: list[jnp.ndarray]
-    #: Observable-side factor matrices for each angle-addition term.
-    obs_matrices: list[jnp.ndarray]
+_BYTES_PER_GB = 1024**3
+_FLOAT_BYTES = 4
 
 
-def _gather_support_values(
-    vectors: ArrayLike, supports: np.ndarray, target_dim: int, n_gates: int, omega: int
-) -> jnp.ndarray:
-    """Extract values at the active qudit positions for every gate, for every vector.
+def _memory_budget_bytes(max_memory: float | None) -> int | None:
+    """Convert a ``max_memory`` budget in GB to an integer number of bytes."""
+    if max_memory is None:
+        return None
 
-    Each gate acts on ``omega`` qudits (its *support*).  Given a batch of
-    full-length vectors (e.g. Monte Carlo samples or observable ``l``-vectors),
-    this function selects only the entries at each gate's support positions and
-    arranges them into shape ``(n_gates, omega, target_dim)`` so downstream
-    trigonometric computations can be vectorised over gates and positions.
-
-    Args:
-        vectors (ArrayLike): Input array of shape ``(target_dim, n_qudits)`` —
-            either the Monte Carlo samples (``target_dim = n_samples``) or the
-            observable ``l``-vectors (``target_dim = n_obs``).
-        supports (np.ndarray): Active qudit indices for each gate, shape
-            ``(n_gates, omega)``.
-        target_dim (int): Number of vectors (rows in ``vectors``).
-        n_gates (int): Number of gates in this weight group.
-        omega (int): Number of active qudits per gate.
-
-    Returns:
-        jnp.ndarray: Values at support positions, shape ``(n_gates, omega, target_dim)``.
-    """
-    flat_supports = supports.reshape(-1)
-    return (
-        jnp.array(vectors)[:, flat_supports].reshape(target_dim, n_gates, omega).transpose(1, 2, 0)
-    )
+    if (
+        isinstance(max_memory, bool)
+        or not isinstance(max_memory, (int, float, np.integer, np.floating))
+        or not math.isfinite(max_memory)
+        or max_memory <= 0
+    ):
+        raise ValueError(
+            "QuditCircuitConfig.max_memory must be None or a positive, finite number of "
+            f"gigabytes, got {max_memory!r}."
+        )
+    return int(max_memory * _BYTES_PER_GB)
 
 
-def _compute_trigonometric_building_blocks(
-    gate_vals: np.ndarray,
-    z_at_support: jnp.ndarray,
-    l_at_support: jnp.ndarray,
-    d_at_support: jnp.ndarray,
-) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    """Compute (state_cos, state_sin, obs_cos, obs_sin) trig factors over the gate support."""
-    g = jnp.array(gate_vals, dtype=jnp.float32)[:, :, jnp.newaxis]
-    d_s = jnp.asarray(d_at_support, dtype=jnp.float32)[:, :, jnp.newaxis]
-    angle_z = 2 * jnp.pi * g * z_at_support.astype(jnp.float32) / d_s + jnp.pi / 4
-    angle_l = 2 * jnp.pi * g * l_at_support.astype(jnp.float32) / d_s
-    return (
-        jnp.sqrt(2.0) * jnp.cos(angle_z),
-        jnp.sqrt(2.0) * jnp.sin(angle_z),
-        jnp.cos(angle_l),
-        jnp.sin(angle_l),
-    )
+def _qudit_phase_bytes_per_gate(omega: int, n_samples: int, n_obs: int) -> int:
+    """Approximate temporary bytes needed per gate of weight ``omega`` inside one block."""
+    per_column = _FLOAT_BYTES * (3 * omega + 2**omega)
+    return per_column * (n_samples + n_obs)
 
 
-def _expand_angle_addition(
-    state_cos: jnp.ndarray,
-    state_sin: jnp.ndarray,
-    obs_cos: jnp.ndarray,
-    obs_sin: jnp.ndarray,
-) -> tuple[list[jnp.ndarray], list[jnp.ndarray]]:
-    """Enumerate all :math:`2^\\omega` angle-addition terms to build the factor matrices.
-
-    Each term corresponds to a binary choice (cos or sin) at each active
-    qudit position, producing paired sample-side and observable-side factors.
-    """
-    n_gates, omega, num_samples = state_cos.shape
-    n_obs = obs_cos.shape[2]
-    state_factors = [state_cos, state_sin]
-    obs_factors = [obs_cos, obs_sin]
-    samples_list: list[jnp.ndarray] = []
-    obs_list: list[jnp.ndarray] = []
-    for sigma in itertools.product([0, 1], repeat=omega):
-        B = jnp.ones((n_gates, num_samples), dtype=jnp.float32)
-        C = jnp.ones((n_gates, n_obs), dtype=jnp.float32)
-        for k, choice in enumerate(sigma):
-            B *= state_factors[choice][:, k, :]
-            C *= obs_factors[choice][:, k, :]
-        samples_list.append(B)
-        obs_list.append(C)
-    return samples_list, obs_list
-
-
-def _build_weight_group(
-    generators_w: np.ndarray,
-    param_indices: jnp.ndarray,
-    samples: jnp.ndarray,
-    l_vecs: jnp.ndarray,
-    dims: np.ndarray,
-) -> WeightGroupData:
-    """Precompute the factor matrices for a group of gates with the same weight."""
-    n_gates = len(generators_w)
-    num_samples = samples.shape[0]
-    n_obs = l_vecs.shape[0]
-    omega = int(np.count_nonzero(generators_w[0]))
-    supports = np.array([np.where(g != 0)[0] for g in generators_w])  # (n_gates, omega)
-    gate_vals = np.array([g[s] for g, s in zip(generators_w, supports)])  # (n_gates, omega)
-    d_at_support = np.asarray(dims)[supports]  # (n_gates, omega)
-
-    z_at_support = _gather_support_values(samples, supports, num_samples, n_gates, omega)
-    l_at_support = _gather_support_values(l_vecs, supports, n_obs, n_gates, omega)
-
-    state_cos, state_sin, obs_cos, obs_sin = _compute_trigonometric_building_blocks(
-        gate_vals, z_at_support, l_at_support, d_at_support
-    )
-    samples_matrices, obs_matrices = _expand_angle_addition(state_cos, state_sin, obs_cos, obs_sin)
-    return WeightGroupData(
-        param_indices=param_indices, samples_matrices=samples_matrices, obs_matrices=obs_matrices
-    )
-
-
-class _PrecomputedObsData(NamedTuple):
-    """Bundled precomputed observable data from the factory."""
-
-    l_vecs: jnp.ndarray
-    n_obs: int
-    l_f: jnp.ndarray
-    m_f: jnp.ndarray
-    weight_data: list
-    obs_phase_matrix: jnp.ndarray
+def _qudit_phase_block_size(max_memory_bytes: int, omega: int, n_samples: int, n_obs: int) -> int:
+    """Number of weight-``omega`` gates per block that fits within ``max_memory_bytes``."""
+    return max(1, max_memory_bytes // _qudit_phase_bytes_per_gate(omega, n_samples, n_obs))
 
 
 def _obs_phase_matrix(
@@ -360,61 +331,164 @@ def _obs_phase_matrix(
 
     :math:`J[i, j] = \\exp(i\\pi \\sum_k m_{ik} (2 z_{jk} - l_{ik}) / d_k)`.
     """
-    s_f = samples.astype(jnp.float32)
-    inv_d = (1.0 / jnp.asarray(dims, dtype=jnp.float32))[jnp.newaxis, :]  # (1, n_qudits)
+    s_f = samples.astype(_REAL_DTYPE)
+    inv_d = (1.0 / jnp.asarray(dims, dtype=_REAL_DTYPE))[jnp.newaxis, :]  # (1, n_qudits)
     m_scaled = m_f * inv_d  # (n_obs, n_qudits)
     return jnp.exp(
         1j * jnp.pi * (2 * m_scaled @ s_f.T - jnp.sum(m_scaled * l_f, axis=1, keepdims=True))
-    )
+    ).astype(_COMPLEX_DTYPE)
+
+
+class _PrecomputedObsData(NamedTuple):
+    """Bundled precomputed observable data from the factory."""
+
+    l_vecs: jnp.ndarray
+    n_obs: int
+    l_f: jnp.ndarray
+    m_f: jnp.ndarray
+    obs_phase_matrix: jnp.ndarray
 
 
 # pylint: disable=too-many-arguments
-def _build_all_weight_groups(
-    gen_np: np.ndarray,
-    pm_np: np.ndarray,
-    gate_weights: np.ndarray,
-    samples: jnp.ndarray,
-    l_vecs: jnp.ndarray,
-    dims: np.ndarray,
-) -> list[WeightGroupData]:
-    """Build :class:`WeightGroupData` for each non-zero gate weight."""
-    weight_data: list[WeightGroupData] = []
-    for omega in sorted(set(gate_weights)):
-        if omega == 0:
-            continue
-        gate_indices = np.where(gate_weights == omega)[0]
-        weight_data.append(
-            _build_weight_group(
-                generators_w=gen_np[gate_indices],
-                param_indices=jnp.array(pm_np[gate_indices]),
-                samples=samples,
-                l_vecs=l_vecs,
-                dims=dims,
-            )
+def _group_block_contribution(
+    theta_ext: jnp.ndarray,
+    samples_t: jnp.ndarray,
+    l_t: jnp.ndarray,
+    dims_f: jnp.ndarray,
+    supports: jnp.ndarray,
+    powers: jnp.ndarray,
+    param_indices: jnp.ndarray,
+) -> jnp.ndarray:
+    """Phase-difference contribution of one block of equal-weight gates.
+
+    Args:
+        theta_ext (jnp.ndarray): Gate parameters with a trailing zero appended, shape
+            ``(n_params + 1,)``. Padded gates index the trailing zero and contribute nothing.
+        samples_t (jnp.ndarray): Transposed samples, shape ``(n_qudits, n_samples)``, float.
+        l_t (jnp.ndarray): Transposed observable ``l`` vectors, shape ``(n_qudits, n_obs)``, float.
+        dims_f (jnp.ndarray): Per-qudit dimensions, shape ``(n_qudits,)``, float.
+        supports (jnp.ndarray): Active qudit indices of the block, shape ``(block, omega)``.
+        powers (jnp.ndarray): :math:`Z` powers of the block, shape ``(block, omega)``.
+        param_indices (jnp.ndarray): Parameter index of each gate, shape ``(block,)``.
+
+    Returns:
+        jnp.ndarray: Accumulated phase differences, shape ``(n_obs, n_samples)``.
+    """
+    omega = supports.shape[1]
+    theta = theta_ext[param_indices]  # (block,)
+
+    g = powers.astype(_REAL_DTYPE)[:, :, jnp.newaxis]  # (block, omega, 1)
+    d_s = dims_f[supports][:, :, jnp.newaxis]  # (block, omega, 1)
+    z_at_support = jnp.take(samples_t, supports, axis=0)  # (block, omega, n_samples)
+    l_at_support = jnp.take(l_t, supports, axis=0)  # (block, omega, n_obs)
+
+    angle_z = 2 * jnp.pi * g * z_at_support / d_s + jnp.pi / 4
+    angle_l = 2 * jnp.pi * g * l_at_support / d_s
+    state_factors = (jnp.sqrt(2.0) * jnp.cos(angle_z), jnp.sqrt(2.0) * jnp.sin(angle_z))
+    obs_factors = (jnp.cos(angle_l), jnp.sin(angle_l))
+
+    accumulated = None
+    for sigma in itertools.product([0, 1], repeat=omega):
+        B_sigma = state_factors[sigma[0]][:, 0, :]
+        C_sigma = obs_factors[sigma[0]][:, 0, :]
+        for k in range(1, omega):
+            B_sigma = B_sigma * state_factors[sigma[k]][:, k, :]
+            C_sigma = C_sigma * obs_factors[sigma[k]][:, k, :]
+        if accumulated is None:  # sigma == (0, ..., 0): B_sigma is the unshifted phi_g(z)
+            accumulated = (theta @ B_sigma)[jnp.newaxis, :]
+        accumulated = accumulated - (C_sigma.T * theta) @ B_sigma
+
+    return accumulated
+
+
+@partial(jax.jit, static_argnames=("block_size",))
+def _group_phase_diffs(
+    theta_ext: jnp.ndarray,
+    samples_t: jnp.ndarray,
+    l_t: jnp.ndarray,
+    dims_f: jnp.ndarray,
+    group: SparseGateGroup,
+    block_size: int,
+) -> jnp.ndarray:
+    """Phase differences of one weight group, processed in memory-bounded blocks."""
+    n_gates, omega = group.supports.shape
+    supports = jnp.asarray(group.supports, dtype=_INDEX_DTYPE)
+    powers = jnp.asarray(group.powers, dtype=_INDEX_DTYPE)
+    param_indices = jnp.asarray(group.param_indices, dtype=_INDEX_DTYPE)
+
+    block_fn = jax.checkpoint(
+        lambda s, p, i: _group_block_contribution(theta_ext, samples_t, l_t, dims_f, s, p, i)
+    )
+
+    if n_gates <= block_size:
+        return block_fn(supports, powers, param_indices)
+
+    n_blocks = -(-n_gates // block_size)
+    n_pad = n_blocks * block_size - n_gates
+    if n_pad:
+        pad_index = theta_ext.shape[0] - 1  # points at the appended zero parameter
+        supports = jnp.concatenate([supports, jnp.zeros((n_pad, omega), supports.dtype)])
+        powers = jnp.concatenate([powers, jnp.ones((n_pad, omega), powers.dtype)])
+        param_indices = jnp.concatenate(
+            [param_indices, jnp.full((n_pad,), pad_index, param_indices.dtype)]
         )
-    return weight_data
+
+    def accumulate(total, block):
+        return total + block_fn(*block), None
+
+    zero = jnp.zeros((l_t.shape[1], samples_t.shape[1]), dtype=_REAL_DTYPE)
+    total, _ = jax.lax.scan(
+        accumulate,
+        zero,
+        (
+            supports.reshape(n_blocks, block_size, omega),
+            powers.reshape(n_blocks, block_size, omega),
+            param_indices.reshape(n_blocks, block_size),
+        ),
+    )
+    return total
 
 
+# pylint: disable=too-many-arguments
 def _accumulate_phase_diffs(
     gates_params: ArrayLike,
-    weight_data: list[WeightGroupData],
-    n_obs: int,
-    n_samples: int,
+    gate_groups: list[SparseGateGroup],
+    samples: jnp.ndarray,
+    l_vecs: jnp.ndarray,
+    dims: ArrayLike,
+    max_memory_bytes: int | None,
     vmapped_phase_func: Callable | None,
     phase_fn_params: ArrayLike | None,
-    samples: ArrayLike,
-    l_vecs: ArrayLike,
 ) -> jnp.ndarray:
     """Assemble the accumulated phase-difference matrix from all weight groups."""
-    accumulated = jnp.zeros((n_obs, n_samples))
-    for group in weight_data:
-        theta_w = jnp.asarray(gates_params)[group.param_indices]
-        accumulated = accumulated + (theta_w @ group.samples_matrices[0])[jnp.newaxis, :]
-        for B_sigma, C_sigma in zip(group.samples_matrices, group.obs_matrices):
-            accumulated = accumulated - (C_sigma.T * theta_w) @ B_sigma
+    n_samples = samples.shape[0]
+    n_obs = l_vecs.shape[0]
+    theta = jnp.asarray(gates_params).astype(_REAL_DTYPE)
+    theta_ext = jnp.concatenate([theta, jnp.zeros((1,), dtype=_REAL_DTYPE)])
+    samples_t = samples.astype(_REAL_DTYPE).T  # (n_qudits, n_samples)
+    l_t = jnp.asarray(l_vecs).astype(_REAL_DTYPE).T  # (n_qudits, n_obs)
+    dims_f = jnp.asarray(dims, dtype=_REAL_DTYPE)
+
+    accumulated = jnp.zeros((n_obs, n_samples), dtype=_REAL_DTYPE)
+    for group in gate_groups:
+        if max_memory_bytes is None:
+            accumulated = accumulated + _group_block_contribution(
+                theta_ext,
+                samples_t,
+                l_t,
+                dims_f,
+                jnp.asarray(group.supports, dtype=_INDEX_DTYPE),
+                jnp.asarray(group.powers, dtype=_INDEX_DTYPE),
+                jnp.asarray(group.param_indices, dtype=_INDEX_DTYPE),
+            )
+        else:
+            block_size = _qudit_phase_block_size(max_memory_bytes, group.omega, n_samples, n_obs)
+            accumulated = accumulated + _group_phase_diffs(
+                theta_ext, samples_t, l_t, dims_f, group, block_size
+            )
 
     if vmapped_phase_func is not None:
-        accumulated += vmapped_phase_func(phase_fn_params, samples, l_vecs)
+        accumulated += vmapped_phase_func(phase_fn_params, samples, l_vecs).astype(_REAL_DTYPE)
 
     return accumulated
 
@@ -427,13 +501,13 @@ def _compute_initial_state_correction(
     dims: ArrayLike,
 ) -> jnp.ndarray:
     """Compute the correction factor for a non-standard initial state."""
-    s_f = samples.astype(jnp.float32)
-    X_state = jnp.asarray(state_elems).astype(jnp.float32)  # (N, n)
-    Psi = jnp.asarray(state_amps)  # (N,)
-    inv_d = (1.0 / jnp.asarray(dims, dtype=jnp.float32))[jnp.newaxis, :]  # (1, n)
+    s_f = samples.astype(_REAL_DTYPE)
+    X_state = jnp.asarray(state_elems).astype(_REAL_DTYPE)  # (N, n)
+    Psi = jnp.asarray(state_amps).astype(_COMPLEX_DTYPE)  # (N,)
+    inv_d = (1.0 / jnp.asarray(dims, dtype=_REAL_DTYPE))[jnp.newaxis, :]  # (1, n)
 
     # ω^{Z·X^T} where ω_j = exp(2πi/d_j) — shape (s, N)
-    omega_ZX = jnp.exp(2j * jnp.pi * ((s_f * inv_d) @ X_state.T))
+    omega_ZX = jnp.exp(2j * jnp.pi * ((s_f * inv_d) @ X_state.T)).astype(_COMPLEX_DTYPE)
 
     # Ψ̃^(2) = ω^{Z·X^T} · Ψ — shape (s,)
     psi_tilde_2 = omega_ZX @ Psi
@@ -442,7 +516,7 @@ def _compute_initial_state_correction(
     F_mat = Psi.conj()[:, jnp.newaxis] * omega_ZX.conj().T
 
     # Ψ̃^(1) = ω^{L·X^T} · F — shape (l, s)
-    omega_LX = jnp.exp(2j * jnp.pi * ((l_f * inv_d) @ X_state.T))  # (l, N)
+    omega_LX = jnp.exp(2j * jnp.pi * ((l_f * inv_d) @ X_state.T)).astype(_COMPLEX_DTYPE)  # (l, N)
     psi_tilde_1 = omega_LX @ F_mat
 
     # H = Ψ̃^(1) ⊙ (1_{l×1} · (Ψ̃^(2))^T) — shape (l, s)
@@ -525,9 +599,9 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
     >>> import jax.numpy as jnp
     >>> from pennylane.labs.tcdq import QuditCircuitConfig, build_qudit_expval_func
     >>> config = QuditCircuitConfig(
-    ...     d=3,
+    ...     dims=3,
     ...     n_qudits=2,
-    ...     gates={0: [[1, 0]], 1: [[0, 1]]},
+    ...     gates={0: [{0: 1}], 1: [{1: 1}]},
     ...     n_samples=512,
     ...     key=jax.random.PRNGKey(0),
     ...     observables=(
@@ -545,10 +619,10 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
 
         `Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/pdf/2607.06675>`_.
     """
-    generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
-
     n = config.n_qudits
     dims = _dims_to_numpy(config.dims, n)
+    gate_groups = _parse_qudit_gate_dict(config.gates, n, dims)
+    max_memory_bytes = _memory_budget_bytes(config.max_memory)
     default_samples = _compute_qudit_samples(config.key, config.n_samples, n, dims)
 
     vmapped_phase_func = None
@@ -565,23 +639,17 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
             in_axes=(None, None, 0),
         )
 
-    gen_np, pm_np = np.array(generators), np.array(param_map)
-    gate_weights = np.sum(gen_np != 0, axis=1)
-
     if config.observables is not None:
-        l_vecs = jnp.array(config.observables[0], dtype=jnp.int32)
-        m_vecs = jnp.array(config.observables[1], dtype=jnp.int32)
-        l_f = l_vecs.astype(jnp.float32)
-        m_f = m_vecs.astype(jnp.float32)
+        l_vecs = jnp.array(config.observables[0], dtype=_INDEX_DTYPE)
+        m_vecs = jnp.array(config.observables[1], dtype=_INDEX_DTYPE)
+        l_f = l_vecs.astype(_REAL_DTYPE)
+        m_f = m_vecs.astype(_REAL_DTYPE)
         n_obs = l_vecs.shape[0]
         defaults = _PrecomputedObsData(
             l_vecs=l_vecs,
             n_obs=n_obs,
             l_f=l_f,
             m_f=m_f,
-            weight_data=_build_all_weight_groups(
-                gen_np, pm_np, gate_weights, default_samples, l_vecs, dims
-            ),
             obs_phase_matrix=_obs_phase_matrix(default_samples, m_f, l_f, dims),
         )
     else:
@@ -623,12 +691,11 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
             of the mean estimator, shape ``(n_obs, 2, 2)``.
         """
         if observables is not None:
-            l_vecs = jnp.array(observables[0], dtype=jnp.int32)
-            n_obs = l_vecs.shape[0]
-            l_f = l_vecs.astype(jnp.float32)
-            m_f = jnp.array(observables[1], dtype=jnp.int32).astype(jnp.float32)
+            l_vecs = jnp.array(observables[0], dtype=_INDEX_DTYPE)
+            l_f = l_vecs.astype(_REAL_DTYPE)
+            m_f = jnp.array(observables[1], dtype=_INDEX_DTYPE).astype(_REAL_DTYPE)
         elif defaults is not None:
-            l_vecs, n_obs, l_f, m_f = defaults.l_vecs, defaults.n_obs, defaults.l_f, defaults.m_f
+            l_vecs, l_f, m_f = defaults.l_vecs, defaults.l_f, defaults.m_f
         else:
             raise ValueError(
                 "No observables specified. Provide them in QuditCircuitConfig "
@@ -648,19 +715,24 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
         )
         if use_cached:
             obs_pm = defaults.obs_phase_matrix
-            w_data = defaults.weight_data
         else:
             obs_pm = _obs_phase_matrix(samples, m_f, l_f, dims)
-            w_data = _build_all_weight_groups(gen_np, pm_np, gate_weights, samples, l_vecs, dims)
 
         accumulated_phase_diffs = _accumulate_phase_diffs(
-            gates_params, w_data, n_obs, _n, vmapped_phase_func, phase_fn_params, samples, l_vecs
+            gates_params,
+            gate_groups,
+            samples,
+            l_vecs,
+            dims,
+            max_memory_bytes,
+            vmapped_phase_func,
+            phase_fn_params,
         )
 
         state_elems = config.init_state_elems if init_state_elems is None else init_state_elems
         state_amps = config.init_state_amps if init_state_amps is None else init_state_amps
 
-        integrand = obs_pm * jnp.exp(1j * accumulated_phase_diffs)
+        integrand = obs_pm * jnp.exp(1j * accumulated_phase_diffs).astype(_COMPLEX_DTYPE)
         if state_elems is not None and state_amps is not None:
             H = _compute_initial_state_correction(samples, l_f, state_elems, state_amps, dims)
             integrand = integrand * H

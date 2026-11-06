@@ -243,7 +243,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
         (Operator): the tapered Hamiltonian
     """
 
-    if any(qp.math.is_abstract(label) for label in ps_h.wires):
+    if any(qp.math.is_tracer(label) for label in ps_h.wires):
         raise ValueError(
             "Cannot taper an operator whose wire labels are abstract JAX tracers. This "
             "happens when the operator is passed as a traced argument to jax.jit. Tapering "
@@ -283,7 +283,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
     interface = qp.math.get_deep_interface(list(ps_h.values()))
     coeffs = qp.math.multiply(val, qp.math.array(list(ts_ps.values()), like=interface))
 
-    if interface == "jax" and qp.math.is_abstract(coeffs):
+    if interface == "jax" and qp.math.is_tracer(coeffs):
         tapered_ham = qp.sum(*(qp.s_prod(coeff, op) for coeff, op in zip(coeffs, obs, strict=True)))
     else:
         if qp.math.all(qp.math.abs(qp.math.imag(coeffs)) <= _IMAGINARY_PART_TOLERANCE):

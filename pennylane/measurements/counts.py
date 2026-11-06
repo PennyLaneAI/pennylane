@@ -474,7 +474,7 @@ def counts(
 
     if isinstance(op, Sequence):
         if not all(
-            math.is_abstract(o) or (isinstance(o, MeasurementValue) and not o.has_processing)
+            math.is_tracer(o) or (isinstance(o, MeasurementValue) and not o.has_processing)
             for o in op
         ):
             raise QuantumFunctionError(

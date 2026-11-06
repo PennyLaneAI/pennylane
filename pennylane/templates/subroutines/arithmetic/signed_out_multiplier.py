@@ -95,7 +95,7 @@ class SignedOutMultiplier(Operator2):
     Then we can find the magnitude by flipping the bits and adding 1. This gives us :math:`[[0 0 1 0 0 1]]`.
     The sum of these bits is :math:`2^3 + 2^0 = 9` for :math:`k=6`.
 
-    >>> print(qp.draw(qp.decompose(circuit, max_expansion=1), max_length=170)())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=1), max_length=170)())
      0: ─╭|Ψ⟩─╭●────╭X───────╭Incrementer───────────────────────╭OutMultiplier───────────────────────────────────╭X───────╭Incrementer───────────────────────╭●────┤
      1: ─├|Ψ⟩─│─────│──╭X────├Incrementer───────────────────────├OutMultiplier───────────────────────────────────│──╭X────├Incrementer───────────────────────│─────┤
      2: ─╰|Ψ⟩─│─────│──│──╭X─├Incrementer───────────────────────├OutMultiplier───────────────────────────────────│──│──╭X─├Incrementer───────────────────────│─────┤

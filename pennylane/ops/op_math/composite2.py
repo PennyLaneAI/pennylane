@@ -63,8 +63,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
                 self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
             )
 
-        for op in self:
-            remove_from_program(op)
+        remove_from_program(*operands)
 
     # FIX: This is a temporary work-around. Long-term fix is to remove `_init_pauli_rep`
     # from the constructor [sc-130145].

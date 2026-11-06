@@ -633,48 +633,46 @@ class TestJaxExecuteIntegration:
             qscript = qp.tape.QuantumScript(
                 [qp.RX(a, wires=0), MyU3(*p, wires=0)], [qp.expval(qp.PauliX(0))]
             )
-            [qscript], _ = qp.decompose(
+            # pylint: disable-next=protected-access
+            [qscript], _ = qp.transforms._tape_decompose(
                 qscript, stopping_condition=qp.devices.default_qubit.stopping_condition
             )
             return execute([qscript], device, **execute_kwargs)[0]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        def _decomp(theta, phi, delta, wires):
+            qp.Rot(delta, theta, -delta, wires)
+            qp.PhaseShift(phi + delta, wires)
 
-            @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
-            def _decomp(theta, phi, delta, wires):
-                qp.Rot(delta, theta, -delta, wires)
-                qp.PhaseShift(phi + delta, wires)
+        qp.add_decomps(MyU3, _decomp)
 
-            qp.add_decomps(MyU3, _decomp)
+        a = jax.numpy.array(0.1)
+        p = jax.numpy.array([0.1, 0.2, 0.3])
 
-            a = jax.numpy.array(0.1)
-            p = jax.numpy.array([0.1, 0.2, 0.3])
+        dev = qp.device("default.qubit", wires=1)
 
-            dev = qp.device("default.qubit", wires=1)
+        res = jax.jit(cost_fn, static_argnums=2)(a, p, device=dev)
 
-            res = jax.jit(cost_fn, static_argnums=2)(a, p, device=dev)
+        expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
+            np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-            expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
-                np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
-            )
-            assert np.allclose(res, expected, atol=tol, rtol=0)
+        jac_fn = jax.jit(jax.grad(cost_fn, argnums=1), static_argnums=2)
 
-            jac_fn = jax.jit(jax.grad(cost_fn, argnums=1), static_argnums=2)
+        res = jac_fn(a, p, device=dev)
 
-            res = jac_fn(a, p, device=dev)
-
-            expected = jax.numpy.array(
-                [
-                    np.cos(p[1])
-                    * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
-                    np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
-                    - np.sin(p[1])
-                    * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
-                    np.sin(a)
-                    * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
-                ]
-            )
-            assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = jax.numpy.array(
+            [
+                np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
+                np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
+                - np.sin(p[1])
+                * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
+                np.sin(a)
+                * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_independent_expval(self, execute_kwargs):
         """Tests computing an expectation value that is independent of trainable

@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.parametrize(
@@ -82,7 +82,7 @@ def test_standard_validity(lcu, control):
     """Check the operation using the assert_valid function."""
     op = qp.Qubitization(lcu, control)
     # Skip differentiation for test cases that raise NaNs in gradients (known limitation of ``MottonenStatePreparation``).
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.parametrize(
@@ -134,8 +134,7 @@ def test_decomposition(hamiltonian, expected_decomposition):
 def test_decomposition_new(hamiltonian, control):  # pylint: disable=unused-argument
     """Tests the decomposition rule implemented with the new system."""
     op = qp.Qubitization(hamiltonian, control=control)
-    for rule in qp.list_decomps(qp.Qubitization):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 def test_lightning_qubit():

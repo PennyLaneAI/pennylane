@@ -513,41 +513,36 @@ class TestJaxExecuteIntegration:
             )
             return execute([tape], device, **execute_kwargs)[0]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        def _decomp(theta, phi, delta, wires):
+            qp.Rot(delta, theta, -delta, wires)
+            qp.PhaseShift(phi + delta, wires)
 
-            @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
-            def _decomp(theta, phi, delta, wires):
-                qp.Rot(delta, theta, -delta, wires)
-                qp.PhaseShift(phi + delta, wires)
+        qp.add_decomps(MyU3, _decomp)
 
-            qp.add_decomps(MyU3, _decomp)
+        a = jnp.array(0.1)
+        p = jnp.array([0.1, 0.2, 0.3])
 
-            a = jnp.array(0.1)
-            p = jnp.array([0.1, 0.2, 0.3])
+        res = cost_fn(a, p)
+        expected = jnp.cos(a) * jnp.cos(p[1]) * jnp.sin(p[0]) + jnp.sin(a) * (
+            jnp.cos(p[2]) * jnp.sin(p[1]) + jnp.cos(p[0]) * jnp.cos(p[1]) * jnp.sin(p[2])
+        )
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-            res = cost_fn(a, p)
-            expected = jnp.cos(a) * jnp.cos(p[1]) * jnp.sin(p[0]) + jnp.sin(a) * (
-                jnp.cos(p[2]) * jnp.sin(p[1]) + jnp.cos(p[0]) * jnp.cos(p[1]) * jnp.sin(p[2])
-            )
-            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
-
-            jac_fn = jax.jacobian(cost_fn, argnums=[1])
-            res = jac_fn(a, p)
-            expected = jnp.array(
-                [
-                    jnp.cos(p[1])
-                    * (jnp.cos(a) * jnp.cos(p[0]) - jnp.sin(a) * jnp.sin(p[0]) * jnp.sin(p[2])),
-                    jnp.cos(p[1]) * jnp.cos(p[2]) * jnp.sin(a)
-                    - jnp.sin(p[1])
-                    * (jnp.cos(a) * jnp.sin(p[0]) + jnp.cos(p[0]) * jnp.sin(a) * jnp.sin(p[2])),
-                    jnp.sin(a)
-                    * (
-                        jnp.cos(p[0]) * jnp.cos(p[1]) * jnp.cos(p[2])
-                        - jnp.sin(p[1]) * jnp.sin(p[2])
-                    ),
-                ]
-            )
-            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        jac_fn = jax.jacobian(cost_fn, argnums=[1])
+        res = jac_fn(a, p)
+        expected = jnp.array(
+            [
+                jnp.cos(p[1])
+                * (jnp.cos(a) * jnp.cos(p[0]) - jnp.sin(a) * jnp.sin(p[0]) * jnp.sin(p[2])),
+                jnp.cos(p[1]) * jnp.cos(p[2]) * jnp.sin(a)
+                - jnp.sin(p[1])
+                * (jnp.cos(a) * jnp.sin(p[0]) + jnp.cos(p[0]) * jnp.sin(a) * jnp.sin(p[2])),
+                jnp.sin(a)
+                * (jnp.cos(p[0]) * jnp.cos(p[1]) * jnp.cos(p[2]) - jnp.sin(p[1]) * jnp.sin(p[2])),
+            ]
+        )
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
     def test_probability_differentiation(self, execute_kwargs, device_name, seed, shots):
         """Tests correct output shape and evaluation for a tape

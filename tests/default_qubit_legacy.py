@@ -1011,7 +1011,7 @@ class DefaultQubitLegacy(QubitDevice):
         basis_states = np.arange(number_of_states)
         # pylint:disable = import-outside-toplevel
         if (
-            qp.math.is_abstract(state_probability)
+            qp.math.is_tracer(state_probability)
             and qp.math.get_interface(state_probability) == "jax"
         ):
             import jax

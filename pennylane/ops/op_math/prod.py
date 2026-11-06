@@ -150,8 +150,7 @@ def prod(*ops, lazy=True):
                 op.operands if isinstance(op, Prod2) else (op,) for op in ops
             )
         )
-        for op in ops:
-            remove_from_program(op)
+        remove_from_program(*ops)
 
         return Prod2(operands)
 
@@ -585,10 +584,10 @@ def _controlled_product_with_one_work_wire(*_, control_wires, work_wires, base, 
     Assumes that all ``control_values`` are 1. Zero-control flipping is handled
     by wrapping this rule with ``flip_zero_control``.
     """
-    qp.ctrl(qp.X(work_wires[:1]), control=control_wires)
+    qp.MultiControlledX([*control_wires, work_wires[0]])
     for op in base.operands[::-1]:
         qp.ctrl(op, control=work_wires[:1])
-    qp.ctrl(qp.X(work_wires[:1]), control=control_wires)
+    qp.MultiControlledX([*control_wires, work_wires[0]])
 
 
 qp.add_decomps(

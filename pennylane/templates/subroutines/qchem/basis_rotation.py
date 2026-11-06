@@ -22,7 +22,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import register_condition
-from pennylane.ops import PhaseShift, SingleExcitation, cond
+from pennylane.ops import PauliZ, PhaseShift, SingleExcitation, cond
 from pennylane.typing import Wire
 from pennylane.wires import Wires
 
@@ -32,28 +32,31 @@ def _qjit_or_capture():
 
 
 def _adjust_determinant(matrix):
-    """Given an orthogonal (real-valued unitary) matrix, adjust its determinant to be 1
-    and queue a phase shift that is equivalent to this adjustment in the context of BasisRotation.
+    """Given an orthogonal (real-valued unitary) matrix, adjust its determinant to be 1.
 
     Args:
         matrix (array): orthogonal matrix to adjust the determinant of.
 
     Returns:
-        tuple[float, array]: The angle to be passed into a PhaseShift gate on the first
-        wire to perform the determinant adjustment on the quantum circuit level,
-        as well as the new matrix with adjusted determinant :math:`+1`.
+        tuple[bool, array]: Whether the determinant was negative, as well as the new
+        matrix with determinant :math:`+1`.
 
     """
     det = math.linalg.det(matrix)
 
     mat = matrix
-    if math.is_abstract(det) or det < 0:
+    if math.is_tracer(det):
+        was_negative = det < 0
+        mat = math.set_index(mat, 0, math.where(was_negative, -mat[0], mat[0]))
+        return was_negative, mat
+
+    was_negative = bool(det < 0)
+    if was_negative:
         if math.get_interface(mat) != "jax":
             mat = math.toarray(mat).copy()
-        mat = math.T(math.set_index(math.T(mat), 0, -mat[:, 0]))
-        return np.pi * (1 - math.real(det)) / 2, mat
+        mat = math.set_index(mat, 0, -mat[0])
 
-    return np.array(0.0), mat
+    return was_negative, mat
 
 
 class BasisRotation(Operator2):
@@ -73,7 +76,6 @@ class BasisRotation(Operator2):
     `Optica, 3, 1460 (2016) <https://opg.optica.org/optica/fulltext.cfm?uri=optica-3-12-1460&id=355743>`_\ .
     For real-valued, i.e., orthogonal :math:`u`, only ``SingleExcitation`` gates are required,
     except for a :class:`~.PauliZ` phase flip for :math:`\operatorname{det}(u)=-1`.
-    This can be expressed concisely by applying ``PhaseShift((1-det(u)) * π / 2)``.
 
     .. seealso:: :func:`~.math.decomposition.givens_decomposition` for the underlying matrix factorization.
 
@@ -85,6 +87,29 @@ class BasisRotation(Operator2):
     Raises:
         ValueError: if the provided matrix is not square.
         ValueError: if length of the wires is less than two.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.BasisRotation
+            :stacked:
+            :symbols: :math:`N \times N` matrix :math:`u` (``unitary_matrix``) on :math:`N` wires
+            :example: :math:`N=3`, with :math:`\det u = -1` for the real-valued rule
+
+            .. decomposition-rule:: _real_basis_rotation_decomp
+                :image: /_static/decomposition_thumbnails/basis_rotation_real_givens.svg
+                :requires: real-valued :math:`u`
+                :where: :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
+
+                :class:`~.PhaseShift` | :math:`[\det u = -1]` | 1
+                :class:`~.SingleExcitation` | :math:`N(N-1)/2` | 3
+
+            .. decomposition-rule:: _complex_basis_rotation_decomp
+                :image: /_static/decomposition_thumbnails/basis_rotation_complex_givens.svg
+                :requires: complex-valued :math:`u`
+
+                :class:`~.PhaseShift` | :math:`\leq N(N+1)/2` | 6
+                :class:`~.SingleExcitation` | :math:`N(N-1)/2` | 3
 
     .. details::
         :title: Usage Details
@@ -120,7 +145,7 @@ class BasisRotation(Operator2):
         The ``BasisRotation`` is implemented with :class:`~.PhaseShift` and
         :class:`~.SingleExcitation` gates:
 
-        >>> @qp.decompose(gate_set=qp.gate_sets.ALL_OPS)
+        >>> @qp.transforms._tape_decompose(gate_set=qp.gate_sets.ALL_OPS)
         ... def circ():
         ...     qp.BasisRotation(wires=wires, unitary_matrix=umat)
         >>> print(qp.draw(circ)())
@@ -128,18 +153,18 @@ class BasisRotation(Operator2):
         1: ──Rϕ(1.62)──╰G(1.38)────────────┤
 
         For real-valued matrices, the decomposition only consists of ``SingleExcitation`` gates,
-        except for one phase gate to account for negative determinants:
+        except for one ``PauliZ`` gate to account for negative determinants:
 
         >>> from scipy.stats import ortho_group
         >>> O = ortho_group.rvs(4, random_state=51)
-        >>> @qp.decompose(gate_set=qp.gate_sets.ALL_OPS)
+        >>> @qp.transforms._tape_decompose(gate_set=qp.gate_sets.ALL_OPS)
         ... def circ():
         ...     qp.BasisRotation(wires=range(4), unitary_matrix=O)
         >>> print(qp.draw(circ)())
-        0: ──Rϕ(3.14)─╭G(-3.19)──────────╭G(2.63)─┤
-        1: ─╭G(-3.13)─╰G(-3.19)─╭G(2.68)─╰G(2.63)─┤
-        2: ─╰G(-3.13)─╭G(-2.98)─╰G(2.68)─╭G(5.70)─┤
-        3: ───────────╰G(-2.98)──────────╰G(5.70)─┤
+        0: ──Z───────╭G(-3.19)───────────╭G(2.63)──┤
+        1: ─╭G(3.13)─╰G(-3.19)─╭G(-2.68)─╰G(2.63)──┤
+        2: ─╰G(3.13)─╭G(2.98)──╰G(-2.68)─╭G(-5.70)─┤
+        3: ──────────╰G(2.98)────────────╰G(-5.70)─┤
 
     .. details::
         :title: Theory
@@ -309,7 +334,7 @@ class BasisRotation(Operator2):
             raise ValueError(f"The unitary matrix should be of shape NxN, got {(M, N)}")
 
         if check:
-            if not math.is_abstract(unitary_matrix) and not math.allclose(
+            if not math.is_tracer(unitary_matrix) and not math.allclose(
                 unitary_matrix @ math.conj(unitary_matrix).T,
                 math.eye(M, dtype=complex),
                 atol=1e-4,
@@ -322,16 +347,8 @@ class BasisRotation(Operator2):
         super().__init__(unitary_matrix, wires=wires)
 
 
-def _is_complex_matrix(unitary_matrix, **__):
-    return math.get_dtype_name(unitary_matrix).startswith("complex")
-
-
-def _is_real_matrix(unitary_matrix, **__):
-    return not _is_complex_matrix(unitary_matrix)
-
-
 def _is_jax_jit(U):
-    return math.is_abstract(U) and not _qjit_or_capture()
+    return math.is_tracer(U) and not _qjit_or_capture()
 
 
 def _prepare_args(unitary_matrix, wires):
@@ -351,26 +368,29 @@ def _real_basis_rotation_resources(unitary_matrix, wires, check=False):
     """Upper bound on the gates emitted by '_real_basis_rotation_decomp'.
 
     - SingleExcitation: Exact count of N(N-1)/2 for Givens rotation.
-    - PhaseShift: *At most* one for determinant correction; skipped if det = +1.
+    - PauliZ: *At most* one for determinant correction; skipped if det = +1. Under ``jax.jit``
+      without qjit or program capture, this is a PhaseShift instead.
 
     """
     dim = math.shape(unitary_matrix)[0]
+    correction = PhaseShift if _is_jax_jit(unitary_matrix) else PauliZ
 
-    return {PhaseShift: 1, SingleExcitation: dim * (dim - 1) // 2}
+    return {correction: 1, SingleExcitation: dim * (dim - 1) // 2}
 
 
-@register_condition(_is_real_matrix)
+@register_condition(lambda unitary_matrix, **_: not math.is_complex_dtype(unitary_matrix))
 @register_resources(_real_basis_rotation_resources, exact=False)
 def _real_basis_rotation_decomp(unitary_matrix, wires, **_):
 
     unitary, wires = _prepare_args(unitary_matrix, wires)
 
-    angle, unitary = _adjust_determinant(unitary)
+    was_negative, unitary = _adjust_determinant(unitary)
 
-    if _is_jax_jit(angle):
-        PhaseShift(angle, wires[0])
+    if _is_jax_jit(was_negative):
+        # Plain jax.jit cannot branch on the traced determinant, so apply PauliZ as PhaseShift(pi).
+        PhaseShift(math.where(was_negative, np.pi, 0.0), wires[0])
     else:
-        cond(math.logical_not(math.allclose(angle, 0.0)), PhaseShift)(angle, wires[0])
+        cond(was_negative, PauliZ)(wires[0])
 
     _, givens_list = math.decomposition.givens_decomposition(unitary)
     givens_matrices, givens_ids = zip(*givens_list, strict=True)
@@ -384,7 +404,7 @@ def _real_basis_rotation_decomp(unitary_matrix, wires, **_):
     def givens_loop(idx):
         grot_mat = givens_matrices[idx]
         i, j = givens_ids[idx]
-        theta = math.arctan2(math.real(grot_mat[0, 1]), math.real(grot_mat[0, 0]))
+        theta = math.arctan2(math.real(grot_mat[1, 0]), math.real(grot_mat[0, 0]))
         SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
 
     givens_loop()  # pylint: disable=no-value-for-parameter
@@ -404,7 +424,7 @@ def _complex_basis_rotation_resources(unitary_matrix, wires, check=False):
     return {PhaseShift: dim + se_count, SingleExcitation: se_count}
 
 
-@register_condition(_is_complex_matrix)
+@register_condition(lambda unitary_matrix, **_: math.is_complex_dtype(unitary_matrix))
 @register_resources(_complex_basis_rotation_resources, exact=False)
 def _complex_basis_rotation_decomp(unitary_matrix, wires, **_):
 
@@ -430,7 +450,9 @@ def _complex_basis_rotation_decomp(unitary_matrix, wires, **_):
         grot_mat = givens_matrices[idx]
         i, j = givens_ids[idx]
         theta = math.arccos(math.real(grot_mat[1, 1]))
-        phi = math.angle(grot_mat[0, 0])
+        # The first column of grot_mat is e^{i phi} (cos(theta), sin(theta)) with both entries
+        # non-negative before the phase, so their sum always carries the phase.
+        phi = math.angle(grot_mat[0, 0] + grot_mat[1, 0])
         SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
         if _is_jax_jit(phi):
             PhaseShift(phi, wires[i])

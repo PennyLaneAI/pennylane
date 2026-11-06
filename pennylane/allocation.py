@@ -22,7 +22,7 @@ from typing import Literal
 
 from pennylane.capture import enabled as capture_enabled
 from pennylane.core.operator import Operator
-from pennylane.math import is_abstract
+from pennylane.math import is_tracer
 from pennylane.wires import DynamicWire, Wires
 
 has_jax = True
@@ -386,7 +386,7 @@ def allocate(
     if isinstance(num_wires, Integral) and not isinstance(num_wires, bool) and num_wires == 0:
         return DynamicRegister(())
     if capture_enabled():
-        if is_abstract(num_wires):
+        if is_tracer(num_wires):
             raise NotImplementedError(
                 "Number of allocated wires must be static when capture is enabled."
             )

@@ -36,7 +36,7 @@ def test_standard_validity(init_state):
 
     weights = np.random.normal(0, 2 * np.pi, (layers, 2 * qubits - 1))
     op = qp.ParticleConservingU2(weights, wires=range(qubits), init_state=init_state)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_resources():

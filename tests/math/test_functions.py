@@ -1421,6 +1421,34 @@ def test_get_dtype_name(x, expected):
     assert fn.get_dtype_name(x) == expected
 
 
+@pytest.mark.parametrize(
+    "obj, expected_is_complex",
+    [
+        (1.0, False),
+        (1.0j, True),
+        (True, False),
+        (onp.array([1], dtype=onp.int64), False),
+        (onp.array([1], dtype=onp.complex64), True),
+        (np.array([1.0]), False),
+        (np.array([1.0j]), True),
+        (jnp.array([1.0]), False),
+        (jnp.array([1.0j]), True),
+        (torch.tensor([1.0]), False),
+        (torch.tensor([1.0j]), True),
+        (qp.typing.Float[2], False),
+        (qp.typing.Complex[2], True),
+    ],
+)
+def test_complex_dtype_helpers(obj, expected_is_complex):
+    assert fn.is_complex_dtype(obj) is expected_is_complex
+
+    abstract_dtype, cast_dtype = fn.get_abstract_and_cast_dtype(obj)
+    expected_abstract = qp.typing.Complex if expected_is_complex else qp.typing.Float
+    expected_cast = complex if expected_is_complex else float
+    assert abstract_dtype is expected_abstract
+    assert cast_dtype is expected_cast
+
+
 @pytest.mark.parametrize("t", test_data)
 def test_sqrt(t):
     """Test that the square root function works for a variety

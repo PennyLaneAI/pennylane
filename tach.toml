@@ -140,7 +140,7 @@ from = ["pennylane.core.transforms"]
 
 [[modules]]
 path = "pennylane.math"
-depends_on = ["pennylane._grad", "pennylane.numpy"]
+depends_on = ["pennylane._grad", "pennylane.numpy", "pennylane.typing"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
@@ -303,16 +303,6 @@ layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.qnn"
-layer = "tertiary"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.kernels"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-layer = "tertiary"
-
-[[modules]]
 path = "pennylane.data"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "tertiary"
@@ -359,6 +349,7 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.testing"
+layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 ## UNSORTED module(s)
@@ -380,7 +371,7 @@ path = "pennylane.core.operator"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[interfaces]]
-expose = ["Operator", "Operator1", "Operator2", "Operation", "Channel", "StatePrepBase", "StatePrepBase2", "abstractify"]
+expose = ["Operator", "Operator1", "Operator2", "Operation", "Channel", "StatePrepBase", "StatePrepBase2", "abstractify", "get_op_class_by_name"]
 from = ["pennylane.core.operator"]
 
 [[modules]]
@@ -413,7 +404,7 @@ path = "pennylane.resource"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[interfaces]]
-expose = ["SpecsResources", "SymbolicSpecsResources", "CircuitSpecs", "resources_from_tape", "Expression", "analyze", "specs", "track"]
+expose = ["SpecsResources", "SymbolicSpecsResources", "CircuitSpecs", "resources_from_tape", "Expression", "analyze", "estimate", "specs", "track"]
 from = ["pennylane.resource"]
 
 [[modules]]

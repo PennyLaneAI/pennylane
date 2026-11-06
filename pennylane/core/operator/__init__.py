@@ -125,15 +125,6 @@ Other
 
     ~operation_derivative
 
-.. currentmodule:: pennylane
-
-PennyLane also provides a function for checking the consistency and correctness of an operator instance.
-
-.. autosummary::
-    :toctree: api
-
-    ~ops.functions.assert_valid
-
 Operation attributes
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -165,6 +156,7 @@ from .operator2 import Operator2, StatePrepBase2
 from .channel import Channel
 from .state_prep import StatePrepBase
 from .utils import abstractify
+from .operator2 import get_op_class_by_name
 
 __all__ = [
     "Operator",
@@ -175,4 +167,5 @@ __all__ = [
     "Operator1",
     "StatePrepBase2",
     "abstractify",
+    "get_op_class_by_name",
 ]

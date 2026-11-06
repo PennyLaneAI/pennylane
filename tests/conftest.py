@@ -94,6 +94,13 @@ def restore_global_seed():
     np.random.set_state(original_state)
 
 
+@pytest.fixture(autouse=True)
+def restore_decomposition_rules():
+    """Undo any changes a test makes to the registry of decomposition rules."""
+    with qp.decomposition.local_decomps():
+        yield
+
+
 @pytest.fixture
 def seed(request):
     """An integer random number generator seed

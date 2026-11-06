@@ -143,7 +143,7 @@ class PhaseAdder(Operation):
 
         num_work_wires = len(work_wire)
 
-        if not math.is_abstract(mod):
+        if not math.is_tracer(mod):
             if mod is None:
                 mod = 2 ** len(x_wires)
             elif mod != 2 ** len(x_wires) and num_work_wires != 1:
@@ -157,7 +157,7 @@ class PhaseAdder(Operation):
                     "PhaseAdder must have enough x_wires to represent mod. The maximum mod "
                     f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
                 )
-            abstract_wires = any(math.is_abstract(w) for w in work_wire)
+            abstract_wires = any(math.is_tracer(w) for w in work_wire)
             if num_work_wires != 0 and not abstract_wires:
                 if any(wire in work_wire for wire in x_wires):
                     raise ValueError(
@@ -247,7 +247,7 @@ class PhaseAdder(Operation):
             op_list.append(
                 ops.change_op_basis(
                     ops.adjoint(QFT)(wires=x_wires),
-                    ops.ctrl(ops.X(work_wire), control=aux_k, control_values=1),
+                    ops.CNOT(wires=[aux_k, work_wire[0]]),
                     QFT(wires=x_wires),
                 )
             )
@@ -293,7 +293,7 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
             ops.CNOT,
             QFT(Wire[num_x_wires]),
         ): 1,
-        ops.ControlledPhaseShift: num_x_wires,
+        ops.ctrl(ops.PhaseShift(Float, Wire[1]), control=Wire[1]): num_x_wires,
         _change_op_basis_abstract(
             basis_op1,
             ops.CNOT,

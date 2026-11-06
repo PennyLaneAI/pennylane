@@ -525,55 +525,47 @@ class TestQNode:
                     qp.PhaseShift(phi + lam, wires=wires),
                 ]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        def _decomp(theta, phi, delta, wires):
+            qp.Rot(delta, theta, -delta, wires)
+            qp.PhaseShift(phi + delta, wires)
 
-            @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
-            def _decomp(theta, phi, delta, wires):
-                qp.Rot(delta, theta, -delta, wires)
-                qp.PhaseShift(phi + delta, wires)
+        qp.add_decomps(MyU3, _decomp)
 
-            qp.add_decomps(MyU3, _decomp)
+        a = np.array(0.1)
+        p_val = [0.1, 0.2, 0.3]
+        p = torch.tensor(p_val, dtype=torch.float64, requires_grad=True)
 
-            a = np.array(0.1)
-            p_val = [0.1, 0.2, 0.3]
-            p = torch.tensor(p_val, dtype=torch.float64, requires_grad=True)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
+        def circuit(a, p):
+            qp.RX(a, wires=0)
+            MyU3(p[0], p[1], p[2], wires=0)
+            return qp.expval(qp.PauliX(0))
 
-            @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
-            def circuit(a, p):
-                qp.RX(a, wires=0)
-                MyU3(p[0], p[1], p[2], wires=0)
-                return qp.expval(qp.PauliX(0))
+        res = circuit(a, p)
 
-            res = circuit(a, p)
+        expected = np.cos(a) * np.cos(p_val[1]) * np.sin(p_val[0]) + np.sin(a) * (
+            np.cos(p_val[2]) * np.sin(p_val[1])
+            + np.cos(p_val[0]) * np.cos(p_val[1]) * np.sin(p_val[2])
+        )
+        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
 
-            expected = np.cos(a) * np.cos(p_val[1]) * np.sin(p_val[0]) + np.sin(a) * (
-                np.cos(p_val[2]) * np.sin(p_val[1])
-                + np.cos(p_val[0]) * np.cos(p_val[1]) * np.sin(p_val[2])
-            )
-            assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
-
-            res.backward()
-            expected = np.array(
-                [
-                    np.cos(p_val[1])
-                    * (
-                        np.cos(a) * np.cos(p_val[0])
-                        - np.sin(a) * np.sin(p_val[0]) * np.sin(p_val[2])
-                    ),
-                    np.cos(p_val[1]) * np.cos(p_val[2]) * np.sin(a)
-                    - np.sin(p_val[1])
-                    * (
-                        np.cos(a) * np.sin(p_val[0])
-                        + np.cos(p_val[0]) * np.sin(a) * np.sin(p_val[2])
-                    ),
-                    np.sin(a)
-                    * (
-                        np.cos(p_val[0]) * np.cos(p_val[1]) * np.cos(p_val[2])
-                        - np.sin(p_val[1]) * np.sin(p_val[2])
-                    ),
-                ]
-            )
-            assert np.allclose(p.grad, expected, atol=tol, rtol=0)
+        res.backward()
+        expected = np.array(
+            [
+                np.cos(p_val[1])
+                * (np.cos(a) * np.cos(p_val[0]) - np.sin(a) * np.sin(p_val[0]) * np.sin(p_val[2])),
+                np.cos(p_val[1]) * np.cos(p_val[2]) * np.sin(a)
+                - np.sin(p_val[1])
+                * (np.cos(a) * np.sin(p_val[0]) + np.cos(p_val[0]) * np.sin(a) * np.sin(p_val[2])),
+                np.sin(a)
+                * (
+                    np.cos(p_val[0]) * np.cos(p_val[1]) * np.cos(p_val[2])
+                    - np.sin(p_val[1]) * np.sin(p_val[2])
+                ),
+            ]
+        )
+        assert np.allclose(p.grad, expected, atol=tol, rtol=0)
 
 
 class TestShotsIntegration:
@@ -1266,41 +1258,39 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qp.RY(3 * self.data[0], wires=self.wires)]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RY: 1})
+        def custom_decomposition(param, wires):
+            qp.RY(3 * param, wires=wires)
 
-            @qp.register_resources({qp.RY: 1})
-            def custom_decomposition(param, wires):
-                qp.RY(3 * param, wires=wires)
+        qp.add_decomps(PhaseShift, custom_decomposition)
 
-            qp.add_decomps(PhaseShift, custom_decomposition)
+        @qnode(
+            dev,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            max_diff=2,
+            device_vjp=device_vjp,
+            interface="torch",
+            gradient_kwargs=gradient_kwargs,
+        )
+        def circuit(x):
+            qp.Hadamard(wires=0)
+            PhaseShift(x, wires=0)
+            return qp.expval(qp.PauliX(0))
 
-            @qnode(
-                dev,
-                diff_method=diff_method,
-                grad_on_execution=grad_on_execution,
-                max_diff=2,
-                device_vjp=device_vjp,
-                interface="torch",
-                gradient_kwargs=gradient_kwargs,
-            )
-            def circuit(x):
-                qp.Hadamard(wires=0)
-                PhaseShift(x, wires=0)
-                return qp.expval(qp.PauliX(0))
+        x = torch.tensor(0.5, requires_grad=True, dtype=torch.float64)
 
-            x = torch.tensor(0.5, requires_grad=True, dtype=torch.float64)
+        loss = circuit(x)
 
-            loss = circuit(x)
+        loss.backward()
+        res = x.grad
 
-            loss.backward()
-            res = x.grad
+        assert torch.allclose(res, -3 * torch.sin(3 * x))
 
-            assert torch.allclose(res, -3 * torch.sin(3 * x))
-
-            if diff_method == "parameter-shift" and dev.name != "param_shift.qubit":
-                # test second order derivatives
-                res = torch.autograd.functional.hessian(circuit, x)
-                assert torch.allclose(res, -9 * torch.cos(3 * x))
+        if diff_method == "parameter-shift" and dev.name != "param_shift.qubit":
+            # test second order derivatives
+            res = torch.autograd.functional.hessian(circuit, x)
+            assert torch.allclose(res, -9 * torch.cos(3 * x))
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_gradient_expansion_trainable_only(

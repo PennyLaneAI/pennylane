@@ -24,10 +24,9 @@ import pytest
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import abstractify
-from pennylane.decomposition import list_decomps
-from pennylane.ops import PPR, H, MultiRZ
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
+from pennylane.ops import PPR_4, H, MultiRZ
 from pennylane.templates.subroutines.iqp import IQP
+from pennylane.testing import assert_decomposable, assert_valid
 from pennylane.typing import AbstractArray, AbstractWires
 
 
@@ -100,8 +99,7 @@ def test_raises(params, error, match):
 def test_decomposition_new(weights, pattern, spin_sym, wires):  # pylint: disable=too-many-arguments
     op = IQP(weights, wires, pattern, spin_sym)
 
-    for rule in list_decomps(IQP):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 @pytest.mark.parametrize(
@@ -112,7 +110,7 @@ def test_decomposition_new(weights, pattern, spin_sym, wires):  # pylint: disabl
             local_gates(4, 1),
             True,
             ["a", "b", "c", "d"],
-            [PPR, H, H, H, H, MultiRZ, MultiRZ, MultiRZ, MultiRZ, H, H, H, H],
+            [PPR_4, H, H, H, H, MultiRZ, MultiRZ, MultiRZ, MultiRZ, H, H, H, H],
         ),
         (
             math.random.uniform(0, 2 * np.pi, 4),
@@ -202,7 +200,7 @@ class TestMatrix:
         weights = math.random.uniform(0, 2 * np.pi, num_wires)
         pattern = [[[i]] for i in range(num_wires)]
         without = IQP(weights, range(num_wires), pattern, spin_sym=False).matrix()
-        ppr = PPR.compute_matrix(4, "Y" + "X" * (num_wires - 1))
+        ppr = PPR_4.compute_matrix(1, "Y" + "X" * (num_wires - 1))
         with_spin_sym = IQP(weights, range(num_wires), pattern, spin_sym=True).matrix()
         assert math.allclose(with_spin_sym, without @ ppr)
 

@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice, make_graph_state
-from pennylane.ops.functions import assert_valid
+from pennylane.testing import assert_valid
 
 
 class TestGraphStatePrep:

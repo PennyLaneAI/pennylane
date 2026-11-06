@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @qp.prod
@@ -32,7 +32,7 @@ def hadamards(wires):
 def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
     op = qp.Reflection(qp.Hadamard(wires=0), 0.5, reflection_wires=[0])
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.parametrize(
@@ -94,8 +94,7 @@ def test_decomposition(op, expected):
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_decomposition_new(op):
     """Tests the decomposition rule implemented with the new system."""
-    for rule in qp.list_decomps(qp.Reflection):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 def test_default_values():

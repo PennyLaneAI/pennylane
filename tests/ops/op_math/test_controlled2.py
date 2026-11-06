@@ -24,9 +24,9 @@ import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.operation import abstractify
-from pennylane.ops.functions.assert_valid import _check_eigendecomposition
-from pennylane.ops.op_math.controlled import Controlled, ControlledOp, custom_ctrl_dispatch
+from pennylane.ops.op_math.controlled import Controlled, ControlledOp
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2, _make_controlled_decomp
+from pennylane.testing.operators import _check_eigendecomposition
 from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import CompilableOp, DynOp, NonParametricOp, OneWireDynOp
@@ -56,13 +56,6 @@ class CustomControlled(Controlled2):
 
     def __init__(self, wires):
         super().__init__(CustomBase(wires[1]), wires[0])
-
-
-@custom_ctrl_dispatch.register
-def _(base: CustomBase, control, control_values, work_wires, work_wire_type):
-    if len(control) == 1:
-        return CustomControlled(control + base.wires)
-    return NotImplemented
 
 
 class TestControlled2:
@@ -106,7 +99,7 @@ class TestControlled2:
 
         op = CustomControlled([0, 1])
         assert op.pow(2) == []
-        assert op.pow(5) == [CustomControlled([0, 1])]
+        assert op.pow(5) == [ControlledOp2(CustomBase(1), control_wires=[0])]
 
     def test_queuing(self):
         """Tests that the base op is properly dequeued."""
@@ -578,12 +571,12 @@ class TestControlledOp2:
         base = qp.H(0)
         op = ControlledOp2(base, control_wires=[1])
 
-        assert op.adjoint() == qp.CH([1, 0])
+        assert op.adjoint() == ControlledOp2(qp.H(0), [1])
 
         base = qp.RX(0.5, wires=0)
         op = ControlledOp2(base, control_wires=[1])
 
-        assert op.adjoint() == qp.CRX(-0.5, wires=[1, 0])
+        assert op.adjoint() == ControlledOp2(qp.RX(-0.5, wires=0), [1])
         assert op.has_generator
 
         generator = qp.Projector([1], wires=1) @ qp.Hamiltonian([-0.5], [qp.PauliX(0)])
@@ -636,6 +629,8 @@ class TestControlledOp2:
             qp.ctrl(op, control=[3, 4], control_values=[0, 1])
             op2 = qp.ctrl(qp.H(0), control=[1, 2], control_values=[1, 0])
             qp.ctrl(op2, control=[3, 4], control_values=cvals)
+            qp.ctrl(qp.H(0), control=[1, 2], control_values=[True, cvals[0]])
+            qp.ctrl(qp.H(0), control=[1, 2], control_values=[cvals[0], True])
 
         jaxpr = jax.make_jaxpr(circ)(jax.numpy.array([True, False]))
         tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, jax.numpy.array([False, True]))
@@ -644,6 +639,8 @@ class TestControlledOp2:
             qp.ctrl(qp.H(1), control=[2, 3, 0], control_values=[0, 1, 1]),
             qp.ctrl(qp.H(0), control=[3, 4, 1, 2], control_values=[0, 1, 0, 1]),
             qp.ctrl(qp.H(0), control=[3, 4, 1, 2], control_values=[0, 1, 1, 0]),
+            qp.ctrl(qp.H(0), control=[1, 2], control_values=[1, 0]),
+            qp.ctrl(qp.H(0), control=[1, 2], control_values=[0, 1]),
         ]
 
     def test_old_decomp_integration(self):
@@ -653,12 +650,10 @@ class TestControlledOp2:
         def _custom_decomp(wires):
             qp.RX(np.pi / 2, wires=wires)
 
-        with qp.decomposition.local_decomps():
-
-            qp.add_decomps(NonParametricOp, _custom_decomp)
-            op = qp.ctrl(NonParametricOp(0), control=1)
-            assert op.has_decomposition
-            assert op.decomposition() == [qp.CRX(np.pi / 2, wires=[1, 0])]
+        qp.add_decomps(NonParametricOp, _custom_decomp)
+        op = qp.ctrl(NonParametricOp(0), control=1)
+        assert op.has_decomposition
+        assert op.decomposition() == [ControlledOp2(qp.RX(np.pi / 2, wires=0), [1])]
 
 
 @pytest.mark.catalyst
@@ -680,7 +675,7 @@ def test_make_controlled_decomp_closes_over_compilable_args():
     op = CompilableOp(True, wires=[0])
     rule = _make_controlled_decomp(_some_decomp)
 
-    @qp.qjit
+    @qp.qjit(capture=False)
     @qp.qnode(qp.device("lightning.qubit", wires=2))
     def f():
         rule(

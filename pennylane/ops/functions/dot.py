@@ -153,7 +153,7 @@ def dot(
     ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
 
     operands = [
-        op if (not qp.math.is_abstract(coeff) and coeff == 1) else qp.s_prod(coeff, op)
+        op if (not qp.math.is_tracer(coeff) and coeff == 1) else qp.s_prod(coeff, op)
         for coeff, op in zip(coeffs, ops, strict=True)
     ]
     return (

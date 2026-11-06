@@ -45,13 +45,13 @@ def pow_using_dunder_method(base, z):
 def test_basic_validity():
     """Run basic operator validity checks."""
     op = qp.pow(qp.RX(1.2, wires=0), 3)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
     op = qp.pow(qp.PauliX(0), 2.5)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
     op = qp.pow(qp.Hermitian(np.eye(2), 0), 2)
-    qp.ops.functions.assert_valid(op, skip_new_decomp=True, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_new_decomp=True, skip_differentiation=True)
 
 
 class TestConstructor:
@@ -491,7 +491,7 @@ class TestSimplify:
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""
         pow_op = Pow(ControlledOp(base=qp.Hadamard(0), control_wires=1), z=3)
-        final_op = qp.CH([1, 0])
+        final_op = qp.ctrl(qp.Hadamard(0), control=1)
         simplified_op = pow_op.simplify()
         qp.assert_equal(simplified_op, final_op)
 

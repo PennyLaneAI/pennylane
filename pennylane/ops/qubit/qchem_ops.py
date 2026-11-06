@@ -145,6 +145,52 @@ class SingleExcitation(Operator2):
             return qp.state()
 
         circuit(0.1)
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SingleExcitation
+
+            .. decomposition-rule:: _single_excitation_decomp
+                :image: /_static/decomposition_thumbnails/singleexcitation_h_cnot_ry.svg
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.CNOT` | :math:`2`
+                :class:`~.RY` | :math:`2`
+
+            .. decomposition-rule:: _single_excitation_ppr
+                :image: /_static/decomposition_thumbnails/singleexcitation_ppr.svg
+
+                :class:`PauliRot("YX") <.PauliRot>` | :math:`1`
+                :class:`PauliRot("XY") <.PauliRot>` | :math:`1`
+
+            .. decomposition-rule:: _single_excitation_ppr_rz
+                :image: /_static/decomposition_thumbnails/singleexcitation_ppr_rz.svg
+
+                :class:`PPR_4(1, "XX") <.PPR_4>` | :math:`1`
+                :class:`PPR_4(-1, "XX") <.PPR_4>` | :math:`1`
+                :class:`~.RZ` | :math:`2`
+            .. decomposition-rule:: _single_excitation_ppr_crz
+                :image: /_static/decomposition_thumbnails/singleexcitation_ppr_crz.svg
+
+                :class:`PPR_4(1, "XX") <.PPR_4>` | :math:`1`
+                :class:`PPR_4(-1, "XX") <.PPR_4>` | :math:`1`
+                :class:`~.CNOT` | :math:`2`
+                :class:`~.CRZ` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/singleexcitation_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.SingleExcitation` | :math:`1`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/singleexcitation_pow.svg
+                :region: pow
+                :where: ``phi`` is multiplied by the power :math:`z`
+
+                :class:`~.SingleExcitation` | :math:`1`
     """
 
     dynamic_argnames = "phi"
@@ -259,9 +305,9 @@ def _single_excitation_ppr(phi: TensorLike, wires: WiresLike):
 def _single_excitation_ppr_rz_resource(phi, wires):
     return {
         _change_op_basis_abstract(
-            qp.PPR(4, "XX", wires=Wire[2]),
+            qp.PPR_4(1, "XX", wires=Wire[2]),
             Prod2((qp.RZ(Float, wires=Wire[1]), qp.RZ(Float, wires=Wire[1]))),
-            qp.PPR(-4, "XX", wires=Wire[2]),
+            qp.PPR_4(-1, "XX", wires=Wire[2]),
         ): 1
     }
 
@@ -272,11 +318,49 @@ def _single_excitation_ppr_rz(phi: TensorLike, wires: WiresLike):
         qp.RZ(phi / 2, wires[0])
         qp.RZ(-phi / 2, wires[1])
 
-    qp.change_op_basis(qp.PPR(4, "XX", wires=wires), _rotations, qp.PPR(-4, "XX", wires=wires))
+    qp.change_op_basis(qp.PPR_4(1, "XX", wires=wires), _rotations, qp.PPR_4(-1, "XX", wires=wires))
+
+
+# pylint: disable=unused-argument
+def _single_excitation_ppr_crz_resource(phi, wires):
+    compute = Prod2((qp.CNOT(Wire[2]), qp.PPR_4(1, "XX", wires=Wire[2])))
+    return {
+        _change_op_basis_abstract(
+            compute,
+            qp.CRZ(Float, wires=Wire[2]),
+            qp.adjoint(compute),
+        ): 1
+    }
+
+
+@register_resources(_single_excitation_ppr_crz_resource)
+def _single_excitation_ppr_crz(phi: TensorLike, wires: WiresLike):
+    r"""A single arbitrary-angle rotation per Givens rotation.
+
+    In the basis of ``_single_excitation_ppr_rz``, the two rotations
+    :math:`RZ(\phi/2)_i\, RZ(-\phi/2)_j = e^{-i\phi(Z_i - Z_j)/4}` are a rotation whose angle
+    depends only on whether the two wires differ. In the parity frame ``CNOT(i, j)`` this reads
+    :math:`e^{-i\phi Z_i n_j/2}`, i.e. a single :class:`~.CRZ` controlled on ``j`` and targeting
+    ``i``. This halves the number of arbitrary-angle rotations whenever a controlled rotation is
+    about as expensive as an uncontrolled one, as for phase-gradient synthesis.
+    """
+
+    def _compute():
+        qp.PPR_4(1, "XX", wires=wires)
+        qp.CNOT(wires)
+
+    def _rotation():
+        qp.CRZ(phi, wires=[wires[1], wires[0]])
+
+    qp.change_op_basis(_compute, _rotation)
 
 
 add_decomps(
-    SingleExcitation, _single_excitation_decomp, _single_excitation_ppr, _single_excitation_ppr_rz
+    SingleExcitation,
+    _single_excitation_decomp,
+    _single_excitation_ppr,
+    _single_excitation_ppr_rz,
+    _single_excitation_ppr_crz,
 )
 add_decomps("Adjoint(SingleExcitation)", adjoint_rotation2)
 add_decomps("Pow(SingleExcitation)", pow_rotation2)
@@ -1300,7 +1384,7 @@ add_decomps("Adjoint(OrbitalRotation)", adjoint_rotation)
 add_decomps("Pow(OrbitalRotation)", pow_rotation)
 
 
-class FermionicSWAP(Operation):
+class FermionicSWAP(Operator2):
     r"""Fermionic SWAP rotation.
 
     .. math:: U(\phi) = \begin{bmatrix}
@@ -1355,26 +1439,18 @@ class FermionicSWAP(Operation):
                0.00249792-0.04991671j, 0.        +0.j        ])
     """
 
+    dynamic_argnames = ("phi",)
+    wire_argnames = ("wires",)
+
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+    wire_sizes = (2,)
+
     num_wires = 2
-    """int: Number of wires that the operator acts on."""
-
     num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-
     ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    grad_method = "A"
-    """Gradient computation method."""
-
-    parameter_frequencies = [(1,)]
-    """Frequencies of the operation parameter with respect to an expectation value."""
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     def generator(self) -> "qp.Hamiltonian":
         w1, w2 = self.wires
@@ -1389,11 +1465,11 @@ class FermionicSWAP(Operation):
             ],
         )
 
-    def __init__(self, phi: TensorLike, wires: WiresLike):
-        super().__init__(phi, wires=wires)
-
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_matrix(
+        phi: TensorLike, wires: WiresLike = None
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1404,6 +1480,7 @@ class FermionicSWAP(Operation):
 
         Args:
           phi (tensor_like or float): rotation angle
+          wires (Sequence[int]): the wires the operation acts on
 
         Returns:
           tensor_like: canonical matrix
@@ -1433,57 +1510,6 @@ class FermionicSWAP(Operation):
         ]
         return qp.math.stack([stack_last(row) for row in rows], axis=-2)
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.FermionicSWAP.decomposition`.
-
-        Args:
-            phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.FermionicSWAP.compute_decomposition(0.2, wires=(0, 1))
-        [H(0),
-         H(1),
-         MultiRZ(0.1, wires=[0, 1]),
-         H(0),
-         H(1),
-         RX(1.5707963267948966, wires=[0]),
-         RX(1.5707963267948966, wires=[1]),
-         MultiRZ(0.1, wires=[0, 1]),
-         RX(-1.5707963267948966, wires=[0]),
-         RX(-1.5707963267948966, wires=[1]),
-         RZ(0.1, wires=[0]),
-         RZ(0.1, wires=[1]),
-         Exp(0.1j Identity)]
-        """
-        decomp_ops = [
-            qp.Hadamard(wires=wires[0]),
-            qp.Hadamard(wires=wires[1]),
-            qp.MultiRZ(phi / 2, wires=[wires[0], wires[1]]),
-            qp.Hadamard(wires=wires[0]),
-            qp.Hadamard(wires=wires[1]),
-            qp.RX(np.pi / 2, wires=wires[0]),
-            qp.RX(np.pi / 2, wires=wires[1]),
-            qp.MultiRZ(phi / 2, wires=[wires[0], wires[1]]),
-            qp.RX(-np.pi / 2, wires=wires[0]),
-            qp.RX(-np.pi / 2, wires=wires[1]),
-            qp.RZ(phi / 2, wires=wires[0]),
-            qp.RZ(phi / 2, wires=wires[1]),
-            # for correcting global phase
-            qp.exp(qp.Identity(wires=[wires[0], wires[1]]), 0.5j * phi),
-        ]
-        return decomp_ops
-
     def adjoint(self) -> "FermionicSWAP":
         (phi,) = self.parameters
         return FermionicSWAP(-phi, wires=self.wires)
@@ -1500,7 +1526,7 @@ class FermionicSWAP(Operation):
         return super().label(decimals=decimals, base_label=base_label or "FSWAP", cache=cache)
 
 
-def _fermionic_swap_decomp_resources():
+def _fermionic_swap_decomp_resources(phi: TensorLike = None, wires: WiresLike = None):
     return {
         qp.Hadamard: 4,
         qp.MultiRZ(Float, Wire[2]): 2,
@@ -1529,5 +1555,5 @@ def _fermionic_swap_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(FermionicSWAP, _fermionic_swap_decomp)
-add_decomps("Adjoint(FermionicSWAP)", adjoint_rotation)
-add_decomps("Pow(FermionicSWAP)", pow_rotation)
+add_decomps("Adjoint(FermionicSWAP)", adjoint_rotation2)
+add_decomps("Pow(FermionicSWAP)", pow_rotation2)

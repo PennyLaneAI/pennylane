@@ -38,7 +38,7 @@ def test_standard_validity(include_pi):
 
     op = qp.GateFabric(weights, wires=range(qubits), init_state=init_state, include_pi=include_pi)
 
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.parametrize("include_pi", (True, False))

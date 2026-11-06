@@ -391,13 +391,28 @@ class QSVT(Operator2):
     To see the implementation details, we can expand the circuit via :func:`qp.decompose <.transforms.decompose>`:
 
     >>> q_script = qp.tape.QuantumScript(ops=[qp.QSVT(block_encoding, phase_shifts)])
-    >>> q_scripts, func = qp.decompose(q_script, gate_set=qp.decomposition.gate_sets.ALL_QUBIT_OPS)
+    >>> q_scripts, func = qp.transforms._tape_decompose(q_script, gate_set=qp.decomposition.gate_sets.ALL_QUBIT_OPS)
     >>> q_script = func(q_scripts)
     >>> print(q_script.draw(decimals=2))
     0: ──RZ(-2.46)──H──RZ(1.00)──H──RZ(-8.00)─┤
 
     See the Usage Details section for more examples on implementing QSVT with different block
     encoding methods.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.QSVT
+            :symbols: block encoding :math:`U=` ``UA`` and :math:`d+1` projector-controlled phase
+                shifts :math:`\Pi_{\phi_k}=` ``projectors[k]``
+            :example: :math:`d=2`
+
+            .. decomposition-rule:: _QSVT_decomposition
+                :image: /_static/decomposition_thumbnails/qsvt_alternating_projectors.svg
+
+                :math:`\Pi_{\phi_k}` | :math:`d+1` (one per :math:`\Pi_{\phi_k}`) | 3
+                :math:`U` | :math:`\lceil d/2 \rceil` | 1
+                :math:`U^\dagger` | :math:`\lfloor d/2 \rfloor` | 1
 
     .. details::
         :title: Usage Details

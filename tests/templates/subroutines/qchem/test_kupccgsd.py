@@ -64,7 +64,7 @@ def test_standard_validity(k, delta_sz, init_state, wires):
     op = qp.kUpCCGSD(weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state)
 
     skip_diff = len(wires) > 4
-    qp.ops.functions.assert_valid(op, skip_differentiation=skip_diff)
+    qp.testing.assert_valid(op, skip_differentiation=skip_diff)
 
 
 class TestDecomposition:
