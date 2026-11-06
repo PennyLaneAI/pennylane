@@ -565,6 +565,32 @@ class TestSingleExcitationDecompositions:
 
 
 class TestDoubleExcitation:
+    def test_assert_valid(self):
+        qp.testing.assert_valid(qp.DoubleExcitation(0.123, wires=[0, 1, 2, 3]))
+
+    def test_abstract_arguments(self):
+        op = qp.DoubleExcitation(Float, wires=Wire[4])
+        assert op.phi == Float
+        assert op.arg_specs == {"phi": Float, "wires": Wire[4]}
+        assert op.wire_sizes == (4,)
+
+    @pytest.mark.parametrize("name", ["_doublexcit", "_doublexcit_ppr"])
+    def test_decomp_rule(self, name):
+        op = qp.DoubleExcitation(0.123, wires=[0, 1, 2, 3])
+        rule = qp.list_decomps(op)[name]
+        qp.testing.assert_valid_decomp_rule(op, rule)
+
+    @pytest.mark.parametrize(
+        "op",
+        [
+            qp.adjoint(qp.DoubleExcitation(0.123, wires=[0, 1, 2, 3])),
+            qp.pow(qp.DoubleExcitation(0.123, wires=[0, 1, 2, 3]), 2, lazy=True),
+        ],
+    )
+    def test_symbolic_decomp_rule(self, op):
+        rule = qp.list_decomps(op)[0]
+        qp.testing.assert_valid_decomp_rule(op, rule)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_matrix(self, phi):
         """Tests that the DoubleExcitation operation calculates the correct matrix"""
