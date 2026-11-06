@@ -917,6 +917,7 @@ class CCZ(Controlled2):
 
         .. decomposition-table:: qp.CCZ
             :stacked:
+            
             .. decomposition-rule:: _ccz
                 :image: /_static/decomposition_thumbnails/ccz_decomp.svg
 
