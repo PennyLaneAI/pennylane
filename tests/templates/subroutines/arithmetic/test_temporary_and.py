@@ -267,7 +267,7 @@ class TestTemporaryAND:
         Adjoint(TemporaryAND)."""
 
         wires = [0, 1, 2]
-        gate_set = {"X", "Hadamard", "CNOT", "CZ", "MidMeasure", "Toffoli", "PauliMeasure"}
+        gate_set = {"X", "Hadamard", "CNOT", "CZ", "MidMeasureMP", "Toffoli", "PauliMeasure"}
 
         @qp.set_shots(1)
         @qp.qnode(qp.device("default.qubit", wires=wires))
