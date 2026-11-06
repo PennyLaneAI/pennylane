@@ -143,16 +143,16 @@ class PhaseAdder(Operator2):
         x_wires = Wires(x_wires)
 
         num_x_wires = len(x_wires)
-        max_mod = 2 ** num_x_wires
+        max_mod = 2**num_x_wires
 
         if mod is None:
             mod = max_mod
         elif mod != max_mod and len(work_wire) != 1:
             raise ValueError(f"If mod is not 2^{num_x_wires}, one work wire should be provided.")
-            
+
         if not isinstance(mod, int):
             raise ValueError("Both k and mod must be integers")
-            
+
         if mod > max_mod:
             raise ValueError(
                 "PhaseAdder must have enough x_wires to represent mod. The maximum mod "
