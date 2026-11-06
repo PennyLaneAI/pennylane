@@ -45,7 +45,7 @@ def _increment(wires, control=()):
     for i in range(n):
         controls = wires[i + 1 :] + control
         if len(controls) == 0:
-            X(wires[i])
+            PauliX(wires[i])
         else:
             MultiControlledX(
                 wires=controls + wires[i : i + 1],
@@ -222,7 +222,7 @@ def _increment_resources(num_wires: int, num_control: int = 0) -> dict:
     for i in range(num_wires):
         num_controls = (num_wires - 1 - i) + num_control
         if num_controls == 0:
-            counts[X] += 1
+            counts[PauliX] += 1
         else:
             counts[MultiControlledX(Wire[num_controls + 1], work_wires=Wire[i])] += 1
     return dict(counts)
@@ -259,7 +259,7 @@ def _adder_arithmetic_resources(
     for rep, count in _add_constant_resources(aug, num_control=1).items():
         counts[rep] += count
     counts[CNOT] += 2
-    counts[X] += 2
+    counts[PauliX] += 2
     return dict(counts)
 
 
@@ -287,9 +287,9 @@ def _adder_arithmetic_decomposition(k: int, x_wires: WiresLike, mod: int, work_w
     CNOT(wires=msb + flag)  # flag = 1 iff x + k < mod
     _add_constant(mod, aug, control=flag)  # add mod back when flag is set
     _add_constant(-k, aug)  # re-expose the branch in msb ...
-    X(msb[0])
+    PauliX(msb[0])
     CNOT(wires=msb + flag)  # ... to reset flag to 0
-    X(msb[0])
+    PauliX(msb[0])
     _add_constant(k, aug)  # aug <- (x + k) mod mod, work wires restored
 
 
