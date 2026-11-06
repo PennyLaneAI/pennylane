@@ -24,12 +24,12 @@ import scipy.sparse as sps
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.pauli import I, PauliSentence, PauliWord, X, Y, Z
 from pennylane.math.utils import is_tracer
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from pennylane.typing import TensorLike
 
-from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z
 from .utils import is_pauli_word
 
 op_map = {I: Identity, X: PauliX, Y: PauliY, Z: PauliZ}

@@ -1501,6 +1501,11 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* ``PauliWord`` and ``PauliSentence`` now live in ``pennylane.core.pauli``; their
+  existing imports from ``pennylane.pauli`` remain available. Their ``commutator``
+  methods now accept only Pauli words and sentences. For mixed operator inputs,
+  use ``qp.commutator(pauli_value, operator, pauli=True)``.
+
 * ``PauliWord.operation()`` and ``PauliSentence.operation()`` have been replaced by
   :func:`~pennylane.pauli.to_operator`. Use ``qp.pauli.to_operator(value, wire_order=...)``
   to construct the corresponding operator.

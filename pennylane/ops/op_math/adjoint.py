@@ -29,6 +29,7 @@ from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.compiler import compiler
 from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import conj, moveaxis, transpose
@@ -344,7 +345,7 @@ class Adjoint(SymbolicOp):
         super().__init__(base)
         if self.base.pauli_rep:
             pr = {pw: qp.math.conjugate(coeff) for pw, coeff in self.base.pauli_rep.items()}
-            self._pauli_rep = qp.pauli.PauliSentence(pr)
+            self._pauli_rep = PauliSentence(pr)
         else:
             self._pauli_rep = None
 

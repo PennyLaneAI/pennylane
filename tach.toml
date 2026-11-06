@@ -90,6 +90,12 @@ expose = ["MeasurementProcess", "StateMeasurement", "SampleMeasurement", "Measur
 from = ["pennylane.core.measurements"]
 
 [[modules]]
+path = "pennylane.core.pauli"
+layer = "core"
+depends_on = ["pennylane.math", "pennylane.typing", "pennylane.wires", "pennylane.exceptions"]
+cannot_depend_on = ["pennylane", "pennylane.ops", "pennylane.pauli", "pennylane.core.operator", "pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
 path = "pennylane.core.shots"
 layer = "core"
 depends_on = ["pennylane.math"]
@@ -401,8 +407,8 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.pauli.pauli_arithmetic"
-depends_on = ["pennylane.core.operator", "pennylane.math", "pennylane.typing", "pennylane.wires", "pennylane.exceptions"]
-cannot_depend_on = ["pennylane", "pennylane.ops", "pennylane.pauli"]
+depends_on = ["pennylane.core.pauli"]
+cannot_depend_on = ["pennylane", "pennylane.ops", "pennylane.core.operator"]
 
 [[modules]]
 path = "pennylane.resource"

@@ -25,6 +25,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator, Operator2
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
@@ -47,7 +48,6 @@ from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.composite2 import CompositeOp2
 from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.ops.op_math.pow2 import Pow2
-from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPrep, Select

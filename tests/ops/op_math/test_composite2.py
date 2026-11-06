@@ -24,9 +24,9 @@ import pytest
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.pauli import PauliWord
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp2
-from pennylane.pauli.pauli_arithmetic import PauliWord
 from pennylane.queuing import AnnotatedQueue
 from pennylane.testing import assert_valid
 from pennylane.typing import Float, Wire

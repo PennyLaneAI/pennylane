@@ -23,6 +23,7 @@ from pennylane._class_property import classproperty
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.operator.operator2 import operator_p  # tach-ignore
+from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import remove_from_program
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
@@ -76,7 +77,7 @@ class Adjoint2(SymbolicOp2):
             return None
         if not self._pauli_rep:
             rep = {pw: math.conjugate(c) for pw, c in self.base.pauli_rep.items()}
-            self._pauli_rep = qp.pauli.PauliSentence(rep)
+            self._pauli_rep = PauliSentence(rep)
         return self._pauli_rep
 
     def __repr__(self) -> str:
