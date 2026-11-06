@@ -54,6 +54,7 @@ extensions = [
     "m2r2",
     "sphinx_automodapi.smart_resolver",
     "decomposition_table",
+    "subroutine_table",
 ]
 
 # Open Graph metadata
