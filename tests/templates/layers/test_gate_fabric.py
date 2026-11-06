@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.typing import Bool, Wire
+from pennylane.typing import Bool, Float, Wire
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -53,7 +53,7 @@ def test_resources(include_pi):
 
     expected = {
         qp.BasisState(Bool[n_wires], Wire[n_wires]): 1,
-        qp.resource_rep(qp.DoubleExcitation): n_layers * len_wire_pattern,
+        qp.DoubleExcitation(Float, Wire[4]): n_layers * len_wire_pattern,
         qp.resource_rep(qp.OrbitalRotation): (include_pi + 1) * n_layers * len_wire_pattern,
     }
     out = rule.compute_resources(
@@ -826,7 +826,7 @@ def circuit_decomposed(weights):
     for layer in range(weights.shape[0]):
         for idx in range(weights.shape[1]):
             qp.OrbitalRotation.compute_decomposition(include_pi_param, wires=qwires[idx])
-            qp.DoubleExcitation.compute_decomposition(weights[layer][idx][0], wires=qwires[idx])
+            qp.DoubleExcitation.decomposition(weights[layer][idx][0], wires=qwires[idx])
             qp.OrbitalRotation.compute_decomposition(weights[layer][idx][1], wires=qwires[idx])
 
     return qp.expval(qp.PauliZ(0))

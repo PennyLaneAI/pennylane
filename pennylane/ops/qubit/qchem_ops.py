@@ -755,15 +755,6 @@ class DoubleExcitation(Operator2):
     arg_specs = {"phi": Float, "wires": Wire[4]}
     wire_sizes = (4,)
 
-    num_wires = 4
-    """int: Number of wires that the operator acts on."""
-
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
     def generator(self) -> "qp.Hamiltonian":
         w0, w1, w2, w3 = self.wires
         return qp.Hamiltonian(
@@ -808,92 +799,6 @@ class DoubleExcitation(Operator2):
           tensor_like: canonical matrix
         """
         return _double_excitations_matrix(phi, 0.0)
-
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.DoubleExcitation.decomposition`.
-
-        For the source of this decomposition, see page 17 of
-        `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://doi.org/10.1088/1367-2630/ac2cb3>`_ .
-
-        Args:
-            phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.DoubleExcitation.compute_decomposition(1.23, wires=(0,1,2,3))
-        [CNOT(wires=[2, 3]),
-        CNOT(wires=[0, 2]),
-        H(3),
-        H(0),
-        CNOT(wires=[2, 3]),
-        CNOT(wires=[0, 1]),
-        RY(0.15375, wires=[1]),
-        RY(-0.15375, wires=[0]),
-        CNOT(wires=[0, 3]),
-        H(3),
-        CNOT(wires=[3, 1]),
-        RY(0.15375, wires=[1]),
-        RY(-0.15375, wires=[0]),
-        CNOT(wires=[2, 1]),
-        CNOT(wires=[2, 0]),
-        RY(-0.15375, wires=[1]),
-        RY(0.15375, wires=[0]),
-        CNOT(wires=[3, 1]),
-        H(3),
-        CNOT(wires=[0, 3]),
-        RY(-0.15375, wires=[1]),
-        RY(0.15375, wires=[0]),
-        CNOT(wires=[0, 1]),
-        CNOT(wires=[2, 0]),
-        H(0),
-        H(3),
-        CNOT(wires=[0, 2]),
-        CNOT(wires=[2, 3])]
-
-        """
-        # This decomposition is the "upside down" version of that on p17 of https://arxiv.org/abs/2104.05695
-        decomp_ops = [
-            qp.CNOT(wires=[wires[2], wires[3]]),
-            qp.CNOT(wires=[wires[0], wires[2]]),
-            qp.Hadamard(wires=wires[3]),
-            qp.Hadamard(wires=wires[0]),
-            qp.CNOT(wires=[wires[2], wires[3]]),
-            qp.CNOT(wires=[wires[0], wires[1]]),
-            qp.RY(phi / 8, wires=wires[1]),
-            qp.RY(-phi / 8, wires=wires[0]),
-            qp.CNOT(wires=[wires[0], wires[3]]),
-            qp.Hadamard(wires=wires[3]),
-            qp.CNOT(wires=[wires[3], wires[1]]),
-            qp.RY(phi / 8, wires=wires[1]),
-            qp.RY(-phi / 8, wires=wires[0]),
-            qp.CNOT(wires=[wires[2], wires[1]]),
-            qp.CNOT(wires=[wires[2], wires[0]]),
-            qp.RY(-phi / 8, wires=wires[1]),
-            qp.RY(phi / 8, wires=wires[0]),
-            qp.CNOT(wires=[wires[3], wires[1]]),
-            qp.Hadamard(wires=wires[3]),
-            qp.CNOT(wires=[wires[0], wires[3]]),
-            qp.RY(-phi / 8, wires=wires[1]),
-            qp.RY(phi / 8, wires=wires[0]),
-            qp.CNOT(wires=[wires[0], wires[1]]),
-            qp.CNOT(wires=[wires[2], wires[0]]),
-            qp.Hadamard(wires=wires[0]),
-            qp.Hadamard(wires=wires[3]),
-            qp.CNOT(wires=[wires[0], wires[2]]),
-            qp.CNOT(wires=[wires[2], wires[3]]),
-        ]
-
-        return decomp_ops
 
     def adjoint(self) -> "DoubleExcitation":
         return DoubleExcitation(-self.phi, wires=self.wires)
