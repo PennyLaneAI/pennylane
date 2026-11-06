@@ -54,7 +54,7 @@ def test_resources(include_pi):
     expected = {
         qp.BasisState(Bool[n_wires], Wire[n_wires]): 1,
         qp.DoubleExcitation(Float, Wire[4]): n_layers * len_wire_pattern,
-        qp.resource_rep(qp.OrbitalRotation): (include_pi + 1) * n_layers * len_wire_pattern,
+        qp.OrbitalRotation(Float, Wire[4]): (include_pi + 1) * n_layers * len_wire_pattern,
     }
     out = rule.compute_resources(
         n_layers=n_layers,
