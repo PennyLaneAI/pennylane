@@ -17,18 +17,16 @@ Contains the PhaseAdder template.
 
 import numpy as np
 
-from pennylane import math, ops
-from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation
+from pennylane import ops
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
-from pennylane.ops.op_math import prod
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.typing import Float, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.typing import AbstractArray, Float, Int, Wire
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 
 def _add_k_fourier(k, wires: WiresLike):
@@ -39,7 +37,7 @@ def _add_k_fourier(k, wires: WiresLike):
     return op_list
 
 
-class PhaseAdder(Operation):
+class PhaseAdder(Operator2):
     r"""Performs the in-place modular phase addition operation.
 
     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the
@@ -133,7 +131,10 @@ class PhaseAdder(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_x_wires", "mod"}
+    dynamic_argnames = ("k",)
+    compilable_argnames = ("mod",)
+    wire_argnames = ("x_wires", "work_wire")
+    arg_specs = {"k": Int, "x_wires": Wire[-1], "work_wire": Wire[-1]}
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = ()):
@@ -141,135 +142,31 @@ class PhaseAdder(Operation):
         work_wire = Wires(() if work_wire is None else work_wire)
         x_wires = Wires(x_wires)
 
-        num_work_wires = len(work_wire)
+        num_x_wires = len(x_wires)
+        max_mod = 2**num_x_wires
 
-        if not math.is_tracer(mod):
-            if mod is None:
-                mod = 2 ** len(x_wires)
-            elif mod != 2 ** len(x_wires) and num_work_wires != 1:
-                raise ValueError(
-                    f"If mod is not 2^{len(x_wires)}, one work wire should be provided."
-                )
-            if not isinstance(k, int) or not isinstance(mod, int):
-                raise ValueError("Both k and mod must be integers")
-            if mod > 2 ** len(x_wires):
-                raise ValueError(
-                    "PhaseAdder must have enough x_wires to represent mod. The maximum mod "
-                    f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
-                )
-            abstract_wires = any(math.is_tracer(w) for w in work_wire)
-            if num_work_wires != 0 and not abstract_wires:
-                if any(wire in work_wire for wire in x_wires):
-                    raise ValueError(
-                        "None of the wires in work_wire should be included in x_wires."
-                    )
+        if mod is None:
+            mod = max_mod
+        elif mod != max_mod and len(work_wire) != 1:
+            raise ValueError(f"If mod is not 2^{num_x_wires}, one work wire should be provided.")
 
-        self.hyperparameters["k"] = k % mod
-        self.hyperparameters["mod"] = mod
-        self.hyperparameters["work_wire"] = work_wire
-        self.hyperparameters["x_wires"] = x_wires
-        super().__init__(wires=x_wires)
+        if not isinstance(mod, int):
+            raise ValueError("Both k and mod must be integers")
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_x_wires": len(self.hyperparameters["x_wires"]),
-            "mod": self.hyperparameters["mod"],
-        }
-
-    @property
-    def num_params(self):
-        return 0
-
-    def _flatten(self):
-        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
-        return tuple(), metadata
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        hyperparams_dict = dict(metadata)
-        return cls(**hyperparams_dict)
-
-    def map_wires(self, wire_map: dict):
-        new_dict = {
-            key: ([wire_map.get(w, w) for w in self.hyperparameters[key]])
-            for key in ["x_wires", "work_wire"]
-        }
-
-        return PhaseAdder(
-            self.hyperparameters["k"],
-            new_dict["x_wires"],
-            self.hyperparameters["mod"],
-            new_dict["work_wire"],
-        )
-
-    def decomposition(self):
-        return self.compute_decomposition(**self.hyperparameters)
-
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
-
-    @staticmethod
-    def compute_decomposition(
-        k, x_wires: WiresLike, mod, work_wire: WiresLike
-    ):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators.
-
-        Args:
-            k (int): the number that needs to be added
-            x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough
-                for a binary representation of the value being targeted, :math:`x`. In some cases an additional
-                wire is needed, see usage details below. The number of wires also limits the maximum
-                value for `mod`.
-            mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
-            work_wire (Sequence[int]): the auxiliary wire to use for the addition. Optional
-                when `mod` is :math:`2^{len(x\_wires)}`.
-        Returns:
-            list[.Operator]: Decomposition of the operator
-
-        **Example**
-
-        >>> qp.PhaseAdder.compute_decomposition(k = 2, x_wires = [0, 1, 2], mod = 8, work_wire = ())
-        [PhaseShift(6.28..., wires=[0]), PhaseShift(3.141..., wires=[1]), PhaseShift(1.57..., wires=[2])]
-        """
-        op_list = []
-
-        if mod == 2 ** len(x_wires):
-            op_list.extend(_add_k_fourier(k, x_wires))
-        else:
-            aux_k = x_wires[0]
-            op_list.extend(_add_k_fourier(k, x_wires))
-
-            for op in reversed(_add_k_fourier(mod, x_wires)):
-                op_list.append(ops.adjoint(op))
-
-            op_list.append(
-                ops.change_op_basis(
-                    ops.adjoint(QFT)(wires=x_wires),
-                    ops.CNOT(wires=[aux_k, work_wire[0]]),
-                    QFT(wires=x_wires),
-                )
+        if mod > max_mod:
+            raise ValueError(
+                "PhaseAdder must have enough x_wires to represent mod. The maximum mod "
+                f"with len(x_wires)={num_x_wires} is {max_mod}, but received {mod}."
             )
-
-            op_list.extend(ops.ctrl(op, control=work_wire) for op in _add_k_fourier(mod, x_wires))
-
-            op_list.append(
-                ops.change_op_basis(
-                    prod(
-                        ops.X(aux_k),
-                        ops.adjoint(QFT)(wires=x_wires),
-                        *[ops.adjoint(op) for op in _add_k_fourier(k, x_wires)],
-                    ),
-                    ops.CNOT(wires=[aux_k, work_wire[0]]),
-                    prod(*_add_k_fourier(k, x_wires)[::-1], QFT(wires=x_wires), ops.X(aux_k)),
-                )
-            )
-
-        return op_list
+        validate_no_wire_overlaps({"x_wires": x_wires, "work_wire": work_wire})
+        super().__init__(k=k, x_wires=x_wires, mod=mod, work_wire=work_wire)
+        if not isinstance(self.k, AbstractArray):
+            self.arguments["k"] = self.k % mod
 
 
-def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
+# pylint: disable-next=unused-argument
+def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
+    num_x_wires = len(x_wires)
 
     if mod == 2**num_x_wires:
         return {ops.PhaseShift: num_x_wires}
@@ -277,7 +174,7 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
     basis_op1 = ops.prod(
         ops.X(Wire[1]),
         ops.adjoint(QFT(Wire[num_x_wires])),
-        *(ops.adjoint(ops.PhaseShift(Float, Wire[1])) for _ in range(num_x_wires)),
+        *(ops.PhaseShift(Float, Wire[1]) for _ in range(num_x_wires)),
     )
     basis_op2 = ops.prod(
         *(ops.PhaseShift(Float, Wire[1]) for _ in range(num_x_wires)),
@@ -286,8 +183,7 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
     )
 
     resources = {
-        ops.PhaseShift: num_x_wires,
-        ops.adjoint(ops.PhaseShift(Float, Wire[1])): num_x_wires,
+        ops.PhaseShift: 2 * num_x_wires,
         _change_op_basis_abstract(
             ops.adjoint(QFT(Wire[num_x_wires])),
             ops.CNOT,
@@ -305,37 +201,35 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
 
 # pylint: disable=no-value-for-parameter
 @register_resources(_phase_adder_decomposition_resources)
-def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire, **__):
+def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire):
 
     n_wires = len(x_wires)
 
-    @for_loop(n_wires)
-    def _add_k_fourier_loop(i, _k):
-        ops.PhaseShift(_k * np.pi / (2**i), wires=x_wires[i])
-        return _k
-
+    _add_k_fourier(k, x_wires)
     if mod == 2**n_wires:
-        _add_k_fourier_loop(k)
         return
 
     aux_k = x_wires[0]
-    _add_k_fourier_loop(k)
-    ops.adjoint(_add_k_fourier_loop)(mod)
+    _add_k_fourier(-mod, x_wires)
     ops.change_op_basis(
-        ops.adjoint(QFT)(wires=x_wires),
+        ops.adjoint(QFT(wires=x_wires)),
         ops.CNOT(wires=[aux_k, work_wire[0]]),
         QFT(wires=x_wires),
     )
-    ops.ctrl(_add_k_fourier_loop, control=work_wire)(mod)
-    ops.change_op_basis(
-        prod(
-            ops.X(aux_k),
-            ops.adjoint(QFT)(wires=x_wires),
-            *reversed(ops.adjoint(_add_k_fourier_loop)(k)),
-        ),
-        ops.CNOT(wires=[aux_k, work_wire[0]]),
-        prod(*_add_k_fourier(k, x_wires), QFT(wires=x_wires), ops.X(aux_k)),
-    )
+    for op in _add_k_fourier(mod, x_wires):
+        ops.ctrl(op, control=work_wire)
+
+    def compute():
+        _add_k_fourier(-k, x_wires)
+        ops.adjoint(QFT(wires=x_wires))
+        ops.X(aux_k)
+
+    def uncompute():
+        ops.X(aux_k)
+        QFT(wires=x_wires)
+        _add_k_fourier(k, x_wires)
+
+    ops.change_op_basis(compute, ops.CNOT(wires=[aux_k, work_wire[0]]), uncompute)
 
 
 add_decomps(PhaseAdder, _phase_adder_decomposition)

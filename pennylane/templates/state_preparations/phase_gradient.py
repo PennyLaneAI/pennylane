@@ -101,7 +101,7 @@ class PhaseGradientStatePrep(StatePrepBase2):
     ...     registers["aux"], registers["work"], mode="postselect"
     ... )
     >>> @qp.transforms.decompose(
-    ...     gate_set={"Hadamard", "PauliZ", "Adjoint(S)", "SemiAdder", "MidMeasureMP"},
+    ...     gate_set={"Hadamard", "PauliZ", "Adjoint(S)", "SemiAdder", "MidMeasure"},
     ...     fixed_decomps={qp.PhaseGradientStatePrep: rule},
     ... )
     ... @qp.qnode(qp.device("null.qubit", wires=14))
