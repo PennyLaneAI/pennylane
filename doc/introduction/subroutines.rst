@@ -3,8 +3,8 @@
 
 .. _intro_ref_temp:
 
-Built-in subroutines
-====================
+Subroutines
+===========
 
 PennyLane2 provides a growing library of subroutines for common tasks, including
 state preparation, data reading and loading, quantum arithmetic, and more.
