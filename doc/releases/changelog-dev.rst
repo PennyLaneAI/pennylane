@@ -1497,6 +1497,11 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of
+  ``"MidMeasureMP"``. Update raw device operation names and comparisons; the deprecated
+  Python import and ``GateSet`` alias remain supported.
+  `(#10457) <https://github.com/PennyLaneAI/pennylane/pull/10457>`__
+
 * ``qp.ctrl`` now constructs symbolic controlled operators without dispatching to specialized
   gates such as ``CNOT`` or ``CRX``. Decomposition rules have been updated accordingly.
   `(#10395) <https://github.com/PennyLaneAI/pennylane/pull/10395>`__
