@@ -42,19 +42,19 @@ def null_postprocessing(results):
 def _decompose_setup_inputs(
     gate_set: Iterable[type | str] | dict[type | str, float],
     fixed_decomps: dict | None = None,
-    alt_decomps: dict | None = None,
+    exclude_decomps: dict | None = None,
 ):
     """Validate and pack options for Catalyst's ``graph-decomposition`` pass.
 
     Wraps a single gate type or name into a set, and includes ``fixed_decomps`` /
-    ``alt_decomps`` in the options dict only when they are provided.
+    ``exclude_decomps`` in the options dict only when they are provided.
 
     Args:
         gate_set (Iterable[type | str] | dict[type | str, float]): Target gate set, or a
             single operator type/name that will be wrapped as a one-element set.
         fixed_decomps (dict | None): Optional map from operators to fixed decomposition
             rules. Omitted from the returned options when ``None``.
-        alt_decomps (dict | None): Optional map from operators to alternative decomposition
+        exclude_decomps (dict | None): Optional map from operators to excluded decomposition
             rules. Omitted from the returned options when ``None``.
 
     Returns:
@@ -70,8 +70,8 @@ def _decompose_setup_inputs(
     options = {"gate_set": gate_set}
     if fixed_decomps is not None:
         options["fixed_decomps"] = fixed_decomps
-    if alt_decomps is not None:
-        options["alt_decomps"] = alt_decomps
+    if exclude_decomps is not None:
+        options["exclude_decomps"] = exclude_decomps
     return (), options
 
 
@@ -90,8 +90,10 @@ Args:
     gate_set (Iterable[type | str] | dict[type | str, float]): Target gate set after
         decomposition. A mapping may supply relative costs used by the graph solver.
     fixed_decomps (dict | None): Map operators to specific decomposition rules.
-    alt_decomps (dict | None): Map operators to alternative decomposition rules considered
-        by the graph solver.
+    exclude_decomps (dict | None): Map operators to lists of decomposition rules to exclude
+        from this pass's graph. Rules may be given as names or callables, including
+        :class:`~.decomposition.DecompositionRule` objects. Excluded rules remain available
+        to subsequent passes. Exclusions also apply to rules selected by ``fixed_decomps``.
 
 **Example**
 
@@ -104,6 +106,10 @@ Args:
         qp.Hadamard(0)
         qp.CNOT([0, 1])
         return qp.expval(qp.Z(0))
+
+To exclude a registered rule from this pass, supply its name or callable in
+``exclude_decomps``, for example ``exclude_decomps={qp.CRX: ["_crx_to_h_crz"]}``.
+Use :func:`~.list_decomps` to inspect the available rules.
 
 """
 
