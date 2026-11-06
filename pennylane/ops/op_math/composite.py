@@ -183,7 +183,7 @@ class CompositeOp(Operator):  # pylint: disable=too-many-instance-attributes
 
     @property
     @handle_recursion_error
-    def has_matrix(self):  # pylint: disable=arguments-renamed, invalid-overridden-method
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return all(op.has_matrix for op in self)
 
     @handle_recursion_error
@@ -283,7 +283,7 @@ class CompositeOp(Operator):  # pylint: disable=too-many-instance-attributes
         return self._eigs[self]
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         if self.has_overlapping_wires:
             for ops in self.overlapping_ops:
@@ -385,7 +385,7 @@ class CompositeOp(Operator):  # pylint: disable=too-many-instance-attributes
         return self._hash
 
     @property
-    def basis(self):  # pylint: disable=missing-function-docstring, useless-return
+    def basis(self):  # pylint: disable=missing-function-docstring,useless-return
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",

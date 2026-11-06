@@ -261,7 +261,7 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
         return getattr(subclass, "_operator_version", None) == 1
 
 
-# pylint: disable-next=too-many-instance-attributes, too-many-public-methods
+# pylint: disable-next=too-many-instance-attributes,too-many-public-methods
 class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     r"""Base class representing quantum operators.
 

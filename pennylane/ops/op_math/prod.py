@@ -370,11 +370,11 @@ class Prod(CompositeOp):
 
     @property
     @handle_recursion_error
-    def has_sparse_matrix(self):  # pylint: disable=arguments-renamed, invalid-overridden-method
+    def has_sparse_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
     @property
-    def has_adjoint(self):  # pylint: disable=arguments-renamed, invalid-overridden-method
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return True
 
     def adjoint(self):

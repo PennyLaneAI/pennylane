@@ -360,7 +360,7 @@ class ChangeOpBasis(CompositeOp):
         return list(self[::-1])
 
     @property
-    def has_adjoint(self):  # pylint: disable=arguments-renamed, invalid-overridden-method
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return True
 
     def adjoint(self):

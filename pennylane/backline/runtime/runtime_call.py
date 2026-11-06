@@ -40,7 +40,7 @@ def get_runtime_call_prim():
     runtime_call_prim.multiple_results = True
 
     @runtime_call_prim.def_abstract_eval
-    # pylint: disable-next=too-many-arguments, unused-argument
+    # pylint: disable-next=too-many-arguments,unused-argument
     def _(*args, signature, symbol, out_bytes, dispatch, library, local_constants):
         return operands.result_avals(signature, out_bytes)
 

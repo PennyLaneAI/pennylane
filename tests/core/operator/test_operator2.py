@@ -13,7 +13,7 @@
 """Basic unit tests for ``Operator2``."""
 
 # Tests exercise private interfaces, group related cases in classes.
-# pylint: disable=protected-access, too-few-public-methods
+# pylint: disable=protected-access,too-few-public-methods
 
 
 # TODO: [sc-120817] Add interface tests
@@ -165,7 +165,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
             static_argnames = ("s2", "s1")
             hybrid_argnames = ("h2", "h1")
 
-            # pylint: disable-next=useless-parent-delegation, too-many-arguments
+            # pylint: disable-next=useless-parent-delegation,too-many-arguments
             def __init__(self, a, reg1, s1, h1, b, reg2, s2, h2):
                 super().__init__(a, reg1, s1, h1, b, reg2, s2, h2)
 

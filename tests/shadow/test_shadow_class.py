@@ -15,7 +15,7 @@
 """Unit tests for the classical shadows class"""
 
 # Tests group related cases in classes, use fixture signatures.
-# pylint: disable=redefined-outer-name, too-few-public-methods
+# pylint: disable=redefined-outer-name,too-few-public-methods
 
 
 import numpy as onp

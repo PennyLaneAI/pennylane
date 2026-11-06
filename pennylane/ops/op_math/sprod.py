@@ -206,7 +206,7 @@ class SProd(ScalarSymbolicOp):
 
     @property
     @handle_recursion_error
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         """Bool: Whether the Operator returns defined diagonalizing gates."""
         return self.base.has_diagonalizing_gates
@@ -268,7 +268,7 @@ class SProd(ScalarSymbolicOp):
 
     @property
     @handle_recursion_error
-    def has_sparse_matrix(self):  # pylint: disable=arguments-renamed, invalid-overridden-method
+    def has_sparse_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.pauli_rep is not None or self.base.has_sparse_matrix
 
     @property

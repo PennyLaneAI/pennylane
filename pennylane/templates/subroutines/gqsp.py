@@ -185,7 +185,7 @@ def _num_shifted_ctrl_ops(shift, num_ctrl_ops):
     return num_absorbed, shift + num_absorbed
 
 
-# pylint: disable-next=too-many-arguments, unused-argument
+# pylint: disable-next=too-many-arguments,unused-argument
 def _GQSP_resources(unitary, angles, control, work_wires, work_wire_type, shift):
     num_iters = angles.shape[1]
     num_absorbed, remaining = _num_shifted_ctrl_ops(shift, num_iters - 1)

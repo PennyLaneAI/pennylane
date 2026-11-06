@@ -23,7 +23,7 @@ unitary and the (``True``) double-phase Hadamard-test circuit of Fig. 6 of arXiv
 """
 
 # Tests load optional backends before dependent imports; retain fixture and callback signatures.
-# pylint: disable=redefined-outer-name, wrong-import-position
+# pylint: disable=redefined-outer-name,wrong-import-position
 
 
 import itertools

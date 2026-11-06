@@ -309,7 +309,7 @@ def _expand_transform_finite_diff(  # pylint: disable=too-many-arguments
     classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
-def finite_diff(  # pylint: disable=too-many-arguments, too-many-statements
+def finite_diff(  # pylint: disable=too-many-arguments,too-many-statements
     tape: QuantumScript,
     argnum=None,
     h: float = 1e-7,

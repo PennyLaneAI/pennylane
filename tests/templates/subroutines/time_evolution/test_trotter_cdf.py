@@ -25,7 +25,7 @@ unitary and the (``True``) double-phase Hadamard-test circuit of Fig. 6 of arXiv
 # Tests parameterize cases through explicit fixture and helper arguments; inspect private
 # interfaces; load optional backends before dependent imports; retain fixture and callback
 # signatures.
-# pylint: disable=too-many-arguments, redefined-outer-name, wrong-import-position, protected-access
+# pylint: disable=too-many-arguments,redefined-outer-name,wrong-import-position,protected-access
 
 
 import warnings

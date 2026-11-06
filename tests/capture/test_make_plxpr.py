@@ -16,7 +16,7 @@ Tests for the make_plxpr function for capturing functions as jaxpr.
 """
 
 # Imports follow the initialization order required by this module.
-# pylint: disable=wrong-import-position, wrong-import-order
+# pylint: disable=wrong-import-position,wrong-import-order
 
 
 from unittest.mock import call

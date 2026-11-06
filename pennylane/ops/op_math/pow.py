@@ -243,7 +243,7 @@ class Pow(ScalarSymbolicOp):
         return fractional_matrix_power(mat, scalar)
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
         return self.base.has_sparse_matrix and isinstance(self.z, int)
 
@@ -285,7 +285,7 @@ class Pow(ScalarSymbolicOp):
             raise DecompositionUndefinedError from e
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
@@ -324,7 +324,7 @@ class Pow(ScalarSymbolicOp):
         return math.cast(base_eigvals, complex_dtype) ** self.z
 
     @property
-    def has_generator(self):  # pylint: disable=arguments-renamed, invalid-overridden-method
+    def has_generator(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_generator
 
     def generator(self):
@@ -345,7 +345,7 @@ class Pow(ScalarSymbolicOp):
         return [Pow(base=self.base, z=self.z * z)]
 
     @property
-    def has_adjoint(self):  # pylint: disable=arguments-renamed, invalid-overridden-method
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return isinstance(self.z, int)
 
     def adjoint(self):

@@ -18,7 +18,7 @@ for quantum algorithms in first quantization using a plane-wave basis.
 
 # Tests parameterize cases through explicit fixture and helper arguments; inspect private
 # interfaces.
-# pylint: disable=too-many-arguments, protected-access
+# pylint: disable=too-many-arguments,protected-access
 
 
 import pytest

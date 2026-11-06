@@ -122,7 +122,7 @@ def _merge_no_duplicates(*iterables):
             yield val
 
 
-class CommutationDAGNode:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
+class CommutationDAGNode:  # pylint: disable=too-many-instance-attributes,too-few-public-methods
     r"""Class to store information about a quantum operation in a node of the
     commutation DAG.
 

@@ -816,7 +816,7 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
         return math.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     @property
-    def has_sparse_matrix(self):  # pylint: disable=arguments-renamed, invalid-overridden-method
+    def has_sparse_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_sparse_matrix or self.base.has_matrix
 
     def sparse_matrix(self, wire_order=None, format="csr"):
@@ -855,7 +855,7 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
         return math.concatenate([ones, base_eigvals])
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
@@ -916,7 +916,7 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
         return d
 
     @property
-    def has_generator(self):  # pylint: disable=arguments-renamed, invalid-overridden-method
+    def has_generator(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_generator
 
     def generator(self):
@@ -930,7 +930,7 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
         return qp.prod(*projectors, sub_gen)
 
     @property
-    def has_adjoint(self):  # pylint: disable=arguments-renamed, invalid-overridden-method
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_adjoint
 
     def adjoint(self):

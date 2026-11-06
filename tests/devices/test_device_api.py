@@ -91,7 +91,7 @@ class TestDeviceCapabilities:
 
         with pytest.raises(FileNotFoundError):
 
-            # pylint: disable-next=too-few-public-methods, unused-variable
+            # pylint: disable-next=too-few-public-methods,unused-variable
             class DeviceWithInvalidCapabilities(Device):
 
                 config_filepath = "nonexistent_file.toml"

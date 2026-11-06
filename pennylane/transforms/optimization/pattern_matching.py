@@ -671,7 +671,7 @@ def _compare_qubits(node1, wires1, control1, target1, wires2, control2, target2)
     return False
 
 
-class ForwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
+class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-public-methods
     """
     Class to apply pattern matching in the forward direction.
     """
@@ -1021,7 +1021,7 @@ class MatchingScenariosList:
         return first
 
 
-class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
+class BackwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-public-methods
     """
     Class BackwardMatch allows to run backward direction part of the pattern matching algorithm.
     """
@@ -1097,7 +1097,7 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
 
         return candidates_indices
 
-    def run_backward_match(self):  # pylint: disable=too-many-branches, too-many-statements
+    def run_backward_match(self):  # pylint: disable=too-many-branches,too-many-statements
         """Run the backward match algorithm and returns the list of matches given an initial match, a forward
         scenario and a circuit qubits configuration.
         """

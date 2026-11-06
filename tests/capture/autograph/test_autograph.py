@@ -16,7 +16,7 @@
 source-to-source transformation feature."""
 
 # Imports follow the initialization order required by this module.
-# pylint: disable=wrong-import-position, wrong-import-order
+# pylint: disable=wrong-import-position,wrong-import-order
 
 
 from functools import partial

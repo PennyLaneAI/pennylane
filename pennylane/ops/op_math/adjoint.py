@@ -370,7 +370,7 @@ class Adjoint(SymbolicOp):
         return moveaxis(conj(base_matrix), -2, -1)
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
         return self.base.has_sparse_matrix
 
@@ -393,7 +393,7 @@ class Adjoint(SymbolicOp):
         return conj(self.base.eigvals())
 
     @property
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
@@ -401,7 +401,7 @@ class Adjoint(SymbolicOp):
         return self.base.diagonalizing_gates()
 
     @property
-    def has_adjoint(self):  # pylint: disable=arguments-renamed, invalid-overridden-method
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return True
 
     def adjoint(self):
@@ -470,7 +470,7 @@ class AdjointOperation(Adjoint, Operation):
         return parameter_frequencies(self.base)
 
     @property
-    def has_generator(self):  # pylint: disable=arguments-renamed, invalid-overridden-method
+    def has_generator(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_generator
 
     def generator(self):

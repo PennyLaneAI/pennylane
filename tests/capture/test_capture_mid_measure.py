@@ -14,7 +14,7 @@
 """Tests for capturing mid-circuit measurements."""
 
 # Imports follow the initialization order required by this module.
-# pylint: disable=wrong-import-order, wrong-import-position
+# pylint: disable=wrong-import-order,wrong-import-position
 
 
 import pytest

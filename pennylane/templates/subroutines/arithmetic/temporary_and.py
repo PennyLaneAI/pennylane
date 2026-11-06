@@ -149,7 +149,7 @@ class TemporaryAND(Operator2):
 
     @staticmethod
     @override
-    def compute_matrix(wires, control_values):  # pylint: disable=arguments-differ, unused-argument
+    def compute_matrix(wires, control_values):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.

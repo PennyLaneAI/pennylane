@@ -128,7 +128,7 @@ class SymbolicOp(Operator):
         return len(self.wires)
 
     @property
-    def has_matrix(self):  # pylint: disable=arguments-renamed, invalid-overridden-method
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_matrix
 
     @property

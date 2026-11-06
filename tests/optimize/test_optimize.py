@@ -16,7 +16,7 @@ Unit tests for the :mod:`pennylane` optimizers.
 """
 
 # Tests group related cases in classes, use fixture signatures.
-# pylint: disable=redefined-outer-name, too-few-public-methods
+# pylint: disable=redefined-outer-name,too-few-public-methods
 
 
 import pytest

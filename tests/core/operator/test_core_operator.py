@@ -44,7 +44,7 @@ I_broadcasted = I[pnp.newaxis]
 def test_basis_deprecation():
     """Test that Operation.basis is deprecated."""
 
-    class MyOp(Operation):  # pylint: disable=redefined-outer-name, too-few-public-methods
+    class MyOp(Operation):  # pylint: disable=redefined-outer-name,too-few-public-methods
         pass
 
     with pytest.warns(PennyLaneDeprecationWarning, match="Operation.basis is deprecated"):
@@ -351,7 +351,7 @@ class TestOperatorConstruction:
     def test_default_hyperparams(self):
         """Tests that the hyperparams attribute is defined for all operations."""
 
-        # pylint: disable-next=redefined-outer-name, too-few-public-methods
+        # pylint: disable-next=redefined-outer-name,too-few-public-methods
         class MyOp(qp.operation.Operation):
             num_wires = 1
 
@@ -370,7 +370,7 @@ class TestOperatorConstruction:
     def test_custom_hyperparams(self):
         """Tests that an operation can add custom hyperparams."""
 
-        # pylint: disable-next=redefined-outer-name, too-few-public-methods
+        # pylint: disable-next=redefined-outer-name,too-few-public-methods
         class MyOp(qp.operation.Operation):
             num_wires = 1
 
@@ -549,7 +549,7 @@ class TestHasReprProperties:
     def test_has_matrix_true(self):
         """Test has_matrix property detects overriding of `compute_matrix` method."""
 
-        # pylint: disable-next=redefined-outer-name, too-few-public-methods
+        # pylint: disable-next=redefined-outer-name,too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
 
@@ -563,7 +563,7 @@ class TestHasReprProperties:
     def test_has_matrix_true_overridden_matrix(self):
         """Test has_matrix is true if `matrix` is overridden instead of `compute_matrix`."""
 
-        # pylint: disable-next=redefined-outer-name, too-few-public-methods
+        # pylint: disable-next=redefined-outer-name,too-few-public-methods
         class MyOp(qp.operation.Operator):
             def matrix(self, _=None):
                 return np.eye(2)
@@ -574,7 +574,7 @@ class TestHasReprProperties:
     def test_has_matrix_false(self):
         """Test has_matrix property defaults to false if `compute_matrix` not overwritten."""
 
-        # pylint: disable-next=redefined-outer-name, too-few-public-methods
+        # pylint: disable-next=redefined-outer-name,too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
 
@@ -595,7 +595,7 @@ class TestHasReprProperties:
     def test_has_adjoint_true(self):
         """Test has_adjoint property detects overriding of `adjoint` method."""
 
-        # pylint: disable-next=redefined-outer-name, too-few-public-methods
+        # pylint: disable-next=redefined-outer-name,too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
             adjoint = lambda self: self
@@ -606,7 +606,7 @@ class TestHasReprProperties:
     def test_has_adjoint_false(self):
         """Test has_adjoint property defaults to false if `adjoint` not overwritten."""
 
-        # pylint: disable-next=redefined-outer-name, too-few-public-methods
+        # pylint: disable-next=redefined-outer-name,too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
 
@@ -616,7 +616,7 @@ class TestHasReprProperties:
     def test_has_decomposition_true_compute_decomposition(self):
         """Test has_decomposition property detects overriding of `compute_decomposition` method."""
 
-        # pylint: disable-next=redefined-outer-name, too-few-public-methods
+        # pylint: disable-next=redefined-outer-name,too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
             num_params = 1
@@ -631,7 +631,7 @@ class TestHasReprProperties:
     def test_has_decomposition_true_decomposition(self):
         """Test has_decomposition property detects overriding of `decomposition` method."""
 
-        # pylint: disable-next=redefined-outer-name, too-few-public-methods
+        # pylint: disable-next=redefined-outer-name,too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
             num_params = 1
@@ -694,7 +694,7 @@ class TestHasReprProperties:
         """Test has_diagonalizing_gates property detects
         overriding of `compute_diagonalizing_gates` method."""
 
-        # pylint: disable-next=redefined-outer-name, too-few-public-methods
+        # pylint: disable-next=redefined-outer-name,too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
             num_params = 1
@@ -710,7 +710,7 @@ class TestHasReprProperties:
         """Test has_diagonalizing_gates property detects
         overriding of `diagonalizing_gates` method."""
 
-        # pylint: disable-next=redefined-outer-name, too-few-public-methods
+        # pylint: disable-next=redefined-outer-name,too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
             num_params = 1
@@ -725,7 +725,7 @@ class TestHasReprProperties:
         """Test has_diagonalizing_gates property defaults to false if neither
         `diagonalizing_gates` nor `compute_diagonalizing_gates` are overwritten."""
 
-        # pylint: disable-next=redefined-outer-name, too-few-public-methods
+        # pylint: disable-next=redefined-outer-name,too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
 
@@ -735,7 +735,7 @@ class TestHasReprProperties:
     def test_has_generator_true(self):
         """Test `has_generator` property detects overriding of `generator` method."""
 
-        # pylint: disable-next=redefined-outer-name, too-few-public-methods
+        # pylint: disable-next=redefined-outer-name,too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
 
@@ -756,7 +756,7 @@ class TestHasReprProperties:
     def test_has_generator_false(self):
         """Test `has_generator` property defaults to false if `generator` not overwritten."""
 
-        # pylint: disable-next=redefined-outer-name, too-few-public-methods
+        # pylint: disable-next=redefined-outer-name,too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
 
@@ -795,7 +795,7 @@ class TestModificationMethods:
             num_wires = 3
 
         op = DummyOp(wires=[0, 1, 2])  # pylint: disable=redefined-outer-name
-        # pylint: disable-next=attribute-defined-outside-init, protected-access
+        # pylint: disable-next=attribute-defined-outside-init,protected-access
         op._pauli_rep = qp.pauli.PauliSentence(
             {
                 qp.pauli.PauliWord({0: "X", 1: "Y", 2: "Z"}): 1.1,

@@ -163,7 +163,7 @@ class TestVar:
             ),
         ],
     )
-    # pylint: disable-next=redefined-outer-name, too-many-arguments
+    # pylint: disable-next=redefined-outer-name,too-many-arguments
     def test_single_wire_observables_variance(self, Obs, Op, expected_fn, theta, phi, dev):
         """Test that variance values for single wire observables are correct"""
 

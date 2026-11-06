@@ -66,7 +66,7 @@ class _LegacyMeta(abc.ABCMeta):
         return super().__instancecheck__(instance)
 
 
-# pylint: disable-next=too-many-instance-attributes, too-many-public-methods
+# pylint: disable-next=too-many-instance-attributes,too-many-public-methods
 class Device(abc.ABC, metaclass=_LegacyMeta):
     """Abstract base class for PennyLane devices.
 
@@ -362,7 +362,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         """
         return cls._capabilities
 
-    # pylint: disable-next=too-many-branches, unused-argument
+    # pylint: disable-next=too-many-branches,unused-argument
     def execute(self, queue, observables, parameters=None, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 

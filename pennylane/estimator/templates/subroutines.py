@@ -2108,7 +2108,7 @@ class HybridQRAM(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    # pylint: disable-next=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def resource_decomp(cls, data, num_wires, num_select_wires, num_tree_control_wires):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -2289,7 +2289,7 @@ class BBQRAM(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    # pylint: disable-next=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def resource_decomp(cls, num_bitstrings, size_bitstring, num_bit_flips, num_wires):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -2408,7 +2408,7 @@ class Select(ResourceOperator):
             self.num_wires = minimum_num_wires
 
     @classmethod
-    # pylint: disable-next=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def resource_decomp(cls, cmpr_ops, num_wires):
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
 

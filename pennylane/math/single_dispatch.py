@@ -14,7 +14,7 @@
 """Autoray registrations"""
 
 # Backend adapters register internal callables and import optional dependencies lazily.
-# pylint: disable=protected-access, import-outside-toplevel, unnecessary-lambda, wrong-import-order
+# pylint: disable=protected-access,import-outside-toplevel,unnecessary-lambda,wrong-import-order
 
 
 from importlib import import_module

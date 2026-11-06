@@ -14,7 +14,7 @@
 
 # Tests group cases in helper classes; inspect private interfaces; load optional backends before
 # dependent imports.
-# pylint: disable=too-few-public-methods, protected-access, wrong-import-position
+# pylint: disable=too-few-public-methods,protected-access,wrong-import-position
 
 
 import numpy as np

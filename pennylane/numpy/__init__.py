@@ -82,7 +82,7 @@ docs <https://github.com/HIPS/autograd/blob/master/docs/tutorial.md>`__.
 """
 
 # The public NumPy namespace is populated dynamically from autograd before later imports.
-# pylint: disable=wrong-import-position, undefined-variable
+# pylint: disable=wrong-import-position,undefined-variable
 
 
 from autograd import numpy as _np

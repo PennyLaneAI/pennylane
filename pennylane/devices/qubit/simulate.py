@@ -387,7 +387,7 @@ def simulate(
     )
 
 
-# pylint: disable-next=too-many-branches, too-many-statements
+# pylint: disable-next=too-many-branches,too-many-statements
 def simulate_tree_mcm(circuit: QuantumScript, debugger=None, **execution_kwargs) -> Result:
     """Simulate a single quantum script with native mid-circuit measurements using the tree-traversal algorithm.
 

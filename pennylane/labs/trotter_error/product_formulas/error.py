@@ -160,7 +160,7 @@ class ImportanceConfig:
        is modified to include the convergence history."""
 
 
-def perturbation_error(  # pylint: disable=too-many-arguments, too-many-branches
+def perturbation_error(  # pylint: disable=too-many-arguments,too-many-branches
     product_formula: ProductFormula,
     fragments: dict[Hashable, Fragment],
     state: TrotterState,

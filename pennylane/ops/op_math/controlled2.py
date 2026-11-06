@@ -377,7 +377,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @property
     @override
-    def has_adjoint(self):  # pylint: disable=arguments-differ, invalid-overridden-method
+    def has_adjoint(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return self.base.has_adjoint
 
     @override
@@ -406,8 +406,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @property
     @override
-    # pylint: disable-next=arguments-differ, invalid-overridden-method
-    def has_diagonalizing_gates(self):
+    def has_diagonalizing_gates(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return self.base.has_diagonalizing_gates
 
     @staticmethod
@@ -417,7 +416,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @property
     @override
-    def has_generator(self):  # pylint: disable=arguments-differ, invalid-overridden-method
+    def has_generator(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return self.base.has_generator
 
     @override
@@ -550,7 +549,7 @@ class ControlledOp2(Controlled2):
         return f"Controlled({self.base}, {', '.join(params)})"
 
     @property
-    def has_decomposition(self):  # pylint: disable=arguments-differ, invalid-overridden-method
+    def has_decomposition(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return any(rule.is_applicable(**self.arguments) for rule in list_decomps(self))
 
     @override

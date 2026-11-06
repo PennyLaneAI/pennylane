@@ -14,7 +14,7 @@
 """Assertion test for multi_dispatch function/decorator"""
 
 # Dispatch tests keep callback signatures and arrange imports for backend registration.
-# pylint: disable=unused-argument, wrong-import-order
+# pylint: disable=unused-argument,wrong-import-order
 
 
 import autoray

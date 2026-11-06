@@ -1191,7 +1191,7 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
 # ---------------------------------------------------------------------------
 
 
-def _trotter_step_second_order(  # pylint: disable=too-many-arguments, too-many-statements
+def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-statements
     time,
     hamiltonian,
     registers,

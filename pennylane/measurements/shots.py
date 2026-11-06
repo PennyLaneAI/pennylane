@@ -15,7 +15,7 @@
 previous location of pennylane.core.shots
 """
 
-# pylint: disable-next=wildcard-import, unused-wildcard-import
+# pylint: disable-next=wildcard-import,unused-wildcard-import
 from pennylane.core.shots import *  # tach-ignore
 
 

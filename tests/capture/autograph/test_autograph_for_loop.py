@@ -15,7 +15,7 @@
 """PyTests for the AutoGraph source-to-source transformation feature."""
 
 # Imports follow the initialization order required by this module.
-# pylint: disable=wrong-import-order, wrong-import-position
+# pylint: disable=wrong-import-order,wrong-import-position
 
 
 from unittest import mock

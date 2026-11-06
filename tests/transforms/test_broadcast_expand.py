@@ -123,7 +123,7 @@ class TestBroadcastExpand:
 
     @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    # pylint: disable-next=too-many-arguments, unused-argument
+    # pylint: disable-next=too-many-arguments,unused-argument
     def test_shot_vector_expval(self, params, size, obs, exp_fn, tol_stochastic, seed):
         """Test that expansion works as expected with shot vectors"""
         ops = make_ops(*params)

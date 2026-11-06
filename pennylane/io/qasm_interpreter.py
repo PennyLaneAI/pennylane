@@ -137,7 +137,7 @@ def _eval_assignment(lhs: any, operator: str, value: any, line: int):
     return lhs
 
 
-# pylint: disable-next=too-many-branches, too-many-return-statements
+# pylint: disable-next=too-many-branches,too-many-return-statements
 def _eval_binary_op(lhs: any, operator: str, rhs: any, line: int):
     """
     Evaluates a binary operator.

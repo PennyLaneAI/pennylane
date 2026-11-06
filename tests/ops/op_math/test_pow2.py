@@ -364,9 +364,9 @@ class TestCapture:  # pylint: disable=too-few-public-methods
         """Test that the eigvals method is jittable."""
         import jax
         import jax.numpy as jnp
-        import numpy as np  # pylint: disable=redefined-outer-name, reimported
+        import numpy as np  # pylint: disable=redefined-outer-name,reimported
 
-        import pennylane as qp  # pylint: disable=redefined-outer-name, reimported
+        import pennylane as qp  # pylint: disable=redefined-outer-name,reimported
 
         @jax.jit
         def f(x):

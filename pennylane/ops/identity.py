@@ -146,7 +146,7 @@ class Identity(Operator2):
         return _identity_sparse_matrix(len(wires), format)
 
     @staticmethod
-    def compute_diagonalizing_gates(wires=()):  # pylint: disable=arguments-differ, unused-argument
+    def compute_diagonalizing_gates(wires=()):  # pylint: disable=arguments-differ,unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -335,7 +335,7 @@ class GlobalPhase(Operator2):
         return qp.math.exp(-1j * phi) * sparse.eye(2**n_wires, format=format)
 
     @staticmethod
-    # pylint: disable-next=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_diagonalizing_gates(phi, wires=()):
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 

@@ -452,7 +452,7 @@ class PauliRot(Operator2):
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in set(pauli_word))
 
     @staticmethod
-    # pylint: disable-next=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(theta: TensorLike, pauli_word: str, wires=None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -519,7 +519,7 @@ class PauliRot(Operator2):
         )
 
     @staticmethod
-    # pylint: disable-next=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_eigvals(theta: TensorLike, pauli_word: str, wires=None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -1169,7 +1169,7 @@ class IsingXX(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable-next=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1330,7 +1330,7 @@ class IsingYY(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable-next=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1514,7 +1514,7 @@ class IsingZZ(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable-next=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1548,7 +1548,7 @@ class IsingZZ(Operator2):
         return diags[:, :, np.newaxis] * math.cast_like(math.eye(4, like=diags), diags)
 
     @staticmethod
-    # pylint: disable-next=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_eigvals(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -1760,7 +1760,7 @@ class IsingXY(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable-next=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1808,7 +1808,7 @@ class IsingXY(Operator2):
         return diags * np.eye(4) + math.tensordot(js, off_diag, axes=0)
 
     @staticmethod
-    # pylint: disable-next=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_eigvals(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 

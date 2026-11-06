@@ -13,7 +13,7 @@
 """Shared ``Operator2`` subclasses used across the ``tests/core/`` suite."""
 
 # Tests group cases in helper classes.
-# pylint: disable=too-few-public-methods, useless-parent-delegation
+# pylint: disable=too-few-public-methods,useless-parent-delegation
 
 
 import pennylane as qp

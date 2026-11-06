@@ -225,7 +225,7 @@ def sum_of_terms_method(
     )
 
 
-def get_measurement_function(  # pylint: disable=too-many-return-statements, too-many-branches
+def get_measurement_function(  # pylint: disable=too-many-return-statements,too-many-branches
     measurementprocess: MeasurementProcess, state: TensorLike
 ) -> Callable[[MeasurementProcess, TensorLike, bool, list[Callable]], TensorLike]:
     """Get the appropriate method for performing a measurement.

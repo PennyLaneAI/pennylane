@@ -113,8 +113,7 @@ class Adjoint2(SymbolicOp2):
 
     @property
     @override
-    # pylint: disable-next=arguments-differ, invalid-overridden-method
-    def has_diagonalizing_gates(self):
+    def has_diagonalizing_gates(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return self.base.has_diagonalizing_gates
 
     @staticmethod
@@ -147,7 +146,7 @@ class Adjoint2(SymbolicOp2):
 
     @property
     @override
-    def has_generator(self):  # pylint: disable=arguments-differ, invalid-overridden-method
+    def has_generator(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return self.base.has_generator
 
     @override
@@ -155,7 +154,7 @@ class Adjoint2(SymbolicOp2):
         return -1 * self.base.generator()
 
     @property
-    def has_decomposition(self):  # pylint: disable=arguments-differ, invalid-overridden-method
+    def has_decomposition(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return any(rule.is_applicable(**self.arguments) for rule in list_decomps(self))
 
     @override

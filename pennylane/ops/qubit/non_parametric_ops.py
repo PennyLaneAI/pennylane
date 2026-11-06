@@ -17,7 +17,7 @@ not depend on any parameters.
 """
 
 # Overrides and callbacks throughout this module use specialized signatures.
-# pylint: disable=arguments-differ, unused-argument
+# pylint: disable=arguments-differ,unused-argument
 
 
 import cmath

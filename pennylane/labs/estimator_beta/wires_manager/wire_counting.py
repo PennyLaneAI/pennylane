@@ -34,7 +34,7 @@ from pennylane.labs.estimator_beta.wires_manager.base_classes import (
 from pennylane.wires import Wires
 
 
-# pylint: disable-next=too-many-arguments, too-many-branches, too-many-statements
+# pylint: disable-next=too-many-arguments,too-many-branches,too-many-statements
 def _estimate_auxiliary_wires(
     list_actions: Iterable[GateCount | Allocate | Deallocate],
     scalar: int = 1,

@@ -294,7 +294,7 @@ class kUpCCGSD(Operation):
         }
 
     @staticmethod
-    # pylint: disable-next=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_decomposition(weights, wires, s_wires, d_wires, k, init_state, delta_sz=None):
         r"""Representation of the operator as a product of other operators.
 

@@ -41,7 +41,7 @@ jacobian_prim.prim_type = "higher_order"
 
 
 @jacobian_prim.def_impl
-# pylint: disable-next=too-many-arguments, unused-argument
+# pylint: disable-next=too-many-arguments,unused-argument
 def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
     if method != "auto":  # pragma: no cover
         raise ValueError(f"Invalid value '{method=}' without QJIT.")
@@ -60,7 +60,7 @@ def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
 
 
 @jacobian_prim.def_abstract_eval
-# pylint: disable-next=too-many-arguments, unused-argument
+# pylint: disable-next=too-many-arguments,unused-argument
 def _grad_abstract(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
     if scalar_out and not (len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()):
         raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
@@ -286,7 +286,7 @@ class grad:  # pylint: disable=too-many-instance-attributes
             # If the differentiable argnum is provided, we can construct
             # the gradient function at once during initialization.
             # Known pylint issue with function signatures and decorators:
-            # pylint: disable-next=unexpected-keyword-arg, no-value-for-parameter
+            # pylint: disable-next=unexpected-keyword-arg,no-value-for-parameter
             self._grad_fn = self._grad_with_forward(func, argnum=self._argnums)
 
         # need to preserve input siganture for use in catalyst AOT compilation, but
@@ -326,7 +326,7 @@ class grad:  # pylint: disable=too-many-instance-attributes
             argnums = argnums[0]
 
         # Known pylint issue with function signatures and decorators:
-        # pylint: disable-next=unexpected-keyword-arg, no-value-for-parameter
+        # pylint: disable-next=unexpected-keyword-arg,no-value-for-parameter
         return self._grad_with_forward(self._func, argnum=argnums), argnums
 
     def __call__(self, *args, **kwargs):

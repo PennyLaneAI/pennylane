@@ -350,7 +350,7 @@ class Sum(CompositeOp):
 
     @property
     @handle_recursion_error
-    # pylint: disable-next=arguments-renamed, invalid-overridden-method
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
@@ -368,7 +368,7 @@ class Sum(CompositeOp):
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order).asformat(format)
 
     @property
-    def has_adjoint(self):  # pylint: disable=arguments-renamed, invalid-overridden-method
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return True
 
     def adjoint(self):

@@ -971,7 +971,7 @@ class TestCapture:  # pylint: disable=too-few-public-methods
         import jax.numpy as jnp
         import numpy as np  # pylint: disable=redefined-outer-name
 
-        import pennylane as qp  # pylint: disable=redefined-outer-name, reimported
+        import pennylane as qp  # pylint: disable=redefined-outer-name,reimported
 
         @jax.jit
         def f(x):

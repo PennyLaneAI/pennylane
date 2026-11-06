@@ -62,8 +62,7 @@ def test_custom_capture_meta():
 def test_custom_capture_meta_no_bind_primitive_call():
     """Test that an NotImplementedError is raised if the type does not define _primitive_bind_call."""
 
-    # pylint: disable-next=too-few-public-methods, undefined-variable
-    class MyObj(metaclass=CaptureMeta):
+    class MyObj(metaclass=CaptureMeta):  # pylint: disable=too-few-public-methods,undefined-variable
         """A class that does not define _primitive_bind_call."""
 
         def __init__(self, a):

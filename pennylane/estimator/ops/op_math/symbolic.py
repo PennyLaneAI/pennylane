@@ -728,7 +728,7 @@ class Prod(ResourceOperator):
         )
 
     @classmethod
-    # pylint: disable-next=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def resource_decomp(cls, cmpr_factors_and_counts, num_wires: int):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.

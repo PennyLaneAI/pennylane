@@ -186,7 +186,7 @@ class _Expansion:  # pylint: disable=too-many-instance-attributes
         self.base_and_n_ctrls = _get_base_and_n_ctrls(self.op)
 
 
-class DecompositionGraph:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
+class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-few-public-methods
     """A graph that models a decomposition problem.
 
     The decomposition graph contains two types of nodes: operator nodes and decomposition nodes.

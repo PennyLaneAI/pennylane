@@ -16,7 +16,7 @@
 
 # Tests group cases in helper classes; inspect private interfaces; load optional backends before
 # dependent imports.
-# pylint: disable=protected-access, wrong-import-position, too-few-public-methods
+# pylint: disable=protected-access,wrong-import-position,too-few-public-methods
 
 
 import ctypes

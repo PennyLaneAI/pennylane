@@ -170,7 +170,7 @@ class Pow2(SymbolicOp2):
 
     @property
     @override
-    def has_decomposition(self):  # pylint: disable=arguments-differ, invalid-overridden-method
+    def has_decomposition(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         if isinstance(self.z, int) and self.z > 0:
             return True
         try:
@@ -200,13 +200,12 @@ class Pow2(SymbolicOp2):
 
     @property
     @override
-    # pylint: disable-next=arguments-differ, invalid-overridden-method
-    def has_diagonalizing_gates(self):
+    def has_diagonalizing_gates(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return self.base.has_diagonalizing_gates
 
     @staticmethod
     @override
-    def compute_diagonalizing_gates(base, z):  # pylint: disable=arguments-differ, unused-argument
+    def compute_diagonalizing_gates(base, z):  # pylint: disable=arguments-differ,unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -247,7 +246,7 @@ class Pow2(SymbolicOp2):
 
     @property
     @override
-    def has_generator(self):  # pylint: disable=arguments-differ, invalid-overridden-method
+    def has_generator(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return self.base.has_generator
 
     @override
@@ -271,7 +270,7 @@ class Pow2(SymbolicOp2):
 
     @property
     @override
-    def has_adjoint(self):  # pylint: disable=arguments-differ, invalid-overridden-method
+    def has_adjoint(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return isinstance(self.z, int)
 
     @override

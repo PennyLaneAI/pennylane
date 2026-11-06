@@ -339,7 +339,7 @@ class ResourceQfunc(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params, name=name)
 
     @classmethod
-    # pylint: disable-next=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def resource_decomp(cls, name, num_wires, cmpr_ops):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
@@ -363,7 +363,7 @@ class ResourceQfunc(ResourceOperator):
         return [GateCount(cmpr_op) for cmpr_op in cmpr_ops]
 
     @staticmethod
-    # pylint: disable-next=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def tracking_name(name, num_wires, cmpr_ops) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         return name

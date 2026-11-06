@@ -15,7 +15,7 @@
 
 # Tests parameterize cases through explicit fixture and helper arguments; group cases in helper
 # classes.
-# pylint: disable=too-many-arguments, too-few-public-methods
+# pylint: disable=too-many-arguments,too-few-public-methods
 
 
 import itertools

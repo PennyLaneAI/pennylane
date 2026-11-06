@@ -17,7 +17,7 @@ works correctly an a device.
 """
 
 # Gate tests parameterize circuit arguments and construct callable test circuits.
-# pylint: disable=too-many-arguments, unnecessary-lambda-assignment
+# pylint: disable=too-many-arguments,unnecessary-lambda-assignment
 
 
 from cmath import exp

@@ -1006,7 +1006,7 @@ class FromBloq(Operation):
         return f'FromBloq({self.hyperparameters["bloq"]}, wires={self.wires})'
 
     @staticmethod
-    def compute_decomposition(wires, bloq):  # pylint: disable=arguments-differ, too-many-branches
+    def compute_decomposition(wires, bloq):  # pylint: disable=arguments-differ,too-many-branches
         ops = []
 
         if len(wires) != bloq.signature.n_qubits():
@@ -1091,7 +1091,7 @@ class FromBloq(Operation):
         return ops
 
     @property
-    def has_matrix(self) -> bool:  # pylint: disable=arguments-renamed, invalid-overridden-method
+    def has_matrix(self) -> bool:  # pylint: disable=arguments-renamed,invalid-overridden-method
         r"""Return if the ``Bloq`` has a valid matrix representation."""
         bloq = self.hyperparameters["bloq"]
         matrix = bloq.tensor_contract()

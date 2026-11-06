@@ -542,7 +542,7 @@ def _tape_decompose(  # pylint: disable=too-many-arguments
     return (tape,), null_postprocessing
 
 
-def _operator_decomposition_gen(  # pylint: disable=too-many-arguments, too-many-branches
+def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-branches
     op: Operator,
     acceptance_function: Callable[[Operator], bool],
     max_expansion: int | None = None,

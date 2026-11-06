@@ -83,7 +83,7 @@ def process_queue(
     return ops, measurements
 
 
-class QuantumScript:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
+class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
     r"""The operations and measurements that represent instructions for
     execution on a quantum device.
 

@@ -192,7 +192,7 @@ class Prod2(CompositeOp2):
 
     @property
     @handle_recursion_error
-    # pylint: disable-next=arguments-differ, invalid-overridden-method
+    # pylint: disable-next=arguments-differ,invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
         return (
             all(op.has_sparse_matrix for op in self)

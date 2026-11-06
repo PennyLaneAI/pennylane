@@ -363,7 +363,7 @@ class StatePrep(StatePrepBase):
             super()._check_batching()
 
     @staticmethod
-    # pylint: disable-next=unused-argument, arguments-differ
+    # pylint: disable-next=unused-argument,arguments-differ
     def compute_decomposition(state: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 

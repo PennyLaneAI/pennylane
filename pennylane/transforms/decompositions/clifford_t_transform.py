@@ -431,7 +431,7 @@ class _CachedCallable:
 
 
 @transform
-def clifford_t_decomposition(  # pylint: disable=too-many-branches, too-many-statements
+def clifford_t_decomposition(  # pylint: disable=too-many-branches,too-many-statements
     tape: QuantumScript,
     epsilon=1e-4,
     method="gridsynth",

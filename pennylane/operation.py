@@ -17,7 +17,7 @@ The former location of pennylane/core/operator.
 import pennylane as qp
 from pennylane import math
 
-# pylint: disable-next=wildcard-import, unused-wildcard-import
+# pylint: disable-next=wildcard-import,unused-wildcard-import
 from pennylane.core.operator import *  # tach-ignore
 from pennylane.core.operator.base import (  # pylint: disable=unused-import # tach-ignore
     _UNSET_BATCH_SIZE,

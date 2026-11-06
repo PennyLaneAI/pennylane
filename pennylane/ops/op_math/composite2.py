@@ -237,7 +237,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
 
     @property
     @handle_recursion_error
-    def has_matrix(self):  # pylint: disable=arguments-differ, invalid-overridden-method
+    def has_matrix(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return all(op.has_matrix for op in self)
 
     @property
@@ -306,8 +306,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
         return self._eigs[self]
 
     @property
-    # pylint: disable-next=arguments-differ, invalid-overridden-method
-    def has_diagonalizing_gates(self):
+    def has_diagonalizing_gates(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         if self.has_overlapping_wires:
             for ops in self.overlapping_ops:
                 # if any of the single ops doesn't have diagonalizing gates, the overall operator doesn't either

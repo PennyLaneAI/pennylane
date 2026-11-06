@@ -136,7 +136,7 @@ def httpserver_listen_address():
     return ("localhost", 8888)
 
 
-# pylint: disable-next=unused-argument, dangerous-default-value
+# pylint: disable-next=unused-argument,dangerous-default-value
 def post_mock(url, json, timeout=1.0, headers={"content-type": "application/json"}):
     """Return mocked get response depending on json content."""
     resp = MagicMock(ok=True)
@@ -263,7 +263,7 @@ class TestLoadInteractive:
             ),
         ],
     )
-    # pylint: disable-next=unused-argument, redefined-outer-name
+    # pylint: disable-next=unused-argument,redefined-outer-name
     def test_load_interactive_success(self, mock_input, mock_sleep, mock_load, side_effect):
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
@@ -308,7 +308,7 @@ class TestLoadInteractive:
         self,
         mock_input,
         _mock_sleep,
-        mock_load,  # pylint: disable=redefined-outer-name, unused-argument
+        mock_load,  # pylint: disable=redefined-outer-name,unused-argument
         side_effect,
         error_message,
     ):
@@ -335,7 +335,7 @@ class TestLoadInteractive:
             ),
         ],
     )
-    # pylint: disable-next=unused-argument, redefined-outer-name
+    # pylint: disable-next=unused-argument,redefined-outer-name
     def test_load_interactive_qchem(self, mock_input, mock_sleep, mock_load, side_effect):
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
@@ -393,7 +393,7 @@ class TestMiscHelpers:
 
 @pytest.fixture
 def mock_download_dataset(monkeypatch):
-    # pylint: disable-next=unused-argument, too-many-arguments
+    # pylint: disable-next=unused-argument,too-many-arguments
     def mock(data_path, dest, attributes, force, block_size, pbar_task):
         dset = Dataset.open(Path(dest), "w")
         if attributes:

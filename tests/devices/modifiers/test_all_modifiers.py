@@ -16,7 +16,7 @@ Tests that apply to all device modifiers or act on a combination of them togethe
 """
 
 # Tests group related cases in classes, use fixture signatures.
-# pylint: disable=unused-argument, too-few-public-methods
+# pylint: disable=unused-argument,too-few-public-methods
 
 
 import pytest

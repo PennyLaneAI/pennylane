@@ -201,7 +201,7 @@ class TestConstruction:
     def test_map_wires(self, construct_overlapping_ops, expected_overlapping_ops):
         """Test the map_wires method."""
         diag_op = ValidOp(*self.simple_operands)
-        # pylint: disable-next=attribute-defined-outside-init, protected-access
+        # pylint: disable-next=attribute-defined-outside-init,protected-access
         diag_op._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "X", 1: "Y"}): 1})
         if construct_overlapping_ops:
             _ = diag_op.overlapping_ops

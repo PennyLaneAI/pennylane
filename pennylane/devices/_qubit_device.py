@@ -16,7 +16,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 """
 
 # Legacy device hooks retain specialized signatures and execution paths.
-# pylint: disable=arguments-differ, too-many-branches, arguments-renamed
+# pylint: disable=arguments-differ,too-many-branches,arguments-renamed
 
 
 # For now, arguments may be different from the signatures provided in Device
