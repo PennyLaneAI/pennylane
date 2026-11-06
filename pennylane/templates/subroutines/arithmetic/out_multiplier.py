@@ -25,13 +25,13 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
-from pennylane.ops import H, X, adjoint, change_op_basis, ctrl, prod
+from pennylane.ops import H, MultiControlledX, X, adjoint, change_op_basis, ctrl, prod
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.multix import MultiX
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
 
 from .incrementer import Incrementer
 from .phase_adder import PhaseAdder
@@ -353,15 +353,15 @@ def _out_multiplier_with_qft_resources(
         compute_rep = QFT(Wire[num_qft_wires])
 
     uncompute_rep = adjoint(QFT(Wire[num_qft_wires]))
-    target_rep = resource_rep(
-        ControlledSequence,
-        base_rep=resource_rep(
-            ControlledSequence,
-            base_rep=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
-            num_control_wires=num_x_wires,
+    target_rep = ControlledSequence(
+        base=ControlledSequence(
+            base=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
+            control=Wire[num_x_wires],
         ),
-        num_control_wires=num_y_wires,
+        control=Wire[num_y_wires],
     )
+    if output_wires_zeroed:
+        return {prod(uncompute_rep, target_rep, compute_rep): 1}
     resources = {_change_op_basis_abstract(compute_rep, target_rep, uncompute_rep): 1}
     return resources
 
@@ -369,8 +369,6 @@ def _out_multiplier_with_qft_resources(
 def _out_multiplier_with_qft_condition(
     x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
 ):  # pylint: disable=unused-argument, too-many-arguments
-    if capture.enabled():
-        return False  # TODO: ControlledSequence cannot take tracer wires [sc-128372]
     return mod == 2 ** len(output_wires) or len(work_wires) >= 2
 
 
@@ -403,11 +401,7 @@ def _out_multiplier_with_qft(
         work_wire = output_wires[:0]
 
     if output_wires_zeroed:
-
-        def compute_op():
-            for w in qft_output_wires:
-                H(w)
-
+        compute_op = prod(*[H(w) for w in qft_output_wires])
     else:
         compute_op = QFT(qft_output_wires)
 
@@ -417,7 +411,12 @@ def _out_multiplier_with_qft(
         ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
         control=y_wires,
     )
-    change_op_basis(compute_op, target_op, uncompute_op)
+    if output_wires_zeroed:
+        # Hadamards match QFT only on the zero state, so inverse QFT does not undo
+        # this computation. Use a product so its adjoint reverses all three factors.
+        prod(uncompute_op, target_op, compute_op)
+    else:
+        change_op_basis(compute_op, target_op, uncompute_op)
 
 
 def _out_multiplier_with_adder_resources(
@@ -584,7 +583,7 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
             X(wire)
         else:
             c_wire, c_val = flip_control
-            ctrl(X(wire), control=c_wire, control_values=[c_val])
+            MultiControlledX(concatenate_wires(c_wire, [wire]), control_values=[c_val])
 
     _semi_adder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
 
@@ -613,7 +612,7 @@ def _c_add_sub_resources(num_x_wires, num_y_wires):
         ctrl_basis_rep = ctrl(MultiX(Bool[num_x_wires - 1], Wire[num_x_wires - 1]), Wire[1])
         resources[ctrl_basis_rep] += 2
 
-    cnot_on_0_rep = ctrl(X(Wire[1]), control=Wire[1], control_values=[0])
+    cnot_on_0_rep = MultiControlledX(Wire[2], control_values=Bool[1])
     resources[cnot_on_0_rep] += 2 * (1 + int(num_y_wires > 1))
 
     for key, value in _semi_adder_resources(Wire[num_x_wires], Wire[num_y_wires]).items():
@@ -649,14 +648,14 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
     work_wires = work_wires[: len(y_wires) - 1]
     # Control-flip the LSB of the output register. This is part of achieving addition plus one
     # for c_wire=|0>. (c.f. _add_plus_one).
-    ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
+    MultiControlledX(c_wire + [y_wires[-1]], control_values=[0])
 
     # Create the operator sequence for an adder and insert (controlled) work wire bit flips
     # We insert controlled work wire bit flips where a carry-in qubit would cause them,
     # i.e., after the very first left elbow and before the last right elbow
     _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=(c_wire, 0))
 
-    ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
+    MultiControlledX(c_wire + [y_wires[-1]], control_values=[0])
 
     if len(x_wires) > 1:
         ctrl(MultiX([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])

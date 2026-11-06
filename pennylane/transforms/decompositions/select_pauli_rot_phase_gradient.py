@@ -25,7 +25,6 @@ from pennylane.core.operator import Operator, abstractify
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Bool, Wire
 from pennylane.wires import WireError, Wires
 
@@ -54,7 +53,7 @@ def _select_pauli_rot_phase_gradient(
 
     def fanout():
         for wire in phase_grad_wires:
-            qp.ctrl(qp.X(wire), control=target_wire, control_values=[0])
+            qp.MultiControlledX(Wires(target_wire) + Wires(wire), control_values=[0])
 
     def compute_fn():
         load()
@@ -289,9 +288,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(
             clean=True,
         )
 
-        # 2. ctrl(X, control=target_wire, control_values=[0])
-        #    -> Controlled X with 1 control, 1 zero-ctrl
-        ctrl_x_rep = _ctrl_abstract(qp.X, Wire[1], num_zero_control_values=1)
+        # 2. MultiControlledX with one control (the runtime control value is zero).
+        ctrl_x_rep = qp.MultiControlledX(Wire[2], control_values=Bool[1])
 
         # 3. The callable decompositions produce products in reverse queuing order.
         compute_rep = qp.ops.prod(*((ctrl_x_rep,) * p + (load_rep,)))

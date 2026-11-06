@@ -274,7 +274,10 @@ class TestQROMLoad:
         qrom = qp.QROM(
             columns, control_wires=[0, 1, 2], target_wires=[5, 6, 7, 8], work_wires=[9, 10]
         )
-        cswaps = [qp.CSWAP([4, 5, 6]), qp.CSWAP([3, 5, 7]), qp.CSWAP([3, 6, 8])]
+        cswaps = [
+            qp.ctrl(qp.SWAP(wires), control=c, work_wires=[9], work_wire_type="zeroed")
+            for c, wires in [(4, [5, 6]), (3, [5, 7]), (3, [6, 8])]
+        ]
         expected_gates = ([qp.Hadamard(5)] + cswaps + [qrom] + cswaps[::-1]) * 2
 
         assert len(qrom_decomposition) == len(expected_gates)

@@ -2091,6 +2091,17 @@ class TestSymbolicOpComparison:
         with pytest.raises(AssertionError, match="Different numbers of abstract control_wires"):
             assert_equal(op2, op3)
 
+    @pytest.mark.parametrize("mod, expected", [(8, True), (7, False)])
+    def test_controlled2_abstract_controlled_sequence(self, mod, expected):
+        """Test equality and graph lookups with a legacy resource representation inside the base."""
+        base1 = qp.decomposition.resource_rep(qp.PhaseAdder, num_x_wires=3, mod=8)
+        base2 = qp.decomposition.resource_rep(qp.PhaseAdder, num_x_wires=3, mod=mod)
+        op1 = ControlledOp2(ControlledSequence(base1, control=Wire[2]), control_wires=Wire[1])
+        op2 = ControlledOp2(ControlledSequence(base2, control=Wire[2]), control_wires=Wire[1])
+
+        assert qp.equal(op1, op2) is expected
+        assert (op2 in {op1: 1}) is expected
+
     def test_controlled2_abstract_control_values(self):
         """Tests comparing ControlledOp2 with abstract control values."""
 
