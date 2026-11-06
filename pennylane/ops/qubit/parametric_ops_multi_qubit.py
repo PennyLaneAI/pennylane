@@ -31,6 +31,7 @@ from pennylane.capture.autograph import disable_autograph
 
 # pylint: disable=arguments-differ
 from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.pauli import pauli_eigs
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -151,7 +152,7 @@ class MultiRZ(Operator2):
         """
         wires = Wires(wires)
         num_wires = len(wires)
-        eigs = math.convert_like(qp.pauli.pauli_eigs(num_wires), theta)
+        eigs = math.convert_like(pauli_eigs(num_wires), theta)
 
         if math.ndim(theta) == 0:
             return math.diag(math.exp(-0.5j * theta * eigs))
@@ -197,7 +198,7 @@ class MultiRZ(Operator2):
         """
         wires = Wires(wires)
         num_wires = len(wires)
-        eigs = math.convert_like(qp.pauli.pauli_eigs(num_wires), theta)
+        eigs = math.convert_like(pauli_eigs(num_wires), theta)
 
         if math.ndim(theta) == 0:
             return math.exp(-0.5j * theta * eigs)

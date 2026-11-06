@@ -35,6 +35,7 @@ from pennylane import (
     PauliZ,
     is_commuting,
 )
+from pennylane.core.pauli import pauli_eigs as core_pauli_eigs
 from pennylane.pauli import (
     are_identical_pauli_words,
     are_pauli_words_qwc,
@@ -1053,6 +1054,11 @@ class TestPauliEigs:
         np.kron(x, y)
         for x, y in list(itertools.product(standard_observables, standard_observables))
     ]
+
+    def test_core_reexport(self):
+        """Both public import paths share the cached core implementation."""
+        assert pauli_eigs is core_pauli_eigs
+        assert qp.pauli.utils.pauli_eigs is core_pauli_eigs
 
     def test_correct_eigenvalues_paulis(self):
         """Test the paulieigs function for one qubit"""

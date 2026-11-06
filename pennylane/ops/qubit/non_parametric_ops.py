@@ -31,7 +31,7 @@ from scipy import sparse
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator2
-from pennylane.core.pauli import PauliSentence, PauliWord
+from pennylane.core.pauli import PauliSentence, PauliWord, pauli_eigs
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -182,7 +182,7 @@ class Hadamard(Operator2):
         >>> print(qp.Hadamard.compute_eigvals())
         [ 1. -1.]
         """
-        return qp.pauli.pauli_eigs(1)
+        return pauli_eigs(1)
 
     @staticmethod
     @override
@@ -468,7 +468,7 @@ class PauliX(Operator2):
         >>> print(qp.X.compute_eigvals())
         [ 1. -1.]
         """
-        return qp.pauli.pauli_eigs(1)
+        return pauli_eigs(1)
 
     @staticmethod
     @override
@@ -716,7 +716,7 @@ class PauliY(Operator2):
         >>> print(qp.Y.compute_eigvals())
         [ 1. -1.]
         """
-        return qp.pauli.pauli_eigs(1)
+        return pauli_eigs(1)
 
     @staticmethod
     def compute_diagonalizing_gates(wires: WiresLike) -> list[qp.operation.Operator]:
@@ -961,7 +961,7 @@ class PauliZ(Operator2):
         >>> print(qp.Z.compute_eigvals())
         [ 1. -1.]
         """
-        return qp.pauli.pauli_eigs(1)
+        return pauli_eigs(1)
 
     @staticmethod
     # pylint: disable=unused-argument

@@ -1830,6 +1830,9 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* Moved ``pauli_eigs`` into ``pennylane.core.pauli`` and updated gate implementations to
+  import it directly. Existing ``pennylane.pauli`` import paths remain available.
+
 * Moved operator-to-Pauli and operator/string conversion helpers into ``pennylane.ops``.
   Existing ``pennylane.pauli`` import paths remain available.
 
