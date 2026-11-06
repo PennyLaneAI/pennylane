@@ -1097,8 +1097,8 @@ def _compute_relative_entropy(rho, sigma, base=None):
 
     # zero eigenvalues need to be treated very carefully here
     # we use the convention that 0 * log(0) = 0
-    evs_sig = math.where(evs_sig == 0, 0.0, evs_sig)
-    rho_nonzero_mask = math.where(evs_rho == 0.0, False, True)
+    evs_sig = math.where(evs_sig > 1e-12, evs_sig, 0.0)
+    rho_nonzero_mask = evs_rho > 1e-12
 
     ent = math.entr(math.where(rho_nonzero_mask, evs_rho, 1.0))
 
@@ -1123,7 +1123,7 @@ def _compute_relative_entropy(rho, sigma, base=None):
     if sig_batched:
         evs_sig = math.expand_dims(evs_sig, 1)
 
-    rel = math.sum(math.where(rel == 0.0, 0.0, np.log(evs_sig) * rel), -1)
+    rel = math.sum(math.where(rel > 1e-12, np.log(evs_sig) * rel, 0.0), -1)
     rel = -math.sum(math.where(rho_nonzero_mask, evs_rho * rel, 0.0), -1)
 
     return (rel - ent) / div_base
