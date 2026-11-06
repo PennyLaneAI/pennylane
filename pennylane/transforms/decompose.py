@@ -89,8 +89,9 @@ decompose.__doc__ = """Decompose a quantum circuit toward a target gate set via 
 Args:
     gate_set (Iterable[type | str] | dict[type | str, float]): Target gate set after
         decomposition. A mapping may supply relative costs used by the graph solver.
-    fixed_decomps (dict | None): Map operators to specific decomposition rules.
-    exclude_decomps (dict | None): Map operators to lists of decomposition rules to exclude
+    fixed_decomps (dict | None): Map operators to specific decomposition rule names to guarantee a
+        specific rule is used for each operator.
+    exclude_decomps (dict | None): Map operators to lists of decomposition rule names to exclude
         from this pass's graph. Rules are specified by name. Excluded rules remain available
         to subsequent passes.
 

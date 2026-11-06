@@ -93,8 +93,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(
     and bound into the created decomposition rule.
     This way, this function can be used in a workflow context that explicitly uses those wires
     to generate this decomposition rule, which can then be registered with
-    :func:`~pennylane.decomposition.add_decomps` or supplied through ``fixed_decomps`` to
-    :func:`~.pennylane.decompose`.
+    :func:`~pennylane.decomposition.add_decomps`.
 
     Parameters:
         angle_wires (Wires): wires that encode the binary representation of the rotation angle
