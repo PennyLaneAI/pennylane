@@ -97,7 +97,7 @@ _REAL_CASES = [
                 [-0.5748820588092205, 0.8182362852252838],
             ]
         ),
-        [([0, 1], 2 * 0.61246)],
+        [([0, 1], -2 * 0.61246)],
     ),
     (
         2,
@@ -120,7 +120,7 @@ _REAL_CASES = [
         ),
         [
             ([0, 1], 2 * 0.42275745323754343),
-            ([1, 2], -2 * 2.118222067141928),
+            ([1, 2], 2 * 2.118222067141928),
             ([0, 1], -2 * 1.805041881040138),
             ([0], np.pi),
         ],
@@ -164,7 +164,8 @@ class TestDecomposition:
         gate_ops, gate_angles, gate_wires = [], [], []
 
         for indices, angle in givens[::-1]:
-            g_op = qp.PhaseShift if len(indices) == 1 else qp.SingleExcitation
+            # The PhaseShift(pi) of a negative determinant is applied as PauliZ.
+            g_op = qp.PauliZ if len(indices) == 1 else qp.SingleExcitation
             gate_ops.append(g_op)
             gate_angles.append(qp.numpy.array(angle))
             gate_wires.append(list(indices))
@@ -173,12 +174,110 @@ class TestDecomposition:
         queue = op.decomposition()
 
         assert len(queue) == len(gate_ops)  # number of gates
-        assert [type(op) for op in queue].count(qp.PhaseShift) <= 1  # at most one phase shift
+        assert [type(op) for op in queue].count(qp.PauliZ) <= 1  # at most one phase flip
 
         for idx, _op in enumerate(queue):
             assert isinstance(_op, gate_ops[idx])  # gate operation
-            assert np.allclose(_op.parameters[0], gate_angles[idx])  # gate parameter
+            if _op.num_params:
+                assert np.allclose(_op.parameters[0], gate_angles[idx])  # gate parameter
             assert list(_op.wires) == gate_wires[idx]  # gate wires
+
+    @pytest.mark.parametrize("num_wires", [2, 3, 4])
+    @pytest.mark.parametrize("det", [1, -1])
+    def test_real_and_complex_decompositions_agree(self, num_wires, det, seed):
+        """Test that the real-valued and the complex-valued decomposition implement the same
+        operator for an orthogonal matrix, independently of its determinant."""
+        rng = np.random.default_rng(seed)
+        q, r = np.linalg.qr(rng.normal(size=(num_wires, num_wires)))
+        ortho_matrix = q * np.sign(np.diag(r))
+        if np.linalg.det(ortho_matrix) * det < 0:
+            ortho_matrix[:, 0] *= -1
+
+        wires = list(range(num_wires))
+        mat_real = qp.matrix(
+            qp.BasisRotation(wires=wires, unitary_matrix=ortho_matrix), wire_order=wires
+        )
+        mat_complex = qp.matrix(
+            qp.BasisRotation(wires=wires, unitary_matrix=ortho_matrix.astype(complex)),
+            wire_order=wires,
+        )
+        assert np.allclose(mat_real, mat_complex)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("det", [1, -1])
+    def test_real_determinant_correction_with_capture(self, det, seed):
+        """Test that with program capture, the determinant correction of an orthogonal matrix is
+        a PauliZ for a negative determinant and nothing otherwise."""
+        # pylint: disable=import-outside-toplevel
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane.templates.subroutines.qchem.basis_rotation import (
+            _real_basis_rotation_decomp,
+            _real_basis_rotation_resources,
+        )
+
+        rng = np.random.default_rng(seed)
+        q, r = np.linalg.qr(rng.normal(size=(3, 3)))
+        ortho_matrix = q * np.sign(np.diag(r))
+        if np.linalg.det(ortho_matrix) * det < 0:
+            ortho_matrix[:, 0] *= -1
+
+        def circuit(unitary_matrix):
+            resources = _real_basis_rotation_resources(unitary_matrix, wires=[0, 1, 2])
+            assert resources == {qp.PauliZ: 1, qp.SingleExcitation: 3}
+            _real_basis_rotation_decomp(unitary_matrix, wires=[0, 1, 2])
+
+        plxpr = qp.capture.make_plxpr(circuit)(ortho_matrix)
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts, ortho_matrix)
+        ops = collector.state["ops"]
+
+        assert [op for op in ops if isinstance(op, qp.PauliZ)] == ([qp.Z(0)] if det < 0 else [])
+        assert sum(isinstance(op, qp.SingleExcitation) for op in ops) == 3
+
+    @pytest.mark.jax
+    def test_real_resources_correction_gate(self):
+        """Test that the resources of the real decomposition report the determinant correction as
+        a PauliZ, except under plain jax.jit, where it is a PhaseShift."""
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        from pennylane.templates.subroutines.qchem.basis_rotation import (
+            _real_basis_rotation_resources,
+        )
+
+        @jax.jit
+        def check_jit_resources(unitary_matrix):
+            resources = _real_basis_rotation_resources(unitary_matrix, wires=[0, 1, 2])
+            assert resources == {qp.PhaseShift: 1, qp.SingleExcitation: 3}
+            return unitary_matrix
+
+        check_jit_resources(np.eye(3))
+
+        resources = _real_basis_rotation_resources(np.eye(3), wires=[0, 1, 2])
+        assert resources == {qp.PauliZ: 1, qp.SingleExcitation: 3}
+
+    @pytest.mark.parametrize(
+        "unitary_matrix",
+        [
+            np.eye(4, dtype=complex),
+            np.diag(np.exp(1j * np.array([0.3, -1.2, 2.5, 0.7]))),
+            np.eye(4, dtype=complex)[[1, 0, 3, 2]],
+            np.kron(np.eye(2), np.array([[0.6, 0.8j], [0.8j, 0.6]])),
+        ],
+    )
+    def test_complex_matrix_with_exact_zeros(self, unitary_matrix):
+        """Test that a complex matrix with exact zeros is implemented correctly, by comparing
+        the action on single-particle states to the matrix."""
+        num_wires = len(unitary_matrix)
+        wires = list(range(num_wires))
+        mat = qp.matrix(
+            qp.BasisRotation(wires=wires, unitary_matrix=unitary_matrix), wire_order=wires
+        )
+        single_particle_states = [2 ** (num_wires - 1 - p) for p in range(num_wires)]
+        single_particle_block = mat[np.ix_(single_particle_states, single_particle_states)]
+
+        assert np.allclose(single_particle_block, unitary_matrix.T)
+        assert np.isclose(mat[0, 0], 1.0)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
@@ -556,6 +655,57 @@ class TestInterfaces:
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("det", [1, -1])
+    @pytest.mark.jax
+    def test_jax_jit_real_matrix_state(self, det):
+        """Test that JIT compilation preserves the state for real matrices of either determinant."""
+        import jax
+        import jax.numpy as jnp
+
+        theta = 0.4
+        unitary_matrix = np.array([[np.cos(theta), np.sin(theta)], [-np.sin(theta), np.cos(theta)]])
+        if det < 0:
+            unitary_matrix[0] *= -1
+        unitary_matrix = jnp.array(unitary_matrix, dtype=jnp.float32)
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit(matrix):
+            qp.PauliX(0)
+            qp.BasisRotation(unitary_matrix=matrix, wires=range(2))
+            return qp.state()
+
+        assert qp.math.allclose(
+            jax.jit(circuit)(unitary_matrix), circuit(unitary_matrix), atol=1e-11, rtol=0
+        )
+
+    @pytest.mark.jax
+    def test_jax_jit_float32_negative_determinant_state(self):
+        """Test exact JIT agreement when a float32 determinant is only approximately negative one."""
+        import jax
+        import jax.numpy as jnp
+
+        unitary_matrix = jnp.array(
+            [
+                [-0.9889079, -0.14836748, 0.0069464],
+                [0.08414589, -0.59816617, -0.79694206],
+                [-0.12239539, 0.7875178, -0.60401577],
+            ],
+            dtype=jnp.float32,
+        )
+        dev = qp.device("default.qubit", wires=3)
+
+        @qp.qnode(dev)
+        def circuit(matrix):
+            qp.PauliX(0)
+            qp.BasisRotation(unitary_matrix=matrix, wires=range(3))
+            return qp.state()
+
+        assert qp.math.allclose(
+            jax.jit(circuit)(unitary_matrix), circuit(unitary_matrix), atol=1e-11, rtol=0
+        )
+
     @pytest.mark.parametrize(
         "unitary",
         [
@@ -600,7 +750,7 @@ class TestInterfaces:
         gate_set = {"BasisState", "PhaseShift", "SingleExcitation"}
         # pylint: disable-next=protected-access
         circuit_dec = qp.transforms._tape_decompose(circuit, gate_set=gate_set)
-        specs = qp.specs(catalyst.qjit(circuit_dec), level="device")(unitary_matrix)
+        specs = qp.specs(catalyst.qjit(circuit_dec, capture=False), level="device")(unitary_matrix)
         assert all(res in gate_set for res in specs.resources.quantum_operations)
 
     @pytest.mark.torch

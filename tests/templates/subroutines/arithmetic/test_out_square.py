@@ -127,7 +127,8 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
     if use_jit:
         circuit = qp.qjit(
             # pylint: disable-next=protected-access
-            qp.transforms._tape_decompose(circuit, max_expansion=2)
+            qp.transforms._tape_decompose(circuit, max_expansion=2),
+            capture=False,
         )
 
     rng = np.random.default_rng(seed)
@@ -185,7 +186,7 @@ class TestOutSquare:
 
         fixed_decomps = {"C(SemiAdder)": qp.list_decomps("C(SemiAdder)")[0]}
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.set_shots(1)
         # pylint: disable-next=protected-access
         @qp.transforms._tape_decompose(max_expansion=2, fixed_decomps=fixed_decomps)
@@ -293,7 +294,13 @@ class TestOutSquare:
         ],
     )
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=(pytest.mark.catalyst,)), False])
+    @pytest.mark.parametrize(
+        "use_jit",
+        [
+            pytest.param(True, marks=pytest.mark.catalyst),
+            False,
+        ],
+    )
     def test_decomposition_new(
         self,
         x_wires,
@@ -355,8 +362,9 @@ class TestOutSquare:
             qp.TemporaryAND(wires=[2, 0, 3]),
             # First AND copied from third-least significant output bit
             qp.CNOT([4, 7]),
-            qp.MultiControlledX(
-                wires=[1, 7, 3],
+            qp.ctrl(
+                qp.X(3),
+                control=[1, 7],
                 control_values=[True, True],
                 work_wires=[8, 9, 10, 6, 5],
                 work_wire_type="zeroed",

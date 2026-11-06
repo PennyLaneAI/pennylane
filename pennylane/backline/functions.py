@@ -18,6 +18,26 @@ from dataclasses import dataclass, field
 
 from numpy.typing import ArrayLike
 
+# The launch contract the generated Triton kernels follow: Catalyst's CoprocLaunchDesc frames,
+# with replies carrying the request's decoder_id.
+_TRITON_LAUNCHER_ABI_VERSION = 2
+
+
+def _check_catalyst_runs_triton_kernels():
+    """Refuse a Catalyst whose GPU coprocessors expect an older reply layout than the generated
+    Triton kernels write: the session would wait for replies it never recognises."""
+    try:
+        import catalyst.backline as catalyst_backline  # pylint: disable=import-outside-toplevel
+    except ImportError:
+        return
+    supported = getattr(catalyst_backline, "COPROCESSOR_LAUNCHER_ABI_VERSION", 1)
+    if supported < _TRITON_LAUNCHER_ABI_VERSION:
+        raise ImportError(
+            "Triton decoders from this PennyLane need a newer Catalyst: its GPU coprocessors "
+            f"follow launcher ABI {supported}, and these kernels write replies for ABI "
+            f"{_TRITON_LAUNCHER_ABI_VERSION}. Update pennylane-catalyst."
+        )
+
 
 @dataclass(frozen=True)
 class CoprocessorFunction:
@@ -169,6 +189,7 @@ def triton_decoder(
     except ImportError as exc:
         raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
+    _check_catalyst_runs_triton_kernels()  # pragma: no cover
     so_path, symbol_name = _build_triton_decoder(decoder_fns, **build_options)  # pragma: no cover
     return CoprocessorFunction(name=symbol_name, lib_path=str(so_path))  # pragma: no cover
 
@@ -246,6 +267,7 @@ def css_bp_decoder(
     except ImportError as exc:
         raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
+    _check_catalyst_runs_triton_kernels()  # pragma: no cover
     so_path, symbol_name = _build_css_bp_decoder(  # pragma: no cover
         Hx, Hz, postprocess=postprocess, num_iters=num_iters, prob=prob, **build_options
     )

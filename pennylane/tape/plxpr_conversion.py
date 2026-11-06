@@ -111,7 +111,7 @@ class CollectOpsandMeas(FlattenedInterpreter):
 
 
 @CollectOpsandMeas.register_primitive(adjoint_transform_prim)
-def _adjoint_transform_prim(self, *invals, jaxpr, lazy, n_consts):
+def _adjoint_transform_prim(self, *invals, jaxpr, n_consts):
     """Handle an adjoint transform primitive by collecting the operations in the jaxpr, and
     then applying their adjoint in reverse order."""
     consts = invals[:n_consts]
@@ -121,7 +121,7 @@ def _adjoint_transform_prim(self, *invals, jaxpr, lazy, n_consts):
     assert child.state
 
     for op in reversed(child.state["ops"]):
-        self.state["ops"].append(ops.adjoint(op, lazy=lazy))
+        self.state["ops"].append(ops.adjoint(op))
 
     return []
 

@@ -22,6 +22,7 @@ import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
 from pennylane.ops import Adjoint, MeasurementValue
+from pennylane.ops.op_math.adjoint import _adjoint_eager
 from pennylane.ops.op_math.decompositions.ross_selinger import rs_decomposition
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
 from pennylane.transforms.core import transform
@@ -425,7 +426,7 @@ class _CachedCallable:
             if f_adj:
                 return seq
 
-            adj = [qp.adjoint(s, lazy=False) for s in reversed(seq)]
+            adj = [_adjoint_eager(s, update_queue=True) for s in reversed(seq)]
             return adj[1:] + adj[:1]
 
         return self.decompose_fn(op)

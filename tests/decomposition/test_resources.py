@@ -27,9 +27,8 @@ from pennylane.decomposition.resources import (
     resource_rep,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import _pow_abstract
-from pennylane.typing import Float, Wire
+from pennylane.typing import Bool, Float, Wire
 
 
 class DummyRX(Operator1):  # pylint: disable=too-few-public-methods
@@ -118,6 +117,10 @@ class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
 @pytest.mark.unit
 class TestCompressedResourceOp:
     """Unit tests for the CompressedResourceOp data structure."""
+
+    def test_mid_measure_name(self):
+        """The resource name agrees with the operator's canonical name."""
+        assert CompressedResourceOp(qp.ops.MidMeasure).name == "MidMeasure"
 
     def test_initialization(self):
         """Tests creating a CompressedResourceOp object."""
@@ -267,7 +270,7 @@ class TestCompressedResourceOp:
         [
             (abstractify(DummyRX), "DummyRX"),
             (_adjoint_abstract(DummyRX), "Adjoint(DummyRX)"),
-            (_ctrl_abstract(qp.T, Wire[1]), "C(T)"),
+            (qp.ctrl(qp.T(Wire[1]), control=Wire[1], control_values=Bool[1]), "C(T)"),
             (pow_resource_rep(DummyRX, {}, 2), "Pow(DummyRX)"),
         ],
     )

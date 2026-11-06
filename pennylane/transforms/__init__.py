@@ -64,6 +64,7 @@ These compilation passes decompose or manipulate quantum circuits in the
 
     ~clifford_t_decomposition
     ~gridsynth
+    ~transforms.decompositions.make_phase_gradient_distillation_decomp
     ~transforms.ppm_compilation
     ~transforms.to_ppr
     ~transforms.commute_ppr
@@ -71,6 +72,18 @@ These compilation passes decompose or manipulate quantum circuits in the
     ~transforms.merge_ppr_ppm
     ~transforms.reduce_t_depth
     ~transforms.decompose_arbitrary_ppr
+
+Instead of a full transform, rotations can also be decomposed into Clifford+T-friendly
+arithmetic via a `phase gradient state <https://pennylane.ai/compilation/phase-gradient>`__,
+using the following decomposition rule factories with the graph-based decomposition system:
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.decompositions.make_rz_to_phase_gradient_decomp
+    ~transforms.decompositions.make_crz_to_phase_gradient_decomp
+    ~transforms.decompositions.make_selectpaulirot_to_phase_gradient_decomp
+    ~transforms.decompositions.phase_gradient_precision_stats
 
 Compilation passes using ZX calculus
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

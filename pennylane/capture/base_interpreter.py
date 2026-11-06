@@ -474,14 +474,14 @@ def _iota_primitive(self, *dyn_shape, dimension, dtype, shape, sharding):
 
 
 @PlxprInterpreter.register_primitive(adjoint_transform_prim)
-def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
+def handle_adjoint_transform(self, *invals, jaxpr, n_consts):
     """Interpret an adjoint transform primitive."""
     consts = invals[:n_consts]
     args = invals[n_consts:]
     jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
     return adjoint_transform_prim.bind(
-        *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
+        *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, n_consts=len(jaxpr.consts)
     )
 
 
