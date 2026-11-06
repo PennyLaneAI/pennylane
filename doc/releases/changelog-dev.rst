@@ -1497,29 +1497,10 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
-* ``qp.ops.MidMeasure(...).name`` now returns ``"MidMeasure"`` instead of ``"MidMeasureMP"``.
-  This changes operation names in device tapes, the keys in
-  :func:`~.resource.resources_from_tape` counts, decomposition resource names, and Catalyst
-  circuit DAG labels. PennyLane circuit drawings, ``repr``, ``str``, and ``label()`` are unchanged.
-
-  The deprecated ``qp.measurements.MidMeasureMP`` import still resolves to ``MidMeasure``.
-  The old string spelling is normalized only in ``GateSet``-based paths, such as
-  ``qp.decompose(gate_set=...)``. Direct name comparisons, legacy ``Device.operations``,
-  and device capability/TOML operation entries must use ``"MidMeasure"``; listing both
-  spellings supports old and new PennyLane versions.
-
-  The FTQC subclasses ``ParametricMidMeasure``, ``XMidMeasure``, and ``YMidMeasure``
-  also inherit their own class names rather than ``"MidMeasureMP"``. Their existing
-  constructor compatibility issue is unchanged.
+* ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of
+  ``"MidMeasureMP"``. Update raw device operation names and comparisons; the deprecated
+  Python import and ``GateSet`` alias remain supported.
   `(#10457) <https://github.com/PennyLaneAI/pennylane/pull/10457>`__
-
-  .. code-block:: pycon
-
-      >>> op = qp.ops.MidMeasure(0)
-      >>> op.name
-      'MidMeasure'
-      >>> op.name in {"MidMeasureMP", "MidMeasure"}
-      True
 
 * ``qp.ctrl`` now constructs symbolic controlled operators without dispatching to specialized
   gates such as ``CNOT`` or ``CRX``. Decomposition rules have been updated accordingly.
