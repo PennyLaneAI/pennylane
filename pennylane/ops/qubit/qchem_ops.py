@@ -1170,7 +1170,7 @@ add_decomps("Adjoint(DoubleExcitationMinus)", adjoint_rotation)
 add_decomps("Pow(DoubleExcitationMinus)", pow_rotation)
 
 
-class OrbitalRotation(Operation):
+class OrbitalRotation(Operator2):
     r"""
     Spin-adapted spatial orbital rotation.
 
@@ -1226,6 +1226,12 @@ class OrbitalRotation(Operation):
                 0.        +0.j])
     """
 
+    dynamic_argnames = ("phi",)
+    wire_argnames = ("wires",)
+
+    arg_specs = {"phi": Float, "wires": Wire[4]}
+    wire_sizes = (4,)
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -1237,15 +1243,6 @@ class OrbitalRotation(Operation):
 
     grad_method = "A"
     """Gradient computation method."""
-
-    parameter_frequencies = [(0.5, 1.0, 1.5, 2.0)]
-    """Frequencies of the operation parameter with respect to an expectation value."""
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qp.Hamiltonian":
         w0, w1, w2, w3 = self.wires
@@ -1274,7 +1271,9 @@ class OrbitalRotation(Operation):
     mask_s2[3, 12] = mask_s2[12, 3] = mask_s2[6, 9] = mask_s2[9, 6] = 1
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(
+        phi: TensorLike, wires: WiresLike = None
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1285,6 +1284,7 @@ class OrbitalRotation(Operation):
 
         Args:
           phi (tensor_like or float): rotation angle
+          wires (Sequence[int]): the wires the operation acts on
 
         Returns:
           tensor_like: canonical matrix
@@ -1328,51 +1328,17 @@ class OrbitalRotation(Operation):
 
         return diag + off_diag
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.OrbitalRotation.decomposition`.
-
-        This operator is decomposed into two :class:`~.SingleExcitation` gates. For a decomposition
-        into more elementary gates, see page 18 of
-        `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://doi.org/10.1088/1367-2630/ac2cb3>`_ .
-
-        Args:
-            phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.OrbitalRotation.compute_decomposition(1.2, wires=[0, 1, 2, 3])
-        [FermionicSWAP(3.141592653589793, wires=[1, 2]), SingleExcitation(1.2, wires=[0, 1]), SingleExcitation(1.2, wires=[2, 3]), FermionicSWAP(3.141592653589793, wires=[1, 2])]
-
-        """
-
-        return [
-            qp.FermionicSWAP(np.pi, wires=[wires[1], wires[2]]),
-            qp.SingleExcitation(phi, wires=[wires[0], wires[1]]),
-            qp.SingleExcitation(phi, wires=[wires[2], wires[3]]),
-            qp.FermionicSWAP(np.pi, wires=[wires[1], wires[2]]),
-        ]
-
     def adjoint(self) -> "OrbitalRotation":
         (phi,) = self.parameters
         return OrbitalRotation(-phi, wires=self.wires)
 
 
-def _orbital_rotation_decomposition_resources():
+def _orbital_rotation_decomposition_resources(phi: TensorLike = None, wires: WiresLike = None):
     return {qp.FermionicSWAP: 2, qp.SingleExcitation: 2}
 
 
 @register_resources(_orbital_rotation_decomposition_resources)
-def _orbital_rotation_decomp(phi, wires: WiresLike, **__):
+def _orbital_rotation_decomp(phi: TensorLike, wires: WiresLike):
     qp.FermionicSWAP(np.pi, wires=[wires[1], wires[2]])
     qp.SingleExcitation(phi, wires=[wires[0], wires[1]])
     qp.SingleExcitation(phi, wires=[wires[2], wires[3]])
@@ -1380,8 +1346,8 @@ def _orbital_rotation_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(OrbitalRotation, _orbital_rotation_decomp)
-add_decomps("Adjoint(OrbitalRotation)", adjoint_rotation)
-add_decomps("Pow(OrbitalRotation)", pow_rotation)
+add_decomps("Adjoint(OrbitalRotation)", adjoint_rotation2)
+add_decomps("Pow(OrbitalRotation)", pow_rotation2)
 
 
 class FermionicSWAP(Operator2):
