@@ -1941,7 +1941,8 @@ Internal changes ⚙️
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
       :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.QuantumPhaseEstimation`, :class:`~.IQP`,
-      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`, :class:`~.IQPEmbedding`, :class:`~.ControlledSequence`
+      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`, :class:`~.IQPEmbedding`, :class:`~.ControlledSequence`,
+      :class:`~.Adder`
 
     `(#9896) <https://github.com/PennyLaneAI/pennylane/pull/9896>`__
     `(#10164) <https://github.com/PennyLaneAI/pennylane/pull/10164>`__
@@ -1981,12 +1982,14 @@ Internal changes ⚙️
     `(#10226) <https://github.com/PennyLaneAI/pennylane/pull/10226>`__
     `(#10267) <https://github.com/PennyLaneAI/pennylane/pull/10267>`__
     `(#10449) <https://github.com/PennyLaneAI/pennylane/pull/10449>`__
+    `(#10240) <https://github.com/PennyLaneAI/pennylane/pull/10240>`__
 
   - Quantum chemistry operators are ported:
 
-    - :class:`~.SingleExcitation`
+    - :class:`~.SingleExcitation`, :class:`~.FermionicSWAP`
 
     `(#9944) <https://github.com/PennyLaneAI/pennylane/pull/9944>`__
+    `(#10458) <https://github.com/PennyLaneAI/pennylane/pull/10458>`__
 
   - Miscelleneous operators are ported:
 
@@ -2311,7 +2314,8 @@ Documentation 📝
   `(#10383) <https://github.com/PennyLaneAI/pennylane/pull/10383>`__
   `(#10416) <https://github.com/PennyLaneAI/pennylane/pull/10416>`__
   `(#10420) <https://github.com/PennyLaneAI/pennylane/pull/10420>`__
-  `(#10421) <https://github.com/PennyLaneAI/pennylane/pull/104121>`__
+  `(#10421) <https://github.com/PennyLaneAI/pennylane/pull/10421>`__
+  `(#10436) <https://github.com/PennyLaneAI/pennylane/pull/10436>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
