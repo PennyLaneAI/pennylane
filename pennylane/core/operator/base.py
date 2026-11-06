@@ -31,6 +31,7 @@ import pennylane as qp
 from pennylane import capture
 from pennylane._class_property import classproperty
 from pennylane.capture import ABCCaptureMeta
+from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -991,7 +992,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     def __init__(self, *params: TensorLike, wires: WiresLike | None = None):
         self._name: str = self.__class__.__name__  #: str: name of the operator
 
-        self._pauli_rep: qp.pauli.PauliSentence | None = (
+        self._pauli_rep: PauliSentence | None = (
             None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
         )
 
@@ -1158,7 +1159,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         return self._hyperparameters
 
     @property
-    def pauli_rep(self) -> Optional["qp.pauli.PauliSentence"]:
+    def pauli_rep(self) -> Optional["PauliSentence"]:
         """A :class:`~.PauliSentence` representation of the Operator, or ``None`` if it doesn't have one."""
         return self._pauli_rep
 

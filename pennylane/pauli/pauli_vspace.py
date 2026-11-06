@@ -22,8 +22,7 @@ import scipy
 
 import pennylane as qp
 from pennylane.core.operator import Operator
-
-from .pauli_arithmetic import PauliSentence
+from pennylane.core.pauli import PauliSentence
 
 
 class PauliVSpace:

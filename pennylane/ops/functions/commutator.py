@@ -16,8 +16,8 @@ This file contains the implementation of the commutator function in PennyLane
 """
 
 import pennylane as qp
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.ops._pauli_conversion import to_operator
-from pennylane.pauli import PauliSentence, PauliWord
 
 
 def commutator(op1, op2, pauli=False):

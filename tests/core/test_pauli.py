@@ -23,8 +23,8 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.pauli import I, PauliSentence, PauliWord, X, Y, Z
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.pauli.pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z
 
 matI = np.eye(2)
 matX = np.array([[0, 1], [1, 0]])
@@ -1249,26 +1249,12 @@ class TestPauliSentenceMatrix:
 class TestPaulicomms:
     """Test 'native' commutator in PauliWord and PauliSentence"""
 
-    def test_pauli_word_comm_raises_NotImplementedError(self):
-        """Test that a NotImplementedError is raised when a PauliWord.commutator() for type that is not PauliWord, PauliSentence or Operator"""
-        op1 = PauliWord({0: "X"})
-        matrix = np.eye(2)
-        with pytest.raises(NotImplementedError, match="Cannot compute natively a commutator"):
-            op1.commutator(matrix)
-
-    def test_pauli_raises_NotImplementedError_without_pauli_rep_ps(self):
-        """Test that a NotImplementedError is raised in PauliSentence when ``other`` is an operator without a pauli_rep"""
-        with pytest.raises(
-            NotImplementedError, match="Cannot compute a native commutator of a Pauli word"
-        ):
-            _ = ps1.commutator(qp.Hadamard(0))
-
-    def test_pauli_raises_NotImplementedError_without_pauli_rep_pw(self):
-        """Test that a NotImplementedError is raised in PauliWord when ``other`` is an operator without a pauli_rep"""
-        with pytest.raises(
-            NotImplementedError, match="Cannot compute a native commutator of a Pauli word"
-        ):
-            _ = pw1.commutator(qp.Hadamard(0))
+    @pytest.mark.parametrize("pauli_value", [PauliWord({0: "X"}), PauliSentence({X0: 1.0})])
+    @pytest.mark.parametrize("other", [qp.Y(0), qp.Hadamard(0), np.eye(2)])
+    def test_operator_inputs_use_public_commutator(self, pauli_value, other):
+        """Core commutators reject operators and direct callers to the public adapter."""
+        with pytest.raises(NotImplementedError, match="Use qp.commutator"):
+            pauli_value.commutator(other)
 
     def test_commutators_with_zeros_ps(self):
         """Test that commutators between PauliSentences where one represents the 0 word is treated correctly"""
@@ -1312,7 +1298,7 @@ class TestPaulicomms:
     ):
         """Test the return when both operators are zero and potentially of different type"""
         op1 = convert1(op1)
-        res = op2.commutator(op1)
+        res = qp.commutator(op2, op1, pauli=True)
         assert res == true_res
 
     data_pauli_relations = [
@@ -1389,10 +1375,10 @@ class TestPaulicomms:
     def test_pauli_word_comm_different_types_with_ops(
         self, op1, op2, true_res, convert1, convert2
     ):  # pylint: disable=too-many-positional-arguments
-        """Test native comm in between a PauliWord, PauliSentence and Operator"""
+        """Test mixed Pauli/operator commutators through the public adapter."""
         op1 = convert1(op1)
         op2 = convert2(op2)
-        res2 = op1.commutator(op2)
+        res2 = qp.commutator(op1, op2, pauli=True)
         assert res2 == true_res
         assert isinstance(res2, PauliSentence)
 
@@ -1417,10 +1403,10 @@ class TestPaulicomms:
     @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
     def test_pauli_commutator_with_operator(self, op1, op2, true_res, convert1):
-        """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, Operator for the case when the operators commute"""
+        """Test mixed Pauli/operator commutators through the public adapter."""
         op1 = convert1(op1)
         op2 = _pauli_to_op(op2)
-        res2 = op1.commutator(op2)
+        res2 = qp.commutator(op1, op2, pauli=True)
         assert res2 == true_res
         assert isinstance(res2, PauliSentence)
 
@@ -1574,3 +1560,33 @@ class TestPauliArithmeticWithADInterfaces:
         assert all(isinstance(val, jnp.ndarray) for val in res1.values())
         assert all(isinstance(val, jnp.ndarray) for val in res2.values())
         assert all(isinstance(val, jnp.ndarray) for val in res3.values())
+
+
+@pytest.mark.parametrize(
+    "serialized, expected",
+    [
+        (
+            b"cpennylane.pauli.pauli_arithmetic\nPauliWord\np0\n((dp1\nI0\nVX\np2\nsVa\np3\nVY\n"
+            b"p4\nstp5\nRp6\n.",
+            PauliWord({0: "X", "a": "Y"}),
+        ),
+        (
+            b"ccopy_reg\n_reconstructor\np0\n(cpennylane.pauli.pauli_arithmetic\nPauliSentence\n"
+            b"p1\nc__builtin__\ndict\np2\n(dp3\ncpennylane.pauli.pauli_arithmetic\nPauliWord\n"
+            b"p4\n((dp5\nI0\nVZ\np6\nstp7\nRp8\nc__builtin__\ncomplex\np9\n(F0.0\nF2.0\ntp10\n"
+            b"Rp11\nsg4\n((dp12\ntp13\nRp14\nF-0.5\nstp15\nRp16\n.",
+            PauliSentence({PauliWord({0: "Z"}): 2j, PauliWord({}): -0.5}),
+        ),
+    ],
+)
+def test_load_legacy_pickle(serialized, expected):
+    """Pauli objects serialized before the core move still load as the core classes."""
+    restored = pickle.loads(serialized)
+    assert type(restored) is type(expected)
+    assert restored == expected
+
+
+@pytest.mark.parametrize("cls", [PauliWord, PauliSentence])
+def test_public_alias(cls):
+    """Public imports refer to the same class, preserving isinstance and dispatch."""
+    assert getattr(qp.pauli, cls.__name__) is cls

@@ -66,7 +66,7 @@ from .meta import OperatorMeta
 from .utils import abstractify
 
 if TYPE_CHECKING:
-    from pennylane.pauli import PauliSentence
+    from pennylane.core.pauli import PauliSentence
 
 ArgSpecType: TypeAlias = type[Number] | AbstractArray | AbstractWires
 

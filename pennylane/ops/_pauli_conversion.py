@@ -15,8 +15,8 @@
 
 from functools import lru_cache
 
-import pennylane as qp
 from pennylane import capture, math, ops
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.core.queuing import QueuingManager
 from pennylane.wires import WiresLike
 
@@ -49,6 +49,7 @@ def to_operator(value, wire_order: WiresLike = ()):
 
     **Example**
 
+    >>> import pennylane as qp
     >>> word = qp.pauli.PauliWord({0: "X", 1: "Y"})
     >>> qp.pauli.to_operator(word)
     X(0) @ Y(1)
@@ -57,15 +58,15 @@ def to_operator(value, wire_order: WiresLike = ()):
     2.0 * (X(0) @ Y(1))
     """
 
-    if isinstance(value, qp.pauli.PauliWord):
+    if isinstance(value, PauliWord):
         if len(value) == 0:
             return ops.Identity(wires=wire_order)
         make_factor = _make_factor if capture.enabled() else _cached_factor
         factors = [make_factor(op, wire) for wire, op in value.items()]
-        pauli_rep = qp.pauli.PauliSentence({value: 1})
+        pauli_rep = PauliSentence({value: 1})
         return factors[0] if len(factors) == 1 else ops.Prod2(factors, _init_pauli_rep=pauli_rep)
 
-    if not isinstance(value, qp.pauli.PauliSentence):
+    if not isinstance(value, PauliSentence):
         raise TypeError("Expected a PauliWord or PauliSentence.")
     if len(value) == 0:
         return ops.s_prod(0, ops.Identity(wires=wire_order))
@@ -73,7 +74,7 @@ def to_operator(value, wire_order: WiresLike = ()):
     wire_order = wire_order or value.wires
     for pw, coeff in value.items():
         pw_op = to_operator(pw, wire_order=list(wire_order))
-        rep = qp.pauli.PauliSentence({pw: coeff})
+        rep = PauliSentence({pw: coeff})
         summands.append(
             pw_op
             if not math.is_tracer(coeff) and math.all(coeff == 1)
