@@ -558,6 +558,81 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(
+        "base, control, custom_type",
+        [(qp.SWAP([0, 1]), [2], qp.CSWAP), (qp.Z(0), [1, 2], qp.CCZ)],
+    )
+    def test_controlled_op_with_work_wires_to_custom_op(self, base, control, custom_type):
+        """Tests that a controlled op with work wires still decomposes into the custom
+        controlled op, which does not have work wires, if it is in the gate set."""
+
+        @decompose(gate_set={custom_type.__name__})
+        @qp.qnode(qp.device("null.qubit"))
+        def circuit():
+            qp.ctrl(base, control=control, work_wires=[5], work_wire_type="zeroed")
+            return qp.state()
+
+        tape = qp.workflow.construct_tape(circuit)()
+        assert len(tape.operations) == 1
+        qp.assert_equal(tape.operations[0], custom_type(control + base.wires))
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        "base, control_values",
+        [
+            (qp.SWAP([0, 1]), [0]),
+            (qp.SWAP([0, 1]), [1]),
+            (qp.SWAP([0, 1]), [1, 1]),
+            (qp.SWAP([0, 1]), [0, 1, 0]),
+            (qp.Z(0), [1, 1]),
+            (qp.Z(0), [0, 1]),
+        ],
+    )
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_controlled_op_with_work_wires_decomposable(self, base, control_values, work_wire_type):
+        """Tests that the decomposition rules of controlled ops with work wires are valid."""
+        control = list(range(2, 2 + len(control_values)))
+        work_wires = list(range(5, 5 + len(control_values)))
+        op = qp.ctrl(
+            base,
+            control=control,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+        assert_decomposable(op)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(
+        "base, num_controls, num_work_wires",
+        [
+            (qp.SWAP([0, 1]), 1, 1),
+            (qp.SWAP([0, 1]), 2, 2),
+            (qp.SWAP([0, 1]), 3, 3),
+            (qp.Z(0), 2, 1),
+        ],
+    )
+    def test_controlled_op_t_count_with_zeroed_work_wires(self, base, num_controls, num_work_wires):
+        """Tests that controlled ops decompose into 4 T gates per zeroed work wire if
+        enough zeroed work wires are provided."""
+        control = list(range(2, 2 + num_controls))
+        work_wires = list(range(5, 5 + num_work_wires))
+        gate_set = {"T": 100, "Adjoint(T)": 100, "Adjoint(S)": 1, "Hadamard": 1, "CNOT": 1}
+        gate_set |= {"CZ": 1, "PauliX": 1, "MidMeasure": 1}
+
+        @decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("null.qubit"))
+        def circuit():
+            qp.ctrl(base, control=control, work_wires=work_wires, work_wire_type="zeroed")
+            return qp.state()
+
+        tape = qp.workflow.construct_tape(circuit)()
+        resources = qp.resource.resources_from_tape(tape).quantum_operations
+        assert resources["T"] + resources["Adjoint(T)"] == 4 * num_work_wires
+        assert "Allocate" not in resources
+        assert set(tape.wires) == set(base.wires + control + work_wires)
+
     def test_swap_decomposition(self):
         """Tests the swap operator produces the correct output"""
         opr = qp.SWAP(wires=[0, 1])

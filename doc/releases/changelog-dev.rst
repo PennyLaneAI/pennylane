@@ -885,6 +885,16 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* Controlled :class:`~.SWAP` and :class:`~.PauliZ` operators now use their work wires when
+  decomposed. The decompositions into :class:`~.CSWAP` (one control wire) and :class:`~.CCZ`
+  (two control wires) are now separate decomposition rules, and the decompositions via
+  :class:`~.MultiControlledX` apply to any number of control wires.
+
+  A controlled :class:`~.PhaseShift` with any number of control wires has a new decomposition into
+  a single :class:`~.PhaseShift` on one of the provided zeroed work wires, computed with a
+  :class:`~.TemporaryAND` ladder, that requires one zeroed work wire per control wire.
+  `(#10455) <https://github.com/PennyLaneAI/pennylane/pull/10455>`__
+
 * Efficient decomposition rules for :class:`~.ControlledPhaseShift`, :class:`~.OutMultiplier`, and :class:`Adjoint(Incrementer) <~.Incrementer>` have been added.
   `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
 
