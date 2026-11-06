@@ -218,6 +218,22 @@ class TestcommPauliFalse:
         assert isinstance(res, Operator)
         assert isinstance(res, SProd)
 
+    @pytest.mark.parametrize("pauli, coeff", [(Z0, 1), (PauliSentence({Z0: 2.0}), 2)])
+    @pytest.mark.parametrize("reverse, sign", [(False, 1), (True, -1)])
+    def test_mixed_pauli_and_operator(self, pauli, coeff, reverse, sign):
+        """Test mixed inputs in both orders without recording the commutator."""
+        op = qp.Hermitian(qp.math.array([[0.0, 1.0], [1.0, 0.0]]), wires=0)
+        assert op.pauli_rep is None
+        op1, op2 = (op, pauli) if reverse else (pauli, op)
+
+        with qp.queuing.AnnotatedQueue() as queue:
+            res = qp.commutator(op1, op2)
+
+        expected = coeff * sign * qp.math.array([[0.0, 2.0], [-2.0, 0.0]])
+        assert isinstance(res, Operator)
+        assert qp.math.allclose(qp.matrix(res, wire_order=[0]), expected)
+        assert queue.queue == []
+
     def test_paulis_used_when_ever_possible(self, mocker):
         """Test that pauli_rep is used whenever possible even when ``pauli=False``"""
         spy = mocker.patch(
