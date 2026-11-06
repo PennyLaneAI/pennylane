@@ -15,7 +15,6 @@
 This module contains the qp.equal function.
 """
 
-# Comparison dispatch retains explicit options and separate cases for operator types.
 # pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches
 
 

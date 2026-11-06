@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for default qubit."""
 
-# Tests parameterize cases through explicit fixture and helper arguments.
 # pylint: disable=too-many-arguments
 
 

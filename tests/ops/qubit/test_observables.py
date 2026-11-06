@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for qubit observables."""
 
-# Tests exercise private interfaces.
 # pylint: disable=protected-access
 
 

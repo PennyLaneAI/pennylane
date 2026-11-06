@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for Subroutine and SubroutineOp"""
 
-# Tests use fixture signatures.
 # pylint: disable=unused-argument
 
 

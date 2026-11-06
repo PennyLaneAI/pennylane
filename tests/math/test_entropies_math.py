@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for differentiable quantum entropies."""
 
-# Tests parameterize cases through explicit fixture and helper arguments.
 # pylint: disable=too-many-arguments
 
 

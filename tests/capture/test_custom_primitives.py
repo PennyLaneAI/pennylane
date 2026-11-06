@@ -15,7 +15,6 @@
 Unit tests for PennyLane custom primitives.
 """
 
-# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-position
 
 

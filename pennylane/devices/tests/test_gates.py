@@ -16,7 +16,6 @@ Tests that application of gates and state preparations
 works correctly an a device.
 """
 
-# Gate tests parameterize circuit arguments and construct callable test circuits.
 # pylint: disable=too-many-arguments,unnecessary-lambda-assignment
 
 

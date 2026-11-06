@@ -2,7 +2,6 @@
 Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
 
-# QASM fixtures use direct file reads; file handling is recorded as separate follow-up work.
 # pylint: disable=consider-using-with,unspecified-encoding
 
 

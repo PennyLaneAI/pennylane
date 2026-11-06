@@ -15,8 +15,6 @@
 Unit tests for functions needed to computing integrals over basis functions.
 """
 
-# Tests parameterize cases through explicit fixture and helper arguments; inspect private
-# interfaces.
 # pylint: disable=too-many-arguments,protected-access
 
 

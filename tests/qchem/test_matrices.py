@@ -15,7 +15,6 @@
 Unit tests for functions needed for computing matrices.
 """
 
-# Tests parameterize cases through explicit fixture and helper arguments.
 # pylint: disable=too-many-arguments
 
 

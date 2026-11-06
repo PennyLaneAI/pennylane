@@ -16,7 +16,6 @@ This submodule contains the operation SpecialUnitary and
 its utility functions.
 """
 
-# Overrides and callbacks throughout this module use specialized signatures.
 # pylint: disable=arguments-differ
 
 

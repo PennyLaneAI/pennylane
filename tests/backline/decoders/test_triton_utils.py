@@ -14,7 +14,6 @@
 
 """Tests for Triton decoder helper utilities."""
 
-# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-position
 
 

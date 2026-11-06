@@ -15,7 +15,6 @@
 This module contains the qp.mutual_info measurement.
 """
 
-# This module implements or adapts internal PennyLane interfaces.
 # pylint: disable=protected-access
 
 

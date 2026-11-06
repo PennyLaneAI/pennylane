@@ -15,7 +15,6 @@
 Unit tests for the eigvals transform
 """
 
-# Tests group related cases in classes.
 # pylint: disable=too-few-public-methods
 
 

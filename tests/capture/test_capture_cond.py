@@ -15,7 +15,6 @@
 Tests for capturing conditionals into jaxpr.
 """
 
-# Tests load optional backends before dependent imports; retain fixture and callback signatures.
 # pylint: disable=redefined-outer-name,wrong-import-position
 
 

@@ -15,7 +15,6 @@
 This module contains the functions needed for computing integrals over basis functions.
 """
 
-# Integral helpers expose basis parameters explicitly; generated parameter tuples are dynamic.
 # pylint: disable=unbalanced-tuple-unpacking,too-many-arguments
 
 

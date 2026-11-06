@@ -15,7 +15,6 @@
 This module contains unit tests for ``qp.testing.assert_valid``.
 """
 
-# Tests group related cases in classes, use fixture signatures.
 # pylint: disable=too-few-public-methods,unused-argument
 
 

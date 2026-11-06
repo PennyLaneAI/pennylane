@@ -15,7 +15,6 @@
 Tests for the capture utilities in ``pennylane.testing``.
 """
 
-# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-position
 
 

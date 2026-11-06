@@ -59,7 +59,6 @@ JAX 0.7.x only has ``DynamicJaxprTrace`` — the ``StagingJaxprTrace`` from olde
 JAX versions no longer exists. All patches assume DynamicJaxprTrace.
 """
 
-# This module implements or adapts internal PennyLane interfaces.
 # pylint: disable=protected-access
 
 

@@ -15,7 +15,6 @@
 """PyTests for the integration between AutoGraph and PennyLane for the
 source-to-source transformation feature."""
 
-# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-position,wrong-import-order
 
 

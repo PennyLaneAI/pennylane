@@ -15,7 +15,6 @@
 Unit tests for functions needed for resource estimation with the double factorization method.
 """
 
-# Tests parameterize cases through explicit fixture and helper arguments.
 # pylint: disable=too-many-arguments
 
 

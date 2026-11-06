@@ -15,7 +15,6 @@
 Integration tests for the capture of pennylane operations into jaxpr.
 """
 
-# Tests inspect private interfaces; load optional backends before dependent imports.
 # pylint: disable=protected-access,wrong-import-position
 
 

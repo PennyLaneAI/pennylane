@@ -13,7 +13,6 @@
 # limitations under the License.
 """This file contains different PennyLane types."""
 
-# Optional dependencies and internal imports are loaded where they are used.
 # pylint: disable=import-outside-toplevel
 
 

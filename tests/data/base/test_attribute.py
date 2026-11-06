@@ -15,7 +15,6 @@
 Tests for :mod:`pennylane.data.base.attribute`.
 """
 
-# Attribute classes are constructed to exercise registration and validation side effects.
 # pylint: disable=unused-argument,unused-variable
 
 

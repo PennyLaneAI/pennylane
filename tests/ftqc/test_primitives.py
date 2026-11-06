@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the custom capture primitives for the ftqc module"""
 
-# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-position
 
 

@@ -15,7 +15,6 @@
 Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
 
-# Tests exercise private interfaces.
 # pylint: disable=protected-access
 
 

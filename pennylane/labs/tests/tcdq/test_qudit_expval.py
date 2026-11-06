@@ -13,8 +13,6 @@
 # limitations under the License.
 """Reference and regression tests for the qudit IQP expectation estimator."""
 
-# Tests parameterize cases through explicit fixture and helper arguments; group cases in helper
-# classes.
 # pylint: disable=too-many-arguments,too-few-public-methods
 
 

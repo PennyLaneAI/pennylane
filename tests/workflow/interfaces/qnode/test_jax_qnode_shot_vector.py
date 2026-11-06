@@ -13,7 +13,6 @@
 # limitations under the License.
 """Integration tests for using the jax interface with shot vectors and with a QNode"""
 
-# Tests parameterize cases through explicit fixture and helper arguments.
 # pylint: disable=too-many-arguments
 
 

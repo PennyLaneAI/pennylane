@@ -15,7 +15,6 @@
 Tests a function for determining abstracted axes and extracting the abstract shapes.
 """
 
-# Tests use fixture signatures.
 # pylint: disable=unused-argument
 
 

@@ -15,7 +15,6 @@
 Unit tests for the Prod arithmetic class of qubit operations
 """
 
-# Tests exercise private interfaces, use fixture signatures.
 # pylint: disable=protected-access,unused-argument
 
 

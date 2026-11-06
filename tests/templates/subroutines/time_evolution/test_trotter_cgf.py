@@ -22,7 +22,6 @@ variants selected by the ``double_phase`` flag: the default (``False``) genuine 
 unitary and the (``True``) double-phase Hadamard-test circuit of Fig. 6 of arXiv:2506.15784.
 """
 
-# Tests load optional backends before dependent imports; retain fixture and callback signatures.
 # pylint: disable=redefined-outer-name,wrong-import-position
 
 

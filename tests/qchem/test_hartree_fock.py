@@ -15,7 +15,6 @@
 Unit tests for Hartree-Fock functions.
 """
 
-# Tests parameterize cases through explicit fixture and helper arguments.
 # pylint: disable=too-many-arguments
 
 

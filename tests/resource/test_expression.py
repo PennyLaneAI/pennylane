@@ -15,7 +15,6 @@
 Test Expression class and its associated methods
 """
 
-# Expression tests call dunder methods directly and inspect implementation details.
 # pylint: disable=unnecessary-dunder-call,protected-access
 
 

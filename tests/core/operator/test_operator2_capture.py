@@ -12,8 +12,6 @@
 # limitations under the License.
 """Tests for capturing ``Operator2`` instances into plxpr."""
 
-# Tests group cases in helper classes; inspect private interfaces; load optional backends before
-# dependent imports.
 # pylint: disable=too-few-public-methods,protected-access,wrong-import-position
 
 

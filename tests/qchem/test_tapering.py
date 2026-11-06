@@ -15,7 +15,6 @@
 Unit tests for functions needed for qubit tapering.
 """
 
-# Tests parameterize cases through explicit fixture and helper arguments.
 # pylint: disable=too-many-arguments
 
 

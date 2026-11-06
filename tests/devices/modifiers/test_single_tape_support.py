@@ -16,7 +16,6 @@ Tests the `single_tape_support` device modifier.
 
 """
 
-# Tests use fixture signatures.
 # pylint: disable=unused-argument
 
 

@@ -12,7 +12,6 @@
 # limitations under the License.
 """Basic unit tests for ``Operator2``."""
 
-# Tests exercise private interfaces, group related cases in classes.
 # pylint: disable=protected-access,too-few-public-methods
 
 

@@ -15,7 +15,6 @@
 Tests for qp.devices.modifiers.simulator_tracking.
 """
 
-# Tests use fixture signatures.
 # pylint: disable=unused-argument
 
 

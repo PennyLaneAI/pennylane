@@ -2056,12 +2056,13 @@ def _create_hollow_operator(cls, args) -> Operator2:
     placeholder that JAX substitutes for real pytree leaves. The values can be hollow because
     these placeholders are used temporarily and discarded.
     """
+    # pylint: disable=protected-access
     op = object.__new__(cls)
-    op._bound_args = op._sig.bind(**args)  # pylint: disable=protected-access
-    op._pauli_rep = None  # pylint: disable=protected-access
-    op._wires = Wires([])  # pylint: disable=protected-access
-    op._batch_size = _UNSET_BATCH_SIZE  # pylint: disable=protected-access
-    op._ndim_params = _UNSET_BATCH_SIZE  # pylint: disable=protected-access
+    op._bound_args = op._sig.bind(**args)
+    op._pauli_rep = None
+    op._wires = Wires([])
+    op._batch_size = _UNSET_BATCH_SIZE
+    op._ndim_params = _UNSET_BATCH_SIZE
     op.tracer = None
     return op
 

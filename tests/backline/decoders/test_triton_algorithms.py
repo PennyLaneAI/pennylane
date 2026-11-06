@@ -14,7 +14,6 @@
 
 """Tests for Triton decoder algorithms."""
 
-# Tests inspect private interfaces; load optional backends before dependent imports.
 # pylint: disable=protected-access,wrong-import-position
 
 

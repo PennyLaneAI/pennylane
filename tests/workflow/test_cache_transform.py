@@ -15,7 +15,6 @@
 Unit tests for the :func:`_cache_transform` transform function.
 """
 
-# Tests use fixture signatures.
 # pylint: disable=redefined-outer-name
 
 

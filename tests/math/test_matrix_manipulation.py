@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for matrix expand functions."""
 
-# Tests group related cases in classes.
 # pylint: disable=too-few-public-methods
 
 

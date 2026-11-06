@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit Tests for the PauliWord and PauliSentence classes"""
 
-# Tests exercise private interfaces, group related cases in classes.
 # pylint: disable=too-many-public-methods,protected-access
 
 

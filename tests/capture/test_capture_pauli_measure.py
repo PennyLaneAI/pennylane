@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for capturing Pauli product measurements."""
 
-# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-order,wrong-import-position
 
 

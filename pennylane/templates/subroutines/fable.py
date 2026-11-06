@@ -15,7 +15,6 @@
 This module contains the template for the Fast Approximate BLock Encoding (FABLE) technique.
 """
 
-# Control-flow decorators supply loop indices when the wrapped loops are called.
 # pylint: disable=no-value-for-parameter
 
 

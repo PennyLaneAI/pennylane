@@ -15,7 +15,6 @@
 This module contains the default.tensor device to perform tensor network simulations of quantum circuits using ``quimb``.
 """
 
-# This module implements or adapts internal PennyLane interfaces.
 # pylint: disable=protected-access
 
 

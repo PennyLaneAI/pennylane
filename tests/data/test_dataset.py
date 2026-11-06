@@ -15,7 +15,6 @@
 Tests for :mod:`pennylane.data.base.dataset`.
 """
 
-# Tests group related cases in classes.
 # pylint: disable=too-few-public-methods
 
 

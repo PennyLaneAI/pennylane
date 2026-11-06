@@ -14,7 +14,6 @@
 
 """Regression tests for Triton shared-library cache keys."""
 
-# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-position
 
 

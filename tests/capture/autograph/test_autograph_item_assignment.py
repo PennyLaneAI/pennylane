@@ -14,7 +14,6 @@
 
 """Test autograph support for standard Python item assignment with JAX Arrays."""
 
-# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-position
 
 

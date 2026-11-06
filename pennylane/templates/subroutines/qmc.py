@@ -15,7 +15,6 @@
 Contains the QuantumMonteCarlo template and utility functions.
 """
 
-# APIs keep circuit and algorithm parameters explicit.
 # pylint: disable=too-many-arguments
 
 

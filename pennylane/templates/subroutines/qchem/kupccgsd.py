@@ -15,7 +15,6 @@ r"""
 Contains the k-UpCCGSD template.
 """
 
-# APIs keep physical and chemistry parameters explicit.
 # pylint: disable=too-many-arguments
 
 

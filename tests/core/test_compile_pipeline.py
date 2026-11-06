@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit and integration tests for the compile pipeline."""
 
-# Tests exercise private interfaces.
 # pylint: disable=protected-access
 
 

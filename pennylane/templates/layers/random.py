@@ -15,7 +15,6 @@ r"""
 Contains the RandomLayers template.
 """
 
-# APIs keep circuit and algorithm parameters explicit.
 # pylint: disable=too-many-arguments
 
 

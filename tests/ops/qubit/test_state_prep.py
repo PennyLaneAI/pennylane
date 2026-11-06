@@ -15,7 +15,6 @@
 Unit tests for the available qubit state preparation operations.
 """
 
-# Tests exercise private interfaces.
 # pylint: disable=protected-access
 
 

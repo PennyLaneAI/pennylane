@@ -16,7 +16,6 @@
 This submodule contains controlled operators based on the ControlledOp class.
 """
 
-# Overrides and callbacks throughout this module use specialized signatures.
 # pylint: disable=unused-argument,arguments-differ,arguments-renamed
 
 

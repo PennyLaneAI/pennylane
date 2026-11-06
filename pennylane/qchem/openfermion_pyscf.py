@@ -13,7 +13,6 @@
 # limitations under the License.
 """This module contains functions to construct many-body observables with ``OpenFermion-PySCF``."""
 
-# Chemistry helpers keep their physical and backend parameters explicit.
 # pylint: disable=too-many-arguments
 
 

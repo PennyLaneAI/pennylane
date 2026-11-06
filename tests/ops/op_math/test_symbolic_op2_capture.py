@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for capturing symbolic ``Operator2`` instances into plxpr."""
 
-# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-position
 
 

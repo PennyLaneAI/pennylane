@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for the shot adaptive optimizer"""
 
-# Tests use fixture signatures.
 # pylint: disable=unused-argument
 
 

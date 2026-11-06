@@ -13,7 +13,6 @@
 # limitations under the License.
 """Integration tests for using the Torch interface with a QNode"""
 
-# QNode tests parameterize execution options and build explicit keyword dictionaries.
 # pylint: disable=too-many-arguments,use-dict-literal
 
 

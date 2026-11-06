@@ -13,7 +13,6 @@
 # limitations under the License.
 """Multiple dispatch functions"""
 
-# Backend dispatch loads optional interfaces and registers their implementations.
 # pylint: disable=import-outside-toplevel,wrong-import-order
 
 

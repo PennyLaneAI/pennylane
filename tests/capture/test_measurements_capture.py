@@ -15,7 +15,6 @@
 Tests for capturing measurements.
 """
 
-# Tests inspect private interfaces; load optional backends before dependent imports.
 # pylint: disable=protected-access,wrong-import-position
 
 

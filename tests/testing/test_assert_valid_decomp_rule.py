@@ -16,7 +16,6 @@ Tests for ``qp.testing.assert_valid_decomp_rule``, ``qp.testing.assert_decomposa
 ``qp.testing.decomp_rule_to_tape``.
 """
 
-# Tests group related cases in classes.
 # pylint: disable=too-few-public-methods
 
 

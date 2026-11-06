@@ -15,7 +15,6 @@
 This module contains the qp.bind_new_parameters function.
 """
 
-# Dispatch implementations share the public bind_new_parameters documentation.
 # pylint: disable=missing-function-docstring
 
 

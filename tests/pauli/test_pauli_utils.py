@@ -15,7 +15,6 @@
 Unit tests for the :mod:`pauli` utility functions in ``pauli/utils.py``.
 """
 
-# Tests group related cases in classes.
 # pylint: disable=too-few-public-methods
 
 

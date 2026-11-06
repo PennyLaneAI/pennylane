@@ -15,7 +15,6 @@ r"""
 Contains the FermionicDoubleExcitation template.
 """
 
-# APIs keep physical and chemistry parameters explicit.
 # pylint: disable=too-many-arguments
 
 

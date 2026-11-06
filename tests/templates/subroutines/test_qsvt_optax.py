@@ -17,7 +17,6 @@ Tests for the QSVT Optax-based iterative angle solver.
 These tests require JAX and Optax to be installed and are marked as external.
 """
 
-# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-position
 
 

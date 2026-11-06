@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for pennylane/dla/lie_closure.py functionality"""
 
-# Tests exercise private interfaces.
 # pylint: disable=protected-access
 
 

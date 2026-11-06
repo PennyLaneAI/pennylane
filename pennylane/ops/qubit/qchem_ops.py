@@ -16,7 +16,6 @@ This submodule contains the discrete-variable quantum operations that come
 from quantum chemistry applications.
 """
 
-# Overrides and callbacks throughout this module use specialized signatures.
 # pylint: disable=arguments-differ
 
 

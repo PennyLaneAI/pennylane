@@ -15,7 +15,6 @@
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
 
-# This module implements or adapts internal PennyLane interfaces.
 # pylint: disable=protected-access
 
 

@@ -15,7 +15,6 @@
 Unit tests for the :mod:`pennylane.circuit_graph.to_openqasm()` method.
 """
 
-# Tests exercise private interfaces.
 # pylint: disable=protected-access
 
 

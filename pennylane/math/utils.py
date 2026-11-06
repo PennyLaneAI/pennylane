@@ -13,7 +13,6 @@
 # limitations under the License.
 """Utility functions"""
 
-# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-order
 
 

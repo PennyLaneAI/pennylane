@@ -15,7 +15,6 @@
 Contains the MPS template.
 """
 
-# APIs keep circuit and algorithm parameters explicit.
 # pylint: disable=too-many-arguments
 
 

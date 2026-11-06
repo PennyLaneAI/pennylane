@@ -13,7 +13,6 @@
 # limitations under the License.
 """Test the pennylane drawer with Catalyst."""
 
-# Tests exercise private interfaces.
 # pylint: disable=protected-access
 
 

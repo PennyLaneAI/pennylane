@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests that the different measurement types work correctly on a device."""
 
-# Device tests inspect dynamically supplied measurement attributes.
 # pylint: disable=no-member
 
 

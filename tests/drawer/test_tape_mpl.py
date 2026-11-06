@@ -17,7 +17,6 @@ See section on "Testing Matplotlib based code" in the "Software Tests"
 page in the developement guide.
 """
 
-# Tests exercise private interfaces.
 # pylint: disable=protected-access
 
 

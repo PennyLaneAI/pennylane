@@ -13,7 +13,6 @@
 # limitations under the License.
 """Test autograph support for standard Python item array updates with operations."""
 
-# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-position
 
 

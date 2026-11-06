@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for measuring states in devices/qubit_mixed."""
 
-# Tests group related cases in classes.
 # pylint: disable=too-few-public-methods
 
 

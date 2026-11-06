@@ -13,8 +13,6 @@
 # limitations under the License.
 """Integration tests for using the JAX-JIT interface with a QNode"""
 
-# Tests parameterize cases through explicit fixture and helper arguments; group cases in helper
-# classes.
 # pylint: disable=too-many-arguments,too-few-public-methods
 
 

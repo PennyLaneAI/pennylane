@@ -15,8 +15,6 @@
 This submodule tests strategy structure for defining custom plxpr interpreters
 """
 
-# Tests group cases in helper classes; inspect private interfaces; load optional backends before
-# dependent imports.
 # pylint: disable=protected-access,too-few-public-methods,wrong-import-position
 
 

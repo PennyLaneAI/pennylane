@@ -13,7 +13,6 @@
 # limitations under the License.
 """The tests for logical operations in AutoGraph"""
 
-# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-position
 
 

@@ -15,7 +15,6 @@
 Contains unit tests for the LegacyDeviceFacade class.
 """
 
-# Tests exercise private interfaces.
 # pylint: disable=protected-access
 
 

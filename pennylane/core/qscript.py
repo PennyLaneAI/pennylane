@@ -16,7 +16,6 @@ This module defines the QuantumScript object responsible for storing quantum ope
 executed by a device.
 """
 
-# This module implements or adapts internal PennyLane interfaces.
 # pylint: disable=protected-access
 
 

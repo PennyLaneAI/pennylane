@@ -15,7 +15,6 @@ r"""
 Contains the AllSinglesDoubles template.
 """
 
-# This module implements or adapts internal PennyLane interfaces.
 # pylint: disable=protected-access
 
 

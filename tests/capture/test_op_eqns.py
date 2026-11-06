@@ -13,7 +13,6 @@
 """Tests for ``pop_op_eqns``, which deletes the plxpr equation of an operator
 that has been consumed by another operator (e.g. ``CNOT`` consuming ``X``)."""
 
-# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-order
 
 

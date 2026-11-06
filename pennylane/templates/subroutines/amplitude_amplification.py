@@ -16,7 +16,6 @@
 This submodule contains the template for Amplitude Amplification.
 """
 
-# APIs keep circuit and algorithm parameters explicit.
 # pylint: disable=too-many-arguments
 
 

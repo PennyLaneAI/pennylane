@@ -13,7 +13,6 @@
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
 
-# This module implements or adapts internal PennyLane interfaces.
 # pylint: disable=protected-access
 
 

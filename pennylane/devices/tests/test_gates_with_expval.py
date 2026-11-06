@@ -16,7 +16,6 @@ Tests that application of gates and state preparations works correctly on a
 device by checking expectation values.
 """
 
-# Tests parameterize cases through explicit fixture and helper arguments.
 # pylint: disable=too-many-arguments
 
 

@@ -16,7 +16,6 @@ This module contains the functions needed for resource estimation with the doubl
 method.
 """
 
-# APIs keep physical and chemistry parameters explicit.
 # pylint: disable=too-many-arguments
 
 

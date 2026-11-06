@@ -15,7 +15,6 @@
 Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 """
 
-# Tests exercise private interfaces.
 # pylint: disable=protected-access
 
 

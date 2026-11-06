@@ -163,17 +163,18 @@ class TestBasics:
     def test_device_jacobians_initialization_new_dev(self):
         """Tests the private attributes are set during initialization of a DeviceDerivatives class."""
 
+        # pylint: disable=protected-access
         device = qp.device("default.qubit")
         config = qp.devices.ExecutionConfig(gradient_method="adjoint")
 
         jpc = DeviceDerivatives(device, config)
 
-        assert jpc._device is device  # pylint: disable=protected-access
-        assert jpc._execution_config is config  # pylint: disable=protected-access
-        assert isinstance(jpc._results_cache, LRUCache)  # pylint: disable=protected-access
-        assert len(jpc._results_cache) == 0  # pylint: disable=protected-access
-        assert isinstance(jpc._jacs_cache, LRUCache)  # pylint: disable=protected-access
-        assert len(jpc._jacs_cache) == 0  # pylint: disable=protected-access
+        assert jpc._device is device
+        assert jpc._execution_config is config
+        assert isinstance(jpc._results_cache, LRUCache)
+        assert len(jpc._results_cache) == 0
+        assert isinstance(jpc._jacs_cache, LRUCache)
+        assert len(jpc._jacs_cache) == 0
 
     def test_device_jacobians_repr(self):
         """Test the repr method for device jacobians."""

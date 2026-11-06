@@ -15,7 +15,6 @@
 Tests for capturing differentiation into jaxpr.
 """
 
-# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-position
 
 

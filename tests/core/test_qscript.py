@@ -93,19 +93,20 @@ class TestInitialization:
     def test_no_update_empty_initialization(self):
         """Test initialization if nothing is provided"""
 
+        # pylint: disable=protected-access
         qs = QuantumScript()
-        assert len(qs._ops) == 0  # pylint: disable=protected-access
-        assert len(qs._measurements) == 0  # pylint: disable=protected-access
+        assert len(qs._ops) == 0
+        assert len(qs._measurements) == 0
         assert len(qs.par_info) == 0
-        assert qs._trainable_params is None  # pylint: disable=protected-access
+        assert qs._trainable_params is None
         assert qs.trainable_params == []
-        assert qs._trainable_params == []  # pylint: disable=protected-access
-        assert qs._graph is None  # pylint: disable=protected-access
-        assert qs._shots.total_shots is None  # pylint: disable=protected-access
-        assert qs._batch_size is _UNSET_BATCH_SIZE  # pylint: disable=protected-access
+        assert qs._trainable_params == []
+        assert qs._graph is None
+        assert qs._shots.total_shots is None
+        assert qs._batch_size is _UNSET_BATCH_SIZE
         assert qs.batch_size is None
-        assert qs._obs_sharing_wires is None  # pylint: disable=protected-access
-        assert qs._obs_sharing_wires_id is None  # pylint: disable=protected-access
+        assert qs._obs_sharing_wires is None
+        assert qs._obs_sharing_wires_id is None
         assert qs.wires == qp.wires.Wires([])
         assert qs.num_wires == 0
         assert qs.samples_computational_basis is False
@@ -143,10 +144,11 @@ class TestInitialization:
     )
     def test_provide_measurements(self, m):
         """Test provided measurements are converted to lists."""
+        # pylint: disable=protected-access
         qs = QuantumScript(measurements=m)
-        assert len(qs._measurements) == 1  # pylint: disable=protected-access
-        assert isinstance(qs._measurements, list)  # pylint: disable=protected-access
-        assert isinstance(qs._measurements[0], StateMP)  # pylint: disable=protected-access
+        assert len(qs._measurements) == 1
+        assert isinstance(qs._measurements, list)
+        assert isinstance(qs._measurements[0], StateMP)
 
     @pytest.mark.parametrize(
         "ops,num_preps",
@@ -259,9 +261,11 @@ class TestUpdate:
         assert isinstance(qs.par_info, list) and len(qs.par_info) > 0
         old_hash = qs.hash
         assert qs.trainable_params == [0, 1, 2, 3, 4, 5, 6, 7]
-        qs._ops = []  # pylint: disable=protected-access
-        qs._measurements = []  # pylint: disable=protected-access
-        qs._update()  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        qs._ops = []
+        qs._measurements = []
+        qs._update()
+        # pylint: enable=protected-access
         assert qs.wires == qp.wires.Wires([])
         assert isinstance(qs.par_info, list) and len(qs.par_info) == 0
         assert QuantumScript([], []).hash == qs.hash and qs.hash != old_hash

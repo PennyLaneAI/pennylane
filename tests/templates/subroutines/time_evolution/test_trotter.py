@@ -15,7 +15,6 @@
 Tests for the TrotterProduct template and helper functions.
 """
 
-# Tests parameterize cases through explicit fixture and helper arguments.
 # pylint: disable=too-many-arguments
 
 

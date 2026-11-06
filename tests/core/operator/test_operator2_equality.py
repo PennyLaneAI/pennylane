@@ -12,7 +12,6 @@
 # limitations under the License.
 """Tests for ``qp.equal`` with ``Operator2``."""
 
-# Tests group related cases in classes.
 # pylint: disable=too-few-public-methods
 
 

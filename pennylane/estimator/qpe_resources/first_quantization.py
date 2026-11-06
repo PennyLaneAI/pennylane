@@ -16,7 +16,6 @@ This module contains the functions needed for estimating the number of logical q
 non-Clifford gates for quantum algorithms in first quantization using a plane-wave basis.
 """
 
-# APIs keep physical and chemistry parameters explicit.
 # pylint: disable=too-many-arguments
 
 

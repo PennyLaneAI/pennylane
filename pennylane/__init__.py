@@ -16,7 +16,6 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 
-# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-order
 
 
