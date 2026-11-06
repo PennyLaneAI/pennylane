@@ -653,12 +653,18 @@ class TestDecomposition:
         assert count_ops(queue, SignedOutMultiplier) > 0
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.parametrize("k, b", [(2, 6), (3, 2)])
-    def test_required_work_wires_are_tight(self, k, b):
+    @pytest.mark.parametrize(
+        "k, b, error, match",
+        [(2, 6, qp.exceptions.DecompositionError, "work wires"), (3, 2, ValueError, "work qubits")],
+    )
+    def test_required_work_wires_are_tight(self, k, b, error, match):
         """Test that ``max(n - 1, b + 1, 2k + 2)`` work wires suffice to decompose the arithmetic
         without allocating further qubits, and that one fewer does not. For ``(k, b) = (2, 6)``,
-        the multipliers into the phase-gradient register set the size (``b + 1``), for ``(3, 2)``
-        the bilinear ``SignedOutMultiplier`` does (``2k + 2``)."""
+        the multipliers into the phase-gradient register set the size (``b + 1``), and the graph
+        reports the missing work wire. For ``(3, 2)``, the bilinear ``SignedOutMultiplier`` sets
+        the size (``2k + 2``). Its sub-decompositions require their work wires as explicit
+        arguments, so the graph finds no decomposition at all and the fallback to the
+        decomposition of ``TrotterVibronic`` raises in the register validation."""
         hamiltonian = build_hamiltonian(sparse_fragment_list(2, 2, seed=0))
         wires = make_wires(2, 2, k=k, b=b)
         gate_set = {
@@ -680,7 +686,7 @@ class TestDecomposition:
         assert count_ops(tape.operations, qp.TemporaryAND) > 0
 
         wires["work"] = wires["work"][:-1]
-        with pytest.raises(qp.exceptions.DecompositionError, match="work wires"):
+        with pytest.raises(error, match=match):
             decompose(make_op(hamiltonian, wires, evolution_time=0.1))
 
     def test_resource_function_is_graph_compatible(self):
