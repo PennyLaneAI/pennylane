@@ -91,9 +91,8 @@ Args:
         decomposition. A mapping may supply relative costs used by the graph solver.
     fixed_decomps (dict | None): Map operators to specific decomposition rules.
     exclude_decomps (dict | None): Map operators to lists of decomposition rules to exclude
-        from this pass's graph. Rules may be given as names or callables, including
-        :class:`~.decomposition.DecompositionRule` objects. Excluded rules remain available
-        to subsequent passes. Exclusions also apply to rules selected by ``fixed_decomps``.
+        from this pass's graph. Rules are specified by name. Excluded rules remain available
+        to subsequent passes.
 
 **Example**
 
