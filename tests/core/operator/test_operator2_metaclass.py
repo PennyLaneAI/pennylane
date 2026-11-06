@@ -80,8 +80,7 @@ class TestArgSpecValidationAbstractInputs:
         # NOTE: Can safely upcast an int to a float.
         op = MixedArgOp(AbstractArray((), np.int32), Wire[3])
         assert op.dynamic_arg == Float
-        # pylint: disable=protected-access
-        assert op.dynamic_arg._weak_type
+        assert op.dynamic_arg._weak_type  # pylint: disable=protected-access
 
     def test_arg_spec_with_unknown_shape_canonicalizes_only_dtype(self):
         """Tests that only the dtype is promoted."""

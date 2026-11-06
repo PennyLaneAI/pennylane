@@ -48,8 +48,12 @@ repos:
           "-rn", # Only display messages
           "-sn", # Don't display the score
           "--rcfile=.pylintrc", # Link to your config file
+          # Check useless suppressions only in the full CI run
+          "--fail-on=", 
+          "--disable=useless-suppression",
         ]
       files: ^pennylane/
+      exclude: ^pennylane/labs/tests/
     - id: pylint-test
       name: "🐍 pylint · Lint test suite"
       entry: pylint

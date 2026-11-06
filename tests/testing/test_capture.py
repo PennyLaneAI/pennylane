@@ -15,6 +15,10 @@
 Tests for the capture utilities in ``pennylane.testing``.
 """
 
+# Imports follow the initialization order required by this module.
+# pylint: disable=wrong-import-position
+
+
 from operator import eq, ne
 
 import pytest
@@ -26,7 +30,6 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import operator_p
 from pennylane.ops.mid_measure import MidMeasure
 

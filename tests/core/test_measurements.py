@@ -44,8 +44,6 @@ from pennylane.measurements import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=too-few-public-methods, unused-argument
-
 
 def test_measurements_module_getattr():
     """Test that the getattr raises an attribute error for things that dont exist."""
@@ -63,7 +61,7 @@ def test_mid_measure_deprecations():
     assert qp.measurements.find_post_processed_mcms == _find_post_processed_mcms
 
 
-class NotValidMeasurement(MeasurementProcess):
+class NotValidMeasurement(MeasurementProcess):  # pylint: disable=too-few-public-methods
     _shortname = "NotValidReturnType"
 
 
@@ -109,7 +107,7 @@ def test_eq_correctness():
     """Test that using `==` on measurement processes behaves the same as
     `qp.equal`."""
 
-    class DummyMP(MeasurementProcess):
+    class DummyMP(MeasurementProcess):  # pylint: disable=too-few-public-methods
         """Dummy measurement process with no return type."""
 
     mp1 = DummyMP(wires=qp.wires.Wires(0))
@@ -122,7 +120,7 @@ def test_eq_correctness():
 def test_hash_correctness():
     """Test that the hash of two equivalent measurement processes is the same."""
 
-    class DummyMP(MeasurementProcess):
+    class DummyMP(MeasurementProcess):  # pylint: disable=too-few-public-methods
         """Dummy measurement process with no return type."""
 
     mp1 = DummyMP(wires=qp.wires.Wires(0))
@@ -182,15 +180,14 @@ valid_meausurements = [
 ]
 
 
-# pylint: disable=protected-access
 @pytest.mark.parametrize("mp", valid_meausurements)
 def test_flatten_unflatten(mp):
     """Test flatten and unflatten methods."""
 
-    data, metadata = mp._flatten()
+    data, metadata = mp._flatten()  # pylint: disable=protected-access
     assert hash(metadata)
 
-    new_mp = type(mp)._unflatten(data, metadata)
+    new_mp = type(mp)._unflatten(data, metadata)  # pylint: disable=protected-access
     qp.assert_equal(new_mp, mp)
 
 
@@ -339,7 +336,7 @@ class TestProperties:
         """An observable with no eigenvalues defined should cause
         the eigvals method to return a NotImplementedError"""
 
-        class DummyObs(qp.core.Operator2):
+        class DummyObs(qp.core.Operator2):  # pylint: disable=too-few-public-methods
 
             def __init__(self, wires):
                 super().__init__(wires=wires)
@@ -416,6 +413,7 @@ class TestDiagonalizingGates:
         mp0 = qp.expval(qp.X(0))
         assert mp0.has_decomposition
 
+        # pylint: disable-next=too-few-public-methods
         class _NoDiagonalizingGates(qp.core.operator.Operator):
             pass
 
@@ -433,10 +431,11 @@ class TestSampleMeasurement:
         """Test the execution of a custom sampled measurement."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
+            # pylint: disable-next=unused-argument
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return qp.math.sum(samples[..., self.wires])
 
+            # pylint: disable-next=unused-argument
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
@@ -454,10 +453,11 @@ class TestSampleMeasurement:
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
+            # pylint: disable-next=unused-argument
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qp.math.sum(samples[..., self.wires])
 
+            # pylint: disable-next=unused-argument
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
@@ -482,7 +482,7 @@ class TestStateMeasurement:
         """Test the execution of a custom state measurement."""
 
         class MyMeasurement(StateMeasurement):
-            def process_state(self, state, wire_order):
+            def process_state(self, state, wire_order):  # pylint: disable=unused-argument
                 return qp.math.sum(state)
 
             _shortname = "state"
@@ -502,7 +502,7 @@ class TestStateMeasurement:
         """Test that executing a state measurement with shots raises an error."""
 
         class MyMeasurement(StateMeasurement):
-            def process_state(self, state, wire_order):
+            def process_state(self, state, wire_order):  # pylint: disable=unused-argument
                 return qp.math.sum(state)
 
             _shortname = "state"
@@ -524,8 +524,8 @@ class TestStateMeasurement:
         """Test that the process_density_matrix method of StateMeasurement raises
         NotImplementedError."""
 
-        class MyMeasurement(StateMeasurement):
-            def process_state(self, state, wire_order):
+        class MyMeasurement(StateMeasurement):  # pylint: disable=too-few-public-methods
+            def process_state(self, state, wire_order):  # pylint: disable=unused-argument
                 return qp.math.sum(state)
 
         with pytest.raises(NotImplementedError):
@@ -534,7 +534,7 @@ class TestStateMeasurement:
             )
 
 
-class TestMeasurementTransform:
+class TestMeasurementTransform:  # pylint: disable=too-few-public-methods
     """Tests for the MeasurementTransform class."""
 
     def test_custom_measurement(self):
@@ -546,9 +546,11 @@ class TestMeasurementTransform:
                 tapes, _ = program([tape])
                 return len(tapes)
 
+            # pylint: disable-next=unused-argument
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return [True]
 
+            # pylint: disable-next=unused-argument
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 

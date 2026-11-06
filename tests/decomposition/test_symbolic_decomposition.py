@@ -68,8 +68,6 @@ from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import repeat_pow_base as repeat_pow_base2
 from pennylane.testing import decomp_rule_to_tape
 from pennylane.typing import Bool, Complex, Float, Wire
-
-# pylint: disable=no-name-in-module
 from tests.core.operator.operator2_utils import (
     DynOp,
     DynOpWithMatrix,
@@ -87,8 +85,7 @@ class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
         return {"key": 0}
 
 
-# pylint: disable=too-few-public-methods
-class DummyHadamard(qp.operation.Operator):
+class DummyHadamard(qp.operation.Operator):  # pylint: disable=too-few-public-methods
     resource_keys = set({})
     num_wires = 1
 

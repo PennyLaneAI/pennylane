@@ -163,8 +163,7 @@ class TestCollectRecipes:
         channel_recipe = [(-1, 0, 0), (1, 0, 1)]
         channel_recipe_2nd_order = [(0, 0, 0), (0, 0, 1)]
 
-        # pylint: disable=too-few-public-methods
-        class DummyOp(qp.RX):
+        class DummyOp(qp.RX):  # pylint: disable=too-few-public-methods
             """A custom RX variant with dummy gradient recipe."""
 
             grad_recipe = (dummy_recipe,)
@@ -232,8 +231,7 @@ class TestCollectRecipes:
         assert qp.math.allclose(offdiag[2], self.four_term_recipe)
 
 
-# pylint: disable=too-few-public-methods
-class TestGenerateOffDiagTapes:
+class TestGenerateOffDiagTapes:  # pylint: disable=too-few-public-methods
     """Test some special features of `_generate_offdiag_tapes`."""
 
     @pytest.mark.parametrize("add_unshifted", [True, False])
@@ -722,8 +720,7 @@ class TestParameterShiftHessian:
         identified to be 0, and that no tapes were generated."""
         dev = qp.device("default.qubit", wires=2)
 
-        # pylint: disable=too-few-public-methods
-        class DummyOp(qp.CRZ):
+        class DummyOp(qp.CRZ):  # pylint: disable=too-few-public-methods
             """A custom variant of qp.CRZ with zero grad_method."""
 
             grad_method = "0"
@@ -752,8 +749,7 @@ class TestParameterShiftHessian:
     def test_error_unsupported_op(self):
         """Test that the correct error is thrown for unsupported operations"""
 
-        # pylint: disable=too-few-public-methods
-        class DummyOp(qp.CRZ):
+        class DummyOp(qp.CRZ):  # pylint: disable=too-few-public-methods
             """A custom variant of qp.CRZ with grad_method "F"."""
 
             grad_method = "F"
@@ -799,8 +795,7 @@ class TestParameterShiftHessian:
             qp.gradients.param_shift_hessian(tape, argnum=argnum, off_diagonal_shifts=[])
 
 
-# pylint: disable=too-many-public-methods
-class TestParameterShiftHessianQNode:
+class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
     """Test the general functionality of the param_shift_hessian method
     with QNodes on the default interface (autograd)"""
 
@@ -914,8 +909,7 @@ class TestParameterShiftHessianQNode:
         c, s = qp.gradients.generate_shift_rule((0.5, 1)).T
         recipe = list(zip(c, np.ones_like(c), s))
 
-        # pylint: disable=too-few-public-methods
-        class DummyOp(qp.CRX):
+        class DummyOp(qp.CRX):  # pylint: disable=too-few-public-methods
             """A custom variant of qp.CRX with a specific gradient recipe."""
 
             grad_recipe = (recipe,)
@@ -1361,8 +1355,7 @@ class TestParameterShiftHessianQNode:
 
         dev = qp.device("default.qubit", wires=2)
 
-        # pylint: disable=too-few-public-methods
-        class DummyOp(qp.CRZ):
+        class DummyOp(qp.CRZ):  # pylint: disable=too-few-public-methods
             """A custom variant of qp.CRZ with grad_method "F"."""
 
             grad_method = "F"
@@ -1425,8 +1418,7 @@ class TestParameterShiftHessianQNode:
     def test_no_error_nondifferentiable_unsupported_operation(self):
         """Test that no error is thrown for operations that are not marked differentiable"""
 
-        # pylint: disable=too-few-public-methods
-        class DummyOp(qp.CRZ):
+        class DummyOp(qp.CRZ):  # pylint: disable=too-few-public-methods
             """A custom variant of qp.CRZ with grad_method "F"."""
 
             grad_method = "F"

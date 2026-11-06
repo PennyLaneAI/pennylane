@@ -16,7 +16,10 @@
 This submodule contains the template for Amplitude Amplification.
 """
 
-# pylint: disable-msg=too-many-arguments,too-many-positional-arguments
+# APIs keep circuit and algorithm parameters explicit.
+# pylint: disable=too-many-arguments
+
+
 import copy
 
 import numpy as np
@@ -199,16 +202,19 @@ class AmplitudeAmplification(Operation):
         return ops
 
     def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
+        # pylint: disable-next=protected-access
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        # pylint: disable-next=protected-access
         new_op._hyperparameters["U"] = new_op._hyperparameters["U"].map_wires(wire_map)
+        # pylint: disable-next=protected-access
         new_op._hyperparameters["O"] = new_op._hyperparameters["O"].map_wires(wire_map)
-        new_op._hyperparameters["reflection_wires"] = Wires(
+        new_op._hyperparameters["reflection_wires"] = Wires(  # pylint: disable=protected-access
+            # pylint: disable-next=protected-access
             [wire_map.get(wire, wire) for wire in new_op._hyperparameters["reflection_wires"]]
         )
-        new_op._hyperparameters["work_wire"] = wire_map.get(
-            w := new_op._hyperparameters["work_wire"], w
+        new_op._hyperparameters["work_wire"] = wire_map.get(  # pylint: disable=protected-access
+            w := new_op._hyperparameters["work_wire"], w  # pylint: disable=protected-access
         )
         return new_op
 

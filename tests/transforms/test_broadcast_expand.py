@@ -16,8 +16,6 @@ Unit tests for the ``broadcast_expand`` transform.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods, unused-argument
 import pytest
 
 import pennylane as qp
@@ -88,8 +86,6 @@ observables_and_exp_fns = [
 class TestBroadcastExpand:
     """Tests for the broadcast_expand transform"""
 
-    # pylint: disable=too-many-arguments
-
     @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     def test_expansion(self, params, size, obs, exp_fn, seed):
@@ -127,6 +123,7 @@ class TestBroadcastExpand:
 
     @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
+    # pylint: disable-next=too-many-arguments, unused-argument
     def test_shot_vector_expval(self, params, size, obs, exp_fn, tol_stochastic, seed):
         """Test that expansion works as expected with shot vectors"""
         ops = make_ops(*params)
@@ -299,9 +296,9 @@ class TestBroadcastExpand:
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     @pytest.mark.parametrize("use_jit", [True, False])
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    # pylint: disable-next=too-many-arguments
     def test_jax(self, params, obs, exp_fn, use_jit, diff_method, seed):
         """Test that the expansion works with jax and is differentiable."""
-        # pylint: disable=too-many-arguments
         import jax
 
         jax.config.update("jax_enable_x64", True)

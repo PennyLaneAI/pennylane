@@ -15,7 +15,6 @@
 Tests for the PrepSelPrep template.
 """
 
-# pylint: disable=protected-access,import-outside-toplevel
 import copy
 
 import numpy as np
@@ -260,7 +259,7 @@ class TestPrepSelPrep:
         lcu_coeffs, lcu_ops = lcu.terms()
 
         op = qp.PrepSelPrep(lcu, control=0)
-        data, metadata = op._flatten()
+        data, metadata = op._flatten()  # pylint: disable=protected-access
 
         data_coeffs, data_ops = data[0].terms()
 
@@ -272,7 +271,7 @@ class TestPrepSelPrep:
 
         assert metadata[0] == op.control
 
-        new_op = type(op)._unflatten(*op._flatten())
+        new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
         assert op.lcu == new_op.lcu
         # assert all(coeff1 == coeff2 for coeff1, coeff2 in zip(op.coeffs, new_op.coeffs))
         # assert all(qp.equal(op1, op2) for op1, op2 in zip(op.ops, new_op.ops))

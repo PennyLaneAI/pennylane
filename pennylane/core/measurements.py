@@ -124,14 +124,13 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         out = cls._mcm_primitive.bind(obs, single_mcm=True, **kwargs)  # single mcm
         return tuple(out) if isinstance(out, list) else out
 
-    # pylint: disable=unused-argument
     @classmethod
     def _abstract_eval(
         cls,
-        n_wires: int | None = None,
-        has_eigvals=False,
-        shots: int | None = None,
-        num_device_wires: int = 0,
+        n_wires: int | None = None,  # pylint: disable=unused-argument
+        has_eigvals=False,  # pylint: disable=unused-argument
+        shots: int | None = None,  # pylint: disable=unused-argument
+        num_device_wires: int = 0,  # pylint: disable=unused-argument
     ) -> tuple[tuple, type]:
         """Calculate the shape and dtype that will be returned when a measurement is performed.
 
@@ -409,7 +408,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         """
         return self if self.obs is None else self.__class__(obs=self.obs.simplify())
 
-    # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):
         """Returns a copy of the current measurement process with its wires changed according to
         the given wire map.
@@ -430,6 +428,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         elif self.obs is not None:
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
         elif self._wires is not None:
+            # pylint: disable-next=protected-access
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         return new_measurement
 

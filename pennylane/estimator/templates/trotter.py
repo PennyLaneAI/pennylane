@@ -48,8 +48,6 @@ from .subroutines import (
     SemiAdder,
 )
 
-# pylint: disable=arguments-differ, too-many-arguments, super-init-not-called
-
 
 class TrotterProduct(ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
@@ -134,7 +132,7 @@ class TrotterProduct(ResourceOperator):
 
     resource_keys = {"first_order_expansion", "num_steps", "order", "num_wires"}
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self,
         first_order_expansion: list,
         num_steps: int,
@@ -194,7 +192,7 @@ class TrotterProduct(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         first_order_expansion: list,
         num_steps: int,
@@ -224,7 +222,7 @@ class TrotterProduct(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         first_order_expansion: list,
         num_steps: int,
@@ -413,7 +411,7 @@ class TrotterCDF(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls, cdf_ham: CDFHamiltonian, num_steps: int, order: int
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
@@ -453,7 +451,7 @@ class TrotterCDF(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls, cdf_ham: CDFHamiltonian, num_steps: int, order: int
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
@@ -765,7 +763,7 @@ class TrotterTHC(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls, thc_ham: THCHamiltonian, num_steps: int, order: int
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
@@ -805,7 +803,7 @@ class TrotterTHC(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls, thc_ham: THCHamiltonian, num_steps: int, order: int
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
@@ -1077,7 +1075,7 @@ class TrotterVibrational(ResourceOperator):
         "coeff_precision",
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         vibration_ham: VibrationalHamiltonian,
         num_steps: int,
@@ -1138,7 +1136,7 @@ class TrotterVibrational(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         vibration_ham: VibrationalHamiltonian,
         num_steps: int,
@@ -1188,6 +1186,7 @@ class TrotterVibrational(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @staticmethod
+    # pylint: disable-next=too-many-arguments
     def _cached_terms(grid_size, taylor_degree, coeff_precision, cached_tree, path, index):
         r"""Recursive function to compute the resources for the trotterization of vibrational Hamiltonian
         while caching the coefficients."""
@@ -1312,7 +1311,7 @@ class TrotterVibrational(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         vibration_ham: VibrationalHamiltonian,
         num_steps: int,
@@ -1505,7 +1504,7 @@ class TrotterVibronic(ResourceOperator):
         "coeff_precision",
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         vibronic_ham: VibronicHamiltonian,
         num_steps: int,
@@ -1568,7 +1567,7 @@ class TrotterVibronic(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         vibronic_ham: VibronicHamiltonian,
         num_steps: int,
@@ -1618,7 +1617,7 @@ class TrotterVibronic(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @staticmethod
-    def _cached_terms(
+    def _cached_terms(  # pylint: disable=too-many-arguments
         num_states, grid_size, taylor_degree, coeff_precision, cached_tree, path, index
     ):
         r"""Recursive function to compute the resources for the trotterization of vibronic Hamiltonian
@@ -1769,7 +1768,7 @@ class TrotterVibronic(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         vibronic_ham: VibronicHamiltonian,
         num_steps: int,
@@ -2036,7 +2035,7 @@ class TrotterPauli(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         pauli_ham: PauliHamiltonian,
         num_steps: int,
@@ -2079,7 +2078,7 @@ class TrotterPauli(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         pauli_ham: PauliHamiltonian,
         num_steps: int,

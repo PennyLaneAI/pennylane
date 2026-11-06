@@ -13,7 +13,9 @@
 # limitations under the License.
 """Unit and integration tests for the compile pipeline."""
 
-# pylint: disable=no-member, protected-access
+# Tests exercise private interfaces.
+# pylint: disable=protected-access
+
 
 from copy import copy
 
@@ -44,13 +46,13 @@ def first_valid_transform(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """A valid transform."""
     tape = tape.copy()
-    tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)
     return [tape], lambda x: x
 
 
 def expand_transform(
     tape: QuantumScript,
-    index: int,  # pylint:disable=unused-argument
+    index: int,  # pylint: disable=unused-argument
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """A valid expand transform."""
     return [tape], lambda x: x
@@ -62,7 +64,7 @@ def second_valid_transform(
     """A valid trasnform."""
     tape1 = tape.copy()
     tape2 = tape.copy()
-    tape2 = tape._ops.pop(index)  # pylint:disable=protected-access
+    tape2 = tape._ops.pop(index)
 
     def fn(results):
         return qp.math.sum(results)
@@ -115,8 +117,7 @@ class TestUtilityHelpers:
         assert out2 == (4.0, 9.0)
 
 
-# pylint: disable=too-many-public-methods
-class TestCompilePipelineDunders:
+class TestCompilePipelineDunders:  # pylint: disable=too-many-public-methods
     """Test the dunder methods."""
 
     def test_bool(self):
@@ -754,7 +755,7 @@ class TestCompilePipelineDunders:
         compile_pipeline.append(transform1)
         compile_pipeline.append(transform2)
 
-        compile_pipeline._ipython_display_()  # pylint: disable=protected-access
+        compile_pipeline._ipython_display_()
         captured = capsys.readouterr()
         assert str(compile_pipeline) + "\n" == captured.out
 
@@ -782,9 +783,10 @@ class TestCompilePipelineDunders:
     def test_str_adds_ellipses(self):
         """Tests that the string representation uses ellipses for long kwargs."""
 
-        # pylint:disable=unused-argument
         def verbose_transform(
-            tape: QuantumScript, verbose_arg: str, verbose_kwarg: str | None = None
+            tape: QuantumScript,
+            verbose_arg: str,  # pylint: disable=unused-argument
+            verbose_kwarg: str | None = None,  # pylint: disable=unused-argument
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             """A valid transform."""
             return [tape], lambda x: x
@@ -1324,7 +1326,7 @@ class TestCompilePipelineCall:
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             """A valid transform."""
             new_ops = list(tape.operations)
-            new_ops.pop(index)  # pylint:disable=protected-access
+            new_ops.pop(index)
             return (
                 qp.tape.QuantumScript(new_ops, tape.measurements, shots=tape.shots),
             ), single_null_postprocessing
@@ -1680,9 +1682,8 @@ class TestCompilePipelineCall:
 
         # Create a dummy device with a custom preprocess_transforms method
         class DummyDevice(qp.devices.Device):
-            def preprocess_transforms(
-                self, execution_config=None
-            ):  # pylint: disable=unused-argument
+            # pylint: disable-next=unused-argument
+            def preprocess_transforms(self, execution_config=None):
                 prog = CompilePipeline()
                 prog.add_transform(qp.defer_measurements)
                 return prog
@@ -1819,7 +1820,7 @@ class TestCompilePipelineIntegration:
         assert pipeline[1].tape_transform is second_valid_transform
 
 
-class TestMarkers:
+class TestMarkers:  # pylint: disable=too-many-public-methods
     """Tests markers in a compile pipeline"""
 
     def test_add_marker(self):

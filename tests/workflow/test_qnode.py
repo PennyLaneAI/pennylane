@@ -14,8 +14,6 @@
 """Unit tests for the QNode"""
 
 import copy
-
-# pylint: disable=import-outside-toplevel, protected-access, no-member
 import warnings
 from dataclasses import replace
 from functools import partial
@@ -46,23 +44,23 @@ def dummyfunc():
     return None
 
 
-# pylint: disable=unused-argument
 class CustomDevice(qp.devices.Device):
     """A null device that just returns 0."""
 
     def __repr__(self):
         return "CustomDevice"
 
-    def execute(self, circuits, execution_config=None):
+    def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
         return (0,)
 
 
 class CustomDeviceWithDiffMethod(qp.devices.Device):
     """A device that defines a derivative."""
 
-    def execute(self, circuits, execution_config=None):
+    def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
         return 0
 
+    # pylint: disable-next=unused-argument
     def compute_derivatives(self, circuits, execution_config=None):
         """Device defines its own method to compute derivatives"""
         return 0
@@ -291,7 +289,6 @@ class TestInitialization:
         assert f.execute_kwargs["cache"] == "auto"
 
 
-# pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
 
@@ -336,7 +333,6 @@ class TestValidation:
         with pytest.raises(QuantumFunctionError, match="Invalid device"):
             QNode(dummyfunc, None)
 
-    # pylint: disable=protected-access, too-many-statements
     def test_diff_method(self):
         """Test that a user-supplied diff method correctly returns the right
         diff method."""
@@ -498,8 +494,6 @@ class TestValidation:
         assert len(record) == 0
 
 
-# pylint: disable=too-few-public-methods
-# pylint: disable=unnecessary-lambda
 class TestPyTreeStructure:
     """Tests for preservation of pytree structure through execution"""
 
@@ -507,7 +501,7 @@ class TestPyTreeStructure:
         "measurement",
         [
             lambda: ({"probs": qp.probs()},),
-            lambda: qp.probs(),
+            lambda: qp.probs(),  # pylint: disable=unnecessary-lambda
             lambda: [
                 [qp.probs(wires=1), {"a": qp.probs(wires=0)}, qp.expval(qp.Z(0))],
                 {"probs": qp.probs(wires=0), "exp": qp.expval(qp.X(1))},
@@ -868,7 +862,6 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # pylint: disable=too-many-positional-arguments
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
@@ -883,9 +876,9 @@ class TestIntegration:
             (qp.probs, lambda x: [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2]),
         ],
     )
-    def test_defer_meas_if_mcm_unsupported(
+    def test_defer_meas_if_mcm_unsupported(  # pylint: disable=too-many-arguments
         self, dev_name, first_par, sec_par, return_type, mv_return, mv_res, mocker
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
         natively."""
@@ -918,7 +911,7 @@ class TestIntegration:
         assert spy.call_count == 2
 
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
-    def test_sampling_with_mcm(self, basis_state, mocker):
+    def test_sampling_with_mcm(self, basis_state, mocker):  # pylint: disable=unused-argument
         """Tests that a QNode with qp.sample and mid-circuit measurements
         returns the expected results."""
         dev = qp.device("default.qubit", wires=3)
@@ -1041,7 +1034,7 @@ class TestIntegration:
             circuit()
 
         tape = qp.workflow.construct_tape(circuit)()
-        assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert q.queue == []
         assert len(tape.operations) == 1
 
     def test_qnode_preserves_inferred_numpy_interface(self):
@@ -1061,7 +1054,6 @@ class TestIntegration:
     def test_qnode_default_interface(self):
         """Tests that the default interface is set correctly for a QNode."""
 
-        # pylint: disable=import-outside-toplevel
         import networkx as nx
 
         @qp.qnode(qp.device("default.qubit"))
@@ -1079,13 +1071,11 @@ class TestIntegration:
     def test_qscript_default_interface(self):
         """Tests that the default interface is set correctly for a QuantumScript."""
 
-        # pylint: disable=import-outside-toplevel
         import networkx as nx
 
         dev = qp.device("default.qubit")
 
-        # pylint: disable=too-few-public-methods
-        class DummyCustomGraphOp(qp.operation.Operation):
+        class DummyCustomGraphOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             """Dummy custom operation for testing purposes."""
 
             def __init__(self, graph: nx.Graph):
@@ -1104,12 +1094,15 @@ class TestIntegration:
         """Test that an error is raised in the device_vjp is unsupported."""
 
         class DummyDev(qp.devices.Device):
+            # pylint: disable-next=unused-argument
             def execute(self, circuits, execution_config=qp.devices.ExecutionConfig()):
                 return 0
 
+            # pylint: disable-next=unused-argument
             def supports_derivatives(self, execution_config=None, circuit=None):
                 return execution_config and execution_config.gradient_method == "vjp_grad"
 
+            # pylint: disable-next=unused-argument
             def supports_vjp(self, execution_config=None, circuit=None) -> bool:
                 return execution_config and execution_config.gradient_method == "vjp_grad"
 
@@ -1160,7 +1153,6 @@ class TestShots:
         with pytest.raises(AttributeError, match="Shots cannot be set on a qnode instance"):
             circuit.shots = 5
 
-    # pylint: disable=unexpected-keyword-arg
     def test_no_shots_per_call_if_user_has_shots_qfunc_kwarg(self):
         """Tests that the per-call shots overwriting is suspended if user
         has a shots keyword argument, but a warning is raised."""
@@ -1185,7 +1177,6 @@ class TestShots:
         tape = qp.workflow.construct_tape(circuit)(0.8, shots=0)
         assert tape.operations[0].wires.labels == (0,)
 
-    # pylint: disable=unexpected-keyword-arg
     def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
         """Tests that the per-call shots overwriting is suspended
         if user has a shots argument, but a warning is raised."""
@@ -1231,7 +1222,6 @@ class TestShots:
         with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
             circuit(0.3)
 
-    # pylint: disable=unexpected-keyword-arg
     def test_warning_finite_shots_override(self):
         """Tests that a warning is raised when caching is used with finite shots."""
         dev = qp.device("default.qubit", wires=1)
@@ -1310,7 +1300,7 @@ class TestShots:
         with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
             dev1 = qp.device("default.qubit", wires=1, shots=100)
         qn = qp.QNode(dummyfunc, dev1)
-        assert qn._shots == qp.measurements.Shots(100)
+        assert qn._shots == qp.measurements.Shots(100)  # pylint: disable=protected-access
 
         # _shots should take precedence over device shots
         with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
@@ -1319,27 +1309,28 @@ class TestShots:
             UserWarning, match="The device's shots value does not match the QNode's shots value."
         ):
             updated_qnode = qn.update(device=dev2)
+        # pylint: disable-next=protected-access
         assert updated_qnode._shots == qp.measurements.Shots(100)
 
     def test_shots_preserved_in_other_updates(self):
         """Test that _shots is preserved when updating other QNode parameters."""
         dev = qp.device("default.qubit", wires=1)
         qn = qp.set_shots(qp.QNode(dummyfunc, dev), shots=50)
-        assert qn._shots == qp.measurements.Shots(50)
+        assert qn._shots == qp.measurements.Shots(50)  # pylint: disable=protected-access
 
         # Update something unrelated to shots or device
         updated_qnode = qn.update(diff_method="parameter-shift")
-        assert updated_qnode._shots == qp.measurements.Shots(50)
+        assert updated_qnode._shots == qp.measurements.Shots(50)  # pylint: disable=protected-access
 
     def test_shots_direct_update(self):
         """Test that QNode shots can be updated directly using the update_shots method."""
         dev = qp.device("default.qubit", wires=1)
         qn = qp.set_shots(qp.QNode(dummyfunc, dev), shots=30)
-        assert qn._shots == qp.measurements.Shots(30)
+        assert qn._shots == qp.measurements.Shots(30)  # pylint: disable=protected-access
 
         # Update shots directly using update_shots method
         updated_qnode = qn.update_shots(shots=75)
-        assert updated_qnode._shots == qp.measurements.Shots(75)
+        assert updated_qnode._shots == qp.measurements.Shots(75)  # pylint: disable=protected-access
 
 
 class TestCompilePipelineIntegration:
@@ -1541,11 +1532,14 @@ class TestNewDeviceIntegration:
         class CustomDeviceWithDiffMethod2(qp.devices.DefaultQubit):
             """A device with a custom derivative named hello."""
 
+            # pylint: disable-next=unused-argument
             def supports_derivatives(self, execution_config=None, circuit=None):
                 return getattr(execution_config, "gradient_method", None) == "hello"
 
             def setup_execution_config(
-                self, config: qp.devices.ExecutionConfig | None = None, circuit=None
+                self,
+                config: qp.devices.ExecutionConfig | None = None,
+                circuit=None,  # pylint: disable=unused-argument
             ):
                 if config.gradient_method in {"best", "hello"}:
                     return replace(config, gradient_method="hello", use_device_gradient=True)
@@ -1625,7 +1619,7 @@ class TestMCMConfiguration:
     def test_defer_measurements_with_jit(self, diff_method, mocker, seed):
         """Test that using mcm_method="deferred" defaults to behaviour like
         postselect_mode="fill-shots" when using jax jit."""
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         shots = 100
         postselect = 1
@@ -1659,7 +1653,7 @@ class TestMCMConfiguration:
     def test_deferred_hw_like_error_with_jit(self, diff_method, seed):
         """Test that an error is raised if attempting to use postselect_mode="hw-like"
         with jax jit with mcm_method="deferred"."""
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         shots = 100
         postselect = 1
@@ -1744,8 +1738,7 @@ class TestTapeExpansion:
         """Test expansion of an unsupported operation on the device"""
         dev = qp.device("default.qubit", wires=1)
 
-        # pylint: disable=too-few-public-methods
-        class UnsupportedOp(qp.operation.Operation):
+        class UnsupportedOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             """custom unsupported op."""
 
             num_wires = 1
@@ -1782,8 +1775,7 @@ class TestTapeExpansion:
 
         dev = qp.device("default.qubit", wires=1)
 
-        # pylint: disable=too-few-public-methods
-        class UnsupportedOp(qp.operation.Operation):
+        class UnsupportedOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             """custom unsupported op."""
 
             num_wires = 1
@@ -1813,14 +1805,13 @@ class TestTapeExpansion:
         assert np.allclose(qp.grad(qp.grad(circuit))(x), -9 * np.cos(3 * x))
 
     @pytest.mark.autograd
-    def test_gradient_expansion(self, mocker):
+    def test_gradient_expansion(self, mocker):  # pylint: disable=unused-argument
         """Test that a *supported* operation with no gradient recipe is
         expanded when applying the gradient transform, but not for execution."""
 
         dev = qp.device("default.qubit", wires=1)
 
-        # pylint: disable=too-few-public-methods
-        class PhaseShift(qp.PhaseShift):
+        class PhaseShift(qp.PhaseShift):  # pylint: disable=too-few-public-methods
             """custom phase shift."""
 
             grad_method = None
@@ -1873,8 +1864,7 @@ class TestTapeExpansion:
 def test_resets_after_execution_error():
     """Test that the interface is reset to ``"auto"`` if an error occurs during execution."""
 
-    # pylint: disable=too-few-public-methods
-    class BadOp(qp.operation.Operator):
+    class BadOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
         """An operator that will cause an error during execution."""
 
     @qp.qnode(qp.device("default.qubit"))
@@ -1942,7 +1932,7 @@ class TestPrivateFunctions:
         assert config == expected_config
 
 
-class TestSetShots:
+class TestSetShots:  # pylint: disable=too-many-public-methods
     """Tests for the set_shots decorator functionality."""
 
     def test_shots_initialization(self):
@@ -1954,16 +1944,17 @@ class TestSetShots:
         ):
             dev_with_shots = qp.device("default.qubit", wires=1, shots=42)
         qn_with_device_shots = qp.QNode(dummyfunc, dev_with_shots)
+        # pylint: disable-next=protected-access
         assert qn_with_device_shots._shots == qp.measurements.Shots(42)
 
         # Test that QNode defaults to analytic mode when device has no shots
         dev_analytic = qp.device("default.qubit", wires=1)
         qnode_analytic = qp.QNode(dummyfunc, dev_analytic)
-        assert qnode_analytic._shots.total_shots is None
+        assert qnode_analytic._shots.total_shots is None  # pylint: disable=protected-access
 
         # Test that qnode creation with shots parameter initializes _shots correctly
         qn_with_shots = qp.QNode(dummyfunc, dev_with_shots)
-        assert qn_with_shots._shots == qp.measurements.Shots(42)
+        assert qn_with_shots._shots == qp.measurements.Shots(42)  # pylint: disable=protected-access
 
     def test_set_shots_direct_decorator(self):
         """Test set_shots with partial decorator syntax."""
@@ -1975,7 +1966,7 @@ class TestSetShots:
             qp.RX(1.0, wires=0)
             return qp.sample(qp.PauliZ(0))
 
-        assert circuit._shots == qp.measurements.Shots(50)
+        assert circuit._shots == qp.measurements.Shots(50)  # pylint: disable=protected-access
         result = circuit()
         assert len(result) == 50
 
@@ -1990,7 +1981,7 @@ class TestSetShots:
             qp.RX(1.0, wires=0)
             return qp.sample(qp.PauliZ(0))
 
-        assert circuit._shots == qp.measurements.Shots(50)
+        assert circuit._shots == qp.measurements.Shots(50)  # pylint: disable=protected-access
         result = circuit()
         assert len(result) == 50
 
@@ -2007,8 +1998,9 @@ class TestSetShots:
         # Apply set_shots directly
         new_circuit = set_shots(original_circuit, 75)
 
+        # pylint: disable-next=protected-access
         assert original_circuit._shots == qp.measurements.Shots(10)
-        assert new_circuit._shots == qp.measurements.Shots(75)
+        assert new_circuit._shots == qp.measurements.Shots(75)  # pylint: disable=protected-access
 
         result = new_circuit()
         assert len(result) == 75
@@ -2026,8 +2018,9 @@ class TestSetShots:
         # Apply set_shots directly
         new_circuit = set_shots(original_circuit, shots=75)
 
+        # pylint: disable-next=protected-access
         assert original_circuit._shots == qp.measurements.Shots(10)
-        assert new_circuit._shots == qp.measurements.Shots(75)
+        assert new_circuit._shots == qp.measurements.Shots(75)  # pylint: disable=protected-access
 
         result = new_circuit()
         assert len(result) == 75
@@ -2044,7 +2037,9 @@ class TestSetShots:
         shot_vector = [(10, 3), (5, 2)]  # 10 shots × 3 times, 5 shots × 2 times
         new_circuit = set_shots(circuit, shots=shot_vector)
 
+        # pylint: disable-next=protected-access
         assert new_circuit._shots.total_shots == 40  # 10*3 + 5*2
+        # pylint: disable-next=protected-access
         assert new_circuit._shots.shot_vector == ((10, 3), (5, 2))
         result = new_circuit()
         assert isinstance(result, tuple)
@@ -2061,6 +2056,7 @@ class TestSetShots:
             qp.RX(1.0, wires=0)
             return qp.expval(qp.PauliZ(0))
 
+        # pylint: disable-next=protected-access
         assert circuit._shots is None or circuit._shots.total_shots is None
         result = circuit()
         assert isinstance(result, (float, np.floating))
@@ -2079,9 +2075,10 @@ class TestSetShots:
         new_circuit = set_shots(original_circuit, shots=100)
 
         # Original should be unchanged
+        # pylint: disable-next=protected-access
         assert original_circuit._shots == qp.measurements.Shots(20)
         # New circuit should have updated shots
-        assert new_circuit._shots == qp.measurements.Shots(100)
+        assert new_circuit._shots == qp.measurements.Shots(100)  # pylint: disable=protected-access
 
         # Both should be different objects
         assert original_circuit is not new_circuit
@@ -2213,7 +2210,7 @@ class TestSetShots:
             return qp.sample(qp.PauliZ(0))
 
         # Verify original has integer shots
-        assert circuit._shots == qp.measurements.Shots(50)
+        assert circuit._shots == qp.measurements.Shots(50)  # pylint: disable=protected-access
         original_result = circuit()
         assert len(original_result) == 50
         assert not isinstance(original_result, tuple)  # Single array, not tuple of arrays
@@ -2223,7 +2220,9 @@ class TestSetShots:
         vector_circuit = set_shots(circuit, shots=shot_vector)
 
         # Verify shot vector conversion
+        # pylint: disable-next=protected-access
         assert vector_circuit._shots.total_shots == 85  # 20*2 + 15*3
+        # pylint: disable-next=protected-access
         assert vector_circuit._shots.shot_vector == ((20, 2), (15, 3))
 
         vector_result = vector_circuit()
@@ -2238,7 +2237,7 @@ class TestSetShots:
         assert len(vector_result[4]) == 15  # Fifth group: 15 shots
 
         # Original circuit should be unchanged
-        assert circuit._shots == qp.measurements.Shots(50)
+        assert circuit._shots == qp.measurements.Shots(50)  # pylint: disable=protected-access
 
     def test_no_warning_if_shots_not_updated_set_shots(self):
         """Test that no warning is raised if set_shots is called but the shots value is unchanged."""
@@ -2264,7 +2263,7 @@ class TestSetShots:
             return qp.expval(qp.PauliZ(0))
 
         # Check that shots are set correctly
-        assert circuit._shots == qp.measurements.Shots(100)
+        assert circuit._shots == qp.measurements.Shots(100)  # pylint: disable=protected-access
 
         # Check that other properties are preserved
         assert circuit.diff_method == "parameter-shift"
@@ -2281,7 +2280,7 @@ class TestSetShots:
             qp.RX(1.0, wires=0)
             return qp.sample(qp.PauliZ(0))
 
-        assert circuit._shots == qp.measurements.Shots(500)
+        assert circuit._shots == qp.measurements.Shots(500)  # pylint: disable=protected-access
         result = circuit()
         assert len(result) == 500
 
@@ -2295,6 +2294,7 @@ class TestSetShots:
             qp.RX(1.0, wires=0)
             return qp.expval(qp.PauliZ(0))
 
+        # pylint: disable-next=protected-access
         assert circuit._shots is None or circuit._shots.total_shots is None
         result = circuit()
         assert isinstance(result, (float, np.floating))
@@ -2313,8 +2313,8 @@ class TestSetShots:
             qp.RX(1.0, wires=0)
             return qp.sample(qp.PauliZ(0))
 
-        assert circuit._shots.total_shots == 85  # 20*2 + 15*3
-        assert circuit._shots.shot_vector == ((20, 2), (15, 3))
+        assert circuit._shots.total_shots == 85  # 20*2 + 15*3  # pylint: disable=protected-access
+        assert circuit._shots.shot_vector == ((20, 2), (15, 3))  # pylint: disable=protected-access
         result = circuit()
         assert isinstance(result, tuple)
         assert len(result) == 5  # 2 + 3 groups
@@ -2336,7 +2336,9 @@ class TestSetShots:
             return qp.expval(qp.PauliZ(0))
 
         # Both should have analytic mode
+        # pylint: disable-next=protected-access
         assert positional_circuit._shots is None or positional_circuit._shots.total_shots is None
+        # pylint: disable-next=protected-access
         assert keyword_circuit._shots is None or keyword_circuit._shots.total_shots is None
 
         # Both should produce the same results for analytic case
@@ -2368,7 +2370,9 @@ class TestSetShots:
         direct_circuit = set_shots(base_circuit, shots=None)
 
         # Both should have analytic mode
+        # pylint: disable-next=protected-access
         assert positional_circuit._shots is None or positional_circuit._shots.total_shots is None
+        # pylint: disable-next=protected-access
         assert direct_circuit._shots is None or direct_circuit._shots.total_shots is None
 
         # Both should produce the same results
@@ -2420,7 +2424,7 @@ class TestSetShots:
             return qp.sample()
 
         # Total shots: 10*5 + 20*3 + 50 = 50 + 60 + 50 = 160
-        assert circuit._shots.total_shots == 160
+        assert circuit._shots.total_shots == 160  # pylint: disable=protected-access
         result = circuit()
         assert isinstance(result, tuple)
         # Should have 5 + 3 + 1 = 9 result groups
@@ -2438,7 +2442,7 @@ class TestSetShots:
             qp.RX(-1.0, wires=0)  # Should be cancelled
             return qp.sample(qp.PauliZ(0))
 
-        assert circuit._shots == qp.measurements.Shots(250)
+        assert circuit._shots == qp.measurements.Shots(250)  # pylint: disable=protected-access
         result = circuit()
         assert len(result) == 250
 

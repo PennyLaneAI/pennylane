@@ -13,7 +13,9 @@
 # limitations under the License.
 """Functions to apply operations to a qubit mixed state."""
 
+# Overrides and callbacks throughout this module use specialized signatures.
 # pylint: disable=unused-argument
+
 
 from functools import singledispatch
 from string import ascii_letters as alphabet

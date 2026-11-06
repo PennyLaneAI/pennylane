@@ -15,7 +15,10 @@
 Unit tests for the ``RotosolveOptimizer``.
 """
 
-# pylint: disable=too-many-arguments,too-few-public-methods
+# Tests parameterize cases through explicit fixture and helper arguments.
+# pylint: disable=too-many-arguments
+
+
 import functools
 
 import pytest
@@ -195,12 +198,17 @@ all_substep_kwargs = [
     list(zip(substep_optimizers, all_substep_kwargs)),
 )
 class TestWithClassicalFunction:
-    # pylint: disable=unused-argument
     def test_number_of_function_calls(
-        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
+        self,
+        fun,
+        x_min,  # pylint: disable=unused-argument
+        param,
+        nums_freq,
+        exp_num_calls,
+        substep_optimizer,
+        substep_kwargs,
     ):
         """Tests that per parameter 2R+1 function calls are used for an update step."""
-        # pylint: disable=too-many-arguments
         num_calls = 0
 
         @functools.wraps(fun)
@@ -225,7 +233,14 @@ class TestWithClassicalFunction:
         assert num_calls == exp_num_calls
 
     def test_single_step_convergence(
-        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
+        self,
+        fun,
+        x_min,
+        param,
+        nums_freq,
+        exp_num_calls,  # pylint: disable=unused-argument
+        substep_optimizer,
+        substep_kwargs,
     ):
         """Tests convergence for easy classical functions in a single Rotosolve step.
         Includes testing of the parameter output shape and the old cost when using step_and_cost."""
@@ -264,7 +279,6 @@ class TestWithClassicalFunction:
         )
 
         # Now with step_and_cost and trainable params
-        # pylint:disable=unbalanced-tuple-unpacking
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             fun,
             *param,
@@ -283,7 +297,14 @@ class TestWithClassicalFunction:
         assert np.isclose(old_cost, fun(*param))
 
     def test_full_output(
-        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
+        self,
+        fun,
+        x_min,  # pylint: disable=unused-argument
+        param,
+        nums_freq,
+        exp_num_calls,  # pylint: disable=unused-argument
+        substep_optimizer,
+        substep_kwargs,
     ):
         """Tests the ``full_output`` feature of Rotosolve, delivering intermediate cost
         function values at the univariate optimization substeps."""
@@ -375,7 +396,7 @@ classical_nums_frequency_deact = [
         )
     ),
 )
-class TestDeactivatedTrainingWithClassicalFunctions:
+class TestDeactivatedTrainingWithClassicalFunctions:  # pylint: disable=too-few-public-methods
     def test_single_step(self, fun, x_min, param, num_freq):
         """Tests convergence for easy classical functions in a single Rotosolve step
         with some arguments deactivated for training.
@@ -400,7 +421,6 @@ class TestDeactivatedTrainingWithClassicalFunctions:
             atol=1e-5,
         )
 
-        # pylint:disable=unbalanced-tuple-unpacking
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             fun,
             *param,
@@ -511,7 +531,6 @@ class TestWithQNodes:
         assert (np.isscalar(new_param_step) and np.isscalar(param)) or len(new_param_step) == len(
             param
         )
-        # pylint:disable=unbalanced-tuple-unpacking
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             qnode,
             *param,

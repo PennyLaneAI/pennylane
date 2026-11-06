@@ -36,10 +36,6 @@ from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
-# pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
-# pylint: disable=use-implicit-booleaness-not-comparison
-
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
@@ -48,7 +44,7 @@ I_broadcasted = I[pnp.newaxis]
 def test_basis_deprecation():
     """Test that Operation.basis is deprecated."""
 
-    class MyOp(Operation):
+    class MyOp(Operation):  # pylint: disable=redefined-outer-name, too-few-public-methods
         pass
 
     with pytest.warns(PennyLaneDeprecationWarning, match="Operation.basis is deprecated"):
@@ -58,7 +54,7 @@ def test_basis_deprecation():
 def test_operator2_isinstance_operator_operation():
     """Test that anything that inherits from Operator2 is an Operator."""
 
-    class NewOp(Operator2):
+    class NewOp(Operator2):  # pylint: disable=too-few-public-methods
         """dummy operator2"""
 
         dynamic_argnames = ()
@@ -80,7 +76,7 @@ class TestOperator1:
     def test_operator1_against_new_op(self):
         """Test that Operator1 checks reject new operator interface."""
 
-        class NewOp(Operator2):
+        class NewOp(Operator2):  # pylint: disable=too-few-public-methods
             """dummy operator2"""
 
             dynamic_argnames = ()
@@ -95,7 +91,7 @@ class TestOperator1:
     def test_operator1_against_old_op(self):
         """Test that Operator1 checks accept old interface."""
 
-        class OldOp(Operator):
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
             pass
 
         old_op = OldOp(wires=0)
@@ -111,12 +107,12 @@ class TestOperator1:
     def test_inheritance_switch_for_Operator(self):
         """Test that inheriting from Operator1 switches it out for Operator."""
 
-        class OldOp(Operator1):
+        class OldOp(Operator1):  # pylint: disable=too-few-public-methods
             """op inheriting from Operator1"""
 
         assert OldOp.__bases__ == (Operator,)
 
-        op = OldOp(wires=0)
+        op = OldOp(wires=0)  # pylint: disable=redefined-outer-name
         assert isinstance(op, Operator)
         assert isinstance(op, Operator1)
         assert not op.has_matrix  # check it has an Operator thing
@@ -133,7 +129,7 @@ class TestOperatorConstruction:
 
     def test_operation_outside_context(self):
         """Test that an operation can be instantiated outside a QNode context"""
-        op = qp.ops.CNOT(wires=[0, 1])
+        op = qp.ops.CNOT(wires=[0, 1])  # pylint: disable=redefined-outer-name
         assert isinstance(op, qp.operation.Operation)
 
         op = qp.ops.RX(0.5, wires=0)
@@ -145,7 +141,7 @@ class TestOperatorConstruction:
     def test_incorrect_num_wires(self):
         """Test that an exception is raised if called with wrong number of wires"""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator"""
 
             num_wires = 1
@@ -156,7 +152,7 @@ class TestOperatorConstruction:
     def test_non_unique_wires(self):
         """Test that an exception is raised if called with identical wires"""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator"""
 
             num_wires = 1
@@ -167,7 +163,7 @@ class TestOperatorConstruction:
     def test_num_wires_default_any_wires(self):
         """Test that num_wires is None by default."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator"""
 
         assert DummyOp.num_wires is None
@@ -176,7 +172,7 @@ class TestOperatorConstruction:
     def test_incorrect_num_params(self):
         """Test that an exception is raised if called with wrong number of parameters"""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator that declares num_params as an instance property"""
 
             num_wires = 1
@@ -189,10 +185,10 @@ class TestOperatorConstruction:
         with pytest.raises(ValueError, match="wrong number of parameters"):
             DummyOp(0.5, 0.6, wires=0)
 
-        op = DummyOp(0.5, wires=0)
+        op = DummyOp(0.5, wires=0)  # pylint: disable=redefined-outer-name
         assert op.num_params == 1
 
-        class DummyOp2(qp.operation.Operator):
+        class DummyOp2(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator that declares num_params as a class property"""
 
             num_params = 4
@@ -206,7 +202,7 @@ class TestOperatorConstruction:
         assert op2.num_params == 4
         assert DummyOp2.num_params == 4
 
-        class DummyOp3(qp.operation.Operator):
+        class DummyOp3(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator that does not declare num_params at all"""
 
             num_wires = 1
@@ -219,21 +215,21 @@ class TestOperatorConstruction:
     def test_incorrect_ndim_params(self):
         """Test that an exception is raised if called with wrongly-shaped parameters"""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator that declares ndim_params as an instance property"""
 
             num_wires = 1
             grad_method = "A"
             ndim_params = (0,)
 
-        op = DummyOp([[[0.5], [0.1]]], wires=0)
+        op = DummyOp([[[0.5], [0.1]]], wires=0)  # pylint: disable=redefined-outer-name
         with pytest.raises(ValueError, match=r"wrong number\(s\) of dimensions in parameters"):
             _ = op.batch_size
 
         op = DummyOp(0.5, wires=0)
         assert op.ndim_params == (0,)
 
-        class DummyOp2(qp.operation.Operator):
+        class DummyOp2(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             ndim_params = (1, 2)
@@ -248,7 +244,7 @@ class TestOperatorConstruction:
         assert op2.ndim_params == (1, 2)
         assert DummyOp2.ndim_params == (1, 2)
 
-        class DummyOp3(qp.operation.Operator):
+        class DummyOp3(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator that does not declare ndim_params at all"""
 
             num_wires = 1
@@ -260,7 +256,7 @@ class TestOperatorConstruction:
         # because it will simply set `ndim_params` to the ndims of the provided arguments
         assert op3.ndim_params == (0, 2)
 
-        class DummyOp4(qp.operation.Operator):
+        class DummyOp4(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             ndim_params = (0, 2)
@@ -274,23 +270,23 @@ class TestOperatorConstruction:
     def test_default_pauli_rep(self):
         """Test that the default _pauli_rep attribute is None"""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator"""
 
             num_wires = 1
 
-        op = DummyOp(wires=0)
+        op = DummyOp(wires=0)  # pylint: disable=redefined-outer-name
         assert op.pauli_rep is None
 
     def test_list_or_tuple_params_casted_into_numpy_array(self):
         """Test that list parameters are casted into numpy arrays."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator"""
 
             num_wires = 1
 
-        op = DummyOp([1, 2, 3], wires=0)
+        op = DummyOp([1, 2, 3], wires=0)  # pylint: disable=redefined-outer-name
 
         assert isinstance(op.data[0], np.ndarray)
 
@@ -300,11 +296,11 @@ class TestOperatorConstruction:
     def test_data_is_read_only(self):
         """Test that operator data is exposed through a read-only property."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             num_params = 1
 
-        op = DummyOp(1.234, wires=0)
+        op = DummyOp(1.234, wires=0)  # pylint: disable=redefined-outer-name
 
         with pytest.raises(
             AttributeError, match=r"property 'data' of '.*DummyOp' object has no setter"
@@ -314,18 +310,18 @@ class TestOperatorConstruction:
     def test_wires_by_final_argument(self):
         """Test that wires can be passed as the final positional argument."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             num_params = 1
 
-        op = DummyOp(1.234, "a")
+        op = DummyOp(1.234, "a")  # pylint: disable=redefined-outer-name
         assert op.wires[0] == "a"
         assert op.data == (1.234,)
 
     def test_no_wires(self):
         """Test an error is raised if no wires are passed."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             num_params = 1
 
@@ -335,7 +331,7 @@ class TestOperatorConstruction:
     def test_no_wires_for_op_with_any_wires(self):
         """Test that an operator that allows any number of wires can have zero wires."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             pass
 
         assert DummyOp(wires=()).wires == qp.wires.Wires(())
@@ -343,28 +339,29 @@ class TestOperatorConstruction:
     def test_name_setter(self):
         """Tests that we can set the name of an operator"""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator"""
 
             num_wires = 1
 
-        op = DummyOp(wires=0)
+        op = DummyOp(wires=0)  # pylint: disable=redefined-outer-name
         op.name = "MyOp"  # pylint: disable=attribute-defined-outside-init
         assert op.name == "MyOp"
 
     def test_default_hyperparams(self):
         """Tests that the hyperparams attribute is defined for all operations."""
 
+        # pylint: disable-next=redefined-outer-name, too-few-public-methods
         class MyOp(qp.operation.Operation):
             num_wires = 1
 
-        class MyOpOverwriteInit(qp.operation.Operation):
+        class MyOpOverwriteInit(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
-            def __init__(self, wires):  # pylint:disable=super-init-not-called
+            def __init__(self, wires):
                 pass
 
-        op = MyOp(wires=0)
+        op = MyOp(wires=0)  # pylint: disable=redefined-outer-name
         assert op.hyperparameters == {}
 
         op = MyOpOverwriteInit(wires=0)
@@ -373,10 +370,11 @@ class TestOperatorConstruction:
     def test_custom_hyperparams(self):
         """Tests that an operation can add custom hyperparams."""
 
+        # pylint: disable-next=redefined-outer-name, too-few-public-methods
         class MyOp(qp.operation.Operation):
             num_wires = 1
 
-            def __init__(self, wires, basis_state=None):  # pylint:disable=super-init-not-called
+            def __init__(self, wires, basis_state=None):  # pylint: disable=unused-argument
                 self._hyperparameters = {"basis_state": basis_state}
 
         state = [0, 1, 0]
@@ -386,7 +384,7 @@ class TestOperatorConstruction:
         """Test that using `==` on operators behaves the same as
         `qp.equal`."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
         op1 = DummyOp(0)
@@ -398,7 +396,7 @@ class TestOperatorConstruction:
     def test_hash_correctness(self):
         """Test that the hash of two equivalent operators is the same."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
         op1 = DummyOp(0)
@@ -418,20 +416,20 @@ class TestOperatorConstruction:
     def test_lazy_ndim_params_and_batch_size(self, data, batch_size, ndim_params):
         """Test that ndim_params and batch_size are lazy properties."""
 
-        class DummyOp(Operator):
+        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             num_params = 1
             ndim_params = (0,)
 
-        op = DummyOp(data, wires=[0])
-        assert op._batch_size is _UNSET_BATCH_SIZE
-        assert op._ndim_params is _UNSET_BATCH_SIZE
+        op = DummyOp(data, wires=[0])  # pylint: disable=redefined-outer-name
+        assert op._batch_size is _UNSET_BATCH_SIZE  # pylint: disable=protected-access
+        assert op._ndim_params is _UNSET_BATCH_SIZE  # pylint: disable=protected-access
         assert op.batch_size == batch_size
-        assert op._ndim_params == (ndim_params,)
+        assert op._ndim_params == (ndim_params,)  # pylint: disable=protected-access
         assert op.ndim_params == (0,)
 
 
-class TestPytreeMethods:
+class TestPytreeMethods:  # pylint: disable=too-few-public-methods
     def test_pytree_defaults(self):
         """Test the default behavior for the flatten and unflatten methods."""
 
@@ -444,9 +442,9 @@ class TestPytreeMethods:
                 super().__init__(x1, x2, wires=wires)
 
         info = "value"
-        op = CustomOp(1.2, 2.3, wires=(0, 1), info=info)
+        op = CustomOp(1.2, 2.3, wires=(0, 1), info=info)  # pylint: disable=redefined-outer-name
 
-        data, metadata = op._flatten()
+        data, metadata = op._flatten()  # pylint: disable=protected-access
         assert data == (1.2, 2.3)
         assert len(metadata) == 2
         assert metadata[0] == qp.wires.Wires((0, 1))
@@ -455,7 +453,7 @@ class TestPytreeMethods:
         # check metadata is hashable
         _ = {metadata: 0}
 
-        new_op = CustomOp._unflatten(*op._flatten())
+        new_op = CustomOp._unflatten(*op._flatten())  # pylint: disable=protected-access
         qp.assert_equal(op, new_op)
         assert new_op.i_got_initialized
 
@@ -481,13 +479,13 @@ class TestBroadcasting:
         r"""Test that initialization of an operator with broadcasted parameters
         works and sets the ``batch_size`` correctly."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             ndim_params = (0, 2)
             num_wires = 1
 
-        op = DummyOp(*params, wires=0)
+        op = DummyOp(*params, wires=0)  # pylint: disable=redefined-outer-name
         assert op.ndim_params == (0, 2)
         assert op.batch_size == exp_batch_size
 
@@ -497,14 +495,14 @@ class TestBroadcasting:
         r"""Test that initialization of an operator with broadcasted parameters
         works and sets the ``batch_size`` correctly with Autograd parameters."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             ndim_params = (0, 2)
             num_wires = 1
 
         params = tuple(pnp.array(p, requires_grad=True) for p in params)
-        op = DummyOp(*params, wires=0)
+        op = DummyOp(*params, wires=0)  # pylint: disable=redefined-outer-name
         assert op.ndim_params == (0, 2)
         assert op.batch_size == exp_batch_size
 
@@ -515,14 +513,14 @@ class TestBroadcasting:
         works and sets the ``batch_size`` correctly with JAX parameters."""
         import jax
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             ndim_params = (0, 2)
             num_wires = 1
 
         params = tuple(jax.numpy.array(p) for p in params)
-        op = DummyOp(*params, wires=0)
+        op = DummyOp(*params, wires=0)  # pylint: disable=redefined-outer-name
         assert op.ndim_params == (0, 2)
         assert op.batch_size == exp_batch_size
 
@@ -533,14 +531,14 @@ class TestBroadcasting:
         works and sets the ``batch_size`` correctly with Torch parameters."""
         import torch
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             ndim_params = (0, 2)
             num_wires = 1
 
         params = tuple(torch.tensor(p, requires_grad=True) for p in params)
-        op = DummyOp(*params, wires=0)
+        op = DummyOp(*params, wires=0)  # pylint: disable=redefined-outer-name
         assert op.ndim_params == (0, 2)
         assert op.batch_size == exp_batch_size
 
@@ -551,11 +549,12 @@ class TestHasReprProperties:
     def test_has_matrix_true(self):
         """Test has_matrix property detects overriding of `compute_matrix` method."""
 
+        # pylint: disable-next=redefined-outer-name, too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
 
             @staticmethod
-            def compute_matrix(*params, **hyperparams):
+            def compute_matrix(*params, **hyperparams):  # pylint: disable=unused-argument
                 return np.eye(2)
 
         assert MyOp.has_matrix is True
@@ -564,6 +563,7 @@ class TestHasReprProperties:
     def test_has_matrix_true_overridden_matrix(self):
         """Test has_matrix is true if `matrix` is overridden instead of `compute_matrix`."""
 
+        # pylint: disable-next=redefined-outer-name, too-few-public-methods
         class MyOp(qp.operation.Operator):
             def matrix(self, _=None):
                 return np.eye(2)
@@ -574,6 +574,7 @@ class TestHasReprProperties:
     def test_has_matrix_false(self):
         """Test has_matrix property defaults to false if `compute_matrix` not overwritten."""
 
+        # pylint: disable-next=redefined-outer-name, too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
 
@@ -587,12 +588,14 @@ class TestHasReprProperties:
         rng = qp.numpy.random.default_rng(seed=seed)
         shape = qp.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
+        # pylint: disable-next=redefined-outer-name
         op = qp.StronglyEntanglingLayers(params, wires=range(2))
         assert op.has_matrix is False
 
     def test_has_adjoint_true(self):
         """Test has_adjoint property detects overriding of `adjoint` method."""
 
+        # pylint: disable-next=redefined-outer-name, too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
             adjoint = lambda self: self
@@ -603,6 +606,7 @@ class TestHasReprProperties:
     def test_has_adjoint_false(self):
         """Test has_adjoint property defaults to false if `adjoint` not overwritten."""
 
+        # pylint: disable-next=redefined-outer-name, too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
 
@@ -612,12 +616,13 @@ class TestHasReprProperties:
     def test_has_decomposition_true_compute_decomposition(self):
         """Test has_decomposition property detects overriding of `compute_decomposition` method."""
 
+        # pylint: disable-next=redefined-outer-name, too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
             num_params = 1
 
             @staticmethod
-            def compute_decomposition(x, wires=None):  # pylint:disable=arguments-differ
+            def compute_decomposition(x, wires=None):
                 return [qp.RX(x, wires=wires)]
 
         assert MyOp.has_decomposition is True
@@ -626,6 +631,7 @@ class TestHasReprProperties:
     def test_has_decomposition_true_decomposition(self):
         """Test has_decomposition property detects overriding of `decomposition` method."""
 
+        # pylint: disable-next=redefined-outer-name, too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
             num_params = 1
@@ -639,7 +645,7 @@ class TestHasReprProperties:
     def test_has_decomposition_graph_decomp(self):
         """Test that an operator provides a decomposition if it has a register graph decomp."""
 
-        class SomeRandomName(qp.operation.Operator):
+        class SomeRandomName(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             pass
 
         @qp.register_resources({qp.X: 1})
@@ -654,7 +660,7 @@ class TestHasReprProperties:
         """Test that operators with multiple decompositions and conditions have
         correct has_decomposition properties."""
 
-        class MNBV(qp.operation.Operator):
+        class MNBV(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             @property
             def resource_params(self):
                 return {"num_wires": len(self.wires)}
@@ -679,7 +685,7 @@ class TestHasReprProperties:
         """Test has_decomposition property defaults to false if neither
         `decomposition` nor `compute_decomposition` are overwritten."""
 
-        class TREWQ(qp.operation.Operator):
+        class TREWQ(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
         assert TREWQ(wires=0).has_decomposition is False
@@ -688,12 +694,13 @@ class TestHasReprProperties:
         """Test has_diagonalizing_gates property detects
         overriding of `compute_diagonalizing_gates` method."""
 
+        # pylint: disable-next=redefined-outer-name, too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
             num_params = 1
 
             @staticmethod
-            def compute_diagonalizing_gates(x, wires=None):  # pylint:disable=arguments-differ
+            def compute_diagonalizing_gates(x, wires=None):  # pylint: disable=unused-argument
                 return []
 
         assert MyOp.has_diagonalizing_gates is True
@@ -703,6 +710,7 @@ class TestHasReprProperties:
         """Test has_diagonalizing_gates property detects
         overriding of `diagonalizing_gates` method."""
 
+        # pylint: disable-next=redefined-outer-name, too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
             num_params = 1
@@ -717,6 +725,7 @@ class TestHasReprProperties:
         """Test has_diagonalizing_gates property defaults to false if neither
         `diagonalizing_gates` nor `compute_diagonalizing_gates` are overwritten."""
 
+        # pylint: disable-next=redefined-outer-name, too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
 
@@ -726,6 +735,7 @@ class TestHasReprProperties:
     def test_has_generator_true(self):
         """Test `has_generator` property detects overriding of `generator` method."""
 
+        # pylint: disable-next=redefined-outer-name, too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
 
@@ -740,12 +750,13 @@ class TestHasReprProperties:
         """Test has_generator with a concrete operation (RZ)
         that does have a generator defined."""
 
-        op = qp.RZ(0.3, 0)
+        op = qp.RZ(0.3, 0)  # pylint: disable=redefined-outer-name
         assert op.has_generator is True
 
     def test_has_generator_false(self):
         """Test `has_generator` property defaults to false if `generator` not overwritten."""
 
+        # pylint: disable-next=redefined-outer-name, too-few-public-methods
         class MyOp(qp.operation.Operator):
             num_wires = 1
 
@@ -756,7 +767,7 @@ class TestHasReprProperties:
         """Test has_generator with a concrete operation (Rot)
         that does not have a generator defined."""
 
-        op = qp.Rot(0.3, 0.2, 0.1, 0)
+        op = qp.Rot(0.3, 0.2, 0.1, 0)  # pylint: disable=redefined-outer-name
         assert op.has_generator is False
 
 
@@ -766,25 +777,26 @@ class TestModificationMethods:
     def test_simplify_method(self):
         """Test that simplify method returns the same instance."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             num_wires = 1
 
-        op = DummyOp(wires=0)
+        op = DummyOp(wires=0)  # pylint: disable=redefined-outer-name
         sim_op = op.simplify()
         assert op is sim_op
 
     def test_map_wires(self):
         """Test the map_wires method."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             num_wires = 3
 
-        op = DummyOp(wires=[0, 1, 2])
-        op._pauli_rep = qp.pauli.PauliSentence(  # pylint:disable=attribute-defined-outside-init
+        op = DummyOp(wires=[0, 1, 2])  # pylint: disable=redefined-outer-name
+        # pylint: disable-next=attribute-defined-outside-init, protected-access
+        op._pauli_rep = qp.pauli.PauliSentence(
             {
                 qp.pauli.PauliWord({0: "X", 1: "Y", 2: "Z"}): 1.1,
                 qp.pauli.PauliWord({0: "Z", 1: "X", 2: "Y"}): 2.2,
@@ -807,12 +819,12 @@ class TestModificationMethods:
         """Test that the map_wires method doesn't change wires that are not present in the wire
         map."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             num_wires = 3
 
-        op = DummyOp(wires=[0, 1, 2])
+        op = DummyOp(wires=[0, 1, 2])  # pylint: disable=redefined-outer-name
         wire_map = {0: 10, 2: 12}
         mapped_op = op.map_wires(wire_map=wire_map)
         assert op is not mapped_op
@@ -827,7 +839,7 @@ class TestOperationConstruction:
         """Test that an operation with a gradient recipe that depends on
         its instantiated parameter values works correctly"""
 
-        class DummyOp(qp.operation.Operation):
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operation"""
 
             num_wires = 1
@@ -839,7 +851,7 @@ class TestOperationConstruction:
                 return ([[1.0, 1.0, x], [1.0, 0.0, -x]],)
 
         x = 0.654
-        op = DummyOp(x, wires=0)
+        op = DummyOp(x, wires=0)  # pylint: disable=redefined-outer-name
         assert op.grad_recipe == ([[1.0, 1.0, x], [1.0, 0.0, -x]],)
 
     def test_default_grad_method_with_frequencies(self):
@@ -847,7 +859,7 @@ class TestOperationConstruction:
         if ``parameter_frequencies`` are present.
         """
 
-        class DummyOp(qp.operation.Operation):
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operation"""
 
             num_wires = 1
@@ -857,7 +869,7 @@ class TestOperationConstruction:
                 return [(0.4, 1.2)]
 
         x = 0.654
-        op = DummyOp(x, wires=0)
+        op = DummyOp(x, wires=0)  # pylint: disable=redefined-outer-name
         assert op.grad_method == "A"
 
     def test_default_grad_method_with_generator(self):
@@ -865,7 +877,7 @@ class TestOperationConstruction:
         if a generator is present to determine parameter_frequencies from.
         """
 
-        class DummyOp(qp.operation.Operation):
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operation"""
 
             num_wires = 1
@@ -874,7 +886,7 @@ class TestOperationConstruction:
                 return -0.2 * qp.PauliX(wires=self.wires)
 
         x = 0.654
-        op = DummyOp(x, wires=0)
+        op = DummyOp(x, wires=0)  # pylint: disable=redefined-outer-name
         assert op.grad_method == "A"
 
     def test_default_grad_method_numeric(self):
@@ -882,13 +894,13 @@ class TestOperationConstruction:
         if no information is present to deduce an analytic gradient method.
         """
 
-        class DummyOp(qp.operation.Operation):
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operation"""
 
             num_wires = 1
 
         x = 0.654
-        op = DummyOp(x, wires=0)
+        op = DummyOp(x, wires=0)  # pylint: disable=redefined-outer-name
         assert op.grad_method == "F"
 
     def test_default_grad_method_with_grad_recipe(self):
@@ -896,14 +908,14 @@ class TestOperationConstruction:
         if a grad_recipe is present.
         """
 
-        class DummyOp(qp.operation.Operation):
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operation"""
 
             num_wires = 1
             grad_recipe = ["not a recipe"]
 
         x = 0.654
-        op = DummyOp(x, wires=0)
+        op = DummyOp(x, wires=0)  # pylint: disable=redefined-outer-name
         assert op.grad_method == "A"
 
     def test_default_grad_no_param(self):
@@ -911,19 +923,19 @@ class TestOperationConstruction:
         if an operation does not have a parameter.
         """
 
-        class DummyOp(qp.operation.Operation):
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operation"""
 
             num_wires = 1
 
-        op = DummyOp(wires=0)
+        op = DummyOp(wires=0)  # pylint: disable=redefined-outer-name
         assert op.grad_method is None
 
     def test_frequencies_default_single_param(self):
         """Test that an operation with default parameter frequencies
         and a single parameter works correctly."""
 
-        class DummyOp(qp.operation.Operation):
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operation"""
 
             num_wires = 1
@@ -933,14 +945,14 @@ class TestOperationConstruction:
                 return -0.2 * qp.PauliX(wires=self.wires)
 
         x = 0.654
-        op = DummyOp(x, wires=0)
+        op = DummyOp(x, wires=0)  # pylint: disable=redefined-outer-name
         assert parameter_frequencies(op) == [(0.4,)]
 
     def test_frequencies_default_multi_param(self):
         """Test that an operation with default parameter frequencies and multiple
         parameters raises an error when calling parameter_frequencies."""
 
-        class DummyOp(qp.operation.Operation):
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operation"""
 
             num_params = 3
@@ -948,7 +960,7 @@ class TestOperationConstruction:
             grad_method = "A"
 
         x = [0.654, 2.31, 0.1]
-        op = DummyOp(*x, wires=0)
+        op = DummyOp(*x, wires=0)  # pylint: disable=redefined-outer-name
         with pytest.raises(
             qp.exceptions.OperatorPropertyUndefined, match="DummyOp does not have parameter"
         ):
@@ -959,7 +971,7 @@ class TestOperationConstruction:
         """Test that an operation with parameter frequencies that depend on
         its instantiated parameter values works correctly"""
 
-        class DummyOp(qp.operation.Operation):
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operation"""
 
             num_params = num_param
@@ -972,7 +984,7 @@ class TestOperationConstruction:
                 return [(0.2, _x) for _x in x]
 
         x = [0.654, 2.31][:num_param]
-        op = DummyOp(*x, wires=0)
+        op = DummyOp(*x, wires=0)  # pylint: disable=redefined-outer-name
         f = parameter_frequencies(op)
         for i in range(num_param):
             assert f[i] == (0.2, x[i])
@@ -983,14 +995,14 @@ class TestOperationConstruction:
         DummyOp = copy.copy(qp.DoubleExcitationPlus)
         DummyOp.parameter_frequencies = qp.operation.Operation.parameter_frequencies
 
-        op = DummyOp(0.7, [0, 1, 2, 3])
+        op = DummyOp(0.7, [0, 1, 2, 3])  # pylint: disable=redefined-outer-name
         assert isinstance(op.generator(), qp.SparseHamiltonian)
         assert parameter_frequencies(op) == [(1.0,)]
 
     def test_no_wires_passed(self):
         """Test exception raised if no wires are passed"""
 
-        class DummyOp(qp.operation.Operation):
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operation"""
 
             num_wires = 1
@@ -1003,25 +1015,25 @@ class TestOperationConstruction:
     def test_control_wires(self):
         """Test that control_wires defaults to an empty Wires object."""
 
-        class DummyOp(qp.operation.Operation):
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operation"""
 
             num_wires = 1
             grad_method = None
 
-        op = DummyOp(1.0, wires=0)
+        op = DummyOp(1.0, wires=0)  # pylint: disable=redefined-outer-name
         assert op.control_wires == qp.wires.Wires([])
 
     def test_is_hermitian(self):
         """Test that is_hermitian defaults to False for an Operator"""
 
-        class DummyOp(qp.operation.Operation):
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operation"""
 
             num_wires = 1
             grad_method = None
 
-        op = DummyOp(wires=0)
+        op = DummyOp(wires=0)  # pylint: disable=redefined-outer-name
         assert op.is_verified_hermitian is False
 
 
@@ -1031,7 +1043,7 @@ class TestObservableConstruction:
     def test_construction_with_wires_pos_arg(self):
         """Test that the wires can be given as a positional argument"""
 
-        class DummyObserv(qp.operation.Operator):
+        class DummyObserv(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom observable"""
 
             num_wires = 1
@@ -1066,7 +1078,7 @@ class TestObservableConstruction:
     def test_raises_if_no_wire_is_given(self):
         """Test that an error is raised if no wire is passed at initialization."""
 
-        class DummyObservable(qp.operation.Operator):
+        class DummyObservable(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
         with pytest.raises(Exception, match="Must specify the wires *"):
@@ -1075,24 +1087,24 @@ class TestObservableConstruction:
     def test_is_hermitian(self):
         """Test that the id attribute of an observable can be set."""
 
-        class DummyObserv(qp.operation.Operator):
+        class DummyObserv(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             r"""Dummy custom observable"""
 
             num_wires = 1
             grad_method = None
 
-        op = DummyObserv(wires=0)
+        op = DummyObserv(wires=0)  # pylint: disable=redefined-outer-name
         assert op.is_verified_hermitian is False
 
 
-class TestOperatorIntegration:
+class TestOperatorIntegration:  # pylint: disable=too-many-public-methods
     """Integration tests for the Operator class"""
 
     def test_pow_method_with_non_numeric_power_raises_error(self):
         """Test that when raising an Operator to a power that is not a number raises
         a ValueError."""
 
-        class DummyOp(qp.operation.Operation):
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             r"""Dummy custom operator"""
 
             num_wires = 1
@@ -1158,7 +1170,7 @@ class TestOperatorIntegration:
 
     def test_sub_obs_from_op(self):
         """Test that __sub__ returns an SProd to be consistent with other Operator dunders."""
-        op = qp.S(0) - qp.PauliX(1)
+        op = qp.S(0) - qp.PauliX(1)  # pylint: disable=redefined-outer-name
         assert isinstance(op, Sum)
         assert isinstance(op[1], SProd)
         qp.assert_equal(op[0], qp.S(0))
@@ -1238,7 +1250,7 @@ class TestOperatorIntegration:
             def __rmatmul__(self, other):
                 return True
 
-        op = qp.PauliX(0)
+        op = qp.PauliX(0)  # pylint: disable=redefined-outer-name
         dummy = Dummy()
         assert op + dummy is True
         assert op - dummy is True
@@ -1295,12 +1307,12 @@ class TestOperatorIntegration:
 
 
 # Dummy class inheriting from Operator
-class MyOp(Operator):
+class MyOp(Operator):  # pylint: disable=too-few-public-methods
     num_wires = 1
 
 
 # Dummy class inheriting from Operation
-class MyGate(Operation):
+class MyGate(Operation):  # pylint: disable=too-few-public-methods
     num_wires = 1
 
 
@@ -1314,10 +1326,10 @@ class TestDefaultRepresentations:
     def test_decomposition_undefined(self):
         """Tests that custom error is raised in the default decomposition representation."""
 
-        class Operator_with_no_decomp(Operator):
+        class Operator_with_no_decomp(Operator):  # pylint: disable=too-few-public-methods
             pass
 
-        op = Operator_with_no_decomp(wires=0)
+        op = Operator_with_no_decomp(wires=0)  # pylint: disable=redefined-outer-name
         with pytest.raises(qp.operation.DecompositionUndefinedError):
             Operator_with_no_decomp.compute_decomposition(wires=[1])
         with pytest.raises(qp.operation.DecompositionUndefinedError):
@@ -1326,6 +1338,7 @@ class TestDefaultRepresentations:
     def test_decomposition_graph_fallback(self):
         """Test that the first registered decomp can be used if compute_decomposition is not overridden."""
 
+        # pylint: disable-next=too-few-public-methods
         class OpWithACustomName98786(qp.operation.Operator):
             pass
 
@@ -1342,7 +1355,7 @@ class TestDefaultRepresentations:
         [out] = OpWithACustomName98786(0.5, wires=0).decomposition()
         qp.assert_equal(out, qp.RX(0.5, wires=0))
 
-        op = OpWithACustomName98786(0.5, wires=0)
+        op = OpWithACustomName98786(0.5, wires=0)  # pylint: disable=redefined-outer-name
         with qp.queuing.AnnotatedQueue() as q:
             op.decomposition()
 
@@ -1356,7 +1369,7 @@ class TestDefaultRepresentations:
         """Test that operators with multiple decompositions and conditions have
         correct has_decomposition properties."""
 
-        class BVCX(qp.operation.Operator):
+        class BVCX(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             @property
             def resource_params(self):
                 return {"num_wires": len(self.wires)}
@@ -1440,15 +1453,15 @@ class TestDefaultRepresentations:
             gate.pow(1.234)
 
 
-class MyOpWithMat(Operator):
+class MyOpWithMat(Operator):  # pylint: disable=too-few-public-methods
     num_wires = 1
 
     @staticmethod
-    def compute_matrix(theta):  # pylint:disable=arguments-differ
+    def compute_matrix(theta):
         return np.tensordot(theta, np.array([[0.4, 1.2], [1.2, 0.4]]), axes=0)
 
 
-class TestInheritedRepresentations:
+class TestInheritedRepresentations:  # pylint: disable=too-few-public-methods
     """Tests that the default representations allow for
     inheritance from other representations"""
 
@@ -1456,7 +1469,7 @@ class TestInheritedRepresentations:
         """Test that eigvals can be extracted when a matrix is defined."""
         # Test with scalar parameter
         theta = 0.3
-        op = MyOpWithMat(theta, wires=1)
+        op = MyOpWithMat(theta, wires=1)  # pylint: disable=redefined-outer-name
         eigvals = op.eigvals()
         assert np.allclose(eigvals, [1.6 * theta, -0.8 * theta])
 
@@ -1467,7 +1480,7 @@ class TestInheritedRepresentations:
         assert np.allclose(eigvals, np.array([1.6 * theta, -0.8 * theta]).T)
 
 
-class TestChannel:
+class TestChannel:  # pylint: disable=too-few-public-methods
     """Unit tests for the Channel class"""
 
     def test_instance_made_correctly(self):
@@ -1480,13 +1493,13 @@ class TestChannel:
             grad_method = "F"
 
             @staticmethod
-            def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
+            def compute_kraus_matrices(p):
                 K1 = np.sqrt(p) * X
                 K2 = np.sqrt(1 - p) * I
                 return [K1, K2]
 
         expected = np.array([[0, np.sqrt(0.1)], [np.sqrt(0.1), 0]])
-        op = DummyOp(0.1, wires=0)
+        op = DummyOp(0.1, wires=0)  # pylint: disable=redefined-outer-name
         assert np.all(op.kraus_matrices()[0] == expected)
 
 
@@ -1496,11 +1509,11 @@ class TestOperationDerivative:
     def test_no_generator_raise(self):
         """Tests if the function raises an exception if the input operation has no generator"""
 
-        class CustomOp(qp.operation.Operation):
+        class CustomOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             num_wires = 1
             num_params = 1
 
-        op = CustomOp(0.5, wires=0)
+        op = CustomOp(0.5, wires=0)  # pylint: disable=redefined-outer-name
 
         with pytest.raises(
             qp.operation.GeneratorUndefinedError,
@@ -1511,7 +1524,7 @@ class TestOperationDerivative:
     def test_rx(self):
         """Test if the function correctly returns the derivative of RX"""
         p = 0.3
-        op = qp.RX(p, wires=0)
+        op = qp.RX(p, wires=0)  # pylint: disable=redefined-outer-name
 
         derivative = operation_derivative(op)
 
@@ -1524,7 +1537,7 @@ class TestOperationDerivative:
     def test_phase(self):
         """Test if the function correctly returns the derivative of PhaseShift"""
         p = 0.3
-        op = qp.PhaseShift(p, wires=0)
+        op = qp.PhaseShift(p, wires=0)  # pylint: disable=redefined-outer-name
 
         derivative = operation_derivative(op)
         expected_derivative = np.array([[0, 0], [0, 1j * np.exp(1j * p)]])
@@ -1533,7 +1546,7 @@ class TestOperationDerivative:
     def test_cry(self):
         """Test if the function correctly returns the derivative of CRY"""
         p = 0.3
-        op = qp.CRY(p, wires=[0, 1])
+        op = qp.CRY(p, wires=[0, 1])  # pylint: disable=redefined-outer-name
 
         derivative = operation_derivative(op)
         expected_derivative = 0.5 * np.array(
@@ -1552,7 +1565,7 @@ class TestOperationDerivative:
         without any other context, the operation derivative should make no
         assumption about the wire ordering."""
         p = 0.3
-        op = qp.CRY(p, wires=[1, 0])
+        op = qp.CRY(p, wires=[1, 0])  # pylint: disable=redefined-outer-name
 
         derivative = operation_derivative(op)
         expected_derivative = 0.5 * np.array(
@@ -1569,14 +1582,12 @@ class TestOperationDerivative:
 class TestStatePrepBase:
     """Test the StatePrepBase interface."""
 
-    class DefaultPrep(StatePrepBase):
+    class DefaultPrep(StatePrepBase):  # pylint: disable=too-few-public-methods
         """A dummy class that assumes it was given a state vector."""
 
-        # pylint:disable=unused-argument,too-few-public-methods
-        def state_vector(self, wire_order=None):
+        def state_vector(self, wire_order=None):  # pylint: disable=unused-argument
             return self.parameters[0]
 
-    # pylint:disable=unused-argument,too-few-public-methods
     def test_basic_initial_state(self):
         """Tests a basic implementation of the StatePrepBase interface."""
         prep_op = self.DefaultPrep([1, 0], wires=[0])
@@ -1585,10 +1596,8 @@ class TestStatePrepBase:
     def test_child_must_implement_state_vector(self):
         """Tests that a child class that does not implement state_vector fails."""
 
-        class NoStatePrepOp(StatePrepBase):
+        class NoStatePrepOp(StatePrepBase):  # pylint: disable=too-few-public-methods
             """A class that is missing the state_vector implementation."""
-
-            # pylint:disable=abstract-class-instantiated
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             NoStatePrepOp(wires=[0])
@@ -1598,7 +1607,7 @@ class TestStatePrepBase:
         assert self.DefaultPrep([1], 0).label() == "|Ψ⟩"
 
 
-class TestCriteria:
+class TestCriteria:  # pylint: disable=too-few-public-methods
     doubleExcitation = qp.DoubleExcitation(0.1, wires=[0, 1, 2, 3])
     rx = qp.RX(qp.numpy.array(0.3, requires_grad=True), wires=1)
     stiff_rx = qp.RX(0.3, wires=1)
@@ -1616,8 +1625,7 @@ class TestCriteria:
         assert not qp.operation.is_trainable(self.cnot)
 
 
-# pylint: disable=too-few-public-methods
-class MultiRot(Operator2):
+class MultiRot(Operator2):  # pylint: disable=too-few-public-methods
     """MultiRot class used for testing purposes."""
 
     dynamic_argnames = ("angles",)
@@ -1668,7 +1676,7 @@ pairs_of_ops = [
 X2 = lambda w: MultiRot([np.pi], [w], "X")
 
 
-class TestNewOpMath:
+class TestNewOpMath:  # pylint: disable=too-few-public-methods
     """Tests dunder operations with new operator arithmetic enabled."""
 
     class TestAdd:
@@ -1677,7 +1685,7 @@ class TestNewOpMath:
         @pytest.mark.parametrize("op0,op1", pairs_of_ops)
         def test_add_operators(self, op0, op1):
             """Tests adding two operators, observable or not."""
-            op = op0 + op1
+            op = op0 + op1  # pylint: disable=redefined-outer-name
             assert isinstance(op, Sum)
             qp.assert_equal(op[0], op0)
             qp.assert_equal(op[1], op1)
@@ -1685,7 +1693,7 @@ class TestNewOpMath:
         @pytest.mark.parametrize("op0,op1", pairs_of_ops)
         def test_sub_operators(self, op0, op1):
             """Tests subtracting two operators."""
-            op = op0 - op1
+            op = op0 - op1  # pylint: disable=redefined-outer-name
             assert isinstance(op, Sum)
             qp.assert_equal(op[0], op0)
             assert isinstance(op[1], SProd)
@@ -1693,7 +1701,7 @@ class TestNewOpMath:
             qp.assert_equal(op[1].base, op1)
 
         @pytest.mark.parametrize("op", [X2(0), qp.S(0)])
-        def test_sub_with_unknown_not_supported(self, op):
+        def test_sub_with_unknown_not_supported(self, op):  # pylint: disable=redefined-outer-name
             """Test subtracting an unexpected type from an Operator."""
             with pytest.raises(TypeError, match="unsupported operand type"):
                 _ = op - "foo"
@@ -1707,7 +1715,7 @@ class TestNewOpMath:
         )
         def test_op_with_scalar(self, x0, x1):
             """Tests adding/subtracting ops with scalars."""
-            for op in [x0 + 1, 1 + x0]:
+            for op in [x0 + 1, 1 + x0]:  # pylint: disable=redefined-outer-name
                 assert isinstance(op, Sum)
                 qp.assert_equal(op[0], x0)
                 assert isinstance(op[1], SProd)
@@ -1737,7 +1745,7 @@ class TestNewOpMath:
         def test_adding_many_does_auto_simplify(self):
             """Tests that adding more than two operators creates nested Sums."""
             op0, op1, op2 = qp.S(0), qp.T(0), X2(0)
-            op = op0 + op1 + op2
+            op = op0 + op1 + op2  # pylint: disable=redefined-outer-name
             assert isinstance(op, Sum)
             assert len(op) == 3
             qp.assert_equal(op[0], op0)
@@ -1776,7 +1784,7 @@ class TestNewOpMath:
         )
         def test_mul(self, operand, base):
             """Tests multiplying an operator by a scalar coefficient works as expected."""
-            for op in [operand * base, base * operand]:
+            for op in [operand * base, base * operand]:  # pylint: disable=redefined-outer-name
                 assert isinstance(op, SProd)
                 assert qp.math.allequal(op.scalar, operand)
                 qp.assert_equal(op.base, base)
@@ -1796,13 +1804,13 @@ class TestNewOpMath:
         )
         def test_div(self, scalar, base):
             """Tests diviing an operator by a scalar coefficient works as expected."""
-            op = base / scalar
+            op = base / scalar  # pylint: disable=redefined-outer-name
             assert isinstance(op, SProd)
             assert qp.math.allequal(op.scalar, 1 / scalar)
             qp.assert_equal(op.base, base)
 
         @pytest.mark.parametrize("op", [X2(0), qp.PauliX(0)])
-        def test_mul_does_auto_simplify(self, op):
+        def test_mul_does_auto_simplify(self, op):  # pylint: disable=redefined-outer-name
             """Tests that multiplying an SProd with a scalar creates nested SProds."""
             _op = 2 * op
             nested = 0.5 * _op
@@ -1831,7 +1839,7 @@ class TestNewOpMath:
         @pytest.mark.parametrize("op0,op1", pairs_of_ops)
         def test_matmul_operators(self, op0, op1):
             """Tests matrix-multiplication of two operators, observable or not."""
-            op = op0 @ op1
+            op = op0 @ op1  # pylint: disable=redefined-outer-name
             assert isinstance(op, Prod)
             qp.assert_equal(op[0], op0)
             if isinstance(op1, Prod):
@@ -1843,7 +1851,7 @@ class TestNewOpMath:
         def test_mul_does_auto_simplify(self):
             """Tests that matrix-multiplying a Prod with another operator creates nested Prods."""
             op0, op1, op2 = qp.PauliX(0), qp.PauliY(1), X2(0)
-            op = op0 @ op1 @ op2
+            op = op0 @ op1 @ op2  # pylint: disable=redefined-outer-name
             assert isinstance(op, Prod)
             assert len(op) == 3
             qp.assert_equal(op[0], op0)
@@ -1869,7 +1877,7 @@ class TestNewOpMath:
         )
         def test_pow(self, power, base):
             """Tests multiplying an operator by a scalar coefficient works as expected."""
-            op = base**power
+            op = base**power  # pylint: disable=redefined-outer-name
             if isinstance(base, Operator2):
                 assert isinstance(op, Pow2)
             else:
@@ -1890,13 +1898,13 @@ class TestNewOpMath:
                 _ = base ** "potato"
 
 
-class TestHamiltonianLinearCombinationAlias:
+class TestHamiltonianLinearCombinationAlias:  # pylint: disable=too-few-public-methods
     """Unit tests for using qp.Hamiltonian as an alias for LinearCombination"""
 
     def test_hamiltonian_linear_combination_alias_enabled(self):
         """Test that qp.Hamiltonian is an alias for LinearCombination with new operator
         arithmetic enabled"""
-        op = qp.Hamiltonian([1.0], [qp.X(0)])
+        op = qp.Hamiltonian([1.0], [qp.X(0)])  # pylint: disable=redefined-outer-name
 
         assert isinstance(op, qp.ops.LinearCombination)
         assert isinstance(op, qp.Hamiltonian)
@@ -1920,7 +1928,7 @@ class TestHamiltonianLinearCombinationAlias:
         qp.PSWAP(1.23, wires=[1, 0]),
     ],
 )
-def test_symmetric_matrix_early_return(op, mocker):
+def test_symmetric_matrix_early_return(op, mocker):  # pylint: disable=redefined-outer-name
     """Test that operators that are symmetric over all wires are not reordered
     when the wire order only contains the same wires as the operator."""
 
@@ -1945,7 +1953,6 @@ def test_docstring_example_of_operator_class(tol):
     class FlipAndRotate(qp.operation.Operation):
         grad_method = "A"
 
-        # pylint: disable=too-many-arguments,too-many-positional-arguments
         def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False):
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
@@ -1964,7 +1971,7 @@ def test_docstring_example_of_operator_class(tol):
             return (0,)
 
         @staticmethod
-        def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
+        def compute_decomposition(angle, wires, do_flip):
             op_list = []
             if do_flip:
                 op_list.append(qp.PauliX(wires=wires[1]))
@@ -1998,10 +2005,10 @@ def test_custom_operator_is_jax_pytree():
 
     import jax
 
-    class CustomOperator(qp.operation.Operator):
+    class CustomOperator(qp.operation.Operator):  # pylint: disable=too-few-public-methods
         pass
 
-    op = CustomOperator(1.2, wires=0)
+    op = CustomOperator(1.2, wires=0)  # pylint: disable=redefined-outer-name
     data, structure = jax.tree_util.tree_flatten(op)
     assert data == [1.2]
 
@@ -2009,7 +2016,6 @@ def test_custom_operator_is_jax_pytree():
     qp.assert_equal(new_op, CustomOperator(2.3, wires=0))
 
 
-# pylint: disable=unused-import,no-name-in-module
 def test_get_attr():
     """Test that importing attributes of operation work as expected"""
 
@@ -2020,7 +2026,7 @@ def test_get_attr():
         _ = qp.operation.non_existent_attr  # error is raised if non-existent attribute accessed
 
     with pytest.raises(ImportError, match=f"cannot import name '{attr_name}'"):
-        from pennylane.operation import (
+        from pennylane.operation import (  # pylint: disable=unused-import
             non_existent_attr,
         )  # error is raised if non-existent attribute imported
 

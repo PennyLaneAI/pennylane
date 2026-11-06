@@ -15,7 +15,9 @@
 This module contains unit tests for ``qp.testing.assert_valid``.
 """
 
-# pylint: disable=too-few-public-methods,unused-argument
+# Tests group related cases in classes, use fixture signatures.
+# pylint: disable=too-few-public-methods, unused-argument
+
 
 import copy
 from pickle import PicklingError
@@ -329,7 +331,7 @@ def test_bad_eigenvalues_order():
 
     class BadEigenDecomp(qp.PauliX):
         @staticmethod
-        def compute_eigvals(wires):  # pylint: disable=signature-differs
+        def compute_eigvals(wires):
             return [-1, 1]
 
     with pytest.raises(
@@ -761,7 +763,7 @@ class TestOperator2AssertValid:
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
-            def __init__(self, phi, wires):  # pylint: disable=unused-argument
+            def __init__(self, phi, wires):
                 super().__init__(1.0, wires=wires)  # always 1.0, ignores ``phi``
 
         op = IgnoresParams(0.5, wires=0)

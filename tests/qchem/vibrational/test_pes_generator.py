@@ -28,7 +28,6 @@ from pennylane.qchem.vibrational.vibrational_class import _single_point
 
 h5py = pytest.importorskip("h5py")
 
-# pylint: disable=too-many-arguments, protected-access, too-many-positional-arguments, unsubscriptable-object
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
@@ -179,6 +178,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support")
+# pylint: disable-next=too-many-arguments
 def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_dip_onemode):
     r"""Test that the correct onemode PES is obtained."""
 
@@ -190,6 +190,7 @@ def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_di
     freqs = harmonic_res["freq_wavenumber"]
     displ_vecs = harmonic_res["norm_mode"]
     with TemporaryDirectory() as tmpdir:
+        # pylint: disable-next=protected-access
         pes_onebody, dipole_onebody = pes_generator._pes_onemode(
             mol, mol_eq, freqs, displ_vecs, gauss_grid, method="RHF", dipole=do_dipole, path=tmpdir
         )
@@ -254,6 +255,7 @@ def test_twomode_pes(sym, geom, freqs, vectors, ref_file):
         exp_pes_twobody = np.array(f["V2_PES"][()])
         exp_dip_twobody = np.array(f["D2_DMS"][()])
     with TemporaryDirectory() as tmpdir:
+        # pylint: disable-next=protected-access
         pes_twobody, dipole_twobody = pes_generator._pes_twomode(
             mol,
             mol_eq,
@@ -326,6 +328,7 @@ def test_threemode_pes(sym, geom, freqs, vectors, ref_file):
         exp_pes_threebody = np.array(f["V3_PES"][()])
         exp_dip_threebody = np.array(f["D3_DMS"][()])
     with TemporaryDirectory() as tmpdir:
+        # pylint: disable-next=protected-access
         pes_threebody, dipole_threebody = pes_generator._pes_threemode(
             mol,
             mol_eq,
@@ -381,7 +384,7 @@ def test_dipole_order_error():
         (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 3, "HF.hdf5", 2, "mpi4py_comm"),
     ],
 )
-def test_vibrational_pes(
+def test_vibrational_pes(  # pylint: disable=too-many-arguments
     sym, geom, dipole_level, result_file, backend, max_workers, mpi4py_support
 ):
     r"""Test that vibrational_pes returns correct object."""

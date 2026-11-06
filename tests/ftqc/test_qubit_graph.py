@@ -25,8 +25,6 @@ import pennylane as qp
 from pennylane.ftqc import QubitGraph
 from pennylane.ftqc.qubit_graph import MAX_TRAVERSAL_DEPTH
 
-# pylint: disable=too-few-public-methods
-
 
 class TestQubitGraphsInitialization:
     """Tests for basic initialization of QubitGraphs."""
@@ -222,9 +220,7 @@ class TestQubitGraphsInitialization:
         assert set(qubit0_00.edge_labels) == set(g.edges)
         assert qubit0_00.parent is qubit0
 
-        # pylint: disable=unsupported-assignment-operation
         qubit0[(0, 0)][(0, 0)] = QubitGraph(g)
-        # pylint: disable=unsubscriptable-object
         qubit0_00_00 = qubit0[(0, 0)][(0, 0)]
         assert set(qubit0_00_00.node_labels) == set(g.nodes)
         assert set(qubit0_00_00.edge_labels) == set(g.edges)
@@ -253,16 +249,15 @@ class TestQubitGraphsInitialization:
 
     def test_init_graph_with_invalid_type_raises_type_error(self):
         """Test that attempting to initialize a graph with an invalid graph type raises a TypeError."""
-        # pylint: disable=missing-class-docstring
 
-        class NotAGraph:
+        class NotAGraph:  # pylint: disable=too-few-public-methods
             pass
 
-        class SomethingWithOnlyNodes:
+        class SomethingWithOnlyNodes:  # pylint: disable=too-few-public-methods
             def __init__(self):
                 self.nodes = []
 
-        class SomethingWithOnlyEdges:
+        class SomethingWithOnlyEdges:  # pylint: disable=too-few-public-methods
             def __init__(self):
                 self.edges = []
 
@@ -300,7 +295,7 @@ class TestQubitGraphsInitialization:
             q.init_graph(None)
 
 
-class TestQubitGraphConnectivityAttributes:
+class TestQubitGraphConnectivityAttributes:  # pylint: disable=too-few-public-methods
     """Test for QubitGraph attributes relating to their connectivity across a single layer in the
     nesting hierarchy.
     """
@@ -363,7 +358,6 @@ class TestQubitGraphOperations:
         assert not q[0][0].has_cycle()
 
         # 3 layers; cyclic
-        # pylint: disable=unsupported-assignment-operation
         q[0][0] = q
         assert q.has_cycle()
         assert q[0].has_cycle()
@@ -663,7 +657,7 @@ class TestQubitGraphRepresentation:
             assert q_next_str_repr.endswith("...]>")
 
 
-class TestQubitGraphWorkflows:
+class TestQubitGraphWorkflows:  # pylint: disable=too-few-public-methods
     """Tests of QubitGraph workflows."""
 
     def test_execution(self):
@@ -746,9 +740,8 @@ class TestQubitGraphsWarnings:
         """Test that initializing a QubitGraph with a graph-like object that is not a networkx.Graph
         object emits a UserWarning.
         """
-        # pylint: disable=missing-class-docstring
 
-        class CustomGraph:
+        class CustomGraph:  # pylint: disable=too-few-public-methods
             def __init__(self):
                 self.nodes = []
                 self.edges = []

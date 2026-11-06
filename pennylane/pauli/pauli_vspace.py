@@ -13,7 +13,6 @@
 # limitations under the License.
 """A class for the linearly independent basis of a vector space in operator space."""
 
-# pylint: disable=too-many-arguments
 from copy import copy
 from functools import reduce
 
@@ -231,9 +230,8 @@ class PauliVSpace:
         return is_independent
 
     @staticmethod
-    def _check_independence(
-        M, pauli_sentence, pw_to_idx, rank, num_pw, tol
-    ):  # pylint: disable=too-many-positional-arguments
+    # pylint: disable-next=too-many-arguments
+    def _check_independence(M, pauli_sentence, pw_to_idx, rank, num_pw, tol):
         r"""
         Checks if :class:`~PauliSentence` ``pauli_sentence`` is linearly independent and provides the updated class attributes in case the vector is added.
 

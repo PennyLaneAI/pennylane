@@ -109,7 +109,7 @@ Args:
 
 
 @transform
-def _tape_decompose(
+def _tape_decompose(  # pylint: disable=too-many-arguments
     tape,
     *,
     gate_set=None,
@@ -120,7 +120,7 @@ def _tape_decompose(
     fixed_decomps: dict | None = None,
     alt_decomps: dict | None = None,
     strict: bool = True,
-):  # pylint: disable=too-many-arguments
+):
     """Tape-based decomposition of a quantum circuit into a user-specified gate set.
 
     This is the Python/tape execution path formerly provided by :func:`~.transforms.decompose`.
@@ -542,7 +542,7 @@ def _tape_decompose(
     return (tape,), null_postprocessing
 
 
-def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-branches
+def _operator_decomposition_gen(  # pylint: disable=too-many-arguments, too-many-branches
     op: Operator,
     acceptance_function: Callable[[Operator], bool],
     max_expansion: int | None = None,
@@ -668,7 +668,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
             )
 
 
-def _process_gate_set(gate_set) -> tuple[GateSet, Callable]:  # pylint: disable=unused-argument
+def _process_gate_set(gate_set) -> tuple[GateSet, Callable]:
     """Return a GateSet and a callable that returns True iff an operator is in the gate set."""
 
     if gate_set is None and enabled_graph():

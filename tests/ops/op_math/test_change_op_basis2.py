@@ -15,7 +15,9 @@
 Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
 
-# pylint:disable=protected-access, unused-argument
+# Tests exercise private interfaces.
+# pylint: disable=protected-access
+
 
 import re
 from functools import partial, reduce
@@ -298,7 +300,7 @@ def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
     assert tape.operations == [compute_op(0), target_op(1), expected_uncompute]
 
 
-class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
+class MyOp(qp.RX):  # pylint: disable=too-few-public-methods
     """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
@@ -307,7 +309,7 @@ class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
     has_diagonalizing_gates = False
 
 
-class TestInitialization:  # pylint:disable=too-many-public-methods
+class TestInitialization:
     """Test the initialization."""
 
     def test_init_change_op_basis_op(self):
@@ -392,7 +394,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert change_op_basis_op.has_diagonalizing_gates is False
 
 
-class TestProperties:  # pylint: disable=too-few-public-methods
+class TestProperties:
     """Test class properties."""
 
     @pytest.mark.parametrize("ops_lst", list(ops))
@@ -642,7 +644,7 @@ def test_callable_validation_doesnt_hide_bugs_with_typeerror():
         change_op_basis(f, qp.Y(0))
 
 
-def blah(a, b, c=3):
+def blah(a, b, c=3):  # pylint: disable=unused-argument
     pass
 
 

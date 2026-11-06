@@ -46,8 +46,7 @@ class TestTensorLike:
     def test_isinstance_unknown_type(self):
         """Test that an unknown type returns False."""
 
-        # pylint: disable=too-few-public-methods
-        class UnknownType:
+        class UnknownType:  # pylint: disable=too-few-public-methods
             """Unknown type."""
 
         assert not isinstance(UnknownType(), TensorLike)
@@ -122,8 +121,7 @@ class TestTensorLike:
     def test_subclass_unknown_type(self):
         """Test that an unknown type returns False."""
 
-        # pylint: disable=too-few-public-methods
-        class UnknownType:
+        class UnknownType:  # pylint: disable=too-few-public-methods
             """Unknown type."""
 
         assert not issubclass(UnknownType, TensorLike)
@@ -149,8 +147,7 @@ class TestTensorLike:
         assert issubclass(torch.Tensor, TensorLike)
 
 
-# pylint: disable=protected-access,too-many-public-methods
-class TestAbstractArray:
+class TestAbstractArray:  # pylint: disable=too-many-public-methods
     """Tests for the AbstractArray class."""
 
     @pytest.mark.parametrize(
@@ -194,7 +191,7 @@ class TestAbstractArray:
             assert isinstance(result, AbstractArray)
             assert result.shape == expected
             assert result.dtype == np.dtype(float)
-            assert result._weak_type
+            assert result._weak_type  # pylint: disable=protected-access
             assert result.shape_fixed == (expected is not Ellipsis and -1 not in expected)
 
     @pytest.mark.parametrize("left, right", [((2,), (3,)), ((-1, 2), (4, 3))])
@@ -222,7 +219,7 @@ class TestAbstractArray:
         """Dtype inference respects weak inputs and operation-specific output types."""
         result = operation(AbstractArray((2,), left), AbstractArray((2,), right))
         assert result.dtype == np.dtype(expected)
-        assert result._weak_type is weak
+        assert result._weak_type is weak  # pylint: disable=protected-access
 
     @pytest.mark.parametrize(
         "operation, dtype",
@@ -236,18 +233,18 @@ class TestAbstractArray:
     def test_arithmetic_chaining(self):
         """Results retain weak typing for subsequent arithmetic."""
         weak = (AbstractArray((2, 1), int) + 1) / 2
-        assert weak._weak_type
+        assert weak._weak_type  # pylint: disable=protected-access
         result = weak * AbstractArray((3,), np.float32)
         assert result.shape == (2, 3)
         assert result.dtype == np.float32
-        assert not result._weak_type
+        assert not result._weak_type  # pylint: disable=protected-access
 
     def test_arithmetic_concrete_array(self):
         """Concrete operands contribute only shape and dtype."""
         result = AbstractArray((2, 1), float) + np.ones(3, dtype=np.float32)
         assert result.shape == (2, 3)
         assert result.dtype == np.float32
-        assert not result._weak_type
+        assert not result._weak_type  # pylint: disable=protected-access
 
     @pytest.mark.parametrize(
         "operation",
@@ -269,7 +266,7 @@ class TestAbstractArray:
         assert isinstance(result, AbstractArray)
         assert result.shape == (-1, 3)
         assert result.dtype == np.dtype(dtype)
-        assert result._weak_type is weak
+        assert result._weak_type is weak  # pylint: disable=protected-access
         assert not result.shape_fixed
 
     def test_reflected_division_integer_dtype(self):
@@ -277,14 +274,14 @@ class TestAbstractArray:
         result = 2 / AbstractArray((3,), int)
         assert result.shape == (3,)
         assert result.dtype == np.dtype(float)
-        assert result._weak_type
+        assert result._weak_type  # pylint: disable=protected-access
 
     def test_reflected_arithmetic_chaining(self):
         """Reflected results retain weak typing for subsequent expressions."""
         result = (2 - AbstractArray((2, 1), int)) * AbstractArray((3,), np.float32)
         assert result.shape == (2, 3)
         assert result.dtype == np.float32
-        assert not result._weak_type
+        assert not result._weak_type  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("operation", [operator.neg, operator.pos, np.negative, np.positive])
     @pytest.mark.parametrize("shape", [(), (2, 3), (-1, 3), Ellipsis])
@@ -307,7 +304,7 @@ class TestAbstractArray:
         assert result is not array
         assert result.shape == shape
         assert result.dtype == np.dtype(dtype)
-        assert result._weak_type is weak
+        assert result._weak_type is weak  # pylint: disable=protected-access
         assert result.shape_fixed == (shape is not Ellipsis and -1 not in shape)
 
     @pytest.mark.parametrize("operation", [abs, np.absolute])
@@ -331,7 +328,7 @@ class TestAbstractArray:
         assert result is not array
         assert result.shape == shape
         assert result.dtype == np.dtype(dtype)
-        assert result._weak_type is weak
+        assert result._weak_type is weak  # pylint: disable=protected-access
         assert result.shape_fixed == (shape is not Ellipsis and -1 not in shape)
 
     def test_unary_arithmetic_chaining(self):
@@ -339,15 +336,13 @@ class TestAbstractArray:
         result = abs(-AbstractArray((2, 1), complex)) + AbstractArray((3,), np.float32)
         assert result.shape == (2, 3)
         assert result.dtype == np.complex64
-        assert not result._weak_type
+        assert not result._weak_type  # pylint: disable=protected-access
 
     def test_arithmetic_unsupported_operand(self):
         """Unrelated operands use Python's unsupported-operation protocol."""
         array = AbstractArray((2,), float)
-        # pylint: disable-next=unnecessary-dunder-call
-        assert array.__add__(object()) is NotImplemented
-        # pylint: disable-next=unnecessary-dunder-call
-        assert array.__radd__(object()) is NotImplemented
+        assert array.__add__(object()) is NotImplemented  # pylint: disable=unnecessary-dunder-call
+        assert array.__radd__(object()) is NotImplemented  # pylint: disable=unnecessary-dunder-call
         with pytest.raises(TypeError):
             array + object()  # pylint: disable=expression-not-assigned
         with pytest.raises(TypeError):
@@ -362,18 +357,18 @@ class TestAbstractArray:
         result = operation(other, array) if reverse else operation(array, other)
         assert result.shape == ((2, 3) if np.ndim(other) else (2, 1))
         assert result.dtype == (np.float64 if isinstance(other, float) else np.float32)
-        assert result._weak_type is (isinstance(other, float))
+        assert result._weak_type is (isinstance(other, float))  # pylint: disable=protected-access
 
     def test_ufunc_chaining(self):
         """Ufunc results carry metadata into subsequent arithmetic."""
         result = np.pow(np.add(AbstractArray((-1, 1), int), 1), 2)
         assert result.shape == (-1, 1)
         assert result.dtype == np.dtype(int)
-        assert result._weak_type
+        assert result._weak_type  # pylint: disable=protected-access
         result = result / AbstractArray((3,), np.float32)
         assert result.shape == (-1, 3)
         assert result.dtype == np.float32
-        assert not result._weak_type
+        assert not result._weak_type  # pylint: disable=protected-access
 
     @pytest.mark.parametrize(
         "call",
@@ -415,7 +410,7 @@ class TestAbstractArray:
         a = AbstractArray([2, 3], dtype=float)
         assert a.shape == (2, 3)  # converted to tuple
         assert a.dtype == np.float64  # converted to numpy dtype
-        assert a._weak_type is True
+        assert a._weak_type is True  # pylint: disable=protected-access
         assert a.shape_fixed is True
 
         assert a.size == 6
@@ -537,11 +532,11 @@ class TestAbstractArray:
 
         b = a[2]
         assert isinstance(b, AbstractWires)
-        assert b._num_wires == 2
+        assert b._num_wires == 2  # pylint: disable=protected-access
 
         c = a[-1]
         assert isinstance(c, AbstractWires)
-        assert c._num_wires == -1
+        assert c._num_wires == -1  # pylint: disable=protected-access
 
     def test_type_factory(self):
         """Test that we can index into a type factory to produce a new hint with a size."""
@@ -551,31 +546,31 @@ class TestAbstractArray:
         assert isinstance(b, AbstractArray)
         assert b.dtype == np.int64
         assert b.shape == (2, 3)
-        assert b._weak_type is True
+        assert b._weak_type is True  # pylint: disable=protected-access
 
         c = a[2]
         assert isinstance(c, AbstractArray)
         assert c.shape == (2,)
         assert c.dtype == np.int64
-        assert c._weak_type is True
+        assert c._weak_type is True  # pylint: disable=protected-access
 
         d = a[...]
         assert isinstance(d, AbstractArray)
         assert d.shape == Ellipsis
         assert d.dtype == np.int64
-        assert d._weak_type is True
+        assert d._weak_type is True  # pylint: disable=protected-access
 
         e = a[5, -1, 2]
         assert isinstance(e, AbstractArray)
         assert e.shape == (5, -1, 2)
         assert e.dtype == np.int64
-        assert e._weak_type is True
+        assert e._weak_type is True  # pylint: disable=protected-access
 
         f = a[-1]
         assert isinstance(f, AbstractArray)
         assert f.dtype == np.int64
         assert f.shape == (-1,)
-        assert f._weak_type is True
+        assert f._weak_type is True  # pylint: disable=protected-access
 
     def test_strong_type_factory(self):
         """Test that type factories work as expected when strong dtypes are used."""
@@ -585,31 +580,31 @@ class TestAbstractArray:
         assert isinstance(b, AbstractArray)
         assert b.dtype == np.int32
         assert b.shape == (2, 3)
-        assert b._weak_type is False
+        assert b._weak_type is False  # pylint: disable=protected-access
 
         c = a[2]
         assert isinstance(c, AbstractArray)
         assert c.shape == (2,)
         assert c.dtype == np.int32
-        assert c._weak_type is False
+        assert c._weak_type is False  # pylint: disable=protected-access
 
         d = a[...]
         assert isinstance(d, AbstractArray)
         assert d.shape == Ellipsis
         assert d.dtype == np.int32
-        assert d._weak_type is False
+        assert d._weak_type is False  # pylint: disable=protected-access
 
         e = a[5, -1, 2]
         assert isinstance(e, AbstractArray)
         assert e.shape == (5, -1, 2)
         assert e.dtype == np.int32
-        assert e._weak_type is False
+        assert e._weak_type is False  # pylint: disable=protected-access
 
         f = a[-1]
         assert isinstance(f, AbstractArray)
         assert f.dtype == np.int32
         assert f.shape == (-1,)
-        assert f._weak_type is False
+        assert f._weak_type is False  # pylint: disable=protected-access
 
     def test_error_indexing_into_non_scalar(self):
         """Test an error is raised when indexing into a non-scalar AbstractArray."""
@@ -683,7 +678,6 @@ class TestAbstractArray:
         assert a.shape == (2, 3, -1)
         assert a.dtype == dtype
 
-    # pylint: disable=isinstance-second-argument-not-valid-type
     def test_instance_check(self):
         """Test that things can be checked to be instances of a AbstractArray instance."""
 
@@ -710,9 +704,11 @@ class TestAbstractArray:
 
     def test_weak_type_for_number_dtypes(self):
         """Test that number dtypes are marked as weak types."""
-        assert AbstractArray((), float)._weak_type is True
-        assert AbstractArray((2, 3), int)._weak_type is True
+        assert AbstractArray((), float)._weak_type is True  # pylint: disable=protected-access
+        assert AbstractArray((2, 3), int)._weak_type is True  # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         assert AbstractArray((2, 3), np.float32)._weak_type is False
+        # pylint: disable-next=protected-access
         assert AbstractArray((2, 3), np.bool_)._weak_type is False
 
     def test_is_compatible_with_non_numeric_input(self):
@@ -775,7 +771,7 @@ class TestAbstractWires:
         """Basic tests for the AbstractWires class."""
 
         a = AbstractWires(3)
-        assert a._num_wires == 3
+        assert a._num_wires == 3  # pylint: disable=protected-access
         assert len(a) == 3
         assert a.shape_fixed is True
 
@@ -814,7 +810,7 @@ class TestAbstractWires:
     def test_unknown_num_wires(self):
         """Test that -1 marks an unknown number of wires."""
         a = AbstractWires(-1)
-        assert a._num_wires == -1
+        assert a._num_wires == -1  # pylint: disable=protected-access
         assert a.shape == (-1,)
         assert a.shape_fixed is False
 
@@ -830,7 +826,6 @@ class TestAbstractWires:
 
     def test_instance_check(self):
         """Test instance check of Wire."""
-        # pylint: disable=isinstance-second-argument-not-valid-type
 
         # int wire labels
         for i in range(4):

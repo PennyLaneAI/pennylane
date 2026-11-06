@@ -443,7 +443,6 @@ class ShadowExpvalMP(MeasurementTransform):
     def _unflatten(cls, data, metadata):
         return cls(data[0], **dict(metadata))
 
-    # pylint: disable=arguments-renamed
     def __init__(
         self,
         H: Operator | Sequence[Operator],
@@ -455,9 +454,8 @@ class ShadowExpvalMP(MeasurementTransform):
         self.k = k
         super().__init__()
 
-    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(
+    def _primitive_bind_call(  # pylint: disable=arguments-renamed
         cls,
         H: Operator | Sequence,
         seed: int | None = None,
@@ -467,8 +465,7 @@ class ShadowExpvalMP(MeasurementTransform):
         def _get_tracer(op):
             if isinstance(op, Operator2):
                 if op.tracer is None:
-                    # pylint: disable-next=protected-access
-                    op._bind_primitive()  # pragma: no cover
+                    op._bind_primitive()  # pragma: no cover  # pylint: disable=protected-access
                 return op.tracer if op.tracer is not None else op
             return op
 
@@ -505,7 +502,7 @@ class ShadowExpvalMP(MeasurementTransform):
             state, wire_order, shots, rng=rng
         )
         # tach-ignore
-        from pennylane.shadows import ClassicalShadow  # pylint:disable=import-outside-toplevel
+        from pennylane.shadows import ClassicalShadow  # pylint: disable=import-outside-toplevel
 
         shadow = ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
@@ -530,7 +527,7 @@ class ShadowExpvalMP(MeasurementTransform):
         bits, recipes = classical_shadow(
             wires=self.wires, seed=self.seed
         ).process_density_matrix_with_shots(state, wire_order, shots, rng=rng)
-        # tach-ignore
+        # pylint: disable-next=import-outside-toplevel # tach-ignore
         from pennylane.shadows import (  # tach-ignore pylint: disable=import-outside-toplevel
             ClassicalShadow,
         )

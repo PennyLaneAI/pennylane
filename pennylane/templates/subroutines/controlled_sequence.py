@@ -150,7 +150,6 @@ def _ctrl_seq_decomposition_resources(base, control) -> dict:
     return {_ctrl_abstract(base_rep, Wire[1]): 2 ** len(control) - 1}
 
 
-# pylint: disable=no-value-for-parameter
 @register_resources(_ctrl_seq_decomposition_resources)
 def _ctrl_seq_decomposition(*_, base=None, control=None, **__):
     if compiler.active() or capture.enabled():
@@ -171,9 +170,9 @@ def _ctrl_seq_decomposition(*_, base=None, control=None, **__):
         def _repeat_loop(_):
             ctrl(base, control=ctrl_wire)
 
-        _repeat_loop()
+        _repeat_loop()  # pylint: disable=no-value-for-parameter
 
-    _powers_loop()
+    _powers_loop()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(ControlledSequence, _ctrl_seq_decomposition)

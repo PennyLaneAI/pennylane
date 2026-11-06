@@ -18,7 +18,9 @@ See section on "Testing Matplotlib based code" in the "Software Tests"
 page in the developement guide.
 """
 
-# pylint: disable=protected-access,wrong-import-position
+# Tests inspect private interfaces; load optional backends before dependent imports.
+# pylint: disable=protected-access, wrong-import-position
+
 
 import warnings
 

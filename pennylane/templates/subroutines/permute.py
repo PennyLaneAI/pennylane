@@ -174,11 +174,12 @@ class Permute(Operation):
         super().__init__(wires=wires)
 
     def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
+        # pylint: disable-next=protected-access
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["permutation"] = tuple(
-            wire_map.get(w, w) for w in new_op._hyperparameters["permutation"]
+        new_op._hyperparameters["permutation"] = tuple(  # pylint: disable=protected-access
+            wire_map.get(w, w)
+            for w in new_op._hyperparameters["permutation"]  # pylint: disable=protected-access
         )
         return new_op
 

@@ -15,7 +15,10 @@
 Unit tests for the ``dipole_of`` function.
 """
 
+# Tests parameterize cases through explicit fixture and helper arguments.
 # pylint: disable=too-many-arguments
+
+
 import numpy as np
 import pytest
 

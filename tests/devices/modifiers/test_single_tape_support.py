@@ -16,7 +16,10 @@ Tests the `single_tape_support` device modifier.
 
 """
 
-# pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring
+# Tests use fixture signatures.
+# pylint: disable=unused-argument
+
+
 import pennylane as qp
 from pennylane.devices.modifiers import single_tape_support
 
@@ -25,7 +28,7 @@ def test_wraps_execute():
     """Test that execute now accepts a single circuit."""
 
     @single_tape_support
-    class DummyDev(qp.devices.Device):
+    class DummyDev(qp.devices.Device):  # pylint: disable=too-few-public-methods
 
         def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)

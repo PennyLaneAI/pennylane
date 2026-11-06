@@ -14,7 +14,9 @@
 
 """Tests for Triton decoder algorithms."""
 
-# pylint: disable=protected-access,wrong-import-position,broad-exception-caught
+# Tests inspect private interfaces; load optional backends before dependent imports.
+# pylint: disable=protected-access, wrong-import-position
+
 
 import pytest
 
@@ -25,7 +27,7 @@ import triton.language as tl
 def _has_cuda_target() -> bool:
     try:
         return triton.runtime.driver.active.get_current_target().backend == "cuda"
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return False
 
 

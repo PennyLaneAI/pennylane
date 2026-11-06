@@ -33,14 +33,14 @@ def _tracing() -> bool:
 def get_runtime_call_prim():
     """Get the primitive that backs :func:`runtime_call`, creating it on the first call."""
 
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable-next=import-outside-toplevel
     from pennylane.capture.custom_primitives import QpPrimitive
 
     runtime_call_prim = QpPrimitive("runtime_call")
     runtime_call_prim.multiple_results = True
 
-    # pylint: disable=unused-argument, too-many-arguments
     @runtime_call_prim.def_abstract_eval
+    # pylint: disable-next=too-many-arguments, unused-argument
     def _(*args, signature, symbol, out_bytes, dispatch, library, local_constants):
         return operands.result_avals(signature, out_bytes)
 

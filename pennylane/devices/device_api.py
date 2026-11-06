@@ -53,7 +53,6 @@ from .preprocess import (
 from .tracker import Tracker
 
 
-# pylint: disable=unused-argument, no-self-use
 class Device(abc.ABC):
     """A device driver that can control one or more backends. A backend can be either a physical
     Quantum Processing Unit or a virtual one such as a simulator.
@@ -628,7 +627,7 @@ class Device(abc.ABC):
     def supports_derivatives(
         self,
         execution_config: ExecutionConfig | None = None,
-        circuit: QuantumScript | None = None,
+        circuit: QuantumScript | None = None,  # pylint: disable=unused-argument
     ) -> bool:
         """Determine whether or not a device provided derivative is potentially available.
 
@@ -839,8 +838,8 @@ class Device(abc.ABC):
 
     def supports_jvp(
         self,
-        execution_config: ExecutionConfig | None = None,
-        circuit: QuantumScript | None = None,
+        execution_config: ExecutionConfig | None = None,  # pylint: disable=unused-argument
+        circuit: QuantumScript | None = None,  # pylint: disable=unused-argument
     ) -> bool:
         """Whether or not a given device defines a custom jacobian vector product.
 
@@ -921,8 +920,8 @@ class Device(abc.ABC):
 
     def supports_vjp(
         self,
-        execution_config: ExecutionConfig | None = None,
-        circuit: QuantumScript | None = None,
+        execution_config: ExecutionConfig | None = None,  # pylint: disable=unused-argument
+        circuit: QuantumScript | None = None,  # pylint: disable=unused-argument
     ) -> bool:
         """Whether or not a given device defines a custom vector jacobian product.
 

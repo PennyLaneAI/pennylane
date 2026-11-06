@@ -13,7 +13,9 @@
 # limitations under the License.
 """This file contains different PennyLane types."""
 
-# pylint: disable=import-outside-toplevel,too-few-public-methods
+# Optional dependencies and internal imports are loaded where they are used.
+# pylint: disable=import-outside-toplevel
+
 
 from __future__ import annotations
 
@@ -93,7 +95,7 @@ if TYPE_CHECKING:
 else:
     # Runtime checks must inspect each tracer, including on Python 3.12.
 
-    class TensorLike(metaclass=TensorLikeMeta):
+    class TensorLike(metaclass=TensorLikeMeta):  # pylint: disable=too-few-public-methods
         """A type for all tensor-like data.
 
         TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor,
@@ -353,7 +355,7 @@ class AbstractArray:
     def _resolve_dtype(self, dtype):
         """Convert an arbitrary dtype into a numpy dtype."""
         if dtype.__class__.__module__.split(".")[0] == "torch":
-            import torch  # pylint: disable=import-outside-toplevel
+            import torch
 
             dummy = torch.empty((), dtype=dtype)
             dtype = dummy.numpy().dtype
@@ -455,7 +457,7 @@ class AbstractArray:
         right_dtype = (
             weak_dtypes.get(other.dtype.kind, other.dtype)
             if other._weak_type  # pylint: disable=protected-access
-            else other.dtype  # pylint: disable=protected-access
+            else other.dtype
         )
         return operation.resolve_dtypes((left_dtype, right_dtype, None))[-1]
 
@@ -473,16 +475,12 @@ class AbstractArray:
         dtype = self._resolve_binary_dtype(other, operation)
 
         result = AbstractArray(shape, dtype)
-        object.__setattr__(
-            result,
-            "_weak_type",
-            self._weak_type and other._weak_type,  # pylint: disable=protected-access
-        )  # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
+        object.__setattr__(result, "_weak_type", self._weak_type and other._weak_type)
 
         return result
 
-    # pylint: disable-next=unused-argument
-    def _unary_arithmetic(self, operation):
+    def _unary_arithmetic(self, operation):  # pylint: disable=unused-argument
         """Infer unary arithmetic metadata while preserving weak typing."""
         return copy.deepcopy(self)
 

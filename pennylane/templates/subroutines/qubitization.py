@@ -123,13 +123,14 @@ class Qubitization(Operation):
         return clone
 
     def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
+        # pylint: disable-next=protected-access
         new_op._wires = Wires([wire_map.get(w, w) for w in self.wires])
+        # pylint: disable-next=protected-access
         new_op._hyperparameters["hamiltonian"] = new_op._hyperparameters["hamiltonian"].map_wires(
             wire_map
         )
-        new_op._hyperparameters["control"] = Wires(
+        new_op._hyperparameters["control"] = Wires(  # pylint: disable=protected-access
             [wire_map.get(w, w) for w in self._hyperparameters["control"]]
         )
         return new_op

@@ -110,7 +110,6 @@ def _construct_ml_execution_pipeline(
     return jpc, execute_fn
 
 
-# pylint: disable=import-outside-toplevel
 def _get_ml_boundary_execute(
     resolved_execution_config: ExecutionConfig,
 ) -> Callable:
@@ -130,18 +129,23 @@ def _get_ml_boundary_execute(
     try:
         match interface:
             case Interface.AUTOGRAD:
+                # pylint: disable-next=import-outside-toplevel
                 from .interfaces.autograd import autograd_execute as ml_boundary
 
             case Interface.TORCH:
+                # pylint: disable-next=import-outside-toplevel
                 from .interfaces.torch import execute as ml_boundary
 
             case Interface.JAX_JIT if resolved_execution_config.convert_to_numpy:
+                # pylint: disable-next=import-outside-toplevel
                 from .interfaces.jax_jit import jax_jit_jvp_execute as ml_boundary
 
             case _:  # interface is jax
                 if device_vjp:
+                    # pylint: disable-next=import-outside-toplevel
                     from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
                 else:
+                    # pylint: disable-next=import-outside-toplevel
                     from .interfaces.jax import jax_jvp_execute as ml_boundary
 
     except ImportError as e:  # pragma: no cover

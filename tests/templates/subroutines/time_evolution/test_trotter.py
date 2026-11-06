@@ -15,7 +15,10 @@
 Tests for the TrotterProduct template and helper functions.
 """
 
-# pylint: disable=private-access, protected-access, too-many-arguments
+# Tests parameterize cases through explicit fixture and helper arguments.
+# pylint: disable=too-many-arguments
+
+
 import copy
 from functools import partial, reduce
 
@@ -529,9 +532,8 @@ class TestDecomposition:
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("order", (1, 2, 4))
     @pytest.mark.parametrize("hamiltonian_index, hamiltonian", list(enumerate(test_hamiltonians)))
-    def test_decomposition_new(
-        self, hamiltonian, hamiltonian_index, order
-    ):  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
+    def test_decomposition_new(self, hamiltonian, hamiltonian_index, order):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.TrotterProduct(hamiltonian, 4.2, order=order)
         assert_decomposable(op)
@@ -1004,7 +1006,7 @@ class TestTrotterizedQfuncInitialization:
         """Test that an error is raised if the named kwargs for the qfunc match the
         names of the kwargs of the TrotterizedQfunc class."""
 
-        def my_dummy_qfunc(time, wires, **kwargs):  # pylint:disable=unused-argument
+        def my_dummy_qfunc(time, wires, **kwargs):  # pylint: disable=unused-argument
             qp.RZ(time, wires[0])
 
         for special_key in ["n", "order", "qfunc", "reverse"]:

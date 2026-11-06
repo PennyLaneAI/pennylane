@@ -761,9 +761,9 @@ class TestDecomposition:
         """Test that the position-fragment loop is a traced ``for_loop`` under capture, rather
         than unrolled by the fragment count: the number of traced ``for_loop`` primitives is the
         same regardless of the number of position fragments."""
-        from jax._src.core import ClosedJaxpr, Jaxpr  # pylint: disable=import-outside-toplevel
+        from jax._src.core import ClosedJaxpr, Jaxpr
 
-        from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
+        from pennylane.capture.primitives import (
             for_loop_prim,
         )
 

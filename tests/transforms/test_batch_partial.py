@@ -15,7 +15,10 @@
 Unit tests for the batch partial transform.
 """
 
+# Tests group related cases in classes.
 # pylint: disable=too-few-public-methods
+
+
 import re
 
 import pytest

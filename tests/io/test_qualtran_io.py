@@ -15,7 +15,6 @@
 Unit tests for the :mod:`pennylane.io.qualtran_io` module.
 """
 
-# pylint: disable=too-many-public-methods
 import numpy as np
 import pytest
 
@@ -376,7 +375,7 @@ class TestFromBloq:
 
 @pytest.mark.external
 @pytest.mark.usefixtures("skip_if_no_pl_qualtran_support")
-class TestToBloqDecomposition:
+class TestToBloqDecomposition:  # pylint: disable=too-many-public-methods
     """Test ToBloq and to_bloq with the decomposition call_graph mode.
 
     These tests verify that operators are correctly wrapped or mapped to Qualtran Bloqs
@@ -1156,7 +1155,7 @@ class TestToBloqDecomposition:
         qt_qpe = qp.to_bloq(op, map_ops=True, custom_mapping=_build_custom_map(custom_map))
         assert qt_qpe == _build_expected_qualtran_bloq(qt_bloq)
 
-    # pylint: disable=redefined-outer-name, protected-access
+    # pylint: disable-next=redefined-outer-name
     def test_initialization_with_tuple(self, qubits, dtypes):
         """Tests standard initialization with a tuple of qubits."""
         q0, q1 = qubits
@@ -1169,9 +1168,9 @@ class TestToBloqDecomposition:
 
         assert qreg.qubits == qubits_tuple
         assert qreg.dtype == dtype_uint
-        assert qreg._initialized is True
+        assert qreg._initialized is True  # pylint: disable=protected-access
 
-    # pylint: disable=redefined-outer-name
+    # pylint: disable-next=redefined-outer-name
     def test_initialization_with_single_qubit(self, qubits, dtypes):
         """Tests that a single qubit is correctly wrapped in a tuple."""
         q0, _ = qubits
@@ -1184,7 +1183,7 @@ class TestToBloqDecomposition:
         assert qreg.qubits == (q0,)
         assert qreg.dtype == dtype_bit
 
-    # pylint: disable=redefined-outer-name
+    # pylint: disable-next=redefined-outer-name
     def test_immutability_raises_error_on_attribute_change(self, qubits, dtypes):
         """Tests that changing an attribute after initialization raises an AttributeError."""
         q0, q1 = qubits
@@ -1200,8 +1199,7 @@ class TestToBloqDecomposition:
         with pytest.raises(AttributeError, match="Cannot set attribute 'new_attr'"):
             qreg.new_attr = "some_value"
 
-    # pylint: disable=redefined-outer-name
-    def test_equality_ignores_dtype(self, qubits, dtypes):
+    def test_equality_ignores_dtype(self, qubits, dtypes):  # pylint: disable=redefined-outer-name
         """Tests the core feature: equality should only depend on qubits, not dtype."""
         q0, _ = qubits
         dtype_bit, dtype_uint = dtypes
@@ -1211,8 +1209,7 @@ class TestToBloqDecomposition:
 
         assert qreg1 == qreg2
 
-    # pylint: disable=redefined-outer-name
-    def test_hash_ignores_dtype(self, qubits, dtypes):
+    def test_hash_ignores_dtype(self, qubits, dtypes):  # pylint: disable=redefined-outer-name
         """Tests that the hash also only depends on the qubits."""
         q0, _ = qubits
         dtype_bit, dtype_uint = dtypes
@@ -1222,7 +1219,7 @@ class TestToBloqDecomposition:
 
         assert hash(qreg1) == hash(qreg2)
 
-    # pylint: disable=redefined-outer-name
+    # pylint: disable-next=redefined-outer-name
     def test_inequality_for_different_qubits(self, qubits, dtypes):
         """Tests that instances with different qubits are not equal."""
         q0, q1 = qubits
@@ -1235,7 +1232,7 @@ class TestToBloqDecomposition:
         assert qreg1 != qreg2
         assert qreg1 != qreg3
 
-    # pylint: disable=redefined-outer-name
+    # pylint: disable-next=redefined-outer-name
     def test_inequality_for_different_types(self, qubits, dtypes):
         """Tests that comparison with other types returns NotImplemented/False."""
         q0, _ = qubits

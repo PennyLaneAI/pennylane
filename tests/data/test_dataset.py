@@ -15,7 +15,9 @@
 Tests for :mod:`pennylane.data.base.dataset`.
 """
 
-# pylint: disable=too-few-public-methods, too-many-public-methods
+# Tests group related cases in classes.
+# pylint: disable=too-few-public-methods
+
 
 from numbers import Number
 from pathlib import Path
@@ -37,9 +39,7 @@ from pennylane.data.base.dataset import UNSET, _init_arg
 from pennylane.data.base.hdf5 import open_group
 
 
-class MyDataset(
-    Dataset, data_name="my_dataset", identifiers=("x", "y")
-):  # pylint: disable=too-many-public-methods
+class MyDataset(Dataset, data_name="my_dataset", identifiers=("x", "y")):
     """A dataset subclass for testing."""
 
     x: str = field()
@@ -47,7 +47,7 @@ class MyDataset(
     description: str = field(doc="description")
 
 
-class TestDataset:
+class TestDataset:  # pylint: disable=too-many-public-methods
     """Tests initialization and instance methods of the ``Dataset`` class."""
 
     def test_init(self):
@@ -395,9 +395,7 @@ class TestDataset:
         - gets data name and identifiers from class arguments
         """
 
-        class NewDataset(
-            Dataset, data_name="new_dataset", identifiers=("x", "y")
-        ):  # pylint: disable= too-few-public-methods
+        class NewDataset(Dataset, data_name="new_dataset", identifiers=("x", "y")):
             """Dataset"""
 
             class_info: ClassVar[str] = "Class variable"

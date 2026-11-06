@@ -16,7 +16,10 @@ This module contains the functions needed for estimating the number of logical q
 non-Clifford gates for quantum algorithms in first quantization using a plane-wave basis.
 """
 
-# pylint: disable=no-self-use disable=too-many-arguments disable=too-many-instance-attributes
+# APIs keep physical and chemistry parameters explicit.
+# pylint: disable=too-many-arguments
+
+
 import numpy as np
 import scipy as sp
 
@@ -24,7 +27,7 @@ from pennylane.core.operator import Operation
 from pennylane.math import ceil_log2
 
 
-class FirstQuantization(Operation):
+class FirstQuantization(Operation):  # pylint: disable=too-many-instance-attributes
     r"""Estimate the number of non-Clifford gates and logical qubits for a quantum phase estimation
     algorithm in first quantization using a plane-wave basis.
 
@@ -148,9 +151,8 @@ class FirstQuantization(Operation):
             ("vectors", self.vectors),
         )
 
-    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, n, eta, **kwargs):
+    def _primitive_bind_call(cls, n, eta, **kwargs):  # pylint: disable=arguments-differ
         return cls._primitive.bind(n, eta, **kwargs)
 
     @classmethod

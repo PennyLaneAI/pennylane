@@ -14,8 +14,6 @@
 """Tests for pennylane/labs/dla/horizontal_cartan_subalgebra.py functionality"""
 
 import numpy as np
-
-# pylint: disable=no-self-use,too-few-public-methods,missing-class-docstring, too-many-positional-arguments, too-many-arguments
 import pytest
 from scipy.linalg import sqrtm
 
@@ -260,12 +258,13 @@ def _generate_test_cases(seed_value):
     return ps_test_cases, op_test_cases, dense_test_cases
 
 
-class TestData:  # pylint: disable=attribute-defined-outside-init
+class TestData:
     """A base class to provide shared, seed-dependent test case fixtures."""
 
     @pytest.fixture(autouse=True)
     def setup_test_cases(self, seed):
         """Generate test cases for the class instance."""
+        # pylint: disable-next=attribute-defined-outside-init
         self.ps_cases, self.op_cases, self.dense_cases = _generate_test_cases(seed)
 
     @pytest.fixture(params=[0, 1, 2, 3], ids=["case0", "case1", "case2", "case3"])

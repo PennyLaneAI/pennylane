@@ -202,8 +202,7 @@ def _apply_diagonalizing_gates(
     return state
 
 
-# pylint:disable = too-many-arguments
-def measure_with_samples(
+def measure_with_samples(  # pylint: disable=too-many-arguments
     measurements: list[SampleMeasurement | ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
@@ -274,7 +273,7 @@ def measure_with_samples(
     return sorted_res
 
 
-def _measure_with_samples_diagonalizing_gates(
+def _measure_with_samples_diagonalizing_gates(  # pylint: disable=too-many-arguments
     mps: list[SampleMeasurement],
     state: np.ndarray,
     shots: Shots,
@@ -336,13 +335,13 @@ def _measure_with_samples_diagonalizing_gates(
     return processed_samples[0]
 
 
-def _measure_classical_shadow(
+def _measure_classical_shadow(  # pylint: disable=too-many-arguments
     mp: list[ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
-    is_state_batched: bool = False,
+    is_state_batched: bool = False,  # pylint: disable=unused-argument
     rng=None,
-    prng_key=None,
+    prng_key=None,  # pylint: disable=unused-argument
 ):
     """
     Returns the result of a classical shadow measurement on the given state.
@@ -362,7 +361,6 @@ def _measure_classical_shadow(
     Returns:
         TensorLike[Any]: Sample measurement results
     """
-    # pylint: disable=unused-argument
 
     # the list contains only one element based on how we group measurements
     mp = mp[0]
@@ -375,7 +373,7 @@ def _measure_classical_shadow(
     return [mp.process_state_with_shots(state, wires, shots.total_shots, rng=rng)]
 
 
-def _measure_hamiltonian_with_samples(
+def _measure_hamiltonian_with_samples(  # pylint: disable=too-many-arguments
     mp: list[SampleMeasurement],
     state: np.ndarray,
     shots: Shots,
@@ -406,7 +404,7 @@ def _measure_hamiltonian_with_samples(
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
-def _measure_sum_with_samples(
+def _measure_sum_with_samples(  # pylint: disable=too-many-arguments
     mp: list[SampleMeasurement],
     state: np.ndarray,
     shots: Shots,
@@ -437,7 +435,7 @@ def _measure_sum_with_samples(
     return [unsqueezed_results] if shots.has_partitioned_shots else [unsqueezed_results[0]]
 
 
-def sample_state(
+def sample_state(  # pylint: disable=too-many-arguments
     state,
     shots: int,
     is_state_batched: bool = False,
@@ -477,6 +475,7 @@ def sample_state(
     return sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key)
 
 
+# pylint: disable-next=too-many-arguments
 def sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=None):
     """
     Sample from given probabilities, dispatching between JAX and NumPy implementations.
@@ -532,6 +531,7 @@ def _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng):
     return (states_sampled_base_ten > 0).astype(np.int64)
 
 
+# pylint: disable-next=too-many-arguments
 def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, seed=None):
     """
     Returns a series of samples of a state for the JAX interface based on the PRNG.

@@ -15,9 +15,12 @@
 This module contains the :class:`QubitDevice` abstract base class.
 """
 
+# Legacy device hooks retain specialized signatures and execution paths.
+# pylint: disable=arguments-differ, too-many-branches, arguments-renamed
+
+
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ,too-many-branches,no-member,arguments-renamed,too-many-arguments
 import abc
 import inspect
 import itertools
@@ -70,7 +73,7 @@ def _sample_to_str(sample):
     return "".join(map(str, sample))
 
 
-class QubitDevice(Device):
+class QubitDevice(Device):  # pylint: disable=too-many-public-methods
     """Abstract base class for PennyLane qubit devices.
 
     The following abstract method **must** be defined:
@@ -109,8 +112,6 @@ class QubitDevice(Device):
         r_dtype: Real floating point precision type.
         c_dtype: Complex floating point precision type.
     """
-
-    # pylint: disable=too-many-public-methods
 
     _asarray = staticmethod(np.asarray)
     _dot = staticmethod(np.dot)
@@ -290,7 +291,7 @@ class QubitDevice(Device):
                 self.apply(diagonalizing_gates)
             self._samples = self.generate_samples()
             if is_lightning and diagonalizing_gates:  # pragma: no cover
-                # pylint: disable=bad-reversed-sequence
+                # pylint: disable-next=bad-reversed-sequence
                 self.apply([_adjoint_eager(g, True) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
@@ -576,9 +577,8 @@ class QubitDevice(Device):
             samples=self._samples, wire_order=self.wires, shot_range=shot_range, bin_size=bin_size
         )
 
-    def statistics(
-        self, circuit: QuantumScript, shot_range=None, bin_size=None
-    ):  # pylint: disable=too-many-statements
+    # pylint: disable-next=too-many-statements
+    def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
@@ -667,7 +667,7 @@ class QubitDevice(Device):
                     self.apply(diagonalizing_gates)
                 result = self.probability(wires=m.wires, shot_range=shot_range, bin_size=bin_size)
                 if is_lightning and diagonalizing_gates:  # pragma: no cover
-                    # pylint: disable=bad-reversed-sequence
+                    # pylint: disable-next=bad-reversed-sequence
                     self.apply([_adjoint_eager(g, True) for g in reversed(diagonalizing_gates)])
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
@@ -863,7 +863,6 @@ class QubitDevice(Device):
         shots = self.shots
 
         basis_states = np.arange(number_of_states)
-        # pylint:disable = import-outside-toplevel
         if math.is_tracer(state_probability) and math.get_interface(state_probability) == "jax":
 
             key = jax.random.PRNGKey(np.random.randint(0, 2**31))
@@ -1112,7 +1111,7 @@ class QubitDevice(Device):
                 outcomes[t] = self.generate_samples()[0][mapped_wires]
         finally:
             self.shots = original_shots
-            # pylint: disable=attribute-defined-outside-init
+            # pylint: disable-next=attribute-defined-outside-init
             self._shot_vector = original_shot_vector
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
@@ -1279,11 +1278,10 @@ class QubitDevice(Device):
         return self.estimate_probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
 
     @staticmethod
-    def _get_batch_size(tensor, expected_shape, expected_size):
+    def _get_batch_size(tensor, expected_shape, expected_size):  # pylint: disable=unused-argument
         """Determine whether a tensor has an additional batch dimension for broadcasting,
         compared to an expected_shape. As QubitDevice does not natively support broadcasting,
         it always reports no batch size, that is ``batch_size=None``"""
-        # pylint: disable=unused-argument
         return None
 
     def marginal_prob(self, prob, wires=None):
@@ -1645,7 +1643,7 @@ class QubitDevice(Device):
 
         # broadcasted inner product not summing over first dimension of b
         sum_axes = tuple(range(1, self.num_wires + 1))
-        # pylint: disable=unnecessary-lambda-assignment
+        # pylint: disable-next=unnecessary-lambda-assignment
         dot_product_real = lambda b, k: self._real(qpsum(self._conj(b) * k, axis=sum_axes))
 
         for m in tape.measurements:
@@ -1677,11 +1675,12 @@ class QubitDevice(Device):
             if not use_device_state:
                 self.reset()
                 self.execute(tape)
-            ket = self._pre_rotated_state
+            ket = self._pre_rotated_state  # pylint: disable=no-member
 
         n_obs = len(tape.observables)
         bras = np.empty([n_obs] + [2] * self.num_wires, dtype=np.complex128)
         for kk in range(n_obs):
+            # pylint: disable-next=no-member
             bras[kk, ...] = self._apply_operation(ket, tape.observables[kk])
 
         expanded_ops = []
@@ -1720,11 +1719,12 @@ class QubitDevice(Device):
         trainable_param_number = len(trainable_params) - 1
         for op in expanded_ops:
             adj_op = adjoint(op)
-            ket = self._apply_operation(ket, adj_op)
+            ket = self._apply_operation(ket, adj_op)  # pylint: disable=no-member
 
             if op.num_params == 1:
                 if param_number in trainable_params:
                     d_op_matrix = operation_derivative(op)
+                    # pylint: disable-next=no-member
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
                     jac[:, trainable_param_number] = 2 * dot_product_real(bras, ket_temp)
@@ -1733,6 +1733,7 @@ class QubitDevice(Device):
                 param_number -= 1
 
             for kk in range(n_obs):
+                # pylint: disable-next=no-member
                 bras[kk, ...] = self._apply_operation(bras[kk, ...], adj_op)
 
         return self._adjoint_jacobian_processing(jac)
@@ -1768,7 +1769,6 @@ class QubitDevice(Device):
         Returns:
             List[~.Operation]: the operations that diagonalize the observables
         """
-        # pylint:disable=no-self-use
         return circuit.diagonalizing_gates
 
     def _is_lightning_device(self):

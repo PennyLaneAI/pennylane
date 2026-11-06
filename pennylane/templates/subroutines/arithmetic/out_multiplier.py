@@ -282,7 +282,7 @@ class OutMultiplier(Operator2):
         "work_wires": Wire[-1],
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         x_wires: WiresLike,
         y_wires: WiresLike,
@@ -290,7 +290,7 @@ class OutMultiplier(Operator2):
         mod=None,
         work_wires: WiresLike = (),
         output_wires_zeroed: bool = False,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
@@ -338,9 +338,14 @@ class OutMultiplier(Operator2):
         return self.x_wires + self.y_wires + self.output_wires + self.work_wires
 
 
-def _out_multiplier_with_qft_resources(
-    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
-):  # pylint: disable=too-many-arguments,unused-argument
+def _out_multiplier_with_qft_resources(  # pylint: disable=too-many-arguments
+    x_wires,
+    y_wires,
+    output_wires,
+    mod,
+    work_wires,  # pylint: disable=unused-argument
+    output_wires_zeroed=False,
+):
     num_output_wires = len(output_wires)
     num_x_wires = len(x_wires)
     num_y_wires = len(y_wires)
@@ -366,22 +371,28 @@ def _out_multiplier_with_qft_resources(
     return resources
 
 
-def _out_multiplier_with_qft_condition(
-    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument, too-many-arguments
+def _out_multiplier_with_qft_condition(  # pylint: disable=too-many-arguments
+    # pylint: disable-next=unused-argument
+    x_wires,
+    y_wires,  # pylint: disable=unused-argument
+    output_wires,
+    mod,
+    work_wires,
+    output_wires_zeroed=False,  # pylint: disable=unused-argument
+):
     return mod == 2 ** len(output_wires) or len(work_wires) >= 2
 
 
 @register_condition(_out_multiplier_with_qft_condition)
 @register_resources(_out_multiplier_with_qft_resources)
-def _out_multiplier_with_qft(
+def _out_multiplier_with_qft(  # pylint: disable=too-many-arguments
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
     mod,
     work_wires: WiresLike,
     output_wires_zeroed: bool,
-):  # pylint: disable=too-many-arguments, unused-argument
+):
 
     if capture.enabled() or compiler.active():
         work_wires = math.array(work_wires, like="jax")
@@ -419,9 +430,14 @@ def _out_multiplier_with_qft(
         change_op_basis(compute_op, target_op, uncompute_op)
 
 
-def _out_multiplier_with_adder_resources(
-    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
-):  # pylint: disable=too-many-arguments,unused-argument
+def _out_multiplier_with_adder_resources(  # pylint: disable=too-many-arguments
+    x_wires,
+    y_wires,
+    output_wires,
+    mod,  # pylint: disable=unused-argument
+    work_wires,
+    output_wires_zeroed=False,
+):
     """Resources for OutMultiplier decomposition with controlled adders."""
     n = len(x_wires)
     m = len(y_wires)
@@ -441,9 +457,15 @@ def _out_multiplier_with_adder_resources(
     return dict(resources)
 
 
-def _out_multiplier_with_adder_condition(
-    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument, too-many-arguments
+def _out_multiplier_with_adder_condition(  # pylint: disable=too-many-arguments
+    # pylint: disable-next=unused-argument
+    x_wires,
+    y_wires,
+    output_wires,
+    mod,
+    work_wires,
+    output_wires_zeroed=False,
+):
     k = len(output_wires)
     m = len(y_wires)
     # Controlled adder takes as many work wires as the output register size. The largest controlled
@@ -458,14 +480,14 @@ def _out_multiplier_with_adder_condition(
 
 @register_condition(_out_multiplier_with_adder_condition)
 @register_resources(_out_multiplier_with_adder_resources)
-def _out_multiplier_with_adder(
+def _out_multiplier_with_adder(  # pylint: disable=too-many-arguments
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
-    mod,
+    mod,  # pylint: disable=unused-argument
     work_wires: WiresLike,
     output_wires_zeroed: bool,
-):  # pylint: disable=unused-argument, too-many-arguments
+):
     """Implementation of Schoolbook multiplication via controlled adders as sole building block,
     except for a potential simplification for the very first adder.
     The j-th building block adds y⋅x_{n-1-j}⋅2^j to the output register, by controlling the
@@ -503,9 +525,14 @@ def _out_multiplier_with_adder(
         ctrl(SemiAdder(y_wires, out_wires, work_wires=work_wires), control=x_wire)
 
 
-def _out_multiplier_with_caddsub_resources(
-    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument,too-many-arguments
+def _out_multiplier_with_caddsub_resources(  # pylint: disable=too-many-arguments
+    x_wires,
+    y_wires,
+    output_wires,
+    mod,  # pylint: disable=unused-argument
+    work_wires,
+    output_wires_zeroed=False,
+):
     n = len(x_wires)
     m = len(y_wires)
     k = len(output_wires) + 1  # augmented output register
@@ -553,8 +580,14 @@ def _out_multiplier_with_caddsub_resources(
 
 
 def _out_multiplier_with_caddsub_condition(  # pylint: disable=too-many-arguments
-    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
+    x_wires,
+    y_wires,  # pylint: disable=unused-argument
+    output_wires,
+    mod,
+    work_wires,
+    output_wires_zeroed=False,  # pylint: disable=unused-argument
+):
     # Adder sizes are (using n=len(x_wires), m=len(y_wires), k=len(output_wires)+1):
     # - min(k, m+1) # Largest size occurring in controlled add/sub loop
     # - k-m, # Add 2^m(x+1)
@@ -663,14 +696,14 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
 
 @register_condition(_out_multiplier_with_caddsub_condition)
 @register_resources(_out_multiplier_with_caddsub_resources)
-def _out_multiplier_with_caddsub(
+def _out_multiplier_with_caddsub(  # pylint: disable=too-many-arguments
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
-    mod: None,
+    mod: None,  # pylint: disable=unused-argument
     work_wires: WiresLike,
     output_wires_zeroed: bool,
-):  # pylint: disable=unused-argument, too-many-arguments
+):
     """Implementation of improved Schoolbook multiplication via controlled add/subtract blocks,
     combined with some correction steps. After appending a work wire to the output register,
     effectively multiplying it with two, we first have a bulk computation with n steps (where
@@ -738,15 +771,26 @@ def _out_multiplier_with_caddsub(
     # not explicit return values.
 
 
-def _out_multiplier_with_cache_condition(
-    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument, too-many-arguments
+def _out_multiplier_with_cache_condition(  # pylint: disable=too-many-arguments
+    # pylint: disable-next=unused-argument
+    x_wires,
+    y_wires,  # pylint: disable=unused-argument
+    output_wires,
+    mod,  # pylint: disable=unused-argument
+    work_wires,
+    output_wires_zeroed=False,
+):
     return len(work_wires) >= 2 * len(output_wires) - 1 and not output_wires_zeroed
 
 
-def _out_multiplier_with_cache_resources(
-    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument, too-many-arguments
+def _out_multiplier_with_cache_resources(  # pylint: disable=too-many-arguments
+    x_wires,
+    y_wires,
+    output_wires,
+    mod,
+    work_wires,
+    output_wires_zeroed=False,  # pylint: disable=unused-argument
+):
     num_x_wires = len(x_wires)
     num_y_wires = len(y_wires)
     num_output_wires = len(output_wires)
@@ -771,14 +815,14 @@ def _out_multiplier_with_cache_resources(
 
 @register_condition(_out_multiplier_with_cache_condition)
 @register_resources(_out_multiplier_with_cache_resources)
-def _out_multiplier_with_cache(
+def _out_multiplier_with_cache(  # pylint: disable=too-many-arguments
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
     mod: None,
     work_wires: WiresLike,
-    output_wires_zeroed,
-):  # pylint: disable=unused-argument,too-many-arguments
+    output_wires_zeroed,  # pylint: disable=unused-argument
+):
     r"""Decompose ``OutMultiplier`` with ``output_wires_zeroed=False`` into two ``OutMultiplier``\ s
     with ``output_wires_zeroed=True`` and one ``SemiAdder``, using additional work wires."""
     cache_wires = work_wires[: len(output_wires)]
@@ -799,9 +843,9 @@ def _out_multiplier_swapped_condition(x_wires, y_wires, **_):
     return len(x_wires) > len(y_wires)
 
 
-def _out_multiplier_swapped_resources(
+def _out_multiplier_swapped_resources(  # pylint: disable=too-many-arguments
     x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
-):  # pylint: disable=too-many-arguments
+):
     swapped = OutMultiplier(
         Wire[len(y_wires)],
         Wire[len(x_wires)],
@@ -815,9 +859,8 @@ def _out_multiplier_swapped_resources(
 
 @register_condition(_out_multiplier_swapped_condition)
 @register_resources(_out_multiplier_swapped_resources)
-def _out_multiplier_swapped(
-    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _out_multiplier_swapped(x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed):
     """Swap the factors of an ``OutMultiplier`` so that ``x_wires`` is the shorter register.
     The schoolbook ``OutMultiplier`` rules perform one controlled addition per bit of ``x_wires``,
     so multiplying a short register into a long one is cheaper than the other way around.

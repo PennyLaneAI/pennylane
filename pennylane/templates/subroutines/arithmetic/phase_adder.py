@@ -135,7 +135,6 @@ class PhaseAdder(Operation):
 
     resource_keys = {"num_x_wires", "mod"}
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = ()):
 
         work_wire = Wires(() if work_wire is None else work_wire)
@@ -211,9 +210,8 @@ class PhaseAdder(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(
-        k, x_wires: WiresLike, mod, work_wire: WiresLike
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(k, x_wires: WiresLike, mod, work_wire: WiresLike):
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -303,7 +301,6 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
     return resources
 
 
-# pylint: disable=no-value-for-parameter
 @register_resources(_phase_adder_decomposition_resources)
 def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire, **__):
 
@@ -315,11 +312,11 @@ def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire, **__):
         return _k
 
     if mod == 2**n_wires:
-        _add_k_fourier_loop(k)
+        _add_k_fourier_loop(k)  # pylint: disable=no-value-for-parameter
         return
 
     aux_k = x_wires[0]
-    _add_k_fourier_loop(k)
+    _add_k_fourier_loop(k)  # pylint: disable=no-value-for-parameter
     ops.adjoint(_add_k_fourier_loop)(mod)
     ops.change_op_basis(
         ops.adjoint(QFT)(wires=x_wires),

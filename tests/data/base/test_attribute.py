@@ -15,7 +15,9 @@
 Tests for :mod:`pennylane.data.base.attribute`.
 """
 
-# pylint: disable=unused-argument,unused-variable,too-many-public-methods
+# Attribute classes are constructed to exercise registration and validation side effects.
+# pylint: disable=unused-argument, unused-variable
+
 
 from collections.abc import Iterable
 from copy import copy, deepcopy
@@ -228,9 +230,7 @@ class NoDefaultAttribute(DatasetAttribute):
 
     type_id = "test"
 
-    def value_to_hdf5(
-        self, bind_parent: HDF5Group, key: str, value: Any
-    ) -> Any:  # pylint: disable=unused-argument
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Any) -> Any:
         return None
 
     def hdf5_to_value(self, bind: Any) -> Any:
@@ -323,13 +323,12 @@ class TestAttribute:
         dset_attr = attribute(val)
         assert copy_func(dset_attr) == dset_attr
 
-    def test_abstract_subclass_not_registered(self):  # pylint: disable=unused-variable
+    def test_abstract_subclass_not_registered(self):
         """Test that a DatasetAttribute subclass marked as
         abstract will not be registered."""
 
-        class AbstractAttribute(
-            DatasetAttribute, abstract=True
-        ):  # pylint: disable=too-few-public-methods
+        # pylint: disable-next=too-few-public-methods
+        class AbstractAttribute(DatasetAttribute, abstract=True):
             """An abstract attribute."""
 
             type_id = "_abstract_test_"
@@ -361,9 +360,7 @@ class TestAttribute:
         class MyType:  # pylint: disable=too-few-public-methods
             pass
 
-        class Attribute(
-            DatasetAttribute
-        ):  # pylint: disable=unused-variable, too-few-public-methods
+        class Attribute(DatasetAttribute):  # pylint: disable=too-few-public-methods
             """An attribute"""
 
             type_id = "_attr_2_"

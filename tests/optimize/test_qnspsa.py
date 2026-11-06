@@ -15,7 +15,10 @@
 Unit tests for the ``QNSPSAOptimizer``
 """
 
+# Tests exercise private interfaces.
 # pylint: disable=protected-access
+
+
 from copy import deepcopy
 
 import pytest

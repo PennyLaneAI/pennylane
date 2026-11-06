@@ -20,8 +20,6 @@ import functools
 from collections.abc import Callable
 from functools import partial
 from typing import Literal
-
-# pylint: disable=too-many-arguments,too-many-branches,too-many-statements,unused-argument
 from warnings import warn
 
 import numpy as np
@@ -170,7 +168,7 @@ def finite_diff_coeffs(n, approx_order, strategy):
     return coeffs_and_shifts
 
 
-def finite_diff_jvp(
+def finite_diff_jvp(  # pylint: disable=too-many-arguments
     f: Callable,
     args: tuple,
     tangents: tuple,
@@ -278,16 +276,16 @@ def _finite_diff_stopping_condition(op) -> bool:
     return True
 
 
-# pylint: disable=too-many-positional-arguments
-def _expand_transform_finite_diff(
+def _expand_transform_finite_diff(  # pylint: disable=too-many-arguments
     tape: QuantumScript,
-    argnum=None,
-    h: float = 1e-7,
-    approx_order: int = 1,
-    n: int = 1,
+    argnum=None,  # pylint: disable=unused-argument
+    h: float = 1e-7,  # pylint: disable=unused-argument
+    approx_order: int = 1,  # pylint: disable=unused-argument
+    n: int = 1,  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
     strategy: Literal["forward", "backward", "center"] = "forward",
-    f0=None,
-    validate_params: bool = True,
+    f0=None,  # pylint: disable=unused-argument
+    validate_params: bool = True,  # pylint: disable=unused-argument
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before finite difference."""
     [new_tape], postprocessing = decompose(
@@ -305,14 +303,13 @@ def _expand_transform_finite_diff(
     return [new_tape], postprocessing
 
 
-# pylint: disable=too-many-positional-arguments
 @partial(
     transform,
     expand_transform=_expand_transform_finite_diff,
     classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
-def finite_diff(
+def finite_diff(  # pylint: disable=too-many-arguments, too-many-statements
     tape: QuantumScript,
     argnum=None,
     h: float = 1e-7,
@@ -524,7 +521,7 @@ def finite_diff(
         gradient_tapes.extend(g_tapes)
         shapes.append(len(g_tapes))
 
-    def _single_shot_batch_result(results):
+    def _single_shot_batch_result(results):  # pylint: disable=too-many-branches
         """Auxiliary function for post-processing one batch of results corresponding to finite shots or a single
         component of a shot vector"""
         grads = []

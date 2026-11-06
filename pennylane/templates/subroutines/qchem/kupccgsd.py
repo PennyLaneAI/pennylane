@@ -15,7 +15,10 @@ r"""
 Contains the k-UpCCGSD template.
 """
 
-# pylint: disable-msg=too-many-arguments,protected-access,too-many-positional-arguments
+# APIs keep physical and chemistry parameters explicit.
+# pylint: disable=too-many-arguments
+
+
 import copy
 from collections import defaultdict
 from collections.abc import Sequence
@@ -266,11 +269,12 @@ class kUpCCGSD(Operation):
 
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)
+        # pylint: disable-next=protected-access
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["s_wires"] = [
+        new_op._hyperparameters["s_wires"] = [  # pylint: disable=protected-access
             [wire_map.get(w, w) for w in wires] for wires in self._hyperparameters["s_wires"]
         ]
-        new_op._hyperparameters["d_wires"] = [
+        new_op._hyperparameters["d_wires"] = [  # pylint: disable=protected-access
             [[wire_map.get(w, w) for w in _wires] for _wires in wires]
             for wires in self._hyperparameters["d_wires"]
         ]
@@ -290,15 +294,8 @@ class kUpCCGSD(Operation):
         }
 
     @staticmethod
-    def compute_decomposition(
-        weights,
-        wires,
-        s_wires,
-        d_wires,
-        k,
-        init_state,
-        delta_sz=None,
-    ):  # pylint: disable=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ, unused-argument
+    def compute_decomposition(weights, wires, s_wires, d_wires, k, init_state, delta_sz=None):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -389,8 +386,8 @@ def _kupccgsd_decomposition(
     d_wires: list,
     k: int,
     init_state: tuple[int],
-    delta_sz: int = None,
-):  # pylint: disable=too-many-arguments, arguments-differ, unused-argument
+    delta_sz: int = None,  # pylint: disable=unused-argument
+):
     BasisState(init_state, wires=wires)
 
     @for_loop(k)

@@ -29,8 +29,6 @@ quimb = pytest.importorskip("quimb")
 
 pytestmark = pytest.mark.external
 
-# pylint: disable=too-many-arguments, redefined-outer-name
-
 
 @pytest.fixture(
     params=[
@@ -65,7 +63,7 @@ def execute(device, tape):
 class TestVar:
     """Tests for the variance"""
 
-    def test_Identity(self, theta, phi, dev):
+    def test_Identity(self, theta, phi, dev):  # pylint: disable=redefined-outer-name
         """Tests applying identities."""
 
         ops = [
@@ -84,7 +82,7 @@ class TestVar:
 
         assert np.allclose(result, expected, atol=tol, rtol=0)
 
-    def test_identity_variance(self, theta, phi, dev):
+    def test_identity_variance(self, theta, phi, dev):  # pylint: disable=redefined-outer-name
         """Tests identity variances."""
 
         tape = qp.tape.QuantumScript(
@@ -96,6 +94,7 @@ class TestVar:
         tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
         assert np.allclose(0.0, result, atol=tol, rtol=0)
 
+    # pylint: disable-next=redefined-outer-name
     def test_multi_wire_identity_variance(self, theta, phi, dev):
         """Tests multi-wire identity."""
 
@@ -164,6 +163,7 @@ class TestVar:
             ),
         ],
     )
+    # pylint: disable-next=redefined-outer-name, too-many-arguments
     def test_single_wire_observables_variance(self, Obs, Op, expected_fn, theta, phi, dev):
         """Test that variance values for single wire observables are correct"""
 
@@ -177,7 +177,7 @@ class TestVar:
         tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
         assert np.allclose(result, expected, atol=tol, rtol=0)
 
-    def test_hermitian_variance(self, theta, phi, dev):
+    def test_hermitian_variance(self, theta, phi, dev):  # pylint: disable=redefined-outer-name
         """Tests an Hermitian operator."""
 
         with qp.tape.QuantumTape() as tape:
@@ -194,7 +194,7 @@ class TestVar:
         tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
         assert np.allclose(calculated_val, reference_val, atol=tol, rtol=0)
 
-    def test_hamiltonian_variance(self, theta, phi, dev):
+    def test_hamiltonian_variance(self, theta, phi, dev):  # pylint: disable=redefined-outer-name
         """Tests a Hamiltonian."""
 
         ham = qp.Hamiltonian(
@@ -222,6 +222,7 @@ class TestVar:
         tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
         assert np.allclose(calculated_val, reference_val, atol=tol, rtol=0)
 
+    # pylint: disable-next=redefined-outer-name
     def test_sparse_hamiltonian_variance(self, theta, phi, dev):
         """Tests a Hamiltonian."""
 
@@ -267,7 +268,7 @@ class TestOperatorArithmetic:
             qp.sum(qp.PauliZ(0), qp.PauliX(1)),
         ],
     )
-    def test_op_math(self, phi, dev, obs):
+    def test_op_math(self, phi, dev, obs):  # pylint: disable=redefined-outer-name
         """Tests the `SProd`, `Prod`, and `Sum` classes."""
 
         tape = qp.tape.QuantumScript(
@@ -287,7 +288,7 @@ class TestOperatorArithmetic:
 
         assert np.allclose(calculated_val, reference_val, tol)
 
-    def test_integration(self, phi, dev):
+    def test_integration(self, phi, dev):  # pylint: disable=redefined-outer-name
         """Test a Combination of `Sum`, `SProd`, and `Prod`."""
 
         obs = qp.sum(
@@ -312,7 +313,7 @@ class TestOperatorArithmetic:
 class TestTensorVar:
     """Test tensor variances"""
 
-    def test_PauliX_PauliY(self, theta, phi, varphi, dev):
+    def test_PauliX_PauliY(self, theta, phi, varphi, dev):  # pylint: disable=redefined-outer-name
         """Tests a tensor product involving PauliX and PauliY."""
 
         with qp.tape.QuantumTape() as tape:
@@ -330,7 +331,7 @@ class TestTensorVar:
 
         assert np.allclose(calculated_val, reference_val, tol)
 
-    def test_PauliZ_identity(self, theta, phi, varphi, dev):
+    def test_PauliZ_identity(self, theta, phi, varphi, dev):  # pylint: disable=redefined-outer-name
         """Tests a tensor product involving PauliZ and Identity."""
 
         with qp.tape.QuantumTape() as tape:
@@ -349,6 +350,7 @@ class TestTensorVar:
 
         assert np.allclose(calculated_val, reference_val, tol)
 
+    # pylint: disable-next=redefined-outer-name
     def test_PauliZ_hadamard_PauliY(self, theta, phi, varphi, dev):
         """Tests a tensor product involving PauliY, PauliZ and Hadamard."""
 

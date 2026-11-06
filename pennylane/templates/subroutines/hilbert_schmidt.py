@@ -113,16 +113,15 @@ class HilbertSchmidt(Operation):
     resource_keys = {"num_wires", "u_reps", "v_wires"}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
-        # pylint: disable=arguments-differ
         U = (U,) if isinstance(U, Operator) or is_tracer(U) else U
         V = (V,) if isinstance(V, Operator) or is_tracer(V) else V
 
         def _get_tracer(op):
             if isinstance(op, Operator2):
                 if op.tracer is None:
-                    # pylint: disable-next=protected-access
-                    op._bind_primitive()
+                    op._bind_primitive()  # pylint: disable=protected-access
                 return op.tracer if op.tracer is not None else op
             return op
 
@@ -217,13 +216,12 @@ class HilbertSchmidt(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(
+    def compute_decomposition(  # pylint: disable=arguments-differ
         *params: TensorLike,
         wires: int | Iterable[int | str] | Wires,
         U: Operator | Iterable[Operator],
         V: Operator | Iterable[Operator],
     ) -> list[Operator]:
-        # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators."""
 
         u_ops = (U,) if isinstance(U, Operator) else tuple(U)
@@ -267,17 +265,15 @@ class HilbertSchmidt(Operation):
         return decomp_ops
 
 
-# pylint: disable=protected-access
-
-
-@HilbertSchmidt._primitive.def_impl
+@HilbertSchmidt._primitive.def_impl  # pylint: disable=protected-access
 def _hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
     V = ops[:num_v_ops]
     U = ops[num_v_ops:]
     return type.__call__(HilbertSchmidt, V, U, **kwargs)
 
 
-class LocalHilbertSchmidt(HilbertSchmidt):
+# Wire mapping remains explicitly unsupported by the parent implementation.
+class LocalHilbertSchmidt(HilbertSchmidt):  # pylint: disable=abstract-method
     r"""Create a Local Hilbert-Schmidt template that can be used to compute the Local Hilbert-Schmidt Test (LHST).
 
     The result of the LHST is a useful quantity for compiling a unitary `U` with an approximate unitary `V`. The
@@ -413,10 +409,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         return clone
 
 
-# pylint: disable=protected-access
-
-
-@LocalHilbertSchmidt._primitive.def_impl
+@LocalHilbertSchmidt._primitive.def_impl  # pylint: disable=protected-access
 def _local_hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
     V = ops[:num_v_ops]
     U = ops[num_v_ops:]
@@ -531,11 +524,11 @@ def _up_to_last_layer(
 
 @register_resources(_hilbert_schmidt_resources)
 def _hilbert_schmidt_decomposition(
-    *params: TensorLike,
+    *params: TensorLike,  # pylint: disable=unused-argument
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
-):  # pylint: disable=unused-argument
+):
     _, first_range, second_range, wires = _up_to_last_layer(wires, U, V)
 
     @for_loop(min(len(first_range), len(second_range)))
@@ -553,11 +546,11 @@ def _hilbert_schmidt_decomposition(
 
 @register_resources(_local_hilbert_schmidt_resources)
 def _local_hilbert_schmidt_decomposition(
-    *params: TensorLike,
+    *params: TensorLike,  # pylint: disable=unused-argument
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
-):  # pylint: disable=unused-argument
+):
     n_wires, _, _, wires = _up_to_last_layer(wires, U, V)
 
     CNOT(wires=[wires[0], wires[n_wires // 2]])

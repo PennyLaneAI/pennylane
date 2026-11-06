@@ -70,7 +70,7 @@ def cdf_reference_hamiltonian(ham):
     equal ``expm(-i H t)``.
     """
     # Local import to avoid a module-load-time dependency on the template.
-    from pennylane.templates.subroutines.time_evolution.trotter_cdf import (  # pylint: disable=import-outside-toplevel
+    from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
         _energy_shift,
     )
 
@@ -104,7 +104,7 @@ def cgf_reference_hamiltonian(ham):
     with ``s = _energy_shift(ham)`` and wire index ``l * n_states + p``. For an identity-leaf
     Hamiltonian ``matrix(TrotterCGF)`` must equal ``expm(-i H t)``.
     """
-    from pennylane.templates.subroutines.time_evolution.trotter_cgf import (  # pylint: disable=import-outside-toplevel
+    from pennylane.templates.subroutines.time_evolution.trotter_cgf import (
         _energy_shift,
     )
 
@@ -132,9 +132,8 @@ def cgf_reference_hamiltonian(ham):
     return H
 
 
-def hadamard_test(
-    trotter_cls, ham, sys_wires, t, steps, double_phase, seed
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def hadamard_test(trotter_cls, ham, sys_wires, t, steps, double_phase, seed):
     """Return (measured <X_anc>, psi) for the H-ctrl-<X> Hadamard-test circuit."""
     anc = max(sys_wires) + 1
     dev = qp.device("default.qubit", wires=[anc] + list(sys_wires))
@@ -144,8 +143,7 @@ def hadamard_test(
     psi /= np.linalg.norm(psi)
 
     @qp.qnode(dev)
-    # pylint: disable-next=protected-access
-    @qp.transforms._tape_decompose(gate_set=TROTTER_GATE_SET)
+    @qp.transforms._tape_decompose(gate_set=TROTTER_GATE_SET)  # pylint: disable=protected-access
     def circ():
         qp.StatePrep(psi, wires=sys_wires)
         qp.H(anc)
@@ -157,16 +155,14 @@ def hadamard_test(
     return float(circ()), psi
 
 
-def control_branches(
-    trotter_cls, ham, sys_wires, t, steps, double_phase
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def control_branches(trotter_cls, ham, sys_wires, t, steps, double_phase):
     """Return the (control-0, control-1) branch unitaries of ctrl(Trotter*)."""
     anc = max(sys_wires) + 1
     op = qp.ctrl(
         trotter_cls(t, steps, ham, wires=sys_wires, double_phase=double_phase), control=[anc]
     )
-    # pylint: disable-next=protected-access
-    [tape], _ = qp.transforms._tape_decompose(
+    [tape], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
         [qp.tape.QuantumScript([op], [])], gate_set=TROTTER_GATE_SET
     )
     matrix = qp.matrix(tape, wire_order=[anc] + list(sys_wires))
@@ -174,9 +170,9 @@ def control_branches(
     return matrix[:dim, :dim], matrix[dim:, dim:]
 
 
-def assert_merged_trotter_matches(
+def assert_merged_trotter_matches(  # pylint: disable=too-many-arguments
     trotter_cls, ham, wires, t, steps, expected_u, has_control, double_phase
-):  # pylint: disable=too-many-arguments
+):
     """Compare the template (and both controlled variants) to an independently built Trotter product."""
     if not has_control:
         actual = qp.matrix(trotter_cls(t, steps, ham, wires=wires), wire_order=wires)

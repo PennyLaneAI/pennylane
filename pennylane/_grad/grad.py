@@ -35,13 +35,13 @@ from pennylane.compiler import compiler
 make_vjp = unary_to_nary(_make_vjp)
 
 
-# pylint: disable=unused-argument, too-many-arguments
 jacobian_prim = capture.QpPrimitive("jacobian")
 jacobian_prim.multiple_results = True
 jacobian_prim.prim_type = "higher_order"
 
 
 @jacobian_prim.def_impl
+# pylint: disable-next=too-many-arguments, unused-argument
 def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
     if method != "auto":  # pragma: no cover
         raise ValueError(f"Invalid value '{method=}' without QJIT.")
@@ -59,8 +59,8 @@ def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
     return jax.tree_util.tree_leaves(res)
 
 
-# pylint: disable=unused-argument
 @jacobian_prim.def_abstract_eval
+# pylint: disable-next=too-many-arguments, unused-argument
 def _grad_abstract(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
     if scalar_out and not (len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()):
         raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
@@ -210,8 +210,7 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
     return new_func
 
 
-# pylint: disable=too-many-instance-attributes
-class grad:
+class grad:  # pylint: disable=too-many-instance-attributes
     """Returns the gradient as a callable function of hybrid quantum-classical functions.
     :func:`~.qjit` and Autograd compatible.
 
@@ -271,7 +270,6 @@ class grad:
         the arguments in ``argnums``.
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(self, func, argnums=None, h=None, method=None):
         self._forward = None
         self._grad_fn = None
@@ -288,7 +286,7 @@ class grad:
             # If the differentiable argnum is provided, we can construct
             # the gradient function at once during initialization.
             # Known pylint issue with function signatures and decorators:
-            # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
+            # pylint: disable-next=unexpected-keyword-arg, no-value-for-parameter
             self._grad_fn = self._grad_with_forward(func, argnum=self._argnums)
 
         # need to preserve input siganture for use in catalyst AOT compilation, but
@@ -328,7 +326,7 @@ class grad:
             argnums = argnums[0]
 
         # Known pylint issue with function signatures and decorators:
-        # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
+        # pylint: disable-next=unexpected-keyword-arg, no-value-for-parameter
         return self._grad_with_forward(self._func, argnum=argnums), argnums
 
     def __call__(self, *args, **kwargs):
@@ -383,7 +381,7 @@ class grad:
         """This function is a replica of ``autograd.grad``, with the only
         difference being that it returns both the gradient *and* the forward pass
         value."""
-        vjp, ans = _make_vjp(fun, x)  # pylint: disable=redefined-outer-name
+        vjp, ans = _make_vjp(fun, x)
 
         if vspace(ans).size != 1:
             raise TypeError(
@@ -425,8 +423,7 @@ def _get_argnum(args):
     return argnum
 
 
-# pylint: disable=too-few-public-methods
-class jacobian:
+class jacobian:  # pylint: disable=too-few-public-methods
     """Returns the Jacobian as a callable function of vector-valued (functions of) QNodes.
     This function is compatible with Autograd and :func:`~.qjit`.
 
@@ -640,7 +637,6 @@ class jacobian:
 
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(self, func, argnums=None, method=None, h=None):
         self._func = func
         self._argnums = argnums

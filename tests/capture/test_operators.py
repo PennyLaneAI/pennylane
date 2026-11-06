@@ -15,7 +15,9 @@
 Integration tests for the capture of pennylane operations into jaxpr.
 """
 
-# pylint: disable=protected-access,wrong-import-position
+# Tests inspect private interfaces; load optional backends before dependent imports.
+# pylint: disable=protected-access, wrong-import-position
+
 
 import numpy as np
 import pytest

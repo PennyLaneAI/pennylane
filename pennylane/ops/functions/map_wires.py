@@ -59,8 +59,8 @@ def map_wires(
     input: Operator | MeasurementProcess | QuantumScript | QNode | Callable | QuantumScriptBatch,
     wire_map: dict,
     queue=False,
-    replace=False,
-):  # pylint: disable=unused-argument
+    replace=False,  # pylint: disable=unused-argument
+):
     """Changes the wires of an operator, tape, qnode or quantum function according
     to the given wire map.
 

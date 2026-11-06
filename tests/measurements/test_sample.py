@@ -20,10 +20,8 @@ import pennylane as qp
 from pennylane.core.operator import Operator
 from pennylane.exceptions import EigvalsUndefinedError, MeasurementShapeError, QuantumFunctionError
 
-# pylint: disable=protected-access, no-member, too-many-public-methods
 
-
-class TestSample:
+class TestSample:  # pylint: disable=too-many-public-methods
     """Tests for the sample function"""
 
     @pytest.mark.parametrize("n_sample", (1, 10))
@@ -50,6 +48,7 @@ class TestSample:
 
         assert len(result) == 3
         assert np.array_equal(result[0].shape, (n_sample,))
+        # pylint: disable-next=protected-access
         assert circuit._qfunc_output[0].shape(shots=n_sample, num_device_wires=3) == (n_sample,)
         assert isinstance(result[1], np.float64)
         assert isinstance(result[2], np.float64)
@@ -70,6 +69,7 @@ class TestSample:
 
         assert isinstance(result, np.ndarray)
         assert np.array_equal(result.shape, (n_sample,))
+        # pylint: disable-next=protected-access
         assert circuit._qfunc_output.shape(shots=n_sample, num_device_wires=1) == (n_sample,)
 
     def test_multi_wire_sample_regular_shape(self):
@@ -86,8 +86,11 @@ class TestSample:
 
         result = circuit()
 
+        # pylint: disable-next=protected-access
         assert circuit._qfunc_output[0].shape(shots=n_sample, num_device_wires=3) == (n_sample,)
+        # pylint: disable-next=protected-access
         assert circuit._qfunc_output[1].shape(shots=n_sample, num_device_wires=3) == (n_sample,)
+        # pylint: disable-next=protected-access
         assert circuit._qfunc_output[2].shape(shots=n_sample, num_device_wires=3) == (n_sample,)
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
@@ -264,7 +267,6 @@ class TestSample:
         assert all(r.shape == exp_shape for r, exp_shape in zip(res, expected_shapes))
 
         # assert first wire is always the same as second
-        # pylint: disable=unsubscriptable-object
         assert np.all(res[0][:, 0] == res[0][:, 1])
         assert np.all(res[1][:, 0] == res[1][:, 1])
         assert np.all(res[2][:, 0] == res[2][:, 1])
@@ -375,7 +377,6 @@ class TestSample:
 
         assert isinstance(binned_samples, tuple)
         assert len(binned_samples) == len(shot_vec)
-        # pylint: disable=unsubscriptable-object
         assert binned_samples[0].shape == (shot_vec[0],)
 
     def test_sample_empty_wires(self):
@@ -395,7 +396,6 @@ class TestSample:
 
         res = circuit()
 
-        # pylint: disable=comparison-with-callable
         assert res.shape == (shots, 3)
 
     def test_new_sample_with_operator_with_no_eigvals(self):
@@ -516,6 +516,7 @@ class TestJAXCompatibility:
 
         expected = (samples, 2)
         assert results.shape == expected
+        # pylint: disable-next=protected-access
         assert circuit._qfunc_output.shape(samples, 3) == (samples, 2) if samples != 1 else (2,)
 
     def test_sample_with_boolean_tracer(self):

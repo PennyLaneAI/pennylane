@@ -15,7 +15,11 @@
 This submodule tests strategy structure for defining custom plxpr interpreters
 """
 
-# pylint: disable=protected-access,too-few-public-methods,unbalanced-tuple-unpacking,wrong-import-position
+# Tests group cases in helper classes; inspect private interfaces; load optional backends before
+# dependent imports.
+# pylint: disable=protected-access, too-few-public-methods, wrong-import-position
+
+
 import pytest
 
 import pennylane as qp
@@ -57,7 +61,6 @@ class SimplifyInterpreter(PlxprInterpreter):
         return new_mp
 
 
-# pylint: disable=use-implicit-booleaness-not-comparison
 def test_env_and_initialized():
     """Test that env is initialized at the start."""
 
@@ -345,8 +348,7 @@ def handle_add_3(self, x):  # pylint: disable=unused-argument
     return x + scalar
 
 
-#  pylint: disable=too-many-public-methods
-class TestHigherOrderPrimitiveRegistrations:
+class TestHigherOrderPrimitiveRegistrations:  # pylint: disable=too-many-public-methods
     def test_adjoint_transform(self):
         """Test the higher order adjoint transform."""
 
@@ -372,7 +374,7 @@ class TestHigherOrderPrimitiveRegistrations:
             def g(y):
                 # One new const
                 theta = add_3.bind(0)
-                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
+                qp.Rot(y, theta, y, 0)
 
             qp.adjoint(g)(x)
 
@@ -411,7 +413,7 @@ class TestHigherOrderPrimitiveRegistrations:
             def g(y):
                 # One new const
                 theta = add_3.bind(0)
-                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
+                qp.Rot(y, theta, y, 0)
 
             qp.ctrl(g, control)(x)
 
@@ -481,7 +483,7 @@ class TestHigherOrderPrimitiveRegistrations:
             def cond_fn(y):
                 # One new const
                 theta = add_3.bind(0)
-                _ = qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
+                _ = qp.Rot(y, theta, y, 0)
 
             @cond_fn.otherwise
             def _(y):
@@ -525,7 +527,7 @@ class TestHigherOrderPrimitiveRegistrations:
             @qp.for_loop(n)
             def g(i):
                 theta = add_3.bind(0)
-                qp.Rot(i, theta, i, 0)  # pylint: disable=expression-not-assigned
+                qp.Rot(i, theta, i, 0)
 
             g()
 
@@ -563,7 +565,7 @@ class TestHigherOrderPrimitiveRegistrations:
             @qp.while_loop(lambda i: i < add_3.bind(n))
             def g(i):
                 theta = add_3.bind(0)
-                qp.Rot(i, theta, i, 0)  # pylint: disable=expression-not-assigned
+                qp.Rot(i, theta, i, 0)
                 return i + 1
 
             g(0)
@@ -622,7 +624,7 @@ class TestHigherOrderPrimitiveRegistrations:
         @qp.qnode(dev, diff_method="backprop", grad_on_execution=False)
         def f():
             theta = add_3.bind(0)
-            qp.Rot(1, theta, 1, 0)  # pylint: disable=expression-not-assigned
+            qp.Rot(1, theta, 1, 0)
             qp.I(0)
             return qp.probs(wires=0)
 
@@ -650,7 +652,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         jaxpr0 = jaxpr.eqns[0].params["jaxpr"]
         assert jaxpr0.eqns[0].primitive.name == "mul"
-        assert_eqn_matches_op(jaxpr0.eqns[1], qp.RX)  # pylint: disable=protected-access
+        assert_eqn_matches_op(jaxpr0.eqns[1], qp.RX)
 
         assert jaxpr0 is jaxpr.eqns[1].params["jaxpr"]  # properly cached
 
@@ -733,7 +735,7 @@ class TestHigherOrderPrimitiveRegistrations:
             @qp.qnode(qp.device("default.qubit", wires=2))
             def circuit(y):
                 theta = add_3.bind(0)
-                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
+                qp.Rot(y, theta, y, 0)
                 return qp.expval(qp.Z(0) + qp.Z(0))
 
             return grad_f(circuit)(x)
@@ -754,7 +756,7 @@ class TestHigherOrderPrimitiveRegistrations:
             @qp.qnode(qp.device("default.qubit", wires=2))
             def circuit(y):
                 theta = add_3.bind(0)
-                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
+                qp.Rot(y, theta, y, 0)
                 return qp.expval(qp.Z(0) + qp.Z(0))
 
             return qp.vjp(circuit, (x,), (1.0,))
@@ -776,7 +778,7 @@ class TestHigherOrderPrimitiveRegistrations:
             @qp.qnode(qp.device("default.qubit", wires=2))
             def circuit(y):
                 theta = add_3.bind(0)
-                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
+                qp.Rot(y, theta, y, 0)
                 return qp.expval(qp.Z(0) + qp.Z(0))
 
             return qp.value_and_grad(circuit)(x)
@@ -798,7 +800,7 @@ class TestHigherOrderPrimitiveRegistrations:
             @qp.qnode(qp.device("default.qubit", wires=2))
             def circuit(y):
                 theta = add_3.bind(0)
-                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
+                qp.Rot(y, theta, y, 0)
                 return qp.expval(qp.Z(0) + qp.Z(0))
 
             return qp.jvp(circuit, (x,), (1.0,))

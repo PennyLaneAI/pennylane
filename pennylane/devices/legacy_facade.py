@@ -17,8 +17,6 @@ new interface.
 """
 
 import warnings
-
-# pylint: disable=not-callable
 from contextlib import contextmanager
 from copy import copy, deepcopy
 from dataclasses import replace
@@ -106,6 +104,7 @@ def null_postprocessing(results):
 @transform
 def legacy_device_expand_fn(tape, device):
     """Turn the ``expand_fn`` from the legacy device interface into a transform."""
+    # pylint: disable-next=not-callable
     new_tape = _set_shots(device, tape.shots)(device.expand_fn)(tape)
     return (new_tape,), null_postprocessing
 
@@ -113,6 +112,7 @@ def legacy_device_expand_fn(tape, device):
 @transform
 def legacy_device_batch_transform(tape, device):
     """Turn the ``batch_transform`` from the legacy device interface into a transform."""
+    # pylint: disable-next=not-callable
     return _set_shots(device, tape.shots)(device.batch_transform)(tape)
 
 
@@ -147,8 +147,9 @@ def _add_adjoint_transforms(pipeline: CompilePipeline, name="adjoint"):
     pipeline.add_transform(validate_adjoint_trainable_params)
 
 
+# Native JVP and VJP entry points are optional for this legacy adapter.
 @single_tape_support
-class LegacyDeviceFacade(Device):
+class LegacyDeviceFacade(Device):  # pylint: disable=abstract-method
     """
     A Facade that converts a device from the old ``qp.Device`` interface into the new interface.
 
@@ -156,8 +157,7 @@ class LegacyDeviceFacade(Device):
         device (qp.device.LegacyDevice): a device that follows the legacy device interface.
     """
 
-    # pylint: disable=super-init-not-called
-    def __init__(self, device: LegacyDevice):
+    def __init__(self, device: LegacyDevice):  # pylint: disable=super-init-not-called
         if isinstance(device, type(self)):
             raise RuntimeError("An already-facaded device can not be wrapped in a facade again.")
 
@@ -217,19 +217,19 @@ class LegacyDeviceFacade(Device):
     def wires(self) -> Wires:
         return self._device.wires
 
-    # pylint: disable=protected-access
     @property
     def shots(self) -> Shots:
-        if self._device._shot_vector:
-            return Shots(self._device._raw_shot_sequence)
+        if self._device._shot_vector:  # pylint: disable=protected-access
+            return Shots(self._device._raw_shot_sequence)  # pylint: disable=protected-access
         return Shots(self._device.shots)
 
     @property
     def _debugger(self):
-        return self._device._debugger
+        return self._device._debugger  # pylint: disable=protected-access
 
     @_debugger.setter
     def _debugger(self, new_debugger):
+        # pylint: disable-next=protected-access
         self._device._debugger = new_debugger  # pragma: no cover
 
     def preprocess_transforms(
@@ -444,9 +444,12 @@ class LegacyDeviceFacade(Device):
 
         first_shot = circuits[0].shots
         if all(t.shots == first_shot for t in circuits):
+            # pylint: disable-next=not-callable
             return _set_shots(dev, first_shot)(dev.batch_execute)(circuits, **kwargs)
         return tuple(
-            _set_shots(dev, t.shots)(dev.batch_execute)((t,), **kwargs)[0] for t in circuits
+            # pylint: disable-next=not-callable
+            _set_shots(dev, t.shots)(dev.batch_execute)((t,), **kwargs)[0]
+            for t in circuits
         )
 
     def execute_and_compute_derivatives(
@@ -457,6 +460,7 @@ class LegacyDeviceFacade(Device):
 
         first_shot = circuits[0].shots
         if all(t.shots == first_shot for t in circuits):
+            # pylint: disable-next=not-callable
             return _set_shots(self._device, first_shot)(self._device.execute_and_gradients)(
                 circuits, **execution_config.gradient_keyword_arguments
             )
@@ -471,6 +475,7 @@ class LegacyDeviceFacade(Device):
 
         first_shot = circuits[0].shots
         if all(t.shots == first_shot for t in circuits):
+            # pylint: disable-next=not-callable
             return _set_shots(self._device, first_shot)(self._device.gradients)(
                 circuits, **execution_config.gradient_keyword_arguments
             )

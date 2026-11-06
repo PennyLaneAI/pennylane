@@ -73,7 +73,10 @@ Functions
 ---------
 """
 
+# Optional dependencies and internal imports are loaded where they are used.
 # pylint: disable=import-outside-toplevel
+
+
 import argparse
 import pathlib
 import subprocess

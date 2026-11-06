@@ -14,8 +14,6 @@
 """Unit tests for the QNode"""
 
 import copy
-
-# pylint: disable=import-outside-toplevel, protected-access, no-member
 import warnings
 from functools import partial
 
@@ -57,12 +55,10 @@ class DummyDevice(qp.devices.LegacyDevice):
     def reset(self):
         pass
 
-    # pylint: disable=unused-argument
-    def apply(self, operation, wires, par):
+    def apply(self, operation, wires, par):  # pylint: disable=unused-argument
         return 0.0
 
-    # pylint: disable=unused-argument
-    def expval(self, observable, wires, par):
+    def expval(self, observable, wires, par):  # pylint: disable=unused-argument
         return 0.0
 
 
@@ -79,7 +75,6 @@ class DeviceDerivatives(DummyDevice):
         return capabilities
 
 
-# pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
 
@@ -728,7 +723,7 @@ class TestIntegration:
             circuit()
 
         tape = qp.workflow.construct_tape(circuit)()
-        assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert q.queue == []
         assert len(tape.operations) == 1
 
 
@@ -897,14 +892,13 @@ class TestCompilePipelineIntegration:
         assert circuit() == 100
 
 
-# pylint: disable=unused-argument
 class CustomDevice(qp.devices.Device):
     """A null device that just returns 0."""
 
     def __repr__(self):
         return "CustomDevice"
 
-    def execute(self, circuits, execution_config=None):
+    def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
         return (0,)
 
 
@@ -920,8 +914,7 @@ class TestTapeExpansion:
 
         dev = DefaultQubitLegacy(wires=1)
 
-        # pylint: disable=too-few-public-methods
-        class UnsupportedOp(qp.operation.Operation):
+        class UnsupportedOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             """custom unsupported op."""
 
             num_wires = 1
@@ -953,13 +946,12 @@ class TestTapeExpansion:
         assert np.allclose(tape.operations[0].parameters, 3 * x)
 
     @pytest.mark.autograd
-    def test_no_gradient_expansion(self, mocker):
+    def test_no_gradient_expansion(self, mocker):  # pylint: disable=unused-argument
         """Test that an unsupported operation with defined gradient recipe is
         not expanded"""
         dev = DefaultQubitLegacy(wires=1)
 
-        # pylint: disable=too-few-public-methods
-        class UnsupportedOp(qp.operation.Operation):
+        class UnsupportedOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             """custom unsupported op."""
 
             num_wires = 1
@@ -988,13 +980,12 @@ class TestTapeExpansion:
         assert np.allclose(qp.grad(qp.grad(circuit))(x), -9 * np.cos(3 * x))
 
     @pytest.mark.autograd
-    def test_gradient_expansion(self, mocker):
+    def test_gradient_expansion(self, mocker):  # pylint: disable=unused-argument
         """Test that a *supported* operation with no gradient recipe is
         expanded when applying the gradient transform, but not for execution."""
         dev = DefaultQubitLegacy(wires=1)
 
-        # pylint: disable=too-few-public-methods
-        class PhaseShift(qp.PhaseShift):
+        class PhaseShift(qp.PhaseShift):  # pylint: disable=too-few-public-methods
             """custom phase shift."""
 
             grad_method = None
@@ -1060,6 +1051,7 @@ class TestTapeExpansion:
         def circuit():
             return qp.expval(H)
 
+        # pylint: disable-next=protected-access
         spy = mocker.spy(qp.devices._legacy_device, "split_non_commuting")
         res = circuit()
         assert np.allclose(res, c[2], atol=0.3)
@@ -1273,16 +1265,16 @@ class TestDefaultQubitLegacySeeding:
         dev = DefaultQubitLegacy(wires=1, shots=num_shots, seed=seed)
 
         # Ensure we're not in fresh execution mode to test intermediate resets
-        dev._fresh_execution = False
+        dev._fresh_execution = False  # pylint: disable=protected-access
 
         # First sample
         samples1 = dev.sample_basis_states(2, state_probability)
-        counter_after_first = dev._sample_call_count
+        counter_after_first = dev._sample_call_count  # pylint: disable=protected-access
 
         # Manual reset (simulating what happens in classical shadow)
         # This should NOT reset the counter since _fresh_execution is False
         dev.reset()
-        counter_after_reset = dev._sample_call_count
+        counter_after_reset = dev._sample_call_count  # pylint: disable=protected-access
 
         # Second sample after reset
         samples2 = dev.sample_basis_states(2, state_probability)

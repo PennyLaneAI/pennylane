@@ -13,7 +13,10 @@
 # limitations under the License.
 """Tests for the shot adaptive optimizer"""
 
+# Tests use fixture signatures.
 # pylint: disable=unused-argument
+
+
 import pytest
 
 import pennylane as qp
@@ -111,7 +114,6 @@ class TestSingleShotGradientIntegration:
     def test_single_argument_step(self, mocker, monkeypatch, seed):
         """Test that a simple QNode with a single argument correctly performs an optimization step,
         and that the single-shot gradients generated have the correct shape"""
-        # pylint: disable=protected-access
 
         opt = qp.ShotAdaptiveOptimizer(min_shots=10)
         spy_single_shot_qnodes = mocker.spy(opt, "_single_shot_qnode_gradients")
@@ -127,6 +129,7 @@ class TestSingleShotGradientIntegration:
 
         spy_grad.assert_called_once()
         spy_single_shot_qnodes.assert_called_once()
+        # pylint: disable-next=protected-access
         single_shot_grads = opt._single_shot_qnode_gradients(qnode, [x_init], {})
 
         # assert single shot gradients are computed correctly
@@ -166,7 +169,6 @@ class TestSingleShotGradientIntegration:
     def test_single_array_argument_step(self, mocker, monkeypatch, seed):
         """Test that a simple QNode with a single array argument correctly performs an optimization step,
         and that the single-shot gradients generated have the correct shape"""
-        # pylint: disable=protected-access
         opt = qp.ShotAdaptiveOptimizer(min_shots=10)
         spy_single_shot_qnodes = mocker.spy(opt, "_single_shot_qnode_gradients")
         spy_grad = mocker.spy(opt, "compute_grad")
@@ -181,6 +183,7 @@ class TestSingleShotGradientIntegration:
         assert not np.allclose(new_x, x_init)
 
         spy_single_shot_qnodes.assert_called_once()
+        # pylint: disable-next=protected-access
         single_shot_grads = opt._single_shot_qnode_gradients(qnode, [x_init], {})
         spy_grad.assert_called_once()
 
@@ -233,7 +236,6 @@ class TestSingleShotGradientIntegration:
         """Test that a simple QNode with a single array argument with extra dimensions correctly
         performs an optimization step, and that the single-shot gradients generated have the
         correct shape"""
-        # pylint: disable=protected-access
         opt = qp.ShotAdaptiveOptimizer(min_shots=10)
         spy_single_shot_qnodes = mocker.spy(opt, "_single_shot_qnode_gradients")
         spy_grad = mocker.spy(opt, "compute_grad")
@@ -248,6 +250,7 @@ class TestSingleShotGradientIntegration:
         assert not np.allclose(new_x, x_init)
 
         spy_single_shot_qnodes.assert_called_once()
+        # pylint: disable-next=protected-access
         single_shot_grads = opt._single_shot_qnode_gradients(qnode, [x_init], {})
         spy_grad.assert_called_once()
 
@@ -303,7 +306,6 @@ class TestSingleShotGradientIntegration:
     def test_multiple_argument_step(self, mocker, monkeypatch, seed):
         """Test that a simple QNode with multiple scalar arguments correctly performs an optimization step,
         and that the single-shot gradients generated have the correct shape"""
-        # pylint: disable=protected-access
         dev = qp.device("default.qubit", wires=1, seed=seed)
 
         @qp.set_shots(100)
@@ -327,6 +329,7 @@ class TestSingleShotGradientIntegration:
         spy_grad.assert_called_once()
 
         # assert single shot gradients are computed correctly
+        # pylint: disable-next=protected-access
         single_shot_grads = opt._single_shot_qnode_gradients(circuit, args, {})
         assert len(single_shot_grads) == 2
         assert single_shot_grads[0].shape == (10,)
@@ -361,7 +364,6 @@ class TestSingleShotGradientIntegration:
     def test_multiple_array_argument_step(self, mocker, monkeypatch, seed):
         """Test that a simple QNode with multiple array arguments correctly performs an optimization step,
         and that the single-shot gradients generated have the correct shape"""
-        # pylint: disable=protected-access
         dev = qp.device("default.qubit", wires=1, seed=seed)
 
         @qp.set_shots(100)
@@ -392,6 +394,7 @@ class TestSingleShotGradientIntegration:
         spy_grad.assert_called_once()
 
         # assert single shot gradients are computed correctly
+        # pylint: disable-next=protected-access
         single_shot_grads = opt._single_shot_qnode_gradients(circuit, args, {})
         assert len(single_shot_grads) == 2
         assert single_shot_grads[0].shape == (10, 2, 3)
@@ -677,8 +680,7 @@ class TestOptimization:
         assert opt.shots_used > min_shots
 
 
-class TestStepAndCost:
-    # pylint: disable=too-few-public-methods
+class TestStepAndCost:  # pylint: disable=too-few-public-methods
     """Tests for the step_and_cost method"""
 
     @pytest.mark.slow

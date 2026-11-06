@@ -23,8 +23,6 @@ import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.labs.tests.estimator_beta.utils import decomp_equal
 
-# pylint: disable=no-self-use,too-many-arguments, undefined-variable, unused-variable
-
 
 class TestMottonenStatePreparation:
     """Test the MottonenStatePreparation class"""
@@ -164,6 +162,8 @@ class TestSumOfSlatersPrep:
                         ),
                         39,
                     ),
+                    # Pylint cannot trace the preceding walrus assignments in this parameter list.
+                    # pylint: disable-next=used-before-assignment
                     qre.Deallocate(allocated_register=alloc_reg),
                 ],
             ),
@@ -262,13 +262,14 @@ class TestSumOfSlatersPrep:
                         ),
                         15,
                     ),
+                    # pylint: disable-next=used-before-assignment
                     qre.Deallocate(allocated_register=alloc_reg_2),
                     qre.Deallocate(allocated_register=alloc_reg),
                 ],
             ),
         ],
     )
-    def test_resources(
+    def test_resources(  # pylint: disable=too-many-arguments
         self, num_coeffs, num_wires, num_bits, stateprep_op, select_swap_depth, expected_resources
     ):
         """Test that the resources are correct"""

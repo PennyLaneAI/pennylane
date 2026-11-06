@@ -4,6 +4,9 @@
 # run arbitrary code
 extension-pkg-whitelist=numpy,scipy,autograd,toml,appdir,autograd.numpy,autograd.numpy.linalg,autograd.numpy.builtins,packaging,torch,tensorflow,tensorflow.contrib,tensorflow.contrib.eager,LazyLoader,networkx,networkx.dag
 
+# Enable the informational diagnostic and fail lint when a suppression is unnecessary.
+fail-on=useless-suppression
+
 [TYPECHECK]
 
 # List of module names for which member attributes should not be checked
@@ -43,7 +46,6 @@ disable=
   import-outside-toplevel,
   missing-class-docstring,
   missing-function-docstring,
-  no-self-use,
   no-member, # because of qnode decorator
   comparison-with-callable,
   unsubscriptable-object, # because of qnode decorator

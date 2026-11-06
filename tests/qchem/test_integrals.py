@@ -15,7 +15,11 @@
 Unit tests for functions needed to computing integrals over basis functions.
 """
 
-# pylint: disable=too-many-arguments,too-few-public-methods,protected-access
+# Tests parameterize cases through explicit fixture and helper arguments; inspect private
+# interfaces.
+# pylint: disable=too-many-arguments, protected-access
+
+
 import pytest
 
 import pennylane as qp
@@ -56,7 +60,7 @@ class TestNorm:
         assert np.allclose(qchem.contracted_norm(l, alpha, a), n)
 
 
-class TestParams:
+class TestParams:  # pylint: disable=too-few-public-methods
     """Tests for parameter generation functions"""
 
     @pytest.mark.parametrize(

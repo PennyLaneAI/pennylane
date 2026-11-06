@@ -19,9 +19,7 @@ from dataclasses import replace
 import pytest
 
 import pennylane as qp
-
-# pylint: disable=no-name-in-module
-from conftest import atol_for_shots, get_device, test_matrix
+from conftest import atol_for_shots, get_device, test_matrix  # pylint: disable=no-name-in-module
 from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
 
 torch = pytest.importorskip("torch")
@@ -96,7 +94,7 @@ class TestTorchRun:
 
         res = torch.autograd.functional.jacobian(cost, a)
         if not shots.has_partitioned_shots:
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qp.math.sin(a)
 

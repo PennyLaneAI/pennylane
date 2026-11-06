@@ -986,8 +986,7 @@ class SumOfSlatersPrep(Operator2):
     # coefficients lead to a cheaper MultiplexerStatePreparation than complex-valued ones.
     arg_specs = {"wires": Wire[-1]}
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         coefficients: TensorLike,
         wires: WiresLike,
@@ -1004,7 +1003,6 @@ class SumOfSlatersPrep(Operator2):
             v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
             _, data = _preprocess(v_bits, wires)
 
-            # pylint: disable-next=protected-access
             sizes = self._required_register_sizes_from_nums(num_entries, data.r, n)
 
             if len(enumeration_wires) > 0 and len(enumeration_wires) != sizes["enumeration_wires"]:
@@ -1155,7 +1153,6 @@ class SumOfSlatersPrep(Operator2):
         }
 
 
-# pylint: disable-next=unused-argument
 def _sos_state_prep_resources(coefficients, wires, indices, **_):
     """Compute the resources for _sos_state_prep. It is an upper bound due to
     conditionally applied CNOT and X gates."""
@@ -1216,9 +1213,8 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     return resources
 
 
-# pylint: disable=unused-argument,too-many-arguments
-def _sos_state_prep_work_wires(
-    coefficients,
+def _sos_state_prep_work_wires(  # pylint: disable=too-many-arguments
+    coefficients,  # pylint: disable=unused-argument
     wires,
     indices,
     enumeration_wires=(),
@@ -1231,7 +1227,6 @@ def _sos_state_prep_work_wires(
     if indices is None:
         # invalid rule, just return so we dont get an error
         return {}
-    # pylint: disable-next=protected-access
     n = 1 if isinstance(wires, int) else len(wires)
     v_bits = math.int_to_binary(np.array(indices), n).T
     selector_ids, _ = select_sos_rows(v_bits)
@@ -1283,7 +1278,7 @@ def _pad_and_cast_coeffs(coefficients, enumeration_wires):
     return qp.math.cast(coefficients, cast_dtype)
 
 
-def _sos_state_prep_with_wires(
+def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
     data: tuple[np.ndarray, np.ndarray, SoSData],
     *,
     wires,
@@ -1293,7 +1288,6 @@ def _sos_state_prep_with_wires(
     mcx_cache_wires,
     selected_wires,
 ):
-    # pylint: disable=too-many-arguments, no-value-for-parameter
     coefficients, v_bits, data = data
     identity_encoding = data.r == data.m
     b_bits = data.b_bits
@@ -1348,9 +1342,9 @@ def _sos_state_prep_with_wires(
             def inner_loop(j):
                 qp.cond(u[j], encoding_cnot)([selected_wires[j], identification_wires[i]])
 
-            inner_loop()
+            inner_loop()  # pylint: disable=no-value-for-parameter
 
-        encoding()
+        encoding()  # pylint: disable=no-value-for-parameter
 
     @for_loop(data.m - 1)
     def left_elbow_ladder(i):
@@ -1386,14 +1380,15 @@ def _sos_state_prep_with_wires(
     @for_loop(1, num_entries)
     def uncompute_enumeration(k, prev_bits):
         bits = b_bits[:, k]
-        flip(bits ^ prev_bits)
+        flip(bits ^ prev_bits)  # pylint: disable=no-value-for-parameter
         if data.m > 1:
-            left_elbow_ladder()
-        cnot_loop(k)
+            left_elbow_ladder()  # pylint: disable=no-value-for-parameter
+        cnot_loop(k)  # pylint: disable=no-value-for-parameter
         if data.m > 1:
-            right_elbow_ladder()
+            right_elbow_ladder()  # pylint: disable=no-value-for-parameter
         return bits
 
+    # pylint: disable-next=no-value-for-parameter
     last_bits = uncompute_enumeration(np.ones(data.m, dtype=int))
 
     last_flip_x = qp.hint(qp.X, {"branch-prob": np.mean(1 - data.b_bits[:, -1])})
@@ -1402,19 +1397,18 @@ def _sos_state_prep_with_wires(
     def last_flip(i):
         qp.cond(1 - last_bits[i], last_flip_x)(mcx_ctrl_wires[i])
 
-    last_flip()
+    last_flip()  # pylint: disable=no-value-for-parameter
 
     # Step 6) in paper (p.7): Uncompute the b_i in the identification register (self-adjoint)
     if not identity_encoding:
-        encoding()
+        encoding()  # pylint: disable=no-value-for-parameter
 
 
 @register_condition(
     lambda coefficients, wires, indices, *_, **__: indices is not None
 )  # indices must be known
 @register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
-# pylint: disable-next=too-many-arguments
-def _sos_state_prep(
+def _sos_state_prep(  # pylint: disable=too-many-arguments
     coefficients,
     wires,
     indices,
@@ -1467,7 +1461,7 @@ def _sos_state_prep(
         all_wires["wires"] = wires
         all_wires["selected_wires"] = selected_wires
         data = (coefficients, v_bits, data)
-        _sos_state_prep_with_wires(data, **all_wires)  # pylint: disable=missing-kwoa
+        _sos_state_prep_with_wires(data, **all_wires)
 
 
 add_decomps(SumOfSlatersPrep, _sos_state_prep)

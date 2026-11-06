@@ -12,7 +12,10 @@
 # limitations under the License.
 """Tests for capturing ``Operator2`` instances into plxpr."""
 
-# pylint: disable=too-few-public-methods,protected-access,unbalanced-tuple-unpacking,wrong-import-position
+# Tests group cases in helper classes; inspect private interfaces; load optional backends before
+# dependent imports.
+# pylint: disable=too-few-public-methods, protected-access, wrong-import-position
+
 
 import numpy as np
 import pytest
@@ -84,7 +87,6 @@ class TestCaptureBasics:
 
         def fn(x):
             with qp.capture.pause():
-                # pylint: disable=protected-access
                 DynOp(x, wires=0)
                 DynOp(x, wires=0)._bind_primitive()
 

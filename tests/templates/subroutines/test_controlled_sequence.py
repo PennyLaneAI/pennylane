@@ -22,8 +22,6 @@ import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.wires import Wires
 
-# pylint: disable=unidiomatic-typecheck, cell-var-from-loop
-
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():

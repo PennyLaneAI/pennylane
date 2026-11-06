@@ -15,7 +15,9 @@
 Tests a function for determining abstracted axes and extracting the abstract shapes.
 """
 
-# pylint: disable=redefined-outer-name, unused-argument
+# Tests use fixture signatures.
+# pylint: disable=unused-argument
+
 
 import pytest
 

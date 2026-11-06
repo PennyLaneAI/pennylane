@@ -24,7 +24,7 @@ from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
 from pennylane.wires import Wires
 
 
-class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
+class TempScalar(ScalarSymbolicOp):  # pylint: disable=too-few-public-methods
     """Temporary scalar symbolic op class."""
 
     _name = "TempScalar"
@@ -34,7 +34,7 @@ class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
         pass
 
 
-class TempScalarCopy(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
+class TempScalarCopy(ScalarSymbolicOp):  # pylint: disable=too-few-public-methods
     """Copy of temporary scalar symbolic op class."""
 
     _name = "TempScalarCopy"
@@ -77,7 +77,7 @@ def test_map_wires():
     """Test the map_wires method."""
     base = Operator("a")
     op = SymbolicOp(base)
-    # pylint:disable=attribute-defined-outside-init,protected-access
+    # pylint: disable-next=protected-access
     op._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({"a": "X"}): 1})
     wire_map = {"a": 5}
     mapped_op = op.map_wires(wire_map=wire_map)
@@ -91,8 +91,6 @@ def test_map_wires():
 
 class TestProperties:
     """Test the properties of the symbolic op."""
-
-    # pylint:disable=too-few-public-methods
 
     def test_data(self):
         """Test that the data property for symbolic ops is read-only."""
@@ -126,7 +124,7 @@ class TestProperties:
     def test_has_matrix(self, has_mat):
         """Test that a symbolic op has a matrix if its base has a matrix."""
 
-        class DummyOp(Operator):
+        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
             has_matrix = has_mat
 
         base = DummyOp("b")
@@ -144,7 +142,7 @@ class TestProperties:
     def test_is_hermitian(self, is_herm):
         """Test that symbolic op is hermitian if the base is hermitian."""
 
-        class DummyOp(Operator):
+        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
             is_verified_hermitian = is_herm
 
         base = DummyOp("b")

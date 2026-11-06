@@ -38,10 +38,9 @@ from .resource import CircuitSpecs
 def _decomps_from_pipeline(pipeline: CompilePipeline) -> dict:
     """Collect the ``fixed_decomps`` and ``alt_decomps`` of the ``decompose`` transforms in
     ``pipeline``. If more than one fixes a rule for the same operator, the last one is used."""
-    # pylint: disable=protected-access
     fixed_decomps, alt_decomps = {}, {}
     for bound_transform in pipeline:
-        if bound_transform._transform is decompose:
+        if bound_transform._transform is decompose:  # pylint: disable=protected-access
             fixed_decomps |= bound_transform.kwargs.get("fixed_decomps", {})
             for op, rules in bound_transform.kwargs.get("alt_decomps", {}).items():
                 alt_decomps.setdefault(op, []).extend(rules)
@@ -50,9 +49,8 @@ def _decomps_from_pipeline(pipeline: CompilePipeline) -> dict:
 
 def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
     """Decompose a qjit'd QNode at ``level`` into the ``target`` gate set and return its specs."""
-    # pylint: disable=import-outside-toplevel,protected-access,no-value-for-parameter
     original_qnode = unwrap_qjit_qnode(func, fn_name="qp.estimate")
-    from catalyst.utils.exceptions import CompileError
+    from catalyst.utils.exceptions import CompileError  # pylint: disable=import-outside-toplevel
 
     if level == "device":
         raise NotImplementedError("qp.estimate does not support level='device' yet.")
@@ -77,7 +75,7 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
 
     # At level="top", the user transforms are skipped and only the decomposition is applied
     estimate_qnode = copy.copy(original_qnode)
-    estimate_qnode._compile_pipeline = CompilePipeline(
+    estimate_qnode._compile_pipeline = CompilePipeline(  # pylint: disable=protected-access
         decompose(gate_set=target, **_decomps_from_pipeline(original_qnode.compile_pipeline))
     )
 

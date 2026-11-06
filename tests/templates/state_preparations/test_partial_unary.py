@@ -38,8 +38,6 @@ from pennylane.testing import assert_valid, assert_valid_decomp_rule
 from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires
 
-# pylint: disable=protected-access
-
 
 def random_distinct_integers(high, size, rng):
     if high < 2**25:
@@ -184,6 +182,7 @@ class TestPUIsometryFinder:
         # Load the final states
         final_states = list(map(int, iso_finder.tableau))
         states = np.array(
+            # pylint: disable-next=protected-access
             [[(val >> s) & iso_finder._one for s in iso_finder._shifts] for val in final_states]
         ).astype(np.int8)
         # Transform the final states back
@@ -220,6 +219,7 @@ class TestPUIsometryFinder:
         # Compute target state bit tableau
         target_states = np.array(
             [
+                # pylint: disable-next=protected-access
                 [(int(val) >> s) & iso_finder._one for s in iso_finder._shifts]
                 for val in basis_states
             ]
@@ -239,12 +239,14 @@ class TestPUIsometryFinder:
 
         # Validate the internal tableau state:
         # All remainder qubits are zeroed everywhere
+        # pylint: disable-next=protected-access
         assert np.all((iso_finder.tableau & iso_finder.rem_mask) == iso_finder._zero)
         # The cached version of this also is correct
-        assert np.all(iso_finder._in_subspace)
-        assert iso_finder._n_not_subspace == 0
+        assert np.all(iso_finder._in_subspace)  # pylint: disable=protected-access
+        assert iso_finder._n_not_subspace == 0  # pylint: disable=protected-access
         # The subspace qubits are enumerating the num_entries integers specified in the bijection
         assert np.allclose(
+            # pylint: disable-next=protected-access
             (iso_finder.tableau >> iso_finder._nr_shift)[np.array(list(bijection.keys()))],
             np.array(list(bijection.values())),
         )
@@ -431,7 +433,6 @@ def assert_pui_correctness(rule, coefficients, indices, wire_specs):
     @qp.qnode(qp.device("lightning.qubit", wires=num_device_wires))
     @qp.transforms.resolve_dynamic_wires(min_int=num_wires + num_work_wires)
     def func():
-        # pylint: disable=cell-var-from-loop
         # Make sure that the output state length is at least 2**num_wires
         rule(coefficients, wires=wires, indices=indices, work_wires=work_wires)
         return qp.state()

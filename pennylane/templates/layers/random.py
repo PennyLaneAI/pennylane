@@ -15,7 +15,9 @@ r"""
 Contains the RandomLayers template.
 """
 
+# APIs keep circuit and algorithm parameters explicit.
 # pylint: disable=too-many-arguments
+
 
 import numpy as np
 
@@ -182,9 +184,8 @@ class RandomLayers(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(
-        weights, wires, ratio_imprim, imprimitive, rotations, seed
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(weights, wires, ratio_imprim, imprimitive, rotations, seed):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

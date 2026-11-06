@@ -15,7 +15,9 @@
 """PyTests for the AutoGraph source-to-source transformation feature for
 converting if/else statements to qp.cond."""
 
-# pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
+# Imports follow the initialization order required by this module.
+# pylint: disable=wrong-import-order, wrong-import-position
+
 
 import pytest
 
@@ -29,6 +31,7 @@ jax = pytest.importorskip("jax")
 # must be below jax importorskip
 from jax.core import eval_jaxpr
 
+# pylint: disable-next=ungrouped-imports
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
 from pennylane.capture.primitives import cond_prim
 from pennylane.exceptions import AutoGraphError
@@ -195,7 +198,6 @@ class TestConditionals:
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
-        # pylint: disable=singleton-comparison
         assert res(5) == 25
         assert res(2) == 8
 
@@ -203,10 +205,8 @@ class TestConditionals:
         """Test return statements from different branches of an if/else statement
         with autograph."""
 
-        # pylint: disable=no-else-return
-
         def f(x: int):
-            if x > 0:
+            if x > 0:  # pylint: disable=no-else-return
                 return 25  # converted to cond_fn
             else:
                 return 60  # converted to else_fn
@@ -253,7 +253,6 @@ class TestConditionals:
             def cond_fn():
                 return n**2
 
-            # pylint: disable=unused-variable
             @cond_fn.otherwise
             def else_fn():
                 return n
@@ -270,7 +269,6 @@ class TestConditionals:
         """Test that an exception is raised when the true branch defines a value without an else
         branch.
         """
-        # pylint: disable=using-constant-test
 
         def circuit(val):
             if val:
@@ -285,7 +283,6 @@ class TestConditionals:
 
     def test_branch_multi_return_type_mismatch(self):
         """Test that an exception is raised when the return types of all branches do not match."""
-        # pylint: disable=using-constant-test
 
         def circuit(val1, val2):
             if val1:

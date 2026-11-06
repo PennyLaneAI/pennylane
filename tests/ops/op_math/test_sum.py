@@ -15,9 +15,6 @@
 Unit tests for the Sum arithmetic class of qubit operations
 """
 
-# pylint: disable=eval-used, unused-argument
-
-
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -84,7 +81,6 @@ def _get_pw(w, pauli_op):
     return qp.pauli.PauliWord({w: pauli_op})
 
 
-# pylint: disable=unused-argument
 def sum_using_dunder_method(*summands):
     """Helper function which computes the sum of all the summands to invoke the
     __add__ dunder method."""
@@ -271,6 +267,7 @@ class TestInitialization:
     @pytest.mark.parametrize(
         "op, coeffs_true, ops_true", SUM_TERMS_OP_PAIRS_PAULI + SUM_TERMS_OP_PAIRS_MIXEDPAULI
     )
+    # pylint: disable-next=unused-argument
     def test_terms_does_not_change_queue(self, op, coeffs_true, ops_true):
         """Test that calling Prod.terms does not queue anything."""
         with qp.queuing.AnnotatedQueue() as q:
@@ -328,7 +325,7 @@ class TestInitialization:
     @pytest.mark.parametrize("op", SUM_REPR_EVAL)
     def test_eval_sum(self, op):
         """Test that string representations of Sum can be evaluated and yield the same operator"""
-        qp.assert_equal(eval(repr(op)), op)
+        qp.assert_equal(eval(repr(op)), op)  # pylint: disable=eval-used
 
 
 class TestMatrix:
@@ -607,8 +604,7 @@ class TestMatrix:
         """Test that an error is raised when the sparse matrix method
         is undefined for any of the factors."""
 
-        # pylint: disable=too-few-public-methods
-        class DummyOp(qp.operation.Operation):
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
             def sparse_matrix(self, wire_order=None):
@@ -811,9 +807,8 @@ class TestProperties:
 
     def test_flatten_unflatten(self):
         """Test that we can flatten/unflatten a Sum correctly."""
-        # pylint: disable=protected-access
         op = Sum(qp.PauliX(0), qp.PauliZ(0))
-        new_op = Sum._unflatten(*op._flatten())
+        new_op = Sum._unflatten(*op._flatten())  # pylint: disable=protected-access
 
         assert op == new_op
         assert new_op.grouping_indices is None
@@ -822,7 +817,6 @@ class TestProperties:
     @pytest.mark.parametrize("method", ("lf", "rlf"))
     def test_flatten_unflatten_with_groups(self, grouping_type, method):
         """Test that we can flatten/unflatten a Sum correctly when grouping indices are available."""
-        # pylint: disable=protected-access
         op = Sum(
             qp.PauliX(0),
             qp.s_prod(2.0, qp.PauliX(1)),
@@ -830,7 +824,7 @@ class TestProperties:
             grouping_type=grouping_type,
             method=method,
         )
-        new_op = Sum._unflatten(*op._flatten())
+        new_op = Sum._unflatten(*op._flatten())  # pylint: disable=protected-access
 
         assert new_op == op
         assert new_op.grouping_indices == op.grouping_indices
@@ -1258,8 +1252,7 @@ class TestIntegration:
         assert tape.trainable_params == [1]
 
 
-# pylint: disable=too-few-public-methods
-class TestArithmetic:
+class TestArithmetic:  # pylint: disable=too-few-public-methods
     """Test arithmetic decomposition methods."""
 
     def test_adjoint(self):

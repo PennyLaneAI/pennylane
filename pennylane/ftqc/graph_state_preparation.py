@@ -222,12 +222,12 @@ class GraphStatePrep(Operation):
         return f"GraphStatePrep({self.hyperparameters['one_qubit_ops'](wires=0).name}, {self.hyperparameters['two_qubit_ops'].name})"
 
     @staticmethod
-    def compute_decomposition(
+    def compute_decomposition(  # pylint: disable=arguments-differ
         wires: Wires,
         graph: nx.Graph | QubitGraph,
         one_qubit_ops: Operation = qp.H,
         two_qubit_ops: Operation = qp.CZ,
-    ):  # pylint: disable=arguments-differ
+    ):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. note::

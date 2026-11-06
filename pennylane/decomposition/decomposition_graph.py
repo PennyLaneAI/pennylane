@@ -186,7 +186,7 @@ class _Expansion:  # pylint: disable=too-many-instance-attributes
         self.base_and_n_ctrls = _get_base_and_n_ctrls(self.op)
 
 
-class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-few-public-methods
+class DecompositionGraph:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
     """A graph that models a decomposition problem.
 
     The decomposition graph contains two types of nodes: operator nodes and decomposition nodes.
@@ -267,7 +267,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         operations: Iterable[Operator | AbstractOperatorLike],
         gate_set: Set[type | str] | Mapping[type | str, float] | GateSet,
@@ -965,7 +965,7 @@ class DecompGraphSolution:
 class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-instance-attributes
     """The visitor used in the Dijkstra search for the optimal decomposition."""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         graph: rx.PyDiGraph,
         gate_set: GateSet,

@@ -56,9 +56,8 @@ def null_postprocessing(results):
     return results[0]
 
 
-# pylint: disable=unused-argument
 def _expand_fn(
-    tape: QuantumScript, postselect_mode=None, **_
+    tape: QuantumScript, postselect_mode=None, **_  # pylint: disable=unused-argument
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     if not any(is_mcm(o) for o in tape.operations):
         return (tape,), null_postprocessing
@@ -322,8 +321,7 @@ def parse_native_mid_circuit_measurements(
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
-# pylint: disable=too-many-arguments
-def _handle_measurement_qjit(
+def _handle_measurement_qjit(  # pylint: disable=too-many-arguments
     m: MeasurementProcess,
     m_count: int,
     results,
@@ -352,8 +350,7 @@ def _handle_measurement_qjit(
     return gather_non_mcm(m, result, is_valid, postselect_mode=postselect_mode), m_count + 1
 
 
-# pylint: disable=too-many-arguments
-def _handle_measurement(
+def _handle_measurement(  # pylint: disable=too-many-arguments
     m: MeasurementProcess,
     m_count: int,
     results,
@@ -459,14 +456,12 @@ def _gather_samples(measurement: SampleMP, samples, is_valid, postselect_mode=No
     return samples[is_valid]
 
 
-# pylint: disable=unused-arguement
 @gather_non_mcm.register
 def _gather_expval(measurement: ExpectationMP, samples, is_valid, postselect_mode=None):
     samples = math.stack(samples)
     return math.sum(math.squeeze(samples) * is_valid) / math.sum(is_valid)
 
 
-# pylint: disable=unused-arguement
 @gather_non_mcm.register
 def _gather_probability(measurement: ProbabilityMP, samples, is_valid, postselect_mode=None):
     samples = math.stack(samples, axis=0)

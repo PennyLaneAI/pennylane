@@ -43,10 +43,8 @@ from pennylane.testing.decompositions import assert_valid_decomp_rule
 from pennylane.typing import Float, Int, Wire
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp, ParametrizedHybridOp
 
-# pylint: disable=too-few-public-methods,useless-parent-delegation
 
-
-class CustomOp(Operator):
+class CustomOp(Operator):  # pylint: disable=too-few-public-methods
     pass
 
 
@@ -57,8 +55,7 @@ class TestDecompositionRule:
     def test_wraps_rule(self):
         """Test that a DecompositionRule has the same sig and docstring as the qfunc."""
 
-        # pylint: disable=unused-argument
-        def f(x, wires: qp.wires.Wires, arg: str = "hello"):
+        def f(x, wires: qp.wires.Wires, arg: str = "hello"):  # pylint: disable=unused-argument
             """A docstring."""
 
         rule = qp.decomposition.DecompositionRule(f, {})
@@ -297,12 +294,12 @@ class TestDecompositionRule:
     def test_operator_without_fixed_sig_raises_error(self, my_arg_specs):
         """Tests that if an operator type without a fixed_sig is used, an error is raised."""
 
-        class MissingFixedSigOp(Operator2):
+        class MissingFixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
             dynamic_argnames = ("angles", "eps")
 
             arg_specs = my_arg_specs
 
-            def __init__(self, angles, eps, wires):
+            def __init__(self, angles, eps, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(angles, eps, wires)
 
         @register_resources({MissingFixedSigOp: 1})
@@ -336,12 +333,12 @@ class TestDecompositionRule:
     def test_resource_keys_are_abstract_operators(self, abstract_sig, concrete_sig):
         """Tests that abstract operators can be used as keys."""
 
-        class FixedSigOp(Operator2):
+        class FixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
             dynamic_argnames = ("phi", "matrix")
 
             arg_specs = abstract_sig
 
-            def __init__(self, phi, matrix, wires):
+            def __init__(self, phi, matrix, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(phi, matrix, wires)
 
         @register_resources(
@@ -919,7 +916,6 @@ class CustomParametrizedOp(Operator):  # pylint: disable=too-few-public-methods
         return {"num_wires": len(self.wires)}
 
 
-# pylint: disable=protected-access
 class TestInspectDecomps:
     """Tests inspecting decomposition rules."""
 
@@ -1007,6 +1003,7 @@ class TestInspectDecomps:
             Not applicable (provided operator instance does not meet all conditions for this rule).
 """).strip()
 
+        # pylint: disable-next=protected-access
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: simple)
 
@@ -1075,6 +1072,7 @@ class TestInspectDecomps:
             Wire Allocations: {'zero': 2}
 """).strip()
 
+        # pylint: disable-next=protected-access
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: simple)
 
@@ -1196,6 +1194,7 @@ class TestInspectDecomps:
             Insufficient work wires: requires 2 but only 1 available.
 """).strip()
 
+        # pylint: disable-next=protected-access
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: simple)
 
@@ -1248,6 +1247,7 @@ class TestInspectDecomps:
 
         result = qp.inspect_decomps(CustomOp(0.5, wires=[0, 1]))
         assert str(result) == "No available decomposition rules."
+        # pylint: disable-next=protected-access
         assert result._repr_markdown_() == "No available decomposition rules."
 
         @qp.register_condition(lambda **_: False)
@@ -1262,7 +1262,7 @@ class TestInspectDecomps:
             str(result) == "No applicable decomposition rules (non-applicable rules are excluded)."
         )
         assert (
-            result._repr_markdown_()
+            result._repr_markdown_()  # pylint: disable=protected-access
             == "No applicable decomposition rules (non-applicable rules are excluded)."
         )
 
@@ -1329,7 +1329,7 @@ class TestInspectDecomps:
             qp.inspect_decomps(CustomParametrizedOp)
 
 
-class TestCOBUnroll:  # pylint: disable=too-few-public-methods
+class TestCOBUnroll:
     """Tests the custom behaviour related to COB in the resource function."""
 
     def test_unroll_change_op_basis_resources(self):

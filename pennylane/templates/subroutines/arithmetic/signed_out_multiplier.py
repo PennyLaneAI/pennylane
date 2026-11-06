@@ -313,7 +313,7 @@ class SignedOutMultiplier(Operator2):
         output_wires: WiresLike,
         work_wires: WiresLike,
         output_wires_zeroed: bool = False,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
@@ -343,8 +343,12 @@ class SignedOutMultiplier(Operator2):
 
 
 def _zeroed_signed_out_multiplier_resources(
-    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument
+    x_wires,
+    y_wires,
+    output_wires,
+    work_wires,
+    output_wires_zeroed=False,  # pylint: disable=unused-argument
+):
     """
     Computes the resources for the SignedOutMultiplier.
     """
@@ -379,8 +383,12 @@ def _zeroed_signed_out_multiplier_resources(
 
 
 def _not_zeroed_signed_out_multiplier_resources(
-    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument
+    x_wires,
+    y_wires,
+    output_wires,
+    work_wires,
+    output_wires_zeroed=False,  # pylint: disable=unused-argument
+):
     """
     Computes the resources for the SignedOutMultiplier.
     """
@@ -442,26 +450,34 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires):
 
 
 def _not_zeroed_work_wire_condition(
-    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
+    x_wires,
+    y_wires,  # pylint: disable=unused-argument
+    output_wires,
+    work_wires,
+    output_wires_zeroed=False,  # pylint: disable=unused-argument
+):
     return len(work_wires) >= 2 * len(output_wires) + 1
 
 
 def _zeroed_work_wire_condition(
-    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
+    x_wires,
+    y_wires,  # pylint: disable=unused-argument
+    output_wires,  # pylint: disable=unused-argument
+    work_wires,
+    output_wires_zeroed=False,  # pylint: disable=unused-argument
+):
     return len(work_wires) >= 2
 
 
-def _zeroed_condition(
-    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _zeroed_condition(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False):
     return output_wires_zeroed
 
 
-def _not_zeroed_condition(
-    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _not_zeroed_condition(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False):
     return not output_wires_zeroed
 
 

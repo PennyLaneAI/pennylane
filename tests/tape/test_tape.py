@@ -13,7 +13,10 @@
 # limitations under the License.
 """Unit tests for the QuantumTape"""
 
-# pylint: disable=protected-access,too-few-public-methods
+# Tests exercise private interfaces, group related cases in classes.
+# pylint: disable=protected-access, too-few-public-methods
+
+
 import copy
 
 import numpy as np
@@ -27,7 +30,7 @@ from pennylane.decomposition import gate_sets
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import ExpectationMP, ProbabilityMP
 from pennylane.tape import QuantumTape
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 
 
 def test_adjoint_deprecated():

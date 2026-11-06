@@ -24,7 +24,6 @@ from pennylane.decomposition import DecompositionRule, add_decomps
 
 def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator2]:
     """Implementation of ``subcircuit``."""
-    # pylint: disable=protected-access
 
     if not isinstance(qfunc, DecompositionRule):
         raise TypeError(
@@ -33,7 +32,7 @@ def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator2]:
 
     # 'self' shouldn't be in signature(OpClass), but it should be in
     # signature(OpClass.__init__)
-    s = signature(qfunc._impl)
+    s = signature(qfunc._impl)  # pylint: disable=protected-access
     self_p = Parameter("self", kind=Parameter.POSITIONAL_OR_KEYWORD)
     init_sig = Signature((self_p, *s.parameters.values()))
 
@@ -45,8 +44,8 @@ def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator2]:
     # sets up various class properties
     attrs = dict(cls_attrs)
     attrs["__init__"] = _init
-    attrs["__doc__"] = qfunc._impl.__doc__
-    attrs["__module__"] = qfunc._impl.__module__
+    attrs["__doc__"] = qfunc._impl.__doc__  # pylint: disable=protected-access
+    attrs["__module__"] = qfunc._impl.__module__  # pylint: disable=protected-access
 
     # creates a new class
     new_operator = type(qfunc.name, (Operator2,), attrs)
@@ -54,9 +53,9 @@ def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator2]:
     # registers the decomposition
     decomp_name = qfunc.name + "_decomp"
     decomp_rule = DecompositionRule(
-        qfunc._impl,
-        resources=qfunc._compute_resources,
-        work_wires=qfunc._work_wire_spec,
+        qfunc._impl,  # pylint: disable=protected-access
+        resources=qfunc._compute_resources,  # pylint: disable=protected-access
+        work_wires=qfunc._work_wire_spec,  # pylint: disable=protected-access
         exact_resources=qfunc.exact_resources,
         name=decomp_name,
     )

@@ -15,7 +15,9 @@
 This module contains the qp.equal function.
 """
 
-# pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches, too-many-positional-arguments
+# Comparison dispatch retains explicit options and separate cases for operator types.
+# pylint: disable=too-many-arguments, too-many-return-statements, too-many-branches
+
 
 from collections.abc import Iterable
 from functools import singledispatch
@@ -695,7 +697,6 @@ def _equal_paulisentence(
 
 @_equal_dispatch.register(CompositeOp)
 @_equal_dispatch.register(CompositeOp2)
-# pylint: disable=protected-access
 def _equal_prod_and_sum(op1, op2, **kwargs):
     """Determine whether two Prod, Sum or Prod2 objects are equal"""
     if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
@@ -705,8 +706,8 @@ def _equal_prod_and_sum(op1, op2, **kwargs):
         return f"op1 and op2 have different number of operands. Got {len(op1.operands)} and {len(op2.operands)}"
 
     # organizes by wire indices while respecting commutation relations
-    sorted_ops1 = op1._sort(op1.operands)
-    sorted_ops2 = op2._sort(op2.operands)
+    sorted_ops1 = op1._sort(op1.operands)  # pylint: disable=protected-access
+    sorted_ops2 = op2._sort(op2.operands)  # pylint: disable=protected-access
 
     for o1, o2 in zip(sorted_ops1, sorted_ops2, strict=True):
         op_check = _equal(o1, o2, **kwargs)

@@ -15,7 +15,10 @@
 Test Expression class and its associated methods
 """
 
-# pylint: disable=unnecessary-dunder-call,protected-access,too-many-public-methods
+# Expression tests call dunder methods directly and inspect implementation details.
+# pylint: disable=unnecessary-dunder-call, protected-access
+
+
 import math
 from fractions import Fraction
 
@@ -125,7 +128,7 @@ def fixture_sample_float_expr() -> Expression:
     )
 
 
-class TestExpression:
+class TestExpression:  # pylint: disable=too-many-public-methods
     """Test the methods and attributes of the Expression class"""
 
     def test_init_as_int(self):
@@ -420,11 +423,10 @@ class TestExpressionMath:
         assert new_expr == 5
 
     def test_add_invalid(self, sample_expr):
-        # pylint: disable=pointless-statement
         with pytest.raises(TypeError):
-            sample_expr + "not an expression"
+            sample_expr + "not an expression"  # pylint: disable=pointless-statement
         with pytest.raises(TypeError):
-            "not an expression" + sample_expr
+            "not an expression" + sample_expr  # pylint: disable=pointless-statement
 
     def test_mul(self):
         expr1 = Expression({("x",): 1, (): 2})
@@ -463,11 +465,10 @@ class TestExpressionMath:
         assert new_expr == 6
 
     def test_mul_invalid(self, sample_expr):
-        # pylint: disable=pointless-statement
         with pytest.raises(TypeError):
-            sample_expr * "not an expression"
+            sample_expr * "not an expression"  # pylint: disable=pointless-statement
         with pytest.raises(TypeError):
-            "not an expression" * sample_expr
+            "not an expression" * sample_expr  # pylint: disable=pointless-statement
 
     @pytest.mark.parametrize("func", [math.ceil, math.floor, round, math.trunc])
     def test_rounding(self, func):
@@ -572,11 +573,10 @@ class TestExpressionFloatMath:
 
     def test_add_invalid(self, sample_float_expr):
         """Test that adding a non-real value still raises a TypeError."""
-        # pylint: disable=pointless-statement
         with pytest.raises(TypeError):
-            sample_float_expr + "not an expression"
+            sample_float_expr + "not an expression"  # pylint: disable=pointless-statement
         with pytest.raises(TypeError):
-            sample_float_expr + 1.5j
+            sample_float_expr + 1.5j  # pylint: disable=pointless-statement
 
     def test_mul(self):
         """Test multiplication of two float-valued expressions."""

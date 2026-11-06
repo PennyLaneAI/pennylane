@@ -15,7 +15,10 @@
 Unit tests for the available qubit state preparation operations.
 """
 
+# Tests exercise private interfaces.
 # pylint: disable=protected-access
+
+
 import numpy as np
 import pytest
 import scipy as sp
@@ -36,7 +39,7 @@ def test_subclasshook_state_prep_base():
         def __init__(self, wires):  # pylint: disable=useless-parent-delegation
             super().__init__(wires)
 
-        def state_vector(self, wire_order):  # pylint: disable=signature-differs, unused-argument
+        def state_vector(self, wire_order):  # pylint: disable=unused-argument
             return [0, 1]
 
     new_op = NewOp(wires=0)
@@ -132,7 +135,6 @@ class TestStandardValidityBasisState:
     @pytest.mark.parametrize("input_state", (np.array([0, 1]), [0, 1], (0, 1), (True, False)))
     def test_assert_valid(self, input_state):
         """Test standard validity."""
-        # pylint: disable=import-outside-toplevel
         wires = [0, 1]
         op = qp.BasisState(input_state, wires=wires)
         qp.testing.assert_valid(op, skip_differentiation=True)
@@ -393,8 +395,6 @@ class TestStatePrepIntegration:
 
 class TestStateVector:
     """Test the state_vector() method of various state-prep operations."""
-
-    # pylint: disable=too-many-public-methods
 
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",

@@ -15,7 +15,10 @@
 Unit tests for molecular dipole.
 """
 
-# pylint: disable=too-many-arguments, protected-access
+# Tests parameterize cases through explicit fixture and helper arguments.
+# pylint: disable=too-many-arguments
+
+
 import pytest
 
 import pennylane as qp

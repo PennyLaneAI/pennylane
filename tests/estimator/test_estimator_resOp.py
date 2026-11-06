@@ -28,26 +28,24 @@ from pennylane.core.queuing import AnnotatedQueue
 from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
 from pennylane.estimator.resource_operator import GateCount, _dequeue, _make_hashable, resource_rep
 
-# pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, disable=arguments-differ, no-member, comparison-with-itself, too-many-arguments, too-many-public-methods
 
-
-class DummyX(ResourceOperator):
+class DummyX(ResourceOperator):  # pylint: disable=too-few-public-methods
     """Dummy testing class representing X gate"""
 
 
-class DummyQFT(ResourceOperator):
+class DummyQFT(ResourceOperator):  # pylint: disable=too-few-public-methods
     """Dummy testing class representing QFT gate"""
 
 
-class DummyQSVT(ResourceOperator):
+class DummyQSVT(ResourceOperator):  # pylint: disable=too-few-public-methods
     """Dummy testing class representing QSVT gate"""
 
 
-class DummyTrotterProduct(ResourceOperator):
+class DummyTrotterProduct(ResourceOperator):  # pylint: disable=too-few-public-methods
     """Dummy testing class representing TrotterProduct gate"""
 
 
-class DummyAdjoint(ResourceOperator):
+class DummyAdjoint(ResourceOperator):  # pylint: disable=too-few-public-methods
     """Dummy testing class representing the Adjoint symbolic operator"""
 
 
@@ -84,10 +82,11 @@ class TestCompressedResourceOp:
         """Test that we can correctly instantiate CompressedResourceOp"""
         cr_op = CompressedResourceOp(op_type, num_wires, parameters, name=name_param)
 
-        assert cr_op._name == name
+        assert cr_op._name == name  # pylint: disable=protected-access
         assert cr_op.op_type is op_type
         assert cr_op.num_wires == num_wires
         assert cr_op.params == parameters
+        # pylint: disable-next=protected-access
         assert sorted(cr_op._hashable_params) == sorted(tuple(parameters.items()))
 
     def test_hash(self):
@@ -267,7 +266,7 @@ class DummyOp_no_resource_keys(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls, x):
+    def resource_rep(cls, x):  # pylint: disable=unused-argument
         """dummy resource rep method"""
         return DummyCmprsRep(cls.__name__, param={})
 
@@ -333,6 +332,7 @@ class DummyOp_decomps(ResourceOperator):
         return [GateCount(rx, max_register_size)]
 
     @classmethod
+    # pylint: disable-next=unused-argument
     def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
@@ -552,7 +552,7 @@ class TestResourceOperator:
     def test_default_resource_keys(self):
         """Test that default resource keys returns the correct result."""
         op1 = X
-        assert op1.resource_keys == set()  # pylint: disable=comparison-with-callable
+        assert op1.resource_keys == set()
 
     def test_adjoint_resource_decomp(self):
         """Test that default adjoint operator returns the correct error."""
@@ -647,7 +647,7 @@ class TestGateCount:
         gc3 = GateCount(op, count=3)
         gc4 = GateCount(op1, count=5)
 
-        assert gc1 == gc1
+        assert gc1 == gc1  # pylint: disable=comparison-with-itself
         assert gc1 == gc2
         assert gc1 != gc3
         assert gc1 != gc4

@@ -19,13 +19,11 @@ import numpy as np
 
 from pennylane.bose import BoseSentence, BoseWord, binary_mapping, unary_mapping
 
-# pylint: disable=import-outside-toplevel
-
 
 def _import_sklearn():
     """Import sklearn."""
     try:
-        import sklearn
+        import sklearn  # pylint: disable=import-outside-toplevel
     except ImportError as Error:
         raise ImportError(
             "This feature requires sklearn. It can be installed with: pip install scikit-learn."
@@ -74,8 +72,8 @@ def _fit_onebody(onemode_op, max_deg, min_deg=3):
     """
     _import_sklearn()
 
-    from sklearn.linear_model import LinearRegression
-    from sklearn.preprocessing import PolynomialFeatures
+    from sklearn.linear_model import LinearRegression  # pylint: disable=import-outside-toplevel
+    from sklearn.preprocessing import PolynomialFeatures  # pylint: disable=import-outside-toplevel
 
     if max_deg < min_deg:
         raise ValueError(
@@ -135,7 +133,7 @@ def _fit_twobody(twomode_op, max_deg, min_deg=3):
             - the predicted two-body PES using fitted coefficients
     """
     _import_sklearn()
-    from sklearn.linear_model import LinearRegression
+    from sklearn.linear_model import LinearRegression  # pylint: disable=import-outside-toplevel
 
     nmodes, _, quad_order, _ = np.shape(twomode_op)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
@@ -233,7 +231,7 @@ def _fit_threebody(threemode_op, max_deg, min_deg=3):
             - the predicted three-body PES using fitted coefficients
     """
     _import_sklearn()
-    from sklearn.linear_model import LinearRegression
+    from sklearn.linear_model import LinearRegression  # pylint: disable=import-outside-toplevel
 
     nmodes, _, _, quad_order, _, _ = np.shape(threemode_op)
     gauss_grid, _ = np.polynomial.hermite.hermgauss(quad_order)
@@ -738,8 +736,7 @@ def taylor_bosonic(coeffs, freqs, is_local=True, uloc=None):
     return ham.normal_order()
 
 
-# pylint: disable=too-many-positional-arguments, too-many-arguments
-def taylor_hamiltonian(
+def taylor_hamiltonian(  # pylint: disable=too-many-arguments
     pes, max_deg=4, min_deg=3, mapping="binary", n_states=2, wire_map=None, tol=1e-12
 ):
     r"""Returns Taylor vibrational Hamiltonian.

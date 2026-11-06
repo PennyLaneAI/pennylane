@@ -388,9 +388,8 @@ register_custom_staging_rule(
 )
 
 
-# pylint: disable=too-many-arguments, unused-argument
 @for_loop_prim.def_impl
-def _for_loop_impl(
+def _for_loop_impl(  # pylint: disable=too-many-arguments
     start,
     stop,
     step,
@@ -399,7 +398,7 @@ def _for_loop_impl(
     consts_slice,
     args_slice,
     abstract_shapes_slice,
-    estimated_iterations,
+    estimated_iterations,  # pylint: disable=unused-argument
 ):
     # Convert tuples back to slices (tuples are used for JAX 0.7.1 hashability)
     consts_slice = slice(*consts_slice)
@@ -419,15 +418,15 @@ def _for_loop_impl(
     return fn_res
 
 
-# pylint: disable=unused-argument
 @for_loop_prim.def_abstract_eval
+# pylint: disable-next=unused-argument
 def _for_loop_abstract_eval(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
     args_slice = slice(*args_slice)
     abstract_shapes_slice = slice(*abstract_shapes_slice)
     return args[abstract_shapes_slice] + args[args_slice]
 
 
-class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-arguments
+class ForLoopCallable:  # pylint: disable=too-few-public-methods
     """Base class to represent a for loop. This class
     when called with an initial state will execute the while
     loop via the Python interpreter.
@@ -448,7 +447,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         start,
         stop,

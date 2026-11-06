@@ -187,7 +187,6 @@ from .symbolic_array import symbolic_array
 from .tracing_device import get_tracing_device, tracing_device
 
 if TYPE_CHECKING:
-    # pylint: disable=import-outside-toplevel, unused-import
     # We only import these if type-checking because JAX is imported unconditionally, so they
     # cannot be imported at runtime without ModuleNotFoundErrors if JAX isn't installed
     from . import primitives
@@ -196,40 +195,39 @@ if TYPE_CHECKING:
     from .primitives import AbstractMeasurement, AbstractOperator, qnode_prim
 
 
-# pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements
-def __getattr__(key):
+def __getattr__(key):  # pylint: disable=too-many-return-statements
     if key == "primitives":
-        import importlib  # pragma: no cover
+        import importlib  # pragma: no cover  # pylint: disable=import-outside-toplevel
 
         return importlib.import_module(".primitives", __name__)  # pragma: no cover
 
     if key == "QpPrimitive":
-        from .custom_primitives import QpPrimitive
+        from .custom_primitives import QpPrimitive  # pylint: disable=import-outside-toplevel
 
         return QpPrimitive
 
     if key == "AbstractOperator":
-        from .primitives import AbstractOperator
+        from .primitives import AbstractOperator  # pylint: disable=import-outside-toplevel
 
         return AbstractOperator
 
     if key == "AbstractMeasurement":
-        from .primitives import AbstractMeasurement
+        from .primitives import AbstractMeasurement  # pylint: disable=import-outside-toplevel
 
         return AbstractMeasurement
 
     if key == "qnode_prim":
-        from ..workflow._capture_qnode import qnode_prim
+        from ..workflow._capture_qnode import qnode_prim  # pylint: disable=import-outside-toplevel
 
         return qnode_prim
 
     if key == "PlxprInterpreter":
-        from .base_interpreter import PlxprInterpreter
+        from .base_interpreter import PlxprInterpreter  # pylint: disable=import-outside-toplevel
 
         return PlxprInterpreter
 
     if key == "eval_jaxpr":
-        from .base_interpreter import eval_jaxpr
+        from .base_interpreter import eval_jaxpr  # pylint: disable=import-outside-toplevel
 
         return eval_jaxpr
 

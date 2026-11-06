@@ -56,27 +56,28 @@ def _autograd_is_indep_analytic(func, *args, **kwargs):
     `autograd.tracer.py::trace
     <https://github.com/HIPS/autograd/blob/master/autograd/tracer.py#L7>`__.
     """
-    # pylint: disable=protected-access
     node = VJPNode.new_root()
     with trace_stack.new_trace() as t:
         start_box = new_box(args, t, node)
         end_box = func(*start_box, **kwargs)
 
     if type(end_box) in [tuple, list]:
+        # pylint: disable-next=protected-access
         if any(isbox(_end) and _end._trace == start_box._trace for _end in end_box):
             return False
     elif isinstance(end_box, np.ndarray):
         if end_box.ndim == 0:
             end_box = [end_box.item()]
+        # pylint: disable-next=protected-access
         if any(isbox(_end) and _end._trace == start_box._trace for _end in end_box):
             return False
     else:
+        # pylint: disable-next=protected-access
         if isbox(end_box) and end_box._trace == start_box._trace:
             return False
     return True
 
 
-# pylint: disable=import-outside-toplevel
 def _jax_is_indep_analytic(func, *args, **kwargs):
     """Test analytically whether a function is independent of its arguments
     using JAX.
@@ -161,7 +162,7 @@ def _get_random_args(args, interface, num, seed, bounds):
     return rnd_args
 
 
-# pylint:disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable-next=too-many-arguments
 def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol, bounds):
     """Test whether a function returns the same output at random positions.
 
@@ -200,8 +201,7 @@ def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol
     return True
 
 
-# pylint: disable=too-many-positional-arguments
-def is_independent(
+def is_independent(  # pylint: disable=too-many-arguments
     func,
     interface,
     args,
@@ -305,8 +305,6 @@ def is_independent(
     This means that ``is_independent`` is a stronger test than simply verifying functions
     have constant output.
     """
-
-    # pylint:disable=too-many-arguments
 
     if interface not in {"autograd", "jax", "torch"}:
         raise ValueError(f"Unknown interface: {interface}")

@@ -31,7 +31,7 @@ from pennylane.exceptions import TermsUndefinedError, WireError
 from pennylane.measurements import expval, probs
 from pennylane.ops.functions import generator, matrix
 from pennylane.ops.qubit.attributes import has_unitary_generator
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
@@ -103,17 +103,15 @@ def _expand_nonunitary_gen_stop_at(obj):
     return len(obj.data) == 0 or (obj.has_generator and obj in has_unitary_generator)
 
 
-# pylint: disable=too-many-positional-arguments
-def _expand_metric_tensor(
+def _expand_metric_tensor(  # pylint: disable=too-many-arguments
     tape: QuantumScript,
-    argnum=None,
+    argnum=None,  # pylint: disable=unused-argument
     approx=None,
     allow_nonunitary=True,
-    aux_wire=None,
-    device_wires=None,
+    aux_wire=None,  # pylint: disable=unused-argument
+    device_wires=None,  # pylint: disable=unused-argument
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Set the metric tensor based on whether non-unitary gates are allowed."""
-    # pylint: disable=unused-argument,too-many-arguments
 
     if not allow_nonunitary and approx is None:
         [new_tape], postprocessing = decompose(
@@ -137,7 +135,7 @@ def _expand_metric_tensor(
     classical_cotransform=_contract_metric_tensor_with_cjac,
     final_transform=True,
 )
-def metric_tensor(  # pylint:disable=too-many-arguments, too-many-positional-arguments
+def metric_tensor(  # pylint: disable=too-many-arguments
     tape: QuantumScript,
     argnum=None,
     approx=None,
@@ -698,9 +696,8 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire, shots):
     return tapes, ids
 
 
-def _metric_tensor_hadamard(
-    tape, argnum, allow_nonunitary, aux_wire, device_wires
-):  # pylint: disable=too-many-statements
+# pylint: disable-next=too-many-statements
+def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wires):
     r"""Generate the quantum tapes that execute the Hadamard tests
     to compute the first term of off block-diagonal metric entries
     and combine them with the covariance matrix-based block-diagonal tapes.

@@ -13,15 +13,16 @@
 # limitations under the License.
 """Utility functions"""
 
+# Imports follow the initialization order required by this module.
+# pylint: disable=wrong-import-order
+
+
 import numbers
 
-# pylint: disable=wrong-import-order
 import autoray as ar
 import jax
 import numpy as _np
 import scipy as sp
-
-# pylint: disable=import-outside-toplevel
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 

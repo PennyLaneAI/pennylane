@@ -15,7 +15,10 @@
 Unit tests for Hartree-Fock functions.
 """
 
-# pylint: disable=too-many-arguments,too-few-public-methods
+# Tests parameterize cases through explicit fixture and helper arguments.
+# pylint: disable=too-many-arguments
+
+
 import pytest
 
 import pennylane as qp

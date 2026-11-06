@@ -59,11 +59,11 @@ JAX 0.7.x only has ``DynamicJaxprTrace`` — the ``StagingJaxprTrace`` from olde
 JAX versions no longer exists. All patches assume DynamicJaxprTrace.
 """
 
-# pylint: disable=too-many-arguments
-# pylint: disable=unused-import,no-else-return,unidiomatic-typecheck,use-dict-literal
-# pylint: disable=protected-access,possibly-used-before-assignment
+# This module implements or adapts internal PennyLane interfaces.
+# pylint: disable=protected-access
 
-import jax
+
+import jax  # pylint: disable=unused-import
 from jax._src import config as jax_config
 from jax._src import core, pjit, source_info_util
 from jax._src.core import JaxprEqnContext, Var
@@ -88,7 +88,7 @@ def _add_make_eqn_helper():
         tuple: (DynamicJaxprTrace, "make_eqn", make_eqn).
     """
 
-    def make_eqn(
+    def make_eqn(  # pylint: disable=too-many-arguments
         self,
         in_tracers: list,
         out_avals_or_tracers: list,

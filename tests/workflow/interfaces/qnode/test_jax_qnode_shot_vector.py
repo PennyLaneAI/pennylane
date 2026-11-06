@@ -13,7 +13,10 @@
 # limitations under the License.
 """Integration tests for using the jax interface with shot vectors and with a QNode"""
 
-# pylint: disable=too-many-arguments,too-many-public-methods
+# Tests parameterize cases through explicit fixture and helper arguments.
+# pylint: disable=too-many-arguments
+
+
 import pytest
 from flaky import flaky
 
@@ -51,7 +54,7 @@ jacobian_fn = [jax.jacobian, jax.jacrev, jax.jacfwd]
 @pytest.mark.parametrize(
     "interface,dev_name,diff_method,gradient_kwargs", interface_and_qubit_device_and_diff_method
 )
-class TestReturnWithShotVectors:
+class TestReturnWithShotVectors:  # pylint: disable=too-many-public-methods
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types and shot vectors."""
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)

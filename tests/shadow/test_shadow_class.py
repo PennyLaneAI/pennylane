@@ -14,7 +14,9 @@
 
 """Unit tests for the classical shadows class"""
 
-# pylint:disable=no-self-use, import-outside-toplevel, redefined-outer-name, unpacking-non-sequence, too-few-public-methods, not-an-iterable, inconsistent-return-statements
+# Tests group related cases in classes, use fixture signatures.
+# pylint: disable=redefined-outer-name, too-few-public-methods
+
 
 import numpy as onp
 import pytest
@@ -409,7 +411,7 @@ class TestExpvalEstimationInterfaces:
         assert qp.math.allclose(actual, expected, atol=1e-1)
 
 
-def convert_to_interface(arr, interface):
+def convert_to_interface(arr, interface):  # pylint: disable=inconsistent-return-statements
     """Dispatch arrays for different interfaces"""
     import jax.numpy as jnp
     import torch

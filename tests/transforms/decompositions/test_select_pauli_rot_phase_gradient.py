@@ -18,8 +18,6 @@ import warnings
 
 import numpy as np
 import phase_gradient_helpers
-
-# pylint: disable=no-value-for-parameter
 import pytest
 
 import pennylane as qp
@@ -133,8 +131,7 @@ def test_as_fixed_decomps(prec, num_controls):
         angle_wires, phase_grad_wires, work_wires
     )
 
-    # pylint: disable-next=protected-access
-    @qp.transforms._tape_decompose(
+    @qp.transforms._tape_decompose(  # pylint: disable=protected-access
         gate_set={
             "QROM",
             "SemiAdder",
@@ -209,8 +206,7 @@ def test_integration_multi_wire(rot_axis, seed):
     if rot_axis in ("X", "Y"):
         gs |= {"Hadamard"}
 
-    # pylint: disable-next=protected-access
-    @qp.transforms._tape_decompose(
+    @qp.transforms._tape_decompose(  # pylint: disable=protected-access
         gate_set=gs,
         fixed_decomps={qp.SelectPauliRot: custom_decomp},
     )

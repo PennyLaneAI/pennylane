@@ -52,7 +52,6 @@ def test_pass_name():
 @pytest.mark.unit
 def test_decompose_setup_inputs():
     """Test that ``_decompose_setup_inputs`` forwards only the provided options."""
-    # pylint: disable=protected-access
     args, options = _decompose_setup_inputs(gate_set={"RX", "CNOT"})
     assert args == ()
     assert options == {"gate_set": {"RX", "CNOT"}}
@@ -353,7 +352,7 @@ class TestDecomposeGraphEnabled:
     def test_fall_back(self):
         """Tests that op.decompose() is used for ops unsolved in the graph."""
 
-        class CustomOpWithFallback(Operation):  # pylint: disable=too-few-public-methods
+        class CustomOpWithFallback(Operation):
             """Dummy custom op."""
 
             resource_keys = set()

@@ -43,7 +43,6 @@ transform_prim.multiple_results = True
 transform_prim.prim_type = "transform"
 
 
-# pylint: disable=too-many-arguments, disable=unused-argument
 @transform_prim.def_impl
 def _transform_prim_impl(*all_args, inner_jaxpr, args_slice, consts_slice, **_):
     args = all_args[slice(*args_slice)]
@@ -446,9 +445,8 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 # NOTE: Prepend "qnode" as an argument to the docstring
                 # so that it's consistent with tape based transform signatures.
                 @wraps(setup_inputs)
-                def _modified_setup_inputs(
-                    qnode, *args, **kwargs
-                ):  # pylint: disable=unused-argument
+                # pylint: disable-next=unused-argument
+                def _modified_setup_inputs(qnode, *args, **kwargs):
                     return setup_inputs(*args, **kwargs)  # pragma: no cover
 
                 orig_sig = signature(setup_inputs)
@@ -463,8 +461,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
         return super().__new__(cls)
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         tape_transform: Callable | None = None,
         pass_name: None | str = None,
@@ -596,7 +593,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         to more explicitly force registration for a given type.
 
         """
-        return generic_apply_transform.register(arg)  # pylint: disable=no-member
+        return generic_apply_transform.register(arg)
 
     def __call__(self, *args, **kwargs):
         if not args and not kwargs:
@@ -628,8 +625,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             )
 
         if self.expand_transform:
-            # pylint: disable=import-outside-toplevel
-            from .compile_pipeline import CompilePipeline
+            from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
 
             return CompilePipeline(self, other)
 
@@ -639,8 +635,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
     def __mul__(self, n):
         """Multiply by an integer to create a compile pipeline with this transform repeated."""
         if self.expand_transform:
-            # pylint: disable=import-outside-toplevel
-            from .compile_pipeline import CompilePipeline
+            from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
 
             return CompilePipeline(self) * n
 
@@ -729,7 +724,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         return qnode
 
 
-class BoundTransform:  # pylint: disable=too-many-instance-attributes
+class BoundTransform:
     """A transform with bound inputs.
 
     Args:
@@ -881,7 +876,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
             self._transform.expand_transform,
             args=self.args,
             kwargs=self.kwargs,
-            use_argnum=self._transform._use_argnum_in_expand,  # pylint:disable=protected-access
+            use_argnum=self._transform._use_argnum_in_expand,  # pylint: disable=protected-access
         )
 
     @property
@@ -929,8 +924,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
             return NotImplemented
 
         # Import here to avoid circular import
-        # pylint: disable=import-outside-toplevel
-        from .compile_pipeline import CompilePipeline
+        from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
 
         if self.is_final_transform and other.is_final_transform:
             raise TransformError(

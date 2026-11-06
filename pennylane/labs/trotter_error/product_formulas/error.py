@@ -33,10 +33,8 @@ from pennylane.labs.trotter_error.product_formulas.commutator import (
 )
 from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
 
-
-def effective_hamiltonian(
+def effective_hamiltonian(  # pylint: disable=too-many-arguments
     product_formula: ProductFormula,
     fragments: dict[Hashable, Fragment],
     order: int,
@@ -162,8 +160,7 @@ class ImportanceConfig:
        is modified to include the convergence history."""
 
 
-# pylint: disable=too-many-branches
-def perturbation_error(
+def perturbation_error(  # pylint: disable=too-many-arguments, too-many-branches
     product_formula: ProductFormula,
     fragments: dict[Hashable, Fragment],
     state: TrotterState,

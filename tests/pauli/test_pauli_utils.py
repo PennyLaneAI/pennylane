@@ -15,7 +15,10 @@
 Unit tests for the :mod:`pauli` utility functions in ``pauli/utils.py``.
 """
 
-# pylint: disable=too-few-public-methods,too-many-public-methods
+# Tests group related cases in classes.
+# pylint: disable=too-few-public-methods
+
+
 import functools
 import itertools
 
@@ -83,7 +86,7 @@ def _make_pauli_word_strings():
     ]
 
 
-class TestGroupingUtils:
+class TestGroupingUtils:  # pylint: disable=too-many-public-methods
     """Basic usage and edge-case tests for the measurement optimization utility functions."""
 
     ops_to_vecs_explicit_wires = [
@@ -1033,8 +1036,8 @@ class TestTapering:
     @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
     def test_binary_matrix_from_pws(self, terms, num_qubits, result):
         r"""Test that _binary_matrix_from_pws returns the correct result."""
-        # pylint: disable=protected-access
         pws_lst = [list(qp.pauli.pauli_sentence(t))[0] for t in terms]
+        # pylint: disable-next=protected-access
         binary_matrix = qp.pauli.utils._binary_matrix_from_pws(pws_lst, num_qubits)
         assert (binary_matrix == result).all()
 
@@ -1074,5 +1077,5 @@ class TestPauliEigs:
         """Test that the right number of cachings have been executed after clearing the cache"""
         pauli_eigs.cache_clear()
         pauli_eigs(depth)
-        # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         assert functools._CacheInfo(depth - 1, depth, 128, depth) == pauli_eigs.cache_info()

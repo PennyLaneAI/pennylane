@@ -13,7 +13,9 @@
 # limitations under the License.
 """Unit tests for measuring states in devices/qubit_mixed."""
 
+# Tests group related cases in classes.
 # pylint: disable=too-few-public-methods
+
 
 from functools import reduce
 
@@ -59,7 +61,6 @@ def get_expval(op, state):
 
 @pytest.mark.parametrize("mp", [qp.sample(), qp.counts(), qp.sample(wires=0), qp.counts(wires=0)])
 class TestCurrentlyUnsupportedCases:
-    # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self, mp, two_qubit_state):
         """Test sample-only measurements raise a NotImplementedError."""
         with pytest.raises(NotImplementedError):
@@ -143,7 +144,7 @@ class TestMeasurementDispatch:
     def test_no_sparse_matrix(self):
         """Tests Hamiltonians/Sums containing observables that do not have a sparse matrix."""
 
-        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(qp.operation.Operator):
             num_wires = 1
 
         S1 = qp.Hamiltonian([0.5, 0.5], [qp.X(0), DummyOp(wires=1)])
@@ -687,7 +688,6 @@ class TestSumOfTermsDifferentiability:
         assert qp.math.allclose(coeffs.grad, coeffs_expected.grad)
 
 
-# pylint: disable=too-few-public-methods
 class TestReadoutErrors:
     """Test that readout errors are correctly applied to measurements."""
 

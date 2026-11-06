@@ -174,10 +174,10 @@ def _change_op_basis_abstract(compute_op, target_op, uncompute_op):
 def _controlled_change_op_basis_resources(
     base,
     control_wires,
-    control_values,
+    control_values,  # pylint: disable=unused-argument
     work_wires,
     work_wire_type,
-):  # pylint: disable=unused-argument
+):
     resources = defaultdict(int)
     resources[base.compute_op] += 1
     resources[

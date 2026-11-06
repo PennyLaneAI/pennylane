@@ -1810,6 +1810,10 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* Updated Pylint to 4.1.3, cleaned up suppression scope and formatting, and made unnecessary
+  suppressions fail lint. Labs tests now consistently use the test lint configuration.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * :func:`~.specs`, :func:`~.analyze` and :func:`~pennylane.estimate` now compile QJIT-compiled
   QNodes up to the MLIR passes with Catalyst's ``target="mlir_opt"``, instead of reproducing part
   of ``QJIT.jit_compile``.

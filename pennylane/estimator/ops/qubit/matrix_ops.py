@@ -23,8 +23,6 @@ from pennylane.estimator.resource_operator import (
 from pennylane.estimator.templates import SelectPauliRot
 from pennylane.wires import WiresLike
 
-# pylint: disable=arguments-differ
-
 
 class QubitUnitary(ResourceOperator):
     r"""Resource class for the QubitUnitary template.
@@ -100,6 +98,7 @@ class QubitUnitary(ResourceOperator):
         return {"num_wires": self.num_wires, "precision": self.precision}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_wires, precision=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -116,6 +115,7 @@ class QubitUnitary(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, num_wires, precision=None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.

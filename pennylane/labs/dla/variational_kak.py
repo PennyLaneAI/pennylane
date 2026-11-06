@@ -13,7 +13,10 @@
 # limitations under the License.
 """Helper Functionality to compute the kak decomposition variationally, as outlined in https://arxiv.org/abs/2104.00728"""
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# APIs keep circuit and algorithm parameters explicit.
+# pylint: disable=too-many-arguments
+
+
 import warnings
 from datetime import datetime
 from functools import partial

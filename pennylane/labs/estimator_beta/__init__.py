@@ -277,7 +277,8 @@ def _(op: qp.MottonenStatePreparation):
 
 @_map_to_resource_op.register
 def _(op: qp.SumOfSlatersPrep):
-    from pennylane.templates.state_preparations.sum_of_slaters import (  # pylint: disable=import-outside-toplevel
+    # pylint: disable-next=import-outside-toplevel
+    from pennylane.templates.state_preparations.sum_of_slaters import (
         select_sos_rows,
     )
 

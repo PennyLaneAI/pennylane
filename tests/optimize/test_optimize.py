@@ -15,7 +15,10 @@
 Unit tests for the :mod:`pennylane` optimizers.
 """
 
-# pylint: disable=redefined-outer-name,too-few-public-methods
+# Tests group related cases in classes, use fixture signatures.
+# pylint: disable=redefined-outer-name, too-few-public-methods
+
+
 import pytest
 
 import pennylane as qp
@@ -50,9 +53,7 @@ def opt(opt_name):
 class TestOverOpts:
     """Tests keywords, multiple arguments, and non-training arguments in relevant optimizers"""
 
-    # pylint: disable=unused-argument
-
-    def test_kwargs(self, mocker, opt, opt_name, tol):
+    def test_kwargs(self, mocker, opt, opt_name, tol):  # pylint: disable=unused-argument
         """Test that the keywords get passed and alter the function"""
 
         class func_wrapper:
@@ -83,7 +84,7 @@ class TestOverOpts:
 
         assert np.allclose(cost_three, wrapper.func(x, c=3.0), atol=tol)
 
-    def test_multi_args(self, mocker, opt, opt_name, tol):
+    def test_multi_args(self, mocker, opt, opt_name, tol):  # pylint: disable=unused-argument
         """Test passing multiple arguments to function"""
 
         class func_wrapper:

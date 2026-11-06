@@ -23,12 +23,8 @@ import scipy as sp
 
 from pennylane import math
 
-# pylint: disable=too-many-arguments, too-many-instance-attributes
-# pylint: disable=too-few-public-methods
-# pylint: disable=too-many-branches
 
-
-class Lattice:
+class Lattice:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
     r"""Constructs a Lattice object.
 
     Args:
@@ -161,7 +157,7 @@ class Lattice:
 
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments, too-many-branches
         self,
         n_cells,
         vectors,

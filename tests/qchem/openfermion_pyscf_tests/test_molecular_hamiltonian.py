@@ -15,7 +15,10 @@
 Unit tests for molecular Hamiltonians.
 """
 
-# pylint: disable=too-many-arguments, protected-access
+# Tests parameterize cases through explicit fixture and helper arguments.
+# pylint: disable=too-many-arguments
+
+
 import pytest
 
 import pennylane as qp
@@ -916,6 +919,7 @@ def test_real_hamiltonian_molecule_class(method, args, tmpdir):
 def test_pyscf_integrals(symbols, geometry, core_ref, one_ref, two_ref):
     r"""Test that _pyscf_integrals returns correct integrals."""
 
+    # pylint: disable-next=protected-access
     core, one, two = qchem.openfermion_pyscf._pyscf_integrals(symbols, geometry)
 
     assert np.allclose(core, core_ref)

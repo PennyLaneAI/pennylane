@@ -27,15 +27,13 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
-# pylint: disable=too-many-branches, protected-access, too-many-statements
-
 
 def _check_tape_validity(tape: QuantumScript):
     """Helper function to check that the tape is valid."""
 
     for mp in tape.measurements:
         if isinstance(mp, (CountsMP, ProbabilityMP, SampleMP)) and not (
-            mp.obs or mp._wires or mp.mv is not None
+            mp.obs or mp._wires or mp.mv is not None  # pylint: disable=protected-access
         ):
             raise ValueError(
                 f"Cannot use {mp.__class__.__name__} as a measurement without specifying wires "
@@ -97,13 +95,12 @@ def null_postprocessing(results):
     return results[0]
 
 
-# pylint: disable=unused-argument
 @transform
-def defer_measurements(
+def defer_measurements(  # pylint: disable=too-many-branches
     tape: QuantumScript,
     reduce_postselected: bool = True,
     allow_postselect: bool = True,
-    num_wires: int | None = None,
+    num_wires: int | None = None,  # pylint: disable=unused-argument
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.

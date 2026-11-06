@@ -15,7 +15,10 @@
 This module contains the default.tensor device to perform tensor network simulations of quantum circuits using ``quimb``.
 """
 
+# This module implements or adapts internal PennyLane interfaces.
 # pylint: disable=protected-access
+
+
 import copy
 import warnings
 from collections.abc import Callable
@@ -188,10 +191,9 @@ def _warn_unused_kwarg_tn(max_bond_dim: None, cutoff: None):
         warnings.warn("The keyword argument 'cutoff' is not used for the 'tn' method. ")
 
 
-# pylint: disable=unused-argument
 @simulator_tracking
 @single_tape_support
-class DefaultTensor(Device):
+class DefaultTensor(Device):  # pylint: disable=too-many-instance-attributes
     """A PennyLane device to perform tensor network simulations of quantum circuits using
     `quimb <https://github.com/jcmgray/quimb/>`_.
 
@@ -368,8 +370,6 @@ class DefaultTensor(Device):
             using the ``MPS`` method of the ``default.tensor`` device is approximately three orders of magnitude slower.
             Similarly, using the ``default.qubit`` device results in a much slower simulation.
     """
-
-    # pylint: disable=too-many-instance-attributes
 
     _device_options = (
         "contract",
@@ -960,7 +960,6 @@ class DefaultTensor(Device):
         )
 
 
-# pylint: disable=no-member
 @singledispatch
 def apply_operation_core(ops: Operation, device):
     """Dispatcher for _apply_operation."""
@@ -1041,7 +1040,7 @@ def apply_operation_core_trotter_product(ops: qp.TrotterProduct, device):
     ops = ops._hyperparameters["base"].operands
     decomp = _recursive_expression(time / n, order, ops)[::-1] * n
     for o in decomp:
-        mat = qp.matrix(o).astype(device._c_dtype)  # pylint: disable=no-member
+        mat = qp.matrix(o).astype(device._c_dtype)
         device._quimb_circuit.apply_gate(mat, *o.wires, parametrize=None)
 
 
@@ -1056,7 +1055,7 @@ def expval_core_prod(obs: Prod, device) -> float:
     """Computes the expval of a Prod."""
     ket = device._quimb_circuit.copy()
     for op in obs:
-        mat = qp.matrix(op).astype(device._c_dtype)  # pylint: disable=no-member
+        mat = qp.matrix(op).astype(device._c_dtype)
         ket.apply_gate(mat, *op.wires, parametrize=None)
     return np.real((device._quimb_circuit.psi.H & ket.psi).contract(all, output_inds=()))
 

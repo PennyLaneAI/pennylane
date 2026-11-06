@@ -15,7 +15,10 @@
 Unit tests for functions needed for computing matrices.
 """
 
-# pylint: disable=too-many-arguments,too-few-public-methods
+# Tests parameterize cases through explicit fixture and helper arguments.
+# pylint: disable=too-many-arguments
+
+
 import pytest
 
 import pennylane as qp
@@ -23,7 +26,7 @@ from pennylane import numpy as np
 from pennylane import qchem
 
 
-class TestMoldensMat:
+class TestMoldensMat:  # pylint: disable=too-few-public-methods
     """Tests for molecular density matrix"""
 
     @pytest.mark.parametrize(

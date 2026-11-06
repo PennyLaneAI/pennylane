@@ -15,7 +15,10 @@
 This module contains the template for the Fast Approximate BLock Encoding (FABLE) technique.
 """
 
+# Control-flow decorators supply loop indices when the wrapped loops are called.
 # pylint: disable=no-value-for-parameter
+
+
 import warnings
 from collections import Counter
 
@@ -147,7 +150,7 @@ class FABLE(Operation):
         }
 
     @staticmethod
-    def compute_decomposition(input_matrix, wires, tol=0):  # pylint:disable=arguments-differ
+    def compute_decomposition(input_matrix, wires, tol=0):  # pylint: disable=arguments-differ
         r"""Sequence of gates that represents the efficient circuit produced by the FABLE technique
 
         Args:

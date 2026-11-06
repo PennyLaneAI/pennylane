@@ -15,7 +15,10 @@
 Unit tests for PennyLane custom primitives.
 """
 
+# Imports follow the initialization order required by this module.
 # pylint: disable=wrong-import-position
+
+
 import pytest
 
 jax = pytest.importorskip("jax")
@@ -51,7 +54,6 @@ def test_qp_primitive_prim_type_setter_invalid():
         prim.prim_type = "blah"
 
 
-# pylint: disable=protected-access
 @pytest.mark.capture
 def test_compile_time_constant_eval():
     """Test that operators and measurements are correctly added to the jaxpr when compile time
@@ -61,8 +63,9 @@ def test_compile_time_constant_eval():
         qp.RX(0.5, 0)
         return qp.expval(qp.Z(0))
 
-    with jax._src.config.eager_constant_folding(True):
+    with jax._src.config.eager_constant_folding(True):  # pylint: disable=protected-access
         jaxpr = jax.make_jaxpr(f)()
 
     assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
+    # pylint: disable-next=protected-access
     assert jaxpr.eqns[-1].primitive == qp.measurements.ExpectationMP._obs_primitive

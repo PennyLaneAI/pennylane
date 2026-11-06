@@ -15,6 +15,10 @@
 Tests for the make_plxpr function for capturing functions as jaxpr.
 """
 
+# Imports follow the initialization order required by this module.
+# pylint: disable=wrong-import-position, wrong-import-order
+
+
 from unittest.mock import call
 
 import numpy as np
@@ -28,9 +32,9 @@ pytestmark = pytest.mark.jax
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
-# pylint: disable=wrong-import-position, wrong-import-order, ungrouped-imports
 from jax import numpy as jnp
 
+# pylint: disable-next=ungrouped-imports
 from pennylane.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
 from pennylane.testing import extract_all_primitives
 
@@ -72,7 +76,7 @@ class TestMakePLxPR:
 
         spy.assert_called()
         assert hasattr(plxpr, "jaxpr")
-        isinstance(plxpr, jax.extend.core.ClosedJaxpr)  # pylint: disable=protected-access
+        isinstance(plxpr, jax.extend.core.ClosedJaxpr)
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("static_argnums", [[0], [1], [0, 1], []])
@@ -124,8 +128,8 @@ class TestMakePLxPR:
 
         # output is as expected for return_shape=True
         assert len(output) == 2
-        isinstance(output[0], jax.extend.core.ClosedJaxpr)  # pylint: disable=protected-access
-        isinstance(output[0], jax.ShapeDtypeStruct)  # pylint: disable=protected-access
+        isinstance(output[0], jax.extend.core.ClosedJaxpr)
+        isinstance(output[0], jax.ShapeDtypeStruct)
 
 
 @pytest.mark.capture

@@ -15,7 +15,10 @@ r"""
 Contains the FermionicDoubleExcitation template.
 """
 
-# pylint: disable=too-many-arguments,protected-access
+# APIs keep physical and chemistry parameters explicit.
+# pylint: disable=too-many-arguments
+
+
 import copy
 
 import numpy as np
@@ -556,9 +559,10 @@ class FermionicDoubleExcitation(Operation):
 
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)
+        # pylint: disable-next=protected-access
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         for key in ["wires1", "wires2"]:
-            new_op._hyperparameters[key] = Wires(
+            new_op._hyperparameters[key] = Wires(  # pylint: disable=protected-access
                 [wire_map.get(wire, wire) for wire in self._hyperparameters[key]]
             )
         return new_op
@@ -1052,9 +1056,8 @@ def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
 
 
 @register_resources(_fermionic_double_excitation_resources)
-def _fermionic_double_excitation_decomopsition(
-    weight, wires, wires1, wires2
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _fermionic_double_excitation_decomopsition(weight, wires, wires1, wires2):
     s = wires1[0]
     r = wires1[-1]
     q = wires2[0]

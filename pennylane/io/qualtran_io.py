@@ -522,7 +522,6 @@ def _handle_custom_map(op, map_ops, custom_mapping, **kwargs):
     return None
 
 
-# pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(
     op: qtemps.subroutines.qpe.QuantumPhaseEstimation,
@@ -530,7 +529,10 @@ def _(
     custom_mapping=None,
     **kwargs,
 ):
+    # pylint: disable-next=import-outside-toplevel
     from qualtran.bloqs.phase_estimation import RectangularWindowState
+
+    # pylint: disable-next=import-outside-toplevel
     from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
     mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
@@ -543,11 +545,10 @@ def _(
     )
 
 
-# pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
     """Mapping for QFT, which maps to ``qt.QFTTextBook`` by default"""
-    from qualtran.bloqs.qft import QFTTextBook
+    from qualtran.bloqs.qft import QFTTextBook  # pylint: disable=import-outside-toplevel
 
     mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
     if mapped_op is not None:
@@ -556,11 +557,13 @@ def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
     return QFTTextBook(len(op.wires))
 
 
-# pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
     """Mapping for QROM that defaults to either ``QROAMClean`` or ``SelectSwapQROM``"""
+    # pylint: disable-next=import-outside-toplevel
     from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
+
+    # pylint: disable-next=import-outside-toplevel
     from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 
     mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
@@ -576,11 +579,10 @@ def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
     return SelectSwapQROM.build_from_data(data)
 
 
-# pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.ModExp, map_ops=True, custom_mapping=None, **kwargs):
     """Mapping for ``ModExp``"""
-    from qualtran.bloqs.cryptography.rsa import ModExp
+    from qualtran.bloqs.cryptography.rsa import ModExp  # pylint: disable=import-outside-toplevel
 
     mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
     if mapped_op is not None:
@@ -1088,9 +1090,8 @@ class FromBloq(Operation):
 
         return ops
 
-    # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
-    def has_matrix(self) -> bool:
+    def has_matrix(self) -> bool:  # pylint: disable=arguments-renamed, invalid-overridden-method
         r"""Return if the ``Bloq`` has a valid matrix representation."""
         bloq = self.hyperparameters["bloq"]
         matrix = bloq.tensor_contract()

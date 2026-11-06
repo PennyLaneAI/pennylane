@@ -15,9 +15,9 @@
 Tests for capturing for loops into jaxpr.
 """
 
-# pylint: disable=no-value-for-parameter, too-few-public-methods, no-self-use
-# pylint: disable=too-many-positional-arguments, too-many-arguments
-# pylint: disable=unbalanced-tuple-unpacking
+# Imports follow the initialization order required by this module.
+# pylint: disable=wrong-import-position
+
 
 from functools import partial
 
@@ -32,7 +32,6 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 # must be below jax importorskip
-# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import for_loop_prim
 from pennylane.testing import extract_all_primitives
 
@@ -392,7 +391,6 @@ class TestCaptureForLoop:
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
 
-    # pylint: disable=unused-argument
     def test_dynamic_shape_input(self):
         """Test that the for loop can accept inputs with dynamic shapes."""
 
@@ -411,11 +409,10 @@ class TestDynamicShapes:
         expected = jax.numpy.array([0, 8, 16])  # [0, 1, 2] * 2**3
         assert jax.numpy.allclose(output, expected)
 
-    # pylint: disable=unused-argument
     def test_dynamic_array_creation(self):
         """Test that for_loops can create dynamically shaped arrays."""
 
-        def f(i, x):
+        def f(i, x):  # pylint: disable=unused-argument
             y = jax.numpy.arange(i)
             return jax.numpy.sum(y)
 
@@ -431,7 +428,7 @@ class TestDynamicShapes:
         allow_array_resizing=False"""
 
         @qp.for_loop(3, allow_array_resizing=False)
-        def f(i, a, b):
+        def f(i, a, b):  # pylint: disable=unused-argument
             a_size = a.shape[0]
             b_size = b.shape[0]
             return jax.numpy.ones(a_size + b_size), 2 * b
@@ -451,7 +448,7 @@ class TestDynamicShapes:
         """Test that a useful error is raised if two arrays with dynamic shapes are combined."""
 
         @qp.for_loop(3, allow_array_resizing=True)
-        def f(i, a, b):
+        def f(i, a, b):  # pylint: disable=unused-argument
             return a * b, 2 * b
 
         def w(i0):
@@ -490,7 +487,7 @@ class TestDynamicShapes:
             c = jnp.arange(i0)
 
             @qp.for_loop(3, allow_array_resizing=allow_array_resizing)
-            def f(i, a):
+            def f(i, a):  # pylint: disable=unused-argument
                 return c * a
 
             return f(jnp.arange(i0))
@@ -547,7 +544,7 @@ class TestDynamicShapes:
         """Test that two arrays can be resized independently of each other."""
 
         @qp.for_loop(4, allow_array_resizing=allow_array_resizing)
-        def f(i, a, b):
+        def f(i, a, b):  # pylint: disable=unused-argument
             return jnp.ones(a.shape[0] + b.shape[0]), b + 1
 
         def w(i0):
@@ -565,7 +562,7 @@ class TestDynamicShapes:
         """Test that arrays with the same dynamic shape can be recombined after a loop."""
 
         @qp.for_loop(2)
-        def f(i, a, b):
+        def f(i, a, b):  # pylint: disable=unused-argument
             return 2 * a, b
 
         def w(i0):
@@ -588,7 +585,7 @@ class TestDynamicShapes:
         def f(sz):
 
             @qp.for_loop(0, 3, 1)
-            def loop(i, a):
+            def loop(i, a):  # pylint: disable=unused-argument
                 return jnp.ones([sz])
 
             a2 = loop(jnp.ones(sz))
@@ -607,7 +604,7 @@ class TestDynamicShapes:
             c = jnp.ones(a)
 
             @qp.for_loop(3)
-            def f(i, x, y):
+            def f(i, x, y):  # pylint: disable=unused-argument
                 return x + b, 2 * y
 
             return f(b, c)
@@ -627,13 +624,13 @@ class TestDynamicShapes:
 
         def w(x):
             @qp.for_loop(x.shape[0])
-            def f(i):
+            def f(i):  # pylint: disable=unused-argument
                 2 * x  # pylint: disable=pointless-statement
 
             f()
 
             @qp.for_loop(x.shape[0])
-            def g(i):
+            def g(i):  # pylint: disable=unused-argument
                 3 * x  # pylint: disable=pointless-statement
 
             g()
@@ -820,7 +817,7 @@ class TestCaptureCircuitsForLoop:
         Encountered in benchmarking suite.
         """
 
-        class ThingWithShape:
+        class ThingWithShape:  # pylint: disable=too-few-public-methods
 
             def __init__(self):
                 pass
@@ -832,9 +829,8 @@ class TestCaptureCircuitsForLoop:
 
             thing = ThingWithShape()
 
-            # pylint: disable=unused-argument
             @qp.for_loop(3)
-            def f(i, x):
+            def f(i, x):  # pylint: disable=unused-argument
                 return x + thing.shape()
 
             return f(2)

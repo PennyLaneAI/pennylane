@@ -17,8 +17,6 @@ with preparing a certain state on the device.
 """
 
 from collections.abc import Sequence
-
-# pylint: disable=too-many-branches,arguments-differ
 from warnings import warn
 
 import numpy as np
@@ -322,7 +320,7 @@ class StatePrep(StatePrepBase):
     """int: Number of dimensions per trainable parameter of the operator."""
 
     @classmethod
-    def _primitive_bind_call(cls, state, wires, **kwargs):
+    def _primitive_bind_call(cls, state, wires, **kwargs):  # pylint: disable=arguments-differ
         if isinstance(state, (tuple, list)):
             if any(qp.math.is_tracer(x) for x in state):
                 state = qp.math.asarray(state, like="jax")
@@ -330,7 +328,6 @@ class StatePrep(StatePrepBase):
                 state = qp.math.asarray(state)
         return super()._primitive_bind_call(state, wires, **kwargs)
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         state: TensorLike | csr_matrix,
@@ -365,8 +362,8 @@ class StatePrep(StatePrepBase):
         else:
             super()._check_batching()
 
-    # pylint: disable=unused-argument
     @staticmethod
+    # pylint: disable-next=unused-argument, arguments-differ
     def compute_decomposition(state: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
@@ -432,6 +429,7 @@ class StatePrep(StatePrepBase):
         return math.transpose(op_vector, transpose_axes)
 
     @staticmethod
+    # pylint: disable-next=too-many-branches
     def _preprocess(state, wires, pad_with, normalize, validate_norm):
         """Validate and pre-process inputs as follows:
 

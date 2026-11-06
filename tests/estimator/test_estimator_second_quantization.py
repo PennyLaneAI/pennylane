@@ -15,7 +15,10 @@
 Unit tests for functions needed for resource estimation with the double factorization method.
 """
 
+# Tests parameterize cases through explicit fixture and helper arguments.
 # pylint: disable=too-many-arguments
+
+
 import pytest
 
 import pennylane as qp
@@ -190,7 +193,7 @@ def test_estimation_cost_error(norm, error):
 )
 def test_qrom_cost(constants, cost_ref, k_ref):
     r"""Test that _qrom_cost returns the correct values."""
-    # pylint: disable=protected-access
+    # pylint: disable-next=protected-access
     cost, k = qp.estimator.DoubleFactorization._qrom_cost(constants)
 
     assert cost == cost_ref

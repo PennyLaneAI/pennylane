@@ -13,7 +13,10 @@
 # limitations under the License.
 """Tests that the different measurement types work correctly on a device."""
 
-# pylint: disable=no-self-use,no-member
+# Device tests inspect dynamically supplied measurement attributes.
+# pylint: disable=no-member
+
+
 import pytest
 from flaky import flaky
 from scipy.sparse import csr_matrix
@@ -155,9 +158,8 @@ class TestSupportedObservables:
         assert isinstance(circuit(), (float, np.ndarray))
 
 
-# pylint: disable=too-few-public-methods
 @flaky(max_runs=10)
-class TestHamiltonianSupport:
+class TestHamiltonianSupport:  # pylint: disable=too-few-public-methods
     """Separate test to ensure that the device can differentiate Hamiltonian observables."""
 
     def test_hamiltonian_diff(self, device_kwargs, tol, shots):
@@ -493,12 +495,11 @@ class TestTensorExpval:
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
         assert np.allclose(res, expected, atol=tol)
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "base_obs, permuted_obs",
         list(zip(obs_lst, obs_permuted_lst, strict=True)),
     )
-    def test_wire_order_in_tensor_prod_observables(
+    def test_wire_order_in_tensor_prod_observables(  # pylint: disable=too-many-arguments
         self, device, base_obs, permuted_obs, tol, skip_if, shots
     ):
         """Test that when given a tensor observable the expectation value is the same regardless of the order of terms
@@ -1236,7 +1237,7 @@ class TestTensorSample:
 
 
 @flaky(max_runs=10)
-class TestSumExpval:
+class TestSumExpval:  # pylint: disable=too-few-public-methods
     """Test expectation values of Sum observables."""
 
     def test_sum_containing_identity_on_no_wires(self, device, tol, shots):
@@ -1439,13 +1440,11 @@ class TestTensorVar:
         ) / 4
         assert np.allclose(res, expected, atol=tol)
 
-    # pylint: disable=too-many-arguments
-
     @pytest.mark.parametrize(
         "base_obs, permuted_obs",
         list(zip(obs_lst, obs_permuted_lst, strict=True)),
     )
-    def test_wire_order_in_tensor_prod_observables(
+    def test_wire_order_in_tensor_prod_observables(  # pylint: disable=too-many-arguments
         self, device, base_obs, permuted_obs, tol, skip_if, shots
     ):
         """Test that when given a tensor observable the variance is the same regardless of the order of terms

@@ -158,7 +158,7 @@ class TestMatrixGeneration:
     def test_jit_matrix(self):
         """Tests that MultiX matrix computations work with JAX bitstrings."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         bitstring = jax.numpy.array([1, 0])
         matrix_fn = jax.jit(lambda bits: qp.MultiX.compute_matrix(bits, wires=[0, 1]))
@@ -193,7 +193,7 @@ class TestEigvalDiagonalization:
     def test_jit_eigvals(self):
         """Tests that MultiX eigenvalue computations work with JAX bitstrings."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         bitstring = jax.numpy.array([1, 0])
         eigvals_fn = jax.jit(lambda bits: qp.MultiX.compute_eigvals(bits, wires=[0, 1]))
@@ -309,12 +309,12 @@ class TestDecomposition:
     def test_decomposition_capture_with_tuple_wires(self):
         """Tests graph capture with tuple wires and a dynamically traced loop index."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
-        from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
+        from pennylane.capture.primitives import (
             for_loop_prim,
         )
-        from pennylane.testing import find_eqns  # pylint: disable=import-outside-toplevel
+        from pennylane.testing import find_eqns
 
         bitstring = jax.numpy.array([1, 0, 1])
         wires = (0, 1, 2)
@@ -350,7 +350,6 @@ class TestDecomposition:
         ``AbstractQubit`` handles from ``qp.allocate`` cannot be stacked for ``for_loop``-based
         dynamic indexing, so the decomposition unrolls into plain ``cond`` gates instead.
         """
-        # pylint: disable=import-outside-toplevel
         import jax
 
         from pennylane.allocation import allocate
@@ -370,7 +369,6 @@ class TestDecomposition:
 
     def test_multix_decomposition_unrolls_for_dynamic_wire(self):
         """``DynamicWire`` handles cannot be stacked for ``for_loop`` indexing, so unroll."""
-        # pylint: disable=import-outside-toplevel
         from pennylane.templates.subroutines.multix import _multix_decomposition
         from pennylane.wires import DynamicWire
 
@@ -441,8 +439,7 @@ class TestDecomposition:
         """A single-control C(MultiX) fans out to one controlled-X per set bit (a CNOT for a
         control on |1>), lowering to the requested gate set."""
 
-        # pylint: disable-next=protected-access
-        @qp.transforms._tape_decompose(gate_set=gate_set)
+        @qp.transforms._tape_decompose(gate_set=gate_set)  # pylint: disable=protected-access
         @qp.qnode(qp.device("null.qubit", wires=4))
         def circuit():
             qp.ctrl(
@@ -492,8 +489,7 @@ class TestDecomposition:
         control = [0, 1, 2, 3]
         targets = [4, 5, 6, 7]
 
-        # pylint: disable-next=protected-access
-        @qp.transforms._tape_decompose(
+        @qp.transforms._tape_decompose(  # pylint: disable=protected-access
             # PauliX is required for solvability (flip_zero_control's declared resources), even
             # though this concrete, all-1-control circuit never emits one.
             gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", "CNOT", "PauliX"},
@@ -520,7 +516,6 @@ class TestDecomposition:
 
     def test_controlled_multix_ladder_extra_work_wires(self):
         """Tests how many zeroed work wires the ladder decomp requests beyond those supplied."""
-        # pylint: disable=import-outside-toplevel
         from pennylane.templates.subroutines.multix import (
             _controlled_multix_ladder_extra_work_wires,
         )
@@ -537,7 +532,6 @@ class TestDecomposition:
 
     def test_controlled_multix_ladder_with_supplied_work_wires(self, mocker):
         """When enough zeroed work wires are supplied, the ladder decomp does not allocate."""
-        # pylint: disable=import-outside-toplevel
         from pennylane.templates.subroutines.multix import _controlled_multix_ladder
 
         fanout = mocker.patch("pennylane.templates.subroutines.multix._multix_ladder_fanout")
@@ -554,7 +548,6 @@ class TestDecomposition:
     @pytest.mark.capture
     def test_multix_ladder_fanout_uses_for_loop_with_static_wires(self):
         """With static wires, the CNOT fanout uses a ``for_loop`` under capture."""
-        # pylint: disable=import-outside-toplevel
         import jax
 
         from pennylane.capture.primitives import for_loop_prim
