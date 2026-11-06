@@ -362,6 +362,35 @@ class CH(Controlled2):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.CH
+
+            .. decomposition-rule:: _ch_to_ry_cz_ry
+                :image: /_static/decomposition_thumbnails/ch_to_ry_cz_ry.svg
+
+                :class:`~.RY` | :math:`2`
+                :class:`~.CZ` | :math:`1`
+
+            .. decomposition-rule:: decompose_to_base
+                :image: /_static/decomposition_thumbnails/ch_adjoint.svg
+                :region: adjoint
+                :where: :class:`~.CH` is self-adjoint
+
+                :class:`~.CH` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/ch_pow_period.svg
+                :region: pow
+                :where: :class:`~.CH` is its own inverse, so only :math:`z \bmod 2` matters, the
+                    rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
+                    :math:`z = 3`
+
+                :class:`~.CH` (odd :math:`z`) | :math:`1`
+                :class:`Pow(CH) <.CH>` with power :math:`z \bmod 2` (non-integer :math:`z`) | :math:`1`
+
     """
 
     wire_argnames = ("wires",)
@@ -457,6 +486,54 @@ class CY(Controlled2):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.CY
+
+            .. decomposition-rule:: _cy
+                :image: /_static/decomposition_thumbnails/cy_decomp.svg
+
+                :class:`~.CRY` | :math:`1`
+                :class:`~.S` | :math:`1`
+
+            .. decomposition-rule:: _cy_to_ppr
+                :image: /_static/decomposition_thumbnails/cy_to_ppr.svg
+
+                :class:`PPR_4(-1, "Z") <.PPR_4>` | :math:`1`
+                :class:`PPR_4(-1, "Y") <.PPR_4>` | :math:`1`
+                :class:`PPR_4(1, "ZY") <.PPR_4>` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _cy_lattice_surgery_ppm
+                :image: /_static/decomposition_thumbnails/cy_lattice_surgery_ppm.svg
+                :requires: 1 work wire (not restored)
+
+                :func:`PauliMeasure("ZX") <.pauli_measure>` | :math:`1`
+                :func:`PauliMeasure("ZY") <.pauli_measure>` | :math:`1`
+                :func:`PauliMeasure("X") <.pauli_measure>` | :math:`1`
+                :class:`~.PauliZ` (conditional) | :math:`2`
+                :class:`~.PauliY` (conditional) | :math:`1`
+                :class:`~.GlobalPhase` (conditional) | :math:`1`
+
+            .. decomposition-rule:: decompose_to_base
+                :image: /_static/decomposition_thumbnails/cy_adjoint.svg
+                :region: adjoint
+                :where: :class:`~.CY` is self-adjoint
+
+                :class:`~.CY` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/cy_pow_period.svg
+                :region: pow
+                :where: :class:`~.CY` is its own inverse, so only :math:`z \bmod 2` matters, the
+                    rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
+                    :math:`z = 3`
+
+                :class:`~.CY` (odd :math:`z`) | :math:`1`
+                :class:`Pow(CY) <.CY>` with power :math:`z \bmod 2` (non-integer :math:`z`) | :math:`1`
+
     """
 
     arg_specs = {"wires": Wire[2]}
@@ -595,6 +672,57 @@ class CZ(Controlled2):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.CZ
+
+            .. decomposition-rule:: _cz_to_cps
+                :image: /_static/decomposition_thumbnails/cz_to_cps.svg
+
+                :class:`~.ControlledPhaseShift` | :math:`1`
+
+            .. decomposition-rule:: _cz_to_cnot
+                :image: /_static/decomposition_thumbnails/cz_to_cnot.svg
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.CNOT` | :math:`1`
+
+            .. decomposition-rule:: _cz_to_ppr
+                :image: /_static/decomposition_thumbnails/cz_to_ppr.svg
+
+                :class:`PPR_4(-1, "Z") <.PPR_4>` | :math:`2`
+                :class:`PPR_4(1, "ZZ") <.PPR_4>` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _cz_lattice_surgery_ppm
+                :image: /_static/decomposition_thumbnails/cz_lattice_surgery_ppm.svg
+                :requires: 1 work wire (not restored)
+
+                :func:`PauliMeasure("ZX") <.pauli_measure>` | :math:`1`
+                :func:`PauliMeasure("ZZ") <.pauli_measure>` | :math:`1`
+                :func:`PauliMeasure("X") <.pauli_measure>` | :math:`1`
+                :class:`~.PauliZ` (conditional) | :math:`3`
+                :class:`~.GlobalPhase` (conditional) | :math:`1`
+
+            .. decomposition-rule:: decompose_to_base
+                :image: /_static/decomposition_thumbnails/cz_adjoint.svg
+                :region: adjoint
+                :where: :class:`~.CZ` is self-adjoint
+
+                :class:`~.CZ` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/cz_pow_period.svg
+                :region: pow
+                :where: :class:`~.CZ` is its own inverse, so only :math:`z \bmod 2` matters, the
+                    rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
+                    :math:`z = 3`
+
+                :class:`~.CZ` (odd :math:`z`) | :math:`1`
+                :class:`Pow(CZ) <.CZ>` with power :math:`z \bmod 2` (non-integer :math:`z`) | :math:`1`
+
     """
 
     arg_specs = {"wires": Wire[2]}
@@ -1095,6 +1223,60 @@ class CNOT(Controlled2):
     1: ────╰X─┤ ╰Sample
     >>> circuit()
     array([[1, 1]])
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.CNOT
+
+            .. decomposition-rule:: _cnot_to_cz_h
+                :image: /_static/decomposition_thumbnails/cnot_to_cz_h.svg
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.CZ` | :math:`1`
+
+            .. decomposition-rule:: _cnot_to_ppr
+                :image: /_static/decomposition_thumbnails/cnot_to_ppr.svg
+
+                :class:`PPR_4(-1, "Z") <.PPR_4>` | :math:`1`
+                :class:`PPR_4(-1, "X") <.PPR_4>` | :math:`1`
+                :class:`PPR_4(1, "ZX") <.PPR_4>` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _cnot_lattice_surgery_ppm
+                :image: /_static/decomposition_thumbnails/cnot_lattice_surgery_ppm.svg
+                :requires: 1 work wire (not restored)
+
+                :func:`PauliMeasure("ZX") <.pauli_measure>` | :math:`2`
+                :func:`PauliMeasure("X") <.pauli_measure>` | :math:`1`
+                :class:`~.PauliZ` (conditional) | :math:`2`
+                :class:`~.PauliX` (conditional) | :math:`1`
+                :class:`~.GlobalPhase` (conditional) | :math:`1`
+
+            .. decomposition-rule:: decompose_to_base
+                :image: /_static/decomposition_thumbnails/cnot_adjoint.svg
+                :region: adjoint
+                :where: :class:`~.CNOT` is self-adjoint
+
+                :class:`~.CNOT` | :math:`1`
+
+            .. decomposition-rule:: _ctrl_cnot_to_mcx
+                :image: /_static/decomposition_thumbnails/cnot_controlled.svg
+                :region: controlled
+                :where: :math:`c` is the number of added control wires, and the circuit shows
+                    :math:`c = 2`
+
+                :class:`~.MultiControlledX` with :math:`c + 1` controls | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/cnot_pow_period.svg
+                :region: pow
+                :where: :class:`~.CNOT` is its own inverse, so only :math:`z \bmod 2` matters, the
+                    rule applies if :math:`z \geq 2` or :math:`z < 0`, and the circuit shows
+                    :math:`z = 3`
+
+                :class:`~.CNOT` (odd :math:`z`) | :math:`1`
+                :class:`Pow(CNOT) <.CNOT>` with power :math:`z \bmod 2` (non-integer :math:`z`) | :math:`1`
 
     """
 
@@ -1983,6 +2165,51 @@ class CRX(Controlled2):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.CRX
+
+            .. decomposition-rule:: _crx_to_rx_cz
+                :image: /_static/decomposition_thumbnails/crx_to_rx_cz.svg
+
+                :class:`~.RX` | :math:`2`
+                :class:`~.CZ` | :math:`2`
+
+            .. decomposition-rule:: _crx_to_rz_ry
+                :image: /_static/decomposition_thumbnails/crx_to_rz_ry.svg
+
+                :class:`~.RZ` | :math:`2`
+                :class:`~.RY` | :math:`2`
+                :class:`~.CNOT` | :math:`2`
+
+            .. decomposition-rule:: _crx_to_h_crz
+                :image: /_static/decomposition_thumbnails/crx_to_h_crz.svg
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.CRZ` | :math:`1`
+
+            .. decomposition-rule:: _crx_to_ppr
+                :image: /_static/decomposition_thumbnails/crx_to_ppr.svg
+
+                :class:`PauliRot("ZX") <.PauliRot>` | :math:`1`
+                :class:`PauliRot("X") <.PauliRot>` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/crx_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.CRX` | :math:`1`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/crx_pow.svg
+                :region: pow
+                :where: ``phi`` is multiplied by the power :math:`z`
+
+                :class:`~.CRX` | :math:`1`
+
     """
 
     num_wires = 2
@@ -2140,6 +2367,38 @@ class CRY(Controlled2):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.CRY
+
+            .. decomposition-rule:: _cry
+                :image: /_static/decomposition_thumbnails/cry_decomp.svg
+
+                :class:`~.RY` | :math:`2`
+                :class:`~.CNOT` | :math:`2`
+
+            .. decomposition-rule:: _cry_to_ppr
+                :image: /_static/decomposition_thumbnails/cry_to_ppr.svg
+
+                :class:`PauliRot("ZY") <.PauliRot>` | :math:`1`
+                :class:`PauliRot("Y") <.PauliRot>` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/cry_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.CRY` | :math:`1`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/cry_pow.svg
+                :region: pow
+                :where: ``phi`` is multiplied by the power :math:`z`
+
+                :class:`~.CRY` | :math:`1`
+
     """
 
     num_wires = 2
@@ -2276,6 +2535,37 @@ class CRZ(Controlled2):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.CRZ
+
+            .. decomposition-rule:: _crz
+                :image: /_static/decomposition_thumbnails/crz_decomp.svg
+
+                :class:`~.RZ` | :math:`2`
+                :class:`~.CNOT` | :math:`2`
+
+            .. decomposition-rule:: _crz_to_ppr
+                :image: /_static/decomposition_thumbnails/crz_to_ppr.svg
+
+                :class:`PauliRot("ZZ") <.PauliRot>` | :math:`1`
+                :class:`PauliRot("Z") <.PauliRot>` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/crz_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.CRZ` | :math:`1`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/crz_pow.svg
+                :region: pow
+                :where: ``phi`` is multiplied by the power :math:`z`
+
+                :class:`~.CRZ` | :math:`1`
 
     """
 
@@ -2440,6 +2730,25 @@ class CRot(Controlled2):
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
         wires (Sequence[int]): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.CRot
+
+            .. decomposition-rule:: _crot
+                :image: /_static/decomposition_thumbnails/crot_decomp.svg
+
+                :class:`~.RZ` | :math:`3`
+                :class:`~.RY` | :math:`2`
+                :class:`~.CNOT` | :math:`2`
+
+            .. decomposition-rule:: _adjoint_crot
+                :image: /_static/decomposition_thumbnails/crot_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` and ``omega`` swap, and all three angles change sign
+
+                :class:`~.CRot` | :math:`1`
 
     """
 
