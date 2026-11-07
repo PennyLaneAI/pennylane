@@ -24,13 +24,12 @@ from pennylane.decomposition import (
     register_condition,
     register_resources,
 )
-from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import H, MultiControlledX, X, adjoint, change_op_basis, ctrl, prod
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.multix import MultiX
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.typing import Bool, Wire
+from pennylane.typing import Bool, Int, Wire
 from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
 
 from .incrementer import Incrementer
@@ -360,7 +359,7 @@ def _out_multiplier_with_qft_resources(  # pylint: disable=too-many-arguments,un
     uncompute_rep = adjoint(QFT(Wire[num_qft_wires]))
     target_rep = ControlledSequence(
         base=ControlledSequence(
-            base=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
+            base=PhaseAdder(Int, Wire[num_qft_wires], mod, Wire[int(mod != 2**num_qft_wires)]),
             control=Wire[num_x_wires],
         ),
         control=Wire[num_y_wires],

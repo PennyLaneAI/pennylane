@@ -19,15 +19,16 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.templates.subroutines.arithmetic.phase_adder import _add_k_fourier
 from pennylane.testing import assert_decomposable
+from pennylane.typing import Int, Wire
 
 
-@pytest.mark.xfail_if_capture(reason="Come back to this when we port it to Op2 [sc-130164]")
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_Phase_Adder():
     """Check the operation using the assert_valid function."""
-    k = 6
+    k = qp.math.asarray(6, like="jax") if qp.capture.enabled() else 6
     mod = 11
     x_wires = [0, 1, 2, 3]
     work_wire = [4]
@@ -35,11 +36,10 @@ def test_standard_validity_Phase_Adder():
     qp.testing.assert_valid(op)
 
 
-@pytest.mark.xfail_if_capture(reason="Come back to this when we port it to Op2 [sc-130164]")
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_falsy_zero_as_work_wire():
     """Test that work wire is not treated as a falsy zero."""
-    k = 6
+    k = qp.math.asarray(6, like="jax") if qp.capture.enabled() else 6
     mod = 11
     x_wires = [1, 2, 3, 4]
     work_wire = 0
@@ -172,7 +172,7 @@ class TestPhaseAdder:
                 [0, 1, 2, 3, 4],
                 12,
                 [4],
-                "None of the wires in work_wire should be included in x_wires.",
+                "x_wires and work_wire must not overlap",
             ),
         ],
     )
@@ -199,7 +199,7 @@ class TestPhaseAdder:
         op1 = qp.PhaseAdder(3, [0, 1, 2], mod=8, work_wire=[3])
         op2 = qp.PhaseAdder(3, [0, 1, 2], mod=8, work_wire=3)
 
-        assert op1.hyperparameters["work_wire"] == op2.hyperparameters["work_wire"]
+        assert op1.work_wire == op2.work_wire
 
     @pytest.mark.parametrize(
         ("k", "x_wires", "mod", "work_wire", "msg_match"),
@@ -207,9 +207,9 @@ class TestPhaseAdder:
             (
                 2.3,
                 [0, 1, 2],
-                9,
+                7,
                 [3],
-                ("Both k and mod must be integers"),
+                ("expected 'arg_specs' dtype"),
             ),
             (
                 2,
@@ -226,14 +226,14 @@ class TestPhaseAdder:
             qp.PhaseAdder(k, x_wires, mod, work_wire)
 
     def test_decomposition(self):
-        """Test that compute_decomposition and decomposition work as expected."""
+        """Test that the inherited graph-based decomposition works as expected."""
 
         k = 4
         x_wires = [1, 2, 3]
         mod = 7
         work_wire = [0]
 
-        phase_adder_decomp = qp.PhaseAdder.compute_decomposition(k, x_wires, mod, work_wire)
+        phase_adder_decomp = qp.PhaseAdder(k, x_wires, mod, work_wire).decomposition()
         cob_index = len(_add_k_fourier(k, x_wires)) + len(_add_k_fourier(mod, x_wires))
         cob_decomp1 = phase_adder_decomp[cob_index].decomposition()
         cob_decomp2 = phase_adder_decomp[-1].decomposition()
@@ -248,7 +248,7 @@ class TestPhaseAdder:
         op_list = []
         base_list_ops1 = [
             qp.adjoint(qp.QFT)(wires=x_wires),
-            *[qp.adjoint(op) for op in _add_k_fourier(k, x_wires)],
+            *reversed(_add_k_fourier(-k, x_wires)),
         ]
         base_list_ops2 = [*_add_k_fourier(k, x_wires)[::-1], qp.QFT(wires=x_wires)]
 
@@ -257,7 +257,7 @@ class TestPhaseAdder:
         else:
             aux_k = x_wires[0]
             op_list.extend(_add_k_fourier(k, x_wires))
-            op_list.extend(qp.adjoint(_add_k_fourier)(mod, x_wires))
+            op_list.extend(_add_k_fourier(-mod, x_wires))
             op_list.append(qp.adjoint(qp.QFT)(wires=x_wires))
             op_list.append(qp.CNOT([aux_k, work_wire[0]]))
             op_list.append(qp.QFT(wires=x_wires))
@@ -269,7 +269,6 @@ class TestPhaseAdder:
         for op1, op2 in zip(phase_adder_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
-    @pytest.mark.xfail_if_capture(reason="Come back to this when we port it to Op2 [sc-130164]")
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("mod", [7, 8])
     def test_decomposition_new(self, mod):
@@ -285,6 +284,18 @@ class TestPhaseAdder:
         """Test that no work wires are added if work_wire = None"""
         wires = qp.PhaseAdder(1, x_wires=[1, 2]).wires
         assert wires == qp.wires.Wires([1, 2])
+
+    @pytest.mark.parametrize("mod, num_work_wires", [(8, 0), (7, 1)])
+    def test_abstract_inputs(self, mod, num_work_wires):
+        """Abstract inputs retain the register sizes needed by decomposition resources."""
+        op = qp.PhaseAdder(Int, Wire[3], mod, Wire[num_work_wires])
+        assert isinstance(op, Operator2)
+        assert op.is_fully_abstract
+        assert len(op.x_wires) == 3
+        assert len(op.work_wire) == num_work_wires
+        concrete = qp.PhaseAdder(4, [0, 1, 2], mod, [3][:num_work_wires])
+        qp.assert_equal(abstractify(concrete), op)
+        assert_decomposable(concrete)
 
     @pytest.mark.jax
     def test_jit_compatible(self):

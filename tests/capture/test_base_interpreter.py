@@ -384,20 +384,30 @@ class TestHigherOrderPrimitiveRegistrations:  # pylint: disable=too-many-public-
         assert jaxpr2.consts == [scalar]
         assert len(jaxpr2.eqns[0].params["jaxpr"].constvars) == 1
 
-    def test_ctrl_transform(self):
-        """Test the higher order ctrl transform."""
+    @pytest.mark.parametrize("dynamic_work_wire", [False, True])
+    def test_ctrl_transform(self, dynamic_work_wire):
+        """The interpreter preserves concrete and traced work-wire operands."""
 
         @SimplifyInterpreter()
-        def f(x, control, val):
+        def f(x, control, val, work):
             def g(y):
                 _ = qp.RY(y, 0) ** 3
 
-            qp.ctrl(g, control, control_values=[val])(x)
+            qp.ctrl(
+                g, control, control_values=[val], work_wires=[work if dynamic_work_wire else 2]
+            )(x)
 
-        jaxpr = jax.make_jaxpr(f)(0.5, 1, False)
+        with jax.checking_leaks():
+            jaxpr = jax.make_jaxpr(f)(0.5, 1, False, 2)
 
         assert jaxpr.eqns[0].primitive == ctrl_transform_prim
-        assert jaxpr.eqns[0].invars[-2:] == jaxpr.jaxpr.invars[1:]
+        assert jaxpr.eqns[0].invars[-3:-1] == jaxpr.jaxpr.invars[1:3]
+        if dynamic_work_wire:
+            assert jaxpr.eqns[0].invars[-1] == jaxpr.jaxpr.invars[-1]
+        else:
+            assert jaxpr.eqns[0].invars[-1].val == 2
+        assert jaxpr.eqns[0].params["n_work_wires"] == 1
+        assert "work_wires" not in jaxpr.eqns[0].params
         assert "control_values" not in jaxpr.eqns[0].params
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         # first eqn mul, second RY

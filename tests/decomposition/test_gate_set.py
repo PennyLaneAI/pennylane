@@ -28,6 +28,15 @@ from pennylane.decomposition.gate_set import GateSet
 class TestGateSet:
     """Unit tests for the GateSet class."""
 
+    @pytest.mark.parametrize(
+        "op", ["MidMeasure", "MidMeasureMP", "measure", "MidCircuitMeasure", qp.ops.MidMeasure]
+    )
+    def test_mid_measure_name(self, op):
+        """Mid-circuit measurement aliases share one canonical gate-set entry."""
+        gate_set = GateSet({op})
+        assert list(gate_set) == ["MidMeasure"]
+        assert qp.ops.MidMeasure(wires=0) in gate_set
+
     def test_initialization_from_set(self):
         """Tests creating a GateSet from a set."""
 

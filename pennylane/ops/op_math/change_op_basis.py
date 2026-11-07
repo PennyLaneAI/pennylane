@@ -150,9 +150,9 @@ def change_op_basis(  # pylint: disable=inconsistent-return-statements
     resulting in a much more resource-efficient decomposition:
 
     >>> print(qp.draw(circuit2)())
-    0: ──H──────╭●────────────────┤ ╭State
-    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤ ├State
-    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤ ╰State
+    0: ──H──────╭●──────────────────────┤ ╭State
+    1: ─╭●─╭QFT─├PhaseAdder(1.00)─╭QFT†─┤ ├State
+    2: ─╰X─╰QFT─╰PhaseAdder(1.00)─╰QFT†─┤ ╰State
 
     A ``Callable`` can also be provided as an argument to ``change_op_basis``. This can be a
     function that applies a series of ``Operation`` s. Since ``change_op_basis`` requires this

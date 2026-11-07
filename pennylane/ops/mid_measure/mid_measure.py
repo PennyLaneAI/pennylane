@@ -120,12 +120,6 @@ class MidMeasure(Operator2):
     ):
         super().__init__(wires=wires, reset=reset, postselect=postselect, meas_uid=meas_uid)
 
-    @property
-    def name(self) -> str:
-        # Kept as ``"MidMeasureMP"`` for backwards compatibility (gate sets, resource-rep aliases,
-        # device capabilities, etc. all key on this name).
-        return "MidMeasureMP"
-
     @staticmethod
     def compute_diagonalizing_gates(*args, **kwargs) -> list:
         return []

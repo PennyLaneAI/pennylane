@@ -109,6 +109,7 @@ class TestMidMeasure:
         """Tests the properties of the MidMeasure class."""
 
         op = MidMeasure(wires="a", postselect=1, reset=True, meas_uid="blah")
+        assert op.name == "MidMeasure"
         assert op.postselect == 1
         assert op.reset is True
         assert op.meas_uid == "blah"

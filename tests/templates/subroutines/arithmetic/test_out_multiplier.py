@@ -91,7 +91,7 @@ class TestBuildingBlocks:
             "S",
             "Adjoint(T)",
             "Adjoint(S)",
-            "MidMeasureMP",
+            "MidMeasure",
             "H",
             "Cond",
             "CZ",
