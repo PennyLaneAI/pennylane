@@ -198,7 +198,8 @@ def _process_data(op):
     else:
         mod_val = None
 
-    return str([id(d) if is_tracer(d) else _mod_and_round(d, mod_val) for d in op.data])
+    with np.printoptions(threshold=np.inf):
+        return str([id(d) if is_tracer(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
 # pylint: disable=abstract-method

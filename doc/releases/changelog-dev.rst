@@ -2330,6 +2330,11 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed a bug where operators with large array parameters (>1000 elements) had their
+  data truncated by NumPy printing options during hashing, causing different operators
+  to produce identical hashes and resulting in execution cache collisions.
+  `(#<pr_number>) <https://github.com/PennyLaneAI/pennylane/pull/<pr_number>>`__
+
 * Fixed tracer leaks when passing traced work-wire labels to :func:`~.ctrl`
   applied to a callable during program capture. Concrete work-wire labels retain
   their existing behaviour.
