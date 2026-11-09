@@ -17,11 +17,22 @@ Test the mapping functionality overrides operators as exected.
 
 import pytest
 
+import pennylane as qp
 import pennylane.estimator as pl_qre
 import pennylane.labs.estimator_beta as qre
 from pennylane.templates.subroutines.qrom import QROM
 
 # pylint: disable=protected-access
+
+
+@pytest.mark.parametrize("mod, work_wires", [(7, [3, 4]), (8, [])])
+def test_adder_mapping(mod, work_wires):
+    """Test that the Adder operator gets mapped correctly"""
+    adder = qp.Adder(3, x_wires=[0, 1, 2], mod=mod, work_wires=work_wires)
+
+    mapped = pl_qre.resource_mapping._map_to_resource_op(adder)
+    assert mapped == qre.Adder(num_x_wires=3, mod=mod, wires=[0, 1, 2])
+    assert mapped.wires == qp.wires.Wires([0, 1, 2])
 
 
 @pytest.mark.parametrize("clean", [True, False])
