@@ -888,6 +888,11 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* :class:`~.ControlledSequence` now simplifies static controlled powers in its graph decomposition,
+  restoring the power simplification used before the ``Operator2`` port, instead of nested loops
+  that repeat the base operator.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * Callable :func:`~.ctrl` now captures work-wire labels as operands, supporting
   traced work wires.
   `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
