@@ -529,10 +529,8 @@ def _(
     custom_mapping=None,
     **kwargs,
 ):
-    # pylint: disable-next=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from qualtran.bloqs.phase_estimation import RectangularWindowState
-
-    # pylint: disable-next=import-outside-toplevel
     from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
 
     mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
@@ -560,10 +558,8 @@ def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
     """Mapping for QROM that defaults to either ``QROAMClean`` or ``SelectSwapQROM``"""
-    # pylint: disable-next=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
-
-    # pylint: disable-next=import-outside-toplevel
     from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 
     mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)

@@ -32,8 +32,9 @@ BOHR_TO_ANG = physical_constants["Bohr radius"][0] * 1e10
 def _import_of():
     """Import openfermion and openfermionpyscf."""
     try:
-        import openfermion  # pylint: disable=import-outside-toplevel
-        import openfermionpyscf  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        import openfermion
+        import openfermionpyscf
     except ImportError as Error:
         raise ImportError(
             "This feature requires openfermionpyscf. "

@@ -40,9 +40,10 @@ def _run_with_resource_tracking(
     Returns the result of the execution along with the resources counted while running it.
     """
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
-    from catalyst import QJIT  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    from catalyst import QJIT
 
-    from ..devices import NullQubit  # pylint: disable=import-outside-toplevel
+    from ..devices import NullQubit
 
     with tempfile.TemporaryDirectory(
         prefix=f"{_RESOURCE_TRACKING_PREFIX}_{os.getpid()}_"

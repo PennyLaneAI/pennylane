@@ -72,8 +72,9 @@ def _fit_onebody(onemode_op, max_deg, min_deg=3):
     """
     _import_sklearn()
 
-    from sklearn.linear_model import LinearRegression  # pylint: disable=import-outside-toplevel
-    from sklearn.preprocessing import PolynomialFeatures  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    from sklearn.linear_model import LinearRegression
+    from sklearn.preprocessing import PolynomialFeatures
 
     if max_deg < min_deg:
         raise ValueError(

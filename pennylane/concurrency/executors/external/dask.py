@@ -47,8 +47,9 @@ class DaskExec(ExtExec):  # pragma: no cover
     ):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)
         try:
-            from dask.distributed import LocalCluster  # pylint: disable=import-outside-toplevel
-            from dask.distributed.deploy import Cluster  # pylint: disable=import-outside-toplevel
+            # pylint: disable=import-outside-toplevel
+            from dask.distributed import LocalCluster
+            from dask.distributed.deploy import Cluster
         except ImportError as ie:
             raise RuntimeError(
                 "Dask Distributed cannot be found.\nPlease install via ``pip install dask distributed``"
