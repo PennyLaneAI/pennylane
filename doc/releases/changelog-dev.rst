@@ -2337,7 +2337,7 @@ Bug fixes 🐛
 * Fixed a bug where :func:`~.draw_mpl` replaced the symbols and quantum controls of
   conditionally applied operations with a labelled box. Conditional operations without
   wires, such as :class:`~.GlobalPhase`, no longer cause an error when drawn.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10496) <https://github.com/PennyLaneAI/pennylane/pull/10496>`__
 
 * Fixed tracer leaks when passing traced work-wire labels to :func:`~.ctrl`
   applied to a callable during program capture. Concrete work-wire labels retain
