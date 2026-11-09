@@ -934,6 +934,42 @@ class TestCPhaseShift:
         assert qp.math.allclose(matrices, expected)
         assert qp.math.allclose(eigvals, qp.math.diagonal(expected, axis1=-2, axis2=-1))
 
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize("adjoint", [False, True], ids=["forward", "adjoint"])
+    @pytest.mark.parametrize("controlled", [False, True], ids=["uncontrolled", "controlled"])
+    def test_qjit(self, cphase_op, adjoint, controlled):
+        """Test compiled gates and their symbolic forms with traced angles and wires."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("lightning.qubit", wires=3))
+        def circuit(phi, first_wire, second_wire):
+            for wire in range(3):
+                qp.Hadamard(wire)
+            op = cphase_op(phi, wires=[first_wire, second_wire])
+            if adjoint:
+                op = qp.adjoint(op)
+            if controlled:
+                qp.ctrl(op, control=2)
+            return qp.state()
+
+        phase_bits = {
+            qp.CPhaseShift00: (0, 0),
+            qp.CPhaseShift01: (0, 1),
+            qp.CPhaseShift10: (1, 0),
+        }[cphase_op]
+        for phi, first_wire, second_wire in [(0.37, 0, 1), (-0.82, 1, 0)]:
+            expected = qp.math.ones((2, 2, 2), dtype=complex)
+            indices = [slice(None)] * 3
+            indices[first_wire], indices[second_wire] = phase_bits
+            if controlled:
+                indices[2] = 1
+            expected[tuple(indices)] = qp.math.exp((-1 if adjoint else 1) * 1j * phi)
+            expected = qp.math.reshape(expected, -1) / qp.math.sqrt(8)
+
+            assert qp.math.allclose(
+                circuit(phi, first_wire, second_wire), expected, atol=1e-8, rtol=0
+            )
+
 
 pswap_angles = list(np.linspace(-np.pi, np.pi, 11)) + [np.linspace(-1, 1, 11)]
 
