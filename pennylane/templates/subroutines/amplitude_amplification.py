@@ -219,7 +219,7 @@ class AmplitudeAmplification(Operation):
         return self
 
 
-def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wires, U):
+def _amplitude_amplification_standard_resources(fixed_point, O, iters, num_reflection_wires, U):
     resources = {}
 
     if fixed_point and iters // 2 > 0:
@@ -251,8 +251,8 @@ def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wir
     return resources
 
 
-@register_resources(_amplitude_amplification_resources)
-def _amplitude_amplification_decomposition(
+@register_resources(_amplitude_amplification_standard_resources, name="standard")
+def _amplitude_amplification_standard(
     *_, U, O, iters, fixed_point, work_wire, p_min, reflection_wires, **__
 ):
 
@@ -292,4 +292,4 @@ def _amplitude_amplification_decomposition(
         iter_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(AmplitudeAmplification, _amplitude_amplification_decomposition)
+add_decomps(AmplitudeAmplification, _amplitude_amplification_standard)

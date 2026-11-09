@@ -32,9 +32,9 @@ from pennylane.templates.subroutines.arithmetic.incrementer import Incrementer
 from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier
 from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
 from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import (
-    _not_zeroed_signed_out_multiplier_resources,
+    _signed_out_multiplier_borrowed_resources,
+    _signed_out_multiplier_zeroed_resources,
     _twos_complement_helper,
-    _zeroed_signed_out_multiplier_resources,
 )
 from pennylane.testing import assert_decomposable, assert_valid
 from pennylane.typing import Wire
@@ -110,7 +110,7 @@ def test_signed_out_multiplier_resources():
     work_wires = [7, 8, 9, 10]
     num_incrementer_work_wires = len(work_wires) - 2
 
-    zeroed_resources = _zeroed_signed_out_multiplier_resources(
+    zeroed_resources = _signed_out_multiplier_zeroed_resources(
         x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=True
     )
     mult_ops = [key for key in zeroed_resources if isinstance(key, OutMultiplier)]
@@ -133,7 +133,7 @@ def test_signed_out_multiplier_resources():
     for inc_rep, count in expected_incrementers.items():
         assert zeroed_resources[inc_rep] == count
 
-    not_zeroed_resources = _not_zeroed_signed_out_multiplier_resources(
+    not_zeroed_resources = _signed_out_multiplier_borrowed_resources(
         x_wires, y_wires, output_wires, work_wires
     )
     nested_ops = [key for key in not_zeroed_resources if isinstance(key, SignedOutMultiplier)]
@@ -226,12 +226,12 @@ def test_decomposition(x_wires, y_wires, work_wires, output_wires, zeroed):
     "rule_name, registers, expected_primitives",
     [
         (
-            "_signed_out_multiplier_decomposition_zeroed",
+            "zeroed",
             ([0, 1, 2], [3, 4, 5], [10, 11, 12, 13, 14, 15], [6, 7, 8, 9]),
             {"for_loop": 5, "OutMultiplier": 1},
         ),
         (
-            "_signed_out_multiplier_decomposition_not_zeroed",
+            "borrowed",
             ([0, 1], [2, 3], [9, 10], [4, 5, 6, 7, 8]),
             {"concatenate": 2, "SignedOutMultiplier": 1},
         ),

@@ -461,7 +461,7 @@ class AliasSamplingTHC(Operator2):
                 :math:`\aleph` = ``aleph`` bits, and :math:`M` is the THC rank.
             :example: :math:`M=1`, :math:`N=2`, :math:`\aleph=1` (:math:`n=1`)
 
-            .. decomposition-rule:: _alias_sampling_thc_decomp
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/alias_sampling_thc_walker.svg
 
                 :class:`~.OutSquare` | :math:`1` | 1
@@ -550,7 +550,7 @@ class AliasSamplingTHC(Operator2):
         return self.mu_wires + self.nu_wires + self.edge_flag + self.work_wires
 
 
-def _alias_sampling_thc_resources(
+def _alias_sampling_thc_standard_resources(
     M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph
 ):  # pylint: disable=too-many-arguments,unused-argument
     n = len(mu_wires)
@@ -613,8 +613,8 @@ def _alias_sampling_thc_resources(
     return dict(resources)
 
 
-@register_resources(_alias_sampling_thc_resources)
-def _alias_sampling_thc_decomp(
+@register_resources(_alias_sampling_thc_standard_resources, name="standard")
+def _alias_sampling_thc_standard(
     M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, **_
 ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
     n = len(mu_wires)
@@ -694,4 +694,4 @@ def _alias_sampling_thc_decomp(
     _symmetrize(mu_wires, nu_wires, symmetrize_flag, edge_flag, sym_cswap_work)
 
 
-add_decomps(AliasSamplingTHC, _alias_sampling_thc_decomp)
+add_decomps(AliasSamplingTHC, _alias_sampling_thc_standard)

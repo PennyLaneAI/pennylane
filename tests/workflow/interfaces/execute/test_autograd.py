@@ -581,7 +581,7 @@ class TestAutogradExecuteIntegration:
             program = device.preprocess_transforms(execution_config=config)
             return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
-        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1}, name="decomp")
         def _decomp(theta, phi, delta, wires):
             qp.Rot(delta, theta, -delta, wires)
             qp.PhaseShift(phi + delta, wires)

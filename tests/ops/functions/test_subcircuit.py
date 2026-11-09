@@ -26,7 +26,7 @@ from pennylane.typing import Bool, Float, Wire
 
 
 @qp.subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": float, "wires": Wire[1]})
-@qp.register_resources({qp.H: 1, qp.RZ: 1})
+@qp.register_resources({qp.H: 1, qp.RZ: 1}, name="FixedOp")
 def FixedOp(phi, wires):
     """Custom operator created using qp.subcircuit."""
     qp.H(wires)
@@ -39,7 +39,7 @@ def _loop_op_resources(phi, w, n_iters):  # pylint: disable=unused-argument
 
 
 @qp.subcircuit(dynamic_argnames=("phi",), wire_argnames=("w",), compilable_argnames=("n_iters",))
-@qp.register_resources(_loop_op_resources)
+@qp.register_resources(_loop_op_resources, name="LoopOp")
 def LoopOp(phi, w, n_iters):
     """Custom operator with control flow created using qp.subcircuit."""
 
@@ -109,7 +109,7 @@ class TestClassCreation:
         """Test that the ``static_argnames`` are set on the class."""
 
         @qp.subcircuit(dynamic_argnames=("phi",), static_argnames=("n",))
-        @qp.register_resources({qp.RZ: 1})
+        @qp.register_resources({qp.RZ: 1}, name="StaticOp")
         def StaticOp(phi, wires, n):  # pylint: disable=unused-argument
             qp.RZ(phi, wires)
 
@@ -119,7 +119,7 @@ class TestClassCreation:
         """Test that the ``hybrid_argnames`` are set on the class."""
 
         @qp.subcircuit(dynamic_argnames=("phi",), hybrid_argnames=("n",))
-        @qp.register_resources({qp.RZ: 1})
+        @qp.register_resources({qp.RZ: 1}, name="HybridOp")
         def HybridOp(phi, wires, n):  # pylint: disable=unused-argument
             qp.RZ(phi, wires)
 
@@ -138,7 +138,7 @@ class TestClassCreation:
         """Extra keyword arguments are passed through as class attributes."""
 
         @qp.subcircuit(custom_attr=42)
-        @qp.register_resources({qp.RZ: 1})
+        @qp.register_resources({qp.RZ: 1}, name="AttrOp")
         def AttrOp(wires):
             qp.H(wires)
 
@@ -162,7 +162,7 @@ class TestDecorator:
         """Test that ``@subcircuit(...)`` configures and returns a class."""
 
         @qp.subcircuit(dynamic_argnames=("phi",))
-        @qp.register_resources({qp.RZ: 1})
+        @qp.register_resources({qp.RZ: 1}, name="ConfiguredOp")
         def ConfiguredOp(phi, wires):
             qp.RZ(phi, wires)
 
@@ -174,7 +174,7 @@ class TestDecorator:
         """Test that ``@subcircuit`` (no call) can be used as a decorator."""
 
         @qp.subcircuit
-        @qp.register_resources({qp.X: 2})
+        @qp.register_resources({qp.X: 2}, name="DirectOp")
         def DirectOp(wires):
             qp.X(wires)
             qp.X(wires)
@@ -254,7 +254,7 @@ class TestAdditionalDecompositionRules:
         operator itself."""
 
         # An alternative but equivalent decomposition of ``H`` followed by ``RZ(phi)``.
-        @qp.register_resources({qp.H: 1, qp.PhaseShift: 1, qp.GlobalPhase: 1})
+        @qp.register_resources({qp.H: 1, qp.PhaseShift: 1, qp.GlobalPhase: 1}, name="alt_fixed")
         def alt_fixed(phi, wires):
             qp.H(wires)
             qp.PhaseShift(phi, wires)
@@ -272,7 +272,7 @@ class TestAdditionalDecompositionRules:
     def test_register_adjoint_rule(self):
         """Test that a valid adjoint decomposition rule can be registered for the operator."""
 
-        @qp.register_resources({qp.RZ: 1, qp.H: 1})
+        @qp.register_resources({qp.RZ: 1, qp.H: 1}, name="adjoint_fixed")
         def adjoint_fixed(base):
             qp.RZ(-base.phi, base.wires)
             qp.H(base.wires)
@@ -314,7 +314,7 @@ class TestAdditionalDecompositionRules:
             ] = 1
             return resources
 
-        @qp.register_resources(_ctrl_resources, exact=False)
+        @qp.register_resources(_ctrl_resources, exact=False, name="controlled_fixed")
         def controlled_fixed(base, control_wires, control_values, work_wires, work_wire_type):
             qp.ctrl(
                 qp.H(base.wires),

@@ -29,8 +29,8 @@ from .semi_adder import (
     SemiAdder,
     _self_ctrl_one_sparse_add,
     _self_ctrl_one_sparse_add_resources,
-    _semi_adder,
-    _semi_adder_resources,
+    _semi_adder_standard,
+    _semi_adder_standard_resources,
 )
 from .temporary_and import TemporaryAND
 
@@ -298,7 +298,7 @@ def _out_square_with_adder_zeroed_resources(
 
 
 @register_condition(_out_square_with_adder_zeroed_condition)
-@register_resources(_out_square_with_adder_zeroed_resources, name="out_square_with_adder")
+@register_resources(_out_square_with_adder_zeroed_resources, name="with_adder_zeroed")
 def _out_square_with_adder_zeroed(
     x_wires: WiresLike,
     output_wires: WiresLike,
@@ -368,7 +368,9 @@ def _out_square_with_caddsub_resources(
         resources[CNOT] += 1
     else:
         skips = [1] + [2 * j for j in range(1, n)]
-        sparse_adder_res = _semi_adder_resources(x_wires, output_wires, skip_input_pos=skips)
+        sparse_adder_res = _semi_adder_standard_resources(
+            x_wires, output_wires, skip_input_pos=skips
+        )
         for key, value in sparse_adder_res.items():
             resources[key] += value
 
@@ -398,7 +400,7 @@ def _shifted_adder(x_wires, output_wires, work_wires):
 
 
 @register_condition(_out_square_with_caddsub_condition)
-@register_resources(_out_square_with_caddsub_resources)
+@register_resources(_out_square_with_caddsub_resources, name="with_caddsub")
 def _out_square_with_caddsub(
     x_wires: WiresLike,
     output_wires: WiresLike,
@@ -429,7 +431,7 @@ def _out_square_with_caddsub(
         CNOT([x_wires[-1], output_wires[-1]])
     else:
         zeroed = [1] + [2 * j for j in range(1, n)]
-        _semi_adder(x_wires, output_wires, work_wires, skip_input_pos=zeroed)
+        _semi_adder_standard(x_wires, output_wires, work_wires, skip_input_pos=zeroed)
 
     if n > 1 and m > 1:
         _output = output_wires[:-1]

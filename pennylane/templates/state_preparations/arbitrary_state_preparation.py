@@ -159,7 +159,7 @@ class ArbitraryStatePreparation(Operation):
         return (2 ** (n_wires + 1) - 2,)
 
 
-def _arbitrary_state_preparation_resources(num_wires):
+def _arbitrary_state_preparation_standard_resources(num_wires):
     return dict(
         Counter(
             qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)])
@@ -168,8 +168,8 @@ def _arbitrary_state_preparation_resources(num_wires):
     )
 
 
-@register_resources(_arbitrary_state_preparation_resources)
-def _arbitrary_state_preparation_decomposition(weights, wires, **_):
+@register_resources(_arbitrary_state_preparation_standard_resources, name="standard")
+def _arbitrary_state_preparation_standard(weights, wires, **_):
     pauli_words = _state_preparation_pauli_words(len(wires))
 
     @for_loop(len(pauli_words))
@@ -180,4 +180,4 @@ def _arbitrary_state_preparation_decomposition(weights, wires, **_):
     pauli_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(ArbitraryStatePreparation, _arbitrary_state_preparation_decomposition)
+add_decomps(ArbitraryStatePreparation, _arbitrary_state_preparation_standard)

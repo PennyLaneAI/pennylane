@@ -161,7 +161,9 @@ def _get_specific_bit(value, i):
     return (value >> i) & 1
 
 
-def _left_classical_comparator_resources(x_wires, value, target_wire, work_wires, comparator, **_):
+def _left_classical_comparator_standard_resources(
+    x_wires, value, target_wire, work_wires, comparator, **_
+):
     """Return conservative worst-case gate counts without knowing the runtime threshold."""
     # pylint: disable=unused-argument
     n = len(x_wires)
@@ -174,8 +176,8 @@ def _left_classical_comparator_resources(x_wires, value, target_wire, work_wires
     }
 
 
-@register_resources(_left_classical_comparator_resources, exact=False)
-def _left_classical_comparator(x_wires, value, target_wire, work_wires, comparator, **_):
+@register_resources(_left_classical_comparator_standard_resources, exact=False, name="standard")
+def _left_classical_comparator_standard(x_wires, value, target_wire, work_wires, comparator, **_):
     x_wires = x_wires[::-1]
 
     def _negate_output():
@@ -218,4 +220,4 @@ def _left_classical_comparator(x_wires, value, target_wire, work_wires, comparat
     cond(comparator.startswith(">"), _negate_output)()
 
 
-add_decomps(LeftClassicalComparator, _left_classical_comparator)
+add_decomps(LeftClassicalComparator, _left_classical_comparator_standard)

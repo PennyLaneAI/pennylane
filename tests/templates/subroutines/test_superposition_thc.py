@@ -88,7 +88,7 @@ def test_standard_validity(M, N, n):
     """Check the operation using the assert_valid function.
 
     The full check (including the graph-based decomposition path) is run, which
-    also exercises ``_superposition_thc_resources``: the resource function must
+    also exercises ``_superposition_thc_standard_resources``: the resource function must
     report exactly the gate counts produced by the decomposition.
     """
     mu_wires, nu_wires, work_wires = _wire_layout(n)

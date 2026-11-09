@@ -340,7 +340,7 @@ class QAOAEmbedding(Operation):
         return n_layers, wire_dim
 
 
-def _qaoa_embedding_resources(repeat, n_features, num_wires, local_field):
+def _qaoa_embedding_standard_resources(repeat, n_features, num_wires, local_field):
     multi_rz_count = num_wires * repeat if num_wires > 2 else repeat
     resources = defaultdict(
         int,
@@ -354,8 +354,8 @@ def _qaoa_embedding_resources(repeat, n_features, num_wires, local_field):
     return resources
 
 
-@register_resources(_qaoa_embedding_resources)
-def _qaoa_embedding_decomposition(features, weights, wires, local_field):
+@register_resources(_qaoa_embedding_standard_resources, name="standard")
+def _qaoa_embedding_standard(features, weights, wires, local_field):
     if capture.enabled():
         weights, wires, features = jnp.array(weights), jnp.array(wires), jnp.array(features)
 
@@ -420,4 +420,4 @@ def _qaoa_embedding_decomposition(features, weights, wires, local_field):
     final_hadamard_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(QAOAEmbedding, _qaoa_embedding_decomposition)
+add_decomps(QAOAEmbedding, _qaoa_embedding_standard)

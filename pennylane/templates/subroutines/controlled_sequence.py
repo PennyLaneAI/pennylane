@@ -141,7 +141,7 @@ class ControlledSequence(SymbolicOp2):
         return f"ControlledSequence({self.base}, control={list(self.control)})"
 
 
-def _ctrl_seq_decomposition_resources(base, control) -> dict:
+def _ctrl_seq_standard_resources(base, control) -> dict:
     control = Wires(control)
     base_rep = abstractify(base)
 
@@ -151,8 +151,8 @@ def _ctrl_seq_decomposition_resources(base, control) -> dict:
 
 
 # pylint: disable=no-value-for-parameter
-@register_resources(_ctrl_seq_decomposition_resources)
-def _ctrl_seq_decomposition(*_, base=None, control=None, **__):
+@register_resources(_ctrl_seq_standard_resources, name="standard")
+def _ctrl_seq_standard(*_, base=None, control=None, **__):
     if compiler.active() or capture.enabled():
         control = math.array(control, like="jax")
 
@@ -176,4 +176,4 @@ def _ctrl_seq_decomposition(*_, base=None, control=None, **__):
     _powers_loop()
 
 
-add_decomps(ControlledSequence, _ctrl_seq_decomposition)
+add_decomps(ControlledSequence, _ctrl_seq_standard)

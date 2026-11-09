@@ -26,7 +26,7 @@ from pennylane.wires import WiresLike
 
 from ..multix import MultiX
 from .out_square import _SquareArithmeticOp
-from .semi_adder import _controlled_semi_adder, _ctrl_semi_adder_resource
+from .semi_adder import _controlled_semi_adder_standard, _controlled_semi_adder_standard_resources
 
 
 class SignedOutSquare(_SquareArithmeticOp):
@@ -191,7 +191,7 @@ class SignedOutSquare(_SquareArithmeticOp):
         Overall, we arrive at the following decomposition:
 
         >>> op = qp.SignedOutSquare(range(3), range(3, 10), range(10, 16), True)
-        >>> qp.inspect_decomps(op, "signed_square_from_unsigned_square")
+        >>> qp.inspect_decomps(op, "from_unsigned")
         Decomposition 0 (name: signed_square_from_unsigned_square)
          0: ──────────────────────────────────────────╭●────────╭●──────────────╭●──────────── ···
          1: ─╭OutSquare──MultiX(M0)───────╭X────╭●────│──────●╮─├●────╭X────────│───MultiX(M0) ···
@@ -243,7 +243,7 @@ class SignedOutSquare(_SquareArithmeticOp):
 def _c_subtract_then_add_one_resources(n, m, num_work_wires, output_wires_zeroed):
     size = min(m - n, n) if output_wires_zeroed else m - n
     add_base = SemiAdder(Wire[n - 1], Wire[size], Wire[size - 1])
-    cadd_resources = _ctrl_semi_adder_resource(
+    cadd_resources = _controlled_semi_adder_standard_resources(
         add_base, Wire[1], None, Wire[num_work_wires - size + 1], "zeroed"
     )
 
@@ -267,14 +267,14 @@ def _c_subtract_then_add_one(c_wire, x_wires, y_wires, work_wires):
     X(y_wires[-1])
 
     m = len(y_wires)
-    # `_controlled_semi_adder` only reads x/y/work_wires from `base`
+    # `_controlled_semi_adder_standard` only reads x/y/work_wires from `base`
     # using SimpleNamespace to avoid having to use capture.pause() and stop_recording()
     base = SimpleNamespace(x_wires=x_wires, y_wires=y_wires, work_wires=work_wires[: m - 1])
 
     # Inject a work wire bit flip where a carry-in qubit would cause one, i.e. after the very
     # first left elbow and before the last right elbow.
     carry_flip = X if len(work_wires) > 0 else None
-    _controlled_semi_adder(
+    _controlled_semi_adder_standard(
         base,
         control_wires=[c_wire],
         work_wires=work_wires[m - 1 :],
@@ -289,7 +289,7 @@ def _c_subtract_then_add_one(c_wire, x_wires, y_wires, work_wires):
         MultiX([1] * (len(x_wires) - 1), x_wires[:-1])
 
 
-def _signed_out_square_resources(
+def _signed_out_square_from_unsigned_resources(
     x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> dict:
     # pylint: disable=unused-argument
@@ -319,8 +319,8 @@ def _signed_out_square_resources(
     return dict(resources)
 
 
-@register_resources(_signed_out_square_resources, name="signed_square_from_unsigned_square")
-def _signed_out_square(
+@register_resources(_signed_out_square_from_unsigned_resources, name="from_unsigned")
+def _signed_out_square_from_unsigned(
     x_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
@@ -355,4 +355,4 @@ def _signed_out_square(
             _ = [X(w) for w in output]
 
 
-add_decomps(SignedOutSquare, _signed_out_square)
+add_decomps(SignedOutSquare, _signed_out_square_from_unsigned)

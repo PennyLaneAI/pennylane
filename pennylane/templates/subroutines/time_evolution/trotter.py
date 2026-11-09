@@ -388,7 +388,7 @@ class TrotterProduct(Operation):
         return decomp
 
 
-def _trotter_product_decomposition_resources(n, order, ops):
+def _trotter_product_standard_resources(n, order, ops):
     reps = {}
 
     def _count(op, ops):
@@ -413,8 +413,8 @@ def _trotter_product_decomposition_resources(n, order, ops):
     return reps
 
 
-@register_resources(_trotter_product_decomposition_resources)
-def _trotter_product_decomposition(*args, **kwargs):
+@register_resources(_trotter_product_standard_resources, name="standard")
+def _trotter_product_standard(*args, **kwargs):
     time = args[-1]
     n = kwargs["n"]
     order = kwargs["order"]
@@ -444,7 +444,7 @@ def _trotter_product_decomposition(*args, **kwargs):
         _recursive(time / n, order, ops)
 
 
-add_decomps(TrotterProduct, _trotter_product_decomposition)
+add_decomps(TrotterProduct, _trotter_product_standard)
 
 
 class TrotterizedQfunc(Operation):

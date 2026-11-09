@@ -35,7 +35,7 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     _find_single_w,
     _preprocess,
     _sos_encoding_size,
-    _sos_state_prep,
+    _sos_state_prep_standard,
     _sos_state_prep_with_wires,
     compute_sos_encoding,
     select_sos_rows,
@@ -534,7 +534,7 @@ class TestSumOfSlatersPrep:
     @pytest.mark.parametrize("num_bits", [4, 5, 6])
     def test_register_sizes(self, num_wires, num_entries, num_bits, seed):
         """Test for ``SumOfSlatersPrep.required_register_sizes`` and work wire spec of
-        ``_sos_state_prep``."""
+        ``_sos_state_prep_standard``."""
 
         coefficients, _ = self.make_random_data(num_wires, num_entries, seed=seed)
 
@@ -557,7 +557,7 @@ class TestSumOfSlatersPrep:
         assert sizes["qrom_work_wires"] == max(d - 1, 0)
         assert sizes["mcx_cache_wires"] == max(m - 1, 0)
 
-        registered_work_wires = _sos_state_prep.get_work_wire_spec(
+        registered_work_wires = _sos_state_prep_standard.get_work_wire_spec(
             coefficients, range(num_wires), indices
         )
         assert sum(sizes.values()) - num_wires == registered_work_wires.total
@@ -565,7 +565,7 @@ class TestSumOfSlatersPrep:
     @pytest.mark.parametrize("n", [7, 8, 9, 15, 16, 17])
     def test_register_sizes_non_id_encoding(self, n, seed):
         """Test for ``SumOfSlatersPrep.required_register_sizes`` and work wire spec of
-        ``_sos_state_prep``. The test is the same as in ``test_register_sizes``, but with
+        ``_sos_state_prep_standard``. The test is the same as in ``test_register_sizes``, but with
         deterministic input data that triggers the ``identity_encoding=False`` scenario."""
 
         coefficients, _ = self.make_random_data(n, n, seed=seed)
@@ -584,7 +584,9 @@ class TestSumOfSlatersPrep:
         assert sizes["qrom_work_wires"] == max(d - 1, 0)
         assert sizes["mcx_cache_wires"] == m - 1
 
-        registered_work_wires = _sos_state_prep.get_work_wire_spec(coefficients, range(n), indices)
+        registered_work_wires = _sos_state_prep_standard.get_work_wire_spec(
+            coefficients, range(n), indices
+        )
         assert sum(sizes.values()) - n == registered_work_wires.total
 
     def test_register_sizes_memory_limit_fallback(self):
@@ -675,7 +677,7 @@ class TestSumOfSlatersPrep:
     def test_resource_counts_are_python_integers(self):
         """Test that decomposition resource counts are Python integers."""
         indices = (0, 1, 2, 4, 8, 16, 32, 64)
-        resources = _sos_state_prep.compute_resources(
+        resources = _sos_state_prep_standard.compute_resources(
             np.zeros(len(indices), dtype=complex), range(7), indices
         )
 
@@ -694,9 +696,9 @@ class TestSumOfSlatersPrep:
         """Test that the MultiplexerStatePreparation in the decomposition is real-valued
         for real-valued coefficients and complex-valued for complex-valued coefficients."""
         op = SumOfSlatersPrep(coefficients, range(3), indices=(0, 3, 5, 6))
-        resources = _sos_state_prep.compute_resources(**op.arguments).gate_counts
+        resources = _sos_state_prep_standard.compute_resources(**op.arguments).gate_counts
         assert qp.MultiplexerStatePreparation(state_type[4], wires=Wire[2]) in resources
-        assert_valid_decomp_rule(op, _sos_state_prep)
+        assert_valid_decomp_rule(op, _sos_state_prep_standard)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
@@ -871,7 +873,7 @@ class TestSumOfSlatersPrep:
         all_wires = qp.registers(SumOfSlatersPrep.required_register_sizes(indices, num_wires))
 
         plxpr = jax.make_jaxpr(
-            lambda: _sos_state_prep(coefficients, indices=indices, **all_wires)
+            lambda: _sos_state_prep_standard(coefficients, indices=indices, **all_wires)
         )()
         ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
 

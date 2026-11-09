@@ -24,8 +24,8 @@ from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
-from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
+from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
+from pennylane.ops.op_math.pow2 import _pow_scale_angle as pow_rotation2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -383,7 +383,7 @@ class GlobalPhase(Operator2):
         return qp.s_prod(-1, qp.I())
 
 
-def _controlled_g_phase_resource(
+def _controlled_g_phase_standard_resources(
     base, control_wires, control_values, work_wires, work_wire_type
 ):  # pylint: disable=unused-argument
     num_control_wires = len(control_wires)
@@ -411,8 +411,8 @@ def _controlled_g_phase_resource(
     return resources
 
 
-@register_resources(_controlled_g_phase_resource, exact=False)
-def _controlled_g_phase_decomp(
+@register_resources(_controlled_g_phase_standard_resources, exact=False, name="standard")
+def _controlled_g_phase_standard(
     base,
     control_wires,
     control_values,
@@ -453,4 +453,4 @@ def _controlled_g_phase_decomp(
 
 add_decomps("Adjoint(GlobalPhase)", adjoint_rotation2)
 add_decomps("Pow(GlobalPhase)", pow_rotation2)
-add_decomps("C(GlobalPhase)", _controlled_g_phase_decomp)
+add_decomps("C(GlobalPhase)", _controlled_g_phase_standard)

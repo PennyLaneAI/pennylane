@@ -3041,7 +3041,7 @@ class TestMultiRZ:
         """Test that MultiRZ decomposes into a PauliRot on a pure-Z Pauli word."""
 
         op = qp.MultiRZ(0.123, wires=wires)
-        rule = qp.list_decomps(qp.MultiRZ)["_multi_rz_to_ppr"]
+        rule = qp.list_decomps(qp.MultiRZ)["to_ppr"]
         tape = decomp_rule_to_tape(op, rule)
         (actual,) = tape.operations
         qp.assert_equal(actual, qp.PauliRot(0.123, "Z" * len(wires), wires=wires))

@@ -158,7 +158,7 @@ class FFFT(Operator):
         }
 
 
-def _fast_fermionic_fourier_transform_resources(num_wires):
+def _fast_fermionic_fourier_transform_standard_resources(num_wires):
     resources = defaultdict(int)
 
     log2_wires = int(math.log2(num_wires))
@@ -182,8 +182,8 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
     return resources
 
 
-@register_resources(_fast_fermionic_fourier_transform_resources)
-def _fast_fermionic_fourier_transform_decomposition(*_, wires: WiresLike, **__):
+@register_resources(_fast_fermionic_fourier_transform_standard_resources, name="standard")
+def _fast_fermionic_fourier_transform_standard(*_, wires: WiresLike, **__):
     if capture.enabled():
         wires = math.array(wires, like="jax")
 
@@ -256,4 +256,4 @@ def _permute_and_apply_parallel(wires, operator):
     permutation_out_layers()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(FFFT, _fast_fermionic_fourier_transform_decomposition)
+add_decomps(FFFT, _fast_fermionic_fourier_transform_standard)

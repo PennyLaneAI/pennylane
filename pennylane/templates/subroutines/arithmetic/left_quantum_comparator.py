@@ -127,7 +127,9 @@ class LeftQuantumComparator(Operator2):
         super().__init__(x_wires, y_wires, target_wire, work_wires, comparator)
 
 
-def _left_quantum_comparator_resources(x_wires, y_wires, target_wire, work_wires, comparator):
+def _left_quantum_comparator_standard_resources(
+    x_wires, y_wires, target_wire, work_wires, comparator
+):
     # pylint: disable=unused-argument
     num_y_wires = len(y_wires)
     resources = {
@@ -141,8 +143,8 @@ def _left_quantum_comparator_resources(x_wires, y_wires, target_wire, work_wires
     return resources
 
 
-@register_resources(_left_quantum_comparator_resources, exact=True)
-def _left_quantum_comparator(
+@register_resources(_left_quantum_comparator_standard_resources, exact=True, name="standard")
+def _left_quantum_comparator_standard(
     x_wires, y_wires, target_wire, work_wires, comparator, **_
 ):  # pylint: disable=too-many-arguments
 
@@ -180,4 +182,4 @@ def _left_quantum_comparator(
         X(target_wire)
 
 
-add_decomps(LeftQuantumComparator, _left_quantum_comparator)
+add_decomps(LeftQuantumComparator, _left_quantum_comparator_standard)

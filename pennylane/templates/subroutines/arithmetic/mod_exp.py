@@ -246,7 +246,7 @@ class ModExp(Operation):
         return op_list
 
 
-def _mod_exp_decomposition_resources(num_x_wires, num_output_wires, mod, num_work_wires) -> dict:
+def _mod_exp_standard_resources(num_x_wires, num_output_wires, mod, num_work_wires) -> dict:
     return {
         ControlledSequence(
             base=resource_rep(
@@ -257,11 +257,9 @@ def _mod_exp_decomposition_resources(num_x_wires, num_output_wires, mod, num_wor
     }
 
 
-@register_resources(_mod_exp_decomposition_resources)
-def _mod_exp_decomposition(
-    x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike, **__
-):
+@register_resources(_mod_exp_standard_resources, name="standard")
+def _mod_exp_standard(x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike, **__):
     ControlledSequence(Multiplier(base, output_wires, mod, work_wires), control=x_wires)
 
 
-add_decomps(ModExp, _mod_exp_decomposition)
+add_decomps(ModExp, _mod_exp_standard)

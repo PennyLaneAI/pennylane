@@ -89,7 +89,7 @@ class NoMatNoDecompOp(qp.operation.Operation):
 def custom_decomps():
     """Locally register decomposition rules."""
 
-    @qp.register_resources({qp.X: 1, qp.Y: 1})
+    @qp.register_resources({qp.X: 1, qp.Y: 1}, name="custom_rule_no_mat_op")
     def custom_rule_no_mat_op(wires):
         qp.X(wires)
         qp.Y(wires)

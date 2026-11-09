@@ -843,7 +843,7 @@ class SumOfSlatersPrep(Operator2):
                 encoding computed by :func:`~.compute_sos_encoding`)
             :example: ``indices=(0, 1, 2, 4)`` on three wires, :math:`D=4`, :math:`m=3`, :math:`u=0`
 
-            .. decomposition-rule:: _sos_state_prep
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/sum_of_slaters_prep.svg
                 :lightbox:
                 :where: :math:`u` is the number of ones in the encoding matrix (:math:`u=0` for an
@@ -1156,8 +1156,8 @@ class SumOfSlatersPrep(Operator2):
 
 
 # pylint: disable-next=unused-argument
-def _sos_state_prep_resources(coefficients, wires, indices, **_):
-    """Compute the resources for _sos_state_prep. It is an upper bound due to
+def _sos_state_prep_standard_resources(coefficients, wires, indices, **_):
+    """Compute the resources for _sos_state_prep_standard. It is an upper bound due to
     conditionally applied CNOT and X gates."""
 
     n = 1 if isinstance(wires, int) else len(wires)
@@ -1217,7 +1217,7 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
 
 
 # pylint: disable=unused-argument,too-many-arguments
-def _sos_state_prep_work_wires(
+def _sos_state_prep_standard_work_wires(
     coefficients,
     wires,
     indices,
@@ -1412,9 +1412,14 @@ def _sos_state_prep_with_wires(
 @register_condition(
     lambda coefficients, wires, indices, *_, **__: indices is not None
 )  # indices must be known
-@register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
+@register_resources(
+    _sos_state_prep_standard_resources,
+    exact=False,
+    work_wires=_sos_state_prep_standard_work_wires,
+    name="standard",
+)
 # pylint: disable-next=too-many-arguments
-def _sos_state_prep(
+def _sos_state_prep_standard(
     coefficients,
     wires,
     indices,
@@ -1470,4 +1475,4 @@ def _sos_state_prep(
         _sos_state_prep_with_wires(data, **all_wires)  # pylint: disable=missing-kwoa
 
 
-add_decomps(SumOfSlatersPrep, _sos_state_prep)
+add_decomps(SumOfSlatersPrep, _sos_state_prep_standard)

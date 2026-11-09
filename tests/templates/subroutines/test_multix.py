@@ -371,13 +371,13 @@ class TestDecomposition:
     def test_multix_decomposition_unrolls_for_dynamic_wire(self):
         """``DynamicWire`` handles cannot be stacked for ``for_loop`` indexing, so unroll."""
         # pylint: disable=import-outside-toplevel
-        from pennylane.templates.subroutines.multix import _multix_decomposition
+        from pennylane.templates.subroutines.multix import _multix_standard
         from pennylane.wires import DynamicWire
 
         qp.capture.disable()
         wires = [DynamicWire() for _ in range(3)]
         with qp.queuing.AnnotatedQueue() as q:
-            _multix_decomposition([1, 0, 1], wires)
+            _multix_standard([1, 0, 1], wires)
         tape = qp.tape.QuantumScript.from_queue(q)
         assert len(tape.operations) == 2
 
@@ -522,27 +522,27 @@ class TestDecomposition:
         """Tests how many zeroed work wires the ladder decomp requests beyond those supplied."""
         # pylint: disable=import-outside-toplevel
         from pennylane.templates.subroutines.multix import (
-            _controlled_multix_ladder_extra_work_wires,
+            _controlled_multix_ladder_standard_work_wires,
         )
 
-        assert _controlled_multix_ladder_extra_work_wires([0, 1, 2, 3], [10], "zeroed") == {
+        assert _controlled_multix_ladder_standard_work_wires([0, 1, 2, 3], [10], "zeroed") == {
             "zeroed": 2
         }
-        assert _controlled_multix_ladder_extra_work_wires([0, 1, 2], [10, 11], "zeroed") == {
+        assert _controlled_multix_ladder_standard_work_wires([0, 1, 2], [10, 11], "zeroed") == {
             "zeroed": 0
         }
-        assert _controlled_multix_ladder_extra_work_wires([0, 1, 2, 3], [], "other") == {
+        assert _controlled_multix_ladder_standard_work_wires([0, 1, 2, 3], [], "other") == {
             "zeroed": 3
         }
 
     def test_controlled_multix_ladder_with_supplied_work_wires(self, mocker):
         """When enough zeroed work wires are supplied, the ladder decomp does not allocate."""
         # pylint: disable=import-outside-toplevel
-        from pennylane.templates.subroutines.multix import _controlled_multix_ladder
+        from pennylane.templates.subroutines.multix import _controlled_multix_ladder_standard
 
         fanout = mocker.patch("pennylane.templates.subroutines.multix._multix_ladder_fanout")
         base = qp.MultiX([1, 0, 1], wires=[3, 4, 5])
-        _controlled_multix_ladder(
+        _controlled_multix_ladder_standard(
             base=base,
             control_wires=[0, 1, 2],
             work_wires=[6, 7],

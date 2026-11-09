@@ -211,8 +211,8 @@ class TestDecomposition:
         # pylint: disable=import-outside-toplevel
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
         from pennylane.templates.subroutines.qchem.basis_rotation import (
-            _real_basis_rotation_decomp,
-            _real_basis_rotation_resources,
+            _basis_rotation_real,
+            _basis_rotation_real_resources,
         )
 
         rng = np.random.default_rng(seed)
@@ -222,9 +222,9 @@ class TestDecomposition:
             ortho_matrix[:, 0] *= -1
 
         def circuit(unitary_matrix):
-            resources = _real_basis_rotation_resources(unitary_matrix, wires=[0, 1, 2])
+            resources = _basis_rotation_real_resources(unitary_matrix, wires=[0, 1, 2])
             assert resources == {qp.PauliZ: 1, qp.SingleExcitation: 3}
-            _real_basis_rotation_decomp(unitary_matrix, wires=[0, 1, 2])
+            _basis_rotation_real(unitary_matrix, wires=[0, 1, 2])
 
         plxpr = qp.capture.make_plxpr(circuit)(ortho_matrix)
         collector = CollectOpsandMeas()
@@ -242,18 +242,18 @@ class TestDecomposition:
         import jax
 
         from pennylane.templates.subroutines.qchem.basis_rotation import (
-            _real_basis_rotation_resources,
+            _basis_rotation_real_resources,
         )
 
         @jax.jit
         def check_jit_resources(unitary_matrix):
-            resources = _real_basis_rotation_resources(unitary_matrix, wires=[0, 1, 2])
+            resources = _basis_rotation_real_resources(unitary_matrix, wires=[0, 1, 2])
             assert resources == {qp.PhaseShift: 1, qp.SingleExcitation: 3}
             return unitary_matrix
 
         check_jit_resources(np.eye(3))
 
-        resources = _real_basis_rotation_resources(np.eye(3), wires=[0, 1, 2])
+        resources = _basis_rotation_real_resources(np.eye(3), wires=[0, 1, 2])
         assert resources == {qp.PauliZ: 1, qp.SingleExcitation: 3}
 
     @pytest.mark.parametrize(

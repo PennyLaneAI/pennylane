@@ -173,7 +173,7 @@ class TrotterVibronic(Operator2):
             :example: :math:`F=1`, :math:`M=1`, :math:`k=1`, :math:`n=1`,
                 :math:`b=1`, :math:`r=1`
 
-            .. decomposition-rule:: _trotter_vibronic_decomposition
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/trotter_vibronic_phase_gradient.svg
                 :where: :math:`P = 2Fr` position-fragment visits and :math:`K = M(M-1)/2` mode
                     pairs. All counts are upper bounds: terms with zero coefficients are
@@ -485,7 +485,7 @@ class TrotterVibronic(Operator2):
 
 
 # pylint: disable-next=too-many-arguments
-def _trotter_vibronic_resources(
+def _trotter_vibronic_standard_resources(
     evolution_time,
     num_trotter_steps,
     hamiltonian,
@@ -668,7 +668,7 @@ def _required_work_wire_sizes(hamiltonian, vib_wires, b):
 
 
 # pylint: disable-next=too-many-arguments
-def _trotter_vibronic_work_wires(
+def _trotter_vibronic_standard_work_wires(
     hamiltonian, vib_wires, coefficient_wires, phase_gradient_wires, cache_wires, work_wires, **_
 ):
     """Number of zeroed work wires allocated when ``coefficient_wires``/``cache_wires``/
@@ -686,10 +686,13 @@ def _trotter_vibronic_work_wires(
 
 
 @register_resources(
-    _trotter_vibronic_resources, exact=False, work_wires=_trotter_vibronic_work_wires
+    _trotter_vibronic_standard_resources,
+    exact=False,
+    work_wires=_trotter_vibronic_standard_work_wires,
+    name="standard",
 )
 # pylint: disable-next=too-many-arguments
-def _trotter_vibronic_decomposition(
+def _trotter_vibronic_standard(
     evolution_time,
     num_trotter_steps,
     hamiltonian,
@@ -763,7 +766,7 @@ def _trotter_vibronic_decomposition(
         _run(coefficients, cache, work)
 
 
-add_decomps(TrotterVibronic, _trotter_vibronic_decomposition)
+add_decomps(TrotterVibronic, _trotter_vibronic_standard)
 
 
 # ---------------------------------------------------------------------------

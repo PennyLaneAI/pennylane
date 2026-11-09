@@ -85,7 +85,7 @@ def decomp_rule_to_tape(op: Operator, rule: DecompositionRule) -> QuantumScript:
 
     .. code-block:: python
 
-        @qp.register_resources({qp.H: 2, qp.CZ: 1})
+        @qp.register_resources({qp.H: 2, qp.CZ: 1}, name="cnot_to_cz")
         def cnot_to_cz(wires):
             qp.H(wires[1])
             qp.CZ(wires)
@@ -163,8 +163,8 @@ def assert_valid_decomp_rule(
             qp.CZ(wires)
             qp.H(wires[1])
 
-        good_rule = qp.register_resources({qp.H: 2, qp.CZ: 1})(cnot_to_cz)
-        bad_rule = qp.register_resources({qp.H: 1, qp.CZ: 1})(cnot_to_cz)
+        good_rule = qp.register_resources({qp.H: 2, qp.CZ: 1}, name="cnot_to_cz")(cnot_to_cz)
+        bad_rule = qp.register_resources({qp.H: 1, qp.CZ: 1}, name="cnot_to_cz")(cnot_to_cz)
 
     >>> qp.testing.assert_valid_decomp_rule(qp.CNOT([0, 1]), good_rule)
     >>> qp.testing.assert_valid_decomp_rule(qp.CNOT([0, 1]), bad_rule)

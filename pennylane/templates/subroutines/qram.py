@@ -273,7 +273,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         return cls._primitive.bind(*args, **kwargs)
 
 
-def _bucket_brigade_qram_resources(num_controls, num_target_wires):
+def _bucket_brigade_qram_standard_resources(num_controls, num_target_wires):
     """
     Calculates the resources, assuming the worst case where bitstrings are all ones.
     """
@@ -346,8 +346,8 @@ def _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j):
         cond(bit, PauliZ)(wires=target)
 
 
-@register_resources(_bucket_brigade_qram_resources, exact=False)
-def _bucket_brigade_qram_decomposition(
+@register_resources(_bucket_brigade_qram_standard_resources, exact=False, name="standard")
+def _bucket_brigade_qram_standard(
     bitstrings, wire_manager, **__
 ):  # pylint: disable=unused-argument
     bus_wire = wire_manager.bus_wire
@@ -368,7 +368,7 @@ def _bucket_brigade_qram_decomposition(
     adjoint(_mark_routers_via_bus)(wire_manager, n_k)
 
 
-add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
+add_decomps(BBQRAM, _bucket_brigade_qram_standard)
 
 
 class HybridQRAM(Operation):
@@ -580,7 +580,7 @@ class HybridQRAM(Operation):
         }
 
 
-def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_wires):
+def _hybrid_qram_standard_resources(num_target_wires, num_select_wires, num_tree_control_wires):
     resources = defaultdict(int)
     num_blocks = 1 << num_select_wires
 
@@ -734,8 +734,8 @@ def _block_tree_query_ops(
     adjoint(_tree_mark_routers_via_bus_ctrl)(tree_wire_manager, n_tree, k, signal)
 
 
-@register_resources(_hybrid_qram_resources, exact=False)
-def _hybrid_qram_decomposition(
+@register_resources(_hybrid_qram_standard_resources, exact=False, name="standard")
+def _hybrid_qram_standard(
     bitstrings, tree_wire_manager, select_wires, signal_wire, **_
 ):  # pylint: disable=unused-argument, too-many-arguments
     k = len(select_wires)
@@ -771,7 +771,7 @@ def _hybrid_qram_decomposition(
             PauliX(wires=signal)
 
 
-add_decomps(HybridQRAM, _hybrid_qram_decomposition)
+add_decomps(HybridQRAM, _hybrid_qram_standard)
 
 
 class SelectOnlyQRAM(Operation):
@@ -961,7 +961,7 @@ class SelectOnlyQRAM(Operation):
         }
 
 
-def _select_only_qram_resources(
+def _select_only_qram_standard_resources(
     select_value, num_control_wires, num_select_wires, num_target_wires
 ):
     resources = defaultdict(int)
@@ -993,8 +993,8 @@ def _flip_controls(control_wires, control_vals):
             PauliX(control_wires[i])
 
 
-@register_resources(_select_only_qram_resources, exact=False)
-def _select_only_qram_decomposition(
+@register_resources(_select_only_qram_standard_resources, exact=False, name="standard")
+def _select_only_qram_standard(
     bitstrings, select_value, select_wires, control_wires, target_wires, **_
 ):  # pylint: disable=unused-argument, too-many-arguments
     controls = select_wires + control_wires
@@ -1028,7 +1028,7 @@ def _select_only_qram_decomposition(
         _flip_controls(controls, control_values)
 
 
-add_decomps(SelectOnlyQRAM, _select_only_qram_decomposition)
+add_decomps(SelectOnlyQRAM, _select_only_qram_standard)
 
 
 class FFQRAM(Operation):
@@ -1262,7 +1262,7 @@ def _normalize_amplitudes(amplitudes):
     return amplitudes / math.reshape(norm, (*math.shape(amplitudes)[:-1], 1))
 
 
-def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
+def _ffqram_standard_resources(num_zero_bits, num_address_wires, num_entries):
     """
     - One Hadamard gate per address wire to initialize the |+>^n state.
     - One "flip" and one "flop" for 0 bits.
@@ -1275,8 +1275,8 @@ def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
     }
 
 
-@register_resources(_ffqram_resources)
-def _ffqram_decomposition(amplitudes, wires, address, **_):
+@register_resources(_ffqram_standard_resources, name="standard")
+def _ffqram_standard(amplitudes, wires, address, **_):
     address_wires = wires[:-1]
     reg_wire = wires[-1]
 
@@ -1313,4 +1313,4 @@ def _ffqram_decomposition(amplitudes, wires, address, **_):
     main_loop(address)  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(FFQRAM, _ffqram_decomposition)
+add_decomps(FFQRAM, _ffqram_standard)

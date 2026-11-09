@@ -233,7 +233,7 @@ class Permute(Operation):
         return op_list
 
 
-def _permute_resources(wires, permutation):
+def _permute_standard_resources(wires, permutation):
     resources = Counter()
     working_order = wires.tolist()
 
@@ -251,8 +251,8 @@ def _permute_resources(wires, permutation):
     return dict(resources)
 
 
-@register_resources(_permute_resources)
-def _permute_decomposition(wires, permutation):
+@register_resources(_permute_standard_resources, name="standard")
+def _permute_standard(wires, permutation):
     # Temporary storage to keep track as we permute
     working_order = wires.tolist()
 
@@ -293,4 +293,4 @@ def _permute_decomposition(wires, permutation):
             )
 
 
-add_decomps(Permute, _permute_decomposition)
+add_decomps(Permute, _permute_standard)

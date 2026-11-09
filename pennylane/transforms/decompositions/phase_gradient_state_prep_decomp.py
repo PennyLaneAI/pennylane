@@ -286,11 +286,11 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
         )
     work_wires = work_wires[:num_work_wires]
 
-    def resource_fn(wires):
+    def _phase_gradient_distillation_resources(wires):
         return _distillation_resources(len(wires), mode)
 
-    @register_resources(resource_fn, exact=False)
-    def phase_gradient_distillation(wires):
+    @register_resources(_phase_gradient_distillation_resources, exact=False, name="distillation")
+    def _phase_gradient_distillation(wires):
         output_wires = Wires(wires)
         num_wires = len(output_wires)
 
@@ -312,4 +312,4 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
             mode,
         )
 
-    return phase_gradient_distillation
+    return _phase_gradient_distillation

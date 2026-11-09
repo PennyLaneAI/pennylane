@@ -204,7 +204,7 @@ class FABLE(Operation):
         return op_list
 
 
-def _fable_resources(wires, thetas, control_wires, tol):
+def _fable_standard_resources(wires, thetas, control_wires, tol):
 
     resources = Counter({Hadamard: len(wires) // 2 * 2})
 
@@ -235,8 +235,8 @@ def _fable_resources(wires, thetas, control_wires, tol):
     return dict(resources)
 
 
-@register_resources(_fable_resources)
-def _fable_decomposition(input_matrix, wires, tol=0):
+@register_resources(_fable_standard_resources, name="standard")
+def _fable_standard(input_matrix, wires, tol=0):
     alphas = math.arccos(input_matrix).flatten()
     thetas = compute_theta(alphas)
 
@@ -315,4 +315,4 @@ def _fable_decomposition(input_matrix, wires, tol=0):
     wires_i_hadamard_loop()
 
 
-add_decomps(FABLE, _fable_decomposition)
+add_decomps(FABLE, _fable_standard)

@@ -95,7 +95,7 @@ class IQPEmbedding(Operator2):
                 entanglers (``len(pattern)``, :math:`n(n-1)/2` by default)
             :example: :math:`n=3`, :math:`r=1`, default ``pattern`` (:math:`K = \tfrac{n(n-1)}{2} = 3`)
 
-            .. decomposition-rule:: _iqp_embedding_decomposition
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/iqp_embedding_multirz.svg
 
                 :class:`~.Hadamard` | :math:`rn` | 3
@@ -219,7 +219,7 @@ class IQPEmbedding(Operator2):
 
 
 # pylint: disable=unused-argument
-def _iqp_embedding_resources(features, wires, n_repeats, pattern):
+def _iqp_embedding_standard_resources(features, wires, n_repeats, pattern):
     return {
         RZ: n_repeats * len(wires),
         H: n_repeats * len(wires),
@@ -227,8 +227,8 @@ def _iqp_embedding_resources(features, wires, n_repeats, pattern):
     }
 
 
-@register_resources(_iqp_embedding_resources, exact=False)
-def _iqp_embedding_decomposition(features, wires: WiresLike, n_repeats, pattern):
+@register_resources(_iqp_embedding_standard_resources, exact=False, name="standard")
+def _iqp_embedding_standard(features, wires: WiresLike, n_repeats, pattern):
 
     if capture.enabled() or compiler.active():
         wires = math.array(wires, like="jax")
@@ -256,4 +256,4 @@ def _iqp_embedding_decomposition(features, wires: WiresLike, n_repeats, pattern)
     outer_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(IQPEmbedding, _iqp_embedding_decomposition)
+add_decomps(IQPEmbedding, _iqp_embedding_standard)

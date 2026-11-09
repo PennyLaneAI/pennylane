@@ -368,7 +368,7 @@ class ParticleConservingU1(Operation):
         return n_layers, n_wires - 1, 2
 
 
-def _particle_conserving_u1_resources(n_layers: int, num_wires: int):
+def _particle_conserving_u1_standard_resources(n_layers: int, num_wires: int):
     num_nm_wires = num_wires - 1  # number of pairs of even-indexed of wires
     return {
         BasisState(Bool[num_wires], Wire[num_wires]): 1,
@@ -416,8 +416,8 @@ def _decompose_ua_qfunc(phi: float, wires: WiresLike):
     PhaseShift(-phi, wires=n)
 
 
-@register_resources(_particle_conserving_u1_resources)
-def _particle_conserving_u1_decomposition(
+@register_resources(_particle_conserving_u1_standard_resources, name="standard")
+def _particle_conserving_u1_standard(
     weights: list, wires: WiresLike, init_state: tuple[int]
 ):  # pylint: disable=arguments-differ
     nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
@@ -463,4 +463,4 @@ def _particle_conserving_u1_decomposition(
     layers_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(ParticleConservingU1, _particle_conserving_u1_decomposition)
+add_decomps(ParticleConservingU1, _particle_conserving_u1_standard)

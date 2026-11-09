@@ -371,7 +371,7 @@ def make_rz_to_phase_gradient_decomp(
     )
     precisions, dispatch = _precision_dispatcher(precision_stats, len(angle_wires), "RZ")
 
-    def _resource_fn(phi, wires):  # pylint: disable=unused-argument
+    def _rz_phase_gradient_standard_resources(phi, wires):  # pylint: disable=unused-argument
         # rz decomposition costs, using information about angle_wires etc from the outer scope.
         # Each non-zero precision that may be applied is counted once.
         resources = {qp.GlobalPhase: 1}
@@ -382,8 +382,8 @@ def make_rz_to_phase_gradient_decomp(
         return resources
 
     # MultiX only emits a gate per set bit, so the gate count depends on the concrete angle.
-    @qp.register_resources(_resource_fn, exact=False)
-    def _rz_phase_gradient_decomp(phi, wires):
+    @qp.register_resources(_rz_phase_gradient_standard_resources, exact=False, name="standard")
+    def _rz_phase_gradient_standard(phi, wires):
         qp.GlobalPhase(phi / 2)
         dispatch(
             phi,
@@ -392,4 +392,4 @@ def make_rz_to_phase_gradient_decomp(
             ),
         )
 
-    return _rz_phase_gradient_decomp
+    return _rz_phase_gradient_standard

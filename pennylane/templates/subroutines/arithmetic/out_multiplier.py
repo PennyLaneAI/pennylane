@@ -34,7 +34,7 @@ from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wir
 
 from .incrementer import Incrementer
 from .phase_adder import PhaseAdder
-from .semi_adder import SemiAdder, _semi_adder, _semi_adder_resources
+from .semi_adder import SemiAdder, _semi_adder_standard, _semi_adder_standard_resources
 from .temporary_and import TemporaryAND
 
 
@@ -124,7 +124,7 @@ class OutMultiplier(Operator2):
                 ``output_wires_zeroed=False``
             :example: :math:`n=m=1`, :math:`k=2`
 
-            .. decomposition-rule:: _out_multiplier_with_qft
+            .. decomposition-rule:: with_qft
                 :image: /_static/decomposition_thumbnails/out_multiplier_qft.svg
                 :requires: program capture to be disabled
 
@@ -132,13 +132,13 @@ class OutMultiplier(Operator2):
                 :class:`~.ControlledSequence` (nested, of :class:`~.PhaseAdder`) | :math:`1` | 1
                 :class:`Adjoint(QFT) <.QFT>` | :math:`1` | 1
 
-            .. decomposition-rule:: _out_multiplier_with_adder
+            .. decomposition-rule:: with_adder
                 :image: /_static/decomposition_thumbnails/out_multiplier_adder.svg
                 :requires: :math:`w \geq k` work wires
 
                 :class:`~.SemiAdder` with 1 control | :math:`n` | 1
 
-            .. decomposition-rule:: _out_multiplier_with_caddsub
+            .. decomposition-rule:: with_caddsub
                 :image: /_static/decomposition_thumbnails/out_multiplier_caddsub.svg
                 :requires: :math:`w \geq k + 1` work wires
                 :where: :math:`[m > 1]` equal to 1 if :math:`m > 1` and 0 otherwise
@@ -152,7 +152,7 @@ class OutMultiplier(Operator2):
                 :class:`~.SemiAdder` | :math:`2` | 2
                 :class:`~.Incrementer` | :math:`1` | 1
 
-            .. decomposition-rule:: _out_multiplier_with_cache
+            .. decomposition-rule:: with_cache
                 :image: /_static/decomposition_thumbnails/out_multiplier_cache.svg
                 :requires: :math:`w \geq 2k - 1` work wires
 
@@ -160,7 +160,7 @@ class OutMultiplier(Operator2):
                 :class:`~.SemiAdder` | :math:`1` | 1
                 :class:`Adjoint(OutMultiplier) <.OutMultiplier>` | :math:`1` | 1
 
-            .. decomposition-rule:: _out_multiplier_swapped
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/out_multiplier_swapped.svg
                 :requires: :math:`n > m`
                 :where: the circuit shows :math:`n=2`, :math:`m=1` and :math:`k=3`
@@ -372,7 +372,7 @@ def _out_multiplier_with_qft_condition(
 
 
 @register_condition(_out_multiplier_with_qft_condition)
-@register_resources(_out_multiplier_with_qft_resources)
+@register_resources(_out_multiplier_with_qft_resources, name="with_qft")
 def _out_multiplier_with_qft(
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -456,7 +456,7 @@ def _out_multiplier_with_adder_condition(
 
 
 @register_condition(_out_multiplier_with_adder_condition)
-@register_resources(_out_multiplier_with_adder_resources)
+@register_resources(_out_multiplier_with_adder_resources, name="with_adder")
 def _out_multiplier_with_adder(
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -521,7 +521,7 @@ def _out_multiplier_with_caddsub_resources(
 
     # Add 2^m(x+1)
     if k > m:
-        adder_resources = _semi_adder_resources(Wire[n], Wire[k - m])
+        adder_resources = _semi_adder_standard_resources(Wire[n], Wire[k - m])
         for key, value in adder_resources.items():
             resources[key] += value
         # bit flips corresponding to input carry activated. Accounts for the fact that
@@ -574,7 +574,7 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
     or a tuple ``(c_wire, c_val)`` for a single control wire.
     """
     if len(work_wires) == 0:
-        _semi_adder(x_wires, y_wires, work_wires)
+        _semi_adder_standard(x_wires, y_wires, work_wires)
         return
 
     def carry_flip(wire):
@@ -584,7 +584,7 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
             c_wire, c_val = flip_control
             MultiControlledX(concatenate_wires(c_wire, [wire]), control_values=[c_val])
 
-    _semi_adder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
+    _semi_adder_standard(x_wires, y_wires, work_wires, carry_flip=carry_flip)
 
 
 def _add_plus_one(x_wires, y_wires, work_wires):
@@ -614,7 +614,7 @@ def _c_add_sub_resources(num_x_wires, num_y_wires):
     cnot_on_0_rep = MultiControlledX(Wire[2], control_values=Bool[1])
     resources[cnot_on_0_rep] += 2 * (1 + int(num_y_wires > 1))
 
-    for key, value in _semi_adder_resources(Wire[num_x_wires], Wire[num_y_wires]).items():
+    for key, value in _semi_adder_standard_resources(Wire[num_x_wires], Wire[num_y_wires]).items():
         resources[key] += value
 
     return dict(resources)
@@ -661,7 +661,7 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
 
 
 @register_condition(_out_multiplier_with_caddsub_condition)
-@register_resources(_out_multiplier_with_caddsub_resources)
+@register_resources(_out_multiplier_with_caddsub_resources, name="with_caddsub")
 def _out_multiplier_with_caddsub(
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -769,7 +769,7 @@ def _out_multiplier_with_cache_resources(
 
 
 @register_condition(_out_multiplier_with_cache_condition)
-@register_resources(_out_multiplier_with_cache_resources)
+@register_resources(_out_multiplier_with_cache_resources, name="with_cache")
 def _out_multiplier_with_cache(
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -798,7 +798,7 @@ def _out_multiplier_swapped_condition(x_wires, y_wires, **_):
     return len(x_wires) > len(y_wires)
 
 
-def _out_multiplier_swapped_resources(
+def _out_multiplier_swapped_standard_resources(
     x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
 ):  # pylint: disable=too-many-arguments
     swapped = OutMultiplier(
@@ -813,8 +813,8 @@ def _out_multiplier_swapped_resources(
 
 
 @register_condition(_out_multiplier_swapped_condition)
-@register_resources(_out_multiplier_swapped_resources)
-def _out_multiplier_swapped(
+@register_resources(_out_multiplier_swapped_standard_resources, name="standard")
+def _out_multiplier_swapped_standard(
     x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
 ):  # pylint: disable=too-many-arguments
     """Swap the factors of an ``OutMultiplier`` so that ``x_wires`` is the shorter register.
@@ -838,5 +838,5 @@ add_decomps(
     _out_multiplier_with_adder,
     _out_multiplier_with_caddsub,
     _out_multiplier_with_cache,
-    _out_multiplier_swapped,
+    _out_multiplier_swapped_standard,
 )

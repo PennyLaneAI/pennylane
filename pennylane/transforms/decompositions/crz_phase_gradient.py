@@ -206,7 +206,7 @@ def make_crz_to_phase_gradient_decomp(
     )
     precisions, dispatch = _precision_dispatcher(precision_stats, len(angle_wires), "CRZ")
 
-    def _resource_fn(phi, wires):  # pylint: disable=unused-argument
+    def _crz_phase_gradient_standard_resources(phi, wires):  # pylint: disable=unused-argument
         # Cost from the wires in the outer scope, counting each non-zero precision that may be
         # applied once. The angle-load fanout emits one gate per *set* bit of the (concrete) angle,
         # so this is an upper bound (exact=False below).
@@ -220,8 +220,8 @@ def make_crz_to_phase_gradient_decomp(
             resources[ChangeOpBasis2(compute_op, target_op, uncompute_op)] = 1
         return resources
 
-    @qp.register_resources(_resource_fn, exact=False)
-    def _crz_phase_gradient_decomp(phi, wires):
+    @qp.register_resources(_crz_phase_gradient_standard_resources, exact=False, name="standard")
+    def _crz_phase_gradient_standard(phi, wires):
         dispatch(
             phi,
             lambda p: _crz_phase_gradient(
@@ -229,4 +229,4 @@ def make_crz_to_phase_gradient_decomp(
             ),
         )
 
-    return _crz_phase_gradient_decomp
+    return _crz_phase_gradient_standard

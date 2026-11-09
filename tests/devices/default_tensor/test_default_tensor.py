@@ -685,13 +685,15 @@ class TestGraphModeExclusiveFeatures:  # pylint: disable=too-few-public-methods
             num_wires = 1
 
         # Fallback decomposition (no work wires needed)
-        @qp.register_resources({qp.Hadamard: 2})
+        @qp.register_resources({qp.Hadamard: 2}, name="decomp_fallback")
         def decomp_fallback(wires):
             qp.Hadamard(wires)
             qp.Hadamard(wires)
 
         # Work wire decomposition (needs more wires than available)
-        @qp.register_resources({qp.PauliX: 1}, work_wires={"burnable": 3})
+        @qp.register_resources(
+            {qp.PauliX: 1}, work_wires={"burnable": 3}, name="decomp_with_work_wire"
+        )
         def decomp_with_work_wire(wires):
             qp.PauliX(wires)
 

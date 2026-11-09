@@ -70,7 +70,7 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
     return _impl
 
 
-def _cancel_adjoint_resource(base_class, base_params):  # pylint:disable=unused-argument
+def _adjoint_cancel_resources(base_class, base_params):  # pylint:disable=unused-argument
     # The base of a nested adjoint is an adjoint, so the base of the base is the original operator,
     # and the "base_params" of base_params are the resource params of the original operator.
     base_class, base_params = base_params["base_class"], base_params["base_params"]
@@ -78,19 +78,19 @@ def _cancel_adjoint_resource(base_class, base_params):  # pylint:disable=unused-
 
 
 # pylint: disable=protected-access,unused-argument
-@register_resources(_cancel_adjoint_resource)
-def cancel_adjoint(*params, wires, base):
+@register_resources(_adjoint_cancel_resources, name="cancel")
+def _adjoint_cancel(*params, wires, base):
     """Decompose the adjoint of the adjoint of an operator."""
     qp.apply(base.base)
 
 
-def _adjoint_rotation_resource(base_class, base_params):
+def _adjoint_negate_angle_resources(base_class, base_params):
     return {resource_rep(base_class, **base_params): 1}
 
 
 # pylint: disable=protected-access,unused-argument
-@register_resources(_adjoint_rotation_resource)
-def adjoint_rotation(phi, wires, base):
+@register_resources(_adjoint_negate_angle_resources, name="negate_angle")
+def _adjoint_negate_angle(phi, wires, base):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
     qp.ops.functions.bind_new_parameters(base, (-phi,))
 
@@ -102,8 +102,11 @@ def is_integer(x):
 
 # pylint: disable=protected-access,unused-argument
 @register_condition(lambda z, **__: is_integer(z) and z >= 0)
-@register_resources(lambda base_class, base_params, z: {resource_rep(base_class, **base_params): z})
-def repeat_pow_base(*params, wires, base, z, **__):
+@register_resources(
+    lambda base_class, base_params, z: {resource_rep(base_class, **base_params): z},
+    name="repeat_base",
+)
+def _pow_repeat_base(*params, wires, base, z, **__):
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
 
@@ -114,7 +117,7 @@ def repeat_pow_base(*params, wires, base, z, **__):
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-def _merge_powers_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+def _pow_merge_powers_resources(base_class, base_params, z):  # pylint: disable=unused-argument
     return {
         pow_resource_rep(
             base_params["base_class"],
@@ -125,13 +128,13 @@ def _merge_powers_resource(base_class, base_params, z):  # pylint: disable=unuse
 
 
 # pylint: disable=protected-access,unused-argument
-@register_resources(_merge_powers_resource)
-def merge_powers(*params, wires, base, z, **__):
+@register_resources(_pow_merge_powers_resources, name="merge_powers")
+def _pow_merge_powers(*params, wires, base, z, **__):
     """Decompose nested powers by combining them."""
     qp.pow(base.base, z * base.z)
 
 
-def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+def _pow_flip_adjoint_resources(base_class, base_params, z):  # pylint: disable=unused-argument
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
     return {
@@ -142,8 +145,8 @@ def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=u
 
 
 # pylint: disable=protected-access,unused-argument
-@register_resources(_flip_pow_adjoint_resource)
-def flip_pow_adjoint(*params, wires, base, z, **__):
+@register_resources(_pow_flip_adjoint_resources, name="flip_adjoint")
+def _pow_flip_adjoint(*params, wires, base, z, **__):
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
     qp.adjoint(qp.pow(base.base, z))
@@ -155,7 +158,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
     def _condition_fn(base_class, base_params, z):  # pylint: disable=unused-argument
         return math.shape(z) == () and z % period != z
 
-    def _resource_fn(base_class, base_params, z):
+    def _pow_reduce_period_resources(base_class, base_params, z):
         z_mod_period = z % period
         if z_mod_period == 0:
             return {}
@@ -166,56 +169,56 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
         return {pow_resource_rep(base_class, base_params, z_mod_period): 1}
 
     @register_condition(_condition_fn)
-    @register_resources(_resource_fn)
-    def _impl(*params, wires, base, z, **__):  # pylint: disable=unused-argument
+    @register_resources(_pow_reduce_period_resources, name="reduce_period")
+    def _pow_reduce_period(*params, wires, base, z, **__):  # pylint: disable=unused-argument
         z_mod_period = z % period
         if z_mod_period == 1:
             qp.apply(base)
         elif z_mod_period > 0 and z_mod_period != period:
             qp.pow(base, z_mod_period)
 
-    return _impl
+    return _pow_reduce_period
 
 
 pow_involutory = make_pow_decomp_with_period(2)
 
 
-def _pow_rotation_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+def _pow_scale_angle_resources(base_class, base_params, z):  # pylint: disable=unused-argument
     return {resource_rep(base_class, **base_params): 1}
 
 
 # pylint: disable=protected-access,unused-argument
-@register_resources(_pow_rotation_resource)
-def pow_rotation(phi, wires, base, z, **__):
+@register_resources(_pow_scale_angle_resources, name="scale_angle")
+def _pow_scale_angle(phi, wires, base, z, **__):
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
     qp.ops.functions.bind_new_parameters(base, (phi * z,))
 
 
-def _decomp_to_base_legacy_res(base_class, base_params, **__):
+def _operator1_to_base_resources(base_class, base_params, **__):
     return {resource_rep(base_class, **base_params): 1}
 
 
 # pylint: disable=protected-access,unused-argument
-@register_resources(_decomp_to_base_legacy_res)
-def decompose_to_base_legacy(*params, wires, base, **__):
+@register_resources(_operator1_to_base_resources, name="to_base")
+def _operator1_to_base(*params, wires, base, **__):
     """Decompose a symbolic operator to its base."""
     qp.apply(base)
 
 
-self_adjoint_legacy: DecompositionRule = decompose_to_base_legacy
+self_adjoint_legacy: DecompositionRule = _operator1_to_base
 
 
-def _decompose_to_base_resource(base):
+def _operator_to_base_resources(base):
     return {abstractify(base): 1}
 
 
-@register_resources(_decompose_to_base_resource)
-def decompose_to_base(base):
+@register_resources(_operator_to_base_resources, name="to_base")
+def _operator_to_base(base):
     """Decompose a symbolic operator to its base."""
     qp.apply(base)
 
 
-self_adjoint: DecompositionRule = decompose_to_base
+self_adjoint: DecompositionRule = _operator_to_base
 
 
 def make_controlled_decomp(base_decomposition: DecompositionRule):
@@ -331,7 +334,7 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
     return _impl
 
 
-def _flip_control_adjoint_resource(
+def _controlled_flip_adjoint_resources(
     base_class,
     base_params,
     num_control_wires,
@@ -353,8 +356,8 @@ def _flip_control_adjoint_resource(
 
 
 # pylint: disable=too-many-arguments
-@register_resources(_flip_control_adjoint_resource)
-def flip_control_adjoint(
+@register_resources(_controlled_flip_adjoint_resources, name="flip_adjoint")
+def _controlled_flip_adjoint(
     *_, wires, control_wires, control_values, work_wires, work_wire_type, base, **__
 ):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
@@ -370,7 +373,7 @@ def flip_control_adjoint(
     )
 
 
-def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, **__):
+def _controlled_single_work_wire_resources(base_class, base_params, num_control_wires, **__):
     return {
         qp.MultiControlledX(Wire[num_control_wires + 1]): 2,
         controlled_resource_rep(base_class, base_params, 1): 1,
@@ -379,8 +382,10 @@ def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, 
 
 # pylint: disable=protected-access,unused-argument
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
-@register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
-def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
+@register_resources(
+    _controlled_single_work_wire_resources, work_wires={"zeroed": 1}, name="single_work_wire"
+)
+def _controlled_single_work_wire(*params, wires, control_wires, base, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     with allocation.allocate(1, state="zero", restored=True) as work_wires:
         qp.MultiControlledX([*control_wires, work_wires[0]])
@@ -388,14 +393,14 @@ def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
         qp.MultiControlledX([*control_wires, work_wires[0]])
 
 
-ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire)
+ctrl_single_work_wire = flip_zero_control(_controlled_single_work_wire, name="single_work_wire")
 
 
 def _to_controlled_qu_condition(base_class, **__):
     return base_class.has_matrix and base_class.num_wires == 1
 
 
-def _to_controlled_qu_resource(
+def _controlled_to_unitary_resources(
     num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, **__
 ):
     return {
@@ -410,8 +415,8 @@ def _to_controlled_qu_resource(
 
 
 @register_condition(_to_controlled_qu_condition)
-@register_resources(_to_controlled_qu_resource)
-def to_controlled_qubit_unitary(*_, wires, control_values, work_wires, work_wire_type, base, **__):
+@register_resources(_controlled_to_unitary_resources, name="to_unitary")
+def _controlled_to_unitary(*_, wires, control_values, work_wires, work_wire_type, base, **__):
     """Convert a controlled operator to a controlled qubit unitary."""
     matrix = base.matrix()
     qp.ControlledQubitUnitary(

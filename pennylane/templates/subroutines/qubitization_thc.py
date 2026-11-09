@@ -362,7 +362,7 @@ class QubitizationTHC(Operator2):
         .. decomposition-table:: qp.QubitizationTHC
             :stacked:
 
-            .. decomposition-rule:: _qubitization_thc_decomp
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/qubitization_thc_walk.svg
 
                 :class:`~.SuperpositionTHC` | :math:`1`
@@ -519,7 +519,7 @@ def _prepare_select(
     return change_op_basis(prepare, select)
 
 
-def _qubitization_thc_resources(
+def _qubitization_thc_standard_resources(
     zeta,
     t_ell,
     chi,
@@ -579,8 +579,8 @@ def _qubitization_thc_resources(
     }
 
 
-@register_resources(_qubitization_thc_resources)
-def _qubitization_thc_decomp(
+@register_resources(_qubitization_thc_standard_resources, name="standard")
+def _qubitization_thc_standard(
     zeta,
     t_ell,
     chi,
@@ -627,4 +627,4 @@ def _qubitization_thc_decomp(
     GlobalPhase(np.pi)
 
 
-add_decomps(QubitizationTHC, _qubitization_thc_decomp)
+add_decomps(QubitizationTHC, _qubitization_thc_standard)

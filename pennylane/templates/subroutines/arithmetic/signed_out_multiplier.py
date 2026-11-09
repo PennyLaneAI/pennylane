@@ -342,7 +342,7 @@ class SignedOutMultiplier(Operator2):
         return self.x_wires + self.y_wires + self.output_wires + self.work_wires
 
 
-def _zeroed_signed_out_multiplier_resources(
+def _signed_out_multiplier_zeroed_resources(
     x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
 ):  # pylint: disable=unused-argument
     """
@@ -378,7 +378,7 @@ def _zeroed_signed_out_multiplier_resources(
     return dict(resources)
 
 
-def _not_zeroed_signed_out_multiplier_resources(
+def _signed_out_multiplier_borrowed_resources(
     x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
 ):  # pylint: disable=unused-argument
     """
@@ -467,8 +467,8 @@ def _not_zeroed_condition(
 
 @register_condition(_zeroed_condition)
 @register_condition(_zeroed_work_wire_condition)
-@register_resources(_zeroed_signed_out_multiplier_resources)
-def _signed_out_multiplier_decomposition_zeroed(
+@register_resources(_signed_out_multiplier_zeroed_resources, name="zeroed")
+def _signed_out_multiplier_zeroed(
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
@@ -524,8 +524,8 @@ def _signed_out_multiplier_decomposition_zeroed(
 
 @register_condition(_not_zeroed_condition)
 @register_condition(_not_zeroed_work_wire_condition)
-@register_resources(_not_zeroed_signed_out_multiplier_resources)
-def _signed_out_multiplier_decomposition_not_zeroed(
+@register_resources(_signed_out_multiplier_borrowed_resources, name="borrowed")
+def _signed_out_multiplier_borrowed(
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
@@ -565,5 +565,5 @@ def _signed_out_multiplier_decomposition_not_zeroed(
     )
 
 
-add_decomps(SignedOutMultiplier, _signed_out_multiplier_decomposition_not_zeroed)
-add_decomps(SignedOutMultiplier, _signed_out_multiplier_decomposition_zeroed)
+add_decomps(SignedOutMultiplier, _signed_out_multiplier_borrowed)
+add_decomps(SignedOutMultiplier, _signed_out_multiplier_zeroed)

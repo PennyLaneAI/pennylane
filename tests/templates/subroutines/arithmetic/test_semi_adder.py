@@ -23,10 +23,10 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops import CNOT, adjoint
 from pennylane.templates.subroutines.arithmetic.semi_adder import (
-    _controlled_semi_adder,
+    _controlled_semi_adder_standard,
     _effective_skip_input_pos,
-    _semi_adder,
-    _semi_adder_resources,
+    _semi_adder_standard,
+    _semi_adder_standard_resources,
 )
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
 from pennylane.testing import assert_decomposable
@@ -304,7 +304,7 @@ class TestSemiAdder:
             qp.BasisState(x_value_bin, x_wires)
             qp.BasisState(y_value_bin, y_wires)
             qp.BasisState(c_value_bin, control_wires)
-            _controlled_semi_adder(
+            _controlled_semi_adder_standard(
                 op, control_wires, control_values, work_wires_ctrl, work_wire_type="zeroed"
             )
             return (
@@ -368,7 +368,7 @@ class TestSemiAdder:
 
 
 class TestSemiAdderSkipInputPos:
-    """Independent tests for the ``skip_input_pos`` feature of ``_semi_adder``."""
+    """Independent tests for the ``skip_input_pos`` feature of ``_semi_adder_standard``."""
 
     @staticmethod
     def _sparse_addend(x, num_x_wires, num_y_wires, skip_input_pos):
@@ -407,7 +407,7 @@ class TestSemiAdderSkipInputPos:
         def circuit():
             qp.BasisEmbedding(qp.math.int_to_binary(x, n), wires=x_wires)
             qp.BasisEmbedding(qp.math.int_to_binary(y, m), wires=y_wires)
-            _semi_adder(x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos)
+            _semi_adder_standard(x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos)
             return qp.sample(wires=y_wires), qp.probs(wires=work_wires)
 
         sample, work_probs = circuit()
@@ -416,16 +416,16 @@ class TestSemiAdderSkipInputPos:
         assert np.isclose(work_probs[0], 1.0)
 
     def test_resources_match_decomposition(self):
-        """Test that ``_semi_adder_resources`` matches the queued ``skip_input_pos``
+        """Test that ``_semi_adder_standard_resources`` matches the queued ``skip_input_pos``
         decomposition."""
         x_wires, y_wires, work_wires = [0, 1, 2], [3, 4, 5, 6], [7, 8, 9]
         skip_input_pos = [1, 2]
 
         with qp.queuing.AnnotatedQueue() as q:
-            _semi_adder(x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos)
+            _semi_adder_standard(x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos)
 
         names = [op.name for op in qp.tape.QuantumScript.from_queue(q).operations]
-        resources = _semi_adder_resources(
+        resources = _semi_adder_standard_resources(
             x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos
         )
 

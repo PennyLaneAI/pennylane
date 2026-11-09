@@ -642,7 +642,7 @@ class TestHasReprProperties:
         class SomeRandomName(qp.operation.Operator):
             pass
 
-        @qp.register_resources({qp.X: 1})
+        @qp.register_resources({qp.X: 1}, name="decomp")
         def decomp(x, wires):
             qp.RX(x, wires)
 
@@ -660,12 +660,12 @@ class TestHasReprProperties:
                 return {"num_wires": len(self.wires)}
 
         @qp.register_condition(lambda num_wires: num_wires == 1)
-        @qp.register_resources({qp.RX: 1})
+        @qp.register_resources({qp.RX: 1}, name="decomp1")
         def decomp1(x, wires):
             qp.RX(x, wires)
 
         @qp.register_condition(lambda num_wires: num_wires == 2)
-        @qp.register_resources({qp.CRX: 1})
+        @qp.register_resources({qp.CRX: 1}, name="decomp2")
         def decomp2(x, wires):
             qp.CRX(x, wires)
 
@@ -1329,11 +1329,11 @@ class TestDefaultRepresentations:
         class OpWithACustomName98786(qp.operation.Operator):
             pass
 
-        @qp.register_resources({qp.RX: 1})
+        @qp.register_resources({qp.RX: 1}, name="decomp1")
         def decomp1(x, wires):
             qp.RX(x, wires)
 
-        @qp.register_resources({qp.RZ: 1})
+        @qp.register_resources({qp.RZ: 1}, name="decomp2")
         def decomp2(x, wires):
             qp.RZ(x, wires)
 
@@ -1362,12 +1362,12 @@ class TestDefaultRepresentations:
                 return {"num_wires": len(self.wires)}
 
         @qp.register_condition(lambda num_wires: num_wires == 1)
-        @qp.register_resources({qp.RX: 1})
+        @qp.register_resources({qp.RX: 1}, name="decomp1")
         def decomp1(x, wires):
             qp.RX(x, wires)
 
         @qp.register_condition(lambda num_wires: num_wires == 2)
-        @qp.register_resources({qp.CRX: 1})
+        @qp.register_resources({qp.CRX: 1}, name="decomp2")
         def decomp2(x, wires):
             qp.CRX(x, wires)
 

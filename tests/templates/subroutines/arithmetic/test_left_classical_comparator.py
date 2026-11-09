@@ -21,7 +21,7 @@ import pytest
 import pennylane as qp
 from pennylane.core import abstractify
 from pennylane.templates.subroutines.arithmetic.left_classical_comparator import (
-    _left_classical_comparator,
+    _left_classical_comparator_standard,
 )
 from pennylane.testing import assert_valid, decomp_rule_to_tape
 from pennylane.typing import Int, Wire
@@ -225,7 +225,7 @@ class TestLeftClassicalComparator:
 @pytest.mark.parametrize("positional", [False, True])
 def test_resource_upper_bound(n, comparator, positional):
     """Worst-case estimates must cover each gate count for every valid threshold, including endpoints."""
-    rule = _left_classical_comparator
+    rule = _left_classical_comparator_standard
     abstract_op = qp.LeftClassicalComparator(Wire[n], Int, Wire[1], Wire[n - 1], comparator)
     if positional:
         estimates = rule.compute_resources(*abstract_op.arguments.values()).gate_counts

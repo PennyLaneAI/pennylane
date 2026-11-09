@@ -90,7 +90,7 @@ class IQP(Operator2):
             :symbols: :math:`n` wires and :math:`G` generators in total in ``pattern``
             :example: :math:`n=2`, ``pattern=[[[0]], [[1]], [[0, 1]]]`` (meaning the number of generators :math:`G = 3`), ``spin_sym=True``
 
-            .. decomposition-rule:: _instantaneous_quantum_polynomial_decomposition
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/iqp_multirz.svg
                 :where: the Pauli word ``"YX...X"`` acts on all :math:`n` wires: one Y, then
                     :math:`n - 1` X's
@@ -151,7 +151,7 @@ class IQP(Operator2):
         return reduce(math.matmul, layers[::-1])
 
 
-def _instantaneous_quantum_polynomial_resources(
+def _instantaneous_quantum_polynomial_standard_resources(
     weights, wires, pattern, spin_sym
 ):  # pylint: disable=unused-argument
     num_wires = len(wires)
@@ -168,8 +168,8 @@ def _instantaneous_quantum_polynomial_resources(
     return resources
 
 
-@register_resources(_instantaneous_quantum_polynomial_resources)
-def _instantaneous_quantum_polynomial_decomposition(weights, wires, pattern, spin_sym):
+@register_resources(_instantaneous_quantum_polynomial_standard_resources, name="standard")
+def _instantaneous_quantum_polynomial_standard(weights, wires, pattern, spin_sym):
     num_wires = len(wires)
 
     if spin_sym:
@@ -186,4 +186,4 @@ def _instantaneous_quantum_polynomial_decomposition(weights, wires, pattern, spi
         Hadamard(wires[i])
 
 
-add_decomps(IQP, _instantaneous_quantum_polynomial_decomposition)
+add_decomps(IQP, _instantaneous_quantum_polynomial_standard)

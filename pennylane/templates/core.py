@@ -180,7 +180,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
         abstract_wires = Wire[1] # a single wire
         S_rep = subroutine_resource_rep(S, abstract_params, abstract_wires, qp.RX)
 
-        @qp.decomposition.register_resources({S_rep: 1})
+        @qp.decomposition.register_resources({S_rep: 1}, name="my_op_decomposition")
         def my_op_decomposition(wires):
             # data of shape (4, ) and dtype float
             params = np.array([1.0, 2.0, 3.0, 4.0])
@@ -395,7 +395,7 @@ def _default_resources(subroutine: "Subroutine", *args, **kwargs) -> defaultdict
     return resources
 
 
-def _calculate_resources(subroutine: "Subroutine", signature_key):
+def _subroutine_standard_resources(subroutine: "Subroutine", signature_key):
     sig = subroutine.signature.bind(*signature_key)
     for arg in subroutine.dynamic_argnames:
         struct, shapes = sig.arguments[arg]
@@ -404,12 +404,12 @@ def _calculate_resources(subroutine: "Subroutine", signature_key):
 
 
 # pylint: disable=unused-argument
-@register_resources(_calculate_resources)
-def _subroutine_decomp(*data, wires, decomposition):
+@register_resources(_subroutine_standard_resources, name="standard")
+def _subroutine_standard(*data, wires, decomposition):
     _ = [apply(op) for op in decomposition]
 
 
-add_decomps(SubroutineOp, _subroutine_decomp)
+add_decomps(SubroutineOp, _subroutine_standard)
 
 P = ParamSpec("P")
 
@@ -601,7 +601,7 @@ class Subroutine:
         abstract_wires = Wire[3]
         rxlayer_rep = subroutine_resource_rep(RXLayer, abstract_params, abstract_wires)
 
-        @qp.decomposition.register_resources({rxlayer_rep: 1})
+        @qp.decomposition.register_resources({rxlayer_rep: 1}, name="MyOpDecomposition")
         def MyOpDecomposition(wires):
             params = np.arange(3, dtype=float)
             RXLayer(params, wires)

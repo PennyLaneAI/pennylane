@@ -613,7 +613,7 @@ class FermionicDoubleExcitation(Operation):
         return op_list
 
 
-def _fermionic_double_excitation_resources(num_wires_1, num_wires_2):
+def _fermionic_double_excitation_standard_resources(num_wires_1, num_wires_2):
     num_set_cnot_wires = num_wires_1 + num_wires_2 - 1
 
     return {Hadamard: 32, RX: 32, CNOT: 16 * num_set_cnot_wires, RZ: 8}
@@ -1051,8 +1051,8 @@ def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
     RX(np.pi / 2, wires=p)
 
 
-@register_resources(_fermionic_double_excitation_resources)
-def _fermionic_double_excitation_decomopsition(
+@register_resources(_fermionic_double_excitation_standard_resources, name="standard")
+def _fermionic_double_excitation_standard(
     weight, wires, wires1, wires2
 ):  # pylint: disable=unused-argument
     s = wires1[0]
@@ -1076,4 +1076,4 @@ def _fermionic_double_excitation_decomopsition(
     _layer_qfunc8(weight, s, r, q, p, set_cnot_wires)
 
 
-add_decomps(FermionicDoubleExcitation, _fermionic_double_excitation_decomopsition)
+add_decomps(FermionicDoubleExcitation, _fermionic_double_excitation_standard)

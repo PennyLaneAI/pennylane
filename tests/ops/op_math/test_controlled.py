@@ -1859,7 +1859,7 @@ class TestTapeExpansionWithControlled:
 
         tape = QuantumScript.from_queue(q_tape)
 
-        @register_resources({qp.RZ: 2, qp.RY: 1})
+        @register_resources({qp.RZ: 2, qp.RY: 1}, name="rot_to_rz_ry_rz")
         def _rot_to_rz_ry_rz(phi, theta, omega, wires, **__):
             qp.RZ(phi, wires=wires)
             qp.RY(theta, wires=wires)

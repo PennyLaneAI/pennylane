@@ -105,19 +105,19 @@ class RotXZX(Operation):
         return RotXZX(-omega, -theta, -phi, wires=self.wires)
 
 
-@register_resources({RX: 2, RZ: 1})
-def _xzx_decompose(phi, theta, omega, wires, **__):
+@register_resources({RX: 2, RZ: 1}, name="standard")
+def _xzx_decompose_standard(phi, theta, omega, wires, **__):
     RX(phi, wires=wires)
     RZ(theta, wires=wires)
     RX(omega, wires=wires)
 
 
-add_decomps(RotXZX, _xzx_decompose)
+add_decomps(RotXZX, _xzx_decompose_standard)
 
 
-@register_resources({RotXZX: 1})
-def _adjoint_rot_xzx(phi, theta, omega, wires, **__):
+@register_resources({RotXZX: 1}, name="standard")
+def _adjoint_rot_xzx_standard(phi, theta, omega, wires, **__):
     RotXZX(-omega, -theta, -phi, wires=wires)
 
 
-add_decomps("Adjoint(RotXZX)", _adjoint_rot_xzx)
+add_decomps("Adjoint(RotXZX)", _adjoint_rot_xzx_standard)

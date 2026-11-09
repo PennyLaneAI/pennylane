@@ -1175,7 +1175,7 @@ class LabsQROM(ResourceOperator):
         cls, num_data_blocks: int, num_bit_flips: int, repeat: int = 1
     ) -> list[GateCount]:
         r"""The gate cost of a partial Select subroutine. This decomposition was obtained directly from
-        the implementation in `pennylane.templates.subroutines.select._select_resources_unary` assuming
+        the implementation in `pennylane.templates.subroutines.select._select_unary_resources` assuming
         `partial = True`.
 
         Args:

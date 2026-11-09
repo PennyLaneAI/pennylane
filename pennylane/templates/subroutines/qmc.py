@@ -464,7 +464,7 @@ def _quantum_monte_carlo_impl(probs, *wires, func, num_target_wires):
     return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires)
 
 
-def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_shape):
+def _quantum_monte_carlo_standard_resources(num_target_wires, num_estimation_wires, q_shape):
     return {
         QubitUnitary(
             Complex[2 ** (num_target_wires - 1), 2 ** (num_target_wires - 1)],
@@ -480,8 +480,8 @@ def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_sha
     }
 
 
-@register_resources(_quantum_monte_carlo_resources)
-def _quantum_monte_carlo_decomposition(
+@register_resources(_quantum_monte_carlo_standard_resources, name="standard")
+def _quantum_monte_carlo_standard(
     A, R, Q, wires, estimation_wires, target_wires
 ):  # pylint: disable=unused-argument
     QubitUnitary(A, wires=target_wires[:-1])
@@ -489,4 +489,4 @@ def _quantum_monte_carlo_decomposition(
     QuantumPhaseEstimation(QubitUnitary(Q, wires=target_wires), estimation_wires=estimation_wires)
 
 
-add_decomps(QuantumMonteCarlo, _quantum_monte_carlo_decomposition)
+add_decomps(QuantumMonteCarlo, _quantum_monte_carlo_standard)

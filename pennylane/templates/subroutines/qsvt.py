@@ -407,7 +407,7 @@ class QSVT(Operator2):
                 shifts :math:`\Pi_{\phi_k}=` ``projectors[k]``
             :example: :math:`d=2`
 
-            .. decomposition-rule:: _QSVT_decomposition
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/qsvt_alternating_projectors.svg
 
                 :math:`\Pi_{\phi_k}` | :math:`d+1` (one per :math:`\Pi_{\phi_k}`) | 3
@@ -529,7 +529,7 @@ class QSVT(Operator2):
         return sum(getattr(op, "num_params", 0) for op in (self.UA, *self.projectors))
 
 
-def _QSVT_resources(UA, projectors):
+def _QSVT_standard_resources(UA, projectors):
     resources = defaultdict(int)
     resources[abstractify(projectors[0])] = 1
     for i in range(1, len(projectors) - 1, 2):
@@ -541,8 +541,8 @@ def _QSVT_resources(UA, projectors):
     return dict(resources)
 
 
-@register_resources(_QSVT_resources)
-def _QSVT_decomposition(UA, projectors):
+@register_resources(_QSVT_standard_resources, name="standard")
+def _QSVT_standard(UA, projectors):
 
     apply(projectors[0])
 
@@ -555,7 +555,7 @@ def _QSVT_decomposition(UA, projectors):
         apply(projectors[-1])
 
 
-add_decomps(QSVT, _QSVT_decomposition)
+add_decomps(QSVT, _QSVT_standard)
 
 
 def _complementary_poly(poly_coeffs):

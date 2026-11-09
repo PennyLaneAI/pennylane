@@ -103,7 +103,7 @@ class GQSP(Operator2):
                 ``(3, d+1)``) and shift :math:`s`
             :example: :math:`d=1`, :math:`s=0`
 
-            .. decomposition-rule:: _GQSP_decomposition
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/gqsp_signal_processing.svg
                 :where: :math:`a = \min(\max(-s, 0), d)` is the number of controlled unitaries
                     absorbing a negative shift, and :math:`[\cdot]` is 1 if the condition holds
@@ -186,7 +186,7 @@ def _num_shifted_ctrl_ops(shift, num_ctrl_ops):
     return num_absorbed, shift + num_absorbed
 
 
-def _GQSP_resources(
+def _GQSP_standard_resources(
     unitary, angles, control, work_wires, work_wire_type, shift
 ):  # pylint: disable=unused-argument,too-many-arguments
     num_iters = angles.shape[1]
@@ -212,8 +212,8 @@ def _GQSP_resources(
     return resources
 
 
-@register_resources(_GQSP_resources)
-def _GQSP_decomposition(
+@register_resources(_GQSP_standard_resources, name="standard")
+def _GQSP_standard(
     unitary, angles, control, work_wires, work_wire_type, shift
 ):  # pylint: disable=too-many-arguments
     if compiler.active() or capture.enabled():
@@ -269,4 +269,4 @@ def _GQSP_decomposition(
     gqsp_loop()  # pylint:disable= no-value-for-parameter
 
 
-add_decomps(GQSP, _GQSP_decomposition)
+add_decomps(GQSP, _GQSP_standard)

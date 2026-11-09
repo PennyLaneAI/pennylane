@@ -297,7 +297,7 @@ class MPSPrep(Operator2):
                 dimension :math:`\chi`
             :example: :math:`n=3`, :math:`w=1`
 
-            .. decomposition-rule:: _mps_prep_decomposition
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/mps_prep.svg
                 :requires: :math:`w \geq \log_2 \chi` work wires
 
@@ -378,7 +378,7 @@ class MPSPrep(Operator2):
         )
 
 
-def _mps_prep_decomposition_resources(
+def _mps_prep_standard_resources(
     mps, wires, work_wires=None, right_canonicalize=False
 ):  # pylint: disable=unused-argument
     num_work_wires = len(work_wires)
@@ -405,8 +405,8 @@ def _work_wires_bond_dimension_condition(
 
 
 @qp.register_condition(_work_wires_bond_dimension_condition)
-@register_resources(_mps_prep_decomposition_resources)
-def _mps_prep_decomposition(mps, wires, work_wires=None, right_canonicalize=False):
+@register_resources(_mps_prep_standard_resources, name="standard")
+def _mps_prep_standard(mps, wires, work_wires=None, right_canonicalize=False):
     mps = list(mps)
 
     n_wires = len(work_wires) + 1
@@ -451,4 +451,4 @@ def _mps_prep_decomposition(mps, wires, work_wires=None, right_canonicalize=Fals
         qp.QubitUnitary(unitary_matrix, wires=[wires[i], *work_wires])
 
 
-add_decomps(MPSPrep, _mps_prep_decomposition)
+add_decomps(MPSPrep, _mps_prep_standard)

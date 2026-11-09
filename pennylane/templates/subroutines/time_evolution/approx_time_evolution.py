@@ -240,7 +240,7 @@ class ApproxTimeEvolution(Operation):
         return full_decomp
 
 
-def _approx_time_evolution_resources(words: tuple[PauliWord], n: int):
+def _approx_time_evolution_standard_resources(words: tuple[PauliWord], n: int):
     resources = defaultdict(int)
 
     for _ in range(n):
@@ -252,8 +252,8 @@ def _approx_time_evolution_resources(words: tuple[PauliWord], n: int):
     return resources
 
 
-@register_resources(_approx_time_evolution_resources)
-def _approx_time_evolution_decomposition(
+@register_resources(_approx_time_evolution_standard_resources, name="standard")
+def _approx_time_evolution_standard(
     *coeffs_and_time: list, wires: WiresLike, hamiltonian: Hamiltonian, n: int
 ):  # pylint: disable=unused-argument
     time = coeffs_and_time[-1]
@@ -275,4 +275,4 @@ def _approx_time_evolution_decomposition(
     rounds_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(ApproxTimeEvolution, _approx_time_evolution_decomposition)
+add_decomps(ApproxTimeEvolution, _approx_time_evolution_standard)

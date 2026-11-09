@@ -36,7 +36,7 @@ class _DecomposingOp(qp.operation.Operation):
         return [qp.RY(0.5, wires=wires), qp.RX(0.5, wires=wires)]
 
 
-@register_resources({qp.RY: 1, qp.RX: 1})
+@register_resources({qp.RY: 1, qp.RX: 1}, name="ry_rx_decompose")
 def _ry_rx_decompose(wires, **__):
     qp.RY(0.5, wires=wires)
     qp.RX(0.5, wires=wires)

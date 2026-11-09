@@ -380,7 +380,7 @@ class Superposition(Operation):
         )
 
 
-def _superposition_resources(num_wires, num_coeffs, bases):
+def _superposition_standard_resources(num_wires, num_coeffs, bases):
     perms = order_states(bases)
 
     resources = Counter()
@@ -401,8 +401,8 @@ def _superposition_resources(num_wires, num_coeffs, bases):
     return dict(resources)
 
 
-@register_resources(_superposition_resources)
-def _superposition_decomposition(
+@register_resources(_superposition_standard_resources, name="standard")
+def _superposition_standard(
     coeffs, bases, wires, target_wires, work_wire  # pylint: disable=unused-argument
 ):
     dic_state = dict(zip(bases, coeffs, strict=True))
@@ -433,4 +433,4 @@ def _superposition_decomposition(
     apply_permutations()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(Superposition, _superposition_decomposition)
+add_decomps(Superposition, _superposition_standard)

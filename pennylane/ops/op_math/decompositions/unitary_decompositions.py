@@ -274,7 +274,7 @@ def multi_qubit_decomposition(U, wires):
     """
 
     with queuing.AnnotatedQueue() as q:
-        multi_qubit_decomp_rule(U, wires)
+        _qubit_unitary_multi_qubit(U, wires)
 
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
@@ -388,7 +388,7 @@ xzx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xzx_decomp, _su2_xzx
 zxz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zxz_decomp, _su2_zxz_resource, "zxz")
 
 
-def _two_qubit_resource(*_, **__):
+def _qubit_unitary_two_qubit_resources(*_, **__):
     """A worst-case over-estimate for the resources of two-qubit unitary decomposition."""
     return {
         ops.QubitUnitary(Complex[2, 2], wires=Wire[1]): 4,
@@ -400,8 +400,8 @@ def _two_qubit_resource(*_, **__):
 
 
 @register_condition(lambda U, wires, **_: len(wires) == 2)  # pylint: disable=unused-argument
-@register_resources(_two_qubit_resource, exact=False)
-def two_qubit_decomp_rule(U, wires, **_):
+@register_resources(_qubit_unitary_two_qubit_resources, exact=False, name="two_qubit")
+def _qubit_unitary_two_qubit(U, wires, **_):
     """The decomposition rule for a two-qubit unitary."""
 
     U, initial_phase = math.convert_to_su4(U)
@@ -425,7 +425,7 @@ def two_qubit_decomp_rule(U, wires, **_):
     ops.cond(math.logical_not(math.allclose(total_phase, 0)), ops.GlobalPhase)(-total_phase)
 
 
-def _multi_qubit_decomp_resource(U, wires, **_):  # pylint: disable=unused-argument
+def _qubit_unitary_multi_qubit_resources(U, wires, **_):  # pylint: disable=unused-argument
     num_wires = len(wires)
     return {
         ops.QubitUnitary(
@@ -447,8 +447,8 @@ def _multi_qubit_decomp_resource(U, wires, **_):  # pylint: disable=unused-argum
 
 
 @register_condition(lambda U, wires, **_: len(wires) > 2)  # pylint: disable=unused-argument
-@register_resources(_multi_qubit_decomp_resource)
-def multi_qubit_decomp_rule(U, wires, **__):
+@register_resources(_qubit_unitary_multi_qubit_resources, name="multi_qubit")
+def _qubit_unitary_multi_qubit(U, wires, **__):
     """The decomposition rule for a multi-qubit unitary."""
 
     # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express

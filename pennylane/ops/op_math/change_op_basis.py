@@ -378,7 +378,7 @@ class ChangeOpBasis(CompositeOp):
         return None
 
 
-def _change_op_basis_resources(compute_op, target_op, uncompute_op):
+def _change_op_basis_standard_resources(compute_op, target_op, uncompute_op):
     resources = Counter()
 
     resources[compute_op] += 1
@@ -388,7 +388,7 @@ def _change_op_basis_resources(compute_op, target_op, uncompute_op):
     return resources
 
 
-def _adjoint_change_op_basis_resources(base_params, **_):
+def _adjoint_change_op_basis_standard_resources(base_params, **_):
     resources = defaultdict(int)
     resources[base_params["compute_op"]] += 1
     resources[base_params["uncompute_op"]] += 1
@@ -398,17 +398,17 @@ def _adjoint_change_op_basis_resources(base_params, **_):
 
 
 # pylint: disable=protected-access
-@register_resources(_adjoint_change_op_basis_resources)
-def _adjoint_change_op_basis_decomp(*_, base, **__):
+@register_resources(_adjoint_change_op_basis_standard_resources, name="standard")
+def _adjoint_change_op_basis_standard(*_, base, **__):
     apply(base.operands[2])
     adjoint(apply(base.operands[1]))
     apply(base.operands[0])
 
 
-add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
+add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_standard)
 
 
-def _controlled_change_op_basis_resources(
+def _controlled_change_op_basis_standard_resources(
     *_,
     num_control_wires,
     num_zero_control_values,
@@ -433,8 +433,8 @@ def _controlled_change_op_basis_resources(
     return resources
 
 
-@register_resources(_controlled_change_op_basis_resources)
-def _controlled_change_op_basis_decomposition(
+@register_resources(_controlled_change_op_basis_standard_resources, name="standard")
+def _controlled_change_op_basis_standard(
     *_,
     control_wires,
     control_values,
@@ -455,11 +455,11 @@ def _controlled_change_op_basis_decomposition(
 
 
 # pylint: disable=unused-argument
-@register_resources(_change_op_basis_resources)
-def _change_op_basis_decomp(*_, wires=None, operands, **__):
+@register_resources(_change_op_basis_standard_resources, name="standard")
+def _change_op_basis_standard(*_, wires=None, operands, **__):
     for op in operands[::-1]:
         apply(op)
 
 
-add_decomps(ChangeOpBasis, _change_op_basis_decomp)
-add_decomps("C(ChangeOpBasis)", _controlled_change_op_basis_decomposition)
+add_decomps(ChangeOpBasis, _change_op_basis_standard)
+add_decomps("C(ChangeOpBasis)", _controlled_change_op_basis_standard)

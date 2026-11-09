@@ -382,7 +382,7 @@ class TestGradientTransformIntegration:
                 """Decompose into a qp.RX gate."""
                 return [qp.RX(phi, wires=wires)]
 
-        @qp.register_resources({qp.RX: 1})
+        @qp.register_resources({qp.RX: 1}, name="decomp")
         def _decomp(phi, wires):
             qp.RX(phi, wires)
 

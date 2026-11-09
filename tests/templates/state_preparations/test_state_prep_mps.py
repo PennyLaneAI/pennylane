@@ -21,7 +21,7 @@ import pytest
 import pennylane as qp
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.templates.state_preparations.state_prep_mps import (
-    _mps_prep_decomposition,
+    _mps_prep_standard,
     _validate_mps_shape,
     right_canonicalize_mps,
 )
@@ -660,7 +660,7 @@ class TestMPSPrep:
         num_wires = 4
 
         def circuit(*_mps):
-            _mps_prep_decomposition(
+            _mps_prep_standard(
                 list(_mps),
                 wires=range(2, num_wires + 2),
                 work_wires=[0, 1],

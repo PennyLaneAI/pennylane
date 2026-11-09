@@ -214,12 +214,12 @@ class FermionicSingleExcitation(Operation):
         return op_list
 
 
-def _fermionic_single_excitation_resources(num_wires):
+def _fermionic_single_excitation_standard_resources(num_wires):
     return {RX: 4, Hadamard: 4, CNOT: 4 * (num_wires - 1), RZ: 2}
 
 
-@register_resources(_fermionic_single_excitation_resources)
-def _fermionic_single_excitation_decomposition(weight, wires, **_):
+@register_resources(_fermionic_single_excitation_standard_resources, name="standard")
+def _fermionic_single_excitation_standard(weight, wires, **_):
     # Interpret first and last wire as r and p
     r = wires[0]
     p = wires[-1]
@@ -277,4 +277,4 @@ def _fermionic_single_excitation_decomposition(weight, wires, **_):
     RX(np.pi / 2, wires=p)
 
 
-add_decomps(FermionicSingleExcitation, _fermionic_single_excitation_decomposition)
+add_decomps(FermionicSingleExcitation, _fermionic_single_excitation_standard)

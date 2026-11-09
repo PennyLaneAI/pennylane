@@ -40,11 +40,11 @@ from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
     _apply_system_basis_rotation,
     _apply_two_body_diagonal_with_work_wires,
     _cdf_resource_counts,
-    _controlled_trotter_cdf_decomp,
+    _controlled_trotter_cdf_standard,
     _energy_shift,
     _merge_leaves,
-    _multi_controlled_trotter_cdf_decomp,
-    _trotter_cdf_decomposition,
+    _trotter_cdf_multi_control,
+    _trotter_cdf_standard,
 )
 from pennylane.testing import assert_decomposable
 from pennylane.typing import Float, Wire
@@ -432,7 +432,7 @@ class TestResourceRule:
         )
         controlled = qp.ctrl(op, control=[99])
         assert controlled.decomposition() == []
-        assert _controlled_trotter_cdf_decomp.compute_resources(
+        assert _controlled_trotter_cdf_standard.compute_resources(
             **controlled.arguments
         ) == Resources({})
 
@@ -468,7 +468,7 @@ class TestResourceRule:
             system_wires = list(wires[:num_system_wires])
             work_wires = list(wires[num_system_wires + int(has_control) :])
             if not has_control:
-                _trotter_cdf_decomposition(t, num_steps, ham, system_wires, False, work_wires)
+                _trotter_cdf_standard(t, num_steps, ham, system_wires, False, work_wires)
                 return
             with qp.capture.pause():
                 base = qp.TrotterCDF(
@@ -479,7 +479,7 @@ class TestResourceRule:
                     double_phase=double_phase,
                     work_wires=work_wires,
                 )
-            _controlled_trotter_cdf_decomp(base, [wires[num_system_wires]], [1], [], "borrowed")
+            _controlled_trotter_cdf_standard(base, [wires[num_system_wires]], [1], [], "borrowed")
 
         args = (jax.numpy.array(0.4), *trace_wires)
         with warnings.catch_warnings():
@@ -580,7 +580,7 @@ class TestDecomposition:
         ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.0)
         wires = list(range(2 * num_orbitals))
 
-        tape = qp.tape.make_qscript(_trotter_cdf_decomposition)(
+        tape = qp.tape.make_qscript(_trotter_cdf_standard)(
             evolution_time, num_steps, ham, wires, False
         )
         angles = np.array([op.data[0] for op in tape.operations if isinstance(op, qp.IsingZZ)])
@@ -852,7 +852,7 @@ class TestControlledDecomposition:
         [inner] = [op for op in operations if op.name == "C(TrotterCDF)"]
         qp.assert_equal(inner, qp.ctrl(base, control=control_work_wires[-1]))
         inner_operations = inner.decomposition()
-        specialized = qp.testing.decomp_rule_to_tape(inner, _controlled_trotter_cdf_decomp)
+        specialized = qp.testing.decomp_rule_to_tape(inner, _controlled_trotter_cdf_standard)
         for actual, expected_op in zip(inner_operations, specialized.operations, strict=True):
             qp.assert_equal(actual, expected_op)
         if num_cdf_work_wires:
@@ -885,7 +885,7 @@ class TestControlledDecomposition:
             work_wires=list(range(7, 6 + num_controls)),
             work_wire_type="zeroed",
         )
-        assert _controlled_trotter_cdf_decomp.is_applicable(**op.arguments) == (num_controls == 1)
+        assert _controlled_trotter_cdf_standard.is_applicable(**op.arguments) == (num_controls == 1)
 
     @pytest.mark.parametrize(
         ("num_controls", "double_phase", "num_work_wires", "work_wire_type", "applicable"),
@@ -916,7 +916,7 @@ class TestControlledDecomposition:
             work_wires=list(range(7, 7 + num_work_wires)),
             work_wire_type=work_wire_type,
         )
-        assert _multi_controlled_trotter_cdf_decomp.is_applicable(**op.arguments) == applicable
+        assert _trotter_cdf_multi_control.is_applicable(**op.arguments) == applicable
 
     @pytest.mark.capture
     def test_multiple_control_rule_capture_resources(self, toy_hamiltonian_cdf_concrete):
@@ -930,7 +930,7 @@ class TestControlledDecomposition:
             work_wires=[7, 8],
             work_wire_type="zeroed",
         )
-        qp.testing.assert_valid_decomp_rule(op, _multi_controlled_trotter_cdf_decomp)
+        qp.testing.assert_valid_decomp_rule(op, _trotter_cdf_multi_control)
 
     def test_control_auxiliaries_cannot_overlap_cdf_work_wires(self, toy_hamiltonian_cdf_concrete):
         """Intermediate control auxiliaries must remain distinct from the CDF work register."""

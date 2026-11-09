@@ -245,7 +245,7 @@ class OneBodyBlockEncoding(Operator2):
                 eigenvalues of ``op_matrix``
             :example: the operator above with ``alias_sampling_nbits=1``, :math:`K=2`, :math:`\nu=1`
 
-            .. decomposition-rule:: _one_body_block_encoding_decomp
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/one_body_block_encoding_lcu.svg
                 :where: :math:`\delta = 1` if :math:`\nu > 0` and :math:`\delta = 0` otherwise
 
@@ -333,7 +333,7 @@ def _split_prep_wires(prep_wires, norbs):
     return index_wires, spin_wire, garbage_wires
 
 
-def _one_body_block_encoding_resources(
+def _one_body_block_encoding_standard_resources(
     op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires
 ):  # pylint: disable=too-many-arguments,unused-argument
     norbs = len(op_matrix)
@@ -382,8 +382,8 @@ def _one_body_block_encoding_resources(
     return resources
 
 
-@register_resources(_one_body_block_encoding_resources)
-def _one_body_block_encoding_decomp(
+@register_resources(_one_body_block_encoding_standard_resources, name="standard")
+def _one_body_block_encoding_standard(
     op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires, **_
 ):  # pylint: disable=too-many-arguments
     norbs = len(op_matrix)
@@ -463,4 +463,4 @@ def _one_body_block_encoding_decomp(
     GlobalPhase(np.pi)
 
 
-add_decomps(OneBodyBlockEncoding, _one_body_block_encoding_decomp)
+add_decomps(OneBodyBlockEncoding, _one_body_block_encoding_standard)

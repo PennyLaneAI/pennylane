@@ -52,7 +52,7 @@ def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator2]:
     new_operator = type(qfunc.name, (Operator2,), attrs)
 
     # registers the decomposition
-    decomp_name = qfunc.name + "_decomp"
+    decomp_name = qfunc.name + "decomp"
     decomp_rule = DecompositionRule(
         qfunc._impl,
         resources=qfunc._compute_resources,
@@ -121,7 +121,7 @@ def subcircuit(  # pylint: disable=too-many-arguments
     .. code-block:: python
 
         @qp.subcircuit(dynamic_argnames=("phi",))
-        @qp.register_resources({qp.H: 1, qp.RZ: 1})
+        @qp.register_resources({qp.H: 1, qp.RZ: 1}, name="MyOp")
         def MyOp(phi, wires):
             qp.H(wires)
             qp.RZ(phi, wires)

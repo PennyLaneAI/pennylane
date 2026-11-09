@@ -205,7 +205,7 @@ def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
 
     # special case of cancelling nested adjoints.
     if isinstance(abs_op.base, Adjoint2):
-        return DecompCollection([cancel_adjoint])
+        return DecompCollection([_adjoint_cancel])
 
     # Custom decomposition rules registered specifically to the adjoint operator
     custom_rules = _list_decomps.dispatch(object)(abs_op)
@@ -282,25 +282,25 @@ def _adjoint_abstract(op: AbstractOperatorLike | type[Operator]):
     return qp.adjoint(op)
 
 
-def _cancel_adjoint_resources(base):
+def _adjoint_cancel_resources(base):
     assert isinstance(base, Adjoint2)
     inner_base = base.base
     return {inner_base: 1}
 
 
-@register_resources(_cancel_adjoint_resources)
-def cancel_adjoint(base):
+@register_resources(_adjoint_cancel_resources, name="cancel")
+def _adjoint_cancel(base):
     """Decompose the adjoint of the adjoint of an operator."""
     assert isinstance(base, Adjoint2)
     type(base.base)(**base.base.arguments)
 
 
-def _adjoint_rotation_resource(base):
+def _adjoint_negate_angle_resources(base):
     return {abstractify(base): 1}
 
 
-@register_resources(_adjoint_rotation_resource)
-def adjoint_rotation(base):
+@register_resources(_adjoint_negate_angle_resources, name="negate_angle")
+def _adjoint_negate_angle(base):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
     # A rotation should only have 1 dynamic parameter
     assert len(base.dynamic_argnames) == 1

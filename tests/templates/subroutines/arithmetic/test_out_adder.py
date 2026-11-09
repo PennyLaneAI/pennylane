@@ -184,15 +184,15 @@ class TestOutAdder:
             7,
             [9, 10],
         )
-        _adder_decomposition = (
+        _adder_fourier = (
             qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
             .compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires)[0]
             .decomposition()
         )
         adder_decomposition = [
-            _adder_decomposition[0],
-            *_adder_decomposition[1].decomposition(),
-            _adder_decomposition[2],
+            _adder_fourier[0],
+            *_adder_fourier[1].decomposition(),
+            _adder_fourier[2],
         ]
 
         op_list = []

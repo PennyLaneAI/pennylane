@@ -147,7 +147,7 @@ class CosineWindow(StatePrepBase):
         return math.convert_like(ket, op_vector)
 
 
-def _cosine_window_resources(num_wires):
+def _cosine_window_standard_resources(num_wires):
     return {
         qp.Hadamard: 1,
         qp.RZ: 1,
@@ -156,8 +156,8 @@ def _cosine_window_resources(num_wires):
     }
 
 
-@register_resources(_cosine_window_resources)
-def _cosine_window_decomposition(wires, **_):
+@register_resources(_cosine_window_standard_resources, name="standard")
+def _cosine_window_standard(wires, **_):
     qp.Hadamard(wires=wires[-1])
     qp.RZ(np.pi, wires=wires[-1])
     qp.adjoint(qp.QFT)(wires=wires)
@@ -173,4 +173,4 @@ def _cosine_window_decomposition(wires, **_):
     wires_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(CosineWindow, _cosine_window_decomposition)
+add_decomps(CosineWindow, _cosine_window_standard)

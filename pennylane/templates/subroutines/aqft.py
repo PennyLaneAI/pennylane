@@ -72,7 +72,7 @@ class AQFT(Operator2):
             :symbols: :math:`n` wires and order :math:`m \leq n-1`
             :example: :math:`n=4`, :math:`m=1`
 
-            .. decomposition-rule:: _AQFT_decomposition
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/aqft_cphase_swap.svg
 
                 :class:`~.Hadamard` | :math:`n` | 4
@@ -144,7 +144,7 @@ class AQFT(Operator2):
         super().__init__(order, wires)
 
 
-def _AQFT_resources(order, wires):
+def _AQFT_standard_resources(order, wires):
     num_wires = len(wires)
     num_ctrl_ps = sum(min(num_wires - 1 - i, order) for i in range(num_wires))
     return {
@@ -154,8 +154,8 @@ def _AQFT_resources(order, wires):
     }
 
 
-@register_resources(_AQFT_resources)
-def _AQFT_decomposition(wires, order):
+@register_resources(_AQFT_standard_resources, name="standard")
+def _AQFT_standard(wires, order):
     num_wires = len(wires)
     shifts = [2 * np.pi / (2**i) for i in range(2, num_wires + 1)]
 
@@ -191,4 +191,4 @@ def _AQFT_decomposition(wires, order):
     half_wire_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(AQFT, _AQFT_decomposition)
+add_decomps(AQFT, _AQFT_standard)

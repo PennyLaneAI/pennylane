@@ -106,16 +106,16 @@ class LabelledOp(SymbolicOp):
         return self.base.matrix(wire_order=wire_order)
 
 
-def _resources(base):
+def _custom_label_standard_resources(base):
     return {base: 1}
 
 
-@register_resources(_resources)
-def _custom_label_decomp(*params, wires, base, **_):
+@register_resources(_custom_label_standard_resources, name="standard")
+def _custom_label_standard(*params, wires, base, **_):
     apply(base)
 
 
-add_decomps(LabelledOp, _custom_label_decomp)
+add_decomps(LabelledOp, _custom_label_standard)
 
 
 @_equal_dispatch.register

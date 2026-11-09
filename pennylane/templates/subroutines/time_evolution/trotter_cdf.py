@@ -134,7 +134,7 @@ class TrotterCDF(Operator2):
                 ``num_trotter_steps``
             :example: the Hamiltonian above, :math:`N=2`, :math:`L=1`, :math:`n=1`. Note that all expressions below assume :math:`n \gt 0`
 
-            .. decomposition-rule:: _trotter_cdf_decomposition
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/trotter_cdf_second_order.svg
                 :where: :math:`B = (2L-1)n + 1` two-body blocks and :math:`w` work wires. The
                     counts are upper bounds, as basis rotations that are the identity are
@@ -702,7 +702,7 @@ def _cdf_resource_counts(
     return {op: count for op, count in resources.items() if count}
 
 
-def _trotter_cdf_resources(
+def _trotter_cdf_standard_resources(
     evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, work_wires=()
 ):
     return _cdf_resource_counts(
@@ -710,8 +710,8 @@ def _trotter_cdf_resources(
     )
 
 
-@register_resources(_trotter_cdf_resources, exact=False)
-def _trotter_cdf_decomposition(
+@register_resources(_trotter_cdf_standard_resources, exact=False, name="standard")
+def _trotter_cdf_standard(
     evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, work_wires=()
 ):
     # ``double_phase`` only affects the controlled decomposition; the base operator is
@@ -729,10 +729,10 @@ def _trotter_cdf_decomposition(
         GlobalPhase(phi)
 
 
-add_decomps(TrotterCDF, _trotter_cdf_decomposition)
+add_decomps(TrotterCDF, _trotter_cdf_standard)
 
 
-def _controlled_trotter_cdf_resource(
+def _controlled_trotter_cdf_standard_resources(
     base, control_wires, control_values, work_wires, work_wire_type
 ):
     return _cdf_resource_counts(
@@ -745,8 +745,10 @@ def _controlled_trotter_cdf_resource(
 
 
 @register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
-@register_resources(_controlled_trotter_cdf_resource, exact=False)
-def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+@register_resources(_controlled_trotter_cdf_standard_resources, exact=False, name="standard")
+def _controlled_trotter_cdf_standard(
+    base, control_wires, control_values, work_wires, work_wire_type
+):
     evolution_time = base.arguments["evolution_time"]
     num_trotter_steps = base.arguments["num_trotter_steps"]
     hamiltonian = base.arguments["hamiltonian"]
@@ -805,10 +807,9 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
         *args, **kwargs
     ).gate_counts,
     exact=False,
+    name="multi_control",
 )
-def _multi_controlled_trotter_cdf_decomp(
-    base, control_wires, control_values, work_wires, work_wire_type
-):
+def _trotter_cdf_multi_control(base, control_wires, control_values, work_wires, work_wire_type):
     """Reuse the single-control CDF decomposition after combining multiple controls."""
     validate_no_wire_overlaps(
         {
@@ -822,6 +823,6 @@ def _multi_controlled_trotter_cdf_decomp(
 
 add_decomps(
     "C(TrotterCDF)",
-    flip_zero_control2(_controlled_trotter_cdf_decomp),
-    _multi_controlled_trotter_cdf_decomp,
+    flip_zero_control2(_controlled_trotter_cdf_standard, name="standard"),
+    _trotter_cdf_multi_control,
 )
