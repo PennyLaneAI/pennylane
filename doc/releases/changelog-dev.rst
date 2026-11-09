@@ -1943,7 +1943,7 @@ Internal changes ⚙️
     `(#10041) <https://github.com/PennyLaneAI/pennylane/pull/10041>`__
     `(#10072) <https://github.com/PennyLaneAI/pennylane/pull/10072>`__
     `(#10149) <https://github.com/PennyLaneAI/pennylane/pull/10149>`__
-    `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+    `(#10494) <https://github.com/PennyLaneAI/pennylane/pull/10494>`__
 
   - Templates are ported:
 
