@@ -176,7 +176,8 @@ a correction.
 
     qdev = qp.device("lightning.qubit", wires=3)
     CPU1 = qp.Controller(device=qdev)
-    CPU2 = qp.Coprocessor(coprocessor_fn="some_decoder")
+    # some_decoder takes packed syndrome bits and replies with a bitmask
+    CPU2 = qp.Coprocessor(coprocessor_fn=qp.CoprocessorFunction("some_decoder", bitpack=True))
 
     dev = qp.Backline(controller=CPU1, coprocessors=[CPU2], transport="memcpy")
 
