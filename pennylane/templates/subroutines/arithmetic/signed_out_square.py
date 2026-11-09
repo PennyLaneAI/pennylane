@@ -192,7 +192,7 @@ class SignedOutSquare(_SquareArithmeticOp):
 
         >>> op = qp.SignedOutSquare(range(3), range(3, 10), range(10, 16), True)
         >>> qp.inspect_decomps(op, "from_unsigned")
-        Decomposition 0 (name: signed_square_from_unsigned_square)
+        Decomposition 0 (name: from_unsigned)
          0: ──────────────────────────────────────────╭●────────╭●──────────────╭●──────────── ···
          1: ─╭OutSquare──MultiX(M0)───────╭X────╭●────│──────●╮─├●────╭X────────│───MultiX(M0) ···
          2: ─├OutSquare─────────────╭●────│─────│─────│───────│─│─────│──────●╮─├●──────────── ···

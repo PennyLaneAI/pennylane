@@ -101,7 +101,7 @@ def test_compiled_decompose_exclusions(use_name, graph_enabled):
     """Compiled exclusions are local to a pass and independent of the legacy graph toggle."""
     pytest.importorskip("catalyst")
     registered_rules = list(qp.list_decomps(qp.CRX))
-    rule = qp.list_decomps(qp.CRX)["_crx_to_h_crz"]
+    rule = qp.list_decomps(qp.CRX)["to_h_crz"]
     gate_set = {qp.RX, qp.CZ, qp.H, qp.CRZ}
 
     @qp.qnode(qp.device("null.qubit", wires=2))
