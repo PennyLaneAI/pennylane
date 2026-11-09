@@ -1317,7 +1317,6 @@ class TestParamShiftUsingBroadcasting:
         assert np.allclose(grad, -np.sin(x))
 
 
-# The first of the pylint disable is for cost1 through cost6
 class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
     """Tests for the parameter shift implementation"""
 
@@ -2436,47 +2435,56 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
         assert np.allclose(gradA, expected, atol=tol, rtol=0)
         assert gradF == pytest.approx(expected, abs=tol)
 
-    def cost1(x):  # pylint: disable=no-self-argument
+    @staticmethod
+    def cost1(x):
         """Perform rotation and return a scalar expectation value."""
         qp.Rot(x[0], 0.3 * x[1], x[2], wires=0)
         return qp.expval(qp.PauliZ(0))
 
-    def cost2(x):  # pylint: disable=no-self-argument
+    @staticmethod
+    def cost2(x):
         """Perform rotation and return an expectation value in a 1d array."""
-        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
+        qp.Rot(*x, wires=0)
         return [qp.expval(qp.PauliZ(0))]
 
-    def cost3(x):  # pylint: disable=no-self-argument
+    @staticmethod
+    def cost3(x):
         """Perform rotation and return two expectation value in a 1d array."""
-        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
+        qp.Rot(*x, wires=0)
         return (qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1)))
 
-    def cost4(x):  # pylint: disable=no-self-argument
+    @staticmethod
+    def cost4(x):
         """Perform rotation and return probabilities."""
-        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
+        qp.Rot(*x, wires=0)
         return qp.probs([0, 1])
 
-    def cost5(x):  # pylint: disable=no-self-argument
+    @staticmethod
+    def cost5(x):
         """Perform rotation and return probabilities in a 2d object."""
-        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
+        qp.Rot(*x, wires=0)
         return [qp.probs([0, 1])]
 
-    def cost6(x):  # pylint: disable=no-self-argument
+    @staticmethod
+    def cost6(x):
         """Perform rotation and return two sets of probabilities in a 2d object."""
-        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
+        qp.Rot(*x, wires=0)
         return (qp.probs([0, 1]), qp.probs([2, 3]))
 
-    def cost7(x):  # pylint: disable=no-self-argument
+    @staticmethod
+    def cost7(x):
         """Perform rotation and return a scalar expectation value."""
         qp.RX(x, wires=0)
         return qp.expval(qp.PauliZ(0))
 
-    def cost8(x):  # pylint: disable=no-self-argument
+    @staticmethod
+    def cost8(x):
         """Perform rotation and return an expectation value in a 1d array."""
         qp.RX(x, wires=0)
         return [qp.expval(qp.PauliZ(0))]
 
-    def cost9(x):  # pylint: disable=no-self-argument
+    @staticmethod
+    def cost9(x):
         """Perform rotation and return two expectation value in a 1d array."""
         qp.RX(x, wires=0)
         return (qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1)))
@@ -2647,7 +2655,6 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
         assert len(record) == 0
 
 
-# The following pylint disable is for cost1 through cost6
 class TestParameterShiftRuleBroadcast:
     """Tests for the parameter shift implementation using broadcasting"""
 

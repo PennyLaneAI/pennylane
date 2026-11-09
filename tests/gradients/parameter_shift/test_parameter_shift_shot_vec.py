@@ -502,7 +502,6 @@ class TestParamShift:
 # tape with `broadcast=False` (as double broadcasting is not supported).
 
 
-# The first line of pylint disable is for cost1 through cost6
 @pytest.mark.slow
 @pytest.mark.parametrize("broadcast", [False, True])
 class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
@@ -1839,34 +1838,40 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
         for gradF in all_gradF:
             assert gradF == pytest.approx(expected, abs=finite_diff_tol)
 
-    def cost1(x):  # pylint: disable=no-self-argument
+    @staticmethod
+    def cost1(x):
         """Perform rotation and return a scalar expectation value."""
-        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
+        qp.Rot(*x, wires=0)
         return qp.expval(qp.PauliZ(0))
 
-    def cost2(x):  # pylint: disable=no-self-argument
+    @staticmethod
+    def cost2(x):
         """Perform rotation and return an expectation value in a 1d array."""
-        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
+        qp.Rot(*x, wires=0)
         return [qp.expval(qp.PauliZ(0))]
 
-    def cost3(x):  # pylint: disable=no-self-argument
+    @staticmethod
+    def cost3(x):
         """Perform rotation and return two expectation value in a 1d array."""
-        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
+        qp.Rot(*x, wires=0)
         return [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))]
 
-    def cost4(x):  # pylint: disable=no-self-argument
+    @staticmethod
+    def cost4(x):
         """Perform rotation and return probabilities."""
-        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
+        qp.Rot(*x, wires=0)
         return qp.probs([0, 1])
 
-    def cost5(x):  # pylint: disable=no-self-argument
+    @staticmethod
+    def cost5(x):
         """Perform rotation and return probabilities in a 2d object."""
-        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
+        qp.Rot(*x, wires=0)
         return [qp.probs([0, 1])]
 
-    def cost6(x):  # pylint: disable=no-self-argument
+    @staticmethod
+    def cost6(x):
         """Perform rotation and return two sets of probabilities in a 2d object."""
-        qp.Rot(*x, wires=0)  # pylint: disable=not-an-iterable
+        qp.Rot(*x, wires=0)
         return [qp.probs([0, 1]), qp.probs([2, 3])]
 
     costs_and_expected_expval = [

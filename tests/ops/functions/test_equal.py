@@ -2848,19 +2848,23 @@ class TestBasisRotation:
 class TestHilbertSchmidt:
     """Test that qp.equal works with qp.HilbertSchmidt."""
 
-    def v_function1(params):  # pylint: disable=no-self-argument
+    @staticmethod
+    def v_function1(params):
         """Returns a v_function that is used in the HilbertSchmidt operator."""
         return qp.RZ(params[0], wires=1)
 
-    def v_function2(params):  # pylint: disable=no-self-argument
+    @staticmethod
+    def v_function2(params):
         """Differs from v_function1 by operation type and used parameter."""
         return qp.RX(params[1], wires=1)
 
-    def v_function3(params):  # pylint: disable=no-self-argument
+    @staticmethod
+    def v_function3(params):
         """Differs from v_function1 by the used wire."""
         return qp.RZ(params[0], wires=2)
 
-    def v_function4(params):  # pylint: disable=no-self-argument
+    @staticmethod
+    def v_function4(params):
         """Differs from v_function1 by the functional parameter dependence, but
         produces the same tape at params[0]=0.2."""
         return qp.RZ(params[0] * 2 - 0.2, wires=1)
