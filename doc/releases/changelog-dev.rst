@@ -1372,7 +1372,7 @@ Improvements 🛠
   `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
 * The levels printed by :func:`~.analyze` and :func:`~.specs` for :func:`~.qjit`'d QNodes are
-  now labelled ``after <pass name>`` (e.g., ``Level: after merge-rotations``), since they
+  now labelled ``After <pass name>`` (e.g., ``Level: After merge-rotations``), since they
   describe the circuit after that pass. The keys of ``CircuitSpecs.resources`` are unchanged.
   `(#10493) <https://github.com/PennyLaneAI/pennylane/pull/10493>`__
 

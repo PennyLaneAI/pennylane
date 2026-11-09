@@ -219,7 +219,7 @@ def cancel_inverses(
         Device: lightning.qubit
         Device wires: 1
         Shots: Shots(total=None)
-        Level: after cancel-inverses
+        Level: After cancel-inverses
         <BLANKLINE>
         Quantum operations:
         - Total: 1

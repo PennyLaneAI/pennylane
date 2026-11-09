@@ -104,7 +104,7 @@ class TestAnalyze:  # pylint: disable=too-many-public-methods
 
         specs = qp.analyze(circuit, level=level)(0.1)
 
-        expected_level = {0: "Before MLIR Passes", 1: "cancelled", 2: "after merge-rotations"}
+        expected_level = {0: "Before MLIR Passes", 1: "cancelled", 2: "After merge-rotations"}
         expected_resources = {
             "Before MLIR Passes": SpecsResources(
                 counts=self.TOP_COUNTS,
@@ -123,7 +123,7 @@ class TestAnalyze:  # pylint: disable=too-many-public-methods
             ),
         }
         if level == "all":
-            expected_level[3] = "after Device Preprocessing"
+            expected_level[3] = "After Device Preprocessing"
             expected_resources["Device Preprocessing"] = SpecsResources(
                 counts=self.DEVICE_COUNTS,
                 measurement_processes=self.DEVICE_MEASUREMENT_PROCESSES,
@@ -231,9 +231,9 @@ class TestAnalyze:  # pylint: disable=too-many-public-methods
 
             assert specs.level == {
                 0: "Before MLIR Passes",
-                1: "after cancel-inverses",
-                2: "after merge-rotations",
-                3: "after Device Preprocessing",
+                1: "After cancel-inverses",
+                2: "After merge-rotations",
+                3: "After Device Preprocessing",
             }
             assert [resources.counts for resources in specs.resources.values()] == [
                 {"Hadamard": 2, "RX": 2, "CNOT": 1},
@@ -260,10 +260,10 @@ class TestAnalyze:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize(
         "level, expected_level, expected_counts",
         [
-            (slice(1, 2), "after merge-rotations", MERGED_COUNTS),
+            (slice(1, 2), "After merge-rotations", MERGED_COUNTS),
             (slice(1, 1), "Before MLIR Passes", TOP_COUNTS),
-            (slice(1, None), "after Device Preprocessing", MERGED_COUNTS),
-            (slice(2, None), "after Device Preprocessing", TOP_COUNTS),
+            (slice(1, None), "After Device Preprocessing", MERGED_COUNTS),
+            (slice(2, None), "After Device Preprocessing", TOP_COUNTS),
         ],
     )
     def test_slice_level(self, circuit, level, expected_level, expected_counts):
@@ -313,7 +313,7 @@ class TestAnalyze:  # pylint: disable=too-many-public-methods
         with pytest.warns(UserWarning, match="has a step greater than 1"):
             specs = qp.analyze(circuit, level=slice(0, None, 2))(0.1)
 
-        assert specs.level == "after Device Preprocessing"
+        assert specs.level == "After Device Preprocessing"
 
     def test_empty_sequence_level(self, circuit):
         """Test that an empty Sequence of levels is rejected, as in get_compile_pipeline."""

@@ -105,7 +105,7 @@ def _run_resource_analysis(func, original_qnode, level, *args, **kwargs) -> tupl
     # The printed name of a transform level describes the circuit after that transform. The
     # resources stay keyed by the bare name.
     level_to_name = {
-        lvl: name if lvl == 0 or lvl in markers_by_level else f"after {name}"
+        lvl: name if lvl == 0 or lvl in markers_by_level else f"After {name}"
         for lvl, name in level_to_name.items()
     }
 
@@ -177,7 +177,7 @@ def analyze(
     Device: null.qubit
     Device wires: 2
     Shots: Shots(total=None)
-    Level: after merge-rotations
+    Level: After merge-rotations
     <BLANKLINE>
     Quantum operations:
     - Total: 2
@@ -197,9 +197,9 @@ def analyze(
     Shots: Shots(total=None)
     Levels:
     - 0: Before MLIR Passes
-    - 1: after cancel-inverses
-    - 2: after merge-rotations
-    - 3: after Device Preprocessing
+    - 1: After cancel-inverses
+    - 2: After merge-rotations
+    - 3: After Device Preprocessing
     <BLANKLINE>
     ↓Metric         Level→ |  0 |  1 |  2 |  3
     ------------------------------------------
