@@ -24,7 +24,7 @@ import pennylane as qp
 from pennylane import apply, device, measure, qnode, registers, workflow
 from pennylane.math import int_to_binary
 from pennylane.measurements import probs, state
-from pennylane.ops import CH, CNOT, CSWAP, CZ, SWAP, Controlled, MultiControlledX, Toffoli, X
+from pennylane.ops import CH, CSWAP, CZ, SWAP, Controlled, MultiControlledX, X
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM, FFQRAM, HybridQRAM, SelectOnlyQRAM
 from pennylane.testing import assert_decomposable, assert_valid
@@ -501,7 +501,7 @@ def hybrid_quantum(
                 qp.adjoint(CSWAP(wires=[5, 6, 7])),
                 qp.adjoint(CSWAP(wires=[5, 1, 6])),
                 MultiControlledX(wires=[0, 5], control_values=[False]),
-                CNOT(wires=[0, 5]),
+                MultiControlledX(wires=[0, 5]),
                 CSWAP(wires=[5, 1, 6]),
                 CSWAP(wires=[5, 6, 7]),
                 CH(wires=[5, 2]),
@@ -544,7 +544,7 @@ def hybrid_quantum(
                 CH(wires=[5, 4]),
                 qp.adjoint(CSWAP(wires=[5, 6, 7])),
                 qp.adjoint(CSWAP(wires=[5, 1, 6])),
-                CNOT(wires=[0, 5]),
+                MultiControlledX(wires=[0, 5]),
             ],
         ),
     ],
@@ -1032,17 +1032,17 @@ def select_only_quantum(
                 BasisEmbedding([0, 0], wires=[0, 1]),
                 X(0),
                 X(1),
-                Toffoli(wires=[0, 1, 3]),
+                MultiControlledX(wires=[0, 1, 3]),
                 X(0),
                 X(1),
                 X(0),
-                Toffoli(wires=[0, 1, 2]),
-                Toffoli(wires=[0, 1, 3]),
-                Toffoli(wires=[0, 1, 4]),
+                MultiControlledX(wires=[0, 1, 2]),
+                MultiControlledX(wires=[0, 1, 3]),
+                MultiControlledX(wires=[0, 1, 4]),
                 X(0),
                 X(1),
-                Toffoli(wires=[0, 1, 2]),
-                Toffoli(wires=[0, 1, 3]),
+                MultiControlledX(wires=[0, 1, 2]),
+                MultiControlledX(wires=[0, 1, 3]),
                 X(1),
             ],
         ),
@@ -1239,7 +1239,6 @@ def test_select_only_raises(params, error, match):
         ),
     ],
 )
-@pytest.mark.xfail_if_capture(reason="Come back to this when we port SelectOnlyQRAM [sc-129956]")
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_select_decomposition_new(
     bitstrings, control_wires, target_wires, select_wires, select_value

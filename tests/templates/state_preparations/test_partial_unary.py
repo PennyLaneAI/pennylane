@@ -30,6 +30,7 @@ from pennylane.templates.state_preparations.partial_unary import (
     PUIsometryFinder,
     _find_affine_subspace_isometry,
     _is_affine_subspace,
+    _partial_unary_dense_state,
     _partial_unary_state_prep_core,
     _partial_unary_state_prep_resources,
 )
@@ -449,7 +450,9 @@ def assert_pui_correctness(rule, coefficients, indices, wire_specs):
                 "MultiControlledX",
                 "QROM",
             }
-            func = qp.qjit(catalyst_decompose(func, capabilities=None, target_gates=gate_set))
+            func = qp.qjit(
+                catalyst_decompose(func, capabilities=None, target_gates=gate_set), capture=False
+            )
 
         out_state = func()
         # We infer the total and aux wire counts from the state shape, because small-scale
@@ -510,6 +513,34 @@ class TestPartialUnaryStatePreparation:
         resources = rule.compute_resources(**op.arguments).gate_counts
         assert qp.MultiplexerStatePreparation(state_type[8], wires=Wire[3]) in resources
         assert_valid_decomp_rule(op, rule)
+
+    @pytest.mark.parametrize(
+        "bijection, expected",
+        [
+            ({0: 1, 1: 0}, [2, 1]),
+            ({0: 2, 1: 0, 2: 1}, [2, 3, 1, 0]),
+            ({0: 4, 1: 0, 2: 2, 3: 6, 4: 1}, [2, 5, 3, 0, 1, 0, 4, 0]),
+        ],
+    )
+    @pytest.mark.parametrize("complex_coefficients", [False, True])
+    @pytest.mark.catalyst
+    def test_dense_state_gather(self, bijection, expected, complex_coefficients):
+        """Gather places coefficients at their mapped positions and fills unused positions with zero."""
+        catalyst = pytest.importorskip("catalyst")
+        n_subspace = ceil_log2(len(expected))
+        coefficients = jax.numpy.arange(1, len(bijection) + 1, dtype=float)
+        expected = jax.numpy.array(expected, dtype=float)
+        if complex_coefficients:
+            coefficients = coefficients * (1 + 1j)
+            expected = expected * (1 + 1j)
+
+        def dense_state(values):
+            return _partial_unary_dense_state(values, bijection, n_subspace)
+
+        compiled = catalyst.qjit(dense_state, capture=True)
+
+        assert qp.math.allclose(dense_state(coefficients), expected)
+        assert qp.math.allclose(compiled(coefficients), expected)
 
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -616,9 +647,6 @@ class TestPartialUnaryStatePreparation:
     )
     def test_decomposition_prepares_state(self, num_wires, num_entries, seed, provide_work_wires):
         """Test that the decomposition of PartialUnaryStatePreparation actually prepares the desired state."""
-        if provide_work_wires and num_entries > 1:
-            pytest.xfail("Requires Catalyst companion PR [sc-134032]")
-
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
         needed_work_wires = max(qp.math.ceil_log2(num_entries) - 1, 1)
         if provide_work_wires:
@@ -639,7 +667,6 @@ class TestPartialUnaryStatePreparation:
         wire_specs = wires, work_wires, num_wires + needed_work_wires
         assert_pui_correctness(rule, coefficients, indices, wire_specs)
 
-    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(

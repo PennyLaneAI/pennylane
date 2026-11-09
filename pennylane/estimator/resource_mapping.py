@@ -487,8 +487,8 @@ def _(op: qtemps.BasisEmbedding):
 
 @_map_to_resource_op.register
 def _(op: qtemps.ControlledSequence):
-    res_base = _map_to_resource_op(op.hyperparameters["base"])
-    num_control_wires = len(op.hyperparameters["control_wires"])
+    res_base = _map_to_resource_op(op.base)
+    num_control_wires = len(op.control)
     return re_temps.ControlledSequence(
         base=res_base,
         num_control_wires=num_control_wires,

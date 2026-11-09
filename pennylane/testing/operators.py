@@ -55,6 +55,7 @@ from pennylane.ops.op_math import (
     SymbolicOp2,
 )
 from pennylane.tape import QuantumScript
+from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qsvt import QSVT
 from pennylane.templates.subroutines.select import Select
 from pennylane.typing import AbstractArray, AbstractWires, TensorLike
@@ -597,7 +598,9 @@ def _check_properties_operator2(op: Operator2) -> None:
     # Some operators (e.g. composites and ``Select``) hold their data inside operator-valued
     # arguments rather than dynamic arguments, so their ``data`` does not correspond to
     # ``dynamic_argnames`` and this check does not apply.
-    if not isinstance(op, (Adjoint2, CompositeOp2, ControlledOp2, Pow2, Select, QSVT)):
+    if not isinstance(
+        op, (Adjoint2, CompositeOp2, ControlledOp2, ControlledSequence, Pow2, Select, QSVT)
+    ):
 
         error_msg = "ndim_params must have the same length as dynamic_argnames"
         assert len(op.ndim_params) == len(op.dynamic_argnames), error_msg
