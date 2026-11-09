@@ -248,8 +248,8 @@ def specs(
         Shots: Shots(total=None)
         Levels:
         - 0: Before MLIR Passes
-        - 1: cancel-inverses
-        - 2: merge-rotations
+        - 1: after cancel-inverses
+        - 2: after merge-rotations
         <BLANKLINE>
         ↓Metric         Level→ |  0 |  1 |  2
         -------------------------------------
@@ -315,8 +315,8 @@ def specs(
         Shots: Shots(total=None)
         Levels:
         - 0: Before MLIR Passes
-        - 1: split-non-commuting
-        - 2: cancel-inverses
+        - 1: after split-non-commuting
+        - 2: after cancel-inverses
         <BLANKLINE>
         ↓Metric         Level→ |    0 |  1-a |  1-b |  2-a |  2-b
         ---------------------------------------------------------
