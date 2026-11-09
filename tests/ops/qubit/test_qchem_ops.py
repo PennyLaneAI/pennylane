@@ -145,6 +145,22 @@ class TestSingleExcitation:
             decomposed_matrix = qp.matrix(tape, wire_order=[0, 1])
             assert np.allclose(decomposed_matrix, exp)
 
+    def test_single_excitation_ppr_crz_decomp(self):
+        """Tests that the Clifford operations belong to the basis change, leaving only CRZ as target."""
+        rule = qp.list_decomps(qp.SingleExcitation)["_single_excitation_ppr_crz"]
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(0.2, [0, 1])
+
+        assert len(q.queue) == 1
+        cob = q.queue[0]
+        assert cob.name == "ChangeOpBasis2"
+        qp.assert_equal(
+            cob.compute_op,
+            qp.prod(qp.CNOT([0, 1]), qp.PPR_4(1, "XX", wires=[0, 1])),
+        )
+        qp.assert_equal(cob.target_op, qp.CRZ(0.2, wires=[1, 0]))
+        qp.assert_equal(cob.uncompute_op, qp.adjoint(cob.compute_op))
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_generator(self, phi):
         """Tests that the SingleExcitation operation calculates the correct generator"""
@@ -549,6 +565,15 @@ class TestSingleExcitationDecompositions:
 
 
 class TestDoubleExcitation:
+    def test_assert_valid(self):
+        qp.testing.assert_valid(qp.DoubleExcitation(0.123, wires=[0, 1, 2, 3]))
+
+    def test_abstract_arguments(self):
+        op = qp.DoubleExcitation(Float, wires=Wire[4])
+        assert op.phi == Float
+        assert op.arg_specs == {"phi": Float, "wires": Wire[4]}
+        assert op.wire_sizes == (4,)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_matrix(self, phi):
         """Tests that the DoubleExcitation operation calculates the correct matrix"""
@@ -780,6 +805,20 @@ class TestDoubleExcitation:
 
 class TestOrbitalRotation:
     """Test OrbitalRotation gate operation"""
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_assert_valid(self):
+        """Test that OrbitalRotation satisfies the operator interface."""
+        qp.testing.assert_valid(qp.OrbitalRotation(0.123, wires=[0, 1, 2, 3]))
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
+    @pytest.mark.parametrize("wires", [[0, 1, 2, 3], [3, 1, 0, 2]])
+    def test_decomposition_rule(self, phi, wires):
+        """Test all registered decomposition matrices and resource counts."""
+        op = qp.OrbitalRotation(phi, wires=wires)
+        for rule in qp.list_decomps(qp.OrbitalRotation):
+            qp.testing.assert_valid_decomp_rule(op, rule)
 
     def grad_circuit_0(self, phi):
         qp.PauliX(1)
@@ -1072,7 +1111,7 @@ class TestOrbitalRotation:
         circuit_1 = qp.QNode(self.grad_circuit_1, dev, interface="torch", diff_method=diff_method)
         total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
-        phi_t = torch.tensor(phi, dtype=torch.complex128, requires_grad=True)
+        phi_t = torch.tensor(phi, dtype=torch.float64, requires_grad=True)
         result = total(phi_t)
         result.backward()
 
@@ -1080,6 +1119,20 @@ class TestOrbitalRotation:
 
 
 class TestFermionicSWAP:
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_assert_valid(self):
+        """Test that FermionicSWAP satisfies the operator interface."""
+        qp.testing.assert_valid(qp.FermionicSWAP(0.123, wires=[0, 1]))
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
+    @pytest.mark.parametrize("wires", [[0, 1], [2, 0]])
+    def test_decomposition_rule(self, phi, wires):
+        """Test the registered decomposition matrix and resource counts."""
+        op = qp.FermionicSWAP(phi, wires=wires)
+        rule = qp.list_decomps(qp.FermionicSWAP)["_fermionic_swap_decomp"]
+        qp.testing.assert_valid_decomp_rule(op, rule)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_fermionic_swap_matrix(self, phi):
         """Tests that the FermionicSWAP operation calculates the correct matrix"""
