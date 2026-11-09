@@ -15,6 +15,8 @@
 Integration tests to ensure that tensor observables return the correct result.
 """
 
+# pylint: disable=too-many-arguments
+
 import functools
 
 import numpy as np
@@ -49,7 +51,6 @@ class TestTensorExpval:
 
         return {"atol": tol, "rtol": 0}
 
-    # pylint: disable-next=too-many-arguments
     def test_tensor_product(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product ZxZ gives the same result as simply
         using an Hermitian matrix"""
@@ -72,7 +73,6 @@ class TestTensorExpval:
 
         assert np.allclose(res1, res2, **tolerance)
 
-    # pylint: disable-next=too-many-arguments
     def test_combine_tensor_with_non_tensor(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product along with a non-tensor product
         continues to function correctly"""
@@ -101,7 +101,6 @@ class TestTensorExpval:
 
         assert np.allclose(res1, res2, **tolerance)
 
-    # pylint: disable-next=too-many-arguments
     def test_paulix_tensor_pauliy(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = qp.device("default.qubit", wires=3, seed=seed)
@@ -118,7 +117,6 @@ class TestTensorExpval:
         assert np.allclose(res, expected, **tolerance)
 
     @pytest.mark.autograd
-    # pylint: disable-next=too-many-arguments
     def test_paulix_tensor_pauliy_gradient(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = qp.device("default.qubit", wires=3, seed=seed)
@@ -135,7 +133,6 @@ class TestTensorExpval:
 
         assert np.allclose(res, expected, **tolerance)
 
-    # pylint: disable-next=too-many-arguments
     def test_pauliz_tensor_identity(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliZ and Identity works correctly"""
         dev = qp.device("default.qubit", wires=3, seed=seed)
@@ -151,7 +148,6 @@ class TestTensorExpval:
 
         assert np.allclose(res, expected, **tolerance)
 
-    # pylint: disable-next=too-many-arguments
     def test_pauliz_tensor_hadamard(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
         dev = qp.device("default.qubit", wires=3, seed=seed)
@@ -167,7 +163,6 @@ class TestTensorExpval:
 
         assert np.allclose(res, expected, **tolerance)
 
-    # pylint: disable-next=too-many-arguments
     def test_hermitian(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving an Hermitian matrix works correctly"""
         dev = qp.device("default.qubit", wires=3, seed=seed)
@@ -197,7 +192,6 @@ class TestTensorExpval:
 
         assert np.allclose(res, expected, **tolerance)
 
-    # pylint: disable-next=too-many-arguments
     def test_hermitian_tensor_hermitian(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
         dev = qp.device("default.qubit", wires=3, seed=seed)
@@ -239,7 +233,7 @@ class TestTensorExpval:
 
         assert np.allclose(res, expected, **tolerance)
 
-    def test_hermitian_tensor_identity_expectation(  # pylint: disable=too-many-arguments
+    def test_hermitian_tensor_identity_expectation(
         self, shots, theta, phi, varphi, tolerance, seed
     ):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
@@ -279,7 +273,6 @@ class TestTensorVar:
 
         return {"atol": tol, "rtol": 0}
 
-    # pylint: disable-next=too-many-arguments
     def test_paulix_tensor_pauliy(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = qp.device("default.qubit", wires=3, seed=seed)
@@ -302,7 +295,6 @@ class TestTensorVar:
 
         assert np.allclose(res, expected, **tolerance)
 
-    # pylint: disable-next=too-many-arguments
     def test_pauliz_tensor_hadamard(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
         dev = qp.device("default.qubit", wires=3, seed=seed)
@@ -323,7 +315,6 @@ class TestTensorVar:
 
         assert np.allclose(res, expected, **tolerance)
 
-    # pylint: disable-next=too-many-arguments
     def test_tensor_hermitian(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving qp.Hermitian works correctly"""
         dev = qp.device("default.qubit", wires=3, seed=seed)

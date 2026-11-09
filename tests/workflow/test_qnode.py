@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the QNode"""
 
+# pylint: disable=protected-access
+
 import copy
 import warnings
 from dataclasses import replace
@@ -249,7 +251,7 @@ class TestInitialization:
         def f2():
             return qp.state()
 
-        assert f2._shots_override_device  # pylint: disable=protected-access
+        assert f2._shots_override_device
         assert f2.shots == qp.measurements.Shots(10)
 
         # Shots from device should be set correctly
@@ -1300,7 +1302,7 @@ class TestShots:
         with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
             dev1 = qp.device("default.qubit", wires=1, shots=100)
         qn = qp.QNode(dummyfunc, dev1)
-        assert qn._shots == qp.measurements.Shots(100)  # pylint: disable=protected-access
+        assert qn._shots == qp.measurements.Shots(100)
 
         # _shots should take precedence over device shots
         with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
@@ -1309,28 +1311,27 @@ class TestShots:
             UserWarning, match="The device's shots value does not match the QNode's shots value."
         ):
             updated_qnode = qn.update(device=dev2)
-        # pylint: disable-next=protected-access
         assert updated_qnode._shots == qp.measurements.Shots(100)
 
     def test_shots_preserved_in_other_updates(self):
         """Test that _shots is preserved when updating other QNode parameters."""
         dev = qp.device("default.qubit", wires=1)
         qn = qp.set_shots(qp.QNode(dummyfunc, dev), shots=50)
-        assert qn._shots == qp.measurements.Shots(50)  # pylint: disable=protected-access
+        assert qn._shots == qp.measurements.Shots(50)
 
         # Update something unrelated to shots or device
         updated_qnode = qn.update(diff_method="parameter-shift")
-        assert updated_qnode._shots == qp.measurements.Shots(50)  # pylint: disable=protected-access
+        assert updated_qnode._shots == qp.measurements.Shots(50)
 
     def test_shots_direct_update(self):
         """Test that QNode shots can be updated directly using the update_shots method."""
         dev = qp.device("default.qubit", wires=1)
         qn = qp.set_shots(qp.QNode(dummyfunc, dev), shots=30)
-        assert qn._shots == qp.measurements.Shots(30)  # pylint: disable=protected-access
+        assert qn._shots == qp.measurements.Shots(30)
 
         # Update shots directly using update_shots method
         updated_qnode = qn.update_shots(shots=75)
-        assert updated_qnode._shots == qp.measurements.Shots(75)  # pylint: disable=protected-access
+        assert updated_qnode._shots == qp.measurements.Shots(75)
 
 
 class TestCompilePipelineIntegration:
@@ -1944,17 +1945,16 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
         ):
             dev_with_shots = qp.device("default.qubit", wires=1, shots=42)
         qn_with_device_shots = qp.QNode(dummyfunc, dev_with_shots)
-        # pylint: disable-next=protected-access
         assert qn_with_device_shots._shots == qp.measurements.Shots(42)
 
         # Test that QNode defaults to analytic mode when device has no shots
         dev_analytic = qp.device("default.qubit", wires=1)
         qnode_analytic = qp.QNode(dummyfunc, dev_analytic)
-        assert qnode_analytic._shots.total_shots is None  # pylint: disable=protected-access
+        assert qnode_analytic._shots.total_shots is None
 
         # Test that qnode creation with shots parameter initializes _shots correctly
         qn_with_shots = qp.QNode(dummyfunc, dev_with_shots)
-        assert qn_with_shots._shots == qp.measurements.Shots(42)  # pylint: disable=protected-access
+        assert qn_with_shots._shots == qp.measurements.Shots(42)
 
     def test_set_shots_direct_decorator(self):
         """Test set_shots with partial decorator syntax."""
@@ -1966,7 +1966,7 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
             qp.RX(1.0, wires=0)
             return qp.sample(qp.PauliZ(0))
 
-        assert circuit._shots == qp.measurements.Shots(50)  # pylint: disable=protected-access
+        assert circuit._shots == qp.measurements.Shots(50)
         result = circuit()
         assert len(result) == 50
 
@@ -1981,7 +1981,7 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
             qp.RX(1.0, wires=0)
             return qp.sample(qp.PauliZ(0))
 
-        assert circuit._shots == qp.measurements.Shots(50)  # pylint: disable=protected-access
+        assert circuit._shots == qp.measurements.Shots(50)
         result = circuit()
         assert len(result) == 50
 
@@ -1998,9 +1998,8 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
         # Apply set_shots directly
         new_circuit = set_shots(original_circuit, 75)
 
-        # pylint: disable-next=protected-access
         assert original_circuit._shots == qp.measurements.Shots(10)
-        assert new_circuit._shots == qp.measurements.Shots(75)  # pylint: disable=protected-access
+        assert new_circuit._shots == qp.measurements.Shots(75)
 
         result = new_circuit()
         assert len(result) == 75
@@ -2018,9 +2017,8 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
         # Apply set_shots directly
         new_circuit = set_shots(original_circuit, shots=75)
 
-        # pylint: disable-next=protected-access
         assert original_circuit._shots == qp.measurements.Shots(10)
-        assert new_circuit._shots == qp.measurements.Shots(75)  # pylint: disable=protected-access
+        assert new_circuit._shots == qp.measurements.Shots(75)
 
         result = new_circuit()
         assert len(result) == 75
@@ -2037,9 +2035,7 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
         shot_vector = [(10, 3), (5, 2)]  # 10 shots × 3 times, 5 shots × 2 times
         new_circuit = set_shots(circuit, shots=shot_vector)
 
-        # pylint: disable-next=protected-access
         assert new_circuit._shots.total_shots == 40  # 10*3 + 5*2
-        # pylint: disable-next=protected-access
         assert new_circuit._shots.shot_vector == ((10, 3), (5, 2))
         result = new_circuit()
         assert isinstance(result, tuple)
@@ -2056,7 +2052,6 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
             qp.RX(1.0, wires=0)
             return qp.expval(qp.PauliZ(0))
 
-        # pylint: disable-next=protected-access
         assert circuit._shots is None or circuit._shots.total_shots is None
         result = circuit()
         assert isinstance(result, (float, np.floating))
@@ -2075,10 +2070,9 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
         new_circuit = set_shots(original_circuit, shots=100)
 
         # Original should be unchanged
-        # pylint: disable-next=protected-access
         assert original_circuit._shots == qp.measurements.Shots(20)
         # New circuit should have updated shots
-        assert new_circuit._shots == qp.measurements.Shots(100)  # pylint: disable=protected-access
+        assert new_circuit._shots == qp.measurements.Shots(100)
 
         # Both should be different objects
         assert original_circuit is not new_circuit
@@ -2210,7 +2204,7 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
             return qp.sample(qp.PauliZ(0))
 
         # Verify original has integer shots
-        assert circuit._shots == qp.measurements.Shots(50)  # pylint: disable=protected-access
+        assert circuit._shots == qp.measurements.Shots(50)
         original_result = circuit()
         assert len(original_result) == 50
         assert not isinstance(original_result, tuple)  # Single array, not tuple of arrays
@@ -2220,9 +2214,7 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
         vector_circuit = set_shots(circuit, shots=shot_vector)
 
         # Verify shot vector conversion
-        # pylint: disable-next=protected-access
         assert vector_circuit._shots.total_shots == 85  # 20*2 + 15*3
-        # pylint: disable-next=protected-access
         assert vector_circuit._shots.shot_vector == ((20, 2), (15, 3))
 
         vector_result = vector_circuit()
@@ -2237,7 +2229,7 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
         assert len(vector_result[4]) == 15  # Fifth group: 15 shots
 
         # Original circuit should be unchanged
-        assert circuit._shots == qp.measurements.Shots(50)  # pylint: disable=protected-access
+        assert circuit._shots == qp.measurements.Shots(50)
 
     def test_no_warning_if_shots_not_updated_set_shots(self):
         """Test that no warning is raised if set_shots is called but the shots value is unchanged."""
@@ -2263,7 +2255,7 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
             return qp.expval(qp.PauliZ(0))
 
         # Check that shots are set correctly
-        assert circuit._shots == qp.measurements.Shots(100)  # pylint: disable=protected-access
+        assert circuit._shots == qp.measurements.Shots(100)
 
         # Check that other properties are preserved
         assert circuit.diff_method == "parameter-shift"
@@ -2280,7 +2272,7 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
             qp.RX(1.0, wires=0)
             return qp.sample(qp.PauliZ(0))
 
-        assert circuit._shots == qp.measurements.Shots(500)  # pylint: disable=protected-access
+        assert circuit._shots == qp.measurements.Shots(500)
         result = circuit()
         assert len(result) == 500
 
@@ -2294,7 +2286,6 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
             qp.RX(1.0, wires=0)
             return qp.expval(qp.PauliZ(0))
 
-        # pylint: disable-next=protected-access
         assert circuit._shots is None or circuit._shots.total_shots is None
         result = circuit()
         assert isinstance(result, (float, np.floating))
@@ -2313,8 +2304,8 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
             qp.RX(1.0, wires=0)
             return qp.sample(qp.PauliZ(0))
 
-        assert circuit._shots.total_shots == 85  # 20*2 + 15*3  # pylint: disable=protected-access
-        assert circuit._shots.shot_vector == ((20, 2), (15, 3))  # pylint: disable=protected-access
+        assert circuit._shots.total_shots == 85  # 20*2 + 15*3
+        assert circuit._shots.shot_vector == ((20, 2), (15, 3))
         result = circuit()
         assert isinstance(result, tuple)
         assert len(result) == 5  # 2 + 3 groups
@@ -2336,9 +2327,7 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
             return qp.expval(qp.PauliZ(0))
 
         # Both should have analytic mode
-        # pylint: disable-next=protected-access
         assert positional_circuit._shots is None or positional_circuit._shots.total_shots is None
-        # pylint: disable-next=protected-access
         assert keyword_circuit._shots is None or keyword_circuit._shots.total_shots is None
 
         # Both should produce the same results for analytic case
@@ -2370,9 +2359,7 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
         direct_circuit = set_shots(base_circuit, shots=None)
 
         # Both should have analytic mode
-        # pylint: disable-next=protected-access
         assert positional_circuit._shots is None or positional_circuit._shots.total_shots is None
-        # pylint: disable-next=protected-access
         assert direct_circuit._shots is None or direct_circuit._shots.total_shots is None
 
         # Both should produce the same results
@@ -2424,7 +2411,7 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
             return qp.sample()
 
         # Total shots: 10*5 + 20*3 + 50 = 50 + 60 + 50 = 160
-        assert circuit._shots.total_shots == 160  # pylint: disable=protected-access
+        assert circuit._shots.total_shots == 160
         result = circuit()
         assert isinstance(result, tuple)
         # Should have 5 + 3 + 1 = 9 result groups
@@ -2442,7 +2429,7 @@ class TestSetShots:  # pylint: disable=too-many-public-methods
             qp.RX(-1.0, wires=0)  # Should be cancelled
             return qp.sample(qp.PauliZ(0))
 
-        assert circuit._shots == qp.measurements.Shots(250)  # pylint: disable=protected-access
+        assert circuit._shots == qp.measurements.Shots(250)
         result = circuit()
         assert len(result) == 250
 

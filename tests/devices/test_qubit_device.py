@@ -15,6 +15,8 @@
 Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
 """
 
+# pylint: disable=protected-access
+
 import copy
 from random import random
 
@@ -151,8 +153,7 @@ def mock_qubit_device_with_paulis_rotations_and_methods(monkeypatch):
 
 
 def _working_get_batch_size(tensor, expected_shape, expected_size):
-    size = QubitDevice._size(tensor)  # pylint: disable=protected-access
-    # pylint: disable-next=protected-access
+    size = QubitDevice._size(tensor)
     if QubitDevice._ndim(tensor) > len(expected_shape) or size > expected_size:
         return size // expected_size
 
@@ -469,9 +470,9 @@ class TestGenerateSamples:  # pylint: disable=too-few-public-methods
             m.setattr(QubitDevice, "states_to_binary", staticmethod(lambda a, b: (a, b)))
             m.setattr(QubitDevice, "analytic_probability", lambda *args: None)
             m.setattr(QubitDevice, "shots", 1000)
-            dev._samples = dev.generate_samples()  # pylint: disable=protected-access
+            dev._samples = dev.generate_samples()
 
-        assert dev._samples == (number_of_states, dev.num_wires)  # pylint: disable=protected-access
+        assert dev._samples == (number_of_states, dev.num_wires)
 
 
 class TestSampleBasisStates:
@@ -782,7 +783,7 @@ class TestSample:
         """Test that sample for a single Pauli observable only produces -1 and 1 samples"""
         obs = qp.PauliX(0)
         dev = mock_qubit_device_with_original_statistics()
-        dev._samples = np.array([[1, 0], [0, 0]])  # pylint: disable=protected-access
+        dev._samples = np.array([[1, 0], [0, 0]])
         res = dev.sample(obs)
 
         assert np.shape(res) == (2,)
@@ -793,7 +794,7 @@ class TestSample:
         """Test that sample for a product of Pauli observables produces samples of eigenvalues"""
         obs = qp.PauliX(0) @ qp.PauliZ(1)
         dev = mock_qubit_device_with_original_statistics(wires=2)
-        dev._samples = np.array([[1, 0], [0, 0]])  # pylint: disable=protected-access
+        dev._samples = np.array([[1, 0], [0, 0]])
         res = dev.sample(obs)
 
         assert np.array_equal(res, np.array([-1, 1]))
@@ -806,7 +807,7 @@ class TestSample:
         obs = qp.measurements.sample(op=None, wires=None)
         dev = mock_qubit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[1, 0], [1, 1]])
-        dev._samples = generated_samples  # pylint: disable=protected-access
+        dev._samples = generated_samples
 
         res = dev.sample(obs)
         assert np.array_equal(res, generated_samples)
@@ -819,7 +820,7 @@ class TestSample:
         obs = qp.measurements.sample(op=None, wires=[1])
         dev = mock_qubit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[1, 0], [1, 1]])
-        dev._samples = generated_samples  # pylint: disable=protected-access
+        dev._samples = generated_samples
 
         wire_samples = np.array([[0], [1]])
         res = dev.sample(obs)
@@ -831,7 +832,7 @@ class TestSample:
         """Tests that an error is thrown if sample is called with an observable
         that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
-        dev._samples = np.array([[1, 0], [0, 0]])  # pylint: disable=protected-access
+        dev._samples = np.array([[1, 0], [0, 0]])
 
         class MyObs(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             """Observable with no eigenvalue representation defined."""
@@ -854,7 +855,6 @@ class TestSampleWithBroadcasting:
         when using broadcasting"""
         obs = qp.PauliX(0)
         dev = mock_qubit_device_with_original_statistics()
-        # pylint: disable-next=protected-access
         dev._samples = np.array([[[0, 0], [0, 0]], [[1, 0], [1, 0]], [[0, 0], [1, 0]]])
         res = dev.sample(obs)
 
@@ -866,8 +866,7 @@ class TestSampleWithBroadcasting:
         of eigenvalues when using broadcasting"""
         obs = qp.PauliX(0) @ qp.PauliZ(1)
         dev = mock_qubit_device_with_original_statistics(wires=2)
-        dev._samples = np.array([[1, 0], [0, 0]])  # pylint: disable=protected-access
-        # pylint: disable-next=protected-access
+        dev._samples = np.array([[1, 0], [0, 0]])
         dev._samples = np.array([[[1, 0], [0, 0]], [[0, 1], [1, 1]], [[1, 0], [0, 1]]])
         res = dev.sample(obs)
 
@@ -881,7 +880,7 @@ class TestSampleWithBroadcasting:
         obs = qp.measurements.sample(op=None, wires=None)
         dev = mock_qubit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[[1, 0], [1, 1]], [[1, 1], [0, 0]], [[0, 1], [1, 0]]])
-        dev._samples = generated_samples  # pylint: disable=protected-access
+        dev._samples = generated_samples
 
         res = dev.sample(obs)
         assert np.array_equal(res, generated_samples)
@@ -894,7 +893,7 @@ class TestSampleWithBroadcasting:
         obs = qp.measurements.sample(op=None, wires=[1])
         dev = mock_qubit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[[1, 0], [1, 1]], [[1, 1], [0, 0]], [[0, 1], [1, 0]]])
-        dev._samples = generated_samples  # pylint: disable=protected-access
+        dev._samples = generated_samples
 
         wire_samples = np.array([[[0], [1]], [[1], [0]], [[1], [0]]])
         res = dev.sample(obs)
@@ -906,7 +905,6 @@ class TestSampleWithBroadcasting:
         """Tests that an error is thrown if sample is called with an observable
         that does not have eigenvalues defined when using broadcasting."""
         dev = mock_qubit_device_with_original_statistics()
-        # pylint: disable-next=protected-access
         dev._samples = np.array([[[1, 0], [1, 1]], [[1, 1], [0, 0]], [[0, 1], [1, 0]]])
 
         class MyObs(qp.operation.Operator):  # pylint: disable=too-few-public-methods
@@ -1374,7 +1372,7 @@ class TestExecution:
         """Test the private _get_diagonalizing_gates helper method."""
         circuit = qp.tape.QuantumScript([qp.RX(1, 0)], [qp.probs(), qp.expval(qp.PauliX(0))])
         dev = mock_qubit_device(wires=1)
-        rotations = dev._get_diagonalizing_gates(circuit)  # pylint: disable=protected-access
+        rotations = dev._get_diagonalizing_gates(circuit)
         assert len(rotations) == 1
         qp.assert_equal(rotations[0], qp.Hadamard(0))
 
@@ -1514,38 +1512,28 @@ class TestGetBatchSize:  # pylint: disable=too-few-public-methods
         """Test that QubitDevice always reports a batch_size of None."""
         dev = mock_qubit_device()
         tensor0 = np.ones(shape, dtype=complex)
-        # pylint: disable-next=protected-access
         assert dev._get_batch_size(tensor0, shape, qp.math.prod(shape)) is None
         tensor1 = np.arange(np.prod(shape)).reshape(shape)
-        # pylint: disable-next=protected-access
         assert dev._get_batch_size(tensor1, shape, qp.math.prod(shape)) is None
 
         broadcasted_shape = (1,) + shape
         tensor0 = np.ones(broadcasted_shape, dtype=complex)
         assert (
-            # pylint: disable-next=protected-access
-            dev._get_batch_size(tensor0, broadcasted_shape, qp.math.prod(broadcasted_shape))
-            is None
+            dev._get_batch_size(tensor0, broadcasted_shape, qp.math.prod(broadcasted_shape)) is None
         )
         tensor1 = np.arange(np.prod(broadcasted_shape)).reshape(broadcasted_shape)
         assert (
-            # pylint: disable-next=protected-access
-            dev._get_batch_size(tensor1, broadcasted_shape, qp.math.prod(broadcasted_shape))
-            is None
+            dev._get_batch_size(tensor1, broadcasted_shape, qp.math.prod(broadcasted_shape)) is None
         )
 
         broadcasted_shape = (3,) + shape
         tensor0 = np.ones(broadcasted_shape, dtype=complex)
         assert (
-            # pylint: disable-next=protected-access
-            dev._get_batch_size(tensor0, broadcasted_shape, qp.math.prod(broadcasted_shape))
-            is None
+            dev._get_batch_size(tensor0, broadcasted_shape, qp.math.prod(broadcasted_shape)) is None
         )
         tensor1 = np.arange(np.prod(broadcasted_shape)).reshape(broadcasted_shape)
         assert (
-            # pylint: disable-next=protected-access
-            dev._get_batch_size(tensor1, broadcasted_shape, qp.math.prod(broadcasted_shape))
-            is None
+            dev._get_batch_size(tensor1, broadcasted_shape, qp.math.prod(broadcasted_shape)) is None
         )
 
 
@@ -1600,7 +1588,7 @@ class TestResourcesTracker:
         """Test that the tracker accurately tracks resources in a single execution"""
         qs, shots, wires = qs_shots_wires
 
-        qs._shots = qp.measurements.Shots(shots)  # pylint: disable=protected-access
+        qs._shots = qp.measurements.Shots(shots)
 
         dev = DefaultQubitLegacy(shots=shots, wires=wires)
 
@@ -1681,8 +1669,8 @@ class TestSamplesToCounts:
         # generate 1000 samples for 2 wires, randomly distributed between 0 and 1
         device = DefaultQubitLegacy(wires=2, shots=1000)
         sv = [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j]
-        device._state = sv  # pylint: disable=protected-access
-        device._samples = device.generate_samples()  # pylint: disable=protected-access
+        device._state = sv
+        device._samples = device.generate_samples()
         samples = device.sample(qp.measurements.CountsMP())
 
         # imitate hardware return with NaNs (requires dtype float)
@@ -1691,7 +1679,6 @@ class TestSamplesToCounts:
         samples[17][1] = np.nan
         samples[850][0] = np.nan
 
-        # pylint: disable-next=protected-access
         result = device._samples_to_counts(samples, mp=qp.measurements.CountsMP(), num_wires=2)
 
         # no keys with NaNs
@@ -1714,11 +1701,11 @@ class TestSamplesToCounts:
         sv = np.random.rand(*([2] * n_wires))
         state = sv / np.linalg.norm(sv)
 
-        device._state = state  # pylint: disable=protected-access
-        device._samples = device.generate_samples()  # pylint: disable=protected-access
+        device._state = state
+        device._samples = device.generate_samples()
         samples = device.sample(qp.measurements.CountsMP(all_outcomes=all_outcomes))
 
-        result = device._samples_to_counts(  # pylint: disable=protected-access
+        result = device._samples_to_counts(
             samples, mp=qp.measurements.CountsMP(), num_wires=n_wires
         )
 
@@ -1758,7 +1745,6 @@ def test_samples_to_counts_all_outcomes():
 
     samples = np.zeros((10, 1))
     dev = DummyQubitDevice(wires=1)
-    # pylint: disable-next=protected-access
     out = dev._samples_to_counts(samples, qp.counts(wires=0, all_outcomes=True), 1)
     assert out == {"0": 10, "1": 0}
 

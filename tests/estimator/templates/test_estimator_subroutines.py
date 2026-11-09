@@ -15,6 +15,8 @@
 Tests for quantum algorithmic subroutines resource operators.
 """
 
+# pylint: disable=too-many-arguments
+
 import math
 
 import numpy as np
@@ -191,7 +193,7 @@ class TestHybridQRAM:
             ),
         ],
     )
-    def test_resource_params(  # pylint: disable=too-many-arguments
+    def test_resource_params(
         self,
         num_wires,
         data,
@@ -320,7 +322,7 @@ class TestHybridQRAM:
             ),
         ),
     )
-    def test_resources(  # pylint: disable=too-many-arguments
+    def test_resources(
         self,
         data,
         num_wires,
@@ -418,7 +420,7 @@ class TestSelectOnlyQRAM:
             ([[1], [0], [1], [0]], 7, 2, 3, (0, 1), (2, 3, 4), (5, 6), 0),
         ],
     )
-    def test_resource_params(  # pylint: disable=too-many-arguments
+    def test_resource_params(
         self,
         data,
         num_wires,
@@ -511,7 +513,7 @@ class TestSelectOnlyQRAM:
             ),
         ),
     )
-    def test_resources(  # pylint: disable=too-many-arguments
+    def test_resources(
         self,
         data,
         num_wires,
@@ -637,7 +639,7 @@ class TestBBQRAM:
             ),
         ],
     )
-    def test_resource_params(  # pylint: disable=too-many-arguments
+    def test_resource_params(
         self,
         num_wires,
         num_bitstrings,
@@ -2146,7 +2148,7 @@ class TestResourceQROM:
             ),
         ),
     )
-    def test_resources(  # pylint: disable=too-many-arguments
+    def test_resources(
         self, num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res
     ):
         """Test that the resources are correct."""
@@ -2251,7 +2253,7 @@ class TestResourceQROM:
             ),
         ),
     )
-    def test_single_controlled_res_decomp(  # pylint: disable=too-many-arguments
+    def test_single_controlled_res_decomp(
         self, num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res
     ):
         """Test that the resources computed by single_controlled_res_decomp are correct."""
@@ -2332,7 +2334,7 @@ class TestResourceQROM:
             ),
         ),
     )
-    def test_controlled_res_decomp(  # pylint: disable=too-many-arguments
+    def test_controlled_res_decomp(
         self,
         num_ctrl_wires,
         num_zero_ctrl,
@@ -2483,7 +2485,7 @@ class TestResourceQROM:
             ),
         ),
     )
-    def test_adjoint_resources(  # pylint: disable=too-many-arguments
+    def test_adjoint_resources(
         self, num_data_points, size_data_points, num_bit_flips, depth, restored, expected_res
     ):
         """Test that the resources are correct."""
@@ -3316,7 +3318,7 @@ class TestResourceReflection:
             ),
         ),
     )
-    def test_controlled_resources(  # pylint: disable=too-many-arguments
+    def test_controlled_resources(
         self, num_ctrl_wires, num_zero_ctrl, num_wires, cmpr_U, alpha, expected_res
     ):
         """Test that the controlled resources are correct."""

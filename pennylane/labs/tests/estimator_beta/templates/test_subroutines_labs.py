@@ -15,6 +15,8 @@
 Tests for quantum algorithmic subroutines resource operators.
 """
 
+# pylint: disable=too-many-arguments,protected-access
+
 import math
 from collections import defaultdict
 
@@ -100,7 +102,7 @@ class TestLabsSelectPauliRot:
             ),
         ),
     )
-    def test_controlled_resources(  # pylint: disable=too-many-arguments
+    def test_controlled_resources(
         self, num_ctrl_wires, num_zero_ctrl, num_ctrl_wires_base, rot_axis, precision, expected_res
     ):
         """Test that the controlled resources are correct."""
@@ -179,7 +181,7 @@ class TestLabsSelectPauliRot:
             ),
         ),
     )
-    def test_controlled_resources_estimate(  # pylint: disable=too-many-arguments
+    def test_controlled_resources_estimate(
         self, num_ctrl_wires, num_zero_ctrl, num_ctrl_wires_base, rot_axis, precision, expected_res
     ):
         """Test that the controlled resources are correct when estimate is used."""
@@ -459,7 +461,7 @@ class TestLabsSelectTHC:
             ),
         ),
     )
-    def test_controlled_resources(  # pylint: disable=too-many-arguments
+    def test_controlled_resources(
         self,
         thc_ham,
         num_batches,
@@ -1512,7 +1514,7 @@ class TestLabsQROM:
         num_bitstrings = 8
         size_bitstring = 17
 
-        opt_width = LabsQROM._t_optimized_select_swap_width(  # pylint: disable=protected-access
+        opt_width = LabsQROM._t_optimized_select_swap_width(
             num_bitstrings,
             size_bitstring,
             borrow=False,
@@ -1612,7 +1614,6 @@ class TestLabsQROM:
     )
     def test_select_cost(self, num_data, num_flips, repeat, expected):
         """Test that the private _select_cost method works as expected"""
-        # pylint: disable-next=protected-access
         assert LabsQROM._select_cost(num_data, num_flips, repeat) == expected
 
     @pytest.mark.parametrize(
@@ -1712,7 +1713,6 @@ class TestLabsQROM:
     )
     def test_control_select_cost(self, num_data, num_flips, repeat, expected):
         """Test that the private _single_ctrl_select_cost method works as expected"""
-        # pylint: disable-next=protected-access
         assert LabsQROM._single_ctrl_select_cost(num_data, num_flips, repeat) == expected
 
     @pytest.mark.parametrize(
@@ -1732,7 +1732,6 @@ class TestLabsQROM:
     )
     def test_swap_cost(self, reg_size, num_swap_ctrls, repeat, expected):
         """Test that the private _swap_cost method works as expected"""
-        # pylint: disable-next=protected-access
         assert LabsQROM._swap_cost(reg_size, num_swap_ctrls, repeat) == expected
 
     @pytest.mark.parametrize(
@@ -1847,7 +1846,6 @@ class TestLabsQROM:
         dealloc_reg = qre.Deallocate(allocated_register=alloc_reg)
         expected = [alloc_reg] + base_decomp + [dealloc_reg]
 
-        # pylint: disable-next=protected-access
         computed = LabsQROM._single_ctrl_swap_cost(reg_size, num_swap_ctrls, repeat)
         assert decomp_equal(computed, expected)
 
@@ -1958,7 +1956,6 @@ class TestLabsQROM:
     )
     def test_swap_adj_cost(self, reg_size, num_swap_ctrls, repeat, expected):
         """Test that the private _swap_adj_cost method works as expected"""
-        # pylint: disable-next=protected-access
         assert LabsQROM._swap_adj_cost(reg_size, num_swap_ctrls, repeat) == expected
 
     @pytest.mark.parametrize(
@@ -1973,13 +1970,10 @@ class TestLabsQROM:
                 None,  # k ~ 4 < M = 8, don't need to allocate
                 (
                     [GateCount(qre.Hadamard.resource_rep(), 8), GateCount(qre.X.resource_rep())]
-                    # pylint: disable-next=protected-access
                     + LabsQROM._swap_cost(register_size=1, num_swap_ctrls=2)
                     + [GateCount(qre.Hadamard.resource_rep(), 4)]
-                    # pylint: disable-next=protected-access
                     + LabsQROM._select_cost(math.ceil(25 / 4), 50)
                     + [GateCount(qre.Hadamard.resource_rep(), 4)]
-                    # pylint: disable-next=protected-access
                     + LabsQROM._swap_adj_cost(register_size=1, num_swap_ctrls=2)
                     + [GateCount(qre.X.resource_rep())]
                 ),
@@ -1993,13 +1987,10 @@ class TestLabsQROM:
                 qre.Allocate(8 - 4, state="zero", restored=True),  # k ~ 8 > M = 4,
                 (
                     [GateCount(qre.Hadamard.resource_rep(), 4), GateCount(qre.X.resource_rep())]
-                    # pylint: disable-next=protected-access
                     + LabsQROM._swap_cost(register_size=1, num_swap_ctrls=3)
                     + [GateCount(qre.Hadamard.resource_rep(), 8)]
-                    # pylint: disable-next=protected-access
                     + LabsQROM._select_cost(math.ceil(49 / 8), 50)
                     + [GateCount(qre.Hadamard.resource_rep(), 8)]
-                    # pylint: disable-next=protected-access
                     + LabsQROM._swap_adj_cost(register_size=1, num_swap_ctrls=3)
                     + [GateCount(qre.X.resource_rep())]
                 ),
@@ -2028,13 +2019,10 @@ class TestLabsQROM:
                 None,  # k ~ 4 < M = 8, don't need to allocate
                 (
                     [GateCount(qre.Hadamard.resource_rep(), 8), GateCount(qre.X.resource_rep())]
-                    # pylint: disable-next=protected-access
                     + LabsQROM._swap_cost(register_size=1, num_swap_ctrls=2)
                     + [GateCount(qre.Hadamard.resource_rep(), 4)]
-                    # pylint: disable-next=protected-access
                     + LabsQROM._select_cost(math.ceil(25 / 4), 50)
                     + [GateCount(qre.Hadamard.resource_rep(), 4)]
-                    # pylint: disable-next=protected-access
                     + LabsQROM._swap_adj_cost(register_size=1, num_swap_ctrls=2)
                     + [GateCount(qre.X.resource_rep())]
                 ),
@@ -2048,13 +2036,10 @@ class TestLabsQROM:
                 qre.Allocate(8 - 4, state="zero", restored=True),  # k ~ 8 > M = 4,
                 (
                     [GateCount(qre.Hadamard.resource_rep(), 4), GateCount(qre.X.resource_rep())]
-                    # pylint: disable-next=protected-access
                     + LabsQROM._swap_cost(register_size=1, num_swap_ctrls=3)
                     + [GateCount(qre.Hadamard.resource_rep(), 8)]
-                    # pylint: disable-next=protected-access
                     + LabsQROM._select_cost(math.ceil(49 / 8), 50)
                     + [GateCount(qre.Hadamard.resource_rep(), 8)]
-                    # pylint: disable-next=protected-access
                     + LabsQROM._swap_adj_cost(register_size=1, num_swap_ctrls=3)
                     + [GateCount(qre.X.resource_rep())]
                 ),
@@ -2087,9 +2072,7 @@ class TestLabsQROM:
                         GateCount(qre.Z.resource_rep(), 2),
                         GateCount(qre.Hadamard.resource_rep(), 2),
                     ]
-                    # pylint: disable-next=protected-access
                     + LabsQROM._swap_cost(register_size=1, num_swap_ctrls=2, repeat=4)
-                    # pylint: disable-next=protected-access
                     + LabsQROM._select_cost(math.ceil(50 / 4), 50, 2)
                 ),
             ),
@@ -2106,9 +2089,7 @@ class TestLabsQROM:
                         GateCount(qre.Z.resource_rep(), 2),
                         GateCount(qre.Hadamard.resource_rep(), 2),
                     ]
-                    # pylint: disable-next=protected-access
                     + LabsQROM._swap_cost(register_size=1, num_swap_ctrls=3, repeat=4)
-                    # pylint: disable-next=protected-access
                     + LabsQROM._select_cost(math.ceil(98 / 8), 50, 2)
                 ),
             ),
@@ -2134,7 +2115,7 @@ class TestLabsQROM:
 
             resources = (
                 [allocate_sel]
-                + LabsQROM._select_cost(10, 15)  # pylint: disable=protected-access
+                + LabsQROM._select_cost(10, 15)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
             )
         if index == 1:  # 100, 5, 50, 2, False
@@ -2142,9 +2123,9 @@ class TestLabsQROM:
             allocate_swap = qre.Allocate(5, "zero", True)
             resources = (
                 [allocate_sel, allocate_swap]
-                + LabsQROM._select_cost(50, 50)  # pylint: disable=protected-access
+                + LabsQROM._select_cost(50, 50)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
-                + LabsQROM._swap_cost(5, 1)  # pylint: disable=protected-access
+                + LabsQROM._swap_cost(5, 1)
                 + [
                     qre.GateCount(qre.Hadamard.resource_rep(), 5),
                     qre.Deallocate(allocated_register=allocate_swap),
@@ -2154,7 +2135,7 @@ class TestLabsQROM:
             allocate_sel = qre.Allocate(ceil_log2(12) - 1, "zero", True)
             resources = (
                 [allocate_sel]
-                + LabsQROM._select_cost(12, 5)  # pylint: disable=protected-access
+                + LabsQROM._select_cost(12, 5)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
             )
         if index == 3:  # 12, 2, 5, 128, False
@@ -2162,8 +2143,8 @@ class TestLabsQROM:
             allocate_swap = qre.Allocate((max_depth - 1) * 2, "zero", True)
             resources = (
                 [allocate_swap]
-                + LabsQROM._select_cost(1, 5)  # pylint: disable=protected-access
-                + LabsQROM._swap_cost(2, 4)  # pylint: disable=protected-access
+                + LabsQROM._select_cost(1, 5)
+                + LabsQROM._swap_cost(2, 4)
                 + [
                     qre.GateCount(qre.Hadamard.resource_rep(), (max_depth - 1) * 2),
                     qre.Deallocate(allocated_register=allocate_swap),
@@ -2177,9 +2158,9 @@ class TestLabsQROM:
             resources = (
                 [allocate_sel, allocate_swap]
                 + [qre.GateCount(h, 2 * 2)]
-                + LabsQROM._select_cost(3, 5, repeat=2)  # pylint: disable=protected-access
+                + LabsQROM._select_cost(3, 5, repeat=2)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
-                + LabsQROM._swap_cost(2, 2, repeat=4)  # pylint: disable=protected-access
+                + LabsQROM._swap_cost(2, 2, repeat=4)
                 + [qre.Deallocate(allocated_register=allocate_swap)]
             )
         return resources
@@ -2194,7 +2175,7 @@ class TestLabsQROM:
             (12, 2, 5, 4, True, 4),
         ),
     )
-    def test_resources(  # pylint: disable=too-many-arguments
+    def test_resources(
         self, num_data_points, size_data_points, num_bit_flips, depth, borrow, expected_res_index
     ):
         """Test that the resources are correct."""
@@ -2219,7 +2200,7 @@ class TestLabsQROM:
 
             resources = (
                 [allocate_sel]
-                + LabsQROM._single_ctrl_select_cost(10, 15)  # pylint: disable=protected-access
+                + LabsQROM._single_ctrl_select_cost(10, 15)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
             )
         if index == 1:  # 10, 3, 15, 2, True
@@ -2230,10 +2211,8 @@ class TestLabsQROM:
             resources = (
                 [allocate_sel, allocate_swap]
                 + [qre.GateCount(h, 3 * 2)]
-                # pylint: disable-next=protected-access
                 + LabsQROM._single_ctrl_select_cost(5, 15, repeat=2)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
-                # pylint: disable-next=protected-access
                 + LabsQROM._single_ctrl_swap_cost(3, 1, repeat=4)
                 + [qre.Deallocate(allocated_register=allocate_swap)]
             )
@@ -2244,9 +2223,7 @@ class TestLabsQROM:
             resources = (
                 [allocate_swap]
                 + [qre.GateCount(h, 2 * 2)]
-                # pylint: disable-next=protected-access
                 + LabsQROM._single_ctrl_select_cost(1, 5, repeat=2)
-                # pylint: disable-next=protected-access
                 + LabsQROM._single_ctrl_swap_cost(2, 4, repeat=4)
                 + [qre.Deallocate(allocated_register=allocate_swap)]
             )
@@ -2260,7 +2237,7 @@ class TestLabsQROM:
             (12, 2, 5, 16, True, 2),
         ),
     )
-    def test_single_controlled_res_decomp(  # pylint: disable=too-many-arguments
+    def test_single_controlled_res_decomp(
         self, num_data_points, size_data_points, num_bit_flips, depth, borrow, expected_res_index
     ):
         """Test that the resources computed by single_controlled_res_decomp are correct."""
@@ -2286,10 +2263,8 @@ class TestLabsQROM:
             resources = (
                 [allocate_sel, allocate_swap]
                 + [qre.GateCount(h, 3 * 2)]
-                # pylint: disable-next=protected-access
                 + LabsQROM._single_ctrl_select_cost(5, 15, repeat=2)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
-                # pylint: disable-next=protected-access
                 + LabsQROM._single_ctrl_swap_cost(3, 1, repeat=4)
                 + [qre.Deallocate(allocated_register=allocate_swap)]
             )
@@ -2311,10 +2286,8 @@ class TestLabsQROM:
                 ]
                 + [allocate_sel, allocate_swap]
                 + [qre.GateCount(h, 3 * 2)]
-                # pylint: disable-next=protected-access
                 + LabsQROM._single_ctrl_select_cost(5, 15, repeat=2)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
-                # pylint: disable-next=protected-access
                 + LabsQROM._single_ctrl_swap_cost(3, 1, repeat=4)
                 + [qre.Deallocate(allocated_register=allocate_swap)]
                 + [
@@ -2340,10 +2313,8 @@ class TestLabsQROM:
                 ]
                 + [allocate_sel, allocate_swap]
                 + [qre.GateCount(h, 3 * 2)]
-                # pylint: disable-next=protected-access
                 + LabsQROM._single_ctrl_select_cost(5, 15, repeat=2)
                 + [qre.Deallocate(allocated_register=allocate_sel)]
-                # pylint: disable-next=protected-access
                 + LabsQROM._single_ctrl_swap_cost(3, 1, repeat=4)
                 + [qre.Deallocate(allocated_register=allocate_swap)]
                 + [
@@ -2361,7 +2332,7 @@ class TestLabsQROM:
             (5, 3, 10, 3, 15, 2, True, 2),
         ),
     )
-    def test_controlled_res_decomp(  # pylint: disable=too-many-arguments
+    def test_controlled_res_decomp(
         self,
         num_ctrl_wires,
         num_zero_ctrl,
@@ -2401,7 +2372,6 @@ class TestSelectCopyQROM:
     )
     def test_optimize_params(self, N, b, max_q, expected_res):
         """Test that the parameters are optimized as expected"""
-        # pylint: disable-next=protected-access
         assert qre.SelectCopyQROM._optimize_params(N, b, max_q) == expected_res
 
     @pytest.mark.parametrize(
@@ -2489,7 +2459,7 @@ class TestSelectCopyQROM:
             ),
         ),
     )
-    def test_resolve_params(  # pylint: disable=too-many-arguments
+    def test_resolve_params(
         self,
         num_bitstrings,
         size_bitstring,
@@ -2501,11 +2471,10 @@ class TestSelectCopyQROM:
         """Test the input validation works as expected for resolve_params"""
         if isinstance(expected_output, str):
             with pytest.raises(ValueError, match=expected_output):
-                qre.SelectCopyQROM._resolve_params(  # pylint: disable=protected-access
+                qre.SelectCopyQROM._resolve_params(
                     num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter
                 )
         else:
-            # pylint: disable-next=protected-access
             assert expected_output == qre.SelectCopyQROM._resolve_params(
                 num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter
             )
@@ -2521,7 +2490,7 @@ class TestSelectCopyQROM:
             (1000, 4, 9, 8, 1, range(14)),
         ),
     )
-    def test_init(  # pylint: disable=too-many-arguments
+    def test_init(
         self, num_bitstrings, size_bitstring, available_dirty_aux, batch_size, bits_per_iter, wires
     ):
         """Test the init method works as expected"""
@@ -2645,7 +2614,7 @@ class TestSelectCopyQROM:
             (int(1e8), 16, None, 32, 8, 9375822, 269),
         ),  # toffoli and qubit costs computed by hand
     )
-    def test_resource_decomp(  # pylint: disable=too-many-arguments
+    def test_resource_decomp(
         self,
         num_bitstrings,
         size_bitstring,
@@ -2677,7 +2646,7 @@ class TestSelectCopyQROM:
             (1e8, 16, None, 32, 8, 10, 9375834, 279),
         ),  # toffoli and qubit costs computed by hand
     )
-    def test_controlled_resource_decomp(  # pylint: disable=too-many-arguments
+    def test_controlled_resource_decomp(
         self,
         num_bitstrings,
         size_bitstring,

@@ -15,6 +15,8 @@
 Test base Resource class and its associated methods
 """
 
+# pylint: disable=protected-access
+
 import dataclasses
 import textwrap
 from dataclasses import FrozenInstanceError
@@ -160,7 +162,7 @@ class TestBaseResources:
             | CNOT | 1 |
         """).strip()
 
-        assert r._repr_markdown_() == expected  # pylint: disable=protected-access
+        assert r._repr_markdown_() == expected
 
     def test_markdown_extra(self, example_base_resources_extra):
         """Test the markdown representation of a Resources instance with extra fields."""
@@ -177,7 +179,7 @@ class TestBaseResources:
             | n | 10 |
         """).strip()
 
-        assert r._repr_markdown_() == expected  # pylint: disable=protected-access
+        assert r._repr_markdown_() == expected
 
     def test_markdown_symbolic(self, example_base_resources_symbolic):
         """Test the markdown representation of a symbolic Resources instance."""
@@ -194,7 +196,7 @@ class TestBaseResources:
             | n | 10 |
         """).strip()
 
-        assert r._repr_markdown_() == expected  # pylint: disable=protected-access
+        assert r._repr_markdown_() == expected
 
     def test_subs(self, example_base_resources_symbolic):
         """Test that the subs method correctly substitutes values for variables."""
@@ -354,7 +356,7 @@ class TestBaseResourcesExtension:
             | n | 10 |
         """).strip()
 
-        assert r._repr_markdown_() == expected  # pylint: disable=protected-access
+        assert r._repr_markdown_() == expected
 
     def test_markdown_empty(self):
         """Test the string representation of a Resources instance with empty fields."""
@@ -367,7 +369,7 @@ class TestBaseResourcesExtension:
             | *None present* | |
         """).strip()
 
-        assert r._repr_markdown_() == expected  # pylint: disable=protected-access
+        assert r._repr_markdown_() == expected
 
     def test_markdown_symbolic(self, example_dummy_resources_symbolic):
         """Test the markdown representation of a symbolic Resources instance."""
@@ -388,7 +390,7 @@ class TestBaseResourcesExtension:
             | n | 10 |
         """).strip()
 
-        assert r._repr_markdown_() == expected  # pylint: disable=protected-access
+        assert r._repr_markdown_() == expected
 
     def test_subs(self, example_dummy_resources_symbolic):
         """Test that the subs method correctly substitutes values for variables."""
@@ -549,7 +551,7 @@ class TestNestedDictResources:
             | meta.depth.a | 4 |
         """).strip()
 
-        assert r._repr_markdown_() == expected  # pylint: disable=protected-access
+        assert r._repr_markdown_() == expected
 
     def test_vars_collected_from_nested(self, example_nested_resources_symbolic):
         """Symbolic variables should be collected from Expressions at any depth."""
@@ -644,7 +646,7 @@ class TestNestedDictSpecsResources:
             | **Total wires** | 2 |
             | **Circuit depth** | 2 |""")
 
-        assert s._repr_markdown_() == expected  # pylint: disable=protected-access
+        assert s._repr_markdown_() == expected
 
     def test_symbolic_nested_subs(self):
         """Substitution should reach Expressions nested inside quantum operations."""
@@ -734,7 +736,7 @@ class TestNestedDictCircuitSpecs:
             | **Total wires** | 2 | 2 |
             | **Circuit depth** | 2 | 1 |""")
 
-        assert r._to_markdown_tabular() == expected  # pylint: disable=protected-access
+        assert r._to_markdown_tabular() == expected
 
 
 class TestSpecsResources:
@@ -916,7 +918,7 @@ class TestPBCSpecsResources:
             | Any commuting depth | 3 |
             | Qubit disjoint depth | 6 |
         """)
-        actual = example_resource._repr_markdown_()  # pylint: disable=protected-access
+        actual = example_resource._repr_markdown_()
 
         assert actual.strip() == expected.strip()
 
@@ -995,7 +997,7 @@ class TestPBCSpecsResources:
             </details>
         """)
 
-        assert s._repr_markdown_() == expected.strip()  # pylint: disable=protected-access
+        assert s._repr_markdown_() == expected.strip()
 
     def test_symbolic_pbc_depth_subs(self):
         """Test that symbolic PBC depth is correctly displayed in the string representation."""
@@ -1155,7 +1157,7 @@ class TestPBCSpecsResources:
             | Qubit disjoint depth | N/A | 4 |
         """).strip()
 
-        assert s._repr_markdown_(collapsible=False) == expected  # pylint: disable=protected-access
+        assert s._repr_markdown_(collapsible=False) == expected
 
     def test_eq(self):
         s1 = PBCSpecsResources(
@@ -1790,7 +1792,7 @@ class TestIPythonDisplays:
             | **Total wires** | 2 |
             | **Circuit depth** | 2 |
         """)
-        actual = example_specs_resource._repr_markdown_()  # pylint: disable=protected-access
+        actual = example_specs_resource._repr_markdown_()
 
         assert actual.strip() == expected.strip()
 
@@ -1808,7 +1810,6 @@ class TestIPythonDisplays:
             | **Total wires** | 2 |
             | **Circuit depth** | 2 |
         """)
-        # pylint: disable-next=protected-access
         actual = example_symbolic_specs_resource._repr_markdown_()
 
         assert actual.strip() == expected.strip()
@@ -1829,7 +1830,7 @@ class TestIPythonDisplays:
             | Any commuting depth | 2 |
             | Qubit disjoint depth | 3 |
         """)
-        actual = example_pbc_specs_resource._repr_markdown_()  # pylint: disable=protected-access
+        actual = example_pbc_specs_resource._repr_markdown_()
 
         assert actual.strip() == expected.strip()
 
@@ -1842,7 +1843,7 @@ class TestIPythonDisplays:
             level=2,
             resources=example_specs_resource,
         )
-        actual = s._repr_markdown_(collapsible=False)  # pylint: disable=protected-access
+        actual = s._repr_markdown_(collapsible=False)
         expected = textwrap.dedent("""\
             **Circuit Specs:**
 
@@ -1878,7 +1879,7 @@ class TestIPythonDisplays:
             level=2,
             resources=example_specs_resource,
         )
-        actual = s._repr_markdown_(collapsible=True)  # pylint: disable=protected-access
+        actual = s._repr_markdown_(collapsible=True)
         expected = textwrap.dedent("""\
             <details open>
             <summary>Circuit Specs</summary>
@@ -1919,7 +1920,7 @@ class TestIPythonDisplays:
             level=2,
             resources=[example_specs_resource, example_specs_resource],
         )
-        actual = s._repr_markdown_(collapsible=False)  # pylint: disable=protected-access
+        actual = s._repr_markdown_(collapsible=False)
         expected = textwrap.dedent("""\
             **Circuit Specs:**
 
@@ -1970,7 +1971,7 @@ class TestIPythonDisplays:
             level=2,
             resources=[example_specs_resource, example_specs_resource],
         )
-        actual = s._repr_markdown_(collapsible=True)  # pylint: disable=protected-access
+        actual = s._repr_markdown_(collapsible=True)
         expected = textwrap.dedent("""\
             <details open>
             <summary>Circuit Specs</summary>
@@ -2043,7 +2044,7 @@ class TestIPythonDisplays:
             s.resources[1][0] = dataclasses.replace(s.resources[1][0], circuit_depth=None)
             s.resources[1][1] = dataclasses.replace(s.resources[1][1], circuit_depth=None)
 
-        actual = s._repr_markdown_(collapsible=False)  # pylint: disable=protected-access
+        actual = s._repr_markdown_(collapsible=False)
         expected = textwrap.dedent("""\
             **Circuit Specs:**
 
@@ -2083,7 +2084,7 @@ class TestIPythonDisplays:
             measurement_processes={},
             num_wires=1,
         )
-        actual = s._repr_markdown_()  # pylint: disable=protected-access
+        actual = s._repr_markdown_()
         expected = textwrap.dedent("""\
             | **Metric** | **Value** |
             | :--- | ---: |

@@ -15,6 +15,8 @@
 Tests for the jacobian product calculator classes.
 """
 
+# pylint: disable=protected-access
+
 from functools import partial
 
 import numpy as np
@@ -94,7 +96,6 @@ def _accepts_finite_shots(jpc):
     if isinstance(jpc, TransformJacobianProducts):
         return True
     if isinstance(jpc, (DeviceDerivatives, DeviceJacobianProducts)):
-        # pylint: disable-next=protected-access
         return isinstance(jpc._device, ParamShiftDerivativesDevice)
     return False
 
@@ -103,7 +104,6 @@ def _accepts_partitioned_shots(jpc):
     if not _accepts_finite_shots(jpc):
         return False
     if isinstance(jpc, TransformJacobianProducts):
-        # pylint: disable-next=protected-access
         return not jpc._gradient_transform is qp.gradients.hadamard_grad
     return True
 
@@ -140,10 +140,9 @@ class TestBasics:
         )
 
         assert isinstance(jpc, JacobianProductCalculator)
-        assert jpc._inner_execute is inner_execute_numpy  # pylint: disable=protected-access
-        # pylint: disable-next=protected-access
+        assert jpc._inner_execute is inner_execute_numpy
         assert jpc._gradient_transform is qp.gradients.hadamard_grad
-        assert jpc._gradient_kwargs == {"aux_wire": "aux"}  # pylint: disable=protected-access
+        assert jpc._gradient_kwargs == {"aux_wire": "aux"}
 
         expected_repr = (
             f"TransformJacobianProducts({repr(inner_execute_numpy)}, "
@@ -158,12 +157,11 @@ class TestBasics:
 
         jpc = DeviceDerivatives(device)
 
-        assert jpc._execution_config is None  # pylint: disable=protected-access
+        assert jpc._execution_config is None
 
     def test_device_jacobians_initialization_new_dev(self):
         """Tests the private attributes are set during initialization of a DeviceDerivatives class."""
 
-        # pylint: disable=protected-access
         device = qp.device("default.qubit")
         config = qp.devices.ExecutionConfig(gradient_method="adjoint")
 
@@ -226,7 +224,6 @@ class TestJacobianProductResults:
         jpc = jpc(seed)
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
-        # pylint: disable-next=protected-access
         if isinstance(jpc, DeviceJacobianProducts) and "lightning" in jpc._device.name:
             pytest.xfail("Lightning devices don't have JVP method")
 
@@ -294,7 +291,6 @@ class TestJacobianProductResults:
         jpc = jpc(seed)
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
-        # pylint: disable-next=protected-access
         if isinstance(jpc, DeviceJacobianProducts) and "lightning" in jpc._device.name:
             pytest.skip("Lightning devices don't have JVP method")
         x = -0.92
@@ -492,75 +488,66 @@ class TestCachingDeviceDerivatives:
         tape1 = qp.tape.QuantumScript([qp.RX(0.1, wires=0)], [qp.expval(qp.PauliZ(0))])
         batch = (tape1,)
 
-        with jpc._device.tracker:  # pylint: disable=protected-access
+        with jpc._device.tracker:
             results = jpc.execute_and_cache_jacobian(batch)
 
         assert qp.math.allclose(results[0], np.cos(0.1))
-        # pylint: disable-next=protected-access
         assert jpc._device.tracker.totals["execute_and_derivative_batches"] == 1
-        assert jpc._device.tracker.totals["derivatives"] == 1  # pylint: disable=protected-access
+        assert jpc._device.tracker.totals["derivatives"] == 1
 
-        if isinstance(jpc._device, ParamShiftDerivativesDevice):  # pylint: disable=protected-access
+        if isinstance(jpc._device, ParamShiftDerivativesDevice):
             # extra execution since needs to do the forward pass again.
             expected_execs = 3
-        elif isinstance(jpc._device, qp.devices.LegacyDevice):  # pylint: disable=protected-access
+        elif isinstance(jpc._device, qp.devices.LegacyDevice):
             expected_execs = 2
         else:
             expected_execs = 1
 
-        # pylint: disable-next=protected-access
         assert jpc._device.tracker.totals["executions"] == expected_execs
 
         # Test reuse with jacobian
-        with jpc._device.tracker:  # pylint: disable=protected-access
+        with jpc._device.tracker:
             jac = jpc.compute_jacobian(batch)
 
         assert qp.math.allclose(jac, -np.sin(0.1))
-        # pylint: disable-next=protected-access
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
-        # pylint: disable-next=protected-access
         assert jpc._device.tracker.totals.get("executions", 0) == 0
 
         # Test reuse with execute_and_compute_jvp
-        with jpc._device.tracker:  # pylint: disable=protected-access
+        with jpc._device.tracker:
             res2, jvp = jpc.execute_and_compute_jvp(batch, ((0.5,),))
 
         assert qp.math.allclose(res2, results)
         assert qp.math.allclose(jvp, 0.5 * -np.sin(0.1))
-        # pylint: disable-next=protected-access
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
-        # pylint: disable-next=protected-access
         assert jpc._device.tracker.totals.get("executions", 0) == 0
 
         # Test reuse with compute_vjp
-        with jpc._device.tracker:  # pylint: disable=protected-access
+        with jpc._device.tracker:
             vjp = jpc.compute_vjp(batch, ((1.5,),))
 
         assert qp.math.allclose(vjp, -1.5 * np.sin(0.1))
-        # pylint: disable-next=protected-access
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
-        # pylint: disable-next=protected-access
         assert jpc._device.tracker.totals.get("executions", 0) == 0
 
         # Test device called again if batch a new instance, even if identical
         tape2 = qp.tape.QuantumScript([qp.RX(0.1, wires=0)], [qp.expval(qp.PauliZ(0))])
         batch2 = (tape2,)
 
-        with jpc._device.tracker:  # pylint: disable=protected-access
+        with jpc._device.tracker:
             jac2 = jpc.compute_jacobian(batch2)
 
         assert qp.math.allclose(jac, jac2)
-        assert jpc._device.tracker.totals["derivatives"] == 1  # pylint: disable=protected-access
+        assert jpc._device.tracker.totals["derivatives"] == 1
 
-        if isinstance(jpc._device, ParamShiftDerivativesDevice):  # pylint: disable=protected-access
+        if isinstance(jpc._device, ParamShiftDerivativesDevice):
             # extra execution since needs to do the forward pass again.
             expected_execs = 2
-        elif isinstance(jpc._device, qp.devices.LegacyDevice):  # pylint: disable=protected-access
+        elif isinstance(jpc._device, qp.devices.LegacyDevice):
             expected_execs = 1
         else:
             expected_execs = 0
 
-        # pylint: disable-next=protected-access
         assert jpc._device.tracker.totals.get("executions", 0) == expected_execs
 
     def test_cached_on_execute_and_compute_jvps(self, jpc, seed):
@@ -572,25 +559,21 @@ class TestCachingDeviceDerivatives:
         batch = (tape1,)
         tangents = ((0.5,),)
 
-        with jpc._device.tracker:  # pylint: disable=protected-access
+        with jpc._device.tracker:
             res, jvps = jpc.execute_and_compute_jvp(batch, tangents)
 
-        # pylint: disable-next=protected-access
         assert jpc._device.tracker.totals["execute_and_derivative_batches"] == 1
 
         assert qp.math.allclose(res, np.cos(0.8))
         assert qp.math.allclose(jvps, -0.5 * np.sin(0.8))
 
-        assert jpc._results_cache[batch] is res  # pylint: disable=protected-access
-        # pylint: disable-next=protected-access
+        assert jpc._results_cache[batch] is res
         assert qp.math.allclose(jpc._jacs_cache[batch], (-np.sin(0.8)))
 
-        with jpc._device.tracker:  # pylint: disable=protected-access
+        with jpc._device.tracker:
             jpc.execute_and_compute_jvp(batch, tangents)
 
-        # pylint: disable-next=protected-access
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
-        # pylint: disable-next=protected-access
         assert jpc._device.tracker.totals.get("executions", 0) == 0
 
     def test_cached_on_execute_and_compute_jacobian(self, jpc, seed):
@@ -602,25 +585,21 @@ class TestCachingDeviceDerivatives:
         )
         batch = (tape1,)
 
-        with jpc._device.tracker:  # pylint: disable=protected-access
+        with jpc._device.tracker:
             res, jacs = jpc.execute_and_compute_jacobian(batch)
 
-        # pylint: disable-next=protected-access
         assert jpc._device.tracker.totals["execute_and_derivative_batches"] == 1
 
         assert qp.math.allclose(res, np.cos(x))
         assert qp.math.allclose(jacs, -np.sin(x))
 
-        assert jpc._results_cache[batch] is res  # pylint: disable=protected-access
-        # pylint: disable-next=protected-access
+        assert jpc._results_cache[batch] is res
         assert qp.math.allclose(jpc._jacs_cache[batch], (-np.sin(x)))
 
-        with jpc._device.tracker:  # pylint: disable=protected-access
+        with jpc._device.tracker:
             jpc.execute_and_compute_jacobian(batch)
 
-        # pylint: disable-next=protected-access
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
-        # pylint: disable-next=protected-access
         assert jpc._device.tracker.totals.get("executions", 0) == 0
 
     def test_cached_on_vjps(self, jpc, seed):
@@ -631,29 +610,27 @@ class TestCachingDeviceDerivatives:
         batch = (tape1,)
         dy = ((0.5,),)
 
-        with jpc._device.tracker:  # pylint: disable=protected-access
+        with jpc._device.tracker:
             jpc.compute_vjp(batch, dy)
 
-        if isinstance(jpc._device, ParamShiftDerivativesDevice):  # pylint: disable=protected-access
+        if isinstance(jpc._device, ParamShiftDerivativesDevice):
             expected = 2
-        elif isinstance(jpc._device, qp.devices.LegacyDevice):  # pylint: disable=protected-access
+        elif isinstance(jpc._device, qp.devices.LegacyDevice):
             expected = 1
         else:
             expected = 0
 
-        # pylint: disable-next=protected-access
         assert jpc._device.tracker.totals.get("executions", 0) == expected
 
-        assert batch not in jpc._results_cache  # pylint: disable=protected-access
-        assert qp.math.allclose(jpc._jacs_cache[batch], 0)  # pylint: disable=protected-access
+        assert batch not in jpc._results_cache
+        assert qp.math.allclose(jpc._jacs_cache[batch], 0)
 
-        with jpc._device.tracker:  # pylint: disable=protected-access
+        with jpc._device.tracker:
             jpc.execute_and_compute_jvp(batch, ((0.5,),))
 
-        assert jpc._device.tracker.totals["executions"] == 1  # pylint: disable=protected-access
-        # pylint: disable-next=protected-access
+        assert jpc._device.tracker.totals["executions"] == 1
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
-        assert qp.math.allclose(jpc._results_cache[batch], 0)  # pylint: disable=protected-access
+        assert qp.math.allclose(jpc._results_cache[batch], 0)
 
     def test_error_cant_cache_results_without_jac(self, jpc, seed):
         """Test that a NotImplementedError is raised if somehow the results are cached
@@ -662,7 +639,7 @@ class TestCachingDeviceDerivatives:
         jpc = jpc(seed)
         tape = qp.tape.QuantumScript([], [qp.state()])
         batch = (tape,)
-        jpc._results_cache[batch] = "value"  # pylint: disable=protected-access
+        jpc._results_cache[batch] = "value"
 
         with pytest.raises(NotImplementedError):
             jpc.execute_and_compute_jacobian(batch)

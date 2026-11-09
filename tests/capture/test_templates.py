@@ -15,6 +15,8 @@
 Integration tests for the capture of PennyLane templates into plxpr.
 """
 
+# pylint: disable=protected-access
+
 import inspect
 from typing import Any
 
@@ -35,7 +37,6 @@ from pennylane.capture.primitives import operator_p  # pylint: disable=wrong-imp
 from pennylane.testing import assert_eqn_matches_op, find_eqns, plxpr_to_tape
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
-# pylint: disable-next=protected-access
 original_op_bind_code = qp.operation.Operator._primitive_bind_call.__code__
 
 
@@ -249,7 +250,6 @@ def test_unmodified_templates(template, args, kwargs):
 
     if issubclass(template, Operator1):
         # Make sure the template actually is not modified in its primitive binding function
-        # pylint: disable-next=protected-access
         assert template._primitive_bind_call.__code__ == original_op_bind_code
 
     def fn(*args):
@@ -261,7 +261,7 @@ def test_unmodified_templates(template, args, kwargs):
     assert len(jaxpr.eqns) == 1
     eqn = jaxpr.eqns[0]
     if issubclass(template, Operator1):
-        assert eqn.primitive == template._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == template._primitive
     else:
         assert_eqn_matches_op(eqn, template)
 
@@ -413,7 +413,6 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
 
         jaxpr = jax.make_jaxpr(f)()
 
-        # pylint: disable-next=protected-access
         [eqn] = find_eqns(jaxpr, qp.AmplitudeEmbedding._primitive)
 
         # Check kwargs
@@ -454,14 +453,12 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         # due to flattening and unflattening H
         assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
         assert_eqn_matches_op(jaxpr.eqns[1], qp.Z)
-        # pylint: disable-next=protected-access
         assert jaxpr.eqns[2].primitive == qp.ops.SProd._primitive
-        # pylint: disable-next=protected-access
         assert jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
-        assert jaxpr.eqns[4].primitive == qp.ops.Sum._primitive  # pylint: disable=protected-access
+        assert jaxpr.eqns[4].primitive == qp.ops.Sum._primitive
 
         eqn = jaxpr.eqns[5]
-        assert eqn.primitive == template._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == template._primitive
         assert eqn.invars[0] == jaxpr.eqns[4].outvars[0]  # the sum op
         assert eqn.invars[1].val == 2.4
 
@@ -555,10 +552,9 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(jaxpr.eqns) == 3
 
         assert_eqn_matches_op(jaxpr.eqns[0], qp.H)
-        assert jaxpr.eqns[1].primitive == qp.FlipSign._primitive  # pylint: disable=protected-access
+        assert jaxpr.eqns[1].primitive == qp.FlipSign._primitive
 
         eqn = jaxpr.eqns[2]
-        # pylint: disable-next=protected-access
         assert eqn.primitive == qp.AmplitudeAmplification._primitive
         assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]  # Hadamard
         assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]  # FlipSign
@@ -643,7 +639,6 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        # pylint: disable-next=protected-access
         assert eqn.primitive == qp.FermionicDoubleExcitation._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
@@ -677,7 +672,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert_eqn_matches_op(jaxpr.eqns[-2], qp.RZ)
 
         eqn = jaxpr.eqns[-1]
-        assert eqn.primitive == template._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == template._primitive
         assert eqn.params == {"num_v_ops": 1}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
@@ -714,7 +709,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert_eqn_matches_op(jaxpr.eqns[-2], qp.RX)
 
         eqn = jaxpr.eqns[-1]
-        assert eqn.primitive == template._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == template._primitive
         assert eqn.params == {"num_v_ops": 2}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
@@ -745,7 +740,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.FFFT._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == qp.FFFT._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
@@ -853,7 +848,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == template._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == template._primitive
 
         expected_params = {
             "n_block_wires": n_block_wires,
@@ -1007,7 +1002,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.QuantumMonteCarlo._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == qp.QuantumMonteCarlo._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         relevant_keys = {"func", "num_target_wires"}
         actual_params = {k: v for k, v in eqn.params.items() if k in relevant_keys}
@@ -1039,7 +1034,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.Qubitization._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == qp.Qubitization._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
@@ -1073,7 +1068,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.BBQRAM._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == qp.BBQRAM._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
@@ -1117,7 +1112,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.SelectOnlyQRAM._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == qp.SelectOnlyQRAM._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
@@ -1152,7 +1147,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.HybridQRAM._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == qp.HybridQRAM._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
@@ -1213,7 +1208,6 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        # pylint: disable-next=protected-access
         assert eqn.primitive == qp.QROMStatePreparation._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
@@ -1382,7 +1376,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.Multiplier._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == qp.Multiplier._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
@@ -1727,7 +1721,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.OutAdder._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == qp.OutAdder._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
@@ -1787,7 +1781,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.ModExp._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == qp.ModExp._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
@@ -1825,7 +1819,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.OutPoly._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == qp.OutPoly._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
 
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
@@ -1947,11 +1941,10 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
 
         assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
         assert_eqn_matches_op(jaxpr.eqns[1], qp.H)
-        # pylint: disable-next=protected-access
         assert jaxpr.eqns[2].primitive == qp.ops.op_math.Prod._primitive
 
         eqn = jaxpr.eqns[3]
-        assert eqn.primitive == qp.Reflection._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == qp.Reflection._primitive
         # Input operator and reflection/estimation wires are invars to template
         assert eqn.invars[:1] == jaxpr.eqns[2].outvars
         assert eqn.invars[1] == jaxpr.jaxpr.invars[1]
@@ -1986,11 +1979,9 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
 
         assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
         assert_eqn_matches_op(jaxpr.eqns[1], qp.H)
-        # pylint: disable-next=protected-access
         assert jaxpr.eqns[2].primitive == qp.ops.op_math.Prod._primitive
 
         eqn = jaxpr.eqns[3]
-        # pylint: disable-next=protected-access
         assert eqn.primitive == qp.QuantumPhaseEstimation._primitive
         assert eqn.invars == jaxpr.eqns[2].outvars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
@@ -2026,11 +2017,11 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         op_eqns = jaxpr.eqns[:4]
         op_types = [qp.X, qp.RX, qp.Y, qp.Z]
         assert all(
-            eqn.primitive == op_type._primitive  # pylint: disable=protected-access
+            eqn.primitive == op_type._primitive
             for eqn, op_type in zip(op_eqns, op_types, strict=True)
         )
         eqn = jaxpr.eqns[4]
-        assert eqn.primitive == qp.Select._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == qp.Select._primitive
         assert eqn.invars[:-2] == [eqn.outvars[0] for eqn in op_eqns]
         assert [invar.val for invar in eqn.invars[-2:]] == [0, 1]
         assert eqn.params == {"n_wires": 2}
@@ -2063,7 +2054,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.Superposition._primitive  # pylint: disable=protected-access
+        assert eqn.primitive == qp.Superposition._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
         assert len(eqn.outvars) == 1
@@ -2203,7 +2194,6 @@ def test_templates_are_modified(template):
     # Make sure the template actually is modified in its primitive binding function
     if template == qp.templates.SubroutineOp or issubclass(template, Operator2):
         return
-    # pylint: disable-next=protected-access
     assert template._primitive_bind_call.__code__ != original_op_bind_code
 
 
