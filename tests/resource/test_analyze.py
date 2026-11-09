@@ -247,7 +247,6 @@ class TestAnalyze:
             ):
                 specs = qp.analyze(circuit, level="all")(0.5)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_pbc_pipeline(self):
         """Test that analyze counts device-level resources after a Clifford+T → PPR → PPM
         compilation pipeline."""

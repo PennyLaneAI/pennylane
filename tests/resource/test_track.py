@@ -106,7 +106,6 @@ class TestTrack:
         assert specs.resources.circuit_depth == 2
         assert specs == qp.specs(circuit, level="device")(0.5)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_pbc_pipeline(self):
         """Test that track counts device-level resources after a Clifford+T → PPR → PPM
         compilation pipeline, including H/T from lowered magic-state fabrication."""
