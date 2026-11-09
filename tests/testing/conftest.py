@@ -232,7 +232,6 @@ _ABSTRACT_OR_META_TYPES = {
     StatePrepBase2,
     PowOperation,
     qp.StatePrep,
-    qp.FromBloq,
     qp.allocation.Allocate,  # no integer wires
     qp.allocation.Deallocate,  # no integer wires
 }

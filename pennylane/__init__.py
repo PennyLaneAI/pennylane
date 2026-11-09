@@ -179,18 +179,12 @@ from pennylane import gradients  # pylint:disable=wrong-import-order
 from pennylane.drawer import draw, draw_mpl
 
 from pennylane.io import (
-    from_pyquil,
     from_qasm,
     to_openqasm,
     from_qiskit,
     from_qiskit_noise,
     from_qiskit_op,
-    from_quil,
-    from_quil_file,
-    FromBloq,
-    bloq_registers,
     from_qasm3,
-    to_bloq,
 )
 
 # pylint:disable=wrong-import-order
