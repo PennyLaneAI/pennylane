@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the SymbolicOp class of qubit operations"""
 
+# pylint: disable=too-few-public-methods
+
 from copy import copy
 
 import pytest
@@ -24,7 +26,7 @@ from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
 from pennylane.wires import Wires
 
 
-class TempScalar(ScalarSymbolicOp):  # pylint: disable=too-few-public-methods
+class TempScalar(ScalarSymbolicOp):
     """Temporary scalar symbolic op class."""
 
     _name = "TempScalar"
@@ -34,7 +36,7 @@ class TempScalar(ScalarSymbolicOp):  # pylint: disable=too-few-public-methods
         pass
 
 
-class TempScalarCopy(ScalarSymbolicOp):  # pylint: disable=too-few-public-methods
+class TempScalarCopy(ScalarSymbolicOp):
     """Copy of temporary scalar symbolic op class."""
 
     _name = "TempScalarCopy"
@@ -124,7 +126,7 @@ class TestProperties:
     def test_has_matrix(self, has_mat):
         """Test that a symbolic op has a matrix if its base has a matrix."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             has_matrix = has_mat
 
         base = DummyOp("b")
@@ -142,7 +144,7 @@ class TestProperties:
     def test_is_hermitian(self, is_herm):
         """Test that symbolic op is hermitian if the base is hermitian."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             is_verified_hermitian = is_herm
 
         base = DummyOp("b")

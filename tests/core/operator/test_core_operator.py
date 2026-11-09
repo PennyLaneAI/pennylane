@@ -15,6 +15,8 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 
+# pylint: disable=too-few-public-methods
+
 import copy
 
 import numpy as np
@@ -44,7 +46,7 @@ I_broadcasted = I[pnp.newaxis]
 def test_basis_deprecation():
     """Test that Operation.basis is deprecated."""
 
-    class MyOp(Operation):  # pylint: disable=redefined-outer-name,too-few-public-methods
+    class MyOp(Operation):  # pylint: disable=redefined-outer-name
         pass
 
     with pytest.warns(PennyLaneDeprecationWarning, match="Operation.basis is deprecated"):
@@ -54,7 +56,7 @@ def test_basis_deprecation():
 def test_operator2_isinstance_operator_operation():
     """Test that anything that inherits from Operator2 is an Operator."""
 
-    class NewOp(Operator2):  # pylint: disable=too-few-public-methods
+    class NewOp(Operator2):
         """dummy operator2"""
 
         dynamic_argnames = ()
@@ -76,7 +78,7 @@ class TestOperator1:
     def test_operator1_against_new_op(self):
         """Test that Operator1 checks reject new operator interface."""
 
-        class NewOp(Operator2):  # pylint: disable=too-few-public-methods
+        class NewOp(Operator2):
             """dummy operator2"""
 
             dynamic_argnames = ()
@@ -91,7 +93,7 @@ class TestOperator1:
     def test_operator1_against_old_op(self):
         """Test that Operator1 checks accept old interface."""
 
-        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+        class OldOp(Operator):
             pass
 
         old_op = OldOp(wires=0)
@@ -107,7 +109,7 @@ class TestOperator1:
     def test_inheritance_switch_for_Operator(self):
         """Test that inheriting from Operator1 switches it out for Operator."""
 
-        class OldOp(Operator1):  # pylint: disable=too-few-public-methods
+        class OldOp(Operator1):
             """op inheriting from Operator1"""
 
         assert OldOp.__bases__ == (Operator,)
@@ -126,8 +128,6 @@ class TestOperator1:
 
 class TestOperatorConstruction:
     """Test custom operators' construction."""
-
-    # pylint: disable=too-few-public-methods
 
     def test_operation_outside_context(self):
         """Test that an operation can be instantiated outside a QNode context"""
@@ -432,7 +432,7 @@ class TestOperatorConstruction:
         assert op.ndim_params == (0,)
 
 
-class TestPytreeMethods:  # pylint: disable=too-few-public-methods
+class TestPytreeMethods:
     def test_pytree_defaults(self):
         """Test the default behavior for the flatten and unflatten methods."""
 
@@ -463,8 +463,6 @@ class TestPytreeMethods:  # pylint: disable=too-few-public-methods
 
 class TestBroadcasting:
     """Test parameter broadcasting checks."""
-
-    # pylint: disable=too-few-public-methods
 
     broadcasted_params_test_data = [
         # Test with no parameter broadcasted
@@ -550,8 +548,6 @@ class TestBroadcasting:
 
 class TestHasReprProperties:
     """Test has representation properties."""
-
-    # pylint: disable=too-few-public-methods
 
     def test_has_matrix_true(self):
         """Test has_matrix property detects overriding of `compute_matrix` method."""
@@ -781,8 +777,6 @@ class TestHasReprProperties:
 class TestModificationMethods:
     """Test the methods that produce a new operation with some modification."""
 
-    # pylint: disable=too-few-public-methods
-
     def test_simplify_method(self):
         """Test that simplify method returns the same instance."""
 
@@ -843,8 +837,6 @@ class TestModificationMethods:
 
 class TestOperationConstruction:
     """Test custom operations construction."""
-
-    # pylint: disable=too-few-public-methods
 
     def test_grad_recipe_parameter_dependent(self):
         """Test that an operation with a gradient recipe that depends on
@@ -1051,8 +1043,6 @@ class TestOperationConstruction:
 class TestObservableConstruction:
     """Test custom observables construction."""
 
-    # pylint: disable=too-few-public-methods
-
     def test_construction_with_wires_pos_arg(self):
         """Test that the wires can be given as a positional argument"""
 
@@ -1117,7 +1107,7 @@ class TestOperatorIntegration:  # pylint: disable=too-many-public-methods
         """Test that when raising an Operator to a power that is not a number raises
         a ValueError."""
 
-        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class DummyOp(qp.operation.Operation):
             r"""Dummy custom operator"""
 
             num_wires = 1
@@ -1320,12 +1310,12 @@ class TestOperatorIntegration:  # pylint: disable=too-many-public-methods
 
 
 # Dummy class inheriting from Operator
-class MyOp(Operator):  # pylint: disable=too-few-public-methods
+class MyOp(Operator):
     num_wires = 1
 
 
 # Dummy class inheriting from Operation
-class MyGate(Operation):  # pylint: disable=too-few-public-methods
+class MyGate(Operation):
     num_wires = 1
 
 
@@ -1339,7 +1329,7 @@ class TestDefaultRepresentations:
     def test_decomposition_undefined(self):
         """Tests that custom error is raised in the default decomposition representation."""
 
-        class Operator_with_no_decomp(Operator):  # pylint: disable=too-few-public-methods
+        class Operator_with_no_decomp(Operator):
             pass
 
         op = Operator_with_no_decomp(wires=0)  # pylint: disable=redefined-outer-name
@@ -1351,7 +1341,6 @@ class TestDefaultRepresentations:
     def test_decomposition_graph_fallback(self):
         """Test that the first registered decomp can be used if compute_decomposition is not overridden."""
 
-        # pylint: disable-next=too-few-public-methods
         class OpWithACustomName98786(qp.operation.Operator):
             pass
 
@@ -1382,7 +1371,7 @@ class TestDefaultRepresentations:
         """Test that operators with multiple decompositions and conditions have
         correct has_decomposition properties."""
 
-        class BVCX(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class BVCX(qp.operation.Operator):
             @property
             def resource_params(self):
                 return {"num_wires": len(self.wires)}
@@ -1466,7 +1455,7 @@ class TestDefaultRepresentations:
             gate.pow(1.234)
 
 
-class MyOpWithMat(Operator):  # pylint: disable=too-few-public-methods
+class MyOpWithMat(Operator):
     num_wires = 1
 
     @staticmethod
@@ -1474,7 +1463,7 @@ class MyOpWithMat(Operator):  # pylint: disable=too-few-public-methods
         return np.tensordot(theta, np.array([[0.4, 1.2], [1.2, 0.4]]), axes=0)
 
 
-class TestInheritedRepresentations:  # pylint: disable=too-few-public-methods
+class TestInheritedRepresentations:
     """Tests that the default representations allow for
     inheritance from other representations"""
 
@@ -1493,7 +1482,7 @@ class TestInheritedRepresentations:  # pylint: disable=too-few-public-methods
         assert np.allclose(eigvals, np.array([1.6 * theta, -0.8 * theta]).T)
 
 
-class TestChannel:  # pylint: disable=too-few-public-methods
+class TestChannel:
     """Unit tests for the Channel class"""
 
     def test_instance_made_correctly(self):
@@ -1522,7 +1511,7 @@ class TestOperationDerivative:
     def test_no_generator_raise(self):
         """Tests if the function raises an exception if the input operation has no generator"""
 
-        class CustomOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(qp.operation.Operation):
             num_wires = 1
             num_params = 1
 
@@ -1595,7 +1584,7 @@ class TestOperationDerivative:
 class TestStatePrepBase:
     """Test the StatePrepBase interface."""
 
-    class DefaultPrep(StatePrepBase):  # pylint: disable=too-few-public-methods
+    class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 
         def state_vector(self, wire_order=None):  # pylint: disable=unused-argument
@@ -1609,7 +1598,7 @@ class TestStatePrepBase:
     def test_child_must_implement_state_vector(self):
         """Tests that a child class that does not implement state_vector fails."""
 
-        class NoStatePrepOp(StatePrepBase):  # pylint: disable=too-few-public-methods
+        class NoStatePrepOp(StatePrepBase):
             """A class that is missing the state_vector implementation."""
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
@@ -1620,7 +1609,7 @@ class TestStatePrepBase:
         assert self.DefaultPrep([1], 0).label() == "|Ψ⟩"
 
 
-class TestCriteria:  # pylint: disable=too-few-public-methods
+class TestCriteria:
     doubleExcitation = qp.DoubleExcitation(0.1, wires=[0, 1, 2, 3])
     rx = qp.RX(qp.numpy.array(0.3, requires_grad=True), wires=1)
     stiff_rx = qp.RX(0.3, wires=1)
@@ -1638,7 +1627,7 @@ class TestCriteria:  # pylint: disable=too-few-public-methods
         assert not qp.operation.is_trainable(self.cnot)
 
 
-class MultiRot(Operator2):  # pylint: disable=too-few-public-methods
+class MultiRot(Operator2):
     """MultiRot class used for testing purposes."""
 
     dynamic_argnames = ("angles",)
@@ -1689,7 +1678,7 @@ pairs_of_ops = [
 X2 = lambda w: MultiRot([np.pi], [w], "X")
 
 
-class TestNewOpMath:  # pylint: disable=too-few-public-methods
+class TestNewOpMath:
     """Tests dunder operations with new operator arithmetic enabled."""
 
     class TestAdd:
@@ -1911,7 +1900,7 @@ class TestNewOpMath:  # pylint: disable=too-few-public-methods
                 _ = base ** "potato"
 
 
-class TestHamiltonianLinearCombinationAlias:  # pylint: disable=too-few-public-methods
+class TestHamiltonianLinearCombinationAlias:
     """Unit tests for using qp.Hamiltonian as an alias for LinearCombination"""
 
     def test_hamiltonian_linear_combination_alias_enabled(self):
@@ -2018,7 +2007,7 @@ def test_custom_operator_is_jax_pytree():
 
     import jax
 
-    class CustomOperator(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+    class CustomOperator(qp.operation.Operator):
         pass
 
     op = CustomOperator(1.2, wires=0)  # pylint: disable=redefined-outer-name

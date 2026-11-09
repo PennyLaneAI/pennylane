@@ -14,6 +14,8 @@
 
 """Tests for the Pow2 class."""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 from scipy.linalg import fractional_matrix_power
@@ -42,7 +44,7 @@ def pow_using_dunder_method(base, z):
     return base**z
 
 
-class NoPowOp(Operator2):  # pylint: disable=too-few-public-methods
+class NoPowOp(Operator2):
     """A base operator whose ``pow`` always raises ``PowUndefinedError``."""
 
     wire_sizes = (1,)
@@ -54,7 +56,7 @@ class NoPowOp(Operator2):  # pylint: disable=too-few-public-methods
         raise PowUndefinedError
 
 
-class BadPowOp(Operator2):  # pylint: disable=too-few-public-methods
+class BadPowOp(Operator2):
     """A base operator whose ``pow`` raises a generic (non-``Pow``) error."""
 
     wire_sizes = (1,)
@@ -66,7 +68,7 @@ class BadPowOp(Operator2):  # pylint: disable=too-few-public-methods
         raise ValueError("bad pow")
 
 
-class RealPowOp(Operator2):  # pylint: disable=too-few-public-methods
+class RealPowOp(Operator2):
     """A base operator with a well-defined ``pow`` for any exponent."""
 
     dynamic_argnames = ("phi",)
@@ -356,7 +358,7 @@ def test_eigvals_fractional_power_negative_eigenvalue_2(z, power_method):
     assert np.allclose(eigvals, np.diag(qp.matrix(op)))
 
 
-class TestCapture:  # pylint: disable=too-few-public-methods
+class TestCapture:
     """Tests Capture"""
 
     @pytest.mark.jax

@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the measurements module"""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 
@@ -61,7 +63,7 @@ def test_mid_measure_deprecations():
     assert qp.measurements.find_post_processed_mcms == _find_post_processed_mcms
 
 
-class NotValidMeasurement(MeasurementProcess):  # pylint: disable=too-few-public-methods
+class NotValidMeasurement(MeasurementProcess):
     _shortname = "NotValidReturnType"
 
 
@@ -107,7 +109,7 @@ def test_eq_correctness():
     """Test that using `==` on measurement processes behaves the same as
     `qp.equal`."""
 
-    class DummyMP(MeasurementProcess):  # pylint: disable=too-few-public-methods
+    class DummyMP(MeasurementProcess):
         """Dummy measurement process with no return type."""
 
     mp1 = DummyMP(wires=qp.wires.Wires(0))
@@ -120,7 +122,7 @@ def test_eq_correctness():
 def test_hash_correctness():
     """Test that the hash of two equivalent measurement processes is the same."""
 
-    class DummyMP(MeasurementProcess):  # pylint: disable=too-few-public-methods
+    class DummyMP(MeasurementProcess):
         """Dummy measurement process with no return type."""
 
     mp1 = DummyMP(wires=qp.wires.Wires(0))
@@ -336,7 +338,7 @@ class TestProperties:
         """An observable with no eigenvalues defined should cause
         the eigvals method to return a NotImplementedError"""
 
-        class DummyObs(qp.core.Operator2):  # pylint: disable=too-few-public-methods
+        class DummyObs(qp.core.Operator2):
 
             def __init__(self, wires):
                 super().__init__(wires=wires)
@@ -413,7 +415,6 @@ class TestDiagonalizingGates:
         mp0 = qp.expval(qp.X(0))
         assert mp0.has_decomposition
 
-        # pylint: disable-next=too-few-public-methods
         class _NoDiagonalizingGates(qp.core.operator.Operator):
             pass
 
@@ -524,7 +525,7 @@ class TestStateMeasurement:
         """Test that the process_density_matrix method of StateMeasurement raises
         NotImplementedError."""
 
-        class MyMeasurement(StateMeasurement):  # pylint: disable=too-few-public-methods
+        class MyMeasurement(StateMeasurement):
             def process_state(self, state, wire_order):  # pylint: disable=unused-argument
                 return qp.math.sum(state)
 
@@ -534,7 +535,7 @@ class TestStateMeasurement:
             )
 
 
-class TestMeasurementTransform:  # pylint: disable=too-few-public-methods
+class TestMeasurementTransform:
     """Tests for the MeasurementTransform class."""
 
     def test_custom_measurement(self):

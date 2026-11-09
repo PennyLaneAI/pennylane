@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for the Adjoint operator wrapper and the adjoint constructor."""
 
+# pylint: disable=too-few-public-methods
+
 import pickle
 
 import numpy as np
@@ -26,7 +28,7 @@ from pennylane.ops.functions import single_qubit_zyz_angles
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
 
 
-class PlainOperator(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+class PlainOperator(qp.operation.Operator):
     """just an operator."""
 
 
@@ -60,7 +62,7 @@ class TestInheritanceMixins:
         """When the operation inherits from `Operation`, the `AdjointOperation` mixin is
         added and the Adjoint has Operation functionality."""
 
-        class CustomOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(qp.operation.Operation):
             num_wires = 1
             num_params = 1
 
@@ -195,7 +197,7 @@ class TestProperties:
         """Test `has_decomposition` property is activated because the base operation defines a
         `decomposition` method."""
 
-        class MyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class MyOp(qp.operation.Operation):
             num_wires = 1
 
             def decomposition(self):
@@ -210,7 +212,7 @@ class TestProperties:
         """Test `has_decomposition` property is not activated if the base neither
         `has_adjoint` nor `has_decomposition`."""
 
-        class MyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class MyOp(qp.operation.Operation):
             num_wires = 1
 
         base = MyOp(0)
@@ -221,7 +223,7 @@ class TestProperties:
     def test_has_adjoint_true_always(self):
         """Test `has_adjoint` property to always be true, irrespective of the base."""
 
-        class MyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class MyOp(qp.operation.Operation):
             """Operation that does not define `adjoint` and hence has `has_adjoint=False`."""
 
             num_wires = 1
@@ -250,7 +252,7 @@ class TestProperties:
         """Test `has_diagonalizing_gates` property is not activated if the base neither
         `has_adjoint` nor `has_diagonalizing_gates`."""
 
-        class MyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class MyOp(qp.operation.Operation):
             num_wires = 1
             has_diagonalizing_gates = False
 
@@ -262,7 +264,7 @@ class TestProperties:
     def test_is_verified_hermitian(self, value):
         """Test `is_verified_hermitian` property mirrors that of the base."""
 
-        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(qp.operation.Operator):
             num_wires = 1
             is_verified_hermitian = value
 
@@ -365,7 +367,7 @@ class TestMiscMethods:
     def test_flatten_unflatten(self):
         """Test the flatten and unflatten methods."""
 
-        class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qp.operation.Operator):
             pass
 
         op = CustomOp(1.2, 2.3, wires=0)
@@ -878,7 +880,7 @@ class TestAdjointConstructorOutsideofQueuing:
     def test_single_op(self):
         """Test providing a single op outside of a queuing context."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             pass
 
         x = 1.234

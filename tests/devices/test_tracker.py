@@ -15,6 +15,8 @@
 Unit tests for the Tracker and constructor
 """
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 
@@ -84,7 +86,7 @@ class TestTrackerCoreBehavior:
     def test_device_assignment(self):
         """Assert gets assigned to device"""
 
-        class TempDevice:  # pylint: disable=too-few-public-methods
+        class TempDevice:
             short_name = "temp"
 
             def __init__(self):
@@ -99,7 +101,7 @@ class TestTrackerCoreBehavior:
     def test_incompatible_device_assignment_no_tracker(self):
         """Assert exception raised when `supports_tracker` not True"""
 
-        class TempDevice:  # pylint: disable=too-few-public-methods
+        class TempDevice:
             short_name = "temp"
 
             def capabilities(self):
@@ -113,7 +115,7 @@ class TestTrackerCoreBehavior:
     def test_incompatible_device_assignment_explicit_false(self):
         """Assert exception raised when `supports_tracker` is False"""
 
-        class TempDevice:  # pylint: disable=too-few-public-methods
+        class TempDevice:
             short_name = "temp"
 
         temp = TempDevice()
@@ -181,7 +183,7 @@ class TestTrackerCoreBehavior:
         assert tracker.latest == {"a": 2, "b": "b2", "c": 1}
 
     def test_record_callback(self, mocker):
-        class callback_wrapper:  # pylint: disable=too-few-public-methods
+        class callback_wrapper:
             @staticmethod
             def callback(totals, history, latest):
                 pass
@@ -216,8 +218,6 @@ def circuit():
 
 class TestDefaultTrackerIntegration:
     """Tests integration behavior with 'default.qubit'."""
-
-    # pylint: disable=too-few-public-methods
 
     def test_single_execution_default(self, mocker):
         """Test correct behavior with single circuit execution"""

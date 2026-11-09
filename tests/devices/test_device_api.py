@@ -15,6 +15,8 @@
 Tests for the basic default behavior of the Device API.
 """
 
+# pylint: disable=too-few-public-methods
+
 import pytest
 
 import pennylane as qp
@@ -34,7 +36,7 @@ from pennylane.wires import Wires
 def test_execute_method_abstract():
     """Test that a device can't be instantiated without an execute method."""
 
-    class BadDevice(Device):  # pylint: disable=too-few-public-methods
+    class BadDevice(Device):
         """A bad device"""
 
     with pytest.raises(TypeError, match=r"instantiate abstract class BadDevice"):
@@ -75,7 +77,7 @@ class TestDeviceCapabilities:
     def test_device_capabilities(self, request):
         """Tests that the device capabilities object is correctly initialized"""
 
-        class DeviceWithCapabilities(Device):  # pylint: disable=too-few-public-methods
+        class DeviceWithCapabilities(Device):
             """A device with a capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -91,7 +93,7 @@ class TestDeviceCapabilities:
 
         with pytest.raises(FileNotFoundError):
 
-            # pylint: disable-next=too-few-public-methods,unused-variable
+            # pylint: disable-next=unused-variable
             class DeviceWithInvalidCapabilities(Device):
 
                 config_filepath = "nonexistent_file.toml"
@@ -103,8 +105,6 @@ class TestDeviceCapabilities:
 
 class TestSetupExecutionConfig:
     """Tests the default implementation for setup_execution_config."""
-
-    # pylint: disable=too-few-public-methods
 
     def test_device_implements_preprocess(self):
         """Tests that the execution config returned by device's preprocess is used."""
@@ -262,8 +262,6 @@ class TestSetupExecutionConfig:
 
 class TestPreprocessTransforms:
     """Tests the default implementation for preprocess_transforms."""
-
-    # pylint: disable=too-few-public-methods
 
     def test_device_implements_preprocess(self):
         """Tests that the execution config returned by device's preprocess is used."""
@@ -570,7 +568,7 @@ class TestPreprocessTransforms:
 class TestMinimalDevice:
     """Tests for a device with only a minimal execute provided."""
 
-    class MinimalDevice(Device):  # pylint: disable=too-few-public-methods
+    class MinimalDevice(Device):
         """A device with only a dummy execute method provided."""
 
         # pylint: disable-next=unused-argument

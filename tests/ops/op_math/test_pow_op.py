@@ -15,6 +15,8 @@
 Unit tests for the Pow arithmetic class of qubit operations
 """
 
+# pylint: disable=too-few-public-methods
+
 from copy import copy
 
 import pytest
@@ -27,7 +29,7 @@ from pennylane.ops.op_math.pow import Pow, PowOperation
 from pennylane.ops.op_math.pow2 import Pow2
 
 
-class TempOperator(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+class TempOperator(qp.operation.Operator):
     """Dummy operator"""
 
     num_wires = 1
@@ -87,7 +89,7 @@ class TestConstructor:
         """Test that when the simplification method returns a list of multiple operators,
         pow returns a list of multiple operators."""
 
-        class Temp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class Temp(qp.operation.Operator):
             num_wires = 1
 
             def pow(self, z):  # pylint: disable=unused-argument
@@ -111,7 +113,7 @@ class TestConstructor:
     def test_simplify_squared(self):
         """Test that an op without a special pow method can still be simplified when raised to an integer power."""
 
-        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(qp.operation.Operator):
             pass
 
         simplified = (DummyOp(0) ** 2).simplify()
@@ -140,7 +142,7 @@ class TestInheritanceMixins:
         """When the operation inherits from `Operation`, the `PowOperation` mixin should
         be added and the Pow should now have Operation functionality."""
 
-        class CustomOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(qp.operation.Operation):
             num_wires = 1
             num_params = 1
 
@@ -299,7 +301,7 @@ class TestProperties:
     def test_no_decomposition_batching_error(self, power_method):
         """Test that if an error occurs with a batched exponent, has_decomposition is False."""
 
-        class MyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyOp(qp.operation.Operator):
 
             def pow(self, z):
                 return super().pow(z % 2)
@@ -313,7 +315,7 @@ class TestProperties:
     def test_error_raised_if_no_batching(self, power_method):
         """Test that if Operator.pow raises an error and no batching is present, the erorr is raised."""
 
-        class MyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyOp(qp.operation.Operator):
 
             def pow(self, z):
                 raise ValueError
@@ -330,7 +332,7 @@ class TestProperties:
     def test_has_diagonalizing_gates(self, value, power_method):
         """Test that Pow defers has_diagonalizing_gates to base operator."""
 
-        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(qp.operation.Operator):
             num_wires = 1
             has_diagonalizing_gates = value
 
@@ -341,7 +343,7 @@ class TestProperties:
     def test_is_hermitian(self, value, power_method):
         """Test that if the base is hermitian, then the power is hermitian."""
 
-        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(qp.operation.Operator):
             """Dummy operator."""
 
             num_wires = 1
@@ -898,7 +900,7 @@ class TestDecompositionExpand:
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qp.pow])
-class TestOperationProperties:  # pylint: disable=too-few-public-methods
+class TestOperationProperties:
     """Test Operation specific properties."""
 
     def test_basis(self, power_method):
@@ -962,7 +964,7 @@ class TestIntegration:
         circ()
 
 
-class TestCapture:  # pylint: disable=too-few-public-methods
+class TestCapture:
 
     @pytest.mark.jax
     def test_pow_eigvals_is_jittable(self):

@@ -14,7 +14,7 @@
 
 """Unit tests for the decomposition graph."""
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,too-few-public-methods
 
 import warnings
 from unittest.mock import patch
@@ -42,7 +42,7 @@ from tests.core.operator.operator2_utils import (
 from tests.decomposition.conftest import decompositions, to_resources
 
 
-class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+class CustomOp(Operation):
     """A custom operation."""
 
     resource_keys = set()
@@ -52,7 +52,7 @@ class CustomOp(Operation):  # pylint: disable=too-few-public-methods
         return {}
 
 
-class MultiWireOp(Operation):  # pylint: disable=too-few-public-methods
+class MultiWireOp(Operation):
     """A custom op"""
 
     resource_keys = {"num_wires"}
@@ -62,7 +62,7 @@ class MultiWireOp(Operation):  # pylint: disable=too-few-public-methods
         return {"num_wires": len(self.wires)}
 
 
-class MultiWireRot(Operation):  # pylint: disable=too-few-public-methods
+class MultiWireRot(Operation):
     """A custom op"""
 
     resource_keys = {"num_wires"}
@@ -75,7 +75,7 @@ class MultiWireRot(Operation):  # pylint: disable=too-few-public-methods
         return {"num_wires": len(self.wires)}
 
 
-class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
+class AnotherOp(Operation):
     """A custom operation."""
 
     resource_keys = set()
@@ -485,7 +485,6 @@ class TestDecompGraphConstruction:
     def test_reuse_of_op_under_exploration_does_not_depend_on_operator_order(self, entry_first):
         """Tests that an operator that reuses an operator which is still being explored is
         explored again when it is visited after a cycle cut in that exploration is resolved."""
-        # pylint: disable=too-few-public-methods
 
         class EntryOp(Operation):
             """An operation that decomposes into ``HubOp``."""
@@ -538,7 +537,6 @@ class TestDecompGraphConstruction:
         """Tests that an operator is explored again when it is visited after a cycle cut in its
         exploration is resolved, even if another cut in its exploration closed a cycle back to it.
         """
-        # pylint: disable=too-few-public-methods
 
         class EntryOp(Operation):
             """An operation that decomposes into ``HubOp``."""
@@ -856,8 +854,6 @@ class TestDecompGraphSolver:
 @pytest.mark.unit
 class TestDecompGraphWorkWireBudgeting:
     """Tests the work-wire budgeting of the decomposition graph."""
-
-    # pylint: disable=too-few-public-methods
 
     def test_work_wire_requirement(self):
         """Tests that the graph respects the work wire requirement."""
@@ -1261,7 +1257,7 @@ class TestControlledDecompositions:
             qp.Z(wires=wires[0])
             qp.GlobalPhase(np.pi / 2)
 
-        class CustomControlledOp(Operation):  # pylint: disable=too-few-public-methods
+        class CustomControlledOp(Operation):
             """A custom operation."""
 
             resource_keys = set()
@@ -1361,7 +1357,7 @@ class TestControlledDecompositions:
         assert all("_custom_rule" not in rule.name for rule in rules)
 
 
-class LegacyRX(Operator1):  # pylint: disable=too-few-public-methods
+class LegacyRX(Operator1):
     pass
 
 

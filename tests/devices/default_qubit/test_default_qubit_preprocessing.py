@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 import scipy as sp
@@ -48,7 +50,7 @@ class MatOp(qp.operation.Operation):
         return [qp.PauliX(self.wires), qp.PauliY(self.wires)]
 
 
-class MyTemplate(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+class MyTemplate(qp.operation.Operation):
     """Temp operator."""
 
     num_wires = 2
@@ -61,7 +63,7 @@ class MyTemplate(qp.operation.Operation):  # pylint: disable=too-few-public-meth
         ]
 
 
-class CustomIsingXX(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+class CustomIsingXX(qp.operation.Operation):
     """Temp operator."""
 
     num_wires = 2
@@ -100,7 +102,7 @@ def custom_decomps():
     qp.add_decomps(CustomIsingXX, custom_rule_isingxx)
 
 
-class NoMatNoDecompOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+class NoMatNoDecompOp(qp.operation.Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
 
@@ -109,7 +111,7 @@ class NoMatNoDecompOp(qp.operation.Operation):  # pylint: disable=too-few-public
         return False
 
 
-class HasDiagonalizingGatesOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+class HasDiagonalizingGatesOp(qp.operation.Operator):
     """Dummy observable that has diagonalizing gates."""
 
     @classproperty
@@ -902,7 +904,7 @@ class TestPreprocessingIntegration:
 
         m0 = qp.measure(0)
 
-        class MyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyOp(qp.operation.Operator):
             def decomposition(self):
                 return m0.measurements
 
@@ -1133,7 +1135,7 @@ class TestAdjointDiffTapeValidation:
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
-class TestDefaultQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
+class TestDefaultQubitGraphModeExclusive:
     """Tests for DefaultQubit features that require graph mode enabled.
     The legacy decomposition mode should not be able to run these tests.
 

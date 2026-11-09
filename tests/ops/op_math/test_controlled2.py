@@ -13,6 +13,8 @@
 
 """Tests for the Controlled2 class."""
 
+# pylint: disable=too-few-public-methods
+
 import copy
 import pickle
 from typing import override
@@ -32,7 +34,7 @@ from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import CompilableOp, DynOp, NonParametricOp, OneWireDynOp
 
 
-class CustomBase(Operator2):  # pylint: disable=too-few-public-methods
+class CustomBase(Operator2):
     """A custom base op."""
 
     arg_specs = {"wires": Wire[1]}
@@ -47,7 +49,7 @@ class CustomBase(Operator2):  # pylint: disable=too-few-public-methods
         return []
 
 
-class CustomControlled(Controlled2):  # pylint: disable=too-few-public-methods
+class CustomControlled(Controlled2):
     """A custom controlled op based on CustomBase."""
 
     arg_specs = {"wires": Wire[2]}
@@ -62,7 +64,7 @@ class TestControlled2:
     def test_non_parametrized_custom_controlled_op(self):
         """Tests non-parametrized custom controlled op that directly inherits Controlled2"""
 
-        class CH2(Controlled2):  # pylint: disable=too-few-public-methods
+        class CH2(Controlled2):
             """A new CH."""
 
             wire_argnames = ("wires",)
@@ -125,7 +127,7 @@ class TestControlled2:
     def test_parametric_custom_controlled_op(self):
         """Tests parametric op that inherits from Controlled2."""
 
-        class CRot2(Controlled2):  # pylint: disable=too-few-public-methods
+        class CRot2(Controlled2):
             """A new CRot."""
 
             dynamic_argnames = ("phi", "theta", "omega")
@@ -159,7 +161,7 @@ class TestControlled2:
     def test_custom_controlled_op_abstract(self):
         """Test creating an abstract custom controlled op."""
 
-        class Rot2(Operator2):  # pylint: disable=too-few-public-methods
+        class Rot2(Operator2):
             """A new Rot."""
 
             dynamic_argnames = ("phi", "theta", "omega")
@@ -172,7 +174,7 @@ class TestControlled2:
             def __init__(self, phi, theta, omega, wires):
                 super().__init__(phi, theta, omega, wires)
 
-        class CRot2(Controlled2):  # pylint: disable=too-few-public-methods
+        class CRot2(Controlled2):
             """A new CRot."""
 
             dynamic_argnames = ("phi", "theta", "omega")
@@ -194,7 +196,6 @@ class TestControlled2:
 
     def test_custom_controlled_op_default_compute_methods(self):
         """Tests that custom controlled ops can use the default compute_xxx methods."""
-        # pylint: disable=too-few-public-methods
 
         class CRot2(Controlled2):
             """A new CRot."""
@@ -266,7 +267,7 @@ class TestControlled2:
     def test_custom_op_compute_methods_queuing(self):
         """Tests the default compute methods for custom controlled ops doesn't queue extra ops."""
 
-        class CRX2(Controlled2):  # pylint: disable=too-few-public-methods
+        class CRX2(Controlled2):
             """A new CRX2."""
 
             dynamic_argnames = ("theta",)
@@ -292,7 +293,7 @@ class TestControlled2:
 
         import jax
 
-        class CH2(Controlled2):  # pylint: disable=too-few-public-methods
+        class CH2(Controlled2):
             """A new CH."""
 
             wire_argnames = ("wires",)

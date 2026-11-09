@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for Controlled"""
 
+# pylint: disable=too-few-public-methods
+
 import pickle
 from copy import copy
 from functools import partial
@@ -48,15 +50,15 @@ def equal_list(lhs, rhs):
     return len(lhs) == len(rhs) and all(qp.equal(l, r) for l, r in zip(lhs, rhs))
 
 
-class TempOperator(Operator):  # pylint: disable=too-few-public-methods
+class TempOperator(Operator):
     num_wires = 1
 
 
-class TempOperation(Operation):  # pylint: disable=too-few-public-methods
+class TempOperation(Operation):
     num_wires = 1
 
 
-class OpWithDecomposition(Operation):  # pylint: disable=too-few-public-methods
+class OpWithDecomposition(Operation):
     @staticmethod
     def compute_decomposition(*params, wires=None, **_):
         return [
@@ -84,7 +86,7 @@ class TestControlledInheritance:
         """When the operation inherits from `Operation`, then a `ControlledOp` should
         be created instead and the Controlled should now have Operation functionality."""
 
-        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operation):
             num_wires = 1
             num_params = 1
 
@@ -234,7 +236,7 @@ class TestControlledInit:
         qp.testing.assert_valid(op)
 
 
-class DummyHadamard(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+class DummyHadamard(qp.operation.Operator):
     resource_keys = set({})
     num_wires = 1
 
@@ -287,7 +289,7 @@ class TestControlledProperties:
     def test_has_matrix(self, value):
         """Test that Controlled defers has_matrix to base operator."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             num_wires = 1
             has_matrix = value
 
@@ -361,7 +363,7 @@ class TestControlledProperties:
     def test_has_adjoint(self, value):
         """Test that Controlled defers has_adjoint to base operator."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             num_wires = 1
             has_adjoint = value
 
@@ -372,7 +374,7 @@ class TestControlledProperties:
     def test_has_diagonalizing_gates(self, value):
         """Test that Controlled defers has_diagonalizing_gates to base operator."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             num_wires = 1
             has_diagonalizing_gates = value
 
@@ -383,7 +385,7 @@ class TestControlledProperties:
     def test_is_hermitian(self, value):
         """Test that Controlled defers `is_hermitian` to base operator."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             num_wires = 1
             is_verified_hermitian = value
 
@@ -588,7 +590,7 @@ class TestControlledOperationProperties:
     def test_grad_method(self, gm):
         """Check grad_method defers to that of the base operation."""
 
-        class DummyOp(Operation):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operation):
             num_wires = 1
             grad_method = gm
 
@@ -599,7 +601,7 @@ class TestControlledOperationProperties:
     def test_basis(self):
         """Test that controlled mimics the basis attribute of the base op."""
 
-        class DummyOp(Operation):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operation):
             num_wires = 1
             basis = "Z"
 
@@ -1099,7 +1101,7 @@ class TestArithmetic:
     def test_adjoint(self):
         """Test the adjoint method for Controlled Operators."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             num_wires = 1
 
             def adjoint(self):
@@ -1120,7 +1122,7 @@ class TestArithmetic:
     def test_pow(self, z):
         """Test the pow method for Controlled Operators."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             num_wires = 1
 
             def pow(self, z):

@@ -14,6 +14,8 @@
 
 """Unit tests for the ``decompose`` transform"""
 
+# pylint: disable=too-few-public-methods
+
 import warnings
 
 import numpy as np
@@ -50,7 +52,7 @@ class NoMatOp(Operation):
         return [qp.PauliX(self.wires), qp.PauliY(self.wires)]
 
 
-class NoMatNoDecompOp(Operation):  # pylint: disable=too-few-public-methods
+class NoMatNoDecompOp(Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
 
@@ -59,7 +61,7 @@ class NoMatNoDecompOp(Operation):  # pylint: disable=too-few-public-methods
         return False
 
 
-class InfiniteOp(Operation):  # pylint: disable=too-few-public-methods
+class InfiniteOp(Operation):
     """An op with an infinite decomposition."""
 
     num_wires = 1
@@ -329,7 +331,7 @@ class TestPrivateHelpers:
     def test_operator_decomposition_gen_doesnt_pollute_queue(self):
         """Tests that this private helper doesn't affect the queue. Regression test for #9343."""
 
-        class _DecomposingOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class _DecomposingOp(qp.operation.Operation):
             """Define a minimal operator whose decomposition creates multiple gates.
 
             Specifically used to trigger the queue leaking bug when wrapped in qp.ctrl()."""
@@ -381,7 +383,7 @@ class TestPrivateHelpers:
         def stopping_condition(op):
             return op.has_matrix
 
-        class RaggedDecompositionOp(Operation):  # pylint: disable=too-few-public-methods
+        class RaggedDecompositionOp(Operation):
             """class with a ragged decomposition."""
 
             num_wires = 1

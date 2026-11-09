@@ -12,6 +12,8 @@
 # limitations under the License.
 """Tests for Operator2's metaclass."""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 from operator2_utils import CompilableOp, DynOp, StaticOp
@@ -24,7 +26,7 @@ from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
 
-class DynCanonOp(Operator2):  # pylint: disable=too-few-public-methods
+class DynCanonOp(Operator2):
     """Operator with a dynamic parameter and wires that performs canonicalization."""
 
     dynamic_argnames = ("phi",)
@@ -62,8 +64,6 @@ def test_static_compilable_arg_validation(op):
 
 class TestArgSpecValidationAbstractInputs:
     """Tests arg_spec validation when abstract inputs are used to construct operators."""
-
-    # pylint: disable=too-few-public-methods
 
     def test_weak_dtype_is_preserved(self):
         """Tests that canonicalization preserves strength of dtype."""

@@ -12,6 +12,8 @@
 # limitations under the License.
 """Tests for ``pennylane.core.operator.utils``."""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 from operator2_utils import CompilableOp, DynOp, FullOp, MixedHybridOp, MultiWireOp, TwoDynOp
@@ -226,7 +228,7 @@ class TestAbstractifyOperatorInstances:
     def test_arg_specs_integration_with_nested_ops(self):
         """Tests how abstractify plays in with arg_specs validation."""
 
-        class AnotherOp2(Operator2):  # pylint: disable=too-few-public-methods
+        class AnotherOp2(Operator2):
             dynamic_argnames = ("theta",)
 
             wire_argnames = ("wires",)
@@ -236,7 +238,7 @@ class TestAbstractifyOperatorInstances:
             def __init__(self, theta, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(theta, wires)
 
-        class CustomOp2(Operator2):  # pylint: disable=too-few-public-methods
+        class CustomOp2(Operator2):
             dynamic_argnames = ("params",)
 
             wire_argnames = ("wires",)
@@ -296,7 +298,7 @@ class TestAbstractifyOperatorClasses:
     def test_operator_subclass_with_complete_arg_specs(self):
         """Tests that an operator subclass with a complete arg_specs correctly."""
 
-        class FixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
+        class FixedSigOp(Operator2):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "ctrl_wires")
             arg_specs = {
@@ -316,7 +318,7 @@ class TestAbstractifyOperatorClasses:
     def test_operator_subclass_with_incomplete_arg_specs(self):
         """Tests that an error is raised if an operator subclass is used without a complete arg_specs."""
 
-        class FixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
+        class FixedSigOp(Operator2):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "ctrl_wires")
 
@@ -336,7 +338,7 @@ class TestAbstractifyOperator1:
     def test_abstractify_op_type(self):
         """Tests abstractifying an operator type."""
 
-        class CustomOp(Operator1):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operator1):
             pass
 
         rep = abstractify(CustomOp)
@@ -347,7 +349,7 @@ class TestAbstractifyOperator1:
     def test_abstractify_op_instance(self):
         """Tests abstractifying operator instance."""
 
-        class CustomOp2(Operator1):  # pylint: disable=too-few-public-methods
+        class CustomOp2(Operator1):
 
             resource_keys = {"num_wires"}
 

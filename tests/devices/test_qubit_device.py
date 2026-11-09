@@ -15,7 +15,7 @@
 Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
 """
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,too-few-public-methods
 
 import copy
 from random import random
@@ -315,7 +315,7 @@ class TestObservables:
     ):
         """Check that an error is raised if the return type of an observable is unsupported"""
 
-        class UnsupportedMeasurement(MeasurementProcess):  # pylint: disable=too-few-public-methods
+        class UnsupportedMeasurement(MeasurementProcess):
             _shortname = "SomeUnsupportedReturnType"
 
         with qp.queuing.AnnotatedQueue() as q:
@@ -333,7 +333,7 @@ class TestObservables:
                 dev.execute(tape)
 
 
-class TestParameters:  # pylint: disable=too-few-public-methods
+class TestParameters:
     """Test for checking device parameter mappings"""
 
     # pylint: disable-next=redefined-outer-name
@@ -386,7 +386,7 @@ class TestExtractStatistics:
     def test_results_created_empty(self, mock_qubit_device_extract_stats, returntype):
         """Tests that the statistics method raises Unsupported QuantumFunctionError if the return type is None"""
 
-        class UnsupportedMeasurement(MeasurementProcess):  # pylint: disable=too-few-public-methods
+        class UnsupportedMeasurement(MeasurementProcess):
             _shortname = returntype
 
         qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
@@ -400,7 +400,7 @@ class TestExtractStatistics:
 
         assert returntype not in ["Expectation", "Variance", "Sample", "Probability", "State", None]
 
-        class UnsupportedMeasurement(MeasurementProcess):  # pylint: disable=too-few-public-methods
+        class UnsupportedMeasurement(MeasurementProcess):
             _shortname = returntype
 
         qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
@@ -448,7 +448,7 @@ class TestExtractStatistics:
             dev.statistics(tape)
 
 
-class TestGenerateSamples:  # pylint: disable=too-few-public-methods
+class TestGenerateSamples:
     """Test the generate_samples method"""
 
     # pylint: disable-next=redefined-outer-name
@@ -667,7 +667,7 @@ class TestExpval:
         dev = mock_qubit_device_with_original_statistics()
 
         # observable with no eigenvalue representation defined
-        class MyObs(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyObs(qp.operation.Operator):
             num_wires = 1
 
             def eigvals(self):
@@ -749,7 +749,7 @@ class TestVar:
         """Tests that an error is thrown if var is called with an observable that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
 
-        class MyObs(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyObs(qp.operation.Operator):
             """Observable with no eigenvalue representation defined."""
 
             num_wires = 1
@@ -823,7 +823,7 @@ class TestSample:
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[1, 0], [0, 0]])
 
-        class MyObs(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyObs(qp.operation.Operator):
             """Observable with no eigenvalue representation defined."""
 
             num_wires = 1
@@ -895,7 +895,7 @@ class TestSampleWithBroadcasting:
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[[1, 0], [1, 1]], [[1, 1], [0, 0]], [[0, 1], [1, 0]]])
 
-        class MyObs(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyObs(qp.operation.Operator):
             """Observable with no eigenvalue representation defined."""
 
             num_wires = 1
@@ -1224,7 +1224,7 @@ class TestMarginalProb:
         assert np.allclose(res, probs.reshape((-1, 2**num_wires)), atol=tol, rtol=0)
 
 
-class TestActiveWires:  # pylint: disable=too-few-public-methods
+class TestActiveWires:
     """Test that the active_wires static method works as required."""
 
     # pylint: disable-next=redefined-outer-name
@@ -1237,7 +1237,7 @@ class TestActiveWires:  # pylint: disable=too-few-public-methods
         assert res == Wires([0, 2, 5])
 
 
-class TestCapabilities:  # pylint: disable=too-few-public-methods
+class TestCapabilities:
     """Test that a default qubit device defines capabilities that all devices inheriting
     from it will automatically have."""
 
@@ -1369,7 +1369,7 @@ class TestExecution:
         qp.assert_equal(rotations[0], qp.Hadamard(0))
 
 
-class TestExecutionBroadcasted:  # pylint: disable=too-few-public-methods
+class TestExecutionBroadcasted:
     """Tests for the execute method with broadcasted parameters"""
 
     def test_device_executions(self):
@@ -1493,7 +1493,7 @@ class TestBatchExecution:
         assert np.allclose(res[0], dev.execute(empty_tape), rtol=tol, atol=0)
 
 
-class TestGetBatchSize:  # pylint: disable=too-few-public-methods
+class TestGetBatchSize:
     """Tests for the helper method ``_get_batch_size`` of ``QubitDevice``."""
 
     @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
@@ -1721,7 +1721,7 @@ def test_generate_basis_states():
 def test_samples_to_counts_all_outcomes():
     """Test that _samples_to_counts can handle counts with all outcomes."""
 
-    class DummyQubitDevice(qp.devices.QubitDevice):  # pylint: disable=too-few-public-methods
+    class DummyQubitDevice(qp.devices.QubitDevice):
 
         author = None
         name = "bla"
@@ -1742,7 +1742,7 @@ def test_samples_to_counts_all_outcomes():
 def test_no_adjoint_jacobian_errors():
     """Test that adjoint_jacobian errors with batching and shot vectors"""
 
-    class DummyQubitDevice(qp.devices.QubitDevice):  # pylint: disable=too-few-public-methods
+    class DummyQubitDevice(qp.devices.QubitDevice):
 
         author = None
         name = "bla"

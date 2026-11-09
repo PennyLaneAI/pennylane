@@ -15,6 +15,8 @@
 This submodule tests the base classes for resource operators.
 """
 
+# pylint: disable=too-few-public-methods
+
 from collections import defaultdict
 from collections.abc import Hashable
 from dataclasses import dataclass
@@ -29,23 +31,23 @@ from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resource
 from pennylane.estimator.resource_operator import GateCount, _dequeue, _make_hashable, resource_rep
 
 
-class DummyX(ResourceOperator):  # pylint: disable=too-few-public-methods
+class DummyX(ResourceOperator):
     """Dummy testing class representing X gate"""
 
 
-class DummyQFT(ResourceOperator):  # pylint: disable=too-few-public-methods
+class DummyQFT(ResourceOperator):
     """Dummy testing class representing QFT gate"""
 
 
-class DummyQSVT(ResourceOperator):  # pylint: disable=too-few-public-methods
+class DummyQSVT(ResourceOperator):
     """Dummy testing class representing QSVT gate"""
 
 
-class DummyTrotterProduct(ResourceOperator):  # pylint: disable=too-few-public-methods
+class DummyTrotterProduct(ResourceOperator):
     """Dummy testing class representing TrotterProduct gate"""
 
 
-class DummyAdjoint(ResourceOperator):  # pylint: disable=too-few-public-methods
+class DummyAdjoint(ResourceOperator):
     """Dummy testing class representing the Adjoint symbolic operator"""
 
 

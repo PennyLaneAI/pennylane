@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types."""
 
+# pylint: disable=too-few-public-methods
+
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
@@ -236,19 +238,19 @@ class TestEvaluateGradient:
                 assert np.allclose(_g, _e)
 
 
-class RY_with_F(qp.RY):  # pylint: disable=too-few-public-methods
+class RY_with_F(qp.RY):
     """Custom variant of qp.RY with grad_method "F"."""
 
     grad_method = "F"
 
 
-class RX_with_F(qp.RX):  # pylint: disable=too-few-public-methods
+class RX_with_F(qp.RX):
     """Custom variant of qp.RX with grad_method "F"."""
 
     grad_method = "F"
 
 
-class RX_par_dep_recipe(qp.RX):  # pylint: disable=too-few-public-methods
+class RX_par_dep_recipe(qp.RX):
     """RX operation with a parameter-dependent grad recipe."""
 
     @property
@@ -278,7 +280,7 @@ class TestGetOperationRecipe:
         c, s = qp.gradients.generate_shift_rule(frequencies, shifts=shifts).T
         recipe = list(zip(c, np.ones_like(c), s))
 
-        class DummyOp(orig_op):  # pylint: disable=too-few-public-methods
+        class DummyOp(orig_op):
             """Custom version of original operation with different gradient recipe."""
 
             grad_recipe = (recipe,)
@@ -332,7 +334,7 @@ class TestGetOperationRecipe:
         c, s = qp.gradients.generate_shift_rule(frequencies, shifts=shifts).T
         recipe = list(zip(c, np.ones_like(c), s))
 
-        class DummyOp(orig_op):  # pylint: disable=too-few-public-methods
+        class DummyOp(orig_op):
             """Custom version of original operation with different gradient recipe."""
 
             grad_recipe = (recipe,)
@@ -928,7 +930,7 @@ class TestParamShift:
         """
         s = np.pi / 2
 
-        class RX(qp.RX):  # pylint: disable=too-few-public-methods
+        class RX(qp.RX):
             """RX operation with an additional term in the grad recipe.
             The grad_recipe no longer yields the derivative, but we account for this.
             For this test, the presence of the unshifted term (with non-vanishing coefficient)
@@ -1028,7 +1030,7 @@ class TestParamShift:
         """Test that an error is raised if no grad_recipe, no parameter_frequencies
         and no generator are found."""
 
-        class LegacyRX(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class LegacyRX(qp.operation.Operation):
             """This copy of RX overwrites parameter_frequencies to report
             missing information, disabling its differentiation."""
 
@@ -1041,7 +1043,7 @@ class TestParamShift:
                 """Raise an error instead of returning frequencies."""
                 raise qp.operation.ParameterFrequenciesUndefinedError
 
-        class NewOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class NewOp(qp.operation.Operation):
             """This new operation does not overwrite parameter_frequencies
             but does not have a generator, disabling its differentiation."""
 
@@ -1064,7 +1066,7 @@ class TestParamShift:
 
 # Remove the following and unskip the class below once broadcasted
 # tapes are fully supported with gradient transforms. See #4462 for details.
-class TestParamShiftRaisesWithBroadcasted:  # pylint: disable=too-few-public-methods
+class TestParamShiftRaisesWithBroadcasted:
     """Test that an error is raised with broadcasted tapes."""
 
     def test_batched_tape_raises(self):
@@ -2575,7 +2577,7 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
-        class SpecialObservable(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class SpecialObservable(qp.operation.Operator):
             """SpecialObservable"""
 
             def diagonalizing_gates(self):
@@ -3250,7 +3252,7 @@ class TestParameterShiftRuleBroadcast:
 @pytest.mark.parametrize(
     "broadcast, expected", [(False, (5, [None] * 5)), (True, (3, [None, 2, 2]))]
 )
-class TestParamShiftGradients:  # pylint: disable=too-few-public-methods
+class TestParamShiftGradients:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd

@@ -14,6 +14,8 @@
 
 """Unit tests for the DecompositionRule class."""
 
+# pylint: disable=too-few-public-methods
+
 import inspect
 from textwrap import dedent
 
@@ -44,7 +46,7 @@ from pennylane.typing import Float, Int, Wire
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp, ParametrizedHybridOp
 
 
-class CustomOp(Operator):  # pylint: disable=too-few-public-methods
+class CustomOp(Operator):
     pass
 
 
@@ -262,7 +264,7 @@ class TestDecompositionRule:
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             resource_keys = set()
 
         @register_resources({DummyOp: 1})
@@ -294,7 +296,7 @@ class TestDecompositionRule:
     def test_operator_without_fixed_sig_raises_error(self, my_arg_specs):
         """Tests that if an operator type without a fixed_sig is used, an error is raised."""
 
-        class MissingFixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
+        class MissingFixedSigOp(Operator2):
             dynamic_argnames = ("angles", "eps")
 
             arg_specs = my_arg_specs
@@ -333,7 +335,7 @@ class TestDecompositionRule:
     def test_resource_keys_are_abstract_operators(self, abstract_sig, concrete_sig):
         """Tests that abstract operators can be used as keys."""
 
-        class FixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
+        class FixedSigOp(Operator2):
             dynamic_argnames = ("phi", "matrix")
 
             arg_specs = abstract_sig
@@ -359,7 +361,7 @@ class TestDecompositionRule:
     def test_auto_wrap_fails(self):
         """Tests that an op with non-empty resource_keys cannot be auto-wrapped."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             resource_keys = {"foo"}
 
         @register_resources({DummyOp: 1})
@@ -471,7 +473,7 @@ class TestDecompDictionary:
     def test_add_and_list_decomps(self):
         """Tests that decomposition rules can be registered for an operator."""
 
-        class SomeOtherOp(Operator):  # pylint: disable=too-few-public-methods
+        class SomeOtherOp(Operator):
             pass
 
         assert not qp.decomposition.has_decomp(SomeOtherOp)
@@ -521,7 +523,7 @@ class TestDecompDictionary:
     def test_add_decomp_duplicate_names(self):
         """Tests that you cannot add decomposition rules with duplicate names."""
 
-        class AnotherOp(Operator):  # pylint: disable=too-few-public-methods
+        class AnotherOp(Operator):
             pass
 
         @register_resources({qp.RZ: 2, qp.CNOT: 1})
@@ -545,7 +547,7 @@ class TestDecompDictionary:
     def test_add_decomp_exact_alias(self):
         """Tests that adding exactly the same decomp rule twice does not error out."""
 
-        class AnotherOp(Operator):  # pylint: disable=too-few-public-methods
+        class AnotherOp(Operator):
             pass
 
         @register_resources({qp.RZ: 2, qp.CNOT: 1})
@@ -659,7 +661,7 @@ class TestDecompDictionary:
             "controlled(custom_rule2)",
         }
 
-        class AnotherOp(DynOp):  # pylint: disable=too-few-public-methods
+        class AnotherOp(DynOp):
             has_matrix = True
             name = "DynOp"
 
@@ -903,7 +905,7 @@ class TestDecompCollection:
         assert "custom3" in collection
 
 
-class CustomParametrizedOp(Operator):  # pylint: disable=too-few-public-methods
+class CustomParametrizedOp(Operator):
     """A custom parametrized op for testing."""
 
     resource_keys = {"num_wires"}

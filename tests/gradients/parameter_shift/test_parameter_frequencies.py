@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for the gradients.parameter_frequencies single dispatch function and handlers."""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 
@@ -31,7 +33,7 @@ class TestParameterFrequencies:
     def test_parameter_frequencies_raises_error_too_many_dynamic_args(self):
         """Test that parameter_frequencies raises an error if there are too many dynamic arguments."""
 
-        class MultiArgOpWithGen(Operator2):  # pylint: disable=too-few-public-methods
+        class MultiArgOpWithGen(Operator2):
             dynamic_argnames = ("phi", "theta")
             wire_argnames = ("wires",)
 
@@ -49,7 +51,7 @@ class TestParameterFrequencies:
     def test_parameter_frequencies_raises_error_no_generator(self):
         """Test that parameter_frequencies raises an error if the op.generator() is undefined."""
 
-        class SingleArgOpNoGen(Operator2):  # pylint: disable=too-few-public-methods
+        class SingleArgOpNoGen(Operator2):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
@@ -66,7 +68,7 @@ class TestParameterFrequencies:
     def test_param_freqs_no_generator(self, freqs):
         """Test that parameter_frequencies are accessible when provided explicitly, even if the op.generator() is undefined."""
 
-        class MultiArgOpNoGenParamFreqs(Operator2):  # pylint: disable=too-few-public-methods
+        class MultiArgOpNoGenParamFreqs(Operator2):
             dynamic_argnames = ("phi", "theta")
             wire_argnames = ("wires",)
 
@@ -92,7 +94,7 @@ class TestParameterFrequencies:
     def test_param_freqs_with_generator(self, matrix):
         """Test that parameter_frequencies relate to the eigenvalues of the generator if the op.generator() is defined."""
 
-        class OpWithGen(Operator2):  # pylint: disable=too-few-public-methods
+        class OpWithGen(Operator2):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
@@ -132,7 +134,7 @@ class TestParameterFrequencies:
     def test_parameter_frequencies_raises(self):
         """Test that parameter_frequencies raises an error if given the wrong type of object."""
 
-        class DummyClass:  # pylint: disable=too-few-public-methods
+        class DummyClass:
             name = "DummyClass"
 
             def __int__(self):

@@ -16,6 +16,8 @@ Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
 
+# pylint: disable=too-few-public-methods
+
 import itertools
 import re
 from copy import deepcopy
@@ -252,7 +254,7 @@ def test_assert_equal_types():
 
 
 def test_assert_equal_unspecified():
-    class RandomType:  # pylint: disable=too-few-public-methods
+    class RandomType:
         """dummy type"""
 
         def __init__(self):
@@ -1357,7 +1359,7 @@ class TestEqual:  # pylint: disable=too-many-public-methods
     def test_equal_subclass_returns_false(self):
         """Test that a strict subclass is not equal to its parent operator."""
 
-        class MyPauliX(qp.X):  # pylint: disable=too-few-public-methods
+        class MyPauliX(qp.X):
             pass
 
         op1 = qp.X(0)
@@ -1371,7 +1373,7 @@ class TestEqual:  # pylint: disable=too-many-public-methods
     def test_equal_identity_subclass_returns_false(self):
         """Test that a subclass of Identity is not equal to Identity itself."""
 
-        class MyIdentity(qp.Identity):  # pylint: disable=too-few-public-methods
+        class MyIdentity(qp.Identity):
             pass
 
         op1 = qp.Identity(0)
@@ -1473,7 +1475,7 @@ class TestPauliErrorEqual:
             assert_equal(pes[0], pes[1], check_trainability=False)
 
 
-class TestPauliWordsEqual:  # pylint: disable=too-few-public-methods
+class TestPauliWordsEqual:
     """Tests for qp.equal with PauliSentences."""
 
     @pytest.mark.parametrize("pw1, pw2, res, error_match", equal_pauli_words)

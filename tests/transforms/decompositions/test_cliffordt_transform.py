@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the Clifford+T transform."""
 
+# pylint: disable=too-few-public-methods
+
 import math
 from functools import reduce
 
@@ -39,7 +41,7 @@ INVSQ2 = 1 / math.sqrt(2)
 PI = math.pi
 
 
-class CustomOneQubitOperation(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+class CustomOneQubitOperation(qp.operation.Operation):
     num_wires = 1
 
     @staticmethod
@@ -47,7 +49,7 @@ class CustomOneQubitOperation(qp.operation.Operation):  # pylint: disable=too-fe
         return qp.math.conj(qp.math.transpose(qp.S.compute_matrix()))
 
 
-class CustomTwoQubitOperation(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+class CustomTwoQubitOperation(qp.operation.Operation):
     num_wires = 2
 
     @staticmethod
@@ -501,7 +503,7 @@ class TestCliffordCompile:
     def test_raise_with_cliffordt_decomposition(self):
         """Test that exception is correctly raise when decomposing gates without any decomposition"""
 
-        class SomethingOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class SomethingOp(qp.operation.Operation):
             pass
 
         tape = qp.tape.QuantumScript([SomethingOp(wires=[0, 1, 2])])

@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit tests for the QNode"""
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,too-few-public-methods
 
 import copy
 import warnings
@@ -1077,7 +1077,7 @@ class TestIntegration:
 
         dev = qp.device("default.qubit")
 
-        class DummyCustomGraphOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class DummyCustomGraphOp(qp.operation.Operation):
             """Dummy custom operation for testing purposes."""
 
             def __init__(self, graph: nx.Graph):
@@ -1729,8 +1729,6 @@ class TestMCMConfiguration:
 class TestTapeExpansion:
     """Test that tape expansion within the QNode works correctly"""
 
-    # pylint: disable=too-few-public-methods
-
     @pytest.mark.parametrize(
         "diff_method,grad_on_execution",
         [("parameter-shift", False), ("adjoint", True), ("adjoint", False)],
@@ -1865,7 +1863,7 @@ class TestTapeExpansion:
 def test_resets_after_execution_error():
     """Test that the interface is reset to ``"auto"`` if an error occurs during execution."""
 
-    class BadOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+    class BadOp(qp.operation.Operator):
         """An operator that will cause an error during execution."""
 
     @qp.qnode(qp.device("default.qubit"))

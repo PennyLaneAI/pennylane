@@ -15,7 +15,7 @@
 Tests for capturing conditionals into jaxpr.
 """
 
-# pylint: disable=redefined-outer-name,wrong-import-position
+# pylint: disable=redefined-outer-name,wrong-import-position,too-few-public-methods
 
 
 from functools import partial
@@ -607,7 +607,7 @@ class TestCondOperatorInstances:
     def test_operator1_instance_raises(self):
         """Test that Operator1 instances are rejected as cond branches."""
 
-        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+        class OldOp(Operator):
             """Legacy Operator1-style operator."""
 
         old_op = OldOp(wires=0)
@@ -621,7 +621,7 @@ class TestCondOperatorInstances:
     def test_operator1_false_fn_created_during_tracing_raises(self):
         """Test that Operator1 instances created during tracing are rejected."""
 
-        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+        class OldOp(Operator):
             """Legacy Operator1-style operator."""
 
         def f(pred):
@@ -635,7 +635,7 @@ class TestCondOperatorInstances:
     def test_operator1_true_fn_created_during_tracing_raises(self):
         """Test that an Operator1 true_fn created during tracing is rejected."""
 
-        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+        class OldOp(Operator):
             """Legacy Operator1-style operator."""
 
         def f(pred):
@@ -671,7 +671,7 @@ class TestCondOperatorInstances:
     def test_callable_true_fn_with_operator1_false_fn_tracer_raises(self):
         """Test that an Operator1 false_fn created during tracing is rejected."""
 
-        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+        class OldOp(Operator):
             """Legacy Operator1-style operator."""
 
         def f(pred):
@@ -686,7 +686,7 @@ class TestCondOperatorInstances:
     def test_callable_true_fn_with_operator1_elif_tracer_raises(self):
         """Test that an Operator1 elif created during tracing is rejected."""
 
-        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+        class OldOp(Operator):
             """Legacy Operator1-style operator."""
 
         def f(pred):
@@ -715,7 +715,7 @@ class TestCondOperatorInstances:
     def test_operator1_elif_raises(self):
         """Test that Operator1 instances are rejected as elif branches."""
 
-        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+        class OldOp(Operator):
             """Legacy Operator1-style operator."""
 
         old_op = OldOp(wires=0)
@@ -729,7 +729,7 @@ class TestCondOperatorInstances:
     def test_operator1_elif_created_during_tracing_raises(self):
         """Test that Operator1 elifs created during tracing are rejected."""
 
-        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+        class OldOp(Operator):
             """Legacy Operator1-style operator."""
 
         def f(pred):

@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for preprocess in devices/qubit."""
 
+# pylint: disable=too-few-public-methods
+
 import warnings
 
 import numpy as np
@@ -51,7 +53,7 @@ class NoMatOp(Operation):
         return [qp.PauliX(self.wires), qp.PauliY(self.wires)]
 
 
-class NoMatNoDecompOp(Operation):  # pylint: disable=too-few-public-methods
+class NoMatNoDecompOp(Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
 
@@ -60,7 +62,7 @@ class NoMatNoDecompOp(Operation):  # pylint: disable=too-few-public-methods
         return False
 
 
-class InfiniteOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+class InfiniteOp(qp.operation.Operation):
     """An op with an infinite decomposition."""
 
     num_wires = 1
@@ -110,7 +112,7 @@ class TestPrivateHelpers:
         def stopping_condition(op):
             return op.has_matrix
 
-        class RaggedDecompositionOp(Operation):  # pylint: disable=too-few-public-methods
+        class RaggedDecompositionOp(Operation):
             """class with a ragged decomposition."""
 
             num_wires = 1
@@ -685,7 +687,7 @@ class TestDecomposeTransformations:
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
-class TestGraphModeExclusiveFeatures:  # pylint: disable=too-few-public-methods
+class TestGraphModeExclusiveFeatures:
     """Tests that only work when graph mode is enabled."""
 
     def test_work_wire_unavailability_causes_fallback(self):

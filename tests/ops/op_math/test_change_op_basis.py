@@ -15,6 +15,8 @@
 Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
 
+# pylint: disable=too-few-public-methods
+
 import re
 from functools import partial
 
@@ -37,31 +39,31 @@ from tests.core.operator.operator2_utils import NonParametricOp
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
 
 
-class Z1(Operator1):  # pylint: disable=too-few-public-methods
+class Z1(Operator1):
 
     def adjoint(self):
         return Z1(self.wires)
 
 
-class X1(Operator1):  # pylint: disable=too-few-public-methods
+class X1(Operator1):
 
     def adjoint(self):
         return X1(self.wires)
 
 
-class H1(Operator1):  # pylint: disable=too-few-public-methods
+class H1(Operator1):
 
     def adjoint(self):
         return H1(self.wires)
 
 
-class CNOT1(Operator1):  # pylint: disable=too-few-public-methods
+class CNOT1(Operator1):
 
     def adjoint(self):
         return CNOT1(self.wires)
 
 
-class RX1(Operator1):  # pylint: disable=too-few-public-methods
+class RX1(Operator1):
 
     def adjoint(self):
         return RX1(self.data[0], self.wires)
@@ -74,7 +76,7 @@ ops = (
 )
 
 
-class DummyOp(qp.core.Operator1):  # pylint: disable=too-few-public-methods
+class DummyOp(qp.core.Operator1):
     pass
 
 
@@ -282,7 +284,7 @@ def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
     assert tape.operations == [compute_op(0), target_op(1), uncompute_op(0)]
 
 
-class MyOp(qp.RX):  # pylint: disable=too-few-public-methods
+class MyOp(qp.RX):
     """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
@@ -398,7 +400,7 @@ class TestProperties:
         assert op.is_verified_hermitian is expected
 
 
-class TestWrapperFunc:  # pylint: disable=too-few-public-methods
+class TestWrapperFunc:
     """Test wrapper function."""
 
     def test_op_change_op_basis_top_level(self):

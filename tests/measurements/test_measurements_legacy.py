@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the measurements module"""
 
+# pylint: disable=too-few-public-methods
+
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
@@ -31,7 +33,7 @@ from pennylane.measurements import (
 from pennylane.wires import Wires
 
 
-class NotValidMeasurement(MeasurementProcess):  # pylint: disable=too-few-public-methods
+class NotValidMeasurement(MeasurementProcess):
     _shortname = "NotValidReturnType"
 
 
@@ -109,7 +111,7 @@ class TestStateMeasurement:
     def test_custom_state_measurement(self):
         """Test the execution of a custom state measurement."""
 
-        class MyMeasurement(StateMeasurement):  # pylint: disable=too-few-public-methods
+        class MyMeasurement(StateMeasurement):
             def process_state(self, state, wire_order):  # pylint: disable=unused-argument
                 return qp.math.sum(state)
 
@@ -124,7 +126,7 @@ class TestStateMeasurement:
     def test_sample_measurement_with_shots(self):
         """Test that executing a state measurement with shots raises a warning."""
 
-        class MyMeasurement(StateMeasurement):  # pylint: disable=too-few-public-methods
+        class MyMeasurement(StateMeasurement):
             def process_state(self, state, wire_order):  # pylint: disable=unused-argument
                 return qp.math.sum(state)
 
@@ -164,7 +166,7 @@ class TestMeasurementTransform:
     def test_custom_measurement(self):
         """Test the execution of a custom measurement."""
 
-        class MyMeasurement(MeasurementTransform):  # pylint: disable=too-few-public-methods
+        class MyMeasurement(MeasurementTransform):
             def process(self, tape, device):
                 return {device.shots: len(tape)}
 
