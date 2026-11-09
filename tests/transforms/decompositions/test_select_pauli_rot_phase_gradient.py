@@ -49,9 +49,8 @@ def test_wires_error_decomp_fun():
         rule(angles, control_wires, target_wire, "X")
 
 
-def test_decomp_has_a_name():
-    """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as expected
-    as a fixed decomposition and yields the correct resources"""
+def test_decomp_registration():
+    """The phase-gradient rule can be registered alongside the built-in rule."""
 
     prec = 3
     num_controls = 2
@@ -66,7 +65,14 @@ def test_decomp_has_a_name():
     custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
         angle_wires, phase_grad_wires, work_wires
     )
-    assert custom_decomp.name == "standard"
+    assert custom_decomp.name == "phase_gradient"
+
+    with qp.decomposition.local_decomps():
+        standard = qp.list_decomps(qp.SelectPauliRot)["standard"]
+        qp.add_decomps(qp.SelectPauliRot, custom_decomp)
+        rules = qp.list_decomps(qp.SelectPauliRot)
+        assert rules["standard"] is standard
+        assert rules["phase_gradient"] is custom_decomp
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

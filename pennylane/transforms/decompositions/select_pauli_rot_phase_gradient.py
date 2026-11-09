@@ -323,7 +323,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(
     @qp.register_resources(
         _select_pauli_rot_phase_gradient_standard_resources,
         exact=precisions == {precision},
-        name="standard",
+        name="phase_gradient",
     )
     def _select_pauli_rot_phase_gradient_standard(
         angles, control_wires, target_wire, rot_axis, **_
