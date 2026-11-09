@@ -33,6 +33,7 @@ from pennylane.ops.qubit import RX as old_loc_RX
 from pennylane.ops.qubit import MultiRZ as old_loc_MultiRZ
 from pennylane.testing import assert_decomposable
 from pennylane.testing.decompositions import assert_valid_decomp_rule, decomp_rule_to_tape
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS = [
@@ -879,6 +880,59 @@ class TestDecompositions:
         exp[..., lam_pos, lam_pos] = lam
 
         assert np.allclose(decomposed_matrix, exp)
+
+
+@pytest.mark.parametrize("cphase_op", [qp.CPhaseShift00, qp.CPhaseShift01, qp.CPhaseShift10])
+class TestCPhaseShift:
+    """Test the Operator2 interface of the controlled phase shifts."""
+
+    def test_abstract_operator(self, cphase_op):
+        """Test that the concrete operator has the expected abstract representation."""
+        op = cphase_op(0.371, wires=[2, 0])
+        assert isinstance(op, Operator2)
+        assert qp.core.abstractify(op) == cphase_op(Float, wires=Wire[2])
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_traced_parameter_frequencies(self, cphase_op):
+        """Test that frequency metadata is available with traced angles and wires."""
+        import jax
+
+        def frequencies(phi, first_wire, second_wire):
+            return parameter_frequencies(cphase_op(phi, wires=[first_wire, second_wire]))
+
+        jaxpr = jax.make_jaxpr(frequencies)(0.371, 2, 0)
+        assert jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.371, 2, 0) == [1]
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("wires", [[0, 2], [2, 0]])
+    @pytest.mark.parametrize("variant", ["base", "adjoint", "pow"])
+    def test_decomposition_rules(self, cphase_op, wires, variant):
+        """Test the base, adjoint and power decomposition matrices and resource counts."""
+        op = cphase_op(0.371, wires=wires)
+        if variant == "adjoint":
+            op = qp.adjoint(op)
+        elif variant == "pow":
+            op = qp.pow(op, 1.25)
+        assert_decomposable(op)
+
+    @pytest.mark.jax
+    def test_jit_vmap(self, cphase_op):
+        """Test matrices and eigenvalues with traced angles and wires."""
+        import jax
+        import jax.numpy as jnp
+
+        def matrix_and_eigvals(phi, wires):
+            op = cphase_op(phi, wires=[wires[0], wires[1]])
+            return op.matrix(), op.eigvals()
+
+        angles = jnp.array([-0.2, 0.4, 1.1])
+        wires = jnp.array([[0, 2], [2, 0], [3, 1]])
+        matrices, eigvals = jax.vmap(jax.jit(matrix_and_eigvals))(angles, wires)
+        expected = qp.math.stack([cphase_op(angle, wires=[0, 1]).matrix() for angle in angles])
+
+        assert qp.math.allclose(matrices, expected)
+        assert qp.math.allclose(eigvals, qp.math.diagonal(expected, axis1=-2, axis2=-1))
 
 
 pswap_angles = list(np.linspace(-np.pi, np.pi, 11)) + [np.linspace(-1, 1, 11)]
