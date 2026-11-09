@@ -151,9 +151,7 @@ def _ctrl_seq_decomposition_resources(base, control) -> dict:
         return {}
     controlled_base = _ctrl_abstract(base_rep, Wire[1])
     return dict(
-        Counter(
-            abstractify(pow(controlled_base, 2**i, lazy=False)) for i in range(len(control))
-        )
+        Counter(abstractify(pow(controlled_base, 2**i, lazy=False)) for i in range(len(control)))
     )
 
 

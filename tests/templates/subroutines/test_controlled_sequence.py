@@ -181,7 +181,7 @@ class TestMethods:
         assert all(eqn.primitive.name != "for_loop" for eqn in plxpr.jaxpr.eqns)
         operations = []
 
-        class CollectOps(qp.capture.PlxprInterpreter):
+        class CollectOps(qp.capture.PlxprInterpreter):  # pylint: disable=too-few-public-methods
             def interpret_operation(self, op):
                 operations.append(op)
 
