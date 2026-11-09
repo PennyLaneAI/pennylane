@@ -13,13 +13,7 @@ fail-on=useless-suppression
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis. It
 # supports qualified module names, as well as Unix pattern matching.
-# Pytest loads local helper modules; Astroid can cache another conftest.py or utils.py.
-ignored-modules=numpy,scipy,autograd,toml,appdir,autograd.numpy,autograd.numpy.linalg,autograd.numpy.builtins,packaging,torch,tensorflow,tensorflow.contrib,tensorflow.contrib.eager,LazyLoader,networkx,networkx.dag,math,pennylane.numpy,
-  conftest.atol_for_shots,
-  conftest.get_device,
-  conftest.test_matrix,
-  utils.check_matrix_equivalence,
-  utils.compare_operation_lists
+ignored-modules=numpy,scipy,autograd,toml,appdir,autograd.numpy,autograd.numpy.linalg,autograd.numpy.builtins,packaging,torch,tensorflow,tensorflow.contrib,tensorflow.contrib.eager,LazyLoader,networkx,networkx.dag,math,pennylane.numpy
 
 # List of classes names for which member attributes should not be checked
 # (useful for classes with attributes dynamically set). This supports can work

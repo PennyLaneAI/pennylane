@@ -189,9 +189,7 @@ class TestOperations:
             dev.op_queue  # pylint: disable=pointless-statement
 
     def test_op_queue_is_filled_during_execution(
-        self,
-        mock_qubit_device_with_paulis_and_methods,
-        monkeypatch,
+        self, mock_qubit_device_with_paulis_and_methods, monkeypatch
     ):
         """Tests that the op_queue is correctly filled when apply is called and that accessing
         op_queue raises no error"""
@@ -252,11 +250,7 @@ class TestOperations:
     @pytest.mark.parametrize("observables", observables)
     @pytest.mark.parametrize("queue", numeric_queues)
     def test_passing_keyword_arguments_to_execute(
-        self,
-        mock_qubit_device_with_paulis_rotations_and_methods,
-        monkeypatch,
-        queue,
-        observables,
+        self, mock_qubit_device_with_paulis_rotations_and_methods, monkeypatch, queue, observables
     ):
         """Tests that passing keyword arguments to execute propagates those kwargs to the apply()
         method"""
@@ -304,9 +298,7 @@ class TestObservables:
             dev.execute(tape)
 
     def test_unsupported_observable_return_type_raise_error(
-        self,
-        mock_qubit_device_with_paulis_and_methods,
-        monkeypatch,
+        self, mock_qubit_device_with_paulis_and_methods, monkeypatch
     ):
         """Check that an error is raised if the return type of an observable is unsupported"""
 
@@ -606,9 +598,7 @@ class TestExpval:
         assert res == (obs.eigvals() @ probs).real
 
     def test_analytic_expval_broadcasted(
-        self,
-        mock_qubit_device_with_original_statistics,
-        monkeypatch,
+        self, mock_qubit_device_with_original_statistics, monkeypatch
     ):
         """Tests expval method when the analytic attribute is True and using broadcasting
 
@@ -688,9 +678,7 @@ class TestVar:
         assert res == (obs.eigvals() ** 2) @ probs - (obs.eigvals() @ probs).real ** 2
 
     def test_analytic_var_broadcasted(
-        self,
-        mock_qubit_device_with_original_statistics,
-        monkeypatch,
+        self, mock_qubit_device_with_original_statistics, monkeypatch
     ):
         """Tests var method when the analytic attribute is True and using broadcasting
 
@@ -893,11 +881,7 @@ class TestEstimateProb:
         "wires, expected", [([0], [0.5, 0.5]), (None, [0.5, 0, 0, 0.5]), ([0, 1], [0.5, 0, 0, 0.5])]
     )
     def test_estimate_probability(
-        self,
-        wires,
-        expected,
-        mock_qubit_device_with_original_statistics,
-        monkeypatch,
+        self, wires, expected, mock_qubit_device_with_original_statistics, monkeypatch
     ):
         """Tests the estimate_probability method"""
         dev = mock_qubit_device_with_original_statistics(wires=2)
@@ -918,11 +902,7 @@ class TestEstimateProb:
         ],
     )
     def test_estimate_probability_with_binsize(
-        self,
-        wires,
-        expected,
-        mock_qubit_device_with_original_statistics,
-        monkeypatch,
+        self, wires, expected, mock_qubit_device_with_original_statistics, monkeypatch
     ):
         """Tests the estimate_probability method with a bin size"""
         dev = mock_qubit_device_with_original_statistics(wires=2)
@@ -944,11 +924,7 @@ class TestEstimateProb:
         ],
     )
     def test_estimate_probability_with_broadcasting(
-        self,
-        wires,
-        expected,
-        mock_qubit_device_with_original_statistics,
-        monkeypatch,
+        self, wires, expected, mock_qubit_device_with_original_statistics, monkeypatch
     ):
         """Tests the estimate_probability method with parameter broadcasting"""
         dev = mock_qubit_device_with_original_statistics(wires=2)
@@ -996,11 +972,7 @@ class TestEstimateProb:
         ],
     )
     def test_estimate_probability_with_binsize_with_broadcasting(
-        self,
-        wires,
-        expected,
-        mock_qubit_device_with_original_statistics,
-        monkeypatch,
+        self, wires, expected, mock_qubit_device_with_original_statistics, monkeypatch
     ):
         """Tests the estimate_probability method with a bin size and parameter broadcasting"""
         dev = mock_qubit_device_with_original_statistics(wires=2)
@@ -1039,12 +1011,7 @@ class TestMarginalProb:
         ],
     )
     def test_correct_arguments_for_marginals(
-        self,
-        mock_qubit_device_with_original_statistics,
-        mocker,
-        wires,
-        inactive_wires,
-        tol,
+        self, mock_qubit_device_with_original_statistics, mocker, wires, inactive_wires, tol
     ):
         """Test that the correct arguments are passed to the marginal_prob method"""
 
@@ -1094,12 +1061,7 @@ class TestMarginalProb:
 
     @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
     def test_correct_marginals_returned(
-        self,
-        mock_qubit_device_with_original_statistics,
-        probs,
-        marginals,
-        wires,
-        tol,
+        self, mock_qubit_device_with_original_statistics, probs, marginals, wires, tol
     ):
         """Test that the correct marginals are returned by the marginal_prob method"""
         num_wires = int(np.log2(len(probs)))

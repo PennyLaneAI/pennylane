@@ -270,10 +270,7 @@ class TestDeviceSupportedLogic:
     @pytest.mark.parametrize("supported_multi_term_obs", ["Hamiltonian", "LinearCombination"])
     @pytest.mark.parametrize("obs_type", [qp.ops.LinearCombination, qp.Hamiltonian])
     def test_all_multi_term_obs_supported_linear_combination(
-        self,
-        mock_device,
-        supported_multi_term_obs,
-        obs_type,
+        self, mock_device, supported_multi_term_obs, obs_type
     ):
         """Test that LinearCombination is supported when the device supports either
         LinearCombination or Hamiltonian."""
@@ -468,10 +465,7 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
         ],
     )
     def test_device_default_expand_ops(
-        self,
-        depth,
-        expanded_ops,
-        mock_device_with_paulis_hamiltonian_and_methods,
+        self, depth, expanded_ops, mock_device_with_paulis_hamiltonian_and_methods
     ):
         """Test that the default expand method can selectively expand operations
         without expanding measurements."""
@@ -627,9 +621,7 @@ class TestOperations:
             dev.op_queue  # pylint: disable=pointless-statement
 
     def test_op_queue_is_filled_at_pre_measure(
-        self,
-        mock_device_with_paulis_and_methods,
-        monkeypatch,
+        self, mock_device_with_paulis_and_methods, monkeypatch
     ):
         """Tests that the op_queue is correctly filled when pre_measure is called and that accessing
         op_queue raises no error"""
@@ -658,9 +650,7 @@ class TestOperations:
         assert queue_at_pre_measure == queue
 
     def test_op_queue_is_filled_during_execution(
-        self,
-        mock_device_with_paulis_and_methods,
-        monkeypatch,
+        self, mock_device_with_paulis_and_methods, monkeypatch
     ):
         """Tests that the operations are properly applied and queued"""
         dev = mock_device_with_paulis_and_methods(wires=3)
@@ -754,9 +744,7 @@ class TestObservables:
             dev.obs_queue  # pylint: disable=pointless-statement
 
     def test_obs_queue_is_filled_at_pre_measure(
-        self,
-        mock_device_with_paulis_and_methods,
-        monkeypatch,
+        self, mock_device_with_paulis_and_methods, monkeypatch
     ):
         """Tests that the op_queue is correctly filled when pre_measure is called and that accessing
         op_queue raises no error"""
@@ -785,9 +773,7 @@ class TestObservables:
         assert queue_at_pre_measure == observables
 
     def test_obs_queue_is_filled_during_execution(
-        self,
-        monkeypatch,
-        mock_device_with_paulis_and_methods,
+        self, monkeypatch, mock_device_with_paulis_and_methods
     ):
         """Tests that the operations are properly applied and queued"""
         dev = mock_device_with_paulis_and_methods(wires=3)

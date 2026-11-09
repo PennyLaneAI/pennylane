@@ -1114,10 +1114,7 @@ class Rot(Operator2):
     @staticmethod
     @override
     def compute_matrix(  # pylint: disable=unused-argument
-        phi: TensorLike,
-        theta: TensorLike,
-        omega: TensorLike,
-        wires: WiresLike | None = None,
+        phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike | None = None
     ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 

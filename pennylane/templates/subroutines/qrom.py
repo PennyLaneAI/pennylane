@@ -560,12 +560,7 @@ def _count_tempAND_in_measurement_qrom(k):
 
 
 def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-argument
-    bitstrings=None,
-    control_wires=None,
-    target_wires=None,
-    work_wires=None,
-    clean=None,
-    base=None,
+    bitstrings=None, control_wires=None, target_wires=None, work_wires=None, clean=None, base=None
 ):
     """Resource estimate for the measurement-based QROM decomposition.
 

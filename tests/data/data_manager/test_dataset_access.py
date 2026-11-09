@@ -335,7 +335,13 @@ class TestLoadInteractive:
             ),
         ],
     )
-    def test_load_interactive_qchem(self, mock_input, mock_sleep, mock_load, side_effect):
+    def test_load_interactive_qchem(
+        self,
+        mock_input,
+        mock_sleep,
+        mock_load,
+        side_effect,
+    ):
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
         assert isinstance(qp.data.load_interactive(), qp.data.Dataset)

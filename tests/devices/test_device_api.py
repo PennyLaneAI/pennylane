@@ -736,8 +736,7 @@ def test_device_with_ambiguous_preprocess():
                 return ExecutionConfig()
 
             def preprocess_transforms(
-                self,
-                execution_config: ExecutionConfig | None = None,
+                self, execution_config: ExecutionConfig | None = None
             ) -> CompilePipeline:
                 return CompilePipeline()
 

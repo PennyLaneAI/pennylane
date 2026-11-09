@@ -207,7 +207,10 @@ def test_integration_multi_wire(rot_axis, seed):
         gs |= {"Hadamard"}
 
     # pylint: disable-next=protected-access
-    @qp.transforms._tape_decompose(gate_set=gs, fixed_decomps={qp.SelectPauliRot: custom_decomp})
+    @qp.transforms._tape_decompose(
+        gate_set=gs,
+        fixed_decomps={qp.SelectPauliRot: custom_decomp},
+    )
     @qp.qnode(qp.device("default.qubit", wires=all_wires))
     def circuit(in_state):
         # input state

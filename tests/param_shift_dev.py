@@ -87,10 +87,7 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
         return (results[0], jacs[0]) if is_single_circuit else (results, jacs)
 
     def compute_jvp(
-        self,
-        circuits,
-        tangents,
-        execution_config: qp.devices.ExecutionConfig | None = None,
+        self, circuits, tangents, execution_config: qp.devices.ExecutionConfig | None = None
     ):
         is_single_circuit = False
         if isinstance(circuits, qp.tape.QuantumScript):
@@ -107,10 +104,7 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
         return fn(results)[0] if is_single_circuit else fn(results)
 
     def execute_and_compute_jvp(
-        self,
-        circuits,
-        tangents,
-        execution_config: qp.devices.ExecutionConfig | None = None,
+        self, circuits, tangents, execution_config: qp.devices.ExecutionConfig | None = None
     ):
         is_single_circuit = False
         if isinstance(circuits, qp.tape.QuantumScript):
@@ -135,10 +129,7 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
         return (results[0], jvps[0]) if is_single_circuit else results, jvps
 
     def compute_vjp(
-        self,
-        circuits,
-        cotangents,
-        execution_config: qp.devices.ExecutionConfig | None = None,
+        self, circuits, cotangents, execution_config: qp.devices.ExecutionConfig | None = None
     ):
         is_single_circuit = False
         if isinstance(circuits, qp.tape.QuantumScript):
@@ -155,10 +146,7 @@ class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
         return fn(results)[0] if is_single_circuit else fn(results)
 
     def execute_and_compute_vjp(
-        self,
-        circuits,
-        cotangents,
-        execution_config: qp.devices.ExecutionConfig | None = None,
+        self, circuits, cotangents, execution_config: qp.devices.ExecutionConfig | None = None
     ):
         is_single_circuit = False
         if isinstance(circuits, qp.tape.QuantumScript):

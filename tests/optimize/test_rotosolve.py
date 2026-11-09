@@ -199,14 +199,7 @@ all_substep_kwargs = [
 class TestWithClassicalFunction:
     # pylint: disable=unused-argument
     def test_number_of_function_calls(
-        self,
-        fun,
-        x_min,
-        param,
-        nums_freq,
-        exp_num_calls,
-        substep_optimizer,
-        substep_kwargs,
+        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests that per parameter 2R+1 function calls are used for an update step."""
         num_calls = 0
@@ -233,14 +226,7 @@ class TestWithClassicalFunction:
         assert num_calls == exp_num_calls
 
     def test_single_step_convergence(
-        self,
-        fun,
-        x_min,
-        param,
-        nums_freq,
-        exp_num_calls,
-        substep_optimizer,
-        substep_kwargs,
+        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests convergence for easy classical functions in a single Rotosolve step.
         Includes testing of the parameter output shape and the old cost when using step_and_cost."""
@@ -293,14 +279,7 @@ class TestWithClassicalFunction:
         assert np.isclose(old_cost, fun(*param))
 
     def test_full_output(
-        self,
-        fun,
-        x_min,
-        param,
-        nums_freq,
-        exp_num_calls,
-        substep_optimizer,
-        substep_kwargs,
+        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests the ``full_output`` feature of Rotosolve, delivering intermediate cost
         function values at the univariate optimization substeps."""
