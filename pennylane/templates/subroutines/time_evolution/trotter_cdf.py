@@ -530,6 +530,7 @@ def _apply_two_body_diagonal_with_work_wires(  # pylint: disable=too-many-argume
     across the inner loop. The work wires and original system basis are restored
     at the end of the layer.
     """
+    # pylint: disable=no-value-for-parameter
     assert len(control_wires) <= 1, "The work-wire decomposition supports at most one control wire."
     num_orbitals = Z.shape[0]
     standard_control = len(control_wires) > 0 and not double_phase
@@ -574,16 +575,16 @@ def _apply_two_body_diagonal_with_work_wires(  # pylint: disable=too-many-argume
         # Flipping p-alpha reverses all (p, q) rotations, so one CNOT pair serves this loop.
         if double_phase:
             CNOT([control_wires[0], wires[2 * p]])
-        pair()  # pylint: disable=no-value-for-parameter
+        pair()
         if double_phase:
             CNOT([control_wires[0], wires[2 * p]])
         if standard_control:
             adjoint(TemporaryAND)(control_and_wires, control_values=(0, 1))
 
-    orbital_parity_cnots()  # pylint: disable=no-value-for-parameter
-    same_orbital_rotations()  # pylint: disable=no-value-for-parameter
-    orbital_pairs()  # pylint: disable=no-value-for-parameter
-    orbital_parity_cnots()  # pylint: disable=no-value-for-parameter
+    orbital_parity_cnots()
+    same_orbital_rotations()
+    orbital_pairs()
+    orbital_parity_cnots()
 
 
 def _energy_shift(hamiltonian):

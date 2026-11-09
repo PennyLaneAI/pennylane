@@ -1288,6 +1288,7 @@ def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
     mcx_cache_wires,
     selected_wires,
 ):
+    # pylint: disable=no-value-for-parameter
     coefficients, v_bits, data = data
     identity_encoding = data.r == data.m
     b_bits = data.b_bits
@@ -1342,9 +1343,9 @@ def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
             def inner_loop(j):
                 qp.cond(u[j], encoding_cnot)([selected_wires[j], identification_wires[i]])
 
-            inner_loop()  # pylint: disable=no-value-for-parameter
+            inner_loop()
 
-        encoding()  # pylint: disable=no-value-for-parameter
+        encoding()
 
     @for_loop(data.m - 1)
     def left_elbow_ladder(i):
@@ -1380,15 +1381,14 @@ def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
     @for_loop(1, num_entries)
     def uncompute_enumeration(k, prev_bits):
         bits = b_bits[:, k]
-        flip(bits ^ prev_bits)  # pylint: disable=no-value-for-parameter
+        flip(bits ^ prev_bits)
         if data.m > 1:
-            left_elbow_ladder()  # pylint: disable=no-value-for-parameter
-        cnot_loop(k)  # pylint: disable=no-value-for-parameter
+            left_elbow_ladder()
+        cnot_loop(k)
         if data.m > 1:
-            right_elbow_ladder()  # pylint: disable=no-value-for-parameter
+            right_elbow_ladder()
         return bits
 
-    # pylint: disable-next=no-value-for-parameter
     last_bits = uncompute_enumeration(np.ones(data.m, dtype=int))
 
     last_flip_x = qp.hint(qp.X, {"branch-prob": np.mean(1 - data.b_bits[:, -1])})
@@ -1397,11 +1397,11 @@ def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
     def last_flip(i):
         qp.cond(1 - last_bits[i], last_flip_x)(mcx_ctrl_wires[i])
 
-    last_flip()  # pylint: disable=no-value-for-parameter
+    last_flip()
 
     # Step 6) in paper (p.7): Uncompute the b_i in the identification register (self-adjoint)
     if not identity_encoding:
-        encoding()  # pylint: disable=no-value-for-parameter
+        encoding()
 
 
 @register_condition(

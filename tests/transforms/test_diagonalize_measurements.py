@@ -361,6 +361,7 @@ class TestDiagonalizeTapeMeasurements:
     def test_with_duplicate_measurements(self, to_eigvals, supported_base_obs):
         """Test that the diagonalize_measurements transform diagonalizes the measurements
         on the tape correctly when the same observable is used more than once"""
+        # pylint: disable=protected-access
 
         if to_eigvals and supported_base_obs != {qp.Z}:
             pytest.skip("to_eigvals is not supported when not diagonalizing all gates")
@@ -381,11 +382,8 @@ class TestDiagonalizeTapeMeasurements:
             assert new_tape.measurements[0].wires == qp.wires.Wires([0])
             assert new_tape.measurements[1].wires == qp.wires.Wires([1, 2])
             assert new_tape.measurements[2].wires == qp.wires.Wires([0, 2])
-            # pylint: disable-next=protected-access
             assert np.allclose(sorted(new_tape.measurements[0]._eigvals), [-1.0, 1])
-            # pylint: disable-next=protected-access
             assert np.allclose(sorted(new_tape.measurements[1]._eigvals), [-2.0, 0, 0, 2.0])
-            # pylint: disable-next=protected-access
             assert np.allclose(sorted(new_tape.measurements[2]._eigvals), [-1.0, -1.0, 1.0, 1.0])
         else:
             assert new_tape.measurements == [

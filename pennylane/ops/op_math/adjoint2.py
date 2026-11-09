@@ -239,12 +239,13 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
         return {_adjoint_abstract(op): count for op, count in base_gates.items()}
 
     def _wrap_work_wire_spec(base_rule):
+        # pylint: disable=protected-access
 
-        if isinstance(base_rule._work_wire_spec, dict):  # pylint: disable=protected-access
-            return base_rule._work_wire_spec  # pylint: disable=protected-access
+        if isinstance(base_rule._work_wire_spec, dict):
+            return base_rule._work_wire_spec
 
         def _wrapper(base, *_, **__):
-            return base_rule._work_wire_spec(**base.arguments)  # pylint: disable=protected-access
+            return base_rule._work_wire_spec(**base.arguments)
 
         return _wrapper
 

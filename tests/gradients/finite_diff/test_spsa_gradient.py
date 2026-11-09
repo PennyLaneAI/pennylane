@@ -133,20 +133,18 @@ class TestSpsaGradient:
 
     def test_sampler_argument(self, seed):
         """Make sure that custom samplers can be created as defined in the docs of spsa_grad."""
+        # pylint: disable=unused-argument
 
-        # pylint: disable-next=unused-argument
         def sampler_required_kwarg(indices, num_params, *args, rng):
             direction = np.zeros(num_params)
             direction[indices] = rng.choice([-1, 0, 1], size=len(indices))
             return direction
 
-        # pylint: disable-next=unused-argument
         def sampler_required_arg_or_kwarg(indices, num_params, idx_rep, rng):
             direction = np.zeros(num_params)
             direction[indices] = rng.choice([-1, 0, 1], size=len(indices))
             return direction
 
-        # pylint: disable-next=unused-argument
         def sampler_required_arg(indices, num_params, foo, idx_rep, rng, /):
             """This should fail since spsa_grad passes rng as a kwarg."""
             direction = np.zeros(num_params)

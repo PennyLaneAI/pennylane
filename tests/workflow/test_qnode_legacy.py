@@ -1258,6 +1258,7 @@ class TestDefaultQubitLegacySeeding:
 
     def test_sample_call_counter_persistence(self):
         """Test that the sample call counter persists across intermediate resets."""
+        # pylint: disable=protected-access
         seed = 42
         num_shots = 100
         state_probability = np.array([0.5, 0.5])
@@ -1265,16 +1266,16 @@ class TestDefaultQubitLegacySeeding:
         dev = DefaultQubitLegacy(wires=1, shots=num_shots, seed=seed)
 
         # Ensure we're not in fresh execution mode to test intermediate resets
-        dev._fresh_execution = False  # pylint: disable=protected-access
+        dev._fresh_execution = False
 
         # First sample
         samples1 = dev.sample_basis_states(2, state_probability)
-        counter_after_first = dev._sample_call_count  # pylint: disable=protected-access
+        counter_after_first = dev._sample_call_count
 
         # Manual reset (simulating what happens in classical shadow)
         # This should NOT reset the counter since _fresh_execution is False
         dev.reset()
-        counter_after_reset = dev._sample_call_count  # pylint: disable=protected-access
+        counter_after_reset = dev._sample_call_count
 
         # Second sample after reset
         samples2 = dev.sample_basis_states(2, state_probability)

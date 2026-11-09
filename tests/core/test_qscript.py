@@ -180,11 +180,12 @@ class TestUpdate:
 
     def test_cached_graph_reset(self):
         """Test that update resets the graph"""
+        # pylint: disable=protected-access
         qs = QuantumScript()
-        qs._graph = "hello"  # pylint: disable=protected-access
+        qs._graph = "hello"
 
-        qs._update()  # pylint: disable=protected-access
-        assert qs._graph is None  # pylint: disable=protected-access
+        qs._update()
+        assert qs._graph is None
 
     def test_update_circuit_info_wires(self):
         """Test that on construction wires and num_wires are set."""
@@ -379,23 +380,26 @@ class TestUpdate:
 
     def test_lazy_batch_size(self):
         """Test that batch_size is computed lazily."""
+        # pylint: disable=protected-access
         qs = QuantumScript([qp.RX([1.1, 2.2], 0)], [qp.expval(qp.PauliZ(0))])
         copied = qs.copy()
-        assert qs._batch_size is _UNSET_BATCH_SIZE  # pylint: disable=protected-access
+        assert qs._batch_size is _UNSET_BATCH_SIZE
         # copying did not evaluate them either
-        assert copied._batch_size is _UNSET_BATCH_SIZE  # pylint: disable=protected-access
+        assert copied._batch_size is _UNSET_BATCH_SIZE
 
         # now evaluate it
         assert qs.batch_size == 2
 
         copied = qs.copy()
-        assert qs._batch_size == 2  # pylint: disable=protected-access
+        assert qs._batch_size == 2
         # copied tape has it pre-evaluated
-        assert copied._batch_size == 2  # pylint: disable=protected-access
+        assert copied._batch_size == 2
 
 
 class TestMapToStandardWires:
     """Tests for the ``_get_standard_wire_map`` method."""
+
+    # pylint: disable=protected-access
 
     @pytest.mark.parametrize(
         "ops",
@@ -408,7 +412,7 @@ class TestMapToStandardWires:
     def test_only_ops_do_nothing(self, ops):
         """Test that no mapping is done if there are only operators and they act on standard wires."""
         tape = QuantumScript(ops)
-        wire_map = tape._get_standard_wire_map()  # pylint: disable=protected-access
+        wire_map = tape._get_standard_wire_map()
         assert wire_map is None
 
     @pytest.mark.parametrize(
@@ -429,7 +433,7 @@ class TestMapToStandardWires:
         and they act on standard wires.
         """
         tape = QuantumScript(ops, meas)
-        wire_map = tape._get_standard_wire_map()  # pylint: disable=protected-access
+        wire_map = tape._get_standard_wire_map()
         assert wire_map is None
 
     @pytest.mark.parametrize(
@@ -448,7 +452,7 @@ class TestMapToStandardWires:
         and they act on standard wires.
         """
         tape = QuantumScript(ops, meas)
-        wire_map = tape._get_standard_wire_map()  # pylint: disable=protected-access
+        wire_map = tape._get_standard_wire_map()
         assert wire_map is None
 
     @pytest.mark.parametrize(
@@ -462,7 +466,7 @@ class TestMapToStandardWires:
     def test_only_ops(self, ops, expected):
         """Test that the mapping is correct if there are only operators."""
         tape = QuantumScript(ops)
-        wire_map = tape._get_standard_wire_map()  # pylint: disable=protected-access
+        wire_map = tape._get_standard_wire_map()
         assert wire_map == expected
 
     @pytest.mark.parametrize(
@@ -484,7 +488,7 @@ class TestMapToStandardWires:
     def test_op_and_meas(self, ops, meas, expected):
         """Test that the mapping is correct if there are operators and measurements."""
         tape = QuantumScript(ops, meas)
-        wire_map = tape._get_standard_wire_map()  # pylint: disable=protected-access
+        wire_map = tape._get_standard_wire_map()
         assert wire_map == expected
 
     @pytest.mark.parametrize(
@@ -517,7 +521,7 @@ class TestMapToStandardWires:
         (and measurements).
         """
         tape = QuantumScript(ops, meas)
-        wire_map = tape._get_standard_wire_map()  # pylint: disable=protected-access
+        wire_map = tape._get_standard_wire_map()
         assert wire_map == expected
 
 

@@ -1224,6 +1224,7 @@ def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-s
     num_position_fragments = hamiltonian.num_fragments
 
     def position_fragments(i):
+        # pylint: disable=no-value-for-parameter
         const_coeffs = all_constant[i]
         linear_coeffs = all_linear[i]
         quadratic_coeffs = all_quadratic[i]
@@ -1310,11 +1311,10 @@ def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-s
 
         prev_bitstrings = np.zeros((n_states, precision), dtype=int)
         prev_bitstrings = constant_term(prev_bitstrings)
-        prev_bitstrings = linear_terms(prev_bitstrings)  # pylint: disable=no-value-for-parameter
-        prev_bitstrings = quadratic_terms(prev_bitstrings)  # pylint: disable=no-value-for-parameter
+        prev_bitstrings = linear_terms(prev_bitstrings)
+        prev_bitstrings = quadratic_terms(prev_bitstrings)
         # Skip empty bilinear loop: zero-iteration ``for_loop`` still traces under capture.
         if bilinear_indices.shape[1] > 0:
-            # pylint: disable-next=no-value-for-parameter
             prev_bitstrings = bilinear_terms(prev_bitstrings)
 
         # Finish up the coefficients register by unloading the last loaded coefficients

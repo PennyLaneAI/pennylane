@@ -559,6 +559,7 @@ def _molecular_hamiltonian(  # pylint: disable=too-many-arguments
     convert_tol=1e12,
 ):
     r"""Generate the qubit Hamiltonian of a molecule."""
+    # pylint: disable=protected-access
 
     method = method.strip().lower()
     if method not in ["dhf", "pyscf", "openfermion"]:
@@ -581,7 +582,7 @@ def _molecular_hamiltonian(  # pylint: disable=too-many-arguments
     wires_map = None
 
     if wires:
-        wires_new = qp.qchem.convert._process_wires(wires)  # pylint: disable=protected-access
+        wires_new = qp.qchem.convert._process_wires(wires)
         wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels), strict=True))
 
     if method in ("dhf", "pyscf"):
@@ -612,7 +613,6 @@ def _molecular_hamiltonian(  # pylint: disable=too-many-arguments
             load_data=load_data,
         )
     if method == "pyscf":
-        # pylint: disable-next=protected-access
         core_constant, one_mo, two_mo = qp.qchem.openfermion_pyscf._pyscf_integrals(
             symbols,
             geometry_hf,  # pylint: disable=possibly-used-before-assignment
@@ -638,7 +638,7 @@ def _molecular_hamiltonian(  # pylint: disable=too-many-arguments
 
         return h_pl, len(h_pl.wires)
 
-    h_pl = qp.qchem.openfermion_pyscf._openfermion_hamiltonian(  # pylint: disable=protected-access
+    h_pl = qp.qchem.openfermion_pyscf._openfermion_hamiltonian(
         symbols,
         geometry_hf,
         name,

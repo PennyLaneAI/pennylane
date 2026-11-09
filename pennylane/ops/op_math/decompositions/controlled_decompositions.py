@@ -563,6 +563,7 @@ def decompose_mcx_many_workers(wires, control_values, work_wires, work_wire_type
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
+    # pylint: disable=no-value-for-parameter
 
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
@@ -592,14 +593,14 @@ def decompose_mcx_many_workers(wires, control_values, work_wires, work_wire_type
     def loop_down(i):
         down_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
-    _x_flips()  # pylint: disable=no-value-for-parameter
+    _x_flips()
 
     if work_wire_type == "borrowed":
         ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
-        loop_up()  # pylint: disable=no-value-for-parameter
+        loop_up()
 
     down_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
-    loop_down()  # pylint: disable=no-value-for-parameter
+    loop_down()
 
     _wires = [control_wires[0], work_wires[0], target_wire]
     ops.MultiControlledX(
@@ -608,13 +609,13 @@ def decompose_mcx_many_workers(wires, control_values, work_wires, work_wire_type
         work_wire_type=work_wire_type,
     )
 
-    loop_up()  # pylint: disable=no-value-for-parameter
+    loop_up()
     up_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
 
     if work_wire_type == "borrowed":
-        loop_down()  # pylint: disable=no-value-for-parameter
+        loop_down()
 
-    _x_flips()  # pylint: disable=no-value-for-parameter
+    _x_flips()
 
 
 # pylint: disable-next=unused-argument

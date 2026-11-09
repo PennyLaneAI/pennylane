@@ -602,21 +602,22 @@ class TestLinearCombination:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("grouping_type", (None, "qwc"))
     def test_flatten_unflatten(self, coeffs, ops, grouping_type):
         """Test the flatten and unflatten methods for LinearCombinations"""
+        # pylint: disable=protected-access
 
         if any(not qp.pauli.is_pauli_word(t) for t in ops) and grouping_type:
             pytest.skip("grouping type must be none if a term is not a pauli word.")
 
         H = LinearCombination(coeffs, ops, grouping_type=grouping_type)
-        data, metadata = H._flatten()  # pylint: disable=protected-access
+        data, metadata = H._flatten()
         assert metadata[0] == H.grouping_indices
         assert hash(metadata)
         assert len(data) == 2
         assert qp.math.allequal(
-            data[0], H._coeffs  # pylint: disable=protected-access
+            data[0], H._coeffs
         )  # Previously checking "is" instead of "==", problem?
-        assert data[1] == H._ops  # pylint: disable=protected-access
+        assert data[1] == H._ops
 
-        new_H = LinearCombination._unflatten(*H._flatten())  # pylint: disable=protected-access
+        new_H = LinearCombination._unflatten(*H._flatten())
         qp.assert_equal(H, new_H)
         assert new_H.grouping_indices == H.grouping_indices
 

@@ -630,10 +630,11 @@ class TestCliffordCached:
 
     def test_clifford_cached(self):
         """Test that the cached version of the circuit is equivalent to the original one."""
+        # pylint: disable=protected-access
 
         import pennylane.transforms.decompositions.clifford_t_transform as clt2
 
-        clt2._CLIFFORD_T_CACHE = None  # pylint: disable=protected-access
+        clt2._CLIFFORD_T_CACHE = None
 
         num_angles = 1
         rand_angles = qp.math.random.rand(num_angles)
@@ -643,9 +644,8 @@ class TestCliffordCached:
         old_tape = qp.tape.make_qscript(circuit_9)(num_repeat, rand_angles)
         _ = clifford_t_decomposition(old_tape, epsilon=10)
 
-        # pylint: disable-next=protected-access
         assert isinstance(clt2._CLIFFORD_T_CACHE, _CachedCallable)
-        cache_info = clt2._CLIFFORD_T_CACHE.query.cache_info()  # pylint: disable=protected-access
+        cache_info = clt2._CLIFFORD_T_CACHE.query.cache_info()
         assert cache_info.misses == 2 * num_angles
         assert cache_info.hits == 2 * num_angles * (num_repeat - 1)
 
@@ -653,9 +653,8 @@ class TestCliffordCached:
         old_tape = qp.tape.make_qscript(circuit_9)(num_repeat, rand_angles)
         _ = clifford_t_decomposition(old_tape, epsilon=10)
 
-        # pylint: disable-next=protected-access
         assert isinstance(clt2._CLIFFORD_T_CACHE, _CachedCallable)
-        cache_info = clt2._CLIFFORD_T_CACHE.query.cache_info()  # pylint: disable=protected-access
+        cache_info = clt2._CLIFFORD_T_CACHE.query.cache_info()
         assert cache_info.misses == 2 * num_angles
         assert cache_info.hits == 2 * num_angles * (2 * num_repeat - 1)
 
@@ -663,9 +662,8 @@ class TestCliffordCached:
         old_tape = qp.tape.make_qscript(circuit_9)(num_repeat, rand_angles)
         _ = clifford_t_decomposition(old_tape, cache_size=100)
 
-        # pylint: disable-next=protected-access
         assert isinstance(clt2._CLIFFORD_T_CACHE, _CachedCallable)
-        cache_info = clt2._CLIFFORD_T_CACHE.query.cache_info()  # pylint: disable=protected-access
+        cache_info = clt2._CLIFFORD_T_CACHE.query.cache_info()
         assert cache_info.misses == 2 * num_angles
         assert cache_info.hits == 2 * num_angles * (num_repeat - 1)
         assert cache_info.maxsize == 100

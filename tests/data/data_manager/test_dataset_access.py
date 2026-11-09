@@ -231,6 +231,8 @@ class TestLoadInteractive:
     [data name, *params, attributes, Force, Folder, continue]
     """
 
+    # pylint: disable=unused-argument,redefined-outer-name
+
     @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
     @pytest.mark.parametrize(
         ("side_effect"),
@@ -263,14 +265,12 @@ class TestLoadInteractive:
             ),
         ],
     )
-    # pylint: disable-next=unused-argument,redefined-outer-name
     def test_load_interactive_success(self, mock_input, mock_sleep, mock_load, side_effect):
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
         assert isinstance(qp.data.load_interactive(), qp.data.Dataset)
 
     @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
-    # pylint: disable-next=redefined-outer-name
     def test_load_interactive_without_confirm(self, mock_input, _mock_sleep, mock_load):
         """Test that load_interactive returns None if the user doesn't confirm."""
         mock_input.side_effect = [
@@ -311,7 +311,7 @@ class TestLoadInteractive:
         mock_load,
         side_effect,
         error_message,
-    ):  # pylint: disable=redefined-outer-name,unused-argument
+    ):
         """Test that load_interactive raises errors as expected."""
         mock_input.side_effect = side_effect
         with pytest.raises(ValueError, match=error_message):
@@ -335,7 +335,6 @@ class TestLoadInteractive:
             ),
         ],
     )
-    # pylint: disable-next=unused-argument,redefined-outer-name
     def test_load_interactive_qchem(self, mock_input, mock_sleep, mock_load, side_effect):
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect

@@ -24,6 +24,7 @@ from pennylane.templates.tensornetworks.ttn import TTN, compute_indices
 
 def test_flatten_unflatten_methods():
     """Tests the _flatten and _unflatten methods."""
+    # pylint: disable=protected-access
 
     def block(weights, wires):
         qp.CNOT(wires=[wires[0], wires[1]])
@@ -40,7 +41,7 @@ def test_flatten_unflatten_methods():
 
     op = qp.TTN(wires, n_block_wires, block, n_params_block, template_weights)
 
-    data, metadata = op._flatten()  # pylint: disable=protected-access
+    data, metadata = op._flatten()
     assert len(data) == 1
     assert qp.math.allclose(data[0], template_weights)
 
@@ -50,9 +51,8 @@ def test_flatten_unflatten_methods():
     # make sure metadata hashable
     assert hash(metadata)
 
-    new_op = qp.TTN._unflatten(*op._flatten())  # pylint: disable=protected-access
+    new_op = qp.TTN._unflatten(*op._flatten())
     qp.assert_equal(new_op, op)
-    # pylint: disable-next=protected-access
     assert new_op._name == "TTN"  # make sure acutally initialized
     assert new_op is not op
 

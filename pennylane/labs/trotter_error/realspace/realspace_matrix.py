@@ -252,14 +252,13 @@ class RealspaceMatrix(Fragment):
     def _norm(self, params: dict) -> float:
         """Returns an upper bound on the spectral norm. This method assumes ``self.states`` is a
         power of two."""
+        # pylint: disable=protected-access
         if self.states == 1:
             return self.block(0, 0).norm(params)
 
         top_left, top_right, bottom_left, bottom_right = self._partition_into_quadrants()
 
-        # pylint: disable-next=protected-access
         norm1 = max(top_left._norm(params), bottom_right._norm(params))
-        # pylint: disable-next=protected-access
         norm2 = math.sqrt(top_right._norm(params) * bottom_left._norm(params))
 
         return norm1 + norm2

@@ -1703,13 +1703,14 @@ def _init_wires(op: Operator2):
     * Flatten pytree arguments and look for operators
     * Append operator argument wires to _wires
     """
+    # pylint: disable=protected-access
     all_algorithmic_wires = []
 
     for wname, wsize in zip(op.wire_argnames, op.wire_sizes, strict=True):
         if wname not in op.hybrid_argnames:
-            warg = op._bound_args.arguments[wname]  # pylint: disable=protected-access
+            warg = op._bound_args.arguments[wname]
             canonical_wires = warg if isinstance(warg, AbstractWires) else Wires(warg)
-            op._bound_args.arguments[wname] = canonical_wires  # pylint: disable=protected-access
+            op._bound_args.arguments[wname] = canonical_wires
             if wsize is not None and len(canonical_wires) != wsize:
                 raise ValueError(
                     f"Incorrect number of wires for '{op.name}.{wname}'. Expected {wsize} "
@@ -1722,7 +1723,6 @@ def _init_wires(op: Operator2):
 
         # Pytree wires handling
         else:
-            # pylint: disable-next=protected-access
             leaves, _ = flatten(op._bound_args.arguments[wname], is_leaf=_is_wires)
             if not all(isinstance(l, (Wires, AbstractWires)) for l in leaves):
                 raise ValueError(
@@ -1737,7 +1737,6 @@ def _init_wires(op: Operator2):
     for hname in op.hybrid_argnames:
         if hname in op.wire_argnames:
             continue
-        # pylint: disable-next=protected-access
         leaves, _ = flatten(op._bound_args.arguments[hname], is_leaf=_is_op)
         ops = filter(_is_op, leaves)
         all_algorithmic_wires.extend(op.wires for op in ops)
@@ -1745,7 +1744,7 @@ def _init_wires(op: Operator2):
     if any(isinstance(w, AbstractWires) and not w.shape_fixed for w in all_algorithmic_wires):
         raise ValueError("Operator2 instances must be constructed with wires of fixed length.")
 
-    op._wires = Wires.all_wires(all_algorithmic_wires)  # pylint: disable=protected-access
+    op._wires = Wires.all_wires(all_algorithmic_wires)
 
 
 def _init_arg_types(op: Operator2) -> None:
@@ -1952,9 +1951,9 @@ def _init_subclass_add_dynamic_properties(cls: type[Operator2]) -> None:
 
 def _init_subclass_dynamic_property(self: Operator2, name: str) -> Any:
     """Dynamic property for an argument called ``name``."""
-    # pylint: disable-next=protected-access
+    # pylint: disable=protected-access
     if "_bound_args" in vars(self) and name in self._bound_args.arguments:
-        return self._bound_args.arguments[name]  # pylint: disable=protected-access
+        return self._bound_args.arguments[name]
 
     raise AttributeError(
         f"'{type(self).__name__}' object has no attribute '{name}'."

@@ -485,14 +485,15 @@ class TestDecompGraphConstruction:
     def test_reuse_of_op_under_exploration_does_not_depend_on_operator_order(self, entry_first):
         """Tests that an operator that reuses an operator which is still being explored is
         explored again when it is visited after a cycle cut in that exploration is resolved."""
+        # pylint: disable=too-few-public-methods
 
-        class EntryOp(Operation):  # pylint: disable=too-few-public-methods
+        class EntryOp(Operation):
             """An operation that decomposes into ``HubOp``."""
 
-        class HubOp(Operation):  # pylint: disable=too-few-public-methods
+        class HubOp(Operation):
             """An operation with a cheap decomposition through the controlled ``EntryOp``."""
 
-        class LoopOp(Operation):  # pylint: disable=too-few-public-methods
+        class LoopOp(Operation):
             """An operation that decomposes into ``HubOp``."""
 
         @qp.register_resources({HubOp: 1})
@@ -537,14 +538,15 @@ class TestDecompGraphConstruction:
         """Tests that an operator is explored again when it is visited after a cycle cut in its
         exploration is resolved, even if another cut in its exploration closed a cycle back to it.
         """
+        # pylint: disable=too-few-public-methods
 
-        class EntryOp(Operation):  # pylint: disable=too-few-public-methods
+        class EntryOp(Operation):
             """An operation that decomposes into ``HubOp``."""
 
-        class HubOp(Operation):  # pylint: disable=too-few-public-methods
+        class HubOp(Operation):
             """An operation that decomposes into ``LeafOp``."""
 
-        class LeafOp(Operation):  # pylint: disable=too-few-public-methods
+        class LeafOp(Operation):
             """An operation with a cheap decomposition through the controlled ``EntryOp``."""
 
         @qp.register_resources({HubOp: 1})
@@ -855,6 +857,8 @@ class TestDecompGraphSolver:
 class TestDecompGraphWorkWireBudgeting:
     """Tests the work-wire budgeting of the decomposition graph."""
 
+    # pylint: disable=too-few-public-methods
+
     def test_work_wire_requirement(self):
         """Tests that the graph respects the work wire requirement."""
 
@@ -951,7 +955,7 @@ class TestDecompGraphWorkWireBudgeting:
         """Tests that ops that are not work-wire dependent are not affected by work-wire
         dependent decomposition rules upstream."""
 
-        class SimpleOp(Operation):  # pylint: disable=too-few-public-methods
+        class SimpleOp(Operation):
             """A simple operation that does not depend on work wires."""
 
         @qp.register_resources({qp.X: 1})
@@ -978,7 +982,7 @@ class TestDecompGraphWorkWireBudgeting:
         """Tests that a cycle of work-wire dependent ops that uses more work wires on every cycle
         iteration does not recurse indefinitely."""
 
-        class WrapperOp(Operation):  # pylint: disable=too-few-public-methods
+        class WrapperOp(Operation):
             """An operation that decomposes into ``CustomOp`` using a work wire."""
 
         @qp.register_resources({CustomOp: 1})
@@ -1013,7 +1017,7 @@ class TestDecompGraphWorkWireBudgeting:
         """Tests that a work-wire dependent op that decomposes into itself using an additional
         work wire does not recurse indefinitely."""
 
-        class WrapperOp(Operation):  # pylint: disable=too-few-public-methods
+        class WrapperOp(Operation):
             """An operation that decomposes into ``CustomOp`` using a work wire."""
 
         @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1})
@@ -1043,10 +1047,10 @@ class TestDecompGraphWorkWireBudgeting:
         """Tests that a cycle of work-wire dependent ops that does not use additional work wires
         is not pruned, so that it remains available to the solver."""
 
-        class WrapperOp(Operation):  # pylint: disable=too-few-public-methods
+        class WrapperOp(Operation):
             """An operation that decomposes into ``CustomOp`` using a work wire."""
 
-        class OuterOp(Operation):  # pylint: disable=too-few-public-methods
+        class OuterOp(Operation):
             """An operation that decomposes into ``AnotherOp`` using a work wire."""
 
         @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1})
@@ -1092,10 +1096,10 @@ class TestDecompGraphWorkWireBudgeting:
         """Tests that an operator whose decomposition rule was cut to break a cycle of work-wire
         dependent ops is explored again when it is visited outside of that cycle."""
 
-        class WrapperOp(Operation):  # pylint: disable=too-few-public-methods
+        class WrapperOp(Operation):
             """An operation that decomposes into ``CustomOp`` using a work wire."""
 
-        class ConsumerOp(Operation):  # pylint: disable=too-few-public-methods
+        class ConsumerOp(Operation):
             """An operation that decomposes into ``AnotherOp`` using two work wires."""
 
         @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1})
@@ -1139,7 +1143,7 @@ class TestDecompGraphWorkWireBudgeting:
     def test_min_work_wires(self):
         """Tests that the graph tracks the minimum number of work wires."""
 
-        class SimpleOp(Operation):  # pylint: disable=too-few-public-methods
+        class SimpleOp(Operation):
             """A simple operation that does not depend on work wires."""
 
         @qp.register_resources({qp.X: 4})
@@ -1180,7 +1184,7 @@ class TestDecompGraphWorkWireBudgeting:
     def test_min_work_wires_unreacheable_rule(self):
         """Tests that unrecheable rules are excluded when computing minimum work wires."""
 
-        class SimpleOp(Operation):  # pylint: disable=too-few-public-methods
+        class SimpleOp(Operation):
             """A simple operation that does not depend on work wires."""
 
         @qp.register_resources({qp.X: 4})

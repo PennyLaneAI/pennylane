@@ -75,6 +75,7 @@ class TestSample:  # pylint: disable=too-many-public-methods
     def test_multi_wire_sample_regular_shape(self):
         """Test the return type and shape of sampling multiple wires
         where a rectangular array is expected"""
+        # pylint: disable=protected-access
         n_sample = 10
 
         dev = qp.device("default.qubit", wires=3)
@@ -86,11 +87,8 @@ class TestSample:  # pylint: disable=too-many-public-methods
 
         result = circuit()
 
-        # pylint: disable-next=protected-access
         assert circuit._qfunc_output[0].shape(shots=n_sample, num_device_wires=3) == (n_sample,)
-        # pylint: disable-next=protected-access
         assert circuit._qfunc_output[1].shape(shots=n_sample, num_device_wires=3) == (n_sample,)
-        # pylint: disable-next=protected-access
         assert circuit._qfunc_output[2].shape(shots=n_sample, num_device_wires=3) == (n_sample,)
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array

@@ -78,15 +78,16 @@ def test_resource_tracking_attributes():
 
 def test_set_device_target():
     """Test that the device target can be set and retrieved correctly."""
+    # pylint: disable=protected-access
     default_dev = NullQubit()
-    assert default_dev._target_device is None  # pylint: disable=protected-access
+    assert default_dev._target_device is None
     assert default_dev.config_filepath is None
 
     # Pick something other than DefaultQubit, which is already the default
     to_target = qp.devices.ReferenceQubit()
 
     dev = NullQubit(target_device=to_target)
-    assert dev._target_device == to_target  # pylint: disable=protected-access
+    assert dev._target_device == to_target
     assert dev.config_filepath == to_target.config_filepath
 
     program1, _ = dev.preprocess(ExecutionConfig())
@@ -117,7 +118,7 @@ def test_set_device_target():
 
     # Check that passing a NullQubit device takes the underlying target
     dev2 = NullQubit(target_device=dev)
-    assert dev2._target_device == to_target  # pylint: disable=protected-access
+    assert dev2._target_device == to_target
     assert dev2.config_filepath == to_target.config_filepath
 
 

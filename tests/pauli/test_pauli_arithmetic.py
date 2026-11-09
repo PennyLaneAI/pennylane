@@ -130,14 +130,15 @@ class TestPauliWord:
 
     def test_hash(self):
         """Test that a unique hash exists for different PauliWords."""
+        # pylint: disable=unnecessary-dunder-call
         pw_1 = PauliWord({0: I, 1: X, 2: Y})
         pw_2 = PauliWord({0: I, 1: X, 2: Y})  # same as 1
         pw_3 = PauliWord({1: X, 2: Y, 0: I})  # same as 1 but reordered
         pw_4 = PauliWord({1: Z, 2: Z})  # distinct from above
 
-        assert pw_1.__hash__() == pw_2.__hash__()  # pylint: disable=unnecessary-dunder-call
-        assert pw_1.__hash__() == pw_3.__hash__()  # pylint: disable=unnecessary-dunder-call
-        assert pw_1.__hash__() != pw_4.__hash__()  # pylint: disable=unnecessary-dunder-call
+        assert pw_1.__hash__() == pw_2.__hash__()
+        assert pw_1.__hash__() == pw_3.__hash__()
+        assert pw_1.__hash__() != pw_4.__hash__()
 
     def test_hash_caches(self):
         """Test that hashes are cached correctly and not recomputed."""

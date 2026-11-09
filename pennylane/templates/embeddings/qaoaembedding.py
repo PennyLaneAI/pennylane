@@ -353,6 +353,7 @@ def _qaoa_embedding_resources(repeat, n_features, num_wires, local_field):
 
 @register_resources(_qaoa_embedding_resources)
 def _qaoa_embedding_decomposition(features, weights, wires, local_field):
+    # pylint: disable=no-value-for-parameter
     if capture.enabled():
         weights, wires, features = jnp.array(weights), jnp.array(wires), jnp.array(features)
 
@@ -370,13 +371,13 @@ def _qaoa_embedding_decomposition(features, weights, wires, local_field):
         def features_loop(i):
             RX(features[i], wires=wires[i])
 
-        features_loop()  # pylint: disable=no-value-for-parameter
+        features_loop()
 
         @for_loop(n_features, len(wires))
         def hadamard_loop(i):
             H(wires=wires[i])
 
-        hadamard_loop()  # pylint: disable=no-value-for-parameter
+        hadamard_loop()
 
         def true_body():
             local_field(weights[l][0], wires=wires)
@@ -387,13 +388,13 @@ def _qaoa_embedding_decomposition(features, weights, wires, local_field):
             def multi_rz_loop(i):
                 MultiRZ(weights[l][i], wires=[wires[i], wires[(i + 1) % len(wires)]])
 
-            multi_rz_loop()  # pylint: disable=no-value-for-parameter
+            multi_rz_loop()
 
             @for_loop(len(wires))
             def local_field_loop(i):
                 local_field(weights[l][len(wires) + i], wires=wires[i])
 
-            local_field_loop()  # pylint: disable=no-value-for-parameter
+            local_field_loop()
 
         def elif_body():
             MultiRZ(weights[l][0], wires=[wires[0], wires[1]])
@@ -402,19 +403,19 @@ def _qaoa_embedding_decomposition(features, weights, wires, local_field):
 
         cond(len(wires) == 1, true_body, false_body, ((len(wires) == 2, elif_body),))()
 
-    repeat_loop()  # pylint: disable=no-value-for-parameter
+    repeat_loop()
 
     @for_loop(n_features)
     def final_rx_loop(i):
         RX(features[i], wires=wires[i])
 
-    final_rx_loop()  # pylint: disable=no-value-for-parameter
+    final_rx_loop()
 
     @for_loop(n_features, len(wires))
     def final_hadamard_loop(i):
         H(wires=wires[i])
 
-    final_hadamard_loop()  # pylint: disable=no-value-for-parameter
+    final_hadamard_loop()
 
 
 add_decomps(QAOAEmbedding, _qaoa_embedding_decomposition)

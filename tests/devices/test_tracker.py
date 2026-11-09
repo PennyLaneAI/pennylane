@@ -217,10 +217,12 @@ def circuit():
 class TestDefaultTrackerIntegration:
     """Tests integration behavior with 'default.qubit'."""
 
+    # pylint: disable=too-few-public-methods
+
     def test_single_execution_default(self, mocker):
         """Test correct behavior with single circuit execution"""
 
-        class callback_wrapper:  # pylint: disable=too-few-public-methods
+        class callback_wrapper:
             @staticmethod
             def callback(totals=None, history=None, latest=None):
                 pass
@@ -251,7 +253,7 @@ class TestDefaultTrackerIntegration:
     def test_shots_execution_default(self, mocker):
         """Test correct tracks shots as well."""
 
-        class callback_wrapper:  # pylint: disable=too-few-public-methods
+        class callback_wrapper:
             @staticmethod
             def callback(totals=None, history=None, latest=None):
                 pass
@@ -289,7 +291,7 @@ class TestDefaultTrackerIntegration:
     def test_batch_execution(self, mocker):
         """Tests that batch execute also updates information stored."""
 
-        class callback_wrapper:  # pylint: disable=too-few-public-methods
+        class callback_wrapper:
             @staticmethod
             def callback(totals=None, history=None, latest=None):
                 pass

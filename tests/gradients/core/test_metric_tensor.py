@@ -1215,6 +1215,8 @@ weights_diff = np.array([0.432, 0.12, -0.292], requires_grad=True)
 class TestDifferentiabilityDiag:
     """Test for diagonal metric tensor differentiability"""
 
+    # pylint: disable=too-many-arguments
+
     def get_circuit(self, ansatz):
         def circuit(*weights):
             ansatz(*weights)
@@ -1227,7 +1229,6 @@ class TestDifferentiabilityDiag:
     @pytest.mark.autograd
     @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
-    # pylint: disable-next=too-many-arguments
     def test_autograd_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)
@@ -1256,7 +1257,6 @@ class TestDifferentiabilityDiag:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("interface", ["auto", "jax"])
-    # pylint: disable-next=too-many-arguments
     def test_jax_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
         """Test metric tensor differentiability in the JAX interface"""
         if diff_method == "parameter-shift":
@@ -1276,7 +1276,6 @@ class TestDifferentiabilityDiag:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])
-    # pylint: disable-next=too-many-arguments
     def test_torch_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
         """Test metric tensor differentiability in the torch interface"""
         import torch

@@ -102,16 +102,14 @@ def test_no_device_vjp_if_not_supported():
     """Test that an error is raised for device_vjp=True if the device does not support it."""
 
     class DummyDev(qp.devices.Device):
+        # pylint: disable=unused-argument
 
-        # pylint: disable-next=unused-argument
         def execute(self, circuits, execution_config=qp.devices.ExecutionConfig()):
             return 0
 
-        # pylint: disable-next=unused-argument
         def supports_derivatives(self, execution_config=None, circuit=None):
             return execution_config and execution_config.gradient_method == "vjp_grad"
 
-        # pylint: disable-next=unused-argument
         def supports_vjp(self, execution_config=None, circuit=None) -> bool:
             return execution_config and execution_config.gradient_method == "vjp_grad"
 

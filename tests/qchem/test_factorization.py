@@ -777,20 +777,18 @@ def test_chemist_transform(
 ):
     r"""Test that `_chemist_transform` builds correct two-body tensors in
     chemist notation with correct one-body corrections"""
-    # pylint: disable-next=protected-access
+    # pylint: disable=protected-access
     one_body_corr, chemist_two_body = qp.qchem.factorization._chemist_transform(
         two_body_tensor=two_body_tensor, spatial_basis=spatial_basis
     )
     assert np.allclose(one_body_corr, one_body_correction)
     assert np.allclose(chemist_two_body, chemist_two_body_coeffs)
 
-    # pylint: disable-next=protected-access
     (chemist_one_body,) = qp.qchem.factorization._chemist_transform(
         one_body_tensor=one_body_correction, spatial_basis=spatial_basis
     )
     assert np.allclose(chemist_one_body, one_body_correction)
 
-    # pylint: disable-next=protected-access
     chemist_one_body, chemist_two_body = qp.qchem.factorization._chemist_transform(
         one_body_tensor=one_body_correction,
         two_body_tensor=two_body_tensor,

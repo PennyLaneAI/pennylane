@@ -37,6 +37,8 @@ def test_assert_valid():
 class TestLeftQuantumComparator:
     """Test LeftQuantumComparator template."""
 
+    # pylint: disable=too-many-arguments
+
     @pytest.mark.catalyst
     @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
     @pytest.mark.parametrize(
@@ -48,7 +50,6 @@ class TestLeftQuantumComparator:
             ([0, 3, 6], [1, 4, 7], 11, [2, 5], 2, 5),
         ],
     )
-    # pylint: disable-next=too-many-arguments
     def test_operation_result(self, comparator, x_wires, y_wires, target_wire, work_wires, x, y):
         """Test that the LeftQuantumComparator template produces the correct output."""
 
@@ -144,7 +145,6 @@ class TestLeftQuantumComparator:
             ),
         ],
     )
-    # pylint: disable-next=too-many-arguments
     def test_wires_error(self, target_wire, x_wires, y_wires, work_wires, comparator, msg_match):
         """Test that an error is raised when some work_wires don't meet the requirements."""
         with pytest.raises(ValueError, match=msg_match):
@@ -162,7 +162,6 @@ class TestLeftQuantumComparator:
         ],
     )
     @pytest.mark.parametrize("seed", [42, 123])
-    # pylint: disable-next=too-many-arguments
     def test_no_phase_errors(self, x_wires, y_wires, target_wire, work_wires, comparator, seed):
         """Test that the comparator introduces no complex phases.
         A correct classical reversible circuit is a real permutation matrix,

@@ -249,15 +249,16 @@ class TestQubitGraphsInitialization:
 
     def test_init_graph_with_invalid_type_raises_type_error(self):
         """Test that attempting to initialize a graph with an invalid graph type raises a TypeError."""
+        # pylint: disable=too-few-public-methods
 
-        class NotAGraph:  # pylint: disable=too-few-public-methods
+        class NotAGraph:
             pass
 
-        class SomethingWithOnlyNodes:  # pylint: disable=too-few-public-methods
+        class SomethingWithOnlyNodes:
             def __init__(self):
                 self.nodes = []
 
-        class SomethingWithOnlyEdges:  # pylint: disable=too-few-public-methods
+        class SomethingWithOnlyEdges:
             def __init__(self):
                 self.edges = []
 

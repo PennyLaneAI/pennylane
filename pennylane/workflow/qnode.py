@@ -703,6 +703,7 @@ class QNode:  # pylint: disable=too-many-instance-attributes
         >>> new_circuit(1)
         tensor(0.5403, dtype=torch.float64)
         """
+        # pylint: disable=protected-access
         if not kwargs:
             valid_params = set(self._init_args.copy()) | qp.gradients.SUPPORTED_GRADIENT_KWARGS
             raise ValueError(
@@ -734,13 +735,11 @@ class QNode:  # pylint: disable=too-many-instance-attributes
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
         if updated_qn.shots != old_shots:
-            updated_qn._set_shots(old_shots)  # pylint: disable=protected-access
+            updated_qn._set_shots(old_shots)
         if self._shots_override_device:
-            updated_qn._shots_override_device = True  # pylint: disable=protected-access
+            updated_qn._shots_override_device = True
 
-        # pylint: disable-next=protected-access
         updated_qn._compile_pipeline = CompilePipeline(self.compile_pipeline)
-        # pylint: disable-next=protected-access
         updated_qn._post_device_pipeline = CompilePipeline(self.post_device_pipeline)
         return updated_qn
 
@@ -776,6 +775,7 @@ class QNode:  # pylint: disable=too-many-instance-attributes
         Returns:
             qnode (QNode): new QNode with updated compile and post-device compile pipelines
         """
+        # pylint: disable=protected-access
 
         if post_device_pipeline is None:
             post_device_pipeline = CompilePipeline()
@@ -784,8 +784,8 @@ class QNode:  # pylint: disable=too-many-instance-attributes
         updated_qn = copy.copy(self)
 
         # Update the compile and post-device compile pipelines
-        updated_qn._compile_pipeline = compile_pipeline  # pylint: disable=protected-access
-        updated_qn._post_device_pipeline = post_device_pipeline  # pylint: disable=protected-access
+        updated_qn._compile_pipeline = compile_pipeline
+        updated_qn._post_device_pipeline = post_device_pipeline
 
         return updated_qn
 
@@ -872,14 +872,14 @@ qnode.__signature__ = inspect.signature(QNode)
 @Transform.generic_register
 def apply_transform_to_qnode(obj: QNode, transform, *targs, **tkwargs) -> QNode:
     """The default behavior for applying a transform to a QNode."""
+    # pylint: disable=protected-access
     targs, tkwargs = transform.setup_inputs(*targs, **tkwargs)
-    if transform._custom_qnode_transform:  # pylint: disable=protected-access
-        # pylint: disable-next=protected-access
+    if transform._custom_qnode_transform:
         return transform._custom_qnode_transform(transform, obj, targs, tkwargs)
 
     new_qnode = copy.copy(obj)
     new_pipeline = copy.copy(new_qnode.compile_pipeline)
     new_pipeline.append(BoundTransform(transform, args=targs, kwargs=tkwargs))
     # Append bound transforms to new pipeline
-    new_qnode._compile_pipeline = new_pipeline  # pylint: disable=protected-access
+    new_qnode._compile_pipeline = new_pipeline
     return new_qnode

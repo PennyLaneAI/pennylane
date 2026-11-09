@@ -251,13 +251,13 @@ class UCCSD(Operation):
         super().__init__(weights, wires=wires)
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
-        # pylint: disable-next=protected-access
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["s_wires"] = tuple(  # pylint: disable=protected-access
+        new_op._hyperparameters["s_wires"] = tuple(
             tuple(wire_map.get(w, w) for w in wires) for wires in self._hyperparameters["s_wires"]
         )
-        new_op._hyperparameters["d_wires"] = tuple(  # pylint: disable=protected-access
+        new_op._hyperparameters["d_wires"] = tuple(
             tuple(tuple(wire_map.get(w, w) for w in _wires) for _wires in wires)
             for wires in self._hyperparameters["d_wires"]
         )

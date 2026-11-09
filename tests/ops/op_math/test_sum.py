@@ -970,6 +970,8 @@ class TestSimplify:
 class TestSortWires:
     """Tests for the wire sorting algorithm."""
 
+    # pylint: disable=protected-access
+
     def test_sorting_operators_with_one_wire(self):
         """Test that the sorting algorithm works for operators that act on one wire."""
         op_list = [
@@ -983,7 +985,7 @@ class TestSortWires:
             qp.X(5),
             qp.Z("ba"),
         ]
-        sorted_list = Sum._sort(op_list)  # pylint: disable=protected-access
+        sorted_list = Sum._sort(op_list)
         final_list = [
             qp.Y(0),
             qp.Y(1),
@@ -1015,7 +1017,7 @@ class TestSortWires:
             qp.CRY(1, [1, 2]),
             qp.X("d"),
         )
-        sorted_list = Sum._sort(op_tuple)  # pylint: disable=protected-access
+        sorted_list = Sum._sort(op_tuple)
         final_list = [
             qp.Y(0),
             qp.CRX(1, [0, 2]),
@@ -1047,7 +1049,6 @@ class TestSortWires:
             qp.Z("three"),
             qp.CRY(1, ["test", 2]),
         ]
-        # pylint: disable-next=protected-access
         sorted_list = Sum._sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
         final_list = [
             qp.Y(0),
@@ -1084,7 +1085,7 @@ class TestSortWires:
             qp.PauliY(1),
             qp.PauliZ(1),
         ]
-        sorted_list = Sum._sort(mixed_list)  # pylint: disable=protected-access
+        sorted_list = Sum._sort(mixed_list)
         for op1, op2 in zip(final_list, sorted_list):
             qp.assert_equal(op1, op2)
 
@@ -1093,7 +1094,7 @@ class TestSortWires:
 
         op_list = [qp.GlobalPhase(0.5), qp.X(0), qp.Y(1), qp.I(), qp.CNOT((1, 2)), qp.I()]
 
-        sorted_list = Sum._sort(op_list)  # pylint: disable=protected-access
+        sorted_list = Sum._sort(op_list)
 
         expected = [qp.GlobalPhase(0.5), qp.I(), qp.I(), qp.X(0), qp.Y(1), qp.CNOT((1, 2))]
         assert sorted_list == expected

@@ -1635,6 +1635,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
             QuantumFunctionError: if the input tape has measurements that are not expectation values
                 or contains a multi-parameter operation aside from :class:`~.Rot`
         """
+        # pylint: disable=no-member
         if tape.batch_size is not None:
             raise QuantumFunctionError(
                 "Parameter broadcasting is not supported with adjoint differentiation"
@@ -1674,12 +1675,11 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
             if not use_device_state:
                 self.reset()
                 self.execute(tape)
-            ket = self._pre_rotated_state  # pylint: disable=no-member
+            ket = self._pre_rotated_state
 
         n_obs = len(tape.observables)
         bras = np.empty([n_obs] + [2] * self.num_wires, dtype=np.complex128)
         for kk in range(n_obs):
-            # pylint: disable-next=no-member
             bras[kk, ...] = self._apply_operation(ket, tape.observables[kk])
 
         expanded_ops = []
@@ -1718,12 +1718,11 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         trainable_param_number = len(trainable_params) - 1
         for op in expanded_ops:
             adj_op = adjoint(op)
-            ket = self._apply_operation(ket, adj_op)  # pylint: disable=no-member
+            ket = self._apply_operation(ket, adj_op)
 
             if op.num_params == 1:
                 if param_number in trainable_params:
                     d_op_matrix = operation_derivative(op)
-                    # pylint: disable-next=no-member
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
                     jac[:, trainable_param_number] = 2 * dot_product_real(bras, ket_temp)
@@ -1732,7 +1731,6 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
                 param_number -= 1
 
             for kk in range(n_obs):
-                # pylint: disable-next=no-member
                 bras[kk, ...] = self._apply_operation(bras[kk, ...], adj_op)
 
         return self._adjoint_jacobian_processing(jac)

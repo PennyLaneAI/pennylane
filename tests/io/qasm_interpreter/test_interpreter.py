@@ -702,6 +702,7 @@ class TestExpressions:
         assert context.vars["c"].val == (not False)
 
     def test_different_binary_exprs(self):
+        # pylint: disable=comparison-of-constants
         # parse the QASM
         ast = parse(
             open("tests/io/qasm_interpreter/binary_expressions.qasm").read(),
@@ -713,12 +714,12 @@ class TestExpressions:
         )
 
         # comparison expressions
-        assert context.vars["a"].val == (0 == 1)  # pylint: disable=comparison-of-constants
-        assert context.vars["b"].val == (0 != 1)  # pylint: disable=comparison-of-constants
-        assert context.vars["c"].val == (0 > 1)  # pylint: disable=comparison-of-constants
-        assert context.vars["d"].val == (0 < 1)  # pylint: disable=comparison-of-constants
-        assert context.vars["e"].val == (0 >= 1)  # pylint: disable=comparison-of-constants
-        assert context.vars["f"].val == (0 <= 1)  # pylint: disable=comparison-of-constants
+        assert context.vars["a"].val == (0 == 1)
+        assert context.vars["b"].val == (0 != 1)
+        assert context.vars["c"].val == (0 > 1)
+        assert context.vars["d"].val == (0 < 1)
+        assert context.vars["e"].val == (0 >= 1)
+        assert context.vars["f"].val == (0 <= 1)
 
         # bitwise operations
         assert context.vars["g"].val == 2 >> 1

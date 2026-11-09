@@ -557,11 +557,11 @@ class FermionicDoubleExcitation(Operation):
         }
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
-        # pylint: disable-next=protected-access
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         for key in ["wires1", "wires2"]:
-            new_op._hyperparameters[key] = Wires(  # pylint: disable=protected-access
+            new_op._hyperparameters[key] = Wires(
                 [wire_map.get(wire, wire) for wire in self._hyperparameters[key]]
             )
         return new_op

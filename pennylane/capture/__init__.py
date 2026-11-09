@@ -196,38 +196,39 @@ if TYPE_CHECKING:
 
 
 def __getattr__(key):  # pylint: disable=too-many-return-statements
+    # pylint: disable=import-outside-toplevel
     if key == "primitives":
-        import importlib  # pragma: no cover  # pylint: disable=import-outside-toplevel
+        import importlib  # pragma: no cover
 
         return importlib.import_module(".primitives", __name__)  # pragma: no cover
 
     if key == "QpPrimitive":
-        from .custom_primitives import QpPrimitive  # pylint: disable=import-outside-toplevel
+        from .custom_primitives import QpPrimitive
 
         return QpPrimitive
 
     if key == "AbstractOperator":
-        from .primitives import AbstractOperator  # pylint: disable=import-outside-toplevel
+        from .primitives import AbstractOperator
 
         return AbstractOperator
 
     if key == "AbstractMeasurement":
-        from .primitives import AbstractMeasurement  # pylint: disable=import-outside-toplevel
+        from .primitives import AbstractMeasurement
 
         return AbstractMeasurement
 
     if key == "qnode_prim":
-        from ..workflow._capture_qnode import qnode_prim  # pylint: disable=import-outside-toplevel
+        from ..workflow._capture_qnode import qnode_prim
 
         return qnode_prim
 
     if key == "PlxprInterpreter":
-        from .base_interpreter import PlxprInterpreter  # pylint: disable=import-outside-toplevel
+        from .base_interpreter import PlxprInterpreter
 
         return PlxprInterpreter
 
     if key == "eval_jaxpr":
-        from .base_interpreter import eval_jaxpr  # pylint: disable=import-outside-toplevel
+        from .base_interpreter import eval_jaxpr
 
         return eval_jaxpr
 

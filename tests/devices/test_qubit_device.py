@@ -180,7 +180,8 @@ def test_notimplemented_analytic_probability(mock_qubit_device):
 class TestOperations:
     """Tests the logic related to operations"""
 
-    # pylint: disable-next=redefined-outer-name
+    # pylint: disable=redefined-outer-name
+
     def test_op_queue_accessed_outside_execution_context(self, mock_qubit_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
 
@@ -190,7 +191,7 @@ class TestOperations:
             dev = mock_qubit_device()
             dev.op_queue  # pylint: disable=pointless-statement
 
-    def test_op_queue_is_filled_during_execution(  # pylint: disable=redefined-outer-name
+    def test_op_queue_is_filled_during_execution(
         self,
         mock_qubit_device_with_paulis_and_methods,
         monkeypatch,
@@ -228,7 +229,6 @@ class TestOperations:
         assert isinstance(call_history[2], qp.PauliZ)
         assert call_history[2].wires == Wires([2])
 
-    # pylint: disable-next=redefined-outer-name
     def test_unsupported_operations_raise_error(self, mock_qubit_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
         with qp.queuing.AnnotatedQueue() as q:
@@ -254,7 +254,7 @@ class TestOperations:
 
     @pytest.mark.parametrize("observables", observables)
     @pytest.mark.parametrize("queue", numeric_queues)
-    def test_passing_keyword_arguments_to_execute(  # pylint: disable=redefined-outer-name
+    def test_passing_keyword_arguments_to_execute(
         self,
         mock_qubit_device_with_paulis_rotations_and_methods,
         monkeypatch,
@@ -283,7 +283,8 @@ class TestOperations:
 class TestObservables:
     """Tests the logic related to observables"""
 
-    # pylint: disable-next=redefined-outer-name
+    # pylint: disable=redefined-outer-name
+
     def test_obs_queue_accessed_outside_execution_context(self, mock_qubit_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
 
@@ -294,7 +295,6 @@ class TestObservables:
             dev = mock_qubit_device()
             dev.obs_queue  # pylint: disable=pointless-statement
 
-    # pylint: disable-next=redefined-outer-name
     def test_unsupported_observables_raise_error(self, mock_qubit_device_with_paulis_and_methods):
         """Tests that the operations are properly applied and queued"""
         with qp.queuing.AnnotatedQueue() as q:
@@ -308,7 +308,7 @@ class TestObservables:
             dev = mock_qubit_device_with_paulis_and_methods()
             dev.execute(tape)
 
-    def test_unsupported_observable_return_type_raise_error(  # pylint: disable=redefined-outer-name
+    def test_unsupported_observable_return_type_raise_error(
         self,
         mock_qubit_device_with_paulis_and_methods,
         monkeypatch,
@@ -351,6 +351,8 @@ class TestParameters:  # pylint: disable=too-few-public-methods
 class TestExtractStatistics:
     """Test the statistics method"""
 
+    # pylint: disable=redefined-outer-name
+
     @pytest.mark.parametrize(
         "measurement",
         [
@@ -361,7 +363,6 @@ class TestExtractStatistics:
             StateMP(),
         ],
     )
-    # pylint: disable-next=redefined-outer-name
     def test_results_created(self, mock_qubit_device_extract_stats, measurement):
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
@@ -371,7 +372,6 @@ class TestExtractStatistics:
 
         assert results == [0]
 
-    # pylint: disable-next=redefined-outer-name
     def test_results_no_state(self, mock_qubit_device_extract_stats):
         """Tests that the statistics method raises an AttributeError when a State return type is
         requested when QubitDevice does not have a state attribute"""
@@ -383,7 +383,6 @@ class TestExtractStatistics:
             dev.statistics(qscript)
 
     @pytest.mark.parametrize("returntype", [None])
-    # pylint: disable-next=redefined-outer-name
     def test_results_created_empty(self, mock_qubit_device_extract_stats, returntype):
         """Tests that the statistics method raises Unsupported QuantumFunctionError if the return type is None"""
 
@@ -396,7 +395,6 @@ class TestExtractStatistics:
             dev.statistics(qscript)
 
     @pytest.mark.parametrize("returntype", ["not None"])
-    # pylint: disable-next=redefined-outer-name
     def test_error_return_type_none(self, mock_qubit_device_extract_stats, returntype):
         """Tests that the statistics method raises an error if the return type is not well-defined and is not None"""
 
@@ -411,7 +409,6 @@ class TestExtractStatistics:
             dev = mock_qubit_device_extract_stats()
             dev.statistics(qscript)
 
-    # pylint: disable-next=redefined-outer-name
     def test_no_entropy_with_shot_vectors(self, mock_qubit_device_extract_stats):
 
         dev = mock_qubit_device_extract_stats()
@@ -421,7 +418,6 @@ class TestExtractStatistics:
         with pytest.raises(NotImplementedError, match="Returning the Von Neumann entropy"):
             dev.statistics(tape)
 
-    # pylint: disable-next=redefined-outer-name
     def test_mutual_info_with_shot_vectors(self, mock_qubit_device_extract_stats):
 
         dev = mock_qubit_device_extract_stats()
@@ -431,7 +427,6 @@ class TestExtractStatistics:
         with pytest.raises(NotImplementedError, match="Returning the mutual information"):
             dev.statistics(tape)
 
-    # pylint: disable-next=redefined-outer-name
     def test_no_classical_shadow_with_other_meas(self, mock_qubit_device_extract_stats):
         """Test that classical shadows can't be performed with other measurements."""
 
@@ -442,7 +437,6 @@ class TestExtractStatistics:
         with pytest.raises(QuantumFunctionError, match="Classical shadows cannot be returned"):
             dev.statistics(tape)
 
-    # pylint: disable-next=redefined-outer-name
     def test_no_shadow_expval_with_other_meas(self, mock_qubit_device_extract_stats):
         """Test that classical shadows can't be performed with other measurements."""
 
@@ -478,7 +472,8 @@ class TestGenerateSamples:  # pylint: disable=too-few-public-methods
 class TestSampleBasisStates:
     """Test the sample_basis_states method"""
 
-    # pylint: disable-next=redefined-outer-name
+    # pylint: disable=redefined-outer-name
+
     def test_sampling_with_correct_arguments(self, mock_qubit_device, monkeypatch):
         """Tests that the sample_basis_states method samples with the correct arguments"""
 
@@ -498,7 +493,6 @@ class TestSampleBasisStates:
         assert res[1] == shots
         assert res[2] == state_probs
 
-    # pylint: disable-next=redefined-outer-name
     def test_raises_deprecation_warning(self, mock_qubit_device):
         """Test that sampling basis states on a device with shots=None produces a warning."""
 
@@ -513,7 +507,6 @@ class TestSampleBasisStates:
         ):
             dev.sample_basis_states(number_of_states, state_probs)
 
-    # pylint: disable-next=redefined-outer-name
     def test_sampling_with_broadcasting(self, mock_qubit_device):
         """Tests that the sample_basis_states method samples with the correct arguments
         when using broadcasted probabilities"""
@@ -533,7 +526,8 @@ class TestSampleBasisStates:
 class TestStatesToBinary:
     """Test the states_to_binary method"""
 
-    # pylint: disable-next=redefined-outer-name
+    # pylint: disable=redefined-outer-name
+
     def test_correct_conversion_two_states(self, mock_qubit_device):
         """Tests that the sample_basis_states method converts samples to binary correctly"""
         wires = 4
@@ -561,7 +555,6 @@ class TestStatesToBinary:
     ]
 
     @pytest.mark.parametrize("samples, binary_states", test_binary_conversion_data)
-    # pylint: disable-next=redefined-outer-name
     def test_correct_conversion(self, mock_qubit_device, samples, binary_states, tol):
         """Tests that the states_to_binary method converts samples to binary correctly"""
         dev = mock_qubit_device()
@@ -594,7 +587,6 @@ class TestStatesToBinary:
     ]
 
     @pytest.mark.parametrize("samples, binary_states", test_binary_conversion_data_broadcasted)
-    # pylint: disable-next=redefined-outer-name
     def test_correct_conversion_broadcasted(self, mock_qubit_device, samples, binary_states, tol):
         """Tests that the states_to_binary method converts broadcasted
         samples to binary correctly"""
@@ -608,7 +600,8 @@ class TestStatesToBinary:
 class TestExpval:
     """Test the expval method"""
 
-    # pylint: disable-next=redefined-outer-name
+    # pylint: disable=redefined-outer-name
+
     def test_analytic_expval(self, mock_qubit_device_with_original_statistics, monkeypatch):
         """Tests that expval method when the analytic attribute is True
 
@@ -627,7 +620,7 @@ class TestExpval:
 
         assert res == (obs.eigvals() @ probs).real
 
-    def test_analytic_expval_broadcasted(  # pylint: disable=redefined-outer-name
+    def test_analytic_expval_broadcasted(
         self,
         mock_qubit_device_with_original_statistics,
         monkeypatch,
@@ -649,7 +642,6 @@ class TestExpval:
 
         assert np.allclose(res, (probs @ obs.eigvals()).real)
 
-    # pylint: disable-next=redefined-outer-name
     def test_non_analytic_expval(self, mock_qubit_device_with_original_statistics, monkeypatch):
         """Tests that expval method when the analytic attribute is False
 
@@ -669,7 +661,6 @@ class TestExpval:
 
         assert res == np.array(obs)  # no idea what is trying to cast obs to an array now.
 
-    # pylint: disable-next=redefined-outer-name
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
         """Tests that an error is thrown if expval is called with an observable that does
         not have eigenvalues defined."""
@@ -693,7 +684,8 @@ class TestExpval:
 class TestVar:
     """Test the var method"""
 
-    # pylint: disable-next=redefined-outer-name
+    # pylint: disable=redefined-outer-name
+
     def test_analytic_var(self, mock_qubit_device_with_original_statistics, monkeypatch):
         """Tests that var method when the analytic attribute is True
 
@@ -712,7 +704,7 @@ class TestVar:
 
         assert res == (obs.eigvals() ** 2) @ probs - (obs.eigvals() @ probs).real ** 2
 
-    def test_analytic_var_broadcasted(  # pylint: disable=redefined-outer-name
+    def test_analytic_var_broadcasted(
         self,
         mock_qubit_device_with_original_statistics,
         monkeypatch,
@@ -734,7 +726,6 @@ class TestVar:
 
         assert np.allclose(res, probs @ (obs.eigvals() ** 2) - (probs @ obs.eigvals()).real ** 2)
 
-    # pylint: disable-next=redefined-outer-name
     def test_non_analytic_var(self, mock_qubit_device_with_original_statistics, monkeypatch):
         """Tests that var method when the analytic attribute is False
 
@@ -754,7 +745,6 @@ class TestVar:
 
         assert res == np.array(obs)
 
-    # pylint: disable-next=redefined-outer-name
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
         """Tests that an error is thrown if var is called with an observable that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
@@ -778,7 +768,8 @@ class TestVar:
 class TestSample:
     """Test the sample method"""
 
-    # pylint: disable-next=redefined-outer-name
+    # pylint: disable=redefined-outer-name
+
     def test_only_ones_minus_ones(self, mock_qubit_device_with_original_statistics, tol):
         """Test that sample for a single Pauli observable only produces -1 and 1 samples"""
         obs = qp.PauliX(0)
@@ -789,7 +780,6 @@ class TestSample:
         assert np.shape(res) == (2,)
         assert np.allclose(res**2, 1, atol=tol, rtol=0)
 
-    # pylint: disable-next=redefined-outer-name
     def test_correct_custom_eigenvalues(self, mock_qubit_device_with_original_statistics):
         """Test that sample for a product of Pauli observables produces samples of eigenvalues"""
         obs = qp.PauliX(0) @ qp.PauliZ(1)
@@ -799,7 +789,7 @@ class TestSample:
 
         assert np.array_equal(res, np.array([-1, 1]))
 
-    def test_sample_with_no_observable_and_no_wires(  # pylint: disable=redefined-outer-name
+    def test_sample_with_no_observable_and_no_wires(
         self, mock_qubit_device_with_original_statistics
     ):
         """Test that when we sample a device without providing an observable or wires then it
@@ -812,7 +802,7 @@ class TestSample:
         res = dev.sample(obs)
         assert np.array_equal(res, generated_samples)
 
-    def test_sample_with_no_observable_and_with_wires(  # pylint: disable=redefined-outer-name
+    def test_sample_with_no_observable_and_with_wires(
         self, mock_qubit_device_with_original_statistics
     ):
         """Test that when we sample a device without providing an observable but we specify
@@ -827,7 +817,6 @@ class TestSample:
 
         assert np.array_equal(res, wire_samples)
 
-    # pylint: disable-next=redefined-outer-name
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
         """Tests that an error is thrown if sample is called with an observable
         that does not have eigenvalues defined."""
@@ -849,7 +838,8 @@ class TestSample:
 class TestSampleWithBroadcasting:
     """Test the sample method when broadcasting is used"""
 
-    # pylint: disable-next=redefined-outer-name
+    # pylint: disable=redefined-outer-name
+
     def test_only_ones_minus_ones(self, mock_qubit_device_with_original_statistics, tol):
         """Test that sample for a single Pauli observable only produces -1 and 1 samples
         when using broadcasting"""
@@ -860,7 +850,6 @@ class TestSampleWithBroadcasting:
 
         assert np.allclose(res, [[1, 1], [-1, -1], [1, -1]], atol=tol, rtol=0)
 
-    # pylint: disable-next=redefined-outer-name
     def test_correct_custom_eigenvalues(self, mock_qubit_device_with_original_statistics):
         """Test that sample for a product of Pauli observables produces samples
         of eigenvalues when using broadcasting"""
@@ -872,7 +861,7 @@ class TestSampleWithBroadcasting:
 
         assert np.array_equal(res, np.array([[-1, 1], [-1, 1], [-1, -1]]))
 
-    def test_sample_with_no_observable_and_no_wires(  # pylint: disable=redefined-outer-name
+    def test_sample_with_no_observable_and_no_wires(
         self, mock_qubit_device_with_original_statistics
     ):
         """Test that when we sample a device without providing an observable or wires then it
@@ -885,7 +874,7 @@ class TestSampleWithBroadcasting:
         res = dev.sample(obs)
         assert np.array_equal(res, generated_samples)
 
-    def test_sample_with_no_observable_and_with_wires(  # pylint: disable=redefined-outer-name
+    def test_sample_with_no_observable_and_with_wires(
         self, mock_qubit_device_with_original_statistics
     ):
         """Test that when we sample a device without providing an observable but we specify wires
@@ -900,7 +889,6 @@ class TestSampleWithBroadcasting:
 
         assert np.array_equal(res, wire_samples)
 
-    # pylint: disable-next=redefined-outer-name
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
         """Tests that an error is thrown if sample is called with an observable
         that does not have eigenvalues defined when using broadcasting."""
@@ -922,10 +910,12 @@ class TestSampleWithBroadcasting:
 class TestEstimateProb:
     """Test the estimate_probability method"""
 
+    # pylint: disable=redefined-outer-name
+
     @pytest.mark.parametrize(
         "wires, expected", [([0], [0.5, 0.5]), (None, [0.5, 0, 0, 0.5]), ([0, 1], [0.5, 0, 0, 0.5])]
     )
-    def test_estimate_probability(  # pylint: disable=redefined-outer-name
+    def test_estimate_probability(
         self,
         wires,
         expected,
@@ -950,7 +940,7 @@ class TestEstimateProb:
             ([0, 1], [[0.0, 0.5], [0, 0], [0, 0.5], [1.0, 0]]),
         ],
     )
-    def test_estimate_probability_with_binsize(  # pylint: disable=redefined-outer-name
+    def test_estimate_probability_with_binsize(
         self,
         wires,
         expected,
@@ -976,7 +966,7 @@ class TestEstimateProb:
             ([0, 1], [[0, 0, 0.25, 0.75], [0.5, 0, 0, 0.5], [0.25, 0, 0.25, 0.5]]),
         ],
     )
-    def test_estimate_probability_with_broadcasting(  # pylint: disable=redefined-outer-name
+    def test_estimate_probability_with_broadcasting(
         self,
         wires,
         expected,
@@ -1034,7 +1024,7 @@ class TestEstimateProb:
         expected,
         mock_qubit_device_with_original_statistics,
         monkeypatch,
-    ):  # pylint: disable=redefined-outer-name
+    ):
         """Tests the estimate_probability method with a bin size and parameter broadcasting"""
         dev = mock_qubit_device_with_original_statistics(wires=2)
         bin_size = 2
@@ -1056,6 +1046,8 @@ class TestEstimateProb:
 class TestMarginalProb:
     """Test the marginal_prob method"""
 
+    # pylint: disable=redefined-outer-name
+
     @pytest.mark.parametrize(
         "wires, inactive_wires",
         [
@@ -1071,7 +1063,7 @@ class TestMarginalProb:
             (Wires([0, 1, 2]), []),
         ],
     )
-    def test_correct_arguments_for_marginals(  # pylint: disable=redefined-outer-name
+    def test_correct_arguments_for_marginals(
         self,
         mock_qubit_device_with_original_statistics,
         mocker,
@@ -1126,7 +1118,7 @@ class TestMarginalProb:
     ]
 
     @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
-    def test_correct_marginals_returned(  # pylint: disable=redefined-outer-name
+    def test_correct_marginals_returned(
         self,
         mock_qubit_device_with_original_statistics,
         probs,
@@ -1148,7 +1140,7 @@ class TestMarginalProb:
         marginals,
         wires,
         tol,
-    ):  # pylint: disable=redefined-outer-name,unused-argument
+    ):  # pylint: disable=unused-argument
         """Test that passing wires=None simply returns the original probability."""
         num_wires = int(np.log2(len(probs)))
         dev = mock_qubit_device_with_original_statistics(wires=num_wires)
@@ -1204,7 +1196,7 @@ class TestMarginalProb:
         wires,
         num_wires,
         tol,
-    ):  # pylint: disable=too-many-arguments,redefined-outer-name
+    ):  # pylint: disable=too-many-arguments
         """Test that the correct marginals are returned by the marginal_prob method when
         broadcasting is used"""
         dev = mock_qubit_device_with_original_statistics(num_wires)
@@ -1223,7 +1215,7 @@ class TestMarginalProb:
         wires,
         num_wires,
         tol,
-    ):  # pylint: disable=too-many-arguments,redefined-outer-name,unused-argument
+    ):  # pylint: disable=too-many-arguments,unused-argument
         """Test that the correct marginals are returned by the marginal_prob method when
         broadcasting is used"""
         dev = mock_qubit_device_with_original_statistics(num_wires)
@@ -1433,6 +1425,8 @@ class TestExecutionBroadcasted:  # pylint: disable=too-few-public-methods
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
+    # pylint: disable=redefined-outer-name
+
     with qp.queuing.AnnotatedQueue() as q1:
         qp.PauliX(wires=0)
         qp.expval(qp.PauliZ(wires=0))
@@ -1446,7 +1440,6 @@ class TestBatchExecution:
     tape2 = QuantumScript.from_queue(q2)
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
-    # pylint: disable-next=redefined-outer-name
     def test_calls_to_execute(self, n_tapes, mocker, mock_qubit_device_with_paulis_and_methods):
         """Tests that the device's execute method is called the correct number of times."""
 
@@ -1459,7 +1452,6 @@ class TestBatchExecution:
         assert spy.call_count == n_tapes
 
     @pytest.mark.parametrize("n_tapes", [1, 2, 3])
-    # pylint: disable-next=redefined-outer-name
     def test_calls_to_reset(self, n_tapes, mocker, mock_qubit_device_with_paulis_and_methods):
         """Tests that the device's reset method is called the correct number of times."""
 
@@ -1473,7 +1465,6 @@ class TestBatchExecution:
         assert spy.call_count == n_tapes
 
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    # pylint: disable-next=redefined-outer-name
     def test_result(self, mock_qubit_device_with_paulis_and_methods, r_dtype, tol):
         """Tests that the result has the correct shape and entry types."""
 
@@ -1489,7 +1480,6 @@ class TestBatchExecution:
         assert res[0][0].dtype == r_dtype
         assert res[1].dtype == r_dtype
 
-    # pylint: disable-next=redefined-outer-name
     def test_result_empty_tape(self, mock_qubit_device_with_paulis_and_methods, tol):
         """Tests that the result has the correct shape and entry types for empty tapes."""
 

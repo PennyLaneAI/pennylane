@@ -108,6 +108,7 @@ def circuit3_MERA(weights, wires):
 
 def test_flatten_unflatten():
     """Tests the flatten and unflatten methods."""
+    # pylint: disable=protected-access
 
     def block(weights, wires):
         qp.CNOT(wires=[wires[0], wires[1]])
@@ -125,7 +126,7 @@ def test_flatten_unflatten():
 
     op = qp.MERA(wires, n_block_wires, block, n_params_block, template_weights)
 
-    data, metadata = op._flatten()  # pylint: disable=protected-access
+    data, metadata = op._flatten()
     assert len(data) == 1
     assert qp.math.allclose(data[0], template_weights)
 
@@ -135,9 +136,8 @@ def test_flatten_unflatten():
     # make sure metadata hashable
     assert hash(metadata)
 
-    new_op = qp.MERA._unflatten(*op._flatten())  # pylint: disable=protected-access
+    new_op = qp.MERA._unflatten(*op._flatten())
     qp.assert_equal(new_op, op)
-    # pylint: disable-next=protected-access
     assert new_op._name == "MERA"  # make sure acutally initialized
     assert new_op is not op
 

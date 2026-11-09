@@ -295,12 +295,11 @@ class TrotterProduct(Operation):
         }
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
-        # pylint: disable-next=protected-access
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        # pylint: disable-next=protected-access
         new_op._hyperparameters["base"] = qp_ops.functions.map_wires(
-            new_op._hyperparameters["base"], wire_map  # pylint: disable=protected-access
+            new_op._hyperparameters["base"], wire_map
         )
         return new_op
 

@@ -421,20 +421,18 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         return str(self._str(indices))
 
     def _str(self, indices) -> str:
+        # pylint: disable=protected-access
         if self.node_type == _NodeType.TENSOR:
             return f"{self.label}[{','.join(indices)}]"
         if self.node_type == _NodeType.FLOAT:
             return f"{self.value}"
         if self.node_type == _NodeType.SCALAR:
-            # pylint: disable-next=protected-access
             return f"{self.scalar} * ({self.l_child._str(indices)})"
         if self.node_type == _NodeType.OUTER:
             l_indices = indices[: len(self.l_child.shape)]
             r_indices = indices[len(self.l_child.shape) :]
-            # pylint: disable-next=protected-access
             return f"({self.l_child._str(l_indices)}) * ({self.r_child._str(r_indices)})"
         if self.node_type == _NodeType.SUM:
-            # pylint: disable-next=protected-access
             return f"({self.l_child._str(indices)}) + ({self.r_child._str(indices)})"
 
         raise ValueError(f"_RealspaceTree was constructed with invalid _NodeType {self.node_type}.")

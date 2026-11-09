@@ -63,7 +63,9 @@ def execute(device, tape):
 class TestExpval:
     """Test expectation value calculations"""
 
-    def test_Identity(self, theta, phi, dev):  # pylint: disable=redefined-outer-name
+    # pylint: disable=redefined-outer-name
+
+    def test_Identity(self, theta, phi, dev):
         """Tests applying identities."""
 
         ops = [
@@ -82,7 +84,7 @@ class TestExpval:
 
         assert np.allclose(result, expected, tol)
 
-    def test_identity_expectation(self, theta, phi, dev):  # pylint: disable=redefined-outer-name
+    def test_identity_expectation(self, theta, phi, dev):
         """Tests identity expectations."""
 
         tape = qp.tape.QuantumScript(
@@ -95,7 +97,6 @@ class TestExpval:
 
         assert np.allclose(1.0, result, tol)
 
-    # pylint: disable-next=redefined-outer-name
     def test_multi_wire_identity_expectation(self, theta, phi, dev):
         """Tests multi-wire identity."""
 
@@ -112,7 +113,6 @@ class TestExpval:
     @pytest.mark.parametrize("method", ["mps", "tn"])
     def test_custom_wires(self, theta, phi, wires, method):
         """Tests custom wires."""
-        # pylint: disable-next=redefined-outer-name
         dev = qp.device("default.tensor", wires=wires, method=method)
 
         tape = qp.tape.QuantumScript(
@@ -165,7 +165,7 @@ class TestExpval:
             ),
         ],
     )
-    # pylint: disable-next=redefined-outer-name,too-many-arguments
+    # pylint: disable-next=too-many-arguments
     def test_single_wire_observables_expectation(self, Obs, Op, expected_fn, theta, phi, tol, dev):
         """Test that expectation values for single wire observables are correct"""
 
@@ -178,7 +178,6 @@ class TestExpval:
 
         assert np.allclose(result, expected, tol)
 
-    # pylint: disable-next=redefined-outer-name
     def test_hermitian_expectation(self, theta, phi, tol, dev):
         """Tests an Hermitian operator."""
 
@@ -195,7 +194,6 @@ class TestExpval:
 
         assert np.allclose(calculated_val, reference_val, tol)
 
-    # pylint: disable-next=redefined-outer-name
     def test_hamiltonian_expectation(self, theta, phi, tol, dev):
         """Tests a Hamiltonian."""
 
@@ -221,7 +219,6 @@ class TestExpval:
 
         assert np.allclose(calculated_val, reference_val, tol)
 
-    # pylint: disable-next=redefined-outer-name
     def test_sparse_hamiltonian_expectation(self, theta, phi, tol, dev):
         """Tests a Hamiltonian."""
 
@@ -307,7 +304,9 @@ class TestOperatorArithmetic:
 class TestTensorExpval:
     """Test tensor expectation values"""
 
-    def test_PauliX_PauliY(self, theta, phi, varphi, dev):  # pylint: disable=redefined-outer-name
+    # pylint: disable=redefined-outer-name
+
+    def test_PauliX_PauliY(self, theta, phi, varphi, dev):
         """Tests a tensor product involving PauliX and PauliY."""
 
         with qp.tape.QuantumTape() as tape:
@@ -325,7 +324,7 @@ class TestTensorExpval:
 
         assert np.allclose(calculated_val, reference_val, tol)
 
-    def test_PauliZ_identity(self, theta, phi, varphi, dev):  # pylint: disable=redefined-outer-name
+    def test_PauliZ_identity(self, theta, phi, varphi, dev):
         """Tests a tensor product involving PauliZ and Identity."""
 
         with qp.tape.QuantumTape() as tape:
@@ -344,7 +343,6 @@ class TestTensorExpval:
 
         assert np.allclose(calculated_val, reference_val, tol)
 
-    # pylint: disable-next=redefined-outer-name
     def test_PauliZ_hadamard_PauliY(self, theta, phi, varphi, dev):
         """Tests a tensor product involving PauliY, PauliZ and Hadamard."""
 

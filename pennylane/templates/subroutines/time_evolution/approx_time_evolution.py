@@ -162,10 +162,9 @@ class ApproxTimeEvolution(Operation):
         super().__init__(*hamiltonian.data, time, wires=wires)
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
-        # pylint: disable-next=protected-access
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        # pylint: disable-next=protected-access
         new_op._hyperparameters["hamiltonian"] = new_op._hyperparameters["hamiltonian"].map_wires(
             wire_map
         )

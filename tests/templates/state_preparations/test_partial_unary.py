@@ -232,6 +232,7 @@ class TestPUIsometryFinder:
     )
     def test_find_isometry(self, num_entries, n, seed):
         """Test the main method ``find_isometry``."""
+        # pylint: disable=protected-access
         rng = np.random.default_rng(seed)
         states = random_distinct_integers(2**n, num_entries, rng)
         iso_finder = PUIsometryFinder(states, n)
@@ -239,14 +240,12 @@ class TestPUIsometryFinder:
 
         # Validate the internal tableau state:
         # All remainder qubits are zeroed everywhere
-        # pylint: disable-next=protected-access
         assert np.all((iso_finder.tableau & iso_finder.rem_mask) == iso_finder._zero)
         # The cached version of this also is correct
-        assert np.all(iso_finder._in_subspace)  # pylint: disable=protected-access
-        assert iso_finder._n_not_subspace == 0  # pylint: disable=protected-access
+        assert np.all(iso_finder._in_subspace)
+        assert iso_finder._n_not_subspace == 0
         # The subspace qubits are enumerating the num_entries integers specified in the bijection
         assert np.allclose(
-            # pylint: disable-next=protected-access
             (iso_finder.tableau >> iso_finder._nr_shift)[np.array(list(bijection.keys()))],
             np.array(list(bijection.values())),
         )

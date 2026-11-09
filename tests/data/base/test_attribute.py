@@ -355,11 +355,12 @@ class TestAttribute:
     def test_conflicting_consumes_types(self):
         """Test that a Warning is raised if an subclass captures the same
         type as another"""
+        # pylint: disable=too-few-public-methods
 
-        class MyType:  # pylint: disable=too-few-public-methods
+        class MyType:
             pass
 
-        class Attribute(DatasetAttribute):  # pylint: disable=too-few-public-methods
+        class Attribute(DatasetAttribute):
             """An attribute"""
 
             type_id = "_attr_2_"
@@ -373,7 +374,7 @@ class TestAttribute:
             match="Conflicting default types: Both 'Conflicting' and 'Attribute' consume type 'MyType'. 'MyType' will now be consumed by 'Conflicting'",
         ):
 
-            class Conflicting(DatasetAttribute):  # pylint: disable=too-few-public-methods
+            class Conflicting(DatasetAttribute):
                 """A conflicting attribute"""
 
                 type_id = "_attr_3_"

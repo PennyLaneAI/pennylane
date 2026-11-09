@@ -104,6 +104,8 @@ class TestGradients:
 class TestMetricTensor:
     """Test that the metric tensor computation works with `approx` and `lam`."""
 
+    # pylint: disable=protected-access
+
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_no_approx(self, dev_name):
@@ -121,7 +123,7 @@ class TestMetricTensor:
         params = jnp.array([0.11, 0.412])
 
         opt = qp.QNGOptimizerQJIT(approx=None)
-        mt = opt._get_metric_tensor(circ, params)  # pylint: disable=protected-access
+        mt = opt._get_metric_tensor(circ, params)
 
         # computing the expected metric tensor requires some manual calculation
         x = params[0]
@@ -149,11 +151,10 @@ class TestMetricTensor:
         params = jnp.array([0.11, 0.412])
 
         blockdiag_opt = qp.QNGOptimizerQJIT(approx="block-diag")
-        # pylint: disable-next=protected-access
         blockdiag_mt = blockdiag_opt._get_metric_tensor(circ, params)
 
         diag_opt = qp.QNGOptimizerQJIT(approx="diag")
-        diag_mt = diag_opt._get_metric_tensor(circ, params)  # pylint: disable=protected-access
+        diag_mt = diag_opt._get_metric_tensor(circ, params)
 
         # computing the expected metric tensor requires some manual calculation
         x = params[0]
@@ -187,13 +188,12 @@ class TestMetricTensor:
         opt_with_lam = qp.QNGOptimizerQJIT(stepsize=stepsize, approx=None, lam=lam)
         state_with_lam = opt_with_lam.init(params)
         new_params_with_lam, _ = opt_with_lam.step(circ, params, state_with_lam)
-        # pylint: disable-next=protected-access
         mt_with_lam = opt_with_lam._get_metric_tensor(circ, params)
 
         opt = qp.QNGOptimizerQJIT(stepsize=stepsize, approx=None)
         state = opt.init(params)
         new_params, _ = opt.step(circ, params, state)
-        mt = opt._get_metric_tensor(circ, params)  # pylint: disable=protected-access
+        mt = opt._get_metric_tensor(circ, params)
 
         # computing the expected metric tensor requires some manual calculation
         x, y = params

@@ -789,13 +789,15 @@ class TestReconstruct:
     the full ``reconstruct`` function as well as the differentiability of the
     reconstructed function with respect to their single scalar argument."""
 
+    # pylint: disable=too-many-arguments
+
     @pytest.mark.parametrize(
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
         test_cases_qnodes,
     )
-    # pylint: disable-next=too-many-arguments
     def test_with_qnode(self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls):
         """Run a full reconstruction on a QNode."""
+        # pylint: disable=cell-var-from-loop
         qnode = qp.QNode(qnode, dev_1, interface="autograd")
 
         with qp.Tracker(qnode.device) as tracker:
@@ -818,10 +820,9 @@ class TestReconstruct:
                     else pnp.ones(qp.math.shape(params[outer_key_num])) - shift_vec
                 )
                 univariate = lambda x: qnode(
-                    *params[:outer_key_num],  # pylint: disable=cell-var-from-loop
-                    # pylint: disable-next=cell-var-from-loop
+                    *params[:outer_key_num],
                     params[outer_key_num] * mask + x * shift_vec,
-                    *params[outer_key_num + 1 :],  # pylint: disable=cell-var-from-loop
+                    *params[outer_key_num + 1 :],
                 )
                 assert np.isclose(rec(x0), qnode(*params))
                 assert np.isclose(rec(x0 + 0.1), univariate(x0 + 0.1))
@@ -831,10 +832,11 @@ class TestReconstruct:
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
         test_cases_qnodes,
     )
-    def test_differentiability_autograd(  # pylint: disable=too-many-arguments
+    def test_differentiability_autograd(
         self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls
     ):
         """Tests the reconstruction and differentiability with autograd."""
+        # pylint: disable=cell-var-from-loop
         qnode = qp.QNode(qnode, dev_1, interface="autograd")
         with qp.Tracker(qnode.device) as tracker:
             recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
@@ -855,10 +857,9 @@ class TestReconstruct:
                     else pnp.ones(qp.math.shape(params[outer_key_num])) - shift_vec
                 )
                 univariate = lambda x: qnode(
-                    *params[:outer_key_num],  # pylint: disable=cell-var-from-loop
-                    # pylint: disable-next=cell-var-from-loop
+                    *params[:outer_key_num],
                     params[outer_key_num] * mask + x * shift_vec,
-                    *params[outer_key_num + 1 :],  # pylint: disable=cell-var-from-loop
+                    *params[outer_key_num + 1 :],
                 )
                 exp_qnode_grad = qp.grad(qnode, argnums=outer_key_num)
                 exp_grad = qp.grad(univariate)
@@ -881,10 +882,11 @@ class TestReconstruct:
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
         test_cases_qnodes,
     )
-    def test_differentiability_jax(  # pylint: disable=too-many-arguments
+    def test_differentiability_jax(
         self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls
     ):
         """Tests the reconstruction and differentiability with JAX."""
+        # pylint: disable=cell-var-from-loop
         import jax
 
         jax.config.update("jax_enable_x64", True)
@@ -910,10 +912,9 @@ class TestReconstruct:
                     else pnp.ones(qp.math.shape(params[outer_key_num])) - shift_vec
                 )
                 univariate = lambda x: qnode(
-                    *params[:outer_key_num],  # pylint: disable=cell-var-from-loop
-                    # pylint: disable-next=cell-var-from-loop
+                    *params[:outer_key_num],
                     params[outer_key_num] * mask + x * shift_vec,
-                    *params[outer_key_num + 1 :],  # pylint: disable=cell-var-from-loop
+                    *params[outer_key_num + 1 :],
                 )
                 exp_qnode_grad = jax.grad(qnode, argnums=outer_key_num)
                 exp_grad = jax.grad(univariate)
@@ -927,10 +928,11 @@ class TestReconstruct:
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
         test_cases_qnodes,
     )
-    def test_differentiability_torch(  # pylint: disable=too-many-arguments
+    def test_differentiability_torch(
         self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls
     ):
         """Tests the reconstruction and differentiability with Torch."""
+        # pylint: disable=cell-var-from-loop
         import torch
 
         qnode = qp.QNode(qnode, dev_1, interface="torch")
@@ -968,16 +970,13 @@ class TestReconstruct:
                     shift_vec = 1.0
                     mask = 0.0
                 univariate = lambda x: qnode(
-                    *params[:outer_key_num],  # pylint: disable=cell-var-from-loop
-                    # pylint: disable-next=cell-var-from-loop
+                    *params[:outer_key_num],
                     params[outer_key_num] * mask + x * shift_vec,
-                    *params[outer_key_num + 1 :],  # pylint: disable=cell-var-from-loop
+                    *params[outer_key_num + 1 :],
                 )
                 exp_qnode_grad = torch.autograd.functional.jacobian(qnode, params)[outer_key_num]
 
-                # pylint: disable-next=cell-var-from-loop
                 exp_grad = lambda x: torch.autograd.functional.jacobian(univariate, x)
-                # pylint: disable-next=cell-var-from-loop
                 grad = lambda x: torch.autograd.functional.jacobian(rec, x)
 
                 assert np.isclose(grad(x0), exp_qnode_grad[inner_key])

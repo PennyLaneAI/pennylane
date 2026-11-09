@@ -381,13 +381,14 @@ class TestQuantumMonteCarlo:
 
             @qp.qnode(dev)
             def circuit():
+                # pylint: disable=cell-var-from-loop
                 qp.QuantumMonteCarlo(
                     probs,
                     func,
-                    target_wires=target_wires,  # pylint: disable=cell-var-from-loop
-                    estimation_wires=estimation_wires,  # pylint: disable=cell-var-from-loop
+                    target_wires=target_wires,
+                    estimation_wires=estimation_wires,
                 )
-                return qp.probs(estimation_wires)  # pylint: disable=cell-var-from-loop
+                return qp.probs(estimation_wires)
 
             phase_estimated = np.argmax(circuit()[: int(N / 2)]) / N
             mu_estimated = (1 - np.cos(np.pi * phase_estimated)) / 2
@@ -435,13 +436,14 @@ class TestQuantumMonteCarlo:
             @jax.jit
             @qp.qnode(dev, interface="jax")
             def circuit():
+                # pylint: disable=cell-var-from-loop
                 qp.QuantumMonteCarlo(
                     probs,
                     func,
-                    target_wires=target_wires,  # pylint: disable=cell-var-from-loop
-                    estimation_wires=estimation_wires,  # pylint: disable=cell-var-from-loop
+                    target_wires=target_wires,
+                    estimation_wires=estimation_wires,
                 )
-                return qp.probs(estimation_wires)  # pylint: disable=cell-var-from-loop
+                return qp.probs(estimation_wires)
 
             phase_estimated = jnp.argmax(circuit()[: int(N / 2)]) / N
             mu_estimated = (1 - jnp.cos(np.pi * phase_estimated)) / 2

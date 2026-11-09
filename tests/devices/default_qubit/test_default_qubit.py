@@ -1213,19 +1213,20 @@ class TestRandomSeed:
 
     def test_global_seed_no_device_seed_by_default(self):
         """Test that the global numpy seed initializes the rng if device seed is none."""
+        # pylint: disable=protected-access
         np.random.seed(42)
         dev = DefaultQubit()
-        first_num = dev._rng.random()  # pylint: disable=protected-access
+        first_num = dev._rng.random()
 
         np.random.seed(42)
         dev2 = DefaultQubit()
-        second_num = dev2._rng.random()  # pylint: disable=protected-access
+        second_num = dev2._rng.random()
 
         assert qp.math.allclose(first_num, second_num)
 
         np.random.seed(42)
         dev2 = DefaultQubit(seed="global")
-        third_num = dev2._rng.random()  # pylint: disable=protected-access
+        third_num = dev2._rng.random()
 
         assert qp.math.allclose(third_num, first_num)
 

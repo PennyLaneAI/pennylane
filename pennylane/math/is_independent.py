@@ -56,23 +56,21 @@ def _autograd_is_indep_analytic(func, *args, **kwargs):
     `autograd.tracer.py::trace
     <https://github.com/HIPS/autograd/blob/master/autograd/tracer.py#L7>`__.
     """
+    # pylint: disable=protected-access
     node = VJPNode.new_root()
     with trace_stack.new_trace() as t:
         start_box = new_box(args, t, node)
         end_box = func(*start_box, **kwargs)
 
     if type(end_box) in [tuple, list]:
-        # pylint: disable-next=protected-access
         if any(isbox(_end) and _end._trace == start_box._trace for _end in end_box):
             return False
     elif isinstance(end_box, np.ndarray):
         if end_box.ndim == 0:
             end_box = [end_box.item()]
-        # pylint: disable-next=protected-access
         if any(isbox(_end) and _end._trace == start_box._trace for _end in end_box):
             return False
     else:
-        # pylint: disable-next=protected-access
         if isbox(end_box) and end_box._trace == start_box._trace:
             return False
     return True

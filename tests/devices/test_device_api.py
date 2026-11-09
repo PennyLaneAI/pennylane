@@ -104,6 +104,8 @@ class TestDeviceCapabilities:
 class TestSetupExecutionConfig:
     """Tests the default implementation for setup_execution_config."""
 
+    # pylint: disable=too-few-public-methods
+
     def test_device_implements_preprocess(self):
         """Tests that the execution config returned by device's preprocess is used."""
 
@@ -124,7 +126,7 @@ class TestSetupExecutionConfig:
     def test_device_no_capabilities(self):
         """Tests if the device does not declare capabilities."""
 
-        class DeviceNoCapabilities(Device):  # pylint: disable=too-few-public-methods
+        class DeviceNoCapabilities(Device):
 
             def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
                 return (0,)
@@ -178,7 +180,7 @@ class TestSetupExecutionConfig:
     ):
         """Tests that the requested MCM method is validated."""
 
-        class DeviceWithMCM(Device):  # pylint: disable=too-few-public-methods
+        class DeviceWithMCM(Device):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -209,7 +211,7 @@ class TestSetupExecutionConfig:
     def test_mcm_method_validation_without_capabilities(self, mcm_method, shots, expected_error):
         """Tests that the requested mcm method is validated without device capabilities"""
 
-        class CustomDevice(Device):  # pylint: disable=too-few-public-methods
+        class CustomDevice(Device):
             """A device with only a dummy execute method provided."""
 
             # pylint: disable-next=unused-argument
@@ -243,7 +245,7 @@ class TestSetupExecutionConfig:
     def test_mcm_method_resolution(self, request, shots, expected_method):
         """Tests that an MCM method is chosen if not specified."""
 
-        class CustomDevice(qp.devices.Device):  # pylint: disable=too-few-public-methods
+        class CustomDevice(qp.devices.Device):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -260,6 +262,8 @@ class TestSetupExecutionConfig:
 
 class TestPreprocessTransforms:
     """Tests the default implementation for preprocess_transforms."""
+
+    # pylint: disable=too-few-public-methods
 
     def test_device_implements_preprocess(self):
         """Tests that the execution config returned by device's preprocess is used."""
@@ -281,7 +285,7 @@ class TestPreprocessTransforms:
     def test_device_no_capabilities(self):
         """Tests if the device does not declare capabilities."""
 
-        class DeviceNoCapabilities(Device):  # pylint: disable=too-few-public-methods
+        class DeviceNoCapabilities(Device):
 
             def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
                 return (0,)
@@ -300,7 +304,7 @@ class TestPreprocessTransforms:
     def test_deferred_allow_postselect(self, request, supports_projector):
         """Tests that the deferred measurements transform validates postselection."""
 
-        class CustomDevice(Device):  # pylint: disable=too-few-public-methods
+        class CustomDevice(Device):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -335,7 +339,7 @@ class TestPreprocessTransforms:
     def test_decomposition(self, request, shots):
         """Tests that decomposition acts correctly with or without shots."""
 
-        class CustomDevice(Device):  # pylint: disable=too-few-public-methods
+        class CustomDevice(Device):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -379,7 +383,7 @@ class TestPreprocessTransforms:
     def test_validation(self, request, shots):
         """Tests that observable and measurement validation works correctly."""
 
-        class CustomDevice(Device):  # pylint: disable=too-few-public-methods
+        class CustomDevice(Device):
             """A device with capabilities config file defined."""
 
             config_filepath = request.node.toml_file
@@ -464,6 +468,7 @@ class TestPreprocessTransforms:
         self, request, overlapping_obs, non_commuting_obs, sum_support
     ):
         """Tests if ``split_non_commuting`` or ``split_to_single_terms`` is applied correctly."""
+        # pylint: disable=protected-access
 
         if not overlapping_obs and non_commuting_obs:
             pytest.skip("Not a valid combination of capabilities")
@@ -471,7 +476,7 @@ class TestPreprocessTransforms:
         if overlapping_obs and sum_support:
             pytest.skip("The support for Sum doesn't matter here")
 
-        class CustomDevice(Device):  # pylint: disable=too-few-public-methods
+        class CustomDevice(Device):
 
             config_filepath = request.node.toml_file
 
@@ -493,21 +498,15 @@ class TestPreprocessTransforms:
             assert qp.transforms.split_non_commuting in program
             assert qp.transforms.split_to_single_terms not in program
             for transform_container in program:
-                # pylint: disable-next=protected-access
                 if transform_container._transform is qp.transforms.split_non_commuting:
-                    # pylint: disable-next=protected-access
                     assert "grouping_strategy" in transform_container._kwargs
-                    # pylint: disable-next=protected-access
                     assert transform_container._kwargs["grouping_strategy"] == "wires"
         elif not non_commuting_obs:
             assert qp.transforms.split_non_commuting in program
             assert qp.transforms.split_to_single_terms not in program
             for transform_container in program:
-                # pylint: disable-next=protected-access
                 if transform_container._transform is qp.transforms.split_non_commuting:
-                    # pylint: disable-next=protected-access
                     assert "grouping_strategy" in transform_container._kwargs
-                    # pylint: disable-next=protected-access
                     assert transform_container._kwargs["grouping_strategy"] == "qwc"
         elif not sum_support:
             assert qp.transforms.split_to_single_terms in program
@@ -523,7 +522,7 @@ class TestPreprocessTransforms:
     def test_diagonalize_measurements(self, request, non_commuting_obs, all_obs_support):
         """Tests that the diagonalize_measurements transform is applied correctly."""
 
-        class CustomDevice(Device):  # pylint: disable=too-few-public-methods
+        class CustomDevice(Device):
 
             config_filepath = request.node.toml_file
 
@@ -726,23 +725,24 @@ def test_device_with_ambiguous_preprocess():
         class InvalidDevice(Device):  # pylint: disable=unused-variable
             """A device with ambiguous preprocess."""
 
-            def preprocess(self, execution_config=None):  # pylint: disable=unused-argument
+            # pylint: disable=unused-argument
+
+            def preprocess(self, execution_config=None):
                 return CompilePipeline(), ExecutionConfig()
 
-            def setup_execution_config(  # pylint: disable=unused-argument
+            def setup_execution_config(
                 self,
                 config: ExecutionConfig | None = None,
                 circuit: QuantumScript | None = None,
             ) -> ExecutionConfig:
                 return ExecutionConfig()
 
-            def preprocess_transforms(  # pylint: disable=unused-argument
+            def preprocess_transforms(
                 self,
                 execution_config: ExecutionConfig | None = None,
             ) -> CompilePipeline:
                 return CompilePipeline()
 
-            # pylint: disable-next=unused-argument
             def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return (0,)
 

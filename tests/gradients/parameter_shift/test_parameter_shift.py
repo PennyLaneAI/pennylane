@@ -56,6 +56,8 @@ shv_m = np.outer([0.1, 0.4, 0.7], [1, 2])
 class TestEvaluateGradient:
     """Test _evaluate_gradient."""
 
+    # pylint: disable=too-many-arguments
+
     # We could theoretically compute the required res, r0 and expected from the parametrization of coeffs,
     # unshifted_coeff and batch_size, but that turned out to take lots of effort and edge case logic
 
@@ -80,7 +82,6 @@ class TestEvaluateGradient:
         "coeffs, unshifted_coeff, batch_size, res, r0, expected",
         test_cases_single_shots_single_meas,
     )
-    # pylint: disable-next=too-many-arguments
     def test_single_shots_single_meas(self, coeffs, unshifted_coeff, batch_size, res, r0, expected):
         """Test that a single shots, single measurement gradient is evaluated correctly."""
 
@@ -122,7 +123,6 @@ class TestEvaluateGradient:
         "coeffs, unshifted_coeff, batch_size, res, r0, expected",
         test_cases_single_shots_multi_meas,
     )
-    # pylint: disable-next=too-many-arguments
     def test_single_shots_multi_meas(self, coeffs, unshifted_coeff, batch_size, res, r0, expected):
         """Test that a single shots, multiple measurements gradient is evaluated correctly."""
 
@@ -162,7 +162,6 @@ class TestEvaluateGradient:
         "coeffs, unshifted_coeff, batch_size, res, r0, expected",
         test_cases_multi_shots_single_meas,
     )
-    # pylint: disable-next=too-many-arguments
     def test_multi_shots_single_meas(self, coeffs, unshifted_coeff, batch_size, res, r0, expected):
         """Test that a shot vector, single measurements gradient is evaluated correctly."""
 
@@ -221,7 +220,6 @@ class TestEvaluateGradient:
         "coeffs, unshifted_coeff, batch_size, res, r0, expected",
         test_cases_multi_shots_multi_meas,
     )
-    # pylint: disable-next=too-many-arguments
     def test_multi_shots_multi_meas(self, coeffs, unshifted_coeff, batch_size, res, r0, expected):
         """Test that a shot vector, multiple measurements gradient is evaluated correctly."""
 

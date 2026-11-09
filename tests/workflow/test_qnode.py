@@ -1096,15 +1096,13 @@ class TestIntegration:
         """Test that an error is raised in the device_vjp is unsupported."""
 
         class DummyDev(qp.devices.Device):
-            # pylint: disable-next=unused-argument
+            # pylint: disable=unused-argument
             def execute(self, circuits, execution_config=qp.devices.ExecutionConfig()):
                 return 0
 
-            # pylint: disable-next=unused-argument
             def supports_derivatives(self, execution_config=None, circuit=None):
                 return execution_config and execution_config.gradient_method == "vjp_grad"
 
-            # pylint: disable-next=unused-argument
             def supports_vjp(self, execution_config=None, circuit=None) -> bool:
                 return execution_config and execution_config.gradient_method == "vjp_grad"
 
@@ -1731,6 +1729,8 @@ class TestMCMConfiguration:
 class TestTapeExpansion:
     """Test that tape expansion within the QNode works correctly"""
 
+    # pylint: disable=too-few-public-methods
+
     @pytest.mark.parametrize(
         "diff_method,grad_on_execution",
         [("parameter-shift", False), ("adjoint", True), ("adjoint", False)],
@@ -1739,7 +1739,7 @@ class TestTapeExpansion:
         """Test expansion of an unsupported operation on the device"""
         dev = qp.device("default.qubit", wires=1)
 
-        class UnsupportedOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class UnsupportedOp(qp.operation.Operation):
             """custom unsupported op."""
 
             num_wires = 1
@@ -1776,7 +1776,7 @@ class TestTapeExpansion:
 
         dev = qp.device("default.qubit", wires=1)
 
-        class UnsupportedOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class UnsupportedOp(qp.operation.Operation):
             """custom unsupported op."""
 
             num_wires = 1
@@ -1812,7 +1812,7 @@ class TestTapeExpansion:
 
         dev = qp.device("default.qubit", wires=1)
 
-        class PhaseShift(qp.PhaseShift):  # pylint: disable=too-few-public-methods
+        class PhaseShift(qp.PhaseShift):
             """custom phase shift."""
 
             grad_method = None

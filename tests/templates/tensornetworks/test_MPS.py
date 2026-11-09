@@ -24,6 +24,7 @@ from pennylane.templates.tensornetworks.mps import MPS, compute_indices_MPS
 
 def test_flatten_unflatten():
     """Test the flatten and unflatten methods."""
+    # pylint: disable=protected-access
 
     def block(weights, wires, use_CNOT=True):
         if use_CNOT:
@@ -41,7 +42,7 @@ def test_flatten_unflatten():
 
     op = qp.MPS(wires, n_block_wires, block, n_params_block, template_weights, use_CNOT=True)
 
-    data, metadata = op._flatten()  # pylint: disable=protected-access
+    data, metadata = op._flatten()
     assert len(data) == 1
     assert qp.math.allclose(data[0], template_weights)
 
@@ -51,9 +52,8 @@ def test_flatten_unflatten():
     # make sure metadata hashable
     assert hash(metadata)
 
-    new_op = qp.MPS._unflatten(*op._flatten())  # pylint: disable=protected-access
+    new_op = qp.MPS._unflatten(*op._flatten())
     qp.assert_equal(new_op, op)
-    # pylint: disable-next=protected-access
     assert new_op._name == "MPS"  # make sure acutally initialized
     assert new_op is not op
 

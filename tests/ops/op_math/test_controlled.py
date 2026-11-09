@@ -426,6 +426,7 @@ class TestControlledMiscMethods:
 
     def test_flatten_unflatten(self):
         """Tests the _flatten and _unflatten methods."""
+        # pylint: disable=protected-access
         target = qp.S(0)
         control_wires = qp.wires.Wires((1, 2))
         control_values = (0, 0)
@@ -433,7 +434,7 @@ class TestControlledMiscMethods:
 
         op = Controlled(target, control_wires, control_values=control_values, work_wires=work_wires)
 
-        data, metadata = op._flatten()  # pylint: disable=protected-access
+        data, metadata = op._flatten()
         assert data[0] is target
         assert len(data) == 1
 
@@ -442,9 +443,8 @@ class TestControlledMiscMethods:
         # make sure metadata is hashable
         assert hash(metadata)
 
-        new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
+        new_op = type(op)._unflatten(*op._flatten())
         qp.assert_equal(op, new_op)
-        # pylint: disable-next=protected-access
         assert new_op._name == "C(S)"  # make sure initialization was called
 
     def test_copy(self):

@@ -272,6 +272,7 @@ class TestSnapshot:
     @pytest.mark.parametrize("measurement", (None, "state"))
     def test_capture_measurement(self, measurement):
         """Test that a snapshot can be captured into plxpr."""
+        # pylint: disable=protected-access
 
         import jax
 
@@ -284,11 +285,8 @@ class TestSnapshot:
         jaxpr = jax.make_jaxpr(f)()
 
         if measurement is None:
-            # pylint: disable-next=protected-access
             assert jaxpr.eqns[0].primitive == qp.Snapshot._primitive
         else:
-            # pylint: disable-next=protected-access
             assert jaxpr.eqns[0].primitive == qp.measurements.StateMP._wires_primitive
-            # pylint: disable-next=protected-access
             assert jaxpr.eqns[1].primitive == qp.Snapshot._primitive
             assert jaxpr.eqns[1].invars[0] == jaxpr.eqns[0].outvars[0]

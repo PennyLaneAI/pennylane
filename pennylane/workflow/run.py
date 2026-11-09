@@ -122,28 +122,24 @@ def _get_ml_boundary_execute(resolved_execution_config: ExecutionConfig) -> Call
     Raises:
         pennylane.QuantumFunctionError: If the required package for the specified interface is not installed.
     """
+    # pylint: disable=import-outside-toplevel
     interface = resolved_execution_config.interface
     device_vjp = resolved_execution_config.use_device_jacobian_product
     try:
         match interface:
             case Interface.AUTOGRAD:
-                # pylint: disable-next=import-outside-toplevel
                 from .interfaces.autograd import autograd_execute as ml_boundary
 
             case Interface.TORCH:
-                # pylint: disable-next=import-outside-toplevel
                 from .interfaces.torch import execute as ml_boundary
 
             case Interface.JAX_JIT if resolved_execution_config.convert_to_numpy:
-                # pylint: disable-next=import-outside-toplevel
                 from .interfaces.jax_jit import jax_jit_jvp_execute as ml_boundary
 
             case _:  # interface is jax
                 if device_vjp:
-                    # pylint: disable-next=import-outside-toplevel
                     from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
                 else:
-                    # pylint: disable-next=import-outside-toplevel
                     from .interfaces.jax import jax_jvp_execute as ml_boundary
 
     except ImportError as e:  # pragma: no cover
