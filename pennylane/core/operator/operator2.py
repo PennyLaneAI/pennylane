@@ -233,7 +233,7 @@ class Operator2(metaclass=OperatorMeta):
                 resources[qp.Rot] = 1
                 return resources
 
-            @qp.register_resources(_my_op_resources, name="_my_op_decomp")
+            @qp.register_resources(_my_op_resources, name="my_op_decomp")
             def _my_op_decomp(pauli_string, angle_array, wires, rot_wire):
                 wire_map = {wires[i]: i for i in range(len(wires))}
                 for wire, pauli in zip(wires, pauli_string):
@@ -258,7 +258,7 @@ class Operator2(metaclass=OperatorMeta):
         >>> qp.decomposition.enable_graph()
         >>> inspector = qp.decomp_inspector(f)()
         >>> inspector.inspect_decomps(MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,)))
-        CHOSEN: Decomposition 0 (name: _my_op_decomp)
+        CHOSEN: Decomposition 0 (name: my_op_decomp)
         0: ──X───────────────────┤
         1: ──Y───────────────────┤
         2: ──Y───────────────────┤

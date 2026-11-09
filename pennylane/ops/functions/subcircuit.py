@@ -138,7 +138,7 @@ def subcircuit(  # pylint: disable=too-many-arguments
     The body of the quantum function is registered as its decomposition rule:
 
     >>> qp.inspect_decomps(op)
-    Decomposition 0 (name: MyOp_decomp)
+    Decomposition 0 (name: MyOpdecomp)
     0: ──H──RZ(0.50)─┤
     Gate Count: {Hadamard: 1, RZ: 1}
     """

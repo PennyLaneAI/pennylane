@@ -752,7 +752,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     >>> qp.list_decomps(qp.CRX)['to_ppr']
     DecompositionRule(name=to_ppr)
     >>> print(qp.list_decomps(qp.CRX)[0])
-    @register_resources(_crx_to_rx_cz_resources, name="crx_to_rx_cz")
+    @register_resources(_crx_to_rx_cz_resources, name="to_rx_cz")
     def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
         qp.RX(phi / 2, wires=wires[1])
         qp.CZ(wires=wires)
@@ -1114,22 +1114,22 @@ def inspect_decomps(
     By default, this function displays all available decomposition rules for an operator.
 
     >>> qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]))
-    Decomposition 0 (name: _crx_to_rx_cz)
+    Decomposition 0 (name: to_rx_cz)
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
     Gate Count: {CZ: 2, RX: 2}
     <BLANKLINE>
-    Decomposition 1 (name: _crx_to_rz_ry)
+    Decomposition 1 (name: to_rz_ry)
     0: ─────────────────────╭●────────────╭●────────────┤
     1: ──RZ(1.57)──RY(0.25)─╰X──RY(-0.25)─╰X──RZ(-1.57)─┤
     Gate Count: {CNOT: 2, RY: 2, RZ: 2}
     <BLANKLINE>
-    Decomposition 2 (name: _crx_to_h_crz)
+    Decomposition 2 (name: to_h_crz)
     0: ────╭●───────────┤
     1: ──H─╰RZ(0.50)──H─┤
     Gate Count: {CRZ: 1, Hadamard: 2}
     <BLANKLINE>
-    Decomposition 3 (name: _crx_to_ppr)
+    Decomposition 3 (name: to_ppr)
     0: ───────────╭RZX(-0.25)─┤
     1: ──RX(0.25)─╰RZX(-0.25)─┤
     Gate Count: {PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=X, wires=AbstractWires(1)): 1, PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZX, wires=AbstractWires(2)): 1}
@@ -1139,7 +1139,7 @@ def inspect_decomps(
     decomposition rule by passing its name.
 
     >>> qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]), "to_h_crz")
-    Decomposition 0 (name: _crx_to_h_crz)
+    Decomposition 0 (name: to_h_crz)
     0: ────╭●───────────┤
     1: ──H─╰RZ(0.50)──H─┤
     Gate Count: {CRZ: 1, Hadamard: 2}

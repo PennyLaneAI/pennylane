@@ -297,7 +297,7 @@ to a device:
     @qp.decomposition.register_resources({
         qp.H: 2,
         qp.CZ: 1
-    }, name="_custom_cnot_decomposition")
+    }, name="custom_cnot_decomposition")
     def _custom_cnot_decomposition(wires, **_):
         qp.Hadamard(wires=wires[1])
         qp.CZ(wires=[wires[0], wires[1]])

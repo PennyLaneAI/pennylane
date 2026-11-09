@@ -355,7 +355,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     "CHOSEN" among those that were considered.
 
     >>> inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5]), num_work_wires=2)
-    Decomposition 0 (name: ctrl_single_work_wire)
+    Decomposition 0 (name: single_work_wire)
     0: ──────────╭MultiRZ(0.50)───────┤
     1: ──────────├MultiRZ(0.50)───────┤
     3: ───────╭●─│──────────────╭●────┤
@@ -368,10 +368,10 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     Full Expansion Gates: {CNOT: 26, GlobalPhase: 68, MidMeasure: 2, RX: 20, RY: 10, RZ: 42}
     Weighted Cost: 3628.0
     <BLANKLINE>
-    Decomposition 1 (name: ctrl_many_zeroed_work_wires)
+    Decomposition 1 (name: many_zeroed_work_wires)
     Not applicable (provided operator instance does not meet all conditions for this rule).
     <BLANKLINE>
-    Decomposition 2 (name: controlled(_multi_rz_to_ppr))
+    Decomposition 2 (name: controlled(to_ppr))
     0: ─╭RZZ(0.50)─┤
     1: ─├RZZ(0.50)─┤
     3: ─├●─────────┤
@@ -382,7 +382,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     Full Expansion Gates: {CNOT: 46, GlobalPhase: 25, RX: 23, RZ: 22}
     Weighted Cost: 2296.0
     <BLANKLINE>
-    CHOSEN: Decomposition 3 (name: controlled(multi_rz_standard))
+    CHOSEN: Decomposition 3 (name: controlled(standard))
     0: ─╭(X)@RZ(0.50)@(X)─┤
     1: ─├(X)@RZ(0.50)@(X)─┤
     3: ─├●────────────────┤
@@ -398,7 +398,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     >>> cnot = qp.CNOT([1, 0])
     >>> cob = qp.change_op_basis(cnot, qp.RZ(0.5, wires=0), cnot)
     >>> inspector.inspect_decomps(qp.ctrl(cob, control=[3, 4, 5]), num_work_wires=2)
-    CHOSEN: Decomposition 0 (name: flip_zero_ctrl_values(_controlled_change_op_basis_standard))
+    CHOSEN: Decomposition 0 (name: standard)
     0: ─╭X─╭RZ(0.50)─╭X─┤
     1: ─╰●─│─────────╰●─┤
     3: ────├●───────────┤
@@ -420,7 +420,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     wires in the budget, so this inner operator has one fewer work wire available to it):
 
     >>> inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=2), num_work_wires=1)
-    Decomposition 0 (name: controlled(_multi_rz_to_ppr))
+    Decomposition 0 (name: controlled(to_ppr))
     0: ─╭RZZ(0.50)─┤
     1: ─├RZZ(0.50)─┤
     2: ─╰●─────────┤
@@ -429,7 +429,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     Full Expansion Gates: {CNOT: 4, GlobalPhase: 5, RX: 5, RZ: 2}
     Weighted Cost: 354.0
     <BLANKLINE>
-    CHOSEN: Decomposition 1 (name: controlled(multi_rz_standard))
+    CHOSEN: Decomposition 1 (name: controlled(standard))
     0: ─╭(X)@RZ(0.50)@(X)─┤
     1: ─├(X)@RZ(0.50)@(X)─┤
     2: ─╰●────────────────┤
@@ -441,7 +441,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     As above, one more decomposition of that change of basis leaves the ladder bare:
 
     >>> inspector.inspect_decomps(qp.ctrl(cob, control=2), num_work_wires=1)
-    CHOSEN: Decomposition 0 (name: flip_zero_ctrl_values(_controlled_change_op_basis_standard))
+    CHOSEN: Decomposition 0 (name: standard)
     0: ─╭X─╭RZ(0.50)─╭X─┤
     1: ─╰●─│─────────╰●─┤
     2: ────╰●───────────┤
@@ -465,7 +465,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         inspector = circuit()
 
     >>> inspector.inspect_decomps(qp.PauliRot(0.5, "XYZ", [0, 1, 2]))
-    Decomposition 0 (name: _pauli_rot_standard)
+    Decomposition 0 (name: standard)
     0: ─╭(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
     1: ─├(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
     2: ─╰(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
@@ -478,7 +478,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
     >>> to_basis = qp.prod(qp.PPR_4(1, "X", wires=1), qp.Hadamard(wires=0))
     >>> inspector.inspect_decomps(to_basis)
-    Decomposition 0 (name: _prod2_standard)
+    Decomposition 0 (name: standard)
     0: ──H───────────┤
     1: ──PPR(π/4, X)─┤
     First-Level Expansion Gates: {Hadamard: 1, PPR_4(1, 'X', wires=AbstractWires(1)): 1}
@@ -488,20 +488,20 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     set, which is why ``PauliRot`` stops here. Inspecting it directly:
 
     >>> inspector.inspect_decomps(qp.Hadamard(0))
-    Decomposition 0 (name: _hadamard_to_ppr)
+    Decomposition 0 (name: to_ppr)
     0: ──PPR(π/2, Z)──PPR(π/4, Y)──GlobalPhase(-1.57)─┤
     First-Level Expansion Gates: {GlobalPhase: 1, PPR_2(1, 'Z', wires=AbstractWires(1)): 1, PPR_4(1, 'Y', wires=AbstractWires(1)): 1}
     Missing Ops: {GlobalPhase, PPR_2(1, 'Z', wires=AbstractWires(1))}
     <BLANKLINE>
-    Decomposition 1 (name: _hadamard_to_ppm)
+    Decomposition 1 (name: to_ppm)
     Insufficient work wires: requires 1 but only 0 available.
     <BLANKLINE>
-    Decomposition 2 (name: _hadamard_to_rz_ry)
+    Decomposition 2 (name: to_rz_ry)
     0: ──RZ(3.14)──RY(1.57)──GlobalPhase(-1.57)─┤
     First-Level Expansion Gates: {GlobalPhase: 1, RY: 1, RZ: 1}
     Missing Ops: {GlobalPhase}
     <BLANKLINE>
-    Decomposition 3 (name: _hadamard_to_rz_rx)
+    Decomposition 3 (name: to_rz_rx)
     0: ──RZ(1.57)──RX(1.57)──RZ(1.57)──GlobalPhase(-1.57)─┤
     First-Level Expansion Gates: {GlobalPhase: 1, RX: 1, RZ: 2}
     Missing Ops: {GlobalPhase}
@@ -548,7 +548,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         >>> op = qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5, 6])
         >>> inspector.inspect_decomps(op, num_work_wires=2)
-        Decomposition 0 (name: ctrl_single_work_wire)
+        Decomposition 0 (name: single_work_wire)
         0: ──────────╭MultiRZ(0.50)───────┤
         1: ──────────├MultiRZ(0.50)───────┤
         3: ───────╭●─│──────────────╭●────┤
@@ -562,10 +562,10 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Full Expansion Gates: {CNOT: 50, GlobalPhase: 99, MidMeasure: 2, RX: 27, RY: 18, RZ: 78}
         Weighted Cost: 6202.0
         <BLANKLINE>
-        Decomposition 1 (name: ctrl_many_zeroed_work_wires)
+        Decomposition 1 (name: many_zeroed_work_wires)
         Not applicable (provided operator instance does not meet all conditions for this rule).
         <BLANKLINE>
-        Decomposition 2 (name: controlled(_multi_rz_to_ppr))
+        Decomposition 2 (name: controlled(to_ppr))
         0: ─╭RZZ(0.50)─┤
         1: ─├RZZ(0.50)─┤
         3: ─├●─────────┤
@@ -577,7 +577,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Full Expansion Gates: {CNOT: 134, GlobalPhase: 33, RX: 31, RZ: 46}
         Weighted Cost: 3984.0
         <BLANKLINE>
-        CHOSEN: Decomposition 3 (name: controlled(multi_rz_standard))
+        CHOSEN: Decomposition 3 (name: controlled(standard))
         0: ─╭(X)@RZ(0.50)@(X)─┤
         1: ─├(X)@RZ(0.50)@(X)─┤
         3: ─├●────────────────┤
@@ -592,7 +592,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Decomposing the chosen change of basis once more again leaves the CNOT ladder bare:
 
         >>> inspector.inspect_decomps(qp.ctrl(cob, control=[3, 4, 5, 6]), num_work_wires=2)
-        CHOSEN: Decomposition 0 (name: flip_zero_ctrl_values(_controlled_change_op_basis_standard))
+        CHOSEN: Decomposition 0 (name: standard)
         0: ─╭X─╭RZ(0.50)─╭X─┤
         1: ─╰●─│─────────╰●─┤
         3: ────├●───────────┤
@@ -608,7 +608,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         >>> op = qp.MultiControlledX([2, 3, 4, 5, 6])
         >>> inspector.inspect_decomps(op, num_work_wires=2)
-        Decomposition 0 (name: _mcx_no_work_wires)
+        Decomposition 0 (name: no_work_wires)
         2: ────╭●───────────────────╭●──────────────────────╭●──────────────────┤
         3: ────├●───────────────────├●──────────────────────├●──────────────────┤
         4: ────│─────────╭●─────────│─────────╭●────────────├●──────────────────┤
@@ -714,7 +714,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         >>> op = qp.MultiControlledX([2, 3, 4, 5, 6])  # concrete wire labels don't matter
         >>> inspector.inspect_decomps(op, num_work_wires=1)
-        Decomposition 0 (name: _mcx_no_work_wires)
+        Decomposition 0 (name: no_work_wires)
         2: ────╭●───────────────────╭●──────────────────────╭●──────────────────┤
         3: ────├●───────────────────├●──────────────────────├●──────────────────┤
         4: ────│─────────╭●─────────│─────────╭●────────────├●──────────────────┤
