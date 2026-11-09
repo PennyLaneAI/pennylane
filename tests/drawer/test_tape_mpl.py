@@ -27,6 +27,7 @@ import pytest
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript
 from pennylane.drawer import tape_mpl
+from pennylane.drawer.tape_mpl import _ppm_controlled
 from pennylane.ops.op_math import ControlledOp2
 
 mpl = pytest.importorskip("matplotlib")
@@ -1012,6 +1013,111 @@ class TestLayering:
 
 class TestClassicalControl:
     """Tests involving mid circuit measurements and classical control."""
+
+    @pytest.mark.parametrize(
+        "op, wires, mapped_wires",
+        [(qp.CZ, [0, 2], [3, 1]), (qp.Toffoli, [0, 2, 3], [3, 1, 0])],
+    )
+    def test_conditional_gate_symbols(self, op, wires, mapped_wires):
+        """Conditional gates retain their symbols and joins after reordering wires."""
+        with qp.queuing.AnnotatedQueue() as q:
+            m0 = qp.measure(0)
+            m1 = qp.measure(1)
+            qp.cond(m0 & m1, op)(wires=wires)
+
+        _, ax = tape_mpl(
+            QuantumScript.from_queue(q),
+            wire_order=[3, 2, 1, 0],
+            show_all_wires=True,
+            style="black_white",
+        )
+        circles = ax.patches[6:]
+        assert len(circles) == len(wires)
+        for circle, wire in zip(circles, mapped_wires, strict=True):
+            assert isinstance(circle, mpl.patches.Circle)
+            assert circle.center == (2, wire)
+        assert circles[0].get_facecolor() == (0.0, 0.0, 0.0, 1.0)
+        assert circles[1].get_facecolor() == (0.0, 0.0, 0.0, 1.0)
+        assert ax.lines[6].get_data() == ((2, 2), (min(mapped_wires), max(mapped_wires)))
+        assert len(ax.texts) == 4  # Only wire labels, no gate box label.
+        if op is qp.Toffoli:
+            assert circles[2].get_facecolor() == (1.0, 1.0, 1.0, 1.0)
+            assert qp.math.allclose(ax.lines[7].get_data(), ((2, 2), (-0.3, 0.3)))
+            assert qp.math.allclose(ax.lines[8].get_data(), ((1.7, 2.3), (0, 0)))
+
+        assert ax.lines[4].get_data() == ([0, 0, 0, 2, 2, 2], [4, 3, 4, 4, 3, 4])
+        assert ax.lines[5].get_data() == (
+            [1, 1, 1, 2, 2, 2],
+            [4.25, 2, 4.25, 4.25, 3, 4.25],
+        )
+        assert ax.lines[-1].get_data() == ((1.8, 2), (4, 4))
+        plt.close()
+
+    def test_conditional_open_control(self):
+        """Conditional controlled rotations show the control value and formatted label."""
+        with qp.queuing.AnnotatedQueue() as q:
+            m0 = qp.measure(0)
+            qp.cond(m0, qp.ctrl(qp.RX, control=1, control_values=0))(0.123, wires=2)
+
+        _, ax = tape_mpl(QuantumScript.from_queue(q), decimals=2, style="black_white")
+        assert len(ax.patches) == 5
+        control, box = ax.patches[3:]
+        assert isinstance(control, mpl.patches.Circle)
+        assert control.center == (1, 1)
+        assert control.get_facecolor() == (1.0, 1.0, 1.0, 1.0)
+        assert isinstance(box, mpl.patches.FancyBboxPatch)
+        assert qp.math.allclose((box.get_y(), box.get_height()), (1.825, 0.35))
+        assert ax.texts[-1].get_text() == "RX\n(0.12)"
+        assert ax.lines[3].get_data() == ([0, 0, 0, 1, 1, 1], [3, 0, 3, 3, 2, 3])
+        assert ax.lines[4].get_data() == ((1, 1), (1, 2))
+        plt.close()
+
+    def test_conditional_global_phase(self):
+        """A wireless conditional gate spans the circuit and retains its classical wire."""
+        with qp.queuing.AnnotatedQueue() as q:
+            m0 = qp.measure(0)
+            qp.X(1)
+            qp.cond(m0, qp.GlobalPhase)(0.123)
+
+        _, ax = tape_mpl(QuantumScript.from_queue(q), decimals=2)
+        assert len(ax.patches) == 5
+        box = ax.patches[-1]
+        assert qp.math.allclose((box.get_y(), box.get_height()), (-0.175, 1.35))
+        assert ax.texts[-1].get_text() == "GlobalPhase\n(0.12)"
+        assert ax.lines[2].get_data() == ([0, 0, 0, 2, 2, 2], [2, 0, 2, 2, 1, 2])
+        plt.close()
+
+    @pytest.mark.parametrize("active_wire_notches, n_patches", [(True, 8), (False, 4)])
+    def test_conditional_active_wire_notches(self, active_wire_notches, n_patches):
+        """Conditional boxes respect the requested active-wire notch setting."""
+        with qp.queuing.AnnotatedQueue() as q:
+            m0 = qp.measure(0)
+            qp.cond(m0, qp.QFT)(wires=[0, 2])
+
+        _, ax = tape_mpl(
+            QuantumScript.from_queue(q),
+            wire_order=[0, 1, 2],
+            show_all_wires=True,
+            active_wire_notches=active_wire_notches,
+        )
+        assert len(ax.patches) == n_patches
+        assert ax.texts[-1].get_text() == "QFT"
+        plt.close()
+
+    @pytest.mark.parametrize(
+        "layer, expected",
+        [
+            ([], False),
+            ([qp.GlobalPhase(0.1)], False),
+            ([qp.GlobalPhase(0.1), qp.ops.PauliMeasure("X", [1])], True),
+            ([qp.ops.PauliMeasure("X", [1]), qp.GlobalPhase(0.1)], True),
+            ([qp.ops.PauliMeasure("X", [0]), qp.X(1), qp.GlobalPhase(0.1)], False),
+            ([qp.X(0), qp.GlobalPhase(0.1), qp.ops.PauliMeasure("X", [1])], True),
+        ],
+    )
+    def test_ppm_controlled_with_wireless_operations(self, layer, expected):
+        """Only wired operations determine whether a classical connector needs an offset."""
+        assert _ppm_controlled(layer) is expected
 
     def test_single_measure_multiple_conds(self):
         """Test a single mid circuit measurement with two conditional operators."""

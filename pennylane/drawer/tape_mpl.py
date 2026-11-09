@@ -166,13 +166,7 @@ def _(op: ops.PauliMeasure, drawer, layer, _):
 
 @_add_operation_to_drawer.register
 def _(op: ops.Conditional, drawer, layer, config) -> None:
-    drawer.box_gate(
-        layer,
-        list(op.wires),
-        op.base.label(decimals=config.decimals),
-        box_options={"zorder": 4},
-        text_options={"zorder": 5},
-    )
+    _add_operation_to_drawer(op.base, drawer, layer, config)
     sorted_bits = sorted([config.bit_map[m] for m in op.meas_val.measurements])
     for b in sorted_bits[:-1]:
         erase_right = layer < config.cwire_layers[b][-1][-1]
@@ -210,13 +204,10 @@ def _add_classical_wires(drawer, layers, cwire_layers, cwire_wires):
 
 
 def _ppm_controlled(layer):
-    last_op = layer[0]
-    last_wire = max(last_op.wires)
-    for op in layer[1:]:
-        if (wire := max(op.wires)) > last_wire:
-            last_wire = wire
-            last_op = op
-    return isinstance(last_op, PauliMeasure)
+    wired_ops = [op for op in layer if len(op.wires) > 0]
+    if not wired_ops:
+        return False
+    return isinstance(max(wired_ops, key=lambda op: max(op.wires)), PauliMeasure)
 
 
 def _get_measured_bits(measurements, bit_map, offset):
