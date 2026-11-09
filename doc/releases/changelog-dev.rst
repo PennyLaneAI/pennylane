@@ -47,6 +47,9 @@ New features since last release
   being removed. When used as a context manager, the rules are excluded only within the context.
   `(#10329) <https://github.com/PennyLaneAI/pennylane/pull/10329>`__
 
+* The `alt-decomps` parameter of :func:`~.transforms.decompose` has been removed in favour of `exclude_decomps`, which prevents a set of decomposition rules from being chosen for an operator in a given pass instance.
+  `(#10461) <https://github.com/PennyLaneAI/pennylane/pull/10461>`__
+
 * A new function called :func:`~pennylane.backline.onnx_decoder` has been added, which runs an
   ONNX model on a Backline :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or
   on the CPU. See :func:`~pennylane.backline.onnx_decoder` for the supported providers and usage
