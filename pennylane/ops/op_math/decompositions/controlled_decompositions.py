@@ -317,8 +317,7 @@ def _multi_ctrl_decomp_zyz_condition(U, wires, *_, **__):
     return num_target_wires == 1 and num_control_wires > 1
 
 
-# pylint: disable-next=unused-argument
-def _controlled_unitary_multi_control_zyz_resources(
+def _controlled_unitary_multi_control_zyz_resources(  # pylint: disable=unused-argument
     U, wires, control_values, work_wires, work_wire_type, **_
 ):
     num_ctrl_wires = len(wires) - 1
@@ -372,8 +371,7 @@ def _controlled_unitary_multi_control_zyz(
     _x_flips()  # pylint: disable=no-value-for-parameter
 
 
-# pylint: disable-next=unused-argument
-def _controlled_unitary_two_qubit_resources(
+def _controlled_unitary_two_qubit_resources(  # pylint: disable=unused-argument
     U, wires, control_values, work_wires, work_wire_type, **_
 ):
     num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))

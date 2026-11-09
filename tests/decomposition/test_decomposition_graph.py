@@ -79,6 +79,31 @@ class CustomOp(Operation):
         return {}
 
 
+def test_legacy_nested_powers():
+    """The graph merges nested powers of Operator1 instances."""
+    op = qp.ops.Pow(qp.ops.Pow(CustomOp(wires=0), 3), 2)
+    solution = DecompositionGraph([op], gate_set={CustomOp}).solve()
+    rule = solution.decomposition(op)
+
+    assert rule.name == "merge_powers"
+    tape = qp.testing.decomp_rule_to_tape(op, rule)
+    assert tape.operations == [qp.ops.Pow(CustomOp(wires=0), 6)]
+    assert solution.resource_estimate(op) == to_resources({CustomOp: 6})
+
+
+def test_legacy_controlled_adjoint():
+    """The graph moves an Operator1 adjoint outside its control."""
+    op = qp.ops.Controlled(qp.ops.Adjoint(CustomOp(wires=0)), control_wires=[1])
+    expected = qp.ops.Adjoint(qp.ops.Controlled(CustomOp(wires=0), control_wires=[1]))
+    solution = DecompositionGraph([op], gate_set={expected.name}).solve()
+    rule = solution.decomposition(op)
+
+    assert rule.name == "flip_adjoint"
+    tape = qp.testing.decomp_rule_to_tape(op, rule)
+    assert tape.operations == [expected]
+    assert solution.resource_estimate(op) == to_resources({expected: 1})
+
+
 class MultiWireOp(Operation):
     """A custom op"""
 

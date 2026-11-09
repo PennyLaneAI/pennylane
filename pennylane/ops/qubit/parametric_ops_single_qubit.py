@@ -258,8 +258,7 @@ add_decomps("Adjoint(RX)", adjoint_rotation2)
 add_decomps("Pow(RX)", pow_rotation2)
 
 
-# pylint: disable-next=unused-argument
-def _controlled_rx_standard_resources(
+def _controlled_rx_standard_resources(  # pylint: disable=unused-argument
     base, control_wires, control_values, work_wires, work_wire_type
 ):
     if len(control_wires) == 1:
@@ -512,8 +511,7 @@ add_decomps("Adjoint(RY)", adjoint_rotation2)
 add_decomps("Pow(RY)", pow_rotation2)
 
 
-# pylint: disable-next=unused-argument
-def _controlled_ry_standard_resources(
+def _controlled_ry_standard_resources(  # pylint: disable=unused-argument
     base, control_wires, control_values, work_wires, work_wire_type
 ):
     if len(control_wires) == 1:

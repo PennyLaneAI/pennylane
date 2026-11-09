@@ -351,7 +351,7 @@ def register_resources(
     return _decorator(qfunc) if qfunc else _decorator
 
 
-class DecompositionRule:
+class DecompositionRule:  # pylint: disable=too-many-instance-attributes
     """Represents a decomposition rule for an operator."""
 
     def __init__(  # pylint: disable=too-many-arguments

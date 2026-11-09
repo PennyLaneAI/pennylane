@@ -482,8 +482,7 @@ def _pow_qubit_unitary_standard(base, z):
 add_decomps("Pow(QubitUnitary)", _pow_qubit_unitary_standard)
 
 
-# pylint: disable-next=unused-argument
-def _controlled_qubit_unitary_standard_resources(
+def _controlled_qubit_unitary_standard_resources(  # pylint: disable=unused-argument
     base, control_wires, control_values, work_wires, work_wire_type
 ):
     num_target_wires = len(base.wires)
