@@ -1997,10 +1997,11 @@ Internal changes ⚙️
 
   - Quantum chemistry operators are ported:
 
-    - :class:`~.SingleExcitation`, :class:`~.FermionicSWAP`, :class:`~.DoubleExcitation`
+    - :class:`~.SingleExcitation`, :class:`~.FermionicSWAP`, :class:`~.OrbitalRotation`, :class:`~.DoubleExcitation`
 
     `(#9944) <https://github.com/PennyLaneAI/pennylane/pull/9944>`__
     `(#10458) <https://github.com/PennyLaneAI/pennylane/pull/10458>`__
+    `(#10482) <https://github.com/PennyLaneAI/pennylane/pull/10482>`__
     `(#10463) <https://github.com/PennyLaneAI/pennylane/pull/10463>`__
 
   - Miscelleneous operators are ported:

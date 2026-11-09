@@ -37,6 +37,7 @@ from pennylane.ops import (
     CRot,
     DoubleExcitation,
     FermionicSWAP,
+    OrbitalRotation,
     PauliRot,
     Prod,
     Rot,
@@ -1359,6 +1360,10 @@ def _handle_single_excitation(op: SingleExcitation):
 
 
 @parameter_frequencies.register
+def _handle_orbital_rotation(op: OrbitalRotation):
+    return [(0.5, 1.0, 1.5, 2.0)]
+
+
 def _handle_double_excitation(op: DoubleExcitation):
     return [(0.5, 1.0)]
 
