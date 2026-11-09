@@ -80,6 +80,21 @@ array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
        [-0.5+0.j,  0. +0.j,  0. +0.j,  0. +0.j],
        [ 0. +0.j,  0.5+0.j,  0. +0.j,  0. +0.j]])
 
+.. note::
+
+    Use :func:`~pennylane.pauli.to_operator` to convert a
+    :class:`~pennylane.pauli.PauliWord` or :class:`~pennylane.pauli.PauliSentence`
+    into a PennyLane operator:
+
+    .. code-block:: pycon
+
+        >>> word = qp.pauli.PauliWord({0: "X", 1: "Z"})
+        >>> qp.pauli.to_operator(word)
+        X(0) @ Z(1)
+        >>> sentence = qp.pauli.PauliSentence({word: 2.0})
+        >>> qp.pauli.to_operator(sentence)
+        2.0 * (X(0) @ Z(1))
+
 We can intuitively use Pauli arithmetic to construct Hamiltonians consisting of :class:`~pennylane.pauli.PauliWord`
 and :class:`~pennylane.pauli.PauliSentence` objects like the spin-1/2 XXZ model Hamiltonian,
 
