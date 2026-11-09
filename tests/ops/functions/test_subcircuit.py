@@ -193,7 +193,7 @@ class TestDecomposition:
         returned by ``subcircuit``."""
         rules = qp.list_decomps(FixedOp)
         assert len(rules) == 1
-        assert rules[0].name == "FixedOp_decomp"
+        assert rules[0].name == "FixedOpdecomp"
 
     def test_decomposition_matches_qfunc(self):
         """Test that the decomposition of an instance matches the quantum function body."""
@@ -263,7 +263,7 @@ class TestAdditionalDecompositionRules:
         qp.add_decomps(FixedOp, alt_fixed)
 
         assert {rule.name for rule in qp.list_decomps(FixedOp)} == {
-            "FixedOp_decomp",
+            "FixedOpdecomp",
             "alt_fixed",
         }
         assert_valid(FixedOp(1.5, wires=0))

@@ -108,13 +108,13 @@ class TestInspectDecompGraph:
         op = qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
         result = inspector.inspect_decomps(op)
         assert str(result) == dedent("""
-            Decomposition 0 (name: ctrl_single_work_wire)
+            Decomposition 0 (name: single_work_wire)
             Insufficient work wires: requires 1 but only 0 available.
 
-            Decomposition 1 (name: ctrl_many_zeroed_work_wires)
+            Decomposition 1 (name: many_zeroed_work_wires)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
-            Decomposition 2 (name: controlled(_multi_rz_to_ppr))
+            Decomposition 2 (name: controlled(to_ppr))
             0: ─╭RZZ(0.50)─┤
             1: ─├RZZ(0.50)─┤
             3: ─├●─────────┤
@@ -125,7 +125,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 46, GlobalPhase: 25, RX: 23, RZ: 22}
             Weighted Cost: 91.0
 
-            CHOSEN: Decomposition 3 (name: controlled(multi_rz_standard))
+            CHOSEN: Decomposition 3 (name: controlled(standard))
             0: ─╭(X)@RZ(0.50)@(X)─┤
             1: ─├(X)@RZ(0.50)@(X)─┤
             3: ─├●────────────────┤
@@ -138,19 +138,19 @@ class TestInspectDecompGraph:
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
-            #### Decomposition 0 (name: ctrl_single_work_wire)
+            #### Decomposition 0 (name: single_work_wire)
 
             _Insufficient work wires: requires 1 but only 0 available._
 
             ---
 
-            #### Decomposition 1 (name: ctrl_many_zeroed_work_wires)
+            #### Decomposition 1 (name: many_zeroed_work_wires)
 
             _Not applicable (provided operator instance does not meet all conditions for this rule)._
 
             ---
 
-            #### Decomposition 2 (name: controlled(_multi_rz_to_ppr))
+            #### Decomposition 2 (name: controlled(to_ppr))
 
             ```
             0: ─╭RZZ(0.50)─┤
@@ -177,7 +177,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### **CHOSEN:** Decomposition 3 (name: controlled(multi_rz_standard))
+            #### **CHOSEN:** Decomposition 3 (name: controlled(standard))
 
             ```
             0: ─╭(X)@RZ(0.50)@(X)─┤
@@ -221,7 +221,7 @@ class TestInspectDecompGraph:
         op = qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5])
         result = inspector.inspect_decomps(op, num_work_wires=2)
         assert str(result) == dedent("""
-            Decomposition 0 (name: ctrl_single_work_wire)
+            Decomposition 0 (name: single_work_wire)
             0: ──────────╭MultiRZ(0.50)───────┤
             1: ──────────├MultiRZ(0.50)───────┤
             3: ───────╭●─│──────────────╭●────┤
@@ -234,10 +234,10 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 26, GlobalPhase: 68, MidMeasure: 2, RX: 20, RY: 10, RZ: 42}
             Weighted Cost: 3628.0
 
-            Decomposition 1 (name: ctrl_many_zeroed_work_wires)
+            Decomposition 1 (name: many_zeroed_work_wires)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
-            Decomposition 2 (name: controlled(_multi_rz_to_ppr))
+            Decomposition 2 (name: controlled(to_ppr))
             0: ─╭RZZ(0.50)─┤
             1: ─├RZZ(0.50)─┤
             3: ─├●─────────┤
@@ -248,7 +248,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 46, GlobalPhase: 25, RX: 23, RZ: 22}
             Weighted Cost: 2296.0
 
-            CHOSEN: Decomposition 3 (name: controlled(multi_rz_standard))
+            CHOSEN: Decomposition 3 (name: controlled(standard))
             0: ─╭(X)@RZ(0.50)@(X)─┤
             1: ─├(X)@RZ(0.50)@(X)─┤
             3: ─├●────────────────┤
@@ -261,7 +261,7 @@ class TestInspectDecompGraph:
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
-            #### Decomposition 0 (name: ctrl_single_work_wire)
+            #### Decomposition 0 (name: single_work_wire)
 
             ```
             0: ──────────╭MultiRZ(0.50)───────┤
@@ -296,13 +296,13 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### Decomposition 1 (name: ctrl_many_zeroed_work_wires)
+            #### Decomposition 1 (name: many_zeroed_work_wires)
 
             _Not applicable (provided operator instance does not meet all conditions for this rule)._
 
             ---
 
-            #### Decomposition 2 (name: controlled(_multi_rz_to_ppr))
+            #### Decomposition 2 (name: controlled(to_ppr))
 
             ```
             0: ─╭RZZ(0.50)─┤
@@ -329,7 +329,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### **CHOSEN:** Decomposition 3 (name: controlled(multi_rz_standard))
+            #### **CHOSEN:** Decomposition 3 (name: controlled(standard))
 
             ```
             0: ─╭(X)@RZ(0.50)@(X)─┤
@@ -357,7 +357,7 @@ class TestInspectDecompGraph:
 
         op = qp.MultiControlledX([0, 1, 2, 3])
         assert str(inspector.inspect_decomps(op, num_work_wires=1)) == dedent("""
-            Decomposition 0 (name: _mcx_no_work_wires)
+            Decomposition 0 (name: no_work_wires)
             0: ────╭●───────────────────╭●──────────────────────╭●──────────────────┤
             1: ────├●───────────────────├●──────────────────────├●──────────────────┤
             2: ────│─────────╭●─────────│─────────╭●────────────├●──────────────────┤
@@ -438,7 +438,7 @@ class TestInspectDecompGraph:
         op = qp.PauliRot(0.5, "XYZ", [0, 1, 2])
         result = inspector.inspect_decomps(op)
         assert str(result) == dedent("""
-            Decomposition 0 (name: _pauli_rot_standard)
+            Decomposition 0 (name: standard)
             0: ─╭(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
             1: ─├(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
             2: ─╰(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
@@ -447,7 +447,7 @@ class TestInspectDecompGraph:
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
-            #### Decomposition 0 (name: _pauli_rot_standard)
+            #### Decomposition 0 (name: standard)
 
             ```
             0: ─╭(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
@@ -467,20 +467,20 @@ class TestInspectDecompGraph:
             """).strip()
 
         assert str(inspector.inspect_decomps(qp.H(0))) == dedent("""
-            Decomposition 0 (name: _hadamard_to_ppr)
+            Decomposition 0 (name: to_ppr)
             0: ──PPR(π/2, Z)──PPR(π/4, Y)──GlobalPhase(-1.57)─┤
             First-Level Expansion Gates: {GlobalPhase: 1, PPR_2(1, 'Z', wires=AbstractWires(1)): 1, PPR_4(1, 'Y', wires=AbstractWires(1)): 1}
             Missing Ops: {GlobalPhase, PPR_2(1, 'Z', wires=AbstractWires(1))}
 
-            Decomposition 1 (name: _hadamard_to_ppm)
+            Decomposition 1 (name: to_ppm)
             Insufficient work wires: requires 1 but only 0 available.
 
-            Decomposition 2 (name: _hadamard_to_rz_ry)
+            Decomposition 2 (name: to_rz_ry)
             0: ──RZ(3.14)──RY(1.57)──GlobalPhase(-1.57)─┤
             First-Level Expansion Gates: {GlobalPhase: 1, RY: 1, RZ: 1}
             Missing Ops: {GlobalPhase}
 
-            Decomposition 3 (name: _hadamard_to_rz_rx)
+            Decomposition 3 (name: to_rz_rx)
             0: ──RZ(1.57)──RX(1.57)──RZ(1.57)──GlobalPhase(-1.57)─┤
             First-Level Expansion Gates: {GlobalPhase: 1, RX: 1, RZ: 2}
             Missing Ops: {GlobalPhase}
@@ -499,10 +499,10 @@ class TestInspectDecompGraph:
         op = qp.QubitUnitary([[1, 0], [0, 1]], wires=0)
         result = inspector.inspect_decomps(op)
         assert str(result) == dedent("""
-            Decomposition 0 (name: _qubit_unitary_multi_qubit)
+            Decomposition 0 (name: multi_qubit)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
-            Decomposition 1 (name: _qubit_unitary_two_qubit)
+            Decomposition 1 (name: two_qubit)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
             Decomposition 2 (name: rot)
@@ -542,13 +542,13 @@ class TestInspectDecompGraph:
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
-            #### Decomposition 0 (name: _qubit_unitary_multi_qubit)
+            #### Decomposition 0 (name: multi_qubit)
 
             _Not applicable (provided operator instance does not meet all conditions for this rule)._
 
             ---
 
-            #### Decomposition 1 (name: _qubit_unitary_two_qubit)
+            #### Decomposition 1 (name: two_qubit)
 
             _Not applicable (provided operator instance does not meet all conditions for this rule)._
 
