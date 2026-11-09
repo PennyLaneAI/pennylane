@@ -15,6 +15,8 @@
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
 
+# pylint: disable=redefined-outer-name
+
 from collections import OrderedDict
 
 import numpy as np
@@ -214,8 +216,6 @@ def test_gradients_record():
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
 
-    # pylint: disable=redefined-outer-name
-
     def test_supports_operation_argument_types(self, mock_device_supporting_paulis):
         """Checks that device.supports_operations returns the correct result
         when passed both string and Operation class arguments"""
@@ -287,8 +287,6 @@ class TestDeviceSupportedLogic:
 
 class TestInternalFunctions:  # pylint: disable=too-many-public-methods
     """Test the internal functions of the abstract Device class"""
-
-    # pylint: disable=redefined-outer-name
 
     def test_repr(self, mock_device_supporting_paulis):
         """Tests the __repr__ function"""
@@ -587,7 +585,6 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
 class TestClassmethods:  # pylint: disable=too-few-public-methods
     """Test the classmethods of Device"""
 
-    # pylint: disable-next=redefined-outer-name
     def test_capabilities(self, mock_device_with_capabilities):
         """check that device can give a dict of further capabilities"""
         dev = mock_device_with_capabilities()
@@ -597,8 +594,6 @@ class TestClassmethods:  # pylint: disable=too-few-public-methods
 
 class TestOperations:
     """Tests the logic related to operations"""
-
-    # pylint: disable=redefined-outer-name
 
     def test_shots_setter(self, mock_device):
         """Tests that the property setter of shots changes the number of shots."""
@@ -748,8 +743,6 @@ class TestOperations:
 class TestObservables:
     """Tests the logic related to observables"""
 
-    # pylint: disable=redefined-outer-name
-
     def test_obs_queue_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
         dev = mock_device()
@@ -855,7 +848,6 @@ class TestObservables:
 class TestParameters:
     """Test for checking device parameter mappings"""
 
-    # pylint: disable-next=redefined-outer-name
     def test_parameters_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to parameters outside the execution context raises the correct error"""
         dev = mock_device()
@@ -866,7 +858,6 @@ class TestParameters:
         ):
             dev.parameters  # pylint: disable=pointless-statement
 
-    # pylint: disable-next=redefined-outer-name
     def test_parameters_available_at_pre_measure(self, mock_device, monkeypatch):
         """Tests that the parameter mapping is available when pre_measure is called and that accessing
         Device.parameters raises no error"""
@@ -935,8 +926,6 @@ class TestDeviceInit:
 
 class TestBatchExecution:
     """Tests for the batch_execute method."""
-
-    # pylint: disable=redefined-outer-name
 
     with qp.queuing.AnnotatedQueue() as q1:
         qp.PauliX(wires=0)

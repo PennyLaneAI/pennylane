@@ -15,6 +15,8 @@
 Tests for the variance calculation on the DefaultTensor device.
 """
 
+# pylint: disable=redefined-outer-name
+
 import numpy as np
 import pytest
 
@@ -62,8 +64,6 @@ def execute(device, tape):
 @pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI)))
 class TestVar:
     """Tests for the variance"""
-
-    # pylint: disable=redefined-outer-name
 
     def test_Identity(self, theta, phi, dev):
         """Tests applying identities."""
@@ -268,7 +268,7 @@ class TestOperatorArithmetic:
             qp.sum(qp.PauliZ(0), qp.PauliX(1)),
         ],
     )
-    def test_op_math(self, phi, dev, obs):  # pylint: disable=redefined-outer-name
+    def test_op_math(self, phi, dev, obs):
         """Tests the `SProd`, `Prod`, and `Sum` classes."""
 
         tape = qp.tape.QuantumScript(
@@ -288,7 +288,7 @@ class TestOperatorArithmetic:
 
         assert np.allclose(calculated_val, reference_val, tol)
 
-    def test_integration(self, phi, dev):  # pylint: disable=redefined-outer-name
+    def test_integration(self, phi, dev):
         """Test a Combination of `Sum`, `SProd`, and `Prod`."""
 
         obs = qp.sum(
@@ -312,8 +312,6 @@ class TestOperatorArithmetic:
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorVar:
     """Test tensor variances"""
-
-    # pylint: disable=redefined-outer-name
 
     def test_PauliX_PauliY(self, theta, phi, varphi, dev):
         """Tests a tensor product involving PauliX and PauliY."""

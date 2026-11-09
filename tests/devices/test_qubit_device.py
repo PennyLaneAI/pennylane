@@ -15,7 +15,7 @@
 Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
 """
 
-# pylint: disable=protected-access,too-few-public-methods
+# pylint: disable=protected-access,redefined-outer-name,too-few-public-methods
 
 import copy
 from random import random
@@ -160,7 +160,7 @@ def _working_get_batch_size(tensor, expected_shape, expected_size):
     return None
 
 
-def test_notimplemented_circuit_hash(mock_qubit_device):  # pylint: disable=redefined-outer-name
+def test_notimplemented_circuit_hash(mock_qubit_device):
     """Test that the circuit hash property is not implemented"""
     dev = mock_qubit_device()
 
@@ -168,7 +168,6 @@ def test_notimplemented_circuit_hash(mock_qubit_device):  # pylint: disable=rede
         dev.circuit_hash  # pylint: disable=pointless-statement
 
 
-# pylint: disable-next=redefined-outer-name
 def test_notimplemented_analytic_probability(mock_qubit_device):
     """Test that the analytic_probability method is not implemented"""
     dev = mock_qubit_device()
@@ -179,8 +178,6 @@ def test_notimplemented_analytic_probability(mock_qubit_device):
 
 class TestOperations:
     """Tests the logic related to operations"""
-
-    # pylint: disable=redefined-outer-name
 
     def test_op_queue_accessed_outside_execution_context(self, mock_qubit_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
@@ -283,8 +280,6 @@ class TestOperations:
 class TestObservables:
     """Tests the logic related to observables"""
 
-    # pylint: disable=redefined-outer-name
-
     def test_obs_queue_accessed_outside_execution_context(self, mock_qubit_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
 
@@ -336,7 +331,6 @@ class TestObservables:
 class TestParameters:
     """Test for checking device parameter mappings"""
 
-    # pylint: disable-next=redefined-outer-name
     def test_parameters_accessed_outside_execution_context(self, mock_qubit_device):
         """Tests that a call to parameters outside the execution context raises the correct error"""
 
@@ -350,8 +344,6 @@ class TestParameters:
 
 class TestExtractStatistics:
     """Test the statistics method"""
-
-    # pylint: disable=redefined-outer-name
 
     @pytest.mark.parametrize(
         "measurement",
@@ -451,7 +443,6 @@ class TestExtractStatistics:
 class TestGenerateSamples:
     """Test the generate_samples method"""
 
-    # pylint: disable-next=redefined-outer-name
     def test_auxiliary_methods_called_correctly(self, mock_qubit_device, monkeypatch):
         """Tests that the generate_samples method calls on its auxiliary methods correctly"""
 
@@ -471,8 +462,6 @@ class TestGenerateSamples:
 
 class TestSampleBasisStates:
     """Test the sample_basis_states method"""
-
-    # pylint: disable=redefined-outer-name
 
     def test_sampling_with_correct_arguments(self, mock_qubit_device, monkeypatch):
         """Tests that the sample_basis_states method samples with the correct arguments"""
@@ -525,8 +514,6 @@ class TestSampleBasisStates:
 
 class TestStatesToBinary:
     """Test the states_to_binary method"""
-
-    # pylint: disable=redefined-outer-name
 
     def test_correct_conversion_two_states(self, mock_qubit_device):
         """Tests that the sample_basis_states method converts samples to binary correctly"""
@@ -599,8 +586,6 @@ class TestStatesToBinary:
 
 class TestExpval:
     """Test the expval method"""
-
-    # pylint: disable=redefined-outer-name
 
     def test_analytic_expval(self, mock_qubit_device_with_original_statistics, monkeypatch):
         """Tests that expval method when the analytic attribute is True
@@ -684,8 +669,6 @@ class TestExpval:
 class TestVar:
     """Test the var method"""
 
-    # pylint: disable=redefined-outer-name
-
     def test_analytic_var(self, mock_qubit_device_with_original_statistics, monkeypatch):
         """Tests that var method when the analytic attribute is True
 
@@ -768,8 +751,6 @@ class TestVar:
 class TestSample:
     """Test the sample method"""
 
-    # pylint: disable=redefined-outer-name
-
     def test_only_ones_minus_ones(self, mock_qubit_device_with_original_statistics, tol):
         """Test that sample for a single Pauli observable only produces -1 and 1 samples"""
         obs = qp.PauliX(0)
@@ -837,8 +818,6 @@ class TestSample:
 
 class TestSampleWithBroadcasting:
     """Test the sample method when broadcasting is used"""
-
-    # pylint: disable=redefined-outer-name
 
     def test_only_ones_minus_ones(self, mock_qubit_device_with_original_statistics, tol):
         """Test that sample for a single Pauli observable only produces -1 and 1 samples
@@ -909,8 +888,6 @@ class TestSampleWithBroadcasting:
 
 class TestEstimateProb:
     """Test the estimate_probability method"""
-
-    # pylint: disable=redefined-outer-name
 
     @pytest.mark.parametrize(
         "wires, expected", [([0], [0.5, 0.5]), (None, [0.5, 0, 0, 0.5]), ([0, 1], [0.5, 0, 0, 0.5])]
@@ -1045,8 +1022,6 @@ class TestEstimateProb:
 
 class TestMarginalProb:
     """Test the marginal_prob method"""
-
-    # pylint: disable=redefined-outer-name
 
     @pytest.mark.parametrize(
         "wires, inactive_wires",
@@ -1227,7 +1202,6 @@ class TestMarginalProb:
 class TestActiveWires:
     """Test that the active_wires static method works as required."""
 
-    # pylint: disable-next=redefined-outer-name
     def test_active_wires_from_queue(self, mock_qubit_device):
         queue = [qp.CNOT(wires=[0, 2]), qp.RX(0.2, wires=0), qp.expval(qp.PauliX(wires=5))]
 
@@ -1359,7 +1333,6 @@ class TestExecution:
             node_3(0.12)
         assert dev_1.num_executions == num_evals_1 + num_evals_3
 
-    # pylint: disable-next=redefined-outer-name
     def test_get_diagonalizing_gates(self, mock_qubit_device):
         """Test the private _get_diagonalizing_gates helper method."""
         circuit = qp.tape.QuantumScript([qp.RX(1, 0)], [qp.probs(), qp.expval(qp.PauliX(0))])
@@ -1424,8 +1397,6 @@ class TestExecutionBroadcasted:
 
 class TestBatchExecution:
     """Tests for the batch_execute method."""
-
-    # pylint: disable=redefined-outer-name
 
     with qp.queuing.AnnotatedQueue() as q1:
         qp.PauliX(wires=0)
@@ -1497,7 +1468,6 @@ class TestGetBatchSize:
     """Tests for the helper method ``_get_batch_size`` of ``QubitDevice``."""
 
     @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
-    # pylint: disable-next=redefined-outer-name
     def test_batch_size_always_None(self, mock_qubit_device, shape):
         """Test that QubitDevice always reports a batch_size of None."""
         dev = mock_qubit_device()

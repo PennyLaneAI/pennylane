@@ -13,6 +13,8 @@
 # limitations under the License.
 """Regression tests for the TCDQ training helpers."""
 
+# pylint: disable=redefined-outer-name
+
 import pytest
 
 from pennylane.labs.tcdq.expval_functions import CircuitConfig, build_expval_func
@@ -39,7 +41,7 @@ def quadratic_problem():
     return loss_fn, params_init, target, loss_kwargs
 
 
-def test_optimization_success(quadratic_problem):  # pylint: disable=redefined-outer-name
+def test_optimization_success(quadratic_problem):
     """The high-level trainer should drive the quadratic loss close to zero."""
     loss_fn, _, target, loss_kwargs = quadratic_problem
 
@@ -57,7 +59,7 @@ def test_optimization_success(quadratic_problem):  # pylint: disable=redefined-o
     assert jnp.allclose(result.final_params, target, atol=1e-1)
 
 
-def test_determinism(quadratic_problem):  # pylint: disable=redefined-outer-name
+def test_determinism(quadratic_problem):
     """Repeated runs with the same seed should be bit-identical."""
     loss_fn, _, _, loss_kwargs = quadratic_problem
     opts = TrainingOptions(unroll_steps=5, random_state=123)
@@ -69,7 +71,7 @@ def test_determinism(quadratic_problem):  # pylint: disable=redefined-outer-name
     assert jnp.array_equal(res1.losses, res2.losses)
 
 
-def test_unroll_consistency(quadratic_problem):  # pylint: disable=redefined-outer-name
+def test_unroll_consistency(quadratic_problem):
     """Changing ``unroll_steps`` should not change the optimization trajectory."""
     loss_fn, _, _, loss_kwargs = quadratic_problem
     seed = 999
@@ -84,7 +86,7 @@ def test_unroll_consistency(quadratic_problem):  # pylint: disable=redefined-out
     assert jnp.allclose(res_slow.losses, res_fast.losses, atol=1e-6)
 
 
-def test_convergence_early_stopping(quadratic_problem):  # pylint: disable=redefined-outer-name
+def test_convergence_early_stopping(quadratic_problem):
     """Training should stop early once the convergence check is satisfied."""
     loss_fn, _, target, _ = quadratic_problem
 
@@ -100,7 +102,7 @@ def test_convergence_early_stopping(quadratic_problem):  # pylint: disable=redef
     print(f"Converged in {len(result.losses)} steps.")
 
 
-def test_validation_handling(quadratic_problem):  # pylint: disable=redefined-outer-name
+def test_validation_handling(quadratic_problem):
     """Validation losses should be tracked separately from training losses."""
     loss_fn, params_init, target, _ = quadratic_problem
 
@@ -132,7 +134,7 @@ def test_loss_signature_variations():
     train("GradientDescent", loss_no_key, 0.1, 5, {"params": params}, opts)
 
 
-def test_history_logging_manual(quadratic_problem):  # pylint: disable=redefined-outer-name
+def test_history_logging_manual(quadratic_problem):
     """The iterator interface should expose per-batch parameters for custom logging."""
     loss_fn, _, _, loss_kwargs = quadratic_problem
     opts = TrainingOptions(unroll_steps=10)
