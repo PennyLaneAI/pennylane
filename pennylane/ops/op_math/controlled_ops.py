@@ -1789,7 +1789,7 @@ class MultiControlledX(Controlled2):
                 :class:`~.MultiControlledX` with :math:`\lceil c/2 \rceil` controls | :math:`2`
                 :class:`~.MultiControlledX` with :math:`\lfloor c/2 \rfloor` controls | :math:`2`
 
-            .. decomposition-rule:: use_allocation(_mcx_two_controls_elbows)
+            .. decomposition-rule:: two_controls_elbows_allocated
                 :image: /_static/decomposition_thumbnails/mcx_alloc_two_controls_elbows.svg
                 :requires: 1 zeroed work wire, allocated by the rule
                 :where: :math:`c = 2` and :math:`w = 0`, the circuit shows :math:`c = 2`, and each

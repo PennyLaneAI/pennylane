@@ -1101,7 +1101,7 @@ class Rot(Operator2):
 
                 :class:`~.Rot` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rot_standard)
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/rot_controlled.svg
                 :region: controlled
                 :where: :math:`c` is the number of control wires, and the circuit shows :math:`c = 2`

@@ -1472,7 +1472,7 @@ class IsingZZ(Operator2):
 
                 :class:`PauliRot("ZZ") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_ising_zz_standard)
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/controlled_ising_zz.svg
                 :region: controlled
                 :where: The CNOT gates compute and uncompute the parity of the two target wires. Only the RZ rotation requires the :math:`c` control wires. Controls on :math:`0` are flipped with X gates before and after the decomposition.

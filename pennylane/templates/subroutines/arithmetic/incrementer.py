@@ -96,7 +96,7 @@ class Incrementer(Operator2):
                 :class:`~.MultiX` on :math:`n` wires | :math:`2`
                 :class:`~.Incrementer` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(ctrl_incrementer_elbow_ladder)
+            .. decomposition-rule:: ctrl_incrementer_elbow_ladder
                 :image: /_static/decomposition_thumbnails/incrementer_controlled.svg
                 :region: controlled
                 :requires: :math:`n + c - 1` work wires in total, from ``work_wires`` and the
