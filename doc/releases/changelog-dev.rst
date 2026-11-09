@@ -888,7 +888,7 @@ Improvements 🛠
 * Callable :func:`~.ctrl` now captures work-wire labels as operands, supporting
   traced work wires.
   `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10491) <https://github.com/PennyLaneAI/pennylane/pull/10491>`__
   
 * Efficient decomposition rules for :class:`~.ControlledPhaseShift`, :class:`~.OutMultiplier`, and :class:`Adjoint(Incrementer) <~.Incrementer>` have been added.
   `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
@@ -2335,7 +2335,7 @@ Bug fixes 🐛
   applied to a callable during program capture. Concrete work-wire labels retain
   their existing behaviour.
   `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10491) <https://github.com/PennyLaneAI/pennylane/pull/10491>`__
   
 * Fixed a bug where AutoGraph raised an error for empty ``for`` loops.
   `(#10448) <https://github.com/PennyLaneAI/pennylane/pull/10448>`__
