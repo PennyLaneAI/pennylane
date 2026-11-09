@@ -88,6 +88,7 @@ def test_prod2():
     "op, new_params, expected_op",
     [
         (qp.evolve(qp.PauliX(0), 0.5), [-0.5], qp.evolve(qp.PauliX(0), -0.5)),
+        (qp.evolve(0.5 * qp.PauliX(0), 1.2), [-0.5], qp.evolve(0.5 * qp.PauliX(0), -0.5)),
         (qp.exp(qp.PauliX(0), 0.5), [-0.5], qp.exp(qp.PauliX(0), -0.5)),
         (qp.pow(qp.RX(0.123, 0), 2), [0.456], qp.pow(qp.RX(0.456, 0), 2)),
         (qp.s_prod(0.5, qp.RX(0.123, 0)), [-0.5, 0.456], qp.s_prod(-0.5, qp.RX(0.456, 0))),
