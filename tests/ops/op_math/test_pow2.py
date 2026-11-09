@@ -16,6 +16,8 @@
 
 # pylint: disable=too-few-public-methods
 
+import jax
+import jax.numpy as jnp
 import numpy as np
 import pytest
 from scipy.linalg import fractional_matrix_power
@@ -364,11 +366,6 @@ class TestCapture:
     @pytest.mark.jax
     def test_pow_2_eigvals_is_jittable(self):
         """Test that the eigvals method is jittable."""
-        import jax
-        import jax.numpy as jnp
-        import numpy as np  # pylint: disable=redefined-outer-name,reimported
-
-        import pennylane as qp  # pylint: disable=redefined-outer-name,reimported
 
         @jax.jit
         def f(x):
