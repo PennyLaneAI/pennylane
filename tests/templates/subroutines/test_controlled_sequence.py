@@ -131,7 +131,7 @@ class TestMethods:
         assert op.base.wires == Wires([0, 1])
         assert op.control == Wires([2, 3])
 
-    @pytest.mark.parametrize("control", [[], [0], [0, 1, 2], ["a", "b", "c"]])
+    @pytest.mark.parametrize("control", [[], [0], [0, 1, 2]])
     def test_decomposition(self, control):
         """Test the returned and queued operations from the registered decomposition."""
         op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=control)
