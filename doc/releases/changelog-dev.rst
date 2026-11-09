@@ -2334,7 +2334,7 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
-* Fixed a bug where :func:`~.draw_mpl` replaced the symbols and quantum controls of
+* Fixed a bug where :func:`~pennylane.draw_mpl` replaced the symbols and quantum controls of
   conditionally applied operations with a labelled box. Conditional operations without
   wires, such as :class:`~.GlobalPhase`, no longer cause an error when drawn.
   `(#10496) <https://github.com/PennyLaneAI/pennylane/pull/10496>`__
