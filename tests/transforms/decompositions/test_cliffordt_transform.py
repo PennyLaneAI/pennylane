@@ -207,7 +207,6 @@ class TestCliffordCompile:
         )
         qp.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
-    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.jax
     @pytest.mark.parametrize("circuit", [circuit_7, circuit_8, circuit_10])
@@ -220,12 +219,11 @@ class TestCliffordCompile:
         dev = qp.device("lightning.qubit", wires=4)
         qnode_cir = qp.qnode(dev)(circuit)
         decomp_cir = clifford_t_decomposition(qnode_cir, method="gridsynth")
-        qjit_cir = qp.qjit(decomp_cir)
+        qjit_cir = qp.qjit(decomp_cir, capture=False)
 
         res1, res2 = decomp_cir(), qjit_cir()
         assert qp.math.isclose(res1, res2, atol=1e-2)
 
-    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.jax
     @pytest.mark.parametrize(
@@ -244,10 +242,10 @@ class TestCliffordCompile:
         dev = qp.device("lightning.qubit", wires=4)
         qnode_cir = qp.qnode(dev)(circuit)
         decomp_cir = clifford_t_decomposition(qnode_cir, method="gridsynth")
-        qjit_cir = qp.qjit(decomp_cir)
+        qjit_cir = qp.qjit(decomp_cir, capture=False)
 
         decomp_cir_copy = clifford_t_decomposition(qnode_cir, method="gridsynth")
-        qjit_cir_copy = qp.qjit(decomp_cir_copy)
+        qjit_cir_copy = qp.qjit(decomp_cir_copy, capture=False)
 
         res1, res2 = qjit_cir(), qjit_cir_copy()
         assert qp.math.isclose(res1, res2, atol=1e-2)
@@ -723,7 +721,7 @@ class TestCatalyst:
 
         import catalyst
 
-        @qp.qjit()
+        @qp.qjit(capture=False)
         @qp.qnode(qp.device("lightning.qubit", wires=3))
         @qp.clifford_t_decomposition
         def circuit():
@@ -734,7 +732,6 @@ class TestCatalyst:
         results = circuit()
         assert results[0] and not results[1]
 
-    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.jax
     def test_decomposition_with_rs_qjit_dynamic_param(self):
@@ -755,14 +752,13 @@ class TestCatalyst:
 
         dev = qp.device("lightning.qubit", wires=2)
         decomposed_cir = qp.QNode(clifford_t_decomposition(circuit, method="gridsynth"), dev)
-        qjit_cir = qp.qjit(decomposed_cir)
+        qjit_cir = qp.qjit(decomposed_cir, capture=False)
 
         angle, qb = PI, 0
         default_res, qjit_res = decomposed_cir(angle, qb), qjit_cir(angle, qb)
 
         assert qp.math.allclose(default_res, qjit_res, atol=1e-2)
 
-    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     def test_decomposition_with_sk_qjit_raise(self):
         """Test decomposition for the Clifford transform with Solovay-Kitaev method
@@ -775,4 +771,4 @@ class TestCatalyst:
         qnode_cir = qp.qnode(dev)(circuit_7)
         decomp_cir = clifford_t_decomposition(qnode_cir, method="sk")
         with pytest.raises(RuntimeError, match=r"Solovay-Kitaev decomposition"):
-            _ = qp.qjit(decomp_cir)()
+            _ = qp.qjit(decomp_cir, capture=False)()

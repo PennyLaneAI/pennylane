@@ -193,7 +193,7 @@ class TestSignedOutSquare:
             "X",
             "Adjoint(TemporaryAND)",
             "BasisEmbedding",
-            "MidMeasureMP",
+            "MidMeasure",
             "Cond",
             "CZ",
             "H",
