@@ -1798,7 +1798,7 @@ Breaking changes 💔
   simulation now requires a compatible plugin; ``default.qubit`` can still return reduced
   density matrices of pure-state circuits, but does not support general noise channels
   or :class:`~.QubitDensityMatrix` preparation.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10504) <https://github.com/PennyLaneAI/pennylane/pull/10504>`__
 
   .. code-block:: python
 
