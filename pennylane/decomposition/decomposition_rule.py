@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import inspect
+import re
 from collections import Counter, defaultdict
 from collections.abc import Callable, Sequence
 from contextlib import contextmanager
@@ -689,16 +690,51 @@ def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: Decompositi
     _decompositions_var.get()[to_name(op_type)].extend(decomps)
 
 
+def _get_registered_decomps(op_name: str) -> DecompCollection:
+    """Retrieves a copy of the decomposition rules directly registered for an operator name.
+
+    Args:
+        op_name (str): operator name, including symbolic names such as ``"C(RX)"``
+    """
+    return _decompositions_var.get()[op_name].copy()
+
+
 @singledispatch
 def _list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
-    """Returns the full list of decomposition rules before being filtered."""
+    """Retrieves decomposition rules before exclusion filtering."""
     if fixed_rule := get_fixed_decomp(op):
         return DecompCollection([fixed_rule])
-    return _decompositions_var.get()[to_name(op)].copy()
+    op_name = to_name(op)
+    if isinstance(op, str) and re.fullmatch(r"C\(.*\)", op_name):
+        return _list_control_decomps(op_name)
+    return _get_registered_decomps(op_name)
+
+
+def _list_control_decomps(op_name) -> DecompCollection:
+    """Lists custom rules and generic fallback candidates for a controlled operator name.
+
+    All three generic fallbacks are included. Their applicability conditions are checked
+    using operator arguments rather than the name alone.
+
+    Args:
+        op_name (str): operator name, including symbolic names such as ``"C(RX)"``
+    """
+    # TODO: the circular dependency can be eliminated when we move the decomposition
+    #       rule library to a separate module [sc-136709]
+    from pennylane.ops.op_math.controlled2 import (  # pylint: disable=import-outside-toplevel
+        ctrl_many_zeroed_work_wires,
+        ctrl_single_work_wire,
+        to_controlled_unitary,
+    )
+
+    registered_rules = _get_registered_decomps(op_name)
+    generic_decomps = [to_controlled_unitary, ctrl_many_zeroed_work_wires, ctrl_single_work_wire]
+    generic_rules = DecompCollection(generic_decomps)
+    return registered_rules + generic_rules
 
 
 def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
-    """Lists all stored decomposition rules for an operator class.
+    """Lists decomposition rules for an operator.
 
     .. note::
 
@@ -713,7 +749,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
             ``"C(RX)"``, etc.
 
     Returns:
-        DecompCollection: a collection of decomposition rules registered for the given operator.
+        DecompCollection: a collection of decomposition rules for the given operator.
 
     .. important::
 

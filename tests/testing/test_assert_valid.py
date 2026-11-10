@@ -27,8 +27,10 @@ import scipy.sparse
 import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.core.operator import Operator
+from pennylane.decomposition.decomposition_rule import _fix_decomp
 from pennylane.testing.operators import (
     _check_bind_new_parameters,
+    _check_decomposition_new,
     _check_eigendecomposition,
     _check_pytree,
     assert_valid,
@@ -227,6 +229,62 @@ class TestDecompositionErrors:
                 return mcm.measurements
 
         assert_valid(ValidPauliMeasureDecomp(wires=[0, 1]), skip_pickle=True)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("native", [False, True])
+def test_controlled_decomposition_checks_only_direct_registrations(native, mocker):
+    """Operator validation checks registered controlled rules and honours exclusions."""
+
+    class CustomOp(Operator):
+        pass
+
+    op = DynOp(0.5, wires=[0]) if native else CustomOp(wires=0)
+    op_name = f"C({op.name})"
+
+    @qp.register_resources({})
+    def custom_rule(*_, **__):
+        raise NotImplementedError
+
+    qp.add_decomps(op_name, custom_rule)
+    checker = mocker.patch("pennylane.testing.operators.assert_valid_decomp_rule")
+
+    _check_decomposition_new(op)
+    assert checker.call_count == 18
+    assert all(call.args[1] is custom_rule for call in checker.call_args_list)
+
+    checker.reset_mock()
+    with qp.decomposition.exclude_decomps(op_name, "custom_rule"):
+        _check_decomposition_new(op)
+    checker.assert_not_called()
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("native", [False, True])
+def test_controlled_decomposition_checks_fixed_rule(native, mocker):
+    """Operator validation checks a fixed rule even when it is not directly registered."""
+
+    class CustomOp(Operator):
+        pass
+
+    op = DynOp(0.5, wires=[0]) if native else CustomOp(wires=0)
+    op_name = f"C({op.name})"
+
+    @qp.register_resources({})
+    def fixed_rule(*_, **__):
+        raise NotImplementedError
+
+    _fix_decomp(op_name, fixed_rule)
+    checker = mocker.patch("pennylane.testing.operators.assert_valid_decomp_rule")
+
+    _check_decomposition_new(op)
+    assert checker.call_count == 18
+    assert all(call.args[1] is fixed_rule for call in checker.call_args_list)
+
+    checker.reset_mock()
+    with qp.decomposition.exclude_decomps(op_name, "fixed_rule"):
+        _check_decomposition_new(op)
+    checker.assert_not_called()
 
 
 class TestBadMatrix:

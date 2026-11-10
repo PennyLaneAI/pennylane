@@ -32,6 +32,7 @@ from pennylane.allocation import Allocate
 from pennylane.core import apply, queuing
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import has_decomp, list_decomps
+from pennylane.decomposition.decomposition_rule import _get_registered_decomps, get_fixed_decomp
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args, to_name
 from pennylane.devices import device
