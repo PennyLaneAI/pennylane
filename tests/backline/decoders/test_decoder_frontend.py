@@ -241,6 +241,7 @@ class TestPublicDecoderWrappers:
         assert fn.name.endswith("_catalyst")
         assert fn.lib_path is not None
         assert fn.lib_path.endswith(".so")
+        assert fn.bitpack is False
 
     def test_css_bp_decoder_returns_a_coprocessor_function(self):
         """``qp.backline.css_bp_decoder`` compiles and wraps the result in a CoprocessorFunction."""
@@ -264,3 +265,4 @@ class TestPublicDecoderWrappers:
         assert fn.name.endswith("_catalyst")
         assert fn.lib_path is not None
         assert fn.lib_path.endswith(".so")
+        assert fn.bitpack is True

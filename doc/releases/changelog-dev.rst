@@ -753,7 +753,7 @@ New features since last release
           executor_options={"host": address_controller, "port": 7810},
       )
       coproc = qp.Coprocessor(
-          coprocessor_fn="decoder",
+          coprocessor_fn=qp.CoprocessorFunction("decoder", bitpack=True),
           hardware="gpu",
           endpoint=qp.Endpoint(address_coproc, 18590),
       )
@@ -766,7 +766,7 @@ New features since last release
           qp.cond(correction[0] == 1, qp.X)(0)
           return qp.expval(qp.Z(0))
 
-  The round is resolved from the device being traced, so the program has to be captured (``qp.qjit(capture=True)``). The controller's ``in_bytes`` and ``out_bytes`` capacities both default to 8 bytes, and the correction comes back as an ``out_bytes``-sized ``uint8`` buffer. Pass ``controller=`` / ``coprocessor=`` to choose the nodes explicitly, ``out_bytes=`` to override the reply size, and ``decoder_id=`` to select which coprocessor-side decoder handles the round.
+  The round is resolved from the device being traced, so the program has to be captured (``qp.qjit(capture=True)``). The controller's ``in_bytes`` and ``out_bytes`` capacities both default to 8 bytes. The coprocessor function's ``bitpack`` sets the round's message format. With ``bitpack=True``, as above, the syndrome bits are packed into one 8-byte word, and the correction comes back as a 64-entry bit vector. Otherwise the syndrome's bytes are sent as they are, and the correction comes back as an ``out_bytes``-sized ``uint8`` buffer. Pass ``controller=`` / ``coprocessor=`` to choose the nodes explicitly, ``out_bytes=`` to override the reply size of an unpacked round, and ``decoder_id=`` to select which coprocessor-side decoder handles the round.
 
 * Added :class:`~.AliasSampling`, which prepares a state with real, positive amplitudes to a chosen
   number of bits of precision using coherent alias sampling, the standard ``PREPARE`` subroutine for
@@ -2335,6 +2335,13 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed a bug where :func:`~pennylane.backline.decode` returned a wrong correction, with no error,
+  from coprocessor functions that do not take bit-packed syndromes, such as Catalyst's built-in
+  Steane decoders. ``decode`` now sends the syndrome's bytes as they are, unless the coprocessor
+  function has ``bitpack=True``, a new argument of :class:`~.CoprocessorFunction` and
+  :func:`~pennylane.backline.triton_decoder` that :func:`~pennylane.backline.css_bp_decoder` sets.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
 
 * Fixed tracer leaks when passing traced work-wire labels to :func:`~.ctrl`
   applied to a callable during program capture. Concrete work-wire labels retain

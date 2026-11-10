@@ -54,13 +54,14 @@ def x64_fixture():
 
 @pytest.mark.jax
 class TestDecodeBitpack:
-    """Checks for decode(..., bitpack=True)."""
+    """Checks for decode's packed rounds, which a function's ``bitpack=True`` selects."""
 
     @staticmethod
     def _nodes():
         controller = qp.Controller()
         coprocessor = qp.Coprocessor(
-            coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1", 7760)
+            coprocessor_fn=qp.CoprocessorFunction("decoder", bitpack=True),
+            endpoint=qp.Endpoint("127.0.0.1", 7760),
         )
         return controller, coprocessor
 
@@ -68,9 +69,7 @@ class TestDecodeBitpack:
         """It should unpack the collected 8-byte reply into a 64-bit vector."""
         controller, coprocessor = self._nodes()
         jaxpr = x64.make_jaxpr(
-            lambda a, b: decode(
-                (a, b), controller=controller, coprocessor=coprocessor, bitpack=True
-            )
+            lambda a, b: decode((a, b), controller=controller, coprocessor=coprocessor)
         )(np.uint8(1), np.uint8(0))
 
         avals = [v.aval for v in jaxpr.jaxpr.outvars]
@@ -88,7 +87,6 @@ class TestDecodeBitpack:
                 np.uint64(1),
                 controller=controller,
                 coprocessor=coprocessor,
-                bitpack=True,
             )
 
     def test_bitpack_decode_rejects_vectors_longer_than_u64(self):
@@ -100,7 +98,6 @@ class TestDecodeBitpack:
                 np.ones(65, dtype=np.uint8),
                 controller=controller,
                 coprocessor=coprocessor,
-                bitpack=True,
             )
 
     @pytest.mark.parametrize(
@@ -115,9 +112,18 @@ class TestDecodeBitpack:
                 np.array([1], dtype=np.uint8),
                 controller=controller,
                 coprocessor=coprocessor,
-                bitpack=True,
                 **kwargs,
             )
+
+    def test_a_function_without_bitpack_gets_raw_bytes(self, x64):
+        """A function with the default ``bitpack=False``, such as Catalyst's Steane decoders, gets
+        the syndrome's bytes and returns its reply's bytes."""
+        dev = a_device(coprocessors=[a_coprocessor()])
+        jaxpr = a_round(x64, dev, syndrome=np.zeros(3, dtype=np.uint8))
+
+        assert scalars_of(jaxpr, calls_of(jaxpr)[1])[2] == 3
+        (correction,) = [var.aval for var in jaxpr.jaxpr.outvars]
+        assert (tuple(correction.shape), correction.dtype) == ((8,), np.dtype(np.uint8))
 
 
 def a_coprocessor(name=None):
@@ -136,7 +142,6 @@ def a_device(coprocessors=()):
 def a_round(jax, dev, syndrome=None, **kwargs):
     """Trace a round on ``dev`` and return its jaxpr."""
     syndrome = np.zeros(4, dtype=np.uint8) if syndrome is None else syndrome
-    kwargs.setdefault("bitpack", False)
     with qp.capture.tracing_device(dev):
         return jax.make_jaxpr(lambda s: decode(s, **kwargs))(syndrome)
 

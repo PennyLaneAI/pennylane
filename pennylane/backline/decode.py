@@ -204,11 +204,15 @@ def decode(  # pylint: disable=too-many-arguments
     in_bytes=None,
     decoder_id=0,
     work_item_idx=_DEFAULT_WORK_ITEM_IDX,
-    bitpack=True,
     library=None,
 ):
     r"""Calls a coprocessor function available on the :class:`~.Backline` to perform quantum error correction
     decoding --- providing a syndrome and recieving the corresponding correction.
+
+    The syndrome's bytes are sent as they are, and the reply comes back as bytes, unless the
+    coprocessor's function has :attr:`~.CoprocessorFunction.bitpack` set to ``True``. Then the
+    syndrome bits are packed least-significant bit first into one 8-byte payload, and the 8-byte
+    reply, a bitmask of the qubits to correct, is unpacked into a 64-entry bit vector.
 
     ``decode`` is implemented internally as a series of :func:`~pennylane.runtime_call`, with the
     communication driven from the controller's own process over the session that
@@ -222,8 +226,8 @@ def decode(  # pylint: disable=too-many-arguments
 
     Args:
         syndrome: The syndrome to send. Passed by data pointer, so its byte length comes from its
-            shape and dtype at compile time. With ``bitpack=True``, this must be a 1D bit vector
-            with at most 64 entries.
+            shape and dtype at compile time. If the coprocessor's function has ``bitpack=True``,
+            this must be a 1D bit vector with at most 64 entries.
         controller (Controller): The :class:`~.Controller` whose session drives the round.
         coprocessor (Coprocessor | None): The :class:`~.Coprocessor` the round targets. Selects the
             session key; which coprocessor serves the round is otherwise fixed by the session's
@@ -234,14 +238,13 @@ def decode(  # pylint: disable=too-many-arguments
             committed to carry. Defaults to ``syndrome``'s full byte length.
         decoder_id (int): Which coprocessor-side decoder handles this round.
         work_item_idx (int): The committed work-item index to post.
-        bitpack (bool): Pack syndrome bits into 8-byte payload and unpack reply to 64-bit vector.
         library (str, None): Shared library exporting the transport symbols, recorded so the
             compiler links it. Defaults to ``None``, relying on ``librt_transport`` already being
             loaded.
 
     Returns:
         The correction reply, as a ``uint8`` buffer of ``out_bytes`` bytes, or a 64-entry boolean
-        bit vector when ``bitpack=True``.
+        bit vector if the coprocessor's function has ``bitpack=True``.
 
     Raises:
         ValueError: if the round targets an unnamed coprocessor which cannot be resolved as the
@@ -261,7 +264,8 @@ def decode(  # pylint: disable=too-many-arguments
             executor_options={"host": "192.168.3.15", "port": 7810},
         )
         coproc = qp.Coprocessor(
-            coprocessor_fn="decoder",
+            # a decoder taking packed syndrome bits and replying with a bitmask
+            coprocessor_fn=qp.CoprocessorFunction("decoder", bitpack=True),
             name="decoder-0",
             hardware="gpu",
             endpoint=qp.Endpoint("192.168.1.3", 18590),
@@ -280,6 +284,7 @@ def decode(  # pylint: disable=too-many-arguments
     controller, coprocessor = _resolve_nodes(controller, coprocessor)
     placement = active_placement()
     key = _session_key(coprocessor, placement.coprocessors if placement is not None else ())
+    bitpack = coprocessor.coprocessor_fn.bitpack
     if bitpack:
         syndrome = _pack(_validate_packed(syndrome, in_bytes, out_bytes))
         nbytes = _PACKED_U64_BYTES

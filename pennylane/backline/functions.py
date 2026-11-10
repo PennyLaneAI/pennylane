@@ -72,6 +72,9 @@ class CoprocessorFunction:
             ``"memcpy"`` transport. On a CPU coprocessor every function is called per message.
         message_bytes (tuple[int, int] or None): The ``(in_bytes, out_bytes)`` message sizes the
             function expects, or ``None`` to declare none.
+        bitpack (bool): Whether the function takes the syndrome as a ``u64`` bitmask and returns a
+            ``u64`` bitmask, rather than raw bytes. If so, :func:`~.decode` packs the syndrome and
+            unpacks the reply.
 
     .. seealso:: :class:`~.Coprocessor`, :func:`~.css_bp_decoder`, :func:`~.onnx_decoder`,
         :func:`~.triton_decoder`
@@ -116,6 +119,11 @@ class CoprocessorFunction:
     not declare them. A :class:`~.Placement` takes the controller's unset sizes from it, and
     rejects a controller size that differs."""
 
+    bitpack: bool = field(default=False, repr=False)
+    """bool: Whether the function takes the syndrome as a ``u64`` bitmask and returns a ``u64``
+    bitmask, rather than raw bytes. If so, :func:`~.decode` packs the syndrome and unpacks the
+    reply."""
+
     def __post_init__(self):
         if self.message_bytes is not None:
             object.__setattr__(self, "message_bytes", tuple(self.message_bytes))
@@ -132,6 +140,8 @@ class CoprocessorFunction:
 
 def triton_decoder(
     decoder_fns: tuple[object, ...],
+    *,
+    bitpack: bool = False,
     **build_options,
 ) -> CoprocessorFunction:
     """Compile Triton quantum error correction decoder functions into a coprocessor function
@@ -148,6 +158,9 @@ def triton_decoder(
     Args:
         decoder_fns (tuple[object, ...]): Un-jitted Triton decoder functions. Each entry is
             jit compiled internally, and ``decoder_id`` selects the tuple index at runtime.
+        bitpack (bool): Whether the decoder functions take the syndrome as a ``u64`` bitmask and
+            return a ``u64`` bitmask, as in the example below. See
+            :attr:`~.CoprocessorFunction.bitpack`.
 
     Keyword Args:
         platform (str): Required Triton platform string of the form ``"backend:arch:warp_size"``.
@@ -180,6 +193,7 @@ def triton_decoder(
     >>> decoder = qp.backline.triton_decoder(  # doctest: +SKIP
     ...     (steane_lookup, steane_lookup),
     ...     platform="hip:gfx942:64",
+    ...     bitpack=True,
     ... )
     """
     try:
@@ -191,7 +205,9 @@ def triton_decoder(
 
     _check_catalyst_runs_triton_kernels()  # pragma: no cover
     so_path, symbol_name = _build_triton_decoder(decoder_fns, **build_options)  # pragma: no cover
-    return CoprocessorFunction(name=symbol_name, lib_path=str(so_path))  # pragma: no cover
+    return CoprocessorFunction(  # pragma: no cover
+        name=symbol_name, lib_path=str(so_path), bitpack=bitpack
+    )
 
 
 def css_bp_decoder(
@@ -271,4 +287,6 @@ def css_bp_decoder(
     so_path, symbol_name = _build_css_bp_decoder(  # pragma: no cover
         Hx, Hz, postprocess=postprocess, num_iters=num_iters, prob=prob, **build_options
     )
-    return CoprocessorFunction(name=symbol_name, lib_path=str(so_path))  # pragma: no cover
+    return CoprocessorFunction(  # pragma: no cover
+        name=symbol_name, lib_path=str(so_path), bitpack=True
+    )
