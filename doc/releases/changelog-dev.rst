@@ -891,7 +891,7 @@ Improvements 🛠
 * :func:`~.list_decomps` now includes generic controlled fallback rules when given an
   operator name such as ``"C(RX)"``. Their registered conditions determine applicability
   from operator arguments.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10502) <https://github.com/PennyLaneAI/pennylane/pull/10502>`__
 
 * Callable :func:`~.ctrl` now captures work-wire labels as operands, supporting
   traced work wires.
