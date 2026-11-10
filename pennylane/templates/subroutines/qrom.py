@@ -431,7 +431,7 @@ def _measure_masked_x(work_wire, targets, product):
         return pauli_measure("X" * (len(x_wires) + 1), [work_wire, *x_wires])
 
     # A PauliMeasure has a static word and number of wires. Group the selected targets
-    # first, then choose a measurement of fixed width using the dynamic Hamming weight.
+    # first, then choose a measurement of fixed width.
     selected = math.array(targets, like="jax")[math.argsort(-product)]
     weight = math.sum(product)
     num_targets = len(product)
