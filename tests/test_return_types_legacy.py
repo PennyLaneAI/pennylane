@@ -42,8 +42,8 @@ class TestSingleReturnExecute:
     """Test that single measurements return behavior does not change."""
 
     @pytest.mark.parametrize("wires", test_wires)
-    def test_state_mixed(self, wires, interface, shots):
-        """Return state with default.mixed."""
+    def test_state(self, wires, interface, shots):
+        """Return state with the legacy qubit device."""
         dev = DefaultQubitLegacy(wires=wires)
 
         def circuit(x):

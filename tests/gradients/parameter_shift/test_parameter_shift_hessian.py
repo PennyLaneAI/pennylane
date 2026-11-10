@@ -1221,30 +1221,6 @@ class TestParameterShiftHessianQNode:
         assert np.allclose(qp.math.transpose(expected[1], (0, 2, 3, 4, 5, 1)), hessian[1])
         assert np.allclose(qp.math.transpose(expected[2], (0, 2, 3, 1)), hessian[2])
 
-    @pytest.mark.xfail(
-        reason=r"ProbsMP.process_density_matrix issue. See https://github.com/PennyLaneAI/pennylane/pull/6684#issuecomment-2552123064"
-    )
-    def test_with_channel(self):
-        """Test that the Hessian is correctly computed for circuits
-        that contain quantum channels."""
-
-        dev = qp.device("default.mixed", wires=2)
-
-        @qp.qnode(dev, max_diff=2)
-        def circuit(x):
-            qp.RX(x[1], wires=0)
-            qp.RY(x[0], wires=0)
-            qp.DepolarizingChannel(x[2], wires=0)
-            qp.CNOT(wires=[0, 1])
-            return qp.probs(wires=[0, 1])
-
-        x = np.array([-0.4, 0.9, 0.1], requires_grad=True)
-
-        expected = qp.jacobian(qp.jacobian(circuit))(x)
-        hessian = qp.gradients.param_shift_hessian(circuit)(x)
-
-        assert np.allclose(qp.math.transpose(expected, (2, 1, 0)), hessian)
-
     def test_hessian_transform_is_differentiable(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation (1d -> 1d)"""
 

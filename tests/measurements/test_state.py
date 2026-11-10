@@ -457,7 +457,7 @@ class TestDensityMatrix:
     # pylint: disable=too-many-public-methods
 
     @pytest.mark.parametrize("wires", range(2, 5))
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_density_matrix_shape_and_dtype(self, dev_name, wires):
         """Test that the density matrix is of correct size and dtype for a
         trivial circuit"""
@@ -473,7 +473,7 @@ class TestDensityMatrix:
         assert state_val.shape == (2, 2)
         assert state_val.dtype == np.complex128
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_return_type_is_state(self, dev_name):
         """Test that the return type of the observable is State"""
 
@@ -490,7 +490,7 @@ class TestDensityMatrix:
         assert isinstance(obs[0], StateMP)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     @pytest.mark.parametrize("diff_method", [None, "backprop"])
     def test_correct_density_matrix_torch(self, dev_name, diff_method):
         """Test that the correct density matrix is returned using torch interface."""
@@ -506,7 +506,7 @@ class TestDensityMatrix:
         assert np.allclose(expected, density_mat)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     @pytest.mark.parametrize("diff_method", [None, "backprop"])
     def test_correct_density_matrix_jax(self, dev_name, diff_method):
         """Test that the correct density matrix is returned using JAX interface."""
@@ -521,23 +521,6 @@ class TestDensityMatrix:
         expected = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
 
         assert np.allclose(expected, density_mat)
-
-    def test_correct_density_matrix_product_state_first_default_mixed(self):
-        """Test that the correct density matrix is returned when
-        tracing out a product state"""
-
-        dev = qp.device("default.mixed", wires=2)
-
-        @qp.qnode(dev)
-        def func():
-            qp.Hadamard(wires=1)
-            qp.PauliY(wires=0)
-            return density_matrix(0)
-
-        density_first = func()
-        expected = np.array([[0.0 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 1.0 + 0.0j]])
-
-        assert np.allclose(expected, density_first)
 
     def test_correct_density_matrix_product_state_first_default_qubit(self):
         """Test that the correct density matrix is returned when
@@ -560,22 +543,6 @@ class TestDensityMatrix:
             qp.density_matrix(wires=0).process_state(state=dev_state, wire_order=dev.wires),
         )
 
-    def test_correct_density_matrix_product_state_second_default_mixed(self):
-        """Test that the correct density matrix is returned when
-        tracing out a product state"""
-
-        dev = qp.device("default.mixed", wires=2)
-
-        @qp.qnode(dev)
-        def func():
-            qp.Hadamard(wires=1)
-            qp.PauliY(wires=0)
-            return density_matrix(1)
-
-        density_second = func()
-        expected = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
-        assert np.allclose(expected, density_second)
-
     def test_correct_density_matrix_product_state_second_default_qubit(self):
         """Test that the correct density matrix is returned when
         tracing out a product state"""
@@ -596,26 +563,6 @@ class TestDensityMatrix:
             expected,
             qp.density_matrix(wires=1).process_state(state=dev_state, wire_order=dev.wires),
         )
-
-    @pytest.mark.parametrize("return_wire_order", ([0, 1], [1, 0]))
-    def test_correct_density_matrix_product_state_both_default_mixed(self, return_wire_order):
-        """Test that the correct density matrix is returned
-        for a full product state on two wires."""
-
-        dev = qp.device("default.mixed", wires=2)
-
-        @qp.qnode(dev)
-        def func():
-            qp.Hadamard(wires=1)
-            qp.PauliY(wires=0)
-            return density_matrix(return_wire_order)
-
-        density_both = func()
-        single_statevectors = [[0, 1j], [1 / np.sqrt(2), 1 / np.sqrt(2)]]
-        expected_statevector = np.kron(*[single_statevectors[w] for w in return_wire_order])
-        expected = np.outer(expected_statevector.conj(), expected_statevector)
-
-        assert np.allclose(expected, density_both)
 
     @pytest.mark.parametrize("return_wire_order", ([0, 1], [1, 0]))
     def test_correct_density_matrix_product_state_both_default_qubit(self, return_wire_order):
@@ -644,29 +591,6 @@ class TestDensityMatrix:
             ),
         )
 
-    def test_correct_density_matrix_three_wires_first_two_default_mixed(self):
-        """Test that the correct density matrix is returned for an example with three wires,
-        and tracing out the third wire."""
-
-        dev = qp.device("default.mixed", wires=3)
-
-        @qp.qnode(dev)
-        def func():
-            qp.Hadamard(wires=1)
-            qp.PauliY(wires=0)
-            return density_matrix([0, 1])
-
-        density_full = func()
-        expected = np.array(
-            [
-                [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                [0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j],
-                [0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j],
-            ]
-        )
-        assert np.allclose(expected, density_full)
-
     def test_correct_density_matrix_three_wires_first_two_default_qubit(self):
         """Test that the correct density matrix is returned for an example with three wires,
         and tracing out the third wire."""
@@ -694,7 +618,7 @@ class TestDensityMatrix:
             qp.density_matrix(wires=[0, 1]).process_state(state=dev_state, wire_order=dev.wires),
         )
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_correct_density_matrix_three_wires_last_two(self, dev_name):
         """Test that the correct density matrix is returned for an example with three wires,
         and tracing out the first wire."""
@@ -721,37 +645,6 @@ class TestDensityMatrix:
         )
 
         assert np.allclose(expected, density)
-
-    @pytest.mark.parametrize(
-        "return_wire_order", ([0], [1], [2], [0, 1], [1, 0], [0, 2], [2, 0], [1, 2, 0], [2, 1, 0])
-    )
-    def test_correct_density_matrix_three_wires_product_default_mixed(self, return_wire_order):
-        """Test that the correct density matrix is returned for an example with
-        three wires and a product state, tracing out various combinations."""
-
-        dev = qp.device("default.mixed", wires=3)
-
-        @qp.qnode(dev)
-        def func():
-            qp.Hadamard(0)
-            qp.PauliX(1)
-            qp.PauliZ(2)
-            return density_matrix(return_wire_order)
-
-        density_full = func()
-
-        single_states = [[1 / np.sqrt(2), 1 / np.sqrt(2)], [0, 1], [1, 0]]
-        if len(return_wire_order) == 1:
-            exp_statevector = np.array(single_states[return_wire_order[0]])
-        elif len(return_wire_order) == 2:
-            i, j = return_wire_order
-            exp_statevector = np.kron(single_states[i], single_states[j])
-        else:  # len(return_wire_order) == 3
-            i, j, k = return_wire_order
-            exp_statevector = np.kron(np.kron(single_states[i], single_states[j]), single_states[k])
-
-        expected = np.outer(exp_statevector.conj(), exp_statevector)
-        assert np.allclose(expected, density_full)
 
     @pytest.mark.parametrize(
         "return_wire_order", ([0], [1], [2], [0, 1], [1, 0], [0, 2], [2, 0], [1, 2, 0], [2, 1, 0])
@@ -791,7 +684,7 @@ class TestDensityMatrix:
             ),
         )
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_correct_density_matrix_mixed_state(self, dev_name):
         """Test that the correct density matrix for an example with a mixed state"""
 
@@ -806,29 +699,6 @@ class TestDensityMatrix:
         density = func()
 
         assert np.allclose(np.array([[0.5 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.5 + 0.0j]]), density)
-
-    def test_correct_density_matrix_all_wires_default_mixed(self):
-        """Test that the correct density matrix is returned when all wires are given"""
-
-        dev = qp.device("default.mixed", wires=2)
-
-        @qp.qnode(dev)
-        def func():
-            qp.Hadamard(0)
-            qp.CNOT(wires=[0, 1])
-            return qp.density_matrix(wires=[0, 1])
-
-        density = func()
-        expected = np.array(
-            [
-                [0.5 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j],
-                [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                [0.5 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.5 + 0.0j],
-            ]
-        )
-
-        assert np.allclose(expected, density)
 
     def test_correct_density_matrix_all_wires_default_qubit(self):
         """Test that the correct density matrix is returned when all wires are given"""
@@ -907,7 +777,7 @@ class TestDensityMatrix:
                 func()
 
     @pytest.mark.parametrize("wires", [[0, 2], ["a", -1]])
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_custom_wire_labels(self, wires, dev_name):
         """Test that the correct density matrix for an example with a mixed
         state when using custom wires"""
@@ -926,7 +796,7 @@ class TestDensityMatrix:
         assert np.allclose(expected, density)
 
     @pytest.mark.parametrize("wires", [[3, 1], ["b", 1000]])
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_custom_wire_labels_all_wires(self, wires, dev_name):
         """Test that the correct density matrix for an example with a mixed
         state when using custom wires"""

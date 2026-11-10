@@ -64,10 +64,7 @@ def test_get_legacy_capability():
     assert not "supports_mid_measure" in caps
     assert not _supports_one_shot(dev)
 
-    with pytest.warns(
-        qp.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
-    ):
-        dev2 = qp.devices.DefaultMixed(wires=[0], shots=1)
+    dev2 = qp.devices.NullQubit(wires=[0])
     assert not _supports_one_shot(dev2)
 
 

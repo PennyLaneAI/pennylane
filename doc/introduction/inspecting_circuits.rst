@@ -226,7 +226,6 @@ When debugging quantum circuits run on simulators, we may want to inspect the cu
 Currently supported devices include:
 
 * ``default.qubit``: each snapshot saves the quantum state vector
-* ``default.mixed``: each snapshot saves the density matrix
 
 A :class:`~pennylane.Snapshot` can be used in a QNode like any other operation:
 

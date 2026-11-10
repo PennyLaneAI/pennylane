@@ -16,7 +16,6 @@ Tests for the transform implementing the deferred measurement principle.
 """
 
 import math
-import re
 
 # pylint: disable=too-few-public-methods, too-many-arguments
 from functools import partial
@@ -27,7 +26,6 @@ from device_shots_to_analytic import shots_to_analytic
 import pennylane as qp
 import pennylane.numpy as np
 from pennylane.devices import DefaultQubit
-from pennylane.exceptions import DecompositionWarning, DeviceError
 from pennylane.ops import Controlled, MeasurementValue, MidMeasure
 
 
@@ -100,30 +98,6 @@ def test_allow_postselect():
     circuit = qp.tape.QuantumScript([MidMeasure(wires=0, postselect=0)], [qp.expval(qp.Z(0))])
     with pytest.raises(ValueError, match="Postselection is not allowed"):
         _, __ = qp.defer_measurements(circuit, allow_postselect=False)
-
-
-def test_postselection_error_with_wrong_device():
-    """Test that an error is raised when postselection is used with a device
-    other than `default.qubit`."""
-    dev = qp.device("default.mixed", wires=2)
-
-    @qp.defer_measurements
-    @qp.qnode(dev)
-    def circ():
-        qp.measure(0, postselect=1)
-        return qp.probs(wires=[0])
-
-    with pytest.raises(
-        DeviceError,
-        match=re.escape(
-            "Operator Projector(array([1]), wires=[0]) not supported with default.mixed and does not provide a decomposition."
-        ),
-    ):
-        if qp.decomposition.enabled_graph():
-            with pytest.warns(DecompositionWarning):
-                _ = circ()
-        else:
-            _ = circ()
 
 
 @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
@@ -868,7 +842,6 @@ class TestConditionalOperations:
         "device",
         [
             "default.qubit",
-            "default.mixed",
             "lightning.qubit",
         ],
     )
@@ -972,7 +945,6 @@ class TestConditionalOperations:
         "device",
         [
             "default.qubit",
-            "default.mixed",
             "lightning.qubit",
         ],
     )
@@ -1009,7 +981,6 @@ class TestConditionalOperations:
         "device",
         [
             "default.qubit",
-            "default.mixed",
             "lightning.qubit",
         ],
     )
@@ -1086,7 +1057,7 @@ class TestConditionalOperations:
 
     @pytest.mark.parametrize(
         "device",
-        ["default.qubit", "default.mixed", "lightning.qubit"],
+        ["default.qubit", "lightning.qubit"],
     )
     def test_cond_qfunc(self, device):
         """Test that a qfunc can also used with qp.cond."""
@@ -1125,7 +1096,7 @@ class TestConditionalOperations:
 
     @pytest.mark.parametrize(
         "device",
-        ["default.qubit", "default.mixed", "lightning.qubit"],
+        ["default.qubit", "lightning.qubit"],
     )
     def test_cond_qfunc_with_else(self, device):
         """Test that a qfunc can also used with qp.cond even when an else

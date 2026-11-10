@@ -17,7 +17,6 @@ This module contains the tests for the clifford simulator based on stim
 
 import numpy as np
 import pytest
-import scipy as sp
 from dummy_debugger import Debugger
 
 import pennylane as qp
@@ -719,11 +718,10 @@ def test_meas_error_noisy():
         qp.DepolarizingChannel(0.75, wires=[2]),
     ],
 )
-def test_meas_noisy_distribution(channel_op):
-    """Test error distribution of samples matches with that from `default.mixed` device."""
+def test_meas_noisy_distribution(channel_op, seed):
+    """Test noisy samples against the channel's exact Kraus probabilities."""
 
-    dev_c = qp.device("default.clifford", wires=4)
-    dev_q = qp.device("default.mixed", wires=4)
+    dev_c = qp.device("default.clifford", wires=4, seed=seed)
 
     def circuit():
         qp.Hadamard(wires=[0])
@@ -733,10 +731,16 @@ def test_meas_noisy_distribution(channel_op):
         return qp.probs()
 
     qnode_clfrd = qp.set_shots(qp.QNode(circuit, dev_c), shots=10000)
-    qnode_qubit = qp.set_shots(qp.QNode(circuit, dev_q), shots=10000)
 
-    kl_d = np.ma.masked_invalid(sp.special.rel_entr(qnode_clfrd(), qnode_qubit()))
-    assert qp.math.allclose(np.abs(kl_d.sum()), 0.0, atol=1e-1)
+    ghz_state = qp.math.array([1, *([0] * 14), 1]) / qp.math.sqrt(2)
+    expected = sum(
+        qp.math.abs(
+            qp.math.expand_matrix(kraus, wires=channel_op.wires, wire_order=range(4)) @ ghz_state
+        )
+        ** 2
+        for kraus in channel_op.kraus_matrices()
+    )
+    assert qp.math.allclose(qnode_clfrd(), expected, atol=0.03)
 
 
 def test_fail_import_stim(monkeypatch):

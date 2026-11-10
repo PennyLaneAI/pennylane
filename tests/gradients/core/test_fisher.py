@@ -149,7 +149,6 @@ class TestIntegration:
         "dev",
         (
             qp.device("default.qubit"),
-            qp.device("default.mixed", wires=3),
             qp.device("lightning.qubit", wires=3),
         ),
     )

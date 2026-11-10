@@ -428,21 +428,6 @@ class TestTranspile:
         assert qp.math.allclose(original_results[0][0], transformed_results[0])
         assert qp.math.allclose(original_results[0][1], transformed_results[1])
 
-    def test_transpile_with_state_default_mixed(self):
-        """Test that if the state is default mixed, state measurements are converted in to density measurements with the device wires."""
-
-        dev = qp.device("default.mixed", wires=(0, 1, 2))
-
-        tape = qp.tape.QuantumScript([qp.PauliX(0), qp.CNOT(wires=(0, 2))], [qp.state()])
-        batch, fn = qp.transforms.transpile(tape, coupling_map=[(0, 1), (1, 2)], device=dev)
-
-        assert batch[0][-1] == qp.density_matrix(wires=(0, 2, 1))
-
-        pre, post = dev.preprocess_transforms()((tape,))
-        original_results = post(dev.execute(pre))
-        transformed_results = fn(dev.execute(batch))
-        assert qp.math.allclose(original_results, transformed_results)
-
     def test_transpile_probs_sample_filled_in_wires(self):
         """Test that if probs or sample are requested broadcasted over all wires, transpile fills in the device wires."""
         dev = qp.device("default.qubit", wires=(0, 1, 2))

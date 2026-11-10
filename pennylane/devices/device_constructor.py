@@ -65,9 +65,6 @@ def device(name, *args, **kwargs):
     * :mod:`'default.qubit' <pennylane.devices.default_qubit>`: a simple
       state simulator of qubit-based quantum circuit architectures.
 
-    * :mod:`'default.mixed' <pennylane.devices.default_mixed>`: a mixed-state
-      simulator of qubit-based quantum circuit architectures.
-
     * ``'lightning.qubit'``: a more performant state simulator of qubit-based
       quantum circuit architectures written in C++.
 

@@ -60,7 +60,7 @@ class TestPLDB:
     def test_valid_context_not_compatible_device(self):
         """Test that valid_context raises an error when breakpoint
         is called with an incompatible device."""
-        dev = qp.device("default.mixed", wires=2)
+        dev = qp.device("null.qubit", wires=2)
 
         @qp.qnode(dev)
         def my_circ():
@@ -309,7 +309,7 @@ def test_breakpoint_integration(mock_method):
 @patch.object(PLDB, "set_trace")
 def test_breakpoint_integration_with_valid_context_error(mock_method):
     """Test that the PLDB.valid_context() integrates well with qp.breakpoint"""
-    dev = qp.device("default.mixed", wires=2)
+    dev = qp.device("null.qubit", wires=2)
 
     @qp.qnode(dev)
     def my_circ():

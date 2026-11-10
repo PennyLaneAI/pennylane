@@ -100,13 +100,13 @@ def insert(
 
     **Example:**
 
-    The following QNode can be transformed to add noise to the circuit:
+    The following QNode can be transformed to add coherent rotation errors to the circuit:
 
     .. code-block:: python
 
-        dev = qp.device("default.mixed", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        @qp.noise.insert(op=qp.AmplitudeDamping, op_args=0.2, position="end")
+        @qp.noise.insert(op=qp.RY, op_args=0.2, position="end")
         @qp.qnode(dev)
         def f(w, x, y, z):
             qp.RX(w, wires=0)
@@ -119,10 +119,10 @@ def insert(
     Executions of this circuit will differ from the noise-free value:
 
     >>> f(0.9, 0.4, 0.5, 0.6)
-    np.float64(0.7548469968854761)
+    np.float64(0.7902624457826982)
     >>> print(qp.draw(f)(0.9, 0.4, 0.5, 0.6))
-    0: ──RX(0.90)─╭●──RY(0.50)──AmplitudeDamping(0.20)─┤ ╭<Z@Z>
-    1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.20)─┤ ╰<Z@Z>
+    0: ──RX(0.90)─╭●──RY(0.50)──RY(0.20)─┤ ╭<Z@Z>
+    1: ──RY(0.40)─╰X──RX(0.60)──RY(0.20)─┤ ╰<Z@Z>
 
     .. details::
         :title: Usage Details
@@ -190,7 +190,7 @@ def insert(
 
         .. code-block:: python
 
-            dev = qp.device("default.mixed", wires=2)
+            dev = qp.device("default.qubit", wires=2)
 
             def f(w, x, y, z):
                 qp.RX(w, wires=0)
@@ -209,10 +209,10 @@ def insert(
 
         However, noise can be easily added to the device:
 
-        >>> dev_noisy = qp.noise.insert(dev, qp.AmplitudeDamping, 0.2)
+        >>> dev_noisy = qp.noise.insert(dev, qp.RY, 0.2)
         >>> qnode_noisy = qp.QNode(f, dev_noisy)
         >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
-        np.float64(0.7294543367428854)
+        np.float64(0.6251005005856245)
     """
 
     # decompose templates and their adjoints to fix a bug in the tutorial_error_mitigation demo

@@ -112,18 +112,18 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
         The main purpose of folding is for zero noise extrapolation (ZNE). PennyLane provides a differentiable transform :func:`~.pennylane.noise.mitigate_with_zne`
         that allows you to perform ZNE as a black box. If you want more control and `see` the extrapolation, you can follow the logic of the following example.
 
-        We start by setting up a noisy device using the mixed state simulator and a noise channel.
+        We start by adding coherent rotation errors to a state-vector simulator.
 
         .. code-block:: python
 
             n_wires = 4
 
             # Describe noise
-            noise_gate = qp.DepolarizingChannel
+            noise_gate = qp.RZ
             noise_strength = 0.05
 
             # Load devices
-            dev_ideal = qp.device("default.mixed", wires=n_wires)
+            dev_ideal = qp.device("default.qubit", wires=n_wires)
             dev_noisy = qp.noise.insert(dev_ideal, noise_gate, noise_strength)
 
             x = np.arange(6)
@@ -146,7 +146,7 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
 
         We can then create folded versions of the noisy qnode and execute them for different scaling factors.
 
-        >>> scale_factors = [1., 2., 3.]
+        >>> scale_factors = [1., 3., 5.]
         >>> folded_res = [qp.noise.fold_global(qnode_noisy, lambda_)(x) for lambda_ in scale_factors]
 
         We want to later compare the ZNE with the ideal result.
@@ -168,7 +168,7 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
 
             from matplotlib import pyplot as plt
 
-            x_fit = np.linspace(0, 3, 20)
+            x_fit = np.linspace(0, 5, 20)
             y_fit = np.poly1d(coeffs)(x_fit)
 
             plt.plot(scale_factors, folded_res, "x--", label="folded")
@@ -383,17 +383,17 @@ def mitigate_with_zne(
 
     **Example:**
 
-    We first create a noisy device using ``default.mixed`` by adding :class:`~.AmplitudeDamping` to
+    We first create a noisy device using ``default.qubit`` by adding coherent :class:`~.RY` errors to
     each gate of circuits executed on the device using the :func:`~.transforms.add_noise` transform:
 
     .. code-block:: python
 
         import pennylane as qp
 
-        dev = qp.device("default.mixed", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         fcond = qp.noise.wires_in(dev.wires)
-        noise = qp.noise.partial_wires(qp.AmplitudeDamping, 0.05)
+        noise = qp.noise.partial_wires(qp.RY, 0.05)
         noise_model = qp.NoiseModel({fcond: noise})
 
         noisy_dev = qp.add_noise(dev, noise_model)
@@ -439,17 +439,17 @@ def mitigate_with_zne(
     Executions of ``circuit`` will now be mitigated:
 
     >>> circuit(w1, w2)
-    np.float64(0.231...)
+    np.float64(0.172326...)
 
-    The unmitigated circuit result is ``0.33652776`` while the ideal circuit result is
-    ``0.23688169`` and we can hence see that mitigation has helped reduce our estimation error.
+    The unmitigated circuit result is ``0.15175622`` while the ideal circuit result is
+    ``0.29696520``. Mitigation reduces the estimation error for this noise model.
 
     This mitigated qnode can be differentiated like any other qnode.
 
     >>> qp.grad(circuit)(qp.numpy.array(w1), qp.numpy.array(w2))
-    (array([-0.92625176,  0.28914607]), array([[[-1.01036246e+00,  2.99296508e-01]],
+    (array([-0.92395554,  0.29616116]), array([[[-8.79735053e-01,  1.46598704e-01]],
     <BLANKLINE>
-           [[-6.93099601e-01, -7.92154137e-04]]]))
+           [[-5.60317764e-01, ...]]]))
 
     .. note::
 

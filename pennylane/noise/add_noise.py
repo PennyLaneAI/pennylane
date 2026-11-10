@@ -73,24 +73,24 @@ def add_noise(tape, noise_model, level="user"):
 
     **Example:**
 
-    The following QNode can be transformed to add noise to the circuit:
+    The following QNode can be transformed to add coherent rotation errors to the circuit:
 
     .. code-block:: python
 
-        dev = qp.device("default.mixed", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         fcond1 = qp.noise.op_eq(qp.RX) & qp.noise.wires_in([0, 1])
-        noise1 = qp.noise.partial_wires(qp.PhaseDamping, 0.4)
+        noise1 = qp.noise.partial_wires(qp.RZ, 0.4)
 
         fcond2 = qp.noise.op_in([qp.RX, qp.RZ])
         def noise2(op, **kwargs):
-            qp.ThermalRelaxationError(op.parameters[0] * 0.5, kwargs["t1"],  kwargs["t2"], 0.6, op.wires)
+            qp.RY(op.parameters[0] * kwargs["overrotation"], wires=op.wires)
 
         fcond3 = qp.noise.meas_eq(qp.expval) & qp.noise.wires_in([0, 1])
-        noise3 = qp.noise.partial_wires(qp.PhaseFlip, 0.2)
+        noise3 = qp.noise.partial_wires(qp.RX, 0.2)
 
         noise_model = qp.NoiseModel(
-            {fcond1: noise1, fcond2: noise2}, {fcond3: noise3}, t1=2.0, t2=0.2
+            {fcond1: noise1, fcond2: noise2}, {fcond3: noise3}, overrotation=0.05
         )
 
         @qp.noise.add_noise(noise_model=noise_model)
@@ -106,13 +106,10 @@ def add_noise(tape, noise_model, level="user"):
     Executions of this circuit will differ from the noise-free value:
 
     >>> circuit(0.9, 0.4, 0.5, 0.6)
-    np.float64(0.5440530007721438)
+    np.float64(0.7280704322147343)
     >>> print(qp.draw(circuit)(0.9, 0.4, 0.5, 0.6))
-    0: ──RX(0.90)──PhaseDamping(0.40)──ThermalRelaxationError(0.45,2.00,0.20,0.60)─╭●──RY(0.50) ···
-    1: ──RY(0.40)──────────────────────────────────────────────────────────────────╰X──RX(0.60) ···
-    <BLANKLINE>
-    0: ··· ──PhaseFlip(0.20)──────────────────────────────────────────────────────────────────┤ ╭<Z@Z>
-    1: ··· ──PhaseDamping(0.40)──ThermalRelaxationError(0.30,2.00,0.20,0.60)──PhaseFlip(0.20)─┤ ╰<Z@Z>
+    0: ──RX(0.90)──RZ(0.40)──RY(0.05)─╭●──RY(0.50)──RX(0.20)─────────────────────┤ ╭<Z@Z>
+    1: ──RY(0.40)─────────────────────╰X──RX(0.60)──RZ(0.40)──RY(0.03)──RX(0.20)─┤ ╰<Z@Z>
 
     .. details::
         :title: Tranform Levels
@@ -124,7 +121,7 @@ def add_noise(tape, noise_model, level="user"):
 
         .. code-block:: python
 
-            dev = qp.device("default.mixed", wires=3)
+            dev = qp.device("default.qubit", wires=3)
 
             @qp.metric_tensor
             @qp.transforms.undo_swaps
@@ -143,18 +140,19 @@ def add_noise(tape, noise_model, level="user"):
 
         >>> from pennylane.workflow import get_compile_pipeline
         >>> print(get_compile_pipeline(circuit, level="device")(1,2,3,4))
-         CompilePipeline(
+        CompilePipeline(
           [1] cancel_inverses(),
           [2] merge_rotations(),
           [3] undo_swaps(),
           [4] _expand_metric_tensor(device_wires=[0, 1, 2]),
           [5] metric_tensor(device_wires=[0, 1, 2]),
-          [6] defer_measurements(allow_postselect=False),
-          [7] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
-          [8] no_sampling(name=backprop + default.mixed),
-          [9] validate_device_wires([0, 1, 2], name=default.mixed),
-          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
-          [11] validate_observables(stopping_condition=..., name=default.mixed)
+          [6] defer_measurements(allow_postselect=True),
+          [7] decompose(stopping_condition=..., device_wires=[0, 1, 2], target_gates=All DefaultQubit Gates, name=default.qubit),
+          [8] device_resolve_dynamic_wires(wires=[0, 1, 2], allow_resets=False),
+          [9] validate_device_wires([0, 1, 2], name=default.qubit),
+          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
+          [11] _conditional_broadcast_expand(),
+          [12] no_sampling(name=backprop + default.qubit)
         )
 
         >>> print(get_compile_pipeline(noisy_circuit, level="device")(1,2,3,4))
@@ -165,12 +163,13 @@ def add_noise(tape, noise_model, level="user"):
           [4] _expand_metric_tensor(device_wires=[0, 1, 2]),
           [5] metric_tensor(device_wires=[0, 1, 2]),
           [6] add_noise(...),
-          [7] defer_measurements(allow_postselect=False),
-          [8] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
-          [9] no_sampling(name=backprop + default.mixed),
-          [10] validate_device_wires([0, 1, 2], name=default.mixed),
-          [11] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
-          [12] validate_observables(stopping_condition=..., name=default.mixed)
+          [7] defer_measurements(allow_postselect=True),
+          [8] decompose(stopping_condition=..., device_wires=[0, 1, 2], target_gates=All DefaultQubit Gates, name=default.qubit),
+          [9] device_resolve_dynamic_wires(wires=[0, 1, 2], allow_resets=False),
+          [10] validate_device_wires([0, 1, 2], name=default.qubit),
+          [11] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
+          [12] _conditional_broadcast_expand(),
+          [13] no_sampling(name=backprop + default.qubit)
         )
 
         However, one can request to insert the ``add_noise`` transform at any specific point in the compile pipeline. By specifying the ``level`` keyword argument while
@@ -184,13 +183,14 @@ def add_noise(tape, noise_model, level="user"):
           [3] undo_swaps(),
           [4] _expand_metric_tensor(device_wires=[0, 1, 2]),
           [5] metric_tensor(device_wires=[0, 1, 2]),
-          [6] defer_measurements(allow_postselect=False),
-          [7] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
-          [8] no_sampling(name=backprop + default.mixed),
-          [9] validate_device_wires([0, 1, 2], name=default.mixed),
-          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
-          [11] validate_observables(stopping_condition=..., name=default.mixed),
-          [12] add_noise(..., level=device)
+          [6] defer_measurements(allow_postselect=True),
+          [7] decompose(stopping_condition=..., device_wires=[0, 1, 2], target_gates=All DefaultQubit Gates, name=default.qubit),
+          [8] device_resolve_dynamic_wires(wires=[0, 1, 2], allow_resets=False),
+          [9] validate_device_wires([0, 1, 2], name=default.qubit),
+          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
+          [11] _conditional_broadcast_expand(),
+          [12] no_sampling(name=backprop + default.qubit),
+          [13] add_noise(..., level=device)
         )
 
         Other acceptable values for ``level`` are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``. Among these, `"top"` will allow addition
@@ -219,13 +219,14 @@ def add_noise(tape, noise_model, level="user"):
           [3] undo_swaps(),
           [4] _expand_metric_tensor(device_wires=[0, 1, 2]),
           [5] metric_tensor(device_wires=[0, 1, 2]),
-          [6] defer_measurements(allow_postselect=False),
-          [7] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
-          [8] no_sampling(name=backprop + default.mixed),
-          [9] validate_device_wires([0, 1, 2], name=default.mixed),
-          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
-          [11] validate_observables(stopping_condition=..., name=default.mixed),
-          [12] add_noise(..., level=device)
+          [6] defer_measurements(allow_postselect=True),
+          [7] decompose(stopping_condition=..., device_wires=[0, 1, 2], target_gates=All DefaultQubit Gates, name=default.qubit),
+          [8] device_resolve_dynamic_wires(wires=[0, 1, 2], allow_resets=False),
+          [9] validate_device_wires([0, 1, 2], name=default.qubit),
+          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
+          [11] _conditional_broadcast_expand(),
+          [12] no_sampling(name=backprop + default.qubit),
+          [13] add_noise(..., level=device)
         )
 
         Finally, more precise control over the insertion of the transform can be achieved by specifying an integer or slice for indexing when extracting the compile pipeline. For example, one can do:

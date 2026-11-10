@@ -389,9 +389,9 @@ class TestInsert:
 def test_insert_qnode():
     """Test that a QNode with the insert decorator gives a different result than one
     without."""
-    dev = qp.device("default.mixed", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
-    @insert(op=qp.AmplitudeDamping, op_args=0.2, position="end")
+    @insert(op=qp.RX, op_args=0.2, position="end")
     @qp.qnode(dev)
     def f_noisy(w, x, y, z):
         qp.RX(w, wires=0)
@@ -415,8 +415,7 @@ def test_insert_qnode():
     assert not np.isclose(f_noisy(*args), f(*args))
 
 
-@pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
-def test_insert_dev(dev_name):
+def test_insert_dev():
     """Test if an device transformed by the insert function does successfully add noise to
     subsequent circuit executions"""
     with qp.queuing.AnnotatedQueue() as q_in_tape:
@@ -429,7 +428,7 @@ def test_insert_dev(dev_name):
         qp.expval(qp.PauliZ(0))
 
     in_tape = QuantumScript.from_queue(q_in_tape)
-    dev = qp.device(dev_name, wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
     program = dev.preprocess_transforms()
     res_without_noise = qp.execute(
@@ -479,9 +478,9 @@ def test_insert_dev(dev_name):
 
 def test_insert_template():
     """Test that ops are inserted correctly into a decomposed template"""
-    dev = qp.device("default.mixed", wires=2)
+    dev = qp.device("default.qubit", wires=2)
 
-    @insert(op=qp.PhaseDamping, op_args=0.3, position="all")
+    @insert(op=qp.RZ, op_args=0.3, position="all")
     @qp.qnode(dev)
     def f1(w1, w2):
         qp.SimplifiedTwoDesign(w1, w2, wires=[0, 1])
@@ -490,16 +489,16 @@ def test_insert_template():
     @qp.qnode(dev)
     def f2(w1, w2):
         qp.RY(w1[0], wires=0)
-        qp.PhaseDamping(0.3, wires=0)
+        qp.RZ(0.3, wires=0)
         qp.RY(w1[1], wires=1)
-        qp.PhaseDamping(0.3, wires=1)
+        qp.RZ(0.3, wires=1)
         qp.CZ(wires=[0, 1])
-        qp.PhaseDamping(0.3, wires=0)
-        qp.PhaseDamping(0.3, wires=1)
+        qp.RZ(0.3, wires=0)
+        qp.RZ(0.3, wires=1)
         qp.RY(w2[0][0][0], wires=0)
-        qp.PhaseDamping(0.3, wires=0)
+        qp.RZ(0.3, wires=0)
         qp.RY(w2[0][0][1], wires=1)
-        qp.PhaseDamping(0.3, wires=1)
+        qp.RZ(0.3, wires=1)
         return qp.expval(qp.PauliZ(0))
 
     w1 = np.random.random(2)
