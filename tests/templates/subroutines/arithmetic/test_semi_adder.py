@@ -358,6 +358,7 @@ class TestSemiAdder:
             "control_wires": control_wires,
             "control_values": jnp.zeros(len(control_wires)),
             "work_wires": jnp.array([]),
+            "work_wire_type": "borrowed"
         }
         for rule in qp.list_decomps("C(SemiAdder)"):
             if not rule.is_applicable(**decomp_args):

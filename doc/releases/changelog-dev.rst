@@ -888,7 +888,7 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
-* :func:`~.list_decomps` now includes generic controlled fallback rules when given an
+* :func:`~pennylane.list_decomps` now includes generic controlled fallback rules when given an
   operator name such as ``"C(RX)"``. Their registered conditions determine applicability
   from operator arguments.
   `(#10502) <https://github.com/PennyLaneAI/pennylane/pull/10502>`__
