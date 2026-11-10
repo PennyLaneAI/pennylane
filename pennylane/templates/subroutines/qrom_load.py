@@ -19,20 +19,29 @@ from collections.abc import Sequence
 from functools import partial
 
 from pennylane import capture, compiler, math
+from pennylane import ops as qp_ops
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
     register_resources,
 )
-from pennylane.ops import SWAP, H, ctrl
+from pennylane.ops import CNOT, SWAP, H, X, cond, ctrl, pauli_measure
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
+from .arithmetic import TemporaryAND
 from .multix import MultiX
-from .qrom import QROM, _unary_iteration_num_elbows, preprocess_qrom_inputs
+from .qrom import (
+    QROM,
+    _qrom_unary_iteration_resources,
+    _unary_iteration_num_elbows,
+    preprocess_qrom_inputs,
+)
 
 
 class QROMLoad(Operator2):
@@ -59,6 +68,10 @@ class QROMLoad(Operator2):
 
     To unload the data again, apply ``qp.adjoint`` of ``QROMLoad``. For ``clean=False``, this
     requires the garbage state of the work wires to be left untouched in the meantime.
+    For ``clean=True`` and within :func:`~.qjit` with program capture, the adjoint can be
+    decomposed with the measurement-based uncomputation from Appendix C of
+    [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__], which requires at least one
+    work wire.
 
     .. warning::
 
@@ -479,4 +492,171 @@ def _qrom_load_to_qrom(bitstrings, control_wires, target_wires, work_wires, clea
     QROM(bitstrings, control_wires, target_wires, work_wires)
 
 
+@QueuingManager.stop_recording()
+def _adjoint_qrom_load_one_hot_size(num_bitstrings, num_control_wires, num_work_wires):
+    """Number of least-significant address bits ``n`` that are encoded into a one-hot register of
+    ``k = 2**n`` work wires for the phase fixup of ``Adjoint(QROMLoad)``.
+
+    The fixup ``QROM`` uses unary iteration over the remaining ``num_control_wires - n`` address
+    bits with the remaining ``num_work_wires - k`` work wires. Each work wire it lacks for a full
+    iteration tree adds a control to every load, which costs far more than a larger one-hot
+    register saves. Therefore, ``n`` first minimizes this shortfall and then the T-count, estimated
+    as 4 per ``TemporaryAND`` and 7 per Toffoli in the loads. Without shortfall, this approximately
+    minimizes the Toffoli cost ``ceil(L / k) + k`` from Appendix C of
+    `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__.
+    """
+
+    def cost(n):
+        k = 2**n
+        num_columns = -(-num_bitstrings // k)
+        num_fixup_work = num_work_wires - k
+        shortfall = max(0, num_control_wires - n - 1 - num_fixup_work)
+        fixup = _qrom_unary_iteration_resources(
+            Bool[num_columns, k], Wire[num_control_wires - n], Wire[k], Wire[num_fixup_work]
+        )
+        num_elbows = k - 1 + fixup.get(TemporaryAND, 0)
+        return shortfall, 4 * num_elbows + 7 * shortfall * num_columns * k, n
+
+    return min(range(min(num_control_wires, num_work_wires.bit_length() - 1) + 1), key=cost)
+
+
+def _one_hot_swap_triples(address_wires, one_hot_wires):
+    r"""Wire triples ``(control, x, y)`` of the controlled SWAPs that move a 1 from
+    ``one_hot_wires[0]`` to ``one_hot_wires[l]``, where ``l`` is the value stored in
+    ``address_wires`` (most-significant bit first), following Figure 8 of
+    `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__. The wire ``y`` is in the
+    :math:`|0\rangle` state before its controlled SWAP is applied.
+
+    These are the controlled SWAPs of ``qp.adjoint(_swap_ops)`` with a single target column,
+    i.e., of the inverted SWAP network of Select-SWAP. They are not obtained from ``_swap_ops``,
+    because the latter applies generic controlled SWAPs and cannot make use of ``y`` being in
+    the :math:`|0\rangle` state."""
+    num_address = len(address_wires)
+    return [
+        (address_wires[num_address - 1 - p], one_hot_wires[j], one_hot_wires[j + 2**p])
+        for p in range(num_address)
+        for j in range(2**p)
+    ]
+
+
+def _adjoint_qrom_load_measurement_resources(base):
+    num_bitstrings = len(base.bitstrings)
+    num_control_wires = len(base.control_wires)
+    num_targets = len(base.target_wires)
+    num_work_wires = len(base.work_wires)
+    num_one_hot_address = _adjoint_qrom_load_one_hot_size(
+        num_bitstrings, num_control_wires, num_work_wires
+    )
+    k = 2**num_one_hot_address
+    num_columns = -(-num_bitstrings // k)
+
+    fixup_qrom = QROM(
+        Bool[num_columns, k],
+        Wire[num_control_wires - num_one_hot_address],
+        Wire[k],
+        Wire[num_work_wires - k],
+    )
+    return {
+        PauliMeasure("X", wires=Wire[1]): num_targets,
+        PauliMeasure("Z", wires=Wire[1]): num_targets,
+        X: num_targets + 2,
+        TemporaryAND: k - 1,
+        CNOT: 2 * (k - 1),
+        H: 2 * k,
+        fixup_qrom: 1,
+        qp_ops.adjoint(TemporaryAND(Wire[3])): k - 1,
+    }
+
+
+@register_condition(
+    lambda base: compiler.active()
+    and capture.enabled()
+    and len(base.control_wires) > 0
+    and len(base.work_wires) > 0
+    and base.clean
+)
+@register_resources(_adjoint_qrom_load_measurement_resources, exact=False)
+def _adjoint_qrom_load_measurement(base):
+    r"""Uncomputation of QROMLoad with measurements and a phase fixup, following Appendix C of
+    `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__.
+
+    The target wires store the bitstring :math:`b_j` for each address :math:`j`, as promised by
+    ``QROMLoad``, and are reset to :math:`|0\rangle`.
+
+    Measuring the target wires in the :math:`X` basis with outcomes :math:`m` leaves the phase
+    :math:`(-1)^{m\cdot b_j}` on each address. This phase is undone with a :class:`~.QROM` of the
+    measurement-dependent fixup table over the most-significant address bits, targeting a one-hot
+    encoding of the :math:`n` least-significant address bits in :math:`k=2^n` work wires
+    that are prepared in the :math:`|\pm\rangle` states (Figure 6). The one-hot encoding is
+    computed with ``TemporaryAND`` gates and uncomputed with their adjoints (Figures 8 to 10).
+    The remaining work wires are passed on to the ``QROM``. All work wires must be in the
+    :math:`|0\rangle` state.
+
+    For example, for 16 bitstrings with four control wires, two target wires and five work
+    wires, two address bits are encoded into a one-hot register of :math:`k=4` work wires:
+
+    .. code-block::
+
+        c0: ─────────────────────────────────────╭◑───────────────────────────────────┤
+        c1: ─────────────────────────────────────├◑───────────────────────────────────┤
+        c2: ──────────────────────╭●────╭●───────│────────────────●╮─────●╮───────────┤
+        c3: ────────────────╭●────│─────│────────│─────────────────│──────│─────●╮────┤
+        t0: ──┤↗X├──┤↗Z├──X─│─────│─────│────────│─────────────────│──────│──────│────┤
+        t1: ──┤↗X├──┤↗Z├──X─│─────│─────│────────│─────────────────│──────│──────│────┤
+        w0: ──X─────────────├●─╭X─├●─╭X─│───H────├QROM(M0)──H──────│─╭X──●┤─╭X──●┤──X─┤
+        w1: ────────────────╰⊕─╰●─│──│──├●─╭X──H─├QROM(M0)──H─╭X──●┤─│────│─╰●──⊕╯────┤
+        w2: ──────────────────────╰⊕─╰●─│──│───H─├QROM(M0)──H─│────│─╰●──⊕╯───────────┤
+        w3: ────────────────────────────╰⊕─╰●──H─├QROM(M0)──H─╰●──⊕╯──────────────────┤
+        w4: ─────────────────────────────────────╰work────────────────────────────────┤
+
+    Here, the ``X`` on each target wire is conditioned on the outcome of its :math:`Z`
+    measurement, and ``M0`` is the fixup table computed from the outcomes of the :math:`X`
+    measurements.
+    """
+    bitstrings = math.cast(base.bitstrings, int)
+    control_wires, target_wires, work_wires = base.control_wires, base.target_wires, base.work_wires
+    num_bitstrings, num_control_wires = len(bitstrings), len(control_wires)
+    num_one_hot_address = _adjoint_qrom_load_one_hot_size(
+        num_bitstrings, num_control_wires, len(work_wires)
+    )
+    k = 2**num_one_hot_address
+    num_columns = -(-num_bitstrings // k)
+
+    outcomes = []
+    for wire in target_wires:
+        outcome = pauli_measure("X", wire)
+        outcomes.append(outcome)
+        m_reset = pauli_measure("Z", wire)
+        cond(m_reset, X)(wire)
+
+    fixups = math.dot(bitstrings, math.cast(math.stack(outcomes), int)) % 2
+    fixups = math.concatenate(
+        [fixups, math.zeros(num_columns * k - num_bitstrings, dtype=int, like=fixups)]
+    )
+    fixup_table = math.cast(math.reshape(fixups, (num_columns, k)), bool)
+
+    high_wires = control_wires[: num_control_wires - num_one_hot_address]
+    low_wires = control_wires[num_control_wires - num_one_hot_address :]
+
+    one_hot_wires = list(work_wires[:k])
+    triples = _one_hot_swap_triples(low_wires, one_hot_wires)
+
+    X(one_hot_wires[0])
+    for control, x, y in triples:
+        TemporaryAND([control, x, y])
+        CNOT([y, x])
+
+    for wire in one_hot_wires:
+        H(wire)
+    QROM(fixup_table, high_wires, one_hot_wires, work_wires[k:])
+    for wire in one_hot_wires:
+        H(wire)
+
+    for control, x, y in reversed(triples):
+        CNOT([y, x])
+        qp_ops.adjoint(TemporaryAND)(wires=[control, x, y])
+    X(one_hot_wires[0])
+
+
 add_decomps(QROMLoad, _select_swap, _qrom_load_to_qrom)
+add_decomps("Adjoint(QROMLoad)", _adjoint_qrom_load_measurement)
