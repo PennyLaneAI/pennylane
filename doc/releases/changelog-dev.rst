@@ -2004,6 +2004,7 @@ Internal changes ⚙️
     `(#10458) <https://github.com/PennyLaneAI/pennylane/pull/10458>`__
     `(#10482) <https://github.com/PennyLaneAI/pennylane/pull/10482>`__
     `(#10463) <https://github.com/PennyLaneAI/pennylane/pull/10463>`__
+    `(#10503) <https://github.com/PennyLaneAI/pennylane/pull/10503>`__
 
   - Miscelleneous operators are ported:
 
