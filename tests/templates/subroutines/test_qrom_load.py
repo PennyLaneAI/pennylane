@@ -16,6 +16,7 @@ Tests for the QROMLoad template.
 """
 
 from functools import partial
+from itertools import product
 
 import hint_helpers
 import jax
@@ -228,6 +229,7 @@ class TestQROMLoad:
             assert np.isclose(target_probs[bitstring[0]], 1.0)
             assert np.isclose(work_probs[0], 1.0)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize("clean", [True, False])
     def test_adjoint_unloads(self, clean, seed):
         """Test that the adjoint of ``QROMLoad`` unloads the data again, returning the target and
@@ -248,15 +250,13 @@ class TestQROMLoad:
         assert np.isclose(circuit()[0], 1.0)
 
     @pytest.mark.parametrize("clean", [True, False])
-    def test_fallback_not_applicable_with_garbage(self, clean, seed):
-        """Test that the plain QROM fallback is not applicable for ``clean=False`` if Select-SWAP
-        is. The two rules leave different garbage on the work wires, so the graph could otherwise
-        decompose ``QROMLoad`` and its adjoint differently, which would not unload the data."""
+    def test_fallback_always_applicable(self, clean, seed):
+        """Test that the plain QROM fallback is applicable even if Select-SWAP is."""
         bitstrings = np.random.default_rng(seed).integers(0, 2, size=(32, 1))
         wires = qp.registers({"control_wires": 5, "target_wires": 1, "work_wires": 5})
         op = qp.QROMLoad(bitstrings, **wires, clean=clean)
         assert _select_swap.is_applicable(**op.arguments)
-        assert _qrom_load_to_qrom.is_applicable(**op.arguments) == clean
+        assert _qrom_load_to_qrom.is_applicable(**op.arguments)
 
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
@@ -560,25 +560,22 @@ def test_calculate_select_swap_sizes_clean(num_bitstrings, n_ctrl, n_target, n_w
         assert sizes == expected[clean]
 
 
-_cswap_without_elbow = pytest.mark.xfail(
-    strict=True,
-    reason="Controlled SWAPs with a zeroed work wire are not yet decomposed into elbows",
-)
+def test_cswap_work_wire_always_available():
+    """Test that the cost-optimal Select-SWAP decomposition always leaves an idle work wire for
+    the controlled SWAPs, which the cost model relies on to count them as elbow pairs."""
+    for n_ctrl in range(1, 8):
+        for num_bitstrings, n_target, n_work, clean in product(
+            range(1, 2**n_ctrl + 1), range(1, 4), range(20), [True, False]
+        ):
+            *_, num_work_wires_cswap, depth = _calculate_select_swap_sizes(
+                num_bitstrings, n_ctrl, n_target, n_work, clean
+            )
+            assert depth == 1 or num_work_wires_cswap == 1
 
 
+@pytest.mark.parametrize("clean", [True, False])
 @pytest.mark.parametrize(
-    ("sizes", "clean"),
-    [
-        pytest.param((21, 5, 1, 5), True, marks=_cswap_without_elbow),
-        pytest.param((32, 5, 1, 5), True, marks=_cswap_without_elbow),
-        ((64, 6, 1, 9), True),
-        pytest.param((64, 6, 2, 20), True, marks=_cswap_without_elbow),
-        ((256, 8, 2, 11), True),
-    ]
-    + [
-        (sizes, False)
-        for sizes in [(21, 5, 1, 5), (32, 5, 1, 5), (64, 6, 1, 9), (64, 6, 2, 20), (256, 8, 2, 11)]
-    ],
+    "sizes", [(21, 5, 1, 5), (32, 5, 1, 5), (64, 6, 1, 9), (64, 6, 2, 20), (256, 8, 2, 11)]
 )
 def test_select_swap_t_count(sizes, clean, seed):
     """Test that the Select-SWAP decomposition, if applicable, uses fewer T gates than a plain
@@ -588,8 +585,9 @@ def test_select_swap_t_count(sizes, clean, seed):
     wires = qp.registers({"control_wires": n_ctrl, "target_wires": n_target, "work_wires": n_work})
     op = qp.QROMLoad(bitstrings, **wires, clean=clean)
     assert _select_swap.is_applicable(**op.arguments)
-    gate_set = {"T", "Adjoint(T)", "H", "S", "Adjoint(S)", "CNOT", "X", "Z", "CZ", "GlobalPhase"}
-    gate_set |= {"MidMeasure"}
+    # Weigh T gates heavily so that the graph minimizes the T count, which is what we compare
+    gate_set = {"T": 100, "Adjoint(T)": 100, "H": 1, "S": 1, "Adjoint(S)": 1, "CNOT": 1, "X": 1}
+    gate_set |= {"Z": 1, "CZ": 1, "GlobalPhase": 1, "MidMeasure": 1}
 
     def t_count(op, fixed_decomps=None):
         graph = DecompositionGraph([op], gate_set, fixed_decomps=fixed_decomps)

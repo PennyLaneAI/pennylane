@@ -545,7 +545,7 @@ def _build_flag(extra_wires, work_wires):
 @register_resources(_qrom_measurement_resources, exact=False)
 def _qrom_measurement_decomposition(
     bitstrings=None, control_wires=None, target_wires=None, work_wires=None, base=None
-):  # pylint: disable=too-many-branches
+):
     """QROM decomposition using measurement-based uncomputation.
 
     Uses L-3 (or L-2) TemporaryAND gates. All uncomputation is done via
@@ -793,7 +793,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
         # Compute total elbow count, subtract the leading ones outside of `loop`, and divide by
         # outer iteration count.
         more_than_half = int(num_blocks > 2 ** (c - 1))
-        num_elbows = c + num_blocks - 2 - (num_blocks - 1).bit_count() - more_than_half
+        num_elbows = _unary_iteration_num_elbows(c, num_blocks)
         average_ladder_len = (num_elbows - len(triples)) / (num_blocks - 1)
         # Out of all k, a single one leads to a == 1 within the first half, if it is reached, and
         # a single one leads to a == 0, if the second half is reached.
