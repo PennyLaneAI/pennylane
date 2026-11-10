@@ -2266,7 +2266,7 @@ Documentation 📝
 
 * Updated :class:`~.MPSPrep` documentation to use ``default.qubit`` and explain the
   work wires required for gate-based decomposition, replacing the ``lightning.tensor`` example.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10505) <https://github.com/PennyLaneAI/pennylane/pull/10505>`__
 
 * The docstring for :class:`~.ControlledPhaseShift` now mentions that :class:`~.CPhase` is an alias.
   `(#10405) <https://github.com/PennyLaneAI/pennylane/pull/10405>`__
