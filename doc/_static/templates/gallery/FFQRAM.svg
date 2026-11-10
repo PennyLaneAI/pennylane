@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">FFQRAM</title>
+  <desc id="description">A flip, controlled amplitude rotation, and inverse flip load weighted addresses before postselection.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M53 108 L347 108" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <rect x="62.5" y="86.5" width="43" height="43" rx="9" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M76 100 L92 116" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M76 116 L92 100" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="293.5" y="86.5" width="43" height="43" rx="9" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <path d="M307 100 L323 116" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M307 116 L323 100" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M154 73 L154 161" fill="none" stroke="#0074E0" stroke-width="3" />
+    <circle cx="154" cy="73" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="154" cy="134" r="22" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M153.6 122.0 L154.8 122.0 L156.0 122.2 L157.2 122.4 L158.3 122.8 L159.4 123.3 L160.5 123.9 L161.5 124.6 L162.4 125.4 L163.2 126.3 L163.9 127.2 L164.5 128.2 L165.1 129.3 L165.5 130.5 L165.8 131.6 L165.9 132.8 L166.0 134.0 L165.9 135.2 L165.8 136.4 L165.5 137.5 L165.1 138.7 L164.5 139.8 L163.9 140.8 L163.2 141.7 L162.4 142.6 L161.5 143.4 L160.5 144.1 L159.4 144.7 L158.3 145.2 L157.2 145.6 L156.0 145.8 L154.8 146.0 L153.6 146.0 L152.5 145.9 L151.3 145.7 L150.1 145.4 L149.0 144.9 L147.9 144.4 L146.9 143.7 L146.0 142.9 L145.2 142.1" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M146.0046877446421 142.94846254612065 L145.15127541350506 142.1055581666138" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M147.67 153.84 L145.15127541350506 142.1055581666138 L156.91 144.48" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M84 165 Q201 261 315 165" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M303 168 L317 163 L315 179" fill="none" stroke="#0074E0" stroke-width="3" />
+    <rect x="204" y="137" width="13" height="32" rx="4" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="227" y="102" width="13" height="67" rx="4" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="250" y="124" width="13" height="45" rx="4" fill="#0074E0" stroke="#151515" stroke-width="3" />
+    <circle cx="348" cy="108" r="7" fill="#0074E0" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

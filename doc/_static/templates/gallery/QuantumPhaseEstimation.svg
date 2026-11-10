@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">QuantumPhaseEstimation</title>
+  <desc id="description">A unit-circle phase is resolved into the binary digits of a quantum register.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="113" cy="140" r="61" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <path d="M113 140 L113 79 A61 61 0 0 1 169 116 Z" fill="#D5F0FD" stroke="none" stroke-width="4" />
+    <path d="M113 140 L159 105" fill="none" stroke="#0074E0" stroke-width="5" />
+    <path d="M147.03 105.84 L159 105 L154.99 116.31" fill="none" stroke="#0074E0" stroke-width="5" />
+    <circle cx="113" cy="140" r="5" fill="#151515" stroke="none" stroke-width="0" />
+    <path d="M113.0 102.0 L113.9 102.0 L114.8 102.0 L115.7 102.1 L116.6 102.2 L117.5 102.3 L118.4 102.4 L119.3 102.5 L120.2 102.7 L121.1 102.9 L122.0 103.1 L122.8 103.3 L123.7 103.5 L124.6 103.8 L125.4 104.1 L126.3 104.4 L127.1 104.7 L128.0 105.1 L128.8 105.4 L129.6 105.8 L130.4 106.2 L131.2 106.6 L132.0 107.1 L132.8 107.5 L133.5 108.0 L134.3 108.5 L135.0 109.0 L135.8 109.6 L136.5 110.1 L137.2 110.7 L137.9 111.3 L138.5 111.9 L139.2 112.5 L139.8 113.1 L140.5 113.8 L141.1 114.4 L141.7 115.1 L142.3 115.8 L142.8 116.5 L143.4 117.2 L143.9 117.9" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M143.39432433895362 117.19243441358785 L143.9273813531763 117.9206638995824" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M143.31 105.94 L143.9273813531763 117.9206638995824 L132.69 113.71" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M186 140 L222 140" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M211.96 133.42 L222 140 L211.96 146.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="235" y="114" width="20" height="52" rx="6" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M245 128 L245 152" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="262" y="114" width="20" height="52" rx="6" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <ellipse cx="272" cy="140" rx="5" ry="12" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="289" y="114" width="20" height="52" rx="6" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M299 128 L299 152" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="316" y="114" width="20" height="52" rx="6" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M326 128 L326 152" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M237 187 L336 187" fill="none" stroke="#0074E0" stroke-width="3" />
+    <circle cx="237" cy="187" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+  </g>
+</svg>

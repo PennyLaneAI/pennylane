@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">FermionicDoubleExcitation</title>
+  <desc id="description">Two occupied orbitals transfer together to two empty orbitals.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M52 84 L348 84" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <ellipse cx="91" cy="84" rx="21" ry="10" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <ellipse cx="151" cy="84" rx="21" ry="10" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <ellipse cx="249" cy="84" rx="21" ry="10" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <ellipse cx="309" cy="84" rx="21" ry="10" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <path d="M52 194 L348 194" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <ellipse cx="91" cy="194" rx="21" ry="10" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <ellipse cx="151" cy="194" rx="21" ry="10" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <ellipse cx="249" cy="194" rx="21" ry="10" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <ellipse cx="309" cy="194" rx="21" ry="10" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="91" cy="84" r="9" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="151" cy="84" r="9" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="249" cy="194" r="9" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="309" cy="194" r="9" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M94 101 C117 129 219 136 244 177" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M154 101 C177 123 286 132 304 177" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M230 170 L246 180 L247 162" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M290 170 L306 180 L307 162" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">AngleEmbedding</title>
+  <desc id="description">A rotation angle on a Bloch sphere represents a classical feature encoded as a qubit rotation.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="202" cy="142" r="81" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <ellipse cx="202" cy="142" rx="81" ry="19" fill="none" stroke="#88A5B5" stroke-width="2.5" />
+    <ellipse cx="202" cy="142" rx="22" ry="81" fill="none" stroke="#88A5B5" stroke-width="2.5" />
+    <path d="M202 48 L202 236" fill="none" stroke="#88A5B5" stroke-width="2.5" />
+    <path d="M202 142 L255 91" fill="none" stroke="#0074E0" stroke-width="6" />
+    <circle cx="255" cy="91" r="9" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="202" cy="142" r="5" fill="#151515" stroke="none" stroke-width="0" />
+    <path d="M202 102 A40 40 0 0 1 230 114" fill="none" stroke="#0074E0" stroke-width="5" />
+    <path d="M202 142 L202 103 M202 142 L230 114" fill="none" stroke="#0074E0" stroke-width="2" />
+    <circle cx="91" cy="201" r="17" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="311" cy="90" r="13" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+  </g>
+</svg>

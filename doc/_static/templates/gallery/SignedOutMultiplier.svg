@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">SignedOutMultiplier</title>
+  <desc id="description">Signed input registers, marked by plus-minus badges, multiply into a separate register.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="55" y="93" width="108" height="42" rx="12" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="82.0" cy="114" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="109.0" cy="114" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="136.0" cy="114" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <rect x="237" y="93" width="108" height="42" rx="12" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="264.0" cy="114" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="291.0" cy="114" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="318.0" cy="114" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="83" cy="77" r="21" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M77 72 L89 72" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M83 66 L83 78" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M77 85 L89 85" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="317" cy="77" r="21" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <path d="M311 72 L323 72" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M317 66 L317 78" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M311 85 L323 85" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M165 114 L175 132" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M175.87 120.03 L175 132 L164.38 126.42" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M235 114 L225 132" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M235.62 126.42 L225 132 L224.13 120.03" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="200" cy="151" r="28" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <path d="M188 139 L212 163" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M188 163 L212 139" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M200 184 L200 201" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M206.58 190.96 L200 201 L193.42 190.96" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="134" y="205" width="132" height="42" rx="12" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="160.4" cy="226" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="186.8" cy="226" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="213.2" cy="226" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="239.6" cy="226" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

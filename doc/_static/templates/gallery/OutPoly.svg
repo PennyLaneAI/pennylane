@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">OutPoly</title>
+  <desc id="description">Contributions of different powers combine into a polynomial curve and a separate output register.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M78 201 L255 201" fill="none" stroke="#88A5B5" stroke-width="4" />
+    <path d="M78 201 L78 70" fill="none" stroke="#88A5B5" stroke-width="4" />
+    <path d="M84 186 C115 106 142 196 175 137 S210 78 248 73" fill="none" stroke="#0074E0" stroke-width="5" />
+    <circle cx="112" cy="158" r="12" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="177" cy="135" r="12" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="229" cy="82" r="12" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <path d="M129 89 L149 89" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M139 79 L139 99" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M207 172 L227 172" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M217 162 L217 182" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M260 143 L278 143" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M267.96 136.42 L278 143 L267.96 149.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="286" y="122" width="65" height="42" rx="12" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <circle cx="307.6666666666667" cy="143" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="329.3333333333333" cy="143" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

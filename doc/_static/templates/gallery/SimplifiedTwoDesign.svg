@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">SimplifiedTwoDesign</title>
+  <desc id="description">Staggered pairs of neighbouring qubits illustrate the alternating block pattern of a simplified two-design.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M48 61 L352 61" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M48 113 L352 113" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M48 165 L352 165" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M48 217 L352 217" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <rect x="82" y="42" width="66" height="90" rx="12" fill="#D5F0FD" stroke="#151515" stroke-width="3.5" />
+    <path d="M115 61 L115 113" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="115" cy="61" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="115" cy="113" r="11" fill="#FFFFFF" stroke="#0074E0" stroke-width="3" />
+    <path d="M108 113 L122 113" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M115 106 L115 120" fill="none" stroke="#0074E0" stroke-width="3" />
+    <rect x="82" y="146" width="66" height="90" rx="12" fill="#D5F0FD" stroke="#151515" stroke-width="3.5" />
+    <path d="M115 165 L115 217" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="115" cy="165" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="115" cy="217" r="11" fill="#FFFFFF" stroke="#0074E0" stroke-width="3" />
+    <path d="M108 217 L122 217" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M115 210 L115 224" fill="none" stroke="#0074E0" stroke-width="3" />
+    <rect x="234" y="94" width="66" height="90" rx="12" fill="#FFB5F1" stroke="#151515" stroke-width="3.5" />
+    <path d="M267 113 L267 165" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="267" cy="113" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="267" cy="165" r="11" fill="#FFFFFF" stroke="#0074E0" stroke-width="3" />
+    <path d="M260 165 L274 165" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M267 158 L267 172" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M178 79 L217 79 M178 139 L217 139 M178 199 L217 199" fill="none" stroke="#88A5B5" stroke-width="3" />
+  </g>
+</svg>

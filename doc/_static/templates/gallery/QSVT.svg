@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">QSVT</title>
+  <desc id="description">A polynomial curve maps singular values into transformed spectral amplitudes.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M58 213 L343 213" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M73 213 L73 61" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M80 199 C149 195 151 82 224 81 S301 181 337 77" fill="none" stroke="#0074E0" stroke-width="5" />
+    <path d="M101 213 L101 193" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="101" cy="193" r="7" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M164 213 L164 140" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="164" cy="140" r="7" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M225 213 L225 81" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="225" cy="81" r="7" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M288 213 L288 140" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="288" cy="140" r="7" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M331 213 L331 91" fill="none" stroke="#151515" stroke-width="3" />
+    <circle cx="331" cy="91" r="7" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="101" cy="213" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="164" cy="213" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="225" cy="213" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="288" cy="213" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <circle cx="331" cy="213" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+  </g>
+</svg>

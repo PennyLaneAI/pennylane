@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">IntegerComparator</title>
+  <desc id="description">A quantum integer is compared with a classical threshold on a number line, setting a target qubit.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="54" y="78" width="96" height="42" rx="12" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="78.0" cy="99" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="102.0" cy="99" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="126.0" cy="99" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <path d="M63 174 L218 174" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M66 166 L66 182" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M103 166 L103 182" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M140 166 L140 182" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M177 166 L177 182" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M214 166 L214 182" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M177 151 L166 135 L188 135 Z" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <path d="M150 99 L209 99 L209 121" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M231.5 120 L252.5 141 L231.5 162" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M230 173 L254 173" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M270 150 L286 150" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M275.96 143.42 L286 150 L275.96 156.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="320" cy="150" r="23" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <circle cx="320" cy="150" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+  </g>
+</svg>

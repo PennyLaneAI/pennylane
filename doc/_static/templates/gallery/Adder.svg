@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">Adder</title>
+  <desc id="description">A classical offset is added to a quantum register, with a return loop indicating an in-place update.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="53" y="123" width="97" height="42" rx="12" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="77.25" cy="144" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="101.5" cy="144" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="125.75" cy="144" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <rect x="252" y="123" width="97" height="42" rx="12" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="276.25" cy="144" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="300.5" cy="144" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="324.75" cy="144" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <path d="M151 144 L173 144" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M162.96 137.42 L173 144 L162.96 150.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M227 144 L250 144" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M239.96 137.42 L250 144 L239.96 150.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="200" cy="144" r="27" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <path d="M188 144 L212 144" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M200 132 L200 156" fill="none" stroke="#151515" stroke-width="4" />
+    <rect x="173" y="55" width="54" height="42" rx="10" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <path d="M190 76 L210 76" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M200 66 L200 86" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M200 99 L200 114" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M206.58 103.96 L200 114 L193.42 103.96" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M302 184 C302 235 100 235 100 184" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M90 194 L100 183 L110 194" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>

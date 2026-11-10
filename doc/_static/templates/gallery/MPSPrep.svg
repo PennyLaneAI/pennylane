@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">MPSPrep</title>
+  <desc id="description">A chain of connected tensors feeds physical qubits to prepare a matrix product state.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M71 91 L71 154" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M157 139 L157 202" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M243 91 L243 154" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M329 139 L329 202" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M71 91 L157 139" fill="none" stroke="#151515" stroke-width="5" />
+    <path d="M157 139 L243 91" fill="none" stroke="#151515" stroke-width="5" />
+    <path d="M243 91 L329 139" fill="none" stroke="#151515" stroke-width="5" />
+    <rect x="50" y="70" width="42" height="42" rx="9" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="71" cy="154" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+    <rect x="136" y="118" width="42" height="42" rx="9" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="157" cy="202" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+    <rect x="222" y="70" width="42" height="42" rx="9" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="243" cy="154" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+    <rect x="308" y="118" width="42" height="42" rx="9" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <circle cx="329" cy="202" r="6" fill="#0074E0" stroke="none" stroke-width="0" />
+  </g>
+</svg>

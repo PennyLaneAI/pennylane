@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">MottonenStatePreparation</title>
+  <desc id="description">A hierarchy of controlled rotations distributes amplitudes across a target quantum state.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M200 57 L124 135" fill="none" stroke="#151515" stroke-width="3.5" />
+    <path d="M200 57 L276 135" fill="none" stroke="#151515" stroke-width="3.5" />
+    <path d="M124 135 L69 213" fill="none" stroke="#151515" stroke-width="3.5" />
+    <path d="M124 135 L159 213" fill="none" stroke="#151515" stroke-width="3.5" />
+    <path d="M276 135 L241 213" fill="none" stroke="#151515" stroke-width="3.5" />
+    <path d="M276 135 L331 213" fill="none" stroke="#151515" stroke-width="3.5" />
+    <circle cx="200" cy="57" r="15" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="124" cy="135" r="15" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="276" cy="135" r="15" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="69" cy="213" r="15" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <circle cx="159" cy="213" r="15" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <circle cx="241" cy="213" r="15" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <circle cx="331" cy="213" r="15" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <path d="M194 60 A7 7 0 1 1 204 51" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M118 138 A7 7 0 1 1 128 129" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M270 138 A7 7 0 1 1 280 129" fill="none" stroke="#0074E0" stroke-width="3" />
+  </g>
+</svg>

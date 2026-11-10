@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">BBQRAM</title>
+  <desc id="description">Bucket-brigade routers activate one path through a binary tree to a memory leaf.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M200 60 L120 122" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M200 60 L280 122" fill="none" stroke="#0074E0" stroke-width="5" />
+    <path d="M120 122 L77 196" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M120 122 L157 196" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M280 122 L243 196" fill="none" stroke="#0074E0" stroke-width="5" />
+    <path d="M280 122 L323 196" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <circle cx="200" cy="60" r="15" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <circle cx="120" cy="122" r="15" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="280" cy="122" r="15" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="54" y="184" width="46" height="39" rx="8" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <circle cx="77" cy="204" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <rect x="134" y="184" width="46" height="39" rx="8" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <circle cx="157" cy="204" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <rect x="220" y="184" width="46" height="39" rx="8" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="243" cy="204" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+    <rect x="300" y="184" width="46" height="39" rx="8" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <circle cx="323" cy="204" r="5" fill="#0074E0" stroke="none" stroke-width="0" />
+  </g>
+</svg>

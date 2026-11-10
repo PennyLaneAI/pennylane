@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">Permute</title>
+  <desc id="description">Four wires smoothly rearranged into a different order.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M57 70 H103 C165 70 224 208 292 208 H343" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="58" cy="70" r="8" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="343" cy="208" r="8" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M57 118 H103 C165 118 224 70 292 70 H343" fill="none" stroke="#151515" stroke-width="4" />
+    <circle cx="58" cy="118" r="8" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <circle cx="343" cy="70" r="8" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <path d="M57 165 H103 C165 165 224 118 292 118 H343" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="58" cy="165" r="8" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <circle cx="343" cy="118" r="8" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <path d="M57 212 H103 C165 212 224 165 292 165 H343" fill="none" stroke="#151515" stroke-width="4" />
+    <circle cx="58" cy="212" r="8" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <circle cx="343" cy="165" r="8" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

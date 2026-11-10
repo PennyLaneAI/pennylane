@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">PartialUnaryStatePreparation</title>
+  <desc id="description">Prepared amplitudes are mapped to selected computational basis positions to form a sparse quantum state.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="52" y="151" width="23" height="59" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="85" y="102" width="23" height="108" rx="5" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="118" y="127" width="23" height="83" rx="5" fill="#FFE08A" stroke="#151515" stroke-width="3" />
+    <path d="M48 212 L147 212" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <path d="M162 144 L196 144" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M185.96 137.42 L196 144 L185.96 150.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M215 212 L355 212" fill="none" stroke="#88A5B5" stroke-width="3" />
+    <circle cx="221" cy="222" r="2.5" fill="#88A5B5" stroke="none" stroke-width="0" />
+    <circle cx="239" cy="222" r="2.5" fill="#88A5B5" stroke="none" stroke-width="0" />
+    <circle cx="257" cy="222" r="2.5" fill="#88A5B5" stroke="none" stroke-width="0" />
+    <circle cx="275" cy="222" r="2.5" fill="#88A5B5" stroke="none" stroke-width="0" />
+    <circle cx="293" cy="222" r="2.5" fill="#88A5B5" stroke="none" stroke-width="0" />
+    <circle cx="311" cy="222" r="2.5" fill="#88A5B5" stroke="none" stroke-width="0" />
+    <circle cx="329" cy="222" r="2.5" fill="#88A5B5" stroke="none" stroke-width="0" />
+    <circle cx="347" cy="222" r="2.5" fill="#88A5B5" stroke="none" stroke-width="0" />
+    <rect x="233" y="151" width="12" height="59" rx="5" fill="#D5F0FD" stroke="#151515" stroke-width="3" />
+    <rect x="269" y="102" width="12" height="108" rx="5" fill="#FFB5F1" stroke="#151515" stroke-width="3" />
+    <rect x="341" y="127" width="12" height="83" rx="5" fill="#FFE08A" stroke="#151515" stroke-width="3" />
+  </g>
+</svg>

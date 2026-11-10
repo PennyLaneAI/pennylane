@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">TrotterCDF</title>
+  <desc id="description">An electronic-structure matrix splits into compact factors for compressed-double-factorization time evolution.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="67" y="85" width="26" height="26" rx="4" fill="#0074E0" stroke="none" stroke-width="3" />
+    <rect x="99" y="85" width="26" height="26" rx="4" fill="#D5F0FD" stroke="none" stroke-width="3" />
+    <rect x="131" y="85" width="26" height="26" rx="4" fill="#FFB5F1" stroke="none" stroke-width="3" />
+    <rect x="67" y="117" width="26" height="26" rx="4" fill="#D5F0FD" stroke="none" stroke-width="3" />
+    <rect x="99" y="117" width="26" height="26" rx="4" fill="#0074E0" stroke="none" stroke-width="3" />
+    <rect x="131" y="117" width="26" height="26" rx="4" fill="#D5F0FD" stroke="none" stroke-width="3" />
+    <rect x="67" y="149" width="26" height="26" rx="4" fill="#FFB5F1" stroke="none" stroke-width="3" />
+    <rect x="99" y="149" width="26" height="26" rx="4" fill="#D5F0FD" stroke="none" stroke-width="3" />
+    <rect x="131" y="149" width="26" height="26" rx="4" fill="#0074E0" stroke="none" stroke-width="3" />
+    <path d="M60 80 H53 V180 H60" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M164 80 H171 V180 H164" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M172 132 L207 132" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M196.96 125.42 L207 132 L196.96 138.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="230" y="70" width="20" height="20" rx="4" fill="#0074E0" stroke="none" stroke-width="3" />
+    <rect x="255" y="70" width="20" height="20" rx="4" fill="#FFFFFF" stroke="none" stroke-width="3" />
+    <rect x="230" y="95" width="20" height="20" rx="4" fill="#FFFFFF" stroke="none" stroke-width="3" />
+    <rect x="255" y="95" width="20" height="20" rx="4" fill="#FFB5F1" stroke="none" stroke-width="3" />
+    <path d="M223 65 H216 V120 H223" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M282 65 H289 V120 H282" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="279" y="128" width="20" height="20" rx="4" fill="#D5F0FD" stroke="none" stroke-width="3" />
+    <rect x="304" y="128" width="20" height="20" rx="4" fill="#0074E0" stroke="none" stroke-width="3" />
+    <rect x="279" y="153" width="20" height="20" rx="4" fill="#0074E0" stroke="none" stroke-width="3" />
+    <rect x="304" y="153" width="20" height="20" rx="4" fill="#D5F0FD" stroke="none" stroke-width="3" />
+    <path d="M272 123 H265 V178 H272" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M331 123 H338 V178 H331" fill="none" stroke="#151515" stroke-width="3" />
+    <rect x="213" y="174" width="20" height="20" rx="4" fill="#FFB5F1" stroke="none" stroke-width="3" />
+    <rect x="238" y="174" width="20" height="20" rx="4" fill="#D5F0FD" stroke="none" stroke-width="3" />
+    <rect x="213" y="199" width="20" height="20" rx="4" fill="#D5F0FD" stroke="none" stroke-width="3" />
+    <rect x="238" y="199" width="20" height="20" rx="4" fill="#FFB5F1" stroke="none" stroke-width="3" />
+    <path d="M206 169 H199 V224 H206" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M265 169 H272 V224 H265" fill="none" stroke="#151515" stroke-width="3" />
+    <path d="M279 90 Q332 91 342 135 Q353 187 315 217" fill="none" stroke="#0074E0" stroke-width="3" />
+    <path d="M317 203 L314 218 L329 215" fill="none" stroke="#0074E0" stroke-width="3" />
+  </g>
+</svg>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="280" viewBox="0 0 400 280" role="img" aria-labelledby="title description">
+  <title id="title">OutAdder</title>
+  <desc id="description">Two input registers feed an addition, producing a separate output register.</desc>
+  <rect width="400" height="280" rx="24" fill="#F2F9FD"/>
+  <circle cx="321" cy="61" r="39" fill="#D5F0FD"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="52" y="64" width="97" height="42" rx="12" fill="#D5F0FD" stroke="#151515" stroke-width="4" />
+    <circle cx="76.25" cy="85" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="100.5" cy="85" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="124.75" cy="85" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <rect x="52" y="173" width="97" height="42" rx="12" fill="#FFB5F1" stroke="#151515" stroke-width="4" />
+    <circle cx="76.25" cy="194" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <circle cx="100.5" cy="194" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="124.75" cy="194" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <path d="M149 85 L173 85 Q184 85 184 97 L184 114" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M149 194 L173 194 Q184 194 184 180 L184 168" fill="none" stroke="#0074E0" stroke-width="4" />
+    <circle cx="195" cy="140" r="30" fill="#FFE08A" stroke="#151515" stroke-width="4" />
+    <path d="M182 140 L208 140" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M195 127 L195 153" fill="none" stroke="#151515" stroke-width="4" />
+    <path d="M228 140 L247 140" fill="none" stroke="#0074E0" stroke-width="4" />
+    <path d="M236.96 133.42 L247 140 L236.96 146.58" fill="none" stroke="#0074E0" stroke-width="4" />
+    <rect x="254" y="119" width="96" height="42" rx="12" fill="#FFFFFF" stroke="#151515" stroke-width="4" />
+    <circle cx="278.0" cy="140" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="302.0" cy="140" r="5" fill="#151515" stroke="#151515" stroke-width="3" />
+    <circle cx="326.0" cy="140" r="5" fill="#FFFFFF" stroke="#151515" stroke-width="3" />
+    <path d="M279 183 L291 196 L315 173" fill="none" stroke="#0074E0" stroke-width="4" />
+  </g>
+</svg>
