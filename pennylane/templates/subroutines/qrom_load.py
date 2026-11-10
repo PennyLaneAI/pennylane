@@ -492,7 +492,6 @@ def _qrom_load_to_qrom(bitstrings, control_wires, target_wires, work_wires, clea
     QROM(bitstrings, control_wires, target_wires, work_wires)
 
 
-@QueuingManager.stop_recording()
 def _adjoint_qrom_load_one_hot_size(num_bitstrings, num_control_wires, num_work_wires):
     """Number of least-significant address bits ``n`` that are encoded into a one-hot register of
     ``k = 2**n`` work wires for the phase fixup of ``Adjoint(QROMLoad)``.
@@ -517,7 +516,9 @@ def _adjoint_qrom_load_one_hot_size(num_bitstrings, num_control_wires, num_work_
         num_elbows = k - 1 + fixup.get(TemporaryAND, 0)
         return shortfall, 4 * num_elbows + 7 * shortfall * num_columns * k, n
 
-    return min(range(min(num_control_wires, num_work_wires.bit_length() - 1) + 1), key=cost)
+    # The cost estimate creates abstract operators, which must not end up in a captured program.
+    with capture.pause(), QueuingManager.stop_recording():
+        return min(range(min(num_control_wires, num_work_wires.bit_length() - 1) + 1), key=cost)
 
 
 def _one_hot_swap_triples(address_wires, one_hot_wires):

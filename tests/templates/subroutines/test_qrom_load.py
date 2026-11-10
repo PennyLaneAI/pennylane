@@ -771,11 +771,6 @@ class TestAdjointQROMLoadMeasurement:
             op.target_wires
         )
 
-    @pytest.mark.xfail(
-        reason="Controlled MultiX needs work wire support for control regions in Catalyst "
-        "(Catalyst #3376).",
-        strict=True,
-    )
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize("case", [(4, 2, 0, 1), (8, 2, 0, 2), (11, 2, 0, 3), (4, 2, 1, 2)])
