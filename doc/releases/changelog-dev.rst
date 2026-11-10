@@ -49,6 +49,8 @@ New features since last release
 
 * The `alt-decomps` parameter of :func:`~.transforms.decompose` has been removed in favour of `exclude_decomps`, which prevents a set of decomposition rules from being chosen for an operator in a given pass instance.
   `(#10461) <https://github.com/PennyLaneAI/pennylane/pull/10461>`__
+  `(#10500) <https://github.com/PennyLaneAI/pennylane/pull/10500>`__
+
 
 * A new function called :func:`~pennylane.backline.onnx_decoder` has been added, which runs an
   ONNX model on a Backline :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or
@@ -2340,11 +2342,6 @@ Bug fixes 🐛
   `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
   `(#10491) <https://github.com/PennyLaneAI/pennylane/pull/10491>`__
   
-* :func:`~.transforms.decompose` now accepts ``exclude_decomps`` in place of ``alt_decomps``
-  to match Catalyst's graph-decomposition pass. :func:`~pennylane.estimate` combines exclusions
-  from all decomposition transforms in the compile pipeline.
-  `(#10500) <https://github.com/PennyLaneAI/pennylane/pull/10500>`__
-
 * Fixed a bug where AutoGraph raised an error for empty ``for`` loops.
   `(#10448) <https://github.com/PennyLaneAI/pennylane/pull/10448>`__
 
