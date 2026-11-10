@@ -662,8 +662,10 @@ def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: Decompositi
 
     These two new decomposition rules for ``qp.Hadamard`` will be subsequently stored within the
     scope of this program, and they will be taken into account for all circuit decompositions
-    for the duration of the session. To add alternative decompositions for a particular circuit
-    as opposed to globally, use the ``alt_decomps`` argument of the :func:`~pennylane.transforms.decompose` transform.
+    for the duration of the session. To keep alternative decompositions local to a workflow,
+    register the rules and compile the circuit within a :func:`~.local_decomps` context.
+    Use ``fixed_decomps`` or ``exclude_decomps`` with :func:`~pennylane.transforms.decompose`
+    to select or exclude rules for an individual compilation pass.
 
     Custom decomposition rules can also be specified for symbolic operators. In this case, the
     operator type can be specified as a string. For example,

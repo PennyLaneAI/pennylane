@@ -37,16 +37,16 @@ from .resource import CircuitSpecs
 
 
 def _decomps_from_pipeline(pipeline: CompilePipeline) -> dict:
-    """Collect the ``fixed_decomps`` and ``alt_decomps`` of the ``decompose`` transforms in
+    """Collect the ``fixed_decomps`` and ``exclude_decomps`` of the ``decompose`` transforms in
     ``pipeline``. If more than one fixes a rule for the same operator, the last one is used."""
     # pylint: disable=protected-access
-    fixed_decomps, alt_decomps = {}, {}
+    fixed_decomps, exclude_decomps = {}, {}
     for bound_transform in pipeline:
         if bound_transform._transform is decompose:
             fixed_decomps |= bound_transform.kwargs.get("fixed_decomps", {})
-            for op, rules in bound_transform.kwargs.get("alt_decomps", {}).items():
-                alt_decomps.setdefault(op, []).extend(rules)
-    return {"fixed_decomps": fixed_decomps or None, "alt_decomps": alt_decomps or None}
+            for op, rules in bound_transform.kwargs.get("exclude_decomps", {}).items():
+                exclude_decomps.setdefault(op, []).extend(rules)
+    return {"fixed_decomps": fixed_decomps or None, "exclude_decomps": exclude_decomps or None}
 
 
 def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
@@ -184,7 +184,7 @@ def estimate(
         :title: Custom decomposition rules
 
         To reach the ``target`` gate set, ``estimate`` uses the ``fixed_decomps`` and
-        ``alt_decomps`` of the :func:`~.decompose` transforms in the compile pipeline.
+        ``exclude_decomps`` of the :func:`~.decompose` transforms in the compile pipeline.
 
         For example, the following circuit fixes a decomposition rule for ``CZ`` that uses
         ``PauliZ`` and ``RY`` gates instead of ``Hadamard`` gates:

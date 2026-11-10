@@ -275,14 +275,44 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             "RX": 1,
         }
 
-    def test_alt_decomps(self, qnode):
-        """Test that the alt_decomps of a decompose transform in the pipeline are used if they
-        lead to a cheaper decomposition."""
+    @pytest.mark.xfail(
+        reason="Catalyst resource estimation does not yet respect exclude_decomps.",
+        raises=AssertionError,
+    )
+    @pytest.mark.parametrize("use_names", [False, True])
+    def test_exclude_decomps(self, qnode, use_names):
+        """Estimate respects exclusions from a decompose transform in the pipeline."""
 
-        target = {"Hadamard": 10, "CNOT": 1, "RX": 1, "RY": 1, "PauliZ": 1}
-        circuit = qp.transforms.decompose(qnode, gate_set=target, alt_decomps={qp.CZ: [cz_with_ry]})
+        target = TARGET | {"RY", "PauliZ"}
+        excluded = list(qp.list_decomps(qp.CZ))
+        if use_names:
+            excluded = [rule.name for rule in excluded]
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(qp.CZ, cz_with_ry)
+            circuit = qp.decompose(qnode, gate_set=target, exclude_decomps={qp.CZ: excluded})
+            specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
 
-        specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
+        assert specs.resources.quantum_operations == {
+            "Hadamard": 2,
+            "PauliZ": 2,
+            "RY": 2,
+            "CNOT": 1,
+            "RX": 1,
+        }
+
+    @pytest.mark.xfail(
+        reason="Catalyst resource estimation does not yet respect exclude_decomps.",
+        raises=AssertionError,
+    )
+    def test_exclusions_from_several_decompose_transforms(self, qnode):
+        """Estimate combines excluded rules from every decomposition in the pipeline."""
+        target = TARGET | {"RY", "PauliZ"}
+        excluded = [rule.name for rule in qp.list_decomps(qp.CZ)]
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(qp.CZ, cz_with_ry)
+            circuit = qp.decompose(qnode, gate_set=target, exclude_decomps={qp.CZ: excluded[:1]})
+            circuit = qp.decompose(circuit, gate_set=target, exclude_decomps={qp.CZ: excluded[1:]})
+            specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
 
         assert specs.resources.quantum_operations == {
             "Hadamard": 2,
