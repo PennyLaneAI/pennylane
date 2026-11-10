@@ -91,10 +91,6 @@ def test_decompose_rejects_alt_decomps(transform):
 
 @pytest.mark.catalyst
 @pytest.mark.capture
-@pytest.mark.xfail(
-    reason="Catalyst graph decomposition does not yet respect exclude_decomps.",
-    raises=AssertionError,
-)
 @pytest.mark.parametrize("use_name", [False, True])
 @pytest.mark.parametrize("graph_enabled", [False, True])
 def test_compiled_decompose_exclusions(use_name, graph_enabled):
