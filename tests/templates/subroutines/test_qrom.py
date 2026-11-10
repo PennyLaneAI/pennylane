@@ -863,11 +863,12 @@ class TestMeasurementQROM:
             (8, 0, False, bool),
             (4, 0, True, float),
         ],
+        ids=["outer", "extra-control", "extra-controls", "recursive", "adjoint"],
     )
     def test_graph_decomposition_dynamic_bitstrings(
         self, num_bitstrings, num_extra_controls, adjoint, dtype, seed
     ):
-        """Registered QROM rules preserve amplitudes when the lookup table is a runtime input."""
+        """Dynamic tables update the base load and corrections, preserving phases and work wires."""
         num_controls = math.ceil(math.log2(num_bitstrings)) + num_extra_controls
         num_targets = 2
         num_work = num_controls - 1
@@ -876,8 +877,8 @@ class TestMeasurementQROM:
         logical_state = rng.normal(size=(2**num_controls, 2**num_targets)) + 1j * rng.normal(
             size=(2**num_controls, 2**num_targets)
         )
-        logical_state /= np.linalg.norm(logical_state)
-        initial_state = np.zeros((*logical_state.shape, 2**num_work), dtype=complex)
+        logical_state /= qp.math.linalg.norm(logical_state)
+        initial_state = qp.math.zeros((*logical_state.shape, 2**num_work), dtype=complex)
         initial_state[:, :, 0] = logical_state
 
         @qp.qjit(capture=True, seed=seed)
@@ -901,23 +902,17 @@ class TestMeasurementQROM:
                 qp.adjoint(op)
             return qp.state()
 
-        table = np.array(
-            [[(index >> 1) & 1, index & 1] for index in range(num_bitstrings)], dtype=dtype
-        )
-        second_table = table.copy()
-        second_table[-1] = np.logical_not(second_table[-1])
-        for bitstrings in (table, second_table):
-            expected = np.zeros_like(initial_state)
-            for address in range(2**num_controls):
-                mask = (
-                    2 * int(bitstrings[address, 0]) + int(bitstrings[address, 1])
-                    if address < num_bitstrings
-                    else 0
-                )
-                expected[address, np.arange(2**num_targets) ^ mask, 0] = logical_state[address]
+        # Change both the nonzero base row and the relative XOR masks between runtime inputs.
+        for table in ((1, 2, 0, 3, 2, 3, 1, 0), (2, 2, 3, 2, 0, 1, 3, 1)):
+            table = table[:num_bitstrings]
+            bitstrings = qp.math.int_to_binary(qp.math.array(table), num_targets).astype(dtype)
+            expected = initial_state.copy()  # Out-of-range addresses act as the identity.
+            for address, mask in enumerate(table):
+                expected[address, :, 0] = logical_state[
+                    address, qp.math.arange(2**num_targets) ^ mask
+                ]
             # Include relative/global phases and the clean work register in the comparison.
-            for _ in range(3):
-                assert np.allclose(circuit(bitstrings), expected.ravel(), atol=1e-7)
+            assert qp.math.allclose(circuit(bitstrings), expected.ravel(), atol=1e-7)
 
     def test_decomposition_single_bitstring(self):
         """Test the L == 1 branch of the measurement decomposition (no control wires)."""
