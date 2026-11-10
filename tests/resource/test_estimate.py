@@ -144,8 +144,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         """Test that the fixed_decomps of a decompose transform in the pipeline replace the
         existing decomposition rules."""
 
-        qp.add_decomps(qp.CZ, "cz_with_ry")
-
+        qp.add_decomps(qp.CZ, cz_with_ry)
         target = TARGET | {"RY", "PauliZ"}
         circuit = qp.transforms.decompose(
             qnode, gate_set=target, fixed_decomps={qp.CZ: "cz_with_ry"}
@@ -169,7 +168,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         excluded = list(qp.list_decomps(qp.CZ))
         if use_names:
             excluded = [rule.name for rule in excluded]
-        qp.add_decomps(qp.CZ, "cz_with_ry")
+        qp.add_decomps(qp.CZ, cz_with_ry)
         circuit = qp.decompose(qnode, gate_set=target, exclude_decomps={qp.CZ: excluded})
         specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
 
@@ -185,7 +184,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         """Estimate combines excluded rules from every decomposition in the pipeline."""
         target = TARGET | {"RY", "PauliZ"}
         excluded = [rule.name for rule in qp.list_decomps(qp.CZ)]
-        qp.add_decomps(qp.CZ, "cz_with_ry")
+        qp.add_decomps(qp.CZ, cz_with_ry)
         circuit = qp.decompose(qnode, gate_set=target, exclude_decomps={qp.CZ: excluded[:1]})
         circuit = qp.decompose(circuit, gate_set=target, exclude_decomps={qp.CZ: excluded[1:]})
         specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
@@ -201,7 +200,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
     def test_decomps_from_several_decompose_transforms(self, qnode):
         """Test that the rules of every decompose transform in the pipeline are used."""
 
-        qp.add_decomps(qp.CZ, "cz_with_ry")
+        qp.add_decomps(qp.CZ, cz_with_ry)
         qp.add_decomps(qp.Hadamard, h_with_x)
         target = {"CNOT", "RX", "RY", "PauliX", "PauliZ"}
         circuit = qp.transforms.decompose(
