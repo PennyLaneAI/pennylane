@@ -265,7 +265,9 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         target = TARGET | {"RY", "PauliZ"}
         with qp.decomposition.local_decomps():
             qp.add_decomps(qp.CZ, cz_with_ry)
-            circuit = qp.transforms.decompose(qnode, gate_set=target, fixed_decomps={qp.CZ: cz_with_ry})
+            circuit = qp.transforms.decompose(
+                qnode, gate_set=target, fixed_decomps={qp.CZ: cz_with_ry}
+            )
             specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
 
         assert specs.resources.quantum_operations == {
