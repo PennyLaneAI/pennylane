@@ -1141,6 +1141,32 @@ class TestClassicalControl:
         assert ax.patches[-3].center == (2, 0)
         plt.close()
 
+    @pytest.mark.parametrize("base", [qp.GlobalPhase(0.123), qp.Identity()])
+    def test_conditional_controlled_global_spacing(self, base):
+        """Gates above a global gate's control remain outside its conditional boundary."""
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.H(0)
+            m0 = qp.measure(2)
+            qp.cond(m0, lambda: qp.ctrl(base, control=2, control_values=[False]))()
+            qp.X(0)
+
+        _, ax = tape_mpl(QuantumScript.from_queue(q), wire_order=[0, 1, 2], show_all_wires=True)
+        labels = {text.get_text(): text.get_position() for text in ax.texts}
+        assert labels["H"] == (0, 0)
+        assert labels["X"] == (2, 0)
+        [frame] = [
+            patch
+            for patch in ax.patches
+            if isinstance(patch, mpl.patches.FancyBboxPatch) and not patch.get_fill()
+        ]
+        assert labels["H"][0] < frame.get_x()
+        assert labels["X"][0] > frame.get_x() + frame.get_width()
+        assert qp.math.allclose((frame.get_y(), frame.get_height()), (-0.45, 2.9))
+        [control] = [patch for patch in ax.patches if isinstance(patch, mpl.patches.Circle)]
+        assert control.center == (1, 2)
+        assert ax.lines[3].get_data() == ([0, 0, 0, 1, 1, 1], [3, 2, 3, 3, 2.45, 3])
+        plt.close()
+
     @pytest.mark.parametrize("active_wire_notches, n_patches", [(True, 8), (False, 4)])
     def test_conditional_active_wire_notches(self, active_wire_notches, n_patches):
         """Conditional boxes respect the requested active-wire notch setting."""
