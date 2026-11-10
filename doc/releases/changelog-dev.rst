@@ -1506,10 +1506,26 @@ Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
 * ``PauliWord.operation()`` and ``PauliSentence.operation()`` have been replaced by
-  :func:`~pennylane.pauli.to_operator`. Use ``qp.pauli.to_operator(value, identity_wires=...)``
-  to construct the corresponding operator. The ``identity_wires`` argument replaces
-  ``wire_order`` and assigns wires to identity terms, including the identity used to represent zero.
+  :func:`~pennylane.pauli.to_operator`.
   `(#10483) <https://github.com/PennyLaneAI/pennylane/pull/10483>`__
+
+  .. code-block:: pycon
+
+      >>> word = qp.pauli.PauliWord({0: "X", 1: "Z"})
+      >>> word_op = qp.pauli.to_operator(word)
+      >>> type(word).__name__, type(word_op).__name__
+      ('PauliWord', 'Prod2')
+      >>> word_op
+      X(0) @ Z(1)
+      >>> sentence = qp.pauli.PauliSentence({word: 2.0})
+      >>> sentence_op = qp.pauli.to_operator(sentence)
+      >>> type(sentence).__name__, type(sentence_op).__name__
+      ('PauliSentence', 'SProd')
+      >>> sentence_op
+      2.0 * (X(0) @ Z(1))
+
+  The ``identity_wires`` argument replaces ``wire_order`` and assigns wires to
+  identity terms, including the identity used to represent zero.
 
 * ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of
   ``"MidMeasureMP"``. Update raw device operation names and comparisons; the deprecated

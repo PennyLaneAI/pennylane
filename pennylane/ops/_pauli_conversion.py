@@ -31,7 +31,7 @@ _cached_factor = lru_cache(_make_factor)
 
 @QueuingManager.stop_recording()
 def to_operator(value, identity_wires: WiresLike = ()):
-    """Convert a Pauli word or sentence to a PennyLane operator.
+    """Convert a :class:`~pennylane.pauli.PauliWord` or :class:`~pennylane.pauli.PauliSentence` into a PennyLane :class:`~pennylane.core.operator.Operator`.
 
     Args:
         value (PauliWord or PauliSentence): The Pauli representation to convert.
@@ -51,12 +51,18 @@ def to_operator(value, identity_wires: WiresLike = ()):
 
     **Example**
 
-    >>> word = qp.pauli.PauliWord({0: "X", 1: "Y"})
-    >>> qp.pauli.to_operator(word)
-    X(0) @ Y(1)
+    >>> word = qp.pauli.PauliWord({0: "X", 1: "Z"})
+    >>> word_op = qp.pauli.to_operator(word)
+    >>> type(word).__name__, type(word_op).__name__
+    ('PauliWord', 'Prod2')
+    >>> word_op
+    X(0) @ Z(1)
     >>> sentence = qp.pauli.PauliSentence({word: 2.0})
-    >>> qp.pauli.to_operator(sentence)
-    2.0 * (X(0) @ Y(1))
+    >>> sentence_op = qp.pauli.to_operator(sentence)
+    >>> type(sentence).__name__, type(sentence_op).__name__
+    ('PauliSentence', 'SProd')
+    >>> sentence_op
+    2.0 * (X(0) @ Z(1))
     """
 
     if isinstance(value, qp.pauli.PauliWord):

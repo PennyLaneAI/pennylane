@@ -82,17 +82,24 @@ array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
 
 .. note::
 
-    Use :func:`~pennylane.pauli.to_operator` to convert a
-    :class:`~pennylane.pauli.PauliWord` or :class:`~pennylane.pauli.PauliSentence`
-    into a PennyLane operator:
+    :class:`~pennylane.pauli.PauliWord` and :class:`~pennylane.pauli.PauliSentence`
+    store algebraic representations of Pauli operators. Use
+    :func:`~pennylane.pauli.to_operator` to construct PennyLane
+    :class:`~pennylane.core.operator.Operator` instances:
 
     .. code-block:: pycon
 
         >>> word = qp.pauli.PauliWord({0: "X", 1: "Z"})
-        >>> qp.pauli.to_operator(word)
+        >>> word_op = qp.pauli.to_operator(word)
+        >>> type(word).__name__, type(word_op).__name__
+        ('PauliWord', 'Prod2')
+        >>> word_op
         X(0) @ Z(1)
         >>> sentence = qp.pauli.PauliSentence({word: 2.0})
-        >>> qp.pauli.to_operator(sentence)
+        >>> sentence_op = qp.pauli.to_operator(sentence)
+        >>> type(sentence).__name__, type(sentence_op).__name__
+        ('PauliSentence', 'SProd')
+        >>> sentence_op
         2.0 * (X(0) @ Z(1))
 
     The optional ``identity_wires`` argument assigns wires to identity terms,
