@@ -144,18 +144,23 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         """Test that the fixed_decomps of a decompose transform in the pipeline replace the
         existing decomposition rules."""
 
-        target = TARGET | {"RY", "PauliZ"}
-        circuit = qp.transforms.decompose(qnode, gate_set=target, fixed_decomps={qp.CZ: cz_with_ry})
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(qp.CZ, cz_with_ry)
 
-        specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
+            target = TARGET | {"RY", "PauliZ"}
+            circuit = qp.transforms.decompose(
+                qnode, gate_set=target, fixed_decomps={qp.CZ: cz_with_ry}
+            )
 
-        assert specs.resources.quantum_operations == {
-            "Hadamard": 2,
-            "PauliZ": 2,
-            "RY": 2,
-            "CNOT": 1,
-            "RX": 1,
-        }
+            specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
+
+            assert specs.resources.quantum_operations == {
+                "Hadamard": 2,
+                "PauliZ": 2,
+                "RY": 2,
+                "CNOT": 1,
+                "RX": 1,
+            }
 
     @pytest.mark.parametrize("use_names", [False, True])
     def test_exclude_decomps(self, qnode, use_names):
@@ -199,6 +204,8 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
     def test_decomps_from_several_decompose_transforms(self, qnode):
         """Test that the rules of every decompose transform in the pipeline are used."""
 
+        qp.add_decomps(qp.CZ, cz_with_ry)
+        qp.add_decomps(qp.Hadamard, h_with_x)
         target = {"CNOT", "RX", "RY", "PauliX", "PauliZ"}
         circuit = qp.transforms.decompose(
             qnode, gate_set=target | {"Hadamard"}, fixed_decomps={qp.CZ: cz_with_ry}
