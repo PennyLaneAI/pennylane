@@ -173,6 +173,33 @@ class QROMLoad(Operator2):
         that minimizes the combined cost, among the powers of two that fit into the work wires.
         Here, eight bitstrings in parallel would not fit, and two would be more expensive than four.
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.QROMLoad
+            :symbols: :math:`L` bitstrings of length :math:`n`, :math:`c` control wires and
+                :math:`w` work wires
+            :example: :math:`L=32`, :math:`n=1`, :math:`c=5`, :math:`w=5` and ``clean=True``
+
+            .. decomposition-rule:: _select_swap
+                :image: /_static/decomposition_thumbnails/qrom_load_select_swap.svg
+                :lightbox:
+                :requires: :math:`w \geq c - 1` work wires, and :math:`k > 1` to be the cheapest
+                    choice
+                :where: :math:`k = 2^j` bitstrings are loaded in parallel, with :math:`j` chosen to
+                    minimize the cost among all :math:`j` with
+                    :math:`n(k - 1) + \max(c - j - 1, 0) \leq w`
+
+                :class:`~.QROM` with :math:`\lceil L/k \rceil` bitstrings of length :math:`kn` on :math:`c - j` control wires | :math:`2` if ``clean=True``, :math:`1` otherwise | 2
+                :class:`~.SWAP` with 1 control | :math:`4n(k - 1)` if ``clean=True``, :math:`n(k - 1)` otherwise | 12
+                :class:`~.Hadamard` | :math:`2n` if ``clean=True``, :math:`0` otherwise | 2
+
+            .. decomposition-rule:: _qrom_load_to_qrom
+                :image: /_static/decomposition_thumbnails/qrom_load_to_qrom.svg
+                :requires: ``clean=True`` or that ``_select_swap`` does not apply
+
+                :class:`~.QROM` | :math:`1` | 1
+
     """
 
     dynamic_argnames = ("bitstrings",)

@@ -14,6 +14,25 @@ New features since last release
   angles with ``QROMLoad``.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
 
+  For example, we may use ``QROMLoad`` on a zeroed target register, but need ``QROM`` to XOR more
+  data onto it afterwards:
+
+  .. code-block:: python
+
+      @qp.qnode(qp.device("default.qubit"), shots=1)
+      def circuit():
+          qp.BasisState([1, 0], wires=[0, 1])
+          # target wires 2, 3, 4 start in |000>
+          qp.QROMLoad(["010", "111", "110", "000"], [0, 1], [2, 3, 4], work_wires=[5, 6, 7])
+          # target wires now hold |110>
+          qp.QROM(["001", "011", "101", "111"], [0, 1], [2, 3, 4], work_wires=[5])
+          return qp.sample(wires=[2, 3, 4])
+
+  .. code-block:: pycon
+
+      >>> print(circuit())
+      [[0 1 1]]
+
 * A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
   `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
 

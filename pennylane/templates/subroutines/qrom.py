@@ -148,6 +148,66 @@ class QROM(Operator2):
     >>> np.allclose(qp.matrix(op), qp.matrix(ctrl_op, wire_order=op.wires))
     True
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.QROM
+            :stacked:
+            :symbols: :math:`L > 2` bitstrings of length :math:`n`, :math:`c` control wires and
+                :math:`w` work wires
+            :example: :math:`L=8`, :math:`n=2`, :math:`c=3`, :math:`w=2`
+
+            .. decomposition-rule:: _qrom_unary_iteration
+                :image: /_static/decomposition_thumbnails/qrom_unary_iteration.svg
+                :lightbox:
+                :where: the iteration tree spans :math:`c' = \min(c, w + 1)` control wires and the
+                    other :math:`e = c - c'` control wires control each load, so that the tree
+                    iterates over :math:`B = \lceil L / 2^e \rceil` blocks of bitstrings,
+                    :math:`N = c' + B - 2 - \mathrm{wt}(B - 1) - [B > 2^{c' - 1}]`,
+                    :math:`\mathrm{wt}(k)` is the number of ones in the binary representation of
+                    :math:`k`, and :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
+
+                :class:`~.TemporaryAND` | :math:`N` if :math:`w \geq 1` | 5
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`N` if :math:`w \geq 1` | 5
+                :class:`~.CNOT` | :math:`B - 1 + [B > 2^{c' - 1}]` if :math:`w \geq 1` | 8
+                :class:`~.PauliX` | :math:`2[B > 2^{c' - 2}]` if :math:`w \geq 1` | 2
+                :class:`~.MultiX` with :math:`e + 1` controls | :math:`L` | 8
+
+            .. decomposition-rule:: _qrom_measurement_decomposition
+                :image: /_static/decomposition_thumbnails/qrom_measurement_based.svg
+                :lightbox:
+                :requires: compilation with :func:`~.qjit` and :math:`w \geq c - 1` work wires
+                :where: :math:`K = 2^{\lceil \log_2 L \rceil}`, :math:`e = c - \lceil \log_2 L \rceil`
+                    extra control wires, :math:`A = K - 3 + 2[e > 0]` temporary ANDs that are
+                    uncomputed with measurements, and :math:`[\cdot]` is 1 if the condition holds
+                    and 0 otherwise. Each X-type measurement acts on a work wire and on the target
+                    wires flipped by the XOR of two bitstrings, so its width and the number of
+                    CNOTs depend on the data
+
+                :class:`~.TemporaryAND` | :math:`A + \max(e - 1, 0)` | 5
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`\max(e - 1, 0)` | 0
+                :func:`PauliMeasure("X...X") <.pauli_measure>` | :math:`A` | 5
+                :func:`PauliMeasure("Z") <.pauli_measure>` | :math:`A` | 5
+                :class:`~.CZ` (conditional) | :math:`A` | 5
+                :class:`~.PauliZ` (conditional) | :math:`A` | 5
+                :class:`~.PauliX` (conditional) | :math:`A` | 5
+                :class:`~.MultiX` (conditional) | :math:`A` | 5
+                :class:`~.MultiX` | :math:`[e = 0]` | 1
+                :class:`~.MultiX` with 1 control | :math:`[e > 0]` | 0
+                :class:`~.MultiControlledX` with 1 control | :math:`[e = 0]` | 1
+                :class:`~.CNOT` | :math:`\leq 3 + \max(K/2 - 4, 0) + 2n` if :math:`e = 0`, :math:`K/2 - 1` if :math:`e > 0` | 6
+                :class:`~.PauliX` | :math:`[e = 1]` | 0
+                :class:`Adjoint(PauliX) <.PauliX>` | :math:`[e = 1]` | 0
+
+            .. decomposition-rule:: _qrom_measurement_decomposition
+                :image: /_static/decomposition_thumbnails/qrom_measurement_based.svg
+                :lightbox:
+                :region: adjoint
+                :requires: compilation with :func:`~.qjit` and :math:`w \geq c - 1` work wires
+                :where: :class:`~.QROM` is self-adjoint, so this is the same rule as above
+
+                Gates of ``_qrom_measurement_decomposition`` above | same counts
+
     """
 
     dynamic_argnames = ("bitstrings",)
