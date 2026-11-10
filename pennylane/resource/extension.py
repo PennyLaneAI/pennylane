@@ -13,7 +13,7 @@
 # limitations under the License.
 """Aggregation and headings for resource extensions stored in ``SpecsResources.extra``."""
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import cast
 
