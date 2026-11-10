@@ -159,7 +159,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         # estimate is a ballpark (e.g. it counts the X gates flipping zero-valued controls on
         # average), so its gate counts may be slightly off from a real decomposition
         assert resources.counts == pytest.approx(
-            {"CNOT": 14, "GlobalPhase": 2, "RX": 2, "RY": 7, "RZ": 10}, abs=1
+            {"CNOT": 14, "GlobalPhase": 3, "RX": 3, "RY": 7, "RZ": 10}, abs=1
         )
         assert resources.measurement_processes == {
             "expval(PauliZ)": 1,
@@ -263,9 +263,10 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         existing decomposition rules."""
 
         target = TARGET | {"RY", "PauliZ"}
-        circuit = qp.transforms.decompose(qnode, gate_set=target, fixed_decomps={qp.CZ: cz_with_ry})
-
-        specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(qp.CZ, cz_with_ry)
+            circuit = qp.transforms.decompose(qnode, gate_set=target, fixed_decomps={qp.CZ: cz_with_ry})
+            specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
 
         assert specs.resources.quantum_operations == {
             "Hadamard": 2,
@@ -275,10 +276,6 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             "RX": 1,
         }
 
-    @pytest.mark.xfail(
-        reason="Catalyst resource estimation does not yet respect exclude_decomps.",
-        raises=AssertionError,
-    )
     @pytest.mark.parametrize("use_names", [False, True])
     def test_exclude_decomps(self, qnode, use_names):
         """Estimate respects exclusions from a decompose transform in the pipeline."""
@@ -300,10 +297,6 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             "RX": 1,
         }
 
-    @pytest.mark.xfail(
-        reason="Catalyst resource estimation does not yet respect exclude_decomps.",
-        raises=AssertionError,
-    )
     def test_exclusions_from_several_decompose_transforms(self, qnode):
         """Estimate combines excluded rules from every decomposition in the pipeline."""
         target = TARGET | {"RY", "PauliZ"}
@@ -326,14 +319,16 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         """Test that the rules of every decompose transform in the pipeline are used."""
 
         target = {"CNOT", "RX", "RY", "PauliX", "PauliZ"}
-        circuit = qp.transforms.decompose(
-            qnode, gate_set=target | {"Hadamard"}, fixed_decomps={qp.CZ: cz_with_ry}
-        )
-        circuit = qp.transforms.decompose(
-            circuit, gate_set=target, fixed_decomps={qp.Hadamard: h_with_x}
-        )
-
-        specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(qp.CZ, cz_with_ry)
+            circuit = qp.transforms.decompose(
+                qnode, gate_set=target | {"Hadamard"}, fixed_decomps={qp.CZ: cz_with_ry}
+            )
+            qp.add_decomps(qp.Hadamard, h_with_x)
+            circuit = qp.transforms.decompose(
+                circuit, gate_set=target, fixed_decomps={qp.Hadamard: h_with_x}
+            )
+            specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
 
         assert specs.resources.quantum_operations == {
             "PauliX": 2,
