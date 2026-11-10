@@ -2336,7 +2336,7 @@ Bug fixes 🐛
 
 * Fixed the measurement-based decomposition of :class:`~.QROM` to support dynamic
   bitstrings with ``qjit(capture=True)``, including padding for extra control wires.
-  `(#10501) <https://github.com/PennyLaneAI/pennylane/pull/10501 >`__
+  `(#10501) <https://github.com/PennyLaneAI/pennylane/pull/10501>`__
 
 * Fixed tracer leaks when passing traced work-wire labels to :func:`~.ctrl`
   applied to a callable during program capture. Concrete work-wire labels retain

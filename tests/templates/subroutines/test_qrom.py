@@ -57,12 +57,7 @@ def test_assert_valid_qrom():
     )
 
     op = qp.QROM(bitstrings, control_wires=[0, 1, 2], target_wires=[3, 4, 5], work_wires=[6, 7, 8])
-    # The resource checker does not expand this rule's captured subroutines. Its gates and
-    # amplitudes are covered separately by TestMeasurementQROM.
-    with qp.decomposition.local_decomps():
-        qp.exclude_decomps(qp.QROM, "_qrom_measurement_decomposition")
-        qp.exclude_decomps("Adjoint(QROM)", "_qrom_measurement_decomposition")
-        qp.testing.assert_valid(op, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_differentiation=True)
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -74,12 +69,7 @@ def test_falsy_zero_as_work_wire():
         target_wires=[3],
         work_wires=0,
     )
-    # The resource checker does not expand this rule's captured subroutines. Its gates and
-    # amplitudes are covered separately by TestMeasurementQROM.
-    with qp.decomposition.local_decomps():
-        qp.exclude_decomps(qp.QROM, "_qrom_measurement_decomposition")
-        qp.exclude_decomps("Adjoint(QROM)", "_qrom_measurement_decomposition")
-        qp.testing.assert_valid(op, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_differentiation=True)
 
 
 class TestQROM:
