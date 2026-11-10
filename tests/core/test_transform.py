@@ -346,7 +346,7 @@ class TestTransform:  # pylint: disable=too-many-public-methods
 
         import catalyst
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.qnode(qp.device("lightning.qubit", wires=1))
         def cost():
             qp.RY(0.1, wires=0)

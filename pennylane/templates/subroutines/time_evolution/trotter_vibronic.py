@@ -163,6 +163,38 @@ class TrotterVibronic(Operator2):
         ``branch_probs`` are left unhinted and counted at every visit.
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.TrotterVibronic
+            :stacked:
+            :symbols: :math:`F` position fragments, :math:`M` modes with :math:`k` wires each,
+                :math:`n` electronic wires, :math:`b` coefficient and phase gradient wires, and
+                :math:`r` = ``num_trotter_steps``
+            :example: :math:`F=1`, :math:`M=1`, :math:`k=1`, :math:`n=1`,
+                :math:`b=1`, :math:`r=1`
+
+            .. decomposition-rule:: _trotter_vibronic_decomposition
+                :image: /_static/decomposition_thumbnails/trotter_vibronic_phase_gradient.svg
+                :where: :math:`P = 2Fr` position-fragment visits and :math:`K = M(M-1)/2` mode
+                    pairs. All counts are upper bounds: terms with zero coefficients are
+                    skipped, and the :class:`~.Hadamard` and :class:`~.CNOT` counts also depend
+                    on each fragment's electronic diagonalization
+
+                :class:`~.Hadamard` | :math:`2P` | 0
+                :class:`~.CNOT` | :math:`2P(n-1) + PM(2+2k+2b) + PK(2+4k+2b)` | 12
+                :class:`~.QROM` | :math:`P(2 + 2M + K)` | 6
+                :class:`~.SemiAdder` | :math:`P` | 2
+                :class:`~.OutMultiplier` | :math:`P(2M + K) + rM` | 3
+                :class:`~.Incrementer` with 1 control | :math:`2P(M + K)` | 4
+                :class:`~.SignedOutSquare` | :math:`PM + rM` | 1
+                :class:`Adjoint(SignedOutSquare) <.SignedOutSquare>` | :math:`PM + rM` | 1
+                :class:`~.SignedOutMultiplier` | :math:`PK` | 0
+                :class:`Adjoint(SignedOutMultiplier) <.SignedOutMultiplier>` | :math:`PK` | 0
+                :class:`~.MultiX` | :math:`2rM` | 2
+                :class:`~.AQFT` | :math:`rM` | 1
+                :class:`Adjoint(AQFT) <.AQFT>` | :math:`rM` | 1
+
+    .. details::
         :title: Register Sizes
         :href: register-sizes
 
@@ -1030,13 +1062,6 @@ def _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes):
     # ``k < ell`` matches bilinear_coeffs, populated only in the upper triangle.
     bilinear_indices = np.array(np.triu_indices(n_modes, 1))
 
-    if compiler.active() or capture.enabled():
-        all_constant = math.array(all_constant, like="jax")
-        all_linear = math.array(all_linear, like="jax")
-        all_quadratic = math.array(all_quadratic, like="jax")
-        all_bilinear = math.array(all_bilinear, like="jax")
-        bilinear_indices = math.array(bilinear_indices, like="jax")
-
     return (all_constant, all_linear, all_quadratic, all_bilinear), bilinear_indices
 
 
@@ -1067,7 +1092,10 @@ def _branch_probs(hamiltonian, evolution_time, num_trotter_steps):
     n_elec = math.ceil_log2(n_states)
     if hamiltonian.num_fragments > 2**n_elec:
         return None
-    time_step = evolution_time / num_trotter_steps
+    # Compute on NumPy copies: within an active JAX trace, e.g., while capturing a circuit, JAX
+    # operations return tracers even for concrete inputs.
+    hamiltonian = VibronicHamiltonian(*(math.toarray(t) for t in hamiltonian.tensors))
+    time_step = float(evolution_time) / num_trotter_steps
     coeffs, _ = _preprocess_data(time_step, hamiltonian, n_elec, n_states, n_modes)
     kinetic = (_momentum_coefficients(hamiltonian.kinetic) * time_step)[:, None]
     return {term: _applied_fraction(c) for term, c in zip(_BRANCH_TERMS, (*coeffs, kinetic))}
@@ -1195,6 +1223,9 @@ def _trotter_step_second_order(
     branch_probs = dict(branch_probs or ())
     precision = len(registers["phase_gradient"])
     all_coeffs, bilinear_indices = _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes)
+    if compiler.active() or capture.enabled():
+        all_coeffs = tuple(math.array(c, like="jax") for c in all_coeffs)
+        bilinear_indices = math.array(bilinear_indices, like="jax")
     all_constant, all_linear, all_quadratic, all_bilinear = all_coeffs
     qrom_wires = _extract_registers(registers, mode_registers, "QROM")
     num_position_fragments = hamiltonian.num_fragments

@@ -23,7 +23,6 @@ from pennylane.core.operator import Operator, abstractify
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Bool, Wire
 from pennylane.wires import WireError, Wires
 
@@ -55,7 +54,7 @@ def _select_pauli_rot_phase_gradient(
             work_wires=work_wires[: len(control_wires) - 1],  # This forces Λ=1 in Select-Swap
         )
         for wire in phase_grad_wires:
-            qp.ctrl(qp.X(wire), control=target_wire, control_values=[0])
+            qp.MultiControlledX(Wires(target_wire) + Wires(wire), control_values=[0])
 
     def target_fn():
         qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
@@ -93,8 +92,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(
     <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__ are taken as inputs
     and bound into the created decomposition rule.
     This way, this function can be used in a workflow context that explicitly uses those wires
-    to generate this decomposition rule, which can then be used as ``alt_decomps`` or
-    ``fixed_decomp`` within :func:`~.pennylane.decompose`.
+    to generate this decomposition rule, which can then be registered with
+    :func:`~pennylane.decomposition.add_decomps`.
 
     Parameters:
         angle_wires (Wires): wires that encode the binary representation of the rotation angle
@@ -240,8 +239,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         * The resource function of the rule adds up the cost of all supported precisions, so
           that the graph-based decomposition system accounts for the operators in all
           conditional branches. This over-reports the cost of the rule, so that the
-          decomposition graph may prefer another rule over this one when it is passed via
-          ``alt_decomps``. Use ``fixed_decomps`` to enforce this rule.
+          decomposition graph may prefer another rule over this one when it is registered with
+          :func:`~pennylane.decomposition.add_decomps`. Use ``fixed_decomps`` to enforce this rule.
         * Angles that require more bits than the largest key in ``precision_stats`` fall back
           to the full precision. Unless ``len(angle_wires)`` is a key in ``precision_stats``,
           this fallback branch is hinted with probability ``0``, so that resource estimates
@@ -280,9 +279,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(
             clean=True,
         )
 
-        # 2. ctrl(X, control=target_wire, control_values=[0])
-        #    -> Controlled X with 1 control, 1 zero-ctrl
-        ctrl_x_rep = _ctrl_abstract(qp.X, Wire[1], num_zero_control_values=1)
+        # 2. MultiControlledX with one control (the runtime control value is zero).
+        ctrl_x_rep = qp.MultiControlledX(Wire[2], control_values=Bool[1])
 
         # 3. The callable decomposition produces the controls before the QROM in product order.
         prod_rep = qp.ops.prod(*((ctrl_x_rep,) * p + (qrom_rep,)))
