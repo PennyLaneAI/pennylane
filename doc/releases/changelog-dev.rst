@@ -2002,6 +2002,7 @@ Internal changes ⚙️
     `(#10458) <https://github.com/PennyLaneAI/pennylane/pull/10458>`__
     `(#10482) <https://github.com/PennyLaneAI/pennylane/pull/10482>`__
     `(#10463) <https://github.com/PennyLaneAI/pennylane/pull/10463>`__
+    `(#10503) <https://github.com/PennyLaneAI/pennylane/pull/10503>`__
 
   - Miscelleneous operators are ported:
 
@@ -2333,10 +2334,6 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
-
-* Fixed a bug where constructing :class:`~.DoubleExcitation` from class-level parameter counts
-  failed after its ``Operator2`` migration. The ``num_params = 1`` class attribute is restored.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
 
 * Fixed tracer leaks when passing traced work-wire labels to :func:`~.ctrl`
   applied to a callable during program capture. Concrete work-wire labels retain
