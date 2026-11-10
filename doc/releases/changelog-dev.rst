@@ -1505,27 +1505,31 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
-* ``PauliWord.operation()`` and ``PauliSentence.operation()`` have been replaced by
-  :func:`~pennylane.pauli.to_operator`.
-  `(#10483) <https://github.com/PennyLaneAI/pennylane/pull/10483>`__
+* Pauli data and arithmetic are being separated from operator construction to remove
+  the circular dependency between ``pennylane.ops`` and ``pennylane.pauli``.
+  This involves the following breaking changes:
 
-  .. code-block:: pycon
+  - ``PauliWord.operation()`` and ``PauliSentence.operation()`` have been replaced by
+    :func:`~pennylane.pauli.to_operator`.
+    `(#10483) <https://github.com/PennyLaneAI/pennylane/pull/10483>`__
 
-      >>> word = qp.pauli.PauliWord({0: "X", 1: "Z"})
-      >>> word_op = qp.pauli.to_operator(word)
-      >>> type(word).__name__, type(word_op).__name__
-      ('PauliWord', 'Prod2')
-      >>> word_op
-      X(0) @ Z(1)
-      >>> sentence = qp.pauli.PauliSentence({word: 2.0})
-      >>> sentence_op = qp.pauli.to_operator(sentence)
-      >>> type(sentence).__name__, type(sentence_op).__name__
-      ('PauliSentence', 'SProd')
-      >>> sentence_op
-      2.0 * (X(0) @ Z(1))
+    .. code-block:: pycon
 
-  The ``identity_wires`` argument replaces ``wire_order`` and assigns wires to
-  identity terms, including the identity used to represent zero.
+        >>> word = qp.pauli.PauliWord({0: "X", 1: "Z"})
+        >>> word_op = qp.pauli.to_operator(word)
+        >>> type(word).__name__, type(word_op).__name__
+        ('PauliWord', 'Prod2')
+        >>> word_op
+        X(0) @ Z(1)
+        >>> sentence = qp.pauli.PauliSentence({word: 2.0})
+        >>> sentence_op = qp.pauli.to_operator(sentence)
+        >>> type(sentence).__name__, type(sentence_op).__name__
+        ('PauliSentence', 'SProd')
+        >>> sentence_op
+        2.0 * (X(0) @ Z(1))
+
+    The ``identity_wires`` argument replaces ``wire_order`` and assigns wires to
+    identity terms, including the identity used to represent zero.
 
 * ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of
   ``"MidMeasureMP"``. Update raw device operation names and comparisons; the deprecated
