@@ -54,8 +54,8 @@ def _decompose_setup_inputs(
             single operator type/name that will be wrapped as a one-element set.
         fixed_decomps (dict | None): Optional map from operators to fixed decomposition
             rules. Omitted from the returned options when ``None``.
-        exclude_decomps (dict | None): Optional map from operators to excluded decomposition
-            rules. Omitted from the returned options when ``None``.
+        exclude_decomps (dict | None): Optional map from operators to decomposition rules
+            to exclude. Omitted from the returned options when ``None``.
 
     Returns:
         tuple[tuple, dict]: positional and keyword arguments forwarded to
