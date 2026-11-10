@@ -568,6 +568,15 @@ class TestDoubleExcitation:
     def test_assert_valid(self):
         qp.testing.assert_valid(qp.DoubleExcitation(0.123, wires=[0, 1, 2, 3]))
 
+    @pytest.mark.parametrize("adjoint", [False, True])
+    def test_constructor_parameter_count(self, adjoint):
+        """Test argument construction using operator and adjoint-constructor parameter counts."""
+        constructor = qp.adjoint(qp.DoubleExcitation) if adjoint else qp.DoubleExcitation
+        op = constructor(*([0.123] * constructor.num_params), wires=[0, 1, 2, 3])
+
+        expected = DoubleExcitation(-0.123 if adjoint else 0.123)
+        assert qp.math.allclose(qp.matrix(op), expected)
+
     def test_abstract_arguments(self):
         op = qp.DoubleExcitation(Float, wires=Wire[4])
         assert op.phi == Float

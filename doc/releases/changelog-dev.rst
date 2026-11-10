@@ -2334,6 +2334,10 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed a bug where constructing :class:`~.DoubleExcitation` from class-level parameter counts
+  failed after its ``Operator2`` migration. The ``num_params = 1`` class attribute is restored.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * Fixed tracer leaks when passing traced work-wire labels to :func:`~.ctrl`
   applied to a callable during program capture. Concrete work-wire labels retain
   their existing behaviour.
