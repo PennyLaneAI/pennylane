@@ -125,8 +125,8 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None, tol=None):
             qubit_operator[pw] = math.real(qubit_operator[pw])
 
     if not ps:
-        # wire_order specifies wires to use for Identity (PauliWord({}))
-        qubit_operator = to_operator(qubit_operator, wire_order=[identity_wire])
+        # identity_wires specifies wires to use for Identity (PauliWord({}))
+        qubit_operator = to_operator(qubit_operator, identity_wires=[identity_wire])
 
     if wire_map:
         return qubit_operator.map_wires(wire_map)
@@ -153,7 +153,7 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None, tol=None):
     qubit_operator.prune(tol=1e-16)
 
     if not ps:
-        qubit_operator = to_operator(qubit_operator, wire_order=[identity_wire])
+        qubit_operator = to_operator(qubit_operator, identity_wires=[identity_wire])
 
     if wire_map:
         return qubit_operator.map_wires(wire_map)
@@ -271,8 +271,8 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
             qubit_operator[pw] = math.real(qubit_operator[pw])
 
     if not ps:
-        # wire_order specifies wires to use for Identity (PauliWord({}))
-        qubit_operator = to_operator(qubit_operator, wire_order=[identity_wire])
+        # identity_wires specifies wires to use for Identity (PauliWord({}))
+        qubit_operator = to_operator(qubit_operator, identity_wires=[identity_wire])
 
     if wire_map:
         return qubit_operator.map_wires(wire_map)
@@ -299,7 +299,7 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
     qubit_operator.prune(tol=1e-16)
 
     if not ps:
-        qubit_operator = to_operator(qubit_operator, wire_order=[identity_wire])
+        qubit_operator = to_operator(qubit_operator, identity_wires=[identity_wire])
 
     if wire_map:
         return qubit_operator.map_wires(wire_map)
@@ -542,8 +542,8 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
             qubit_operator[pw] = math.real(qubit_operator[pw])
 
     if not ps:
-        # wire_order specifies wires to use for Identity (PauliWord({}))
-        qubit_operator = to_operator(qubit_operator, wire_order=[identity_wire])
+        # identity_wires specifies wires to use for Identity (PauliWord({}))
+        qubit_operator = to_operator(qubit_operator, identity_wires=[identity_wire])
 
     if wire_map:
         return qubit_operator.map_wires(wire_map)
@@ -570,7 +570,7 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
     qubit_operator.prune(tol=1e-16)
 
     if not ps:
-        qubit_operator = to_operator(qubit_operator, wire_order=[identity_wire])
+        qubit_operator = to_operator(qubit_operator, identity_wires=[identity_wire])
 
     if wire_map:
         return qubit_operator.map_wires(wire_map)

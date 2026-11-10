@@ -95,6 +95,10 @@ array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
         >>> qp.pauli.to_operator(sentence)
         2.0 * (X(0) @ Z(1))
 
+    The optional ``identity_wires`` argument assigns wires to identity terms,
+    including the identity used to represent zero. It does not reorder or extend
+    the wires of non-identity terms.
+
 We can intuitively use Pauli arithmetic to construct Hamiltonians consisting of :class:`~pennylane.pauli.PauliWord`
 and :class:`~pennylane.pauli.PauliSentence` objects like the spin-1/2 XXZ model Hamiltonian,
 

@@ -1506,8 +1506,9 @@ Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
 * ``PauliWord.operation()`` and ``PauliSentence.operation()`` have been replaced by
-  :func:`~pennylane.pauli.to_operator`. Use ``qp.pauli.to_operator(value, wire_order=...)``
-  to construct the corresponding operator.
+  :func:`~pennylane.pauli.to_operator`. Use ``qp.pauli.to_operator(value, identity_wires=...)``
+  to construct the corresponding operator. The ``identity_wires`` argument replaces
+  ``wire_order`` and assigns wires to identity terms, including the identity used to represent zero.
   `(#10483) <https://github.com/PennyLaneAI/pennylane/pull/10483>`__
 
 * ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of

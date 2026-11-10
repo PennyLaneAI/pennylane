@@ -30,13 +30,15 @@ _cached_factor = lru_cache(_make_factor)
 
 
 @QueuingManager.stop_recording()
-def to_operator(value, wire_order: WiresLike = ()):
+def to_operator(value, identity_wires: WiresLike = ()):
     """Convert a Pauli word or sentence to a PennyLane operator.
 
     Args:
         value (PauliWord or PauliSentence): The Pauli representation to convert.
-        wire_order (Iterable): Wires to use for identity terms. For a nonempty
-            sentence, defaults to its wires; otherwise defaults to no wires.
+        identity_wires (Iterable): Wires assigned to identity terms, including the
+            identity used to represent zero. If empty, uses a nonempty sentence's
+            wires; otherwise defaults to no wires. Does not change the wires of
+            non-identity terms.
 
     Returns:
         Operator: The corresponding operator, without adding it to the queue.
@@ -59,7 +61,7 @@ def to_operator(value, wire_order: WiresLike = ()):
 
     if isinstance(value, qp.pauli.PauliWord):
         if len(value) == 0:
-            return ops.Identity(wires=wire_order)
+            return ops.Identity(wires=identity_wires)
         make_factor = _make_factor if capture.enabled() else _cached_factor
         factors = [make_factor(op, wire) for wire, op in value.items()]
         pauli_rep = qp.pauli.PauliSentence({value: 1})
@@ -68,11 +70,11 @@ def to_operator(value, wire_order: WiresLike = ()):
     if not isinstance(value, qp.pauli.PauliSentence):
         raise TypeError("Expected a PauliWord or PauliSentence.")
     if len(value) == 0:
-        return ops.s_prod(0, ops.Identity(wires=wire_order))
+        return ops.s_prod(0, ops.Identity(wires=identity_wires))
     summands = []
-    wire_order = wire_order or value.wires
+    identity_wires = identity_wires or value.wires
     for pw, coeff in value.items():
-        pw_op = to_operator(pw, wire_order=list(wire_order))
+        pw_op = to_operator(pw, identity_wires=list(identity_wires))
         rep = qp.pauli.PauliSentence({pw: coeff})
         summands.append(
             pw_op
