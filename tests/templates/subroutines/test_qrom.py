@@ -57,7 +57,12 @@ def test_assert_valid_qrom():
     )
 
     op = qp.QROM(bitstrings, control_wires=[0, 1, 2], target_wires=[3, 4, 5], work_wires=[6, 7, 8])
-    qp.testing.assert_valid(op, skip_differentiation=True)
+    # The resource checker does not expand this rule's captured subroutines. Its gates and
+    # amplitudes are covered separately by TestMeasurementQROM.
+    with qp.decomposition.local_decomps():
+        qp.exclude_decomps(qp.QROM, "_qrom_measurement_decomposition")
+        qp.exclude_decomps("Adjoint(QROM)", "_qrom_measurement_decomposition")
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -69,7 +74,12 @@ def test_falsy_zero_as_work_wire():
         target_wires=[3],
         work_wires=0,
     )
-    qp.testing.assert_valid(op, skip_differentiation=True)
+    # The resource checker does not expand this rule's captured subroutines. Its gates and
+    # amplitudes are covered separately by TestMeasurementQROM.
+    with qp.decomposition.local_decomps():
+        qp.exclude_decomps(qp.QROM, "_qrom_measurement_decomposition")
+        qp.exclude_decomps("Adjoint(QROM)", "_qrom_measurement_decomposition")
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
 
 class TestQROM:
@@ -723,10 +733,11 @@ class TestMeasurementQROM:
 
     def test_resources_general_case(self):
         """Test that the general resource estimate contains the expected gate types."""
-        # Only bitstrings and target_wires are relevant
         res = _qrom_measurement_resources(
-            bitstrings=Bool[8, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
+            bitstrings=Bool[8, 3], control_wires=Wire[3], target_wires=Wire[3], work_wires=Wire[2]
         )
+        assert res[qp.CNOT] == 3
+        assert res[qp.ctrl(qp.MultiX(Bool[3], Wire[3]), Wire[1])] == 2
 
         ppm_counts = sum(v for k, v in res.items() if isinstance(k, PauliMeasure))
         assert ppm_counts > 0
@@ -786,8 +797,7 @@ class TestMeasurementQROM:
     def test_resources_bound_decomposition(self, L, n_extra, n_targets, seed):
         """Test that the resource estimate declares every gate type queued by the decomposition
         and upper-bounds its count."""
-        # ``assert_valid`` skips this rule, as its condition requires an active compiler, and for
-        # an inexact estimate it would only check the declared gate types, not their counts.
+        # For an inexact estimate, ``assert_valid`` only checks declared gate types, not counts.
         rng = np.random.default_rng(seed)
         bitstrings = rng.integers(0, 2, size=(L, n_targets))
         n_control = math.ceil(math.log2(L)) + n_extra
@@ -817,7 +827,7 @@ class TestMeasurementQROM:
                 assert count <= estimate[op], f"{op}: {count} > {estimate[op]}"
 
     def test_condition_without_compiler(self):
-        """Test that the measurement decomposition is disabled without an active compiler."""
+        """Test that the decomposition is disabled without capture or an active compiler."""
         assert _qrom_measurement_condition(Bool[8, 3], Wire[2], Wire[3], Wire[3]) is False
 
     def test_condition_with_compiler(self, mocker):
@@ -842,6 +852,82 @@ class TestMeasurementQROM:
             )
             is True
         )
+
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_capture")
+    def test_condition_with_capture(self):
+        """Rule discovery must accept capture before entering the active compiler context."""
+        assert not qp.compiler.active()
+        assert _qrom_measurement_condition(Bool[2, 1], Wire[1], Wire[1], Wire[0]) is True
+        assert _qrom_measurement_condition(Bool[8, 2], Wire[3], Wire[2], Wire[2]) is True
+        assert _qrom_measurement_condition(Bool[8, 2], Wire[3], Wire[2], Wire[1]) is False
+
+    @pytest.mark.catalyst
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(
+        ("num_bitstrings", "num_extra_controls", "adjoint", "dtype"),
+        [
+            (4, 0, False, bool),
+            (3, 1, False, float),
+            (3, 2, False, bool),
+            (8, 0, False, bool),
+            (4, 0, True, float),
+        ],
+    )
+    def test_graph_decomposition_dynamic_bitstrings(
+        self, num_bitstrings, num_extra_controls, adjoint, dtype, seed
+    ):
+        """Registered QROM rules preserve amplitudes when the lookup table is a runtime input."""
+        num_controls = math.ceil(math.log2(num_bitstrings)) + num_extra_controls
+        num_targets = 2
+        num_work = num_controls - 1
+        num_wires = num_controls + num_targets + num_work
+        rng = np.random.default_rng(seed)
+        logical_state = rng.normal(size=(2**num_controls, 2**num_targets)) + 1j * rng.normal(
+            size=(2**num_controls, 2**num_targets)
+        )
+        logical_state /= np.linalg.norm(logical_state)
+        initial_state = np.zeros((*logical_state.shape, 2**num_work), dtype=complex)
+        initial_state[:, :, 0] = logical_state
+
+        @qp.qjit(capture=True, seed=seed)
+        @qp.decompose(
+            gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ | {"PauliMeasure"},
+            fixed_decomps={
+                "QROM": "_qrom_measurement_decomposition",
+                "Adjoint(QROM)": "_qrom_measurement_decomposition",
+            },
+        )
+        @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
+        def circuit(bitstrings):
+            qp.StatePrep(initial_state.ravel(), wires=range(num_wires))
+            op = qp.QROM(
+                bitstrings,
+                control_wires=range(num_controls),
+                target_wires=range(num_controls, num_controls + num_targets),
+                work_wires=range(num_controls + num_targets, num_wires),
+            )
+            if adjoint:
+                qp.adjoint(op)
+            return qp.state()
+
+        table = np.array(
+            [[(index >> 1) & 1, index & 1] for index in range(num_bitstrings)], dtype=dtype
+        )
+        second_table = table.copy()
+        second_table[-1] = np.logical_not(second_table[-1])
+        for bitstrings in (table, second_table):
+            expected = np.zeros_like(initial_state)
+            for address in range(2**num_controls):
+                mask = (
+                    2 * int(bitstrings[address, 0]) + int(bitstrings[address, 1])
+                    if address < num_bitstrings
+                    else 0
+                )
+                expected[address, np.arange(2**num_targets) ^ mask, 0] = logical_state[address]
+            # Include relative/global phases and the clean work register in the comparison.
+            for _ in range(3):
+                assert np.allclose(circuit(bitstrings), expected.ravel(), atol=1e-7)
 
     def test_decomposition_single_bitstring(self):
         """Test the L == 1 branch of the measurement decomposition (no control wires)."""

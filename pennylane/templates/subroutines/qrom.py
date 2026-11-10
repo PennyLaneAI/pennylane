@@ -424,6 +424,32 @@ def _select_swap(
     _select_swap_loop()  # pylint: disable=no-value-for-parameter
 
 
+def _measure_masked_x(work_wire, targets, product):
+    """Measure X on the work wire and on targets selected by an integer bit mask."""
+    if not math.is_tracer(product):
+        x_wires = [wire for wire, bit in zip(targets, product) if bit]
+        return pauli_measure("X" * (len(x_wires) + 1), [work_wire, *x_wires])
+
+    # A PauliMeasure has a static word and number of wires. Group the selected targets
+    # first, then choose a measurement of fixed width using the dynamic Hamming weight.
+    selected = math.array(targets, like="jax")[math.argsort(-product)]
+    weight = math.sum(product)
+    num_targets = len(product)
+
+    def measure_width(width):
+        return pauli_measure("X" * (width + 1), [work_wire, *selected[:width]])
+
+    return cond(
+        weight == 0,
+        partial(measure_width, 0),
+        partial(measure_width, num_targets),
+        elifs=tuple(
+            (weight == width, partial(measure_width, width)) for width in range(1, num_targets)
+        ),
+    )()
+
+
+@capture.subroutine
 def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
     """Measurement-based uncomputation from Fig 18a) https://arxiv.org/abs/2211.15465
 
@@ -433,9 +459,7 @@ def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
         targets: target register wires.
         product: bitstring indicating the X positions in the target register.
     """
-    x_wires = [targets[i] for i, bit in enumerate(product) if bit == 1]
-
-    m1 = pauli_measure("X" + "X" * len(x_wires), [work_wire, *x_wires])
+    m1 = _measure_masked_x(work_wire, targets, product)
 
     cond(m1 == 1, CZ)(wires=ctrl_wires)
     # Without this, the reset below would leave a global phase of -1 if both outcomes are 1
@@ -446,6 +470,7 @@ def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
     cond(m2 == 1, MultiX)(product, wires=targets)
 
 
+@capture.subroutine
 def _measurement_qrom_inner(controls, targets, bitstrings):
     """Inner binary recursion with measurement-based uncomputation.
 
@@ -523,9 +548,7 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):
         _measurement_qrom_inner(child_controls, targets, bitstrings[k0:k01])
 
     # --- MIDDLE: merge close+open into 2 CNOTs (no measurement here) ---
-    for i, bit in enumerate(diff_q1):
-        if bit == 1:
-            CNOT(wires=[controls[2], targets[i]])
+    ctrl(MultiX(diff_q1, wires=targets), control=controls[2])
     CNOT(wires=[and_wires[0], and_wires[2]])
     CNOT(wires=[and_wires[1], and_wires[2]])
     sec_wires = and_wires
@@ -533,9 +556,7 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):
 
     # --- Q2 base correction (explicit, no measurement available here) ---
     diff_q2 = math.bitwise_xor(bitstrings[0], bitstrings[k01])
-    for i, bit in enumerate(diff_q2):
-        if bit == 1:
-            CNOT(wires=[sec_wires[2], targets[i]])
+    ctrl(MultiX(diff_q2, wires=targets), control=sec_wires[2])
 
     # --- Q2 ---
     if k2 > 1:
@@ -606,12 +627,16 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
     elif L == 2:
         return {load: 1, ctrl(load, Wire[1]): 1}
     else:
-        # Base load followed by the 4-quarter outer iterator. Its CNOTs are 3 structural ones,
-        # one per inner-iterator split in the quarters, and up to ``num_targets`` for each of the
-        # two explicit base corrections.
+        # Base load followed by the 4-quarter outer iterator. Its CNOTs are 3 structural ones
+        # and one per inner-iterator split in the quarters. Two controlled loads apply the
+        # explicit base corrections.
         num_ands = _count_tempAND_in_measurement_qrom(L)
-        num_cnots = 3 + max(L // 2 - 4, 0) + 2 * num_targets
-        resources = {load: 1, MultiControlledX(Wire[2], control_values=Bool[1]): 1}
+        num_cnots = 3 + max(L // 2 - 4, 0)
+        resources = {
+            load: 1,
+            ctrl(load, Wire[1]): 2,
+            MultiControlledX(Wire[2], control_values=Bool[1]): 1,
+        }
 
     # Each of the ``num_ands`` uncomputations performs one Z measurement on the work wire and
     # one X-type joint measurement on the work wire plus the ``w`` target wires flipped by the XOR
@@ -664,7 +689,7 @@ def _qrom_measurement_condition(
         num_work_wires = len(work_wires)
         num_control_wires = len(control_wires)
 
-    if not compiler.active():
+    if not (compiler.active() or capture.enabled()):
         return False
 
     num_control_wires = (
@@ -779,8 +804,12 @@ def _qrom_measurement_decomposition(
         flag, core_work = _build_flag(extra_wires, work_wires)
 
         # Gated base load, then the flag-gated unary iterator over the padded 2**num_control_wires_active table.
-        padded = math.zeros((2**num_control_wires_active, len(bitstrings[0])), dtype=int)
-        padded[:L] = bitstrings
+        padded = math.concatenate(
+            [
+                bitstrings,
+                math.zeros((2**num_control_wires_active - L, len(bitstrings[0])), dtype=int),
+            ]
+        )
         base = padded[0]
         # Fanout the base bitstring onto the target register, controlled on the flag.
         ctrl(MultiX(base, wires=target_wires), control=flag)
