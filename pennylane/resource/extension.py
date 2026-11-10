@@ -83,8 +83,8 @@ def register_resource_extension(
         Inputs are passed without copying, so mutations can affect subsequent aggregations
         or reports.
 
-        Currently, aggregation only supports flat dictionaries of numeric values (``int``, 
-        ``float``, or :class:`~.resource.Expression`). Boolean and other metadata types are 
+        Currently, aggregation only supports flat dictionaries of numeric values (``int``,
+        ``float``, or :class:`~.resource.Expression`). Boolean and other metadata types are
         not supported.
 
     Args:
