@@ -15,12 +15,12 @@
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Any, TypeVar, cast
+from typing import cast
 
 from .expression import Expression
 
 Count = int | float | Expression
-ExtensionData = TypeVar("ExtensionData", bound=dict[str, Any])
+ExtensionData = dict[str, Count]
 AggregateCallback = Callable[[ExtensionData, ExtensionData, Count], ExtensionData]
 
 
@@ -28,7 +28,7 @@ AggregateCallback = Callable[[ExtensionData, ExtensionData, Count], ExtensionDat
 class _ResourceHandler:
     """Aggregation and a report heading for one backend extension key."""
 
-    aggregate: AggregateCallback[Any]
+    aggregate: AggregateCallback
     display_name: str
 
 
@@ -36,10 +36,10 @@ _RESOURCE_EXTENSIONS: dict[str, _ResourceHandler] = {}
 
 
 def weighted_sum(
-    total: Mapping[str, Count],
-    incoming: Mapping[str, Count],
+    total: ExtensionData,
+    incoming: ExtensionData,
     call_count: Count,
-) -> dict[str, Count]:
+) -> ExtensionData:
     """
     Helper for aggregating dictionaries of using weighted sums.
 
@@ -53,7 +53,7 @@ def weighted_sum(
         call_count (Count): Number of calls, possibly estimated or symbolic.
 
     Returns:
-        dict[str, Count]: Combined counts in a new dictionary.
+        ExtensionData: Combined counts in a new dictionary.
 
     **Example**
 
@@ -71,7 +71,7 @@ def weighted_sum(
 
 def register_resource_extension(
     name: str,
-    aggregate: AggregateCallback[ExtensionData],
+    aggregate: AggregateCallback,
     *,
     display_name: str,
 ) -> None:
@@ -82,6 +82,10 @@ def register_resource_extension(
         The ``aggregate`` callback must not modify its input data, including nested values.
         Inputs are passed without copying, so mutations can affect subsequent aggregations
         or reports.
+
+        Currently, aggregation only supports flat dictionaries of numeric values (``int``, 
+        ``float``, or :class:`~.resource.Expression`). Boolean and other metadata types are 
+        not supported.
 
     Args:
         name (str): Key in the compiler's ``extended_fields`` and in
@@ -112,20 +116,15 @@ def register_resource_extension(
     A payload such as ``{"Hadamard": 7}`` appears as a ``Hadamard`` row under
     ``Example gates`` in individual and comparison reports.
 
-    For example, a custom callback can also combine a numeric count with a Boolean flag:
+    Symbolic call counts remain expressions that can be substituted later:
 
-    >>> def aggregate(total, incoming, call_count):
-    ...     return {
-    ...         "count": total.get("count", 0) + call_count * incoming["count"],
-    ...         "flag": total.get("flag", False)
-    ...         or (call_count != 0 and incoming["flag"]),
-    ...     }
-    >>> combined = aggregate({"count": 1}, {"count": 2, "flag": True}, 3)
-    >>> combined
-    {'count': 7, 'flag': True}
-    >>> register_resource_extension(
-    ...     "example_metadata", aggregate=aggregate, display_name="Example metadata"
-    ... )
+    >>> from pennylane.resource import Expression
+    >>> a = Expression({("a",): 1})
+    >>> combined = weighted_sum({"count": 1}, {"count": 2}, a)
+    >>> combined["count"].subs(a=0)
+    1
+    >>> combined["count"].subs(a=3)
+    7
     """
     handler = _ResourceHandler(aggregate, display_name)
     if name in _RESOURCE_EXTENSIONS and _RESOURCE_EXTENSIONS[name] != handler:
