@@ -15,6 +15,8 @@
 Pytest helper functions for testing phase gradient decomposition rules.
 """
 
+from functools import partial
+
 import numpy as np
 
 import pennylane as qp
@@ -26,11 +28,6 @@ def bits_to_angles(decimals, unit):
     """Angle(s) with the given binary decimals (along the last axis), in units of ``unit``."""
     decimals = np.array(decimals)
     return decimals @ (2.0 ** -np.arange(1, decimals.shape[-1] + 1)) * unit
-
-
-def bits(x, width):
-    """Big-endian bits of the integer ``x``."""
-    return [(x >> (width - 1 - i)) & 1 for i in range(width)]
 
 
 def leaf_ops(ops):
@@ -65,6 +62,25 @@ def work_wire_spec_total(rule, op):
     return rule.get_work_wire_spec(**op.arguments).total
 
 
+def _final_state(prepare, ops, wires):
+    """State of default.qubit on ``wires`` after the state preparation that ``prepare()`` queues
+    and the :func:`leaf_ops` of ``ops``."""
+    with qp.capture.pause():
+        # default.qubit simulates composite blocks as dense matrices on all their wires
+        leaves = list(leaf_ops(ops))
+
+        # Captured operations carry jax data, which is slow to simulate
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(qp.device("default.qubit", wires=wires), interface="numpy")
+        def circuit():
+            prepare()
+            for op in leaves:
+                qp.apply(op)
+            return qp.state()
+
+        return circuit()
+
+
 def assert_decomp_realizes_op(op, tape, phase_grad_wires, seed, *, zeroed_wires=()):
     """Assert that the operations of ``tape`` realize ``op`` on a random input state, if a phase
     gradient state is prepared on ``phase_grad_wires``, returning all other wires to zero.
@@ -82,27 +98,21 @@ def assert_decomp_realizes_op(op, tape, phase_grad_wires, seed, *, zeroed_wires=
     in_state /= np.linalg.norm(in_state)
 
     with qp.capture.pause():
-        # Captured decompositions carry jax data, which is slow to simulate
-        [tape], _ = qp.transforms.convert_to_numpy_parameters(tape)
         # default.qubit decomposes a phase gradient state preparation that is not the first
         # operation into hundreds of gates, so prepare it together with the input state
         phase_grad_state = qp.PhaseGradientStatePrep(phase_grad_wires).state_vector().flatten()
-        circuit = qp.tape.QuantumScript(
-            [
-                qp.StatePrep(np.kron(in_state, phase_grad_state), in_wires + phase_grad_wires),
-                # default.qubit simulates composite blocks as dense matrices on all their wires
-                *leaf_ops(tape.operations),
-            ],
-            [qp.state()],
-        )
-        dev = qp.device("default.qubit", wires=in_wires + phase_grad_wires + aux_wires)
-        out_state = qp.execute([circuit], dev)[0]
         # ``in_wires + op.wires`` puts the zeroed wires last, so the stride selects the rows and
         # columns with all of them in zero
         stride = 2 ** (len(op.wires) - len(in_wires))
         op_matrix = qp.matrix(op, wire_order=in_wires + op.wires)[::stride, ::stride]
-        expected = np.kron(op_matrix @ in_state, phase_grad_state)
-        expected = np.kron(expected, np.eye(2 ** len(aux_wires), 1)[:, 0])
+
+    out_state = _final_state(
+        partial(qp.StatePrep, np.kron(in_state, phase_grad_state), in_wires + phase_grad_wires),
+        tape.operations,
+        in_wires + phase_grad_wires + aux_wires,
+    )
+    expected = np.kron(op_matrix @ in_state, phase_grad_state)
+    expected = np.kron(expected, np.eye(2 ** len(aux_wires), 1)[:, 0])
 
     assert np.allclose(out_state, expected)
     # np.allclose misses global phase errors below about 1e-5
@@ -123,21 +133,14 @@ def record(qfunc, *args):
 
 
 def basis_outputs(ops, num_wires, inputs):
-    """Bits of the states that ``ops`` map the basis states ``inputs`` of the wires
-    ``0, ..., num_wires - 1`` to, asserting that each of them is a basis state with phase 1."""
+    """Big-endian bits of the states that ``ops`` map the basis states ``inputs`` of the wires
+    ``0, ..., num_wires - 1`` to, one row per input, asserting that each of them is a basis state
+    with phase 1."""
     wires = list(range(num_wires))
-    with qp.capture.pause():
-        # Captured operations carry jax data, which is slow to simulate
-        [tape], _ = qp.transforms.convert_to_numpy_parameters(qp.tape.QuantumScript(ops))
-        # default.qubit simulates composite blocks as dense matrices on all their wires
-        ops = list(leaf_ops(tape.operations))
-        tapes = [
-            qp.tape.QuantumScript([qp.BasisState(x, wires), *ops], [qp.state()]) for x in inputs
-        ]
-        states = qp.execute(tapes, qp.device("default.qubit", wires=wires))
-    outputs = []
-    for state in states:
+    indices = []
+    for x in inputs:
+        state = _final_state(partial(qp.BasisState, x, wires), ops, wires)
         index = int(np.argmax(np.abs(state)))
         assert np.isclose(state[index], 1)
-        outputs.append(bits(index, num_wires))
-    return outputs
+        indices.append(index)
+    return qp.math.int_to_binary(np.array(indices), num_wires)
