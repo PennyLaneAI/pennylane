@@ -252,6 +252,8 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
             "measure", "PauliMeasure",
         }
 
+        qp.add_decomps(qp.PhaseGradientStatePrep, rule)
+
         @qp.qjit(capture=True)
         @qp.decompose(gate_set=gate_set, fixed_decomps={qp.PhaseGradientStatePrep: rule})
         @qp.qnode(qp.device("lightning.qubit", wires=8))
