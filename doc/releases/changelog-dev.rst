@@ -2343,8 +2343,8 @@ Bug fixes 🐛
 ~~~~~~~~~~~~
 
 * Fixed AutoGraph conversion of functions wrapped in existing :class:`~.grad`,
-  :class:`~.jacobian`, and :class:`~.value_and_grad` instances. New callable class wrappers can
-  register their conversion behaviour with a new
+  :class:`~.jacobian`, :class:`~.value_and_grad`, and ``staticmethod`` instances. New callable
+  class wrappers can register their conversion behaviour with a new
   :func:`~pennylane.capture.autograph.register_autograph_wrapper`.
   `(#10422 ) <https://github.com/PennyLaneAI/pennylane/pull/10422>`__
 

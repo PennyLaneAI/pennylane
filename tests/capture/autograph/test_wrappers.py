@@ -64,6 +64,81 @@ def registered_wrapper_type():
 
 
 @pytest.mark.parametrize("nested", [False, True])
+def test_staticmethod(nested):
+    """Static method descriptors preserve control flow and expose converted source."""
+
+    def function(condition, data):
+        if condition:
+            result = data**2
+        else:
+            result = data**3
+        return result
+
+    wrapper = staticmethod(function)
+
+    if nested:
+
+        def caller(condition, data):
+            return wrapper(condition, data=data)
+
+        converted = run_autograph(caller)
+    else:
+        converted = run_autograph(wrapper)
+        assert isinstance(converted, staticmethod)
+        assert converted is not wrapper
+
+    jaxpr = jax.make_jaxpr(converted)(True, 2.0)
+    assert cond_prim in extract_all_primitives(jaxpr)
+    assert jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 2.0) == [4.0]
+    assert jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 2.0) == [8.0]
+    assert wrapper.__func__ is function
+    assert not hasattr(function, "ag_unconverted")
+    assert "ag__.if_stmt" in autograph_source(wrapper)
+    if not nested:
+        assert "ag__.if_stmt" in autograph_source(converted)
+
+
+@pytest.mark.parametrize("nested", [False, True])
+def test_qnode_staticmethod(nested):
+    """Class static methods convert QNode control flow directly and through callers."""
+
+    class Circuit:
+        """A quantum circuit and its static caller."""
+
+        @qp.qnode(qp.device("default.qubit", wires=1))
+        @staticmethod
+        def circuit(condition, angle: float):
+            if condition:
+                qp.RY(angle, wires=0)
+            else:
+                qp.RY(2 * angle, wires=0)
+            return qp.expval(qp.Z(0))
+
+        @staticmethod
+        def caller(condition, angle):
+            return Circuit.circuit(condition, angle)
+
+    instance = Circuit()
+    wrapper = instance.circuit
+    function = wrapper.func.__func__
+    assert wrapper is Circuit.circuit
+    if nested:
+        converted = run_autograph(instance.caller)
+    else:
+        converted = run_autograph(wrapper)
+        assert isinstance(converted.func, staticmethod)
+        assert converted is not wrapper
+
+    jaxpr = jax.make_jaxpr(converted)(True, 0.7)
+    assert cond_prim in extract_all_primitives(jaxpr)
+    assert wrapper.func.__func__ is function
+    assert not hasattr(function, "ag_unconverted")
+    assert "ag__.if_stmt" in autograph_source(wrapper)
+    if not nested:
+        assert "ag__.if_stmt" in autograph_source(converted)
+
+
+@pytest.mark.parametrize("nested", [False, True])
 @pytest.mark.parametrize("subclass", [False, True])
 def test_custom_wrapper(wrapper_type, nested, subclass):
     """Registered library wrappers and their subclasses convert dynamic control flow."""

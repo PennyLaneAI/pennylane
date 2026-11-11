@@ -82,3 +82,11 @@ def register_autograph_wrapper(wrapper_type: type) -> Callable:
     4.0
     """
     return _wrapper_adapter.register(wrapper_type)
+
+
+@register_autograph_wrapper(staticmethod)
+def _staticmethod_autograph_wrapper(
+    wrapped_method: staticmethod,
+) -> tuple[Callable, Callable[[Callable], staticmethod]]:
+    """Return the static method's function and a callback that preserves its descriptor type."""
+    return wrapped_method.__func__, type(wrapped_method)
