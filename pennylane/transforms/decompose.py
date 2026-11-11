@@ -257,12 +257,13 @@ def _tape_decompose(
 
     .. code-block:: python
 
+        from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
+
         phase = 1
         target_wires = [0]
         unitary = qp.QubitUnitary(qp.RX(phase, wires=0).matrix(), wires=target_wires)
         n_estimation_wires = 3
         estimation_wires = range(1, n_estimation_wires + 1)
-        gate_set = qp.gate_sets.ROTATIONS_PLUS_CNOT
 
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
@@ -270,13 +271,13 @@ def _tape_decompose(
             qp.Hadamard(wires=target_wires)
             qp.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)
 
-    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=gate_set, max_expansion=0))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=ROTATIONS_PLUS_CNOT, max_expansion=0))())
     0: ──H─╭QuantumPhaseEstimation─┤
     1: ────├QuantumPhaseEstimation─┤
     2: ────├QuantumPhaseEstimation─┤
     3: ────╰QuantumPhaseEstimation─┤
 
-    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=gate_set, max_expansion=1))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=ROTATIONS_PLUS_CNOT, max_expansion=1))())
     0: ──RZ(3.14)──RY(1.57)─╭GlobalPhase(-1.57)────╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
     1: ─────────────────────├GlobalPhase(-1.57)──H─╰●──────│───────│───────╭QFT†─┤
     2: ─────────────────────├GlobalPhase(-1.57)──H─────────╰●──────│───────├QFT†─┤
@@ -286,7 +287,7 @@ def _tape_decompose(
     [[0.87758256+0.j         0.        -0.47942554j]
      [0.        -0.47942554j 0.87758256+0.j        ]]
 
-    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=gate_set, max_expansion=2))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=ROTATIONS_PLUS_CNOT, max_expansion=2))())
     0: ──RZ(3.14)──RY(1.57)─╭GlobalPhase(-1.57)─────────────────────╭GlobalPhase(-1.57)────────── ···
     1: ─────────────────────├GlobalPhase(-1.57)──RZ(3.14)──RY(1.57)─├GlobalPhase(-1.57)────────── ···
     2: ─────────────────────├GlobalPhase(-1.57)─────────────────────├GlobalPhase(-1.57)──RZ(3.14) ···

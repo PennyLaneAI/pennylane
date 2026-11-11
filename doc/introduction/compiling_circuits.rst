@@ -208,11 +208,12 @@ with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit:
 
 .. code-block:: python
 
+    from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
+
     phase = 1 
     unitary = qp.RX(phase, wires=0)
     n_estimation_wires = 3
     estimation_wires = range(1, n_estimation_wires + 1)
-    gate_set = qp.gate_sets.ROTATIONS_PLUS_CNOT
 
     @qp.qnode(qp.device('default.qubit'))
     def circuit():
@@ -223,19 +224,19 @@ with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit:
 From here, we can iterate through the stages of decomposition:
 
 >>> from pennylane.transforms import _tape_decompose
->>> print(qp.draw(_tape_decompose(circuit, gate_set=gate_set, max_expansion=0))())
+>>> print(qp.draw(_tape_decompose(circuit, gate_set=ROTATIONS_PLUS_CNOT, max_expansion=0))())
 0: ──H─╭QuantumPhaseEstimation─┤  
 1: ────├QuantumPhaseEstimation─┤  
 2: ────├QuantumPhaseEstimation─┤  
 3: ────╰QuantumPhaseEstimation─┤  
 
->>> print(qp.draw(_tape_decompose(circuit, gate_set=gate_set, max_expansion=1))())
+>>> print(qp.draw(_tape_decompose(circuit, gate_set=ROTATIONS_PLUS_CNOT, max_expansion=1))())
 0: ──RZ(3.14)──RY(1.57)─╭GlobalPhase(-1.57)────╭RX(1.00)⁴─╭RX(1.00)²─╭RX(1.00)¹───────┤
 1: ─────────────────────├GlobalPhase(-1.57)──H─╰●─────────│──────────│──────────╭QFT†─┤
 2: ─────────────────────├GlobalPhase(-1.57)──H────────────╰●─────────│──────────├QFT†─┤
 3: ─────────────────────╰GlobalPhase(-1.57)──H───────────────────────╰●─────────╰QFT†─┤
 
->>> print(qp.draw(_tape_decompose(circuit, gate_set=gate_set, max_expansion=2))())
+>>> print(qp.draw(_tape_decompose(circuit, gate_set=ROTATIONS_PLUS_CNOT, max_expansion=2))())
 0: ──RZ(3.14)──RY(1.57)─╭GlobalPhase(-1.57)─────────────────────╭GlobalPhase(-1.57)────────── ···
 1: ─────────────────────├GlobalPhase(-1.57)──RZ(3.14)──RY(1.57)─├GlobalPhase(-1.57)────────── ···
 2: ─────────────────────├GlobalPhase(-1.57)─────────────────────├GlobalPhase(-1.57)──RZ(3.14) ···
