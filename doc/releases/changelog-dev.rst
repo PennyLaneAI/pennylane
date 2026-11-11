@@ -1830,7 +1830,7 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
-* Adding trusted publishing for prototyping and testing of the PennyLane Catalyst integration.
+* Adding trusted publishing PyPI.
   `(#10513) <https://github.com/PennyLaneAI/pennylane/pull/10513>`__
 
 * :func:`~.specs`, :func:`~.analyze` and :func:`~pennylane.estimate` now compile QJIT-compiled
