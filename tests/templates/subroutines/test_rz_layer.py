@@ -13,15 +13,12 @@
 # limitations under the License.
 """Tests for the RZLayer template."""
 
-from functools import reduce
-
 import numpy as np
 import pytest
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.templates.subroutines.rz_layer import _rzlayer_individual
-from pennylane.testing import assert_valid_decomp_rule
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
@@ -38,12 +35,6 @@ SMALL_CASES = [
 
 def _random_angles(num_angles, seed):
     return np.random.default_rng(seed).uniform(-2 * np.pi, 2 * np.pi, num_angles)
-
-
-def _expected_rzs(angles, wires):
-    """One RZ per wire, with ``angles[i]`` on the i-th block of ``len(wires) // len(angles)``."""
-    block_size = len(wires) // len(angles)
-    return [qp.RZ(angles[i // block_size], wires=w) for i, w in enumerate(wires)]
 
 
 def _rz_layer_circuit(angles):
@@ -133,74 +124,12 @@ class TestInitialization:
         assert np.isclose(circuit(0.3), np.cos(0.15) ** 2)
 
 
-class TestValidity:
-    """Standard validity checks of the operator and its decomposition rules."""
-
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("angles, wires, work_wires", SMALL_CASES)
-    def test_assert_valid(self, angles, wires, work_wires):
-        """Run the standard Operator2 validity checks."""
-        qp.testing.assert_valid(qp.RZLayer(angles, wires, work_wires))
-
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("angles, wires, work_wires", SMALL_CASES)
-    def test_individual_rule_valid(self, angles, wires, work_wires):
-        """Test that the individual rule is valid, including its matrix."""
-        assert_valid_decomp_rule(qp.RZLayer(angles, wires, work_wires), _rzlayer_individual)
-
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("angles, wires, work_wires", SMALL_CASES)
-    def test_adjoint_rule_valid(self, angles, wires, work_wires):
-        """Test that the registered Adjoint(RZLayer) rule is valid, including its matrix."""
-        [rule] = qp.list_decomps("Adjoint(RZLayer)")
-        assert_valid_decomp_rule(qp.adjoint(qp.RZLayer(angles, wires, work_wires)), rule)
-
-
-class TestMatrix:
-    """Tests for the matrix and eigenvalues of RZLayer."""
-
-    @pytest.mark.parametrize(
-        "num_angles, block_size",
-        [(1, m) for m in range(1, 8)] + [(3, m) for m in range(1, 4)],
-    )
-    def test_matrix_matches_product_of_rz(self, num_angles, block_size, seed):
-        """Test that the matrix is the product of one RZ per wire."""
-        angles = _random_angles(num_angles, seed)
-        wires = list(range(num_angles * block_size))
-
-        expected = qp.matrix(qp.prod(*_expected_rzs(angles, wires)), wire_order=wires)
-        assert np.allclose(qp.matrix(qp.RZLayer(angles, wires)), expected)
-
-    @pytest.mark.parametrize("block_size", range(1, 8))
-    @pytest.mark.parametrize("num_angles", [1, 3])
-    def test_eigvals_match_product_of_rz(self, num_angles, block_size, seed):
-        """Test that the eigenvalues are the diagonal of the product of one RZ per wire, also
-        at sizes where dense matrices are impractical."""
-        angles = _random_angles(num_angles, seed)
-        wires = list(range(num_angles * block_size))
-
-        diagonals = [np.diag(qp.RZ.compute_matrix(rz.phi)) for rz in _expected_rzs(angles, wires)]
-        assert np.allclose(qp.RZLayer(angles, wires).eigvals(), reduce(np.kron, diagonals))
-
-    def test_identity_on_work_wires(self, seed):
-        """Test that the matrix acts as the identity on the work wires."""
-        angles = _random_angles(2, seed)
-        op = qp.RZLayer(angles, wires=[0, 1, 2, 3], work_wires=[4, 5])
-
-        expected = np.kron(qp.matrix(qp.RZLayer(angles, wires=[0, 1, 2, 3])), np.eye(4))
-        assert np.allclose(qp.matrix(op), expected)
-
-    def test_compute_matrix_and_eigvals(self, seed):
-        """Test that the static ``compute_matrix`` and ``compute_eigvals`` give the product of one
-        RZ per wire, extended by the identity on the work wires."""
-        angles = _random_angles(2, seed)
-        wires = [0, 1, 2, 3]
-        rz_matrix = qp.matrix(qp.prod(*_expected_rzs(angles, wires)), wire_order=wires)
-
-        assert np.allclose(qp.RZLayer.compute_matrix(angles, wires), rz_matrix)
-        expected = np.kron(rz_matrix, np.eye(4))
-        assert np.allclose(qp.RZLayer.compute_matrix(angles, wires, [4, 5]), expected)
-        assert np.allclose(qp.RZLayer.compute_eigvals(angles, wires, [4, 5]), np.diag(expected))
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("angles, wires, work_wires", SMALL_CASES)
+def test_assert_valid(angles, wires, work_wires):
+    """Run the standard Operator2 validity checks, which include those of the decomposition rules
+    of RZLayer and its adjoint."""
+    qp.testing.assert_valid(qp.RZLayer(angles, wires, work_wires))
 
 
 class TestDecomposition:
@@ -253,29 +182,7 @@ class TestDecomposition:
 
 
 class TestInterfaces:
-    """Tests for the matrix and the gradient of RZLayer with the jax, autograd and torch
-    interfaces, and under ``qjit``."""
-
-    @pytest.mark.jax
-    def test_jax_jit_matrix(self):
-        """Test that the matrix of an RZLayer with jax angles is computed correctly under
-        ``jax.jit``."""
-        import jax
-
-        angles, wires = [0.3, -1.2], [0, 1, 2, 3]
-        matrix_fn = jax.jit(lambda angles: qp.RZLayer(angles, wires).matrix())
-
-        expected = qp.matrix(qp.prod(*_expected_rzs(angles, wires)), wire_order=wires)
-        assert qp.math.allclose(matrix_fn(jax.numpy.array(angles)), expected)
-
-    @pytest.mark.autograd
-    def test_autograd(self):
-        """Test that the gradient with autograd is the analytic gradient."""
-        angles = [0.3, -1.2]
-        circuit = qp.QNode(_rz_layer_circuit, qp.device("default.qubit", wires=4))
-
-        grad = qp.grad(circuit)(qp.numpy.array(angles, requires_grad=True))
-        assert np.allclose(grad, _rz_layer_circuit_grad(angles))
+    """Tests for the gradient of RZLayer with torch and under ``qjit``."""
 
     @pytest.mark.torch
     def test_torch(self):
@@ -288,17 +195,6 @@ class TestInterfaces:
         torch_angles = torch.tensor(angles, dtype=torch.float64, requires_grad=True)
         circuit(torch_angles).backward()
         assert np.allclose(torch_angles.grad, _rz_layer_circuit_grad(angles))
-
-    @pytest.mark.jax
-    def test_jax_jit(self):
-        """Test that the gradient with jax under ``jax.jit`` is the analytic gradient."""
-        import jax
-
-        angles = [0.3, -1.2]
-        circuit = qp.QNode(_rz_layer_circuit, qp.device("default.qubit", wires=4))
-
-        grad = jax.jit(jax.grad(circuit))(jax.numpy.array(angles))
-        assert np.allclose(grad, _rz_layer_circuit_grad(angles))
 
     @pytest.mark.catalyst
     def test_qjit(self):

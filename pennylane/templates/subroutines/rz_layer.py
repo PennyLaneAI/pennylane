@@ -57,6 +57,16 @@ class RZLayer(Operator2):
     >>> op.decomposition()
     [RZ(0.1, wires=[0]), RZ(0.1, wires=[1]), RZ(0.2, wires=[2]), RZ(0.2, wires=[3])]
 
+    With one angle per wire, every wire gets its own angle:
+
+    >>> qp.RZLayer([0.1, 0.2, 0.3], wires=[0, 1, 2]).decomposition()
+    [RZ(0.1, wires=[0]), RZ(0.2, wires=[1]), RZ(0.3, wires=[2])]
+
+    With a single angle, all wires share it:
+
+    >>> qp.RZLayer([0.5], wires=[0, 1, 2]).decomposition()
+    [RZ(0.5, wires=[0]), RZ(0.5, wires=[1]), RZ(0.5, wires=[2])]
+
     .. details::
         :title: Available decompositions
 
@@ -106,47 +116,6 @@ class RZLayer(Operator2):
     def wires(self) -> Wires:
         """All wires involved in the operation, with the work wires last."""
         return self.arguments["wires"] + self.work_wires
-
-    @staticmethod
-    # pylint: disable-next=arguments-differ
-    def compute_matrix(
-        angles: TensorLike, wires: WiresLike, work_wires: WiresLike = ()
-    ) -> TensorLike:
-        r"""
-        Representation of the operator as a canonical matrix in the computational basis.
-        Assumes the wire order ``wires`` followed by ``work_wires``.
-
-        Args:
-            angles (TensorLike): one-dimensional array of :math:`k\geq 1` rotation angles
-            wires (WiresLike): the :math:`km` wires the rotations act on
-            work_wires (WiresLike): auxiliary wires, on which the operator acts as the identity
-
-        Returns:
-            TensorLike: The canonical matrix representing ``RZLayer(angles, wires, work_wires)``.
-        """
-        return math.diag(RZLayer.compute_eigvals(angles, wires, work_wires))
-
-    @staticmethod
-    # pylint: disable-next=arguments-differ
-    def compute_eigvals(
-        angles: TensorLike, wires: WiresLike, work_wires: WiresLike = ()
-    ) -> TensorLike:
-        r"""
-        Eigenvalues of the operator, which form the diagonal of its canonical matrix.
-
-        Args:
-            angles (TensorLike): one-dimensional array of :math:`k\geq 1` rotation angles
-            wires (WiresLike): the :math:`km` wires the rotations act on
-            work_wires (WiresLike): auxiliary wires, on which the operator acts as the identity
-
-        Returns:
-            TensorLike: The eigenvalues of ``RZLayer(angles, wires, work_wires)``.
-        """
-        block_size = len(wires) // len(angles)
-        eigvals = math.ones(1)
-        for i in range(len(wires)):
-            eigvals = math.kron(eigvals, RZ.compute_eigvals(angles[i // block_size]))
-        return math.kron(eigvals, math.ones(2 ** len(work_wires)))
 
     def adjoint(self) -> "RZLayer":
         return RZLayer(-self.angles, **self.wire_args)

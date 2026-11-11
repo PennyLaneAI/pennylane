@@ -4,9 +4,10 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* The new :class:`~.RZLayer` applies ``angles[i]`` as an :class:`~.RZ` rotation to every wire of
-  the ``i``-th of ``len(angles)`` equal blocks of ``wires``, so that decomposition rules can treat
-  rotations that share an angle, or act in parallel, together.
+* The new :class:`~.RZLayer` applies a :class:`~.RZ` rotation gate to each of its target wires, with
+  equal angles used for blocks of ``len(wires) // len(angles)`` wires. This includes the case of
+  ``len(wires)=len(angles)`` (one angle per wire) and ``len(angles)=1`` (same angle on all wires). This
+  allows for more efficient decomposition rules.
   `(#10508) <https://github.com/PennyLaneAI/pennylane/pull/10508>`__
 
 * A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
