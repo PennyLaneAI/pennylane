@@ -293,7 +293,11 @@ def register_resources(
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
 
-          @qp.transforms._tape_decompose(fixed_decomps=decomps, num_work_wires=1)
+          @qp.transforms._tape_decompose(
+              gate_set={qp.MultiControlledX, qp.CRot},
+              fixed_decomps=decomps,
+              num_work_wires=1,
+          )
           @qp.qnode(qp.device("default.qubit"))
           def circuit():
               qp.ctrl(qp.Rot(0.1, 0.2, 0.3, wires=3), control=[0, 1, 2])

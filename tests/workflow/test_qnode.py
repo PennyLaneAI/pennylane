@@ -1829,8 +1829,8 @@ class TestTapeExpansion:
                 return [qp.RY(3 * self.data[0], wires=self.wires)]
 
         @qp.register_resources({qp.RY: 1})
-        def custom_decomposition(param, wires):
-            qp.RY(3 * param, wires=wires)
+        def custom_decomposition(phi, wires):
+            qp.RY(3 * phi, wires=wires)
 
         qp.add_decomps(PhaseShift, custom_decomposition)
 

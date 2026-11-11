@@ -39,6 +39,9 @@ class TestFable:
         )
 
     @pytest.mark.xfail_if_capture(reason="come back to this after we migrate Fable [sc-129901]")
+    @pytest.mark.pl2do(
+        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+    )
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self, input_matrix):
         """Check the operation using the assert_valid function."""
@@ -310,6 +313,9 @@ class TestFable:
             circuit_jax(input_matrix_jax)
 
     @pytest.mark.autograd
+    @pytest.mark.pl2do(
+        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+    )
     def test_fable_autograd(self, input_matrix):
         """Test that FABLE is differentiable when using autograd."""
         dev = qp.device("default.qubit")

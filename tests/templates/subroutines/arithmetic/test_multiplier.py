@@ -105,7 +105,15 @@ class TestMultiplier:
         multiplier_decomposition = (
             # pylint: disable-next=protected-access
             qp.transforms._tape_decompose(
-                qp.tape.QuantumScript([qp.Multiplier(k, x_wires, mod, work_wires)]), max_expansion=2
+                qp.tape.QuantumScript([qp.Multiplier(k, x_wires, mod, work_wires)]),
+                gate_set={
+                    qp.QFT,
+                    qp.ControlledSequence,
+                    qp.SWAP,
+                    "Adjoint(QFT)",
+                    "Adjoint(ControlledSequence)",
+                },
+                max_expansion=2,
             )[0][0].operations
         )
 

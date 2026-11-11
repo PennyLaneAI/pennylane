@@ -243,11 +243,11 @@ class TestDecomposeGraphEnabled:
 
     @pytest.mark.unit
     def test_none_gate_set_error(self):
-        """Tests that an error is raised when gate_set is not provided."""
+        """Tests that an error is raised when gate_set is None."""
 
         tape = qp.tape.QuantumScript([])
         with pytest.raises(TypeError, match="The gate_set argument is required."):
-            _tape_decompose(tape, stopping_condition=lambda op: True)
+            _tape_decompose(tape, gate_set=None, stopping_condition=lambda op: True)
 
     @pytest.mark.integration
     def test_mixed_gate_set_specification(self):

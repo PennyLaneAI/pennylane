@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import execute
+from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 from pennylane.gradients import param_shift
 from pennylane.typing import TensorLike
 
@@ -635,7 +636,9 @@ class TestJaxExecuteIntegration:
             )
             # pylint: disable-next=protected-access
             [qscript], _ = qp.transforms._tape_decompose(
-                qscript, stopping_condition=qp.devices.default_qubit.stopping_condition
+                qscript,
+                gate_set=ROTATIONS_PLUS_CNOT,
+                stopping_condition=qp.devices.default_qubit.stopping_condition,
             )
             return execute([qscript], device, **execute_kwargs)[0]
 

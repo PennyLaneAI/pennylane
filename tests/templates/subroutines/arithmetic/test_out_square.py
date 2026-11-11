@@ -20,6 +20,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
+from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 from pennylane.ops.op_math import Adjoint
 from pennylane.templates.subroutines.arithmetic.out_square import (
     OutSquare,
@@ -127,7 +128,7 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
     if use_jit:
         circuit = qp.qjit(
             # pylint: disable-next=protected-access
-            qp.transforms._tape_decompose(circuit, max_expansion=2),
+            qp.transforms._tape_decompose(circuit, gate_set=ROTATIONS_PLUS_CNOT, max_expansion=2),
             capture=False,
         )
 
@@ -188,7 +189,9 @@ class TestOutSquare:
         @qp.qjit(capture=False)
         @qp.set_shots(1)
         # pylint: disable-next=protected-access
-        @qp.transforms._tape_decompose(max_expansion=2, fixed_decomps=fixed_decomps)
+        @qp.transforms._tape_decompose(
+            gate_set=ROTATIONS_PLUS_CNOT, max_expansion=2, fixed_decomps=fixed_decomps
+        )
         @qp.qnode(dev)
         def circuit(x, y, x_wires, work_wires):
             qp.BasisEmbedding(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
