@@ -27,7 +27,7 @@ import pytest
 plt = pytest.importorskip("matplotlib.pyplot")
 
 from matplotlib.colors import to_rgba
-from matplotlib.patches import Arc, FancyArrow
+from matplotlib.patches import Arc, FancyArrow, FancyBboxPatch
 
 from pennylane.drawer import MPLDrawer
 from pennylane.math import allclose
@@ -1020,6 +1020,32 @@ class TestAutosize:
 
 
 class TestClassicalWires:
+    """Tests classical connections and boundaries around conditional diagrams."""
+
+    @pytest.mark.parametrize("wires", [(0, 2), (2, 0)])
+    @pytest.mark.parametrize("color, linewidth", [("firebrick", 1.5), ("white", 3)])
+    def test_transparent_frame_preserves_wires(self, wires, color, linewidth):
+        """The frame respects drawing style without covering or modifying crossing wires."""
+        with plt.rc_context({"lines.color": color, "lines.linewidth": linewidth}):
+            drawer = MPLDrawer(n_layers=3, wire_map={0: 0, 1: 1, 2: 2}, c_wires=1)
+            drawer.classical_wire([0, 0, 1, 1], [0, 3, 3, 2.45])
+            lines_before = [line.get_data() for line in drawer.ax.lines]
+
+            drawer.conditional_frame(layer=1, wires=wires)
+
+            [frame] = drawer.ax.patches
+            assert isinstance(frame, FancyBboxPatch)
+            assert allclose(frame.get_x(), 0.52)
+            assert allclose((frame.get_y(), frame.get_height()), (-0.45, 2.9))
+            assert allclose(frame.get_width(), 0.96)
+            assert not frame.get_fill()
+            assert frame.get_edgecolor() == to_rgba(color)
+            assert frame.get_linewidth() == 0.8 * linewidth
+            assert frame.get_linestyle() == (0, (4, 3))
+            assert [line.get_data() for line in drawer.ax.lines] == lines_before
+            assert not drawer.ax.texts
+            plt.close(drawer.fig)
+
     def test_classical_wire(self):
         """Test the addition of horiziontal classical wires."""
         drawer = MPLDrawer(wire_map={0: 0}, n_layers=4, c_wires=3)
