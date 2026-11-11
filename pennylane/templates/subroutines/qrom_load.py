@@ -209,6 +209,28 @@ class QROMLoad(Operator2):
 
                 :class:`~.QROM` | :math:`1` | 1
 
+            .. decomposition-rule:: _adjoint_qrom_load_measurement
+                :image: /_static/decomposition_thumbnails/qrom_load_adjoint_measurement.svg
+                :lightbox:
+                :region: adjoint
+                :requires: compilation with :func:`~.qjit` and program capture, ``clean=True``,
+                    :math:`c \geq 1` control wires and :math:`w \geq 1` work wires
+                :where: the :math:`j` least-significant control wires are encoded into a one-hot
+                    register of :math:`k = 2^j` work wires, with
+                    :math:`j \leq \min(c, \lfloor \log_2 w \rfloor)` chosen to minimize the
+                    estimated T-count. With enough work wires, this approximately minimizes the
+                    Toffoli count :math:`\lceil L/k \rceil + k`
+
+                :class:`~.QROM` with :math:`\lceil L/k \rceil` bitstrings of length :math:`k` on :math:`c - j` control wires and :math:`w - k` work wires | :math:`1` | 1
+                :func:`PauliMeasure("X") <.pauli_measure>` | :math:`n` | 1
+                :func:`PauliMeasure("Z") <.pauli_measure>` | :math:`n` | 1
+                :class:`~.PauliX` (conditional) | :math:`n` | 1
+                :class:`~.PauliX` | :math:`2` | 2
+                :class:`~.TemporaryAND` | :math:`k - 1` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`k - 1` | 1
+                :class:`~.CNOT` | :math:`2(k - 1)` | 2
+                :class:`~.Hadamard` | :math:`2k` | 4
+
     """
 
     dynamic_argnames = ("bitstrings",)
