@@ -311,7 +311,7 @@ class LinearCombination(Sum):
             new_ops = []
 
             for pw, coeff in pr.items():
-                pw_op = to_operator(pw, wire_order=pr.wires)
+                pw_op = to_operator(pw, identity_wires=pr.wires)
                 new_ops.append(pw_op)
                 new_coeffs.append(coeff)
 

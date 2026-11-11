@@ -424,9 +424,9 @@ class TestPauliWord:
             assert pw_op.wires == op.wires
 
     def test_operation_empty(self):
-        """Test that an empty PauliWord with wire_order returns Identity."""
+        """Test that an empty PauliWord with identity_wires returns Identity."""
         with qp.queuing.AnnotatedQueue() as q:
-            op = qp.pauli.to_operator(PauliWord({}), wire_order=[0, 1])
+            op = qp.pauli.to_operator(PauliWord({}), identity_wires=[0, 1])
         assert len(q.queue) == 0
         id = qp.Identity(wires=[0, 1])
         assert op.name == id.name
@@ -976,9 +976,9 @@ class TestPauliSentence:
         # in constructing the identity wires are cast from set -> list and the order is not preserved
 
     def test_operation_empty(self):
-        """Test that an empty PauliSentence with wire_order returns Identity."""
+        """Test that an empty PauliSentence with identity_wires returns zero times Identity."""
         with qp.queuing.AnnotatedQueue() as q:
-            op = qp.pauli.to_operator(ps5, wire_order=[0, 1])
+            op = qp.pauli.to_operator(ps5, identity_wires=[0, 1])
         assert len(q.queue) == 0
         id = qp.s_prod(0.0, qp.Identity(wires=[0, 1]))
 
@@ -998,9 +998,9 @@ class TestPauliSentence:
         assert len(q.queue) == 0
         assert res2 == qp.s_prod(0, qp.Identity())
 
-    def test_operation_wire_order(self):
-        """Test that the wire_order parameter is used when the pauli representation is empty"""
-        op = qp.pauli.to_operator(ps5, wire_order=["a", "b"])
+    def test_operation_identity_wires(self):
+        """Test that the identity_wires parameter is used when the Pauli representation is empty."""
+        op = qp.pauli.to_operator(ps5, identity_wires=["a", "b"])
         id = qp.s_prod(0.0, qp.Identity(wires=["a", "b"]))
 
         qp.assert_equal(op, id)

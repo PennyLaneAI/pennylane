@@ -47,6 +47,11 @@ New features since last release
   being removed. When used as a context manager, the rules are excluded only within the context.
   `(#10329) <https://github.com/PennyLaneAI/pennylane/pull/10329>`__
 
+* The `alt-decomps` parameter of :func:`~.transforms.decompose` has been removed in favour of `exclude_decomps`, which prevents a set of decomposition rules from being chosen for an operator in a given pass instance.
+  `(#10461) <https://github.com/PennyLaneAI/pennylane/pull/10461>`__
+  `(#10500) <https://github.com/PennyLaneAI/pennylane/pull/10500>`__
+
+
 * A new function called :func:`~pennylane.backline.onnx_decoder` has been added, which runs an
   ONNX model on a Backline :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or
   on the CPU. See :func:`~pennylane.backline.onnx_decoder` for the supported providers and usage
@@ -888,6 +893,7 @@ Improvements 🛠
 * Callable :func:`~.ctrl` now captures work-wire labels as operands, supporting
   traced work wires.
   `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
+  `(#10491) <https://github.com/PennyLaneAI/pennylane/pull/10491>`__
   
 * Efficient decomposition rules for :class:`~.ControlledPhaseShift`, :class:`~.OutMultiplier`, and :class:`Adjoint(Incrementer) <~.Incrementer>` have been added.
   `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
@@ -1501,16 +1507,38 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
-* ``PauliWord`` and ``PauliSentence`` now live in ``pennylane.core.pauli``; their
-  existing imports from ``pennylane.pauli`` remain available. Their ``commutator``
-  methods now accept only Pauli words and sentences. For mixed operator inputs,
-  use ``qp.commutator(pauli_value, operator, pauli=True)``.
-  `(#10484) <https://github.com/PennyLaneAI/pennylane/pull/10484>`__
+* Pauli data and arithmetic are being separated from operator construction to remove
+  the circular dependency between ``pennylane.ops`` and ``pennylane.pauli``.
+  This involves the following breaking changes:
 
-* ``PauliWord.operation()`` and ``PauliSentence.operation()`` have been replaced by
-  :func:`~pennylane.pauli.to_operator`. Use ``qp.pauli.to_operator(value, wire_order=...)``
-  to construct the corresponding operator.
-  `(#10483) <https://github.com/PennyLaneAI/pennylane/pull/10483>`__
+  - ``PauliWord.operation()`` and ``PauliSentence.operation()`` have been replaced by
+    :func:`~pennylane.pauli.to_operator`.
+    `(#10483) <https://github.com/PennyLaneAI/pennylane/pull/10483>`__
+
+    .. code-block:: pycon
+
+        >>> from pennylane.core.operator import Operator
+        >>> word = qp.pauli.PauliWord({0: "X", 1: "Z"})
+        >>> word_op = qp.pauli.to_operator(word)
+        >>> isinstance(word_op, Operator)
+        True
+        >>> word_op
+        X(0) @ Z(1)
+        >>> sentence = qp.pauli.PauliSentence({word: 2.0})
+        >>> sentence_op = qp.pauli.to_operator(sentence)
+        >>> isinstance(sentence_op, Operator)
+        True
+        >>> sentence_op
+        2.0 * (X(0) @ Z(1))
+
+    The ``identity_wires`` argument replaces ``wire_order`` and assigns wires to
+    identity terms, including the identity used to represent zero.
+
+  - ``PauliWord`` and ``PauliSentence`` now live in ``pennylane.core.pauli``; their
+    existing imports from ``pennylane.pauli`` remain available. Their ``commutator``
+    methods now accept only Pauli words and sentences. For mixed operator inputs,
+    use ``qp.commutator(pauli_value, operator, pauli=True)``.
+    `(#10484) <https://github.com/PennyLaneAI/pennylane/pull/10484>`__
 
 * ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of
   ``"MidMeasureMP"``. Update raw device operation names and comparisons; the deprecated
@@ -2003,11 +2031,13 @@ Internal changes ⚙️
 
   - Quantum chemistry operators are ported:
 
-    - :class:`~.SingleExcitation`, :class:`~.FermionicSWAP`, :class:`~.DoubleExcitation`
+    - :class:`~.SingleExcitation`, :class:`~.FermionicSWAP`, :class:`~.OrbitalRotation`, :class:`~.DoubleExcitation`
 
     `(#9944) <https://github.com/PennyLaneAI/pennylane/pull/9944>`__
     `(#10458) <https://github.com/PennyLaneAI/pennylane/pull/10458>`__
+    `(#10482) <https://github.com/PennyLaneAI/pennylane/pull/10482>`__
     `(#10463) <https://github.com/PennyLaneAI/pennylane/pull/10463>`__
+    `(#10503) <https://github.com/PennyLaneAI/pennylane/pull/10503>`__
 
   - Miscelleneous operators are ported:
 
@@ -2344,6 +2374,7 @@ Bug fixes 🐛
   applied to a callable during program capture. Concrete work-wire labels retain
   their existing behaviour.
   `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
+  `(#10491) <https://github.com/PennyLaneAI/pennylane/pull/10491>`__
   
 * Fixed a bug where AutoGraph raised an error for empty ``for`` loops.
   `(#10448) <https://github.com/PennyLaneAI/pennylane/pull/10448>`__
@@ -2642,6 +2673,11 @@ Bug fixes 🐛
   :class:`~.ChangeOpBasis` operators that are nested in other ``ChangeOpBasis`` operators, matching
   the gates produced by the captured decomposition.
   `(#10351) <https://github.com/PennyLaneAI/pennylane/pull/10351>`__
+
+* The decomposition of a controlled :class:`~.SemiAdder` without dedicated control work wires
+  now treats surplus work wires of the ``SemiAdder`` as zeroed, instead of using the
+  ``work_wire_type`` of the length-zero control work wires, which defaults to ``"borrowed"``.
+  `(#10506) <https://github.com/PennyLaneAI/pennylane/pull/10506>`__
 
 Contributors ✍️
 ~~~~~~~~~~~~~~~

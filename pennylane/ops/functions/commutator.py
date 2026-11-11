@@ -115,7 +115,7 @@ def commutator(op1, op2, pauli=False):
         if not isinstance(op2, PauliSentence):
             op2 = qp.pauli.pauli_sentence(op2)
         res = op1.commutator(op2)
-        return res if pauli else to_operator(res, wire_order=res.wires)
+        return res if pauli else to_operator(res, identity_wires=res.wires)
 
     # If no pauli processing is possible, use operator arithmetic
     with qp.QueuingManager.stop_recording():

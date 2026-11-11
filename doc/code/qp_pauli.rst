@@ -80,6 +80,33 @@ array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
        [-0.5+0.j,  0. +0.j,  0. +0.j,  0. +0.j],
        [ 0. +0.j,  0.5+0.j,  0. +0.j,  0. +0.j]])
 
+.. note::
+
+    :class:`~pennylane.pauli.PauliWord` and :class:`~pennylane.pauli.PauliSentence`
+    store algebraic representations of Pauli operators. Use
+    :func:`~pennylane.pauli.to_operator` to construct PennyLane
+    :class:`~pennylane.core.operator.Operator` instances:
+
+    .. code-block:: pycon
+
+        >>> from pennylane.core.operator import Operator
+        >>> word = qp.pauli.PauliWord({0: "X", 1: "Z"})
+        >>> word_op = qp.pauli.to_operator(word)
+        >>> isinstance(word_op, Operator)
+        True
+        >>> word_op
+        X(0) @ Z(1)
+        >>> sentence = qp.pauli.PauliSentence({word: 2.0})
+        >>> sentence_op = qp.pauli.to_operator(sentence)
+        >>> isinstance(sentence_op, Operator)
+        True
+        >>> sentence_op
+        2.0 * (X(0) @ Z(1))
+
+    The optional ``identity_wires`` argument assigns wires to identity terms,
+    including the identity used to represent zero. It does not reorder or extend
+    the wires of non-identity terms.
+
 We can intuitively use Pauli arithmetic to construct Hamiltonians consisting of :class:`~pennylane.pauli.PauliWord`
 and :class:`~pennylane.pauli.PauliSentence` objects like the spin-1/2 XXZ model Hamiltonian,
 

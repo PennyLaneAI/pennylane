@@ -532,7 +532,7 @@ def test_fermi_sentence_identity():
 
     assert ps_op == ps
 
-    result = qp.pauli.to_operator(ps, wire_order=[0])
+    result = qp.pauli.to_operator(ps, identity_wires=[0])
     qp.assert_equal(qubit_op.simplify(), result.simplify())
 
 

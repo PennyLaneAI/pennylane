@@ -277,7 +277,7 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
         obs.append(
             qp.pauli.to_operator(
                 qp.pauli.PauliWord({wiremap_tap[wire]: pw[wire] for wire in wires_tap}),
-                wire_order=wires_ord,
+                identity_wires=wires_ord,
             )
         )
 

@@ -422,7 +422,7 @@ class Sum(CompositeOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return to_operator(pr, wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         new_summands = self._simplify_summands(summands=self.operands).get_summands(cutoff=cutoff)
         if new_summands:

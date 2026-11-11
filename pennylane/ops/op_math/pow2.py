@@ -314,7 +314,7 @@ class Pow2(SymbolicOp2):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return to_operator(pr, wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         base = self.base if capture.enabled() else self.base.simplify()
         try:
