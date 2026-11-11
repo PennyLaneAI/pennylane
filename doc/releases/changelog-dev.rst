@@ -1798,8 +1798,8 @@ Breaking changes 💔
   ``disable_graph``, ``enabled_graph``, and ``toggle_graph_ctx`` functions have been removed.
   Remove calls to these functions and use graph-based decomposition directly.
   The :func:`~pennylane.transforms.decompose` and :func:`~pennylane.transforms._tape_decompose`
-  transforms now require ``gate_set``. Pass ``qp.gate_sets.ALL_OPS`` explicitly to retain
-  the former all-operations target.
+  transforms now require ``gate_set``. For example, use ``qp.gate_sets.ROTATIONS_PLUS_CNOT``
+  to target single-qubit rotations and CNOTs.
   `(#10510) <https://github.com/PennyLaneAI/pennylane/pull/10510>`__
 
 Deprecations 👋

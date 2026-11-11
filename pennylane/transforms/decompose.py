@@ -149,8 +149,8 @@ def _tape_decompose(
             target gate set specified as either (1) a sequence of operator types and/or names,
             (2) a dictionary mapping operator types and/or names to their respective costs, in
             which case the total cost will be minimized. Operators that belong in the target
-            gate set will not be decomposed. Use :data:`~pennylane.decomposition.gate_sets.ALL_OPS`
-            to target all built-in operations.
+            gate set will not be decomposed. For a basis of single-qubit rotations and CNOTs,
+            use :data:`~pennylane.decomposition.gate_sets.ROTATIONS_PLUS_CNOT`.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
             the operator is in the target gate set. See the "Gate Set vs. Stopping Condition"
@@ -263,7 +263,7 @@ def _tape_decompose(
         unitary = qp.QubitUnitary(qp.RX(phase, wires=0).matrix(), wires=target_wires)
         n_estimation_wires = 3
         estimation_wires = range(1, n_estimation_wires + 1)
-        gate_set = qp.gate_sets.ALL_OPS
+        gate_set = qp.gate_sets.ROTATIONS_PLUS_CNOT
 
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
@@ -278,20 +278,30 @@ def _tape_decompose(
     3: ────╰QuantumPhaseEstimation─┤
 
     >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=gate_set, max_expansion=1))())
-    0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
-    1: ──H─╰●──────│───────│───────╭QFT†─┤
-    2: ──H─────────╰●──────│───────├QFT†─┤
-    3: ──H─────────────────╰●──────╰QFT†─┤
+    0: ──RZ(3.14)──RY(1.57)─╭GlobalPhase(-1.57)────╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
+    1: ─────────────────────├GlobalPhase(-1.57)──H─╰●──────│───────│───────╭QFT†─┤
+    2: ─────────────────────├GlobalPhase(-1.57)──H─────────╰●──────│───────├QFT†─┤
+    3: ─────────────────────╰GlobalPhase(-1.57)──H─────────────────╰●──────╰QFT†─┤
     <BLANKLINE>
     M0 =
-    [[0.877...+0.j         0.        -0.479...j]
-     [0.        -0.479...j 0.877...+0.j        ]]
+    [[0.87758256+0.j         0.        -0.47942554j]
+     [0.        -0.47942554j 0.87758256+0.j        ]]
 
     >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=gate_set, max_expansion=2))())
-    0: ──H─╭U(M0)─╭U(M1)─╭U(M2)───────────────────────────────────────────────────────────┤
-    1: ──H─╰●─────│──────│──────╭SWAP†──────────────────────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
-    2: ──H────────╰●─────│──────│──────────╭(Rϕ(1.57))†──H†─│────────────╰(Rϕ(1.57))†─────┤
-    3: ──H───────────────╰●─────╰SWAP†──H†─╰(Rϕ(1.57))†─────╰(Rϕ(0.79))†──────────────────┤
+    0: ──RZ(3.14)──RY(1.57)─╭GlobalPhase(-1.57)─────────────────────╭GlobalPhase(-1.57)────────── ···
+    1: ─────────────────────├GlobalPhase(-1.57)──RZ(3.14)──RY(1.57)─├GlobalPhase(-1.57)────────── ···
+    2: ─────────────────────├GlobalPhase(-1.57)─────────────────────├GlobalPhase(-1.57)──RZ(3.14) ···
+    3: ─────────────────────╰GlobalPhase(-1.57)─────────────────────╰GlobalPhase(-1.57)────────── ···
+    <BLANKLINE>
+    0: ··· ───────────╭GlobalPhase(-1.57)─────────────────────╭GlobalPhase(-1.57)─╭U(M0)─╭U(M1) ···
+    1: ··· ───────────├GlobalPhase(-1.57)─────────────────────├GlobalPhase(-1.57)─╰●─────│───── ···
+    2: ··· ──RY(1.57)─├GlobalPhase(-1.57)─────────────────────├GlobalPhase(-1.57)────────╰●──── ···
+    3: ··· ───────────╰GlobalPhase(-1.57)──RZ(3.14)──RY(1.57)─╰GlobalPhase(-1.57)────────────── ···
+    <BLANKLINE>
+    0: ··· ─╭U(M2)───────────────────────────────────────────────────────────┤
+    1: ··· ─│──────╭SWAP†──────────────────────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
+    2: ··· ─│──────│──────────╭(Rϕ(1.57))†──H†─│────────────╰(Rϕ(1.57))†─────┤
+    3: ··· ─╰●─────╰SWAP†──H†─╰(Rϕ(1.57))†─────╰(Rϕ(0.79))†──────────────────┤
     <BLANKLINE>
     M0 =
     [[-0.41614684+0.j          0.        -0.90929743j]

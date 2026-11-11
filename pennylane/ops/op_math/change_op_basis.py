@@ -144,15 +144,15 @@ def change_op_basis(
             )
             return qp.state()
 
-        circuit2 = qp.transforms._tape_decompose(circuit, gate_set=qp.gate_sets.ALL_OPS, max_expansion=1)
+        circuit2 = qp.transforms._tape_decompose(circuit, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1)
 
     When this circuit is decomposed, the ``compute_op`` and ``uncompute_op`` are not controlled,
     resulting in a much more resource-efficient decomposition:
 
     >>> print(qp.draw(circuit2)())
-    0: ──H──────╭●──────────────────────┤ ╭State
-    1: ─╭●─╭QFT─├PhaseAdder(1.00)─╭QFT†─┤ ├State
-    2: ─╰X─╰QFT─╰PhaseAdder(1.00)─╰QFT†─┤ ╰State
+    0: ──RZ(3.14)──RY(1.57)─╭GlobalPhase(-1.57)─────────╭●──────────────────────┤ ╭State
+    1: ─────────────────────├GlobalPhase(-1.57)─╭●─╭QFT─├PhaseAdder(1.00)─╭QFT†─┤ ├State
+    2: ─────────────────────╰GlobalPhase(-1.57)─╰X─╰QFT─╰PhaseAdder(1.00)─╰QFT†─┤ ╰State
 
     A ``Callable`` can also be provided as an argument to ``change_op_basis``. This can be a
     function that applies a series of ``Operation`` s. Since ``change_op_basis`` requires this
@@ -179,7 +179,7 @@ def change_op_basis(
             qp.change_op_basis(compute, target)
             return qp.state()
 
-        circuit3 = qp.transforms._tape_decompose(circuit, gate_set=qp.gate_sets.ALL_OPS, max_expansion=1)
+        circuit3 = qp.transforms._tape_decompose(circuit, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1)
 
     >>> print(qp.draw(circuit3)())
     0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤ ╭State
