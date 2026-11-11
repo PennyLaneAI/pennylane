@@ -24,7 +24,12 @@ from pennylane import capture, math
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_name,
+    register_resources,
+)
 from pennylane.ops import CNOT, MultiControlledX, adjoint, ctrl
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -426,7 +431,8 @@ def _select_multi_control_resources(ops, control, work_wires, partial):
     return dict(resources)
 
 
-@register_resources(_select_multi_control_resources, name="multi_control")
+@register_name("multi_control")
+@register_resources(_select_multi_control_resources)
 def _select_multi_control(*_, ops, control, work_wires, partial, **__):
 
     if partial:
@@ -847,7 +853,8 @@ def _unary_condition(ops, control, work_wires, partial):
 
 
 @register_condition(_unary_condition)
-@register_resources(_select_unary_resources, name="unary")
+@register_name("unary")
+@register_resources(_select_unary_resources)
 def _select_unary(*_, ops, control, work_wires, partial, **__):
     r"""This function reproduces the unary iterator behaviour in https://arxiv.org/abs/1805.03662.
     For :math:`K` operators this decomposition requires at least :math:`c=\lceil\log_2 K\rceil`
@@ -967,7 +974,8 @@ def _work_wire_condition(ops, control, work_wires, partial):
 
 
 @register_condition(_work_wire_condition)
-@register_resources(_select_multi_control_work_wire_resources, name="multi_control_work_wire")
+@register_name("multi_control_work_wire")
+@register_resources(_select_multi_control_work_wire_resources)
 def _select_multi_control_work_wire(*_, ops, control, work_wires, partial, **__):
     """
     Multi-controlled gate decomposition, in which, instead of directly controlling the target operator with all control

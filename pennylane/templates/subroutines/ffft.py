@@ -23,7 +23,7 @@ from pennylane import capture, math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import FermionicSWAP, PauliZ, pow
 from pennylane.ops.op_math.pow2 import _pow_abstract
 from pennylane.wires import WiresLike
@@ -182,7 +182,8 @@ def _fast_fermionic_fourier_transform_standard_resources(num_wires):
     return resources
 
 
-@register_resources(_fast_fermionic_fourier_transform_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_fast_fermionic_fourier_transform_standard_resources)
 def _fast_fermionic_fourier_transform_standard(*_, wires: WiresLike, **__):
     if capture.enabled():
         wires = math.array(wires, like="jax")

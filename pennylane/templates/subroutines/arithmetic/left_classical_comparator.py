@@ -17,7 +17,7 @@ test of a quantum register and a classical integer."""
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import CNOT, X, cond
 from pennylane.typing import AbstractArray, AbstractWires, Int, Wire
 from pennylane.wires import Wires, WiresLike
@@ -176,7 +176,8 @@ def _left_classical_comparator_standard_resources(
     }
 
 
-@register_resources(_left_classical_comparator_standard_resources, exact=False, name="standard")
+@register_name("standard")
+@register_resources(_left_classical_comparator_standard_resources, exact=False)
 def _left_classical_comparator_standard(x_wires, value, target_wire, work_wires, comparator, **_):
     x_wires = x_wires[::-1]
 

@@ -513,7 +513,8 @@ class TestJaxExecuteIntegration:
             )
             return execute([tape], device, **execute_kwargs)[0]
 
-        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1}, name="decomp")
+        @qp.register_name("decomp")
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
         def _decomp(theta, phi, delta, wires):
             qp.Rot(delta, theta, -delta, wires)
             qp.PhaseShift(phi + delta, wires)

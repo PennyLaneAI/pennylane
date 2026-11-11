@@ -18,7 +18,7 @@ Contains the SignedOutSquare template.
 from collections import defaultdict
 from types import SimpleNamespace
 
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import X
 from pennylane.templates.subroutines.arithmetic import OutSquare, SemiAdder
 from pennylane.typing import Bool, Wire
@@ -319,7 +319,8 @@ def _signed_out_square_from_unsigned_resources(
     return dict(resources)
 
 
-@register_resources(_signed_out_square_from_unsigned_resources, name="from_unsigned")
+@register_name("from_unsigned")
+@register_resources(_signed_out_square_from_unsigned_resources)
 def _signed_out_square_from_unsigned(
     x_wires: WiresLike,
     output_wires: WiresLike,

@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core import Operator2
-from pennylane.decomposition.decomposition_rule import register_resources
+from pennylane.decomposition.decomposition_rule import register_name, register_resources
 from pennylane.operation import abstractify
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2, _make_controlled_decomp
@@ -646,7 +646,8 @@ class TestControlledOp2:
     def test_old_decomp_integration(self):
         """Tests that ControlledOp2 is compatible with the old decomposition convention."""
 
-        @register_resources({qp.RX: 1}, name="custom_decomp")
+        @register_name("custom_decomp")
+        @register_resources({qp.RX: 1})
         def _custom_decomp(wires):
             qp.RX(np.pi / 2, wires=wires)
 
@@ -665,7 +666,8 @@ def test_make_controlled_decomp_closes_over_compilable_args():
     and break any decomposition that branches on it with a Python ``if`` (as
     :class:`~.OutMultiplier`'s ``mod``/``output_wires_zeroed`` do)."""
 
-    @register_resources(lambda n, wires: {qp.X: 1} if n else {qp.Y: 1}, name="some_decomp")
+    @register_name("some_decomp")
+    @register_resources(lambda n, wires: {qp.X: 1} if n else {qp.Y: 1})
     def _some_decomp(n, wires):
         if n:
             qp.X(wires[0])

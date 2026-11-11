@@ -29,7 +29,7 @@ from pennylane.core import Operator2
 from pennylane.core.operator import Operation, Operator
 from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition import gate_sets
-from pennylane.decomposition.decomposition_rule import register_resources
+from pennylane.decomposition.decomposition_rule import register_name, register_resources
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
@@ -1859,7 +1859,8 @@ class TestTapeExpansionWithControlled:
 
         tape = QuantumScript.from_queue(q_tape)
 
-        @register_resources({qp.RZ: 2, qp.RY: 1}, name="rot_to_rz_ry_rz")
+        @register_name("rot_to_rz_ry_rz")
+        @register_resources({qp.RZ: 2, qp.RY: 1})
         def _rot_to_rz_ry_rz(phi, theta, omega, wires, **__):
             qp.RZ(phi, wires=wires)
             qp.RY(theta, wires=wires)

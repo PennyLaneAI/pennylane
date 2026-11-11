@@ -25,7 +25,11 @@ from scipy.linalg import cossin
 from pennylane import capture, compiler, math, ops, templates
 from pennylane.core import queuing
 from pennylane.core.apply import apply
-from pennylane.decomposition.decomposition_rule import register_condition, register_resources
+from pennylane.decomposition.decomposition_rule import (
+    register_condition,
+    register_name,
+    register_resources,
+)
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.math.decomposition import (
     xyx_rotation_angles,
@@ -299,7 +303,8 @@ def make_one_qubit_unitary_decomposition(su2_rule, su2_resource, name=""):
 
     # Resources are not exact because the global phase or rotations might be skipped
     @register_condition(lambda U, wires, **_: len(wires) == 1)
-    @register_resources(_resource_fn, exact=False, name=name)
+    @register_name(name)
+    @register_resources(_resource_fn, exact=False)
     def _impl(U, wires, **__):
         if sparse.issparse(U):
             U = U.todense()
@@ -400,7 +405,8 @@ def _qubit_unitary_two_qubit_resources(*_, **__):
 
 
 @register_condition(lambda U, wires, **_: len(wires) == 2)  # pylint: disable=unused-argument
-@register_resources(_qubit_unitary_two_qubit_resources, exact=False, name="two_qubit")
+@register_name("two_qubit")
+@register_resources(_qubit_unitary_two_qubit_resources, exact=False)
 def _qubit_unitary_two_qubit(U, wires, **_):
     """The decomposition rule for a two-qubit unitary."""
 
@@ -447,7 +453,8 @@ def _qubit_unitary_multi_qubit_resources(U, wires, **_):  # pylint: disable=unus
 
 
 @register_condition(lambda U, wires, **_: len(wires) > 2)  # pylint: disable=unused-argument
-@register_resources(_qubit_unitary_multi_qubit_resources, name="multi_qubit")
+@register_name("multi_qubit")
+@register_resources(_qubit_unitary_multi_qubit_resources)
 def _qubit_unitary_multi_qubit(U, wires, **__):
     """The decomposition rule for a multi-qubit unitary."""
 

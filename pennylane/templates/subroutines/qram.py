@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import (
     CH,
     CSWAP,
@@ -346,7 +346,8 @@ def _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j):
         cond(bit, PauliZ)(wires=target)
 
 
-@register_resources(_bucket_brigade_qram_standard_resources, exact=False, name="standard")
+@register_name("standard")
+@register_resources(_bucket_brigade_qram_standard_resources, exact=False)
 def _bucket_brigade_qram_standard(
     bitstrings, wire_manager, **__
 ):  # pylint: disable=unused-argument
@@ -734,7 +735,8 @@ def _block_tree_query_ops(
     adjoint(_tree_mark_routers_via_bus_ctrl)(tree_wire_manager, n_tree, k, signal)
 
 
-@register_resources(_hybrid_qram_standard_resources, exact=False, name="standard")
+@register_name("standard")
+@register_resources(_hybrid_qram_standard_resources, exact=False)
 def _hybrid_qram_standard(
     bitstrings, tree_wire_manager, select_wires, signal_wire, **_
 ):  # pylint: disable=unused-argument, too-many-arguments
@@ -993,7 +995,8 @@ def _flip_controls(control_wires, control_vals):
             PauliX(control_wires[i])
 
 
-@register_resources(_select_only_qram_standard_resources, exact=False, name="standard")
+@register_name("standard")
+@register_resources(_select_only_qram_standard_resources, exact=False)
 def _select_only_qram_standard(
     bitstrings, select_value, select_wires, control_wires, target_wires, **_
 ):  # pylint: disable=unused-argument, too-many-arguments
@@ -1275,7 +1278,8 @@ def _ffqram_standard_resources(num_zero_bits, num_address_wires, num_entries):
     }
 
 
-@register_resources(_ffqram_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_ffqram_standard_resources)
 def _ffqram_standard(amplitudes, wires, address, **_):
     address_wires = wires[:-1]
     reg_wire = wires[-1]

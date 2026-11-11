@@ -22,6 +22,7 @@ from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
+    register_name,
     register_resources,
     resource_rep,
 )
@@ -227,7 +228,8 @@ def _prepselprep_standard_resources(op_reps, num_control):
 
 
 # pylint: disable=unused-argument
-@register_resources(_prepselprep_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_prepselprep_standard_resources)
 def _prepselprep_standard(*_, wires, lcu, control, target_wires):
     coeffs, ops, phases = _get_new_terms(lcu)
     sqrt_coeffs = math.sqrt(coeffs)

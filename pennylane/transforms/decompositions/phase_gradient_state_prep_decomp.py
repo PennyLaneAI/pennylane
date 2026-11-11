@@ -18,7 +18,7 @@ from collections import defaultdict
 from functools import lru_cache
 
 import pennylane as qp
-from pennylane.decomposition import register_resources
+from pennylane.decomposition import register_name, register_resources
 from pennylane.typing import Wire
 from pennylane.wires import WireError, Wires, validate_no_wire_overlaps
 
@@ -289,7 +289,8 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
     def _phase_gradient_distillation_resources(wires):
         return _distillation_resources(len(wires), mode)
 
-    @register_resources(_phase_gradient_distillation_resources, exact=False, name="distillation")
+    @register_name("distillation")
+    @register_resources(_phase_gradient_distillation_resources, exact=False)
     def _phase_gradient_distillation(wires):
         output_wires = Wires(wires)
         num_wires = len(output_wires)

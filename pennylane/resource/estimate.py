@@ -181,7 +181,8 @@ def estimate(
 
         .. code-block:: python
 
-            @qp.register_resources({qp.Z: 2, qp.RY: 2, qp.CNOT: 1}, name="cz_with_ry")
+            @qp.register_name("cz_with_ry")
+            @qp.register_resources({qp.Z: 2, qp.RY: 2, qp.CNOT: 1})
             def cz_with_ry(wires, **_):
                 qp.Z(wires[1])
                 qp.RY(np.pi / 2, wires[1])

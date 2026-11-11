@@ -19,7 +19,7 @@ from collections.abc import Sequence
 
 from pennylane import math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import CZ, X, Z, ctrl
 from pennylane.typing import AbstractArray, Bool, Wire
 from pennylane.wires import Wires, WiresLike
@@ -134,7 +134,8 @@ def _flip_sign_standard_resources(state: tuple[int], wires: WiresLike, work_wire
     return res
 
 
-@register_resources(_flip_sign_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_flip_sign_standard_resources)
 def _flip_sign_standard(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
     if state[-1] == 0:
         X(wires[-1])

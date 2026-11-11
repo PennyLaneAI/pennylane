@@ -31,6 +31,7 @@ from pennylane.decomposition.decomposition_rule import (
     _list_decomps,
     get_fixed_decomp,
     register_condition,
+    register_name,
     register_resources,
 )
 from pennylane.decomposition.resources import (
@@ -336,7 +337,8 @@ def _pow_abstract(op: AbstractOperatorLike | type[Operator], z: int | float = 1)
 
 # pylint: disable-next=unused-argument
 @register_condition(lambda base, z, **_: is_integer(z) and z >= 0)
-@register_resources(lambda base, z: {abstractify(base): z}, name="repeat_base")
+@register_name("repeat_base")
+@register_resources(lambda base, z: {abstractify(base): z})
 def _pow_repeat_base(base, z):
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
@@ -349,9 +351,8 @@ def _pow_repeat_base(base, z):
 
 
 # pylint: disable=protected-access,unused-argument
-@register_resources(
-    lambda base, z: {qp.pow(abstractify(base.base), z * base.z): 1}, name="merge_powers"
-)
+@register_name("merge_powers")
+@register_resources(lambda base, z: {qp.pow(abstractify(base.base), z * base.z): 1})
 def _pow_merge_powers(base, z):
     """Decompose nested powers by combining them."""
     qp.pow(base.base, z * base.z)
@@ -363,7 +364,8 @@ def _pow_flip_adjoint_resources(base, z):
 
 
 # pylint: disable=protected-access,unused-argument
-@register_resources(_pow_flip_adjoint_resources, name="flip_adjoint")
+@register_name("flip_adjoint")
+@register_resources(_pow_flip_adjoint_resources)
 def _pow_flip_adjoint(base, z, **__):
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
@@ -385,7 +387,8 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
         return {_pow_abstract(base, z_mod_period): 1}
 
     @register_condition(_condition_fn)
-    @register_resources(_pow_reduce_period_resources, name="reduce_period")
+    @register_name("reduce_period")
+    @register_resources(_pow_reduce_period_resources)
     def _pow_reduce_period(base, z, **__):  # pylint: disable=unused-argument
         z_mod_period = z % period
         if z_mod_period == 1:
@@ -403,7 +406,8 @@ def _pow_scale_angle_resources(base, z):  # pylint: disable=unused-argument
     return {abstractify(base): 1}
 
 
-@register_resources(_pow_scale_angle_resources, name="scale_angle")
+@register_name("scale_angle")
+@register_resources(_pow_scale_angle_resources)
 def _pow_scale_angle(base, z):
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
     # A rotation should only have 1 dynamic parameter

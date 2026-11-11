@@ -23,7 +23,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import PauliRot
 from pennylane.ops.op_math.linear_combination import Hamiltonian
 from pennylane.pauli import PauliWord
@@ -252,7 +252,8 @@ def _approx_time_evolution_standard_resources(words: tuple[PauliWord], n: int):
     return resources
 
 
-@register_resources(_approx_time_evolution_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_approx_time_evolution_standard_resources)
 def _approx_time_evolution_standard(
     *coeffs_and_time: list, wires: WiresLike, hamiltonian: Hamiltonian, n: int
 ):  # pylint: disable=unused-argument

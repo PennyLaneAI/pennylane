@@ -25,7 +25,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_name, register_resources, resource_rep
 from pennylane.ops import Hadamard, PhaseShift
 from pennylane.ops.op_math import ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -251,7 +251,8 @@ def _amplitude_amplification_standard_resources(fixed_point, O, iters, num_refle
     return resources
 
 
-@register_resources(_amplitude_amplification_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_amplitude_amplification_standard_resources)
 def _amplitude_amplification_standard(
     *_, U, O, iters, fixed_point, work_wire, p_min, reflection_wires, **__
 ):

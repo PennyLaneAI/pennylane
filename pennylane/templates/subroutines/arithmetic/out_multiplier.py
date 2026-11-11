@@ -22,6 +22,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
+    register_name,
     register_resources,
 )
 from pennylane.ops import H, MultiControlledX, X, adjoint, change_op_basis, ctrl, prod
@@ -372,7 +373,8 @@ def _out_multiplier_with_qft_condition(
 
 
 @register_condition(_out_multiplier_with_qft_condition)
-@register_resources(_out_multiplier_with_qft_resources, name="with_qft")
+@register_name("with_qft")
+@register_resources(_out_multiplier_with_qft_resources)
 def _out_multiplier_with_qft(
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -456,7 +458,8 @@ def _out_multiplier_with_adder_condition(
 
 
 @register_condition(_out_multiplier_with_adder_condition)
-@register_resources(_out_multiplier_with_adder_resources, name="with_adder")
+@register_name("with_adder")
+@register_resources(_out_multiplier_with_adder_resources)
 def _out_multiplier_with_adder(
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -661,7 +664,8 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
 
 
 @register_condition(_out_multiplier_with_caddsub_condition)
-@register_resources(_out_multiplier_with_caddsub_resources, name="with_caddsub")
+@register_name("with_caddsub")
+@register_resources(_out_multiplier_with_caddsub_resources)
 def _out_multiplier_with_caddsub(
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -769,7 +773,8 @@ def _out_multiplier_with_cache_resources(
 
 
 @register_condition(_out_multiplier_with_cache_condition)
-@register_resources(_out_multiplier_with_cache_resources, name="with_cache")
+@register_name("with_cache")
+@register_resources(_out_multiplier_with_cache_resources)
 def _out_multiplier_with_cache(
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -813,7 +818,8 @@ def _out_multiplier_swapped_standard_resources(
 
 
 @register_condition(_out_multiplier_swapped_condition)
-@register_resources(_out_multiplier_swapped_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_out_multiplier_swapped_standard_resources)
 def _out_multiplier_swapped_standard(
     x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
 ):  # pylint: disable=too-many-arguments

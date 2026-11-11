@@ -26,7 +26,7 @@ from jax import numpy as jnp
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_name, register_resources, resource_rep
 from pennylane.ops import BasisState
 from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
@@ -337,7 +337,8 @@ def _UCCSD_standard_resources(num_wires, n_repeats, num_d_wires, num_s_wires):
     return dict(resources)
 
 
-@register_resources(_UCCSD_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_UCCSD_standard_resources)
 def _UCCSD_standard(weights, wires, s_wires, d_wires, init_state, n_repeats):
     BasisState(init_state, wires=wires)
 

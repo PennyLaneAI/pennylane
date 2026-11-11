@@ -23,7 +23,7 @@ from pennylane import capture, compiler, math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
@@ -154,7 +154,8 @@ def _AQFT_standard_resources(order, wires):
     }
 
 
-@register_resources(_AQFT_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_AQFT_standard_resources)
 def _AQFT_standard(wires, order):
     num_wires = len(wires)
     shifts = [2 * np.pi / (2**i) for i in range(2, num_wires + 1)]

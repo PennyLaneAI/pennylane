@@ -20,7 +20,7 @@ from jax import numpy as jnp
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation, abstractify
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import RX, RY, RZ
 from pennylane.wires import WiresLike
 
@@ -151,7 +151,8 @@ def _angle_embedding_standard_resources(rotation: Operation, num_wires: int) -> 
     return {abstractify(rotation): num_wires}
 
 
-@register_resources(_angle_embedding_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_angle_embedding_standard_resources)
 def _angle_embedding_standard(features: list, wires: WiresLike, rotation: Operation):
     batched = math.ndim(features) > 1
     # We will iterate over the first axis of `features` together with iterating over the wires.

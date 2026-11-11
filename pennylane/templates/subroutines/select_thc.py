@@ -21,7 +21,7 @@ import numpy as np
 
 from pennylane import capture, math
 from pennylane.core.operator import Operator2, abstractify
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import (
     CNOT,
     SWAP,
@@ -766,7 +766,8 @@ def _select_thc_standard_resources(
     return resources
 
 
-@register_resources(_select_thc_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_select_thc_standard_resources)
 def _select_thc_standard(
     chi,
     t_eigenvectors,

@@ -320,10 +320,10 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         return change_basis_rep_basis_adapted
 
     # The resources are inexact if conditional branches are used
+    @qp.register_name("phase_gradient")
     @qp.register_resources(
         _select_pauli_rot_phase_gradient_standard_resources,
         exact=precisions == {precision},
-        name="phase_gradient",
     )
     def _select_pauli_rot_phase_gradient_standard(
         angles, control_wires, target_wire, rot_axis, **_

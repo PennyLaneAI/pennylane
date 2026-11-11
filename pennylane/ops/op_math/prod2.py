@@ -28,7 +28,12 @@ import pennylane as qp
 from pennylane import capture, compiler, control_flow, math
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_name,
+    register_resources,
+)
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.controlled2 import flip_zero_control
@@ -346,7 +351,8 @@ def _prod2_standard_resources(operands, _init_pauli_rep=None):  # pylint: disabl
     return dict(Counter(abstractify(op) for op in operands))
 
 
-@register_resources(_prod2_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_prod2_standard_resources)
 def _prod2_standard(operands, _init_pauli_rep=None):  # pylint: disable=unused-argument
     for op in reversed(operands):
         apply(op)
@@ -410,7 +416,8 @@ def _multi_temporary_and_all_ones(
     and len(work_wires) >= len(control_wires) - 1
     and work_wire_type == "zeroed"
 )
-@register_resources(_controlled_prod2_with_work_wires_resources, name="with_work_wires")
+@register_name("with_work_wires")
+@register_resources(_controlled_prod2_with_work_wires_resources)
 def _controlled_prod2_with_work_wires(base, control_wires, control_values, work_wires, **_):
     """Decomposition of ``C(Prod2)`` with at least ``num_control_wires - 1`` zeroed work wires.
 
@@ -441,7 +448,8 @@ def _controlled_prod2_with_one_work_wire_resources(base, control_wires, work_wir
     and len(work_wires) >= 1
     and work_wire_type == "zeroed"
 )
-@register_resources(_controlled_prod2_with_one_work_wire_resources, name="with_one_work_wire")
+@register_name("with_one_work_wire")
+@register_resources(_controlled_prod2_with_one_work_wire_resources)
 def _controlled_prod2_with_one_work_wire(base, control_wires, control_values, work_wires, **_):
     """Decomposition of ``C(Prod2)`` with a single zeroed work wire.
 

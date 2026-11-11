@@ -269,7 +269,8 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
 
   qp.decomposition.enable_graph()
 
-  @qp.register_resources({qp.CNOT: 1, qp.H: 2}, name='my_cz_rule')
+  @qp.register_name('my_cz_rule')
+  @qp.register_resources({qp.CNOT: 1, qp.H: 2})
   def cz_to_h_cnot(wires):
       qp.H(wires[1])
       qp.CNOT(wires)

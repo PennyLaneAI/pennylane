@@ -17,7 +17,12 @@ from pennylane import capture, compiler, math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_name,
+    register_resources,
+)
 from pennylane.ops import CNOT, MultiControlledX, PauliX, X, adjoint, change_op_basis, cond
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -320,7 +325,8 @@ def _incrementer_fallback_resources(wires, work_wires):
 
 
 @register_condition(_work_wire_inverse_condition)
-@register_resources(_incrementer_fallback_resources, name="incrementer_multicontrolledx")
+@register_name("incrementer_multicontrolledx")
+@register_resources(_incrementer_fallback_resources)
 def _incrementer_multicontrolledx(wires, work_wires, **_):
     # This loop is intentionally a plain Python loop rather than a ``qp.for_loop``: each
     # iteration emits a ``MultiControlledX`` with a different number of controls (``i - 1``),
@@ -339,7 +345,8 @@ def _incrementer_multicontrolledx(wires, work_wires, **_):
 
 
 @register_condition(_work_wire_condition)
-@register_resources(_incrementer_resources, name="incrementer_elbow_ladder")
+@register_name("incrementer_elbow_ladder")
+@register_resources(_incrementer_resources)
 def _incrementer_elbow_ladder(wires, work_wires, **_):
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
@@ -359,7 +366,8 @@ def _controlled_incrementer_resources(base, control_wires, **_):
 
 
 @register_condition(_ctrl_work_wire_condition)
-@register_resources(_controlled_incrementer_resources, name="ctrl_incrementer_elbow_ladder")
+@register_name("ctrl_incrementer_elbow_ladder")
+@register_resources(_controlled_incrementer_resources)
 def _ctrl_incrementer_elbow_ladder(base, control_wires, work_wires, **_):
     wires = base.increment_wires
     base_work_wires = base.work_wires
@@ -389,7 +397,8 @@ def _adjoint_incrementer_resources(base):
     return {_change_op_basis_abstract(multix, incrementer, multix): 1}
 
 
-@register_resources(_adjoint_incrementer_resources, name="adjoint_incrementer_bit_flips")
+@register_name("adjoint_incrementer_bit_flips")
+@register_resources(_adjoint_incrementer_resources)
 def _adjoint_incrementer_bit_flips(base):
     """Decompose a decrement into an increment conjugated by bit flips, ``x - 1 = ~(~x + 1)``."""
     wires = base.increment_wires

@@ -32,7 +32,12 @@ from pennylane import math, ops
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import CompressedResourceOp, add_decomps, register_resources
+from pennylane.decomposition import (
+    CompressedResourceOp,
+    add_decomps,
+    register_name,
+    register_resources,
+)
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import TensorLike
@@ -541,7 +546,8 @@ def _QSVT_standard_resources(UA, projectors):
     return dict(resources)
 
 
-@register_resources(_QSVT_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_QSVT_standard_resources)
 def _QSVT_standard(UA, projectors):
 
     apply(projectors[0])

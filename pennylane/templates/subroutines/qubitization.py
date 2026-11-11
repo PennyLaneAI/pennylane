@@ -19,7 +19,7 @@ import copy
 
 from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_name, register_resources, resource_rep
 from pennylane.ops import I, prod
 from pennylane.typing import Wire
 from pennylane.wires import Wires
@@ -195,7 +195,8 @@ def _qubitization_standard_resources(num_control_wires, hamiltonian):
     }
 
 
-@register_resources(_qubitization_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_qubitization_standard_resources)
 def _qubitization_standard(*_, **kwargs):
     hamiltonian = kwargs["hamiltonian"]
     control = kwargs["control"]

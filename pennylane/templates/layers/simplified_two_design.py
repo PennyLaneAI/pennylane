@@ -20,7 +20,7 @@ from jax import numpy as jnp
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import CZ, RY
 
 
@@ -241,7 +241,8 @@ def _simplified_two_design_standard_resources(n_layers, num_wires):
     return {RY: num_wires}
 
 
-@register_resources(_simplified_two_design_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_simplified_two_design_standard_resources)
 def _simplified_two_design_standard(initial_layer_weights, weights, wires):
     n_layers = math.shape(weights)[0]
 

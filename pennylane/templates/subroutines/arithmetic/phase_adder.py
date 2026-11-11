@@ -21,6 +21,7 @@ from pennylane import ops
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
+    register_name,
     register_resources,
 )
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -200,7 +201,8 @@ def _phase_adder_standard_resources(k, x_wires, mod, work_wire) -> dict:
 
 
 # pylint: disable=no-value-for-parameter
-@register_resources(_phase_adder_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_phase_adder_standard_resources)
 def _phase_adder_standard(k, x_wires: WiresLike, mod, work_wire):
 
     n_wires = len(x_wires)

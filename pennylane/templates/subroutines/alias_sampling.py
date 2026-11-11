@@ -20,7 +20,7 @@ import numpy as np
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.math import ceil_log2
 from pennylane.ops import CSWAP, RZ, GlobalPhase, Hadamard, adjoint, ctrl
 from pennylane.typing import Wire
@@ -165,7 +165,8 @@ def _uniform_prep_standard_resources(n_states, target_wires, work_wires):
     return resources
 
 
-@register_resources(_uniform_prep_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_uniform_prep_standard_resources)
 def _uniform_prep_standard(n_states, target_wires, work_wires, **_):
     k = (n_states & -n_states).bit_length() - 1
     L = n_states >> k
@@ -509,7 +510,8 @@ def _alias_sampling_standard_resources(probs, mu, target_wires, temp_wires, work
     }
 
 
-@register_resources(_alias_sampling_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_alias_sampling_standard_resources)
 def _alias_sampling_standard(probs, mu, target_wires, temp_wires, work_wires, **_):
     L = len(probs)
     logL = ceil_log2(L)

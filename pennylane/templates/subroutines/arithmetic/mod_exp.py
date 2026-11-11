@@ -18,7 +18,7 @@ Contains the ModExp template.
 import numpy as np
 
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_name, register_resources, resource_rep
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
@@ -257,7 +257,8 @@ def _mod_exp_standard_resources(num_x_wires, num_output_wires, mod, num_work_wir
     }
 
 
-@register_resources(_mod_exp_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_mod_exp_standard_resources)
 def _mod_exp_standard(x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike, **__):
     ControlledSequence(Multiplier(base, output_wires, mod, work_wires), control=x_wires)
 

@@ -24,7 +24,7 @@ from pennylane import ops
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
@@ -250,7 +250,8 @@ def _reflection_standard_resources(base_rep, num_wires, num_reflection_wires=Non
     return resources
 
 
-@register_resources(_reflection_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_reflection_standard_resources)
 def _reflection_standard(*parameters, wires=None, **hyperparameters):
     alpha = parameters[0]
     U = hyperparameters["base"]

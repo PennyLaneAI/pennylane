@@ -20,7 +20,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane.core.operator import Operator2
-from pennylane.decomposition.decomposition_rule import register_resources
+from pennylane.decomposition.decomposition_rule import register_name, register_resources
 from pennylane.decomposition.resources import Resources
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_negate_angle, _make_adjoint_decomp
@@ -153,7 +153,8 @@ def test_attributes():
 def test_old_decomp_integartion():
     """Tests that adjoint2 is compatible with the old decomposition convention."""
 
-    @register_resources({qp.RX: 1}, name="sx_to_rx")
+    @register_name("sx_to_rx")
+    @register_resources({qp.RX: 1})
     def _sx_to_rx(wires):
         qp.RX(np.pi / 2, wires=wires)
 
@@ -266,7 +267,8 @@ def test_make_adjoint_decomp_closes_over_compilable_args():
     any decomposition that branches on it with a Python ``if`` (as :class:`~.OutMultiplier`'s
     ``mod``/``output_wires_zeroed`` do)."""
 
-    @register_resources(lambda n, wires: {qp.X: 1} if n else {qp.Y: 1}, name="some_decomp")
+    @register_name("some_decomp")
+    @register_resources(lambda n, wires: {qp.X: 1} if n else {qp.Y: 1})
     def _some_decomp(n, wires):
         if n:
             qp.X(wires[0])

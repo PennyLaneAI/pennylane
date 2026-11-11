@@ -26,7 +26,7 @@ import numpy as np
 from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_name, register_resources, resource_rep
 from pennylane.ops.qubit import BasisState
 from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
@@ -381,7 +381,8 @@ def _kupccgsd_standard_resources(num_wires: int, k: int, d_wires: list, s_wires:
     return resources
 
 
-@register_resources(_kupccgsd_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_kupccgsd_standard_resources)
 def _kupccgsd_standard(
     weights: list,
     wires: WiresLike,

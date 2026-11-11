@@ -24,7 +24,7 @@ from jax import numpy as jnp
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -1051,7 +1051,8 @@ def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
     RX(np.pi / 2, wires=p)
 
 
-@register_resources(_fermionic_double_excitation_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_fermionic_double_excitation_standard_resources)
 def _fermionic_double_excitation_standard(
     weight, wires, wires1, wires2
 ):  # pylint: disable=unused-argument

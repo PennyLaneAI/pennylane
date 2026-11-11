@@ -436,6 +436,7 @@ class TestCtrlQfunc:
     def test_controlled2_rule_forwards_work_wires(self, work_wire_type):
         """Controlled2 rule arguments can be forwarded to a callable control without patching."""
 
+        @qp.register_name("rule")
         @qp.register_resources(
             {
                 qp.ctrl(
@@ -445,7 +446,6 @@ class TestCtrlQfunc:
                     work_wire_type=work_wire_type,
                 ): 1
             },
-            name="rule",
         )
         def rule(base, control_wires, control_values, work_wires, work_wire_type):
             qp.ctrl(

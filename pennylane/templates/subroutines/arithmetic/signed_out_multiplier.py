@@ -22,7 +22,12 @@ from jax import numpy as jnp
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_name,
+    register_resources,
+)
 from pennylane.ops import CNOT, ctrl
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit, validate_no_wire_overlaps
@@ -467,7 +472,8 @@ def _not_zeroed_condition(
 
 @register_condition(_zeroed_condition)
 @register_condition(_zeroed_work_wire_condition)
-@register_resources(_signed_out_multiplier_zeroed_resources, name="zeroed")
+@register_name("zeroed")
+@register_resources(_signed_out_multiplier_zeroed_resources)
 def _signed_out_multiplier_zeroed(
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -524,7 +530,8 @@ def _signed_out_multiplier_zeroed(
 
 @register_condition(_not_zeroed_condition)
 @register_condition(_not_zeroed_work_wire_condition)
-@register_resources(_signed_out_multiplier_borrowed_resources, name="borrowed")
+@register_name("borrowed")
+@register_resources(_signed_out_multiplier_borrowed_resources)
 def _signed_out_multiplier_borrowed(
     x_wires: WiresLike,
     y_wires: WiresLike,

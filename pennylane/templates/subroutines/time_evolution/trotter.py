@@ -23,7 +23,7 @@ from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator
 from pennylane.core.qscript import make_qscript
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_name, register_resources, resource_rep
 from pennylane.wires import Wires
 
 
@@ -413,7 +413,8 @@ def _trotter_product_standard_resources(n, order, ops):
     return reps
 
 
-@register_resources(_trotter_product_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_trotter_product_standard_resources)
 def _trotter_product_standard(*args, **kwargs):
     time = args[-1]
     n = kwargs["n"]

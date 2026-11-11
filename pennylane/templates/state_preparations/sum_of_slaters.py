@@ -21,7 +21,12 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_name,
+    register_resources,
+)
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
 from pennylane.wires import WiresLike
@@ -1412,11 +1417,11 @@ def _sos_state_prep_with_wires(
 @register_condition(
     lambda coefficients, wires, indices, *_, **__: indices is not None
 )  # indices must be known
+@register_name("standard")
 @register_resources(
     _sos_state_prep_standard_resources,
     exact=False,
     work_wires=_sos_state_prep_standard_work_wires,
-    name="standard",
 )
 # pylint: disable-next=too-many-arguments
 def _sos_state_prep_standard(

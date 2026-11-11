@@ -20,7 +20,7 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import CNOT, CZ, BasisState, CRot, PhaseShift
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
@@ -416,7 +416,8 @@ def _decompose_ua_qfunc(phi: float, wires: WiresLike):
     PhaseShift(-phi, wires=n)
 
 
-@register_resources(_particle_conserving_u1_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_particle_conserving_u1_standard_resources)
 def _particle_conserving_u1_standard(
     weights: list, wires: WiresLike, init_state: tuple[int]
 ):  # pylint: disable=arguments-differ

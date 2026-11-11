@@ -18,7 +18,7 @@ Contains the ControlledSequence template.
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import abstractify
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops.op_math import SymbolicOp2, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
@@ -151,7 +151,8 @@ def _ctrl_seq_standard_resources(base, control) -> dict:
 
 
 # pylint: disable=no-value-for-parameter
-@register_resources(_ctrl_seq_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_ctrl_seq_standard_resources)
 def _ctrl_seq_standard(*_, base=None, control=None, **__):
     if compiler.active() or capture.enabled():
         control = math.array(control, like="jax")

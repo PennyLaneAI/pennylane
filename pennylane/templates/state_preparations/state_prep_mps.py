@@ -19,7 +19,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.typing import Complex, Wire
 
 
@@ -405,7 +405,8 @@ def _work_wires_bond_dimension_condition(
 
 
 @qp.register_condition(_work_wires_bond_dimension_condition)
-@register_resources(_mps_prep_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_mps_prep_standard_resources)
 def _mps_prep_standard(mps, wires, work_wires=None, right_canonicalize=False):
     mps = list(mps)
 

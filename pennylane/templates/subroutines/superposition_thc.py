@@ -18,7 +18,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import RY, GlobalPhase, Hadamard, MultiControlledX, X, Z, adjoint, ctrl
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
@@ -333,7 +333,8 @@ def _superposition_thc_standard_resources(M, N, mu_wires, nu_wires, work_wires):
     }
 
 
-@register_resources(_superposition_thc_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_superposition_thc_standard_resources)
 def _superposition_thc_standard(M, N, mu_wires, nu_wires, work_wires, **_):
     # pylint: disable=too-many-arguments
     #

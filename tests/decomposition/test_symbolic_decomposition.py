@@ -26,6 +26,7 @@ from pennylane.decomposition.decomposition_rule import (
     _fix_decomp,
     list_decomps,
     register_condition,
+    register_name,
     register_resources,
 )
 from pennylane.decomposition.resources import (
@@ -135,7 +136,8 @@ class TestAdjointDecompositionRules:
     def test_adjoint_general(self):
         """Tests the adjoint of a general operator can be correctly decomposed."""
 
-        @qp.register_resources({qp.H: 1, qp.CNOT: 2, qp.RX: 1, qp.T: 1}, name="custom_decomp")
+        @qp.register_name("custom_decomp")
+        @qp.register_resources({qp.H: 1, qp.CNOT: 2, qp.RX: 1, qp.T: 1})
         def _custom_decomp(phi, wires, **_):
             qp.H(wires[0])
             qp.CNOT(wires=wires[:2])
@@ -148,11 +150,11 @@ class TestAdjointDecompositionRules:
 
         assert str(rule) == dedent("""
             @register_condition(_condition_fn)
+            @register_name(f"adjoint({base_decomposition.name})")
             @register_resources(
                 _resource_fn,
                 work_wires=base_decomposition._work_wire_spec,
                 exact=base_decomposition.exact_resources,
-                name=f"adjoint({base_decomposition.name})",
             )
             def _impl(*params, wires, base):
                 # pylint: disable=protected-access
@@ -160,7 +162,8 @@ class TestAdjointDecompositionRules:
 
             where base_decomposition is defined as:
 
-            @qp.register_resources({qp.H: 1, qp.CNOT: 2, qp.RX: 1, qp.T: 1}, name="custom_decomp")
+            @qp.register_name("custom_decomp")
+            @qp.register_resources({qp.H: 1, qp.CNOT: 2, qp.RX: 1, qp.T: 1})
             def _custom_decomp(phi, wires, **_):
                 qp.H(wires[0])
                 qp.CNOT(wires=wires[:2])
@@ -194,7 +197,8 @@ class TestAdjointDecompositionRules:
         """Tests the rules populated for Adjoint2."""
 
         @register_condition(lambda phi, wires: len(wires) == 1)
-        @register_resources({qp.RX: 1, qp.H: 1, qp.T: 1, OneWireDynOp: 1}, name="custom_rule")
+        @register_name("custom_rule")
+        @register_resources({qp.RX: 1, qp.H: 1, qp.T: 1, OneWireDynOp: 1})
         def custom_rule(phi, wires):
             qp.H(wires)
             qp.RX(phi, wires)
@@ -535,7 +539,8 @@ def _custom_resource(num_wires):
     }
 
 
-@qp.register_resources(_custom_resource, name="custom_decomp")
+@qp.register_name("custom_decomp")
+@qp.register_resources(_custom_resource)
 def custom_decomp(*params, wires, **_):
     qp.X(wires[0])
     qp.CNOT(wires=wires[:2])
@@ -647,11 +652,11 @@ class TestControlledDecomposition:
 
         assert str(rule) == dedent("""
             @register_condition(_condition_fn)
+            @register_name(f"controlled({base_decomposition.name})")
             @register_resources(
                 _resource_fn,
                 work_wires=base_decomposition._work_wire_spec,
                 exact=base_decomposition.exact_resources,
-                name=f"controlled({base_decomposition.name})",
             )
             def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
                 zero_control_wires = [
@@ -673,7 +678,8 @@ class TestControlledDecomposition:
 
             where base_decomposition is defined as:
 
-            @qp.register_resources(_custom_resource, name="custom_decomp")
+            @qp.register_name("custom_decomp")
+            @qp.register_resources(_custom_resource)
             def custom_decomp(*params, wires, **_):
                 qp.X(wires[0])
                 qp.CNOT(wires=wires[:2])
@@ -933,7 +939,8 @@ class TestControlledDecomposition:
             return {OneWireDynOp: len(wires), qp.CNOT: len(wires) - 1}
 
         @qp.register_condition(_condition_fn)
-        @qp.register_resources(_resource_fn, name="custom_decomp")
+        @qp.register_name("custom_decomp")
+        @qp.register_resources(_resource_fn)
         def _custom_decomp(phi, wires):
             @qp.for_loop(0, len(wires))
             def _loop(i):
@@ -1009,7 +1016,8 @@ class TestControlledDecomposition:
     def test_flip_zero_control(self):
         """Tests the `flip_zero_control` modifier."""
 
-        @qp.register_resources({qp.CNOT: 3, qp.H: 2}, name="custom_controlled_rule")
+        @qp.register_name("custom_controlled_rule")
+        @qp.register_resources({qp.CNOT: 3, qp.H: 2})
         def _custom_controlled_rule(wires, **_):
             qp.CNOT(wires[0:2])
             qp.H(wires[1])
@@ -1022,11 +1030,11 @@ class TestControlledDecomposition:
 
         assert str(rule) == dedent("""
             @register_condition(_condition_fn)
+            @register_name(name or f"flip_zero_ctrl_values({inner_decomp.name})")
             @register_resources(
                 _resource_fn,
                 work_wires=inner_decomp._work_wire_spec,
                 exact=inner_decomp.exact_resources,
-                name=name or f"flip_zero_ctrl_values({inner_decomp.name})",
             )
             def _impl(*params, wires, control_wires, control_values, **kwargs):
                 zero_control_wires = [
@@ -1046,7 +1054,8 @@ class TestControlledDecomposition:
 
             where inner_decomp is defined as:
 
-            @qp.register_resources({qp.CNOT: 3, qp.H: 2}, name="custom_controlled_rule")
+            @qp.register_name("custom_controlled_rule")
+            @qp.register_resources({qp.CNOT: 3, qp.H: 2})
             def _custom_controlled_rule(wires, **_):
                 qp.CNOT(wires[0:2])
                 qp.H(wires[1])
@@ -1075,7 +1084,8 @@ class TestControlledDecomposition:
             return len(control_wires) == 3
 
         @qp.register_condition(_condition_fn)
-        @qp.register_resources({qp.CNOT: 3, qp.H: 2}, name="custom_controlled_rule")
+        @qp.register_name("custom_controlled_rule")
+        @qp.register_resources({qp.CNOT: 3, qp.H: 2})
         def _custom_controlled_rule(base, control_wires, **_):
             qp.CNOT(control_wires[:2])
             qp.H(control_wires[2])
@@ -1110,7 +1120,8 @@ class TestControlledDecomposition:
     def test_flip_zero_control_qjit(self):
         """Tests flip_zero_control with qjit."""
 
-        @qp.register_resources({qp.CNOT: 3, qp.H: 2}, name="custom_controlled_rule")
+        @qp.register_name("custom_controlled_rule")
+        @qp.register_resources({qp.CNOT: 3, qp.H: 2})
         def _custom_controlled_rule(base, control_wires, **_):
             qp.CNOT(control_wires[:2])
             qp.H(control_wires[2])
@@ -1145,7 +1156,8 @@ class TestControlledDecomposition:
         from pennylane.exceptions import CaptureWarning
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
-        @qp.register_resources({qp.CNOT: 3, qp.H: 2}, name="custom_controlled_rule")
+        @qp.register_name("custom_controlled_rule")
+        @qp.register_resources({qp.CNOT: 3, qp.H: 2})
         def _custom_controlled_rule(base, control_wires, **_):
             qp.CNOT(control_wires[:2])
             qp.H(control_wires[2])

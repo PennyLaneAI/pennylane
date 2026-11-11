@@ -18,7 +18,7 @@ Contains the hardware-efficient ParticleConservingU2 template.
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import CNOT, CRX, RZ, BasisState
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
@@ -268,7 +268,8 @@ def _particle_conserving_u2_standard_resources(num_wires: int, n_layers: int):
     }
 
 
-@register_resources(_particle_conserving_u2_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_particle_conserving_u2_standard_resources)
 def _particle_conserving_u2_standard(weights: list, wires: WiresLike, init_state: tuple[int]):
     nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
     nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]

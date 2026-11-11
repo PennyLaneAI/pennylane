@@ -80,23 +80,27 @@ class CustomIsingXX(qp.operation.Operation):
 def custom_decomps():
     """Locally register decomposition rules."""
 
-    @qp.register_resources({qp.X: 1, qp.Y: 1}, name="custom_rule_no_mat_op")
+    @qp.register_name("custom_rule_no_mat_op")
+    @qp.register_resources({qp.X: 1, qp.Y: 1})
     def custom_rule_no_mat_op(wires):
         qp.X(wires)
         qp.Y(wires)
 
-    @qp.register_resources({qp.X: 1, qp.Y: 1}, name="custom_rule_mat_op")
+    @qp.register_name("custom_rule_mat_op")
+    @qp.register_resources({qp.X: 1, qp.Y: 1})
     def custom_rule_mat_op(data, wires):  # pylint: disable=unused-argument
         qp.X(wires)
         qp.Y(wires)
 
-    @qp.register_resources({qp.RX: 1, qp.RY: 1, qp.CNOT: 1}, name="custom_rule_template")
+    @qp.register_name("custom_rule_template")
+    @qp.register_resources({qp.RX: 1, qp.RY: 1, qp.CNOT: 1})
     def custom_rule_template(data0, data1, wires):
         qp.RX(data0, wires[0])
         qp.RY(data1, wires[1])
         qp.CNOT(wires)
 
-    @qp.register_resources({qp.IsingXX: 1}, name="custom_rule_isingxx")
+    @qp.register_name("custom_rule_isingxx")
+    @qp.register_resources({qp.IsingXX: 1})
     def custom_rule_isingxx(data, wires):
         qp.IsingXX(data, wires)
 
@@ -461,7 +465,8 @@ class TestPreprocessing:
             def has_matrix(self):
                 return True
 
-        @qp.register_resources({qp.RX: 1}, name="custom_decomp")
+        @qp.register_name("custom_decomp")
+        @qp.register_resources({qp.RX: 1})
         def custom_decomp(data, wires):
             qp.RX(data, wires)
 
@@ -1161,12 +1166,14 @@ class TestDefaultQubitGraphModeExclusive:
         class MyDefaultQubitOp(qp.operation.Operator):
             num_wires = 1
 
-        @qp.register_resources({qp.H: 2}, name="decomp_fallback")
+        @qp.register_name("decomp_fallback")
+        @qp.register_resources({qp.H: 2})
         def decomp_fallback(wires):
             qp.H(wires)
             qp.H(wires)
 
-        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 5}, name="decomp_with_work_wire")
+        @qp.register_name("decomp_with_work_wire")
+        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 5})
         def decomp_with_work_wire(wires):
             qp.X(wires)
 

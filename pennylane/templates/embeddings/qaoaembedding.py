@@ -22,7 +22,7 @@ from jax import numpy as jnp
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation, abstractify
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import RX, RY, RZ, H, MultiRZ, cond
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
@@ -354,7 +354,8 @@ def _qaoa_embedding_standard_resources(repeat, n_features, num_wires, local_fiel
     return resources
 
 
-@register_resources(_qaoa_embedding_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_qaoa_embedding_standard_resources)
 def _qaoa_embedding_standard(features, weights, wires, local_field):
     if capture.enabled():
         weights, wires, features = jnp.array(weights), jnp.array(wires), jnp.array(features)

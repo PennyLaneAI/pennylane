@@ -16,7 +16,7 @@ Contains FTQC/MBQC-specific operations
 """
 
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import RX, RZ
 
 
@@ -105,7 +105,8 @@ class RotXZX(Operation):
         return RotXZX(-omega, -theta, -phi, wires=self.wires)
 
 
-@register_resources({RX: 2, RZ: 1}, name="standard")
+@register_name("standard")
+@register_resources({RX: 2, RZ: 1})
 def _xzx_decompose_standard(phi, theta, omega, wires, **__):
     RX(phi, wires=wires)
     RZ(theta, wires=wires)
@@ -115,7 +116,8 @@ def _xzx_decompose_standard(phi, theta, omega, wires, **__):
 add_decomps(RotXZX, _xzx_decompose_standard)
 
 
-@register_resources({RotXZX: 1}, name="standard")
+@register_name("standard")
+@register_resources({RotXZX: 1})
 def _adjoint_rot_xzx_standard(phi, theta, omega, wires, **__):
     RotXZX(-omega, -theta, -phi, wires=wires)
 

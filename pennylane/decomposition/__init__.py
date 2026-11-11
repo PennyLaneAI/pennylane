@@ -56,6 +56,7 @@ Defining Decomposition Rules
     :toctree: api
 
     ~register_resources
+    ~register_name
     ~register_condition
     ~resource_rep
     ~controlled_resource_rep
@@ -74,7 +75,8 @@ must declare its resource requirements using the ``register_resources`` decorato
 
 .. code-block:: python
 
-    @qp.register_resources({qp.H: 2, qp.CZ: 1}, name="my_cnot")
+    @qp.register_name("my_cnot")
+    @qp.register_resources({qp.H: 2, qp.CZ: 1})
     def my_cnot(wires):
         qp.H(wires=wires[1])
         qp.CZ(wires=wires)
@@ -147,19 +149,22 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
 
     qp.decomposition.enable_graph()
 
-    @qp.register_resources({qp.CNOT: 2, qp.RX: 1}, name="isingxx_decomp")
+    @qp.register_name("isingxx_decomp")
+    @qp.register_resources({qp.CNOT: 2, qp.RX: 1})
     def isingxx_decomp(phi, wires, **__):
         qp.CNOT(wires=wires)
         qp.RX(phi, wires=[wires[0]])
         qp.CNOT(wires=wires)
 
-    @qp.register_resources({qp.H: 2, qp.CZ: 1}, name="my_cnot1")
+    @qp.register_name("my_cnot1")
+    @qp.register_resources({qp.H: 2, qp.CZ: 1})
     def my_cnot1(wires, **__):
         qp.H(wires=wires[1])
         qp.CZ(wires=wires)
         qp.H(wires=wires[1])
 
-    @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2}, name="my_cnot2")
+    @qp.register_name("my_cnot2")
+    @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2})
     def my_cnot2(wires, **__):
         qp.RY(np.pi/2, wires[1])
         qp.Z(wires[1])
@@ -251,6 +256,7 @@ from .resources import (
     change_op_basis_resource_rep,
 )
 from .decomposition_rule import (
+    register_name,
     register_resources,
     register_condition,
     DecompositionRule,

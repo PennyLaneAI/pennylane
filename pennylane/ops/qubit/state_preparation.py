@@ -28,7 +28,7 @@ from scipy.sparse import csr_array, csr_matrix
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operation, Operator, StatePrepBase, StatePrepBase2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.exceptions import WireError
 from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import AbstractArray, AbstractWires, Bool, TensorLike, Wire
@@ -164,7 +164,8 @@ def _basis_state_standard_resources(state, wires):  # pylint: disable=unused-arg
     return {qp.X: num_wires - num_wires // 2}  # Estimate 50% of wires (rounded up) to get flipped
 
 
-@register_resources(_basis_state_standard_resources, exact=False, name="standard")
+@register_name("standard")
+@register_resources(_basis_state_standard_resources, exact=False)
 def _basis_state_standard(state, wires):
     if qp.capture.enabled() or qp.compiler.active():
         # This branch makes sure that state and wires are cast to objects into which
@@ -563,7 +564,8 @@ def _state_prep_standard_resources(num_wires):
     return {qp.resource_rep(qp.MottonenStatePreparation, num_wires=num_wires): 1}
 
 
-@register_resources(_state_prep_standard_resources, name="standard")
+@register_name("standard")
+@register_resources(_state_prep_standard_resources)
 def _state_prep_standard(state, wires, **_):
     qp.MottonenStatePreparation(state, wires)
 
