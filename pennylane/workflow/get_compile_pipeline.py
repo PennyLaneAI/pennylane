@@ -73,7 +73,8 @@ def get_compile_pipeline(
               preprocessing is the last level, a slice without a stop, such as
               ``slice(1, None)``, includes the device preprocessing. To exclude it, give an
               explicit stop, e.g. ``slice(1, 2)`` for a pipeline with two user-applied
-              transforms. A step greater than ``1`` skips transforms, and emits a warning.
+              transforms. A step greater than ``1`` skips transforms, and emits a warning, as
+              does a slice that selects no transforms.
             * ``Sequence``: A non-empty ``list``, ``tuple``, or similar containing ``int`` or
               ``str`` values. One compile pipeline is returned per level, in ascending order. If
               the levels are not in ascending order, or contain duplicates, they are sorted and

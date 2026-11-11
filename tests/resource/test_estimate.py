@@ -289,18 +289,32 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         with pytest.raises(NotImplementedError, match="qp.estimate only supports level='top'"):
             qp.estimate(circuit, level="end", target=TARGET)(0.5)
 
-    @pytest.mark.parametrize("level", [[0], ("top",), slice(0, 0), slice(1, 1)])
+    @pytest.mark.parametrize("level", [slice(0, 0), slice(1, 1)])
     def test_levels_equivalent_to_top(self, circuit, level):
-        """Test that a single-entry Sequence of level 0, and a slice that selects no transforms,
-        are the same as level="top"."""
+        """Test that a slice that selects no transforms is the same as level="top", with a
+        warning."""
 
-        specs = qp.estimate(circuit, level=level, target=TARGET)(0.5)
+        with pytest.warns(UserWarning, match="does not select any transforms"):
+            specs = qp.estimate(circuit, level=level, target=TARGET)(0.5)
 
         assert specs == qp.estimate(circuit, level="top", target=TARGET)(0.5)
 
     @pytest.mark.parametrize(
         "level",
-        [1, "user", "all", [1], ["user"], (0, 1), slice(0, 1), slice(1, 2), slice(0, None)],
+        [
+            1,
+            "user",
+            "all",
+            [0],
+            ("top",),
+            ["device"],
+            [1],
+            ["user"],
+            (0, 1),
+            slice(0, 1),
+            slice(1, 2),
+            slice(0, None),
+        ],
     )
     def test_unsupported_level(self, circuit, level):
         """Test that an error is raised for levels other than "top"."""
@@ -325,12 +339,11 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         with pytest.raises(NotImplementedError, match="qp.estimate only supports level='top'"):
             qp.estimate(qp.qjit(qnode), level=level, target=TARGET)(0.5)
 
-    @pytest.mark.parametrize("level", ["device", ["device"]])
-    def test_device_level(self, circuit, level):
+    def test_device_level(self, circuit):
         """Test that an error is raised for level="device"."""
 
         with pytest.raises(NotImplementedError, match="does not support level='device' yet"):
-            qp.estimate(circuit, level=level, target=TARGET)(0.5)
+            qp.estimate(circuit, level="device", target=TARGET)(0.5)
 
     @pytest.mark.parametrize(
         "level",

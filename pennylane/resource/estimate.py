@@ -26,7 +26,6 @@ from pennylane.workflow._levels import (
     is_single_level,
     level_to_number,
     pipeline_at_slice,
-    unpack_single_entry,
     validate_level,
 )
 from pennylane.workflow.get_compile_pipeline import unwrap_qjit_qnode
@@ -57,18 +56,15 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
 
     compile_pipeline = original_qnode.compile_pipeline
     validate_level(level, compile_pipeline)
-    single_level = unpack_single_entry(level)
 
     # The ``isinstance`` check avoids elementwise comparisons
-    if isinstance(single_level, str) and single_level == "device":
+    if isinstance(level, str) and level == "device":
         raise NotImplementedError("qp.estimate does not support level='device' yet.")
-    if isinstance(single_level, slice):
+    if isinstance(level, slice):
         # A slice that selects no transforms is the same as level 0
-        is_top = not pipeline_at_slice(compile_pipeline, single_level)
+        is_top = not pipeline_at_slice(compile_pipeline, level)
     else:
-        is_top = (
-            is_single_level(single_level) and level_to_number(single_level, compile_pipeline) == 0
-        )
+        is_top = is_single_level(level) and level_to_number(level, compile_pipeline) == 0
     if not is_top:
         raise NotImplementedError(
             f"qp.estimate only supports level='top' or level=0, instead got: {level!r}."

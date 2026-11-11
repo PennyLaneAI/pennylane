@@ -1511,7 +1511,9 @@ Breaking changes 💔
   supported. Printed :class:`~.CompilePipeline` transforms are numbered from ``[0]``,
   and ``"all-user"`` can no longer be used as a marker label. The ``level`` argument of
   :func:`~.analyze`, :func:`~pennylane.estimate` and :func:`~.track` now follows
-  :func:`~.workflow.get_compile_pipeline`. :func:`~.workflow.get_compile_pipeline` now only
+  :func:`~.workflow.get_compile_pipeline`, so a negative or out-of-range ``int`` level, or a
+  ``set`` or generator of levels, now raises a ``ValueError``, and a marker at the end of the
+  selected transforms is kept. :func:`~.workflow.get_compile_pipeline` now only
   accepts :func:`~.qjit`'d QNodes; for a QNode that is not qjit'd, use ``qnode.compile_pipeline``
   for the user transforms, or :func:`~.workflow.construct_batch` to inspect the tapes at the
   gradient or device level.

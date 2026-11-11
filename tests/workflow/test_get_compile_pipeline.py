@@ -353,9 +353,24 @@ class TestLevels:
         assert cp[-1] == DEVICE_PREPROCESSING
 
     def test_slice_starting_at_device_level(self):
-        """Tests that a slice starting at the device level is empty."""
+        """Tests that a slice starting after the device level is empty, with a warning."""
 
-        assert get_compile_pipeline(self._circuit(), level=slice(3, None)) == (CompilePipeline())
+        with pytest.warns(UserWarning, match="does not select any transforms"):
+            cp = get_compile_pipeline(self._circuit(), level=slice(3, None))
+        assert cp == CompilePipeline()
+
+    @pytest.mark.parametrize("level_slice", [slice(1, 1), slice(3, None, 2)])
+    def test_empty_slice_warns(self, level_slice):
+        """Tests that a slice that selects no transforms warns, only once with a step greater
+        than 1."""
+
+        with warnings.catch_warnings(record=True) as record:
+            warnings.simplefilter("always")
+            cp = get_compile_pipeline(self._circuit(), level=level_slice)
+
+        messages = [str(w.message) for w in record if "does not select any" in str(w.message)]
+        assert len(messages) == 1
+        assert not list(cp)
 
     def test_slice_with_unit_step(self):
         """Tests that a slice with an explicit step of 1 is the same as without a step."""
