@@ -2347,6 +2347,11 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed a bug where AutoGraph raised an error for ``for`` loops over static iterables
+  that cannot be converted to arrays, such as lists of strings. These loops, including
+  ``enumerate`` loops, are now unrolled during capture without a warning.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * Fixed a bug where :func:`~pennylane.draw_mpl` replaced the symbols and quantum controls of
   conditionally applied operations with a labelled box. Conditional control/target diagrams
   now have a dashed boundary showing that the classical condition applies to the whole operation.
