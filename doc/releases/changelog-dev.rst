@@ -1830,6 +1830,9 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* Adding trusted publishing for prototyping and testing of the PennyLane Catalyst integration.
+  `(#10513) <https://github.com/PennyLaneAI/pennylane/pull/10513>`__
+
 * :func:`~.specs`, :func:`~.analyze` and :func:`~pennylane.estimate` now compile QJIT-compiled
   QNodes up to the MLIR passes with Catalyst's ``target="mlir_opt"``, instead of reproducing part
   of ``QJIT.jit_compile``.
@@ -2656,6 +2659,7 @@ Contributors ✍️
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire,
 Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,
