@@ -2005,6 +2005,7 @@ Internal changes ⚙️
     `(#10458) <https://github.com/PennyLaneAI/pennylane/pull/10458>`__
     `(#10482) <https://github.com/PennyLaneAI/pennylane/pull/10482>`__
     `(#10463) <https://github.com/PennyLaneAI/pennylane/pull/10463>`__
+    `(#10503) <https://github.com/PennyLaneAI/pennylane/pull/10503>`__
 
   - Miscelleneous operators are ported:
 
@@ -2640,6 +2641,11 @@ Bug fixes 🐛
   :class:`~.ChangeOpBasis` operators that are nested in other ``ChangeOpBasis`` operators, matching
   the gates produced by the captured decomposition.
   `(#10351) <https://github.com/PennyLaneAI/pennylane/pull/10351>`__
+
+* The decomposition of a controlled :class:`~.SemiAdder` without dedicated control work wires
+  now treats surplus work wires of the ``SemiAdder`` as zeroed, instead of using the
+  ``work_wire_type`` of the length-zero control work wires, which defaults to ``"borrowed"``.
+  `(#10506) <https://github.com/PennyLaneAI/pennylane/pull/10506>`__
 
 Contributors ✍️
 ~~~~~~~~~~~~~~~
