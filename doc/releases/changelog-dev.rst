@@ -14,6 +14,25 @@ New features since last release
   angles with ``QROMLoad``.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
 
+  For example, we may use ``QROMLoad`` on a zeroed target register, but need ``QROM`` to XOR more
+  data onto it afterwards:
+
+  .. code-block:: python
+
+      @qp.qnode(qp.device("default.qubit"), shots=1)
+      def circuit():
+          qp.BasisState([1, 0], wires=[0, 1])
+          # target wires 2, 3, 4 start in |000>
+          qp.QROMLoad(["010", "111", "110", "000"], [0, 1], [2, 3, 4], work_wires=[5, 6, 7])
+          # target wires now hold |110>
+          qp.QROM(["001", "011", "101", "111"], [0, 1], [2, 3, 4], work_wires=[5])
+          return qp.sample(wires=[2, 3, 4])
+
+  .. code-block:: pycon
+
+      >>> print(circuit())
+      [[0 1 1]]
+
 * A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
   `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
 
@@ -56,6 +75,11 @@ New features since last release
   that they are hidden from :func:`~.decomposition.list_decomps` and the graph-based decomposition system without
   being removed. When used as a context manager, the rules are excluded only within the context.
   `(#10329) <https://github.com/PennyLaneAI/pennylane/pull/10329>`__
+
+* The `alt-decomps` parameter of :func:`~.transforms.decompose` has been removed in favour of `exclude_decomps`, which prevents a set of decomposition rules from being chosen for an operator in a given pass instance.
+  `(#10461) <https://github.com/PennyLaneAI/pennylane/pull/10461>`__
+  `(#10500) <https://github.com/PennyLaneAI/pennylane/pull/10500>`__
+
 
 * A new function called :func:`~pennylane.backline.onnx_decoder` has been added, which runs an
   ONNX model on a Backline :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or
@@ -903,9 +927,20 @@ Improvements 🛠
   for :math:`L` bitstrings but requires additional work wires.
   `(#10363) <https://github.com/PennyLaneAI/pennylane/pull/10363>`__
 
+* Controlled :class:`~.SWAP` and :class:`~.PauliZ` operators now use their work wires when
+  decomposed. The decompositions into :class:`~.CSWAP` (one control wire) and :class:`~.CCZ`
+  (two control wires) are now separate decomposition rules, and the decompositions via
+  :class:`~.MultiControlledX` apply to any number of control wires.
+
+  A controlled :class:`~.PhaseShift` with any number of control wires has a new decomposition into
+  a single :class:`~.PhaseShift` on one of the provided zeroed work wires, computed with a
+  :class:`~.TemporaryAND` ladder, that requires one zeroed work wire per control wire.
+  `(#10455) <https://github.com/PennyLaneAI/pennylane/pull/10455>`__
+
 * Callable :func:`~.ctrl` now captures work-wire labels as operands, supporting
   traced work wires.
   `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
+  `(#10491) <https://github.com/PennyLaneAI/pennylane/pull/10491>`__
   
 * Efficient decomposition rules for :class:`~.ControlledPhaseShift`, :class:`~.OutMultiplier`, and :class:`Adjoint(Incrementer) <~.Incrementer>` have been added.
   `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
@@ -2019,10 +2054,13 @@ Internal changes ⚙️
 
   - Quantum chemistry operators are ported:
 
-    - :class:`~.SingleExcitation`, :class:`~.FermionicSWAP`
+    - :class:`~.SingleExcitation`, :class:`~.FermionicSWAP`, :class:`~.OrbitalRotation`, :class:`~.DoubleExcitation`
 
     `(#9944) <https://github.com/PennyLaneAI/pennylane/pull/9944>`__
     `(#10458) <https://github.com/PennyLaneAI/pennylane/pull/10458>`__
+    `(#10482) <https://github.com/PennyLaneAI/pennylane/pull/10482>`__
+    `(#10463) <https://github.com/PennyLaneAI/pennylane/pull/10463>`__
+    `(#10503) <https://github.com/PennyLaneAI/pennylane/pull/10503>`__
 
   - Miscelleneous operators are ported:
 
@@ -2350,6 +2388,7 @@ Documentation 📝
   `(#10421) <https://github.com/PennyLaneAI/pennylane/pull/10421>`__
   `(#10433) <https://github.com/PennyLaneAI/pennylane/pull/10433>`__
   `(#10436) <https://github.com/PennyLaneAI/pennylane/pull/10436>`__
+  `(#10453) <https://github.com/PennyLaneAI/pennylane/pull/10453>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
@@ -2358,6 +2397,7 @@ Bug fixes 🐛
   applied to a callable during program capture. Concrete work-wire labels retain
   their existing behaviour.
   `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
+  `(#10491) <https://github.com/PennyLaneAI/pennylane/pull/10491>`__
   
 * Fixed a bug where AutoGraph raised an error for empty ``for`` loops.
   `(#10448) <https://github.com/PennyLaneAI/pennylane/pull/10448>`__

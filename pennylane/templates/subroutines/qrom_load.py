@@ -35,7 +35,6 @@ from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .arithmetic import TemporaryAND
-from .multix import MultiX
 from .qrom import (
     QROM,
     _qrom_unary_iteration_resources,
@@ -94,9 +93,7 @@ class QROMLoad(Operator2):
             as pay off, though, so not all work wires are necessarily used.
         clean (bool): whether to return the ``work_wires`` to :math:`|0\rangle`. With
             ``clean=False``, they are left in a garbage state, which cuts the cost of Select-SWAP
-            by more than half. As this garbage state depends on the decomposition, Select-SWAP is
-            then always used where it pays off, irrespective of the target gate set. Defaults to
-            ``True``.
+            by more than half. Defaults to ``True``.
 
     **Example**
 
@@ -186,6 +183,32 @@ class QROMLoad(Operator2):
         that minimizes the combined cost, among the powers of two that fit into the work wires.
         Here, eight bitstrings in parallel would not fit, and two would be more expensive than four.
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.QROMLoad
+            :symbols: :math:`L` bitstrings of length :math:`n`, :math:`c` control wires and
+                :math:`w` work wires
+            :example: :math:`L=32`, :math:`n=1`, :math:`c=5`, :math:`w=5` and ``clean=True``
+
+            .. decomposition-rule:: _select_swap
+                :image: /_static/decomposition_thumbnails/qrom_load_select_swap.svg
+                :lightbox:
+                :requires: :math:`w \geq c - 1` work wires, and :math:`k > 1` to be the cheapest
+                    choice
+                :where: :math:`k = 2^j` bitstrings are loaded in parallel, with :math:`j` chosen to
+                    minimize the cost among all :math:`j` with
+                    :math:`n(k - 1) + \max(c - j - 1, 0) \leq w`
+
+                :class:`~.QROM` with :math:`\lceil L/k \rceil` bitstrings of length :math:`kn` on :math:`c - j` control wires | :math:`2` if ``clean=True``, :math:`1` otherwise | 2
+                :class:`~.SWAP` with 1 control | :math:`4n(k - 1)` if ``clean=True``, :math:`n(k - 1)` otherwise | 12
+                :class:`~.Hadamard` | :math:`2n` if ``clean=True``, :math:`0` otherwise | 2
+
+            .. decomposition-rule:: _qrom_load_to_qrom
+                :image: /_static/decomposition_thumbnails/qrom_load_to_qrom.svg
+
+                :class:`~.QROM` | :math:`1` | 1
+
     """
 
     dynamic_argnames = ("bitstrings",)
@@ -206,7 +229,7 @@ class QROMLoad(Operator2):
         target_wires: WiresLike,
         work_wires: WiresLike,
         clean: bool = True,
-    ):  # pylint: disable=too-many-arguments
+    ):
         args = (bitstrings, control_wires, target_wires, work_wires)
         super().__init__(*preprocess_qrom_inputs(*args), clean)
 
@@ -352,7 +375,6 @@ def _calculate_select_swap_sizes(
 
 
 def _select_swap_condition(bitstrings, control_wires, target_wires, work_wires, clean):
-    # pylint: disable=unused-argument
     """We use Select-SWAP only when there are enough work wires for unary iteration on the
     nested select QROM and an actual SWAP network is used on top, i.e. for depth > 1. If the
     cost-optimal depth is 1, the plain QROM fallback is the better decomposition."""
@@ -368,9 +390,7 @@ def _select_swap_condition(bitstrings, control_wires, target_wires, work_wires, 
     return depth > 1
 
 
-def _select_swap_resources(
-    bitstrings, control_wires, target_wires, work_wires, clean
-):  # pylint: disable=too-many-branches
+def _select_swap_resources(bitstrings, control_wires, target_wires, work_wires, clean):
     """Assumes depth computed below satisfies depth > 1, as guaranteed by _select_swap_condition."""
     num_bitstrings = len(bitstrings)
     num_control_wires = len(control_wires)
@@ -410,13 +430,7 @@ def _select_swap_resources(
 
 @register_condition(_select_swap_condition)
 @register_resources(_select_swap_resources)
-def _select_swap(
-    bitstrings, control_wires, target_wires, work_wires, clean
-):  # pylint: disable=unused-argument, too-many-arguments
-    if len(control_wires) == 0:
-        MultiX(bitstrings[0, :], wires=target_wires)
-        return
-
+def _select_swap(bitstrings, control_wires, target_wires, work_wires, clean):
     num_control_wires_select, _, num_work_wires_swap, num_work_wires_cswap, depth = (
         _calculate_select_swap_sizes(
             len(bitstrings), len(control_wires), len(target_wires), len(work_wires), clean
@@ -446,7 +460,7 @@ def _select_swap(
         target_wires = math.array(target_wires, like="jax")
 
     @for_loop(2)
-    def _select_swap_loop(i):
+    def _select_swap_loop(_):
 
         @for_loop(len(target_wires))
         def apply_h(i):
@@ -477,15 +491,6 @@ def _qrom_load_to_qrom_resources(bitstrings, control_wires, target_wires, work_w
     }
 
 
-def _qrom_load_to_qrom_condition(bitstrings, control_wires, target_wires, work_wires, clean):
-    """For ``clean=False``, the final state of the work wires depends on the decomposition. Only
-    one rule may be applicable, so that loading and unloading with the adjoint always match."""
-    return clean or not _select_swap_condition(
-        bitstrings, control_wires, target_wires, work_wires, clean
-    )
-
-
-@register_condition(_qrom_load_to_qrom_condition)
 @register_resources(_qrom_load_to_qrom_resources)
 def _qrom_load_to_qrom(bitstrings, control_wires, target_wires, work_wires, clean):
     # pylint: disable=unused-argument

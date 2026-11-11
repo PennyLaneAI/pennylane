@@ -210,10 +210,9 @@ class SingleExcitation(Operator2):
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
-    # pylint: disable=unused-argument
     @staticmethod
     def compute_matrix(
-        phi: TensorLike, wires=None
+        phi: TensorLike, wires=None  # pylint: disable=unused-argument
     ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -255,7 +254,7 @@ class SingleExcitation(Operator2):
 
 
 # needs to be wrapped in function due to circular dependencies
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _single_excitation_resources(phi, wires):
     # ``Prod2`` takes its operands in matrix order, i.e. reversed relative to the order in which
     # the decomposition below applies them.
@@ -287,7 +286,7 @@ def _single_excitation_decomp(phi: TensorLike, wires: WiresLike):
     qp.change_op_basis(_to_basis, _rotations, _from_basis)
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _single_excitation_ppr_resource(phi, wires):
     return {
         qp.PauliRot(Float, pauli_word="XY", wires=Wire[2]): 1,
@@ -301,7 +300,7 @@ def _single_excitation_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(-phi / 2, "XY", wires=wires)
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _single_excitation_ppr_rz_resource(phi, wires):
     return {
         _change_op_basis_abstract(
@@ -321,7 +320,7 @@ def _single_excitation_ppr_rz(phi: TensorLike, wires: WiresLike):
     qp.change_op_basis(qp.PPR_4(1, "XX", wires=wires), _rotations, qp.PPR_4(-1, "XX", wires=wires))
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _single_excitation_ppr_crz_resource(phi, wires):
     compute = Prod2((qp.CNOT(Wire[2]), qp.PPR_4(1, "XX", wires=Wire[2])))
     return {
@@ -701,7 +700,7 @@ add_decomps("Adjoint(SingleExcitationPlus)", adjoint_rotation)
 add_decomps("Pow(SingleExcitationPlus)", pow_rotation)
 
 
-class DoubleExcitation(Operation):
+class DoubleExcitation(Operator2):
     r"""
     Double excitation rotation.
 
@@ -750,26 +749,16 @@ class DoubleExcitation(Operation):
         circuit(0.1)
     """
 
+    dynamic_argnames = ("phi",)
+    wire_argnames = ("wires",)
+    arg_specs = {"phi": Float, "wires": Wire[4]}
+    wire_sizes = (4,)
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    grad_method = "A"
-    """Gradient computation method."""
-
-    parameter_frequencies = [(0.5, 1.0)]
-    """Frequencies of the operation parameter with respect to an expectation value."""
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qp.Hamiltonian":
         w0, w1, w2, w3 = self.wires
@@ -788,7 +777,7 @@ class DoubleExcitation(Operation):
         )
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
-        return [DoubleExcitation(self.data[0] * z, wires=self.wires)]
+        return [DoubleExcitation(self.phi * z, wires=self.wires)]
 
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
@@ -798,7 +787,9 @@ class DoubleExcitation(Operation):
     mask_s[12, 3] = 1
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(
+        phi: TensorLike, wires: WiresLike = None  # pylint: disable=unused-argument
+    ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -809,101 +800,15 @@ class DoubleExcitation(Operation):
 
         Args:
           phi (tensor_like or float): rotation angle
+          wires (Sequence[int]): the wires the operation acts on
 
         Returns:
           tensor_like: canonical matrix
         """
         return _double_excitations_matrix(phi, 0.0)
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.DoubleExcitation.decomposition`.
-
-        For the source of this decomposition, see page 17 of
-        `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://doi.org/10.1088/1367-2630/ac2cb3>`_ .
-
-        Args:
-            phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.DoubleExcitation.compute_decomposition(1.23, wires=(0,1,2,3))
-        [CNOT(wires=[2, 3]),
-        CNOT(wires=[0, 2]),
-        H(3),
-        H(0),
-        CNOT(wires=[2, 3]),
-        CNOT(wires=[0, 1]),
-        RY(0.15375, wires=[1]),
-        RY(-0.15375, wires=[0]),
-        CNOT(wires=[0, 3]),
-        H(3),
-        CNOT(wires=[3, 1]),
-        RY(0.15375, wires=[1]),
-        RY(-0.15375, wires=[0]),
-        CNOT(wires=[2, 1]),
-        CNOT(wires=[2, 0]),
-        RY(-0.15375, wires=[1]),
-        RY(0.15375, wires=[0]),
-        CNOT(wires=[3, 1]),
-        H(3),
-        CNOT(wires=[0, 3]),
-        RY(-0.15375, wires=[1]),
-        RY(0.15375, wires=[0]),
-        CNOT(wires=[0, 1]),
-        CNOT(wires=[2, 0]),
-        H(0),
-        H(3),
-        CNOT(wires=[0, 2]),
-        CNOT(wires=[2, 3])]
-
-        """
-        # This decomposition is the "upside down" version of that on p17 of https://arxiv.org/abs/2104.05695
-        decomp_ops = [
-            qp.CNOT(wires=[wires[2], wires[3]]),
-            qp.CNOT(wires=[wires[0], wires[2]]),
-            qp.Hadamard(wires=wires[3]),
-            qp.Hadamard(wires=wires[0]),
-            qp.CNOT(wires=[wires[2], wires[3]]),
-            qp.CNOT(wires=[wires[0], wires[1]]),
-            qp.RY(phi / 8, wires=wires[1]),
-            qp.RY(-phi / 8, wires=wires[0]),
-            qp.CNOT(wires=[wires[0], wires[3]]),
-            qp.Hadamard(wires=wires[3]),
-            qp.CNOT(wires=[wires[3], wires[1]]),
-            qp.RY(phi / 8, wires=wires[1]),
-            qp.RY(-phi / 8, wires=wires[0]),
-            qp.CNOT(wires=[wires[2], wires[1]]),
-            qp.CNOT(wires=[wires[2], wires[0]]),
-            qp.RY(-phi / 8, wires=wires[1]),
-            qp.RY(phi / 8, wires=wires[0]),
-            qp.CNOT(wires=[wires[3], wires[1]]),
-            qp.Hadamard(wires=wires[3]),
-            qp.CNOT(wires=[wires[0], wires[3]]),
-            qp.RY(-phi / 8, wires=wires[1]),
-            qp.RY(phi / 8, wires=wires[0]),
-            qp.CNOT(wires=[wires[0], wires[1]]),
-            qp.CNOT(wires=[wires[2], wires[0]]),
-            qp.Hadamard(wires=wires[0]),
-            qp.Hadamard(wires=wires[3]),
-            qp.CNOT(wires=[wires[0], wires[2]]),
-            qp.CNOT(wires=[wires[2], wires[3]]),
-        ]
-
-        return decomp_ops
-
     def adjoint(self) -> "DoubleExcitation":
-        (theta,) = self.parameters
-        return DoubleExcitation(-theta, wires=self.wires)
+        return DoubleExcitation(-self.phi, wires=self.wires)
 
     def label(
         self,
@@ -914,12 +819,12 @@ class DoubleExcitation(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G²", cache=cache)
 
 
-def _doublexcit_resource():
+def _doublexcit_resource(phi, wires):  # pylint: disable=unused-argument
     return {qp.CNOT: 14, qp.Hadamard: 6, qp.RY: 8}
 
 
 @register_resources(_doublexcit_resource)
-def _doublexcit(phi: TensorLike, wires: WiresLike, **_):
+def _doublexcit(phi: TensorLike, wires: WiresLike):
     qp.CNOT(wires=[wires[2], wires[3]])
     qp.CNOT(wires=[wires[0], wires[2]])
     qp.Hadamard(wires=wires[3])
@@ -950,7 +855,7 @@ def _doublexcit(phi: TensorLike, wires: WiresLike, **_):
     qp.CNOT(wires=[wires[2], wires[3]])
 
 
-def _doublexcit_ppr_resource():
+def _doublexcit_ppr_resource(phi, wires):  # pylint: disable=unused-argument
     return {
         qp.PauliRot(Float, pauli_word="YYYX", wires=Wire[4]): 1,
         qp.PauliRot(Float, pauli_word="YYXY", wires=Wire[4]): 1,
@@ -964,7 +869,7 @@ def _doublexcit_ppr_resource():
 
 
 @register_resources(_doublexcit_ppr_resource)
-def _doublexcit_ppr(phi: TensorLike, wires: WiresLike, **_):
+def _doublexcit_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 8, pauli_word="YYYX", wires=wires)
     qp.PauliRot(phi / 8, pauli_word="YYXY", wires=wires)
     qp.PauliRot(-phi / 8, pauli_word="YXYY", wires=wires)
@@ -976,8 +881,8 @@ def _doublexcit_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(DoubleExcitation, _doublexcit, _doublexcit_ppr)
-add_decomps("Adjoint(DoubleExcitation)", adjoint_rotation)
-add_decomps("Pow(DoubleExcitation)", pow_rotation)
+add_decomps("Adjoint(DoubleExcitation)", adjoint_rotation2)
+add_decomps("Pow(DoubleExcitation)", pow_rotation2)
 
 
 class DoubleExcitationPlus(Operation):
@@ -1170,7 +1075,7 @@ add_decomps("Adjoint(DoubleExcitationMinus)", adjoint_rotation)
 add_decomps("Pow(DoubleExcitationMinus)", pow_rotation)
 
 
-class OrbitalRotation(Operation):
+class OrbitalRotation(Operator2):
     r"""
     Spin-adapted spatial orbital rotation.
 
@@ -1226,26 +1131,20 @@ class OrbitalRotation(Operation):
                 0.        +0.j])
     """
 
+    dynamic_argnames = ("phi",)
+    wire_argnames = ("wires",)
+
+    arg_specs = {"phi": Float, "wires": Wire[4]}
+    wire_sizes = (4,)
+
     num_wires = 4
     """int: Number of wires that the operator acts on."""
-
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    grad_method = "A"
-    """Gradient computation method."""
-
-    parameter_frequencies = [(0.5, 1.0, 1.5, 2.0)]
-    """Frequencies of the operation parameter with respect to an expectation value."""
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
 
     def generator(self) -> "qp.Hamiltonian":
         w0, w1, w2, w3 = self.wires
@@ -1274,7 +1173,9 @@ class OrbitalRotation(Operation):
     mask_s2[3, 12] = mask_s2[12, 3] = mask_s2[6, 9] = mask_s2[9, 6] = 1
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(
+        phi: TensorLike, wires: WiresLike = None  # pylint: disable=unused-argument
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1285,6 +1186,7 @@ class OrbitalRotation(Operation):
 
         Args:
           phi (tensor_like or float): rotation angle
+          wires (Sequence[int]): the wires the operation acts on
 
         Returns:
           tensor_like: canonical matrix
@@ -1328,51 +1230,18 @@ class OrbitalRotation(Operation):
 
         return diag + off_diag
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.OrbitalRotation.decomposition`.
-
-        This operator is decomposed into two :class:`~.SingleExcitation` gates. For a decomposition
-        into more elementary gates, see page 18 of
-        `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://doi.org/10.1088/1367-2630/ac2cb3>`_ .
-
-        Args:
-            phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.OrbitalRotation.compute_decomposition(1.2, wires=[0, 1, 2, 3])
-        [FermionicSWAP(3.141592653589793, wires=[1, 2]), SingleExcitation(1.2, wires=[0, 1]), SingleExcitation(1.2, wires=[2, 3]), FermionicSWAP(3.141592653589793, wires=[1, 2])]
-
-        """
-
-        return [
-            qp.FermionicSWAP(np.pi, wires=[wires[1], wires[2]]),
-            qp.SingleExcitation(phi, wires=[wires[0], wires[1]]),
-            qp.SingleExcitation(phi, wires=[wires[2], wires[3]]),
-            qp.FermionicSWAP(np.pi, wires=[wires[1], wires[2]]),
-        ]
-
     def adjoint(self) -> "OrbitalRotation":
         (phi,) = self.parameters
         return OrbitalRotation(-phi, wires=self.wires)
 
 
-def _orbital_rotation_decomposition_resources():
+# pylint: disable-next=unused-argument
+def _orbital_rotation_decomposition_resources(phi: TensorLike, wires: WiresLike):
     return {qp.FermionicSWAP: 2, qp.SingleExcitation: 2}
 
 
 @register_resources(_orbital_rotation_decomposition_resources)
-def _orbital_rotation_decomp(phi, wires: WiresLike, **__):
+def _orbital_rotation_decomp(phi: TensorLike, wires: WiresLike):
     qp.FermionicSWAP(np.pi, wires=[wires[1], wires[2]])
     qp.SingleExcitation(phi, wires=[wires[0], wires[1]])
     qp.SingleExcitation(phi, wires=[wires[2], wires[3]])
@@ -1380,8 +1249,8 @@ def _orbital_rotation_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(OrbitalRotation, _orbital_rotation_decomp)
-add_decomps("Adjoint(OrbitalRotation)", adjoint_rotation)
-add_decomps("Pow(OrbitalRotation)", pow_rotation)
+add_decomps("Adjoint(OrbitalRotation)", adjoint_rotation2)
+add_decomps("Pow(OrbitalRotation)", pow_rotation2)
 
 
 class FermionicSWAP(Operator2):
@@ -1466,9 +1335,8 @@ class FermionicSWAP(Operator2):
         )
 
     @staticmethod
-    # pylint: disable-next=unused-argument
     def compute_matrix(
-        phi: TensorLike, wires: WiresLike = None
+        phi: TensorLike, wires: WiresLike = None  # pylint: disable=unused-argument
     ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1526,6 +1394,7 @@ class FermionicSWAP(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "FSWAP", cache=cache)
 
 
+# pylint: disable-next=unused-argument
 def _fermionic_swap_decomp_resources(phi: TensorLike = None, wires: WiresLike = None):
     return {
         qp.Hadamard: 4,

@@ -1074,6 +1074,16 @@ class TestToBloqDecomposition:
                 "qrom_custom_mapping",
                 "qrom_custom_bloq",
             ),
+            (
+                qp.QROMLoad(
+                    bitstrings=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7],
+                ),
+                "qrom_load_custom_mapping",
+                "qrom_custom_bloq",
+            ),
         ],
     )
     def test_custom_mapping(self, op, custom_map, qt_bloq):
@@ -1151,6 +1161,17 @@ class TestToBloqDecomposition:
                 },
                 "qrom_custom_mapping": {
                     qp.QROM(
+                        bitstrings=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
+                        control_wires=[0, 1],
+                        target_wires=[2, 3, 4],
+                        work_wires=[5, 6, 7],
+                    ): TextbookQPE(
+                        unitary=qp.to_bloq(qp.RX(0.1, wires=0)),
+                        ctrl_state_prep=LPResourceState(4),
+                    )
+                },
+                "qrom_load_custom_mapping": {
+                    qp.QROMLoad(
                         bitstrings=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
                         control_wires=[0, 1],
                         target_wires=[2, 3, 4],
