@@ -225,7 +225,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
     basis = list(matrices[:subbasis_length])
     for A in matrices[subbasis_length:]:
-        if not math.is_abstract(A):
+        if not math.is_tracer(A):
             if not math.allclose(math.transpose(math.conj(A)), A):
                 A = 1j * A
                 if not math.allclose(math.transpose(math.conj(A)), A):

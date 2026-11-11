@@ -45,7 +45,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.math import expand_matrix, is_abstract
+from pennylane.math import expand_matrix, is_tracer
 from pennylane.pytrees import register_pytree
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit
@@ -169,7 +169,7 @@ def create_operator_primitive(
         # for plxpr, all wires must be integers
         # could be abstract when using tracing evaluation in interpreter
         wire_args = args[split:] if split else ()
-        wires = tuple(w if is_abstract(w) else int(w) for w in wire_args)
+        wires = tuple(w if is_tracer(w) else int(w) for w in wire_args)
         return type.__call__(operator_type, *args[:split], wires=wires, **kwargs)
 
     @primitive.def_abstract_eval
@@ -198,7 +198,7 @@ def _process_data(op):
     else:
         mod_val = None
 
-    return str([id(d) if is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
+    return str([id(d) if is_tracer(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
 # pylint: disable=abstract-method

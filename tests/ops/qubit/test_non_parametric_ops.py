@@ -48,7 +48,7 @@ from scipy.stats import unitary_group
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.utils import _get_decomp_args
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
 from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 # pylint: disable=too-few-public-methods
@@ -770,6 +770,7 @@ class TestMultiControlledX:
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
+
         tape = qp.tape.QuantumScript.from_queue(q)
         [tape], _ = decompose(tape, max_expansion=2, gate_set=qp.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qp.MultiControlledX) for op in tape.operations)
@@ -805,7 +806,7 @@ class TestMultiControlledX:
         with qp.queuing.AnnotatedQueue() as q:
             qp.MultiControlledX(wires=control_target_wires, work_wires=worker_wires)
         tape = qp.tape.QuantumScript.from_queue(q)
-        [tape], _ = decompose(tape, max_expansion=1, gate_set=qp.gate_sets.CLIFFORD_T)
+        [tape], _ = decompose(tape, max_expansion=2, gate_set=qp.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qp.MultiControlledX) for op in tape.operations)
 
         @qp.qnode(dev)
@@ -878,34 +879,7 @@ class TestMultiControlledX:
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
-        for rule in qp.list_decomps(op):
-            _test_decomposition_rule(op, rule)
-
-    def test_custom_dispatch(self):
-        """Tests that qp.ctrl() of MCX dispatches to another MCX."""
-
-        op = qp.MultiControlledX(
-            [0, 1, 2],
-            control_values=[0, 1],
-            work_wires=[3],
-            work_wire_type="borrowed",
-        )
-        new_op = qp.ctrl(
-            op,
-            control=[4, 5],
-            control_values=[1, 0],
-            work_wires=[6],
-            work_wire_type="zeroed",
-        )
-        qp.assert_equal(
-            new_op,
-            qp.MultiControlledX(
-                [4, 5, 0, 1, 2],
-                control_values=[1, 0, 0, 1],
-                work_wires=[6, 3],
-                work_wire_type="borrowed",
-            ),
-        )
+        assert_decomposable(op)
 
 
 period_two_ops = (
@@ -936,7 +910,12 @@ class TestPowMethod:
         """Test that ops with a period of 2 raised to an odd power are the same as the original op."""
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
-        qp.assert_equal(pow_ops[0], op)
+        expected = (
+            qp.ctrl(op.base, op.control_wires, control_values=op.control_values)
+            if isinstance(op, qp.ops.Controlled2)
+            else op
+        )
+        qp.assert_equal(pow_ops[0], expected)
 
     @pytest.mark.parametrize("op", period_two_ops)
     @pytest.mark.parametrize("n", (2, 6, 0, -2))
@@ -1114,25 +1093,15 @@ class TestPowMethod:
 
 
 class TestControlledMethod:
-    """Tests for the _controlled method of non-parametric operations."""
+    """Tests symbolic controls of non-parametric operations."""
 
     # pylint: disable=protected-access
-
-    def test_PauliZ(self):
-        """A positive control on ``PauliZ`` should dispatch to ``CZ``."""
-        out = qp.ctrl(qp.PauliZ(0), "a")
-        qp.assert_equal(out, qp.CZ(("a", 0)))
 
     def test_Barrier(self):
         """Tests the control behavior of Barrier."""
         original = qp.Barrier((0, 1, 2), only_visual=True)
         out = qp.ctrl(original, "a")
         qp.assert_equal(original, out)
-
-    def test_CZ(self):
-        """Test the CZ ctrl dispatch produces CCZ."""
-        out = qp.ctrl(qp.CZ(wires=[0, 1]), control="a")
-        qp.assert_equal(out, qp.CCZ(("a", 0, 1)))
 
 
 class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
@@ -1176,12 +1145,9 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
         decomps = qp.list_decomps(f"Pow({op.name})")
         for rule in decomps:
             if rule.is_applicable(**pow_op.arguments):
-                with qp.queuing.AnnotatedQueue() as q:
-                    rule(**pow_op.arguments)
-
                 # It's fine to test matrix equivalence here because ISWAP and SISWAP
                 # have very specific power decompositions.
-                tape = qp.tape.QuantumScript.from_queue(q)
+                tape = qp.testing.decomp_rule_to_tape(pow_op, rule)
                 assert qp.math.allclose(qp.matrix(tape, wire_order=[0, 1]), qp.matrix(pow_op))
 
 
@@ -1514,11 +1480,10 @@ class TestPPR:
         adj_op = qp.adjoint(op_cls(1, "XY", wires=[0, 1]))
         rule = qp.list_decomps(f"Adjoint(PPR_{denominator})")["_adjoint_ppr_flip_sign"]
 
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(**adj_op.arguments)
+        tape = qp.testing.decomp_rule_to_tape(adj_op, rule)
 
         expected = [op_cls(-1, "XY", wires=[0, 1])]
-        for actual, exp in zip(q.queue, expected, strict=True):
+        for actual, exp in zip(tape.operations, expected, strict=True):
             qp.assert_equal(actual, exp)
 
     def test_adjoint_decomp_resources(self, op_cls):
@@ -1545,3 +1510,40 @@ class TestPPR:
             -1j * np.pi * sign / denominator * qp.matrix(pw, wire_order=wires)
         )
         assert np.allclose(mat_ppr, expected_manual)
+
+
+class TestToPPRDecompositions:
+    """Tests for the decomposition rules of non-parametric gates into PPRs."""
+
+    @pytest.mark.parametrize(
+        "op, rule_name, expected",
+        [
+            (qp.X(0), "_paulix_to_ppr", [qp.PPR_2(1, "X", 0), qp.GlobalPhase(-np.pi / 2)]),
+            (qp.Y(0), "_pauliy_to_ppr", [qp.PPR_2(1, "Y", 0), qp.GlobalPhase(-np.pi / 2)]),
+            (qp.Z(0), "_pauliz_to_ppr", [qp.PPR_2(1, "Z", 0), qp.GlobalPhase(-np.pi / 2)]),
+            (qp.S(0), "_s_to_ppr", [qp.PPR_4(1, "Z", 0), qp.GlobalPhase(-np.pi / 4)]),
+            (qp.T(0), "_t_to_ppr", [qp.PPR_8(1, "Z", 0), qp.GlobalPhase(-np.pi / 8)]),
+        ],
+    )
+    def test_decomposition_rule(self, op, rule_name, expected):
+        """Test the queued operations, resources and matrix of the decomposition rule."""
+        rule = qp.list_decomps(op)[rule_name]
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(**op.arguments)
+
+        for actual, exp in zip(q.queue, expected, strict=True):
+            qp.assert_equal(actual, exp)
+
+        assert_valid_decomp_rule(op, rule)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize("base, ppr_cls", [(qp.S, qp.PPR_4), (qp.T, qp.PPR_8)])
+    def test_adjoint_reaches_ppr(self, base, ppr_cls):
+        """Test that the adjoint of S and T decompose into a PPR with a negative sign."""
+        tape = qp.tape.QuantumScript([qp.adjoint(base(0))])
+        [new_tape], _ = decompose(tape, gate_set={ppr_cls, qp.GlobalPhase})
+
+        (ppr,) = (op for op in new_tape.operations if isinstance(op, ppr_cls))
+        qp.assert_equal(ppr, ppr_cls(-1, "Z", 0))
+        assert np.allclose(qp.matrix(new_tape, wire_order=[0]), qp.matrix(qp.adjoint(base(0))))

@@ -62,10 +62,73 @@ def test_decompose_setup_inputs():
     assert options == {"gate_set": {"RX"}}
 
     fixed = {qp.CNOT: null_decomp}
-    alt = {qp.RX: [null_decomp]}
-    args, options = _decompose_setup_inputs(gate_set=qp.RX, fixed_decomps=fixed, alt_decomps=alt)
+    excluded = {qp.RX: [null_decomp]}
+    args, options = _decompose_setup_inputs(
+        gate_set=qp.RX, fixed_decomps=fixed, exclude_decomps=excluded
+    )
     assert args == ()
-    assert options == {"gate_set": {qp.RX}, "fixed_decomps": fixed, "alt_decomps": alt}
+    assert options == {"gate_set": {qp.RX}, "fixed_decomps": fixed, "exclude_decomps": excluded}
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("excluded", [None, {}, {qp.CRX: ["_crx_to_ppr"]}])
+def test_decompose_exclusions(excluded):
+    """The public transform preserves provided exclusions and omits unset options."""
+    bound_transform = qp.decompose(gate_set={"RX", "CZ"}, exclude_decomps=excluded)
+    expected = {"gate_set": {"RX", "CZ"}}
+    if excluded is not None:
+        expected["exclude_decomps"] = excluded
+    assert bound_transform.kwargs == expected
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("transform", [qp.decompose, qp.transforms.decompose])
+def test_decompose_rejects_alt_decomps(transform):
+    """The public decomposition transform rejects the removed alternative-rules option."""
+    with pytest.raises(TypeError, match="alt_decomps"):
+        transform(gate_set={"RX"}, alt_decomps={qp.RX: [null_decomp]})
+
+
+@pytest.mark.catalyst
+@pytest.mark.capture
+@pytest.mark.parametrize("use_name", [False, True])
+@pytest.mark.parametrize("graph_enabled", [False, True])
+def test_compiled_decompose_exclusions(use_name, graph_enabled):
+    """Compiled exclusions are local to a pass and independent of the legacy graph toggle."""
+    pytest.importorskip("catalyst")
+    registered_rules = list(qp.list_decomps(qp.CRX))
+    rule = qp.list_decomps(qp.CRX)["_crx_to_h_crz"]
+    gate_set = {qp.RX, qp.CZ, qp.H, qp.CRZ}
+
+    @qp.qnode(qp.device("null.qubit", wires=2))
+    def circuit():
+        qp.CRX(0.5, wires=[0, 1])
+        return qp.probs()
+
+    with qp.decomposition.toggle_graph_ctx(graph_enabled):
+        excluded_circuit = qp.qjit(
+            qp.decompose(
+                circuit,
+                gate_set=gate_set,
+                exclude_decomps={qp.CRX: [rule.name if use_name else rule]},
+            ),
+            capture=True,
+            target="mlir",
+        )
+        assert qp.analyze(excluded_circuit, level="user")().resources.quantum_operations == {
+            "RX": 2,
+            "CZ": 2,
+        }
+
+        unrestricted_circuit = qp.qjit(
+            qp.decompose(circuit, gate_set=gate_set), capture=True, target="mlir"
+        )
+        assert qp.analyze(unrestricted_circuit, level="user")().resources.quantum_operations == {
+            "Hadamard": 2,
+            "CRZ": 1,
+        }
+
+    assert list(qp.list_decomps(qp.CRX)) == registered_rules
 
 
 @pytest.mark.unit
@@ -451,9 +514,9 @@ class TestDecomposeGraphEnabled:
             qp.CNOT(wires=[1, 0]),
             # Decomposition of C(RZ) -> CRZ
             qp.RZ(0.25, wires=[0]),
-            qp.CNOT(wires=[2, 0]),
-            qp.RZ(-0.25, wires=[0]),
-            qp.CNOT(wires=[2, 0]),
+            qp.CNOT(wires=[0, 2]),
+            qp.RZ(-0.25, wires=[2]),
+            qp.CNOT(wires=[0, 2]),
             # The conjugating ladder stays control-free
             qp.CNOT(wires=[1, 0]),
         ]

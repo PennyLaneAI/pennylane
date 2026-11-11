@@ -25,7 +25,7 @@ from pennylane.templates.subroutines.arithmetic.temporary_and import (
     _adjoint_temporary_and_ppm,
     _adjoint_temporary_and_to_toffoli,
 )
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_valid_decomp_rule
 from pennylane.typing import Bool, Wire
 
 expected_adjoint_temporary_and_rule_ops = [
@@ -182,7 +182,7 @@ class TestTemporaryAND:
         op = qp.TemporaryAND(wires, control_values=cvals)
         for rule in qp.list_decomps(qp.TemporaryAND):
             assert rule.is_applicable(**op.arguments)
-            _test_decomposition_rule(op, rule, skip_decomp_matrix_check=True)
+            assert_valid_decomp_rule(op, rule, check_matrix=False)
             with qp.capture.pause():
                 matrix = qp.matrix(rule, wire_order=wires)(wires, control_values=cvals)
             self.compare_to_toffoli_on_zero(matrix, "input", cvals)
@@ -367,7 +367,7 @@ class TestTemporaryAND:
         exp_probs = qp.math.array([1, 0, 1, 0, 1, 0, 1, 0]) / 4
         flip = 2 * int(cvals[0]) + int(cvals[1])
         exp_probs[2 * flip : 2 * flip + 2] = [0, 0.25]
-        qjit_circuit = qp.qjit(circuit)
+        qjit_circuit = qp.qjit(circuit, capture=False)
         values = qp.math.array(cvals, like="jax")
         out = circuit(values)
         qjit_out = qjit_circuit(values)

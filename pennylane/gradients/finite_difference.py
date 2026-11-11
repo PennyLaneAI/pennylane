@@ -239,7 +239,7 @@ def finite_diff_jvp(
         for index in np.ndindex(math.shape(args[i])):
             ti = t[index]
 
-            if not math.is_abstract(ti) and math.allclose(ti, 0):
+            if not math.is_tracer(ti) and math.allclose(ti, 0):
                 continue
 
             ti_over_h = ti / h

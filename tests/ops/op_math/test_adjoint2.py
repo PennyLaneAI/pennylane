@@ -249,10 +249,9 @@ def test_adjoint_rotation_decomposition_rule():
     op = qp.adjoint(OneWireDynOp(0.5, wires=[0]))
     assert isinstance(op, Adjoint2)
 
-    with qp.core.AnnotatedQueue() as q:
-        adjoint_rotation(**op.arguments)
+    tape = qp.testing.decomp_rule_to_tape(op, adjoint_rotation)
 
-    assert q.queue == [OneWireDynOp(-0.5, wires=[0])]
+    assert tape.operations == [OneWireDynOp(-0.5, wires=[0])]
     assert adjoint_rotation.compute_resources(**op.arguments) == Resources(
         {OneWireDynOp(Float, wires=Wire[1]): 1}
     )
@@ -277,7 +276,7 @@ def test_make_adjoint_decomp_closes_over_compilable_args():
     op = CompilableOp(True, wires=[0])
     rule = _make_adjoint_decomp(_some_decomp)
 
-    @qp.qjit
+    @qp.qjit(capture=False)
     @qp.qnode(qp.device("lightning.qubit", wires=1))
     def f():
         rule(base=op)

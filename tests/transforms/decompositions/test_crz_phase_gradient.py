@@ -17,10 +17,11 @@
 # pylint: disable=no-value-for-parameter, disable=too-many-arguments
 
 import numpy as np
+import phase_gradient_helpers
 import pytest
 
 import pennylane as qp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_valid_decomp_rule
 from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
 
 
@@ -63,7 +64,7 @@ def test_valid_decomp(p):
 
     custom_decomp = make_crz_to_phase_gradient_decomp(**kwargs)
     op = qp.CRZ(phi, [0, 1])
-    _test_decomposition_rule(op, custom_decomp, skip_decomp_matrix_check=True)
+    assert_valid_decomp_rule(op, custom_decomp, check_matrix=False)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -205,3 +206,33 @@ def test_integration_multi_wire(seed):
     out_state_expected = np.kron(zeros, out_state_expected)
 
     assert np.allclose(out_state, out_state_expected)
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize(
+    "bits, precision_stats, width",
+    [
+        ([1, 0, 1, 0], {1: 2, 3: 5}, 3),
+        ([1, 0, 1, 0], {1: 1, 2: 1}, 4),
+        ([0, 0, 0, 0], {0: 1, 3: 1}, 0),
+    ],
+)
+def test_precision_stats_decomp(bits, precision_stats, width, seed):
+    """Test that the rule with ``precision_stats`` truncates the phase-gradient flips and the
+    SemiAdder to the smallest sufficient precision, accounts for all gates in its resources, and
+    realizes CRZ. The precision dispatch itself is tested in test_rz_phase_gradient.py."""
+    angle_wires, phase_grad_wires = qp.wires.Wires([2, 3, 4, 5]), qp.wires.Wires([6, 7, 8, 9])
+    rule = make_crz_to_phase_gradient_decomp(
+        angle_wires, phase_grad_wires, [10, 11, 12], precision_stats=precision_stats
+    )
+    op = qp.CRZ(phase_gradient_helpers.bits_to_angles(bits, 4 * np.pi), [0, 1])
+    assert_valid_decomp_rule(op, rule, check_matrix=False)
+
+    tape = qp.testing.decomp_rule_to_tape(op, rule)
+    adders = [
+        o for o in phase_gradient_helpers.leaf_ops(tape.operations) if isinstance(o, qp.SemiAdder)
+    ]
+    assert [(a.x_wires, a.y_wires) for a in adders] == (
+        [(angle_wires[:width], phase_grad_wires[:width])] if width else []
+    )
+    phase_gradient_helpers.assert_decomp_realizes_op(op, tape, phase_grad_wires, seed)

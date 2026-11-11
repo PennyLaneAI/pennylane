@@ -88,6 +88,29 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             ),
         )
 
+    @pytest.mark.parametrize("num_wires", [1, 3])
+    @pytest.mark.parametrize("measurement", ["probs", "sample", "counts", "expval"])
+    def test_abstract_wire_measurements(self, num_wires, measurement):
+        """Estimate supports terminal measurements on abstract registers."""
+        wires = qp.typing.Wire[num_wires]
+
+        @qp.qjit(capture=True)
+        @qp.set_shots(50 if measurement in ("sample", "counts") else None)
+        @qp.qnode(qp.device("null.qubit", wires=num_wires))
+        def circuit():
+            qp.X(wires=0)
+            if measurement == "expval":
+                return qp.expval(qp.Z(wires=wires[0]))
+            if measurement == "counts":
+                return qp.counts(wires=wires, all_outcomes=True)
+            return getattr(qp, measurement)(wires=wires)
+
+        specs = qp.estimate(circuit, target={"PauliX": 1})()
+
+        assert specs.resources.quantum_operations == {"PauliX": 1}
+        measured = "PauliZ" if measurement == "expval" else f"{num_wires} wires"
+        assert specs.resources.measurement_processes == {f"{measurement}({measured})": 1}
+
     @pytest.mark.parametrize(
         "target",
         [
@@ -121,8 +144,11 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         """Test that the fixed_decomps of a decompose transform in the pipeline replace the
         existing decomposition rules."""
 
+        qp.add_decomps(qp.CZ, cz_with_ry)
         target = TARGET | {"RY", "PauliZ"}
-        circuit = qp.transforms.decompose(qnode, gate_set=target, fixed_decomps={qp.CZ: cz_with_ry})
+        circuit = qp.transforms.decompose(
+            qnode, gate_set=target, fixed_decomps={qp.CZ: "cz_with_ry"}
+        )
 
         specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
 
@@ -134,13 +160,33 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             "RX": 1,
         }
 
-    def test_alt_decomps(self, qnode):
-        """Test that the alt_decomps of a decompose transform in the pipeline are used if they
-        lead to a cheaper decomposition."""
+    @pytest.mark.parametrize("use_names", [False, True])
+    def test_exclude_decomps(self, qnode, use_names):
+        """Estimate respects exclusions from a decompose transform in the pipeline."""
 
-        target = {"Hadamard": 10, "CNOT": 1, "RX": 1, "RY": 1, "PauliZ": 1}
-        circuit = qp.transforms.decompose(qnode, gate_set=target, alt_decomps={qp.CZ: [cz_with_ry]})
+        target = TARGET | {"RY", "PauliZ"}
+        excluded = list(qp.list_decomps(qp.CZ))
+        if use_names:
+            excluded = [rule.name for rule in excluded]
+        qp.add_decomps(qp.CZ, cz_with_ry)
+        circuit = qp.decompose(qnode, gate_set=target, exclude_decomps={qp.CZ: excluded})
+        specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
 
+        assert specs.resources.quantum_operations == {
+            "Hadamard": 2,
+            "PauliZ": 2,
+            "RY": 2,
+            "CNOT": 1,
+            "RX": 1,
+        }
+
+    def test_exclusions_from_several_decompose_transforms(self, qnode):
+        """Estimate combines excluded rules from every decomposition in the pipeline."""
+        target = TARGET | {"RY", "PauliZ"}
+        excluded = [rule.name for rule in qp.list_decomps(qp.CZ)]
+        qp.add_decomps(qp.CZ, cz_with_ry)
+        circuit = qp.decompose(qnode, gate_set=target, exclude_decomps={qp.CZ: excluded[:1]})
+        circuit = qp.decompose(circuit, gate_set=target, exclude_decomps={qp.CZ: excluded[1:]})
         specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
 
         assert specs.resources.quantum_operations == {
@@ -154,9 +200,11 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
     def test_decomps_from_several_decompose_transforms(self, qnode):
         """Test that the rules of every decompose transform in the pipeline are used."""
 
+        qp.add_decomps(qp.CZ, cz_with_ry)
+        qp.add_decomps(qp.Hadamard, h_with_x)
         target = {"CNOT", "RX", "RY", "PauliX", "PauliZ"}
         circuit = qp.transforms.decompose(
-            qnode, gate_set=target | {"Hadamard"}, fixed_decomps={qp.CZ: cz_with_ry}
+            qnode, gate_set=target | {"Hadamard"}, fixed_decomps={qp.CZ: "cz_with_ry"}
         )
         circuit = qp.transforms.decompose(
             circuit, gate_set=target, fixed_decomps={qp.Hadamard: h_with_x}

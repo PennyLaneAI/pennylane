@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -169,8 +169,7 @@ class TestDecomposition:
     @pytest.mark.parametrize(("initial_layer_weights", "weights", "wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, initial_layer_weights, weights, wires):
         op = qp.SimplifiedTwoDesign(initial_layer_weights, weights, wires)
-        for rule in qp.list_decomps(qp.SimplifiedTwoDesign):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 class TestInputs:

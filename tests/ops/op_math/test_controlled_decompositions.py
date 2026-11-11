@@ -33,8 +33,7 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     decompose_mcx_two_workers,
     decompose_mcx_with_no_worker,
 )
-from pennylane.testing.decompositions import _test_decomposition_rule
-from pennylane.wires import Wires
+from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
 
 cw5 = tuple(list(range(1, 1 + n)) for n in range(2, 6))
 
@@ -324,11 +323,11 @@ class TestControlledDecompBisect:
 
         assert len(op_seq) == 8
 
-        mcx1 = qp.MultiControlledX(wires=Wires([1, 2, 3, 0]), work_wires=Wires([4, 5]))
+        mcx1 = qp.MultiControlledX([1, 2, 3, 0], work_wires=[4, 5])
         qp.assert_equal(mcx1, op_seq[0])
         qp.assert_equal(mcx1, op_seq[4])
 
-        mcx2 = qp.MultiControlledX(wires=Wires([4, 5, 0]), work_wires=Wires([1, 2, 3]))
+        mcx2 = qp.MultiControlledX([4, 5, 0], work_wires=[1, 2, 3])
         qp.assert_equal(mcx2, op_seq[2])
         qp.assert_equal(mcx2, op_seq[6])
 
@@ -615,7 +614,7 @@ class TestMCXDecomposition:
                 decompose_mcx_many_workers(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
-        _test_decomposition_rule(mcx, decompose_mcx_many_workers, skip_decomp_matrix_check=True)
+        assert_valid_decomp_rule(mcx, decompose_mcx_many_workers, check_matrix=False)
 
         tape = qp.tape.QuantumScript.from_queue(q)
         matrix = _tape_to_matrix(tape, wire_order=control_wires + work_wires + [target_wire])
@@ -653,7 +652,7 @@ class TestMCXDecomposition:
                 decompose_mcx_one_worker(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
-        _test_decomposition_rule(mcx, decompose_mcx_one_worker, skip_decomp_matrix_check=True)
+        assert_valid_decomp_rule(mcx, decompose_mcx_one_worker, check_matrix=False)
 
         # Verify that the decomposition produces an equivalent matrix.
         tape = qp.tape.QuantumScript.from_queue(q)
@@ -691,7 +690,7 @@ class TestMCXDecomposition:
                 decompose_mcx_two_workers(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
-        _test_decomposition_rule(mcx, decompose_mcx_two_workers, skip_decomp_matrix_check=True)
+        assert_valid_decomp_rule(mcx, decompose_mcx_two_workers, check_matrix=False)
 
         # Verify that the decomposition produces an equivalent matrix.
         tape = qp.tape.QuantumScript.from_queue(q)
@@ -721,7 +720,7 @@ class TestMCXDecomposition:
                 decompose_mcx_with_no_worker(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
-        _test_decomposition_rule(mcx, decompose_mcx_with_no_worker, skip_decomp_matrix_check=True)
+        assert_valid_decomp_rule(mcx, decompose_mcx_with_no_worker, check_matrix=False)
 
         # Verify that the decomposition produces an equivalent matrix.
         tape = qp.tape.QuantumScript.from_queue(q)
@@ -771,10 +770,7 @@ class TestMCXDecomposition:
         """Tests that MCX can be resolved into CNOT and Toffoli properly."""
 
         mcx = qp.MultiControlledX(**params)
-        rules = qp.list_decomps(mcx)
-        assert rules
-        for rule in rules:
-            _test_decomposition_rule(mcx, rule)
+        assert_decomposable(mcx)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_mcx_fixed_decomp(self):

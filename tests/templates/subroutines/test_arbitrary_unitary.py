@@ -27,7 +27,7 @@ from pennylane.templates.subroutines.arbitrary_unitary import (
     _n_k_gray_code,
     _tuple_to_word,
 )
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -213,8 +213,7 @@ class TestDecomposition:
     @pytest.mark.parametrize(("weights", "wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, weights, wires):
         op = qp.ArbitraryUnitary(weights, wires=wires)
-        for rule in qp.list_decomps(qp.ArbitraryUnitary):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 class TestInputs:

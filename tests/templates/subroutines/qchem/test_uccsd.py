@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 test_data_decomposition = [
     (
@@ -310,8 +310,7 @@ class TestDecomposition:
             init_state=np.array([1, 1, 0, 0, 0, 0]),
             n_repeats=n_repeats,
         )
-        for rule in qp.list_decomps(qp.UCCSD):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""

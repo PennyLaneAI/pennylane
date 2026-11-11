@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.exceptions import WireError
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -50,8 +50,7 @@ class TestDecomposition:
         """Tests the decomposition rule implemented with the new system."""
         op = qp.CosineWindow(wires=wires)
 
-        for rule in qp.list_decomps(qp.CosineWindow):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_correct_gates_single_wire(self):
         """Test that the correct gates are applied."""

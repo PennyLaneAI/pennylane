@@ -787,7 +787,7 @@ def _check_hermitian_operator(operators):
     if len(operators.shape) == 2:
         operators = math.stack([operators])
 
-    if not math.is_abstract(operators):
+    if not math.is_tracer(operators):
         for ops in operators:
             conj_trans = np.transpose(np.conj(ops))
             if not math.allclose(ops, conj_trans):
@@ -947,7 +947,7 @@ def sqrt_matrix(density_matrix):
     evs, vecs = math.linalg.eigh(density_matrix)
     evs = math.real(evs)
     evs = math.where(evs > 0.0, evs, 0.0)
-    if not math.is_abstract(evs):
+    if not math.is_tracer(evs):
         evs = math.cast_like(evs, vecs)
 
     shape = math.shape(density_matrix)
@@ -1186,7 +1186,7 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
     state0 = math.cast(state0, dtype=c_dtype)
 
     # Cannot be cast_like if jit
-    if not math.is_abstract(state0):
+    if not math.is_tracer(state0):
         state1 = math.cast_like(state1, state0)
 
     if check_state:
@@ -1214,7 +1214,7 @@ def _check_density_matrix(density_matrix):
     if len(density_matrix.shape) == 2:
         density_matrix = math.stack([density_matrix])
 
-    if not math.is_abstract(density_matrix):
+    if not math.is_tracer(density_matrix):
         for dm in density_matrix:
             # Check trace
             trace = np.trace(dm)
@@ -1244,7 +1244,7 @@ def _check_state_vector(state_vector):
         state_vector = math.stack([state_vector])
 
     # Check norm
-    if not math.is_abstract(state_vector):
+    if not math.is_tracer(state_vector):
         for sv in state_vector:
             norm = np.linalg.norm(sv, ord=2)
             if not math.allclose(norm, 1.0, atol=1e-10):
@@ -1485,7 +1485,7 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
     state0 = math.cast(state0, dtype=c_dtype)
 
     # Cannot be cast_like if jit
-    if not math.is_abstract(state0):
+    if not math.is_tracer(state0):
         state1 = math.cast_like(state1, state0)
 
     if check_state:

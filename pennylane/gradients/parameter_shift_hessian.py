@@ -43,7 +43,7 @@ def _process_jacs(jac, qhess):
     Combine the classical and quantum jacobians
     """
     # Check for a Jacobian equal to the identity matrix.
-    if not math.is_abstract(jac):
+    if not math.is_tracer(jac):
         shape = math.shape(jac)
         is_square = len(shape) == 2 and shape[0] == shape[1]
         if is_square and math.allclose(jac, math.eye(shape[0])):

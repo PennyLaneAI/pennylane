@@ -82,7 +82,7 @@ def _contract_metric_tensor_with_cjac(mt, cjac, tape):  # pylint: disable=unused
         metric_tensors = tuple(_mt_cjac_tdot(mt, c) for c in cjac if c is not None)
         return metric_tensors[0] if len(metric_tensors) == 1 else metric_tensors
 
-    if not math.is_abstract(cjac):
+    if not math.is_tracer(cjac):
         is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
 
         if is_square and math.allclose(cjac, math.eye(cjac.shape[0])):

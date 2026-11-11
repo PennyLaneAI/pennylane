@@ -20,6 +20,7 @@ import numpy as np
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 from .multiplier import Multiplier
@@ -247,12 +248,11 @@ class ModExp(Operation):
 
 def _mod_exp_decomposition_resources(num_x_wires, num_output_wires, mod, num_work_wires) -> dict:
     return {
-        resource_rep(
-            ControlledSequence,
-            base_rep=resource_rep(
+        ControlledSequence(
+            base=resource_rep(
                 Multiplier, num_x_wires=num_output_wires, num_work_wires=num_work_wires, mod=mod
             ),
-            num_control_wires=num_x_wires,
+            control=Wire[num_x_wires],
         ): 1,
     }
 

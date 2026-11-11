@@ -31,6 +31,8 @@ from pennylane.backline.decode import (
     _validate_packed,
     decode,
 )
+from pennylane.backline.runtime.runtime_call import get_runtime_call_prim
+from pennylane.testing import find_eqns
 
 TRANSPORT_CALLS = [
     "__catalyst__transport__get_session",
@@ -141,7 +143,7 @@ def a_round(jax, dev, syndrome=None, **kwargs):
 
 def runtime_calls_of(jaxpr):
     """Every runtime call, checks included, in order."""
-    return [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+    return find_eqns(jaxpr, get_runtime_call_prim())
 
 
 def calls_of(jaxpr):

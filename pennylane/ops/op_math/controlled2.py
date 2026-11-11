@@ -67,7 +67,9 @@ def _setup_control_values(control_values, num_control_wires):
         raise ValueError("control_values should be the same length as control_wires")
 
     if isinstance(control_values, (list, tuple)):
-        control_values = qp.math.asarray(control_values, like=control_values[0])
+        control_values = qp.math.asarray(
+            control_values, like=qp.math.get_interface(*control_values)
+        )
 
     if not isinstance(control_values, AbstractArray):
         control_values = qp.math.cast(control_values, dtype=bool)
@@ -546,7 +548,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         if self.work_wires:
             params.append(f"work_wires={self.work_wires}")
         ctrl_values = self.control_values
-        if isinstance(ctrl_values, AbstractArray) or math.is_abstract(ctrl_values):
+        if isinstance(ctrl_values, AbstractArray) or math.is_tracer(ctrl_values):
             params.append(f"control_values={ctrl_values}")
         elif not all(ctrl_values):
             params.append(f"control_values={ctrl_values.tolist()}")
@@ -618,7 +620,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         self.base.tracer = None
         # If we bind the primitive outside a tracing context but with program capture enabled,
         # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
-        if math.is_abstract(res):
+        if math.is_tracer(res):
             self.tracer = res
 
 
@@ -852,8 +854,8 @@ def _ctrl_single_work_wire_resource(base, control_wires, *_, **__):
     # as this rule assumes that no work wires are *explicitly* provided and instead
     # the only work wire comes from allocation.
     return {
-        _ctrl_abstract(base, Wire[1]): 1,
-        qp.ctrl(qp.X(Wire[1]), Wire[len(control_wires)]): 2,
+        qp.ctrl(base, control=Wire[1], control_values=Bool[1]): 1,
+        qp.MultiControlledX(Wire[len(control_wires) + 1]): 2,
     }
 
 
@@ -861,9 +863,9 @@ def _ctrl_single_work_wire_resource(base, control_wires, *_, **__):
 def _ctrl_single_work_wire(base, control_wires, *_, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     with allocation.allocate(1, state="zero", restored=True) as aux:
-        qp.ctrl(qp.X(aux[0]), control=control_wires)
+        qp.MultiControlledX([*control_wires, aux[0]])
         qp.ctrl(base, control=aux[0])
-        qp.ctrl(qp.X(aux[0]), control=control_wires)
+        qp.MultiControlledX([*control_wires, aux[0]])
 
 
 ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire, name="ctrl_single_work_wire")
@@ -874,7 +876,7 @@ def _ctrl_many_zeroed_work_wires_resource(base, control_wires, *_, **__):
     return {
         qp.TemporaryAND: num_control_wires - 1,
         qp.adjoint(qp.TemporaryAND(Wire[3])): num_control_wires - 1,
-        _ctrl_abstract(base, Wire[1]): 1,
+        qp.ctrl(base, control=Wire[1], control_values=Bool[1]): 1,
     }
 
 
@@ -923,14 +925,10 @@ def _ctrl_abstract(
             work_wire_type=work_wire_type,
         )
 
-    # if control values are all ones, first see if we can dispatch to a special type
-    # then run abstractify to promote control values to being boolean if it wasn't
-    # turned into a special type.
-    empty_cvals = num_zero_control_values == 0
     op = qp.ctrl(
         op,
         control=control_wires,
-        control_values=None if empty_cvals else Bool[len(control_wires)],
+        control_values=Bool[len(control_wires)],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )

@@ -139,7 +139,7 @@ class TestQROMStatePreparation:
         )
 
         for gate in decomposition:
-            assert gate.name in ["QROM", "Adjoint(QROM)", "CRY", "PhaseShift"]
+            assert gate.name in ["QROM", "Adjoint(QROM)", "CRY", "C(GlobalPhase)"]
 
     @pytest.mark.jax
     def test_interface_jax(self):

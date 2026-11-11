@@ -39,7 +39,7 @@ from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2, _change_op_ba
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow2 import flip_pow_adjoint, merge_powers, repeat_pow_base
 from pennylane.ops.op_math.prod2 import Prod2
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing.decompositions import assert_valid_decomp_rule
 from pennylane.typing import Float, Int, Wire
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp, ParametrizedHybridOp
 
@@ -1349,7 +1349,7 @@ class TestCOBUnroll:  # pylint: disable=too-few-public-methods
         cob = _change_op_basis_abstract(x_rep, y_rep, x_rep)
 
         def wrapper(op):
-            return qp.adjoint(qp.ctrl(op, control=Wire[1]))
+            return abstractify(qp.adjoint(qp.ctrl(op, control=Wire[1])))
 
         wrapped_z = wrapper(z_rep)
         result = _unroll_change_op_basis({wrapper(cob): 2, wrapped_z: 3})
@@ -1416,4 +1416,4 @@ class TestCOBUnroll:  # pylint: disable=too-few-public-methods
 
             qp.change_op_basis(outer_compute, inner_cob, outer_compute)
 
-        _test_decomposition_rule(qp.X(0), rule)
+        assert_valid_decomp_rule(qp.X(0), rule)

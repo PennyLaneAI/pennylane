@@ -168,6 +168,20 @@ def test_givens_decomposition_exact_zeros(matrix):
     assert onp.allclose(matrix, decomposed_matrix)
 
 
+def test_givens_decomposition_complex64():
+    """Test that phase commuting preserves complex64 reconstruction accuracy."""
+    matrix = unitary_group.rvs(4, random_state=1955).astype(onp.complex64)
+
+    phase_mat, ordered_rotations = givens_decomposition(matrix)
+    decomposed_matrix = onp.diag(phase_mat)
+    for grot_mat, (i, _) in ordered_rotations:
+        rotation_matrix = onp.eye(len(matrix), dtype=onp.complex64)
+        rotation_matrix[i : i + 2, i : i + 2] = grot_mat
+        decomposed_matrix = decomposed_matrix @ rotation_matrix
+
+    assert onp.allclose(matrix, decomposed_matrix)
+
+
 @pytest.mark.parametrize("shape", [2, 3, 7])
 @pytest.mark.parametrize(
     "compiler",

@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition import gate_sets
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 # pylint: disable=expression-not-assigned
@@ -444,8 +444,7 @@ class TestHilbertSchmidt:
     @pytest.mark.parametrize(("U", "V"), DECOMP_PARAMS)
     def test_decomposition_new(self, U, V):
         op = qp.HilbertSchmidt(V, U)
-        for rule in qp.list_decomps(qp.HilbertSchmidt):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 class TestLocalHilbertSchmidt:
@@ -611,8 +610,7 @@ class TestLocalHilbertSchmidt:
     @pytest.mark.parametrize(("U", "V"), DECOMP_PARAMS)
     def test_local_decomposition_new(self, U, V):
         op = qp.LocalHilbertSchmidt(V, U)
-        for rule in qp.list_decomps(qp.LocalHilbertSchmidt):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_qnode_integration(self):
         """Test that the local hilbert schmidt template can be used inside a qnode."""

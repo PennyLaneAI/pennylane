@@ -28,9 +28,9 @@ pytestmark = pytest.mark.catalyst
 @pytest.mark.parametrize(
     "level",
     [
-        1,
         2,
-        [1, 2],
+        3,
+        [3, 4],
     ],
 )
 def test_resources_from_analysis_pass_invalid_levels(level):

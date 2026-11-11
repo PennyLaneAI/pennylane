@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 class TestFable:
@@ -436,8 +436,7 @@ class TestFable:
         """Tests the decomposition rule implemented with the new system."""
         op = qp.FABLE(input_matrix=input, wires=range(wires), tol=tol)
 
-        for rule in qp.list_decomps(qp.FABLE):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.xfail_if_capture(reason="come back to this after we migrate Fable [sc-129901]")
     @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -449,5 +448,4 @@ class TestFable:
 
         op = qp.FABLE(matrix, wires=range(3), tol=0)
 
-        for rule in qp.list_decomps(qp.FABLE):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)

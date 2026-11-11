@@ -37,7 +37,7 @@ class ShotCopies(NamedTuple):
 
 def valid_int(s):
     """Returns True if s is a positive integer."""
-    return isinstance(s, int) and s > 0 or math.is_abstract(s) and s.shape == ()
+    return isinstance(s, int) and s > 0 or math.is_tracer(s) and s.shape == ()
 
 
 def valid_tuple(s):
@@ -178,7 +178,7 @@ class Shots:
             self.__all_tuple_init__([s if isinstance(s, Sequence) else (s, 1) for s in shots])
         elif isinstance(shots, self.__class__):
             return  # self already _is_ shots as defined by __new__
-        elif math.is_abstract(shots) and shots.shape == ():
+        elif math.is_tracer(shots) and shots.shape == ():
             self.total_shots = shots
             self.shot_vector = (ShotCopies(shots, 1),)
         else:
@@ -227,7 +227,7 @@ class Shots:
         total_shots = 0
         current_shots, current_copies = shots[0]
         for s in shots[1:]:
-            if math.is_abstract(s[0]) or math.is_abstract(current_shots) or s[0] != current_shots:
+            if math.is_tracer(s[0]) or math.is_tracer(current_shots) or s[0] != current_shots:
                 res.append(ShotCopies(current_shots, current_copies))
                 total_shots += current_shots * current_copies
                 current_shots, current_copies = s

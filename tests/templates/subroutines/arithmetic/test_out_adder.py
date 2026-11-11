@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -218,7 +218,6 @@ class TestOutAdder:
         for op1, op2 in zip(adder_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
-    @pytest.mark.xfail_if_capture(reason="Needs PhaseAdder to be Op2 [sc-130164]", strict=False)
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("mod", [7, 8])
     def test_decomposition_new(self, mod):
@@ -229,8 +228,7 @@ class TestOutAdder:
         output_wires = [8, 9, 10]
         work_wires = [0, 1]
         op = qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-        for rule in qp.list_decomps(qp.OutAdder):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""

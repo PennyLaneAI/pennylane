@@ -193,13 +193,7 @@ def _(action: Deallocate):
 
 @_map_to_resource_op.register
 def _(op: qp.Adder):
-    mod = op.hyperparameters["mod"]
-    x_wires = op.hyperparameters["x_wires"]
-    return Adder(
-        len(x_wires),
-        mod,
-        wires=x_wires,
-    )
+    return Adder(len(op.x_wires), op.mod, wires=op.x_wires)
 
 
 @_map_to_resource_op.register

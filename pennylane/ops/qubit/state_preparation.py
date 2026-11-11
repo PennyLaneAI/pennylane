@@ -120,7 +120,7 @@ class BasisState(StatePrepBase2):
         if isinstance(state, AbstractArray):
             return state
 
-        if not qp.math.is_abstract(state):
+        if not qp.math.is_tracer(state):
             state_list = list(qp.math.toarray(state))
             if not set(state_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
@@ -324,7 +324,7 @@ class StatePrep(StatePrepBase):
     @classmethod
     def _primitive_bind_call(cls, state, wires, **kwargs):
         if isinstance(state, (tuple, list)):
-            if any(qp.math.is_abstract(x) for x in state):
+            if any(qp.math.is_tracer(x) for x in state):
                 state = qp.math.asarray(state, like="jax")
             else:
                 state = qp.math.asarray(state)
@@ -488,7 +488,7 @@ class StatePrep(StatePrepBase):
 
         norm = math.linalg.norm(state, axis=-1)
 
-        if math.is_abstract(norm):
+        if math.is_tracer(norm):
             if normalize:
                 state = state / math.reshape(norm, (*shape[:-1], 1))
 

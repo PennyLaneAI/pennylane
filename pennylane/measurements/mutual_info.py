@@ -168,7 +168,7 @@ def mutual_info(wires0, wires1, log_base=None) -> MutualInfoMP:
     wires1 = Wires(wires1)
 
     # the subsystems cannot overlap
-    if not any(math.is_abstract(w) for w in wires0 + wires1) and [
+    if not any(math.is_tracer(w) for w in wires0 + wires1) and [
         wire for wire in wires0 if wire in wires1
     ]:
         raise QuantumFunctionError("Subsystems for computing mutual information must not overlap.")

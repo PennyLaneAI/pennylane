@@ -26,12 +26,11 @@ from pennylane.decomposition import DecompositionGraph, resource_rep
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_decomp
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
-from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract, flip_control_adjoint
 from pennylane.ops.op_math.pow2 import _pow_abstract
-from pennylane.typing import Float, Wire
+from pennylane.typing import Bool, Float, Wire
 from tests.core.operator.operator2_utils import (
     DynOp,
     NonParametricOp,
@@ -309,7 +308,7 @@ class TestDecompGraphConstruction:
                 qp.RX: 1,
                 qp.X: 1,
                 _adjoint_abstract(qp.RY): 1,
-                _ctrl_abstract(qp.T, Wire[2]): 1,
+                qp.ctrl(qp.T(Wire[1]), control=Wire[2], control_values=Bool[2]): 1,
                 _pow_abstract(qp.Z, z=2): 1,
             }
         )
@@ -392,6 +391,202 @@ class TestDecompGraphConstruction:
             gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
             alt_decomps={NonParametricOp: [_custom_rule], DynOp: [_another_rule]},
         )
+
+    @pytest.mark.parametrize("base", [CustomOp(0), NonParametricOp(Wire[1])])
+    def test_growing_controls_beneath_adjoint(self, base):
+        """Tests that the graph construction terminates if the number of control wires
+        grows beneath an adjoint with every pass through a decomposition cycle."""
+
+        @qp.register_resources({_ctrl_abstract(base, Wire[1]): 1})
+        def _base_to_ctrl(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({_adjoint_abstract(_ctrl_abstract(base, Wire[1])): 1})
+        def _another_to_adjoint_ctrl(*_, **__):
+            raise NotImplementedError
+
+        # The adjoint of C(base) with n controls decomposes into the adjoint of C(base) with
+        # n + 1 controls, by applying control to the decomposition of the base.
+        _ = DecompositionGraph(
+            [AnotherOp(0)],
+            gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
+            alt_decomps={type(base): [_base_to_ctrl], AnotherOp: [_another_to_adjoint_ctrl]},
+        )
+
+    @pytest.mark.parametrize("cyclic_rule_first", [False, True])
+    def test_cycle_with_exit_through_in_progress_controlled_op(self, cyclic_rule_first):
+        """Tests that a decomposition cycle back to a controlled operator that is still being
+        explored is kept if the controlled operator already has a node in the graph, whether
+        or not the exit of the cycle has been explored when the cycle is closed."""
+
+        @qp.register_resources({qp.X: 1})
+        def _custom_to_x(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({_ctrl_abstract(AnotherOp, Wire[1]): 1})
+        def _custom_to_another(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({_ctrl_abstract(CustomOp, Wire[1]): 1})
+        def _another_to_custom(*_, **__):
+            raise NotImplementedError
+
+        custom_rules = [_custom_to_x, _custom_to_another]
+        if cyclic_rule_first:
+            custom_rules.reverse()
+
+        ctrl_custom = qp.ctrl(CustomOp(0), control=[1])
+        ctrl_another = qp.ctrl(AnotherOp(0), control=[1])
+        graph = DecompositionGraph(
+            [ctrl_custom, ctrl_another],
+            gate_set={qp.X},
+            alt_decomps={
+                "C(CustomOp)": custom_rules,
+                "C(AnotherOp)": [_another_to_custom],
+            },
+        )
+        solution = graph.solve()
+        assert solution.decomposition(ctrl_another) is _another_to_custom
+
+    @pytest.mark.parametrize("consumer_first", [False, True])
+    def test_cut_cycle_does_not_depend_on_operator_order(self, consumer_first):
+        """Tests that a controlled operator whose decomposition rule was cut to break a cycle
+        while its base was being explored is explored again when it is visited later."""
+
+        @qp.register_resources({qp.X: 1})
+        def _custom_to_x(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({_ctrl_abstract(AnotherOp, Wire[1]): 1})
+        def _custom_to_ctrl_another(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({_ctrl_abstract(CustomOp, Wire[1]): 1})
+        def _ctrl_another_to_ctrl_custom(*_, **__):
+            raise NotImplementedError
+
+        ctrl_another = qp.ctrl(AnotherOp(0), control=[1])
+        ops = [CustomOp(0), ctrl_another]
+        if consumer_first:
+            ops.reverse()
+
+        graph = DecompositionGraph(
+            ops,
+            gate_set={qp.X, qp.CNOT},
+            alt_decomps={
+                CustomOp: [_custom_to_x, _custom_to_ctrl_another],
+                "C(AnotherOp)": [_ctrl_another_to_ctrl_custom],
+            },
+        )
+        solution = graph.solve()
+        assert solution.decomposition(ctrl_another) is _ctrl_another_to_ctrl_custom
+
+    @pytest.mark.parametrize("entry_first", [False, True])
+    def test_reuse_of_op_under_exploration_does_not_depend_on_operator_order(self, entry_first):
+        """Tests that an operator that reuses an operator which is still being explored is
+        explored again when it is visited after a cycle cut in that exploration is resolved."""
+
+        class EntryOp(Operation):
+            """An operation that decomposes into ``HubOp``."""
+
+        class HubOp(Operation):
+            """An operation with a cheap decomposition through the controlled ``EntryOp``."""
+
+        class LoopOp(Operation):
+            """An operation that decomposes into ``HubOp``."""
+
+        @qp.register_resources({HubOp: 1})
+        def _to_hub(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.Z: 1})
+        def _hub_to_z(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({_ctrl_abstract(EntryOp, Wire[1]): 1})
+        def _hub_to_ctrl_entry(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({LoopOp: 1})
+        def _hub_to_loop(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.X: 1})
+        def _ctrl_entry_to_x(*_, **__):
+            raise NotImplementedError
+
+        ops = [EntryOp(0), LoopOp(0)]
+        if not entry_first:
+            ops.reverse()
+
+        graph = DecompositionGraph(
+            ops,
+            gate_set={qp.X: 1.0, qp.Z: 100.0},
+            alt_decomps={
+                EntryOp: [_to_hub],
+                HubOp: [_hub_to_z, _hub_to_ctrl_entry, _hub_to_loop],
+                LoopOp: [_to_hub],
+                "C(EntryOp)": [_ctrl_entry_to_x],
+            },
+        )
+        solution = graph.solve()
+        assert solution.resource_estimate(LoopOp(0)) == to_resources({qp.X: 1})
+
+    @pytest.mark.parametrize("entry_first", [False, True])
+    def test_cuts_against_several_in_progress_ops(self, entry_first):
+        """Tests that an operator is explored again when it is visited after a cycle cut in its
+        exploration is resolved, even if another cut in its exploration closed a cycle back to it.
+        """
+
+        class EntryOp(Operation):
+            """An operation that decomposes into ``HubOp``."""
+
+        class HubOp(Operation):
+            """An operation that decomposes into ``LeafOp``."""
+
+        class LeafOp(Operation):
+            """An operation with a cheap decomposition through the controlled ``EntryOp``."""
+
+        @qp.register_resources({HubOp: 1})
+        def _entry_to_hub(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({LeafOp: 1})
+        def _hub_to_leaf(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.Z: 1})
+        def _leaf_to_z(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({_ctrl_abstract(EntryOp, Wire[1]): 1})
+        def _leaf_to_ctrl_entry(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({_ctrl_abstract(HubOp, Wire[1]): 1})
+        def _leaf_to_ctrl_hub(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.X: 1})
+        def _ctrl_entry_to_x(*_, **__):
+            raise NotImplementedError
+
+        ops = [EntryOp(0), HubOp(0)]
+        if not entry_first:
+            ops.reverse()
+
+        graph = DecompositionGraph(
+            ops,
+            gate_set={qp.X: 1.0, qp.Z: 100.0},
+            alt_decomps={
+                EntryOp: [_entry_to_hub],
+                HubOp: [_hub_to_leaf],
+                LeafOp: [_leaf_to_z, _leaf_to_ctrl_entry, _leaf_to_ctrl_hub],
+                "C(EntryOp)": [_ctrl_entry_to_x],
+            },
+        )
+        solution = graph.solve()
+        assert solution.resource_estimate(HubOp(0)) == to_resources({qp.X: 1})
 
 
 @pytest.mark.unit
@@ -779,6 +974,168 @@ class TestDecompGraphWorkWireBudgeting:
         solution = graph.solve()
         assert solution.is_solved_for(SimpleOp(0))
 
+    def test_cycle_through_work_wire_dependent_ops(self):
+        """Tests that a cycle of work-wire dependent ops that uses more work wires on every cycle
+        iteration does not recurse indefinitely."""
+
+        class WrapperOp(Operation):
+            """An operation that decomposes into ``CustomOp`` using a work wire."""
+
+        @qp.register_resources({CustomOp: 1})
+        def _another_to_custom(_):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1})
+        def _custom_to_x(_):
+            raise NotImplementedError
+
+        @qp.register_resources({AnotherOp: 1}, work_wires={"zeroed": 1})
+        def _custom_to_another(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1}, work_wires={"zeroed": 1})
+        def _wrapper_to_custom(_):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [AnotherOp(0), WrapperOp(0)],
+            gate_set={qp.X},
+            alt_decomps={
+                AnotherOp: [_another_to_custom],
+                CustomOp: [_custom_to_x, _custom_to_another],
+                WrapperOp: [_wrapper_to_custom],
+            },
+        )
+        solution = graph.solve(num_work_wires=None)
+        assert solution.decomposition(WrapperOp(0), num_work_wires=None) is _wrapper_to_custom
+
+    def test_self_loop_through_work_wire_dependent_op(self):
+        """Tests that a work-wire dependent op that decomposes into itself using an additional
+        work wire does not recurse indefinitely."""
+
+        class WrapperOp(Operation):
+            """An operation that decomposes into ``CustomOp`` using a work wire."""
+
+        @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1})
+        def _custom_to_x(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1}, work_wires={"zeroed": 1})
+        def _custom_to_custom(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1}, work_wires={"zeroed": 1})
+        def _wrapper_to_custom(_):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [CustomOp(0), WrapperOp(0)],
+            gate_set={qp.X},
+            alt_decomps={
+                CustomOp: [_custom_to_x, _custom_to_custom],
+                WrapperOp: [_wrapper_to_custom],
+            },
+        )
+        solution = graph.solve(num_work_wires=None)
+        assert solution.is_solved_for(WrapperOp(0), num_work_wires=None)
+
+    def test_cycle_through_work_wire_dependent_ops_without_extra_work_wires(self):
+        """Tests that a cycle of work-wire dependent ops that does not use additional work wires
+        is not pruned, so that it remains available to the solver."""
+
+        class WrapperOp(Operation):
+            """An operation that decomposes into ``CustomOp`` using a work wire."""
+
+        class OuterOp(Operation):
+            """An operation that decomposes into ``AnotherOp`` using a work wire."""
+
+        @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1})
+        def _custom_to_x(_):
+            raise NotImplementedError
+
+        @qp.register_resources({AnotherOp: 1})
+        def _custom_to_another(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1})
+        def _another_to_custom(_):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.Z: 1}, work_wires={"zeroed": 1})
+        def _another_to_z(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1}, work_wires={"zeroed": 1})
+        def _wrapper_to_custom(_):
+            raise NotImplementedError
+
+        @qp.register_resources({AnotherOp: 1}, work_wires={"zeroed": 1})
+        def _outer_to_another(_):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [CustomOp(0), WrapperOp(0), OuterOp(0)],
+            gate_set={qp.X: 1.0, qp.Z: 100.0},
+            alt_decomps={
+                CustomOp: [_custom_to_x, _custom_to_another],
+                AnotherOp: [_another_to_custom, _another_to_z],
+                WrapperOp: [_wrapper_to_custom],
+                OuterOp: [_outer_to_another],
+            },
+        )
+        solution = graph.solve(num_work_wires=None)
+        resources = solution.resource_estimate(OuterOp(0), num_work_wires=None)
+        assert resources == to_resources({qp.X: 1})
+
+    @pytest.mark.parametrize("consumer_first", [False, True])
+    def test_cut_work_wire_cycle_does_not_depend_on_operator_order(self, consumer_first):
+        """Tests that an operator whose decomposition rule was cut to break a cycle of work-wire
+        dependent ops is explored again when it is visited outside of that cycle."""
+
+        class WrapperOp(Operation):
+            """An operation that decomposes into ``CustomOp`` using a work wire."""
+
+        class ConsumerOp(Operation):
+            """An operation that decomposes into ``AnotherOp`` using two work wires."""
+
+        @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1})
+        def _custom_to_x(_):
+            raise NotImplementedError
+
+        @qp.register_resources({AnotherOp: 1}, work_wires={"zeroed": 1})
+        def _custom_to_another(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1})
+        def _another_to_custom(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1}, work_wires={"zeroed": 1})
+        def _wrapper_to_custom(_):
+            raise NotImplementedError
+
+        @qp.register_resources({AnotherOp: 1}, work_wires={"zeroed": 2})
+        def _consumer_to_another(_):
+            raise NotImplementedError
+
+        ops = [AnotherOp(0), WrapperOp(0), ConsumerOp(0)]
+        if consumer_first:
+            ops = [ConsumerOp(0), AnotherOp(0), WrapperOp(0)]
+
+        graph = DecompositionGraph(
+            ops,
+            gate_set={qp.X},
+            alt_decomps={
+                CustomOp: [_custom_to_x, _custom_to_another],
+                AnotherOp: [_another_to_custom],
+                WrapperOp: [_wrapper_to_custom],
+                ConsumerOp: [_consumer_to_another],
+            },
+        )
+        solution = graph.solve(num_work_wires=None)
+        resources = solution.resource_estimate(ConsumerOp(0), num_work_wires=None)
+        assert resources == to_resources({qp.X: 1})
+
     def test_min_work_wires(self):
         """Tests that the graph tracks the minimum number of work wires."""
 
@@ -873,11 +1230,8 @@ class TestControlledDecompositions:
             [op1, op2],
             gate_set={"ControlledPhaseShift", "PhaseShift", "GlobalPhase", "X"},
         )
-        # 6 op nodes and 3 decomposition nodes, and 1 dummy starting node.
-        assert len(graph._graph.nodes()) == 10
-        # 3 edges from decompositions to ops and 4 edges from ops to decompositions,
-        # and 4 edges from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 11
+        assert len(graph._graph.nodes()) == 17
+        assert len(graph._graph.edges()) == 22
 
         # Verify the decompositions
         solution = graph.solve()
@@ -887,7 +1241,7 @@ class TestControlledDecompositions:
 
         assert q.queue == [
             qp.PhaseShift(-0.5, wires=[1]),
-            qp.ControlledPhaseShift(-0.5, wires=[1, 2]),
+            ControlledOp2(qp.PhaseShift(-0.5, wires=2), [1]),
         ]
 
     def test_controlled_base_decomposition(self):
@@ -928,8 +1282,8 @@ class TestControlledDecompositions:
                 CustomControlledOp: [custom_controlled_decomp],
             },
         )
-        assert len(graph._graph.nodes()) == 39
-        assert len(graph._graph.edges()) == 62
+        assert len(graph._graph.nodes()) == 83
+        assert len(graph._graph.edges()) == 137
 
         solution = graph.solve()
 
@@ -945,31 +1299,13 @@ class TestControlledDecompositions:
         """Tests that the controlled form of an adjoint operator is decomposed properly."""
 
         op = qp.ctrl(qp.adjoint(qp.U1(0.5, wires=0)), control=[1])
-        # Applying ``flip_control_adjoint`` rewrites ``C(Adjoint(U1))`` as ``Adjoint(C(U1))``.
-        # With the eager ``C(U1) -> ControlledPhaseShift`` lowering, the inner ``C(U1)`` is lowered
-        # directly to ``ControlledPhaseShift``, so the result is an adjoint of a
-        # ``ControlledPhaseShift``.
-        with qp.queuing.AnnotatedQueue() as q:
-            _, args, kwargs = _get_decomp_args(op)
-            flip_control_adjoint(*args, **kwargs)
-        assert q.queue == [qp.adjoint(qp.ControlledPhaseShift(0.5, wires=[1, 0]))]
+        # Modifier interchange preserves the symbolic controlled U1.
+        tape = qp.testing.decomp_rule_to_tape(op, flip_control_adjoint)
+        assert tape.operations == [qp.adjoint(ControlledOp2(qp.U1(0.5, wires=0), [1]))]
 
     def test_flip_controlled_adjoint_full_solve(self):
-        """Tests that a full graph solve resolves C(Adjoint(U1)) down to
-        Adjoint(ControlledPhaseShift), without any decomposition rule registered
-        specifically for ``C(U1)``.
-
-        The controlled U1 node only appears once ``flip_control_adjoint`` is applied, and
-        it already resolves to ``ControlledPhaseShift`` through the generic mechanism that
-        applies control to U1's own (unconditional) decomposition into ``PhaseShift``,
-        combined with the pre-existing ``(PhaseShift, 1) -> ControlledPhaseShift`` mapping.
-        ``PauliX`` must be included in the target gate set because the resource estimate for
-        a controlled operator conservatively accounts for a potential zero-control flip, even
-        though none is required for this concrete, all-``True`` control case. ``self_adjoint``
-        must be supplied for ``PauliX`` via ``alt_decomps`` since the test-local decomposition
-        registry (unlike the real one) doesn't register it for ``Adjoint(PauliX)``, which is
-        pulled in when adjointing the same zero-control-flip resource estimate.
-        """
+        """A full graph solve lowers C(Adjoint(U1)) through symbolic C(U1)
+        and C(PhaseShift), reaching named gates through registered rules."""
 
         op = qp.ctrl(qp.adjoint(qp.U1(0.5, wires=0)), control=[1])
         graph = DecompositionGraph(
@@ -981,11 +1317,9 @@ class TestControlledDecompositions:
         )
         solution = graph.solve()
 
-        with qp.queuing.AnnotatedQueue() as q:
-            _, args, kwargs = _get_decomp_args(op)
-            solution.decomposition(op)(*args, **kwargs)
+        tape = qp.testing.decomp_rule_to_tape(op, solution.decomposition(op))
 
-        assert q.queue == [qp.adjoint(qp.ControlledPhaseShift(0.5, wires=[1, 0]))]
+        assert tape.operations == [qp.adjoint(ControlledOp2(qp.U1(0.5, wires=0), [1]))]
 
     def test_decompose_with_single_work_wire(self):
         """Tests that the Lemma 7.11 decomposition from https://arxiv.org/pdf/quant-ph/9503016 is applied correctly."""
@@ -994,19 +1328,16 @@ class TestControlledDecompositions:
 
         graph = DecompositionGraph(operations=[op], gate_set={"MultiControlledX", "CRot", "PauliX"})
         solution = graph.solve(num_work_wires=1)
-        with qp.queuing.AnnotatedQueue() as q:
-            rule = solution.decomposition(op, num_work_wires=1)
-            rule(**op.arguments)
-
-        tape = qp.tape.QuantumScript.from_queue(q)
+        rule = solution.decomposition(op, num_work_wires=1)
+        tape = qp.testing.decomp_rule_to_tape(op, rule)
         [tape], _ = qp.transforms.resolve_dynamic_wires([tape], min_int=4)
         assert tape.operations == [
-            qp.MultiControlledX(wires=[1, 2, 3, 4]),
-            qp.CRot(0.123, 0.234, 0.345, wires=[4, 0]),
-            qp.MultiControlledX(wires=[1, 2, 3, 4]),
+            qp.MultiControlledX([1, 2, 3, 4]),
+            ControlledOp2(qp.Rot(0.123, 0.234, 0.345, wires=0), [4]),
+            qp.MultiControlledX([1, 2, 3, 4]),
         ]
         assert solution.resource_estimate(op, num_work_wires=1) == to_resources(
-            {_ctrl_abstract(qp.X, Wire[3]): 2, qp.CRot: 1, qp.X: 3}
+            {qp.MultiControlledX(Wire[4]): 2, qp.CRot: 1, qp.X: 4}
         )
 
     def test_base_decomp_contains_mcms(self):
