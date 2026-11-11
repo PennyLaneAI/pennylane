@@ -175,6 +175,8 @@ def _conditional_frame_wires(op: Operator, n_wires: int) -> Sequence[int]:
     if not isinstance(op, ops.Conditional):
         return ()
     control_wires, _, base = unwrap_controls(op.base)
+    # Controls, SWAP crosses, and TemporaryAND symbols need a shared boundary
+    # to show that the classical condition applies to the whole operation.
     if (
         not control_wires
         and not isinstance(op.base, ops.SWAP)
