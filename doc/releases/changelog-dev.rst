@@ -1797,7 +1797,10 @@ Breaking changes 💔
 * Graph-based decomposition is now always enabled. The ``qp.decomposition.enable_graph``,
   ``disable_graph``, ``enabled_graph``, and ``toggle_graph_ctx`` functions have been removed.
   Remove calls to these functions and use graph-based decomposition directly.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  The :func:`~pennylane.transforms.decompose` and :func:`~pennylane.transforms._tape_decompose`
+  transforms now require ``gate_set``. Pass ``qp.gate_sets.ALL_OPS`` explicitly to retain
+  the former all-operations target.
+  `(#10510) <https://github.com/PennyLaneAI/pennylane/pull/10510>`__
 
 Deprecations 👋
 ~~~~~~~~~~~~~~~

@@ -55,7 +55,7 @@ class ControlledSequence(SymbolicOp2):
 
         dev = qp.device("default.qubit")
 
-        @qp.transforms._tape_decompose(max_expansion=1)
+        @qp.transforms._tape_decompose(gate_set=qp.gate_sets.ALL_OPS, max_expansion=1)
         @qp.qnode(dev)
         def circuit():
             qp.ControlledSequence(qp.RX(0.25, wires = 3), control = [0, 1, 2])

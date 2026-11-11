@@ -62,6 +62,9 @@ def _decompose_setup_inputs(
         the Catalyst pass under capture.
 
     """
+    if gate_set is None:
+        raise TypeError("The gate_set argument is required.")
+
     if isinstance(gate_set, (type, str)):
         gate_set = {gate_set}
 
@@ -118,7 +121,7 @@ Use :func:`~pennylane.decomposition.list_decomps` to inspect the available rules
 def _tape_decompose(
     tape,
     *,
-    gate_set=None,
+    gate_set: Iterable[type | str] | dict[type | str, float],
     stopping_condition=None,
     max_expansion=None,
     num_work_wires: int | None = 0,
@@ -142,14 +145,12 @@ def _tape_decompose(
 
     Args:
         tape (QuantumScript or QNode or Callable): A quantum circuit (QNode or quantum function).
-        gate_set (Iterable[str or type], Dict[type or str, float], optional): The
+        gate_set (Iterable[str or type], Dict[type or str, float]): The
             target gate set specified as either (1) a sequence of operator types and/or names,
             (2) a dictionary mapping operator types and/or names to their respective costs, in
-            which case the total cost will be minimized. If both ``gate_set`` and
-            ``stopping_condition`` are omitted, the target is
-            :data:`~pennylane.decomposition.gate_sets.ALL_OPS`.
-            A gate set is required when a stopping condition is supplied. Operators that belong
-            in the target gate set will not be decomposed.
+            which case the total cost will be minimized. Operators that belong in the target
+            gate set will not be decomposed. Use :data:`~pennylane.decomposition.gate_sets.ALL_OPS`
+            to target all built-in operations.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
             the operator is in the target gate set. See the "Gate Set vs. Stopping Condition"
@@ -262,6 +263,7 @@ def _tape_decompose(
         unitary = qp.QubitUnitary(qp.RX(phase, wires=0).matrix(), wires=target_wires)
         n_estimation_wires = 3
         estimation_wires = range(1, n_estimation_wires + 1)
+        gate_set = qp.gate_sets.ALL_OPS
 
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
@@ -269,13 +271,13 @@ def _tape_decompose(
             qp.Hadamard(wires=target_wires)
             qp.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)
 
-    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=0))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=gate_set, max_expansion=0))())
     0: ──H─╭QuantumPhaseEstimation─┤
     1: ────├QuantumPhaseEstimation─┤
     2: ────├QuantumPhaseEstimation─┤
     3: ────╰QuantumPhaseEstimation─┤
 
-    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=1))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=gate_set, max_expansion=1))())
     0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
     1: ──H─╰●──────│───────│───────╭QFT†─┤
     2: ──H─────────╰●──────│───────├QFT†─┤
@@ -285,7 +287,7 @@ def _tape_decompose(
     [[0.877...+0.j         0.        -0.479...j]
      [0.        -0.479...j 0.877...+0.j        ]]
 
-    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=2))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=gate_set, max_expansion=2))())
     0: ──H─╭U(M0)─╭U(M1)─╭U(M2)───────────────────────────────────────────────────────────┤
     1: ──H─╰●─────│──────│──────╭SWAP†──────────────────────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
     2: ──H────────╰●─────│──────│──────────╭(Rϕ(1.57))†──H†─│────────────╰(Rϕ(1.57))†─────┤
@@ -479,6 +481,9 @@ def _tape_decompose(
         penalty to the graph solution should it encounter a ``qp.PauliRot`` instance (e.g.,
         ``qp.transforms._tape_decompose(..., gate_set={..., qp.PauliRot: 100_000})``).
     """
+
+    if gate_set is None:
+        raise TypeError("The gate_set argument is required.")
 
     gate_set, stopping_condition = _resolve_gate_set(gate_set, stopping_condition)
 

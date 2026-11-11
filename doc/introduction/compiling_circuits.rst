@@ -143,7 +143,8 @@ set of gates. For tape-based (non-compiled) workflows, use
 :func:`~.pennylane.transforms._tape_decompose`, which decomposes circuits into a
 set of gates defined either by their name, type, or by a set of rules they must
 follow. Under :func:`~.qjit`, use :func:`~.pennylane.transforms.decompose`, which
-dispatches to Catalyst's graph-decomposition pass.
+dispatches to Catalyst's graph-decomposition pass. Both transforms require an explicit
+``gate_set``.
 
 Using a gate set
 ****************
@@ -211,6 +212,7 @@ with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit:
     unitary = qp.RX(phase, wires=0)
     n_estimation_wires = 3
     estimation_wires = range(1, n_estimation_wires + 1)
+    gate_set = qp.gate_sets.ALL_OPS
 
     @qp.qnode(qp.device('default.qubit'))
     def circuit():
@@ -221,19 +223,19 @@ with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit:
 From here, we can iterate through the stages of decomposition:
 
 >>> from pennylane.transforms import _tape_decompose
->>> print(qp.draw(_tape_decompose(circuit, max_expansion=0))())
+>>> print(qp.draw(_tape_decompose(circuit, gate_set=gate_set, max_expansion=0))())
 0: ──H─╭QuantumPhaseEstimation─┤  
 1: ────├QuantumPhaseEstimation─┤  
 2: ────├QuantumPhaseEstimation─┤  
 3: ────╰QuantumPhaseEstimation─┤  
 
->>> print(qp.draw(_tape_decompose(circuit, max_expansion=1))())
+>>> print(qp.draw(_tape_decompose(circuit, gate_set=gate_set, max_expansion=1))())
 0: ──H─╭RX(1.00)⁴─╭RX(1.00)²─╭RX(1.00)¹───────┤
 1: ──H─╰●─────────│──────────│──────────╭QFT†─┤
 2: ──H────────────╰●─────────│──────────├QFT†─┤
 3: ──H───────────────────────╰●─────────╰QFT†─┤
 
->>> print(qp.draw(_tape_decompose(circuit, max_expansion=2))())
+>>> print(qp.draw(_tape_decompose(circuit, gate_set=gate_set, max_expansion=2))())
 0: ──H─╭U(M0)─╭U(M1)─╭U(M2)───────────────────────────────────────────────────────────┤
 1: ──H─╰●─────│──────│──────╭SWAP†──────────────────────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
 2: ──H────────╰●─────│──────│──────────╭(Rϕ(1.57))†──H†─│────────────╰(Rϕ(1.57))†─────┤
