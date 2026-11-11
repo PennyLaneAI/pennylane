@@ -8,11 +8,15 @@ New features since last release
   state. Unlike :class:`~.QROM`, which XORs the bitstrings onto arbitrary target states, it can use
   extra work wires for the cheaper Select-SWAP decomposition. It picks the number of bitstrings to
   load in parallel that minimizes the cost, and its controlled ``SWAP`` gates borrow an idle work
-  wire. Use its adjoint to unload the data again.
+  wire. Use its adjoint to unload the data again. With ``qjit(capture=True)`` and ``clean=True``,
+  the adjoint is decomposed with the measurement-based uncomputation from Appendix C of
+  `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, which reduces its Toffoli cost to
+  roughly :math:`2\sqrt{L}` for :math:`L` bitstrings, given enough work wires.
   The phase gradient
   decomposition from :func:`~.make_selectpaulirot_to_phase_gradient_decomp` now loads the rotation
   angles with ``QROMLoad``.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
+  `(#10363) <https://github.com/PennyLaneAI/pennylane/pull/10363>`__
 
   For example, we may use ``QROMLoad`` on a zeroed target register, but need ``QROM`` to XOR more
   data onto it afterwards:
@@ -918,14 +922,6 @@ New features since last release
 
 Improvements 🛠
 ~~~~~~~~~~~~~~
-
-* Added a new decomposition to ``Adjoint(QROMLoad)`` based on measurement-based uncomputation from
-  Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, available with
-  ``qjit(capture=True)`` and ``clean=True``. It measures the target wires in the :math:`X` basis
-  and fixes up the resulting phases with a lookup of size :math:`\lceil L/k\rceil` targeting a
-  one-hot register of size :math:`k`. This reduces the Toffoli cost to roughly :math:`2\sqrt{L}`
-  for :math:`L` bitstrings but requires additional work wires.
-  `(#10363) <https://github.com/PennyLaneAI/pennylane/pull/10363>`__
 
 * Controlled :class:`~.SWAP` and :class:`~.PauliZ` operators now use their work wires when
   decomposed. The decompositions into :class:`~.CSWAP` (one control wire) and :class:`~.CCZ`

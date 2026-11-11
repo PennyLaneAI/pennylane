@@ -621,6 +621,8 @@ def _adjoint_qrom_load_setup(L, n_target, n_extra, n_work):
 
 # (num_bitstrings, num_targets, num_extra_control_wires, num_work_wires)
 ADJOINT_QROM_LOAD_CASES = [
+    (4, 2, 0, 0),
+    (16, 2, 0, 3),
     (1, 2, 0, 1),
     (1, 2, 2, 1),
     (2, 2, 0, 1),
@@ -644,9 +646,9 @@ class TestAdjointQROMLoadMeasurement:
     arXiv:1902.02134."""
 
     @pytest.mark.parametrize(
-        ("num_bitstrings", "num_control_wires", "num_work_wires", "expected"),
+        ("num_bitstrings", "num_control_wires", "num_aux_wires", "expected"),
         [
-            # With enough work wires, the size minimizes ceil(L/k) + k.
+            # With enough auxiliary wires, the size minimizes ceil(L/k) + k.
             (1, 1, 8, 0),
             (2, 1, 8, 0),
             (8, 3, 8, 1),
@@ -657,7 +659,7 @@ class TestAdjointQROMLoadMeasurement:
             # Ties in the estimated T-count go to the smaller one-hot register.
             (4, 2, 8, 0),
             (5, 4, 16, 1),
-            # With few work wires, the fixup QROM receives enough work wires first.
+            # With few auxiliary wires, the fixup QROM receives enough work wires first.
             (64, 6, 1, 0),
             (16, 4, 4, 1),
             (16, 4, 5, 2),
@@ -670,15 +672,15 @@ class TestAdjointQROMLoadMeasurement:
             (5, 4, 2, 0),
         ],
     )
-    def test_one_hot_size(self, num_bitstrings, num_control_wires, num_work_wires, expected):
+    def test_one_hot_size(self, num_bitstrings, num_control_wires, num_aux_wires, expected):
         """Test that the one-hot register size gives the fixup QROM enough work wires for its
         unary iteration first, and otherwise minimizes ceil(L/k) + k."""
-        size = _adjoint_qrom_load_one_hot_size(num_bitstrings, num_control_wires, num_work_wires)
+        size = _adjoint_qrom_load_one_hot_size(num_bitstrings, num_control_wires, num_aux_wires)
         assert size == expected
 
     def test_condition(self, mocker):
         """Test that the rule requires an active compiler with program capture, at least one
-        control wire, at least one work wire, and ``clean=True``."""
+        control wire, and ``clean=True``, but no work wires."""
         op = qp.adjoint(qp.QROMLoad(Bool[4, 2], Wire[2], Wire[2], Wire[1]))
         assert not _adjoint_qrom_load_measurement.is_applicable(base=op.base)
         with qp.capture.toggle_ctx(True):
@@ -691,7 +693,7 @@ class TestAdjointQROMLoadMeasurement:
             op = qp.adjoint(qp.QROMLoad(Bool[1, 2], Wire[0], Wire[2], Wire[1]))
             assert not _adjoint_qrom_load_measurement.is_applicable(base=op.base)
             op = qp.adjoint(qp.QROMLoad(Bool[4, 2], Wire[2], Wire[2], Wire[0]))
-            assert not _adjoint_qrom_load_measurement.is_applicable(base=op.base)
+            assert _adjoint_qrom_load_measurement.is_applicable(base=op.base)
             op = qp.adjoint(qp.QROMLoad(Bool[4, 2], Wire[2], Wire[2], Wire[1], False))
             assert not _adjoint_qrom_load_measurement.is_applicable(base=op.base)
 
@@ -715,6 +717,27 @@ class TestAdjointQROMLoadMeasurement:
         )
         expected = _adjoint_qrom_load_measurement.compute_resources(base=op).gate_counts
         _assert_counts_match({k: v for k, v in expected.items() if v > 0}, actual)
+
+    @pytest.mark.parametrize("case", [(16, 2, 0, 3), (64, 2, 0, 5)])
+    def test_chosen_by_graph(self, case, mocker):
+        """Test that the graph chooses the rule for ``Adjoint(QROMLoad)`` with an active compiler
+        and program capture, and that this reduces the T count."""
+        op = qp.adjoint(_adjoint_qrom_load_setup(*case)[0])
+        gate_set = {"T": 100, "Adjoint(T)": 100, "H": 1, "S": 1, "Adjoint(S)": 1, "CNOT": 1, "X": 1}
+        gate_set |= {"Z": 1, "CZ": 1, "GlobalPhase": 1, "MidMeasure": 1, "PauliMeasure": 1}
+
+        def solve():
+            solution = DecompositionGraph([op], gate_set).solve()
+            counts = solution.resource_estimate(op).gate_counts
+            t_count = sum(n for gate, n in counts.items() if str(gate) in {"T", "Adjoint(T)"})
+            return solution, t_count
+
+        _, inverse_t_count = solve()
+        mocker.patch("pennylane.templates.subroutines.qrom_load.compiler.active", return_value=True)
+        with qp.capture.toggle_ctx(True):
+            solution, t_count = solve()
+        assert solution.decomposition(op) == _adjoint_qrom_load_measurement
+        assert t_count < inverse_t_count
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("case", ADJOINT_QROM_LOAD_CASES)
@@ -770,7 +793,9 @@ class TestAdjointQROMLoadMeasurement:
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
-    @pytest.mark.parametrize("case", [(4, 2, 0, 1), (8, 2, 0, 2), (11, 2, 0, 3), (4, 2, 1, 2)])
+    @pytest.mark.parametrize(
+        "case", [(4, 2, 0, 1), (8, 2, 0, 2), (11, 2, 0, 3), (4, 2, 1, 2), (16, 2, 0, 3)]
+    )
     def test_qjit(self, case):
         """Test that loading and uncomputing a QROMLoad under ``qjit`` leaves the target and work
         wires in the zero state, and does not introduce relative phases on a uniform superposition
