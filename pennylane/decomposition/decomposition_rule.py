@@ -710,7 +710,7 @@ def _list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     return _get_registered_decomps(op_name)
 
 
-def _list_control_decomps(op_name) -> DecompCollection:
+def _list_control_decomps(op_name: str) -> DecompCollection:
     """Lists custom rules and generic fallback candidates for a controlled operator name.
 
     All three generic fallbacks are included. Their applicability conditions are checked
