@@ -23,7 +23,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.core.pauli import I, PauliSentence, PauliWord, X, Y, Z
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.exceptions import PennyLaneDeprecationWarning
 
 matI = np.eye(2)
@@ -36,9 +36,9 @@ sparse_matX = sparse.csr_matrix([[0, 1], [1, 0]])
 sparse_matY = sparse.csr_matrix([[0, -1j], [1j, 0]])
 sparse_matZ = sparse.csr_matrix([[1, 0], [0, -1]])
 
-pw1 = PauliWord({0: I, 1: X, 2: Y})
-pw2 = PauliWord({"a": X, "b": X, "c": Z})
-pw3 = PauliWord({0: Z, "b": Z, "c": Z})
+pw1 = PauliWord({0: "I", 1: "X", 2: "Y"})
+pw2 = PauliWord({"a": "X", "b": "X", "c": "Z"})
+pw3 = PauliWord({0: "Z", "b": "Z", "c": "Z"})
 pw4 = PauliWord({})
 pw_id = pw4  # Identity PauliWord
 
@@ -100,14 +100,14 @@ def _id(p):
 class TestPauliWord:
     def test_identity_removed_on_init(self):
         """Test that identities are removed on init."""
-        pw = PauliWord({0: I, 1: X, 2: Y})
+        pw = PauliWord({0: "I", 1: "X", 2: "Y"})
         assert 0 not in pw.keys()  # identity ops are removed from pw
 
     def test_missing(self):
         """Test the result when a missing key is indexed"""
-        pw = PauliWord({0: I, 1: X, 2: Y})
+        pw = PauliWord({0: "I", 1: "X", 2: "Y"})
         assert 3 not in pw.keys()
-        assert pw[3] == I
+        assert pw[3] == "I"
 
     @pytest.mark.parametrize("pw", words)
     def test_trivial_pauli_rep(self, pw):
@@ -117,23 +117,23 @@ class TestPauliWord:
 
     def test_set_items(self):
         """Test that setting items raises an error"""
-        pw = PauliWord({0: I, 1: X, 2: Y})
+        pw = PauliWord({0: "I", 1: "X", 2: "Y"})
         with pytest.raises(TypeError, match="PauliWord object does not support assignment"):
-            pw[3] = Z  # trying to add to a pw after instantiation is prohibited
+            pw[3] = "Z"  # trying to add to a pw after instantiation is prohibited
 
     def test_update_items(self):
         """Test that updating items raises an error"""
-        pw = PauliWord({0: I, 1: X, 2: Y})
+        pw = PauliWord({0: "I", 1: "X", 2: "Y"})
         with pytest.raises(TypeError, match="PauliWord object does not support assignment"):
-            pw.update({3: Z})  # trying to add to a pw after instantiation is prohibited
+            pw.update({3: "Z"})  # trying to add to a pw after instantiation is prohibited
 
     # pylint: disable=unnecessary-dunder-call
     def test_hash(self):
         """Test that a unique hash exists for different PauliWords."""
-        pw_1 = PauliWord({0: I, 1: X, 2: Y})
-        pw_2 = PauliWord({0: I, 1: X, 2: Y})  # same as 1
-        pw_3 = PauliWord({1: X, 2: Y, 0: I})  # same as 1 but reordered
-        pw_4 = PauliWord({1: Z, 2: Z})  # distinct from above
+        pw_1 = PauliWord({0: "I", 1: "X", 2: "Y"})
+        pw_2 = PauliWord({0: "I", 1: "X", 2: "Y"})  # same as 1
+        pw_3 = PauliWord({1: "X", 2: "Y", 0: "I"})  # same as 1 but reordered
+        pw_4 = PauliWord({1: "Z", 2: "Z"})  # distinct from above
 
         assert pw_1.__hash__() == pw_2.__hash__()
         assert pw_1.__hash__() == pw_3.__hash__()
@@ -142,7 +142,7 @@ class TestPauliWord:
     # pylint: disable=unnecessary-dunder-call
     def test_hash_caches(self):
         """Test that hashes are cached correctly and not recomputed."""
-        pw = PauliWord({0: I, 1: X, 2: Y})
+        pw = PauliWord({0: "I", 1: "X", 2: "Y"})
 
         assert pw._hashval is None  # hash should not be computed until __hash__ is called
         h = pw.__hash__()
@@ -294,8 +294,8 @@ class TestPauliWord:
 
     tup_pws_matmult = (
         (pw1, pw1, PauliWord({}), 1.0),  # identities are automatically removed !
-        (pw1, pw3, PauliWord({0: Z, 1: X, 2: Y, "b": Z, "c": Z}), 1.0),
-        (pw2, pw3, PauliWord({"a": X, "b": Y, 0: Z}), -1.0j),
+        (pw1, pw3, PauliWord({0: "Z", 1: "X", 2: "Y", "b": "Z", "c": "Z"}), 1.0),
+        (pw2, pw3, PauliWord({"a": "X", "b": "Y", 0: "Z"}), -1.0j),
         (pw3, pw4, pw3, 1.0),
     )
 
@@ -402,7 +402,7 @@ class TestPauliWord:
         assert np.allclose(sparse_mat.toarray(), true_matrix)
 
     tup_pw_operation = (
-        (PauliWord({0: X}), qp.PauliX(wires=0)),
+        (PauliWord({0: "X"}), qp.PauliX(wires=0)),
         (pw1, qp.prod(qp.PauliX(wires=1), qp.PauliY(wires=2))),
         (pw2, qp.prod(qp.PauliX(wires="a"), qp.PauliX(wires="b"), qp.PauliZ(wires="c"))),
         (pw3, qp.prod(qp.PauliZ(wires=0), qp.PauliZ(wires="b"), qp.PauliZ(wires="c"))),
@@ -449,10 +449,10 @@ class TestPauliWord:
     @pytest.mark.parametrize(
         "word,wire_map,expected",
         [
-            (PauliWord({0: X, 1: Y}), {0: "a", 1: "b"}, PauliWord({"a": X, "b": Y})),
-            (PauliWord({0: X, 1: Y}), {1: "b"}, PauliWord({0: X, "b": Y})),
-            (PauliWord({0: X, 1: Y}), {0: 1, 1: 0}, PauliWord({0: Y, 1: X})),
-            (PauliWord({"a": X, 0: Y}), {"a": 2, 0: 1, "c": "C"}, PauliWord({2: X, 1: Y})),
+            (PauliWord({0: "X", 1: "Y"}), {0: "a", 1: "b"}, PauliWord({"a": "X", "b": "Y"})),
+            (PauliWord({0: "X", 1: "Y"}), {1: "b"}, PauliWord({0: "X", "b": "Y"})),
+            (PauliWord({0: "X", 1: "Y"}), {0: 1, 1: 0}, PauliWord({0: "Y", 1: "X"})),
+            (PauliWord({"a": "X", 0: "Y"}), {"a": 2, 0: 1, "c": "C"}, PauliWord({2: "X", 1: "Y"})),
         ],
     )
     def test_map_wires(self, word, wire_map, expected):
@@ -473,8 +473,8 @@ class TestPauliWord:
 class TestPauliSentence:
     def test_missing(self):
         """Test the result when a missing key is indexed"""
-        pw = PauliWord({0: X})
-        new_pw = PauliWord({"a": Z})
+        pw = PauliWord({0: "X"})
+        new_pw = PauliWord({"a": "Z"})
         ps = PauliSentence({pw: 1.0})
 
         assert new_pw not in ps.keys()
@@ -495,10 +495,10 @@ class TestPauliSentence:
 
     def test_set_items(self):
         """Test that we can add to a PauliSentence"""
-        pw = PauliWord({0: X})
+        pw = PauliWord({0: "X"})
         ps = PauliSentence({pw: 1.0})
 
-        new_pw = PauliWord({"a": Z})
+        new_pw = PauliWord({"a": "Z"})
         assert new_pw not in ps.keys()
 
         ps[new_pw] = 3.45
@@ -506,7 +506,7 @@ class TestPauliSentence:
 
     def test_pauli_rep(self):
         """Test trivial pauli_rep property"""
-        ps = PauliSentence({PauliWord({0: "I", 1: "X", 2: Y}): 1j, X0: 2.0})
+        ps = PauliSentence({PauliWord({0: "I", 1: "X", 2: "Y"}): 1j, X0: 2.0})
         assert ps.pauli_rep == ps
 
     tup_ps_str = (
@@ -559,8 +559,8 @@ class TestPauliSentence:
             PauliSentence(
                 {
                     PauliWord({}): -14.2371,
-                    PauliWord({1: X, 2: Y, "a": X, "b": X, "c": Z}): 9.84j,
-                    PauliWord({0: Z, 1: X, 2: Y, "b": Z, "c": Z}): -1.23,
+                    PauliWord({1: "X", 2: "Y", "a": "X", "b": "X", "c": "Z"}): 9.84j,
+                    PauliWord({0: "Z", 1: "X", 2: "Y", "b": "Z", "c": "Z"}): -1.23,
                 }
             ),
         ),
@@ -569,12 +569,12 @@ class TestPauliSentence:
             ps3,
             PauliSentence(
                 {
-                    PauliWord({0: Z, 1: X, 2: Y, "b": Z, "c": Z}): -0.615,
-                    PauliWord({0: Z, "a": X, "b": Y}): -2,
+                    PauliWord({0: "Z", 1: "X", 2: "Y", "b": "Z", "c": "Z"}): -0.615,
+                    PauliWord({0: "Z", "a": "X", "b": "Y"}): -2,
                     PauliWord({}): 0.25,
-                    PauliWord({0: I, 1: X, 2: Y}): 1.23,
-                    PauliWord({"a": X, "b": X, "c": Z}): 4j,
-                    PauliWord({0: Z, "b": Z, "c": Z}): -0.5,
+                    PauliWord({0: "I", 1: "X", 2: "Y"}): 1.23,
+                    PauliWord({"a": "X", "b": "X", "c": "Z"}): 4j,
+                    PauliWord({0: "Z", "b": "Z", "c": "Z"}): -0.5,
                 }
             ),
         ),
@@ -910,7 +910,7 @@ class TestPauliSentence:
         assert un_simplified_ps == expected_simplified_ps2
 
     tup_ps_operation = (
-        (PauliSentence({PauliWord({0: X}): 1}), qp.s_prod(1, qp.PauliX(wires=0))),
+        (PauliSentence({PauliWord({0: "X"}): 1}), qp.s_prod(1, qp.PauliX(wires=0))),
         (
             ps1_hamiltonian,
             qp.sum(
@@ -1058,9 +1058,9 @@ class TestPauliSentence:
         """Test the map_wires conversion method."""
         assert ps1.map_wires({1: "u", 2: "v", "a": 1, "b": 2, "c": 3}) == PauliSentence(
             {
-                PauliWord({"u": X, "v": Y}): 1.23,
-                PauliWord({1: X, 2: X, 3: Z}): 4j,
-                PauliWord({0: Z, 2: Z, 3: Z}): -0.5,
+                PauliWord({"u": "X", "v": "Y"}): 1.23,
+                PauliWord({1: "X", 2: "X", 3: "Z"}): 4j,
+                PauliWord({0: "Z", 2: "Z", 3: "Z"}): -0.5,
             }
         )
 
@@ -1269,8 +1269,8 @@ class TestPaulicomms:
         (X0, X0, PauliSentence({})),
         (Y0, Y0, PauliSentence({})),
         (Z0, Z0, PauliSentence({})),
-        (PauliWord({"a": X}), PauliWord({"a": X}), PauliSentence({})),
-        (PauliWord({"a": X}), PauliWord({"b": Y}), PauliSentence({})),
+        (PauliWord({"a": "X"}), PauliWord({"a": "X"}), PauliSentence({})),
+        (PauliWord({"a": "X"}), PauliWord({"b": "Y"}), PauliSentence({})),
     ]
 
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_commutes)
@@ -1589,4 +1589,6 @@ def test_load_legacy_pickle(serialized, expected):
 @pytest.mark.parametrize("cls", [PauliWord, PauliSentence])
 def test_public_alias(cls):
     """Public imports refer to the same class, preserving isinstance and dispatch."""
+    assert getattr(qp.core, cls.__name__) is cls
+    assert cls.__name__ in qp.core.__all__
     assert getattr(qp.pauli, cls.__name__) is cls

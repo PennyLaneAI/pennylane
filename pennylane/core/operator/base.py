@@ -20,7 +20,7 @@ import abc
 import copy
 import warnings
 from collections.abc import Hashable, Iterable, Set
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Union
 from warnings import warn
 
 import jax
@@ -1159,7 +1159,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         return self._hyperparameters
 
     @property
-    def pauli_rep(self) -> Optional["PauliSentence"]:
+    def pauli_rep(self) -> PauliSentence | None:
         """A :class:`~.PauliSentence` representation of the Operator, or ``None`` if it doesn't have one."""
         return self._pauli_rep
 

@@ -98,6 +98,7 @@ cannot_depend_on = ["pennylane", "pennylane.ops", "pennylane.pauli", "pennylane.
 [[interfaces]]
 expose = ["PauliWord", "PauliSentence"]
 from = ["pennylane.core.pauli"]
+
 [[modules]]
 path = "pennylane.core.shots"
 layer = "core"
