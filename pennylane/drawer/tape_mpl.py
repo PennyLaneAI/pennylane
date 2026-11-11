@@ -38,6 +38,7 @@ from .utils import (
     default_bit_map,
     transform_deferred_measurements_tape,
     unwrap_controls,
+    unwrap_temporary_and,
 )
 
 if TYPE_CHECKING:
@@ -70,6 +71,11 @@ def _add_operation_to_drawer(op: Operator, drawer: MPLDrawer, layer: int, config
         Adds a depiction of ``op`` to ``drawer``
 
     """
+    if (elbow := unwrap_temporary_and(op)) is not None:
+        controls, target, values, adjoint = elbow
+        drawer.elbow(layer, controls + [target], control_values=values, adjoint=adjoint)
+        return
+
     op_control_wires, control_values, base = unwrap_controls(op)
     is_global_op = isinstance(base, (ops.GlobalPhase, ops.Identity))
     op_wires = list(range(drawer.n_wires)) if len(op.wires) == 0 or is_global_op else op.wires
@@ -169,7 +175,11 @@ def _conditional_frame_wires(op: Operator, n_wires: int) -> Sequence[int]:
     if not isinstance(op, ops.Conditional):
         return ()
     control_wires, _, base = unwrap_controls(op.base)
-    if not control_wires and not isinstance(op.base, ops.SWAP):
+    if (
+        not control_wires
+        and not isinstance(op.base, ops.SWAP)
+        and unwrap_temporary_and(op.base) is None
+    ):
         return ()
     if isinstance(base, (ops.GlobalPhase, ops.Identity)):
         return range(n_wires)
