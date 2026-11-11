@@ -126,7 +126,7 @@ def test_change_op_basis_concrete_legacy_operand_capture():
     import jax
 
     with qp.capture.pause():
-        legacy_op = qp.ControlledSequence(qp.RX(0.1, 0), control=1)
+        legacy_op = qp.AngleEmbedding(np.array([0.1]), wires=[0])
 
     def circuit():
         qp.change_op_basis(legacy_op, qp.X(2), qp.X(2))
@@ -134,7 +134,7 @@ def test_change_op_basis_concrete_legacy_operand_capture():
     jaxpr = jax.make_jaxpr(circuit)()
 
     names = [eqn.primitive.name for eqn in jaxpr.eqns]
-    assert names.count("ControlledSequence") == 1
+    assert names.count("AngleEmbedding") == 1
     tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
     assert len(tape.operations) == 1
     assert isinstance(tape.operations[0], qp.ops.ChangeOpBasis)
@@ -147,13 +147,13 @@ def test_change_op_basis_abstract_legacy_operand_capture():
     import jax
 
     def circuit():
-        legacy_op = qp.ControlledSequence(qp.RX(0.1, 0), control=1)
+        legacy_op = qp.AngleEmbedding(np.array([0.1]), wires=[0])
         qp.change_op_basis(legacy_op, qp.X(2), qp.X(2))
 
     jaxpr = jax.make_jaxpr(circuit)()
 
     names = [eqn.primitive.name for eqn in jaxpr.eqns]
-    assert names.count("ControlledSequence") == 1
+    assert names.count("AngleEmbedding") == 1
     tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
     assert len(tape.operations) == 1
     assert isinstance(tape.operations[0], qp.ops.ChangeOpBasis)

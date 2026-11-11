@@ -302,7 +302,7 @@ def register_resources(
 
           def _ops_fn(control_wires, **_):
               return {
-                  qp.ctrl(qp.X(Wire[1]), control_wires): 2,
+                  qp.MultiControlledX(Wire[len(control_wires) + 1]): 2,
                   qp.CRot: 1
               }
 
@@ -311,9 +311,9 @@ def register_resources(
           def _controlled_rot_decomp(base, control_wires, **_):
               wires = control_wires + base.wires
               with allocate(1, state="zero", restored=True) as work_wires:
-                  qp.ctrl(qp.X(work_wires[0]), control=wires[:-1])
+                  qp.MultiControlledX([*wires[:-1], work_wires[0]])
                   qp.CRot(**base.dynamic_args, wires=[work_wires[0], wires[-1]])
-                  qp.ctrl(qp.X(work_wires[0]), control=wires[:-1])
+                  qp.MultiControlledX([*wires[:-1], work_wires[0]])
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
 
@@ -654,8 +654,10 @@ def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: Decompositi
 
     These two new decomposition rules for ``qp.Hadamard`` will be subsequently stored within the
     scope of this program, and they will be taken into account for all circuit decompositions
-    for the duration of the session. To add alternative decompositions for a particular circuit
-    as opposed to globally, use the ``alt_decomps`` argument of the :func:`~pennylane.transforms.decompose` transform.
+    for the duration of the session. To keep alternative decompositions local to a workflow,
+    register the rules and compile the circuit within a :func:`~.local_decomps` context.
+    Use ``fixed_decomps`` or ``exclude_decomps`` with :func:`~pennylane.transforms.decompose`
+    to select or exclude rules for an individual compilation pass.
 
     Custom decomposition rules can also be specified for symbolic operators. In this case, the
     operator type can be specified as a string. For example,

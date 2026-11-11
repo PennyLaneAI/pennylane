@@ -30,7 +30,6 @@ from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     multi_qubit_decomp_rule,
     rot_decomp_rule,
@@ -176,7 +175,7 @@ class QubitUnitary(Operator2):
                 :image: /_static/decomposition_thumbnails/qubit_unitary_two_qubit.svg
                 :requires: a two-qubit matrix
                 :where: the counts are the worst case, a matrix that needs 3 :class:`~.CNOT` gates:
-                    matrices that need 0 or 1 (or, without program capture, 2) use fewer gates, and
+                    matrices that need 0 or 1 use fewer gates, and
                     the :class:`~.GlobalPhase` is skipped when its phase is zero
 
                 :class:`~.QubitUnitary` on 1 wire | :math:`4`
@@ -192,6 +191,27 @@ class QubitUnitary(Operator2):
                 :class:`~.QubitUnitary` on :math:`n-1` wires | :math:`4`
                 :class:`~.SelectPauliRot` (:math:`Z`) with :math:`n-1` controls | :math:`2`
                 :class:`~.SelectPauliRot` (:math:`Y`) with :math:`n-1` controls | :math:`1`
+
+            .. decomposition-rule:: _adjoint_qubit_unitary
+                :image: /_static/decomposition_thumbnails/qubit_unitary_adjoint.svg
+                :region: adjoint
+                :where: the adjoint of the input unitary matrix is used
+
+                :class:`~.QubitUnitary` | :math:`1`
+
+            .. decomposition-rule:: _controlled_qubit_unitary
+                :image: /_static/decomposition_thumbnails/qubit_unitary_controlled.svg
+                :region: controlled
+                :where: the circuit shows :math:`c = 2` control wires
+
+                :class:`~.ControlledQubitUnitary` | :math:`1`
+
+            .. decomposition-rule:: _pow_qubit_unitary
+                :image: /_static/decomposition_thumbnails/qubit_unitary_pow.svg
+                :region: pow
+                :where: the input unitary matrix is raised to the power, :math:`z`
+
+                :class:`~.QubitUnitary` | :math:`1`
     """
 
     dynamic_argnames = ("U",)
@@ -423,17 +443,6 @@ class QubitUnitary(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
-@custom_ctrl_dispatch.register
-def _ctrl_qu(base: QubitUnitary, control, control_values, work_wires, work_wire_type):
-    return qp.ControlledQubitUnitary(
-        U=base.U,
-        wires=control + base.wires,
-        control_values=control_values,
-        work_wires=work_wires,
-        work_wire_type=work_wire_type,
-    )
-
-
 add_decomps(
     QubitUnitary,
     zyz_decomp_rule,
@@ -538,6 +547,20 @@ class DiagonalQubitUnitary(Operator2):
                 :requires: :math:`w \geq 1` work wire
 
                 :class:`~.SelectPauliRot` (:math:`Z`) with :math:`n` controls | :math:`1` | 1
+
+            .. decomposition-rule:: _adjoint_diagonal_unitary
+                :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_adjoint.svg
+                :region: adjoint
+                :where: the adjoint of the diagonal entries is taken
+
+                :class:`~.DiagonalQubitUnitary` | :math:`1`
+
+            .. decomposition-rule:: _pow_diagonal_unitary
+                :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_pow.svg
+                :region: pow
+                :where: diagonal entries are raised to the power, :math:`z`
+
+                :class:`~.DiagonalQubitUnitary` | :math:`1`
     """
 
     dynamic_argnames = ("D",)

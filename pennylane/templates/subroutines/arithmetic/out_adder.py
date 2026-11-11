@@ -21,7 +21,6 @@ from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
-    resource_rep,
 )
 from pennylane.decomposition._subcircuit import subcircuit
 from pennylane.ops import change_op_basis
@@ -29,7 +28,7 @@ from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.typing import Wire
+from pennylane.typing import Int, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
@@ -273,7 +272,7 @@ class OutAdder(Operation):
         >>> ops = qp.OutAdder.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [(Adjoint(QFT(wires=[5, 6]))) @ ((ControlledSequence(PhaseAdder(wires=[5, 6]), control=[2, 3])) @ (ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]))) @ QFT(wires=[5, 6])]
+        [(Adjoint(QFT(wires=[5, 6]))) @ ((ControlledSequence(PhaseAdder(k=1, x_wires=[5, 6], mod=4, work_wire=[]), control=[2, 3])) @ (ControlledSequence(PhaseAdder(k=1, x_wires=[5, 6], mod=4, work_wire=[]), control=[0, 1]))) @ QFT(wires=[5, 6])]
 
         """
         if mod != 2 ** len(output_wires) and mod is not None:
@@ -292,22 +291,15 @@ class OutAdder(Operation):
         return op_list
 
 
-def _out_adder_target_resources(x_wires, y_wires, output_wires, mod, **_) -> dict:
+def _out_adder_target_resources(x_wires, y_wires, output_wires, mod, work_wires) -> dict:
     target_resources = defaultdict(int)
-    target_resources[
-        resource_rep(
-            ControlledSequence,
-            base_rep=resource_rep(PhaseAdder, num_x_wires=len(output_wires), mod=mod),
-            num_control_wires=len(x_wires),
-        )
-    ] += 1
-    target_resources[
-        resource_rep(
-            ControlledSequence,
-            base_rep=resource_rep(PhaseAdder, num_x_wires=len(output_wires), mod=mod),
-            num_control_wires=len(y_wires),
-        )
-    ] += 1
+    for control_wires in (x_wires, y_wires):
+        target_resources[
+            ControlledSequence(
+                base=PhaseAdder(Int, Wire[len(output_wires)], mod, Wire[len(work_wires)]),
+                control=Wire[len(control_wires)],
+            )
+        ] += 1
     return dict(target_resources)
 
 

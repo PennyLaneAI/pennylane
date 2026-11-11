@@ -141,9 +141,9 @@ def change_op_basis(
     resulting in a much more resource-efficient decomposition:
 
     >>> print(qp.draw(circuit2)())
-    0: ──H──────╭●────────────────┤ ╭State
-    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤ ├State
-    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤ ╰State
+    0: ──H──────╭●──────────────────────┤ ╭State
+    1: ─╭●─╭QFT─├PhaseAdder(1.00)─╭QFT†─┤ ├State
+    2: ─╰X─╰QFT─╰PhaseAdder(1.00)─╰QFT†─┤ ╰State
 
     With program capture disabled, a callable can also be provided as an argument. The callable
     applies a series of operations and must have no unbound mandatory parameters.

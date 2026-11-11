@@ -20,7 +20,7 @@ from typing import Any, Literal
 import jax
 
 from pennylane import capture, math
-from pennylane.capture import FlatFn, HintedCallable, apply_hint, enabled
+from pennylane.capture import FlatFn, HintedCallable, apply_hint
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.capture.hint import get_hints, process_hints
@@ -597,7 +597,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             isinstance(self.stop, int) and isinstance(self.start, int) and self.stop == self.start
         )
 
-        if enabled() and not start_equals_stop:
+        if capture.enabled() and not start_equals_stop:
             return self._call_capture_enabled(*init_state)
         return self._call_capture_disabled(*init_state)
 
