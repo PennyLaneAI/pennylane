@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for the pytest helper functions in ``phase_gradient_helpers.py``."""
 
+from collections import Counter
+
 import numpy as np
 import phase_gradient_helpers
 import pytest
@@ -74,6 +76,26 @@ def test_leaf_ops_unpacks_default_uncompute_block():
         "Adjoint(TemporaryAND)",
     ]
     assert phase_gradient_helpers.count_ands([op]) == (3, 2)
+
+
+@pytest.mark.catalyst
+def test_leaf_ops_matches_qjit_resources():
+    """Test that ``leaf_ops`` unpacks a change of basis with the default uncompute block into the
+    operators of the circuit compiled with ``qjit``, so that tests can compare the two."""
+    pytest.importorskip("catalyst")
+
+    def qfunc():
+        qp.change_op_basis(_compute_and_of_three, qp.SemiAdder([4], [5, 6, 7], [8, 9]))
+
+    @qp.qjit(capture=True)
+    @qp.qnode(qp.device("null.qubit", wires=10))
+    def circuit():
+        qfunc()
+        return qp.expval(qp.Z(0))
+
+    ops = phase_gradient_helpers.record(qfunc)
+    expected = Counter(op.name for op in phase_gradient_helpers.leaf_ops(ops))
+    assert qp.analyze(circuit, level=0)().resources.counts == expected
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
