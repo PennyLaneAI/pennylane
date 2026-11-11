@@ -16,6 +16,8 @@ This module contains tests for ``qp.subcircuit``.
 """
 
 import inspect
+import subprocess
+import sys
 
 import pytest
 
@@ -335,3 +337,27 @@ class TestAdditionalDecompositionRules:
 
         assert [rule.name for rule in qp.list_decomps("C(FixedOp)")] == ["controlled_fixed"]
         assert_valid(qp.ctrl(FixedOp(1.5, wires=0), control=[1, 2, 3]))
+
+
+def test_import_with_builtin_subcircuits():
+    """Fresh imports preserve operator utilities and serializable built-in subcircuits."""
+    code = """
+from pennylane.ops.functions.subcircuit import subcircuit
+import pickle
+import pennylane as qp
+
+assert qp.subcircuit is subcircuit
+assert qp.ops.functions.matrix is qp.matrix
+assert not qp.is_hermitian(qp.RX(0.2, 0))
+
+rule = qp.list_decomps(qp.RY)["_ry_to_rz_cliff"]
+tape = qp.testing.decomp_rule_to_tape(qp.RY(0.2, 0), rule)
+(basis_change,) = tape.operations
+assert isinstance(basis_change, qp.ops.ChangeOpBasis2)
+assert len(qp.list_decomps(type(basis_change.compute_op))) == 1
+qp.assert_equal(pickle.loads(pickle.dumps(basis_change)), basis_change)
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

@@ -187,6 +187,17 @@ class TestTemporaryAND:
                 matrix = qp.matrix(rule, wire_order=wires)(wires, control_values=cvals)
             self.compare_to_toffoli_on_zero(matrix, "input", cvals)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_basis_subcircuit(self):
+        """The compute block is a resource-registered subcircuit with its own decomposition."""
+        op = qp.TemporaryAND([5, 2, 7])
+        rule = qp.list_decomps(qp.TemporaryAND)[0]
+        tape = qp.testing.decomp_rule_to_tape(op, rule)
+        sandwich = next(gate for gate in tape.operations if isinstance(gate, qp.ops.ChangeOpBasis2))
+        assert not isinstance(sandwich.compute_op, qp.ops.Prod2)
+        qp.testing.assert_valid(sandwich.compute_op)
+        qp.testing.assert_decomposable(sandwich.uncompute_op)
+
     @pytest.mark.parametrize("rule", qp.list_decomps("Adjoint(TemporaryAND)"))
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_adjoint_temporary_and_decomposition(self, control_values, rule, seed):

@@ -19,6 +19,7 @@ import pytest
 import pennylane as qp
 from pennylane.templates.subroutines.alias_sampling import _build_alias_tables
 from pennylane.templates.subroutines.alias_sampling_thc import _build_thc_pairs, _lcu_signs
+from pennylane.templates.subroutines.qubitization_thc import _THCPrepare, _THCSelect
 from pennylane.testing import assert_valid
 
 
@@ -158,6 +159,7 @@ class TestQubitizationTHC:
 
     # pylint: disable=too-few-public-methods
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("num_batches", [1, 2])
     def test_standard_validity(self, seed, num_batches):
         """Test standard validity of the QubitizationTHC operator with assert_valid."""
@@ -173,6 +175,14 @@ class TestQubitizationTHC:
             zeta, t_ell, chi, t_eigenvectors, aleph, beth, **wires, num_batches=num_batches
         )
         assert_valid(op)
+
+        tape = qp.testing.decomp_rule_to_tape(op, qp.list_decomps(qp.QubitizationTHC)[0])
+        sandwich = tape.operations[0]
+        assert isinstance(sandwich, qp.ops.ChangeOpBasis2)
+        assert sandwich.compute_op.__class__ is _THCPrepare
+        assert sandwich.target_op.__class__ is _THCSelect
+        for operand in (sandwich.compute_op, sandwich.target_op):
+            assert_valid(operand, skip_differentiation=True)
 
     @pytest.mark.parametrize(
         "register, match",

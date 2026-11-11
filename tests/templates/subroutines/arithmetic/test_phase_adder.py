@@ -243,7 +243,12 @@ class TestPhaseAdder:
         phase_adder_decomp = qp.PhaseAdder(k, x_wires, mod, work_wire).decomposition()
         cob_index = len(_add_k_fourier(k, x_wires)) + len(_add_k_fourier(mod, x_wires))
         cob_decomp1 = phase_adder_decomp[cob_index].decomposition()
-        cob_decomp2 = phase_adder_decomp[-1].decomposition()
+        basis_change = phase_adder_decomp[-1]
+        cob_decomp2 = [
+            *basis_change.compute_op.decomposition(),
+            basis_change.target_op,
+            *basis_change.uncompute_op.decomposition(),
+        ]
 
         phase_adder_decomposition = [
             *phase_adder_decomp[:cob_index],
@@ -269,10 +274,11 @@ class TestPhaseAdder:
             op_list.append(qp.CNOT([aux_k, work_wire[0]]))
             op_list.append(qp.QFT(wires=x_wires))
             op_list.extend(qp.ctrl(op, control=work_wire) for op in _add_k_fourier(mod, x_wires))
-            op_list.append(qp.prod(qp.X(aux_k), *base_list_ops1))
+            op_list.extend([*reversed(base_list_ops1), qp.X(aux_k)])
             op_list.append(qp.CNOT(wires=[aux_k, work_wire[0]]))
-            op_list.append(qp.prod(*base_list_ops2, qp.X(aux_k)))
+            op_list.extend([qp.X(aux_k), *reversed(base_list_ops2)])
 
+        assert len(phase_adder_decomposition) == len(op_list)
         for op1, op2 in zip(phase_adder_decomposition, op_list):
             qp.assert_equal(op1, op2)
 

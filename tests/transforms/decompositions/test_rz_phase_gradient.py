@@ -26,7 +26,9 @@ import pytest
 import pennylane as qp
 from pennylane.testing import assert_valid_decomp_rule
 from pennylane.transforms.decompositions import (
+    make_crz_to_phase_gradient_decomp,
     make_rz_to_phase_gradient_decomp,
+    make_selectpaulirot_to_phase_gradient_decomp,
     phase_gradient_precision_stats,
     validate_phase_gradient_wires,
 )
@@ -111,6 +113,59 @@ def test_valid_decomp(p):
 
     custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
     assert_valid_decomp_rule(qp.RZ(phi, 0), custom_decomp, check_matrix=False)
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize("rotation", ["RZ", "CRZ", "X", "Y", "Z"])
+def test_phase_gradient_capture_reuses_dynamic_inputs(rotation, seed):
+    """The captured factories apply new angles on new system wires on each evaluation."""
+    import jax.numpy as jnp
+
+    factories = {
+        "RZ": make_rz_to_phase_gradient_decomp,
+        "CRZ": make_crz_to_phase_gradient_decomp,
+        "X": make_selectpaulirot_to_phase_gradient_decomp,
+        "Y": make_selectpaulirot_to_phase_gradient_decomp,
+        "Z": make_selectpaulirot_to_phase_gradient_decomp,
+    }
+    phase_grad_wires = qp.wires.Wires([12, 13])
+    rule = factories[rotation]([10, 11], phase_grad_wires, [14])
+
+    def decomp(angles, wires):
+        if rotation in ("RZ", "CRZ"):
+            rule(angles, wires)
+        else:
+            rule(angles, wires[:1], wires[1:], rot_axis=rotation)
+
+    angles = np.pi if rotation in ("RZ", "CRZ") else jnp.array([np.pi, 2 * np.pi])
+    wires = jnp.array([0] if rotation == "RZ" else [0, 1])
+    program = qp.capture.make_plxpr(decomp)(angles, wires)
+
+    for scale, runtime_wires in [(1, wires), (2, wires[::-1] + 3)]:
+        runtime_angles = angles * scale
+        tape = qp.testing.plxpr_to_tape(
+            program.jaxpr, program.consts, runtime_angles, runtime_wires
+        )
+        if rotation in ("RZ", "CRZ"):
+            op = getattr(qp, rotation)(runtime_angles, runtime_wires)
+        else:
+            op = qp.SelectPauliRot(
+                runtime_angles, runtime_wires[:1], runtime_wires[1:], rot_axis=rotation
+            )
+        assert isinstance(tape.operations[-1], qp.ops.ChangeOpBasis2)
+        basis_change = tape.operations[-1]
+        if rotation == "CRZ":
+            assert basis_change.compute_op.name == "_CRZPhaseGradientCompute"
+            qp.testing.assert_decomposable(basis_change.compute_op, check_matrix=False)
+        elif rotation in ("X", "Y", "Z"):
+            if rotation == "Y":
+                assert basis_change.compute_op.name == "_SelectPauliRotYBasis"
+                assert basis_change.uncompute_op.name == "_SelectPauliRotYBasisInverse"
+            if rotation in ("X", "Y"):
+                basis_change = basis_change.target_op
+            assert basis_change.compute_op.name == "_SelectPauliRotPhaseGradientCompute"
+            qp.testing.assert_decomposable(basis_change.compute_op, check_matrix=False)
+        phase_gradient_helpers.assert_decomp_realizes_op(op, tape, phase_grad_wires, seed)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
