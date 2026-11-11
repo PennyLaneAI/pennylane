@@ -15,12 +15,9 @@
 Contains the MPSPrep template.
 """
 
-import numpy as np
-
 import pennylane as qp
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
-from pennylane.typing import Complex, Wire
+from pennylane.typing import Wire
 
 
 def _validate_mps_shape(mps):
@@ -70,153 +67,6 @@ def _validate_mps_shape(mps):
     assert qp.math.isclose(
         new_dj0, dj2
     ), "Dimension mismatch: the last tensor's first dimension does not match the previous third dimension."
-
-
-def right_canonicalize_mps(mps):
-    r"""Transform a matrix product state (MPS) into its right-canonical form.
-
-    A right-canonicalized MPS is a matrix product state in which the constituent tensors, :math:`A^{(j)}`, satisfy
-    the following orthonormality condition [Eq. (21) of `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_]:
-
-    .. math::
-
-        \sum_{d_{j,1}, d_{j,2}} A^{(j)}_{d_{j, 0}, d_{j, 1}, d_{j, 2}} \left( A^{(j)}_{d'_{j, 0}, d_{j, 1}, d_{j, 2}} \right)^* = \delta_{d_{j, 0}, d'_{j, 0}},
-
-    where :math:`d_{i,j}` denotes the :math:`j` dimension of the :math:`i` tensor and :math:`\delta` is the Kronecker delta.
-
-
-    Args:
-        mps (list[TensorLike]): List of tensors representing the MPS.
-
-    Returns:
-        List of tensors representing the MPS in right-canonical form with the same dimensions as the initial MPS.
-
-    .. seealso:: :class:`~.MPSPrep`.
-
-    **Example**
-
-    .. code-block::
-
-        n_sites = 4
-
-        import numpy as np
-
-        mps = ([np.ones((2, 4))] +
-               [np.ones((4, 2, 4)) for _ in range(1, n_sites - 1)] +
-               [np.ones((4, 2))])
-
-        mps_rc = qp.right_canonicalize_mps(mps)
-
-        # Check that the right-canonical definition is fulfilled
-        for i in range(1, n_sites - 1):
-            tensor = mps_rc[i]
-            contraction_matrix = np.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
-            assert np.allclose(contraction_matrix, np.eye(tensor.shape[0]))
-
-    .. details::
-        :title: Usage Details
-
-        The input MPS must be a list of :math:`n` tensors :math:`[A^{(0)}, ..., A^{(n-1)}]`
-        with shapes :math:`d_0, ..., d_{n-1}`, respectively. The first and last tensors have rank :math:`2`
-        while the intermediate tensors have rank :math:`3`.
-
-        The first tensor must have the shape :math:`d_0 = (d_{0,0}, d_{0,1})` where :math:`d_{0,0}`
-        and :math:`d_{0,1}`  correspond to the physical dimension of the site and an auxiliary bond
-        dimension connecting it to the next tensor, respectively.
-
-        The last tensor must have the shape :math:`d_{n-1} = (d_{n-1,0}, d_{n-1,1})` where :math:`d_{n-1,0}`
-        and :math:`d_{n-1,1}` represent the auxiliary dimension from the previous site and the physical
-        dimension of the site, respectively.
-
-        The intermediate tensors must have the shape :math:`d_j = (d_{j,0}, d_{j,1}, d_{j,2})`, where:
-
-        - :math:`d_{j,0}` is the bond dimension connecting to the previous tensor
-        - :math:`d_{j,1}` is the physical dimension of the site
-        - :math:`d_{j,2}` is the bond dimension connecting to the next tensor
-
-        Note that the bond dimensions must match between adjacent tensors such that :math:`d_{j-1,2} = d_{j,0}`.
-
-        Additionally, the physical dimension of the site should always be fixed at :math:`2`
-        (since the dimension of a qubit is :math:`2`), while the other dimensions must be powers of two.
-
-        The following example shows a valid MPS input containing four tensors with
-        dimensions :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]` which satisfy the criteria described above.
-
-        .. code-block::
-
-            mps = [
-                np.array([[0.0, 0.107], [0.994, 0.0]]),
-                np.array(
-                    [
-                        [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
-                        [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
-                    ]
-                ),
-                np.array(
-                    [
-                        [[-1.0, 0.0], [0.0, 0.0]],
-                        [[0.0, 0.0], [0.0, 1.0]],
-                        [[0.0, -1.0], [0.0, 0.0]],
-                        [[0.0, 0.0], [1.0, 0.0]],
-                    ]
-                ),
-                np.array([[-1.0, -0.0], [-0.0, -1.0]]),
-            ]
-    """
-
-    _validate_mps_shape(mps)
-
-    mps = mps.copy()
-    mps[0] = mps[0].reshape((1, *mps[0].shape))
-    mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
-
-    if not qp.math.is_tracer(mps[0]):
-        is_right_canonical = True
-        for tensor in mps[1:-1]:
-            # Right-canonical definition
-            input_matrix = qp.math.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
-            if not qp.math.allclose(input_matrix, qp.math.eye(tensor.shape[0])):
-                is_right_canonical = False
-                break
-
-        if is_right_canonical:
-            mps[0] = mps[0][0]
-            mps[-1] = mps[-1][:, :, 0]
-            return mps
-
-    d_shapes = []
-    for tensor in mps[1:-1]:
-        d_shapes += tensor.shape
-
-    max_bond_dim = qp.math.max(d_shapes)
-
-    n_sites = len(mps)
-    output_mps = [None] * n_sites
-
-    # Procedure analogous to the left-canonical conversion but starting from the right and storing the Vd,
-    # where Vd is the right matrix in the Singular Value Decomposition (SVD)
-    for i in range(n_sites - 1, 0, -1):
-        chi_left, d, chi_right = mps[i].shape
-        input_matrix = mps[i].reshape(chi_left, d * chi_right)
-
-        u_matrix, s_diag, vd_matrix = qp.math.linalg.svd(input_matrix, full_matrices=False)
-
-        # Truncate SVD components if needed
-        chi_new = min(int(max_bond_dim), len(s_diag))
-        u_matrix = u_matrix[:, :chi_new]
-        s_diag = s_diag[:chi_new]
-        vd_matrix = vd_matrix[:chi_new, :]
-
-        # Store Vd reshaped as an MPS tensor in the output MPS
-        output_mps[i] = vd_matrix.reshape(chi_new, d, chi_right)
-
-        # Contract U with diag(S) and merge it with the preceding MPS tensor, preserving the canonical structure
-        mps[i - 1] = qp.math.tensordot(mps[i - 1], u_matrix @ qp.math.diag(s_diag), axes=([2], [0]))
-
-    output_mps[0] = mps[0][0]
-    output_mps[-1] = output_mps[-1][:, :, 0]
-
-    return output_mps
 
 
 class MPSPrep(Operator2):
@@ -366,77 +216,148 @@ class MPSPrep(Operator2):
         )
 
 
-def _mps_prep_decomposition_resources(
-    mps, wires, work_wires=None, right_canonicalize=False
-):  # pylint: disable=unused-argument
-    num_work_wires = len(work_wires)
-    num_sites = len(mps)
-    return {
-        qp.QubitUnitary(
-            Complex[2 ** (1 + num_work_wires), 2 ** (1 + num_work_wires)],
-            wires=Wire[1 + num_work_wires],
-        ): num_sites
-    }
+def right_canonicalize_mps(mps):
+    r"""Transform a matrix product state (MPS) into its right-canonical form.
+
+    A right-canonicalized MPS is a matrix product state in which the constituent tensors, :math:`A^{(j)}`, satisfy
+    the following orthonormality condition [Eq. (21) of `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_]:
+
+    .. math::
+
+        \sum_{d_{j,1}, d_{j,2}} A^{(j)}_{d_{j, 0}, d_{j, 1}, d_{j, 2}} \left( A^{(j)}_{d'_{j, 0}, d_{j, 1}, d_{j, 2}} \right)^* = \delta_{d_{j, 0}, d'_{j, 0}},
+
+    where :math:`d_{i,j}` denotes the :math:`j` dimension of the :math:`i` tensor and :math:`\delta` is the Kronecker delta.
 
 
-def _work_wires_bond_dimension_condition(
-    mps, wires, work_wires=None, right_canonicalize=False
-):  # pylint: disable=unused-argument
-    bond_dimensions = [data.shape[-1] for data in mps]
-    max_bond_dimension = max(bond_dimensions[:-1])
+    Args:
+        mps (list[TensorLike]): List of tensors representing the MPS.
 
-    return (
-        work_wires is not None
-        and len(work_wires) > 0
-        and 2 ** len(work_wires) >= max_bond_dimension
-    )
+    Returns:
+        List of tensors representing the MPS in right-canonical form with the same dimensions as the initial MPS.
 
+    .. seealso:: :class:`~.MPSPrep`.
 
-@qp.register_condition(_work_wires_bond_dimension_condition)
-@register_resources(_mps_prep_decomposition_resources)
-def _mps_prep_decomposition(mps, wires, work_wires=None, right_canonicalize=False):
-    mps = list(mps)
+    **Example**
 
-    n_wires = len(work_wires) + 1
+    .. code-block::
+
+        n_sites = 4
+
+        import numpy as np
+
+        mps = ([np.ones((2, 4))] +
+               [np.ones((4, 2, 4)) for _ in range(1, n_sites - 1)] +
+               [np.ones((4, 2))])
+
+        mps_rc = qp.right_canonicalize_mps(mps)
+
+        # Check that the right-canonical definition is fulfilled
+        for i in range(1, n_sites - 1):
+            tensor = mps_rc[i]
+            contraction_matrix = np.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
+            assert np.allclose(contraction_matrix, np.eye(tensor.shape[0]))
+
+    .. details::
+        :title: Usage Details
+
+        The input MPS must be a list of :math:`n` tensors :math:`[A^{(0)}, ..., A^{(n-1)}]`
+        with shapes :math:`d_0, ..., d_{n-1}`, respectively. The first and last tensors have rank :math:`2`
+        while the intermediate tensors have rank :math:`3`.
+
+        The first tensor must have the shape :math:`d_0 = (d_{0,0}, d_{0,1})` where :math:`d_{0,0}`
+        and :math:`d_{0,1}`  correspond to the physical dimension of the site and an auxiliary bond
+        dimension connecting it to the next tensor, respectively.
+
+        The last tensor must have the shape :math:`d_{n-1} = (d_{n-1,0}, d_{n-1,1})` where :math:`d_{n-1,0}`
+        and :math:`d_{n-1,1}` represent the auxiliary dimension from the previous site and the physical
+        dimension of the site, respectively.
+
+        The intermediate tensors must have the shape :math:`d_j = (d_{j,0}, d_{j,1}, d_{j,2})`, where:
+
+        - :math:`d_{j,0}` is the bond dimension connecting to the previous tensor
+        - :math:`d_{j,1}` is the physical dimension of the site
+        - :math:`d_{j,2}` is the bond dimension connecting to the next tensor
+
+        Note that the bond dimensions must match between adjacent tensors such that :math:`d_{j-1,2} = d_{j,0}`.
+
+        Additionally, the physical dimension of the site should always be fixed at :math:`2`
+        (since the dimension of a qubit is :math:`2`), while the other dimensions must be powers of two.
+
+        The following example shows a valid MPS input containing four tensors with
+        dimensions :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]` which satisfy the criteria described above.
+
+        .. code-block::
+
+            mps = [
+                np.array([[0.0, 0.107], [0.994, 0.0]]),
+                np.array(
+                    [
+                        [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
+                        [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
+                    ]
+                ),
+                np.array(
+                    [
+                        [[-1.0, 0.0], [0.0, 0.0]],
+                        [[0.0, 0.0], [0.0, 1.0]],
+                        [[0.0, -1.0], [0.0, 0.0]],
+                        [[0.0, 0.0], [1.0, 0.0]],
+                    ]
+                ),
+                np.array([[-1.0, -0.0], [-0.0, -1.0]]),
+            ]
+    """
+
+    _validate_mps_shape(mps)
 
     mps = mps.copy()
-
-    # Transform the MPS to ensure that the generated matrix is unitary
-    if right_canonicalize:
-        mps = right_canonicalize_mps(mps)
-
-    #  NOTE: tensor legs assignment convention is (vL, p, vR)
     mps[0] = mps[0].reshape((1, *mps[0].shape))
     mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
 
-    interface, dtype = qp.math.get_interface(mps[0]), mps[0].dtype
+    if not qp.math.is_tracer(mps[0]):
+        is_right_canonical = True
+        for tensor in mps[1:-1]:
+            # Right-canonical definition
+            input_matrix = qp.math.tensordot(tensor, tensor.conj(), axes=([1, 2], [1, 2]))
+            if not qp.math.allclose(input_matrix, qp.math.eye(tensor.shape[0])):
+                is_right_canonical = False
+                break
 
-    for i, Ai in enumerate(mps):
+        if is_right_canonical:
+            mps[0] = mps[0][0]
+            mps[-1] = mps[-1][:, :, 0]
+            return mps
 
-        vectors = []
-        for column in Ai:
-            vector = qp.math.zeros(2**n_wires, like=interface, dtype=dtype)
-            if interface == "jax":
-                vector = vector.at[: len(column[0])].set(column[0])
-                vector = vector.at[2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])].set(
-                    column[1]
-                )
-            else:
-                vector[: len(column[0])] = column[0]
-                vector[2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])] = column[1]
-            vectors.append(vector)
-        vectors = qp.math.stack(vectors).T
-        # The unitary is completed using QR decomposition
-        d, k = vectors.shape
-        assert d == 2**n_wires, "The first dimension of the vectors must match 2**n_wires."
-        assert (
-            k <= d
-        ), "The second dimension of the vectors must be less than or equal to 2**(n_wires-1)."
-        new_columns = qp.math.array(np.random.RandomState(42).random((d, d - k)))
-        unitary_matrix, R = qp.math.linalg.qr(qp.math.hstack([vectors, new_columns]))
-        unitary_matrix *= qp.math.sign(qp.math.diag(R))  # Enforce uniqueness for QR decomposition
+    d_shapes = []
+    for tensor in mps[1:-1]:
+        d_shapes += tensor.shape
 
-        qp.QubitUnitary(unitary_matrix, wires=[wires[i], *work_wires])
+    max_bond_dim = qp.math.max(d_shapes)
 
+    n_sites = len(mps)
+    output_mps = [None] * n_sites
 
-add_decomps(MPSPrep, _mps_prep_decomposition)
+    # Procedure analogous to the left-canonical conversion but starting from the right and storing the Vd,
+    # where Vd is the right matrix in the Singular Value Decomposition (SVD)
+    for i in range(n_sites - 1, 0, -1):
+        chi_left, d, chi_right = mps[i].shape
+        input_matrix = mps[i].reshape(chi_left, d * chi_right)
+
+        u_matrix, s_diag, vd_matrix = qp.math.linalg.svd(input_matrix, full_matrices=False)
+
+        # Truncate SVD components if needed
+        chi_new = min(int(max_bond_dim), len(s_diag))
+        u_matrix = u_matrix[:, :chi_new]
+        s_diag = s_diag[:chi_new]
+        vd_matrix = vd_matrix[:chi_new, :]
+
+        # Store Vd reshaped as an MPS tensor in the output MPS
+        output_mps[i] = vd_matrix.reshape(chi_new, d, chi_right)
+
+        # Contract U with diag(S) and merge it with the preceding MPS tensor, preserving the canonical structure
+        mps[i - 1] = qp.math.tensordot(mps[i - 1], u_matrix @ qp.math.diag(s_diag), axes=([2], [0]))
+
+    output_mps[0] = mps[0][0]
+    output_mps[-1] = output_mps[-1][:, :, 0]
+
+    return output_mps

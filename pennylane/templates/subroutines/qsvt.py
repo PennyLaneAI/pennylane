@@ -16,7 +16,6 @@ Contains the QSVT template and qsvt wrapper function.
 """
 
 import warnings
-from collections import defaultdict
 from collections.abc import Sequence
 from functools import partial, reduce
 from importlib import import_module, util
@@ -29,12 +28,9 @@ from jax import jacobian, jit, vmap
 from numpy.polynomial import Polynomial, chebyshev
 
 from pennylane import math, ops
-from pennylane.core.apply import apply
-from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator import Operator, Operator2
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import CompressedResourceOp, add_decomps, register_resources
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.decomposition import CompressedResourceOp
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -527,35 +523,6 @@ class QSVT(Operator2):
     def num_params(self) -> int:
         """Number of trainable parameters of the block encoding and projectors."""
         return sum(getattr(op, "num_params", 0) for op in (self.UA, *self.projectors))
-
-
-def _QSVT_resources(UA, projectors):
-    resources = defaultdict(int)
-    resources[abstractify(projectors[0])] = 1
-    for i in range(1, len(projectors) - 1, 2):
-        resources[_change_op_basis_abstract(UA, projectors[i], _adjoint_abstract(UA))] += 1
-        resources[abstractify(projectors[i + 1])] += 1
-    if len(projectors) % 2 == 0:
-        resources[abstractify(UA)] += 1
-        resources[abstractify(projectors[-1])] += 1
-    return dict(resources)
-
-
-@register_resources(_QSVT_resources)
-def _QSVT_decomposition(UA, projectors):
-
-    apply(projectors[0])
-
-    for i in range(1, len(projectors) - 1, 2):
-        ops.change_op_basis(UA, projectors[i])
-        apply(projectors[i + 1])
-
-    if len(projectors) % 2 == 0:
-        apply(UA)
-        apply(projectors[-1])
-
-
-add_decomps(QSVT, _QSVT_decomposition)
 
 
 def _complementary_poly(poly_coeffs):

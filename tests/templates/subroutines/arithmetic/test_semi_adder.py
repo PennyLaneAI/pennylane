@@ -21,13 +21,13 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops import CNOT, adjoint
-from pennylane.templates.subroutines.arithmetic.semi_adder import (
+from pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder import (
     _controlled_semi_adder,
-    _effective_skip_input_pos,
     _semi_adder,
     _semi_adder_resources,
 )
+from pennylane.ops import CNOT, adjoint
+from pennylane.templates.subroutines.arithmetic.semi_adder import _effective_skip_input_pos
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
 from pennylane.testing import assert_decomposable
 from pennylane.typing import Wire

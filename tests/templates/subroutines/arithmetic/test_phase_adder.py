@@ -20,7 +20,9 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import Operator2, abstractify
-from pennylane.templates.subroutines.arithmetic.phase_adder import _add_k_fourier
+from pennylane.decomposition_rules.templates.subroutines.arithmetic.phase_adder import (
+    _add_k_fourier,
+)
 from pennylane.testing import assert_decomposable
 from pennylane.typing import Int, Wire
 

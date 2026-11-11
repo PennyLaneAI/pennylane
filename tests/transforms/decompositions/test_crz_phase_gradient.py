@@ -21,8 +21,10 @@ import phase_gradient_helpers
 import pytest
 
 import pennylane as qp
+from pennylane.decomposition_rules.transforms.decompositions.crz_phase_gradient import (
+    make_crz_to_phase_gradient_decomp,
+)
 from pennylane.testing import assert_valid_decomp_rule
-from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
 
 
 def _num_set_bits(phi, p):

@@ -16,14 +16,9 @@ Contains the ArbitraryStatePreparation template.
 """
 
 import functools
-from collections import Counter
 
 import pennylane as qp
-from pennylane import register_resources
-from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps
-from pennylane.typing import Float, Wire
 
 
 @functools.lru_cache
@@ -157,27 +152,3 @@ class ArbitraryStatePreparation(Operation):
             tuple[int]: shape
         """
         return (2 ** (n_wires + 1) - 2,)
-
-
-def _arbitrary_state_preparation_resources(num_wires):
-    return dict(
-        Counter(
-            qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)])
-            for pauli_word in _state_preparation_pauli_words(num_wires)
-        )
-    )
-
-
-@register_resources(_arbitrary_state_preparation_resources)
-def _arbitrary_state_preparation_decomposition(weights, wires, **_):
-    pauli_words = _state_preparation_pauli_words(len(wires))
-
-    @for_loop(len(pauli_words))
-    def pauli_loop(i):
-        pauli_word = pauli_words[i]
-        qp.PauliRot(weights[i], pauli_word, wires=wires)
-
-    pauli_loop()  # pylint: disable=no-value-for-parameter
-
-
-add_decomps(ArbitraryStatePreparation, _arbitrary_state_preparation_decomposition)

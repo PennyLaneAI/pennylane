@@ -15,18 +15,10 @@
 Contains the OutPoly template.
 """
 
-from collections import Counter
-
 from pennylane import math
 from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
-)
 from pennylane.ops import adjoint, ctrl
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.typing import Int, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
@@ -466,81 +458,3 @@ class OutPoly(Operation):
         list_ops.append(adjoint(QFT)(wires=output_adder_mod))
 
         return list_ops
-
-
-def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coeffs_list) -> dict:
-    num_output_adder_mod = num_output_wires + 1 if num_work_wires else num_output_wires
-
-    resources = Counter({QFT(Wire[num_output_adder_mod]): 1})
-
-    coeffs_dic = dict(coeffs_list)
-    phase_rep = PhaseAdder(
-        Int, Wire[num_output_adder_mod], mod, Wire[int(mod != 2**num_output_adder_mod)]
-    )
-
-    for item in coeffs_dic:
-
-        if 1 not in item:
-            resources[phase_rep] += 1
-        else:
-            num_controls = sum(1 for bit in item if bit == 1)
-
-            ctrl_phase_rep = ctrl(
-                phase_rep,
-                control=Wire[num_controls],
-                work_wires=Wire[int(num_work_wires > 0)],
-                work_wire_type="borrowed",
-            )
-            resources[ctrl_phase_rep] += 1
-
-    resources[_adjoint_abstract(QFT(Wire[num_output_adder_mod]))] = 1
-
-    return dict(resources)
-
-
-@register_resources(_out_poly_decomposition_resources)
-def _out_poly_decomposition(
-    polynomial_function,
-    input_registers,
-    output_wires: WiresLike,
-    mod=None,
-    work_wires: WiresLike = (),
-    **kwargs,
-):  # pylint: disable=unused-argument
-    registers_wires = [*input_registers, output_wires]
-
-    if len(work_wires) == 0:
-        work_wires = [(), ()]
-
-    output_adder_mod = (
-        [work_wires[0]] + registers_wires[-1] if work_wires[0] else registers_wires[-1]
-    )
-
-    QFT(wires=output_adder_mod)
-
-    coeffs_dic = dict(kwargs["coeffs_list"])
-
-    all_wires_input = sum([*registers_wires[:-1]], start=[])
-
-    for item, coeff in coeffs_dic.items():
-
-        if 1 not in item:
-            # Add the constant term
-            PhaseAdder(int(coeff), output_adder_mod)
-        else:
-            controls = [all_wires_input[i] for i, bit in enumerate(item) if bit == 1]
-
-            ctrl(
-                PhaseAdder(
-                    int(coeff) % mod,
-                    output_adder_mod,
-                    work_wire=work_wires[1],
-                    mod=mod,
-                ),
-                control=controls,
-            )
-
-    adjoint(QFT(wires=output_adder_mod))
-
-
-add_decomps(OutPoly, _out_poly_decomposition)

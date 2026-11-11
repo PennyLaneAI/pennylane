@@ -209,11 +209,11 @@ class TestDecomposition:
         """Test that with program capture, the determinant correction of an orthogonal matrix is
         a PauliZ for a negative determinant and nothing otherwise."""
         # pylint: disable=import-outside-toplevel
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-        from pennylane.templates.subroutines.qchem.basis_rotation import (
+        from pennylane.decomposition_rules.templates.subroutines.qchem.basis_rotation import (
             _real_basis_rotation_decomp,
             _real_basis_rotation_resources,
         )
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         rng = np.random.default_rng(seed)
         q, r = np.linalg.qr(rng.normal(size=(3, 3)))
@@ -241,7 +241,7 @@ class TestDecomposition:
         # pylint: disable=import-outside-toplevel
         import jax
 
-        from pennylane.templates.subroutines.qchem.basis_rotation import (
+        from pennylane.decomposition_rules.templates.subroutines.qchem.basis_rotation import (
             _real_basis_rotation_resources,
         )
 

@@ -37,16 +37,20 @@ from pennylane.decomposition.decomposition_rule import (
 )
 from pennylane.decomposition.resources import Resources
 from pennylane.decomposition.utils import to_name
-from pennylane.ops.mid_measure import MidMeasure
-from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2, _change_op_basis_abstract
-from pennylane.ops.op_math.controlled2 import (
-    ControlledOp2,
+from pennylane.decomposition_rules.op_math.controlled2 import (
     ctrl_many_zeroed_work_wires,
     ctrl_single_work_wire,
     to_controlled_unitary,
 )
-from pennylane.ops.op_math.pow2 import flip_pow_adjoint, merge_powers, repeat_pow_base
+from pennylane.decomposition_rules.op_math.pow2 import (
+    flip_pow_adjoint,
+    merge_powers,
+    repeat_pow_base,
+)
+from pennylane.ops.mid_measure import MidMeasure
+from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2, _change_op_basis_abstract
+from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.testing.decompositions import assert_valid_decomp_rule
 from pennylane.typing import Float, Int, Wire

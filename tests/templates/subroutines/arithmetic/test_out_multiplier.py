@@ -20,14 +20,14 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
-from pennylane.ops import adjoint
-from pennylane.templates.subroutines.arithmetic.out_multiplier import (
-    OutMultiplier,
+from pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier import (
     _add_plus_one,
     _out_multiplier_with_cache_resources,
     _out_multiplier_with_caddsub,
     _out_multiplier_with_qft,
 )
+from pennylane.ops import adjoint
+from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier
 from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
 from pennylane.testing import assert_valid_decomp_rule
 from pennylane.typing import Wire

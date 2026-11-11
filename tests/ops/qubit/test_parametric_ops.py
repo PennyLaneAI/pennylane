@@ -694,7 +694,9 @@ class TestDecompositions:
         self, angle, control_values, work_wires, work_wire_type
     ):
         """Test the controlled IsingZZ rule's gates, matrix, and resource counts."""
-        from pennylane.ops.qubit.parametric_ops_multi_qubit import controlled_ising_zz
+        from pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit import (
+            controlled_ising_zz,
+        )
 
         control_wires = list(range(len(control_values)))
         op = qp.ctrl(

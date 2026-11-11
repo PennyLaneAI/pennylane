@@ -17,11 +17,9 @@ This submodule contains the template for Qubitization.
 
 import copy
 
-from pennylane.core.operator import Operation, abstractify
+from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import I, prod
-from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 from .prepselprep import PrepSelPrep
@@ -177,31 +175,3 @@ class Qubitization(Operation):
         context.remove(self.hyperparameters["hamiltonian"])
         context.append(self)
         return self
-
-
-def _qubitization_resources(num_control_wires, hamiltonian):
-    return {
-        resource_rep(
-            Reflection,
-            base_rep=I(Wire[num_control_wires]),
-            num_wires=1,
-            num_reflection_wires=1,
-        ): 1,
-        resource_rep(
-            PrepSelPrep,
-            op_reps=(abstractify(hamiltonian),),
-            num_control=num_control_wires,
-        ): 1,
-    }
-
-
-@register_resources(_qubitization_resources)
-def _qubitization_decomposition(*_, **kwargs):
-    hamiltonian = kwargs["hamiltonian"]
-    control = kwargs["control"]
-
-    Reflection(I(control))
-    PrepSelPrep(hamiltonian, control=control)
-
-
-add_decomps(Qubitization, _qubitization_decomposition)

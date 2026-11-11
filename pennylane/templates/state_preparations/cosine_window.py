@@ -18,13 +18,9 @@ Contains the CosineWindow template.
 import numpy as np
 
 import pennylane as qp
-from pennylane import capture, math, register_resources
-from pennylane.control_flow import for_loop
+from pennylane import math
 from pennylane.core.operator import StatePrepBase
-from pennylane.decomposition import add_decomps
 from pennylane.exceptions import WireError
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 
@@ -145,32 +141,3 @@ class CosineWindow(StatePrepBase):
             ket = ket.transpose(desired_order)
 
         return math.convert_like(ket, op_vector)
-
-
-def _cosine_window_resources(num_wires):
-    return {
-        qp.Hadamard: 1,
-        qp.RZ: 1,
-        _adjoint_abstract(qp.QFT(Wire[num_wires])): 1,
-        qp.PhaseShift: num_wires,
-    }
-
-
-@register_resources(_cosine_window_resources)
-def _cosine_window_decomposition(wires, **_):
-    qp.Hadamard(wires=wires[-1])
-    qp.RZ(np.pi, wires=wires[-1])
-    qp.adjoint(qp.QFT)(wires=wires)
-
-    if capture.enabled():
-        wires = qp.math.array(wires, like="jax")
-
-    @for_loop(len(wires))
-    def wires_loop(ind):
-        wire = wires[ind]
-        qp.PhaseShift(np.pi * 2 ** (-ind - 1), wires=wire)
-
-    wires_loop()  # pylint: disable=no-value-for-parameter
-
-
-add_decomps(CosineWindow, _cosine_window_decomposition)

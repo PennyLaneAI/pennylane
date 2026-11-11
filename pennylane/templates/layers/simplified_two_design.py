@@ -15,12 +15,8 @@ r"""
 Contains the SimplifiedTwoDesign template.
 """
 
-from jax import numpy as jnp
-
-from pennylane import capture, math
-from pennylane.control_flow import for_loop
+from pennylane import math
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CZ, RY
 
 
@@ -230,54 +226,3 @@ class SimplifiedTwoDesign(Operation):
             return [(n_wires,), (n_layers,)]
 
         return [(n_wires,), (n_layers, n_wires - 1, 2)]
-
-
-def _simplified_two_design_resources(n_layers, num_wires):
-    if num_wires > 1:
-        return {
-            RY: num_wires + (n_layers * num_wires - n_layers) * 2,
-            CZ: n_layers * num_wires - n_layers,
-        }
-    return {RY: num_wires}
-
-
-@register_resources(_simplified_two_design_resources)
-def _simplified_two_design_decomposition(initial_layer_weights, weights, wires):
-    n_layers = math.shape(weights)[0]
-
-    if capture.enabled():
-        initial_layer_weights, weights, wires = (
-            jnp.array(initial_layer_weights),
-            jnp.array(weights),
-            jnp.array(wires),
-        )
-
-    # initial rotations
-    @for_loop(len(wires))
-    def initial_rotation_loop(i):
-        RY(initial_layer_weights[i], wires=wires[i])
-
-    initial_rotation_loop()  # pylint: disable=no-value-for-parameter
-
-    @for_loop(n_layers)
-    def layers_loop(layer):
-
-        all_wire_pairs = [wires[i : i + 2] for i in range(0, len(wires) - 1, 2)] + [
-            wires[i : i + 2] for i in range(1, len(wires) - 1, 2)
-        ]
-        if capture.enabled():
-            all_wire_pairs = jnp.array(all_wire_pairs)
-
-        @for_loop(len(all_wire_pairs))
-        def block_loop(i):
-            wire_pair = all_wire_pairs[i]
-            CZ(wires=wire_pair)
-            RY(weights[layer, i, 0], wires=wire_pair[0])
-            RY(weights[layer, i, 1], wires=wire_pair[1])
-
-        block_loop()  # pylint: disable=no-value-for-parameter
-
-    layers_loop()  # pylint: disable=no-value-for-parameter
-
-
-add_decomps(SimplifiedTwoDesign, _simplified_two_design_decomposition)

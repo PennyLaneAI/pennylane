@@ -17,13 +17,9 @@ Contains the IQPEmbedding template.
 
 from itertools import combinations
 
-from pennylane import capture, compiler, math
-from pennylane.control_flow import for_loop
+from pennylane import math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import RZ, H, MultiRZ
 from pennylane.typing import Float, Int, Wire
-from pennylane.wires import WiresLike
 
 
 class IQPEmbedding(Operator2):
@@ -216,44 +212,3 @@ class IQPEmbedding(Operator2):
             pattern = math.asarray(pattern, dtype=int)
 
         super().__init__(features, wires, n_repeats, pattern)
-
-
-# pylint: disable=unused-argument
-def _iqp_embedding_resources(features, wires, n_repeats, pattern):
-    return {
-        RZ: n_repeats * len(wires),
-        H: n_repeats * len(wires),
-        MultiRZ(Float, Wire[2]): len(pattern) * n_repeats,
-    }
-
-
-@register_resources(_iqp_embedding_resources, exact=False)
-def _iqp_embedding_decomposition(features, wires: WiresLike, n_repeats, pattern):
-
-    if capture.enabled() or compiler.active():
-        wires = math.array(wires, like="jax")
-
-    if math.ndim(features) > 1:
-        features = math.T(features)
-
-    @for_loop(n_repeats)
-    def outer_loop(_):
-
-        @for_loop(len(wires))
-        def single_qubit_loop(i):
-            H(wires=wires[i])
-            RZ(features[i], wires=wires[i])
-
-        single_qubit_loop()  # pylint: disable=no-value-for-parameter
-
-        @for_loop(len(pattern))
-        def pattern_loop(j):
-            idx1, idx2 = pattern[j][0], pattern[j][1]
-            MultiRZ(features[idx1] * features[idx2], wires=[wires[idx1], wires[idx2]])
-
-        pattern_loop()  # pylint: disable=no-value-for-parameter
-
-    outer_loop()  # pylint: disable=no-value-for-parameter
-
-
-add_decomps(IQPEmbedding, _iqp_embedding_decomposition)

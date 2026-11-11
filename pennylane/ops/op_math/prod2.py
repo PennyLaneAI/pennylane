@@ -17,7 +17,6 @@ symbolic operator representing the product of operators.
 """
 
 import itertools
-from collections import Counter
 from copy import copy
 from functools import reduce
 from typing import Union, override
@@ -25,15 +24,12 @@ from typing import Union, override
 from scipy.sparse import kron as sparse_kron
 
 import pennylane as qp
-from pennylane import capture, compiler, control_flow, math
-from pennylane.core.apply import apply
+from pennylane import capture, math
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.ops.op_math.controlled2 import flip_zero_control
-from pennylane.typing import AbstractWires, TensorLike, Wire
-from pennylane.wires import DynamicWire, Wires, is_abstract_qubit
+from pennylane.typing import AbstractWires, TensorLike
+from pennylane.wires import Wires
 
 from ..qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from .composite import handle_recursion_error
@@ -340,124 +336,6 @@ class Prod2(CompositeOp2):
 def _abstractify_prod2(val: Prod2):
     """Abstractify ``Prod2``."""
     return Prod2(tuple(abstractify(op) for op in val.operands), _init_pauli_rep=None)
-
-
-def _prod2_resources(operands, _init_pauli_rep=None):  # pylint: disable=unused-argument
-    return dict(Counter(abstractify(op) for op in operands))
-
-
-@register_resources(_prod2_resources)
-def _prod2_decomp(operands, _init_pauli_rep=None):  # pylint: disable=unused-argument
-    for op in reversed(operands):
-        apply(op)
-
-
-# pylint: disable=unused-argument
-def _ctrl_prod2_resources(base, control_wires, work_wires, work_wire_type, **_):
-
-    num_control_wires = len(control_wires)
-    resources = Counter()
-    resources[qp.TemporaryAND] += num_control_wires - 1
-    resources[qp.adjoint(abstractify(qp.TemporaryAND))] += num_control_wires - 1
-
-    # Per-factor single-control fan-out from the single aux qubit
-    for op in base.operands:
-        resources[qp.ctrl(abstractify(op), Wire[1])] += 1
-
-    return dict(resources)
-
-
-def _multi_temporary_and_all_ones(
-    control,
-    work_wires,
-):
-    """Controlled decomposition using a ``TemporaryAND`` ladder.
-
-    Assumes all control values are 1 and returns the last ancilla as the
-    effective control target. Compatible with QJIT: the ladder is expressed
-    via ``control_flow.for_loop`` when running under tracing.
-    """
-    num_needed = len(control) - 1
-
-    if any(is_abstract_qubit(w) or isinstance(w, DynamicWire) for w in (*control, *work_wires)):
-        # Dynamically allocated wires can't be cast to a JAX array for the traced indexing below.
-        # The ladder length is static either way, so just unroll it directly.
-        qp.TemporaryAND(wires=[control[0], control[1], work_wires[0]])
-        for i in range(1, num_needed):
-            qp.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
-        return work_wires[num_needed - 1]
-
-    if compiler.active() or qp.capture.enabled():
-        control = math.array(control, like="jax")
-        work_wires = math.array(work_wires, like="jax")
-
-    qp.TemporaryAND(wires=[control[0], control[1], work_wires[0]])
-
-    @control_flow.for_loop(1, num_needed, 1)
-    def _ladder(i):
-        qp.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
-
-    _ladder()  # pylint: disable = no-value-for-parameter
-
-    return work_wires[num_needed - 1]
-
-
-# pylint: disable=unused-argument
-@register_condition(
-    lambda control_wires, work_wires, work_wire_type, **_: len(control_wires) >= 2
-    and len(work_wires) >= len(control_wires) - 1
-    and work_wire_type == "zeroed"
-)
-@register_resources(_ctrl_prod2_resources)
-def _controlled_prod2_with_work_wires(base, control_wires, control_values, work_wires, **_):
-    """Decomposition of ``C(Prod2)`` with at least ``num_control_wires - 1`` zeroed work wires.
-
-    ``Operator2`` port of :func:`~._controlled_product_with_work_wires`. Assumes all
-    ``control_values`` are 1; zero-control flipping is handled by ``flip_zero_control``.
-    """
-    target_wire = _multi_temporary_and_all_ones(control_wires, work_wires)
-    for op in base.operands[::-1]:
-        qp.ctrl(op, control=[target_wire])
-    qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
-
-
-def _ctrl_prod2_resources_with_one_work_wire(base, control_wires, work_wires, **_):
-
-    resources = Counter()
-    resources[qp.MultiControlledX(Wire[len(control_wires) + 1])] += 2
-
-    # Per-factor single-control fan-out from the single aux qubit
-    for op in base.operands:
-        resources[qp.ctrl(abstractify(op), Wire[1])] += 1
-
-    return dict(resources)
-
-
-# pylint: disable=unused-argument
-@register_condition(
-    lambda control_wires, work_wires, work_wire_type, **_: len(control_wires) >= 2
-    and len(work_wires) >= 1
-    and work_wire_type == "zeroed"
-)
-@register_resources(_ctrl_prod2_resources_with_one_work_wire)
-def _controlled_prod2_with_one_work_wire(base, control_wires, control_values, work_wires, **_):
-    """Decomposition of ``C(Prod2)`` with a single zeroed work wire.
-
-    ``Operator2`` port of :func:`~._controlled_product_with_one_work_wire`. Assumes all
-    ``control_values`` are 1; zero-control flipping is handled by ``flip_zero_control``.
-    """
-    qp.MultiControlledX([*control_wires, work_wires[0]])
-    for op in base.operands[::-1]:
-        qp.ctrl(op, control=work_wires[:1])
-    qp.MultiControlledX([*control_wires, work_wires[0]])
-
-
-add_decomps(Prod2, _prod2_decomp)
-add_decomps(
-    "C(Prod2)",
-    flip_zero_control(_controlled_prod2_with_work_wires),
-    flip_zero_control(_controlled_prod2_with_one_work_wire),
-)
 
 
 @to_name.register

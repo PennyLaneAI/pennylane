@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core import abstractify
-from pennylane.templates.subroutines.arithmetic.left_classical_comparator import (
+from pennylane.decomposition_rules.templates.subroutines.arithmetic.left_classical_comparator import (
     _left_classical_comparator,
 )
 from pennylane.testing import assert_valid, decomp_rule_to_tape

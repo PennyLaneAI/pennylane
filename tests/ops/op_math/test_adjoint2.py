@@ -22,8 +22,9 @@ import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.decomposition.resources import Resources
+from pennylane.decomposition_rules.op_math.adjoint2 import _make_adjoint_decomp, adjoint_rotation
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
-from pennylane.ops.op_math.adjoint2 import Adjoint2, _make_adjoint_decomp, adjoint_rotation
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import CompilableOp, OneWireDynOp

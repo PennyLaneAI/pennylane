@@ -43,13 +43,7 @@ from pennylane.capture import subroutine as capture_subroutine
 from pennylane.core import queuing
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator, abstractify
-from pennylane.decomposition import (
-    CompressedResourceOp,
-    add_decomps,
-    adjoint_resource_rep,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import CompressedResourceOp, adjoint_resource_rep, resource_rep
 from pennylane.ops import ChangeOpBasis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -394,22 +388,6 @@ def _default_resources(subroutine: "Subroutine", *args, **kwargs) -> defaultdict
         resources[abstractify(op)] += 1
     return resources
 
-
-def _calculate_resources(subroutine: "Subroutine", signature_key):
-    sig = subroutine.signature.bind(*signature_key)
-    for arg in subroutine.dynamic_argnames:
-        struct, shapes = sig.arguments[arg]
-        sig.arguments[arg] = unflatten(shapes, struct)
-    return subroutine.compute_resources(**sig.arguments)
-
-
-# pylint: disable=unused-argument
-@register_resources(_calculate_resources)
-def _subroutine_decomp(*data, wires, decomposition):
-    _ = [apply(op) for op in decomposition]
-
-
-add_decomps(SubroutineOp, _subroutine_decomp)
 
 P = ParamSpec("P")
 

@@ -23,7 +23,7 @@ from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
 import pennylane as qp
-from pennylane.ops.op_math.controlled_ops import _toffoli_elbow
+from pennylane.decomposition_rules.op_math.controlled_ops import _toffoli_elbow
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires
 

@@ -1,0 +1,541 @@
+# Copyright 2026 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Built-in decomposition rules for templates.subroutines.arithmetic.out_multiplier."""
+
+from collections import defaultdict
+
+from pennylane import capture, compiler, math
+from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder import (
+    _semi_adder,
+    _semi_adder_resources,
+)
+from pennylane.ops import H, MultiControlledX, X, adjoint, change_op_basis, ctrl, prod
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.templates.subroutines.arithmetic.incrementer import Incrementer
+from pennylane.templates.subroutines.arithmetic.out_multiplier import (
+    OutMultiplier,
+    _resolve_mod_and_num_work_wires,
+)
+from pennylane.templates.subroutines.arithmetic.phase_adder import PhaseAdder
+from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
+from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
+from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
+from pennylane.templates.subroutines.multix import MultiX
+from pennylane.templates.subroutines.qft import QFT
+from pennylane.typing import Bool, Int, Wire
+from pennylane.wires import WiresLike, concatenate_wires
+
+
+def _out_multiplier_with_qft_resources(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=too-many-arguments,unused-argument
+    num_output_wires = len(output_wires)
+    num_x_wires = len(x_wires)
+    num_y_wires = len(y_wires)
+    num_qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
+
+    if output_wires_zeroed:
+        multi_h = [H(Wire[1])] * num_qft_wires
+        compute_rep = prod(*multi_h)
+    else:
+        compute_rep = QFT(Wire[num_qft_wires])
+
+    uncompute_rep = adjoint(QFT(Wire[num_qft_wires]))
+    target_rep = ControlledSequence(
+        base=ControlledSequence(
+            base=PhaseAdder(Int, Wire[num_qft_wires], mod, Wire[int(mod != 2**num_qft_wires)]),
+            control=Wire[num_x_wires],
+        ),
+        control=Wire[num_y_wires],
+    )
+    if output_wires_zeroed:
+        return {prod(uncompute_rep, target_rep, compute_rep): 1}
+    resources = {_change_op_basis_abstract(compute_rep, target_rep, uncompute_rep): 1}
+    return resources
+
+
+def _out_multiplier_with_qft_condition(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument, too-many-arguments
+    return mod == 2 ** len(output_wires) or len(work_wires) >= 2
+
+
+@register_condition(_out_multiplier_with_qft_condition)
+@register_resources(_out_multiplier_with_qft_resources)
+def _out_multiplier_with_qft(
+    x_wires: WiresLike,
+    y_wires: WiresLike,
+    output_wires: WiresLike,
+    mod,
+    work_wires: WiresLike,
+    output_wires_zeroed: bool,
+):  # pylint: disable=too-many-arguments, unused-argument
+
+    if capture.enabled() or compiler.active():
+        work_wires = math.array(work_wires, like="jax")
+        output_wires = math.array(output_wires, like="jax")
+
+    if mod != 2 ** len(output_wires):
+        if capture.enabled() or compiler.active():
+            qft_output_wires = math.concatenate(
+                [math.array([work_wires[0]], like="jax"), output_wires]
+            )
+        else:
+            qft_output_wires = [work_wires[0]] + output_wires
+        work_wire = work_wires[1]
+    else:
+        qft_output_wires = output_wires
+        # Keep the empty register traceable instead of passing a literal tuple to JAX.
+        work_wire = output_wires[:0]
+
+    if output_wires_zeroed:
+        compute_op = prod(*[H(w) for w in qft_output_wires])
+    else:
+        compute_op = QFT(qft_output_wires)
+
+    uncompute_op = adjoint(QFT(qft_output_wires))
+
+    target_op = ControlledSequence(
+        ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
+        control=y_wires,
+    )
+    if output_wires_zeroed:
+        # Hadamards match QFT only on the zero state, so inverse QFT does not undo
+        # this computation. Use a product so its adjoint reverses all three factors.
+        prod(uncompute_op, target_op, compute_op)
+    else:
+        change_op_basis(compute_op, target_op, uncompute_op)
+
+
+def _out_multiplier_with_adder_resources(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=too-many-arguments,unused-argument
+    """Resources for OutMultiplier decomposition with controlled adders."""
+    n = len(x_wires)
+    m = len(y_wires)
+    k = len(output_wires)
+    num_work_wires = len(work_wires)
+
+    resources = defaultdict(int)
+    if output_wires_zeroed:
+        resources[TemporaryAND] += min(m, k)
+
+    for i in range(int(output_wires_zeroed), min(k, n)):
+        if output_wires_zeroed:
+            size = min(k - i, m + 1)
+        else:
+            size = k - i
+        resources[ctrl(SemiAdder(Wire[m], Wire[size], Wire[num_work_wires]), Wire[1])] += 1
+    return dict(resources)
+
+
+def _out_multiplier_with_adder_condition(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument, too-many-arguments
+    k = len(output_wires)
+    m = len(y_wires)
+    # Controlled adder takes as many work wires as the output register size. The largest controlled
+    # adder is the first one in the loop, with size `min(k - 1, m+1)` if output_wires_zeroed=True
+    # (because in that case the very first adder is replaced by ctrl(copy)) and size `k` else.
+    if output_wires_zeroed:
+        min_num_work_wires = min(k - 1, m + 1)
+    else:
+        min_num_work_wires = k
+    return mod == 2 ** k and len(work_wires) >= min_num_work_wires
+
+
+@register_condition(_out_multiplier_with_adder_condition)
+@register_resources(_out_multiplier_with_adder_resources)
+def _out_multiplier_with_adder(
+    x_wires: WiresLike,
+    y_wires: WiresLike,
+    output_wires: WiresLike,
+    mod,
+    work_wires: WiresLike,
+    output_wires_zeroed: bool,
+):  # pylint: disable=unused-argument, too-many-arguments
+    """Implementation of Schoolbook multiplication via controlled adders as sole building block,
+    except for a potential simplification for the very first adder.
+    The j-th building block adds y⋅x_{n-1-j}⋅2^j to the output register, by controlling the
+    addition of y on x_{n-1-j} and shifting the output wires of the addition by j bits.
+    Overall, we thus add
+
+    sum_{j=0}^{n-1} 2^j⋅x_{n-1-j}⋅y = x⋅y
+
+    to the output register. Note that the size of the addition output registers as well as the
+    upper limit of the sum are adjusted depending on the sizes n, m, and k of the three registers
+    x_wires, y_wires, and output_wires.
+    """
+    m = len(y_wires)
+    k = len(output_wires)
+
+    # If the output wires are zeroed, the first controlled adder is just a controlled copy.
+    if output_wires_zeroed:
+        # We use strict=False here because we only need to copy for as long as both
+        # more y_wires and more output_wires exist. zip(strict=False) produces exactly this bound
+        for y_wire, out_wire in zip(
+            y_wires[::-1], output_wires[max(0, k - (m + 1)) : k][::-1], strict=False
+        ):
+            TemporaryAND([x_wires[-1], y_wire, out_wire])
+
+    # If the output wires are zeroed, we already did the first controlled adder above
+    start = int(output_wires_zeroed)
+    for i, x_wire in enumerate(x_wires[::-1][start:k], start=start):
+        # Slice the output wires according to the shift in control, and bounded by its own size,
+        # and the size of the y_wires
+        if output_wires_zeroed:
+            out_wires = output_wires[max(0, k - (m + 1 + i)) : k - i]
+        else:
+            out_wires = output_wires[: k - i]
+        # Add y wires to shifted output, controlled by current x_wire
+        ctrl(SemiAdder(y_wires, out_wires, work_wires=work_wires), control=x_wire)
+
+
+def _out_multiplier_with_caddsub_resources(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument,too-many-arguments
+    n = len(x_wires)
+    m = len(y_wires)
+    k = len(output_wires) + 1  # augmented output register
+    num_work_wires = len(work_wires)
+    num_passed_ww = num_work_wires - 1  # One work wire is used by the arithmetic logic itself.
+
+    resources = defaultdict(int)
+
+    # Controlled add-subtract loop
+    for i in range(min(k, n)):
+        size = min(k - i, m + 1) if output_wires_zeroed else k - i
+        for key, value in _c_add_sub_resources(m, size).items():
+            resources[key] += value
+
+    # Add 2^m(x+1)
+    if k > m:
+        adder_resources = _semi_adder_resources(Wire[n], Wire[k - m])
+        for key, value in adder_resources.items():
+            resources[key] += value
+        # bit flips corresponding to input carry activated. Accounts for the fact that
+        # we don't need to flip a work wire if k=m+1, in which case there are no work wires.
+        has_work_wires = int(k > m + 1)
+        resources[X] += 4 + 2 * has_work_wires
+
+    # Subtract y+2^(n+m)
+    # First negation
+    resources[X] += k
+    # Add y
+    add_rep = SemiAdder(Wire[m], Wire[k], Wire[num_passed_ww])
+    resources[add_rep] += 1
+
+    # increment 2^(n+m) bit
+    if k > n + m:
+        size = k - n - m
+        resources[Incrementer(Wire[size], work_wires=Wire[num_work_wires - 1])] = 1
+
+    # Second negation
+    resources[X] += k
+
+    # Add 2^n y
+    if k > n:
+        resources[SemiAdder(Wire[m], Wire[k - n], Wire[num_passed_ww])] += 1
+
+    return dict(resources)
+
+
+def _out_multiplier_with_caddsub_condition(  # pylint: disable=too-many-arguments
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument
+    # Adder sizes are (using n=len(x_wires), m=len(y_wires), k=len(output_wires)+1):
+    # - min(k, m+1) # Largest size occurring in controlled add/sub loop
+    # - k-m, # Add 2^m(x+1)
+    # - k, # Add y during subtracting 2^(n+m)+y     <-- Largest one
+    # - k-n, # Add 2^n y
+    largest_adder_size = len(output_wires) + 1
+    # One work wire for temporarily enlarged output register. Adder takes size-1 work wires.
+    min_num_work_wires = 1 + (largest_adder_size - 1)
+    return mod == 2 ** len(output_wires) and len(work_wires) >= min_num_work_wires
+
+
+def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=None):
+    """SemiAdder decomposition with bit flips on the last work wire inserted after the first
+    left elbow and before the last right elbow of the adder.
+
+    If flip_control is provided, the bit flips are controlled accordingly, the adder part remains
+    unchanged. We only expect this function to be used with two values for `flip_control`: None
+    or a tuple ``(c_wire, c_val)`` for a single control wire.
+    """
+    if len(work_wires) == 0:
+        _semi_adder(x_wires, y_wires, work_wires)
+        return
+
+    def carry_flip(wire):
+        if flip_control is None:
+            X(wire)
+        else:
+            c_wire, c_val = flip_control
+            MultiControlledX(concatenate_wires(c_wire, [wire]), control_values=[c_val])
+
+    _semi_adder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
+
+
+def _add_plus_one(x_wires, y_wires, work_wires):
+    """This qfunc implements ``(x, y, 0) -> (x, (x+y+1) % 2**m, 0)`` for ``m`` the number of
+    bits in ``y``. This circuit is similar to the one shown in Fig. 1c) in
+    `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__, just without the bit flips on the
+    ``x_wires`` before and after the adder. We replace the explicit input carry in that figure
+    by bit flips on the least significant bits of all three registers, the bit flip on the work
+    wire occurring after the first left elbow/before the last right elbow (this insertion
+    is done by _adder_flipped_first_work_wire).
+    """
+    work_wires = work_wires[: len(y_wires) - 1]
+    X(x_wires[-1])
+    X(y_wires[-1])
+    _adder_flipped_first_work_wire(x_wires, y_wires, work_wires)
+    X(y_wires[-1])
+    X(x_wires[-1])
+
+
+def _c_add_sub_resources(num_x_wires, num_y_wires):
+    """Resources for _c_add_sub."""
+    resources = defaultdict(int)
+    if num_x_wires > 1:
+        ctrl_basis_rep = ctrl(MultiX(Bool[num_x_wires - 1], Wire[num_x_wires - 1]), Wire[1])
+        resources[ctrl_basis_rep] += 2
+
+    cnot_on_0_rep = MultiControlledX(Wire[2], control_values=Bool[1])
+    resources[cnot_on_0_rep] += 2 * (1 + int(num_y_wires > 1))
+
+    for key, value in _semi_adder_resources(Wire[num_x_wires], Wire[num_y_wires]).items():
+        resources[key] += value
+
+    return dict(resources)
+
+
+def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
+    r"""Controlled add/subtract operation. If the control wire ``c_wire`` is in the
+    state :math:`|1\rangle`, simply adds :math:`x`, the integer stored in ``x_wires``,
+    to :math:`y`, the value in ``y_wires``. If the control wire is in
+    the state :math:`|0\rangle`, adds :math:`2^n-x` to :math:`y` instead where :math:`n`
+    is the length of ``x_wires``. In short:
+
+    |0>|x>|y>  ->  |0>|x>|y+2^n-x>
+    |1>|x>|y>  ->  |1>|x>|y+x>
+
+    This is shown in Fig. 1f) in `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__.
+    Note that the figure explicitly shows an input carry for the adder, which
+    we do not represent here. Instead, we introduce (controlled) bit flips on the least significant
+    bits of each register that correspond to an input carry being set to one. The bit flips on
+    the least significant work wire occur after the first left elbow/before the last right elbow.
+    """
+    # We need to control-flip all x_wires in order to achieve subtraction for c_wire=|0>
+    # We also need to control-flip the LSB of x_wires (last wire) to achieve addition plus one
+    # (c.f. _add_plus_one). The bit flips on the LSB cancel, so that we only control-flip all _but_
+    # the LSB
+    c_wire = [c_wire]
+    if len(x_wires) > 1:
+        ctrl(MultiX([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
+
+    work_wires = work_wires[: len(y_wires) - 1]
+    # Control-flip the LSB of the output register. This is part of achieving addition plus one
+    # for c_wire=|0>. (c.f. _add_plus_one).
+    MultiControlledX(c_wire + [y_wires[-1]], control_values=[0])
+
+    # Create the operator sequence for an adder and insert (controlled) work wire bit flips
+    # We insert controlled work wire bit flips where a carry-in qubit would cause them,
+    # i.e., after the very first left elbow and before the last right elbow
+    _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=(c_wire, 0))
+
+    MultiControlledX(c_wire + [y_wires[-1]], control_values=[0])
+
+    if len(x_wires) > 1:
+        ctrl(MultiX([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
+
+
+@register_condition(_out_multiplier_with_caddsub_condition)
+@register_resources(_out_multiplier_with_caddsub_resources)
+def _out_multiplier_with_caddsub(
+    x_wires: WiresLike,
+    y_wires: WiresLike,
+    output_wires: WiresLike,
+    mod: None,
+    work_wires: WiresLike,
+    output_wires_zeroed: bool,
+):  # pylint: disable=unused-argument, too-many-arguments
+    """Implementation of improved Schoolbook multiplication via controlled add/subtract blocks,
+    combined with some correction steps. After appending a work wire to the output register,
+    effectively multiplying it with two, we first have a bulk computation with n steps (where
+    n is the size of x_wires):
+
+    The j-th building block adds y⋅(2x_{n-1-j}-1)⋅2^j+2^(j+m)⋅(1-x_{n-1-j}) to the output register,
+    by controlling between addition and subtraction of y on x_{n-1-j}, and shifting the output
+    wires of the addition by j bits.
+    Overall, we thus computed (including the initial multiplication with two)
+
+    2⋅z + sum_{j=0}^{n-1} (2^j⋅(2x_{n-1-j}-1)⋅y + 2^{j+m}⋅(1-x_{n-1-j})
+    = 2⋅z + 2⋅x⋅y - (2^n-1)⋅y + 2^{n+m}-2^m⋅(1+x)
+
+    to the output register. Note that the size of the addition output registers as well as the
+    upper limit of the sum are adjusted depending on the sizes n, m, and k of the three registers
+    x_wires, y_wires, and output_wires.
+
+    Afterwards, we correct for the additional terms in three steps:
+    - Add 2^m⋅(x+1)
+    - Subtract 2^{n+m}+y
+    - Add 2^n⋅y
+    We are left with 2⋅(z+x⋅y), an even number, which we can divide by two by splitting off the
+    least significant bit (which is exactly the one we appended initially) from the output register.
+    """
+    # We extend our output by one wire because we need to store 2x*y intermediately, instead
+    # of x*y. This also multiplies the value stored in output_wires with two.
+    output_wires = list(output_wires) + [work_wires[0]]
+    # The other work wires can be used for arithmetic building blocks
+    work_wires = work_wires[1:]
+    n = len(x_wires)
+    m = len(y_wires)
+    k = len(output_wires)
+
+    # Controlled add-subtract loop
+    for i, x_wire in enumerate(x_wires[::-1][:k]):
+        # Slice the output wires according to the shift in control, and bounded by its own size,
+        # and the size of the y_wires.
+        output_msb = max(0, k - (m + 1 + i)) if output_wires_zeroed else 0
+        output = output_wires[output_msb : k - i]
+        _c_add_sub(x_wire, y_wires, output, work_wires)
+
+    # Add 2^m(x+1)
+    if k > m:
+        _add_plus_one(x_wires, output_wires[: k - m], work_wires)
+
+    # Implement |y> |z> -> |y> |z-2^(n+m)-y>, i.e. subtract 2^(n+m)+y in four steps:
+    # - Negate z: |y> |z> -> |y> |2^k-1-z>
+    # - Add y: |y> |2^k-1-z> -> |y> |2^k-1-z+y>
+    # - Add 2^(n+m) by incrementing the (k-(n+m)) most significant bits
+    #   |y> |2^k-1-z+y> -> |y> |2^k-1-z+y+2^(n+m)>
+    # - Negate z again: |y> |2^k-1-z+y+2^(n+m)> -> |y> |z-y-2^(n+m)>
+    # The third step only is needed if k>n+m, otherwise those bits to increment do not exist.
+    _ = [X(w) for w in output_wires]
+    SemiAdder(y_wires, output_wires, work_wires)
+    if k > n + m:
+        increment_wires = output_wires[: k - n - m]
+        Incrementer(increment_wires, work_wires)
+    _ = [X(w) for w in output_wires]
+
+    # Add (2^n·y) if 2^k > 2^n (otherwise it just vanishes in the modulus)
+    if k > n:
+        SemiAdder(y_wires, output_wires[: k - n], work_wires)
+
+
+def _out_multiplier_with_cache_condition(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument, too-many-arguments
+    return len(work_wires) >= 2 * len(output_wires) - 1 and not output_wires_zeroed
+
+
+def _out_multiplier_with_cache_resources(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument, too-many-arguments
+    num_x_wires = len(x_wires)
+    num_y_wires = len(y_wires)
+    num_output_wires = len(output_wires)
+    new_num_work_wires = len(work_wires) - num_output_wires
+    mod, new_num_work_wires = _resolve_mod_and_num_work_wires(
+        num_output_wires, mod, new_num_work_wires
+    )
+    mult_op = OutMultiplier(
+        Wire[num_x_wires],
+        Wire[num_y_wires],
+        Wire[num_output_wires],
+        mod=mod,
+        work_wires=Wire[new_num_work_wires],
+        output_wires_zeroed=True,
+    )
+    return {
+        mult_op: 1,
+        SemiAdder(Wire[num_output_wires], Wire[num_output_wires], Wire[new_num_work_wires]): 1,
+        adjoint(mult_op): 1,
+    }
+
+
+@register_condition(_out_multiplier_with_cache_condition)
+@register_resources(_out_multiplier_with_cache_resources)
+def _out_multiplier_with_cache(
+    x_wires: WiresLike,
+    y_wires: WiresLike,
+    output_wires: WiresLike,
+    mod: None,
+    work_wires: WiresLike,
+    output_wires_zeroed,
+):  # pylint: disable=unused-argument,too-many-arguments
+    r"""Decompose ``OutMultiplier`` with ``output_wires_zeroed=False`` into two ``OutMultiplier``\ s
+    with ``output_wires_zeroed=True`` and one ``SemiAdder``, using additional work wires."""
+    cache_wires = work_wires[: len(output_wires)]
+    work_wires = work_wires[len(output_wires) :]
+    OutMultiplier(
+        x_wires, y_wires, cache_wires, mod=mod, work_wires=work_wires, output_wires_zeroed=True
+    )
+    SemiAdder(cache_wires, output_wires, work_wires)
+    adjoint(OutMultiplier)(
+        x_wires, y_wires, cache_wires, mod=mod, work_wires=work_wires, output_wires_zeroed=True
+    )
+
+
+def _out_multiplier_swapped_condition(x_wires, y_wires, **_):
+    """Condition for swapping the two input registers of OutMultiplier. It only is reasonable
+    to switch if x_wires is larger than y_wires. This also prevents the decomposition from
+    switching back and forth in the case of equal cost of both orderings."""
+    return len(x_wires) > len(y_wires)
+
+
+def _out_multiplier_swapped_resources(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=too-many-arguments
+    swapped = OutMultiplier(
+        Wire[len(y_wires)],
+        Wire[len(x_wires)],
+        Wire[len(output_wires)],
+        mod=mod,
+        work_wires=Wire[len(work_wires)],
+        output_wires_zeroed=output_wires_zeroed,
+    )
+    return {swapped: 1}
+
+
+@register_condition(_out_multiplier_swapped_condition)
+@register_resources(_out_multiplier_swapped_resources)
+def _out_multiplier_swapped(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
+):  # pylint: disable=too-many-arguments
+    """Swap the factors of an ``OutMultiplier`` so that ``x_wires`` is the shorter register.
+    The schoolbook ``OutMultiplier`` rules perform one controlled addition per bit of ``x_wires``,
+    so multiplying a short register into a long one is cheaper than the other way around.
+    Computationally, both paths are equivalent because multiplication is commutative.
+    """
+    OutMultiplier(
+        x_wires=y_wires,
+        y_wires=x_wires,
+        output_wires=output_wires,
+        mod=mod,
+        work_wires=work_wires,
+        output_wires_zeroed=output_wires_zeroed,
+    )
+
+
+add_decomps(
+    OutMultiplier,
+    _out_multiplier_with_qft,
+    _out_multiplier_with_adder,
+    _out_multiplier_with_caddsub,
+    _out_multiplier_with_cache,
+    _out_multiplier_swapped,
+)

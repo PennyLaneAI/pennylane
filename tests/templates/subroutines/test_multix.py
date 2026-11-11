@@ -371,7 +371,7 @@ class TestDecomposition:
     def test_multix_decomposition_unrolls_for_dynamic_wire(self):
         """``DynamicWire`` handles cannot be stacked for ``for_loop`` indexing, so unroll."""
         # pylint: disable=import-outside-toplevel
-        from pennylane.templates.subroutines.multix import _multix_decomposition
+        from pennylane.decomposition_rules.templates.subroutines.multix import _multix_decomposition
         from pennylane.wires import DynamicWire
 
         qp.capture.disable()
@@ -521,7 +521,7 @@ class TestDecomposition:
     def test_controlled_multix_ladder_extra_work_wires(self):
         """Tests how many zeroed work wires the ladder decomp requests beyond those supplied."""
         # pylint: disable=import-outside-toplevel
-        from pennylane.templates.subroutines.multix import (
+        from pennylane.decomposition_rules.templates.subroutines.multix import (
             _controlled_multix_ladder_extra_work_wires,
         )
 
@@ -538,9 +538,13 @@ class TestDecomposition:
     def test_controlled_multix_ladder_with_supplied_work_wires(self, mocker):
         """When enough zeroed work wires are supplied, the ladder decomp does not allocate."""
         # pylint: disable=import-outside-toplevel
-        from pennylane.templates.subroutines.multix import _controlled_multix_ladder
+        from pennylane.decomposition_rules.templates.subroutines.multix import (
+            _controlled_multix_ladder,
+        )
 
-        fanout = mocker.patch("pennylane.templates.subroutines.multix._multix_ladder_fanout")
+        fanout = mocker.patch(
+            "pennylane.decomposition_rules.templates.subroutines.multix._multix_ladder_fanout"
+        )
         base = qp.MultiX([1, 0, 1], wires=[3, 4, 5])
         _controlled_multix_ladder(
             base=base,
@@ -558,7 +562,7 @@ class TestDecomposition:
         import jax
 
         from pennylane.capture.primitives import for_loop_prim
-        from pennylane.templates.subroutines.multix import _multix_ladder_fanout
+        from pennylane.decomposition_rules.templates.subroutines.multix import _multix_ladder_fanout
 
         base = qp.MultiX([1, 0, 1], wires=[3, 4, 5])
         jaxpr = jax.make_jaxpr(

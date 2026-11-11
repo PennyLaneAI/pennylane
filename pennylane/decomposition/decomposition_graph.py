@@ -37,6 +37,27 @@ from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 import pennylane as qp
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.decomposition.gate_set import GateSet
+from pennylane.decomposition_rules._common import null_decomp
+from pennylane.decomposition_rules.op_math.adjoint import (
+    adjoint_rotation,
+    cancel_adjoint,
+    make_adjoint_decomp,
+)
+from pennylane.decomposition_rules.op_math.controlled import (
+    ctrl_single_work_wire,
+    flip_control_adjoint,
+    make_controlled_decomp,
+    to_controlled_qubit_unitary,
+)
+from pennylane.decomposition_rules.op_math.pow import (
+    flip_pow_adjoint,
+    merge_powers,
+    repeat_pow_base,
+)
+from pennylane.decomposition_rules.op_math.symbolicop import (
+    decompose_to_base_legacy,
+    self_adjoint_legacy,
+)
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 
 from .decomposition_rule import (
@@ -47,23 +68,8 @@ from .decomposition_rule import (
     add_decomps,
     list_decomps,
     local_decomps,
-    null_decomp,
 )
 from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, resource_rep
-from .symbolic_decomposition import (
-    adjoint_rotation,
-    cancel_adjoint,
-    ctrl_single_work_wire,
-    decompose_to_base_legacy,
-    flip_control_adjoint,
-    flip_pow_adjoint,
-    make_adjoint_decomp,
-    make_controlled_decomp,
-    merge_powers,
-    repeat_pow_base,
-    self_adjoint_legacy,
-    to_controlled_qubit_unitary,
-)
 from .utils import to_name
 
 IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot"}

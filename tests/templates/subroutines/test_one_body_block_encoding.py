@@ -17,8 +17,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.decomposition_rules.templates.subroutines.alias_sampling import _build_alias_tables
 from pennylane.fermi import FermiSentence, FermiWord, jordan_wigner
-from pennylane.templates.subroutines.alias_sampling import _build_alias_tables
 from pennylane.testing import assert_valid
 from pennylane.typing import AbstractWires
 

@@ -19,9 +19,7 @@ from collections.abc import Sequence
 
 from pennylane import math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import CZ, X, Z, ctrl
-from pennylane.typing import AbstractArray, Bool, Wire
+from pennylane.typing import AbstractArray, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -109,51 +107,3 @@ class FlipSign(Operator2):
         state = self._canonicalize_state(state, num_wires)
         work_wires = () if work_wires is None else work_wires
         super().__init__(state, wires, work_wires)
-
-
-def _flip_sign_resources(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
-    num_wires = len(wires)
-    num_ctrl_wires = num_wires - 1
-    if num_ctrl_wires == 0:
-        res = {Z: 1}
-    elif num_ctrl_wires == 1 and state[0]:
-        res = {CZ: 1}
-    else:
-        res = {
-            ctrl(
-                Z(Wire[1]),
-                control=Wire[num_ctrl_wires],
-                control_values=Bool[num_ctrl_wires],
-                work_wires=Wire[len(work_wires)],
-                work_wire_type="zeroed",
-            ): 1
-        }
-
-    if state[-1] == 0:
-        res[X] = 2
-    return res
-
-
-@register_resources(_flip_sign_resources)
-def _flip_sign_decomposition(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
-    if state[-1] == 0:
-        X(wires[-1])
-
-    if len(wires) == 1:
-        Z(wires)
-    elif len(wires) == 2 and state[0]:
-        CZ(wires)
-    else:
-        ctrl(
-            Z(wires[-1]),
-            control=wires[:-1],
-            work_wire_type="zeroed",
-            work_wires=work_wires,
-            control_values=state[:-1],
-        )
-
-    if state[-1] == 0:
-        X(wires[-1])
-
-
-add_decomps(FlipSign, _flip_sign_decomposition)

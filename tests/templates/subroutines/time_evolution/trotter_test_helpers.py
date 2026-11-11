@@ -70,7 +70,7 @@ def cdf_reference_hamiltonian(ham):
     equal ``expm(-i H t)``.
     """
     # Local import to avoid a module-load-time dependency on the template.
-    from pennylane.templates.subroutines.time_evolution.trotter_cdf import (  # pylint: disable=import-outside-toplevel
+    from pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf import (
         _energy_shift,
     )
 
@@ -104,7 +104,7 @@ def cgf_reference_hamiltonian(ham):
     with ``s = _energy_shift(ham)`` and wire index ``l * n_states + p``. For an identity-leaf
     Hamiltonian ``matrix(TrotterCGF)`` must equal ``expm(-i H t)``.
     """
-    from pennylane.templates.subroutines.time_evolution.trotter_cgf import (  # pylint: disable=import-outside-toplevel
+    from pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cgf import (
         _energy_shift,
     )
 
