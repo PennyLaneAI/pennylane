@@ -22,7 +22,6 @@ import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.templates.subroutines.rz_layer import _rzlayer_individual
 from pennylane.testing import assert_valid_decomp_rule
-from pennylane.transforms import _tape_decompose
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
@@ -115,19 +114,23 @@ class TestInitialization:
         assert abstractify(op) == abstract_op
         assert hash(abstractify(op)) == hash(abstract_op)
 
-    @pytest.mark.capture
+    @pytest.mark.catalyst
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_traced_angles_in_list(self):
-        """Test that angles given as a list of traced scalars are captured as one array."""
-        import jax
+        """Test that angles given as a list of traced scalars are compiled into one RZLayer."""
+        pytest.importorskip("catalyst")
 
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set={"Hadamard", "RZ"})
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
         def circuit(phi):
+            qp.H(0)
+            qp.H(1)
             qp.RZLayer([phi / 2], wires=[0, 1])
+            return qp.expval(qp.X(0) @ qp.X(1))
 
-        jaxpr = jax.make_jaxpr(circuit)(0.3)
-        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.3)
-
-        [op] = tape.operations
-        qp.assert_equal(op, qp.RZLayer(np.array([0.15]), wires=[0, 1]), check_interface=False)
+        assert qp.analyze(circuit, level=0)(0.3).resources.counts == {"Hadamard": 2, "RZLayer": 1}
+        assert np.isclose(circuit(0.3), np.cos(0.15) ** 2)
 
 
 class TestValidity:
@@ -203,21 +206,6 @@ class TestMatrix:
 class TestDecomposition:
     """Tests for the decomposition rules of RZLayer."""
 
-    @pytest.mark.parametrize("block_size", range(1, 8))
-    @pytest.mark.parametrize("num_angles", [1, 3])
-    def test_individual_rule_emits_rz_per_wire(self, num_angles, block_size, seed):
-        """Test that the individual rule applies ``angles[i]`` to every wire of block ``i``."""
-        angles = _random_angles(num_angles, seed)
-        wires = list(range(num_angles * block_size))
-        op = qp.RZLayer(angles, wires, work_wires=["w"])
-
-        tape = qp.testing.decomp_rule_to_tape(op, _rzlayer_individual)
-
-        expected = _expected_rzs(angles, wires)
-        assert len(tape.operations) == len(expected)
-        for actual_op, expected_op in zip(tape.operations, expected, strict=True):
-            qp.assert_equal(actual_op, expected_op)
-
     @pytest.mark.parametrize(
         "num_angles, block_size, num_work_wires", [(1, 1, 0), (3, 2, 2), (2, 7, 1)]
     )
@@ -235,28 +223,38 @@ class TestDecomposition:
         assert resources.gate_counts == {abstractify(qp.RZ): num_angles * block_size}
         assert _rzlayer_individual.get_work_wire_spec(**abstract_args).total == 0
 
+    @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_graph_decomposition(self):
-        """Test that RZLayer and its adjoint are decomposed into RZ gates with the graph."""
-        tape = qp.tape.QuantumScript(
-            [
-                qp.RZLayer([0.3, -1.2], wires=[0, 1, 2, 3], work_wires=[4]),
-                qp.adjoint(qp.RZLayer([0.5], wires=[5, 6])),
+    @pytest.mark.parametrize("num_angles, block_size", [(1, 1), (1, 5), (3, 2)])
+    def test_qjit_graph_decomposition(self, num_angles, block_size, seed):
+        """Test that, compiled with the graph, an RZLayer and its adjoint apply one RZ per wire,
+        with ``angles[i]`` and ``-angles[i]`` on block ``i``. On ``|+>``, ``RZ(a)`` gives
+        ``<X> = cos(a)`` and ``<Y> = sin(a)``."""
+        pytest.importorskip("catalyst")
+        angles = _random_angles(num_angles, seed)
+        num_wires = num_angles * block_size
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set={"Hadamard", "RZ"})
+        @qp.qnode(qp.device("lightning.qubit", wires=2 * num_wires + 1))
+        def circuit(angles):
+            for wire in range(2 * num_wires):
+                qp.H(wire)
+            qp.RZLayer(angles, wires=range(num_wires), work_wires=[2 * num_wires])
+            qp.adjoint(qp.RZLayer(angles, wires=range(num_wires, 2 * num_wires)))
+            return [qp.expval(qp.X(w)) for w in range(2 * num_wires)] + [
+                qp.expval(qp.Y(w)) for w in range(2 * num_wires)
             ]
-        )
 
-        [decomposed], _ = _tape_decompose(tape, gate_set={"RZ"})
-
-        assert [op.name for op in decomposed.operations] == ["RZ"] * 6
-        wire_order = list(range(7))
-        assert np.allclose(
-            qp.matrix(decomposed, wire_order=wire_order), qp.matrix(tape, wire_order=wire_order)
-        )
+        expected = np.concatenate([np.repeat(angles, block_size), -np.repeat(angles, block_size)])
+        assert np.allclose(circuit(angles), np.concatenate([np.cos(expected), np.sin(expected)]))
+        counts = qp.analyze(circuit, level="device")(angles).resources.counts
+        assert counts == {"Hadamard": 2 * num_wires, "RZ": 2 * num_wires}
 
 
 class TestInterfaces:
     """Tests for the matrix and the gradient of RZLayer with the jax, autograd and torch
-    interfaces."""
+    interfaces, and under ``qjit``."""
 
     @pytest.mark.jax
     def test_jax_jit_matrix(self):
@@ -301,6 +299,16 @@ class TestInterfaces:
 
         grad = jax.jit(jax.grad(circuit))(jax.numpy.array(angles))
         assert np.allclose(grad, _rz_layer_circuit_grad(angles))
+
+    @pytest.mark.catalyst
+    def test_qjit(self):
+        """Test that the expectation value and its gradient are the analytic ones under ``qjit``."""
+        pytest.importorskip("catalyst")
+        angles = np.array([0.3, -1.2])
+        circuit = qp.QNode(_rz_layer_circuit, qp.device("lightning.qubit", wires=4))
+
+        assert np.isclose(qp.qjit(circuit)(angles), np.prod(np.cos(angles) ** 2))
+        assert np.allclose(qp.qjit(qp.grad(circuit))(angles), _rz_layer_circuit_grad(angles))
 
 
 def test_adjoint_negates_angles():
