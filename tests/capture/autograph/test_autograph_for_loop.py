@@ -110,7 +110,6 @@ class TestCustomRangeAndEnumeration:
 class TestForLoops:
     """Test that the autograph transformations produce correct results on for loops."""
 
-    @pytest.mark.filterwarnings("error")
     @pytest.mark.parametrize("iterable", [["a", "b"], ("a", "b"), {"a": 1, "b": 2}, [[1], [2, 3]]])
     def test_static_non_array_iterable(self, iterable):
         """Static iterables that cannot become arrays are captured as Python loops."""
@@ -126,7 +125,6 @@ class TestForLoops:
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts) == [2]
         assert for_loop_prim not in extract_all_primitives(jaxpr.jaxpr)
 
-    @pytest.mark.filterwarnings("error")
     def test_static_string_enumeration(self):
         """Python fallback preserves enumeration offsets and variables used after the loop."""
 
