@@ -61,6 +61,15 @@ State Preparation
     ~LabsCosineWindow
     ~LabsSumOfSlatersPrep
 
+TCDQ Sampling
+~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ParityPhaseLayer
+    ~SumPhaseLayer
+
 Alternate Decompositions
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -131,6 +140,8 @@ from .templates import LabsMottonenStatePreparation
 from .templates import LabsSumOfSlatersPrep
 
 from .templates import (
+    ParityPhaseLayer,
+    SumPhaseLayer,
     SelectCopyQROM,
     LabsQROM,
     OutOfPlaceIntegerComparator,
