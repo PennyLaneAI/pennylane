@@ -563,6 +563,34 @@ class MPLDrawer:
                 text_obj.set_fontsize(s)
                 w, h = self._text_dims(text_obj)
 
+    @property
+    def conditional_frame_offset(self) -> float:
+        """Distance from the outermost wire to a conditional diagram's boundary."""
+        return 0.45
+
+    def conditional_frame(self, layer: int, wires: Sequence[int]) -> None:
+        """Enclose a conditional operation's diagram without hiding its quantum wires.
+
+        Args:
+            layer (int): layer containing the conditional operation
+            wires (Sequence[int]): displayed wires spanned by the operation
+        """
+        offset = self.conditional_frame_offset
+        min_wire, max_wire = min(wires), max(wires)
+        # Keep the boundary within one layer while enclosing gate boxes and their notches.
+        frame = patches.FancyBboxPatch(
+            (layer - 0.48, min_wire - offset),
+            0.96,
+            max_wire - min_wire + 2 * offset,
+            boxstyle="round,pad=0,rounding_size=0.08",
+            fill=False,
+            edgecolor=plt.rcParams["lines.color"],
+            linewidth=0.8 * plt.rcParams["lines.linewidth"],
+            linestyle=(0, (4, 3)),
+            zorder=4,
+        )
+        self.ax.add_patch(frame)
+
     def _add_notch(self, layer, wire, extra_width, box_options):
         """Add a wire used marker to both sides of a box.
 
