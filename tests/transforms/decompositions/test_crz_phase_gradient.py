@@ -67,7 +67,6 @@ def test_valid_decomp(p):
     assert_valid_decomp_rule(op, custom_decomp, check_matrix=False)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_decomp_has_name():
     """Ensures the decomp rule has a name property."""
     p = 2
@@ -87,7 +86,6 @@ def test_decomp_has_name():
     assert custom_decomp.name == "_crz_phase_gradient_decomp"
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_as_fixed_decomps(phi, p):
@@ -118,7 +116,6 @@ def test_as_fixed_decomps(phi, p):
     assert specs == _expected_crz_specs(phi, p)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_as_alt_decomps(phi, p):
@@ -149,7 +146,6 @@ def test_as_alt_decomps(phi, p):
     assert specs == _expected_crz_specs(phi, p)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_integration_multi_wire(seed):
     """
     Tests that the decomposition correctly realizes the phase gradient decomposition of CRZ as

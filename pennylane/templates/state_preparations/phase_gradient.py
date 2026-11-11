@@ -95,7 +95,6 @@ class PhaseGradientStatePrep(StatePrepBase2):
     mid-circuit measurements and supports any number of wires. Construct it and pass it to
     ``fixed_decomps``:
 
-    >>> qp.decomposition.enable_graph()
     >>> registers = qp.registers({"grad": 5, "aux": 5, "work": 4})
     >>> rule = qp.transforms.decompositions.make_phase_gradient_distillation_decomp(
     ...     registers["aux"], registers["work"], mode="postselect"

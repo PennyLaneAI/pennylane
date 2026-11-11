@@ -757,7 +757,6 @@ class SumOfSlatersPrep(Operator2):
 
     .. code-block:: python
 
-        qp.decomposition.enable_graph()
 
         gate_set = {"QROM", "TemporaryAND", "Adjoint(TemporaryAND)", "MultiplexerStatePreparation", "CNOT", "X"}
 

@@ -393,7 +393,6 @@ class TestSingleExcitationDecompositions:
         )
         assert rule.compute_resources(**op.arguments) == expected
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_decomposition_graph(self):
         r"""Controlling ``SingleExcitation`` should control only the two inner ``RY``'s, leaving the
         conjugating Hadamard/CNOT basis change bare. This comes out of the generic

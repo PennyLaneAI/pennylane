@@ -310,7 +310,6 @@ class TestSubroutineOp:
             qp.assert_equal(d[0], qp.PauliRot(0.5, "XY", (0, "a")))
             qp.assert_equal(d[1], qp.PauliRot(0.6, "YZ", ("a", 1)))
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_decompose_integration(self):
         """Test that SubroutineOp can be used with the decompose transform in a basic use case."""
 
@@ -614,7 +613,6 @@ class TestTapePLIntegration:
         assert out2 == "0: ─╭Tester─┤  <Z>\n1: ─╰Tester─┤  <Z>"
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestGraphDecomposition:
 
     def test_resource_keys(self):

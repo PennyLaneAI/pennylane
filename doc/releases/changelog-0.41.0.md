@@ -23,11 +23,11 @@ to the current system. This is done by traversing an internal graph structure th
 resources (e.g., gate counts) required to decompose down to a given set of gates. 
 
 The graph-based system is experimental and is disabled by default, but it can be enabled by adding 
-:func:`qml.decomposition.enable_graph() <pennylane.decomposition.enable_graph>` to the top of your 
-program. Conversely, :func:`qml.decomposition.disable_graph() <pennylane.decomposition.disable_graph>` 
+``qml.decomposition.enable_graph()`` to the top of your
+program. Conversely, ``qml.decomposition.disable_graph()``
 disables the new system from being active.
 
-With :func:`qml.decomposition.enable_graph() <pennylane.decomposition.enable_graph>`, the following 
+With ``qml.decomposition.enable_graph()``, the following
 new features are available:
 
 * Operators in PennyLane can now accommodate multiple decompositions, which can be queried with the 

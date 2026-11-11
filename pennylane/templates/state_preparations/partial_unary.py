@@ -700,7 +700,6 @@ class PartialUnaryStatePreparation(Operator2):
 
         import pennylane as qp
         import numpy as np
-        qp.decomposition.enable_graph()
 
         coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
         indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)

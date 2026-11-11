@@ -83,7 +83,6 @@ def make_crz_to_phase_gradient_decomp(
         from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
         import numpy as np
 
-        qp.decomposition.enable_graph()
 
         prec = 3
         phi = (1/2 + 1/4 + 1/8) * 4 * np.pi # binary rep is (111)

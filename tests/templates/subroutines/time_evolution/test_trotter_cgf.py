@@ -334,7 +334,6 @@ class TestResourceRule:
         )
         assert resources == Resources({})
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_zero_steps_empty_decomposition(self, toy_hamiltonian_cgf_concrete):
         """Test that C(TrotterCGF) with zero steps emits no gates."""
         ham, num_modes, n_states = toy_hamiltonian_cgf_concrete
@@ -588,7 +587,6 @@ class TestDecomposition:
         assert np.allclose(u[np.ix_(~mask, physical)], 0.0, atol=1e-12)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestControlledDecomposition:
     """Tests for the default (genuine) C(TrotterCGF) controlled decomposition."""
 
@@ -648,7 +646,6 @@ class TestControlledDecomposition:
         assert np.allclose(block1, expected, atol=1e-9)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestDoublePhaseControlledDecomposition:
     """Tests for the opt-in double-phase (Fig. 6) C(TrotterCGF) controlled decomposition."""
 
@@ -719,7 +716,6 @@ class TestDoublePhaseControlledDecomposition:
 class TestIntegration:
     """Integration tests via the graph-based decomposition system."""
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("t, num_steps", [(1.0, 0), (0.0, 10)])
     def test_identity_edge_cases(self, toy_hamiltonian_cgf_concrete, t, num_steps):
         """Test that zero Trotter steps, or zero evolution time, produce the identity."""

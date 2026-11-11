@@ -39,6 +39,8 @@ jobs:
       }}
 
     strategy:
+      # Temporary: collect all graph-decomposition migration failures.
+      fail-fast: false
       max-parallel: 2
       matrix:
         python-version:
@@ -115,10 +117,22 @@ jobs:
         run: uv pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run non-triton GPU tests
-        run: python -m pytest -m "${{ env.SUITE }}" tests --ignore=tests/backline/decoders --no-flaky-report --tb=native
+        id: graph_migration_test_1
+        continue-on-error: true
+        run: |
+          # Temporary: collect all graph-decomposition migration failures.
+          graph_test_status=0
+          python -m pytest -m "${{ env.SUITE }}" tests --ignore=tests/backline/decoders --no-flaky-report --tb=native || graph_test_status=$?
+          exit "$graph_test_status"
 
       - name: Run triton GPU tests
-        run: python -m pytest -m "${{ env.SUITE }}" tests/backline/decoders --cov-config=.coveragerc --cov=pennylane.backline.decoders.triton --cov=pennylane.backline.functions --cov-report=xml --no-flaky-report --tb=native
+        id: graph_migration_test_2
+        continue-on-error: true
+        run: |
+          # Temporary: collect all graph-decomposition migration failures.
+          graph_test_status=0
+          python -m pytest -m "${{ env.SUITE }}" tests/backline/decoders --cov-config=.coveragerc --cov=pennylane.backline.decoders.triton --cov=pennylane.backline.functions --cov-report=xml --no-flaky-report --tb=native || graph_test_status=$?
+          exit "$graph_test_status"
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
@@ -147,3 +161,8 @@ jobs:
           rm -rf .gitignore
           rm -rf .github
           pip cache purge
+
+      - name: Report graph migration test failures
+        # Temporary: collect all graph-decomposition migration failures.
+        if: ${{ !cancelled() && (steps.graph_migration_test_1.outcome == 'failure' || steps.graph_migration_test_2.outcome == 'failure') }}
+        run: exit 1

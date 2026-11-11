@@ -1882,12 +1882,8 @@ def test_resets_after_execution_error():
         BadOp(x, wires=0)
         return qp.state()
 
-    if qp.decomposition.enabled_graph():
-        with pytest.raises(DeviceError):
-            with pytest.warns(DecompositionWarning):
-                circuit(qp.numpy.array(0.1))
-    else:
-        with pytest.raises(DeviceError):
+    with pytest.raises(DeviceError):
+        with pytest.warns(DecompositionWarning):
             circuit(qp.numpy.array(0.1))
 
     assert circuit.interface == "auto"

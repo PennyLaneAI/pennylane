@@ -35,8 +35,6 @@ from pennylane.transforms.decompose import (
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
-pytestmark = pytest.mark.usefixtures("enable_graph_decomposition")
-
 
 @pytest.mark.unit
 def test_pass_name():
@@ -92,9 +90,8 @@ def test_decompose_rejects_alt_decomps(transform):
 @pytest.mark.catalyst
 @pytest.mark.capture
 @pytest.mark.parametrize("use_name", [False, True])
-@pytest.mark.parametrize("graph_enabled", [False, True])
-def test_compiled_decompose_exclusions(use_name, graph_enabled):
-    """Compiled exclusions are local to a pass and independent of the legacy graph toggle."""
+def test_compiled_decompose_exclusions(use_name):
+    """Compiled exclusions are local to a pass."""
     pytest.importorskip("catalyst")
     registered_rules = list(qp.list_decomps(qp.CRX))
     rule = qp.list_decomps(qp.CRX)["_crx_to_h_crz"]
@@ -105,28 +102,27 @@ def test_compiled_decompose_exclusions(use_name, graph_enabled):
         qp.CRX(0.5, wires=[0, 1])
         return qp.probs()
 
-    with qp.decomposition.toggle_graph_ctx(graph_enabled):
-        excluded_circuit = qp.qjit(
-            qp.decompose(
-                circuit,
-                gate_set=gate_set,
-                exclude_decomps={qp.CRX: [rule.name if use_name else rule]},
-            ),
-            capture=True,
-            target="mlir",
-        )
-        assert qp.analyze(excluded_circuit, level="user")().resources.quantum_operations == {
-            "RX": 2,
-            "CZ": 2,
-        }
+    excluded_circuit = qp.qjit(
+        qp.decompose(
+            circuit,
+            gate_set=gate_set,
+            exclude_decomps={qp.CRX: [rule.name if use_name else rule]},
+        ),
+        capture=True,
+        target="mlir",
+    )
+    assert qp.analyze(excluded_circuit, level="user")().resources.quantum_operations == {
+        "RX": 2,
+        "CZ": 2,
+    }
 
-        unrestricted_circuit = qp.qjit(
-            qp.decompose(circuit, gate_set=gate_set), capture=True, target="mlir"
-        )
-        assert qp.analyze(unrestricted_circuit, level="user")().resources.quantum_operations == {
-            "Hadamard": 2,
-            "CRZ": 1,
-        }
+    unrestricted_circuit = qp.qjit(
+        qp.decompose(circuit, gate_set=gate_set), capture=True, target="mlir"
+    )
+    assert qp.analyze(unrestricted_circuit, level="user")().resources.quantum_operations == {
+        "Hadamard": 2,
+        "CRZ": 1,
+    }
 
     assert list(qp.list_decomps(qp.CRX)) == registered_rules
 
@@ -243,7 +239,7 @@ def _decomp2_without_work_wire(wires, **__):
 
 
 class TestDecomposeGraphEnabled:
-    """Tests the decompose transform with graph enabled."""
+    """Tests the graph-based decompose transform."""
 
     @pytest.mark.unit
     def test_none_gate_set_error(self):
@@ -844,7 +840,7 @@ class TestDecomposeGraphEnabled:
 
 @pytest.mark.unit
 def test_stopping_condition_graph_enabled():
-    """Tests that the stopping condition is resolved correctly when the graph is disabled."""
+    """Tests that the stopping condition is resolved correctly."""
 
     def _stopping_condition(op):
         return op.num_params > 0 and all(qp.math.allclose(p, 0) for p in op.parameters)

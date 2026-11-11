@@ -488,7 +488,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
   
   These new features leverage the graph-based decomposition system, enabled with 
-  :func:`~.decomposition.enable_graph()`. To illustrate their use, consider the following example. 
+  ``decomposition.enable_graph()``. To illustrate their use, consider the following example.
   The compute-uncompute pattern is composed of a ``QFT``, followed by a ``PhaseAdder``, and finally 
   an inverse ``QFT``.
 
@@ -608,7 +608,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
 
 <h4>Resource-efficient decompositions</h4>
 
-* With :func:`~.decomposition.enable_graph()`, dynamically allocated wires with :func:`~.allocate` 
+* With ``decomposition.enable_graph()``, dynamically allocated wires with :func:`~.allocate`
   are now supported in decomposition rules. This provides a smoother overall experience when 
   decomposing operators in a way that requires auxiliary/work wires.
   [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
@@ -629,7 +629,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
     [(#8024)](https://github.com/PennyLaneAI/pennylane/pull/8024)
 
 * Several templates now have decompositions that can be accessed within the graph-based
-  decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows
+  decomposition system (``decomposition.enable_graph``), allowing workflows
   that include these templates to be decomposed in a resource-efficient and performant
   manner.
   [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
@@ -723,7 +723,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x127034bd0>]
   ```
 
-* With the graph-based decomposition system enabled (:func:`~.decomposition.enable_graph()`), if a 
+* With the graph-based decomposition system enabled (``decomposition.enable_graph()``), if a
   decomposition cannot be found for an operator in the circuit in terms of the target gates, it no 
   longer raises an error. Instead, a warning is raised, and ``op.decomposition()`` (the current 
   default method for decomposing gates) is used as a fallback, while the rest of the circuit is 
@@ -1079,7 +1079,7 @@ The resource estimation tools in the :mod:`~.estimator` module were originally p
   3: ────╰X─────┤  <Z>
   ```
 
-* With :func:`~.decomposition.enable_graph`, the ``UserWarning`` that is raised when a decomposition
+* With ``decomposition.enable_graph``, the ``UserWarning`` that is raised when a decomposition
   cannot be found for an operator in the circuit is now more generic, not making any assumptions 
   about how the unresolved operations will be applied or used in the decompose transformation.
   [(#8361)](https://github.com/PennyLaneAI/pennylane/pull/8361)

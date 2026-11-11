@@ -98,7 +98,6 @@ class TemporaryAND(Operator2):
 
         import pennylane as qp
 
-        qp.decomposition.enable_graph()
 
         @qp.transforms._tape_decompose(gate_set={qp.Toffoli, qp.X})
         def circuit():

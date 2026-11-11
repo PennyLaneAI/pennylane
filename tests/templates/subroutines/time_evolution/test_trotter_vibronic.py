@@ -685,7 +685,7 @@ class TestDecomposition:
         assert _num_applied_terms(branch_probs, use_key, num_visits) == expected
 
     @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp", "enable_and_disable_capture")
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_assert_valid(self):
         """Test that ``TrotterVibronic`` passes ``assert_valid``."""
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=1))
@@ -695,7 +695,7 @@ class TestDecomposition:
         )
 
     @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp", "enable_and_disable_capture")
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_optional_work_wires_are_allocated(self):
         """Test that ``cache`` and ``work`` are optional and dynamically allocated when omitted."""
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=1))
@@ -722,7 +722,7 @@ class TestDecomposition:
         )
 
     @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp", "enable_and_disable_capture")
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_optional_coefficient_wires_are_allocated(self):
         """Test that ``coefficient_wires`` is optional and dynamically allocated (sized to match
         ``phase_gradient_wires``) when omitted, alongside ``cache_wires``/``work_wires``."""
@@ -749,7 +749,6 @@ class TestDecomposition:
             op, skip_differentiation=True, skip_decomp_matrix_check=True, skip_wire_mapping=True
         )
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_explicit_work_wires_are_not_allocated(self):
         """Test that providing ``cache``/``work`` explicitly skips the dynamic allocation."""
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=1))

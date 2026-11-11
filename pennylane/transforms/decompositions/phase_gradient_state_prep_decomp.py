@@ -243,7 +243,6 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
 
         import pennylane as qp
 
-        qp.decomposition.enable_graph()
 
         registers = qp.registers({"grad": 3, "aux": 3, "work": 2})
         rule = qp.transforms.decompositions.make_phase_gradient_distillation_decomp(

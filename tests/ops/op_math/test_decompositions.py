@@ -1364,7 +1364,6 @@ def test_multi_qubit_decomposition(U, n_wires):
     assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestQubitUnitaryDecompositionGraph:
     """Tests that the decomposition rules for QubitUnitary work with graph-enabled."""
 

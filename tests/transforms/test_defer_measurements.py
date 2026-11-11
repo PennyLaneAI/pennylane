@@ -119,10 +119,7 @@ def test_postselection_error_with_wrong_device():
             "Operator Projector(array([1]), wires=[0]) not supported with default.mixed and does not provide a decomposition."
         ),
     ):
-        if qp.decomposition.enabled_graph():
-            with pytest.warns(DecompositionWarning):
-                _ = circ()
-        else:
+        with pytest.warns(DecompositionWarning):
             _ = circ()
 
 

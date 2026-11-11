@@ -133,7 +133,6 @@ def change_op_basis(
         import pennylane as qp
         from functools import partial
 
-        qp.decomposition.enable_graph()
 
         dev = qp.device("default.qubit")
         @qp.qnode(dev)

@@ -25,7 +25,6 @@ from copy import copy
 from pennylane.core.measurements import SampleMeasurement, StateMeasurement
 from pennylane.core.operator import Operator, StatePrepBase
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
-from pennylane.decomposition import enabled_graph
 from pennylane.exceptions import (
     AllocationError,
     DecompositionUndefinedError,
@@ -299,17 +298,16 @@ def decompose(  # pylint: disable = too-many-positional-arguments
         decomposer (Callable): an optional callable that takes an operator and implements the
             relevant decomposition. If ``None``, defaults to using a callable returning
             ``op.decomposition()`` for any :class:`~.Operator` .
-        device_wires (Wires): The device wires. If provided along with ``target_gates`` and
-            graph-based decomposition is enabled, will be used to infer available work wires.
-        num_work_wires (int): Number of work wires to be used if the graph-based decomposition
-            is enabled. If ``device_wires`` are given, they take precedence over ``num_work_wires``
-        target_gates (set or dict): Target gate set to be used if the graph-based decomposition
-            is enabled. See :func:`qp.decompose <pennylane.transforms.decompose>` for more details.
-        fixed_decomps (dict): Fixed decomposition rules to be used if the graph-based decomposition
-            is enabled. See :func:`qp.decompose <pennylane.transforms.decompose>` for more details.
-        alt_decomps (dict): Alternative decomposition rules to be used if the graph-based
-            decomposition is enabled. See :func:`qp.decompose <pennylane.transforms.decompose>`
-            for more details.
+        device_wires (Wires): The device wires. If provided along with ``target_gates``,
+            will be used to infer available work wires.
+        num_work_wires (int): Number of work wires available for graph-based decomposition.
+            If ``device_wires`` are given, they take precedence over ``num_work_wires``.
+        target_gates (set or dict): The target gate set for graph-based decomposition.
+            See :func:`~pennylane.transforms._tape_decompose` for more details.
+        fixed_decomps (dict): Fixed decomposition rules for graph-based decomposition.
+            See :func:`~pennylane.transforms._tape_decompose` for more details.
+        alt_decomps (dict): Alternative decomposition rules for graph-based decomposition.
+            See :func:`~pennylane.transforms._tape_decompose` for more details.
         name (str): The name of the transform, process or device using decompose. Used in the
             error message. Defaults to "device".
         error (type): An error type to raise if it is not possible to obtain a decomposition that
@@ -371,13 +369,13 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     if stopping_condition_shots is not None and tape.shots:
         stopping_condition = stopping_condition_shots
 
-    num_available_work_wires = None  # no constraint on work wires / not applicable with old system
+    num_available_work_wires = None  # no constraint on work wires
     graph_solution = None
     if device_wires is not None:
         # Calculate work wires as device wires that are not used by the tape
         num_available_work_wires = len(set(device_wires) - set(tape.wires))
 
-    if target_gates is not None and enabled_graph():
+    if target_gates is not None:
         # Compute parameters for graph decomposition if device_wires and target_gates are provided
         if num_available_work_wires is None:
             num_available_work_wires = num_work_wires

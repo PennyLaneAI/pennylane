@@ -28,7 +28,7 @@ from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.qscript import QuantumScriptOrBatch
 from pennylane.core.transforms import CompilePipeline
-from pennylane.decomposition import enabled_graph, has_decomp
+from pennylane.decomposition import has_decomp
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -471,6 +471,4 @@ def _op_has_decomp(op):
     Returns:
         bool: True if the operator has a decomposition, False otherwise.
     """
-    if enabled_graph():
-        return has_decomp(op)
-    return op.has_decomposition
+    return has_decomp(op)

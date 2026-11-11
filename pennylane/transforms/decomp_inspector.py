@@ -20,7 +20,7 @@ from typing import override
 
 from pennylane.core.operator import Operator, abstractify
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
-from pennylane.decomposition import DecompGraphSolution, DecompositionGraph, enabled_graph
+from pennylane.decomposition import DecompGraphSolution, DecompositionGraph
 from pennylane.decomposition.decomposition_graph import _DecompositionNode, _OperatorNode
 from pennylane.decomposition.decomposition_rule import _DecompInfo, _DecompInfoCollection
 from pennylane.decomposition.resources import _gate_count_dict_to_str
@@ -298,12 +298,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     """Returns a :class:`DecompGraphInspector` for querying the decomposition decisions made
     for a given circuit and target gate set.
 
-    .. note::
 
-        This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new
-        way of doing decompositions is generally more resource efficient and accommodates multiple
-        alternative decomposition rules for an operator.
 
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
@@ -339,7 +334,6 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
     .. code-block:: python
 
-        qp.decomposition.enable_graph()
 
         rotations = qp.gate_sets.ROTATIONS_PLUS_CNOT | {qp.RX: 50, qp.RY: 50, qp.RZ: 50}
 
@@ -454,7 +448,6 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
     .. code-block:: python
 
-        qp.decomposition.enable_graph()
 
         @qp.decomp_inspector(gate_set={"RZ", "RX", "CNOT", "PPR_4"}, num_work_wires=2)
         @qp.qnode(qp.device("default.qubit"))
@@ -767,13 +760,6 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Insufficient work wires: requires 2 but only 1 available.
 
     """
-
-    if not enabled_graph():
-        raise ValueError(
-            "The decomp_inspector transform is only relevant with the new "
-            "graph-based decomposition system. Use qp.decomposition.enable_graph() "
-            "to enable the new system."
-        )
 
     gate_set, _ = _resolve_gate_set(gate_set)
     graph = DecompositionGraph(

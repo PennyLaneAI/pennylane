@@ -366,7 +366,6 @@ class TestDecomposition:
         qp.assert_equal(q[10], qp.GlobalPhase(-np.pi / 8))
 
     @pytest.mark.capture
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_decomposition_capture(self):
         """Tests that the new decomposition works with capture."""
         from jax import numpy as jnp

@@ -192,7 +192,6 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     .. code-block:: python
 
-        qp.decomposition.enable_graph()
 
         @qp.qnode(qp.device('reference.qubit', wires=1))
         def c():
@@ -615,7 +614,6 @@ class Subroutine:
             MyOp((0,1,2))
             return qp.expval(qp.Z(0))
 
-        qp.decomposition.enable_graph()
 
 
     >>> print(qp.draw(c)())

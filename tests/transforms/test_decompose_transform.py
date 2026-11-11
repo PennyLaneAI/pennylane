@@ -34,8 +34,6 @@ from pennylane.transforms.decompose import (
 # pylint: disable=unnecessary-lambda-assignment
 # pylint: disable=too-few-public-methods
 
-pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
-
 
 @pytest.fixture(autouse=True)
 def warnings_as_errors():
@@ -73,26 +71,6 @@ class InfiniteOp(Operation):
 
     def decomposition(self):
         return [InfiniteOp(*self.parameters, self.wires)]
-
-
-@pytest.mark.unit
-def test_fixed_alt_decomps_not_available():
-    """Test that a TypeError is raised when graph is disabled and
-    fixed_decomps or alt_decomps is used."""
-
-    @qp.register_resources({qp.H: 2, qp.CZ: 1})
-    def my_cnot(*_, **__):
-        raise NotImplementedError
-
-    tape = qp.tape.QuantumScript([])
-
-    with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
-        # pylint: disable-next=protected-access
-        qp.transforms._tape_decompose(tape, fixed_decomps={qp.CNOT: my_cnot})
-
-    with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
-        # pylint: disable-next=protected-access
-        qp.transforms._tape_decompose(tape, alt_decomps={qp.CNOT: [my_cnot]})
 
 
 class TestDecompose:

@@ -22,22 +22,7 @@ import pennylane as qp
 from pennylane.transforms import decomp_inspector
 
 
-@pytest.mark.usefixtures("disable_graph_decomposition")
-def test_error_raised_graph_disabled():
-    """Tests that an error is raised if graph is disabled."""
-
-    @decomp_inspector
-    @qp.qnode(qp.device("default.qubit"))
-    def circuit():
-        qp.CRX(0.5, [0, 1])
-        return qp.probs()
-
-    with pytest.raises(ValueError, match="only relevant with the new graph-based decomposition"):
-        circuit()
-
-
 # pylint: disable=protected-access
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestInspectDecompGraph:
     """Tests the decomp_inspector transform."""
 

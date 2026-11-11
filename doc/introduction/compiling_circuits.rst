@@ -147,10 +147,8 @@ dispatches to Catalyst's graph-decomposition pass.
 
 .. note::
 
-    Using :func:`~.pennylane.decomposition.enable_graph` enables PennyLane's new 
-    **experimental** decomposition algorithm (by default, this new system is *not* 
-    enabled). This new system uses a graph-based approach, which provides better 
-    overall versatility and resource efficiency.
+    PennyLane always uses graph-based decomposition to select resource-efficient
+    decompositions towards a target gate set.
 
 Using a gate set
 ****************
@@ -188,7 +186,6 @@ or two-qubit gates using a rule:
 
 .. code-block:: python
 
-    qp.decomposition.disable_graph()
 
     @_tape_decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
     @qp.qnode(dev)
@@ -305,7 +302,6 @@ to a device:
 
     qp.decomposition.add_decomps(qp.CNOT, _custom_cnot_decomposition)
 
-    qp.decomposition.enable_graph()
 
     decomp_dev = qp.device("default.qubit", wires=3)
     qnode = qp.QNode(circuit, decomp_dev)
@@ -321,11 +317,11 @@ to our specifications:
 
 .. _custom_decomps_with_graph:
 
-Custom decompositions with qp.decomposition.enable_graph
-*********************************************************
+Custom graph-based decompositions
+*********************************
 
-With the graph decompositions system enabled, custom decompositions for operators 
-in PennyLane can be added in a few ways depending on the application. 
+Custom decompositions for operators in PennyLane can be added in a few ways
+depending on the application.
 
 The :func:`~.pennylane.transforms._tape_decompose` transform offers the ability to inject
 custom decompositions via two keyword arguments:
@@ -346,7 +342,6 @@ Consider this example where we add a fixed decomposition to ``CNOT`` gates:
 
 .. code-block:: python
 
-    qp.decomposition.enable_graph()
 
     @qp.register_resources({qp.H: 2, qp.CZ: 1})
     def my_cnot(wires, **__):

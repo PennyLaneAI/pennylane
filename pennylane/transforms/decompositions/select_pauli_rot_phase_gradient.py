@@ -126,7 +126,6 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         from pennylane.transforms.decompositions import make_selectpaulirot_to_phase_gradient_decomp
         import numpy as np
 
-        qp.decomposition.enable_graph()
 
         prec = 3
         np.random.seed(35)

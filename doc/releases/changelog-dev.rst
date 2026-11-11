@@ -364,7 +364,6 @@ New features since last release
 
       import pennylane as qp
       import numpy as np
-      qp.decomposition.enable_graph()
 
       coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
       indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
@@ -1315,7 +1314,7 @@ Improvements 🛠
   the arbitrarily precise rotations of the existing QFT-based decomposition and supports an arbitrary
   modulus. Its multi-controlled gates reuse the remaining register wires as borrowed work wires for a
   cheaper decomposition, and the graph-based decomposition system
-  (:func:`~pennylane.decomposition.enable_graph`) automatically selects the cheaper rule.
+  automatically selects the cheaper rule.
   `(#9698) <https://github.com/PennyLaneAI/pennylane/pull/9698>`__
 
 * :func:`~pennylane.apply` is now compatible with program capture.
@@ -1794,6 +1793,11 @@ Breaking changes 💔
   :mod:`pennylane.core.apply` module, and is no longer importable from
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
+
+* Graph-based decomposition is now always enabled. The ``qp.decomposition.enable_graph``,
+  ``disable_graph``, ``enabled_graph``, and ``toggle_graph_ctx`` functions have been removed.
+  Remove calls to these functions and use graph-based decomposition directly.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
 
 Deprecations 👋
 ~~~~~~~~~~~~~~~

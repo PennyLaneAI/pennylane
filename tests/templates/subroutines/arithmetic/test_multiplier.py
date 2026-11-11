@@ -34,7 +34,6 @@ def test_standard_validity_Multiplier():
 
 
 @pytest.mark.system
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestMultiplier:
     """Test the qp.Multiplier template."""
 

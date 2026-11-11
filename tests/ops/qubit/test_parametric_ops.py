@@ -725,7 +725,6 @@ class TestDecompositions:
         assert_valid_decomp_rule(op, rule)
 
     @pytest.mark.integration
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_isingzz_decomposition_graph(self):
         r"""Controlling ``IsingZZ`` should control only the inner ``RZ``, leaving the two
         conjugating ``CNOT``'s bare. There's no dedicated ``C(IsingZZ)`` rule for this: writing
@@ -782,7 +781,6 @@ class TestDecompositions:
         mat = qp.matrix(decomp, wire_order=[2, 3, 4])
         assert qp.math.allclose(mat, expected_matrix)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_multirz_decomposition_graph(self):
         r"""Controlling ``MultiRZ`` should control only the inner ``RZ``, leaving the conjugating
         CNOT ladder bare. This comes out of the generic ``C(ChangeOpBasis)`` rule rather than a
@@ -846,7 +844,6 @@ class TestDecompositions:
         assert_decomposable(op)
 
     @pytest.mark.integration
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_pcphase_decomposition_graph(self):
         """Tests that the PCPhase can be decomposed all the way down."""
 
@@ -1837,7 +1834,6 @@ class TestEigvals:
         assert np.allclose(op.eigvals(), expected)
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestGrad:
     device_methods = [
         ["default.qubit", "finite-diff"],

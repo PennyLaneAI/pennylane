@@ -412,7 +412,6 @@ class TestSupportsDerivatives:
             dev.execute_and_compute_vjp(circuits=None, cotangents=None)
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize("method", ["mps", "tn"])
 @pytest.mark.jax
 class TestJaxSupport:
@@ -451,7 +450,6 @@ class TestJaxSupport:
         assert np.allclose(circuit(), 0.0)
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize("method", ["mps", "tn"])
 @pytest.mark.parametrize(
     "operation, expected_output, par",
@@ -493,7 +491,6 @@ def test_apply_operation_state_preparation(operation, expected_output, par, meth
 
 
 # At this stage, this test is especially relevant for the MPS method, but we test both methods for consistency.
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize("num_orbitals", [2, 4])
 @pytest.mark.parametrize("method", ["mps", "tn"])
 def test_wire_order_dense_vector(method, num_orbitals):
@@ -531,7 +528,6 @@ def test_wire_order_dense_vector(method, num_orbitals):
     assert len(state) == 2 ** (2 * num_orbitals + 1)
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestMCMs:
     """Test that default.tensor can handle mid circuit measurements."""
 
@@ -638,7 +634,6 @@ class TestPreprocessingTransforms:
         assert "stopping_condition" in decompose_transform.kwargs
         assert decompose_transform.kwargs["stopping_condition"] == stopping_condition
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.integration
     def test_integration_with_qnode(self):
         """Test integration with QNode to ensure the device works end-to-end."""
@@ -654,7 +649,6 @@ class TestPreprocessingTransforms:
         result = circuit()
         assert isinstance(result, (float, np.floating))
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.integration
     def test_integration_with_multiple_decomposition_layers(self):
         """Test that operations requiring multiple layers of decomposition work."""
@@ -672,7 +666,6 @@ class TestPreprocessingTransforms:
         assert isinstance(result, (float, np.floating))
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestGraphModeExclusiveFeatures:  # pylint: disable=too-few-public-methods
     """Tests that only work when graph mode is enabled."""
 

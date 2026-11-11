@@ -55,7 +55,6 @@ def test_flatten_unflatten():
 
 
 @pytest.mark.system
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestCorrectness:
     """Tests the correctness of the template."""
 

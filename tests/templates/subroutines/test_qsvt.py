@@ -250,7 +250,6 @@ class TestQSVTBasics:
         assert op.data == (1, 2, 3)
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.integration
 class TestQSVTIntegration:
     """Test the qp.QSVT template."""

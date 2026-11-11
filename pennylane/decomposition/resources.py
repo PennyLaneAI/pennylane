@@ -29,14 +29,7 @@ from .utils import to_name
 class CompressedResourceOp:
     """A lightweight representation of an operator to be decomposed.
 
-    .. note::
 
-        This class is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qp.decomposition.enable_graph()``. This new way of
-        doing decompositions is generally more resource efficient and accommodates multiple alternative
-        decomposition rules for an operator. In this new system, custom decomposition rules are
-        defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using :func:`~pennylane.register_resources`.
 
     The ``CompressedResourceOp`` is a lightweight data structure that contains an operator type
     and a set of parameters that affects the resource requirement of this operator. If the
@@ -227,14 +220,7 @@ def _validate_resource_rep(op_type, params):
 def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     """Binds an operator type with additional resource parameters.
 
-    .. note::
 
-        This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qp.decomposition.enable_graph()``. This new way of
-        doing decompositions is generally more resource efficient and accommodates multiple alternative
-        decomposition rules for an operator. In this new system, custom decomposition rules are
-        defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using :func:`~pennylane.register_resources`.
 
     Args:
         op_type: the operator class to create a resource representation for.

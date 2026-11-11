@@ -93,7 +93,6 @@ class TestGateSetDecomposition:
 
         assert np.allclose(expected_state, state)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_convert_to_mbqc_gateset(self):
         """Test the convert_to_mbqc_gateset works as expected"""
         tape = qp.tape.QuantumScript(
@@ -117,7 +116,6 @@ class TestGateSetDecomposition:
         with pytest.raises(RuntimeError, match="requires the graph-based decomposition method"):
             _, _ = convert_to_mbqc_gateset(tape)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_qnode_integration(self):
         """Test that a QNode containing Rot and other unsupported gates is decomposed as
         expected by the convert_to_mbqc_gateset"""
