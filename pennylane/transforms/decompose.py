@@ -149,8 +149,7 @@ def _tape_decompose(
             target gate set specified as either (1) a sequence of operator types and/or names,
             (2) a dictionary mapping operator types and/or names to their respective costs, in
             which case the total cost will be minimized. Operators that belong in the target
-            gate set will not be decomposed. For a basis of single-qubit rotations and CNOTs,
-            use :data:`~pennylane.decomposition.gate_sets.ROTATIONS_PLUS_CNOT`.
+            gate set will not be decomposed.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
             the operator is in the target gate set. See the "Gate Set vs. Stopping Condition"
