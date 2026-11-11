@@ -2641,10 +2641,10 @@ Bug fixes 🐛
   the gates produced by the captured decomposition.
   `(#10351) <https://github.com/PennyLaneAI/pennylane/pull/10351>`__
 
-* The decomposition of a controlled :class:`~.SemiAdder` now treats surplus work wires of the
-  ``SemiAdder`` as zeroed when passing them to the controlled ``CNOT`` gates, instead of using the
-  ``work_wire_type`` of the control, which defaults to ``"borrowed"``.
-  `(#XXXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXXX>`__
+* The decomposition of a controlled :class:`~.SemiAdder` without dedicated control work wires
+  now treats surplus work wires of the ``SemiAdder`` as zeroed, instead of using the
+  ``work_wire_type`` of the length-zero control work wires, which defaults to ``"borrowed"``.
+  `(#10506) <https://github.com/PennyLaneAI/pennylane/pull/10506>`__
 
 Contributors ✍️
 ~~~~~~~~~~~~~~~
