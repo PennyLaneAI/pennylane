@@ -1795,6 +1795,11 @@ Breaking changes 💔
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
+* PyQuil and Qualtran interoperability has been removed from ``qp.io`` and the top-level
+  PennyLane namespace. The removed APIs are ``from_pyquil``, ``from_quil``, ``from_quil_file``,
+  ``FromBloq``, ``ToBloq``, ``to_bloq``, and ``bloq_registers``.
+  `(#10498) <https://github.com/PennyLaneAI/pennylane/pull/10498>`__
+
 Deprecations 👋
 ~~~~~~~~~~~~~~~
 
