@@ -18,7 +18,7 @@
   :class:`~.TemporaryAND`, which was also added in this release (see the next changelog entry).
   
   This decomposition rule for :class:`~.Select` is available when the graph-based
-  decomposition system is enabled via ``decomposition.enable_graph``:
+  decomposition system is enabled via :func:`~.decomposition.enable_graph`:
 
   ```python
   import pennylane as qml
@@ -481,7 +481,7 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
 
 <h4>Resource-efficient decompositions 🔎</h4>
 
-* With graph-based decomposition enabled via ``decomposition.enable_graph``, the
+* With graph-based decomposition enabled via :func:`~.decomposition.enable_graph`, the 
   :func:`~.transforms.decompose` transform now supports weighting gates in the target `gate_set`, 
   allowing for preferential treatment of certain gates in a target `gate_set` over others.
   [(#7389)](https://github.com/PennyLaneAI/pennylane/pull/7389)
@@ -582,12 +582,12 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   * :class:`~.IntegerComparator`
     [(#7636)](https://github.com/PennyLaneAI/pennylane/pull/7636)
 
-* With graph-based decomposition enabled with ``decomposition.enable_graph``, a new
+* With graph-based decomposition enabled with :func:`~.decomposition.enable_graph`, a new 
   decomposition rule that uses a single work wire for decomposing multi-controlled operators can be
   accessed.
   [(#7383)](https://github.com/PennyLaneAI/pennylane/pull/7383)
 
-* With graph-based decomposition enabled with ``decomposition.enable_graph``, a new decorator
+* With graph-based decomposition enabled with :func:`~.decomposition.enable_graph`, a new decorator 
   called :func:`~.decomposition.register_condition` can be used to bind a condition to a 
   decomposition rule denoting when it is applicable.
   [(#7439)](https://github.com/PennyLaneAI/pennylane/pull/7439)

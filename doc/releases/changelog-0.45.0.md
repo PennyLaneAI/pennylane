@@ -32,7 +32,7 @@
   ``wires`` as input. It efficiently prepares sparse states using auxiliary wires,
   :class:`~.QROM`\ s, reversible bit encodings, and a dense-state preparation on a smaller
   subspace. Its implementation can be inspected by using PennyLane's graph-based decomposition
-  algorithm (``decomposition.enable_graph``) with the following gate set and five auxiliary
+  algorithm (:func:`~.decomposition.enable_graph`) with the following gate set and five auxiliary
   wires (``work_wires``).
 
   ```python
@@ -255,7 +255,7 @@
 
 <h4>Decomposition Inspection and Pre-defined Gate Sets 📠</h4>
 
-New tools dedicated to accessible inspectability of PennyLane's graph-based decomposition system (enabled with ``decomposition.enable_graph``)
+New tools dedicated to accessible inspectability of PennyLane's graph-based decomposition system (enabled with :func:`~.decomposition.enable_graph`)
 are now available! With this release, you can query the solutions of the graph-based system to 
 understand how PennyLane decomposed a circuit, why specific rules where chosen over others, and more.
 
@@ -547,7 +547,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
     gates and a single ``Toffoli`` gate.
     [(#8887)](https://github.com/PennyLaneAI/pennylane/pull/8887)
 
-* Several new decomposition rules have been added that can be accessed with ``decomposition.enable_graph``:
+* Several new decomposition rules have been added that can be accessed with :func:`~.decomposition.enable_graph`:
 
   - :class:`~.MultiControlledX` has a new decomposition into a pair of ``TemporaryAND`` gates and one ``CNOT``.
   It takes two control wires and at least one ``zeroed`` work wire that has been passed explicitly.
@@ -566,7 +566,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
     [(#9001)](https://github.com/PennyLaneAI/pennylane/pull/9001)
     [(#9049)](https://github.com/PennyLaneAI/pennylane/pull/9049)
 
-* The graph-based decompositions system, enabled via ``decomposition.enable_graph``, now
+* The graph-based decompositions system, enabled via :func:`~.decomposition.enable_graph`, now
   additionally supports the custom `adjoint` method of qutrit operators such as :class:`~.QutritUnitary`,
   :class:`~.ControlledQutritUnitary`, and :class:`~.TRZ`.
   [(#9056)](https://github.com/PennyLaneAI/pennylane/pull/9056)
@@ -1023,7 +1023,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
     (:func:`qp.register_resources <pennylane.register_resources>`) to a decomposition rule of an
     operator that contains :class:`~.SemiAdder`, the resource representation of :class:`~.SemiAdder`
     must also receive these new arguments.
-  - These changes are relevant only with ``decomposition.enable_graph``.
+  - These changes are relevant only with :func:`~.decomposition.enable_graph`.
 
 * All ``Operator`` classes are now queued by default, unless they implement a custom ``queue``
   method that changes this behaviour.
@@ -1100,7 +1100,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
 
 * ``compute_qfunc_decomposition`` and ``has_qfunc_decomposition`` have been removed from
   :class:`~.Operator` and all subclasses that implemented them. The graph decomposition system
-  (``decomposition.enable_graph``) should be used when capture is enabled.
+  (:func:`~.decomposition.enable_graph`) should be used when capture is enabled.
   [(#8922)](https://github.com/PennyLaneAI/pennylane/pull/8922)
 
 * The :func:`pennylane.devices.preprocess.mid_circuit_measurements` transform has been removed.
@@ -1114,7 +1114,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
   [(#8926)](https://github.com/PennyLaneAI/pennylane/pull/8926)
 
 * The ``custom_decomps`` keyword argument to ``qp.device`` has been removed. Instead, with the graph
-  decomposition system (``decomposition.enable_graph``), new decomposition rules can be
+  decomposition system (:func:`~.decomposition.enable_graph`), new decomposition rules can be
   defined as quantum functions with registered resources. See :mod:`pennylane.decomposition` for
   more details.
   [(#8928)](https://github.com/PennyLaneAI/pennylane/pull/8928)

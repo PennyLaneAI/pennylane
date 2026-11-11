@@ -133,12 +133,6 @@ def _tape_decompose(
     :func:`~.transforms.decompose` now always dispatches to Catalyst's ``graph-decomposition`` pass
     under :func:`~.qjit`.
 
-    .. note::
-
-        This transform uses the graph-based decomposition algorithm to find resource-efficient
-        decompositions towards a target gate set. Use ``fixed_decomps`` and ``alt_decomps``
-        to provide custom decomposition rules.
-
     .. seealso::
 
         For more information on PennyLane's decomposition tools and features, check out the

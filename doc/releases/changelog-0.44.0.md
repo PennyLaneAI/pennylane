@@ -431,7 +431,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
 
 * Directly decomposing Clifford+T gates and other small gates into PPRs is possible using the 
   :func:`~.transforms.decompose` transform with graph-based decompositions enabled 
-  (``decomposition.enable_graph``). This allows direct decomposition of certain operators
+  (:func:`~.decomposition.enable_graph`). This allows direct decomposition of certain operators 
   without the need to use approximate methods such as those found in the 
   :func:`~.clifford_t_decomposition` transform, which can sometimes be less efficient.
   [(#8700)](https://github.com/PennyLaneAI/pennylane/pull/8700)
@@ -841,7 +841,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   ```
 
 * It is now possible to minimize the number of work wires in decompositions by activating the new 
-  graph-based decomposition system (``pennylane.decomposition.enable_graph``) and setting
+  graph-based decomposition system (:func:`~pennylane.decomposition.enable_graph`) and setting 
   ``minimize_work_wires=True`` in the :func:`~pennylane.transforms.decompose` transform. The 
   decomposition system will select decomposition rules that minimize the maximum number of 
   simultaneously allocated work wires.
@@ -864,7 +864,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   [(#8608)](https://github.com/PennyLaneAI/pennylane/pull/8608)
   [(#8620)](https://github.com/PennyLaneAI/pennylane/pull/8620)
 
-* The graph-based decompositions system enabled via ``decomposition.enable_graph`` now
+* The graph-based decompositions system enabled via :func:`~.decomposition.enable_graph` now 
   additionally supports many existing templates.
   [(#8520)](https://github.com/PennyLaneAI/pennylane/pull/8520)
   [(#8515)](https://github.com/PennyLaneAI/pennylane/pull/8515)
@@ -1223,7 +1223,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
 
 * The ``max_work_wires`` argument of the :func:`~pennylane.transforms.decompose` transform has been 
   renamed to ``num_work_wires``. This change is only relevant with graph-based decompositions 
-  (enabled via ``decomposition.enable_graph``).
+  (enabled via :func:`~.decomposition.enable_graph`).
   [(#8769)](https://github.com/PennyLaneAI/pennylane/pull/8769)
 
 * ``QuantumScript.to_openqasm`` has been removed. Please use :func:`~.to_openqasm` instead. This 
@@ -1375,7 +1375,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   [(#8481)](https://github.com/PennyLaneAI/pennylane/pull/8481)
 
 * The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
-  in 0.45. Instead, with ``decomposition.enable_graph``, new decomposition rules can be
+  in 0.45. Instead, with :func:`~.decomposition.enable_graph`, new decomposition rules can be 
   defined as quantum functions with registered resources. See :mod:`pennylane.decomposition` for more 
   details.
 

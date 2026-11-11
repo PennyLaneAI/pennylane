@@ -21,8 +21,6 @@ This module implements the infrastructure for PennyLane's new graph-based decomp
 
     This module is experimental and is subject to change in the future.
 
-Graph-based decomposition is always enabled.
-
 .. _decomps_rules:
 
 Defining Decomposition Rules

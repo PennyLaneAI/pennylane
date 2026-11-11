@@ -145,11 +145,6 @@ set of gates defined either by their name, type, or by a set of rules they must
 follow. Under :func:`~.qjit`, use :func:`~.pennylane.transforms.decompose`, which
 dispatches to Catalyst's graph-decomposition pass.
 
-.. note::
-
-    PennyLane always uses graph-based decomposition to select resource-efficient
-    decompositions towards a target gate set.
-
 Using a gate set
 ****************
 
