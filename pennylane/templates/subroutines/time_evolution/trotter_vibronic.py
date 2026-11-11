@@ -563,8 +563,8 @@ def _trotter_vibronic_resources(
     )
     # The quadratic/kinetic terms multiply with the cache register minus its sign bit
     out_mult_quad = OutMultiplier(
-        x_wires=Wire[b],
-        y_wires=Wire[max(2 * k - 1, 1)],
+        x_wires=Wire[max(2 * k - 1, 1)],
+        y_wires=Wire[b],
         output_wires=Wire[b],
         work_wires=Wire[n_work],
     )
@@ -1116,14 +1116,14 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
         # The cache contains 2k wires, we just need 2k-1 here
         square_wires["output_wires"] = square_wires["output_wires"][1:]
         mult_wires = {
-            "x_wires": "coefficients",
-            "y_wires": "cache",
+            "x_wires": "cache",
+            "y_wires": "coefficients",
             "output_wires": "phase_gradient",
             "work_wires": "work",
         }
         mult_wires = {new: registers[old] for new, old in mult_wires.items()}
         # The cache contains 2k wires, we just need 2k-1 here, see above
-        mult_wires["y_wires"] = mult_wires["y_wires"][1:]
+        mult_wires["x_wires"] = mult_wires["x_wires"][1:]
         return square_wires, mult_wires
 
     if term == "bilinear":
