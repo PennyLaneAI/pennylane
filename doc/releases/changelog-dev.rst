@@ -1803,7 +1803,7 @@ Breaking changes 💔
 * :func:`~.change_op_basis` now preserves the basis-change operator during program capture and
   requires operator instances as inputs. Convert quantum functions with :func:`~.subcircuit`
   and instantiate the resulting operator class before passing it to ``change_op_basis``.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10511) <https://github.com/PennyLaneAI/pennylane/pull/10511>`__
 
   .. code-block:: python
 
