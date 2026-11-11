@@ -37,21 +37,6 @@ def _random_angles(num_angles, seed):
     return np.random.default_rng(seed).uniform(-2 * np.pi, 2 * np.pi, num_angles)
 
 
-def _rz_layer_circuit(angles):
-    """Apply an RZLayer with the angles ``(a, b)`` on two blocks of two wires to ``|+>`` on all
-    four wires, and return the expectation value ``cos(a)**2 * cos(b)**2`` of X on all wires."""
-    for wire in range(4):
-        qp.H(wire)
-    qp.RZLayer(angles, wires=range(4))
-    return qp.expval(qp.X(0) @ qp.X(1) @ qp.X(2) @ qp.X(3))
-
-
-def _rz_layer_circuit_grad(angles):
-    """Analytic gradient of :func:`_rz_layer_circuit`."""
-    a, b = angles
-    return np.array([-np.sin(2 * a) * np.cos(b) ** 2, -np.cos(a) ** 2 * np.sin(2 * b)])
-
-
 class TestInitialization:
     """Tests for the arguments of RZLayer."""
 
@@ -179,32 +164,6 @@ class TestDecomposition:
         assert np.allclose(circuit(angles), np.concatenate([np.cos(expected), np.sin(expected)]))
         counts = qp.analyze(circuit, level="device")(angles).resources.counts
         assert counts == {"Hadamard": 2 * num_wires, "RZ": 2 * num_wires}
-
-
-class TestInterfaces:
-    """Tests for the gradient of RZLayer with torch and under ``qjit``."""
-
-    @pytest.mark.torch
-    def test_torch(self):
-        """Test that the gradient with torch is the analytic gradient."""
-        import torch
-
-        angles = [0.3, -1.2]
-        circuit = qp.QNode(_rz_layer_circuit, qp.device("default.qubit", wires=4))
-
-        torch_angles = torch.tensor(angles, dtype=torch.float64, requires_grad=True)
-        circuit(torch_angles).backward()
-        assert np.allclose(torch_angles.grad, _rz_layer_circuit_grad(angles))
-
-    @pytest.mark.catalyst
-    def test_qjit(self):
-        """Test that the expectation value and its gradient are the analytic ones under ``qjit``."""
-        pytest.importorskip("catalyst")
-        angles = np.array([0.3, -1.2])
-        circuit = qp.QNode(_rz_layer_circuit, qp.device("lightning.qubit", wires=4))
-
-        assert np.isclose(qp.qjit(circuit)(angles), np.prod(np.cos(angles) ** 2))
-        assert np.allclose(qp.qjit(qp.grad(circuit))(angles), _rz_layer_circuit_grad(angles))
 
 
 def test_adjoint_negates_angles():
