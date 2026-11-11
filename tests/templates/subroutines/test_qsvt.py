@@ -35,7 +35,7 @@ from pennylane.templates.subroutines.qsvt import (
     _W_of_x,
     _z_rotation,
 )
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 
@@ -200,8 +200,7 @@ class TestQSVTBasics:
     )
     def test_decomposition(self, UA, projectors):
         op = qp.QSVT(UA, projectors)
-        for rule in qp.list_decomps(op):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_wire_order(self):
         """Test that the wire order is preserved."""

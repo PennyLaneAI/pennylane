@@ -25,7 +25,7 @@ from pennylane.templates.state_preparations.state_prep_mps import (
     _validate_mps_shape,
     right_canonicalize_mps,
 )
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 class TestMPSPrep:
@@ -630,8 +630,7 @@ class TestMPSPrep:
         op = qp.MPSPrep(
             mps, wires=range(2, num_wires + 2), work_wires=[0, 1], right_canonicalize=True
         )
-        for rule in qp.list_decomps(qp.MPSPrep):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.capture
     @pytest.mark.usefixtures("enable_graph_decomposition")

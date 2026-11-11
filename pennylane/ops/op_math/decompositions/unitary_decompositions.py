@@ -1173,4 +1173,4 @@ def _cossin_decomposition(U, p):
 
 def _is_jax_jit(U):
     """Assume jax-jit if U is abstract and not in a capture or qjit context."""
-    return math.is_abstract(U) and not (capture.enabled() or compiler.active())
+    return math.is_tracer(U) and not (capture.enabled() or compiler.active())

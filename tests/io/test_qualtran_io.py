@@ -664,7 +664,7 @@ class TestToBloqDecomposition:
                 ),
                 {
                     (
-                        qp.QROM(
+                        qp.QROMLoad(
                             bitstrings=[[0, 0, 1]],
                             control_wires=[],
                             target_wires=[1, 2, 3],
@@ -675,7 +675,7 @@ class TestToBloqDecomposition:
                     ): 1,
                     (
                         qp.adjoint(
-                            qp.QROM(
+                            qp.QROMLoad(
                                 bitstrings=[[0, 0, 1]],
                                 control_wires=[],
                                 target_wires=[1, 2, 3],
@@ -686,7 +686,7 @@ class TestToBloqDecomposition:
                         True,
                     ): 1,
                     (
-                        qp.QROM(
+                        qp.QROMLoad(
                             bitstrings=[[0, 0, 0], [0, 0, 1]],
                             control_wires=[4],
                             target_wires=[1, 2, 3],
@@ -697,7 +697,7 @@ class TestToBloqDecomposition:
                     ): 1,
                     (
                         qp.adjoint(
-                            qp.QROM(
+                            qp.QROMLoad(
                                 bitstrings=[[0, 0, 0], [0, 0, 1]],
                                 control_wires=[4],
                                 target_wires=[1, 2, 3],
@@ -711,7 +711,7 @@ class TestToBloqDecomposition:
                 },
             ),
             (
-                qp.QROM(
+                qp.QROMLoad(
                     bitstrings=[[0, 0, 0], [0, 0, 1]],
                     control_wires=[4],
                     target_wires=[1, 2, 3],
@@ -732,7 +732,7 @@ class TestToBloqDecomposition:
                 },
             ),
             (
-                qp.QROM(
+                qp.QROMLoad(
                     bitstrings=[[0, 0, 1]],
                     control_wires=[],
                     target_wires=[1, 2, 3],
@@ -745,7 +745,7 @@ class TestToBloqDecomposition:
                 },
             ),
             (
-                qp.QROM(
+                qp.QROMLoad(
                     bitstrings=[[0, 0, 0], [0, 0, 1]],
                     control_wires=[4],
                     target_wires=[1, 2, 3],
@@ -770,7 +770,7 @@ class TestToBloqDecomposition:
                 qp.QROMStatePreparation(np.array([0.5, -0.5, 0.5, 0.5]), [4, 5], [1, 2, 3], [0]),
                 {
                     (
-                        qp.QROM(
+                        qp.QROMLoad(
                             bitstrings=[[0, 0, 1]],
                             control_wires=[],
                             target_wires=[1, 2, 3],
@@ -781,7 +781,7 @@ class TestToBloqDecomposition:
                     ): 1,
                     (
                         qp.adjoint(
-                            qp.QROM(
+                            qp.QROMLoad(
                                 bitstrings=[[0, 0, 1]],
                                 control_wires=[],
                                 target_wires=[1, 2, 3],
@@ -792,7 +792,7 @@ class TestToBloqDecomposition:
                         True,
                     ): 1,
                     (
-                        qp.QROM(
+                        qp.QROMLoad(
                             bitstrings=[[0, 0, 0], [0, 0, 1]],
                             control_wires=[4],
                             target_wires=[1, 2, 3],
@@ -803,7 +803,7 @@ class TestToBloqDecomposition:
                     ): 1,
                     (
                         qp.adjoint(
-                            qp.QROM(
+                            qp.QROMLoad(
                                 bitstrings=[[0, 0, 0], [0, 0, 1]],
                                 control_wires=[4],
                                 target_wires=[1, 2, 3],
@@ -814,7 +814,7 @@ class TestToBloqDecomposition:
                         True,
                     ): 1,
                     (
-                        qp.QROM(
+                        qp.QROMLoad(
                             bitstrings=[[0, 0, 0], [0, 0, 0], [0, 0, 1], [0, 0, 1]],
                             control_wires=[4, 5],
                             target_wires=[1, 2, 3],
@@ -825,7 +825,7 @@ class TestToBloqDecomposition:
                     ): 1,
                     (
                         qp.adjoint(
-                            qp.QROM(
+                            qp.QROMLoad(
                                 bitstrings=[[0, 0, 0], [0, 0, 0], [0, 0, 1], [0, 0, 1]],
                                 control_wires=[4, 5],
                                 target_wires=[1, 2, 3],
@@ -929,7 +929,7 @@ class TestToBloqDecomposition:
                 qp.Select(ops=[qp.X(2), qp.QFT(wires=[2, 3, 4])], control=[0, 1]),
                 {
                     (qp.X(wires=[2]), True): 2,
-                    (qp.ctrl(qp.X(2), control=[0]), True): 1,
+                    (qp.CNOT([0, 2]), True): 1,
                     (qp.ctrl(qp.QFT(wires=[2, 3, 4]), control=[0]), True): 1,
                 },
             ),
@@ -979,17 +979,26 @@ class TestToBloqDecomposition:
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7],
                 ),
-                "qrom_bloq_clean",
+                "qrom_bloq",
             ),
             (
-                qp.QROM(
+                qp.QROMLoad(
+                    bitstrings=((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
+                    control_wires=[0, 1],
+                    target_wires=[2, 3, 4],
+                    work_wires=[5, 6, 7],
+                ),
+                "qrom_load_bloq_clean",
+            ),
+            (
+                qp.QROMLoad(
                     bitstrings=((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7],
                     clean=False,
                 ),
-                "qrom_bloq_dirty",
+                "qrom_load_bloq_dirty",
             ),
         ],
     )
@@ -1000,6 +1009,7 @@ class TestToBloqDecomposition:
             """Factory function inside for parametrization of test cases"""
             from qualtran.bloqs.cryptography.rsa import ModExp
             from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
+            from qualtran.bloqs.data_loading.qrom import QROM
             from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
             from qualtran.bloqs.phase_estimation import RectangularWindowState
             from qualtran.bloqs.phase_estimation.text_book_qpe import TextbookQPE
@@ -1012,8 +1022,9 @@ class TestToBloqDecomposition:
                 ),
                 "qft_bloq": QFTTextBook(4),
                 "modexp_bloq": ModExp(base=2, mod=7, exp_bitsize=2, x_bitsize=3),
-                "qrom_bloq_clean": QROAMClean.build_from_data([2, 7, 6, 0]),
-                "qrom_bloq_dirty": SelectSwapQROM.build_from_data([2, 7, 6, 0]),
+                "qrom_bloq": QROM.build_from_data([2, 7, 6, 0]),
+                "qrom_load_bloq_clean": QROAMClean.build_from_data([2, 7, 6, 0]),
+                "qrom_load_bloq_dirty": SelectSwapQROM.build_from_data([2, 7, 6, 0]),
             }
 
             return qualtran_bloqs[qt_bloq]
@@ -1348,7 +1359,7 @@ class TestToBloqEstimator:
                 },
             ),
             (
-                qp.QROM(
+                qp.QROMLoad(
                     bitstrings=[[0, 0, 0], [0, 0, 1]],
                     control_wires=[4],
                     target_wires=[1, 2, 3],
@@ -1363,7 +1374,7 @@ class TestToBloqEstimator:
                 },
             ),
             (
-                qp.QROM(
+                qp.QROMLoad(
                     bitstrings=[[0, 0, 1]],
                     control_wires=[],
                     target_wires=[1, 2, 3],
@@ -1375,7 +1386,7 @@ class TestToBloqEstimator:
                 },
             ),
             (
-                qp.QROM(
+                qp.QROMLoad(
                     bitstrings=[[0, 0, 0], [0, 0, 1]],
                     control_wires=[4],
                     target_wires=[1, 2, 3],

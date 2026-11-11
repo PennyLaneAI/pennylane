@@ -55,13 +55,14 @@ from pennylane.ops.op_math import (
     SymbolicOp2,
 )
 from pennylane.tape import QuantumScript
+from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qsvt import QSVT
 from pennylane.templates.subroutines.select import Select
 from pennylane.typing import AbstractArray, AbstractWires, TensorLike
 from pennylane.wires import Wires
 from pennylane.workflow import QNode
 
-from .decompositions import _resolve_dynamic_wires, _test_decomposition_rule
+from .decompositions import _resolve_dynamic_wires, assert_valid_decomp_rule
 
 
 def _assert_error_raised(func, expected_error_type, failure_comment):
@@ -200,17 +201,19 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
             err_msg = "resource_params must be defined for operators with decompositions"
             assert not has_decomp(op_type), err_msg
 
+    check_matrix = not skip_decomp_matrix_check
+
     for rule in list_decomps(op):
-        _test_decomposition_rule(op, rule, skip_decomp_matrix_check)
+        assert_valid_decomp_rule(op, rule, check_matrix=check_matrix)
 
     for rule in list_decomps(f"Adjoint({to_name(op)})"):
         adj_op = ops.adjoint(op)
-        _test_decomposition_rule(adj_op, rule, skip_decomp_matrix_check)
+        assert_valid_decomp_rule(adj_op, rule, check_matrix=check_matrix)
 
     for rule in list_decomps(f"Pow({to_name(op)})"):
         for z in [2, 3, 4, 8, 9]:
             pow_op = ops.pow(op, z)
-            _test_decomposition_rule(pow_op, rule, skip_decomp_matrix_check)
+            assert_valid_decomp_rule(pow_op, rule, check_matrix=check_matrix)
 
     for rule in list_decomps(f"C({to_name(op)})"):
         for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
@@ -221,7 +224,7 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
             control_values = [c_value] * n_ctrl_wires
             work_wires = [i + max(control_wires) + 1 for i in range(n_workers)]
             ctrl_op = ctrl(op, control_wires, control_values, work_wires)
-            _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check)
+            assert_valid_decomp_rule(ctrl_op, rule, check_matrix=check_matrix)
 
 
 def _check_matrix(op):
@@ -455,7 +458,7 @@ def _check_capture(op):
 
     leaves = jax.tree_util.tree_leaves(jaxpr.eqns[-1].params)
     error_msg = "capture params cannot contain tracers"
-    assert not any(math.is_abstract(l) for l in leaves), error_msg
+    assert not any(math.is_tracer(l) for l in leaves), error_msg
 
 
 def _check_pickle(op):
@@ -595,7 +598,9 @@ def _check_properties_operator2(op: Operator2) -> None:
     # Some operators (e.g. composites and ``Select``) hold their data inside operator-valued
     # arguments rather than dynamic arguments, so their ``data`` does not correspond to
     # ``dynamic_argnames`` and this check does not apply.
-    if not isinstance(op, (Adjoint2, CompositeOp2, ControlledOp2, Pow2, Select, QSVT)):
+    if not isinstance(
+        op, (Adjoint2, CompositeOp2, ControlledOp2, ControlledSequence, Pow2, Select, QSVT)
+    ):
 
         error_msg = "ndim_params must have the same length as dynamic_argnames"
         assert len(op.ndim_params) == len(op.dynamic_argnames), error_msg

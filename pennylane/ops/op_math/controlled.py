@@ -27,6 +27,7 @@ from typing import Any, Literal, overload
 
 import jax
 import numpy as np
+from jax._src.core import trace_state_clean
 from scipy import sparse
 
 import pennylane as qp
@@ -70,7 +71,7 @@ def ctrl(
     work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
 ) -> Callable: ...
 def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type="borrowed"):
-    r"""Create a method that applies a controlled version of the provided op.
+    r"""Construct a symbolic controlled operator or a function that applies controlled operators.
     :func:`~.qjit` compatible.
 
     .. note::
@@ -178,7 +179,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
-    if math.is_abstract(op):
+    if math.is_tracer(op):
         return Controlled(
             op,
             control,
@@ -209,16 +210,8 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
     qp.QueuingManager.remove(op)
     _ = pop_op_eqns((op,))
 
-    if (
-        custom_op := custom_ctrl_dispatch(
-            op,
-            control_wires,
-            control_values,
-            work_wires,
-            work_wire_type,
-        )
-    ) is not NotImplemented:
-        return custom_op
+    if isinstance(op, qp.Barrier):
+        return _apply_if_recording(op)
 
     if isinstance(op, Controlled2):
         work_wire_type = resolve_work_wire_type(
@@ -253,43 +246,13 @@ def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
     return math.array(math.concatenate([control_values, base_ctrl_values]), dtype=bool)
 
 
-def _is_empty_or_all_true(control_values):
-    """Checks whether a control values argument is empty or all True."""
-    return control_values is None or (
-        not math.is_abstract(control_values)
-        and not isinstance(control_values, AbstractArray)
-        and all(control_values)
-    )
+def _is_recording():
+    return (qp.capture.enabled() and not trace_state_clean()) or qp.QueuingManager.recording()
 
 
-# pylint: disable=unused-argument
-@functools.singledispatch
-def custom_ctrl_dispatch(base, control, control_values, work_wires, work_wire_type) -> Operator:
-    """Dispatch a ``qp.ctrl`` call to return a custom operator.
-
-    This is a single-dispatch function to be registered for operators that produce
-    custom operators when controlled.
-
-    **Examples**
-
-    For example, a ``PauliY`` controlled on a single wire is a ``CY``:
-
-    .. code-block:: python
-
-        from pennylane.ops.op_math import custom_ctrl_dispatch
-        from pennylane.ops.op_math.controlled import _is_empty_or_all_true
-
-        @custom_ctrl_dispatch.register
-        def _ctrl_y(base: qp.PauliY, control, control_values, *_):
-            if len(control) == 1 and _is_empty_or_all_true(control_values):
-                return qp.CY(control + base.wires)
-            return NotImplemented
-
-    >>> qp.ctrl(qp.Y(0), control=1)
-    CY(wires=[1, 0])
-
-    """
-    return NotImplemented
+def _apply_if_recording(op):
+    """Apply a pass-through operator to the active program, if there is one."""
+    return qp.apply(op) if _is_recording() else op
 
 
 def create_controlled_op(op, control, control_values, work_wires, work_wire_type):
@@ -299,30 +262,15 @@ def create_controlled_op(op, control, control_values, work_wires, work_wire_type
         control = Wires(control)
     if isinstance(control_values, (int, bool)):
         control_values = [bool(control_values)]
-    elif isinstance(control_values, tuple):
-        control_values = [bool(v) for v in control_values]
+    elif isinstance(control_values, (tuple, list)):
+        control_values = [
+            math.cast(v, dtype=bool) if math.is_tracer(v) else bool(v) for v in control_values
+        ]
 
     qp.QueuingManager.remove(op)
 
     if isinstance(op, (qp.Barrier, qp.Snapshot)):
-        if qp.QueuingManager.recording():
-            # for example
-            # op = Barrier(), qp.X(), qp.ctrl(op, 1)
-            # new barrier should exist after the X
-            qp.QueuingManager.remove(op)
-            qp.QueuingManager.append(op)  # requeue in proper place
-        return op
-
-    if (
-        custom_op := custom_ctrl_dispatch(
-            op,
-            control,
-            control_values,
-            work_wires,
-            work_wire_type,
-        )
-    ) is not NotImplemented:
-        return custom_op
+        return _apply_if_recording(op)
 
     one_controlled = False
     if control_values is None:
@@ -436,17 +384,21 @@ def _ctrl_transform_impl(
     *args,
     n_control,
     jaxpr,
-    control_values,
-    work_wires,
     n_consts,
+    n_work_wires,
     work_wire_type="borrowed",
 ):
     # pylint: disable=import-outside-toplevel
     from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
+    work_start = len(args) - n_work_wires
+    values_start = work_start - n_control
+    controls_start = values_start - n_control
     consts = args[:n_consts]
-    control_wires = args[-n_control:]
-    args = args[n_consts:-n_control]
+    control_wires = args[controls_start:values_start]
+    control_values = args[values_start:work_start]
+    work_wires = math.array(args[work_start:])
+    args = args[n_consts:controls_start]
 
     collector = CollectOpsandMeas()
     with qp.QueuingManager.stop_recording():
@@ -470,8 +422,13 @@ def _capture_ctrl_transform(
     work_wires,
     work_wire_type="borrowed",
 ) -> Callable:
-    """Capture compatible way of performing an ctrl transform."""
+    """Capture a callable control.
+
+    Operands are constants, body arguments, control wires, control values, then work wires.
+    """
     # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
+
+    work_wires = qp.wires.Wires([] if work_wires is None else work_wires)
 
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
@@ -486,10 +443,11 @@ def _capture_ctrl_transform(
             *abstract_shapes,
             *flat_args,
             *control_wires,
+            *(math.cast(value, dtype=bool) for value in control_values),
+            *work_wires,
             jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),
-            control_values=control_values,
-            work_wires=qp.wires.Wires(work_wires) if work_wires is not None else work_wires,
+            n_work_wires=len(work_wires),
             work_wire_type=work_wire_type,
             n_consts=len(jaxpr.consts),
         )
@@ -726,7 +684,7 @@ class Controlled(SymbolicOp):
         if self.base.name in ("RX", "RY", "RZ", "Rot"):
             base_params = str(
                 [
-                    (id(d) if math.is_abstract(d) else math.round(math.real(d) % (4 * np.pi), 10))
+                    (id(d) if math.is_tracer(d) else math.round(math.real(d) % (4 * np.pi), 10))
                     for d in self.base.data
                 ]
             )
@@ -932,7 +890,7 @@ class Controlled(SymbolicOp):
         ):
             return True
         is_su2 = _is_single_qubit_special_unitary(self.base)
-        if not math.is_abstract(is_su2) and is_su2:
+        if not math.is_tracer(is_su2) and is_su2:
             return True
         if self.base.has_decomposition:
             return True
@@ -1097,7 +1055,7 @@ def _decompose_no_control_values(op: Controlled) -> list[Operator] | None:
         return decomp
 
     is_su2 = _is_single_qubit_special_unitary(op.base)
-    if not math.is_abstract(is_su2) and is_su2:
+    if not math.is_tracer(is_su2) and is_su2:
         if len(op.control_wires) >= 2 and math.get_interface(*op.data) == "numpy":
             return ctrl_decomp_bisect(op.base, op.control_wires)
         return ctrl_decomp_zyz(
@@ -1199,7 +1157,7 @@ def _impl(
     work_wires=None,
     work_wire_type="borrowed",
 ):
-    control_wires = tuple(w if math.is_abstract(w) else int(w) for w in control_wires)
+    control_wires = tuple(w if math.is_tracer(w) else int(w) for w in control_wires)
     return type.__call__(
         Controlled,
         base,

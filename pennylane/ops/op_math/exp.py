@@ -279,7 +279,7 @@ class Exp(ScalarSymbolicOp, Operation):
             base = base.base
 
         # pylint: disable=unidiomatic-typecheck
-        if type(self) is Exp and not math.is_abstract(coeff) and math.real(coeff):
+        if type(self) is Exp and not math.is_tracer(coeff) and math.real(coeff):
             # if type is Evolution, we assume that is is indeed time evolution
             return False
 
@@ -330,7 +330,7 @@ class Exp(ScalarSymbolicOp, Operation):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
 
         # pylint: disable=unidiomatic-typecheck
-        if type(self) is Exp and not math.is_abstract(coeff) and math.real(coeff):
+        if type(self) is Exp and not math.is_tracer(coeff) and math.real(coeff):
             error_msg = f"The decomposition of the {self} operator is not defined."
 
             if self.base.is_verified_hermitian:
@@ -474,7 +474,7 @@ class Exp(ScalarSymbolicOp, Operation):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_generator(self):
-        if math.is_abstract(self.coeff):
+        if math.is_tracer(self.coeff):
             return self.base.is_verified_hermitian
         return self.base.is_verified_hermitian and not np.real(self.coeff)
 

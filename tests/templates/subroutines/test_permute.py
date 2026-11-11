@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition import gate_sets
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
 
 
@@ -56,8 +56,7 @@ class TestDecomposition:
         """Tests the decomposition rule implemented with the new system."""
         op = qp.Permute(permutation_order, wire_order)
 
-        for rule in qp.list_decomps(qp.Permute):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_identity_permutation_qnode(self, mocker):
         """Test that identity permutations have no effect on QNodes."""

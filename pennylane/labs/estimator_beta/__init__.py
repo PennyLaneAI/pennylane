@@ -193,13 +193,7 @@ def _(action: Deallocate):
 
 @_map_to_resource_op.register
 def _(op: qp.Adder):
-    mod = op.hyperparameters["mod"]
-    x_wires = op.hyperparameters["x_wires"]
-    return Adder(
-        len(x_wires),
-        mod,
-        wires=x_wires,
-    )
+    return Adder(len(op.x_wires), op.mod, wires=op.x_wires)
 
 
 @_map_to_resource_op.register
@@ -211,7 +205,21 @@ def _(op: qp.QROM):
     return LabsQROM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
-        borrow_qubits=not (op.hyperparameters["clean"]),
+        select_swap_depth=1,
+        wires=op_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qp.QROMLoad):
+    bitstrings = op.data[0]
+    num_bitstrings = bitstrings.shape[0]
+    size_bitstring = bitstrings.shape[1] if num_bitstrings > 0 else 0
+    op_wires = op.control_wires + op.target_wires
+    return LabsQROM(
+        num_bitstrings=num_bitstrings,
+        size_bitstring=size_bitstring,
+        borrow_qubits=not op.clean,
         wires=op_wires,
     )
 

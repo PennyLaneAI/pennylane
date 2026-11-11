@@ -28,7 +28,7 @@ from pennylane import math
 from pennylane.core.operator import Operator, abstractify
 from pennylane.exceptions import DeviceError, MatrixUndefinedError
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
@@ -1136,7 +1136,9 @@ class TestSimplify:
         prod_op = prod_fn(
             qp.RX(1, 0), qp.RZ(1, 1), qp.CNOT((1, 2)), qp.RZ(1, 1), qp.RX(3, 0), qp.RZ(1, 1)
         )
-        final_op = prod_fn(qp.RZ(1, 1), qp.CNOT((1, 2)), qp.RX(4, 0), qp.RZ(2, 1))
+        final_op = prod_fn(
+            qp.RZ(1, 1), qp.ops.ControlledOp2(qp.X(2), [1]), qp.RX(4, 0), qp.RZ(2, 1)
+        )
         simplified_op = prod_op.simplify()
         qp.assert_equal(simplified_op, final_op)
 
@@ -1700,20 +1702,14 @@ class TestDecomposition:
             work_wires=work_wires,
             work_wire_type="zeroed",
         )
-        rules = qp.list_decomps("C(Prod)")
-        assert rules, "no decomp rules registered for C(Prod)"
-
-        # ``_test_decomposition_rule`` is a no-op for rules that are not applicable, so check
-        # explicitly that when the work_wire_type is "zeroed", at least one rule is applicable
-        applicable = [rule for rule in rules if rule.is_applicable(**op.resource_params)]
-        assert applicable
-
-        for rule in rules:
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
-    @pytest.mark.parametrize("num_control_wires, num_work_wires", [(3, 1), (3, 2), (4, 1), (5, 3)])
+    @pytest.mark.parametrize(
+        "num_control_wires, num_work_wires",
+        [(3, 1), (3, 2), (4, 1), (5, 3)],
+    )
     @pytest.mark.parametrize("work_wire_type", ["zeroed"])
     def test_controlled_prod_qjit(self, num_control_wires, num_work_wires, work_wire_type):
         """Test that the ``C(Prod)`` decompositions* is QJIT-compatible with JAX-traced wires.

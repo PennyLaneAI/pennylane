@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_valid_decomp_rule
 
 _REAL_STATE = np.array([-0.84223628, -0.40036496, 0.08974619, -0.34970212])
 _COMPLEX_STATE = np.array(
@@ -64,7 +64,7 @@ class TestMultiplexerStatePreparation:
         op = qp.MultiplexerStatePreparation(state, wires=range(2))
         for rule in qp.list_decomps(qp.MultiplexerStatePreparation):
             assert rule.is_applicable(**op.arguments) is (rule.name == applicable_rule)
-            _test_decomposition_rule(op, rule)
+            assert_valid_decomp_rule(op, rule)
 
     @pytest.mark.parametrize(
         ("state", "msg_match"),

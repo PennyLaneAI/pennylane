@@ -255,9 +255,8 @@ class TestApplyOp:
         cjaxpr = jax.make_jaxpr(f)()
 
         assert len(cjaxpr.eqns) == 2
-        info = [eqn.params["op_cls"] for eqn in cjaxpr.eqns]
-        # C(PauliX) automatically gets dispatched to CNOT
-        assert info == [qp.X, qp.CNOT]
+        info = [(eqn.params["op_cls"], eqn.params["n_ctrls"]) for eqn in cjaxpr.eqns]
+        assert info == [(qp.X, 0), (qp.X, 1)]
 
     @pytest.mark.capture
     def test_apply_twice(self):

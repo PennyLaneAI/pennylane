@@ -1807,8 +1807,8 @@ class TestMeasurementsEqual:
 
         @jax.jit
         def eq_traced(a, b):
-            assert qp.math.is_abstract(a)
-            assert qp.math.is_abstract(b)
+            assert qp.math.is_tracer(a)
+            assert qp.math.is_tracer(b)
 
             mp1 = mp_fn(op=a)
             mp2 = mp_fn(op=a)
@@ -2090,6 +2090,17 @@ class TestSymbolicOpComparison:
         op3 = ControlledOp2(base, control_wires=Wire[3])
         with pytest.raises(AssertionError, match="Different numbers of abstract control_wires"):
             assert_equal(op2, op3)
+
+    @pytest.mark.parametrize("mod, expected", [(8, True), (7, False)])
+    def test_controlled2_abstract_controlled_sequence(self, mod, expected):
+        """Test equality and graph lookups with abstract PhaseAdder bases."""
+        base1 = qp.PhaseAdder(qp.typing.Int, Wire[3], mod=8, work_wire=Wire[0])
+        base2 = qp.PhaseAdder(qp.typing.Int, Wire[3], mod=mod, work_wire=Wire[int(mod != 8)])
+        op1 = ControlledOp2(ControlledSequence(base1, control=Wire[2]), control_wires=Wire[1])
+        op2 = ControlledOp2(ControlledSequence(base2, control=Wire[2]), control_wires=Wire[1])
+
+        assert qp.equal(op1, op2) is expected
+        assert (op2 in {op1: 1}) is expected
 
     def test_controlled2_abstract_control_values(self):
         """Tests comparing ControlledOp2 with abstract control values."""

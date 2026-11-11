@@ -170,7 +170,7 @@ def right_canonicalize_mps(mps):
     mps[0] = mps[0].reshape((1, *mps[0].shape))
     mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
 
-    if not qp.math.is_abstract(mps[0]):
+    if not qp.math.is_tracer(mps[0]):
         is_right_canonical = True
         for tensor in mps[1:-1]:
             # Right-canonical definition
@@ -287,6 +287,21 @@ class MPSPrep(Operator2):
     >>> print(circuit()[:8]) # doctest: +SKIP
     [ 0.        +0.j -0.10702756+0.j  0.        +0.j  0.        +0.j
       0.        +0.j  0.        +0.j -0.99425605+0.j  0.        +0.j]
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.MPSPrep
+            :stacked:
+            :symbols: :math:`n` MPS tensors (one per wire), :math:`w` work wires and maximal bond
+                dimension :math:`\chi`
+            :example: :math:`n=3`, :math:`w=1`
+
+            .. decomposition-rule:: _mps_prep_decomposition
+                :image: /_static/decomposition_thumbnails/mps_prep.svg
+                :requires: :math:`w \geq \log_2 \chi` work wires
+
+                :class:`~.QubitUnitary` on :math:`w + 1` wires | :math:`n` | 3
 
     .. details::
         :title: Usage Details

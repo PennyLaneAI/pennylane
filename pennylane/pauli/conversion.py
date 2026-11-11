@@ -24,7 +24,7 @@ import scipy.sparse as sps
 
 import pennylane as qp
 from pennylane import math
-from pennylane.math.utils import is_abstract
+from pennylane.math.utils import is_tracer
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from pennylane.typing import TensorLike
@@ -238,7 +238,7 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
         bit_array = math.array([[(rep in "YZ"), (rep in "XY")] for rep in pauli_rep], dtype=int).T
         coefficient = term_mat[tuple(int("".join(map(str, x)), 2) for x in bit_array)]
 
-        if not is_abstract(matrix) and math.allclose(coefficient, 0):
+        if not is_tracer(matrix) and math.allclose(coefficient, 0):
             continue
 
         observables = (
@@ -602,7 +602,7 @@ def pauli_decompose(
         if shape != (N, N):
             raise ValueError("The matrix should have shape (2**n, 2**n), for any qubit number n>=1")
 
-        if not is_abstract(H):
+        if not is_tracer(H):
             if is_sparse:
                 _check_hermitian_sparse(H)
             else:

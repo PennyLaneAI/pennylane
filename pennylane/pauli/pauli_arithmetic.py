@@ -1029,7 +1029,7 @@ class PauliSentence(dict):
             rep = PauliSentence({pw: coeff})
             summands.append(
                 pw_op
-                if not math.is_abstract(coeff) and qp.math.all(coeff == 1)
+                if not math.is_tracer(coeff) and qp.math.all(coeff == 1)
                 else SProd(coeff, pw_op, _pauli_rep=rep)
             )
         return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
@@ -1053,7 +1053,7 @@ class PauliSentence(dict):
         """
         items = list(self.items())
         for pw, coeff in items:
-            if not math.is_abstract(coeff) and abs(coeff) <= tol:
+            if not math.is_tracer(coeff) and abs(coeff) <= tol:
                 del self[pw]
 
     def simplify(self, tol=1e-8) -> None:

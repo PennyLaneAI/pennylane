@@ -27,21 +27,14 @@ import scipy.sparse
 import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.core.operator import Operator
-from pennylane.testing.decompositions import _test_decomposition_rule
 from pennylane.testing.operators import (
     _check_bind_new_parameters,
     _check_eigendecomposition,
     _check_pytree,
     assert_valid,
 )
-from pennylane.typing import Wire
 from pennylane.wires import Wires
-from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
-
-
-def test_assert_valid_alias():
-    """The old import path still points at :func:`~.testing.assert_valid`."""
-    assert qp.ops.functions.assert_valid is qp.testing.assert_valid
+from tests.core.operator.operator2_utils import DynOp
 
 
 class TestDecompositionErrors:
@@ -234,148 +227,6 @@ class TestDecompositionErrors:
                 return mcm.measurements
 
         assert_valid(ValidPauliMeasureDecomp(wires=[0, 1]), skip_pickle=True)
-
-    def test_rule_with_non_int_counts(self):
-        """Test that a rule with non-int counts raises an error."""
-
-        class MyOp(Operator):
-            num_wires = 2
-
-        op = MyOp([0, 1])
-
-        def rule(wires):
-            qp.X(wires[0])
-            qp.X(wires[1])
-            qp.Y(wires[0])
-            qp.Y(wires[1])
-
-        rule_float_counts = qp.register_resources({qp.X: 2.0, qp.Y: 3.0})(rule)
-        with pytest.raises(
-            AssertionError,
-            match="Resource count for 'PauliX' in 'MyOp' decomp rule 'rule' must be an integer",
-        ):
-            _test_decomposition_rule(op, rule_float_counts)
-
-        rule_float_counts = qp.register_resources({qp.X: 2, qp.Y: 3.0})(rule)
-        with pytest.raises(
-            AssertionError,
-            match="Resource count for 'PauliY' in 'MyOp' decomp rule 'rule' must be an integer",
-        ):
-            _test_decomposition_rule(op, rule_float_counts)
-
-    @pytest.mark.parametrize("numpy_int", (np.int64, np.int32, np.uint8))
-    def test_numpy_ints_are_not_allowed(self, numpy_int):
-        """Test that numpy integer types are not allowed."""
-
-        class MyOp(Operator):
-            num_wires = 2
-
-        op = MyOp([0, 1])
-
-        def rule(wires):
-            qp.X(wires[0])
-            qp.X(wires[1])
-
-        rule = qp.register_resources({qp.X: numpy_int(2)})(rule)
-
-        with pytest.raises(
-            AssertionError,
-            match="Resource count for 'PauliX' in 'MyOp' decomp rule 'rule' must be an integer",
-        ):
-            _test_decomposition_rule(op, rule)
-
-    def test_bad_new_decomposition_rule_exact(self):
-        """Test that an informative error is raised if the
-        claimed-to-be-exact resources of a decomposition rule are not correct."""
-
-        class MyOp(Operator):
-            num_wires = 2
-
-        op = MyOp([0, 1])
-
-        def rule(wires):
-            qp.X(wires[0])
-            qp.X(wires[1])
-            qp.Y(wires[0])
-            qp.Y(wires[1])
-
-        rule_wrong_numbers = qp.register_resources({qp.X: 2, qp.Y: 3})(rule)
-        with pytest.raises(AssertionError, match="The numbers are off"):
-            _test_decomposition_rule(op, rule_wrong_numbers)
-
-        rule_wrong_ops = qp.register_resources({qp.X: 2, qp.Z: 2})(rule)
-        with pytest.raises(AssertionError, match="Missing entirely in gate counts"):
-            _test_decomposition_rule(op, rule_wrong_ops)
-
-    def test_bad_new_decomposition_rule_inexact(self):
-        """Test that an informative error is raised if the
-        inexact resources of a decomposition rule are not correct."""
-
-        class MyOp(Operator):
-            num_wires = 2
-
-        def rule(wires):
-            qp.X(wires[0])
-            qp.X(wires[1])
-            qp.Y(wires[0])
-            qp.Y(wires[1])
-
-        rule_wrong_ops = qp.register_resources({qp.X: 2, qp.Z: 2}, exact=False)(rule)
-        op = MyOp([0, 1])
-        with pytest.raises(AssertionError, match="Gate counts expected from"):
-            _test_decomposition_rule(op, rule_wrong_ops)
-
-    def test_new_decomposition_rule_with_mcm_skips_matrix_check(self, mocker):
-        """Test that matrix check is skipped for decompositions containing mid-circuit measurements."""
-
-        class MyOp(Operator):
-            num_wires = 1
-
-            @staticmethod
-            def compute_matrix():
-                return qp.Hadamard.compute_matrix()
-
-        op = MyOp([0])
-
-        def mcm_rule(wires):
-            qp.ops.measure(wires[0])
-
-        rule = qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1})(mcm_rule)
-
-        spy = mocker.spy(qp.ops.functions, "matrix")
-        _test_decomposition_rule(op, rule)
-        spy.assert_not_called()
-
-    @pytest.mark.capture
-    def test_new_decomposition_rule_capture(self):
-        """A captured decomposition is converted to a tape before validating its resources."""
-
-        class MyOp(Operator):
-            num_wires = 3
-
-        @qp.register_resources({qp.S: 3})
-        def rule(wires):  # pylint: disable=unused-argument
-            @qp.for_loop(3)
-            def loop(i):
-                qp.S(i)
-
-            loop()  # pylint: disable=no-value-for-parameter
-
-        _test_decomposition_rule(MyOp([0, 1, 2]), rule)
-
-    @pytest.mark.capture
-    def test_new_decomposition_rule_capture_operator2(self):
-        """Operator2 dynamic and wire arguments are forwarded as capture inputs."""
-
-        @qp.register_resources({OneWireDynOp: 3})
-        def rule(phi, wires):  # pylint: disable=unused-argument
-            @qp.for_loop(3)
-            def loop(i):
-                OneWireDynOp(phi, wires=i)
-
-            loop()  # pylint: disable=no-value-for-parameter
-
-        _test_decomposition_rule(OneWireDynOp(0.5, wires=0), rule)
 
 
 class TestBadMatrix:

@@ -17,12 +17,13 @@
 import warnings
 
 import numpy as np
+import phase_gradient_helpers
 
 # pylint: disable=no-value-for-parameter
 import pytest
 
 import pennylane as qp
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_valid_decomp_rule
 from pennylane.transforms.decompositions import (
     make_selectpaulirot_to_phase_gradient_decomp,
 )
@@ -31,7 +32,7 @@ from pennylane.wires import WireError
 
 def test_wires_error_decomp_fun():
     """Test WireError is raised correctly when calling the decomposition function on a large
-    SelectPauliRot that needs more work wires for its QROM than are available."""
+    SelectPauliRot that needs more work wires for its QROMLoad than are available."""
     registers = {
         "angle_wires": 3,
         "phase_grad_wires": 3,
@@ -104,7 +105,29 @@ def test_valid_decomp(prec, num_controls, rot_axis):
     op = qp.SelectPauliRot(
         angles, control_wires=control_wires, target_wire=wire_idx, rot_axis=rot_axis
     )
-    _test_decomposition_rule(op, custom_decomp)
+    assert_valid_decomp_rule(op, custom_decomp)
+
+
+def test_select_swap_data_loading(seed):
+    """Test that the rule is correct if enough work wires are provided for ``QROMLoad`` to use its
+    Select-SWAP decomposition."""
+    rng = np.random.default_rng(seed)
+    bits = rng.integers(0, 2, size=(32, 1))
+    rule = make_selectpaulirot_to_phase_gradient_decomp([0], [1], [2, 3, 4, 5, 6])
+    op = qp.SelectPauliRot(
+        phase_gradient_helpers.bits_to_angles(bits, 4 * np.pi),
+        control_wires=[7, 8, 9, 10, 11],
+        target_wire=12,
+    )
+    assert_valid_decomp_rule(op, rule)
+
+    tape = qp.testing.decomp_rule_to_tape(op, rule)
+    ops = phase_gradient_helpers.leaf_ops(tape.operations)
+    load = next(o for o in ops if isinstance(o, qp.QROMLoad))
+    # Select-SWAP loads several angles in parallel with a QROM over fewer control wires
+    nested_qrom = next(o for o in load.decomposition() if isinstance(o, qp.QROM))
+    assert len(nested_qrom.control_wires) < len(load.control_wires)
+    phase_gradient_helpers.assert_decomp_realizes_op(op, tape, [1], seed)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -135,7 +158,8 @@ def test_as_fixed_decomps(prec, num_controls):
     # pylint: disable-next=protected-access
     @qp.transforms._tape_decompose(
         gate_set={
-            "QROM",
+            "QROMLoad",
+            "Adjoint(QROMLoad)",
             "SemiAdder",
             "CNOT",
             "X",
@@ -152,7 +176,8 @@ def test_as_fixed_decomps(prec, num_controls):
     tape = qp.workflow.construct_tape(circuit)(angles)
     specs = qp.resource.resources_from_tape(tape).quantum_operations
     expected_specs = {
-        "QROM": 2,
+        "QROMLoad": 1,
+        "Adjoint(QROMLoad)": 1,
         "CNOT": 2 * prec,
         "PauliX": 2 * prec,
         "SemiAdder": 1,
@@ -188,7 +213,8 @@ def test_integration_multi_wire(rot_axis, seed):
     )
 
     gs = {
-        "QROM",
+        "QROMLoad",
+        "Adjoint(QROMLoad)",
         "SemiAdder",
         "CNOT",
         "PauliX",
@@ -287,7 +313,7 @@ def test_capture_compatibility():
     )
 
     op = qp.SelectPauliRot(angles, control_wires=control_wires, target_wire=target_wire)
-    _test_decomposition_rule(op, custom_decomp)
+    assert_valid_decomp_rule(op, custom_decomp)
 
 
 @pytest.mark.parametrize(
@@ -312,10 +338,66 @@ def test_rot_axis_zero_controls(rot_axis, expected_op):
     angles = np.array([1.23])
     op = qp.SelectPauliRot(angles, control_wires=[], target_wire=0, rot_axis=rot_axis)
 
-    _test_decomposition_rule(op, custom_decomp)
+    assert_valid_decomp_rule(op, custom_decomp)
 
     with qp.queuing.AnnotatedQueue() as q:
         custom_decomp(angles, [], 0, rot_axis=rot_axis)
 
     assert len(q.queue) == 1
     assert isinstance(q.queue[0], expected_op)
+
+
+@pytest.mark.parametrize(
+    "precision_stats, exact",
+    [(None, True), ({2: 0, 4: 3}, True), ({0: 1, 4: 1}, False), ({2: 1}, False)],
+)
+def test_precision_stats_exact_resources(precision_stats, exact):
+    """Test that the resources of the rule are only marked as exact if no conditional is used."""
+    rule = make_selectpaulirot_to_phase_gradient_decomp(
+        [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10], precision_stats=precision_stats
+    )
+    assert rule.exact_resources is exact
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize(
+    "bits, precision_stats, width, rot_axis",
+    [
+        ([[1, 0, 1, 0], [0, 1, 0, 0]], {1: 1, 3: 5}, 3, "Z"),
+        # The required precision is the maximum over all angles
+        ([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [1, 1, 0, 0]], {1: 1, 2: 1, 4: 1}, 2, "X"),
+        ([[1, 0, 0, 1], [0, 0, 0, 0]], {2: 1, 3: 1}, 4, "Y"),
+        ([[0, 0, 0, 0], [0, 0, 0, 0]], {0: 1, 4: 1}, 0, "Z"),
+    ],
+)
+def test_precision_stats_decomp(bits, precision_stats, width, rot_axis, seed):
+    """Test that the rule with ``precision_stats`` truncates the QROMLoad, the phase-gradient flips
+    and the SemiAdder to the smallest precision that suffices for all angles, accounts for all
+    gates in its resources, and realizes SelectPauliRot. The precision dispatch itself is tested in
+    test_rz_phase_gradient.py."""
+    angle_wires, phase_grad_wires = qp.wires.Wires([0, 1, 2, 3]), qp.wires.Wires([4, 5, 6, 7])
+    rule = make_selectpaulirot_to_phase_gradient_decomp(
+        angle_wires, phase_grad_wires, [8, 9, 10], precision_stats=precision_stats
+    )
+    num_controls = int(np.log2(len(bits)))
+    op = qp.SelectPauliRot(
+        phase_gradient_helpers.bits_to_angles(bits, 4 * np.pi),
+        control_wires=list(range(11, 11 + num_controls)),
+        target_wire=11 + num_controls,
+        rot_axis=rot_axis,
+    )
+    assert_valid_decomp_rule(op, rule)
+
+    tape = qp.testing.decomp_rule_to_tape(op, rule)
+    ops = list(phase_gradient_helpers.leaf_ops(tape.operations))
+    adders = [o for o in ops if isinstance(o, qp.SemiAdder)]
+    assert [(a.x_wires, a.y_wires) for a in adders] == (
+        [(angle_wires[:width], phase_grad_wires[:width])] if width else []
+    )
+    # Both the QROMLoad and its adjoint
+    loads = [o for o in (getattr(o, "base", o) for o in ops) if isinstance(o, qp.QROMLoad)]
+    assert len(loads) == (2 if width else 0)
+    for load in loads:
+        assert load.target_wires == angle_wires[:width]
+        assert np.array_equal(load.bitstrings, np.array(bits)[:, :width])
+    phase_gradient_helpers.assert_decomp_realizes_op(op, tape, phase_grad_wires, seed)

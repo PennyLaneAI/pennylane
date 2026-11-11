@@ -136,7 +136,7 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
 
     Each row holds the ``beth``-bit angles that rotate one leaf onto
     :math:`\lvert e_0 \rangle`, one field per pair in the batch; addresses not backed by a
-    leaf are all-zero and load the identity. Since ``QROM(clean=True)`` writes with an
+    leaf are all-zero and load the identity. Since ``QROM`` writes with an
     XOR, table :math:`b` is stored as its difference with table :math:`b - 1`, which carries
     the angle register from one batch to the next instead of erasing and reloading it. The
     first table is absolute, so re-loading it clears the register.
@@ -288,10 +288,8 @@ def select_thc_wires(M, N, beth, num_batches=1):
     .. note::
 
         Only ``work_wires`` is a minimum; the other four are exact and must be matched.
-        Extra work wires are forwarded to the internal :class:`~.QROM`, which splits them
-        between the unary iteration of its ``Select`` and the ``SelectSwap`` space-time
-        trade-off. Which split it picks depends on ``M``, ``N`` and ``beth``, so extra
-        wires do not necessarily lower the gate count.
+        Extra work wires are forwarded to the internal :class:`~.QROM`, which only uses as
+        many as its unary iteration needs, so extra wires do not lower the gate count.
 
     .. note::
 
@@ -436,7 +434,6 @@ def _select_half(
         "control_wires": ([edge] if one_body_table else []) + list(index_wires)[n - n_mu :],
         "target_wires": angle_wires,
         "work_wires": qrom_work,
-        "clean": True,
     }
 
     z_control, z_values = ([succ, edge], [1, 0]) if skip_one_body else ([succ], [1])
@@ -466,10 +463,7 @@ def _select_half(
         )
 
     def _unbasis():
-        # ``lazy=False``: the QROM in ``_basis`` uncomputes through measurement-based elbow
-        # uncompute, which cannot be reversed, so the adjoint has to be pushed onto the
-        # individual ops instead of wrapping the body in a region that is reversed later.
-        adjoint(_basis, lazy=False)()
+        adjoint(_basis)()
 
     return change_op_basis(_basis, _reflect, _unbasis)
 
@@ -602,6 +596,35 @@ class SelectTHC(Operator2):
                 wires["flag_wires"], wires["gradient_wires"], wires["work_wires"],
             )
             return qp.probs(wires=wires["system_wires"])
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SelectTHC
+            :stacked:
+            :symbols: :math:`N` spin orbitals, :math:`M` is the THC rank, :math:`h = N/2` spatial orbitals, :math:`P = h - 1` Givens pairs loaded in
+                :math:`B` batches (:math:`B \leq` ``num_batches``, and :math:`B = 0` if
+                :math:`P = 0`), and :math:`n = \lceil \log_2(M+1) \rceil` wires per index
+            :example: :math:`M=1`, :math:`N=4` (:math:`h=2`, :math:`P=1`, :math:`B=1`, :math:`n=1`)
+
+            .. decomposition-rule:: _select_thc_decomp
+                :image: /_static/decomposition_thumbnails/select_thc_double_factorized.svg
+                :lightbox:
+
+                :class:`~.QROM` | :math:`2B` | 2
+                :class:`Adjoint(QROM) <.QROM>` | :math:`2B` | 2
+                :class:`~.CSWAP` | :math:`4h + n + 1` | 10
+                :class:`~.Hadamard` | :math:`24P` | 24
+                :class:`~.CNOT` | :math:`8P` | 8
+                :class:`~.S` | :math:`8P` | 8
+                :class:`Adjoint(S) <.S>` | :math:`8P` | 8
+                :class:`~.Z` | :math:`8P` | 8
+                :class:`~.MultiX` with 1 control | :math:`16P` | 16
+                :class:`~.SemiAdder` | :math:`4P` | 4
+                :class:`Adjoint(SemiAdder) <.SemiAdder>` | :math:`4P` | 4
+                :class:`~.CZ` with 1 control | :math:`1` | 1
+                :class:`~.CZ` with 2 controls | :math:`1` | 1
+                :class:`~.X` | :math:`3` | 3
 
     """
 

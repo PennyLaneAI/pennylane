@@ -451,9 +451,9 @@ class TestDecomposeGraphEnabled:
             qp.CNOT(wires=[1, 0]),
             # Decomposition of C(RZ) -> CRZ
             qp.RZ(0.25, wires=[0]),
-            qp.CNOT(wires=[2, 0]),
-            qp.RZ(-0.25, wires=[0]),
-            qp.CNOT(wires=[2, 0]),
+            qp.CNOT(wires=[0, 2]),
+            qp.RZ(-0.25, wires=[2]),
+            qp.CNOT(wires=[0, 2]),
             # The conjugating ladder stays control-free
             qp.CNOT(wires=[1, 0]),
         ]

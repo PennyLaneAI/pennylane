@@ -27,7 +27,7 @@ from pennylane.templates.subroutines.arithmetic.out_square import (
     _out_square_with_caddsub,
 )
 from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
 from pennylane.typing import Wire
 
 
@@ -127,7 +127,8 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
     if use_jit:
         circuit = qp.qjit(
             # pylint: disable-next=protected-access
-            qp.transforms._tape_decompose(circuit, max_expansion=2)
+            qp.transforms._tape_decompose(circuit, max_expansion=2),
+            capture=False,
         )
 
     rng = np.random.default_rng(seed)
@@ -185,7 +186,7 @@ class TestOutSquare:
 
         fixed_decomps = {"C(SemiAdder)": qp.list_decomps("C(SemiAdder)")[0]}
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.set_shots(1)
         # pylint: disable-next=protected-access
         @qp.transforms._tape_decompose(max_expansion=2, fixed_decomps=fixed_decomps)
@@ -293,7 +294,13 @@ class TestOutSquare:
         ],
     )
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=(pytest.mark.catalyst,)), False])
+    @pytest.mark.parametrize(
+        "use_jit",
+        [
+            pytest.param(True, marks=pytest.mark.catalyst),
+            False,
+        ],
+    )
     def test_decomposition_new(
         self,
         x_wires,
@@ -310,7 +317,7 @@ class TestOutSquare:
         for j, rule in enumerate(qp.list_decomps(OutSquare)):
             applicable = rule.is_applicable(**op.arguments)
             assert applicable is (j in applicable_rules)
-            _test_decomposition_rule(op, rule)
+            assert_valid_decomp_rule(op, rule)
 
         if qp.capture.enabled():
             pytest.skip("The following test relies on executing a qnode with capture.")
@@ -336,8 +343,7 @@ class TestOutSquare:
         """Test that the decomposition rules are consistent with the operator, with program
         capture enabled and disabled."""
         op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
-        for rule in qp.list_decomps(OutSquare):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_adder_decomposition_output_wires_zeroed(self):
         """Test that the controlled adder decomposition has the expected structure with
@@ -356,8 +362,9 @@ class TestOutSquare:
             qp.TemporaryAND(wires=[2, 0, 3]),
             # First AND copied from third-least significant output bit
             qp.CNOT([4, 7]),
-            qp.MultiControlledX(
-                wires=[1, 7, 3],
+            qp.ctrl(
+                qp.X(3),
+                control=[1, 7],
                 control_values=[True, True],
                 work_wires=[8, 9, 10, 6, 5],
                 work_wire_type="zeroed",

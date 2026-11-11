@@ -29,7 +29,7 @@ from pennylane.templates.subroutines.arithmetic.out_multiplier import (
     _out_multiplier_with_qft,
 )
 from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
-from pennylane.testing.decompositions import _test_decomposition_rule
+from pennylane.testing import assert_valid_decomp_rule
 from pennylane.typing import Wire
 
 
@@ -91,7 +91,7 @@ class TestBuildingBlocks:
             "S",
             "Adjoint(T)",
             "Adjoint(S)",
-            "MidMeasureMP",
+            "MidMeasure",
             "H",
             "Cond",
             "CZ",
@@ -292,49 +292,49 @@ def _test_mult_correctness(all_wires, mod, rule, seed, output_wires_zeroed=False
 
 
 _DECOMP_NEW_OUTPUT_WIRES_ZEROED_CASES = [
-    ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10, 11], [0]),
-    ([0, 1, 2], [3, 6], [5, 8], 4, [], [0]),
-    ([0, 1, 2], [3, 6], [5, 8], 4, [9], [0, 1]),
-    ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2]),
+    ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10, 11], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [9], [0, 1, 4]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2, 4]),
     ([0], [3, 6], [5, 8], 4, [], [0]),
     ([0], [3, 6], [5, 8], 4, [9], [0, 1]),
     ([0], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2]),
-    ([0, 1, 2], [3], [5, 7, 8], None, [9], [0]),
-    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0, 1]),
-    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], [0, 1, 2]),
-    ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11], [0]),
-    ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11, 12], [0, 1]),
-    ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11, 12, 13, 14, 15, 16], [0, 1, 2]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9], [0]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13], [0, 1]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13, 14, 15, 16], [0, 1, 2]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10], [0]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10, 13, 14, 15, 16, 17, 18], [0]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9], [0, 4]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0, 1, 4]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], [0, 1, 2, 4]),
+    ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11], [0, 4]),
+    ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11, 12], [0, 1, 4]),
+    ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11, 12, 13, 14, 15, 16], [0, 1, 2, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13], [0, 1, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13, 14, 15, 16], [0, 1, 2, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10, 13, 14, 15, 16, 17, 18], [0, 4]),
     ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9], [0]),
     ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11], [0, 1]),
     ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12, 13], [0, 1, 2]),
 ]
 
 _DECOMP_NEW_NON_ZERO_OUTPUT_WIRES_CASES = [
-    ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10], [0]),
-    ([0, 1, 2], [3, 6], [5, 8], 4, [9], [0]),
-    ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10], [0, 1]),
-    ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
+    ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [9], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10], [0, 1, 4]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3, 4]),
     ([0], [3, 6], [5, 8], 4, [9], [0]),
     ([0], [3, 6], [5, 8], 4, [9, 10], [0, 1]),
     ([0], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
     ([0], [3, 6, 4], [5, 8], 4, [9], [0]),
     ([0], [3, 6, 4], [5, 8], 4, [9, 10], [0, 1]),
     ([0], [3, 6, 4], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
-    ([0, 1, 2], [3], [5, 7, 8], None, [9], [0]),
-    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0]),
-    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], [0, 1, 2]),
-    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12, 13], [0, 1, 2, 3]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9], [0]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13], [0]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13, 14, 15, 16], [0, 1, 2]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10], [0]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10, 13, 14, 15, 16, 17, 18], [0]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9], [0, 4]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0, 4]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], [0, 1, 2, 4]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12, 13], [0, 1, 2, 3, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13, 14, 15, 16], [0, 1, 2, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10, 13, 14, 15, 16, 17, 18], [0, 4]),
     ([0, 1], [2, 3], [4, 5, 6, 7], 16, [8, 9], [0]),
     ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9], [0]),
     ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11], [0]),
@@ -492,6 +492,23 @@ class TestOutMultiplier:
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("mod", [4, 3])
+    @pytest.mark.parametrize("output_wires_zeroed", [False, True])
+    def test_decomposition_qft_rule(self, mod, output_wires_zeroed):
+        """Test the QFT decomposition and its declared resources."""
+        op = OutMultiplier(
+            x_wires=[0, 1],
+            y_wires=[2, 3],
+            output_wires=[4, 5],
+            mod=mod,
+            work_wires=[6, 7],
+            output_wires_zeroed=output_wires_zeroed,
+        )
+
+        assert _out_multiplier_with_qft.is_applicable(**op.arguments)
+        assert_valid_decomp_rule(op, _out_multiplier_with_qft)
+
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "applicable_rules"),
         _DECOMP_NEW_OUTPUT_WIRES_ZEROED_CASES,
@@ -500,7 +517,7 @@ class TestOutMultiplier:
     def test_decomposition_new_output_wires_zeroed(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
     ):  # pylint: disable=too-many-arguments
-        """Tests the decomposition rule implemented with the new system
+        """Tests the decomposition rules implemented with the new system
         with output_wires_zeroed=True."""
 
         op = qp.OutMultiplier(
@@ -516,7 +533,7 @@ class TestOutMultiplier:
             # TODO: ControlledSequence doesn't take traced wires [sc-128372]
             if rule.name != "_out_multiplier_with_qft":
                 assert applicable is (j in applicable_rules)
-            _test_decomposition_rule(op, rule)
+            assert_valid_decomp_rule(op, rule)
 
         if qp.capture.enabled():
             pytest.skip("The following test relies on executing a qnode with capture.")
@@ -544,7 +561,7 @@ class TestOutMultiplier:
             # TODO: ControlledSequence doesn't take traced wires [sc-128372]
             if rule.name != "_out_multiplier_with_qft":
                 assert applicable is (j in applicable_rules)
-            _test_decomposition_rule(op, rule)
+            assert_valid_decomp_rule(op, rule)
 
         if qp.capture.enabled():
             pytest.skip("The following test relies on executing a qnode with capture.")
@@ -576,7 +593,7 @@ class TestOutMultiplier:
             x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=output_wires_zeroed
         )
         assert _out_multiplier_with_caddsub.is_applicable(**op.arguments)
-        _test_decomposition_rule(op, _out_multiplier_with_caddsub)
+        assert_valid_decomp_rule(op, _out_multiplier_with_caddsub)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
@@ -597,7 +614,7 @@ class TestOutMultiplier:
         work_wires = [5, 10]
         dev = qp.device("lightning.qubit")
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():
