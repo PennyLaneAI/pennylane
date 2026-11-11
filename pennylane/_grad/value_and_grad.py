@@ -16,12 +16,14 @@ Defines qp.value_and_grad.
 """
 
 import inspect
+from collections.abc import Callable, Sequence
 from functools import wraps
 
 import jax
 from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten
 
 from pennylane import capture
+from pennylane.capture.autograph import register_autograph_wrapper
 from pennylane.compiler import compiler
 from pennylane.exceptions import CompileError
 
@@ -232,6 +234,26 @@ class value_and_grad:
         fn_name = getattr(self._func, "__name__", repr(self._func))
         self.__name__ = f"<value_and_grad: {fn_name}>"
 
+    @property
+    def func(self) -> Callable:
+        """The function to differentiate."""
+        return self._func
+
+    @property
+    def argnums(self) -> int | Sequence[int] | None:
+        """Argument indices to differentiate, or ``None`` to infer trainable arguments."""
+        return self._argnums
+
+    @property
+    def method(self) -> str | None:
+        """The differentiation method, or ``None`` to use the default."""
+        return self._method
+
+    @property
+    def h(self) -> float | None:
+        """The finite-difference step size, or ``None`` to use the default."""
+        return self._h
+
     def __call__(self, *args, **kwargs):
         if active_jit := compiler.active_compiler():
             available_eps = compiler.AvailableCompilers.names_entrypoints
@@ -247,3 +269,17 @@ class value_and_grad:
             return g(*args, **kwargs)
 
         raise CompileError("PennyLane does not support the value_and_grad function without QJIT.")
+
+
+@register_autograph_wrapper(value_and_grad)
+def _value_and_grad_autograph_wrapper(
+    derivative: value_and_grad,
+) -> tuple[Callable, Callable[[Callable], value_and_grad]]:
+    """Return the wrapped function and a callback that preserves differentiation settings."""
+
+    def rebuild(function: Callable) -> value_and_grad:
+        return type(derivative)(
+            function, argnums=derivative.argnums, method=derivative.method, h=derivative.h
+        )
+
+    return derivative.func, rebuild

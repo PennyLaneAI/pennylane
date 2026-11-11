@@ -15,6 +15,8 @@
 Tests for capturing differentiation into jaxpr.
 """
 
+from functools import partial
+
 import pytest
 
 import pennylane as qp
@@ -24,7 +26,9 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
-from pennylane.capture.primitives import jacobian_prim, qnode_prim
+from pennylane.capture.autograph import autograph_source, run_autograph
+from pennylane.capture.autograph.wrappers import get_autograph_wrapper
+from pennylane.capture.primitives import cond_prim, jacobian_prim, qnode_prim
 from pennylane.testing import assert_eqn_matches_op
 
 jnp = jax.numpy
@@ -659,3 +663,166 @@ class TestJacobian:
 
         assert grad_eqn.outvars[0].aval.shape == (4, *grad_eqn.invars[shift].aval.shape)
         assert grad_eqn.outvars[1].aval.shape == (4, *grad_eqn.invars[shift + 1].aval.shape)
+
+
+class TestAutograph:
+    """Tests for AutoGraph conversion of grad and Jacobian wrappers."""
+
+    @pytest.mark.parametrize("derivative", [qp.grad, qp.jacobian])
+    @pytest.mark.parametrize("nested", [False, True])
+    def test_derivative_instance(self, derivative, nested):
+        """Already-created derivative wrappers convert their functions and retain their settings."""
+
+        def function(condition, data):
+            if condition:
+                result = data**2
+            else:
+                result = data**3
+            return result
+
+        wrapper = derivative(function, argnums=1, method="fd", h=0.125)
+
+        if nested:
+
+            def caller(condition, data):
+                return wrapper(condition, data)
+
+            converted = run_autograph(caller)
+        else:
+            converted = run_autograph(wrapper)
+            assert isinstance(converted, derivative)
+
+        jaxpr = jax.make_jaxpr(converted)(True, 2.0)
+        equation = jaxpr.eqns[0]
+        assert equation.primitive == jacobian_prim
+        assert equation.params["argnums"] == (1,)
+        assert equation.params["method"] == "fd"
+        assert equation.params["h"] == 0.125
+        assert equation.params["scalar_out"] is (derivative is qp.grad)
+        assert cond_prim in [eqn.primitive for eqn in equation.params["jaxpr"].eqns]
+        assert wrapper.func is function
+        assert not hasattr(function, "ag_unconverted")
+        assert "ag__.if_stmt" in autograph_source(wrapper)
+        if not nested:
+            assert "ag__.if_stmt" in autograph_source(converted)
+
+    @pytest.mark.parametrize("derivative", [qp.grad, qp.jacobian])
+    @pytest.mark.parametrize("condition", [True, False])
+    def test_derivative_multiple_arguments(self, derivative, condition):
+        """Converted scalar gradients and vector Jacobians differentiate both conditional branches."""
+
+        def scalar_function(predicate, data, scale):
+            if predicate:
+                result = scale * data**2
+            else:
+                result = scale * data**3
+            return result
+
+        def vector_function(predicate, data, scale):
+            if predicate:
+                result = scale * data**2
+            else:
+                result = scale * data**3
+            return qp.math.stack((result, scale * data))
+
+        function = scalar_function if derivative is qp.grad else vector_function
+        original = derivative(function, argnums=(1, 2))
+        converted = run_autograph(original)
+
+        jaxpr = jax.make_jaxpr(converted)(condition, 2.0, 3.0)
+        equation = jaxpr.eqns[0]
+        assert equation.primitive == jacobian_prim
+        assert equation.params["argnums"] == (1, 2)
+        assert cond_prim in [eqn.primitive for eqn in equation.params["jaxpr"].eqns]
+
+        with qp.capture.pause():
+            data = qp.numpy.array(2.0, requires_grad=True)
+            scale = qp.numpy.array(3.0, requires_grad=True)
+            results = converted(condition, data, scale)
+
+        expected = (12.0, 4.0) if condition else (36.0, 8.0)
+        if derivative is qp.jacobian:
+            expected = ([expected[0], 3.0], [expected[1], 2.0])
+        assert len(results) == 2
+        for result, expected_result in zip(results, expected, strict=True):
+            assert qp.math.allclose(result, expected_result)
+        assert original.func is function
+
+    @pytest.mark.parametrize("derivative", [qp.grad, qp.jacobian])
+    @pytest.mark.parametrize("nested", [False, True])
+    def test_derivative_of_qnode(self, derivative, nested):
+        """Conversion follows both a derivative wrapper and its wrapped QNode."""
+
+        @qp.qnode(qp.device("lightning.qubit", wires=1), diff_method="parameter-shift")
+        def circuit(condition, data):
+            if condition:
+                qp.RY(data, wires=0)
+            return qp.expval(qp.Z(0))
+
+        wrapper = derivative(circuit, argnums=1)
+        original_function = circuit.func
+
+        if nested:
+
+            def caller(condition, data):
+                return wrapper(condition, data)
+
+            converted = run_autograph(caller)
+        else:
+            converted = run_autograph(wrapper)
+            converted_qnode = converted.func
+            assert converted_qnode is not circuit
+            assert converted_qnode.device is circuit.device
+            assert converted_qnode.diff_method == circuit.diff_method
+
+        jaxpr = jax.make_jaxpr(converted)(True, 0.5)
+        derivative_eqn = jaxpr.eqns[0]
+        assert derivative_eqn.primitive == jacobian_prim
+        qnode_eqn = derivative_eqn.params["jaxpr"].eqns[0]
+        assert qnode_eqn.primitive == qnode_prim
+        assert cond_prim in [eqn.primitive for eqn in qnode_eqn.params["qfunc_jaxpr"].eqns]
+        assert circuit.func is original_function
+        assert wrapper.func is circuit
+        assert not hasattr(original_function, "ag_unconverted")
+        assert "ag__.if_stmt" in autograph_source(wrapper)
+
+    def test_jacobian_decorator_stack(self):
+        """AutoGraph outside the Jacobian and QNode decorators converts a conditional rotation."""
+
+        @run_autograph
+        @partial(qp.jacobian, argnums=1)
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
+        def circuit(condition, data):
+            if condition:
+                qp.RY(data, wires=0)
+            return qp.probs()
+
+        jaxpr = jax.make_jaxpr(circuit)(True, 0.5)
+        derivative_eqn = jaxpr.eqns[0]
+        assert derivative_eqn.primitive == jacobian_prim
+        qnode_eqn = derivative_eqn.params["jaxpr"].eqns[0]
+        assert qnode_eqn.primitive == qnode_prim
+        assert cond_prim in [eqn.primitive for eqn in qnode_eqn.params["qfunc_jaxpr"].eqns]
+        assert "ag__.if_stmt" in autograph_source(circuit)
+
+    def test_grad_rebuilds_cached_derivative(self):
+        """Replacing a grad target also replaces its cached derivative without changing the original."""
+
+        def square(data):
+            return data**2
+
+        def cube(data):
+            return data**3
+
+        original = qp.grad(square, argnums=0)
+        _, rebuild = get_autograph_wrapper(original)
+        replacement = rebuild(cube)
+
+        with qp.capture.pause():
+            data = qp.numpy.array(2.0, requires_grad=True)
+            assert qp.math.allclose(original(data), 4.0)
+            assert qp.math.allclose(replacement(data), 12.0)
+            assert qp.math.allclose(original.forward, 4.0)
+            assert qp.math.allclose(replacement.forward, 8.0)
+
+        assert original.func is square

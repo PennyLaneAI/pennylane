@@ -20,6 +20,7 @@ import functools
 
 from pennylane.exceptions import AutoGraphWarning
 from .transformer import autograph_source, run_autograph, disable_autograph
+from .wrappers import register_autograph_wrapper
 
 AUTOGRAPH_WRAPPER_ASSIGNMENTS = tuple(
     attr for attr in functools.WRAPPER_ASSIGNMENTS if attr != "__module__"
@@ -37,5 +38,6 @@ __all__ = (
     "autograph_source",
     "run_autograph",
     "disable_autograph",
+    "register_autograph_wrapper",
     "wraps",
 )

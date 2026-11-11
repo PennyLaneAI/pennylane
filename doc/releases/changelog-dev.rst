@@ -2342,6 +2342,12 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed AutoGraph conversion of functions wrapped in existing :class:`~.grad`,
+  :class:`~.jacobian`, and :class:`~.value_and_grad` instances. New callable class wrappers can
+  register their conversion behaviour with a new
+  :func:`~pennylane.capture.autograph.register_autograph_wrapper`.
+  `(#10422 ) <https://github.com/PennyLaneAI/pennylane/pull/10422>`__
+
 * Fixed tracer leaks when passing traced work-wire labels to :func:`~.ctrl`
   applied to a callable during program capture. Concrete work-wire labels retain
   their existing behaviour.

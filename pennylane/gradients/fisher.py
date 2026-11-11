@@ -105,9 +105,10 @@ def classical_fisher(qnode, argnums=0):
         argnums (Optional[int or List[int]]): Arguments to be differentiated in case interface ``jax`` is used.
 
     Returns:
-        func: The function that computes the classical fisher information matrix. This function accepts the same
-        signature as the :class:`.QNode`. If the signature contains one differentiable variable ``params``, the function
-        returns a matrix of size ``(len(params), len(params))``. For multiple differentiable arguments ``x, y, z``,
+        Callable: The function that computes the classical fisher information matrix. This function
+        accepts the same signature as the :class:`.QNode`. If the signature contains one
+        differentiable variable ``params``, the function returns a matrix of size
+        ``(len(params), len(params))``. For multiple differentiable arguments ``x, y, z``,
         it returns a list of sizes ``[(len(x), len(x)), (len(y), len(y)), (len(z), len(z))]``.
 
 
