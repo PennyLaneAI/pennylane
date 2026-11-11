@@ -192,7 +192,6 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     .. code-block:: python
 
-
         @qp.qnode(qp.device('reference.qubit', wires=1))
         def c():
             MyOp(wires=0)
@@ -506,7 +505,6 @@ class Subroutine:
             for word in pauli_words:
                 qp.PauliRot(x, word, wires)
 
-
     >>> print(qp.draw(WithSetup)(0.5, [0, 1], ["XX", "XY", "XZ"]))
     0: ─╭WithSetup(0.50)─┤
     1: ─╰WithSetup(0.50)─┤
@@ -523,7 +521,6 @@ class Subroutine:
             if y is None:
                 y = len(wires)
             return (y, wires), {}
-
 
     ``setup_inputs`` should only interact with with compile-time information like
     static arguments, pytree structures, shapes, and dtypes, and *not* interact with any
@@ -544,7 +541,6 @@ class Subroutine:
                 # do something else
             ...
 
-
     **Integration with Graph decompositions:**
 
     .. warning::
@@ -553,7 +549,6 @@ class Subroutine:
         Ahead-Of-Time compiled decomposition rules and simple call signatures. Graph decompositions
         are not available for higher order algorithmic abstractions like ``Subroutine``, or operators
         that decompose to ``Subroutine``, in Catalyst.
-
 
     To use ``Subroutine`` with graph-based decompositions, we need a function to compute the resources.
     A default fallback calculates the resources by calling the subroutine with
@@ -613,8 +608,6 @@ class Subroutine:
         def c():
             MyOp((0,1,2))
             return qp.expval(qp.Z(0))
-
-
 
     >>> print(qp.draw(c)())
     0: ─╭MyOp─┤  <Z>

@@ -295,14 +295,15 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             if and only if the tape has shots.
         skip_initial_state_prep (bool): If ``True``, the first operator will not be decomposed if
             it inherits from :class:`~.StatePrepBase`. Defaults to ``True``.
-        decomposer (Callable): an optional callable that takes an operator and implements the
-            relevant decomposition. If ``None``, defaults to using a callable returning
-            ``op.decomposition()`` for any :class:`~.Operator` .
+        decomposer (Callable): an optional fallback callable that takes an operator and
+            implements its decomposition when no graph rule is selected. If ``None``,
+            uses ``op.decomposition()``.
         device_wires (Wires): The device wires. If provided along with ``target_gates``,
             will be used to infer available work wires.
         num_work_wires (int): Number of work wires available for graph-based decomposition.
             If ``device_wires`` are given, they take precedence over ``num_work_wires``.
         target_gates (set or dict): The target gate set for graph-based decomposition.
+            If omitted, the transform uses recursive operator or custom decompositions.
             See :func:`~pennylane.transforms._tape_decompose` for more details.
         fixed_decomps (dict): Fixed decomposition rules for graph-based decomposition.
             See :func:`~pennylane.transforms._tape_decompose` for more details.
@@ -323,8 +324,8 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     .. seealso::
 
         This transform is intended for device developers. See
-        :func:`qp.decompose <pennylane.transforms.decompose>` for a more user-friendly
-        interface.
+        :func:`~pennylane.transforms._tape_decompose` for tape-based user workflows, or
+        :func:`~pennylane.transforms.decompose` for workflows compiled with :func:`~.qjit`.
 
     Raises:
         Exception: Type defaults to ``DeviceError`` but can be modified via keyword argument.

@@ -76,8 +76,6 @@ def register_condition(
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     """Binds a condition to a decomposition rule for when it is applicable.
 
-
-
     Args:
         condition (Callable): a function which takes the resource parameters of an operator as
             arguments and returns ``True`` or ``False`` based on whether the decomposition rule
@@ -155,8 +153,6 @@ def register_resources(
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     r"""Binds a quantum function to its required resources.
 
-
-
     Args:
         ops (dict or Callable): a dictionary mapping unique operators within the given ``qfunc``
             to their number of occurrences therein. If a function is provided instead of a static
@@ -181,7 +177,6 @@ def register_resources(
             a data structure that represents a decomposition rule, which contains a PennyLane
             quantum function representing the decomposition, and its resource function.
 
-
     **Example**
 
     This function can be used as a decorator to bind a quantum function to its required resources
@@ -190,7 +185,6 @@ def register_resources(
     .. code-block:: python
 
         import pennylane as qp
-
 
         @qp.register_resources({qp.H: 2, qp.CZ: 1})
         def my_cnot(wires, **_):
@@ -203,7 +197,6 @@ def register_resources(
         def circuit():
             qp.CNOT(wires=[0, 1])
             return qp.state()
-
 
     >>> print(qp.draw(circuit, level="device")())
     0: ────╭●────┤ ╭State
@@ -279,7 +272,6 @@ def register_resources(
           import pennylane as qp
           from pennylane.allocation import allocate
           from pennylane.typing import Wire
-
 
           def _condition_fn(control_wires, **_):
               return len(control_wires) > 1
@@ -598,10 +590,8 @@ _excluded_decomps_var = ContextVar("_excluded_decomps", default=_excluded_decomp
 def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
-
-
-    In the new system of decompositions, multiple decomposition rules can be registered for the
-    same operator class. The specified decomposition rules in ``add_decomps`` serve as alternative
+    Multiple decomposition rules can be registered for the same operator class.
+    The specified decomposition rules in ``add_decomps`` serve as alternative
     decomposition rules that may be chosen if they lead to a more resource-efficient decomposition.
 
     Args:
@@ -676,8 +666,6 @@ def _list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
 
 def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     """Lists all stored decomposition rules for an operator class.
-
-
 
     Args:
         op (type or Operator or str): the operator or operator type to retrieve decomposition
@@ -819,8 +807,6 @@ def exclude_decomps(op: type[Operator] | Operator | str, *names: str) -> _Decomp
 
 def has_decomp(op: type[Operator] | Operator | str) -> bool:
     """Checks whether an operator has decomposition rules defined.
-
-
 
     Args:
         op (type or Operator or str): the operator or operator type to check for
@@ -1043,8 +1029,6 @@ def inspect_decomps(
     Takes an operator instance and displays how the operator is decomposed
     using different decomposition rules.
 
-
-
     Args:
         op (Operator): the operator instance whose decomposition rules will be inspected.
         *rules (str or DecompositionRule): the decomposition rules to inspect. Accepts instances
@@ -1163,7 +1147,6 @@ def null_decomp(*_, **__):
 
         import pennylane as qp
         from pennylane.decomposition import null_decomp
-
 
         @qp.transforms._tape_decompose(
             gate_set={qp.RZ},

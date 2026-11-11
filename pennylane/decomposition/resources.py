@@ -29,8 +29,6 @@ from .utils import to_name
 class CompressedResourceOp:
     """A lightweight representation of an operator to be decomposed.
 
-
-
     The ``CompressedResourceOp`` is a lightweight data structure that contains an operator type
     and a set of parameters that affects the resource requirement of this operator. If the
     decomposition of an operator is independent of its parameters, e.g., ``Rot`` can be decomposed
@@ -219,8 +217,6 @@ def _validate_resource_rep(op_type, params):
 
 def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     """Binds an operator type with additional resource parameters.
-
-
 
     Args:
         op_type: the operator class to create a resource representation for.

@@ -757,7 +757,6 @@ class SumOfSlatersPrep(Operator2):
 
     .. code-block:: python
 
-
         gate_set = {"QROM", "TemporaryAND", "Adjoint(TemporaryAND)", "MultiplexerStatePreparation", "CNOT", "X"}
 
         first_free_wire = max(wires)+1

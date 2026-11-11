@@ -298,8 +298,6 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     """Returns a :class:`DecompGraphInspector` for querying the decomposition decisions made
     for a given circuit and target gate set.
 
-
-
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
         gate_set (Iterable[str or type], Dict[type or str, float]): The target gate set specified
@@ -324,7 +322,6 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     Returns:
         DecompGraphInspector: An interactive object that can be used to inspect the graph.
 
-
     **Examples**
 
     Applying the ``decomp_inspector`` transform on a circuit will return a
@@ -333,7 +330,6 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     rotation costs as much as fifty Cliffords.
 
     .. code-block:: python
-
 
         rotations = qp.gate_sets.ROTATIONS_PLUS_CNOT | {qp.RX: 50, qp.RY: 50, qp.RZ: 50}
 
@@ -447,7 +443,6 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     This can be useful to find out why a circuit cannot be decomposed:
 
     .. code-block:: python
-
 
         @qp.decomp_inspector(gate_set={"RZ", "RX", "CNOT", "PPR_4"}, num_work_wires=2)
         @qp.qnode(qp.device("default.qubit"))

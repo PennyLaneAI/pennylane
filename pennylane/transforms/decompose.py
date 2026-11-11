@@ -145,9 +145,11 @@ def _tape_decompose(
         gate_set (Iterable[str or type], Dict[type or str, float], optional): The
             target gate set specified as either (1) a sequence of operator types and/or names,
             (2) a dictionary mapping operator types and/or names to their respective costs, in
-            which case the total cost will be minimized. If ``None``, the gate set is considered to be
-            all operations in ``qp.ops.__all__``.  See :doc:`quantum operators </introduction/operations>`
-            for this list. Operators that belong in the target gate set will not be decomposed.
+            which case the total cost will be minimized. If both ``gate_set`` and
+            ``stopping_condition`` are omitted, the target is
+            :data:`~pennylane.decomposition.gate_sets.ALL_OPS`.
+            A gate set is required when a stopping condition is supplied. Operators that belong
+            in the target gate set will not be decomposed.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
             the operator is in the target gate set. See the "Gate Set vs. Stopping Condition"
@@ -178,9 +180,12 @@ def _tape_decompose(
 
     .. note::
 
-        The graph solver raises a ``DecompositionError`` when no decomposition to the target
-        gate set exists. With ``strict=False``, operators without decomposition rules are
-        treated as supported and may remain outside the target gate set.
+        An unsolved graph path can produce a ``DecompositionWarning``. The transform then
+        attempts an existing operator decomposition as a fallback, so the result is not
+        guaranteed to contain only operators in the target gate set. With ``strict=False``,
+        operators without registered decomposition rules are treated as supported by the graph.
+        A ``DecompositionError`` is raised if the graph's minimum work-wire requirement
+        exceeds the available budget.
 
     .. seealso::
 
@@ -227,7 +232,10 @@ def _tape_decompose(
 
     .. code-block:: python
 
-        @qp.transforms._tape_decompose(gate_set={"H", "T", "CNOT", "GlobalPhase"}, stopping_condition=lambda op: len(op.wires) <= 2)
+        @qp.transforms._tape_decompose(
+            gate_set={"H", "T", "Adjoint(T)", "CNOT", "GlobalPhase"},
+            stopping_condition=lambda op: len(op.wires) <= 2,
+        )
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.Hadamard(wires=[0])
@@ -294,10 +302,7 @@ def _tape_decompose(
      [0.        -0.47942554j 0.87758256+0.j        ]]
 
     .. details::
-        :title: Integration with the Graph-Based Decomposition System
-
-        This transform uses the graph-based decomposition algorithm, which allows for flexible
-        decompositions towards any target gate set.
+        :title: Decomposition Options
 
         .. code-block:: python
 
@@ -305,7 +310,6 @@ def _tape_decompose(
 
             with qp.queuing.AnnotatedQueue() as q:
                 qp.CRX(0.5, wires=[0, 1])
-
 
             tape = qp.tape.QuantumScript.from_queue(q)
             [new_tape], _ = qp.transforms._tape_decompose([tape], gate_set={"RX", "RY", "RZ", "CZ", "CNOT"})
@@ -371,7 +375,6 @@ def _tape_decompose(
 
             import pennylane as qp
 
-
             # Prepare a unitary matrix that we want to decompose
             U = qp.matrix(qp.Rot(0.1, 0.2, 0.3, wires=0) @ qp.Identity(wires=1))
 
@@ -429,7 +432,6 @@ def _tape_decompose(
         .. code-block:: python
 
             import pennylane as qp
-
 
             @qp.register_resources({qp.CNOT: 2, qp.RX: 1})
             def isingxx_decomp(phi, wires, **__):

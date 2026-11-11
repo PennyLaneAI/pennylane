@@ -99,7 +99,7 @@ class PhaseGradientStatePrep(StatePrepBase2):
     >>> rule = qp.transforms.decompositions.make_phase_gradient_distillation_decomp(
     ...     registers["aux"], registers["work"], mode="postselect"
     ... )
-    >>> @qp.transforms.decompose(
+    >>> @qp.transforms._tape_decompose(
     ...     gate_set={"Hadamard", "PauliZ", "Adjoint(S)", "SemiAdder", "MidMeasure"},
     ...     fixed_decomps={qp.PhaseGradientStatePrep: rule},
     ... )

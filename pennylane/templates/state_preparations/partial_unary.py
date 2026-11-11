@@ -706,7 +706,6 @@ class PartialUnaryStatePreparation(Operator2):
 
     Let's prepare this state on a six-qubit register, using three auxiliary qubits:
 
-
     .. code-block:: python
 
         wires = list(range(6))

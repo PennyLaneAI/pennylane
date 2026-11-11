@@ -15,7 +15,7 @@
 r"""
 .. currentmodule:: pennylane
 
-This module implements the infrastructure for PennyLane's new graph-based decomposition system.
+This module implements the infrastructure for PennyLane's graph-based decomposition system.
 
 .. warning::
 
@@ -43,7 +43,7 @@ Defining Decomposition Rules
     ~CompressedResourceOp
     ~null_decomp
 
-In the new decomposition system, a decomposition rule must be defined as a quantum function that
+A decomposition rule must be defined as a quantum function that
 accepts ``(*op.parameters, op.wires, **op.hyperparameters)`` as arguments, where ``op`` is an
 instance of the operator type that the decomposition is for. Additionally, a decomposition rule
 must declare its resource requirements using the ``register_resources`` decorator:
@@ -77,7 +77,7 @@ Inspecting and Managing Decomposition Rules
 
 PennyLane maintains a global dictionary of decomposition rules. New decomposition rules can be
 registered under an operator using ``add_decomps``, and ``list_decomps`` can be called to inspect
-a list of known decomposition rules for a given operator. In the new system, an operator can be
+a list of known decomposition rules for a given operator. An operator can be
 associated with multiple decomposition rules, and the one that leads to the most resource-efficient
 decomposition towards a target gate set is chosen.
 
@@ -90,7 +90,6 @@ decomposition algorithm to find resource-efficient decompositions towards a targ
 .. code-block:: python
 
     from pprint import pprint
-
 
     with qp.queuing.AnnotatedQueue() as q:
         qp.CRX(0.5, wires=[0, 1])
@@ -105,8 +104,8 @@ decomposition algorithm to find resource-efficient decompositions towards a targ
 
 The :func:`~pennylane.transforms._tape_decompose` transform accepts custom decomposition rules
 through the keyword arguments ``fixed_decomps`` and ``alt_decomps``.
-The user can define custom decomposition rules
-as explained in the :ref:`Defining Decomposition Rules <decomps_rules>` section, and provide them
+The user can define custom decomposition rules as explained in the
+:ref:`Defining Decomposition Rules <decomps_rules>` section, and provide them
 to the transform via these arguments.
 
 ``fixed_decomps`` forces the transform to use the specified decomposition rules for
@@ -118,7 +117,6 @@ gates; when it comes to ``qp.CNOT``, the system will choose the most efficient d
 among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined for ``qp.CNOT``.
 
 .. code-block:: python
-
 
     @qp.register_resources({qp.CNOT: 2, qp.RX: 1})
     def isingxx_decomp(phi, wires, **__):

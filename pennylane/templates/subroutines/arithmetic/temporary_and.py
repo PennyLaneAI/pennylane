@@ -60,7 +60,6 @@ class TemporaryAND(Operator2):
             operator is applied. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
             Default is ``(1, 1)``, corresponding to a traditional ``AND`` gate.
 
-
     .. seealso:: The alias :class:`~Elbow`.
 
     **Example**
@@ -97,7 +96,6 @@ class TemporaryAND(Operator2):
     .. code-block:: python
 
         import pennylane as qp
-
 
         @qp.transforms._tape_decompose(gate_set={qp.Toffoli, qp.X})
         def circuit():
