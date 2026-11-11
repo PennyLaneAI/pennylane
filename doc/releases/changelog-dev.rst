@@ -890,6 +890,12 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* Updated the decomposition of :class:`~.TrotterCDF` and its double-phase controlled decomposition
+  to implement the one-body evolution, together with the basis rotations around it, as a single
+  Givens network. This replaces two basis rotations and the one-body ``RZ`` layer per Trotter step
+  and spin channel by :math:`N(N-1)/2` ``SingleExcitation`` and :math:`N(N+1)/2` phase gates.
+  `(#10362) <https://github.com/PennyLaneAI/pennylane/pull/10362>`__
+
 * Callable :func:`~.ctrl` now captures work-wire labels as operands, supporting
   traced work wires.
   `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
