@@ -558,24 +558,28 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.catalyst
     @pytest.mark.parametrize(
-        "base, control, custom_type",
-        [(qp.SWAP([0, 1]), [2], qp.CSWAP), (qp.Z(0), [1, 2], qp.CCZ)],
+        "base, control, custom_type, num_paulis",
+        [(qp.SWAP([0, 1]), [2], "CSWAP", 2), (qp.Z(0), [1, 2], "CCZ", 4)],
     )
-    def test_controlled_op_with_work_wires_to_custom_op(self, base, control, custom_type):
+    def test_controlled_op_with_work_wires_to_custom_op(
+        self, base, control, custom_type, num_paulis
+    ):
         """Tests that a controlled op with work wires still decomposes into the custom
         controlled op, which does not have work wires, if it is in the gate set."""
 
-        @decompose(gate_set={custom_type.__name__})
-        @qp.qnode(qp.device("null.qubit"))
+        @qp.qjit(capture=True, target="mlir")
+        # PauliX is needed for flipping zero-valued controls, which can't be ruled out
+        # when solving the decomposition graph for abstract control values
+        @qp.decompose(gate_set={custom_type, "PauliX"})
+        @qp.qnode(qp.device("lightning.qubit", wires=6))
         def circuit():
             qp.ctrl(base, control=control, work_wires=[5], work_wire_type="zeroed")
             return qp.state()
 
-        tape = qp.workflow.construct_tape(circuit)()
-        assert len(tape.operations) == 1
-        qp.assert_equal(tape.operations[0], custom_type(control + base.wires))
+        resources = qp.analyze(circuit)().resources
+        assert resources.quantum_operations == {custom_type: 1, "PauliX": num_paulis}
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
