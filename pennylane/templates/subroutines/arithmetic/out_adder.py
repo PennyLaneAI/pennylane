@@ -22,8 +22,8 @@ from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
-from pennylane.decomposition._subcircuit import subcircuit
 from pennylane.ops import change_op_basis
+from pennylane.ops.functions.subcircuit import subcircuit
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence

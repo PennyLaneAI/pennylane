@@ -19,7 +19,7 @@ Factory that produces a decomposition rule for CRZ in terms of
 import numpy as np
 
 import pennylane as qp
-from pennylane.decomposition._subcircuit import subcircuit
+from pennylane.ops.functions.subcircuit import subcircuit
 from pennylane.ops.op_math import ChangeOpBasis2
 from pennylane.typing import Bool, Wire
 

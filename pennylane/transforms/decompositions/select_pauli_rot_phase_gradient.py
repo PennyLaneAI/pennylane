@@ -20,7 +20,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.operator import Operator
-from pennylane.decomposition._subcircuit import subcircuit
+from pennylane.ops.functions.subcircuit import subcircuit
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.select_pauli_rot import (

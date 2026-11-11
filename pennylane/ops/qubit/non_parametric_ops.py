@@ -32,9 +32,9 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.decomposition._subcircuit import subcircuit
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.ops.functions.subcircuit import subcircuit
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract

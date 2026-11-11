@@ -21,7 +21,6 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition._subcircuit import subcircuit
 from pennylane.ops import (
     CNOT,
     SWAP,
@@ -33,6 +32,7 @@ from pennylane.ops import (
     change_op_basis,
     ctrl,
 )
+from pennylane.ops.functions.subcircuit import subcircuit
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 

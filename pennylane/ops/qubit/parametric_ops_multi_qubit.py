@@ -32,10 +32,10 @@ from pennylane.capture.autograph import disable_autograph
 # pylint: disable=arguments-differ
 from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition._subcircuit import subcircuit
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
+from pennylane.ops.functions.subcircuit import subcircuit
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control

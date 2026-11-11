@@ -34,8 +34,8 @@ from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
-from pennylane.decomposition._subcircuit import subcircuit
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.ops.functions.subcircuit import subcircuit
 from pennylane.ops.identity import I
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
