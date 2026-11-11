@@ -47,6 +47,11 @@ New features since last release
   being removed. When used as a context manager, the rules are excluded only within the context.
   `(#10329) <https://github.com/PennyLaneAI/pennylane/pull/10329>`__
 
+* The `alt-decomps` parameter of :func:`~.transforms.decompose` has been removed in favour of `exclude_decomps`, which prevents a set of decomposition rules from being chosen for an operator in a given pass instance.
+  `(#10461) <https://github.com/PennyLaneAI/pennylane/pull/10461>`__
+  `(#10500) <https://github.com/PennyLaneAI/pennylane/pull/10500>`__
+
+
 * A new function called :func:`~pennylane.backline.onnx_decoder` has been added, which runs an
   ONNX model on a Backline :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or
   on the CPU. See :func:`~pennylane.backline.onnx_decoder` for the supported providers and usage
@@ -886,6 +891,11 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* Callable :func:`~.ctrl` now captures work-wire labels as operands, supporting
+  traced work wires.
+  `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
+  `(#10491) <https://github.com/PennyLaneAI/pennylane/pull/10491>`__
+  
 * Efficient decomposition rules for :class:`~.ControlledPhaseShift`, :class:`~.OutMultiplier`, and :class:`Adjoint(Incrementer) <~.Incrementer>` have been added.
   `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
 
@@ -1498,6 +1508,11 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of
+  ``"MidMeasureMP"``. Update raw device operation names and comparisons; the deprecated
+  Python import and ``GateSet`` alias remain supported.
+  `(#10457) <https://github.com/PennyLaneAI/pennylane/pull/10457>`__
+
 * ``qp.ctrl`` now constructs symbolic controlled operators without dispatching to specialized
   gates such as ``CNOT`` or ``CRX``. Decomposition rules have been updated accordingly.
   `(#10395) <https://github.com/PennyLaneAI/pennylane/pull/10395>`__
@@ -1938,7 +1953,8 @@ Internal changes ⚙️
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
       :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.QuantumPhaseEstimation`, :class:`~.IQP`,
-      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`, :class:`~.IQPEmbedding`, :class:`~.ControlledSequence`
+      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`, :class:`~.IQPEmbedding`, :class:`~.ControlledSequence`,
+      :class:`~.PhaseAdder`, :class:`~.Adder`
 
     `(#9896) <https://github.com/PennyLaneAI/pennylane/pull/9896>`__
     `(#10164) <https://github.com/PennyLaneAI/pennylane/pull/10164>`__
@@ -1978,13 +1994,18 @@ Internal changes ⚙️
     `(#10226) <https://github.com/PennyLaneAI/pennylane/pull/10226>`__
     `(#10267) <https://github.com/PennyLaneAI/pennylane/pull/10267>`__
     `(#10449) <https://github.com/PennyLaneAI/pennylane/pull/10449>`__
+    `(#10459) <https://github.com/PennyLaneAI/pennylane/pull/10459>`__
+    `(#10240) <https://github.com/PennyLaneAI/pennylane/pull/10240>`__
 
   - Quantum chemistry operators are ported:
 
-    - :class:`~.SingleExcitation`, :class:`~.FermionicSWAP`
+    - :class:`~.SingleExcitation`, :class:`~.FermionicSWAP`, :class:`~.OrbitalRotation`, :class:`~.DoubleExcitation`
 
     `(#9944) <https://github.com/PennyLaneAI/pennylane/pull/9944>`__
     `(#10458) <https://github.com/PennyLaneAI/pennylane/pull/10458>`__
+    `(#10482) <https://github.com/PennyLaneAI/pennylane/pull/10482>`__
+    `(#10463) <https://github.com/PennyLaneAI/pennylane/pull/10463>`__
+    `(#10503) <https://github.com/PennyLaneAI/pennylane/pull/10503>`__
 
   - Miscelleneous operators are ported:
 
@@ -2310,11 +2331,19 @@ Documentation 📝
   `(#10416) <https://github.com/PennyLaneAI/pennylane/pull/10416>`__
   `(#10420) <https://github.com/PennyLaneAI/pennylane/pull/10420>`__
   `(#10421) <https://github.com/PennyLaneAI/pennylane/pull/10421>`__
+  `(#10433) <https://github.com/PennyLaneAI/pennylane/pull/10433>`__
   `(#10436) <https://github.com/PennyLaneAI/pennylane/pull/10436>`__
+  `(#10453) <https://github.com/PennyLaneAI/pennylane/pull/10453>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed tracer leaks when passing traced work-wire labels to :func:`~.ctrl`
+  applied to a callable during program capture. Concrete work-wire labels retain
+  their existing behaviour.
+  `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
+  `(#10491) <https://github.com/PennyLaneAI/pennylane/pull/10491>`__
+  
 * Fixed a bug where AutoGraph raised an error for empty ``for`` loops.
   `(#10448) <https://github.com/PennyLaneAI/pennylane/pull/10448>`__
 
