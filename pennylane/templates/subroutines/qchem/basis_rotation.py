@@ -449,7 +449,7 @@ def _complex_basis_rotation_decomp(unitary_matrix, wires, **_):
     def givens_loop(idx):
         grot_mat = givens_matrices[idx]
         i, j = givens_ids[idx]
-        theta = math.arccos(math.real(grot_mat[1, 1]))
+        theta = math.arctan2(-math.real(grot_mat[0, 1]), math.real(grot_mat[1, 1]))
         # The first column of grot_mat is e^{i phi} (cos(theta), sin(theta)) with both entries
         # non-negative before the phase, so their sum always carries the phase.
         phi = math.angle(grot_mat[0, 0] + grot_mat[1, 0])

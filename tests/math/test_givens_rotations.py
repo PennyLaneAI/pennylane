@@ -17,6 +17,7 @@ Unit tests for functions needed for performing givens decomposition of a unitary
 
 import numpy as onp
 import pytest
+from scipy.linalg import expm
 from scipy.stats import ortho_group, unitary_group
 
 import pennylane as qp
@@ -166,6 +167,23 @@ def test_givens_decomposition_exact_zeros(matrix):
 
     assert onp.all(onp.isfinite(decomposed_matrix))
     assert onp.allclose(matrix, decomposed_matrix)
+
+
+@pytest.mark.parametrize("dt", [1e-3, 1e-5, 1e-6])
+def test_givens_decomposition_close_to_identity(dt, seed):
+    r"""Test that `givens_decomposition` is accurate for unitaries close to the identity."""
+    rng = onp.random.default_rng(seed)
+    h = rng.normal(size=(4, 4)) + 1j * rng.normal(size=(4, 4))
+    matrix = expm(1j * dt * (h + h.conj().T))
+
+    phase_mat, ordered_rotations = givens_decomposition(matrix)
+    decomposed_matrix = onp.diag(phase_mat)
+    for grot_mat, (i, _) in ordered_rotations:
+        rotation_matrix = onp.eye(len(matrix), dtype=complex)
+        rotation_matrix[i : i + 2, i : i + 2] = grot_mat
+        decomposed_matrix = decomposed_matrix @ rotation_matrix
+
+    assert onp.allclose(matrix, decomposed_matrix, atol=1e-14, rtol=0)
 
 
 def test_givens_decomposition_complex64():
