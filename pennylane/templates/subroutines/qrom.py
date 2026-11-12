@@ -176,7 +176,7 @@ class QROM(Operator2):
             .. decomposition-rule:: _qrom_measurement_decomposition
                 :image: /_static/decomposition_thumbnails/qrom_measurement_based.svg
                 :lightbox:
-                :requires: compilation with :func:`~.qjit` and :math:`w \geq c - 1` work wires
+                :requires: :math:`w \geq c - 1` work wires
                 :where: :math:`K = 2^{\lceil \log_2 L \rceil}`, :math:`e = c - \lceil \log_2 L \rceil`
                     extra control wires, :math:`A = K - 3 + 2[e > 0]` temporary ANDs that are
                     uncomputed with measurements, and :math:`[\cdot]` is 1 if the condition holds
@@ -203,7 +203,7 @@ class QROM(Operator2):
                 :image: /_static/decomposition_thumbnails/qrom_measurement_based.svg
                 :lightbox:
                 :region: adjoint
-                :requires: compilation with :func:`~.qjit` and :math:`w \geq c - 1` work wires
+                :requires: :math:`w \geq c - 1` work wires
                 :where: :class:`~.QROM` is self-adjoint, so this is the same rule as above
 
                 Gates of ``_qrom_measurement_decomposition`` above | same counts
