@@ -41,6 +41,7 @@ from pennylane.templates.subroutines.time_evolution.trotter_vibronic import (
     _validate_registers,
     _wires_are_concrete,
 )
+from pennylane.transforms.decompositions import make_rz_to_phase_gradient_decomp
 from pennylane.typing import AbstractWires
 
 # ---------------------------------------------------------------------------
@@ -134,7 +135,7 @@ def sparse_fragment_list(n_states, n_modes, seed):
     return fragments
 
 
-def make_wires(n_states, n_modes, k=3, b=3):
+def make_wires(n_states, n_modes, k=3, b=3, num_extra_pg_wires=0):
     """Create the wire registers required by :class:`~.TrotterVibronic`."""
     n = int(qp.math.ceil_log2(n_states))
     sizes = {
@@ -142,8 +143,8 @@ def make_wires(n_states, n_modes, k=3, b=3):
         "vib_wires": n_modes * k,
         "cache": 2 * k,
         "coefficients": b,
-        "phase_gradient": b,
-        "work": max(n - 1, 2 * k, 2 * b + 2),
+        "phase_gradient": b + num_extra_pg_wires,
+        "work": max(n - 1, b + 1, 2 * k + 2),
     }
     return qp.registers(sizes)
 
@@ -345,25 +346,41 @@ class TestCoefficientReadout:
 
 
 @pytest.mark.parametrize(
-    "x, y, z, expected",
-    [(3, -3, 5, (5 + 3 * (-3)) % 64), (2, 3, 1, (1 + 2 * 3) % 64), (4, -1, 0, (-4) % 64)],
+    "sizes, x, y, z",
+    [
+        ((3, 3, 6), 3, -3, 5),
+        ((3, 3, 6), 2, 3, 1),
+        ((3, 3, 6), 4, -1, 0),
+        ((3, 3, 6), 7, -4, 9),
+        ((3, 1, 4), 5, -1, 2),
+        ((3, 1, 4), 5, 0, 2),
+        ((2, 4, 3), 3, -6, 1),
+        ((3, 5, 4), 6, -16, 3),
+    ],
 )
-def test_half_signed_out_multiplier(x, y, z, expected):
-    """Test that the half-signed multiplier computes ``(z + x*y) mod 2^k`` for a signed ``y``."""
-    x_wires, y_wires = [0, 1, 2], [3, 4, 5]
-    output_wires, work_wires = [6, 7, 8, 9, 10, 11], [12, 13, 14, 15]
-    dev = qp.device("default.qubit", wires=16)
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+def test_half_signed_out_multiplier(sizes, x, y, z):
+    """Test that the half-signed multiplier computes ``(z + x*y) mod 2^k`` for a signed ``y``,
+    restores the input registers and leaves the work wires clean."""
+    num_x, num_y, num_out = sizes
+    x_wires, y_wires = list(range(num_x)), list(range(num_x, num_x + num_y))
+    output_wires = list(range(num_x + num_y, num_x + num_y + num_out))
+    work_wires = list(range(num_x + num_y + num_out, num_x + num_y + 2 * num_out + 1))
+    y_unsigned = y % 2**num_y
+    expected = (z + x * y) % 2**num_out
+    dev = qp.device("default.qubit")
 
     @qp.qnode(dev)
     def circuit():
         qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
-        qp.BasisState(qp.math.int_to_binary(y % (2 ** len(y_wires)), len(y_wires)), wires=y_wires)
+        qp.BasisState(qp.math.int_to_binary(y_unsigned, len(y_wires)), wires=y_wires)
         qp.BasisState(qp.math.int_to_binary(z, len(output_wires)), wires=output_wires)
         _half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires)
-        return qp.probs(wires=output_wires)
+        return qp.probs(wires=x_wires + y_wires + output_wires + work_wires)
 
     # the circuit permutes basis states, so the output is a single basis state
-    assert int(np.argmax(circuit())) == expected
+    expected_state = ((x * 2**num_y + y_unsigned) * 2**num_out + expected) * 2 ** len(work_wires)
+    assert int(np.argmax(circuit())) == expected_state
 
 
 # ---------------------------------------------------------------------------
@@ -490,10 +507,10 @@ class TestConstruction:
             "cache": [1, 2, 3, 4],
             "coefficients": [5],
             "phase_gradient": [6],
-            "work": [7, 8, 9, 10],
+            "work": [7, 8, 9, 10, 11, 12],
         }
         # The first mode has two wires while the second has one, which is invalid.
-        mode_registers = [[11, 12], [13]]
+        mode_registers = [[13, 14], [15]]
         with pytest.raises(ValueError, match="same size"):
             _validate_registers(registers, mode_registers, n_modes=2, n_states=2)
 
@@ -512,9 +529,9 @@ class TestConstruction:
             "cache": [1, 2, 3, 4],
             "coefficients": [5],
             "phase_gradient": [6],
-            "work": [7, 8, 9, 10],
+            "work": [7, 8, 9, 10, 11, 12],
         }
-        mode_registers = [[11, 12], [13, 14]]
+        mode_registers = [[13, 14], [15, 16]]
         with pytest.raises(ValueError, match="electronic states"):
             _validate_registers(registers, mode_registers, n_modes=2, n_states=4)
 
@@ -795,7 +812,8 @@ class TestDecomposition:
         ``branch-prob`` hints that reproduce the number of applied terms."""
         hamiltonian = build_hamiltonian(sparse_fragment_list(n_states, n_modes, seed))
         num_steps = 2
-        op = make_op(hamiltonian, make_wires(n_states, n_modes), num_trotter_steps=num_steps)
+        wires = make_wires(n_states, n_modes)
+        op = make_op(hamiltonian, wires, num_trotter_steps=num_steps)
         decomposition = qp.list_decomps(qp.TrotterVibronic)[0]
 
         def traced_decomposition(*tensors):
@@ -811,13 +829,18 @@ class TestDecomposition:
         num_fragments = hamiltonian.num_fragments
         position_visits = 2 * num_fragments * num_steps
         num_pairs = n_modes * (n_modes - 1) // 2
-        num_linear = counts["OutMultiplier"] - counts["SignedOutSquare"]
-        num_linear -= counts["SignedOutMultiplier"]
+        # A half-signed multiplier with an ``m``-wire signed register emits one ``SemiAdder`` and
+        # ``2 min(m, b + 1)`` controlled ``MultiX`` gates. Its signed register is a mode register
+        # for linear terms and the cache register for bilinear terms.
+        k, b = len(wires["vib_wires"]) // n_modes, len(wires["coefficients"])
+        num_bilinear = counts["SignedOutMultiplier"]
+        num_ctrl_multix_linear = counts["C(MultiX)"] - 2 * min(2 * k, b + 1) * num_bilinear
+        num_linear = num_ctrl_multix_linear / (2 * min(k, b + 1))
         p_kinetic = counts["AQFT"] / (num_steps * n_modes)
-        p_constant = counts["SemiAdder"] / position_visits
+        p_constant = (counts["SemiAdder"] - num_linear - num_bilinear) / position_visits
         p_linear = num_linear / (position_visits * n_modes)
         p_quadratic = (counts["SignedOutSquare"] - counts["AQFT"]) / (position_visits * n_modes)
-        p_bilinear = counts["SignedOutMultiplier"] / (position_visits * num_pairs)
+        p_bilinear = num_bilinear / (position_visits * num_pairs)
 
         def skip_hint(p):
             # The skipping branch is the true branch
@@ -912,7 +935,7 @@ def test_default_qubit_execution():
             "cache": 2 * k,
             "coefficients": b,
             "phase_gradient": b,
-            "work": max(n - 1, 2 * k, 2 * b + 2),
+            "work": max(n - 1, b + 1, 2 * k + 2),
         }
     )
     num_wires = max(w for reg in wires.values() for w in reg) + 1
@@ -1010,16 +1033,18 @@ class TestNumericalCorrectness:
         expected = (2 * _binary_decimals_int(-lam / 2, b) * q) % (2**b)
         assert got == expected == (-2 * m * q) % (2**b)
 
-    @pytest.mark.parametrize("mode_value", [0, 1, 2])
-    def test_sign_matches_exact_evolution(self, mode_value):
+    @pytest.mark.parametrize("num_extra_pg_wires", [0, 2])
+    @pytest.mark.parametrize("mode_value", [0, 1, -1])
+    def test_sign_matches_exact_evolution(self, mode_value, num_extra_pg_wires):
         """With a genuine phase-gradient state the template realizes ``e^{-iHt}`` (not
         ``e^{+iHt}``): the global sign that the integer-accumulation tests above cannot see.
 
         A single position fragment (kinetic zero) is diagonal, so one Trotter step is exact and
         the electronic register picks up the diagonal phase ``e^{-i theta_a}`` per electronic
         state ``a``. Comparing the measured relative phase against the exact one pins the sign.
+        Phase-gradient wires beyond the first ``b`` must not change the result.
         """
-        n_states, n_modes, k, b = 2, 1, 3, 3
+        n_states, n_modes, k, b = 2, 1, 2, 3
         t = 1.0
         # Exact binary fractions of 2*pi (so ``binary_decimals`` is exact): coeff = 2*pi*m/2**(b-1).
         scale = 2 * np.pi / 2 ** (b - 1)
@@ -1037,7 +1062,7 @@ class TestNumericalCorrectness:
             quadratic=quadratic,
             kinetic=np.zeros((n_states, n_states, n_modes, n_modes)),
         )
-        wires = make_wires(n_states, n_modes, k=k, b=b)
+        wires = make_wires(n_states, n_modes, k=k, b=b, num_extra_pg_wires=num_extra_pg_wires)
         num_wires = max(w for reg in wires.values() for w in reg) + 1
         dev = qp.device("default.qubit", wires=num_wires)
 
@@ -1045,7 +1070,7 @@ class TestNumericalCorrectness:
         def circuit():
             qp.Hadamard(wires["electronic"][0])  # electronic |+>
             if mode_value:
-                qp.BasisState(qp.math.int_to_binary(mode_value, k), wires=wires["vib_wires"])
+                qp.BasisState(qp.math.int_to_binary(mode_value % 2**k, k), wires=wires["vib_wires"])
             qp.PhaseGradientStatePrep(wires["phase_gradient"])
             make_op(hamiltonian, wires, evolution_time=t, num_trotter_steps=1)
             return qp.density_matrix(wires=wires["electronic"])
@@ -1060,6 +1085,66 @@ class TestNumericalCorrectness:
 
         expected = -(theta(1) - theta(0))  # arg(e^{-i theta_1} conj(e^{-i theta_0}))
         assert np.isclose(np.exp(1j * measured), np.exp(1j * expected))
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_kinetic_aqft_with_phase_gradient_rotations(self):
+        """Test that the ``AQFT`` of the kinetic fragment may be decomposed into phase-gradient
+        rotations that reuse the coefficient wires as angle wires, which requires the coefficient
+        register to be zeroed during the ``AQFT``."""
+        n_states, n_modes, k, b = 2, 1, 2, 4
+        # The kinetic coefficient loads the bitstring 0101 into the coefficient register. For most
+        # other bitstrings, a coefficient register that is occupied during the ``AQFT`` leads to a
+        # global phase or to an error that commutes with the kinetic evolution, and thus would
+        # not be detected.
+        kinetic = 2 * np.pi * 11 / 2**b
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=np.zeros((1, n_states, n_states)),
+            linear=np.zeros((1, n_states, n_states, n_modes)),
+            quadratic=np.zeros((1, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.einsum("ab,cd->abcd", np.eye(n_states), np.diag([kinetic])),
+        )
+        wires = make_wires(n_states, n_modes, k=k, b=b)
+        num_wires = max(w for reg in wires.values() for w in reg) + 1
+        rz_rule = make_rz_to_phase_gradient_decomp(
+            wires["coefficients"], wires["phase_gradient"], wires["work"][: b - 1]
+        )
+        gate_set = {
+            "Hadamard",
+            "SWAP",
+            "CNOT",
+            "PauliX",
+            "RX",
+            "RY",
+            "GlobalPhase",
+            "MultiX",
+            "C(MultiX)",
+            "SemiAdder",
+            "QROM",
+            "OutMultiplier",
+            "SignedOutSquare",
+            "Adjoint(SignedOutSquare)",
+            "PhaseGradientStatePrep",
+        }
+
+        @qp.qnode(qp.device("default.qubit", wires=num_wires))
+        def circuit():
+            mode_0, mode_1 = wires["vib_wires"]
+            qp.Hadamard(mode_0)
+            qp.Hadamard(mode_1)
+            qp.RY(0.4, mode_1)
+            qp.RX(0.7, mode_0)
+            qp.CNOT([mode_0, mode_1])
+            qp.PhaseGradientStatePrep(wires["phase_gradient"])
+            make_op(hamiltonian, wires, evolution_time=1.0, num_trotter_steps=1)
+            return qp.state()
+
+        expected = circuit()
+        # pylint: disable-next=protected-access
+        pg_circuit = qp.transforms._tape_decompose(
+            circuit, gate_set=gate_set, fixed_decomps={qp.RZ: rz_rule}
+        )
+        assert count_ops(qp.workflow.construct_tape(pg_circuit)().operations, SemiAdder) > 0
+        assert np.isclose(np.abs(np.vdot(expected, pg_circuit())), 1.0)
 
 
 # ---------------------------------------------------------------------------
