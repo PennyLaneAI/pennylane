@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable
 from functools import partial
 
 from pennylane import capture
@@ -106,7 +106,7 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
 
 def estimate(
     qnode,
-    level: str | int | slice | Sequence[str | int] = "top",
+    level: str | int | slice = "top",
     *,
     target: str | Iterable[type | str] | dict[type | str, float],
 ) -> Callable[..., CircuitSpecs]:
@@ -121,7 +121,7 @@ def estimate(
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the qjit'd QNode for which to estimate resources.
-        level (str | int | slice | Sequence[str | int]): The portion of the
+        level (str | int | slice): The portion of the
             :class:`~.CompilePipeline` to apply before projecting the resources onto the
             ``target``. Accepts the same values as :func:`~.workflow.get_compile_pipeline`.
             Currently, only ``"top"``, ``0``, or the label of a marker placed before all
