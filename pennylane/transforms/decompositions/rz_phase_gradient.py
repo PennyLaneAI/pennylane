@@ -33,7 +33,7 @@ def validate_phase_gradient_wires(angle_wires, phase_grad_wires, work_wires):
     Args:
         angle_wires (Wires): wires that encode the binary representation of the rotation angle
         phase_grad_wires (Wires): wires that carry a phase gradient state.
-        work_wires (Wires): work wires for :class:`~.SemiAdder` (and possibly :class:`~.QROM`)
+        work_wires (Wires): work wires for :class:`~.SemiAdder` (and possibly :class:`~.QROMLoad`)
             decomposition.
 
     """

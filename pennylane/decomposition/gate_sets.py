@@ -67,10 +67,10 @@ essentially free.
 CLIFFORD_T = _CLIFFORD_T | IDENTITY | _MID_MEASURE
 """The standard Clifford+T gate set.
 
-The Clifford+T gate set contains the following gates: ``PauliX``, ``PauliY``, ``PauliZ``, 
-``Hadamard``, ``S``, ``SX``, ``T``, ``CNOT``, ``CY``, ``CZ``, ``SWAP``, and ``ISWAP``, as 
+The Clifford+T gate set contains the following gates: ``PauliX``, ``PauliY``, ``PauliZ``,
+``Hadamard``, ``S``, ``SX``, ``T``, ``CNOT``, ``CY``, ``CZ``, ``SWAP``, and ``ISWAP``, as
 well as the ``Identity`` and ``GlobalPhase``. The ``MidMeasure`` operator and all adjoints
-are also included. 
+are also included.
 
 The ``Identity`` and ``GlobalPhase`` ops have weights of ``0``, indicating they are
 essentially free.

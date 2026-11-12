@@ -4,6 +4,37 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* The new :class:`~.QROMLoad` operator loads bitstrings into a target register that starts in the all-zero
+  state. Unlike :class:`~.QROM`, which XORs the bitstrings onto arbitrary target states, it can use
+  extra work wires for the cheaper Select-SWAP decomposition. It picks the number of bitstrings to
+  load in parallel that minimizes the cost, and its controlled ``SWAP`` gates borrow an idle work
+  wire. Use its adjoint to unload the data again.
+  The phase gradient
+  decomposition from :func:`~.make_selectpaulirot_to_phase_gradient_decomp` now loads the rotation
+  angles with ``QROMLoad``.
+  `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
+
+  For example, we may use ``QROMLoad`` on a zeroed target register, but need ``QROM`` to XOR more
+  data onto it afterwards:
+
+  .. code-block:: python
+
+      @qp.qjit(capture=True, target="mlir")
+      @qp.set_shots(1)
+      @qp.qnode(qp.device("lightning.qubit", wires=8))
+      def circuit():
+          qp.BasisState([1, 0], wires=[0, 1])
+          # target wires 2, 3, 4 start in |000>
+          qp.QROMLoad(["010", "111", "110", "000"], [0, 1], [2, 3, 4], work_wires=[5, 6, 7])
+          # target wires now hold |110>
+          qp.QROM(["001", "011", "101", "111"], [0, 1], [2, 3, 4], work_wires=[5])
+          return qp.sample(wires=[2, 3, 4])
+
+  .. code-block:: pycon
+
+      >>> print(circuit())
+      [[0 1 1]]
+
 * A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
   `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
 
@@ -1031,10 +1062,14 @@ Improvements 🛠
   unhinted conditionals by the exact average counts when compiling them with Catalyst.
   `(#10311) <https://github.com/PennyLaneAI/pennylane/pull/10311>`__
 
-* The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
-  but instead expresses the Select block as another ``QROM`` with fewer controls and more target
-  qubits. This allows for scalable compilation of this decomposition rule.
+* The Select-SWAP decomposition previously attributed to :class:`~.QROM`
+  (``qp.list_decomps(qp.QROM)["_qrom_decomposition"]``) is now attributed to :class:`~.QROMLoad`
+  (``qp.list_decomps(qp.QROMLoad)["_select_swap"]``). Additionally, this decomposition rule no
+  longer uses :class:`~.Select`, but instead expresses the Select block as a :class:`~.QROM` with
+  fewer controls and more target qubits. This allows for scalable compilation of this decomposition
+  rule.
   `(#10207) <https://github.com/PennyLaneAI/pennylane/pull/10207>`__
+  `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
 
 * A :class:`~.Controller` now takes the size of its messages in each direction, with the
   ``in_bytes`` and ``out_bytes`` keyword arguments. Left unset, they take the sizes its
@@ -1526,6 +1561,11 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
+
+* :class:`~.QROM` no longer takes a ``clean`` argument and no longer has a Select-SWAP
+  decomposition, which requires a target register in the zero state. Use :class:`~.QROMLoad`
+  instead if the target wires start in the zero state, and drop the ``clean`` argument otherwise.
+  `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
 
 * ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of
   ``"MidMeasureMP"``. Update raw device operation names and comparisons; the deprecated

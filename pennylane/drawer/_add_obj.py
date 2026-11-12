@@ -52,7 +52,7 @@ from pennylane.ops import (
 )
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
-from pennylane.templates.subroutines import QROM, SelectPauliRot, TemporaryAND
+from pennylane.templates.subroutines import QROM, QROMLoad, SelectPauliRot, TemporaryAND
 
 from .utils import unwrap_temporary_and
 
@@ -266,19 +266,27 @@ def _add_select_pauli_rot(
 
 
 @_add_obj.register
-def _add_qrom(obj: QROM, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
-    """Updates ``layer_str`` with ``op`` operation of type ``QROM``."""
+def _add_qrom(
+    obj: QROM | QROMLoad, layer_str, config, tape_cache=None, skip_grouping_symbols=False
+):
+    """Updates ``layer_str`` with ``op`` operation of type ``QROM`` or ``QROMLoad``."""
+    return _add_qrom_core(obj, obj, layer_str, config, skip_grouping_symbols)
+
+
+def _add_qrom_core(obj, qrom, layer_str, config, skip_grouping_symbols=False):
+    """Draws ``obj`` with the wire registers of ``qrom``, which is either ``obj`` itself or the
+    base of an adjoint."""
     if not skip_grouping_symbols:
         layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
 
-    for w in obj.control_wires:
+    for w in qrom.control_wires:
         layer_str[config.wire_map[w]] += "◑"
 
     target_label = obj.label(decimals=config.decimals, cache=config.cache).replace("\n", "")
-    for w in obj.target_wires:
+    for w in qrom.target_wires:
         layer_str[config.wire_map[w]] += target_label
 
-    for w in obj.work_wires:
+    for w in qrom.work_wires:
         layer_str[config.wire_map[w]] += "work"
 
     return layer_str
@@ -286,9 +294,13 @@ def _add_qrom(obj: QROM, layer_str, config, tape_cache=None, skip_grouping_symbo
 
 @_add_obj.register
 def _add_adjoint(obj: Adjoint, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
-    """Update an adjoint's text, using directional grouping for wrapped TemporaryANDs."""
+    """Updates ``layer_str`` with ``op`` operation of type Adjoint. Currently
+    only differs from ``_add_op`` if the base of the adjoint op is a ``TemporaryAND``,
+    making the overall object a right elbow, or a ``QROM`` or ``QROMLoad``."""
     if (elbow := unwrap_temporary_and(obj)) is not None:
         return _add_elbow(elbow, layer_str, config)
+    if isinstance(obj.base, (QROM, QROMLoad)):
+        return _add_qrom_core(obj, obj.base, layer_str, config, skip_grouping_symbols)
     return _add_op(obj, layer_str, config, tape_cache, skip_grouping_symbols)
 
 
