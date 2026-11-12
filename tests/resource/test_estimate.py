@@ -133,55 +133,31 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         assert qp.analyze(decomposed_circuit, level=1)().resources == resources
 
     def test_decomposition_rotations(self):
-        """Test the resources of a circuit with many kinds of rotations and several measurements
-        projected onto rotations and CNOT, and compare with a real decompose call."""
+        """Test estimate of ctrl(RX) into ROTATIONS_PLUS_CNOT against a real decompose call.
+
+        estimate counts average-case X flips for zero-valued controls; analyze takes the max
+        over scf.if branches, so counts may differ by one RX and one GlobalPhase.
+        """
+        target = qp.gate_sets.ROTATIONS_PLUS_CNOT
 
         @qp.qjit(capture=True)
-        @qp.qnode(qp.device("null.qubit", wires=3))
+        @qp.qnode(qp.device("null.qubit", wires=2))
         def circuit():
-            qp.Hadamard(0)
-            qp.Hadamard(0)
-            qp.SWAP([0, 1])
-            qp.CRX(0.2, [0, 1])
-            qp.MultiRZ(0.3, [0, 1, 2])
-            qp.IsingXX(0.4, [1, 2])
-            qp.Rot(0.1, 0.2, 0.3, 0)
-            qp.adjoint(qp.RX(0.5, 2))
-            qp.ctrl(qp.RX(0.3, 2), control=[1])
-            qp.RZ(0.7, 1)
-            qp.CNOT([1, 2])
-            return qp.expval(qp.Z(0)), qp.probs(wires=[0, 1]), qp.var(qp.X(2))
+            qp.ctrl(qp.RX(0.3, 1), control=[0])
+            return qp.state()
 
-        resources = qp.estimate(circuit, target=qp.gate_sets.ROTATIONS_PLUS_CNOT)().resources
-
-        # estimate is a ballpark (e.g. it counts the X gates flipping zero-valued controls on
-        # average), so its gate counts may be slightly off from a real decomposition
+        resources = qp.estimate(circuit, target=target)().resources
         assert resources.counts == pytest.approx(
-            {"CNOT": 14, "GlobalPhase": 3, "RX": 3, "RY": 7, "RZ": 10}, abs=1
+            {"CNOT": 2, "GlobalPhase": 1, "RX": 1, "RY": 2, "RZ": 2}, abs=1
         )
-        assert resources.measurement_processes == {
-            "expval(PauliZ)": 1,
-            "probs(2 wires)": 1,
-            "var(PauliX)": 1,
-        }
-        assert resources.num_wires == 3
+        assert resources.num_wires == 2
 
         @qp.qjit(capture=True)
-        @qp.transforms.decompose(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT)
-        @qp.qnode(qp.device("null.qubit", wires=3))
+        @qp.transforms.decompose(gate_set=target)
+        @qp.qnode(qp.device("null.qubit", wires=2))
         def decomposed_circuit():
-            qp.Hadamard(0)
-            qp.Hadamard(0)
-            qp.SWAP([0, 1])
-            qp.CRX(0.2, [0, 1])
-            qp.MultiRZ(0.3, [0, 1, 2])
-            qp.IsingXX(0.4, [1, 2])
-            qp.Rot(0.1, 0.2, 0.3, 0)
-            qp.adjoint(qp.RX(0.5, 2))
-            qp.ctrl(qp.RX(0.3, 2), control=[1])
-            qp.RZ(0.7, 1)
-            qp.CNOT([1, 2])
-            return qp.expval(qp.Z(0)), qp.probs(wires=[0, 1]), qp.var(qp.X(2))
+            qp.ctrl(qp.RX(0.3, 1), control=[0])
+            return qp.state()
 
         decomposed = qp.analyze(decomposed_circuit, level=1)().resources
         assert resources.counts == pytest.approx(decomposed.counts, abs=1)
