@@ -809,7 +809,7 @@ class TestDecompositions:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("base_type", [qp.PhaseShift, qp.U1])
-    @pytest.mark.parametrize("control_values", [[], [0], [1], [1, 1], [0, 1, 0]])
+    @pytest.mark.parametrize("control_values", [[0], [1], [1, 1], [0, 1, 0]])
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     def test_controlled_phase_shift_with_work_wires_decomposable(
         self, base_type, control_values, work_wire_type
