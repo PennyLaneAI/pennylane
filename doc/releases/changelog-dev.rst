@@ -1835,6 +1835,11 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* The test helpers for phase gradient decomposition rules count ANDs and requested work wires,
+  record operations under program capture, and check rules that use work wires of the decomposed
+  operator, including their global phase.
+  `(#10507) <https://github.com/PennyLaneAI/pennylane/pull/10507>`__
+
 * :func:`~.specs`, :func:`~.analyze` and :func:`~pennylane.estimate` now compile QJIT-compiled
   QNodes up to the MLIR passes with Catalyst's ``target="mlir_opt"``, instead of reproducing part
   of ``QJIT.jit_compile``.
