@@ -495,6 +495,111 @@ controlled_data = [
 ]
 
 
+class TestTemporaryAND:
+    """Temporary AND controls and corners remain visible through symbolic wrappers."""
+
+    @pytest.mark.parametrize("values", [(0, 0), (0, 1), (1, 0), (1, 1)])
+    @pytest.mark.parametrize("adjoint", [False, True])
+    @pytest.mark.parametrize(
+        "order", [["a", "idle", "b", "t"], ["t", "b", "idle", "a"], ["a", "t", "idle", "b"]]
+    )
+    def test_elbow(self, values, adjoint, order):
+        """Check controls, circled-plus target, and connector side with arbitrary wire order."""
+        op = qp.TemporaryAND(["a", "b", "t"], control_values=values)
+        if adjoint:
+            op = qp.adjoint(op)
+        fig, ax = tape_mpl(
+            QuantumScript([op]), wire_order=order, show_all_wires=True, style="black_white"
+        )
+        assert [text.get_text() for text in ax.texts] == order
+        connector, *controls, target = ax.patches
+        for patch, wire, value in zip(controls, ["a", "b"], values, strict=True):
+            assert isinstance(patch, mpl.patches.Circle)
+            assert patch.center == (0, order.index(wire))
+            assert patch.get_facecolor() == mpl.colors.to_rgba("black" if value else "white")
+        assert target.center == (0, order.index("t"))
+        assert target.get_radius() == 0.3
+        path = connector.get_path()
+        assert isinstance(connector, mpl.patches.PathPatch)
+        side = 0.32 if adjoint else -0.32
+        np.testing.assert_allclose(path.vertices[[2, 3, 4, 5], 0], side)
+        np.testing.assert_allclose(path.vertices[[0, 7]], [(0, 0), (0, 3)])
+        for wire in ax.lines[:4]:
+            assert list(wire.get_xdata()) == [-1, 1]
+        # The only central vertical line is the short cross inside the target circle.
+        assert list(ax.lines[4].get_xdata()) == [0, 0]
+        np.testing.assert_allclose(
+            ax.lines[4].get_ydata(), [order.index("t") - 0.3, order.index("t") + 0.3]
+        )
+        plt.close(fig)
+
+    @pytest.mark.parametrize(
+        "wrapper, adjoint",
+        [
+            (lambda op: qp.ctrl(op, [3, 4], control_values=[0, 1]), False),
+            (lambda op: qp.ctrl(qp.adjoint(op), [3, 4], control_values=[0, 1]), True),
+            (lambda op: qp.adjoint(qp.ctrl(op, [3, 4], control_values=[0, 1])), True),
+            (lambda op: qp.ctrl(qp.ctrl(op, 3, control_values=[0]), 4), False),
+            (lambda op: qp.adjoint(qp.adjoint(qp.ctrl(op, [3, 4], control_values=[0, 1]))), False),
+        ],
+    )
+    def test_wrapped_elbow(self, wrapper, adjoint):
+        """Every intrinsic and additional control is drawn once, with its value."""
+        op = wrapper(qp.TemporaryAND([0, 1, 2], control_values=[1, 0]))
+        fig, ax = tape_mpl(QuantumScript([op]), wire_order=range(5), style="black_white")
+        connector, *circles, target = ax.patches
+        assert target.center == (0, 2)
+        np.testing.assert_allclose(connector.get_path().vertices[2, 0], 0.32 if adjoint else -0.32)
+        controls = {patch.center[1]: patch for patch in circles}
+        assert set(controls) == {0, 1, 3, 4}
+        for wire, value in [(0, 1), (1, 0), (3, 0), (4, 1)]:
+            assert controls[wire].center[0] == 0
+            assert controls[wire].get_facecolor() == mpl.colors.to_rgba(
+                "black" if value else "white"
+            )
+        assert len(ax.texts) == 5
+        plt.close(fig)
+
+    def test_reused_target_and_wrapping(self):
+        """The target wire remains continuous through gates, measurements, and wrapped figures."""
+        op = qp.TemporaryAND([0, 1, 2])
+        tape = QuantumScript(
+            [qp.X(2), op, qp.CNOT([2, 3]), qp.adjoint(op), qp.H(2)],
+            [qp.probs(wires=2)],
+        )
+        fig, ax = tape_mpl(tape, wire_order=range(4))
+        assert list(ax.lines[2].get_xdata()) == [-1, 5]
+        plt.close(fig)
+        figures = tape_mpl(tape, wire_order=range(4), max_length=2)
+        expected = [[-1, 2], [-1, 2], [-1, 1]]
+        for (fig, ax), xs in zip(figures, expected, strict=True):
+            np.testing.assert_allclose(ax.lines[2].get_xdata(), xs)
+            plt.close(fig)
+
+    @pytest.mark.parametrize("adjoint", [False, True])
+    @pytest.mark.parametrize("wires", [[0, 1, 2], [1, 2, 0]])
+    def test_conditional_elbow_frame(self, adjoint, wires):
+        """Classical control attaches to the boundary around the complete elbow diagram."""
+        op = qp.TemporaryAND(wires, control_values=[0, 1])
+        if adjoint:
+            op = qp.adjoint(op)
+        with qp.queuing.AnnotatedQueue() as queue:
+            measurement = qp.measure(3)
+            qp.cond(measurement, lambda: qp.apply(op))()
+        tape = QuantumScript.from_queue(queue)
+        fig, ax = tape_mpl(tape, wire_order=range(4))
+        frames = [patch for patch in ax.patches if isinstance(patch, mpl.patches.FancyBboxPatch)]
+        frame = frames[-1]
+        assert not frame.get_fill()
+        np.testing.assert_allclose(frame.get_y() + frame.get_height(), 2.45)
+        connector = next(patch for patch in ax.patches if isinstance(patch, mpl.patches.PathPatch))
+        assert np.all(connector.get_path().vertices[:, 0] > frame.get_x())
+        assert np.all(connector.get_path().vertices[:, 0] < frame.get_x() + frame.get_width())
+        classical = next(line for line in ax.lines if line.get_path_effects())
+        assert 2.45 in classical.get_ydata()
+        plt.close(fig)
+
+
 class TestControlledGates:
     """Tests generic controlled gates"""
 

@@ -27,10 +27,61 @@ import pytest
 plt = pytest.importorskip("matplotlib.pyplot")
 
 from matplotlib.colors import to_rgba
-from matplotlib.patches import Arc, FancyArrow, FancyBboxPatch
+from matplotlib.patches import Arc, FancyArrow, FancyBboxPatch, PathPatch
+from matplotlib.path import Path
 
 from pennylane.drawer import MPLDrawer
 from pennylane.math import allclose
+
+
+class TestElbow:
+    """Test the elbow primitive without masking unrelated wires or changing styles."""
+
+    @pytest.mark.parametrize("adjoint", [False, True])
+    def test_preserves_artists(self, adjoint):
+        """The connector preserves continuous custom wires and crossing classical lines."""
+        drawer = MPLDrawer(
+            n_layers=3,
+            wire_map={0: 0, 1: 1, 2: 2},
+            wire_options={2: {"color": "red", "linewidth": 3, "linestyle": "--"}},
+        )
+        drawer.classical_wire([0, 2], [2, 2])
+        lines_before = [line.get_data() for line in drawer.ax.lines]
+        drawer.elbow(1, [0, 1, 2], [0, 1], adjoint=adjoint)
+        line = drawer.ax.lines[2]
+        assert line.get_color() == "red"
+        assert line.get_linewidth() == 3
+        assert line.get_linestyle() == "--"
+        assert [line.get_data() for line in drawer.ax.lines[:4]] == lines_before
+        connector = drawer.ax.patches[0]
+        assert isinstance(connector, PathPatch)
+        assert not connector.get_fill()
+        # Explicit spurs keep the gate connected even with dashed horizontal wires.
+        side = 1.32 if adjoint else 0.68
+        assert allclose(connector.get_path().vertices[-2:], [(side, 1), (1, 1)])
+        plt.close(drawer.fig)
+
+    @pytest.mark.parametrize("adjoint", [False, True])
+    @pytest.mark.parametrize("color, background", [("black", "white"), ("white", "#151515")])
+    def test_rounded_connector_style(self, adjoint, color, background):
+        """The bracket is rounded, mirrored, and drawn under the correctly styled symbols."""
+        with plt.rc_context({"lines.color": color, "axes.facecolor": background}):
+            drawer = MPLDrawer(n_layers=1, wire_map={0: 0, 1: 1, 2: 2})
+            drawer.elbow(0, [0, 1, 2], [0, 1], adjoint=adjoint)
+            connector, open_control, closed_control, target = drawer.ax.patches
+            path = connector.get_path()
+            side = 0.32 if adjoint else -0.32
+            assert allclose(path.vertices[[2, 3, 4, 5], 0], side)
+            assert allclose(path.vertices[[0, 7]], [(0, 0), (0, 2)])
+            assert list(path.codes).count(Path.CURVE3) == 4
+            assert connector.get_edgecolor() == to_rgba(color)
+            assert open_control.get_facecolor() == to_rgba(background)
+            assert closed_control.get_facecolor() == to_rgba(color)
+            assert target.get_facecolor() == to_rgba(background)
+            assert target.center == (0, 2)
+            assert target.get_radius() == 0.3
+            assert target.get_zorder() > connector.get_zorder()
+            plt.close(drawer.fig)
 
 
 class TestInitialization:
