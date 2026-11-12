@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.14'",
@@ -1515,11 +1515,11 @@ wheels = [
 
 [[package]]
 name = "idna"
-version = "3.11"
+version = "3.15"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/6f/6d/0703ccc57f3a7233505399edb88de3cbd678da106337b9fcde432b65ed60/idna-3.11.tar.gz", hash = "sha256:795dafcc9c04ed0c1fb032c2aa73654d8e8c5023a7df64a53f39190ada629902", size = 194582, upload-time = "2025-10-12T14:55:20.501Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/82/77/7b3966d0b9d1d31a36ddf1746926a11dface89a83409bf1483f0237aa758/idna-3.15.tar.gz", hash = "sha256:ca962446ea538f7092a95e057da437618e886f4d349216d2b1e294abfdb65fdc", size = 199245, upload-time = "2026-05-12T22:45:57.011Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0e/61/66938bbb5fc52dbdf84594873d5b51fb1f7c7794e9c0f5bd885f30bc507b/idna-3.11-py3-none-any.whl", hash = "sha256:771a87f49d9defaf64091e6e6fe9c18d4833f140bd19464795bc32d966ca37ea", size = 71008, upload-time = "2025-10-12T14:55:18.883Z" },
+    { url = "https://files.pythonhosted.org/packages/d2/23/408243171aa9aaba178d3e2559159c24c1171a641aa83b67bdd3394ead8e/idna-3.15-py3-none-any.whl", hash = "sha256:048adeaf8c2d788c40fee287673ccaa74c24ffd8dcf09ffa555a2fbb59f10ac8", size = 72340, upload-time = "2026-05-12T22:45:55.733Z" },
 ]
 
 [[package]]
@@ -3023,6 +3023,7 @@ docs = [
     { name = "sphinxcontrib-bibtex" },
     { name = "sphinxcontrib-devhelp" },
     { name = "sphinxcontrib-htmlhelp" },
+    { name = "sphinxcontrib-lightbox2" },
     { name = "sphinxcontrib-qthelp" },
     { name = "sphinxcontrib-serializinghtml" },
     { name = "sphinxext-opengraph" },
@@ -3136,6 +3137,7 @@ docs = [
     { name = "sphinxcontrib-bibtex", specifier = "==2.6.3" },
     { name = "sphinxcontrib-devhelp", specifier = "==2.0.0" },
     { name = "sphinxcontrib-htmlhelp", specifier = "==2.1.0" },
+    { name = "sphinxcontrib-lightbox2", specifier = "==0.6.0" },
     { name = "sphinxcontrib-qthelp", specifier = "==2.0.0" },
     { name = "sphinxcontrib-serializinghtml", specifier = "==2.0.0" },
     { name = "sphinxext-opengraph", specifier = "==0.9.0" },
@@ -4866,6 +4868,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/b2/e8/9ed3830aeed71f17c026a07a5097edcf44b692850ef215b161b8ad875729/sphinxcontrib-jsmath-1.0.1.tar.gz", hash = "sha256:a9925e4a4587247ed2191a22df5f6970656cb8ca2bd6284309578f2153e0c4b8", size = 5787, upload-time = "2019-01-21T16:10:16.347Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c2/42/4c8646762ee83602e3fb3fbe774c2fac12f317deb0b5dbeeedd2d3ba4b77/sphinxcontrib_jsmath-1.0.1-py2.py3-none-any.whl", hash = "sha256:2ec2eaebfb78f3f2078e73666b1415417a116cc848b72e5172e596c871103178", size = 5071, upload-time = "2019-01-21T16:10:14.333Z" },
+]
+
+[[package]]
+name = "sphinxcontrib-lightbox2"
+version = "0.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "sphinx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b8/ff/f6decb9f9a6a6da4d1ece9b0a4db51d0d8b010f93957c44ff57ed5bba35c/sphinxcontrib_lightbox2-0.6.0.tar.gz", hash = "sha256:aeda9d982dbbebc88c36e5a00aa41c2ade6d017affb827e68712a7ede08bea29", size = 112061, upload-time = "2026-03-25T15:47:24.483Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f8/7b/941cb0508d0e583d994b3c1b2fdc1263eccd8dae40fc5529a9d16a025c4a/sphinxcontrib_lightbox2-0.6.0-py3-none-any.whl", hash = "sha256:7dd194b442ba45d3cf694f625320c1d2602bdaeefb52d173b2767747fd901080", size = 112880, upload-time = "2026-03-25T15:47:25.751Z" },
 ]
 
 [[package]]
