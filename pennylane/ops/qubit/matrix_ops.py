@@ -565,8 +565,6 @@ class DiagonalQubitUnitary(Operator2):
 
     dynamic_argnames = ("D",)
 
-    wire_sizes = (None,)
-
     arg_specs = {"D": Complex[-1], "wires": Wire[-1]}
 
     num_params = 1

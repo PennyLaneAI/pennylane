@@ -48,8 +48,6 @@ def pow_using_dunder_method(base, z):
 class NoPowOp(Operator2):
     """A base operator whose ``pow`` always raises ``PowUndefinedError``."""
 
-    wire_sizes = (1,)
-
     def __init__(self, wires):
         super().__init__(wires)
 
@@ -59,8 +57,6 @@ class NoPowOp(Operator2):
 
 class BadPowOp(Operator2):
     """A base operator whose ``pow`` raises a generic (non-``Pow``) error."""
-
-    wire_sizes = (1,)
 
     def __init__(self, wires):
         super().__init__(wires)
@@ -73,8 +69,6 @@ class RealPowOp(Operator2):
     """A base operator with a well-defined ``pow`` for any exponent."""
 
     dynamic_argnames = ("phi",)
-
-    wire_sizes = (1,)
 
     def __init__(self, phi, wires):
         super().__init__(phi, wires)

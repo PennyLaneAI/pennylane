@@ -34,8 +34,6 @@ from tests.core.operator.operator2_utils import CompilableOp, OneWireDynOp
 class SX2(Operator2):
     """A new SX gate."""
 
-    wire_sizes = (1,)
-
     is_verified_hermitian = True
 
     def __init__(self, wires):
@@ -71,8 +69,6 @@ class RX2(Operator2):
     """A simplified RX operator that inherit from Operator2."""
 
     dynamic_argnames = ("theta",)
-
-    wire_sizes = (1,)
 
     is_verified_hermitian = True
 

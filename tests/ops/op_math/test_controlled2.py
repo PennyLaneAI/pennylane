@@ -69,8 +69,6 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
-
             def __init__(self, wires):
                 super().__init__(qp.H(wires[1]), wires[0])
 
@@ -134,8 +132,6 @@ class TestControlled2:
             dynamic_argnames = ("phi", "theta", "omega")
 
             wire_argnames = ("wires",)
-
-            wire_sizes = (2,)
 
             def __init__(self, phi, theta, omega, wires):
                 super().__init__(qp.Rot(phi, theta, omega, wires=wires[1]), control_wires=wires[0])
@@ -204,8 +200,6 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
-
             def __init__(self, phi, theta, omega, wires):
                 super().__init__(qp.Rot(phi, theta, omega, wires=wires[1]), control_wires=wires[0])
 
@@ -239,8 +233,6 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
-
             def __init__(self, theta, wires):
                 super().__init__(qp.RX(theta, wires[1]), control_wires=wires[0])
 
@@ -253,8 +245,6 @@ class TestControlled2:
             """A new CH."""
 
             wire_argnames = ("wires",)
-
-            wire_sizes = (2,)
 
             def __init__(self, wires):
                 super().__init__(qp.H(wires[1]), wires[0])
@@ -273,8 +263,6 @@ class TestControlled2:
             dynamic_argnames = ("theta",)
 
             wire_argnames = ("wires",)
-
-            wire_sizes = (2,)
 
             def __init__(self, theta, wires):
                 super().__init__(qp.RX(theta, wires[1]), control_wires=wires[0])
@@ -298,8 +286,6 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
-
             def __init__(self, wires):
                 super().__init__(qp.H(wires[1]), wires[0])
 
@@ -320,8 +306,6 @@ class TestControlled2:
             """A new CH."""
 
             wire_argnames = ("wires",)
-
-            wire_sizes = (2,)
 
             def __init__(self, wires):
                 super().__init__(qp.H(wires[1]), wires[0])

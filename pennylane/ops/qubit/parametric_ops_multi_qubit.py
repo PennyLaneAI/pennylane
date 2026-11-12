@@ -351,7 +351,6 @@ class PauliRot(Operator2):
     dynamic_argnames = ("theta",)
     compilable_argnames = ("pauli_word",)
     wire_argnames = ("wires",)
-    wire_sizes = (None,)
     arg_specs = {"theta": Float, "wires": Wire[-1]}
 
     grad_recipe = (None,)

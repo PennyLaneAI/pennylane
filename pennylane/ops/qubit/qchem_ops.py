@@ -195,8 +195,7 @@ class SingleExcitation(Operator2):
 
     dynamic_argnames = "phi"
     arg_specs = {"phi": Float, "wires": Wire[2]}
-    wire_sizes = (2,)
-
+    
     num_wires = 2  # TODO: try and get rid of this legacy property
     num_params = 1  # TODO: try and get rid of this legacy property
 
@@ -752,8 +751,7 @@ class DoubleExcitation(Operator2):
     dynamic_argnames = ("phi",)
     wire_argnames = ("wires",)
     arg_specs = {"phi": Float, "wires": Wire[4]}
-    wire_sizes = (4,)
-
+    
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -1132,8 +1130,7 @@ class OrbitalRotation(Operator2):
     wire_argnames = ("wires",)
 
     arg_specs = {"phi": Float, "wires": Wire[4]}
-    wire_sizes = (4,)
-
+    
     num_wires = 4
     """int: Number of wires that the operator acts on."""
 
@@ -1309,8 +1306,7 @@ class FermionicSWAP(Operator2):
     wire_argnames = ("wires",)
 
     arg_specs = {"phi": Float, "wires": Wire[2]}
-    wire_sizes = (2,)
-
+    
     num_wires = 2
     num_params = 1
     ndim_params = (0,)

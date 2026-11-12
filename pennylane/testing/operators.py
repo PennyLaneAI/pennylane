@@ -610,11 +610,6 @@ def _check_properties_operator2(op: Operator2) -> None:
             error_msg = f"shape of {name} is not equal to dimension in ndim_params"
             assert len(math.shape(val)) == dim, error_msg
 
-    if op.wire_sizes:
-        for (name, val), dim in zip(op.wire_args.items(), op.wire_sizes, strict=True):
-            # make sure wires have the right sizes
-            error_msg = f"Wires argument {name} has an invalid dimension."
-            assert dim is None or len(val) == dim, error_msg
 
 
 # pylint: disable=too-many-arguments

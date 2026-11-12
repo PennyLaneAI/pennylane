@@ -572,7 +572,6 @@ class TestDoubleExcitation:
         op = qp.DoubleExcitation(Float, wires=Wire[4])
         assert op.phi == Float
         assert op.arg_specs == {"phi": Float, "wires": Wire[4]}
-        assert op.wire_sizes == (4,)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_matrix(self, phi):

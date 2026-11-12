@@ -8,6 +8,7 @@ dist
 *venv*/
 .envrc
 config.toml
+pl-env
 
 # Local Git worktrees
 /.worktrees/
