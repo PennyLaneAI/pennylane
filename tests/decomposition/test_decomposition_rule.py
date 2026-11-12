@@ -47,7 +47,7 @@ from pennylane.ops.op_math.controlled2 import (
     ctrl_single_work_wire,
     to_controlled_unitary,
 )
-from pennylane.ops.op_math.pow2 import _pow_flip_adjoint, _pow_merge_powers, _pow_repeat_base, flip_pow_adjoint, merge_powers, repeat_pow_base
+from pennylane.ops.op_math.pow2 import _pow_flip_adjoint, _pow_merge_powers, _pow_repeat_base
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.testing.decompositions import assert_valid_decomp_rule
 from pennylane.typing import Float, Int, Wire
