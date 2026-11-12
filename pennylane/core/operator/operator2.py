@@ -1700,25 +1700,22 @@ def _init_wires(op: Operator2):
     # pylint: disable=protected-access
     all_algorithmic_wires = []
 
-    wire_sizes = tuple(
-        (
-            None
-            if name not in op.arg_specs or not op.arg_specs[name].shape_fixed
-            else len(op.arg_specs[name])
-        )
-        for name in op.wire_argnames
-    )
-
-    for wname, wsize in zip(op.wire_argnames, wire_sizes, strict=True):
+    for wname in op.wire_argnames:
         if wname not in op.hybrid_argnames:
             warg = op._bound_args.arguments[wname]
             canonical_wires = warg if isinstance(warg, AbstractWires) else Wires(warg)
+
+            if op.arg_specs and wname in op.arg_specs:
+                exp_type = op.arg_specs[wname]
+                if getattr(exp_type, "shape_fixed", False) and len(canonical_wires) != len(
+                    exp_type
+                ):
+                    raise ValueError(
+                        f"Incorrect number of wires for '{type(op).__name__}.{wname}'. "
+                        f"Expected {len(exp_type)} wires but got {len(canonical_wires)}."
+                    )
+
             op._bound_args.arguments[wname] = canonical_wires
-            if wsize is not None and len(canonical_wires) != wsize:
-                raise ValueError(
-                    f"Incorrect number of wires for '{op.name}.{wname}'. Expected {wsize} "
-                    f"wires but got {len(canonical_wires)}."
-                )
 
             # Work wires are NOT included in the full wires list.
             if wname not in ("work_wires", "work_wire"):
