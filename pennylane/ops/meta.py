@@ -33,9 +33,9 @@ from pennylane.wires import WiresLike
 
 
 barrier_p = QpPrimitive("barrier")
-barrier_p.prim_type = "operator"
 barrier_p.def_impl(operator_p.impl)
-barrier_p.def_effectful_abstract_eval(operator_p.abstract_eval)
+barrier_p.multiple_results = True
+barrier_p.def_abstract_eval(lambda *args, **kwargs: operator_p.abstract_eval(*args, **kwargs)[0])
 
 
 class Barrier(Operator2):

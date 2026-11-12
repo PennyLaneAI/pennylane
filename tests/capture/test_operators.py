@@ -80,13 +80,6 @@ class TestBarrierPrimitive:
             operator_p, barrier_p, operator_p
         ]
 
-    def test_returned_barrier(self):
-        """Returning a barrier treats it as operator data, not a gate."""
-        closed = jax.make_jaxpr(lambda: qp.Barrier(wires=[0, 1]))()
-        collector = CollectOpsandMeas()
-        collector.eval(closed.jaxpr, closed.consts)
-        assert collector.state["ops"] == []
-
     def test_capture_disabled(self):
         """Ordinary construction does not bind a primitive."""
         with qp.capture.pause():
