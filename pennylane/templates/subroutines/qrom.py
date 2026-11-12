@@ -213,6 +213,7 @@ class QROM(Operator2):
                 :func:`PauliMeasure <.pauli_measure>` (:math:`X`-type, :math:`\leq b + 1` wires) | :math:`A` | 1
                 :func:`PauliMeasure <.pauli_measure>` (:math:`Z`, 1 wire) | :math:`A` | 1
                 :class:`~.CZ` (conditional) | :math:`A` | 1
+                :class:`~.Z` (conditional) | :math:`A` | 1
                 :class:`~.X` (conditional) | :math:`A` | 1
 
     .. details::
