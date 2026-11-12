@@ -54,8 +54,8 @@ def _decompose_setup_inputs(
             single operator type/name that will be wrapped as a one-element set.
         fixed_decomps (dict | None): Optional map from operators to fixed decomposition
             rules. Omitted from the returned options when ``None``.
-        exclude_decomps (dict | None): Optional map from operators to excluded decomposition
-            rules. Omitted from the returned options when ``None``.
+        exclude_decomps (dict | None): Optional map from operators to decomposition rules
+            to exclude. Omitted from the returned options when ``None``.
 
     Returns:
         tuple[tuple, dict]: positional and keyword arguments forwarded to
@@ -477,13 +477,13 @@ def _tape_decompose(
                 alt_decomps={qp.CNOT: [my_cnot1, my_cnot2]},
                 fixed_decomps={qp.IsingXX: isingxx_decomp},
             )
-            @qp.qnode(qp.device("lightning.qubit"))
+            @qp.qnode(qp.device("lightning.qubit", wires=2))
             def circuit():
                 qp.CNOT(wires=[0, 1])
                 qp.IsingXX(0.5, wires=[0, 1])
                 return qp.state()
 
-        >>> qp.specs(qp.qjit(circuit))().resources.quantum_operations
+        >>> qp.specs(qp.qjit(circuit, capture=False))().resources.quantum_operations
         {'GlobalPhase': 6, 'CZ': 3, 'RX': 7, 'RZ': 12}
         >>> qp.decomposition.disable_graph()
 

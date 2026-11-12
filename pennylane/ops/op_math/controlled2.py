@@ -32,6 +32,7 @@ from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
     _decomp_contains_mcm,
+    _get_registered_decomps,
     _list_decomps,
     get_fixed_decomp,
     list_decomps,
@@ -641,8 +642,8 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     if isinstance(op.base, Adjoint2):
         return DecompCollection([_controlled_flip_adjoint])
 
-    # Get custom rules registered for this controlled operator.
-    custom_rules = _list_decomps.dispatch(object)(op)
+    # Retrieve only rules registered directly for this controlled operator.
+    custom_rules = _get_registered_decomps(to_name(op))
 
     # The specialized ChangeOpBasis rule leaves the compute and uncompute operations
     # uncontrolled, so it must always take precedence over general controlled fallbacks.
@@ -782,6 +783,7 @@ def _controlled_to_unitary_resources(
 
 
 @register_name("to_unitary")
+@register_condition(lambda base, *_, **__: base.has_matrix and len(base.wires) == 1)
 @register_resources(_controlled_to_unitary_resources)
 def _controlled_to_unitary(base, control_wires, control_values, work_wires, work_wire_type):
     """Convert a controlled operator to a controlled qubit unitary."""
@@ -867,6 +869,7 @@ def _controlled_single_work_wire_resources(base, control_wires, *_, **__):
 
 
 @register_name("single_work_wire")
+@register_condition(lambda base, control_wires, *_, **__: len(control_wires) > 2)
 @register_resources(_controlled_single_work_wire_resources, work_wires={"zeroed": 1})
 def _controlled_single_work_wire(base, control_wires, *_, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""

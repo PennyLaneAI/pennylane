@@ -16,6 +16,7 @@
 from pennylane.allocation import allocate
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.ops import CNOT, adjoint, ctrl
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import Wire
@@ -396,7 +397,11 @@ def _controlled_semi_adder_standard_resources(  # pylint: disable=too-many-argum
     # The base's own work_wires beyond the (num_y_wires - 1) consumed by the ladders
     # are available, in addition to any extra work_wires passed to `ctrl`, to the ctrl-CNOTs.
     # Clamped at 0: if the base has too few, the ladders allocate and none are left over here.
-    num_work_wires = num_extra_work_wires + max(len(base_work_wires) - (num_y_wires - 1), 0)
+    num_extra_work_wires_from_base = max(len(base_work_wires) - (num_y_wires - 1), 0)
+    num_work_wires = num_extra_work_wires + num_extra_work_wires_from_base
+    work_wire_type = resolve_work_wire_type(
+        Wire[num_extra_work_wires_from_base], "zeroed", work_wires, work_wire_type
+    )
 
     if num_y_wires == 1:
         return {
@@ -461,11 +466,14 @@ def _controlled_semi_adder_standard(
         base_work_wires += list(alloc_work_wires)
         work_wires = [] if work_wires is None else work_wires
         ctrl_work_wires = Wires.all_wires([work_wires, extra_work_wires_from_base])
+        ctrl_work_wire_type = resolve_work_wire_type(
+            extra_work_wires_from_base, "zeroed", work_wires, work_wire_type
+        )
         ctrl_kwargs = {
             "control": control_wires,
             "control_values": control_values,
             "work_wires": ctrl_work_wires,
-            "work_wire_type": work_wire_type,
+            "work_wire_type": ctrl_work_wire_type,
         }
 
         num_y_wires = len(y_wires)
