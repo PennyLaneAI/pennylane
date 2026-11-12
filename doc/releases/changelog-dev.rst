@@ -1391,9 +1391,9 @@ Improvements 🛠
   levels are documented in a single place in :func:`~.workflow.get_compile_pipeline`.
   `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
-* The levels printed by :func:`~.analyze` and :func:`~.specs` for :func:`~.qjit`'d QNodes are
-  now labelled ``After <pass name>`` (e.g., ``Level: After merge-rotations``), since they
-  describe the circuit after that pass. The keys of ``CircuitSpecs.resources`` are unchanged.
+* The levels printed by :func:`~.analyze` are now labelled ``After <pass name>`` (e.g.,
+  ``Level: After merge-rotations``), since they describe the circuit after that pass. The keys
+  of ``CircuitSpecs.resources`` are unchanged.
   `(#10493) <https://github.com/PennyLaneAI/pennylane/pull/10493>`__
 
 Labs: a place for unified and rapid prototyping of research software 🧪
