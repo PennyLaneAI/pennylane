@@ -103,7 +103,7 @@ class TrotterCDF(Operator2):
             nuc_constant = 0.5,
         )
 
-        gate_set = {"BasisRotation", "RZ", "IsingZZ", "GlobalPhase", "ForLoop"}
+        gate_set = {"BasisRotation", "RZ", "IsingZZ", "GlobalPhase"}
 
         @qp.qjit
         @qp.decompose(gate_set=gate_set)
