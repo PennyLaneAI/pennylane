@@ -286,7 +286,7 @@ class TestProperties:
         op = qp.dot(coeffs, paulis)
         adjoint_ps = qp.adjoint(op).pauli_rep
         assert (list(adjoint_ps.values()) == qp.math.conjugate(coeffs)).all()
-        assert (qp.adjoint(adjoint_ps.operation()).matrix() == op.matrix()).all()
+        assert (qp.adjoint(qp.pauli.to_operator(adjoint_ps)).matrix() == op.matrix()).all()
 
 
 class TestSimplify:

@@ -114,7 +114,7 @@ def test_generate_paulis(generators, num_qubits, result):
         qp.assert_equal(p1, p2)
 
     # test arithmetic op compatibility:
-    generators_as_ops = [pauli_sentence(g).operation() for g in generators]
+    generators_as_ops = [qp.pauli.to_operator(pauli_sentence(g)) for g in generators]
     assert not any(isinstance(g, qp.Hamiltonian) for g in generators_as_ops)
 
     for p1, p2 in zip(pauli_ops, result):
@@ -179,7 +179,7 @@ def test_clifford(generator, paulixops, result):
     assert pauli_sentence(u) == pauli_sentence(result)
 
     # test arithmetic op compatibility:
-    result_as_op = pauli_sentence(result).operation()
+    result_as_op = qp.pauli.to_operator(pauli_sentence(result))
 
     assert pauli_sentence(result_as_op) == pauli_sentence(u)
 

@@ -29,8 +29,10 @@ from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, P
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from pennylane.typing import TensorLike
 
-from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
+from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z
 from .utils import is_pauli_word
+
+op_map = {I: Identity, X: PauliX, Y: PauliY, Z: PauliZ}
 
 #: Tolerance for checking if a sparse matrix is Hermitian.
 _HERMITIAN_TOLERANCE = 1e-8

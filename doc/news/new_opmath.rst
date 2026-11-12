@@ -62,9 +62,9 @@ Summary of the update
   >>> type(op.pauli_rep)
   pennylane.pauli.pauli_arithmetic.PauliSentence
 
-  You can transform the :class:`~.pennylane.pauli.PauliSentence` back to a suitable :class:`~.pennylane.operation.Operator` via the :meth:`~pennylane.pauli.PauliSentence.operation` method.
+  You can transform the :class:`~.pennylane.pauli.PauliSentence` back to a suitable :class:`~.pennylane.operation.Operator` via :func:`~pennylane.pauli.to_operator`.
 
-  >>> op.pauli_rep.operation()
+  >>> qp.pauli.to_operator(op.pauli_rep)
   X(0) + Y(0)
 
 * Extensive improvements have been made to the string representations of PennyLane operators,

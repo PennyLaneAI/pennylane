@@ -22,6 +22,7 @@ from copy import copy
 import pennylane as qp
 from pennylane.core.operator import Operator, Operator2
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
+from pennylane.ops._pauli_conversion import to_operator
 from pennylane.pytrees import flatten, unflatten
 
 from .sprod import SProd
@@ -306,7 +307,7 @@ class LinearCombination(Sum):
             new_ops = []
 
             for pw, coeff in pr.items():
-                pw_op = pw.operation(wire_order=pr.wires)
+                pw_op = to_operator(pw, identity_wires=pr.wires)
                 new_ops.append(pw_op)
                 new_coeffs.append(coeff)
 

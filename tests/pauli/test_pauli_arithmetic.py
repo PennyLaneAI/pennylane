@@ -84,7 +84,7 @@ def test_ps_ps_multiplication_non_commutativity():
 
 def _pauli_to_op(p):
     """convert PauliWord or PauliSentence to Operator"""
-    return p.operation()
+    return qp.pauli.to_operator(p)
 
 
 def _pw_to_ps(p):
@@ -412,7 +412,7 @@ class TestPauliWord:
     def test_operation(self, pw, op):
         """Test that a PauliWord can be cast to a PL operation."""
         with qp.queuing.AnnotatedQueue() as q:
-            pw_op = pw.operation()
+            pw_op = qp.pauli.to_operator(pw)
         assert len(q.queue) == 0
 
         if len(pw) > 1:
@@ -424,9 +424,9 @@ class TestPauliWord:
             assert pw_op.wires == op.wires
 
     def test_operation_empty(self):
-        """Test that an empty PauliWord with wire_order returns Identity."""
+        """Test that an empty PauliWord with identity_wires returns Identity."""
         with qp.queuing.AnnotatedQueue() as q:
-            op = PauliWord({}).operation(wire_order=[0, 1])
+            op = qp.pauli.to_operator(PauliWord({}), identity_wires=[0, 1])
         assert len(q.queue) == 0
         id = qp.Identity(wires=[0, 1])
         assert op.name == id.name
@@ -435,7 +435,7 @@ class TestPauliWord:
     def test_operation_empty_nowires(self):
         """Test that an empty PauliWord is cast to qp.Identity() operation."""
         with qp.queuing.AnnotatedQueue() as q:
-            res = pw4.operation()
+            res = qp.pauli.to_operator(pw4)
         assert len(q.queue) == 0
         assert res == qp.Identity()
 
@@ -938,7 +938,7 @@ class TestPauliSentence:
             assert op1.wires == op2.wires
 
         with qp.queuing.AnnotatedQueue() as q:
-            ps_op = ps.operation()
+            ps_op = qp.pauli.to_operator(ps)
         assert len(q.queue) == 0
         if len(ps) > 1:
             for ps_summand, op_summand in zip(ps_op.operands, op.operands):
@@ -954,7 +954,7 @@ class TestPauliSentence:
         """Test that a PauliSentence with an empty PauliWord can be cast to
         operation correctly."""
         with qp.queuing.AnnotatedQueue() as q:
-            full_ps_op = ps3.operation()
+            full_ps_op = qp.pauli.to_operator(ps3)
         assert len(q.queue) == 0
         full_op = qp.sum(
             -0.5 * qp.prod(qp.PauliZ(wires=0), qp.PauliZ(wires="b"), qp.PauliZ(wires="c")),
@@ -976,9 +976,9 @@ class TestPauliSentence:
         # in constructing the identity wires are cast from set -> list and the order is not preserved
 
     def test_operation_empty(self):
-        """Test that an empty PauliSentence with wire_order returns Identity."""
+        """Test that an empty PauliSentence with identity_wires returns zero times Identity."""
         with qp.queuing.AnnotatedQueue() as q:
-            op = ps5.operation(wire_order=[0, 1])
+            op = qp.pauli.to_operator(ps5, identity_wires=[0, 1])
         assert len(q.queue) == 0
         id = qp.s_prod(0.0, qp.Identity(wires=[0, 1]))
 
@@ -989,18 +989,18 @@ class TestPauliSentence:
         """Test that a ValueError is raised if an empty PauliSentence is
         cast to a PL operation."""
         with qp.queuing.AnnotatedQueue() as q:
-            res1 = ps4.operation()
+            res1 = qp.pauli.to_operator(ps4)
         assert len(q.queue) == 0
         assert res1 == qp.Identity()
 
         with qp.queuing.AnnotatedQueue() as q:
-            res2 = ps5.operation()
+            res2 = qp.pauli.to_operator(ps5)
         assert len(q.queue) == 0
         assert res2 == qp.s_prod(0, qp.Identity())
 
-    def test_operation_wire_order(self):
-        """Test that the wire_order parameter is used when the pauli representation is empty"""
-        op = ps5.operation(wire_order=["a", "b"])
+    def test_operation_identity_wires(self):
+        """Test that the identity_wires parameter is used when the Pauli representation is empty."""
+        op = qp.pauli.to_operator(ps5, identity_wires=["a", "b"])
         id = qp.s_prod(0.0, qp.Identity(wires=["a", "b"]))
 
         qp.assert_equal(op, id)
@@ -1011,7 +1011,7 @@ class TestPauliSentence:
         pw0 = qp.pauli.PauliWord({0: "X", "a": "Y"})
         pw1 = qp.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})  # pylint: disable=redefined-outer-name
         ps = qp.pauli.PauliSentence({pw0: coeff0, pw1: coeff1})
-        assert ps.operation() is not None
+        assert qp.pauli.to_operator(ps) is not None
 
     def test_pickling(self):
         """Check that paulisentences can be pickled and unpickled."""
@@ -1071,7 +1071,7 @@ class TestPauliSentence:
         pw1 = qp.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})  # pylint: disable=redefined-outer-name
         ps = qp.pauli.PauliSentence({pw0: coeff0, pw1: coeff1})
         mat0 = ps.to_mat(wire_order=wire_order)
-        mat1 = qp.matrix(ps.operation(), wire_order=wire_order)
+        mat1 = qp.matrix(qp.pauli.to_operator(ps), wire_order=wire_order)
         assert qp.math.allclose(mat0, mat1)
 
 

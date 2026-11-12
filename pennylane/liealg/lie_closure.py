@@ -28,6 +28,7 @@ from pennylane.pauli import (
     PauliVSpace,
     PauliWord,
     pauli_sentence,
+    to_operator,
     trace_inner_product,
 )
 from pennylane.typing import TensorLike
@@ -197,7 +198,7 @@ def lie_closure(  # pylint: disable=too-many-arguments
 
     res = vspace.basis
     if not pauli:
-        res = [op.operation() for op in res]
+        res = [to_operator(op) for op in res]
 
     return res
 

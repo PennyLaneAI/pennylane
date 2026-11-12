@@ -400,6 +400,11 @@ path = "pennylane.pauli"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
+path = "pennylane.pauli.pauli_arithmetic"
+depends_on = ["pennylane.core.operator", "pennylane.math", "pennylane.typing", "pennylane.wires", "pennylane.exceptions"]
+cannot_depend_on = ["pennylane", "pennylane.ops", "pennylane.pauli"]
+
+[[modules]]
 path = "pennylane.resource"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 

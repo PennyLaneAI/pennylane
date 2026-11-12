@@ -228,7 +228,7 @@ class TestBoseWordMapping:
         qubit_op = unary_mapping(bosonic_op, n_states=n_states, ps=False)
 
         expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
-        expected_op = expected_op.operation(wires)
+        expected_op = qp.pauli.to_operator(expected_op, wires)
 
         qp.assert_equal(qubit_op.simplify(), expected_op.simplify())
 

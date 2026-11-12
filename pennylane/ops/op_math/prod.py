@@ -31,6 +31,7 @@ from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, remove_from_program
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
+from pennylane.ops._pauli_conversion import to_operator
 from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires
 
@@ -411,7 +412,7 @@ class Prod(CompositeOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return pr.operation(wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         global_phase, factors = self._simplify_factors(factors=self.operands)
 
@@ -478,7 +479,7 @@ class Prod(CompositeOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             with qp.QueuingManager.stop_recording():
-                ops = [pauli.operation() for pauli in pr.keys()]
+                ops = [to_operator(pauli) for pauli in pr.keys()]
             return list(pr.values()), ops
 
         with qp.QueuingManager.stop_recording():

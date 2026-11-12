@@ -478,7 +478,11 @@ def _dhf_molecular_hamiltonian(  # pylint: disable=too-many-arguments
     h_as_ps = qp.pauli.pauli_sentence(h)
     coeffs = qp.math.real(qp.math.array(list(h_as_ps.values()), **interface_args))
     h_as_ps = qp.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs, strict=True)))
-    h = qp.s_prod(0, qp.Identity(h.wires[0])) if len(h_as_ps) == 0 else h_as_ps.operation()
+    h = (
+        qp.s_prod(0, qp.Identity(h.wires[0]))
+        if len(h_as_ps) == 0
+        else qp.pauli.to_operator(h_as_ps)
+    )
 
     if wires:
         wires_new = qp.qchem.convert._process_wires(wires)  # pylint: disable=protected-access

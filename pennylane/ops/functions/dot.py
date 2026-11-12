@@ -21,6 +21,7 @@ from collections.abc import Sequence
 
 import pennylane as qp
 from pennylane.core.operator import Operator
+from pennylane.ops._pauli_conversion import to_operator
 from pennylane.pauli import PauliSentence, PauliWord
 
 
@@ -88,7 +89,7 @@ def dot(
     Note that it returns a :class:`~.PauliSentence`, which is not an :class:`~.Operator`. This
     specialized representation can be converted to an operator:
 
-    >>> qp.dot([1, 2], [qp.X(0), qp.X(0)], pauli=True).operation()
+    >>> qp.pauli.to_operator(qp.dot([1, 2], [qp.X(0), qp.X(0)], pauli=True))
     3.0 * X(0)
 
     Using ``pauli=True`` and then converting the result to an :class:`~.Operator` is much faster
@@ -150,7 +151,7 @@ def dot(
         return _dot_with_ops_and_paulis(coeffs, ops)
 
     # Convert possible PauliWord and PauliSentence instances to operation
-    ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
+    ops = [to_operator(op) if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
 
     operands = [
         op if (not qp.math.is_tracer(coeff) and coeff == 1) else qp.s_prod(coeff, op)

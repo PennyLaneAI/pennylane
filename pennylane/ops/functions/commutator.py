@@ -16,6 +16,7 @@ This file contains the implementation of the commutator function in PennyLane
 """
 
 import pennylane as qp
+from pennylane.ops._pauli_conversion import to_operator
 from pennylane.pauli import PauliSentence, PauliWord
 
 
@@ -114,14 +115,14 @@ def commutator(op1, op2, pauli=False):
         if not isinstance(op2, PauliSentence):
             op2 = qp.pauli.pauli_sentence(op2)
         res = op1.commutator(op2)
-        return res if pauli else res.operation(wire_order=res.wires)
+        return res if pauli else to_operator(res, identity_wires=res.wires)
 
     # If no pauli processing is possible, use operator arithmetic
     with qp.QueuingManager.stop_recording():
         if isinstance(op1, (PauliWord, PauliSentence)):
-            op1 = op1.operation()
+            op1 = to_operator(op1)
         if isinstance(op2, (PauliWord, PauliSentence)):
-            op2 = op2.operation()
+            op2 = to_operator(op2)
 
         res = qp.sum(qp.prod(op1, op2), qp.s_prod(-1.0, qp.prod(op2, op1)))
         res = res.simplify()
