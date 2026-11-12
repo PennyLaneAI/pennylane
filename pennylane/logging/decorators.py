@@ -30,10 +30,9 @@ def log_string_debug_func(func, log_level, use_entry, override=None):
 
     def _get_bound_signature(*args, **kwargs) -> str:
         s = inspect.signature(func)
-        # pylint:disable = broad-except
         try:
             ba = s.bind(*args, **kwargs)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             # If kwargs are concat onto args, attempt to unpack. Fail otherwise
             if len(args) == 2 and len(kwargs) == 0 and isinstance(args[1], dict):
                 ba = s.bind(*args[0], **args[1])

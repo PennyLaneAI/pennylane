@@ -29,7 +29,7 @@ from pennylane.decomposition import gate_sets
 from pennylane.measurements import ProbabilityMP, expval
 from pennylane.ops import Sum
 from pennylane.pauli import PauliWord, pauli_decompose, to_operator
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.transforms import split_to_single_terms
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn, ResultBatch
@@ -64,8 +64,7 @@ def _inplace_set_trainable_params(tape):
     tape.trainable_params = math.get_trainable_indices(params)
 
 
-# pylint: disable=unused-argument
-def _expand_transform_hadamard(
+def _expand_transform_hadamard(  # pylint: disable=unused-argument
     tape: QuantumScript,
     argnum=None,
     aux_wire=None,
@@ -499,6 +498,7 @@ def _hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
     return new_batch, sub_coeffs
 
 
+# pylint: disable-next=unused-argument
 def _direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
 
     trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
@@ -559,6 +559,7 @@ def _reversed_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, 
     return new_batch, coeffs
 
 
+# pylint: disable-next=unused-argument
 def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
 
     trainable_op, idx, _ = tape.get_operation(trainable_param_idx)

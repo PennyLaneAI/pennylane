@@ -24,7 +24,7 @@ jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.capture]
 
-# pylint: disable=wrong-import-position
+# pylint: disable-next=wrong-import-position
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp
 
 

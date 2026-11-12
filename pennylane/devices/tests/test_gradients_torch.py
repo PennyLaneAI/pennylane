@@ -14,8 +14,6 @@
 """Tests trainable circuits using the Torch interface."""
 
 import numpy as np
-
-# pylint:disable=no-self-use,no-member
 import pytest
 
 import pennylane as qp
@@ -44,7 +42,7 @@ class TestGradients:
 
         x = torch.tensor(0.5, requires_grad=True)
         res = circuit(x)
-        res.backward()
+        res.backward()  # pylint: disable=no-member
         assert np.isclose(x.grad, -np.sin(x.detach()), atol=tol, rtol=0)
 
     def test_backprop_state(self, diff_method, device, tol, shots):
@@ -97,7 +95,7 @@ class TestGradients:
             return qp.expval(qp.Hamiltonian([1, 1], [qp.Z(0), qp.Y(1)]))
 
         res = circuit(a, b)
-        res.backward()
+        res.backward()  # pylint: disable=no-member
         grad = [a.grad, b.grad]
         a, b = a.detach(), b.detach()
         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
@@ -206,7 +204,7 @@ class TestGradients:
         x = torch.tensor([1.0, 2.0], requires_grad=True)
         res = circuit(x)
 
-        res.backward()
+        res.backward()  # pylint: disable=no-member
         g = x.grad
 
         hess = torch.autograd.functional.hessian(circuit, x)
@@ -216,6 +214,7 @@ class TestGradients:
         assert tuple(hess.shape) == (2, 2)
 
         expected_res = np.cos(a) * np.cos(b)
+        # pylint: disable-next=no-member
         assert np.allclose(res.detach(), expected_res, atol=tol, rtol=0)
 
         expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]

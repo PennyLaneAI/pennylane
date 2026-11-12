@@ -92,9 +92,7 @@ def _reset(wires):
         qp.cond(qp.pauli_measure("Z", wire), qp.X)(wire)
 
 
-def _distillation_attempt(
-    level, output_wires, scratch_wires, register_sizes, mode
-):  # pylint: disable=too-many-arguments
+def _distillation_attempt(level, output_wires, scratch_wires, register_sizes, mode):
     """Prepare two children and perform one symmetric Jones distillation attempt."""
     output_size = register_sizes[level]
     child_size = register_sizes[level - 1]

@@ -15,9 +15,8 @@
 
 import numpy as np
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
 
-
+# pylint: disable-next=too-many-arguments
 def _build_fock(mode, active_ham_terms, active_terms, modals, h_mat, mode_rot):
     r"""Builds the fock matrix for each vibrational mode.
 
@@ -51,6 +50,7 @@ def _build_fock(mode, active_ham_terms, active_terms, modals, h_mat, mode_rot):
     return fock_matrix
 
 
+# pylint: disable-next=too-many-arguments
 def _update_h(h_mat, mode, active_ham_terms, mode_rot, active_terms, modals):
     r"""Updates value of Hamiltonian matrix for a mode after other modes have been rotated.
 

@@ -19,11 +19,10 @@ Lark grammar reference:
  * https://lark-parser.readthedocs.io/en/latest/grammar.html
 """
 
-# pylint: disable=unused-import
-
 from textwrap import dedent  # pragma: no cover
 
 try:  # pragma: no cover
+    # pylint: disable-next=unused-import
     from lark import Lark, LarkError, UnexpectedInput  # pragma: no cover
 except ImportError as e:  # pragma: no cover
     raise RuntimeError(

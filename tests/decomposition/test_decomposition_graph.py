@@ -14,6 +14,8 @@
 
 """Unit tests for the decomposition graph."""
 
+# pylint: disable=protected-access,too-few-public-methods
+
 import warnings
 from unittest.mock import patch
 
@@ -38,8 +40,6 @@ from tests.core.operator.operator2_utils import (
     ParametrizedHybridOp,
 )
 from tests.decomposition.conftest import decompositions, to_resources
-
-# pylint: disable=protected-access,too-few-public-methods,useless-parent-delegation,unused-argument
 
 
 class CustomOp(Operation):
@@ -67,7 +67,7 @@ class MultiWireRot(Operation):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, phi, wires):
+    def __init__(self, phi, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(phi, wires)
 
     @property
@@ -634,7 +634,7 @@ class TestDecompGraphSolver:
     def test_operator2_integration(self):
         """Tests constructing and solving a graph from an Operator2."""
 
-        def _resource_fn(params, wires, op):
+        def _resource_fn(params, wires, op):  # pylint: disable=unused-argument
             return {qp.CNOT: 2 * len(wires), OneWireDynOp: 1, qp.RX: 2 * (len(wires) - 1)}
 
         @qp.register_resources(_resource_fn)
@@ -1357,7 +1357,7 @@ class TestControlledDecompositions:
         assert all("_custom_rule" not in rule.name for rule in rules)
 
 
-class LegacyRX(Operator1):  # pylint: disable=too-few-public-methods
+class LegacyRX(Operator1):
     pass
 
 
@@ -1389,7 +1389,7 @@ class TestSymbolicDecompositions:
         assert q.queue == [LegacyRX(0.5, wires=[0])]
         assert solution.resource_estimate(op) == to_resources({LegacyRX: 1})
 
-    def test_adjoint_custom(self, mocker):
+    def test_adjoint_custom(self, mocker):  # pylint: disable=unused-argument
         """Tests adjoint of an operator that defines its own adjoint."""
 
         op = qp.adjoint(LegacyRX(0.5, wires=[0]))
@@ -1407,7 +1407,7 @@ class TestSymbolicDecompositions:
         assert q.queue == [LegacyRX(-0.5, wires=[0])]
         assert solution.resource_estimate(op) == to_resources({LegacyRX: 1})
 
-    def test_adjoint_general(self, mocker):
+    def test_adjoint_general(self, mocker):  # pylint: disable=unused-argument
         """Tests decomposition of a generalized adjoint operation."""
 
         @qp.register_resources({qp.H: 1, qp.CNOT: 2, LegacyRX: 1, qp.T: 1})

@@ -155,7 +155,6 @@ def _ctrl_seq_decomposition_resources(base, control) -> dict:
     )
 
 
-# pylint: disable=no-value-for-parameter
 @register_resources(_ctrl_seq_decomposition_resources)
 def _ctrl_seq_decomposition(*_, base=None, control=None, **__):
     if compiler.active() or capture.enabled():

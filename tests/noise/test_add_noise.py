@@ -24,8 +24,6 @@ from pennylane.core.qscript import QuantumScript
 from pennylane.core.transforms import BoundTransform, CompilePipeline
 from pennylane.noise.add_noise import _get_transform_program, add_noise
 
-# pylint:disable = no-member
-
 
 class TestAddNoise:
     """Tests for the add_noise transform using input tapes"""
@@ -279,7 +277,6 @@ class TestAddNoiseInterface:
 
         assert np.allclose(f1(w1, w2), f2(w1, w2))
 
-    # pylint: disable=unused-argument
     def test_add_noise_with_non_qwc_obs_and_mid_meas(self):
         """Test that the add_noise transform catches and reports errors from the enclosed function."""
 
@@ -287,7 +284,7 @@ class TestAddNoiseInterface:
 
         fcond = qp.noise.wires_in([0, 1])
 
-        def noise(op, **kwargs):
+        def noise(op, **kwargs):  # pylint: disable=unused-argument
             qp.CNOT(wires=[1, 0])
             qp.CRX(kwargs["noise_param"], wires=[0, 1])
 
@@ -319,7 +316,6 @@ class TestAddNoiseInterface:
 
         assert np.allclose(noisy_circuit(0.4), explicit_circuit(0.4))
 
-    # pylint:disable = cell-var-from-loop
     def test_add_noise_with_readout_errors(self):
         """Test that a add_noise works with readout errors."""
         dev = qp.device("default.mixed", wires=2)
@@ -363,7 +359,7 @@ class TestAddNoiseInterface:
                 qp.RX(z, wires=1)
                 qp.PhaseFlip(0.2, wires=0)
                 qp.PhaseFlip(0.2, wires=1)
-                return qp.apply(mp)
+                return qp.apply(mp)  # pylint: disable=cell-var-from-loop
 
             results.append(f(*args))
 
@@ -378,7 +374,7 @@ class TestAddNoiseInterface:
                 qp.RY(y, wires=0)
                 qp.AmplitudeDamping(0.4, wires=0)
                 qp.RX(z, wires=1)
-                return qp.apply(mp)
+                return qp.apply(mp)  # pylint: disable=cell-var-from-loop
 
             results.append(g(*args))
 
