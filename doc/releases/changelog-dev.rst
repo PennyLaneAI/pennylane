@@ -2355,6 +2355,10 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed exponential regular-expression backtracking in :func:`~.qchem.mol_data` when
+  validating malformed InChI identifiers.
+  `(#10462) <https://github.com/PennyLaneAI/pennylane/pull/10462>`__
+
 * Fixed :func:`~pennylane.draw_mpl` to show the control values of :class:`~.TemporaryAND`
   and its adjoint. Rounded connectors on the left or right distinguish these
   operations from :class:`~.Toffoli`, consistently with :func:`~pennylane.draw`.
