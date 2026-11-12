@@ -17,6 +17,7 @@ Tests for the BasisRotation template.
 
 import numpy as np
 import pytest
+from scipy.linalg import expm
 
 import pennylane as qp
 from pennylane.testing import assert_decomposable
@@ -278,6 +279,22 @@ class TestDecomposition:
 
         assert np.allclose(single_particle_block, unitary_matrix.T)
         assert np.isclose(mat[0, 0], 1.0)
+
+    @pytest.mark.parametrize("dt", [1e-3, 1e-5, 1e-7])
+    def test_complex_matrix_close_to_identity(self, dt):
+        """Test that a complex matrix close to the identity is implemented accurately, by
+        comparing the action on single-particle states to the matrix."""
+        rng = np.random.default_rng(1)
+        h = rng.normal(size=(4, 4)) + 1j * rng.normal(size=(4, 4))
+        unitary_matrix = expm(1j * dt * (h + h.conj().T))
+        wires = list(range(4))
+        mat = qp.matrix(
+            qp.BasisRotation(wires=wires, unitary_matrix=unitary_matrix), wire_order=wires
+        )
+        single_particle_states = [2 ** (3 - p) for p in range(4)]
+        single_particle_block = mat[np.ix_(single_particle_states, single_particle_states)]
+
+        assert np.allclose(single_particle_block, unitary_matrix.T, atol=1e-14, rtol=0)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(

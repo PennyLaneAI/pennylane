@@ -320,14 +320,17 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
 
     interface = interface_a
 
-    EPS = math.finfo(math.asarray(a).dtype).eps
-    hypot = math.hypot(abs_a, abs_b) + EPS  # avoid division by zero
+    small_a, small_b = abs_a < tol, abs_b < tol
+    any_small = math.logical_or(small_a, small_b)
+    # Only divide by quantities bounded away from zero, also in the masked-out branch, to avoid
+    # regularization bias as well as NaNs in results and gradients.
+    hypot = math.where(any_small, 1.0, math.hypot(abs_a, abs_b))
 
-    cosine = math.where(abs_b < tol, 0.0, abs_b / hypot)
-    cosine = math.where(abs_a < tol, 1.0, cosine)
+    cosine = math.where(small_b, 0.0, abs_b / hypot)
+    cosine = math.where(small_a, 1.0, cosine)
 
-    sine = math.where(abs_b < tol, 1.0, abs_a / hypot)
-    sine = math.where(abs_a < tol, 0.0, sine)
+    sine = math.where(small_b, 1.0, abs_a / hypot)
+    sine = math.where(small_a, 0.0, sine)
 
     # The following logic produces four different matrices for the four possible settings
     # of ``left`` and ``real_valued``:
@@ -358,9 +361,8 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
         return phase, g00, g01
 
     def complex_branch(g00, g01):
-        aprod = math.nan_to_num(abs_b * abs_a)
-        phase = math.where(abs_b < tol, 1.0, (b * math.conj(a)) / (aprod + EPS))
-        phase = math.where(abs_a < tol, 1.0, phase)
+        aprod = math.where(any_small, 1.0, math.nan_to_num(abs_b * abs_a))
+        phase = math.where(any_small, 1.0, (b * math.conj(a)) / aprod)
         g00 = phase * g00
         return phase, g00, g01
 
