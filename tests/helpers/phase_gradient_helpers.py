@@ -101,17 +101,18 @@ def assert_decomp_realizes_op(op, tape, phase_grad_wires, seed, *, zeroed_wires=
         # default.qubit decomposes a phase gradient state preparation that is not the first
         # operation into hundreds of gates, so prepare it together with the input state
         phase_grad_state = qp.PhaseGradientStatePrep(phase_grad_wires).state_vector().flatten()
-        # ``in_wires + op.wires`` puts the zeroed wires last, so the stride selects the rows and
-        # columns with all of them in zero
-        stride = 2 ** (len(op.wires) - len(in_wires))
-        op_matrix = qp.matrix(op, wire_order=in_wires + op.wires)[::stride, ::stride]
+
+    # ``in_wires + op.wires`` puts the zeroed wires last, so the first column holds the amplitudes
+    # with all of them in zero
+    op_state = _final_state(partial(qp.StatePrep, in_state, in_wires), [op], in_wires + op.wires)
+    op_state = op_state.reshape(2 ** len(in_wires), -1)[:, 0]
 
     out_state = _final_state(
         partial(qp.StatePrep, np.kron(in_state, phase_grad_state), in_wires + phase_grad_wires),
         tape.operations,
         in_wires + phase_grad_wires + aux_wires,
     )
-    expected = np.kron(op_matrix @ in_state, phase_grad_state)
+    expected = np.kron(op_state, phase_grad_state)
     expected = np.kron(expected, np.eye(2 ** len(aux_wires), 1)[:, 0])
 
     assert np.allclose(out_state, expected)
