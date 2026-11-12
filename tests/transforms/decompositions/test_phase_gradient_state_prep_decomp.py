@@ -20,6 +20,12 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.capture.primitives import (
+    operator_p,
+    pauli_measure_prim,
+    symbolic_array_prim,
+    while_loop_prim,
+)
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import _fix_decomp
 from pennylane.exceptions import WireError
@@ -206,6 +212,64 @@ def test_repeat_rule_captures_nested_local_loops():
     assert sorted(hints) == pytest.approx(sorted({1 / p for p in probabilities}))
 
 
+@pytest.mark.capture
+@pytest.mark.parametrize("num_wires", [3, 5])
+@pytest.mark.parametrize("abstract_output", [False, True], ids=["traced-output", "abstract-output"])
+@pytest.mark.parametrize(
+    ("abstract_aux", "abstract_work"),
+    [(True, True), (True, False), (False, True)],
+    ids=["abstract-helpers", "abstract-aux", "abstract-work"],
+)
+def test_abstract_registers_reuse_symbolic_wires(
+    num_wires, abstract_output, abstract_aux, abstract_work
+):
+    """Abstract registers retain their wire identities across additions, measurements and retries."""
+    jax = pytest.importorskip("jax")
+    aux = qp.typing.Wire[num_wires] if abstract_aux else range(num_wires, 2 * num_wires)
+    work = (
+        qp.typing.Wire[num_wires - 1] if abstract_work else range(2 * num_wires, 3 * num_wires - 1)
+    )
+    rule = make_phase_gradient_distillation_decomp(aux, work)
+
+    def circuit(wires):
+        rule(wires=qp.typing.Wire[num_wires] if abstract_output else wires)
+
+    plxpr = qp.capture.make_plxpr(circuit, autograph=False)(jax.numpy.arange(num_wires))
+    symbols = qp.testing.find_eqns(plxpr, symbolic_array_prim)
+    expected_symbols = (
+        num_wires * (abstract_output + abstract_aux) + (num_wires - 1) * abstract_work
+    )
+    assert len(symbols) == expected_symbols
+
+    [retry] = qp.testing.find_eqns(plxpr, while_loop_prim)
+    body = retry.params["jaxpr_body_fn"]
+    assert all(symbol.outvars[0] in retry.invars for symbol in symbols)
+    assert symbolic_array_prim not in qp.testing.extract_all_primitives(body)
+    assert bool(qp.testing.find_eqns(body, while_loop_prim)) == (num_wires == 5)
+
+    [adder] = [
+        eqn
+        for eqn in qp.testing.find_eqns(body, operator_p)
+        if eqn.params["op_cls"] is qp.SemiAdder
+    ]
+    source_wires = adder.invars[:num_wires]
+    if not abstract_aux:
+        source_wires = [wire.val for wire in source_wires]
+    measurements = qp.testing.find_eqns(body, pauli_measure_prim)
+    for basis in ("X", "Z"):
+        measured_wires = [
+            eqn.invars[0] for eqn in measurements if eqn.params["pauli_word"] == basis
+        ]
+        if not abstract_aux:
+            measured_wires = [wire.val for wire in measured_wires]
+        assert measured_wires == source_wires
+
+    if not abstract_aux:
+        assert source_wires == list(aux)
+    if not abstract_work:
+        assert [wire.val for wire in adder.invars[-(num_wires - 1) :]] == list(work)
+
+
 def test_resources_are_structural_one_attempt_counts():
     """Test that the registered resources count the static retry body, not expected
     repetitions."""
@@ -351,6 +415,41 @@ def test_qjit_analyze_counts_expected_attempts():
     # three X measurements and three source resets per attempt, three output resets per failed
     # attempt
     assert gate_types["PPM-w1"] == 6 / 0.75 + 3 * 0.25 / 0.75
+
+
+@pytest.mark.catalyst
+@pytest.mark.usefixtures("enable_graph_decomposition")
+def test_estimate_with_abstract_helpers_above_table_limit():
+    """Jones estimation with abstract helpers agrees with concrete helpers beyond the tables."""
+    pytest.importorskip("catalyst")
+    num_wires = 31
+    gate_set = {"Hadamard", "Z", "Adjoint(S)", "S", "SemiAdder", "PauliMeasure", "X"}
+
+    def estimate(abstract_helpers):
+        aux = qp.typing.Wire[num_wires] if abstract_helpers else range(num_wires, 2 * num_wires)
+        work = (
+            qp.typing.Wire[num_wires - 1]
+            if abstract_helpers
+            else range(2 * num_wires, 3 * num_wires - 1)
+        )
+        rule = make_phase_gradient_distillation_decomp(aux, work)
+
+        with qp.decomposition.local_decomps():
+            _fix_decomp(qp.PhaseGradientStatePrep, rule)
+
+            @qp.qjit(capture=True, enable_aot_compilation=False)
+            @qp.qnode(qp.device("null.qubit", wires=3 * num_wires - 1))
+            def circuit():
+                qp.PhaseGradientStatePrep(qp.typing.Wire[num_wires])
+                return qp.expval(qp.Z(0))
+
+            return qp.estimate(circuit, target=gate_set)().resources.quantum_operations
+
+    concrete = estimate(False)
+    abstract = estimate(True)
+    assert abstract == concrete
+    assert abstract["SemiAdder"] > 0
+    assert "PhaseGradientStatePrep" not in abstract
 
 
 @pytest.mark.catalyst

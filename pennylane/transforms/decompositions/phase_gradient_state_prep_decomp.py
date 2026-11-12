@@ -19,7 +19,7 @@ from functools import lru_cache
 
 import pennylane as qp
 from pennylane.decomposition import register_resources
-from pennylane.typing import Wire
+from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import WireError, Wires, validate_no_wire_overlaps
 
 
@@ -90,6 +90,13 @@ def _reset(wires):
     """Reset a register with Z Pauli measurements and X corrections."""
     for wire in wires:
         qp.cond(qp.pauli_measure("Z", wire), qp.X)(wire)
+
+
+def _wire_list(wires: Wires | AbstractWires) -> list:
+    """Create reusable wire labels before capturing the retry loops."""
+    if isinstance(wires, AbstractWires) and qp.capture.enabled():
+        return [qp.capture.symbolic_array((), int) for _ in range(len(wires))]
+    return list(wires)
 
 
 def _distillation_attempt(
@@ -308,8 +315,8 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
         register_sizes = _jones_register_sizes(num_wires)
         _prepare_distilled_state(
             len(register_sizes) - 1,
-            list(output_wires),
-            list(aux_wires + work_wires),
+            _wire_list(output_wires),
+            _wire_list(aux_wires) + _wire_list(work_wires),
             register_sizes,
             mode,
         )
