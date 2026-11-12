@@ -374,13 +374,12 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         tensor<f64>
         }
         module @module_circuit {
-            module attributes {transform.with_named_sequence} {
+          module attributes {transform.with_named_sequence} {
             transform.named_sequence @__transform_main(%arg0: !transform.op<"builtin.module">) {
-                %0 = transform.apply_registered_pass "cancel-inverses" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
-                transform.yield
+              %0 = transform.apply_registered_pass "cancel-inverses" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+              transform.yield
             }
-            }
-            func.func public @circui
+            transform.named_sequence @__
 
         Transforms can have both tape-based and ``pass_name``-based definitions. For example, the
         transform below called ``my_transform`` has both definitions. In this case, the MLIR pass
@@ -397,7 +396,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         Note that any transform with only a ``pass_name`` definition *must* occur after any purely tape-based
         transform, as tape transforms occur prior to lowering to MLIR.
 
-        >>> @qp.qjit
+        >>> @qp.qjit(capture=False)
         ... @qp.defer_measurements
         ... @qp.transform(pass_name="cancel-inverses")
         ... @qp.qnode(qp.device('lightning.qubit', wires=4))

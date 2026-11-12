@@ -142,7 +142,8 @@ def _handle_mid_measure(op: MidMeasure | PauliMeasure, wire_map, bit_map):
 
 @_get_op_occupied_wires.register
 def _handle_cond(op: Conditional, wire_map, bit_map):
-    if len(op.base.wires) == 0 or isinstance(op.base, (GlobalPhase, Identity)):
+    *_, base = unwrap_controls(op.base)
+    if len(op.base.wires) == 0 or isinstance(base, (GlobalPhase, Identity)):
         return set(wire_map.values())
 
     mapped_wires = [wire_map[wire] for wire in op.base.wires]

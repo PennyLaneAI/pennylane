@@ -23,6 +23,7 @@ try:
     import matplotlib.patheffects as path_effects
     import matplotlib.pyplot as plt
     from matplotlib import patches
+    from matplotlib.path import Path
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_mpl = False
 
@@ -560,6 +561,34 @@ class MPLDrawer:
                 text_obj.set_fontsize(s)
                 w, h = self._text_dims(text_obj)
 
+    @property
+    def conditional_frame_offset(self) -> float:
+        """Distance from the outermost wire to a conditional diagram's boundary."""
+        return 0.45
+
+    def conditional_frame(self, layer: int, wires: Sequence[int]) -> None:
+        """Enclose a conditional operation's diagram without hiding its quantum wires.
+
+        Args:
+            layer (int): layer containing the conditional operation
+            wires (Sequence[int]): displayed wires spanned by the operation
+        """
+        offset = self.conditional_frame_offset
+        min_wire, max_wire = min(wires), max(wires)
+        # Keep the boundary within one layer while enclosing gate boxes and their notches.
+        frame = patches.FancyBboxPatch(
+            (layer - 0.48, min_wire - offset),
+            0.96,
+            max_wire - min_wire + 2 * offset,
+            boxstyle="round,pad=0,rounding_size=0.08",
+            fill=False,
+            edgecolor=plt.rcParams["lines.color"],
+            linewidth=0.8 * plt.rcParams["lines.linewidth"],
+            linestyle=(0, (4, 3)),
+            zorder=4,
+        )
+        self.ax.add_patch(frame)
+
     def _add_notch(self, layer, wire, extra_width, box_options):
         """Add a wire used marker to both sides of a box.
 
@@ -752,6 +781,73 @@ class MPLDrawer:
 
         self.ctrl(layer, wires[:-1], wires[-1], control_values=control_values, options=options)
         self._target_x(layer, wires[-1], options=options)
+
+    def elbow(self, layer, wires, control_values=None, *, adjoint=False):
+        """Draw a temporary AND with a rounded connector beside its controls and target.
+
+        The connector is on the left for computation and on the right for uncomputation.
+        The target is a circled plus, and the horizontal wires remain continuous.
+
+        Args:
+            layer (int): layer to draw in
+            wires (Sequence[int]): controls followed by the target
+            control_values (Sequence[bool]): values on which the controls activate
+
+        Keyword Args:
+            adjoint (bool): whether to draw the uncomputation connector
+
+        **Example**
+
+        .. code-block:: python
+
+            drawer = MPLDrawer(n_layers=2, wire_map={0: 0, 1: 1, 2: 2})
+            drawer.elbow(0, [0, 1, 2], control_values=[0, 1])
+            drawer.elbow(1, [0, 1, 2], adjoint=True)
+        """
+        direction = -1 if adjoint else 1
+        side = layer - direction * (self._circ_rad + 0.02)
+        radius = 0.1
+        top, bottom = min(wires), max(wires)
+        vertices = [
+            (layer, top),
+            (side + direction * radius, top),
+            (side, top),
+            (side, top + radius),
+            (side, bottom - radius),
+            (side, bottom),
+            (side + direction * radius, bottom),
+            (layer, bottom),
+        ]
+        codes = [
+            Path.MOVETO,
+            Path.LINETO,
+            Path.CURVE3,
+            Path.CURVE3,
+            Path.LINETO,
+            Path.CURVE3,
+            Path.CURVE3,
+            Path.LINETO,
+        ]
+        for wire in wires:
+            if top < wire < bottom:
+                vertices.extend([(side, wire), (layer, wire)])
+                codes.extend([Path.MOVETO, Path.LINETO])
+        self._ax.add_patch(
+            patches.PathPatch(
+                Path(vertices, codes),
+                fill=False,
+                edgecolor=plt.rcParams["lines.color"],
+                linewidth=plt.rcParams["lines.linewidth"],
+                zorder=2,
+            )
+        )
+        values = [True] * (len(wires) - 1) if control_values is None else control_values
+        for wire, value in zip(wires[:-1], values, strict=True):
+            if value:
+                self._ctrl_circ(layer, wire)
+            else:
+                self._ctrlo_circ(layer, wire)
+        self._target_x(layer, wires[-1])
 
     def _target_x(self, layer, wires, options=None):
         """Draws the circle used to represent a CNOT's target

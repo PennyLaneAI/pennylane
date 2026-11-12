@@ -369,7 +369,7 @@ class TestSemiAdder:
             "work_wires": jnp.array([]),
         }
         for rule in qp.list_decomps("C(SemiAdder)"):
-            if not rule.is_applicable(**decomp_args):
+            if not rule.is_applicable(**decomp_args, work_wire_type="borrowed"):
                 continue
             # pylint: disable-next=protected-access
             subroutine = qp.capture.subroutine(partial(rule._impl, work_wire_type="borrowed"))
