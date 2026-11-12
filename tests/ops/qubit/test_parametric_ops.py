@@ -826,6 +826,7 @@ class TestDecompositions:
         )
         assert_decomposable(op)
 
+    @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("base_type", [qp.PhaseShift, qp.U1])
     @pytest.mark.parametrize("num_controls", [1, 2, 3])
