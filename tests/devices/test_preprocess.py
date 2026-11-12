@@ -404,7 +404,6 @@ def dummy_rz_decomp_2(phi, wires):
     qp.H(wires)
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestDecomposeTransformations:
     """Tests for the behavior of the `decompose` helper."""
 
@@ -602,8 +601,6 @@ class TestDecomposeTransformations:
         """Test that decompose works correctly when passing through ``fixed_decomps``
         and/or ``alt_decomps`` with the graph-based decomposer."""
         # pylint: disable=too-many-arguments
-        if not qp.decomposition.enabled_graph():
-            pytest.skip("This test only is expected to work with the graph-based system.")
 
         # Mock a simple target gate set
         target_gates = {"Hadamard": 1, "RX": 5, "RY": 5, "PhaseShift": 5, "GlobalPhase": 0}
@@ -690,7 +687,6 @@ class TestDecomposeTransformations:
             ), f"Expected num_work_wires={expected_work_wires} not found in calls"
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestGraphModeExclusiveFeatures:
     """Tests that only work when graph mode is enabled."""
 

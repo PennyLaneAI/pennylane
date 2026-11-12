@@ -284,16 +284,13 @@ to execute a circuit written in terms of ``CNOT`` s. Then, we can define a decom
         name="my_device"
     )
 
-There is also an experimental graph-based decomposition algorithm (activated via
-:func:`qp.decomposition.enable_graph() <pennylane.decomposition.enable_graph>`) that can
-be leveraged when overriding the decompositions of certain operators. To make your device
-compatible with this new system, the ``target_gates`` kwarg in the :func:`pennylane.devices.preprocess.decompose` transform
-needs to be specified as part of the compile pipeline. Note that the stopping condition function
-defines whether an operator should be decomposed, while the ``target_gates`` defines the set of operator
-types that the graph-based decomposition algorithm needs to target.
+To select resource-based decomposition rules in a device's compile pipeline, provide
+``target_gates`` to :func:`pennylane.devices.preprocess.decompose`. The stopping condition
+determines which operator instances need to be decomposed, while ``target_gates`` specifies
+the operator types or names used by the graph solver. Without ``target_gates``, the transform
+uses the recursive decomposer shown above.
 
-In this case, the decomposition for the CNOT needs to be specified as a quantum function, ``decompose_cnot``, and
-registered with ``qp.add_decomps``:
+For example, register the same CNOT decomposition as a quantum function with declared resources:
 
 .. code-block:: python
 

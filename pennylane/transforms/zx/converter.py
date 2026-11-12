@@ -397,8 +397,7 @@ def to_zx(tape, expand_measurements=False):
 
         # Expand the tape to be compatible with PyZX and add rotations first for measurements
         kwargs = {"gate_set": gate_sets.PYZX}
-        if qp.decomposition.enabled_graph():
-            kwargs["fixed_decomps"] = {qp.GlobalPhase: null_decomp}
+        kwargs["fixed_decomps"] = {qp.GlobalPhase: null_decomp}
         # pylint: disable-next=protected-access
         [mapped_tape], _ = qp.transforms._tape_decompose(mapped_tape, **kwargs)
 
@@ -407,10 +406,6 @@ def to_zx(tape, expand_measurements=False):
 
         expanded_operations = []
         for op in mapped_tape.operations:
-            # NOTE: Legacy decomposition previously had GlobalPhase decompose to nothing.
-            # PyZX doesn't track global phases so we can drop it.
-            if not qp.decomposition.enabled_graph() and op.name == "GlobalPhase":
-                continue
             if op.name == "Toffoli":
                 decomp = _toffoli_clifford_t_decomp(op.wires)
                 expanded_operations.extend(decomp)

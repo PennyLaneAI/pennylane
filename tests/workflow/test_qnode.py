@@ -1829,8 +1829,8 @@ class TestTapeExpansion:
                 return [qp.RY(3 * self.data[0], wires=self.wires)]
 
         @qp.register_resources({qp.RY: 1})
-        def custom_decomposition(param, wires):
-            qp.RY(3 * param, wires=wires)
+        def custom_decomposition(phi, wires):
+            qp.RY(3 * phi, wires=wires)
 
         qp.add_decomps(PhaseShift, custom_decomposition)
 
@@ -1882,12 +1882,8 @@ def test_resets_after_execution_error():
         BadOp(x, wires=0)
         return qp.state()
 
-    if qp.decomposition.enabled_graph():
-        with pytest.raises(DeviceError):
-            with pytest.warns(DecompositionWarning):
-                circuit(qp.numpy.array(0.1))
-    else:
-        with pytest.raises(DeviceError):
+    with pytest.raises(DeviceError):
+        with pytest.warns(DecompositionWarning):
             circuit(qp.numpy.array(0.1))
 
     assert circuit.interface == "auto"

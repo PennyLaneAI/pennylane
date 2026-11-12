@@ -255,7 +255,6 @@ class Operator2(metaclass=OperatorMeta):
                 MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,))
                 return qp.expval(qp.Z(0))
 
-        >>> qp.decomposition.enable_graph()
         >>> inspector = qp.decomp_inspector(f)()
         >>> inspector.inspect_decomps(MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,)))
         CHOSEN: Decomposition 0 (name: _my_op_decomp)
@@ -266,7 +265,6 @@ class Operator2(metaclass=OperatorMeta):
         First-Level Expansion Gates: {PauliX: 1, PauliY: 2, Rot: 1}
         Full Expansion Gates: {PauliX: 1, PauliY: 2, Rot: 1}
         Weighted Cost: 4.0
-        >>> qp.decomposition.disable_graph()
 
         **Downstream effects of static_argnames, compilable_argnames**
 

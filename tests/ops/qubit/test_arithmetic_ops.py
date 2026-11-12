@@ -441,7 +441,6 @@ class TestIntegerComparator:
         assert_decomposable(op)
 
     @pytest.mark.integration
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_decomposition_graph_integration(self):
         """Tests that the decomposition is correct under the new system."""
 

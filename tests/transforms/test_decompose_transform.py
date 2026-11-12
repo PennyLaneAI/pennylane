@@ -34,8 +34,6 @@ from pennylane.transforms.decompose import (
 # pylint: disable=unnecessary-lambda-assignment
 # pylint: disable=too-few-public-methods
 
-pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
-
 
 @pytest.fixture(autouse=True)
 def warnings_as_errors():
@@ -75,31 +73,10 @@ class InfiniteOp(Operation):
         return [InfiniteOp(*self.parameters, self.wires)]
 
 
-@pytest.mark.unit
-def test_fixed_alt_decomps_not_available():
-    """Test that a TypeError is raised when graph is disabled and
-    fixed_decomps or alt_decomps is used."""
-
-    @qp.register_resources({qp.H: 2, qp.CZ: 1})
-    def my_cnot(*_, **__):
-        raise NotImplementedError
-
-    tape = qp.tape.QuantumScript([])
-
-    with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
-        # pylint: disable-next=protected-access
-        qp.transforms._tape_decompose(tape, fixed_decomps={qp.CNOT: my_cnot})
-
-    with pytest.raises(TypeError, match="The keyword arguments fixed_decomps and alt_decomps"):
-        # pylint: disable-next=protected-access
-        qp.transforms._tape_decompose(tape, alt_decomps={qp.CNOT: [my_cnot]})
-
-
 class TestDecompose:
     """Unit tests for decompose function"""
 
     gate_set_inputs = [
-        None,
         "RX",
         ["RX"],
         ("RX",),
@@ -146,7 +123,7 @@ class TestDecompose:
             {qp.Toffoli},
             [qp.Toffoli([0, 1, 2]), qp.ops.MidMeasure(0)],
             {
-                "type": UserWarning,
+                "type": qp.exceptions.DecompositionWarning,
                 "msg": "MidMeasure",
             },
         ),
@@ -184,8 +161,9 @@ class TestDecompose:
         (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
         qp.assert_equal(tape, decomposed_tape)
 
-    def test_stopping_cond_without_gate_set(self):
-        gate_set = None
+    def test_stopping_condition_accepts_operator_outside_gate_set(self):
+        """Test that a stopping condition accepts an operator outside the target gate set."""
+        gate_set = {qp.RX}
 
         def stopping_condition(op):
             return op.name in ("NoMatNoDecompOp")
@@ -201,22 +179,34 @@ class TestDecompose:
             return op.name in ("CX")
 
         with pytest.raises(
-            UserWarning,
-            match="Operator NoMatNoDecompOp does not define a decomposition to the target gate set",
+            qp.exceptions.DecompositionWarning,
+            match="unable to find a decomposition.*NoMatNoDecompOp",
         ):
             decompose(tape, gate_set=gate_set, stopping_condition=stopping_condition_2)
 
     def test_user_warning(self):
         """Tests that user warning is raised if operator does not have a valid decomposition"""
         tape = qp.tape.QuantumScript([NoMatNoDecompOp(0, wires=[0])])
-        with pytest.warns(UserWarning, match="does not define a decomposition"):
-            decompose(tape, stopping_condition=lambda op: op.name not in {"NoMatNoDecompOp"})
+        with pytest.warns(
+            qp.exceptions.DecompositionWarning,
+            match="unable to find a decomposition.*NoMatNoDecompOp",
+        ):
+            decompose(
+                tape,
+                gate_set={qp.RX},
+                stopping_condition=lambda op: op.name not in {"NoMatNoDecompOp"},
+            )
 
     def test_infinite_decomposition_loop(self):
         """Test that a recursion error is raised if decomposition enters an infinite loop."""
         tape = qp.tape.QuantumScript([InfiniteOp(1.23, 0)])
-        with pytest.raises(RecursionError, match=r"Reached recursion limit trying to decompose"):
-            decompose(tape, stopping_condition=lambda obj: obj.has_matrix)
+        with pytest.warns(
+            qp.exceptions.DecompositionWarning, match="unable to find a decomposition.*InfiniteOp"
+        ):
+            with pytest.raises(
+                RecursionError, match=r"Reached recursion limit trying to decompose"
+            ):
+                decompose(tape, gate_set={qp.RX}, stopping_condition=lambda obj: obj.has_matrix)
 
     @pytest.mark.parametrize(
         "initial_ops, gate_set, expected_ops, warning_or_error_pattern", iterables_test
@@ -243,12 +233,17 @@ class TestDecompose:
     ):
         """Tests that stopping_condition defined by callables decompose correctly"""
         tape = qp.tape.QuantumScript(initial_ops)
+        target_gates = {qp.Hadamard, qp.T, "Adjoint(T)", qp.CNOT, qp.GlobalPhase}
 
         if warning_pattern is not None:
             with pytest.warns(UserWarning, match=warning_pattern):
-                (decomposed_tape,), _ = decompose(tape, stopping_condition=gate_set)
+                (decomposed_tape,), _ = decompose(
+                    tape, gate_set=target_gates, stopping_condition=gate_set
+                )
         else:
-            (decomposed_tape,), _ = decompose(tape, stopping_condition=gate_set)
+            (decomposed_tape,), _ = decompose(
+                tape, gate_set=target_gates, stopping_condition=gate_set
+            )
 
         expected_tape = qp.tape.QuantumScript(expected_ops)
 
@@ -280,10 +275,13 @@ class TestDecompose:
                 qp.ops.Conditional(m0, qp.RX(0.5, wires=0)),
             ]
         )
-        # pylint: disable-next=protected-access
-        [decomposed_tape], _ = qp.transforms._tape_decompose(
-            [tape], gate_set={qp.RX, qp.RZ, MidMeasure, qp.GlobalPhase}
-        )
+        with pytest.warns(
+            qp.exceptions.DecompositionWarning, match="unable to find a decomposition.*CustomOp"
+        ):
+            # pylint: disable-next=protected-access
+            [decomposed_tape], _ = qp.transforms._tape_decompose(
+                [tape], gate_set={qp.RX, qp.RZ, MidMeasure, qp.GlobalPhase}
+            )
         assert len(decomposed_tape.operations) == 13
 
         with qp.queuing.AnnotatedQueue() as q:

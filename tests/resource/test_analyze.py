@@ -206,7 +206,6 @@ class TestAnalyze:
 
         assert qp.analyze(circuit, level=level)(0.1) == qp.specs(circuit, level=level)(0.1)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_with_catalyst_passes(self):
         """Test that analyze counts the resources after each pass of a pipeline of Catalyst passes,
         with program capture enabled and disabled."""

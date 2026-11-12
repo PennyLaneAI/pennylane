@@ -192,14 +192,12 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     .. code-block:: python
 
-        qp.decomposition.enable_graph()
-
         @qp.qnode(qp.device('reference.qubit', wires=1))
         def c():
             MyOp(wires=0)
             return qp.state()
 
-    >>> print(qp.draw(qp.transforms._tape_decompose(c, max_expansion=1))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(c, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1))())
     0: ──S(M0)─┤  State
     <BLANKLINE>
     M0 =
@@ -507,7 +505,6 @@ class Subroutine:
             for word in pauli_words:
                 qp.PauliRot(x, word, wires)
 
-
     >>> print(qp.draw(WithSetup)(0.5, [0, 1], ["XX", "XY", "XZ"]))
     0: ─╭WithSetup(0.50)─┤
     1: ─╰WithSetup(0.50)─┤
@@ -524,7 +521,6 @@ class Subroutine:
             if y is None:
                 y = len(wires)
             return (y, wires), {}
-
 
     ``setup_inputs`` should only interact with with compile-time information like
     static arguments, pytree structures, shapes, and dtypes, and *not* interact with any
@@ -545,7 +541,6 @@ class Subroutine:
                 # do something else
             ...
 
-
     **Integration with Graph decompositions:**
 
     .. warning::
@@ -554,7 +549,6 @@ class Subroutine:
         Ahead-Of-Time compiled decomposition rules and simple call signatures. Graph decompositions
         are not available for higher order algorithmic abstractions like ``Subroutine``, or operators
         that decompose to ``Subroutine``, in Catalyst.
-
 
     To use ``Subroutine`` with graph-based decompositions, we need a function to compute the resources.
     A default fallback calculates the resources by calling the subroutine with
@@ -615,21 +609,18 @@ class Subroutine:
             MyOp((0,1,2))
             return qp.expval(qp.Z(0))
 
-        qp.decomposition.enable_graph()
-
-
     >>> print(qp.draw(c)())
     0: ─╭MyOp─┤  <Z>
     1: ─├MyOp─┤
     2: ─╰MyOp─┤
-    >>> print(qp.draw(qp.transforms._tape_decompose(c, max_expansion=1))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(c, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1))())
     0: ─╭RXLayer(M0)─┤  <Z>
     1: ─├RXLayer(M0)─┤
     2: ─╰RXLayer(M0)─┤
     <BLANKLINE>
     M0 =
     [0. 1. 2.]
-    >>> print(qp.draw(qp.transforms._tape_decompose(c, max_expansion=2))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(c, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=2))())
     0: ──RX(0.00)─┤  <Z>
     1: ──RX(1.00)─┤
     2: ──RX(2.00)─┤

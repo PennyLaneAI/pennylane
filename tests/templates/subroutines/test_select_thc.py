@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 from pennylane.templates.subroutines import SelectTHC, select_thc_wires
 from pennylane.templates.subroutines.select_thc import (
     _angle_batches,
@@ -773,18 +774,18 @@ class TestControlledSelectTHC:
             qp.ctrl(SelectTHC, control=control)(*args)
         tape = qp.tape.QuantumScript.from_queue(q)
 
-        with qp.decomposition.toggle_graph_ctx(True):
-            # one ChangeOpBasis per V sandwich plus one for the index swaps, and the control
-            # lands on the outside of each of them
-            # pylint: disable-next=protected-access
-            tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][0]
-            names = [op.name for op in tape.operations]
-            assert sum(name.startswith("C(ChangeOpBasis") for name in names) == 3
+        # one ChangeOpBasis per V sandwich plus one for the index swaps, and the control
+        # lands on the outside of each of them
+        gate_set = ROTATIONS_PLUS_CNOT | {qp.QROM, qp.SemiAdder}
+        # pylint: disable-next=protected-access
+        tape = qp.transforms._tape_decompose(tape, gate_set=gate_set, max_expansion=1)[0][0]
+        names = [op.name for op in tape.operations]
+        assert sum(name.startswith("C(ChangeOpBasis") for name in names) == 3
 
-            # pylint: disable-next=protected-access
-            tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][0]
-            # pylint: disable-next=protected-access
-            tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][0]
+        # pylint: disable-next=protected-access
+        tape = qp.transforms._tape_decompose(tape, gate_set=gate_set, max_expansion=1)[0][0]
+        # pylint: disable-next=protected-access
+        tape = qp.transforms._tape_decompose(tape, gate_set=gate_set, max_expansion=1)[0][0]
 
         loads = [op for op in tape.operations if "QROM" in op.name or "SemiAdder" in op.name]
         assert len(loads) == 12

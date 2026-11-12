@@ -32,7 +32,6 @@ from pennylane.exceptions import DeviceError
 
 pytestmark = [
     pytest.mark.skip_unsupported,
-    pytest.mark.usefixtures("enable_and_disable_graph_decomp"),
 ]
 
 

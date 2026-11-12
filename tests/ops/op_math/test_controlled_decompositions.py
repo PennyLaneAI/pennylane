@@ -772,7 +772,6 @@ class TestMCXDecomposition:
         mcx = qp.MultiControlledX(**params)
         assert_decomposable(mcx)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_mcx_fixed_decomp(self):
         """Tests that a fixed decomposition rule is used instead of the stock ones."""
 
@@ -781,7 +780,6 @@ class TestMCXDecomposition:
         assert list(qp.list_decomps(mcx)) == [decompose_mcx_with_no_worker]
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("num_control_wires, num_work_wires", [(4, 1), (4, 2)])
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     def test_mcx_qjit(self, num_control_wires, num_work_wires, work_wire_type):

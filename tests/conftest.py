@@ -197,35 +197,6 @@ def enable_disable_dynamic_shapes():
         jax.config.update("jax_dynamic_shapes", False)
 
 
-@pytest.fixture(scope="function")
-def enable_graph_decomposition():
-    """enable and disable graph-decomposition around each test."""
-    with qp.decomposition.toggle_graph_ctx(True):
-        yield
-
-
-@pytest.fixture(scope="function")
-def disable_graph_decomposition():
-    """disable graph-decomposition."""
-    with qp.decomposition.toggle_graph_ctx(False):
-        yield
-
-
-@pytest.fixture(params=[False, True], ids=["graph_disabled", "graph_enabled"])
-def enable_and_disable_graph_decomp(request):
-    """
-    A fixture that parametrizes a test to run twice: once with graph
-    decomposition disabled and once with it enabled.
-
-    It automatically handles the setup (enabling/disabling) before the
-    test runs and the teardown (always disabling) after the test completes.
-
-    """
-    use_graph_decomp = request.param
-    with qp.decomposition.toggle_graph_ctx(use_graph_decomp):
-        yield
-
-
 #######################################################################
 
 try:

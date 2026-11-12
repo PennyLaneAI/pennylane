@@ -546,7 +546,6 @@ class TestDecomposition:
             op.decomposition()
 
     @pytest.mark.integration
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "coeff, hamiltonian",
         [

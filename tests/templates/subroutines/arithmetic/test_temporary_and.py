@@ -261,7 +261,6 @@ class TestTemporaryAND:
     @pytest.mark.parametrize(
         "rule, expected_ops_per_elbow", expected_adjoint_temporary_and_rule_ops
     )
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_adjoint_temporary_and_decomposition_ops(self, rule, expected_ops_per_elbow):
         """Test that the expected operators are produced by a fixed decomposition of
         Adjoint(TemporaryAND)."""
@@ -349,7 +348,6 @@ class TestTemporaryAND:
 
         assert qp.math.allclose(circuit(), jit_circuit())
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize("cvals", [(0, 0), (0, 1), (1, 1), (True, False)])
     def test_jax_qjit_control_values(self, cvals):

@@ -39,6 +39,9 @@ class TestFable:
         )
 
     @pytest.mark.xfail_if_capture(reason="come back to this after we migrate Fable [sc-129901]")
+    @pytest.mark.pl2do(
+        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+    )
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self, input_matrix):
         """Check the operation using the assert_valid function."""
@@ -178,6 +181,9 @@ class TestFable:
         assert qp.math.get_interface(qp.matrix(circuit_grad)) == "autograd"
 
     @pytest.mark.jax
+    @pytest.mark.pl2do(
+        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+    )
     def test_fable_grad_jax(self, input_matrix):
         """Test that FABLE is differentiable when using jax."""
         import jax
@@ -227,6 +233,9 @@ class TestFable:
         assert np.allclose(gradient_numeric, gradient_jax[0, 0], rtol=0.001)
 
     @pytest.mark.jax
+    @pytest.mark.pl2do(
+        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+    )
     def test_fable_jax_jit(self, input_matrix):
         """Test that FABLE is differentiable when using jax."""
         import jax
@@ -281,6 +290,9 @@ class TestFable:
         assert qp.math.allclose(jitted_fn(input_matrix), circuit_jax(input_matrix))
 
     @pytest.mark.jax
+    @pytest.mark.pl2do(
+        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+    )
     def test_fable_grad_jax_jit_error(self, input_matrix):
         """Test that FABLE is differentiable when using jax."""
         import jax
@@ -301,6 +313,9 @@ class TestFable:
             circuit_jax(input_matrix_jax)
 
     @pytest.mark.autograd
+    @pytest.mark.pl2do(
+        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+    )
     def test_fable_autograd(self, input_matrix):
         """Test that FABLE is differentiable when using autograd."""
         dev = qp.device("default.qubit")

@@ -237,13 +237,12 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
 
     **Example**
 
-    The rule is passed to :func:`qp.decompose` via ``fixed_decomps``:
+    The rule is passed to :func:`qp.decompose <pennylane.transforms.decompose>`
+    via ``fixed_decomps``:
 
     .. code-block:: python
 
         import pennylane as qp
-
-        qp.decomposition.enable_graph()
 
         registers = qp.registers({"grad": 3, "aux": 3, "work": 2})
         rule = qp.transforms.decompositions.make_phase_gradient_distillation_decomp(

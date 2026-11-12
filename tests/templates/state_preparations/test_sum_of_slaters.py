@@ -698,7 +698,6 @@ class TestSumOfSlatersPrep:
         assert qp.MultiplexerStatePreparation(state_type[4], wires=Wire[2]) in resources
         assert_valid_decomp_rule(op, _sos_state_prep)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "num_wires,num_entries",
         [(3, 1), (3, 2), (3, 3), (4, 3), (4, 15), (5, 4), (5, 21), (7, 63)],
@@ -792,7 +791,6 @@ class TestSumOfSlatersPrep:
 
         return tuple(new_indices)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("num_wires,num_entries", [(7, 7), (8, 10)])
     def test_decomposition_prepares_state_non_id_encoding(self, num_wires, num_entries, seed):
         """Test that the decomposition of SumOfSlatersPrep actually prepares the desired state."""

@@ -346,9 +346,11 @@ def _handle_measurement_qjit(
             math.sum(result[1] * math.reshape(is_valid, (-1, 1)), axis=0),
         )
         return res, m_count + 1
-    result = math.squeeze(result)
-    if isinstance(m, SampleMP) and result.ndim == 1:
-        result = math.expand_dims(result, axis=1)  # pragma: no cover
+    if isinstance(m, SampleMP):
+        sample_shape = (-1, math.shape(result)[-1]) if m.obs is None else (-1,)
+        result = math.reshape(result, sample_shape)
+    else:
+        result = math.squeeze(result)
     return gather_non_mcm(m, result, is_valid, postselect_mode=postselect_mode), m_count + 1
 
 

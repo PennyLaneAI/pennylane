@@ -74,7 +74,6 @@ class TestBuildingBlocks:
                 else:
                     assert output == (x, (x + y + 1) % num_y)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("decompose_right_elbow", [False, True])
     def test_add_plus_one_phase(self, decompose_right_elbow, seed):
         """Test that the subroutine _add_plus_one does not incur any phases."""
@@ -601,7 +600,6 @@ class TestOutMultiplier:
         assert wires == qp.wires.Wires([1, 2, 3, 4, 5, 6])
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("mod", [16, 12])
     def test_qjit_compatible(self, mod):
         """Test that the template is compatible with the QJIT compiler."""

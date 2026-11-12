@@ -78,7 +78,6 @@ class TestLabelledOp:
 
 
 @pytest.mark.integration
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize("op", [CustomOp(0), DynOp(0.5, wires=[0])])
 def test_decomposition(op):
     """Tests that the decomposition of label op works."""

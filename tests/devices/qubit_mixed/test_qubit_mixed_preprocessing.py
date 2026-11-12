@@ -329,12 +329,8 @@ class TestPreprocessing:
         ]
 
         program, _ = DefaultMixed(wires=2).preprocess()
-        if qp.decomposition.enabled_graph():
-            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
-                with pytest.warns(DecompositionWarning):
-                    program(tapes)
-        else:
-            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+            with pytest.warns(DecompositionWarning):
                 program(tapes)
 
     @pytest.mark.parametrize(

@@ -18,8 +18,6 @@ This module implements utility functions for the decomposition module.
 
 import re
 from collections import defaultdict
-from contextlib import contextmanager
-from contextvars import ContextVar
 from functools import singledispatch
 from types import MappingProxyType, NoneType
 from typing import overload
@@ -96,59 +94,6 @@ def _get_decomp_args(op: Operator):
     if isinstance(op, Operator1):
         return op.resource_params, op.data, {"wires": op.wires, **op.hyperparameters}
     return abstractify(op).arguments, (), op.arguments
-
-
-def toggle_graph_decomposition():
-    """A closure that toggles the experimental graph-based decomposition on and off."""
-
-    _GRAPH_DECOMPOSITION = ContextVar("_GRAPH_DECOMPOSITION", default=False)
-
-    def enable():
-        """
-        A global toggle for enabling the experimental graph-based decomposition system
-        in PennyLane (introduced in v0.41). This new way of doing decompositions is
-        generally more performant and allows for specifying custom decompositions.
-
-        When this is enabled, :func:`~pennylane.transforms.decompose` will use the new decompositions system.
-        """
-        _GRAPH_DECOMPOSITION.set(True)
-
-    def disable() -> None:
-        """
-        A global toggle for disabling the experimental graph-based decomposition
-        system in PennyLane (introduced in v0.41). The experimental graph-based
-        decomposition system is disabled by default in PennyLane.
-
-        .. seealso:: :func:`~pennylane.decomposition.enable_graph`
-
-        """
-        _GRAPH_DECOMPOSITION.set(False)
-
-    def status() -> bool:
-        """
-        A global toggle for checking the status of the experimental graph-based
-        decomposition system in PennyLane (introduced in v0.41). The experimental
-        graph-based decomposition system is disabled by default in PennyLane.
-
-        .. seealso:: :func:`~pennylane.decomposition.enable_graph`
-
-        """
-        return _GRAPH_DECOMPOSITION.get()
-
-    @contextmanager
-    def toggle_ctx(new_state: bool):
-        """A context manager in which graph is enabled or disabled temporarily."""
-
-        token = _GRAPH_DECOMPOSITION.set(new_state)
-        try:
-            yield
-        finally:
-            _GRAPH_DECOMPOSITION.reset(token)
-
-    return enable, disable, status, toggle_ctx
-
-
-enable_graph, disable_graph, enabled_graph, toggle_graph_ctx = toggle_graph_decomposition()
 
 
 def _init_signature_registration():

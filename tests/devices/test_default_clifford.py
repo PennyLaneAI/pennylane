@@ -671,7 +671,7 @@ def test_clifford_error(check):
         DeviceError,
         match=r"Operator LegacyRX\(1.0, wires=\[0\]\) not supported with default.clifford and does not provide a decomposition",
     ):
-        if qp.decomposition.enabled_graph() and check:
+        if check:
             with pytest.warns(DecompositionWarning):
                 circuit()
         else:

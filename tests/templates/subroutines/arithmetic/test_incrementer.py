@@ -133,7 +133,6 @@ def test_adjoint_decomposition_correct(wires, init_state, forward_output, work_w
     assert np.allclose(result, 0)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize(
     "init_state, expected, work_wires, control_wires, control_values",
     [
@@ -215,7 +214,6 @@ def test_controlled_enough_work_wires(
     assert np.allclose(result, 0)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize(
     "init_state, expected, work_wires, control_wires, control_values",
     [

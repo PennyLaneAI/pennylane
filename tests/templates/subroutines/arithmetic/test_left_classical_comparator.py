@@ -243,7 +243,6 @@ def test_resource_upper_bound(n, comparator, positional):
 
 
 @pytest.mark.catalyst
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
 def test_capture_dynamic_threshold(comparator):
     """A captured circuit returns the correct comparison result as the runtime threshold changes."""

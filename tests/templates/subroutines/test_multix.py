@@ -425,7 +425,6 @@ class TestDecomposition:
 
         assert_decomposable(op)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         ("control_values", "gate_set", "expected"),
         [
@@ -456,7 +455,6 @@ class TestDecomposition:
         resources = qp.resource.resources_from_tape(tape).quantum_operations
         assert resources == expected
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("control_values", [[1], [0]])
     def test_controlled_decomposition_matrix(self, control_values):
         """The controlled MultiX decomposition matches the op matrix for controls on |0> and |1>."""
@@ -467,7 +465,6 @@ class TestDecomposition:
         assert_decomposable(op)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("control_values", [[1, 1, 1], [0, 1, 0]])
     def test_controlled_multi_control_ladder_decomposition_capture_compatibility(
         self, control_values
@@ -483,7 +480,6 @@ class TestDecomposition:
 
         assert_decomposable(op)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_multi_control_ladder_uses_fewer_non_clifford_gates(self):
         """With a work wire available, a multi-control C(MultiX) loads the multi-control
         structure once (as a TemporaryAND ladder) and fans it out to the targets with CNOTs,

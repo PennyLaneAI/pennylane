@@ -23,7 +23,7 @@ from collections.abc import Callable, Generator, Iterable, Sequence
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.core import queuing
 from pennylane.core.operator import Operator
-from pennylane.decomposition import DecompositionGraph, GateSet, enabled_graph, gate_sets
+from pennylane.decomposition import DecompositionGraph, GateSet, gate_sets
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import DecompositionUndefinedError
@@ -62,6 +62,9 @@ def _decompose_setup_inputs(
         the Catalyst pass under capture.
 
     """
+    if gate_set is None:
+        raise TypeError("The gate_set argument is required.")
+
     if isinstance(gate_set, (type, str)):
         gate_set = {gate_set}
 
@@ -118,7 +121,7 @@ Use :func:`~pennylane.decomposition.list_decomps` to inspect the available rules
 def _tape_decompose(
     tape,
     *,
-    gate_set=None,
+    gate_set: Iterable[type | str] | dict[type | str, float],
     stopping_condition=None,
     max_expansion=None,
     num_work_wires: int | None = 0,
@@ -133,13 +136,6 @@ def _tape_decompose(
     :func:`~.transforms.decompose` now always dispatches to Catalyst's ``graph-decomposition`` pass
     under :func:`~.qjit`.
 
-    .. note::
-
-        When ``qp.decomposition.enable_graph()`` is present, this transform takes advantage of the
-        new graph-based decomposition algorithm that allows for more flexible and resource-efficient
-        decompositions towards any target gate set. The keyword arguments ``fixed_decomps`` and
-        ``alt_decomps`` are only functional with this toggle present.
-
     .. seealso::
 
         For more information on PennyLane's decomposition tools and features, check out the
@@ -149,13 +145,11 @@ def _tape_decompose(
 
     Args:
         tape (QuantumScript or QNode or Callable): A quantum circuit (QNode or quantum function).
-        gate_set (Iterable[str or type], Dict[type or str, float], optional): The
+        gate_set (Iterable[str or type], Dict[type or str, float]): The
             target gate set specified as either (1) a sequence of operator types and/or names,
             (2) a dictionary mapping operator types and/or names to their respective costs, in
-            which case the total cost will be minimized (only available when the new graph-based
-            decomposition system is enabled). If ``None``, the gate set is considered to be
-            all operations in ``qp.ops.__all__``.  See :doc:`quantum operators </introduction/operations>`
-            for this list. Operators that belong in the target gate set will not be decomposed.
+            which case the total cost will be minimized. Operators that belong in the target
+            gate set will not be decomposed.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
             the operator is in the target gate set. See the "Gate Set vs. Stopping Condition"
@@ -170,14 +164,12 @@ def _tape_decompose(
             to custom decomposition rules. A decomposition rule is a quantum function decorated with
             :func:`~pennylane.register_resources`. The custom decomposition rules specified here
             will be used in place of the existing decomposition rules defined for this operator.
-            This is only used when :func:`~pennylane.decomposition.enable_graph` is present.
         alt_decomps (Dict[Type[Operator], List[DecompositionRule]]): a dictionary mapping operator
             types to lists of alternative custom decomposition rules. A decomposition rule is a
             quantum function decorated with :func:`~pennylane.register_resources`. The custom
             decomposition rules specified here will be considered as alternatives to the existing
             decomposition rules defined for this operator, and one of them may be chosen if they
-            lead to a more resource-efficient decomposition. This is only used when :func:`~pennylane.decomposition.enable_graph`
-            is present.
+            lead to a more resource-efficient decomposition.
         strict (bool): If ``False``, operators that do not define a decomposition will be treated
             as supported. Defaults to ``True``
 
@@ -188,11 +180,12 @@ def _tape_decompose(
 
     .. note::
 
-        This function does not guarantee a decomposition to the target gate set. If an operation
-        with no defined decomposition is encountered during decomposition, it will be left in the
-        circuit even if it does not belong in the target gate set. In this case, a ``UserWarning``
-        will be raised. To suppress this warning, simply add the operator to the gate set.
-        When ``qp.decomposition.enabled_graph()``, PennyLane errors out with a ``DecompositionError``.
+        An unsolved graph path can produce a ``DecompositionWarning``. The transform then
+        attempts an existing operator decomposition as a fallback, so the result is not
+        guaranteed to contain only operators in the target gate set. With ``strict=False``,
+        operators without registered decomposition rules are treated as supported by the graph.
+        A ``DecompositionError`` is raised if the graph's minimum work-wire requirement
+        exceeds the available budget.
 
     .. seealso::
 
@@ -239,7 +232,10 @@ def _tape_decompose(
 
     .. code-block:: python
 
-        @qp.transforms._tape_decompose(gate_set={"H", "T", "CNOT", "GlobalPhase"}, stopping_condition=lambda op: len(op.wires) <= 2)
+        @qp.transforms._tape_decompose(
+            gate_set={"H", "T", "Adjoint(T)", "CNOT", "GlobalPhase"},
+            stopping_condition=lambda op: len(op.wires) <= 2,
+        )
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.Hadamard(wires=[0])
@@ -261,6 +257,8 @@ def _tape_decompose(
 
     .. code-block:: python
 
+        from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
+
         phase = 1
         target_wires = [0]
         unitary = qp.QubitUnitary(qp.RX(phase, wires=0).matrix(), wires=target_wires)
@@ -273,27 +271,37 @@ def _tape_decompose(
             qp.Hadamard(wires=target_wires)
             qp.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)
 
-    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=0))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=ROTATIONS_PLUS_CNOT, max_expansion=0))())
     0: ──H─╭QuantumPhaseEstimation─┤
     1: ────├QuantumPhaseEstimation─┤
     2: ────├QuantumPhaseEstimation─┤
     3: ────╰QuantumPhaseEstimation─┤
 
-    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=1))())
-    0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
-    1: ──H─╰●──────│───────│───────╭QFT†─┤
-    2: ──H─────────╰●──────│───────├QFT†─┤
-    3: ──H─────────────────╰●──────╰QFT†─┤
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=ROTATIONS_PLUS_CNOT, max_expansion=1))())
+    0: ──RZ(3.14)──RY(1.57)─╭GlobalPhase(-1.57)────╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
+    1: ─────────────────────├GlobalPhase(-1.57)──H─╰●──────│───────│───────╭QFT†─┤
+    2: ─────────────────────├GlobalPhase(-1.57)──H─────────╰●──────│───────├QFT†─┤
+    3: ─────────────────────╰GlobalPhase(-1.57)──H─────────────────╰●──────╰QFT†─┤
     <BLANKLINE>
     M0 =
-    [[0.877...+0.j         0.        -0.479...j]
-     [0.        -0.479...j 0.877...+0.j        ]]
+    [[0.87758256+0.j         0.        -0.47942554j]
+     [0.        -0.47942554j 0.87758256+0.j        ]]
 
-    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=2))())
-    0: ──H─╭U(M0)─╭U(M1)─╭U(M2)───────────────────────────────────────────────────────────┤
-    1: ──H─╰●─────│──────│──────╭SWAP†──────────────────────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
-    2: ──H────────╰●─────│──────│──────────╭(Rϕ(1.57))†──H†─│────────────╰(Rϕ(1.57))†─────┤
-    3: ──H───────────────╰●─────╰SWAP†──H†─╰(Rϕ(1.57))†─────╰(Rϕ(0.79))†──────────────────┤
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=ROTATIONS_PLUS_CNOT, max_expansion=2))())
+    0: ──RZ(3.14)──RY(1.57)─╭GlobalPhase(-1.57)─────────────────────╭GlobalPhase(-1.57)────────── ···
+    1: ─────────────────────├GlobalPhase(-1.57)──RZ(3.14)──RY(1.57)─├GlobalPhase(-1.57)────────── ···
+    2: ─────────────────────├GlobalPhase(-1.57)─────────────────────├GlobalPhase(-1.57)──RZ(3.14) ···
+    3: ─────────────────────╰GlobalPhase(-1.57)─────────────────────╰GlobalPhase(-1.57)────────── ···
+    <BLANKLINE>
+    0: ··· ───────────╭GlobalPhase(-1.57)─────────────────────╭GlobalPhase(-1.57)─╭U(M0)─╭U(M1) ···
+    1: ··· ───────────├GlobalPhase(-1.57)─────────────────────├GlobalPhase(-1.57)─╰●─────│───── ···
+    2: ··· ──RY(1.57)─├GlobalPhase(-1.57)─────────────────────├GlobalPhase(-1.57)────────╰●──── ···
+    3: ··· ───────────╰GlobalPhase(-1.57)──RZ(3.14)──RY(1.57)─╰GlobalPhase(-1.57)────────────── ···
+    <BLANKLINE>
+    0: ··· ─╭U(M2)───────────────────────────────────────────────────────────┤
+    1: ··· ─│──────╭SWAP†──────────────────────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
+    2: ··· ─│──────│──────────╭(Rϕ(1.57))†──H†─│────────────╰(Rϕ(1.57))†─────┤
+    3: ··· ─╰●─────╰SWAP†──H†─╰(Rϕ(1.57))†─────╰(Rϕ(0.79))†──────────────────┤
     <BLANKLINE>
     M0 =
     [[-0.41614684+0.j          0.        -0.90929743j]
@@ -306,11 +314,7 @@ def _tape_decompose(
      [0.        -0.47942554j 0.87758256+0.j        ]]
 
     .. details::
-        :title: Integration with the Graph-Based Decomposition System
-
-        This transform takes advantage of the new graph-based decomposition algorithm when
-        ``qp.decomposition.enable_graph()`` is present, which allows for more flexible
-        decompositions towards any target gate set.
+        :title: Decomposition Options
 
         .. code-block:: python
 
@@ -318,8 +322,6 @@ def _tape_decompose(
 
             with qp.queuing.AnnotatedQueue() as q:
                 qp.CRX(0.5, wires=[0, 1])
-
-            qp.decomposition.enable_graph()
 
             tape = qp.tape.QuantumScript.from_queue(q)
             [new_tape], _ = qp.transforms._tape_decompose([tape], gate_set={"RX", "RY", "RZ", "CZ", "CNOT"})
@@ -329,7 +331,7 @@ def _tape_decompose(
 
         **Weighted Gate Sets**
 
-        With the graph based decomposition enabled, gate weights can be provided in the ``gate_set`` parameter. For example:
+        Gate weights can be provided in the ``gate_set`` parameter. For example:
 
         .. code-block:: python
 
@@ -369,8 +371,8 @@ def _tape_decompose(
 
         **Gate Set vs. Stopping Condition**
 
-        With the new graph-based decomposition system enabled, we make the distinction between a
-        target gate set and a stopping condition. The ``gate_set`` is a collection of operator
+        The graph-based decomposition system distinguishes between a target gate set and a
+        stopping condition. The ``gate_set`` is a collection of operator
         types and/or names that is required by the graph-based decomposition solver, which chooses
         a decomposition rule for each operator that ultimately minimizes the total number of gates
         in terms of the target gate set (or the total cost if weights are provided). On the other
@@ -384,8 +386,6 @@ def _tape_decompose(
         .. code-block:: python
 
             import pennylane as qp
-
-            qp.decomposition.enable_graph()
 
             # Prepare a unitary matrix that we want to decompose
             U = qp.matrix(qp.Rot(0.1, 0.2, 0.3, wires=0) @ qp.Identity(wires=1))
@@ -425,9 +425,9 @@ def _tape_decompose(
 
         **Customizing Decompositions**
 
-        The new system also enables specifying custom decomposition rules. When ``qp.decomposition.enable_graph()``
-        is present, this transform accepts two additional keyword arguments: ``fixed_decomps`` and
-        ``alt_decomps``. The user can define custom decomposition rules as quantum functions decorated
+        This transform accepts custom decomposition rules through the keyword arguments
+        ``fixed_decomps`` and ``alt_decomps``.
+        The user can define custom decomposition rules as quantum functions decorated
         with ``@qp.register_resources``, and provide them to the transform via these arguments.
 
         .. seealso:: :func:`qp.register_resources <pennylane.register_resources>`
@@ -444,8 +444,6 @@ def _tape_decompose(
         .. code-block:: python
 
             import pennylane as qp
-
-            qp.decomposition.enable_graph()
 
             @qp.register_resources({qp.CNOT: 2, qp.RX: 1})
             def isingxx_decomp(phi, wires, **__):
@@ -480,7 +478,6 @@ def _tape_decompose(
 
         >>> qp.specs(qp.qjit(circuit, capture=False))().resources.quantum_operations
         {'GlobalPhase': 6, 'CZ': 3, 'RX': 7, 'RZ': 12}
-        >>> qp.decomposition.disable_graph()
 
         **Degenerate Graph Solutions**
 
@@ -495,34 +492,25 @@ def _tape_decompose(
         ``qp.transforms._tape_decompose(..., gate_set={..., qp.PauliRot: 100_000})``).
     """
 
-    if not enabled_graph() and (fixed_decomps or alt_decomps):
-        raise TypeError(
-            "The keyword arguments fixed_decomps and alt_decomps are only available with the new "
-            "experimental graph-based decomposition system. Use qp.decomposition.enable_graph() "
-            "to enable the new system."
-        )
+    if gate_set is None:
+        raise TypeError("The gate_set argument is required.")
 
     gate_set, stopping_condition = _resolve_gate_set(gate_set, stopping_condition)
 
     if all(stopping_condition(op) for op in tape.operations):
         return (tape,), null_postprocessing
 
-    # If the decomposition graph is enabled, we create a DecompositionGraph instance
-    # to optimize the decomposition.
-    decomp_graph_solution = None
-
-    if enabled_graph():
-        unsupported_ops = [op for op in tape.operations if not stopping_condition(op)]
-        decomp_graph_solution = _construct_and_solve_decomp_graph(
-            unsupported_ops,
-            gate_set,
-            num_work_wires=num_work_wires,
-            minimize_work_wires=minimize_work_wires,
-            fixed_decomps=fixed_decomps,
-            alt_decomps=alt_decomps,
-            strict=strict,
-        )
-        num_work_wires = decomp_graph_solution.num_work_wires
+    unsupported_ops = [op for op in tape.operations if not stopping_condition(op)]
+    decomp_graph_solution = _construct_and_solve_decomp_graph(
+        unsupported_ops,
+        gate_set,
+        num_work_wires=num_work_wires,
+        minimize_work_wires=minimize_work_wires,
+        fixed_decomps=fixed_decomps,
+        alt_decomps=alt_decomps,
+        strict=strict,
+    )
+    num_work_wires = decomp_graph_solution.num_work_wires
 
     try:
         new_ops = [
@@ -567,8 +555,8 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
         current_depth: The current depth of expansion.
         num_work_wires: The number of available work wires at the top level.
         graph_solution: The solution to the decomposition graph.
-        custom_decomposer: A custom function that decomposes an operator. This is only relevant
-            with the graph enabled, and only used by ``preprocess.decompose``.
+        custom_decomposer: A custom function that decomposes an operator, used by
+            ``preprocess.decompose``.
         strict: If True, an error will be raised when an operator does not provide a decomposition
             and does not meet the stopping criteria.
 
@@ -621,10 +609,10 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
             if num_work_wires is not None:
                 num_work_wires -= op_rule.get_work_wire_spec(**params).total
 
-        elif enabled_graph() and isinstance(op, GlobalPhase):
+        elif isinstance(op, GlobalPhase):
             warnings.warn(
-                "With qp.decomposition.enabled_graph(), GlobalPhase is not assumed to have a "
-                "decomposition. To disable this warning, add GlobalPhase to the gate set, or "
+                "GlobalPhase is not assumed to have a decomposition. "
+                "To disable this warning, add GlobalPhase to the gate set, or "
                 "assign a decomposition rule to GlobalPhase via the fixed_decomps keyword "
                 "argument. To make GlobalPhase decompose to nothing, you can import null_decomp "
                 "from pennylane.decomposition, and assign it to GlobalPhase."
@@ -648,16 +636,6 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
             )
 
         else:
-            if not enabled_graph():
-                # Only warn about this if graph mode is not enabled, because if it is, the
-                # graph would have already raised this warning. There is no need to raise
-                # duplicate warnings.
-                warnings.warn(
-                    f"Operator {op.name} does not define a decomposition to the target gate set "
-                    "and was not found in the target gate set. To remove this warning, add the "
-                    f"operator name ({op.name}) or type ({type(op)}) to the gate set.",
-                    UserWarning,
-                )
             yield op
 
         current_depth += 1
@@ -677,11 +655,8 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
 def _process_gate_set(gate_set) -> tuple[GateSet, Callable]:  # pylint: disable=unused-argument
     """Return a GateSet and a callable that returns True iff an operator is in the gate set."""
 
-    if gate_set is None and enabled_graph():
-        raise TypeError(
-            "The gate_set argument is required when the graph-based decomposition system "
-            "is enabled via qp.decomposition.enable_graph()"
-        )
+    if gate_set is None:
+        raise TypeError("The gate_set argument is required.")
 
     gate_set = gate_set or {}
     if isinstance(gate_set, Iterable):

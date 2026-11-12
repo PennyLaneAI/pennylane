@@ -169,7 +169,6 @@ class TestSignedOutSquare:
     """Test the SignedOutSquare template."""
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("output_wires_zeroed", [False, True])
     def test_qjit_dynamic_wires(self, output_wires_zeroed):
         """Test the SignedOutSquare template with dynamic wires."""

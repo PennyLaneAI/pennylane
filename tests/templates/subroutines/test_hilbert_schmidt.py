@@ -338,7 +338,6 @@ class TestHilbertSchmidt:
         copy_V = copy_op.hyperparameters["V"]
         assert all(v1 is not v2 for v1, v2 in zip(orig_V, copy_V))
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("U", "V", "results"),
         [

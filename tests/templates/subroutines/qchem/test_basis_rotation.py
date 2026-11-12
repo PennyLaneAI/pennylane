@@ -316,7 +316,6 @@ class TestDecomposition:
         ],
     )
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_basis_rotation_operations_real_without_jax(self, num_wires, ortho_matrix):
         """Test the correctness of the BasisRotation template including the gate count
         and their order, the wires the operation acts on and the correct use of parameters
@@ -363,7 +362,6 @@ class TestDecomposition:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("unitary_matrix", "eigen_values", "exp_state"),
         [
@@ -562,7 +560,6 @@ def circuit_decomposed(weights):
     return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestInterfaces:
     """Test that the template is compatible with all interfaces, including the computation
     of gradients."""

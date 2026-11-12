@@ -77,15 +77,6 @@ def register_condition(
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     """Binds a condition to a decomposition rule for when it is applicable.
 
-    .. note::
-
-        This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
-        performing decompositions is generally more resource-efficient and accommodates multiple alternative
-        decomposition rules for an operator. In this new system, custom decomposition rules are
-        defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using :func:`~.register_resources`.
-
     Args:
         condition (Callable): a function which takes the resource parameters of an operator as
             arguments and returns ``True`` or ``False`` based on whether the decomposition rule
@@ -163,15 +154,6 @@ def register_resources(
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     r"""Binds a quantum function to its required resources.
 
-    .. note::
-
-        This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
-        doing decompositions is generally more resource efficient and accommodates multiple alternative
-        decomposition rules for an operator. In this new system, custom decomposition rules are
-        defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using ``qp.register_resources``.
-
     Args:
         ops (dict or Callable): a dictionary mapping unique operators within the given ``qfunc``
             to their number of occurrences therein. If a function is provided instead of a static
@@ -196,7 +178,6 @@ def register_resources(
             a data structure that represents a decomposition rule, which contains a PennyLane
             quantum function representing the decomposition, and its resource function.
 
-
     **Example**
 
     This function can be used as a decorator to bind a quantum function to its required resources
@@ -205,8 +186,6 @@ def register_resources(
     .. code-block:: python
 
         import pennylane as qp
-
-        qp.decomposition.enable_graph()
 
         @qp.register_resources({qp.H: 2, qp.CZ: 1})
         def my_cnot(wires, **_):
@@ -219,7 +198,6 @@ def register_resources(
         def circuit():
             qp.CNOT(wires=[0, 1])
             return qp.state()
-
 
     >>> print(qp.draw(circuit, level="device")())
     0: ────╭●────┤ ╭State
@@ -296,8 +274,6 @@ def register_resources(
           from pennylane.allocation import allocate
           from pennylane.typing import Wire
 
-          qp.decomposition.enable_graph()
-
           def _condition_fn(control_wires, **_):
               return len(control_wires) > 1
 
@@ -318,7 +294,11 @@ def register_resources(
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
 
-          @qp.transforms._tape_decompose(fixed_decomps=decomps, num_work_wires=1)
+          @qp.transforms._tape_decompose(
+              gate_set={qp.MultiControlledX, qp.CRot},
+              fixed_decomps=decomps,
+              num_work_wires=1,
+          )
           @qp.qnode(qp.device("default.qubit"))
           def circuit():
               qp.ctrl(qp.Rot(0.1, 0.2, 0.3, wires=3), control=[0, 1, 2])
@@ -615,17 +595,8 @@ _excluded_decomps_var = ContextVar("_excluded_decomps", default=_excluded_decomp
 def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
-    .. note::
-
-        This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
-        doing decompositions is generally more resource efficient and accommodates multiple alternative
-        decomposition rules for an operator. In this new system, custom decomposition rules are
-        defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using :func:`~pennylane.register_resources`
-
-    In the new system of decompositions, multiple decomposition rules can be registered for the
-    same operator class. The specified decomposition rules in ``add_decomps`` serve as alternative
+    Multiple decomposition rules can be registered for the same operator class.
+    The specified decomposition rules in ``add_decomps`` serve as alternative
     decomposition rules that may be chosen if they lead to a more resource-efficient decomposition.
 
     Args:
@@ -735,13 +706,6 @@ def _list_control_decomps(op_name: str) -> DecompCollection:
 
 def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     """Lists decomposition rules for an operator.
-
-    .. note::
-
-        This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
-        doing decompositions is generally more resource efficient and accommodates multiple alternative
-        decomposition rules for an operator.
 
     Args:
         op (type or Operator or str): the operator or operator type to retrieve decomposition
@@ -883,13 +847,6 @@ def exclude_decomps(op: type[Operator] | Operator | str, *names: str) -> _Decomp
 
 def has_decomp(op: type[Operator] | Operator | str) -> bool:
     """Checks whether an operator has decomposition rules defined.
-
-    .. note::
-
-        This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
-        doing decompositions is generally more resource efficient and accommodates multiple alternative
-        decomposition rules for an operator.
 
     Args:
         op (type or Operator or str): the operator or operator type to check for
@@ -1112,13 +1069,6 @@ def inspect_decomps(
     Takes an operator instance and displays how the operator is decomposed
     using different decomposition rules.
 
-    .. note::
-
-        This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This
-        new way of performing decompositions is generally more resource-efficient and accommodates
-        multiple alternative decomposition rules for an operator.
-
     Args:
         op (Operator): the operator instance whose decomposition rules will be inspected.
         *rules (str or DecompositionRule): the decomposition rules to inspect. Accepts instances
@@ -1237,8 +1187,6 @@ def null_decomp(*_, **__):
 
         import pennylane as qp
         from pennylane.decomposition import null_decomp
-
-        qp.decomposition.enable_graph()
 
         @qp.transforms._tape_decompose(
             gate_set={qp.RZ},

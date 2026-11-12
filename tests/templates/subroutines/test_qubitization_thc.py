@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 from pennylane.templates.subroutines.alias_sampling import _build_alias_tables
 from pennylane.templates.subroutines.alias_sampling_thc import _build_thc_pairs, _lcu_signs
 from pennylane.testing import assert_valid
@@ -124,7 +125,9 @@ def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, num_walks=1):
     auxiliaries = [w for w in range(total) if w not in system]
 
     # pylint: disable-next=protected-access
-    @qp.transforms._tape_decompose(stopping_condition=lambda op: len(op.wires) <= 3)
+    @qp.transforms._tape_decompose(
+        gate_set=ROTATIONS_PLUS_CNOT, stopping_condition=lambda op: len(op.wires) <= 3
+    )
     @qp.qnode(qp.device("default.qubit", wires=total))
     def circuit():
         qp.StatePrep(psi, wires=system)

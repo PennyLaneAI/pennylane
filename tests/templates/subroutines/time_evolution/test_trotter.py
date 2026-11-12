@@ -566,7 +566,6 @@ class TestDecomposition:
             qp.assert_equal(op1, op2)
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestIntegration:
     """Test that the TrotterProduct can be executed and differentiated
     through all interfaces."""
