@@ -389,7 +389,8 @@ You can then use the device in PennyLane2 as follows:
 Taking the TOML configuration from the
 :ref:`"Configuration file for declaring supported instructions" <device_capabilities>`
 section, it declares ``ExpectationMP``. Therefore, running ``circuit`` requires
-the implementation of ``Expval`` and ``Observable`` in the ``CustomDevice``.
+the implementation of ``Expval`` and ``Observable`` in the ``CustomDevice``. Additionally, 
+it also needs ``NamedOperation`` for the ``RY`` and ``CNOT``.
 
 When initializing a custom device in PennyLane2, the device's ``wires`` argument
 must be an integer or consecutive integers starting at
