@@ -153,7 +153,7 @@ devices. The identifier must match exactly the name returned by
 ``get_c_interface`` in the :ref:`Python device class <python_device_class>`.
 
 The runtime deletes the device when it's no longer needed, which calls the
-destructor of ``CustomDevice``.
+destructor of ``QuantumDevice``.
 
 Device parameters
 ^^^^^^^^^^^^^^^^^
@@ -301,13 +301,12 @@ All headers and fields are required unless stated otherwise.
     # that the device does not support mid-circuit measurements.
     supported_mcm_methods = [ ]
 
+    # Observables supported by the QuantumDevice.
+    [qjit.operators.observables]
+
 The configuration file is also loaded into the
 :attr:`~pennylane.devices.Device.capabilities` attribute of your
-:ref:`Python device class <python_device_class>`. Sections
-prefixed with ``qjit.``, such as ``[qjit.operators.observables]``, are added on
-top of the corresponding sections above when compiling. They're only needed if
-the same file also describes a PennyLane Classic version of your device; see the
-Catalyst :doc:`custom devices guide <catalyst:dev/custom_devices>` for details.
+:ref:`Python device class <python_device_class>`.
 
 .. _python_device_class:
 
@@ -326,15 +325,16 @@ your shared library and configuration file is required. It needs:
   :ref:`the device factory <device_factory>`) and the absolute path to the
   :ref:`shared library <compile_to_shared_lib>`.
 
-* Optionally, a ``device_kwargs`` dictionary of options to pass to the
-  ``QuantumDevice`` constructor.
+* A ``device_kwargs`` dictionary of options to pass to the ``QuantumDevice``
+  constructor, if applicable.
 
-* An :meth:`~pennylane.devices.Device.execute` method. It's required by
-  :class:`~pennylane.devices.Device`, but compiled programs run on your
-  ``QuantumDevice`` and never call it, so it can simply raise an error.
+* Optionally, override :attr:`~pennylane.devices.Device.name` with
+  the name that the device is registered under (see :ref:`registering_device`).
 
-It's also a good idea to override :attr:`~pennylane.devices.Device.name` with
-the name your device is registered under (see :ref:`registering_device`).
+* An :meth:`~pennylane.devices.Device.execute` method. It's required by the
+  :class:`~pennylane.devices.Device` class, but compiled programs run on your
+  ``QuantumDevice`` and never call :meth:`~pennylane.devices.Device.execute`, so
+  it can simply raise an error as shown in the code example below.
 
 .. code-block:: python
 
@@ -369,7 +369,7 @@ the name your device is registered under (see :ref:`registering_device`).
         def execute(self, circuits, execution_config=None):
             raise NotImplementedError("CustomDevice can only run programs compiled with qp.qjit.")
 
-You can then use the device like any other:
+You can then use the device in PennyLane2 as follows:
 
 .. code-block:: python
 
@@ -382,13 +382,15 @@ You can then use the device like any other:
         qp.CNOT(wires=[0, 1])
         return qp.expval(qp.Z(1))
 
-Since this configuration file declares ``ExpectationMP``, running ``circuit``
-requires your ``QuantumDevice`` to implement ``Expval`` and ``Observable``.
+Taking the TOML configuration from the
+:ref:`"Configuration file for declaring supported instructions" <device_capabilities>`
+section, it declares ``ExpectationMP``. Therefore, running ``circuit`` requires
+the implementation of ``Expval`` and ``Observable`` in the ``CustomDevice``.
 
-When compiling, the device's wires must be consecutive integers starting at
-``0``, such as ``wires=2`` or ``wires=[0, 1]``. Shots are set on the QNode, with
-the ``shots`` argument of :func:`~pennylane.qnode` or with
-:func:`~pennylane.set_shots`, and reach your device through ``SetDeviceShots``.
+When initializing a custom device in PennyLane2, the device's ``wires`` argument
+must be an integer or consecutive integers starting at
+``0``, such as ``wires=2`` or ``wires=[0, 1]``. Shots are set with
+:func:`~pennylane.set_shots` and reach the device through ``SetDeviceShots``.
 
 .. _registering_device:
 
@@ -414,11 +416,9 @@ with ``pip install -e .``, the device can be loaded with:
 
     dev = qp.device("custom.device", wires=2, noise=0.1)
 
-Any keyword arguments are passed to the constructor of your Python class.
-
 Make sure that both the configuration file and the shared library are installed
-with your package, for example as
-`package data <https://setuptools.pypa.io/en/stable/userguide/datafiles.html>`__,
+with your package (e.g., as
+`package data <https://setuptools.pypa.io/en/stable/userguide/datafiles.html>`__),
 so that ``config_filepath`` and ``get_c_interface`` point to files that exist.
 
 Further reading
@@ -427,4 +427,4 @@ Further reading
 * :doc:`Custom devices <catalyst:dev/custom_devices>` and
   :doc:`supported devices <catalyst:dev/devices>` in the Catalyst documentation.
 * The `QuantumDevice API documentation <https://docs.pennylane.ai/projects/catalyst/en/stable/api/structCatalyst_1_1Runtime_1_1QuantumDevice.html>`__.
-* :doc:`/introduction/qjit`: how ``qjit`` compiles and runs your workflow.
+* :doc:`/introduction/qjit`: a primer on ``qjit``.
