@@ -655,9 +655,9 @@ class RZ(Operator2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/rz_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` changes sign
 
                 :class:`~.RZ` | :math:`1`
-                :where: ``phi`` changes sign
 
             .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rz_decomp)
                 :image: /_static/decomposition_thumbnails/rz_controlled.svg
