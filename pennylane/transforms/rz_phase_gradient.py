@@ -156,15 +156,25 @@ def rz_phase_gradient(
     Overall, the full circuit looks like the following:
 
     >>> print(qp.draw(rz_circ, wire_order=wire_order)(phi, wire))
-      targ: ──H────────────╭●──────────────────────╭●───────────H─╭GlobalPhase(2.36)─┤  Probs
-     ang_0: ───────────────├MultiX(M0)──╭SemiAdder─├MultiX(M0)────├GlobalPhase(2.36)─┤
-     ang_1: ───────────────├MultiX(M0)──├SemiAdder─├MultiX(M0)────├GlobalPhase(2.36)─┤
-     ang_2: ───────────────╰MultiX(M0)──├SemiAdder─╰MultiX(M0)────├GlobalPhase(2.36)─┤
-     phg_0: ──PPR(-π/4, Y)──────────────├SemiAdder────────────────├GlobalPhase(2.36)─┤
-     phg_1: ──PPR(π/4, X)───────────────├SemiAdder────────────────├GlobalPhase(2.36)─┤
-     phg_2: ──PPR(π/4, X)───PPR(π/8, Z)─├SemiAdder────────────────├GlobalPhase(2.36)─┤
-    work_0: ────────────────────────────├SemiAdder────────────────├GlobalPhase(2.36)─┤
-    work_1: ────────────────────────────╰SemiAdder────────────────╰GlobalPhase(2.36)─┤
+      targ: ──RZ(3.14)──RY(1.57)─╭●─────────────────────╭●───────────RZ(3.14)──RY(1.57) ···
+     ang_0: ─────────────────────├MultiX(M0)─╭SemiAdder─├MultiX(M0)──────────────────── ···
+     ang_1: ─────────────────────├MultiX(M0)─├SemiAdder─├MultiX(M0)──────────────────── ···
+     ang_2: ─────────────────────╰MultiX(M0)─├SemiAdder─╰MultiX(M0)──────────────────── ···
+     phg_0: ──H─────────Z────────────────────├SemiAdder──────────────────────────────── ···
+     phg_1: ──H─────────S─────────H──────────├SemiAdder──────────────────────────────── ···
+     phg_2: ──H─────────T─────────X──────────├SemiAdder──────────────────────────────── ···
+    work_0: ─────────────────────────────────├SemiAdder──────────────────────────────── ···
+    work_1: ─────────────────────────────────╰SemiAdder──────────────────────────────── ···
+    <BLANKLINE>
+      targ: ··· ─╭GlobalPhase(1.18)─┤  Probs
+     ang_0: ··· ─├GlobalPhase(1.18)─┤
+     ang_1: ··· ─├GlobalPhase(1.18)─┤
+     ang_2: ··· ─├GlobalPhase(1.18)─┤
+     phg_0: ··· ─├GlobalPhase(1.18)─┤
+     phg_1: ··· ─├GlobalPhase(1.18)─┤
+     phg_2: ··· ─├GlobalPhase(1.18)─┤
+    work_0: ··· ─├GlobalPhase(1.18)─┤
+    work_1: ··· ─╰GlobalPhase(1.18)─┤
     <BLANKLINE>
     M0 =
     [ True  True  True]
