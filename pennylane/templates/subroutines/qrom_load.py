@@ -138,34 +138,34 @@ class QROMLoad(Operator2):
         >>> op = qp.QROMLoad(*args, clean=False)
         >>> rule = qp.list_decomps(qp.QROMLoad)["_select_swap"]
         >>> print(qp.draw(rule, show_matrices=False)(**op.arguments))
-         0: ─╭◑────────────────────────────────────────────┤
-         1: ─├◑────────────────────────────────────────────┤
-         2: ─├◑────────────────────────────────────────────┤
-         3: ─├◑────────────────────────────────────────────┤
-         4: ─├◑────────────────────────────────────────────┤
-         5: ─├◑────────────────────────────────────────────┤
-         6: ─│─────────╭●────╭●────╭●────╭●────────────────┤
-         7: ─│─────────│─────│─────│─────│─────╭●────╭●────┤
-         8: ─├QROM(M0)─│─────│─────├SWAP─│─────├SWAP─│─────┤
-         9: ─├QROM(M0)─│─────│─────│─────├SWAP─│─────├SWAP─┤
-        10: ─├QROM(M0)─├SWAP─│─────│─────│─────╰SWAP─│─────┤
-        11: ─├QROM(M0)─│─────├SWAP─│─────│───────────╰SWAP─┤
-        12: ─├QROM(M0)─│─────│─────╰SWAP─│─────────────────┤
-        13: ─├QROM(M0)─│─────│───────────╰SWAP─────────────┤
-        14: ─├QROM(M0)─╰SWAP─│─────────────────────────────┤
-        15: ─├QROM(M0)───────╰SWAP─────────────────────────┤
-        16: ─├work─────────────────────────────────────────┤
-        17: ─├work─────────────────────────────────────────┤
-        18: ─├work─────────────────────────────────────────┤
-        19: ─├work─────────────────────────────────────────┤
-        20: ─╰work─────────────────────────────────────────┤
+         0: ─╭◑────────────────────────────────────────────────┤
+         1: ─├◑────────────────────────────────────────────────┤
+         2: ─├◑────────────────────────────────────────────────┤
+         3: ─├◑────────────────────────────────────────────────┤
+         4: ─├◑────────────────────────────────────────────────┤
+         5: ─├◑────────────────────────────────────────────────┤
+         6: ─│─────────────╭●────╭●────╭●────╭●────────────────┤
+         7: ─│─────────────│─────│─────│─────│─────╭●────╭●────┤
+         8: ─├QROMLoad(M0)─│─────│─────├SWAP─│─────├SWAP─│─────┤
+         9: ─├QROMLoad(M0)─│─────│─────│─────├SWAP─│─────├SWAP─┤
+        10: ─├QROMLoad(M0)─├SWAP─│─────│─────│─────╰SWAP─│─────┤
+        11: ─├QROMLoad(M0)─│─────├SWAP─│─────│───────────╰SWAP─┤
+        12: ─├QROMLoad(M0)─│─────│─────╰SWAP─│─────────────────┤
+        13: ─├QROMLoad(M0)─│─────│───────────╰SWAP─────────────┤
+        14: ─├QROMLoad(M0)─╰SWAP─│─────────────────────────────┤
+        15: ─├QROMLoad(M0)───────╰SWAP─────────────────────────┤
+        16: ─├work─────────────────────────────────────────────┤
+        17: ─├work─────────────────────────────────────────────┤
+        18: ─├work─────────────────────────────────────────────┤
+        19: ─├work─────────────────────────────────────────────┤
+        20: ─╰work─────────────────────────────────────────────┤
 
-        The inner ``QROM`` only reads the first six control wires, so it has 64 instead of 256
+        The inner ``QROMLoad`` only reads the first six control wires, so it has 64 instead of 256
         entries. Each entry stacks four bitstrings, which are loaded onto the target wires 8 and 9
         *and* the work wires 10 to 15 at once. The two remaining control wires then pick the
         requested bitstring with controlled ``SWAP`` gates, moving it into the target register.
         In general, loading :math:`k` bitstrings of length :math:`n` in parallel divides the number
-        of entries in the ``QROM`` block by :math:`k`, at the price of :math:`n(k-1)` controlled
+        of entries in the inner block by :math:`k`, at the price of :math:`n(k-1)` controlled
         ``SWAP`` gates. ``QROMLoad`` weighs the two against each other and picks the :math:`k`
         that minimizes the combined cost, among the powers of two that fit into the work wires.
         Here, eight bitstrings in parallel would not fit, and two would be more expensive than four.
@@ -187,7 +187,8 @@ class QROMLoad(Operator2):
                     minimize the cost among all :math:`j` with
                     :math:`n(k - 1) + \max(c - j - 1, 0) \leq w`
 
-                :class:`~.QROM` with :math:`\lceil L/k \rceil` bitstrings of length :math:`kn` on :math:`c - j` control wires | :math:`2` if ``clean=True``, :math:`1` otherwise | 2
+                :class:`~.QROM` with :math:`\lceil L/k \rceil` bitstrings of length :math:`kn` on :math:`c - j` control wires | :math:`2` if ``clean=True``, :math:`0` otherwise | 2
+                :class:`~.QROMLoad` with ``clean=True``, :math:`\lceil L/k \rceil` bitstrings of length :math:`kn` on :math:`c - j` control wires | :math:`1` if ``clean=False``, :math:`0` otherwise | 0
                 :class:`~.SWAP` with 1 control | :math:`4n(k - 1)` if ``clean=True``, :math:`n(k - 1)` otherwise | 12
                 :class:`~.Hadamard` | :math:`2n` if ``clean=True``, :math:`0` otherwise | 2
 
@@ -227,7 +228,13 @@ class QROMLoad(Operator2):
 
 
 def _select_ops(
-    bitstrings, depth, target_wires, swap_wires, select_control_wires, select_work_wires
+    bitstrings,
+    depth,
+    target_wires,
+    swap_wires,
+    select_control_wires,
+    select_work_wires,
+    zeroed_targets=False,
 ):  # pylint:disable=too-many-arguments
     num_targets = len(target_wires)
     num_bitstrings = bitstrings.shape[0]
@@ -239,12 +246,16 @@ def _select_ops(
 
     num_targets_select = depth * num_targets
     new_bitstrings = bitstrings.reshape((num_columns, num_targets_select))
-    QROM(
-        new_bitstrings,
-        control_wires=select_control_wires,
-        target_wires=swap_wires[:num_targets_select],
-        work_wires=select_work_wires,
-    )
+    wires = {
+        "control_wires": select_control_wires,
+        "target_wires": swap_wires[:num_targets_select],
+        "work_wires": select_work_wires,
+    }
+    if zeroed_targets:
+        # clean=True, because the CSWAPs borrow a work wire of the Select block as zeroed wire
+        QROMLoad(new_bitstrings, **wires, clean=True)
+    else:
+        QROM(new_bitstrings, **wires)
 
 
 def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires, adjoint=False):
@@ -389,9 +400,9 @@ def _select_swap_resources(bitstrings, control_wires, target_wires, work_wires, 
     )
     num_work_wires_select = max(0, num_control_wires_select - 1)
     num_columns = -(-num_bitstrings // depth)
-    # Select block (implemented as a nested QROM over concatenated columns)
+    # Select block (implemented as a nested QROM or QROMLoad over concatenated columns)
     num_targets_select = depth * num_targets
-    bigger_qrom = QROM(
+    select_args = (
         Bool[num_columns, num_targets_select],
         Wire[num_control_wires_select],
         Wire[num_targets_select],
@@ -410,9 +421,9 @@ def _select_swap_resources(bitstrings, control_wires, target_wires, work_wires, 
     )
 
     if not clean:
-        return {bigger_qrom: 1, cswap_rep: num_cswaps_per_block}
+        return {QROMLoad(*select_args, clean=True): 1, cswap_rep: num_cswaps_per_block}
 
-    return {bigger_qrom: 2, cswap_rep: 4 * num_cswaps_per_block, H: 2 * num_targets}
+    return {QROM(*select_args): 2, cswap_rep: 4 * num_cswaps_per_block, H: 2 * num_targets}
 
 
 @register_condition(_select_swap_condition)
@@ -438,7 +449,13 @@ def _select_swap(bitstrings, control_wires, target_wires, work_wires, clean):
 
     if not clean:
         _select_ops(
-            bitstrings, depth, target_wires, swap_wires, select_control_wires, select_work_wires
+            bitstrings,
+            depth,
+            target_wires,
+            swap_wires,
+            select_control_wires,
+            select_work_wires,
+            zeroed_targets=True,
         )
         _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires)
         return

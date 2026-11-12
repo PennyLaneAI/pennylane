@@ -284,6 +284,37 @@ class TestQROMLoad:
         for op1, op2 in zip(qrom_decomposition, expected_gates):
             qp.assert_equal(op1, op2)
 
+    def test_decomposition_not_clean(self):
+        """Test that the Select block of the decomposition with ``clean=False`` is a ``QROMLoad``
+        with ``clean=True``, because its target wires are zeroed and the CSWAPs borrow its work
+        wires as zeroed wires."""
+        bitstrings = [[(i // 3) % 2] for i in range(32)]
+        qrom_decomposition = qp.QROMLoad(
+            bitstrings,
+            control_wires=[0, 1, 2, 3, 4],
+            target_wires=[5],
+            work_wires=[6, 7, 8, 9, 10],
+            clean=False,
+        ).decomposition()
+
+        columns = [sum(bitstrings[4 * i : 4 * i + 4], []) for i in range(8)]
+        qrom_load = qp.QROMLoad(
+            columns,
+            control_wires=[0, 1, 2],
+            target_wires=[5, 6, 7, 8],
+            work_wires=[9, 10],
+            clean=True,
+        )
+        cswaps = [
+            qp.ctrl(qp.SWAP(wires), control=c, work_wires=[9], work_wire_type="zeroed")
+            for c, wires in [(3, [6, 8]), (3, [5, 7]), (4, [5, 6])]
+        ]
+        expected_gates = [qrom_load] + cswaps
+
+        assert len(qrom_decomposition) == len(expected_gates)
+        for op1, op2 in zip(qrom_decomposition, expected_gates):
+            qp.assert_equal(op1, op2)
+
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         ("num_bitstrings", "control_wires", "target_wires", "work_wires", "clean"),
@@ -589,10 +620,13 @@ def test_select_swap_t_count(sizes, clean, seed):
     gate_set = {"T": 100, "Adjoint(T)": 100, "H": 1, "S": 1, "Adjoint(S)": 1, "CNOT": 1, "X": 1}
     gate_set |= {"Z": 1, "CZ": 1, "GlobalPhase": 1, "MidMeasure": 1}
 
-    def t_count(op, fixed_decomps=None):
-        graph = DecompositionGraph([op], gate_set, fixed_decomps=fixed_decomps)
-        counts = graph.solve().resource_estimate(op).gate_counts
-        return sum(num for gate, num in counts.items() if str(gate) in {"T", "Adjoint(T)"})
+    def t_count(op):
+        solution = DecompositionGraph([op], gate_set).solve()
+        counts = solution.resource_estimate(op).gate_counts
+        return solution, sum(
+            num for gate, num in counts.items() if str(gate) in {"T", "Adjoint(T)"}
+        )
 
-    select_swap_t_count = t_count(op, fixed_decomps={qp.QROMLoad: _select_swap})
-    assert 0 < select_swap_t_count < t_count(qp.QROM(bitstrings, **wires))
+    solution, select_swap_t_count = t_count(op)
+    assert solution.decomposition(op) is _select_swap
+    assert 0 < select_swap_t_count < t_count(qp.QROM(bitstrings, **wires))[1]
