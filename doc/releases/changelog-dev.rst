@@ -895,6 +895,11 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* :func:`~pennylane.list_decomps` now includes generic controlled fallback rules when given an
+  operator name such as ``"C(RX)"``. Their registered conditions determine applicability
+  from operator arguments.
+  `(#10502) <https://github.com/PennyLaneAI/pennylane/pull/10502>`__
+
 * Callable :func:`~.ctrl` now captures work-wire labels as operands, supporting
   traced work wires.
   `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
@@ -2299,6 +2304,10 @@ Internal changes ⚙️
 Documentation 📝
 ~~~~~~~~~~~~~~~~
 
+* Updated :class:`~.MPSPrep` documentation to use ``default.qubit`` and explain the
+  work wires required for gate-based decomposition, replacing the ``lightning.tensor`` example.
+  `(#10505) <https://github.com/PennyLaneAI/pennylane/pull/10505>`__
+
 * The docstring for :class:`~.ControlledPhaseShift` now mentions that :class:`~.CPhase` is an alias.
   `(#10405) <https://github.com/PennyLaneAI/pennylane/pull/10405>`__
 
@@ -2368,6 +2377,11 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed :func:`~pennylane.draw_mpl` to show the control values of :class:`~.TemporaryAND`
+  and its adjoint. Rounded connectors on the left or right distinguish these
+  operations from :class:`~.Toffoli`, consistently with :func:`~pennylane.draw`.
+  `(#10514) <https://github.com/PennyLaneAI/pennylane/pull/10514>`__
 
 * Fixed a bug where :func:`~pennylane.draw_mpl` replaced the symbols and quantum controls of
   conditionally applied operations with a labelled box. Conditional control/target diagrams

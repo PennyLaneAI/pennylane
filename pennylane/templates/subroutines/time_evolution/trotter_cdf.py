@@ -103,10 +103,10 @@ class TrotterCDF(Operator2):
             nuc_constant = 0.5,
         )
 
-        gate_set = {"BasisRotation", "RZ", "IsingZZ", "GlobalPhase", "ForLoop"}
+        gate_set = {"BasisRotation", "RZ", "IsingZZ", "GlobalPhase"}
 
         @qp.qjit
-        @qp.transforms._tape_decompose(gate_set=gate_set)
+        @qp.decompose(gate_set=gate_set)
         @qp.qnode(qp.device("lightning.qubit", wires=2 * N))
         def trotter_circuit():
             qp.TrotterCDF(
