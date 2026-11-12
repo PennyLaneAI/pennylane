@@ -198,6 +198,8 @@ def _process_data(op):
     else:
         mod_val = None
 
+    # Disable NumPy's summarization of large arrays (>1000 elements) so that
+    # every entry contributes to the hash (see #10460).
     with np.printoptions(threshold=np.inf):
         return str([id(d) if is_tracer(d) else _mod_and_round(d, mod_val) for d in op.data])
 
