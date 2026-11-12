@@ -31,6 +31,7 @@ from pennylane.exceptions import (
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
+from pennylane.ops._pauli_conversion import to_operator
 from pennylane.ops.identity import Identity
 
 from .pow2 import Pow2
@@ -381,7 +382,7 @@ class Pow(ScalarSymbolicOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return pr.operation(wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         base = self.base if qp.capture.enabled() else self.base.simplify()
         try:

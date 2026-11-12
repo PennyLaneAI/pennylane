@@ -355,9 +355,9 @@ def test_hf_state_basis(electrons, symbols, geometry, charge):
     state_parity = qchem.hf_state(electrons, qubits, basis="parity")
     state_bk = qchem.hf_state(electrons, qubits, basis="bravyi_kitaev")
 
-    h_occ = qp.jordan_wigner(h_ferm, ps=True, tol=1e-16).operation()
-    h_parity = qp.parity_transform(h_ferm, qubits, ps=True, tol=1e-16).operation()
-    h_bk = qp.bravyi_kitaev(h_ferm, qubits, ps=True, tol=1e-16).operation()
+    h_occ = qp.pauli.to_operator(qp.jordan_wigner(h_ferm, ps=True, tol=1e-16))
+    h_parity = qp.pauli.to_operator(qp.parity_transform(h_ferm, qubits, ps=True, tol=1e-16))
+    h_bk = qp.pauli.to_operator(qp.bravyi_kitaev(h_ferm, qubits, ps=True, tol=1e-16))
 
     dev = qp.device("default.qubit", wires=qubits)
 

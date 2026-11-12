@@ -31,6 +31,7 @@ from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
+from pennylane.ops._pauli_conversion import to_operator
 from pennylane.ops.op_math.controlled2 import flip_zero_control
 from pennylane.typing import AbstractWires, TensorLike, Wire
 from pennylane.wires import DynamicWire, Wires, is_abstract_qubit
@@ -284,7 +285,7 @@ class Prod2(CompositeOp2):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             with qp.QueuingManager.stop_recording(), capture.pause():
-                ops = [pauli.operation() for pauli in pr.keys()]
+                ops = [to_operator(pauli) for pauli in pr.keys()]
             return list(pr.values()), ops
 
         with qp.QueuingManager.stop_recording(), capture.pause():
@@ -317,7 +318,7 @@ class Prod2(CompositeOp2):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return pr.operation(wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         global_phase, factors = self._simplify_factors(factors=self.operands)
 

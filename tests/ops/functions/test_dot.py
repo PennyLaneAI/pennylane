@@ -209,7 +209,7 @@ class TestDotSum:
     def test_dot_with_words_and_sentences_pauli_false(self, coeff, ops):
         """Test operators that are a mix of pauli words and pauli sentences"""
         dot_res = qp.dot(coeff, ops, pauli=False)
-        true_res = qp.dot(coeff, [op.operation() for op in ops], pauli=False)
+        true_res = qp.dot(coeff, [qp.pauli.to_operator(op) for op in ops], pauli=False)
         assert dot_res == true_res
 
     data_op_words_and_sentences_pauli_false = (
@@ -292,7 +292,7 @@ class TestDotPauliSentence:
     def test_coeffs_and_ops(self):
         """Test that the coefficients and operators of the returned PauliSentence are correct."""
         ps = qp.dot(coeffs0, ops0, pauli=True)
-        h = ps.operation()
+        h = qp.pauli.to_operator(ps)
         hcoeffs, hops = h.terms()
         assert qp.math.allequal(hcoeffs, coeffs0)
         for _op1, _op2 in zip(hops, ops0):
@@ -304,7 +304,7 @@ class TestDotPauliSentence:
             coeffs=[0.12, 1.2, 12], ops=[qp.PauliX(0), qp.PauliX(0), qp.PauliX(0)], pauli=True
         )
         assert len(ps) == 1
-        h = ps.operation()
+        h = qp.pauli.to_operator(ps)
         assert isinstance(h, qp.ops.SProd)
         qp.assert_equal(h.base, qp.PauliX(0))
 
@@ -312,7 +312,7 @@ class TestDotPauliSentence:
         """Test that hamiltonian computed from the PauliSentence created by the dot function is equal
         to the simplified hamiltonian."""
         ps = qp.dot(coeffs0, ops0, pauli=True)
-        h_ps = ps.operation()
+        h_ps = qp.pauli.to_operator(ps)
         h = qp.Hamiltonian(coeffs0, ops0)
         h.simplify()
         qp.assert_equal(h_ps, h)

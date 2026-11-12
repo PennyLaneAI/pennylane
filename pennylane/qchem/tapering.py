@@ -126,7 +126,7 @@ def symmetry_generators(h):
             tau[idx] = pauli_map[f"{x}{z}"]
 
         ham = qp.pauli.PauliSentence({qp.pauli.PauliWord(tau): 1.0})
-        ham = ham.operation(h.wires)
+        ham = qp.pauli.to_operator(ham, h.wires)
         generators.append(ham)
 
     return generators
@@ -212,7 +212,7 @@ def clifford(generators, paulixops):
 
     u = functools.reduce(lambda p, q: p @ q, cliff)
 
-    return u.operation()
+    return qp.pauli.to_operator(u)
 
 
 def _split_pauli_sentence(pl_sentence, max_size=15000):
@@ -275,8 +275,9 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
                 val[i] *= paulix_sector[idx]
 
         obs.append(
-            qp.pauli.PauliWord({wiremap_tap[wire]: pw[wire] for wire in wires_tap}).operation(
-                wire_order=wires_ord
+            qp.pauli.to_operator(
+                qp.pauli.PauliWord({wiremap_tap[wire]: pw[wire] for wire in wires_tap}),
+                identity_wires=wires_ord,
             )
         )
 
@@ -740,11 +741,11 @@ def taper_operation(
         if qp.QueuingManager.recording():
             qp.QueuingManager.remove(operation)
             for op, coeff in gen_tapered.items():
-                qp.exp(op.operation(), 1j * params * coeff)
+                qp.exp(qp.pauli.to_operator(op), 1j * params * coeff)
         else:
             ops_tapered = []
             for op, coeff in gen_tapered.items():
-                ops_tapered.append(qp.exp(op.operation(), 1j * params * coeff))
+                ops_tapered.append(qp.exp(qp.pauli.to_operator(op), 1j * params * coeff))
             return ops_tapered
 
     # if operation was a callable, return the functional form that accepts new parameters
