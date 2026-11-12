@@ -1231,8 +1231,9 @@ class TestControlledDecompositions:
             [op1, op2],
             gate_set={"ControlledPhaseShift", "PhaseShift", "GlobalPhase", "X"},
         )
-        assert len(graph._graph.nodes()) == 17
-        assert len(graph._graph.edges()) == 22
+        # Inapplicable generic rules are filtered before graph construction.
+        assert len(graph._graph.nodes()) == 16
+        assert len(graph._graph.edges()) == 21
 
         # Verify the decompositions
         solution = graph.solve()
@@ -1283,8 +1284,8 @@ class TestControlledDecompositions:
                 CustomControlledOp: [custom_controlled_decomp],
             },
         )
-        assert len(graph._graph.nodes()) == 83
-        assert len(graph._graph.edges()) == 137
+        assert len(graph._graph.nodes()) == 79
+        assert len(graph._graph.edges()) == 133
 
         solution = graph.solve()
 

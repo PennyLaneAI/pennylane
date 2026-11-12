@@ -712,25 +712,8 @@ def _list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
 
 
 def _list_control_decomps(op_name: str) -> DecompCollection:
-    """Lists custom rules and generic fallback candidates for a controlled operator name.
-
-    All three generic fallbacks are included. Their applicability conditions are checked
-    using operator arguments rather than the name alone.
-
-    Args:
-        op_name (str): operator name, including symbolic names such as ``"C(RX)"``
-    """
-    # Load rule implementations lazily after operator definitions are available.
-    from pennylane.decomposition_rules.op_math.controlled2 import (  # pylint: disable=import-outside-toplevel
-        ctrl_many_zeroed_work_wires,
-        ctrl_single_work_wire,
-        to_controlled_unitary,
-    )
-
-    registered_rules = _get_registered_decomps(op_name)
-    generic_decomps = [to_controlled_unitary, ctrl_many_zeroed_work_wires, ctrl_single_work_wire]
-    generic_rules = DecompCollection(generic_decomps)
-    return registered_rules + generic_rules
+    """List directly registered rules and generic controlled candidates for an operator name."""
+    return _get_registered_decomps(op_name) + list_decomps("ControlledOp")
 
 
 def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:

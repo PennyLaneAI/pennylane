@@ -44,6 +44,8 @@ from pennylane.decomposition_rules.qubit.parametric_ops_single_qubit import (
 _decompositions = defaultdict(DecompCollection)
 decompositions = ContextVar("_test_decompositions", default=_decompositions)
 
+decompositions.get()["ControlledOp"].extend(qp.list_decomps("ControlledOp"))
+
 
 def to_resources(gate_count: dict, weighted_cost: float | None = None) -> Resources:
     """Wrap a dictionary of gate counts in a Resources object."""

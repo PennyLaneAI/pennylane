@@ -28,6 +28,7 @@ from pennylane.decomposition.decomposition_rule import (
     _decomp_contains_mcm,
     _get_registered_decomps,
     _list_decomps,
+    add_decomps,
     get_fixed_decomp,
     list_decomps,
     register_condition,
@@ -65,13 +66,9 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
         return custom_rules
 
     # Get general fallback rules.
-    general_rules = DecompCollection([])
-    if op.base.has_matrix and len(op.base.wires) == 1:
-        general_rules.append(to_controlled_unitary)
-    if len(op.control_wires) > 1:
-        general_rules.append(ctrl_many_zeroed_work_wires)
-    if len(op.control_wires) > 2:
-        general_rules.append(ctrl_single_work_wire)
+    general_rules = DecompCollection(
+        [rule for rule in list_decomps("ControlledOp") if rule.is_applicable(**op.arguments)]
+    )
 
     # Populate controlled versions of the base decomposition rules.
     wrapped_rules = DecompCollection(
@@ -319,4 +316,11 @@ def _ctrl_many_zeroed_work_wires(base, control_wires, work_wires, *_, **__):
 
 ctrl_many_zeroed_work_wires = flip_zero_control(
     _ctrl_many_zeroed_work_wires, name="ctrl_many_zeroed_work_wires"
+)
+
+add_decomps(
+    "ControlledOp",
+    to_controlled_unitary,
+    ctrl_many_zeroed_work_wires,
+    ctrl_single_work_wire,
 )

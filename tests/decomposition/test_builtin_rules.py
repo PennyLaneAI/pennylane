@@ -122,5 +122,9 @@ assert qp.list_decomps(qp.QFT)
 assert qp.list_decomps(qp.QROM)
 assert qp.list_decomps(qp.adjoint(qp.RX(0.5, 0)))
 assert qp.list_decomps(qp.ctrl(qp.H(0), control=1))
+expected = ["to_controlled_unitary", "ctrl_many_zeroed_work_wires", "ctrl_single_work_wire"]
+assert [rule.name for rule in qp.list_decomps("ControlledOp")] == expected
+assert [rule.name for rule in qp.list_decomps("C(UnregisteredOp)")] == expected
+assert [rule.name for rule in qp.list_decomps("Controlled(UnregisteredOp)")] == expected
 """
     subprocess.run([sys.executable, "-B", "-c", source], check=True, capture_output=True, text=True)
