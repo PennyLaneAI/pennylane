@@ -427,4 +427,3 @@ Further reading
 * :doc:`Custom devices <catalyst:dev/custom_devices>` and
   :doc:`supported devices <catalyst:dev/devices>` in the Catalyst documentation.
 * The `QuantumDevice API documentation <https://docs.pennylane.ai/projects/catalyst/en/stable/api/structCatalyst_1_1Runtime_1_1QuantumDevice.html>`__.
-* :doc:`/introduction/qjit`: a primer on ``qjit``.
