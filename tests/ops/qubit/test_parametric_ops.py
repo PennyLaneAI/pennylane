@@ -809,7 +809,7 @@ class TestDecompositions:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("base_type", [qp.PhaseShift, qp.U1])
-    @pytest.mark.parametrize("control_values", [[0], [1], [1, 1], [0, 1, 0]])
+    @pytest.mark.parametrize("control_values", [[], [0], [1], [1, 1], [0, 1, 0]])
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     def test_controlled_phase_shift_with_work_wires_decomposable(
         self, base_type, control_values, work_wire_type
@@ -826,6 +826,7 @@ class TestDecompositions:
         )
         assert_decomposable(op)
 
+    @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("base_type", [qp.PhaseShift, qp.U1])
     @pytest.mark.parametrize("num_controls", [1, 2, 3])
@@ -837,9 +838,8 @@ class TestDecompositions:
         work_wires = list(range(1 + num_controls, 1 + 2 * num_controls))
 
         # pylint: disable-next=protected-access
-        @qp.transforms._tape_decompose(
-            gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", "PhaseShift", "PauliX"}
-        )
+        @qp.qjit(capture=True, target="mlir", enable_aot_compilation=False)
+        @qp.decompose(gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", "PhaseShift", "PauliX"})
         @qp.qnode(qp.device("null.qubit", wires=1 + 2 * num_controls))
         def circuit():
             qp.ctrl(
@@ -847,15 +847,14 @@ class TestDecompositions:
             )
             return qp.state()
 
-        tape = qp.workflow.construct_tape(circuit)()
-        assert [op.name for op in tape.operations] == (
-            ["TemporaryAND"] * num_controls
-            + ["PhaseShift"]
-            + ["Adjoint(TemporaryAND)"] * num_controls
-        )
-        assert tape.operations[0].wires == Wires([*control, 0][:2] + work_wires[:1])
-        assert tape.operations[num_controls - 1].wires[1] == 0
-        assert tape.operations[num_controls].wires == Wires(work_wires[-1:])
+        resources = qp.analyze(circuit)().resources.quantum_operations
+        expected = {
+            "TemporaryAND": num_controls,
+            "Adjoint(TemporaryAND)": num_controls,
+            "PauliX": 2 * num_controls,
+            "PhaseShift": 1,
+        }
+        assert resources == expected
 
     two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, [1, 2]), (3, [1, 3]), (4, [9, 0])]
     five_wire_pcphases = [(i, [0, 1, 3, 2, 7]) for i in range(2**5)]

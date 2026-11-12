@@ -1075,6 +1075,7 @@ def _controlled_phase_shift_single_phase_resources(base, control_wires, *_, **__
 
 @register_condition(
     lambda control_wires, work_wires, work_wire_type, **_: work_wire_type == "zeroed"
+    and len(control_wires) > 0
     and len(work_wires) >= len(control_wires)
 )
 @register_resources(_controlled_phase_shift_single_phase_resources)

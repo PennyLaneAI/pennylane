@@ -815,6 +815,69 @@ def test_single_ops(op, expected):
     assert tape_text(_tape, decimals=2, show_matrices=False) == expected
 
 
+@pytest.mark.parametrize("values", [(0, 0), (0, 1), (1, 0), (1, 1)])
+@pytest.mark.parametrize("adjoint", [False, True])
+@pytest.mark.parametrize("order", [[0, 1, 2], [2, 0, 1], [0, 2, 1]])
+def test_temporary_and_corners(values, adjoint, order):
+    """Controls and targets have a left or right connector, without cutting their wires."""
+    op = qp.TemporaryAND([0, 1, 2], control_values=values)
+    if adjoint:
+        op = qp.adjoint(op)
+    lines = tape_text(QuantumScript([op]), wire_order=order).splitlines()
+    symbols = {0: "●" if values[0] else "○", 1: "●" if values[1] else "○", 2: "⊕"}
+    for row, wire in enumerate(order):
+        corner = ("╮", "┤", "╯")[row] if adjoint else ("╭", "├", "╰")[row]
+        symbol = f"─{symbols[wire]}{corner}" if adjoint else f"{corner}{symbols[wire]}"
+        assert lines[row] == f"{wire}: ─{symbol}─┤"
+
+
+@pytest.mark.parametrize("outer_adjoint", [False, True])
+def test_controlled_temporary_and_adjoint(outer_adjoint):
+    """Controlled adjoints retain every control without introducing a second stem."""
+    op = qp.TemporaryAND([0, 1, 2], control_values=[0, 1])
+    op = (
+        qp.adjoint(qp.ctrl(op, 3, control_values=[0]))
+        if outer_adjoint
+        else qp.ctrl(qp.adjoint(op), 3, control_values=[0])
+    )
+    assert tape_text(QuantumScript([op]), wire_order=range(4)) == (
+        "0: ──○╮─┤\n1: ──●┤─┤\n2: ──⊕┤─┤\n3: ──○╯─┤"
+    )
+
+
+@pytest.mark.parametrize("inner_adjoint", [False, True])
+@pytest.mark.parametrize("outer_adjoint", [False, True])
+def test_nested_controlled_temporary_and(inner_adjoint, outer_adjoint):
+    """Nested controls occur once and adjoint parity determines the connector side."""
+    op = qp.TemporaryAND([0, 1, 2], control_values=[0, 1])
+    op = qp.adjoint(op) if inner_adjoint else op
+    op = qp.ctrl(op, 3, control_values=[0])
+    op = qp.adjoint(op) if outer_adjoint else op
+    op = qp.ctrl(op, 4)
+    expected = (
+        "0: ──○╮─┤\n1: ──●┤─┤\n2: ──⊕┤─┤\n3: ──○┤─┤\n4: ──●╯─┤"
+        if inner_adjoint != outer_adjoint
+        else "0: ─╭○─┤\n1: ─├●─┤\n2: ─├⊕─┤\n3: ─├○─┤\n4: ─╰●─┤"
+    )
+    assert tape_text(QuantumScript([op]), wire_order=range(5)) == expected
+
+
+@pytest.mark.parametrize("adjoint", [False, True])
+def test_temporary_and_inactive_intermediate_wire(adjoint):
+    """An elbow stem does not restore an inactive dynamic wire's horizontal line."""
+    config = _Config(
+        wire_map=default_wire_map,
+        bit_map={},
+        num_op_layers=4,
+        cur_layer=1,
+        wire_layers={**default_wire_layers, 2: [[2, 4]]},
+    )
+    op = qp.TemporaryAND([0, 1, 3])
+    op = qp.adjoint(op) if adjoint else op
+    expected = ["─●╮", "─●┤", "  │", "─⊕╯"] if adjoint else ["╭●", "├●", "│", "╰⊕"]
+    assert _add_obj(op, ["─", "─", " ", "─"], config) == expected
+
+
 class TestLayering:
     """Test operations are placed in the correct locations."""
 
