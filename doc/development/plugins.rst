@@ -249,7 +249,6 @@ All headers and fields are required unless stated otherwise.
     PauliX = { }
     PauliY = { }
     PauliZ = { }
-    Hamiltonian = { conditions = [ "terms-commute" ] }
     Sum = { conditions = [ "terms-commute" ] }
     SProd = { }
     Prod = { }
@@ -303,6 +302,11 @@ All headers and fields are required unless stated otherwise.
 
     # Observables supported by the QuantumDevice.
     [qjit.operators.observables]
+
+    Sum = { }
+
+
+
 
 The configuration file is also loaded into the
 :attr:`~pennylane.devices.Device.capabilities` attribute of your
