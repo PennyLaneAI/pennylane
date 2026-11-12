@@ -4,6 +4,11 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* A new decomposition rule for :class:`~.RZLayer`, ``_rzlayer_hwp_synthesis``, uses Hamming-weight
+  phasing to apply :math:`\lfloor \log_2 m \rfloor + 1` rotations instead of :math:`m` to each
+  block of :math:`m \geq 3` wires.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * The new :class:`~.RZLayer` applies a :class:`~.RZ` rotation gate to each of its target wires, with
   equal angles used for blocks of ``len(wires) // len(angles)`` wires. This includes the case of
   ``len(wires)=len(angles)`` (one angle per wire) and ``len(angles)=1`` (same angle on all wires). This

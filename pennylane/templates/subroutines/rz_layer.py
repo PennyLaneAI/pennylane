@@ -13,14 +13,20 @@
 # limitations under the License.
 """Contains the RZLayer template."""
 
+from functools import partial
+
 from pennylane import capture, compiler, math
+from pennylane.allocation import allocate
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import RZ
+from pennylane.core.operator import Operator2, abstractify
+from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.ops import RZ, GlobalPhase, PhaseShift
+from pennylane.ops.op_math import ChangeOpBasis2, change_op_basis, prod
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+
+from .arithmetic.hamming_weight import _apply_hamming_weight, _hamming_weight_plan
 
 
 class RZLayer(Operator2):
@@ -78,6 +84,22 @@ class RZLayer(Operator2):
                 :image: /_static/decomposition_thumbnails/rz_layer_individual.svg
 
                 :class:`~.RZ` | :math:`km` | 6
+
+            .. decomposition-rule:: _rzlayer_hwp_synthesis
+                :image: /_static/decomposition_thumbnails/rz_layer_hwp_synthesis.svg
+                :lightbox:
+                :requires: :math:`m \geq 3` and :math:`a` work wires, of which
+                    :math:`\max(a - w, 0)` are allocated
+                :where: :math:`n = m - 1` if :math:`m` is a power of two and :math:`n = m`
+                    otherwise, :math:`a = n - \operatorname{popcount}(n)`, and
+                    :math:`\ell(x) = \lfloor \log_2 x \rfloor + 1` is the number of bits of
+                    :math:`x`
+
+                :class:`~.TemporaryAND` | :math:`ka` | 2
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`ka` | 2
+                :class:`~.CNOT` | :math:`2k(5n - 4\ell(n) - \operatorname{popcount}(n))` | 20
+                :class:`~.PhaseShift` | :math:`k\ell(m)` | 4
+                :class:`~.GlobalPhase` | :math:`k` | 2
 
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/rz_layer_adjoint.svg
@@ -138,5 +160,68 @@ def _rzlayer_individual(angles, wires, **_):
     for_loop(len(wires))(_rz)()
 
 
-add_decomps(RZLayer, _rzlayer_individual)
+def _hwp_num_hw_wires(block_size):
+    """Number of wires of a block whose Hamming weight the synthesis rule computes: all of them,
+    or all but the last one, which is then rotated separately. Prefers fewer rotations, then
+    fewer ANDs."""
+
+    def _cost(num_hw_wires):
+        _, out_positions, num_work = _hamming_weight_plan(num_hw_wires)
+        return len(out_positions) + block_size - num_hw_wires, num_work
+
+    return min(block_size, block_size - 1, key=_cost)
+
+
+def _rzlayer_hwp_synthesis_resources(angles, wires, **_):
+    block_size = len(wires) // len(angles)
+    num_hw_wires = _hwp_num_hw_wires(block_size)
+    gates, out_positions, _ = _hamming_weight_plan(num_hw_wires)
+    # The factors of a product are in matrix order, the reverse of the order of application
+    compute_op = prod(*(abstractify(op) for op, _ in reversed(gates)))
+    num_rotations = len(out_positions) + block_size - num_hw_wires
+    target_op = prod(*[abstractify(PhaseShift)] * num_rotations)
+    return {ChangeOpBasis2(compute_op, target_op): len(angles), GlobalPhase: len(angles)}
+
+
+def _rzlayer_hwp_synthesis_work_wires(angles, wires, work_wires):
+    _, _, num_work = _hamming_weight_plan(_hwp_num_hw_wires(len(wires) // len(angles)))
+    return {"zeroed": max(num_work - len(work_wires), 0)}
+
+
+@register_condition(lambda angles, wires, **_: len(wires) // len(angles) >= 3)
+@register_resources(_rzlayer_hwp_synthesis_resources, work_wires=_rzlayer_hwp_synthesis_work_wires)
+def _rzlayer_hwp_synthesis(angles, wires, work_wires):
+    """Hamming-weight phasing: :math:`m` rotations ``RZ(theta)`` equal
+    ``GlobalPhase(m * theta / 2)`` and ``PhaseShift(2**j * theta)`` on bit :math:`j` of the
+    Hamming weight of their wires."""
+    block_size = len(wires) // len(angles)
+    num_hw_wires = _hwp_num_hw_wires(block_size)
+    plan = _hamming_weight_plan(num_hw_wires)
+    _, out_positions, num_work = plan
+    if capture.enabled() or compiler.active():
+        angles = math.array(angles, like="jax")
+        wires = math.array(wires, like="jax")
+
+    # Each block uncomputes its Hamming weight, which returns the work wires to zero, so all blocks
+    # share them
+    with allocate(max(num_work - len(work_wires), 0), restored=True) as extra_work_wires:
+        work_wires = [*work_wires, *extra_work_wires][:num_work]
+
+        def _block(i):
+            block_wires = [wires[i * block_size + j] for j in range(block_size)]
+            hw_wires = block_wires[:num_hw_wires] + work_wires
+
+            def _phase_shifts():
+                for j, position in enumerate(out_positions):
+                    PhaseShift(2**j * angles[i], wires=hw_wires[position])
+                if num_hw_wires < block_size:
+                    PhaseShift(angles[i], wires=block_wires[-1])
+
+            change_op_basis(partial(_apply_hamming_weight, plan, hw_wires), _phase_shifts)
+            GlobalPhase(block_size * angles[i] / 2)
+
+        for_loop(len(angles))(_block)()
+
+
+add_decomps(RZLayer, _rzlayer_individual, _rzlayer_hwp_synthesis)
 add_decomps("Adjoint(RZLayer)", adjoint_rotation2)
