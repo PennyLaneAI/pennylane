@@ -1529,7 +1529,7 @@ class U2(Operator2):
             .. decomposition-rule:: _adjoint_u2
                 :image: /_static/decomposition_thumbnails/u2_adjoint.svg
                 :region: adjoint
-                :where: the angles change to :math:`\delta \rightarrow \pi - \delta` and  :math:`\phi \rightarrow \pi - \phi` (both :math:`\text{mod} 2 \pi)
+                :where: the angles change to :math:`\delta \rightarrow \pi - \delta` and  :math:`\phi \rightarrow \pi - \phi` (both :math:`\text{mod} 2 \pi`)
 
                 :class:`~.U2` | :math:`1`
     """
@@ -1677,7 +1677,7 @@ class U3(Operator2):
             .. decomposition-rule:: _adjoint_u3
                 :image: /_static/decomposition_thumbnails/u3_adjoint.svg
                 :region: adjoint
-                :where: :math:`theta` stays the same, but :math:`\delta \rightarrow \pi - \delta` and  :math:`\phi \rightarrow \pi - \phi` (both :math:`\text{mod} 2 \pi)
+                :where: :math:`theta` stays the same, but :math:`\delta \rightarrow \pi - \delta` and  :math:`\phi \rightarrow \pi - \phi` (both :math:`\text{mod} 2 \pi`)
 
                 :class:`~.U3` | :math:`1`
     """
