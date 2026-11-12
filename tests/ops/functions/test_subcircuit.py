@@ -345,8 +345,8 @@ class TestAdditionalDecompositionRules:
 
         assert [rule.name for rule in qp.list_decomps("C(FixedOp)")] == [
             "controlled_fixed",
-            "to_controlled_unitary",
-            "ctrl_many_zeroed_work_wires",
-            "ctrl_single_work_wire",
+            "to_unitary",
+            "many_zeroed_work_wires",
+            "single_work_wire",
         ]
         assert_valid(qp.ctrl(FixedOp(1.5, wires=0), control=[1, 2, 3]))

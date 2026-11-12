@@ -45,7 +45,7 @@ from pennylane.ops.op_math.controlled2 import (
     ControlledOp2,
     ctrl_many_zeroed_work_wires,
     ctrl_single_work_wire,
-    to_controlled_unitary,
+    _controlled_to_unitary,
 )
 from pennylane.ops.op_math.pow2 import _pow_flip_adjoint, _pow_merge_powers, _pow_repeat_base
 from pennylane.ops.op_math.prod2 import Prod2
@@ -884,7 +884,7 @@ class TestListDecompsByName:
         qp.add_decomps("C(DynOp)", custom_rule)
         expected = [
             custom_rule,
-            to_controlled_unitary,
+            _controlled_to_unitary,
             ctrl_many_zeroed_work_wires,
             ctrl_single_work_wire,
         ]
@@ -909,13 +909,13 @@ class TestListDecompsByName:
         assert custom_rule in _get_registered_decomps(to_name(op_name))
         assert custom_rule not in _get_registered_decomps(op_name)
         assert custom_rule in qp.list_decomps(op_name)
-        assert "to_controlled_unitary" in qp.list_decomps(op_name)
+        assert "to_unitary" in qp.list_decomps(op_name)
 
     @pytest.mark.parametrize("op_name", ["C(UnregisteredOp)", "Controlled(UnregisteredOp)"])
     def test_unregistered_controlled_name(self, op_name):
         """Controlled names without custom registrations still have generic candidates."""
         assert list(qp.list_decomps(op_name)) == [
-            to_controlled_unitary,
+            _controlled_to_unitary,
             ctrl_many_zeroed_work_wires,
             ctrl_single_work_wire,
         ]
@@ -942,7 +942,7 @@ class TestListDecompsByName:
             assert list(_get_registered_decomps("C(DynOp)")) == [custom_rule]
             assert list(_list_control_decomps("C(DynOp)")) == [
                 custom_rule,
-                to_controlled_unitary,
+                _controlled_to_unitary,
                 ctrl_many_zeroed_work_wires,
                 ctrl_single_work_wire,
             ]
@@ -957,9 +957,9 @@ class TestListDecompsByName:
             raise NotImplementedError
 
         qp.add_decomps("C(DynOp)", custom_rule)
-        with qp.decomposition.exclude_decomps("C(DynOp)", "custom_rule", "ctrl_single_work_wire"):
+        with qp.decomposition.exclude_decomps("C(DynOp)", "custom_rule", "single_work_wire"):
             assert list(qp.list_decomps("C(DynOp)")) == [
-                to_controlled_unitary,
+                _controlled_to_unitary,
                 ctrl_many_zeroed_work_wires,
             ]
 
@@ -990,14 +990,14 @@ class TestListDecompsByName:
             else DynOp(Float, Wire[num_target_wires])
         )
         op = ControlledOp2(base, control_wires=Wire[1])
-        rule = qp.list_decomps(op.name)["to_controlled_unitary"]
+        rule = qp.list_decomps(op.name)["to_unitary"]
         assert rule.is_applicable(**op.arguments) == (has_matrix and num_target_wires == 1)
 
     @pytest.mark.parametrize("num_control_wires", [1, 2, 3, 4])
     def test_single_work_wire_condition(self, num_control_wires):
         """The wrapped candidate requires more than two control wires."""
         op = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[num_control_wires])
-        rule = qp.list_decomps(op.name)["ctrl_single_work_wire"]
+        rule = qp.list_decomps(op.name)["single_work_wire"]
         assert rule.is_applicable(**op.arguments) == (num_control_wires > 2)
 
     @pytest.mark.parametrize(
@@ -1021,7 +1021,7 @@ class TestListDecompsByName:
             work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         )
-        rule = qp.list_decomps(op.name)["ctrl_many_zeroed_work_wires"]
+        rule = qp.list_decomps(op.name)["many_zeroed_work_wires"]
         assert rule.is_applicable(**op.arguments) == expected
 
 

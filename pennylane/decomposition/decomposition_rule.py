@@ -773,11 +773,11 @@ def _list_control_decomps(op_name: str) -> DecompCollection:
     from pennylane.ops.op_math.controlled2 import (  # pylint: disable=import-outside-toplevel
         ctrl_many_zeroed_work_wires,
         ctrl_single_work_wire,
-        to_controlled_unitary,
+        _controlled_to_unitary,
     )
 
     registered_rules = _get_registered_decomps(op_name)
-    generic_decomps = [to_controlled_unitary, ctrl_many_zeroed_work_wires, ctrl_single_work_wire]
+    generic_decomps = [_controlled_to_unitary, ctrl_many_zeroed_work_wires, ctrl_single_work_wire]
     generic_rules = DecompCollection(generic_decomps)
     return registered_rules + generic_rules
 
