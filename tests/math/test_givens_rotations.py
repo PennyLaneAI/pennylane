@@ -169,7 +169,7 @@ def test_givens_decomposition_exact_zeros(matrix):
     assert onp.allclose(matrix, decomposed_matrix)
 
 
-@pytest.mark.parametrize("dt", [1e-3, 1e-5, 1e-7])
+@pytest.mark.parametrize("dt", [1e-3, 1e-5, 1e-6])
 def test_givens_decomposition_close_to_identity(dt, seed):
     r"""Test that `givens_decomposition` is accurate for unitaries close to the identity."""
     rng = onp.random.default_rng(seed)

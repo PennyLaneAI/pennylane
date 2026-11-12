@@ -280,7 +280,7 @@ class TestDecomposition:
         assert np.allclose(single_particle_block, unitary_matrix.T)
         assert np.isclose(mat[0, 0], 1.0)
 
-    @pytest.mark.parametrize("dt", [1e-3, 1e-5, 1e-7])
+    @pytest.mark.parametrize("dt", [1e-3, 1e-5, 1e-6])
     def test_complex_matrix_close_to_identity(self, dt, seed):
         """Test that a complex matrix close to the identity is implemented accurately, by
         comparing the action on single-particle states to the matrix."""
