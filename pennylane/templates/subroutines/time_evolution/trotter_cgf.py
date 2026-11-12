@@ -98,7 +98,7 @@ class TrotterCGF(Operator2):
     .. code-block:: python
 
         registers = qp.registers({"hadamard": 1, "system": M * N})
-        gate_set = {"Hadamard", "BasisRotation", "RZ", "CNOT", "PhaseShift", "GlobalPhase"}
+        gate_set = {"Hadamard", "BasisRotation", "CRZ", "C(IsingZZ)", "CNOT", "PhaseShift", "GlobalPhase"}
 
         @qp.qjit
         @qp.decompose(gate_set=gate_set)
@@ -123,13 +123,12 @@ class TrotterCGF(Operator2):
 
     Or check the quantum resources required for this task. Because the (default) controlled
     decomposition is a genuine controlled unitary, each diagonal rotation is individually
-    controlled via :class:`~.CRZ` and ``ctrl(IsingZZ(...))``, which are then decomposed into
-    :class:`~.CNOT` and :class:`~.RZ` gates. Note that the order of the keys in
+    controlled via :class:`~.CRZ` and ``ctrl(IsingZZ(...))``. Note that the order of the keys in
     the ``quantum_operations`` dictionary is not guaranteed, so we sort it before printing:
 
     >>> specs = qp.specs(trotter_circuit)()["resources"].quantum_operations
     >>> dict(sorted(specs.items()))
-    {'CNOT': 516, 'Hadamard': 1, 'PhaseShift': 1, 'RZ': 318, 'SingleExcitation': 132}
+    {'C(IsingZZ)': 99, 'CRZ': 60, 'Hadamard': 1, 'PhaseShift': 1, 'SingleExcitation': 132}
 
     The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing into
     :class:`~.PhaseShift` and :class:`~.SingleExcitation` on ``lightning.qubit``.
