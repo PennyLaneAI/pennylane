@@ -101,6 +101,7 @@ class Hadamard(Operator2):
             .. decomposition-rule:: decompose_to_base
                 :image: /_static/decomposition_thumbnails/hadamard_adjoint.svg
                 :region: adjoint
+                :where: :class:`~.Hadamard` is self-adjoint
 
                 :class:`~.Hadamard` | :math:`1`
 
@@ -394,6 +395,7 @@ class PauliX(Operator2):
             .. decomposition-rule:: decompose_to_base
                 :image: /_static/decomposition_thumbnails/paulix_adjoint.svg
                 :region: adjoint
+                :where: :class:`~.PauliX` is self-adjoint
 
                 :class:`~.PauliX` | :math:`1`
 
@@ -687,6 +689,7 @@ class PauliY(Operator2):
             .. decomposition-rule:: decompose_to_base
                 :image: /_static/decomposition_thumbnails/pauliy_adjoint.svg
                 :region: adjoint
+                :where: :class:`~.PauliY` is self-adjoint
 
                 :class:`~.PauliY` | :math:`1`
 
@@ -966,6 +969,7 @@ class PauliZ(Operator2):
             .. decomposition-rule:: decompose_to_base
                 :image: /_static/decomposition_thumbnails/pauliz_adjoint.svg
                 :region: adjoint
+                :where: :class:`~.PauliZ` is self-adjoint
 
                 :class:`~.PauliZ` | :math:`1`
 
