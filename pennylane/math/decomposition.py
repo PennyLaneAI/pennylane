@@ -322,8 +322,11 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
 
     small_a, small_b = abs_a < tol, abs_b < tol
     any_small = math.logical_or(small_a, small_b)
-    # Only divide by quantities bounded away from zero, also in the masked-out branch, to avoid
-    # regularization bias as well as NaNs in results and gradients.
+    # Entries below ``tol`` are treated as exact zeros via ``where``, which evaluates both of its
+    # branches. Denominators are therefore replaced by 1 whenever an entry is small, so that the
+    # discarded branch stays finite and does not leak NaNs into gradients. Adding a regularizer
+    # like ``eps`` to the denominators instead would bias the matrix entries by ``eps / hypot``,
+    # making the Givens matrices inaccurate and non-unitary for small, but non-zero, entries.
     hypot = math.where(any_small, 1.0, math.hypot(abs_a, abs_b))
 
     cosine = math.where(small_b, 0.0, abs_b / hypot)
@@ -361,7 +364,7 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
         return phase, g00, g01
 
     def complex_branch(g00, g01):
-        aprod = math.where(any_small, 1.0, math.nan_to_num(abs_b * abs_a))
+        aprod = math.where(any_small, 1.0, abs_b * abs_a)
         phase = math.where(any_small, 1.0, (b * math.conj(a)) / aprod)
         g00 = phase * g00
         return phase, g00, g01

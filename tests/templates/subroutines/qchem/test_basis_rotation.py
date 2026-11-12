@@ -281,10 +281,10 @@ class TestDecomposition:
         assert np.isclose(mat[0, 0], 1.0)
 
     @pytest.mark.parametrize("dt", [1e-3, 1e-5, 1e-7])
-    def test_complex_matrix_close_to_identity(self, dt):
+    def test_complex_matrix_close_to_identity(self, dt, seed):
         """Test that a complex matrix close to the identity is implemented accurately, by
         comparing the action on single-particle states to the matrix."""
-        rng = np.random.default_rng(1)
+        rng = np.random.default_rng(seed)
         h = rng.normal(size=(4, 4)) + 1j * rng.normal(size=(4, 4))
         unitary_matrix = expm(1j * dt * (h + h.conj().T))
         wires = list(range(4))
