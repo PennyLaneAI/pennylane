@@ -2353,7 +2353,7 @@ Bug fixes 🐛
 
 * Fixed a bug where the Jones decomposition of :class:`~.PhaseGradientStatePrep` failed
   during program capture when auxiliary or work wires were abstract.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10516) <https://github.com/PennyLaneAI/pennylane/pull/10516>`__
 
 * Fixed :func:`~pennylane.draw_mpl` to show the control values of :class:`~.TemporaryAND`
   and its adjoint. Rounded connectors on the left or right distinguish these
