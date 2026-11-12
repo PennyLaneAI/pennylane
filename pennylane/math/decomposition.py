@@ -326,9 +326,7 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
     # Entries below ``tol`` are treated as exact zeros via ``where``, which evaluates both of its
     # branches. Denominators that may vanish are therefore replaced by 1 (``hypot`` if both entries
     # are small, ``aprod`` below if any entry is small), so that the discarded branch stays finite
-    # and does not leak NaNs into gradients. Adding a regularizer like ``eps`` to the denominators
-    # instead would bias the matrix entries by ``eps / hypot``, making the Givens matrices
-    # inaccurate and non-unitary for small, but non-zero, entries.
+    # and does not leak NaNs into gradients.
     hypot = math.where(both_small, 1.0, math.hypot(abs_a, abs_b))
 
     cosine = math.where(small_b, 0.0, abs_b / hypot)
