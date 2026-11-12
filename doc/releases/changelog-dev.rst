@@ -2351,9 +2351,9 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
-* Fixed :func:`~.draw_mpl` to show the control values of :class:`~.TemporaryAND`
+* Fixed :func:`~pennylane.draw_mpl` to show the control values of :class:`~.TemporaryAND`
   and its adjoint. Rounded connectors on the left or right distinguish these
-  operations from :class:`~.Toffoli`, consistently with :func:`~.draw`.
+  operations from :class:`~.Toffoli`, consistently with :func:`~pennylane.draw`.
   `(#10514) <https://github.com/PennyLaneAI/pennylane/pull/10514>`__
 
 * Fixed a bug where :func:`~pennylane.draw_mpl` replaced the symbols and quantum controls of
