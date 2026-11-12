@@ -128,7 +128,11 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
     if use_jit:
         circuit = qp.qjit(
             # pylint: disable-next=protected-access
-            qp.transforms._tape_decompose(circuit, gate_set=ROTATIONS_PLUS_CNOT, max_expansion=2),
+            qp.transforms._tape_decompose(
+                circuit,
+                gate_set=ROTATIONS_PLUS_CNOT | {qp.StatePrep, "Adjoint(StatePrep)"},
+                max_expansion=2,
+            ),
             capture=False,
         )
 
