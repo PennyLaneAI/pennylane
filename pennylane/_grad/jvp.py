@@ -188,7 +188,6 @@ def jvp(f, params, tangents, method=None, h=None, argnums=None):
 
     .. code-block:: python
 
-        @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=2))
         def circuit(n, params):
             qp.RX(params[n, 0], wires=n)
