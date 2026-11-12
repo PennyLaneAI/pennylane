@@ -192,7 +192,9 @@ def estimate(
             qp.add_decomps(qp.CZ, cz_with_ry)
 
             @qp.qjit(capture=True)
-            @qp.decompose(gate_set={"CNOT", "PauliZ", "RY"}, fixed_decomps={qp.CZ: cz_with_ry})
+            @qp.decompose(
+                gate_set={"CNOT", "PauliZ", "RY"}, fixed_decomps={qp.CZ: "cz_with_ry"}
+            )
             @qp.qnode(qp.device("null.qubit", wires=2))
             def circuit():
                 qp.CZ([0, 1])
