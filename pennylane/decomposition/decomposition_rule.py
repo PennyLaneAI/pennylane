@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import inspect
+import re
 from collections import Counter, defaultdict
 from collections.abc import Callable, Sequence
 from contextlib import contextmanager
@@ -302,7 +303,7 @@ def register_resources(
 
           def _ops_fn(control_wires, **_):
               return {
-                  qp.ctrl(qp.X(Wire[1]), control_wires): 2,
+                  qp.MultiControlledX(Wire[len(control_wires) + 1]): 2,
                   qp.CRot: 1
               }
 
@@ -311,9 +312,9 @@ def register_resources(
           def _controlled_rot_decomp(base, control_wires, **_):
               wires = control_wires + base.wires
               with allocate(1, state="zero", restored=True) as work_wires:
-                  qp.ctrl(qp.X(work_wires[0]), control=wires[:-1])
+                  qp.MultiControlledX([*wires[:-1], work_wires[0]])
                   qp.CRot(**base.dynamic_args, wires=[work_wires[0], wires[-1]])
-                  qp.ctrl(qp.X(work_wires[0]), control=wires[:-1])
+                  qp.MultiControlledX([*wires[:-1], work_wires[0]])
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
 
@@ -662,8 +663,10 @@ def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: Decompositi
 
     These two new decomposition rules for ``qp.Hadamard`` will be subsequently stored within the
     scope of this program, and they will be taken into account for all circuit decompositions
-    for the duration of the session. To add alternative decompositions for a particular circuit
-    as opposed to globally, use the ``alt_decomps`` argument of the :func:`~pennylane.transforms.decompose` transform.
+    for the duration of the session. To keep alternative decompositions local to a workflow,
+    register the rules and compile the circuit within a :func:`~.local_decomps` context.
+    Use ``fixed_decomps`` or ``exclude_decomps`` with :func:`~pennylane.transforms.decompose`
+    to select or exclude rules for an individual compilation pass.
 
     Custom decomposition rules can also be specified for symbolic operators. In this case, the
     operator type can be specified as a string. For example,
@@ -687,16 +690,51 @@ def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: Decompositi
     _decompositions_var.get()[to_name(op_type)].extend(decomps)
 
 
+def _get_registered_decomps(op_name: str) -> DecompCollection:
+    """Retrieves a copy of the decomposition rules directly registered for an operator name.
+
+    Args:
+        op_name (str): operator name, including symbolic names such as ``"C(RX)"``
+    """
+    return _decompositions_var.get()[op_name].copy()
+
+
 @singledispatch
 def _list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
-    """Returns the full list of decomposition rules before being filtered."""
+    """Retrieves decomposition rules before exclusion filtering."""
     if fixed_rule := get_fixed_decomp(op):
         return DecompCollection([fixed_rule])
-    return _decompositions_var.get()[to_name(op)].copy()
+    op_name = to_name(op)
+    if isinstance(op, str) and re.fullmatch(r"C\(.*\)", op_name):
+        return _list_control_decomps(op_name)
+    return _get_registered_decomps(op_name)
+
+
+def _list_control_decomps(op_name: str) -> DecompCollection:
+    """Lists custom rules and generic fallback candidates for a controlled operator name.
+
+    All three generic fallbacks are included. Their applicability conditions are checked
+    using operator arguments rather than the name alone.
+
+    Args:
+        op_name (str): operator name, including symbolic names such as ``"C(RX)"``
+    """
+    # TODO: the circular dependency can be eliminated when we move the decomposition
+    #       rule library to a separate module [sc-136709]
+    from pennylane.ops.op_math.controlled2 import (  # pylint: disable=import-outside-toplevel
+        ctrl_many_zeroed_work_wires,
+        ctrl_single_work_wire,
+        to_controlled_unitary,
+    )
+
+    registered_rules = _get_registered_decomps(op_name)
+    generic_decomps = [to_controlled_unitary, ctrl_many_zeroed_work_wires, ctrl_single_work_wire]
+    generic_rules = DecompCollection(generic_decomps)
+    return registered_rules + generic_rules
 
 
 def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
-    """Lists all stored decomposition rules for an operator class.
+    """Lists decomposition rules for an operator.
 
     .. note::
 
@@ -711,7 +749,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
             ``"C(RX)"``, etc.
 
     Returns:
-        DecompCollection: a collection of decomposition rules registered for the given operator.
+        DecompCollection: a collection of decomposition rules for the given operator.
 
     .. important::
 
@@ -1292,15 +1330,15 @@ def _unroll_change_op_basis_resource(op_rep):
 
     # pylint: disable=import-outside-toplevel
     from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-    from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 
     if isinstance(op_rep, qp.ops.Adjoint2):
         return _unroll_symbolic_change_op_basis(op_rep, _adjoint_abstract)
 
     if isinstance(op_rep, qp.ops.ControlledOp2):
         wrapper = partial(
-            _ctrl_abstract,
-            control_wires=op_rep.control_wires,
+            qp.ctrl,
+            control=op_rep.control_wires,
+            control_values=op_rep.control_values,
             work_wires=op_rep.work_wires,
             work_wire_type=op_rep.work_wire_type,
         )

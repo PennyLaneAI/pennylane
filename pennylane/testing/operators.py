@@ -32,6 +32,7 @@ from pennylane.allocation import Allocate
 from pennylane.core import apply, queuing
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import has_decomp, list_decomps
+from pennylane.decomposition.decomposition_rule import _get_registered_decomps
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args, to_name
 from pennylane.devices import device
@@ -55,6 +56,7 @@ from pennylane.ops.op_math import (
     SymbolicOp2,
 )
 from pennylane.tape import QuantumScript
+from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qsvt import QSVT
 from pennylane.templates.subroutines.select import Select
 from pennylane.typing import AbstractArray, AbstractWires, TensorLike
@@ -214,7 +216,7 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
             pow_op = ops.pow(op, z)
             assert_valid_decomp_rule(pow_op, rule, check_matrix=check_matrix)
 
-    for rule in list_decomps(f"C({to_name(op)})"):
+    for rule in _get_registered_decomps(f"C({to_name(op)})"):
         for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
             ctrl = Controlled if isinstance(op, Operator1) else ControlledOp2
             int_wires = [w for w in op.wires if isinstance(w, int)]
@@ -597,7 +599,9 @@ def _check_properties_operator2(op: Operator2) -> None:
     # Some operators (e.g. composites and ``Select``) hold their data inside operator-valued
     # arguments rather than dynamic arguments, so their ``data`` does not correspond to
     # ``dynamic_argnames`` and this check does not apply.
-    if not isinstance(op, (Adjoint2, CompositeOp2, ControlledOp2, Pow2, Select, QSVT)):
+    if not isinstance(
+        op, (Adjoint2, CompositeOp2, ControlledOp2, ControlledSequence, Pow2, Select, QSVT)
+    ):
 
         error_msg = "ndim_params must have the same length as dynamic_argnames"
         assert len(op.ndim_params) == len(op.dynamic_argnames), error_msg

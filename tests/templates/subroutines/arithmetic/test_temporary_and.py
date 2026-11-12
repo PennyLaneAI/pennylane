@@ -219,7 +219,6 @@ class TestTemporaryAND:
         probs = circuit(state)
         assert qp.math.allclose(probs, np.eye(1, 8))
 
-    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_adjoint_temporary_and_ppm_decomposition(self, control_values, seed):
@@ -350,7 +349,6 @@ class TestTemporaryAND:
 
         assert qp.math.allclose(circuit(), jit_circuit())
 
-    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize("cvals", [(0, 0), (0, 1), (1, 1), (True, False)])
@@ -369,7 +367,7 @@ class TestTemporaryAND:
         exp_probs = qp.math.array([1, 0, 1, 0, 1, 0, 1, 0]) / 4
         flip = 2 * int(cvals[0]) + int(cvals[1])
         exp_probs[2 * flip : 2 * flip + 2] = [0, 0.25]
-        qjit_circuit = qp.qjit(circuit)
+        qjit_circuit = qp.qjit(circuit, capture=False)
         values = qp.math.array(cvals, like="jax")
         out = circuit(values)
         qjit_out = qjit_circuit(values)

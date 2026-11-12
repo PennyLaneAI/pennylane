@@ -16,6 +16,7 @@ operations and observables.
 TODO: [sc-120453] Fill docstring
 """
 
+import warnings
 from abc import abstractmethod
 from collections.abc import Hashable, Iterable, Sequence
 from copy import copy, deepcopy
@@ -31,9 +32,9 @@ from jax.core import ShapedArray
 from scipy.sparse import issparse, spmatrix
 
 import pennylane as qp
-from pennylane import math
+from pennylane import capture, math
 from pennylane._class_property import classproperty
-from pennylane.capture import enabled, pause, symbolic_array
+from pennylane.capture import pause, symbolic_array
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core.apply import apply
@@ -84,6 +85,32 @@ ARGNAME_CATEGORIES = (
     "compilable_argnames",
     "hybrid_argnames",
 )
+
+
+class OperatorRegistry:
+    """A Singleton class that keeps track of all the Operator2 operators (including user-defined operators) defined."""
+
+    _instance = None
+    registry = {}
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __getitem__(self, index):
+        try:
+            return self.registry[index]
+        except KeyError as e:
+            raise KeyError(f"No defined Operator2 with the name {index} found.") from e
+
+    def __setitem__(self, index, value):
+        if index not in self.registry:
+            self.registry[index] = value
+        elif self.registry[index] is not value:
+            warnings.warn(
+                f"More than one operator class by the same name ({index}) has been defined."
+            )
 
 
 class Operator2(metaclass=OperatorMeta):
@@ -1550,7 +1577,7 @@ class Operator2(metaclass=OperatorMeta):
         """Bind the operator plxpr primitive, optionally using a custom primitive."""
 
         # Skip if program capture is disabled
-        if not enabled():
+        if not capture.enabled():
             return
 
         # Substitute AbstractArray and AbstractWires for symbolic arrays.
@@ -1609,6 +1636,9 @@ class Operator2(metaclass=OperatorMeta):
 
     def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
         cls._sig = signature(cls)
+
+        OperatorRegistry()[cls.__name__] = cls
+
         if is_baseclass:
             return
 
@@ -1630,6 +1660,40 @@ class Operator2(metaclass=OperatorMeta):
 
         if cls.has_fixed_sig:
             qp.decomposition.register_signature(cls)
+
+
+# ---------------------------------------------------------------------------------
+# ------------------------- Operator registry helper ------------------------------
+# ---------------------------------------------------------------------------------
+
+
+def get_op_class_by_name(name: str) -> type[Operator2]:
+    """
+    Helper to get an operator class by name using a function call.
+
+    Args:
+        name (str): the name of the class to retrieve.
+
+    Returns:
+        The class with the provided name.
+
+    **Example**
+
+    .. code-block:: python
+
+        from pennylane.core.operator import Operator2
+
+        class MyNamedOp(Operator2):
+            static_argnames = ("label",)
+
+            def __init__(self, label, wires):
+                super().__init__(label, wires=wires)
+
+    >>> from pennylane.core import get_op_class_by_name
+    >>> get_op_class_by_name("MyNamedOp")("my-label", [0, 1])
+    MyNamedOp(label=my-label, wires=[0, 1])
+    """
+    return OperatorRegistry()[name]
 
 
 # ---------------------------------------------------------------------------------

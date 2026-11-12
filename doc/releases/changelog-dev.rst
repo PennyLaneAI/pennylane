@@ -8,6 +8,9 @@ New features since last release
   the ``Operator2`` argument format and operator reconstruction behavior.
   `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
 
+* A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
+  `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
+
 * :func:`~.transforms.gridsynth` has a new ``method`` keyword argument with two randomized
   synthesis methods from `arXiv:2203.10064 <https://arxiv.org/abs/2203.10064>`__, which reduce the
   T-count at the same accuracy of the channel averaged over executions.
@@ -48,6 +51,11 @@ New features since last release
   being removed. When used as a context manager, the rules are excluded only within the context.
   `(#10329) <https://github.com/PennyLaneAI/pennylane/pull/10329>`__
 
+* The `alt-decomps` parameter of :func:`~.transforms.decompose` has been removed in favour of `exclude_decomps`, which prevents a set of decomposition rules from being chosen for an operator in a given pass instance.
+  `(#10461) <https://github.com/PennyLaneAI/pennylane/pull/10461>`__
+  `(#10500) <https://github.com/PennyLaneAI/pennylane/pull/10500>`__
+
+
 * A new function called :func:`~pennylane.backline.onnx_decoder` has been added, which runs an
   ONNX model on a Backline :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or
   on the CPU. See :func:`~pennylane.backline.onnx_decoder` for the supported providers and usage
@@ -67,9 +75,10 @@ New features since last release
   :func:`~.while_loop` to specify a heuristic number of times the loop will iterate, and on
   :func:`~.cond` to specify heuristic branch probabilities. This provides more concrete and accurate
   resource estimates with :func:`~.analyze`.
-  [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
-  [(#10297)](https://github.com/PennyLaneAI/pennylane/pull/10297)
-  [(#10251)](https://github.com/PennyLaneAI/pennylane/pull/10251)
+  `(#10230) <https://github.com/PennyLaneAI/pennylane/pull/10230>`__
+  `(#10297) <https://github.com/PennyLaneAI/pennylane/pull/10297>`__
+  `(#10251) <https://github.com/PennyLaneAI/pennylane/pull/10251>`__
+  `(#10428) <https://github.com/PennyLaneAI/pennylane/pull/10428>`__
 
   By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, reosurce profiling with
   :func:`~.analyze` can heuristically specify the number of iterations, leading to concrete
@@ -167,12 +176,15 @@ New features since last release
   `(#10227) <https://github.com/PennyLaneAI/pennylane/pull/10227>`__
   `(#10245) <https://github.com/PennyLaneAI/pennylane/pull/10245>`__
   `(#10264) <https://github.com/PennyLaneAI/pennylane/pull/10264>`__
+  `(#10446) <https://github.com/PennyLaneAI/pennylane/pull/10446>`__
 
   The operation has a gridsynth-based decomposition into Pauli product rotations on up to
   30 wires, consisting of :class:`~.PPR_8` operators, at most one :class:`~.PPR_2` or
   :class:`~.PPR_4` operator per wire, and a
   :class:`~.GlobalPhase`. It approximates the phase gradient state on 30 wires to
   precision :math:`10^{-12}` (in 2-norm).
+  A second decomposition with the same precision uses :class:`~.Hadamard`, :class:`~.S`,
+  :class:`~.T`, and Pauli gates instead, with one :class:`~.T` gate per :class:`~.PPR_8` operator.
 
 * Added a ``qp.math.floor_log2`` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
   in analogy to the existing ``qp.math.ceil_log2``.
@@ -347,6 +359,7 @@ New features since last release
   `(#9847) <https://github.com/PennyLaneAI/pennylane/pull/9847>`__
   `(#10008) <https://github.com/PennyLaneAI/pennylane/pull/10008>`__
   `(#10053) <https://github.com/PennyLaneAI/pennylane/pull/10053>`__
+  `(#10414) <https://github.com/PennyLaneAI/pennylane/pull/10414>`__
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
   want to prepare, the template is simple to call. Consider the following example:
@@ -850,6 +863,7 @@ New features since last release
   `(#9308) <https://github.com/PennyLaneAI/pennylane/pull/9308>`__
   `(#9554) <https://github.com/PennyLaneAI/pennylane/pull/9554>`__
   `(#10145) <https://github.com/PennyLaneAI/pennylane/pull/10145>`__
+  `(#10377) <https://github.com/PennyLaneAI/pennylane/pull/10377>`__
 
   .. code-block:: python
 
@@ -859,12 +873,12 @@ New features since last release
 
       @qp.set_shots(shots=1)
       @qp.qnode(dev)
-      def circuit(x_val, L_val):
+      def circuit(x_val, value):
           x_val_bin = qp.math.int_to_binary(x_val, 3)
           qp.BasisState(x_val_bin, wires=[0, 1, 2])
           qp.LeftClassicalComparator(
               x_wires=[0, 1, 2],
-              L=L_val,
+              value=value,
               target_wire=3,
               work_wires=[4, 5],
               comparator=">=",
@@ -877,8 +891,76 @@ New features since last release
       >>> print(bool(output))  # 3 >= 2
       True
 
+* Plugins can register aggregation callbacks and display names for compiler resource
+  extensions with :func:`~pennylane.resource.register_resource_extension`.
+  Extension values remain in ``SpecsResources.extra`` and appear in resource reports.
+  `(#10438) <https://github.com/PennyLaneAI/pennylane/pull/10438>`__
+
 Improvements 🛠
 ~~~~~~~~~~~~~~
+
+* :func:`~pennylane.list_decomps` now includes generic controlled fallback rules when given an
+  operator name such as ``"C(RX)"``. Their registered conditions determine applicability
+  from operator arguments.
+  `(#10502) <https://github.com/PennyLaneAI/pennylane/pull/10502>`__
+
+* Callable :func:`~.ctrl` now captures work-wire labels as operands, supporting
+  traced work wires.
+  `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
+  `(#10491) <https://github.com/PennyLaneAI/pennylane/pull/10491>`__
+  
+* Efficient decomposition rules for :class:`~.ControlledPhaseShift`, :class:`~.OutMultiplier`, and :class:`Adjoint(Incrementer) <~.Incrementer>` have been added.
+  `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
+
+  - :class:`~.ControlledPhaseShift`: using one clean work wire and a single
+  :class:`~.PhaseShift` gate.
+  - :class:`~.OutMultiplier`: with longer ``x_wires`` input than ``y_wires`` as
+  input, it decomposes into an ``OutMultiplier`` instance with swapped input registers. This is computationally
+  equivalent but makes the multiplication cheaper.
+  - :class:`Adjoint(Incrementer) <~.Incrementer>`: sandwiching an :class:`~.Incrementer` with
+  :class:`~.MultiX` gates, realizing the identity :math:`x-1 = \overline{(\overline{x}+1)}`.
+
+* :class:`~.TrotterVibronic` has a new ``branch_probs`` argument, a dictionary with the
+  probabilities for the Hamiltonian terms to be applied rather than skipped for vanishing 
+  coefficients. The decomposition uses them as resource hints.
+  If ``branch_probs`` is not provided, it is computed from the ``hamiltonian``
+  data and the ``evolution_time`` at construction, as long as both are concrete.
+  `(#10401) <https://github.com/PennyLaneAI/pennylane/pull/10401>`__
+  `(#10445) <https://github.com/PennyLaneAI/pennylane/pull/10445>`__
+
+* Added ``pennylane.core.get_op_class_by_name``
+  to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
+  automatically registered when they are defined.
+  `(#10430) <https://github.com/PennyLaneAI/pennylane/pull/10430>`__
+
+* Refined the warnings raised by :class:`~.AQFT`:
+
+  - No warning for ``order=0``, as it is a valid approximation.
+  - Instead of rounding non-integer ``order`` values, an error is raised.
+  - No warning for ``order=len(wires)-1``, as it is an equivalent realization of :class:`~.QFT`.
+  - The warning for ``order>=len(wires)`` now recommends reducing the ``order`` to the equivalent
+    ``len(wires)-1``, instead of switching to :class:`~.QFT`.
+
+  `(#10415) <https://github.com/PennyLaneAI/pennylane/pull/10415>`__
+
+* Added optional ``work_wires`` to :class:`~.TrotterCDF` to combine the four equal-angle
+  ``IsingZZ`` gates between each pair of distinct spatial orbitals. With one work
+  wire initialized to :math:`|0\rangle`, each uncontrolled two-body layer uses
+  :math:`N(N-1)/2` ``CRZ`` and :math:`N` ``RZ`` gates instead of
+  :math:`N(2N-1)` ``IsingZZ`` gates, where :math:`N` is the number of spatial orbitals.
+  The double-phase decomposition also needs one work wire and shares control CNOTs
+  across orbital pairs; standard single-qubit control needs two work wires and shares
+  one ``TemporaryAND`` computation across pairs with the same first orbital.
+  For :math:`m>1` standard controls, a registered decomposition reuses the single-control
+  implementation through the generic AND reduction when :math:`m-1` additional clean
+  work wires are supplied to :func:`~.ctrl` with ``work_wire_type="zeroed"``.
+  The reduction in rotations comes at the cost of additional ``TemporaryAND`` and CNOT gates.
+  The original decomposition is used when fewer work wires are supplied.
+  `(#10380) <https://github.com/PennyLaneAI/pennylane/pull/10380>`__
+  
+* Added a new decomposition rule, ``_single_excitation_ppr_crz``, to :class:`~.SingleExcitation`, that
+  realizes the Givens rotation with a single arbitrary-angle ``CRZ`` gate and four Clifford operations.
+  `(#10358) <https://github.com/PennyLaneAI/pennylane/pull/10358>`__
 
 * The phase gradient decomposition rule factories :func:`~.make_rz_to_phase_gradient_decomp`,
   :func:`~.make_crz_to_phase_gradient_decomp` and
@@ -892,6 +974,13 @@ Improvements 🛠
 * ``qp.gate_sets.ALL_QUBIT_OPS`` now includes the in-build controlled gates like :class:`~.CNOT`,
   :class:`~.CRZ`, and others.
   `(#10396) <https://github.com/PennyLaneAI/pennylane/pull/10396/>`__
+
+* :class:`~.BasisRotation` with a real-valued matrix now applies its determinant correction as a
+  :class:`~.PauliZ` instead of a :class:`~.PhaseShift` with angle :math:`\pi`, so its
+  decomposition contains no rotations beyond the Givens rotations. This also stops static resource
+  estimates under :func:`~.qjit` or program capture, where the determinant is only known at
+  runtime, from counting a rotation per call.
+  `(#10442) <https://github.com/PennyLaneAI/pennylane/pull/10442>`__
 
 * :func:`~pennylane.estimate` and :func:`~.analyze` are now faster on qjit-compiled workflows. They use
   Catalyst's new ``user-transform-stage`` pipeline, which stops compiling right after the user
@@ -1432,6 +1521,15 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of
+  ``"MidMeasureMP"``. Update raw device operation names and comparisons; the deprecated
+  Python import and ``GateSet`` alias remain supported.
+  `(#10457) <https://github.com/PennyLaneAI/pennylane/pull/10457>`__
+
+* ``qp.ctrl`` now constructs symbolic controlled operators without dispatching to specialized
+  gates such as ``CNOT`` or ``CRX``. Decomposition rules have been updated accordingly.
+  `(#10395) <https://github.com/PennyLaneAI/pennylane/pull/10395>`__
+
 * The ``pennylane.kernels`` module has been removed. This includes ``kernel_matrix``,
   ``square_kernel_matrix``, ``polarity``, ``target_alignment``, ``threshold_matrix``,
   ``displace_matrix``, ``flip_matrix``, ``closest_psd_matrix`` and
@@ -1458,6 +1556,7 @@ Breaking changes 💔
   inverse (for example, ``qp.RX(-theta, wires=0)``) or explicitly simplify with
   ``qp.simplify(qp.adjoint(op))``.
   `(#10371) <https://github.com/PennyLaneAI/pennylane/pull/10371>`__
+  `(#10394) <https://github.com/PennyLaneAI/pennylane/pull/10394>`__
 
 * ``qp.tape.plxpr_to_tape`` and ``qp.tape.plxpr_conversion.plxpr_to_tape`` have been removed.
   Use :func:`~.testing.plxpr_to_tape` instead.
@@ -1867,7 +1966,8 @@ Internal changes ⚙️
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
       :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.QuantumPhaseEstimation`, :class:`~.IQP`,
-      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`, :class:`~.IQPEmbedding`
+      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`, :class:`~.IQPEmbedding`, :class:`~.ControlledSequence`,
+      :class:`~.PhaseAdder`, :class:`~.Adder`
 
     `(#9896) <https://github.com/PennyLaneAI/pennylane/pull/9896>`__
     `(#10164) <https://github.com/PennyLaneAI/pennylane/pull/10164>`__
@@ -1906,12 +2006,19 @@ Internal changes ⚙️
     `(#10209) <https://github.com/PennyLaneAI/pennylane/pull/10209>`__
     `(#10226) <https://github.com/PennyLaneAI/pennylane/pull/10226>`__
     `(#10267) <https://github.com/PennyLaneAI/pennylane/pull/10267>`__
+    `(#10449) <https://github.com/PennyLaneAI/pennylane/pull/10449>`__
+    `(#10459) <https://github.com/PennyLaneAI/pennylane/pull/10459>`__
+    `(#10240) <https://github.com/PennyLaneAI/pennylane/pull/10240>`__
 
   - Quantum chemistry operators are ported:
 
-    - :class:`~.SingleExcitation`
+    - :class:`~.SingleExcitation`, :class:`~.FermionicSWAP`, :class:`~.OrbitalRotation`, :class:`~.DoubleExcitation`
 
     `(#9944) <https://github.com/PennyLaneAI/pennylane/pull/9944>`__
+    `(#10458) <https://github.com/PennyLaneAI/pennylane/pull/10458>`__
+    `(#10482) <https://github.com/PennyLaneAI/pennylane/pull/10482>`__
+    `(#10463) <https://github.com/PennyLaneAI/pennylane/pull/10463>`__
+    `(#10503) <https://github.com/PennyLaneAI/pennylane/pull/10503>`__
 
   - Miscelleneous operators are ported:
 
@@ -2159,11 +2266,6 @@ Internal changes ⚙️
   `(#9400) <https://github.com/PennyLaneAI/pennylane/pull/9400>`__
   `(#9541) <https://github.com/PennyLaneAI/pennylane/pull/9541>`__
 
-* The custom dispatch logic from general controlled operators to equivalent bespoke operators (e.g.,
-  from ``qp.ctrl(qp.X(0), control=[1, 2])`` to ``Toffoli(wires=[1, 2, 0])``) is re-written to use a
-  singledispatch function ``custom_ctrl_dispatch`` as opposed to relying on hard-coded logic.
-  `(#9798) <https://github.com/PennyLaneAI/pennylane/pull/9798>`__
-
 * ``capture.enable()``, ``capture.disable()`` are updated to use ``ContextVar`` for thread safety. A ``capture.toggle_ctx``
   context manager that temporarily enables or disables capture is added.
   `(#10016) <https://github.com/PennyLaneAI/pennylane/pull/10016>`__
@@ -2178,6 +2280,10 @@ Internal changes ⚙️
 
 Documentation 📝
 ~~~~~~~~~~~~~~~~
+
+* Updated :class:`~.MPSPrep` documentation to use ``default.qubit`` and explain the
+  work wires required for gate-based decomposition, replacing the ``lightning.tensor`` example.
+  `(#10505) <https://github.com/PennyLaneAI/pennylane/pull/10505>`__
 
 * The docstring for :class:`~.ControlledPhaseShift` now mentions that :class:`~.CPhase` is an alias.
   `(#10405) <https://github.com/PennyLaneAI/pennylane/pull/10405>`__
@@ -2230,14 +2336,46 @@ Documentation 📝
   `(#10284) <https://github.com/PennyLaneAI/pennylane/pull/10284>`__
 
 * Operator documentation now has an "Available decompositions" table listing each of the
-  operator's decomposition rules, with a circuit diagram and the resources the rule uses. 
-  This change only applies to operators that are subclasses of ``Operator2``. 
+  operator's decomposition rules, with a circuit diagram and the resources the rule uses.
+  This change only applies to operators that are subclasses of ``Operator2``.
   The tables are rendered by a new ``decomposition-table`` Sphinx directive, and their diagrams are
-  drawn with :func:`~pennylane.draw_mpl`.
+  drawn with :func:`~pennylane.draw_mpl`. Symbolic decomposition rules for operators (i.e., 
+  ``"Adjoint(Operator)"``, ``"Controlled(Operator)"``, and ``"Pow(Operator)"``) are also displayed
+  and marked by the region type with `:region: adjoint/controlled/pow`.
   `(#10381) <https://github.com/PennyLaneAI/pennylane/pull/10381>`__
+  `(#10382) <https://github.com/PennyLaneAI/pennylane/pull/10382>`__
+  `(#10383) <https://github.com/PennyLaneAI/pennylane/pull/10383>`__
+  `(#10416) <https://github.com/PennyLaneAI/pennylane/pull/10416>`__
+  `(#10420) <https://github.com/PennyLaneAI/pennylane/pull/10420>`__
+  `(#10421) <https://github.com/PennyLaneAI/pennylane/pull/10421>`__
+  `(#10433) <https://github.com/PennyLaneAI/pennylane/pull/10433>`__
+  `(#10436) <https://github.com/PennyLaneAI/pennylane/pull/10436>`__
+  `(#10453) <https://github.com/PennyLaneAI/pennylane/pull/10453>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed :func:`~pennylane.draw_mpl` to show the control values of :class:`~.TemporaryAND`
+  and its adjoint. Rounded connectors on the left or right distinguish these
+  operations from :class:`~.Toffoli`, consistently with :func:`~pennylane.draw`.
+  `(#10514) <https://github.com/PennyLaneAI/pennylane/pull/10514>`__
+
+* Fixed a bug where :func:`~pennylane.draw_mpl` replaced the symbols and quantum controls of
+  conditionally applied operations with a labelled box. Conditional control/target diagrams
+  now have a dashed boundary showing that the classical condition applies to the whole operation.
+  Conditional controlled global gates no longer overlap other operations.
+  Conditional operations without wires, such as :class:`~.GlobalPhase`, no longer cause an error
+  when drawn.
+  `(#10496) <https://github.com/PennyLaneAI/pennylane/pull/10496>`__
+
+* Fixed tracer leaks when passing traced work-wire labels to :func:`~.ctrl`
+  applied to a callable during program capture. Concrete work-wire labels retain
+  their existing behaviour.
+  `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
+  `(#10491) <https://github.com/PennyLaneAI/pennylane/pull/10491>`__
+  
+* Fixed a bug where AutoGraph raised an error for empty ``for`` loops.
+  `(#10448) <https://github.com/PennyLaneAI/pennylane/pull/10448>`__
 
 * Fixed a bug where :class:`~.BasisRotation` for real-valued matrices :math:`u` implemented the
   rotation for :math:`S u S` instead of :math:`u`, with :math:`S=\operatorname{diag}((-1)^p)`,
@@ -2253,6 +2391,13 @@ Bug fixes 🐛
 * Fixed decomposition graph construction discarding a reachable symbolic adjoint when an
   alternative decomposition revisits its base, which could overestimate required work wires.
   `(#10371) <https://github.com/PennyLaneAI/pennylane/pull/10371>`__
+
+* Fixed infinite recursion in the construction of ``DecompositionGraph`` when a cycle of work-wire
+  dependent operators uses additional work wires on every pass through the cycle. Also fixed
+  ``DecompositionGraph`` reusing operator nodes that were only partially explored because a cycle
+  was cut, which made results depend on exploration order and could mark decompositions as
+  unreachable or overestimate their cost.
+  `(#10423) <https://github.com/PennyLaneAI/pennylane/pull/10423>`__
 
 * The resource estimate of the measurement-based decomposition of :class:`~.QROM` now declares
   every gate type that the decomposition uses and upper-bounds every count except the split of
@@ -2436,6 +2581,7 @@ Bug fixes 🐛
 * Fixed a bug where the construction of ``DecompositionGraph`` enters infinite recursion when a decomposition path
   exists from an operator to a controlled/adjoint version of itself.
   `(#9457) <https://github.com/PennyLaneAI/pennylane/pull/9457>`__
+  `(#10423) <https://github.com/PennyLaneAI/pennylane/pull/10423>`__
 
 * Fixed a bug in ``MPSPrep`` where passing ``work_wires`` as a NumPy array or an integer caused initialization errors.
   `(#9448) <https://github.com/PennyLaneAI/pennylane/pull/9448>`__
@@ -2525,6 +2671,11 @@ Bug fixes 🐛
   :class:`~.ChangeOpBasis` operators that are nested in other ``ChangeOpBasis`` operators, matching
   the gates produced by the captured decomposition.
   `(#10351) <https://github.com/PennyLaneAI/pennylane/pull/10351>`__
+
+* The decomposition of a controlled :class:`~.SemiAdder` without dedicated control work wires
+  now treats surplus work wires of the ``SemiAdder`` as zeroed, instead of using the
+  ``work_wire_type`` of the length-zero control work wires, which defaults to ``"borrowed"``.
+  `(#10506) <https://github.com/PennyLaneAI/pennylane/pull/10506>`__
 
 Contributors ✍️
 ~~~~~~~~~~~~~~~

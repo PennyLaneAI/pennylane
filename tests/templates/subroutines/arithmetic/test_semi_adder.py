@@ -34,11 +34,11 @@ from pennylane.typing import Wire
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_standard_validity_SemiAdder():
+@pytest.mark.parametrize("work_wires", [[6, 7], [6, 7, 8]])
+def test_standard_validity_SemiAdder(work_wires):
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2]
     y_wires = [3, 4, 5]
-    work_wires = [6, 7]
     op = qp.SemiAdder(x_wires, y_wires, work_wires)
     qp.testing.assert_valid(op)
 
@@ -330,6 +330,21 @@ class TestSemiAdder:
             else:
                 assert output == expected_output
 
+    @pytest.mark.parametrize("y_wires", [[3], [3, 4, 5]])
+    def test_controlled_decomposition_surplus_base_work_wires_are_zeroed(self, y_wires):
+        """Test that the surplus work wires of the base ``SemiAdder`` are passed on as zeroed
+        work wires to the controlled CNOTs, even if the work wire type of the control is borrowed.
+        """
+        base = qp.SemiAdder([0, 1, 2], y_wires, [6, 7, 8, 9])
+
+        with qp.queuing.AnnotatedQueue() as q:
+            _controlled_semi_adder(base, [10], [1], work_wire_type="borrowed")
+
+        ops = qp.tape.QuantumScript.from_queue(q).operations
+        ctrl_ops = [o for o in ops if isinstance(o, qp.ops.ControlledOp2)]
+        assert ctrl_ops
+        assert all(o.work_wire_type == "zeroed" for o in ctrl_ops)
+
     @pytest.mark.capture
     @pytest.mark.parametrize(
         "wire_lens",
@@ -360,7 +375,7 @@ class TestSemiAdder:
             "work_wires": jnp.array([]),
         }
         for rule in qp.list_decomps("C(SemiAdder)"):
-            if not rule.is_applicable(**decomp_args):
+            if not rule.is_applicable(**decomp_args, work_wire_type="borrowed"):
                 continue
             # pylint: disable-next=protected-access
             subroutine = qp.capture.subroutine(partial(rule._impl, work_wire_type="borrowed"))

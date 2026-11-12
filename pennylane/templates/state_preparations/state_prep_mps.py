@@ -224,20 +224,20 @@ class MPSPrep(Operator2):
 
     .. note::
 
-        This operator is natively supported on the ``lightning.tensor`` device, which is designed to run MPS
-        structures efficiently. For other devices, this operation prepares the state vector represented by the
-        MPS using a gate-based decomposition from Eq. (23) in `arXiv:2310.18410
-        <https://arxiv.org/pdf/2310.18410>`_, which requires the right canonicalization of the MPS using
-        the :func:`~.right_canonicalize_mps` function and defining auxiliary qubits with ``work_wires``.
+        The gate-based decomposition prepares the state vector represented by the MPS using
+        Eq. (23) in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_. It requires a
+        right-canonical MPS and auxiliary qubits supplied through ``work_wires``. Set
+        ``right_canonicalize=True`` to convert the input MPS to right-canonical form, or use
+        :func:`~.right_canonicalize_mps` before constructing the operator.
 
     Args:
         mps (list[TensorLike]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state
             as a product of site matrices. See the usage details section for more information.
 
         wires (Sequence[int]): wires that the template acts on. It should match the number of MPS tensors.
-        work_wires (Sequence[int]): list of extra qubits needed in the decomposition. If the maximum dimension
-            of the MPS tensors is :math:`2^k`, then :math:`k` ``work_wires`` will be needed. If no ``work_wires`` are given,
-            this operator can only be executed on the ``lightning.tensor`` device. Default is ``None``.
+        work_wires (Sequence[int]): extra qubits needed for the gate-based decomposition.
+            At least one work wire is required. If the maximum bond dimension of the MPS is
+            :math:`2^k`, provide at least :math:`k` work wires.
 
         right_canonicalize (bool): indicates whether a conversion to right-canonical form should be performed to the MPS.
             Default is ``False``.
@@ -247,7 +247,7 @@ class MPSPrep(Operator2):
 
     **Example**
 
-    Example using the ``lightning.tensor`` device:
+    Prepare an MPS on ``default.qubit`` using one auxiliary wire:
 
     .. code-block:: python
 
@@ -262,31 +262,34 @@ class MPSPrep(Operator2):
             np.array([[-1.0, -0.0], [-0.0, -1.0]]),
         ]
 
-    .. code-block::
-
-        dev = qp.device("lightning.tensor", wires=3)
-        @qp.qnode(dev)
-        def circuit():
-            qp.MPSPrep(mps, wires = [0,1,2])
-            return qp.state()
-
-    >>> print(circuit()) # doctest: +SKIP
-    [ 0.        +0.j -0.10705513+0.j  0.        +0.j  0.        +0.j
-    0.        +0.j  0.        +0.j -0.99451217+0.j  0.        +0.j]
-
-    Example using the ``default.qubit`` device:
-
-    .. code-block:: python
-
         dev = qp.device("default.qubit", wires=4)
+
         @qp.qnode(dev)
         def circuit():
-            qp.MPSPrep(mps, wires = [1,2,3], work_wires = [0])
+            qp.MPSPrep(mps, wires=[1, 2, 3], work_wires=[0])
             return qp.state()
 
-    >>> print(circuit()[:8]) # doctest: +SKIP
+    The auxiliary wire returns to :math:`|0\rangle`, so the first eight amplitudes
+    contain the prepared three-qubit state:
+
+    >>> print(circuit()[:8])
     [ 0.        +0.j -0.10702756+0.j  0.        +0.j  0.        +0.j
       0.        +0.j  0.        +0.j -0.99425605+0.j  0.        +0.j]
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.MPSPrep
+            :stacked:
+            :symbols: :math:`n` MPS tensors (one per wire), :math:`w` work wires and maximal bond
+                dimension :math:`\chi`
+            :example: :math:`n=3`, :math:`w=1`
+
+            .. decomposition-rule:: _mps_prep_decomposition
+                :image: /_static/decomposition_thumbnails/mps_prep.svg
+                :requires: :math:`w \geq \log_2 \chi` work wires
+
+                :class:`~.QubitUnitary` on :math:`w + 1` wires | :math:`n` | 3
 
     .. details::
         :title: Usage Details

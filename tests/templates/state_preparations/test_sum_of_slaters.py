@@ -897,7 +897,6 @@ class TestSumOfSlatersPrep:
             expected = [id_cnot_hint, *expected, id_cnot_hint]
         assert hint_helpers.cond_hints(plxpr.jaxpr) == expected
 
-    @pytest.mark.xfail(reason="Requires Catalyst companion PR [sc-134032]")
     @pytest.mark.catalyst
     @pytest.mark.parametrize("force_non_id_encoding", (False, True))
     def test_qjit_on_subroutine(self, seed, force_non_id_encoding):
@@ -922,7 +921,7 @@ class TestSumOfSlatersPrep:
         all_wires = qp.registers(sizes)
         all_wires["selected_wires"] = selected_wires
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.qnode(qp.device("lightning.qubit"))
         def func():
             _sos_state_prep_with_wires(data, **all_wires)  # pylint: disable=missing-kwoa

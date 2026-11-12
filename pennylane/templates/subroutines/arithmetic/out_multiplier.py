@@ -24,14 +24,13 @@ from pennylane.decomposition import (
     register_condition,
     register_resources,
 )
-from pennylane.decomposition.resources import resource_rep
-from pennylane.ops import H, X, adjoint, change_op_basis, ctrl, prod
+from pennylane.ops import H, MultiControlledX, X, adjoint, change_op_basis, ctrl, prod
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.multix import MultiX
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.typing import Bool, Int, Wire
+from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
 
 from .incrementer import Incrementer
 from .phase_adder import PhaseAdder
@@ -59,7 +58,7 @@ class OutMultiplier(Operator2):
     .. math::
         \text{OutMultiplier}(mod) |x \rangle |y \rangle |z \rangle = |x \rangle |y \rangle |z + x \cdot y \; \text{mod} \; mod \rangle,
 
-    There are three implementations available, which differ in the auxiliary wires
+    There are five implementations available, which differ in the auxiliary wires
     and in the gate counts they require, and in whether or not they support arbitrary values for
     the modulus ``mod``. See the usage details for more information.
 
@@ -115,6 +114,58 @@ class OutMultiplier(Operator2):
 
     The result :math:`[[0 0 1 0]]`, is the binary representation of
     :math:`2 \cdot 7 \; \text{modulo} \; 12 = 2`.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.OutMultiplier
+            :symbols: :math:`n` ``x_wires``, :math:`m` ``y_wires``, :math:`k \geq n + m`
+                ``output_wires``, :math:`w` ``work_wires``, ``mod`` :math:`=2^k` and
+                ``output_wires_zeroed=False``
+            :example: :math:`n=m=1`, :math:`k=2`
+
+            .. decomposition-rule:: _out_multiplier_with_qft
+                :image: /_static/decomposition_thumbnails/out_multiplier_qft.svg
+                :requires: program capture to be disabled
+
+                :class:`~.QFT` | :math:`1` | 1
+                :class:`~.ControlledSequence` (nested, of :class:`~.PhaseAdder`) | :math:`1` | 1
+                :class:`Adjoint(QFT) <.QFT>` | :math:`1` | 1
+
+            .. decomposition-rule:: _out_multiplier_with_adder
+                :image: /_static/decomposition_thumbnails/out_multiplier_adder.svg
+                :requires: :math:`w \geq k` work wires
+
+                :class:`~.SemiAdder` with 1 control | :math:`n` | 1
+
+            .. decomposition-rule:: _out_multiplier_with_caddsub
+                :image: /_static/decomposition_thumbnails/out_multiplier_caddsub.svg
+                :requires: :math:`w \geq k + 1` work wires
+                :where: :math:`[m > 1]` equal to 1 if :math:`m > 1` and 0 otherwise
+
+                :class:`~.TemporaryAND` | :math:`(n + 1)k - m - \binom{n}{2}` | 3
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`(n + 1)k - m - \binom{n}{2}` | 3
+                :class:`~.CNOT` | :math:`(n + 1)k + 5nm + n - m - 4 - \binom{n}{2}` | 5
+                :class:`~.X` | :math:`2k + 8` | 12
+                :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`4n` | 4
+                :class:`~.MultiX` with 1 control on :math:`|0\rangle` | :math:`2n\,[m > 1]` | 0
+                :class:`~.SemiAdder` | :math:`2` | 2
+                :class:`~.Incrementer` | :math:`1` | 1
+
+            .. decomposition-rule:: _out_multiplier_with_cache
+                :image: /_static/decomposition_thumbnails/out_multiplier_cache.svg
+                :requires: :math:`w \geq 2k - 1` work wires
+
+                :class:`~.OutMultiplier` with ``output_wires_zeroed=True`` | :math:`1` | 1
+                :class:`~.SemiAdder` | :math:`1` | 1
+                :class:`Adjoint(OutMultiplier) <.OutMultiplier>` | :math:`1` | 1
+
+            .. decomposition-rule:: _out_multiplier_swapped
+                :image: /_static/decomposition_thumbnails/out_multiplier_swapped.svg
+                :requires: :math:`n > m`
+                :where: the circuit shows :math:`n=2`, :math:`m=1` and :math:`k=3`
+
+                :class:`~.OutMultiplier` with ``x_wires`` and ``y_wires`` swapped | :math:`1`
 
     .. details::
         :title: Usage Details
@@ -178,10 +229,10 @@ class OutMultiplier(Operator2):
 
         **Different decompositions**
 
-        There are three decompositions, which differ in the required number of work wires and
+        There are five decompositions, which differ in the required number of work wires and
         gates, and in whether they support ``mod!=2**len(output_wires)``.
 
-        - The first implementation is based on the quantum Fourier transform (QFT) method presented
+        - The first decomposition is based on the quantum Fourier transform (QFT) method presented
           in `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_. We nest
           :class:`~.ControlledSequence` around :class:`~.PhaseAdder` to create doubly-controlled
           in place phase addition in the output register, which is then transformed into
@@ -189,15 +240,15 @@ class OutMultiplier(Operator2):
           wires for ``mod=2**len(output_wires)`` (for other values of ``mod``)
           Any value for ``mod`` is supported, subject to the description above.
 
-        - The second implementation uses controlled :class:`~.SemiAdder`\ s to realize the
+        - The second decomposition uses controlled :class:`~.SemiAdder`\ s to realize the
           multiplication. For :math:`n` ``x_wires``, :math:`m` ``y_wires`` and :math:`k`
           ``output_wires``, we need :math:`L = \min(k, n)` adders with usually varying sizes
-          :math:`\min(k - i, m + 1)` for :math:`0\leq i<L`. The implementation is shown in
+          :math:`\min(k - i, m + 1)` for :math:`0\leq i<L`. The decomposition is shown in
           Fig. 2a) (for :math:`k=2m=2n`) and Fig. 2c) (for :math:`k=m=n`) in
           `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__.
 
-        - The third implementation uses controlled addition/subtraction to replace the controlled
-          ``SemiAdder``\ s from the previous implementation, based on Litinski's
+        - The third decomposition uses controlled addition/subtraction to replace the controlled
+          ``SemiAdder``\ s from the previous decomposition, based on Litinski's
           `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__.
           For :math:`n` ``x_wires``, :math:`m` ``y_wires`` and :math:`k`
           ``output_wires``, we need :math:`L=\min(k, n)` controlled add/subtract operations
@@ -205,7 +256,18 @@ class OutMultiplier(Operator2):
           three ``SemiAdder``\ s of sizes :math:`\min(k + 1 - m, n + 1)`,
           :math:`\min(k + 1 - n, m + 1)` and :math:`k+1`, as well as an incrementer on
           :math:`\min(k + 1, n + m)` qubits and Pauli gates. For :math:`n=m` and
-          :math:`k=2n`, this implementation is shown in Fig. 2b), for :math:`k=n=m` in Fig. 2d).
+          :math:`k=2n`, this decomposition is shown in Fig. 2b), for :math:`k=n=m` in Fig. 2d).
+
+        - The fourth decomposition uses additional work wires as cache in order to implement
+          the multiplier with ``output_wires_zeroed=False`` via a multiplier with
+          ``output_wires_zeroed=True``. For this, the latter computes the product into the
+          additional cache register, which is then added with a simple :class:`~.SemiAdder` to
+          the actual target register. Finally, the cache is uncomputed.
+
+        - The fifth decomposition simply switches the two input registers of the multiplier if
+          the ``x_wires`` register is larger than ``y_wires``. This is a valid decomposition
+          because multiplication is commutative, and it saves resources because the cost of
+          other decompositions is not symmetric with respect to the input register sizes.
 
     """
 
@@ -290,15 +352,15 @@ def _out_multiplier_with_qft_resources(
         compute_rep = QFT(Wire[num_qft_wires])
 
     uncompute_rep = adjoint(QFT(Wire[num_qft_wires]))
-    target_rep = resource_rep(
-        ControlledSequence,
-        base_rep=resource_rep(
-            ControlledSequence,
-            base_rep=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
-            num_control_wires=num_x_wires,
+    target_rep = ControlledSequence(
+        base=ControlledSequence(
+            base=PhaseAdder(Int, Wire[num_qft_wires], mod, Wire[int(mod != 2**num_qft_wires)]),
+            control=Wire[num_x_wires],
         ),
-        num_control_wires=num_y_wires,
+        control=Wire[num_y_wires],
     )
+    if output_wires_zeroed:
+        return {prod(uncompute_rep, target_rep, compute_rep): 1}
     resources = {_change_op_basis_abstract(compute_rep, target_rep, uncompute_rep): 1}
     return resources
 
@@ -306,8 +368,6 @@ def _out_multiplier_with_qft_resources(
 def _out_multiplier_with_qft_condition(
     x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
 ):  # pylint: disable=unused-argument, too-many-arguments
-    if capture.enabled():
-        return False  # TODO: ControlledSequence cannot take tracer wires [sc-128372]
     return mod == 2 ** len(output_wires) or len(work_wires) >= 2
 
 
@@ -340,11 +400,7 @@ def _out_multiplier_with_qft(
         work_wire = output_wires[:0]
 
     if output_wires_zeroed:
-
-        def compute_op():
-            for w in qft_output_wires:
-                H(w)
-
+        compute_op = prod(*[H(w) for w in qft_output_wires])
     else:
         compute_op = QFT(qft_output_wires)
 
@@ -354,7 +410,12 @@ def _out_multiplier_with_qft(
         ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
         control=y_wires,
     )
-    change_op_basis(compute_op, target_op, uncompute_op)
+    if output_wires_zeroed:
+        # Hadamards match QFT only on the zero state, so inverse QFT does not undo
+        # this computation. Use a product so its adjoint reverses all three factors.
+        prod(uncompute_op, target_op, compute_op)
+    else:
+        change_op_basis(compute_op, target_op, uncompute_op)
 
 
 def _out_multiplier_with_adder_resources(
@@ -521,7 +582,7 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
             X(wire)
         else:
             c_wire, c_val = flip_control
-            ctrl(X(wire), control=c_wire, control_values=[c_val])
+            MultiControlledX(concatenate_wires(c_wire, [wire]), control_values=[c_val])
 
     _semi_adder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
 
@@ -550,7 +611,7 @@ def _c_add_sub_resources(num_x_wires, num_y_wires):
         ctrl_basis_rep = ctrl(MultiX(Bool[num_x_wires - 1], Wire[num_x_wires - 1]), Wire[1])
         resources[ctrl_basis_rep] += 2
 
-    cnot_on_0_rep = ctrl(X(Wire[1]), control=Wire[1], control_values=[0])
+    cnot_on_0_rep = MultiControlledX(Wire[2], control_values=Bool[1])
     resources[cnot_on_0_rep] += 2 * (1 + int(num_y_wires > 1))
 
     for key, value in _semi_adder_resources(Wire[num_x_wires], Wire[num_y_wires]).items():
@@ -586,14 +647,14 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
     work_wires = work_wires[: len(y_wires) - 1]
     # Control-flip the LSB of the output register. This is part of achieving addition plus one
     # for c_wire=|0>. (c.f. _add_plus_one).
-    ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
+    MultiControlledX(c_wire + [y_wires[-1]], control_values=[0])
 
     # Create the operator sequence for an adder and insert (controlled) work wire bit flips
     # We insert controlled work wire bit flips where a carry-in qubit would cause them,
     # i.e., after the very first left elbow and before the last right elbow
     _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=(c_wire, 0))
 
-    ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
+    MultiControlledX(c_wire + [y_wires[-1]], control_values=[0])
 
     if len(x_wires) > 1:
         ctrl(MultiX([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
@@ -730,10 +791,52 @@ def _out_multiplier_with_cache(
     )
 
 
+def _out_multiplier_swapped_condition(x_wires, y_wires, **_):
+    """Condition for swapping the two input registers of OutMultiplier. It only is reasonable
+    to switch if x_wires is larger than y_wires. This also prevents the decomposition from
+    switching back and forth in the case of equal cost of both orderings."""
+    return len(x_wires) > len(y_wires)
+
+
+def _out_multiplier_swapped_resources(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=too-many-arguments
+    swapped = OutMultiplier(
+        Wire[len(y_wires)],
+        Wire[len(x_wires)],
+        Wire[len(output_wires)],
+        mod=mod,
+        work_wires=Wire[len(work_wires)],
+        output_wires_zeroed=output_wires_zeroed,
+    )
+    return {swapped: 1}
+
+
+@register_condition(_out_multiplier_swapped_condition)
+@register_resources(_out_multiplier_swapped_resources)
+def _out_multiplier_swapped(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
+):  # pylint: disable=too-many-arguments
+    """Swap the factors of an ``OutMultiplier`` so that ``x_wires`` is the shorter register.
+    The schoolbook ``OutMultiplier`` rules perform one controlled addition per bit of ``x_wires``,
+    so multiplying a short register into a long one is cheaper than the other way around.
+    Computationally, both paths are equivalent because multiplication is commutative.
+    """
+    OutMultiplier(
+        y_wires,
+        x_wires,
+        output_wires,
+        mod=mod,
+        work_wires=work_wires,
+        output_wires_zeroed=output_wires_zeroed,
+    )
+
+
 add_decomps(
     OutMultiplier,
     _out_multiplier_with_qft,
     _out_multiplier_with_adder,
     _out_multiplier_with_caddsub,
     _out_multiplier_with_cache,
+    _out_multiplier_swapped,
 )
