@@ -3,48 +3,50 @@
 Building a device
 =================
 
-PennyLane compiles every workflow with :func:`~pennylane.qjit`, using the
-:doc:`Catalyst <catalyst:index>` compiler. The compiled program doesn't run on a
-Python device: it calls the device through the Catalyst runtime, using a C++
-interface called ``QuantumDevice``. To make your own simulator or hardware
-backend available in PennyLane, you need three things:
-
-#. A C++ implementation of the ``QuantumDevice`` interface, compiled into a
-   shared library.
-
-#. A TOML configuration file that declares which gates, observables and
-   measurements your device supports.
-
-#. A small Python class that tells PennyLane where to find the shared library
-   and the configuration file, so that the device can be loaded with
-   :func:`qp.device() <pennylane.device>`.
-
-This page walks through each of these. For complete working devices, see the
-`Lightning <https://github.com/PennyLaneAI/pennylane-lightning>`__ simulators,
-such as ``lightning.qubit``, and Catalyst's
-`null.qubit runtime device <https://github.com/PennyLaneAI/catalyst/tree/main/runtime/lib/backend/null_qubit>`__.
-
 .. note::
 
-    Devices written for PennyLane Classic (v0.45 and earlier), which execute
-    tapes in Python, can't run compiled programs and don't work with PennyLane
-    as they are. To keep building a Classic device, see the
+    Devices written with PennyLane Classic (``pennylane<=0.45.1``) are not
+    compatible with pennylane. For information on building a device with
+    PennyLane Classic, please consult the
     `PennyLane Classic documentation <https://docs.pennylane.ai/en/v0.45.1/development/plugins.html>`__.
+
+PennyLane2 workflows are compiled :doc:`Catalyst <catalyst:index>` via
+:func:`~pennylane.qjit`. Compiled programs are then executed on devices defined
+in the :doc:`Catalyst <catalyst:index>` runtime, which uses a C++ interface
+called ``QuantumDevice``. To make your own simulator or hardware backend
+available in PennyLane2, you need three things:
+
+#. A C++ implementation of the device that uses the ``QuantumDevice`` interface,
+   compiled into a shared library.
+
+#. A TOML configuration file that declares which instructions (e.g., gates,
+   observables and measurements) the device supports.
+
+#. A Python class that tells PennyLane2 where to find the shared library and the
+   TOML configuration file, so that the device can be loaded with
+   :func:`qp.device() <pennylane.device>`.
+
+This page walks through each of these necessities. For examples to reference,
+see the `Lightning <https://github.com/PennyLaneAI/pennylane-lightning>`__ simulators,
+such as ``lightning.qubit``, and Catalyst's
+`null.qubit runtime device <https://github.com/PennyLaneAI/catalyst/tree/main/runtime/lib/backend/null_qubit>`__.
 
 .. warning::
 
     The ``QuantumDevice`` interface might change quickly in the near future.
     Breaking changes are announced in the release changelogs, so please check
     back regularly to make sure your device is compatible with the version of
-    PennyLane you're using.
+    PennyLane2 you're using.
 
-Implementing the device in C++
-------------------------------
+1. Implementing the device in C++
+---------------------------------
 
-Your device is a C++ class that inherits from ``Catalyst::Runtime::QuantumDevice``
+A custom device is a C++ class that inherits from ``Catalyst::Runtime::QuantumDevice``
 (defined in the header ``QuantumDevice.hpp``). Below is a very basic device in
 which the quantum operations have been stubbed out. It implements only the
-methods that every device must provide:
+methods that every device must provide (optional functions are listed
+in the ``QuantumDevice``
+`API documentation <https://docs.pennylane.ai/projects/catalyst/en/stable/api/structCatalyst_1_1Runtime_1_1QuantumDevice.html>`):
 
 .. code-block:: c++
 
@@ -97,8 +99,8 @@ its :ref:`configuration file <device_capabilities>`. For example:
     :header-rows: 1
     :widths: 40 60
 
-    * - To support
-      - Implement
+    * - To support...
+      - Implement...
     * - Gates applied by name, such as :class:`~pennylane.RX`
       - ``NamedOperation``
     * - :class:`~pennylane.QubitUnitary`
@@ -118,7 +120,7 @@ its :ref:`configuration file <device_capabilities>`. For example:
     * - The adjoint differentiation method
       - ``Gradient``, ``StartTapeRecording`` and ``StopTapeRecording``
 
-For the full interface, see the header file or its
+For the full interface, see the ``QuantumDevice``
 `API documentation <https://docs.pennylane.ai/projects/catalyst/en/stable/api/structCatalyst_1_1Runtime_1_1QuantumDevice.html>`__.
 
 .. _device_factory:
@@ -126,9 +128,9 @@ For the full interface, see the header file or its
 The device factory
 ^^^^^^^^^^^^^^^^^^
 
-Your library must also provide an entry point, a factory function named
-``<DeviceIdentifier>Factory``, where ``<DeviceIdentifier>`` uniquely identifies
-the device. Using the identifier ``CustomDevice``:
+Your library must also provide an entry point for the device library: a factory
+function named ``<DeviceIdentifier>Factory``, where ``<DeviceIdentifier>``
+uniquely identifies the device. Using the identifier ``CustomDevice``:
 
 .. code-block:: c++
 
@@ -146,29 +148,30 @@ including its namespace. Here, both are the same:
     GENERATE_DEVICE_FACTORY(CustomDevice, CustomDevice);
 
 A library can provide several factory functions if it packages several devices.
-Choose identifiers that are as unique as possible, to avoid clashes with other
+Choose identifiers that are as unique as possible to avoid clashes with other
 devices. The identifier must match exactly the name returned by
-``get_c_interface`` in your :ref:`Python device class <python_device_class>`.
+``get_c_interface`` in the :ref:`Python device class <python_device_class>`.
 
-The runtime deletes the device when it's no longer needed, which calls its
-destructor.
+The runtime deletes the device when it's no longer needed, which calls the
+destructor of ``CustomDevice``.
 
 Device parameters
 ^^^^^^^^^^^^^^^^^
 
 The constructor receives ``kwargs``, a string of device options in Python
-dictionary format, such as a noise parameter: ``"{'noise': 0.5}"``. These
-options are set in Python through the ``device_kwargs`` attribute of your
-:ref:`Python device class <python_device_class>`, and are passed to the
-constructor when the compiled program starts the device. Your constructor is
-responsible for parsing the string.
+dictionary format (e.g., a noise parameter: ``"{'noise': 0.5}"``). These
+options are set in Python through the ``device_kwargs`` attribute of the
+corresponding :ref:`Python device class <python_device_class>`, and are passed
+to the ``CustomDevice`` constructor when the compiled program starts the device.
+The ``CustomDevice`` constructor is responsible for parsing the string.
 
-Compiling the device
---------------------
+.. _compile_to_shared_lib:
+
+Compiling the device into a shared library
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Compile your device into a shared library (``.so`` on Linux, ``.dylib`` on
-macOS), with the Catalyst runtime headers on the include path. With CMake, you
-can follow Catalyst's
+macOS) following Catalyst's
 `third-party device example <https://github.com/PennyLaneAI/catalyst/blob/26b412b298f22565fea529d2019554e7ad9b9624/runtime/tests/third_party/CMakeLists.txt>`__:
 
 .. code-block:: cmake
@@ -184,19 +187,16 @@ can follow Catalyst's
     target_include_directories(custom_device PUBLIC ${runtime_includes})
     set_property(TARGET custom_device PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-Here, ``runtime_includes`` is the directory that contains ``QuantumDevice.hpp``
-(``runtime/include`` in the
-`Catalyst repository <https://github.com/PennyLaneAI/catalyst>`__).
-
 .. _device_capabilities:
 
-Declaring device capabilities
------------------------------
+2. Configuration file for declaring supported instructions
+----------------------------------------------------------
 
 The configuration file is a `TOML file <https://toml.io/en/>`__ that tells the
-compiler what your ``QuantumDevice`` supports. When compiling a program, PennyLane
-decomposes operations and transforms measurements into ones your device declares
-here, and raises an error for anything that remains unsupported.
+compiler what a ``QuantumDevice`` supports. When compiling a program,
+PennyLane2 decomposes operations and transforms instructions into ones the
+device declares in the TOML file, and raises an error for anything that remains
+unsupported.
 
 Below is an example configuration file, with inline descriptions of each field.
 All headers and fields are required unless stated otherwise.
@@ -311,20 +311,20 @@ Catalyst :doc:`custom devices guide <catalyst:dev/custom_devices>` for details.
 
 .. _python_device_class:
 
-The Python device class
------------------------
+3. The Python device class
+--------------------------
 
-The last piece is a Python class that inherits from
-:class:`~pennylane.devices.Device` and points PennyLane to your shared library
-and configuration file. It needs:
+To use a custom ``QuantumDevice`` with PennyLane2 in Python, a Python class
+that inherits from :class:`~pennylane.devices.Device` and points PennyLane2 to
+your shared library and configuration file is required. It needs:
 
-* A ``config_filepath`` class attribute with the path to your configuration
+* A ``config_filepath`` class variable with the path to your configuration
   file.
 
 * A static ``get_c_interface`` method that takes no arguments and returns a
   tuple of the device identifier (``<DeviceIdentifier>`` from
   :ref:`the device factory <device_factory>`) and the absolute path to the
-  shared library.
+  :ref:`shared library <compile_to_shared_lib>`.
 
 * Optionally, a ``device_kwargs`` dictionary of options to pass to the
   ``QuantumDevice`` constructor.
