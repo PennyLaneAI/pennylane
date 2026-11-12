@@ -28,6 +28,7 @@ from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
+    _get_registered_decomps,
     _list_decomps,
     get_fixed_decomp,
     register_condition,
@@ -427,7 +428,7 @@ def _list_pow_decomps(op: Pow2) -> DecompCollection:
         return DecompCollection([flip_pow_adjoint])
 
     # Custom decomposition rules registered specifically to the pow operator
-    custom_rules = _list_decomps.dispatch(object)(abs_op)
+    custom_rules = _get_registered_decomps(to_name(abs_op))
 
     return custom_rules + [repeat_pow_base] if is_integer(op.z) else custom_rules
 
