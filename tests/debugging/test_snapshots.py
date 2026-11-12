@@ -145,9 +145,8 @@ class TestSnapshotTape:
 @pytest.mark.parametrize(
     "dev",
     [
-        # Two supported devices
+        # A supported device
         qp.device("default.qubit"),
-        qp.device("default.mixed", wires=2),
         # A non-supported device
         qp.device("lightning.qubit", wires=2),
     ],
@@ -179,7 +178,7 @@ class TestSnapshotGeneral:
             qp.snapshots(circuit)()
 
     def test_StateMP_with_finite_shot_device_passes(self, dev):
-        if "lightning" in dev.name or "mixed" in dev.name:
+        if "lightning" in dev.name:
             pytest.skip()
 
         @qp.set_shots(shots=200)
@@ -195,8 +194,6 @@ class TestSnapshotGeneral:
     @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
     def test_all_state_measurement_snapshot_pure_qubit_dev(self, dev, diff_method):
         """Test that the correct measurement snapshots are returned for different measurement types."""
-        if isinstance(dev, qp.devices.default_mixed.DefaultMixed):
-            pytest.skip()
 
         @qp.qnode(dev, diff_method=diff_method)
         def circuit(x):
@@ -303,38 +300,6 @@ class TestSnapshotSupportedQNode:
         expected = {
             "important_expval": np.array(1.0),
             1: np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]),
-            "execution_results": np.array(0),
-        }
-
-        _compare_numpy_dicts(result, expected)
-
-    # pylint: disable=protected-access
-    @pytest.mark.parametrize("method", [None, "parameter-shift"])
-    def test_default_mixed(self, method):
-        """Test that multiple snapshots are returned correctly on the density-matrix simulator."""
-        dev = qp.device("default.mixed", wires=2)
-
-        assert qp.debugging.snapshot._is_snapshot_compatible(dev)
-
-        @qp.qnode(dev, diff_method=method)
-        def circuit():
-            qp.Snapshot(measurement=qp.expval(qp.PauliX(0)))
-            qp.Hadamard(wires=0)
-            qp.Snapshot("very_important_state")
-            qp.CNOT(wires=[0, 1])
-            qp.Snapshot(measurement=qp.probs())
-            return qp.expval(qp.PauliX(0))
-
-        circuit()
-        assert dev._debugger is None
-
-        result = qp.snapshots(circuit)()
-        expected = {
-            0: np.array(0),
-            2: np.array([0.5, 0.0, 0.0, 0.5]),
-            "very_important_state": np.array(
-                [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
-            ),
             "execution_results": np.array(0),
         }
 

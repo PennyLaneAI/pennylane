@@ -25,7 +25,6 @@ to verify and test quantum gradient computations.
 
     capabilities
     default_qubit
-    default_mixed
     default_clifford
     default_tensor
     _legacy_device
@@ -47,7 +46,6 @@ replaces :class:`pennylane.devices.LegacyDevice` and :class:`pennylane.devices.Q
     ExecutionConfig
     MCMConfig
     Device
-    DefaultMixed
     DefaultQubit
     default_tensor.DefaultTensor
     NullQubit
@@ -140,12 +138,6 @@ Qubit Simulation Tools
 .. automodule:: pennylane.devices.qubit
 
 
-Qubit Mixed-State Simulation Tools
------------------------------------
-
-.. currentmodule:: pennylane.devices.qubit_mixed
-.. automodule:: pennylane.devices.qubit_mixed
-
 """
 
 from .tracker import Tracker
@@ -160,7 +152,6 @@ from .legacy_facade import LegacyDeviceFacade
 # DefaultTensor is not imported here to avoid possible warnings
 # from quimb. Such warnings are due to a known issue with the cotengra package
 # when the latter is installed along with certain other packages.
-from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
 from .null_qubit import NullQubit
 from .reference_qubit import ReferenceQubit

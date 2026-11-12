@@ -455,32 +455,6 @@ class TestSPSAOptimizer:
         assert np.all(params != init_params)
         assert energy < init_energy
 
-    @pytest.mark.slow
-    def test_default_mixed_device(self):
-        """Test SPSAOptimizer implementation with default.mixed device."""
-        n_qubits = 1
-        max_iterations = 400
-        dev = qp.device("default.mixed", wires=n_qubits)
-
-        @qp.qnode(dev)
-        def circuit(params):
-            qp.RX(params[0], wires=0)
-            qp.RY(params[1], wires=0)
-            qp.AmplitudeDamping(0.5, wires=0)
-            return qp.expval(qp.PauliZ(0))
-
-        opt = qp.SPSAOptimizer(maxiter=max_iterations, c=0.3)
-
-        init_params = np.random.normal(scale=0.1, size=(2,), requires_grad=True)
-        params = init_params
-        init_circuit_res = circuit(params)
-
-        for _ in range(max_iterations):
-            params, circuit_res = opt.step_and_cost(circuit, params)
-
-        assert np.all(params != init_params)
-        assert circuit_res < init_circuit_res
-
     def test_not_A_nor_maxiter_provided(self):
         """Test that if the objective function is not a
         scalar function, an error is raised."""

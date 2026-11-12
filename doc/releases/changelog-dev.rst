@@ -1805,6 +1805,29 @@ Breaking changes 💔
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
+* The ``default.mixed`` device, ``pennylane.devices.DefaultMixed``, and the internal
+  ``pennylane.devices.qubit_mixed`` simulation tools have been removed. Mixed-state
+  simulation now requires a compatible plugin; ``default.qubit`` can still return reduced
+  density matrices of pure-state circuits, but does not support general noise channels
+  or :class:`~.QubitDensityMatrix` preparation.
+  `(#10504) <https://github.com/PennyLaneAI/pennylane/pull/10504>`__
+
+  .. code-block:: python
+
+      dev = qp.device("default.qubit", wires=2)
+
+      @qp.qnode(dev)
+      def reduced_state():
+          qp.Hadamard(0)
+          qp.CNOT([0, 1])
+          return qp.density_matrix([0])
+
+  .. code-block:: pycon
+
+      >>> reduced_state()
+      array([[0.5+0.j, 0. +0.j],
+             [0. +0.j, 0.5+0.j]])
+
 Deprecations 👋
 ~~~~~~~~~~~~~~~
 

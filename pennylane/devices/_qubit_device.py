@@ -1447,14 +1447,13 @@ class QubitDevice(Device):
 
             >>> from pennylane import numpy as np
             >>> num_wires = 2
-            >>> dev = qp.device("default.mixed", wires=num_wires)
             >>> mp = qp.counts()
             >>> samples = np.array([[0, 0], [0, 0], [1, 0]])
-            >>> dev._samples_to_counts(samples, mp, num_wires)
-            {'00': 2, '10': 1}
+            >>> mp.process_samples(samples, wire_order=qp.wires.Wires(range(num_wires)))
+            {np.str_('00'): np.int64(2), np.str_('10'): np.int64(1)}
             >>> mp = qp.counts(all_outcomes=True)
-            >>> dev._samples_to_counts(samples, mp, num_wires)
-            {'00': 2, '01': 0, '10': 1, '11': 0}
+            >>> mp.process_samples(samples, wire_order=qp.wires.Wires(range(num_wires)))
+            {'00': np.int64(2), '01': np.int64(0), '10': np.int64(1), '11': np.int64(0)}
 
             The variable all_outcomes can be set when running measurements.counts, i.e.:
 

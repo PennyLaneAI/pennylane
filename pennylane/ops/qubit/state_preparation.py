@@ -596,28 +596,18 @@ class QubitDensityMatrix(Operation):
     .. details::
         :title: Usage Details
 
-        Example:
+        This operation requires a device with native density-matrix preparation support.
+        Construct it with a mixed-state density matrix:
 
         .. code-block:: python
 
             import pennylane as qp
-            nr_wires = 2
-            rho = np.zeros((2 ** nr_wires, 2 ** nr_wires), dtype=np.complex128)
-            rho[0, 0] = 1  # initialize the pure state density matrix for the |0><0| state
+            rho = np.diag([0.75, 0.25])
+            op = qp.QubitDensityMatrix(rho, wires=0)
 
-            dev = qp.device("default.mixed", wires=2)
-            @qp.qnode(dev)
-            def circuit():
-                qp.QubitDensityMatrix(rho, wires=[0, 1])
-                return qp.state()
-
-        Running this circuit:
-
-        >>> circuit()
-        array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-               [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-               [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-               [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]])
+        >>> op.parameters[0]
+        array([[0.75, 0.  ],
+               [0.  , 0.25]])
     """
 
     num_params = 1

@@ -869,7 +869,7 @@ class TestIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     # pylint: disable=too-many-positional-arguments
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize(

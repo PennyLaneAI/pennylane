@@ -247,10 +247,10 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         **Example**
 
-        >>> dev = qp.device("default.mixed", wires=2, shots=[3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
-        >>> dev.shots
+        >>> shots = qp.measurements.Shots([3, 1, 2, 2, 2, 2, 6, 1, 1, 5, 12, 10, 10])
+        >>> shots.total_shots
         57
-        >>> dev.shot_vector
+        >>> list(shots.shot_vector)
         [ShotCopies(3 shots x 1),
          ShotCopies(1 shots x 1),
          ShotCopies(2 shots x 4),

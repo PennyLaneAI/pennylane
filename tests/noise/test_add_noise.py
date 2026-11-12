@@ -150,9 +150,9 @@ class TestAddNoiseInterface:
 
     def test_add_noise_qnode(self):
         """Test that a QNode with add_noise decorator gives a different result."""
-        dev = qp.device("default.mixed", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        c, n = qp.noise.op_in([qp.RY, qp.RZ]), qp.noise.partial_wires(qp.AmplitudeDamping, 0.4)
+        c, n = qp.noise.op_in([qp.RY, qp.RZ]), qp.noise.partial_wires(qp.RX, 0.4)
 
         @add_noise(noise_model=qp.NoiseModel({c: n}))
         @qp.qnode(dev)
@@ -177,10 +177,10 @@ class TestAddNoiseInterface:
         def g(w, x, y, z):
             qp.RX(w, wires=0)
             qp.RY(x, wires=1)
-            qp.AmplitudeDamping(0.4, wires=1)
+            qp.RX(0.4, wires=1)
             qp.CNOT(wires=[0, 1])
             qp.RY(y, wires=0)
-            qp.AmplitudeDamping(0.4, wires=0)
+            qp.RX(0.4, wires=0)
             qp.RX(z, wires=1)
             return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
@@ -189,8 +189,7 @@ class TestAddNoiseInterface:
         assert not np.isclose(f_noisy(*args), f(*args))
         assert np.isclose(f_noisy(*args), g(*args))
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
-    def test_add_noise_dev(self, dev_name):
+    def test_add_noise_dev(self):
         """Test if an device transformed by the add_noise transform does successfully add noise to
         subsequent circuit executions"""
         with qp.queuing.AnnotatedQueue() as q_in_tape:
@@ -203,7 +202,7 @@ class TestAddNoiseInterface:
             qp.expval(qp.PauliZ(0))
 
         in_tape = QuantumScript.from_queue(q_in_tape)
-        dev = qp.device(dev_name, wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         program = dev.preprocess_transforms()
         res_without_noise = qp.execute(
@@ -251,9 +250,9 @@ class TestAddNoiseInterface:
 
     def test_add_noise_template(self):
         """Test that noisy ops are inserted correctly into a decomposed template"""
-        dev = qp.device("default.mixed", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        c, n = qp.noise.op_in([qp.RX, qp.RY]), qp.noise.partial_wires(qp.PhaseDamping, 0.3)
+        c, n = qp.noise.op_in([qp.RX, qp.RY]), qp.noise.partial_wires(qp.RZ, 0.3)
 
         @add_noise(noise_model=qp.NoiseModel({c: n}))
         @qp.qnode(dev)
@@ -264,14 +263,14 @@ class TestAddNoiseInterface:
         @qp.qnode(dev)
         def f2(w1, w2):
             qp.RY(w1[0], wires=0)
-            qp.PhaseDamping(0.3, wires=0)
+            qp.RZ(0.3, wires=0)
             qp.RY(w1[1], wires=1)
-            qp.PhaseDamping(0.3, wires=1)
+            qp.RZ(0.3, wires=1)
             qp.CZ(wires=[0, 1])
             qp.RY(w2[0][0][0], wires=0)
-            qp.PhaseDamping(0.3, wires=0)
+            qp.RZ(0.3, wires=0)
             qp.RY(w2[0][0][1], wires=1)
-            qp.PhaseDamping(0.3, wires=1)
+            qp.RZ(0.3, wires=1)
             return qp.expval(qp.PauliZ(0))
 
         w1 = np.random.random(2)
@@ -322,12 +321,12 @@ class TestAddNoiseInterface:
     # pylint:disable = cell-var-from-loop
     def test_add_noise_with_readout_errors(self):
         """Test that a add_noise works with readout errors."""
-        dev = qp.device("default.mixed", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
-        fc, fn = qp.noise.op_in([qp.RY, qp.RZ]), qp.noise.partial_wires(qp.AmplitudeDamping, 0.4)
+        fc, fn = qp.noise.op_in([qp.RY, qp.RZ]), qp.noise.partial_wires(qp.RX, 0.4)
         mc, mn = (qp.noise.meas_eq(qp.expval) | qp.noise.meas_eq(qp.var)) & qp.noise.wires_in(
             [0, 1]
-        ), qp.noise.partial_wires(qp.PhaseFlip, 0.2)
+        ), qp.noise.partial_wires(qp.RX, 0.2)
 
         @add_noise(noise_model=qp.NoiseModel({fc: fn}, {mc: mn}))
         @qp.qnode(dev)
@@ -356,13 +355,13 @@ class TestAddNoiseInterface:
             def f(w, x, y, z):
                 qp.RX(w, wires=0)
                 qp.RY(x, wires=1)
-                qp.AmplitudeDamping(0.4, wires=1)
+                qp.RX(0.4, wires=1)
                 qp.CNOT(wires=[0, 1])
                 qp.RY(y, wires=0)
-                qp.AmplitudeDamping(0.4, wires=0)
+                qp.RX(0.4, wires=0)
                 qp.RX(z, wires=1)
-                qp.PhaseFlip(0.2, wires=0)
-                qp.PhaseFlip(0.2, wires=1)
+                qp.RX(0.2, wires=0)
+                qp.RX(0.2, wires=1)
                 return qp.apply(mp)
 
             results.append(f(*args))
@@ -373,10 +372,10 @@ class TestAddNoiseInterface:
             def g(w, x, y, z):
                 qp.RX(w, wires=0)
                 qp.RY(x, wires=1)
-                qp.AmplitudeDamping(0.4, wires=1)
+                qp.RX(0.4, wires=1)
                 qp.CNOT(wires=[0, 1])
                 qp.RY(y, wires=0)
-                qp.AmplitudeDamping(0.4, wires=0)
+                qp.RX(0.4, wires=0)
                 qp.RX(z, wires=1)
                 return qp.apply(mp)
 
@@ -392,21 +391,32 @@ class TestAddNoiseInterface:
 class TestAddNoiseLevels:
     """Tests for custom insertion of add_noise transform at correct level."""
 
-    @pytest.mark.xfail(strict=False, reason="https://github.com/PennyLaneAI/pennylane/issues/8779")
     @pytest.mark.parametrize(
         "level1, level2",
         [
             ("top", 0),
             (0, slice(0, 0)),
-            ("user", 4),
-            ("user", slice(0, 4)),
+            pytest.param(
+                "user",
+                4,
+                marks=pytest.mark.xfail(
+                    strict=True, reason="https://github.com/PennyLaneAI/pennylane/issues/8779"
+                ),
+            ),
+            pytest.param(
+                "user",
+                slice(0, 4),
+                marks=pytest.mark.xfail(
+                    strict=True, reason="https://github.com/PennyLaneAI/pennylane/issues/8779"
+                ),
+            ),
             (-1, slice(0, -1)),
             ("device", slice(0, None)),
         ],
     )
     def test_add_noise_level(self, level1, level2):
         """Test that add_noise can be inserted to correct level in the CompilePipeline"""
-        dev = qp.device("default.mixed", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.metric_tensor
         @qp.transforms.undo_swaps
@@ -439,7 +449,7 @@ class TestAddNoiseLevels:
 
     def test_add_noise_level_with_final(self):
         """Test that add_noise can be inserted in the CompilePipeline with a final transform"""
-        dev = qp.device("default.mixed", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.metric_tensor
         @qp.transforms.undo_swaps

@@ -21,7 +21,7 @@ import pytest
 import pennylane as qp
 
 test_wires = [2, 3, 4]
-devices = ["default.qubit", "lightning.qubit", "default.mixed"]
+devices = ["default.qubit", "lightning.qubit"]
 
 
 def qubit_ansatz(x):
@@ -45,21 +45,6 @@ class TestIntegrationSingleReturn:
         res = qnode(0.5)
 
         assert res.shape == (2**wires,)
-        assert isinstance(res, (np.ndarray, np.float64))
-
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_mixed(self, wires):
-        """Return state with default.mixed."""
-        dev = qp.device("default.mixed", wires=wires)
-
-        def circuit(x):
-            qubit_ansatz(x)
-            return qp.state()
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(0.5)
-
-        assert res.shape == (2**wires, 2**wires)
         assert isinstance(res, (np.ndarray, np.float64))
 
     @pytest.mark.parametrize("device", devices)
@@ -267,10 +252,7 @@ class TestIntegrationSingleReturn:
         assert sum(res.values()) == shots
 
 
-devices = ["default.mixed"]
-
-
-devices = ["default.mixed"]
+devices = ["default.qubit"]
 
 
 @pytest.mark.torch
@@ -293,24 +275,6 @@ class TestIntegrationSingleReturnTorch:
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
         assert res.shape == (2**wires,)
-        assert isinstance(res, torch.Tensor)
-
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_mixed(self, wires):
-        """Return state with default.mixed."""
-        import torch
-
-        dev = qp.device("default.mixed", wires=wires)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.state()
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(torch.tensor(0.5, requires_grad=True))
-
-        assert res.shape == (2**wires, 2**wires)
         assert isinstance(res, torch.Tensor)
 
     @pytest.mark.parametrize("device", devices)
@@ -442,9 +406,6 @@ class TestIntegrationSingleReturnTorch:
         """Test the sample measurement."""
         import torch
 
-        if device in ["default.mixed", "default.qubit"]:
-            pytest.skip("Sample need to be rewritten for Torch.")
-
         dev = qp.device(device, wires=2)
 
         def circuit(x):
@@ -457,19 +418,16 @@ class TestIntegrationSingleReturnTorch:
 
         assert isinstance(res, torch.Tensor)
 
-        if measurement.wires.tolist() != [0, 1]:
+        if measurement.obs is not None:
             assert res.shape == (shots,)
         else:
-            assert res.shape == (shots, 2)
+            assert res.shape == (shots, len(measurement.wires))
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("measurement", [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0])])
     def test_counts(self, measurement, device, shots=100):
         """Test the counts measurement."""
         import torch
-
-        if device == "default.mixed":
-            pytest.skip("Counts need to be rewritten for Torch and default mixed.")
 
         dev = qp.device(device, wires=2)
 
@@ -485,7 +443,7 @@ class TestIntegrationSingleReturnTorch:
         assert sum(res.values()) == shots
 
 
-devices = ["default.mixed"]
+devices = ["default.qubit"]
 
 
 @pytest.mark.jax
@@ -511,24 +469,6 @@ class TestIntegrationSingleReturnJax:
         assert res.shape == (2**wires,)
         assert isinstance(res, jax.numpy.ndarray)
 
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_mixed(self, wires):
-        """Return state with default.mixed."""
-        import jax
-
-        dev = qp.device("default.mixed", wires=wires)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.state()
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(jax.numpy.array(0.5))
-
-        assert res.shape == (2**wires, 2**wires)
-        assert isinstance(res, jax.numpy.ndarray)
-
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("d_wires", test_wires)
     def test_density_matrix(self, d_wires, device):
@@ -658,9 +598,6 @@ class TestIntegrationSingleReturnJax:
         """Test the sample measurement."""
         import jax
 
-        if device == "default.mixed":
-            pytest.skip("Sample need to be rewritten for each interface in default mixed.")
-
         dev = qp.device(device, wires=2)
 
         def circuit(x):
@@ -673,10 +610,10 @@ class TestIntegrationSingleReturnJax:
 
         assert isinstance(res, jax.numpy.ndarray)
 
-        if measurement.wires.tolist() != [0, 1]:
+        if measurement.obs is not None:
             assert res.shape == (shots,)
         else:
-            assert res.shape == (shots, 2)
+            assert res.shape == (shots, len(measurement.wires))
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
@@ -702,7 +639,7 @@ class TestIntegrationSingleReturnJax:
 
 multi_return_wires = [([0], [1]), ([1], [0]), ([0], [0]), ([1], [1])]
 
-devices = ["default.qubit", "lightning.qubit", "default.mixed"]
+devices = ["default.qubit", "lightning.qubit"]
 
 
 class TestIntegrationMultipleReturns:
@@ -963,10 +900,7 @@ class TestIntegrationMultipleReturns:
         assert res[2].shape == (2,)
 
 
-devices = ["default.mixed"]
-
-
-devices = ["default.mixed"]
+devices = ["default.qubit"]
 
 
 @pytest.mark.torch
@@ -1117,9 +1051,6 @@ class TestIntegrationMultipleReturnsTorch:
         """Test the expval and sample measurements together."""
         import torch
 
-        if device in ["default.mixed", "default.qubit"]:
-            pytest.skip("Sample need to be rewritten for interfaces.")
-
         dev = qp.device(device, wires=2)
 
         def circuit(x):
@@ -1136,16 +1067,16 @@ class TestIntegrationMultipleReturnsTorch:
 
         # Sample
         assert isinstance(res[1], torch.Tensor)
-        assert res[1].shape == (shots,)
+        expected_shape = (
+            (shots,) if measurement.obs is not None else (shots, len(measurement.wires))
+        )
+        assert res[1].shape == expected_shape
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("measurement", [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0])])
     def test_expval_counts(self, measurement, device, shots=100):
         """Test the expval and counts measurements together."""
         import torch
-
-        if device == "default.mixed":
-            pytest.skip("Counts need to be rewritten for interfaces.")
 
         dev = qp.device(device, wires=2)
 
@@ -1198,9 +1129,6 @@ class TestIntegrationMultipleReturnsTorch:
         """Return a comprehension list of multiple expvals."""
         import torch
 
-        if device == "default.mixed" and shot_vector:
-            pytest.skip("No support for shot vector and mixed device with Torch.")
-
         dev = qp.device(device, wires=wires)
 
         def circuit(x):
@@ -1228,7 +1156,7 @@ class TestIntegrationMultipleReturnsTorch:
                     assert t.shape == ()
 
 
-devices = ["default.mixed"]
+devices = ["default.qubit"]
 
 
 @pytest.mark.jax
@@ -1379,9 +1307,6 @@ class TestIntegrationMultipleReturnJax:
         """Test the expval and sample measurements together."""
         import jax
 
-        if device == "default.mixed":
-            pytest.skip("Sample need to be rewritten for interfaces.")
-
         dev = qp.device(device, wires=2)
 
         def circuit(x):
@@ -1398,16 +1323,16 @@ class TestIntegrationMultipleReturnJax:
 
         # Sample
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (shots,)
+        expected_shape = (
+            (shots,) if measurement.obs is not None else (shots, len(measurement.wires))
+        )
+        assert res[1].shape == expected_shape
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("measurement", [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0])])
     def test_expval_counts(self, measurement, device, shots=100):
         """Test the expval and counts measurements together."""
         import jax
-
-        if device == "default.mixed":
-            pytest.skip("Counts need to be rewritten for interfaces and mixed device.")
 
         dev = qp.device(device, wires=2)
 
@@ -1458,9 +1383,6 @@ class TestIntegrationMultipleReturnJax:
     def test_list_multiple_expval(self, wires, device, shot_vector):
         """Return a comprehension list of multiple expvals."""
         import jax
-
-        if device == "default.mixed" and shot_vector:
-            pytest.skip("No support for shot vector and mixed device with Jax")
 
         dev = qp.device(device, wires=wires)
 
@@ -1514,7 +1436,7 @@ probs_data = [
 
 shot_vectors = [[10, 1000], [1, 10, 10, 1000], [1, (10, 2), 1000]]
 
-devices = ["default.qubit", "default.mixed"]
+devices = ["default.qubit"]
 
 
 @pytest.mark.parametrize("device", devices)

@@ -563,7 +563,7 @@ class QuantumScript:
         .. note::
 
             For devices that support native backpropagation (such as
-            ``default.qubit`` and ``default.mixed``), this
+            ``default.qubit``), this
             property contains no relevant information when using
             backpropagation to compute gradients.
 

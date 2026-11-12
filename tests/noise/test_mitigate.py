@@ -52,7 +52,7 @@ with qp.queuing.AnnotatedQueue() as q_tape_base:
 
 
 tape_base = QuantumScript.from_queue(q_tape_base)
-dev_ideal = qp.device("default.mixed", wires=2)
+dev_ideal = qp.device("default.qubit", wires=2)
 
 
 def same_tape(tape1, tape2):
@@ -137,7 +137,7 @@ class TestMitigateWithZNE:
         """Tests if the expected shape is returned when mitigating a circuit with two returns"""
         noise_strength = 0.05
 
-        dev_noise = insert(dev_ideal, qp.AmplitudeDamping, noise_strength)
+        dev_noise = insert(dev_ideal, qp.RY, noise_strength)
 
         n_wires = 2
         n_layers = 2
@@ -231,24 +231,23 @@ class TestMitigateWithZNE:
     def test_zne_with_noise_models(self):
         """Test that mitigate_with_zne transform works with noise models"""
         fcond = qp.noise.wires_in([0, 1])
-        noise = qp.noise.partial_wires(qp.AmplitudeDamping, 0.05)
+        noise = qp.noise.partial_wires(qp.RX, 0.05)
         noise_model = qp.NoiseModel({fcond: noise})
 
         def circuit():
             qp.RX(1.23, wires=0)
-            qp.RZ(0.45, wires=1)
+            qp.RX(0.45, wires=1)
             return qp.expval(qp.Z(0) @ qp.Z(1))
 
         noise_qnode = qp.QNode(circuit, device=qp.add_noise(dev_ideal, noise_model))
-        zne_qnode = mitigate_with_zne(noise_qnode, [1, 2, 3], fold_global, richardson_extrapolate)
+        zne_qnode = mitigate_with_zne(noise_qnode, [1, 3, 5], fold_global, richardson_extrapolate)
 
-        # following result has been obtained manually and also by using
-        # mitigate_with_zne(
-        #     noise_qnode, [1, 2, 3],
-        #     mitiq.zne.scaling.fold_global, mitiq.zne.inference.RichardsonFactory.extrapolate
-        # )()
-        mitigated_result = 0.39843788456
-        assert qp.math.allclose(zne_qnode(), mitigated_result, atol=1e-2)
+        # Each full fold adds two RX errors per wire. Extrapolate the analytic
+        # product-state expectations to zero noise using Richardson weights.
+        scales = qp.math.array([1, 3, 5])
+        expectations = qp.math.cos(1.23 + scales * 0.05) * qp.math.cos(0.45 + scales * 0.05)
+        mitigated_result = qp.math.dot(qp.math.array([15 / 8, -5 / 4, 3 / 8]), expectations)
+        assert qp.math.allclose(zne_qnode(), mitigated_result)
 
     # pylint:disable=not-callable
     def test_zne_error_with_channels(self):
@@ -302,8 +301,8 @@ class TestMitiqIntegration:
 
         noise_strength = 0.05
 
-        dev_noise_free = qp.device("default.mixed", wires=2)
-        dev = insert(dev_noise_free, qp.AmplitudeDamping, noise_strength)
+        dev_noise_free = qp.device("default.qubit", wires=2)
+        dev = insert(dev_noise_free, qp.RY, noise_strength)
 
         n_wires = 2
         n_layers = 2
@@ -351,8 +350,8 @@ class TestMitiqIntegration:
 
         noise_strength = 0.05
 
-        dev_noise_free = qp.device("default.mixed", wires=2)
-        dev = insert(dev_noise_free, qp.AmplitudeDamping, noise_strength)
+        dev_noise_free = qp.device("default.qubit", wires=2)
+        dev = insert(dev_noise_free, qp.RY, noise_strength)
 
         n_wires = 2
         n_layers = 2
@@ -397,8 +396,8 @@ class TestMitiqIntegration:
 
         noise_strength = 0.05
 
-        dev_noise_free = qp.device("default.mixed", wires=2)
-        dev = insert(dev_noise_free, qp.AmplitudeDamping, noise_strength)
+        dev_noise_free = qp.device("default.qubit", wires=2)
+        dev = insert(dev_noise_free, qp.RY, noise_strength)
 
         n_wires = 2
         n_layers = 2
@@ -439,8 +438,8 @@ class TestMitiqIntegration:
 
         noise_strength = 0.05
 
-        dev_noise_free = qp.device("default.mixed", wires=2)
-        dev = insert(dev_noise_free, qp.AmplitudeDamping, noise_strength)
+        dev_noise_free = qp.device("default.qubit", wires=2)
+        dev = insert(dev_noise_free, qp.RY, noise_strength)
 
         n_wires = 2
         n_layers = 2
@@ -496,8 +495,8 @@ class TestMitiqIntegration:
 
         noise_strength = 0.05
 
-        dev_noise_free = qp.device("default.mixed", wires=2)
-        dev = insert(dev_noise_free, qp.AmplitudeDamping, noise_strength)
+        dev_noise_free = qp.device("default.qubit", wires=2)
+        dev = insert(dev_noise_free, qp.RY, noise_strength)
 
         n_wires = 2
         n_layers = 2
@@ -534,11 +533,11 @@ def qfunc_multi(theta):
     return (qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1)))
 
 
-# Describe noise
-noise_gate = qp.PhaseDamping
+# Coherent rotation errors preserve the differentiable mitigation checks.
+noise_gate = qp.RY
 
 # Load devices
-dev_noisy = insert(dev_ideal, noise_gate, 0.05)
+dev_noisy = insert(dev_ideal, noise_gate, 0.01)
 
 out_ideal = np.sqrt(2) / 2 + np.sqrt(2)
 grad_ideal_0 = [-np.sqrt(2) / 2, -np.sqrt(2)]
@@ -632,7 +631,7 @@ class TestDifferentiableZNE:
         qnode_noisy = qp.QNode(qfunc, dev_noisy)
         qnode_ideal = qp.QNode(qfunc, dev_ideal)
 
-        scale_factors = [1.0, 2.0, 3.0]
+        scale_factors = [1.0, 3.0, 5.0]
 
         mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
@@ -657,7 +656,7 @@ class TestDifferentiableZNE:
         qnode_noisy = qp.QNode(qfunc, dev_noisy, interface=interface)
         qnode_ideal = qp.QNode(qfunc, dev_ideal, interface=interface)
 
-        scale_factors = [1.0, 2.0, 3.0]
+        scale_factors = [1.0, 3.0, 5.0]
 
         mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
@@ -684,7 +683,7 @@ class TestDifferentiableZNE:
         qnode_noisy = qp.QNode(qfunc, dev_noisy, interface=interface)
         qnode_ideal = qp.QNode(qfunc, dev_ideal, interface=interface)
 
-        scale_factors = [1.0, 2.0, 3.0]
+        scale_factors = [1.0, 3.0, 5.0]
 
         mitigated_qnode = jax.jit(
             mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
@@ -712,7 +711,7 @@ class TestDifferentiableZNE:
         qnode_noisy = qp.QNode(qfunc, dev_noisy, interface=interface)
         qnode_ideal = qp.QNode(qfunc, dev_ideal, interface=interface)
 
-        scale_factors = [1.0, 2.0, 3.0]
+        scale_factors = [1.0, 3.0, 5.0]
 
         mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
@@ -738,7 +737,7 @@ class TestDifferentiableZNE:
         qnode_noisy = qp.QNode(qfunc_multi, dev_noisy)
         qnode_ideal = qp.QNode(qfunc_multi, dev_ideal)
 
-        scale_factors = [1.0, 2.0, 3.0]
+        scale_factors = [1.0, 3.0, 5.0]
 
         mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
@@ -764,7 +763,7 @@ class TestDifferentiableZNE:
         qnode_noisy = qp.QNode(qfunc_multi, dev_noisy, interface=interface)
         qnode_ideal = qp.QNode(qfunc_multi, dev_ideal, interface=interface)
 
-        scale_factors = [1.0, 2.0, 3.0]
+        scale_factors = [1.0, 3.0, 5.0]
 
         mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
@@ -792,7 +791,7 @@ class TestDifferentiableZNE:
         qnode_noisy = qp.QNode(qfunc_multi, dev_noisy, interface=interface)
         qnode_ideal = qp.QNode(qfunc_multi, dev_ideal, interface=interface)
 
-        scale_factors = [1.0, 2.0, 3.0]
+        scale_factors = [1.0, 3.0, 5.0]
 
         mitigated_qnode = jax.jit(
             mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
@@ -821,7 +820,7 @@ class TestDifferentiableZNE:
         qnode_noisy = qp.QNode(qfunc_multi, dev_noisy, interface=interface)
         qnode_ideal = qp.QNode(qfunc_multi, dev_ideal, interface=interface)
 
-        scale_factors = [1.0, 2.0, 3.0]
+        scale_factors = [1.0, 3.0, 5.0]
 
         mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 

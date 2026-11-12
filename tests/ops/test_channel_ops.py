@@ -320,24 +320,6 @@ class TestBitFlip:
         expected_K1 = np.sqrt(p) * X
         assert np.allclose(op(p, wires=0).kraus_matrices()[1], expected_K1, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_grad_bitflip(self, angle):
-        """Test that analytical gradient is computed correctly for different states. Channel
-        grad recipes are independent of channel parameter"""
-
-        dev = qp.device("default.mixed", wires=1)
-        prob = pnp.array(0.5, requires_grad=True)
-
-        @qp.qnode(dev)
-        def circuit(p):
-            qp.RX(angle, wires=0)
-            qp.BitFlip(p, wires=0)
-            return qp.expval(qp.PauliZ(0))
-
-        gradient = np.squeeze(qp.grad(circuit)(prob))
-        assert np.allclose(gradient, circuit(1) - circuit(0))
-        assert np.allclose(gradient, (-2 * np.cos(angle)))
-
     def test_p_invalid_parameter(self):
         with pytest.raises(ValueError, match="p must be in the interval"):
             channel.BitFlip(1.5, wires=0).kraus_matrices()
@@ -389,25 +371,6 @@ class TestPhaseFlip:
 
         expected_K1 = np.sqrt(p) * Z
         assert np.allclose(op(p, wires=0).kraus_matrices()[1], expected_K1, atol=tol, rtol=0)
-
-    # TODO: bring back angle 0 when the bug fixed https://github.com/PennyLaneAI/pennylane/pull/6684#issuecomment-2552123064
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7)[1:])
-    def test_jacobian_phaseflip(self, angle):
-        """Test that analytical gradient is computed correctly for different states. Channel
-        grad recipes are independent of channel parameter"""
-
-        dev = qp.device("default.mixed", wires=1)
-        prob = pnp.array(0.5, requires_grad=True)
-
-        @qp.qnode(dev)
-        def circuit(p):
-            qp.RX(angle, wires=0)
-            qp.PhaseFlip(p, wires=0)
-            return qp.expval(qp.PauliZ(0))
-
-        gradient = np.squeeze(qp.grad(circuit)(prob))
-        assert gradient == circuit(1) - circuit(0)
-        assert np.allclose(gradient, 0.0)
 
     def test_p_invalid_parameter(self):
         with pytest.raises(ValueError, match="p must be in the interval"):
@@ -462,24 +425,6 @@ class TestDepolarizingChannel:
         op = qp.DepolarizingChannel
         expected = np.sqrt(p / 3) * X
         assert np.allclose(op(0.1, wires=0).kraus_matrices()[1], expected, atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_grad_depolarizing(self, angle):
-        """Test that analytical gradient is computed correctly for different states. Channel
-        grad recipes are independent of channel parameter"""
-
-        dev = qp.device("default.mixed", wires=1)
-        prob = pnp.array(0.5, requires_grad=True)
-
-        @qp.qnode(dev)
-        def circuit(p):
-            qp.RX(angle, wires=0)
-            qp.DepolarizingChannel(p, wires=0)
-            return qp.expval(qp.PauliZ(0))
-
-        gradient = np.squeeze(qp.grad(circuit)(prob))
-        assert np.allclose(gradient, circuit(1) - circuit(0))
-        assert np.allclose(gradient, -(4 / 3) * np.cos(angle))
 
     def test_p_invalid_parameter(self):
         with pytest.raises(ValueError, match="p must be in the interval"):
@@ -566,40 +511,6 @@ class TestResetError:
     def test_p0_p1_sum_not_normalized(self):
         with pytest.raises(ValueError, match="must be in the interval"):
             channel.ResetError(1.0, 1.0, wires=0).kraus_matrices()
-
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_grad_reset_error(self, angle):
-        """Test that gradient is computed correctly for different states. Channel
-        grad recipes are independent of channel parameter"""
-
-        dev = qp.device("default.mixed", wires=1)
-        p_0, p_1 = pnp.array([0.0, 0.5], requires_grad=True)
-
-        @qp.qnode(dev)
-        def circuit(p_0, p_1):
-            qp.RX(angle, wires=0)
-            qp.ResetError(p_0, p_1, wires=0)
-            return qp.expval(qp.PauliZ(0))
-
-        gradient = np.squeeze(qp.grad(circuit)(p_0, p_1))
-        assert np.allclose(
-            gradient,
-            np.array(
-                [
-                    (1 / 0.1) * (circuit(0.1, p_1) - circuit(0.0, p_1)),
-                    (1 / 0.1) * (circuit(p_0, 0.1) - circuit(p_0, 0.0)),
-                ]
-            ),
-        )
-        assert np.allclose(
-            gradient,
-            np.array(
-                [
-                    (2 * np.sin(angle / 2) * np.sin(angle / 2)),
-                    (-2 * np.cos(angle / 2) * np.cos(angle / 2)),
-                ]
-            ),
-        )
 
     @staticmethod
     def expected_jac_fn(p0, p1):
@@ -895,18 +806,16 @@ class TestQubitChannel:
 
         import jax
 
-        dev = qp.device("default.mixed", wires=1)
-
         @jax.jit
-        @qp.qnode(dev, interface="jax")
         def noise_channel(p):
             k0 = jax.numpy.sqrt(1 - p) * jax.numpy.eye(2)
             k1 = jax.numpy.sqrt(p) * jax.numpy.eye(2)
-            qp.QubitChannel([k0, k1], wires=[0])
-            return qp.expval(qp.PauliZ(0))
+            return qp.math.stack(qp.QubitChannel([k0, k1], wires=[0]).kraus_matrices())
 
-        # just checking it runs
-        noise_channel(0.1)
+        expected = qp.math.stack(
+            [qp.math.sqrt(0.9) * qp.math.eye(2), qp.math.sqrt(0.1) * qp.math.eye(2)]
+        )
+        assert qp.math.allclose(noise_channel(0.1), expected)
 
 
 class TestThermalRelaxationError:
@@ -1050,27 +959,3 @@ class TestThermalRelaxationError:
     def test_tg_le_0_invalid_parameter(self):
         with pytest.raises(ValueError, match="Invalid gate_time"):
             channel.ThermalRelaxationError(0.3, 100e-6, 100e-6, -20e-9, wires=0).kraus_matrices()
-
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_grad_thermal_relaxation_error(self, angle):
-        """Test that gradient is computed correctly for different states. Channel
-        grad recipes are independent of channel parameter"""
-
-        dev = qp.device("default.mixed", wires=1)
-        pe = pnp.array(0.0, requires_grad=True)
-
-        @qp.qnode(dev)
-        def circuit(pe):
-            qp.RX(angle, wires=0)
-            qp.ThermalRelaxationError(pe, 120e-6, 100e-6, 20e-9, wires=0)
-            return qp.expval(qp.PauliZ(0))
-
-        gradient = np.squeeze(qp.grad(circuit)(pe))
-        assert np.allclose(
-            gradient,
-            np.array(
-                [
-                    (1 / 0.1) * (circuit(0.1) - circuit(0.0)),
-                ]
-            ),
-        )

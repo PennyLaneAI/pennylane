@@ -174,7 +174,7 @@ class TestIntegration:
     diff_methods = ["backprop", "finite-diff"]
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
     def test_qnode_state(self, device, interface, params):
@@ -200,7 +200,7 @@ class TestIntegration:
         assert np.allclose(actual, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize(
         "params", list(zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
@@ -430,7 +430,7 @@ class TestIntegration:
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize(
         "params", [np.array([0.0, 0.0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]

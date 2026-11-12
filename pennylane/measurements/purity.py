@@ -79,18 +79,16 @@ def purity(wires) -> PurityMP:
 
     .. code-block:: python
 
-        dev = qp.device("default.mixed", wires=2)
+        dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev)
-        def circuit_purity(p):
-            qp.Hadamard(wires=0)
+        def circuit_purity(theta):
+            qp.RY(theta, wires=0)
             qp.CNOT(wires=[0, 1])
-            qp.BitFlip(p, wires=0)
-            qp.BitFlip(p, wires=1)
-            return qp.purity(wires=[0,1])
+            return qp.purity(wires=[0])
 
-    >>> print(circuit_purity(0.1))
-    0.7048...
+    >>> print(circuit_purity(np.pi / 2))
+    0.5
 
     .. seealso:: :func:`pennylane.math.purity`
     """

@@ -125,7 +125,7 @@ class TestResolveDiffMethod:
 
     def test_transform_dispatcher_as_diff_method(self):
         """Test when diff_method is of type Transform"""
-        dev = qp.device("default.mixed", wires=1)
+        dev = qp.device("default.qubit", wires=1)
         initial_config = ExecutionConfig(gradient_method=qp.gradients.param_shift)
         resolved_config = _resolve_diff_method(initial_config, dev)
         assert resolved_config.gradient_method is qp.gradients.param_shift
