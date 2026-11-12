@@ -424,17 +424,17 @@ def _select_swap(
     _select_swap_loop()  # pylint: disable=no-value-for-parameter
 
 
-def _measure_masked_x(work_wire, targets, product):
+def _measure_masked_x(work_wire, targets, bit_mask):
     """Measure X on the work wire and on targets selected by an integer bit mask."""
-    if not math.is_tracer(product):
-        x_wires = [wire for wire, bit in zip(targets, product) if bit]
+    if not math.is_tracer(bit_mask):
+        x_wires = [wire for wire, bit in zip(targets, bit_mask) if bit]
         return pauli_measure("X" * (len(x_wires) + 1), [work_wire, *x_wires])
 
     # A PauliMeasure has a static word and number of wires. Group the selected targets
     # first, then choose a measurement of fixed width.
-    selected = math.array(targets, like="jax")[math.argsort(-product)]
-    weight = math.sum(product)
-    num_targets = len(product)
+    selected = math.array(targets, like="jax")[math.argsort(-bit_mask)]
+    weight = math.sum(bit_mask)
+    num_targets = len(bit_mask)
 
     def measure_width(width):
         return pauli_measure("X" * (width + 1), [work_wire, *selected[:width]])
@@ -472,42 +472,67 @@ def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
 
 @capture.subroutine
 def _measurement_qrom_inner(controls, targets, bitstrings):
-    """Inner binary recursion with measurement-based uncomputation.
+    """Iterate over pairs of rows with measurement-based uncomputation.
 
-    Each level opens a TemporaryAND, recurses into left/right halves,
-    then uncomputes via measurement. The XOR product between subtree
-    bases is absorbed into the measurement.
+    Each pair uses a TemporaryAND that is uncomputed with its XOR mask.
+    Between pairs, close and reopen only the ancestor levels whose address
+    bits change, absorbing the XOR between each subtree's bases into its
+    closing measurement.
 
     Args:
         controls: interleaved [flag, sel, work, sel2, work2, ...]
         targets: target register wires
-        bitstrings: The set of k strings to be loaded in the decomposition. They do not necessarily match the QROM input values.
-
+        bitstrings: XOR-relative table, padded to a power-of-two number of rows.
     """
-
-    k = len(bitstrings)
-    if k <= 1:
+    if len(bitstrings) <= 1:
         return
 
-    num_bits = ceil_log2(k)
-    needed = 2 * num_bits + 1
-    controls = list(controls[:1]) + list(controls[-(needed - 1) :])
+    num_bits = ceil_log2(len(bitstrings))
+    controls = list(controls[:1]) + list(controls[-2 * num_bits :])
+    triples = [controls[2 * i : 2 * i + 3] for i in range(num_bits)]
+    if compiler.active() or capture.enabled():
+        triples = math.array(triples, like="jax")
+        bitstrings = math.array(bitstrings, like="jax")
 
-    flag, sel, work = controls[0], controls[1], controls[2]
-    child_controls = controls[2:]
+    def load_pair(k):
+        TemporaryAND(triples[-1], control_values=[1, 1])
+        bit_mask = math.bitwise_xor(bitstrings[2 * k], bitstrings[2 * k + 1])
+        _measurement_uncompute(triples[-1][2], triples[-1][:2], targets, bit_mask)
 
-    k_left = 2 ** (num_bits - 1)
+    def close_level(i, k):
+        # Align the current row to the subtree rooted at level i, then compare its
+        # left and right base rows. The table shape stays fixed throughout the loop.
+        half_size = 1 << (num_bits - i - 1)
+        start = (2 * k // (2 * half_size)) * (2 * half_size)
+        bit_mask = math.bitwise_xor(bitstrings[start], bitstrings[start + half_size])
+        _measurement_uncompute(triples[i][2], triples[i][:2], targets, bit_mask)
 
-    if k > 2:
-        TemporaryAND([flag, sel, work], control_values=[1, 0])
-        _measurement_qrom_inner(child_controls, targets, bitstrings[:k_left])
-        CNOT(wires=[flag, work])
-        _measurement_qrom_inner(child_controls, targets, bitstrings[k_left:])
-    else:
-        TemporaryAND([flag, sel, work], control_values=[1, 1])
+    def open_level(i):
+        TemporaryAND(triples[i], control_values=[1, 0])
 
-    product = math.bitwise_xor(bitstrings[0], bitstrings[k_left])
-    _measurement_uncompute(work, [flag, sel], targets, product)
+    for i in range(num_bits - 1):
+        open_level(i)
+
+    num_pairs = len(bitstrings) // 2
+    if num_pairs > 1:
+        # Exclude the initial/final ladders and the leaf AND for each pair.
+        average_ladder_len = (num_pairs - num_bits) / (num_pairs - 1)
+
+        def loop(k):
+            load_pair(k)
+            # MSB-first index of the ancestor bit that changes between pairs k and k+1.
+            level = num_bits - 1 - math.bitwise_count(math.bitwise_xor(k, k + 1)).astype(int)
+            uncompute = for_loop(num_bits - 2, level, -1)(partial(close_level, k=k))
+            hint(uncompute, {"num-iters": average_ladder_len})()
+            CNOT(wires=triples[level][::2])
+            recompute = for_loop(level + 1, num_bits - 1)(open_level)
+            hint(recompute, {"num-iters": average_ladder_len})()
+
+        for_loop(num_pairs - 1)(loop)()
+
+    load_pair(num_pairs - 1)
+    for i in range(num_bits - 2, -1, -1):
+        close_level(i, num_pairs - 1)
 
 
 def _measurement_qrom_outer(controls, targets, bitstrings, k):

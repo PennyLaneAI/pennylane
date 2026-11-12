@@ -26,19 +26,21 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.capture.primitives import for_loop_prim
 from pennylane.core.operator import abstractify
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.templates.subroutines.qrom import (
     _calculate_select_swap_sizes,
     _count_tempAND_in_measurement_qrom,
+    _measurement_qrom_inner,
     _qrom_measurement_condition,
     _qrom_measurement_decomposition,
     _qrom_measurement_resources,
     _qrom_unary_iteration,
     _select_swap,
 )
-from pennylane.testing import assert_decomposable
+from pennylane.testing import assert_decomposable, extract_all_primitives
 from pennylane.typing import Bool, Wire
 
 
@@ -852,6 +854,20 @@ class TestMeasurementQROM:
         assert _qrom_measurement_condition(Bool[8, 2], Wire[3], Wire[2], Wire[2]) is True
         assert _qrom_measurement_condition(Bool[8, 2], Wire[3], Wire[2], Wire[1]) is False
 
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_capture")
+    @pytest.mark.parametrize("num_bitstrings", [4, 8, 16])
+    def test_inner_loop_capture(self, num_bitstrings):
+        """Capture retains structured loops for dynamic tables and wires."""
+        num_controls = math.ceil(math.log2(num_bitstrings))
+        controls = qp.math.arange(2 * num_controls + 1, like="jax")
+        targets = qp.math.arange(2 * num_controls + 1, 2 * num_controls + 3, like="jax")
+        bitstrings = qp.math.zeros((num_bitstrings, 2), like="jax", dtype=int)
+
+        plxpr = jax.make_jaxpr(_measurement_qrom_inner)(controls, targets, bitstrings)
+
+        assert for_loop_prim in extract_all_primitives(plxpr.jaxpr)
+
     @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
@@ -861,9 +877,23 @@ class TestMeasurementQROM:
             (3, 1, False, float),
             (3, 2, False, bool),
             (8, 0, False, bool),
+            (16, 0, False, bool),
+            (32, 0, False, bool),
+            (8, 1, False, bool),
             (4, 0, True, float),
+            (32, 0, True, bool),
         ],
-        ids=["outer", "extra-control", "extra-controls", "recursive", "adjoint"],
+        ids=[
+            "outer",
+            "extra-control",
+            "extra-controls",
+            "inner-pair",
+            "inner-loop",
+            "nested-ladders",
+            "nested-ladders-extra-control",
+            "adjoint",
+            "nested-ladders-adjoint",
+        ],
     )
     def test_graph_decomposition_dynamic_bitstrings(
         self, num_bitstrings, num_extra_controls, adjoint, dtype, seed
@@ -903,16 +933,18 @@ class TestMeasurementQROM:
             return qp.state()
 
         # Change both the nonzero base row and the relative XOR masks between runtime inputs.
-        for table in ((1, 2, 0, 3, 2, 3, 1, 0), (2, 2, 3, 2, 0, 1, 3, 1)):
-            table = table[:num_bitstrings]
+        for pattern in ((1, 2, 0, 3, 2, 3, 1, 0), (2, 2, 3, 2, 0, 1, 3, 1)):
+            table = tuple(mask ^ offset for offset in range(4) for mask in pattern)[:num_bitstrings]
             bitstrings = qp.math.int_to_binary(qp.math.array(table), num_targets).astype(dtype)
-            expected = initial_state.copy()  # Out-of-range addresses act as the identity.
+            # Addresses >= num_bitstrings have no table entry, so their amplitudes stay
+            # unchanged, including those selected by nonzero extra control bits.
+            expected = initial_state.copy()
             for address, mask in enumerate(table):
                 expected[address, :, 0] = logical_state[
                     address, qp.math.arange(2**num_targets) ^ mask
                 ]
             # Include relative/global phases and the clean work register in the comparison.
-            assert qp.math.allclose(circuit(bitstrings), expected.ravel(), atol=1e-7)
+            assert qp.math.allclose(circuit(bitstrings), expected.ravel())
 
     def test_decomposition_single_bitstring(self):
         """Test the L == 1 branch of the measurement decomposition (no control wires)."""

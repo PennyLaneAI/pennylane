@@ -2353,6 +2353,7 @@ Bug fixes 🐛
 
 * Fixed the measurement-based decomposition of :class:`~.QROM` to support dynamic
   bitstrings with ``qjit(capture=True)``, including padding for extra control wires.
+  Its inner traversal now uses :func:`~.for_loop` instead of recursion.
   `(#10501) <https://github.com/PennyLaneAI/pennylane/pull/10501>`__
 
 * Fixed :func:`~pennylane.draw_mpl` to show the control values of :class:`~.TemporaryAND`
