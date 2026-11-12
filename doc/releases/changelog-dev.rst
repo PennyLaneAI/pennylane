@@ -7,7 +7,7 @@ New features since last release
 * A new decomposition rule for :class:`~.RZLayer`, ``_rzlayer_hwp_synthesis``, uses Hamming-weight
   phasing to apply :math:`\lfloor \log_2 m \rfloor + 1` rotations instead of :math:`m` to each
   block of :math:`m \geq 3` wires.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10519) <https://github.com/PennyLaneAI/pennylane/pull/10519>`__
 
 * The new :class:`~.RZLayer` applies a :class:`~.RZ` rotation gate to each of its target wires, with
   equal angles used for blocks of ``len(wires) // len(angles)`` wires. This includes the case of
@@ -1839,7 +1839,7 @@ Internal changes ⚙️
 * The test helpers for phase gradient decomposition rules count ANDs and requested work wires,
   record operations under program capture, and check rules that use work wires of the decomposed
   operator, including their global phase.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10519) <https://github.com/PennyLaneAI/pennylane/pull/10519>`__
 
 * :func:`~.specs`, :func:`~.analyze` and :func:`~pennylane.estimate` now compile QJIT-compiled
   QNodes up to the MLIR passes with Catalyst's ``target="mlir_opt"``, instead of reproducing part
