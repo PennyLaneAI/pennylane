@@ -105,7 +105,7 @@ class SelectPauliRot(Operator2):
                 :image: /_static/decomposition_thumbnails/select_pauli_rot_cnot_ladder.svg
                 :where: :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
 
-                :class:`~.RZ` | :math:`2^c` | 2
+                :class:`~.RZ` | :math:`\leq 2^c` | 2
                 :class:`~.CNOT` | :math:`2^c` | 2
                 :class:`~.Hadamard` | :math:`2[P \neq Z]` | 2
                 :class:`~.S` | :math:`[P = Y]` | 1
