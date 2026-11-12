@@ -17,30 +17,10 @@ can either be formally added to PennyLane2 or just used locally.
 Important classes and functions
 ###############################
 
-Decomposition and resource estimation
--------------------------------------
-
-Adding a custom operator is often convenient because it represents some
-self-contained block that not only will be used repetitively, but also
-*implemented* differently (i.e., different decompositions).
-
-PennyLane2 offers a robust and modularized decomposition algorithm, wherein any
-quantum operator can define different decompositions in terms of other
-operators. Creating new decomposition rules involves the following functions and
-modules.
-
-.. autosummary::
-
-    ~pennylane.register_resources
-    ~pennylane.add_decomps
-    ~pennylane.typing
-
-The decomposition algorithm in PennyLane2 bases its output on the resources
-required to compile a circuit into a target gate set. The
-:func:`~pennylane.register_resources` function is the avenue to specifying
-an individual decomposition rule's quantum resources. An example will be
-provided further down this page that uses :func:`~pennylane.register_resources`,
-:func:`~pennylane.add_decomps`, and the :mod:`~pennylane.typing` module.
+To define a quantum operator in PennyLane2, there are a handful of important
+functions to be aware of that pertain to the general scaffolding for operator
+creation, how the operator is implemented (its decomposition(s)), and how it
+integrates with resource estimation.
 
 Operator creation
 -----------------
@@ -59,8 +39,33 @@ either will result in a valid quantum operator that is agnostic to how it
 originated.
 
 For most cases, :func:`~pennylane.subcircuit` is recommended for its ease of
-use. Utilizing the :class:`~pennylane.core.operator.Operator2` class is
+use. However, the :class:`~pennylane.core.operator.Operator2` class is
 recommended for the utmost customization, testing, and validation.
+
+Decomposition and resource estimation
+-------------------------------------
+
+Adding a custom operator is often convenient because it represents some
+self-contained block that will not only be used repetitively, but also
+*implemented* differently (i.e., different decompositions).
+
+PennyLane2 supports a robust and modularized decomposition system wherein any
+quantum operator can define different decompositions in terms of other
+operators. Creating new decomposition rules involves the following functions and
+modules.
+
+.. autosummary::
+
+    ~pennylane.register_resources
+    ~pennylane.add_decomps
+    ~pennylane.typing
+
+The decomposition system in PennyLane2 works by counting the quantum resources
+required to compile a given circuit into a desired target gate set. The
+:func:`~pennylane.register_resources` function is the avenue to specifying
+an individual decomposition rule's quantum resources. An example will be
+provided further down this page that uses :func:`~pennylane.register_resources`,
+:func:`~pennylane.add_decomps`, and the :mod:`~pennylane.typing` module.
 
 .. _operator_argument_types:
 
@@ -110,13 +115,12 @@ An example
 Creating a custom operator using both :func:`~pennylane.subcircuit` and
 :class:`~pennylane.core.operator.Operator2` will be shown in this section.
 
-The following is an example for a fictitious two-wire gate called ``FlipAndRotate``. This
-operator flips a wire, measures another wire (a mid-circuit measurement) and
-conditionally applies a different :class:`~pennylane.CNOT` gate given the
-mid-circuit measurement result.
+The following is an example for a fictitious two-wire gate called
+``FlipAndRotate``. This operator flips a wire, measures another wire (a
+mid-circuit measurement) and conditionally applies a different
+:class:`~pennylane.CNOT` gate given the mid-circuit measurement result.
 
-First, the input arguments need to be binned into the proper categories. Its
-call signature will be ``FlipAndRotate(angle, rot_axes, wires)``, so the
+Its call signature will be ``FlipAndRotate(angle, rot_axes, wires)``, so the
 ``angle``, ``rot_axes``, and ``wires`` arguments need to be categorized into
 ``wire/dynamic/static/compilable/hybrid_argnames``.
 
@@ -150,7 +154,7 @@ with :func:`~pennylane.register_resources`.
     - Some operators have arguments that affect their resource usage, like the
       ``pauli_word`` of :class:`~pennylane.PauliRot` and the number of wires
       that it acts on. Every unique instance of such an operator must be
-      declared in the resources function, where abstract argument types in the
+      declared in the resources function, where abstract argument types from the
       :mod:`~pennylane.typing` module can be used as placeholder values.
 
 .. code-block:: python
@@ -185,7 +189,7 @@ with :func:`~pennylane.register_resources`.
 
         qp.cond(m, true_fn, false_fn)()
 
-In defining ``FlipAndRotate`` this way, it is an ``Operator2`` subclass
+In defining ``FlipAndRotate`` this way, it is a valid ``Operator2`` subclass
 
 >>> from pennylane.core.operator import Operator2
 >>> op = FlipAndRotate(0.1, ("X", "Y"), wires=(0, 1))
@@ -286,21 +290,35 @@ order for users to import the operator directly from ``pennylane``.
 Ensure that the operator's decomposition rules are displayed at the end of
 its docstring with a ``decomposition-table`` directive inside an "Available
 decompositions" ``details`` block. Add one nested ``decomposition-rule`` per
-rule, giving the rule's name, a circuit thumbnail saved under
-``doc/_static/decomposition_thumbnails/``, and one ``gate | count`` line per
-gate in its required resources. If a decomposition rule has certain constraints (e.g., it
-needs work wires), say so with ``:requires:``.
+available decomposition rule, giving the rule's name, a circuit thumbnail saved
+under ``doc/_static/decomposition_thumbnails/``, and one ``gate | count`` line per
+gate in its required resources. Additionally,
 
-If the resources depend on the operator's arguments (e.g., the number of
-wires), write the counts as symbolic expressions and add:
+* If a decomposition rule has certain constraints (e.g., it needs work wires),
+  say so with ``:requires:``.
 
-* ``:symbols:`` to ``decomposition-table``, defining each symbol used in the
-  counts;
-* ``:example:`` to ``decomposition-table``, giving the symbol values used to draw
-  the thumbnail;
-* a third column on each line, giving the count in the example circuit;
-* optionally, ``:where:`` to ``decomposition-rule``, defining any shorthand used
-  in that rule's counts.
+* If the resources depend on the operator's arguments (e.g., the number of
+  wires), write the counts as symbolic expressions and add:
+
+  - ``:symbols:`` to ``decomposition-table``, defining each symbol used in the
+    counts;
+  - ``:example:`` to ``decomposition-table``, giving the symbol values used to draw
+    the thumbnail;
+  - a third column on each line, giving the count in the example circuit;
+  - optionally, ``:where:`` to ``decomposition-rule``, defining any shorthand,
+    variale, or assumptions used in that rule's counts.
+
+* If decomposition rules are large, the ``:stacked:`` directive can be used to
+  better display the circuit thumbnail. This will place the example circuit
+  thumbnail above the required resources instead of to the left of the
+  resources. Optionally, use ``:lightbox:`` below circuit image thumbnails to
+  allow for the image to be clicked on and expanded in a separate window.
+
+* If a decomposition rule is for a symbolic decomposition (e.g.,
+  ``Controlled(MyNewOperator)``, ``Adjoint(MyNewOperator)``, or
+  ``Pow(MyNewOperator)``), add ``:region: controlled/adjoint/pow`` to indicate
+  this. All decomposition rules with the same ``:region:`` must be grouped
+  together sequentially.
 
 .. code-block:: rst
 
@@ -308,19 +326,31 @@ wires), write the counts as symbolic expressions and add:
         :title: Available decompositions
 
         .. decomposition-table:: qp.MyNewOperator
+            :stacked:
             :symbols: :math:`n` wires
             :example: :math:`n=4`
 
-            .. decomposition-rule:: _my_new_operator_decomp
+            .. decomposition-rule:: my_new_operator_decomp
                 :image: /_static/decomposition_thumbnails/my_new_operator_decomp.svg
+                :lightbox:
+
                 :requires: :math:`n - 2` work wires
                 :where: :math:`m = 2(n - 1)`
 
                 :class:`~.CNOT` | :math:`m` | 6
                 :class:`~.RZ` | :math:`n` | 4
 
-For operators with fixed resources, omit these and use only ``gate | count``
-lines.
+            .. decomposition-rule:: my_new_operator_decomp_controlled
+                :image: /_static/decomposition_thumbnails/my_new_operator_decomp_controlled.svg
+                :region:
+                :lightbox:
+
+                :requires: :math:`n + 2` work wires
+                :where: :math:`m = 2(n - 1)`, :math:`c` is the number of control wires and the example circuit shows :math:`c = 2`
+
+                :class:`~.CNOT` | :math:`m + c` | 8
+                :class:`~.RZ` | :math:`n` | 4
+                :class:`~.RZ` | :math:`n` | 4
 
 Don't forget to also add the new operator to the documentation in the
 ``doc/introduction/operations.rst`` file, or to
