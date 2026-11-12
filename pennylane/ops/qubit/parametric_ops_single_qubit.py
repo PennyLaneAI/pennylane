@@ -116,6 +116,7 @@ class RX(Operator2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/rx_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` changes sign
 
                 :class:`~.RX` | :math:`1`
 
@@ -133,7 +134,7 @@ class RX(Operator2):
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/rx_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: the angle of rotation is multiplied by the power :math:`z`
 
                 :class:`~.RX` | :math:`1`
     """
@@ -376,6 +377,7 @@ class RY(Operator2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/ry_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` changes sign
 
                 :class:`~.RY` | :math:`1`
 
@@ -392,7 +394,7 @@ class RY(Operator2):
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/ry_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: the angle of rotation is multiplied by the power :math:`z`
 
                 :class:`~.RY` | :math:`1`
     """
@@ -655,6 +657,7 @@ class RZ(Operator2):
                 :region: adjoint
 
                 :class:`~.RZ` | :math:`1`
+                :where: ``phi`` changes sign
 
             .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rz_decomp)
                 :image: /_static/decomposition_thumbnails/rz_controlled.svg
@@ -669,7 +672,7 @@ class RZ(Operator2):
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/rz_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: the angle of rotation is multiplied by the power :math:`z`
 
                 :class:`~.RZ` | :math:`1`
     """
@@ -947,6 +950,7 @@ class PhaseShift(Operator2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/phaseshift_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` changes sign
 
                 :class:`~.PhaseShift` | :math:`1`
 
@@ -964,7 +968,7 @@ class PhaseShift(Operator2):
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/phaseshift_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: the angle is multiplied by the power :math:`z`
 
                 :class:`~.PhaseShift` | :math:`1`
     """
@@ -1386,11 +1390,12 @@ class U1(Operator2):
                 :region: adjoint
 
                 :class:`~.U1` | :math:`1`
+                :where: ``phi`` changes sign
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/u1_pow.svg
                 :region: pow
-                :where: :math:`z` is the power, and the circuit shows :math:`z = 2`
+                :where: the angle is multiplied by the power :math:`z`
 
                 :class:`~.U1` | :math:`1`
     """
@@ -1524,6 +1529,7 @@ class U2(Operator2):
             .. decomposition-rule:: _adjoint_u2
                 :image: /_static/decomposition_thumbnails/u2_adjoint.svg
                 :region: adjoint
+                :where: the angles change to :math:`\delta \rightarrow \pi - \delta` and  :math:`\phi \rightarrow \pi - \phi` (both :math:`\text{mod} 2 \pi)
 
                 :class:`~.U2` | :math:`1`
     """
@@ -1671,6 +1677,7 @@ class U3(Operator2):
             .. decomposition-rule:: _adjoint_u3
                 :image: /_static/decomposition_thumbnails/u3_adjoint.svg
                 :region: adjoint
+                :where: :math:`theta` stays the same, but :math:`\delta \rightarrow \pi - \delta` and  :math:`\phi \rightarrow \pi - \phi` (both :math:`\text{mod} 2 \pi)
 
                 :class:`~.U3` | :math:`1`
     """
