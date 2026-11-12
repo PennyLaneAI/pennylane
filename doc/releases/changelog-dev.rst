@@ -4,6 +4,17 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* A new decomposition rule for :class:`~.RZLayer`, ``_rzlayer_hwp_synthesis``, uses Hamming-weight
+  phasing to apply :math:`\lfloor \log_2 m \rfloor + 1` rotations instead of :math:`m` to each
+  block of :math:`m \geq 3` wires.
+  `(#10519) <https://github.com/PennyLaneAI/pennylane/pull/10519>`__
+
+* The new :class:`~.RZLayer` applies a :class:`~.RZ` rotation gate to each of its target wires, with
+  equal angles used for blocks of ``len(wires) // len(angles)`` wires. This includes the case of
+  ``len(wires)=len(angles)`` (one angle per wire) and ``len(angles)=1`` (same angle on all wires). This
+  allows for more efficient decomposition rules.
+  `(#10508) <https://github.com/PennyLaneAI/pennylane/pull/10508>`__
+
 * A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
   `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
 
@@ -1834,6 +1845,11 @@ Deprecations 👋
 
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
+
+* The test helpers for phase gradient decomposition rules count ANDs and requested work wires,
+  record operations under program capture, and check rules that use work wires of the decomposed
+  operator, including their global phase.
+  `(#10519) <https://github.com/PennyLaneAI/pennylane/pull/10519>`__
 
 * :func:`~.specs`, :func:`~.analyze` and :func:`~pennylane.estimate` now compile QJIT-compiled
   QNodes up to the MLIR passes with Catalyst's ``target="mlir_opt"``, instead of reproducing part
