@@ -16,12 +16,9 @@ Contains the StronglyEntanglingLayers template.
 """
 
 # pylint: disable=too-many-arguments
-from pennylane import capture, math
-from pennylane.control_flow import for_loop
+from pennylane import math
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, Rot
-from pennylane.ops.op_math import cond
 from pennylane.wires import Wires
 
 
@@ -256,58 +253,3 @@ class StronglyEntanglingLayers(Operation):
         """
 
         return n_layers, n_wires, 3
-
-
-def _strongly_entangling_resources(imprimitive, n_wires, n_layers):
-    resources = {}
-
-    resources[Rot] = n_wires * n_layers
-    if n_wires > 1:
-        resources[imprimitive] = n_wires * n_layers
-
-    return resources
-
-
-@register_resources(_strongly_entangling_resources)
-def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
-
-    if capture.enabled():
-        wires = math.array(wires, like="jax")
-        ranges = math.array(ranges, like="jax")
-        weights = math.array(weights, like="jax")
-
-    n_wires = len(wires)
-    n_layers = weights.shape[-3]
-
-    @for_loop(n_layers)
-    def layers(l):
-        @for_loop(n_wires)
-        def rot_loop(i):
-            Rot(
-                weights[..., l, i, 0],
-                weights[..., l, i, 1],
-                weights[..., l, i, 2],
-                wires=wires[i],
-            )
-
-        def imprim_true():
-            @for_loop(n_wires)
-            def imprimitive_loop(i):
-                if capture.enabled():
-                    act_on = math.array([i, i + ranges[l]], like="jax") % n_wires
-                else:
-                    act_on = wires.subset([i, i + ranges[l]], periodic_boundary=True)
-                imprimitive(wires=act_on)
-
-            imprimitive_loop()  # pylint: disable=no-value-for-parameter
-
-        def imprim_false():
-            pass
-
-        rot_loop()  # pylint: disable=no-value-for-parameter
-        cond(n_wires > 1, imprim_true, imprim_false)()
-
-    layers()  # pylint: disable=no-value-for-parameter
-
-
-add_decomps(StronglyEntanglingLayers, _strongly_entangling_decomposition)

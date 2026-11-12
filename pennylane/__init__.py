@@ -18,7 +18,8 @@ PennyLane can be directly imported.
 
 import warnings
 
-from pennylane import exceptions
+from pennylane import decomposition_rules, exceptions
+from pennylane.decomposition_rules import _load_builtin_rules
 from pennylane.boolean_fn import BooleanFn
 from pennylane import numpy
 from pennylane import queuing
@@ -243,6 +244,8 @@ if _find_spec("numpy") is not None:
         )
 
 from ._entry_points_utils import _setup_entry_points  # pylint:disable=wrong-import-position
+
+_load_builtin_rules()
 
 # add to _entry_point_groups as new groups are added and desired to be accessed top-level
 _entry_point_groups = ["pennylane.drawer"]

@@ -26,9 +26,8 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.qubit.parametric_ops_multi_qubit import PauliRot
-from pennylane.typing import FlatPytree, Float, TensorLike, Wire
+from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import WiresLike
 
 _pauli_matrices = np.array(
@@ -720,14 +719,6 @@ class SpecialUnitary(Operation):
         return SpecialUnitary(-self.data[0], wires=self.wires)
 
 
-@register_resources({SpecialUnitary: 1})
-def _adjoint_special_unitary(theta, wires, **__):
-    SpecialUnitary(-theta, wires=wires)
-
-
-add_decomps("Adjoint(SpecialUnitary)", _adjoint_special_unitary)
-
-
 class TmpPauliRot(PauliRot):
     r"""A custom version of ``PauliRot`` that is inserted with rotation angle zero when
     decomposing ``SpecialUnitary``. The differentiation logic makes use of the gradient
@@ -777,24 +768,3 @@ class TmpPauliRot(PauliRot):
         if qp.math.isclose(theta, theta * 0) and not qp.math.requires_grad(theta):
             return []
         return [PauliRot(theta, pauli_word, wires)]
-
-
-# pylint: disable-next=unused-argument
-def _tmp_paulirot_decomp_resources(theta, wires, pauli_word: str):
-    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
-
-
-@register_resources(_tmp_paulirot_decomp_resources)
-def _tmp_paulirot_decomp(theta: TensorLike, wires: WiresLike, pauli_word: str):
-    PauliRot(theta, pauli_word=pauli_word, wires=wires)
-
-
-add_decomps(TmpPauliRot, _tmp_paulirot_decomp)
-
-
-@register_resources(lambda base: _tmp_paulirot_decomp_resources(**base.arguments))
-def _adjoint_tmp_paulirot(base):
-    PauliRot(-base.theta, pauli_word=base.pauli_word, wires=base.wires)
-
-
-add_decomps("Adjoint(TmpPauliRot)", _adjoint_tmp_paulirot)

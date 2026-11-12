@@ -17,14 +17,14 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.templates.subroutines import SelectTHC, select_thc_wires
-from pennylane.templates.subroutines.select_thc import (
-    _angle_batches,
+from pennylane.decomposition_rules.templates.subroutines.select_thc import (
     _apply_loaded_rotation,
     _build_qrom_givens_data,
     _cascade_angles,
     _select_half,
 )
+from pennylane.templates.subroutines import SelectTHC, select_thc_wires
+from pennylane.templates.subroutines.select_thc import _angle_batches
 from pennylane.testing import assert_valid
 from pennylane.typing import AbstractWires
 

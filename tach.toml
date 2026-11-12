@@ -412,6 +412,10 @@ path = "pennylane.decomposition"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
+path = "pennylane.decomposition_rules"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
 path = "pennylane.devices"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 

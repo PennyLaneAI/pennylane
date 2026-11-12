@@ -24,9 +24,6 @@ from pennylane import ops
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 
 
@@ -223,64 +220,6 @@ class Reflection(Operation):
 
         return decomp_ops
 
-
-def _reflection_decomposition_resources(base_rep, num_wires, num_reflection_wires=None) -> dict:
-
-    num_wires = num_reflection_wires if num_reflection_wires is not None else num_wires
-
-    resources = {
-        ops.GlobalPhase: 1,
-        _adjoint_abstract(base_rep): 1,
-        ops.PauliX: 2,
-    }
-
-    if num_wires > 1:
-        resources[
-            ops.ctrl(
-                ops.PhaseShift(Float, Wire[1]),
-                control=Wire[num_wires - 1],
-                control_values=Bool[num_wires - 1],
-            )
-        ] = 1
-    else:
-        resources[ops.PhaseShift] = 1
-
-    resources[base_rep] = 1
-
-    return resources
-
-
-@register_resources(_reflection_decomposition_resources)
-def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
-    alpha = parameters[0]
-    U = hyperparameters["base"]
-    reflection_wires = hyperparameters["reflection_wires"]
-
-    wires = Wires(reflection_wires) if reflection_wires is not None else wires
-
-    ops.GlobalPhase(np.pi)
-    ops.adjoint(U)
-
-    if len(wires) > 1:
-        ops.PauliX(wires=wires[-1])
-
-        ops.ctrl(
-            ops.PhaseShift(alpha, wires=wires[-1]),
-            control=wires[:-1],
-            control_values=[0] * (len(wires) - 1),
-        )
-
-        ops.PauliX(wires=wires[-1])
-
-    else:
-        ops.PauliX(wires=wires)
-        ops.PhaseShift(alpha, wires=wires)
-        ops.PauliX(wires=wires)
-
-    apply(U)
-
-
-add_decomps(Reflection, _reflection_decomposition)
 
 # pylint: disable=protected-access
 

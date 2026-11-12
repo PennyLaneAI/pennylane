@@ -20,19 +20,11 @@ from pennylane import math
 from pennylane import ops as qp_ops
 from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
-    resource_rep,
-)
-from pennylane.ops import GlobalPhase, StatePrep, change_op_basis
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops import GlobalPhase, change_op_basis
 from pennylane.ops.op_math.composite import CompositeOp
 from pennylane.ops.op_math.prod import prod
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 from pennylane.templates.embeddings import AmplitudeEmbedding
-from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 from .select import Select
@@ -204,40 +196,6 @@ class PrepSelPrep(Operation):
         context.append(self)
         return self
 
-
-def _prepselprep_resources(op_reps, num_control):
-    select_lcu = Select(list(op_reps), control=Wire[num_control], work_wires=Wire[0], partial=True)
-    select_phases = Select(
-        [abstractify(GlobalPhase)] * len(op_reps),
-        control=Wire[num_control],
-        work_wires=Wire[0],
-        partial=True,
-    )
-
-    _compute_op = resource_rep(StatePrep, num_wires=num_control)
-    _target_op = prod(select_lcu, select_phases)
-    resources = {
-        _change_op_basis_abstract(
-            _compute_op,
-            _target_op,
-            _adjoint_abstract(_compute_op),
-        ): 1,
-    }
-    return resources
-
-
-# pylint: disable=unused-argument
-@register_resources(_prepselprep_resources)
-def _prepselprep_decomp(*_, wires, lcu, control, target_wires):
-    coeffs, ops, phases = _get_new_terms(lcu)
-    sqrt_coeffs = math.sqrt(coeffs)
-    change_op_basis(
-        StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control),
-        prod(Select(ops, control, partial=True), Select(phases, control, partial=True)),
-    )
-
-
-add_decomps(PrepSelPrep, _prepselprep_decomp)
 
 # pylint: disable=protected-access
 

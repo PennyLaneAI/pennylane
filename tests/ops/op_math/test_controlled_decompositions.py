@@ -22,16 +22,18 @@ from scipy import sparse
 import pennylane as qp
 from pennylane import math
 from pennylane.decomposition.decomposition_rule import _fix_decomp
+from pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions import (
+    decompose_mcx_many_workers,
+    decompose_mcx_one_worker,
+    decompose_mcx_two_workers,
+    decompose_mcx_with_no_worker,
+)
 from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
 from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     _bisect_compute_a,
     _bisect_compute_b,
     _ctrl_decomp_bisect_md,
     _ctrl_decomp_bisect_od,
-    decompose_mcx_many_workers,
-    decompose_mcx_one_worker,
-    decompose_mcx_two_workers,
-    decompose_mcx_with_no_worker,
 )
 from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
 

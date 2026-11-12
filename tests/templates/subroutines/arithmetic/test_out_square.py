@@ -20,12 +20,12 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
-from pennylane.ops.op_math import Adjoint
-from pennylane.templates.subroutines.arithmetic.out_square import (
-    OutSquare,
+from pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square import (
     _out_square_with_adder_zeroed,
     _out_square_with_caddsub,
 )
+from pennylane.ops.op_math import Adjoint
+from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
 from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
 from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
 from pennylane.typing import Wire

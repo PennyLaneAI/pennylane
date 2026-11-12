@@ -17,15 +17,10 @@ Contains the quantum-number-preserving GateFabric template.
 
 # pylint: disable=too-many-arguments
 import numpy as np
-from jax import numpy as jnp
 
-from pennylane import capture, math
-from pennylane.control_flow import for_loop
+from pennylane import math
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import BasisState, DoubleExcitation, OrbitalRotation, cond
-from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires
+from pennylane.ops import BasisState, DoubleExcitation, OrbitalRotation
 
 
 class GateFabric(Operation):
@@ -318,59 +313,3 @@ class GateFabric(Operation):
             )
 
         return n_layers, n_wires // 2 - 1, 2
-
-
-def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
-    rotation_count = 2 * n_layers * len_wire_pattern if include_pi else n_layers * len_wire_pattern
-    return {
-        BasisState(Bool[num_wires], Wire[num_wires]): 1,
-        DoubleExcitation: n_layers * len_wire_pattern,
-        OrbitalRotation: rotation_count,
-    }
-
-
-@register_resources(_gate_fabric_resources)
-def _gate_fabric_decomposition(weights, wires, init_state, include_pi):
-    if isinstance(wires, Wires):
-        wires = wires.labels
-
-    n_layers = math.shape(weights)[0]
-
-    wire_pattern = [wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4]
-    if len(wires) > 4:
-        wire_pattern += [
-            wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
-        ]
-
-    if capture.enabled():
-        weights, wires, init_state, wire_pattern, n_layers = (
-            jnp.array(weights),
-            jnp.array(wires),
-            jnp.array(init_state),
-            jnp.array(wire_pattern),
-            jnp.array(n_layers),
-        )
-
-    BasisState(init_state, wires=wires)
-
-    @for_loop(n_layers)
-    def layers_loop(layer):
-
-        @for_loop(len(wire_pattern))
-        def wires_loop(idx):
-            wires_ = wire_pattern[idx]
-
-            def true_body():
-                OrbitalRotation(np.pi, wires=wires_)
-
-            cond(include_pi, true_body)()
-
-            DoubleExcitation(weights[layer][idx][0], wires=wires_)
-            OrbitalRotation(weights[layer][idx][1], wires=wires_)
-
-        wires_loop()  # pylint: disable=no-value-for-parameter
-
-    layers_loop()  # pylint: disable=no-value-for-parameter
-
-
-add_decomps(GateFabric, _gate_fabric_decomposition)

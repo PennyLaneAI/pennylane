@@ -19,11 +19,11 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.exceptions import WireError
-from pennylane.templates.state_preparations.phase_gradient import (
+from pennylane.decomposition_rules.templates.state_preparations.phase_gradient import (
     _phase_gradient_state_prep_clifford_t_decomposition,
     _phase_gradient_state_prep_ppr_decomposition,
 )
+from pennylane.exceptions import WireError
 from pennylane.templates.state_preparations.phase_gradient_decomp_data import PI_OVER_8_PPRS
 
 

@@ -230,7 +230,22 @@ Utility Classes
 
 """
 
+from pennylane.decomposition_rules._common import null_decomp
 from pennylane.exceptions import DecompositionError
+
+from .all_decomps import all_decomps
+from .decomposition_rule import (
+    register_resources,
+    register_condition,
+    DecompositionRule,
+    add_decomps,
+    list_decomps,
+    exclude_decomps,
+    inspect_decomps,
+    has_decomp,
+    local_decomps,
+    DecompCollection,
+)
 from .gate_set import GateSet
 from .utils import (
     enable_graph,
@@ -250,17 +265,3 @@ from .resources import (
     CompressedResourceOp,
     change_op_basis_resource_rep,
 )
-from .decomposition_rule import (
-    register_resources,
-    register_condition,
-    DecompositionRule,
-    null_decomp,
-    add_decomps,
-    list_decomps,
-    exclude_decomps,
-    inspect_decomps,
-    has_decomp,
-    local_decomps,
-    DecompCollection,
-)
-from .all_decomps import all_decomps

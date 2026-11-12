@@ -25,17 +25,17 @@ import pennylane as qp
 from pennylane import SignedOutMultiplier, device, qnode
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import list_decomps
+from pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_multiplier import (
+    _not_zeroed_signed_out_multiplier_resources,
+    _twos_complement_helper,
+    _zeroed_signed_out_multiplier_resources,
+)
 from pennylane.measurements import sample, state
 from pennylane.ops import CNOT, ctrl
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.arithmetic.incrementer import Incrementer
 from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier
 from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
-from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import (
-    _not_zeroed_signed_out_multiplier_resources,
-    _twos_complement_helper,
-    _zeroed_signed_out_multiplier_resources,
-)
 from pennylane.testing import assert_decomposable, assert_valid
 from pennylane.typing import Wire
 

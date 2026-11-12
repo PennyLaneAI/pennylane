@@ -15,14 +15,9 @@ r"""
 Contains the ``AngleEmbedding`` template.
 """
 
-from jax import numpy as jnp
-
-from pennylane import capture, math
-from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation, abstractify
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane import math
+from pennylane.core.operator import Operation
 from pennylane.ops import RX, RY, RZ
-from pennylane.wires import WiresLike
 
 ROT = {"X": RX, "Y": RY, "Z": RZ}
 
@@ -145,27 +140,3 @@ class AngleEmbedding(Operation):
         features = math.T(features) if batched else features
 
         return [rotation(features[i], wires=wires[i]) for i in range(len(wires))]
-
-
-def _angle_embedding_resources(rotation: Operation, num_wires: int) -> dict:
-    return {abstractify(rotation): num_wires}
-
-
-@register_resources(_angle_embedding_resources)
-def _angle_embedding_decomposition(features: list, wires: WiresLike, rotation: Operation):
-    batched = math.ndim(features) > 1
-    # We will iterate over the first axis of `features` together with iterating over the wires.
-    # If the leading dimension is a batch dimension, exchange the wire and batching axes.
-    features = math.T(features) if batched else features
-
-    if capture.enabled():
-        features, wires = jnp.array(features), jnp.array(wires)
-
-    @for_loop(len(wires))
-    def rotation_loop(i):
-        rotation(features[i], wires=wires[i])
-
-    rotation_loop()  # pylint: disable=no-value-for-parameter
-
-
-add_decomps(AngleEmbedding, _angle_embedding_decomposition)

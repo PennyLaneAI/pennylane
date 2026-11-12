@@ -23,10 +23,10 @@ import phase_gradient_helpers
 import pytest
 
 import pennylane as qp
-from pennylane.testing import assert_valid_decomp_rule
-from pennylane.transforms.decompositions import (
+from pennylane.decomposition_rules.transforms.decompositions.select_pauli_rot_phase_gradient import (
     make_selectpaulirot_to_phase_gradient_decomp,
 )
+from pennylane.testing import assert_valid_decomp_rule
 from pennylane.wires import WireError
 
 

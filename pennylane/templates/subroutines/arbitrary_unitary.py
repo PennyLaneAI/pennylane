@@ -17,10 +17,7 @@ Contains the ArbitraryUnitary template.
 
 from pennylane import math
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import PauliRot
-from pennylane.typing import Float, Wire
-from pennylane.wires import WiresLike
 
 _PAULIS = ["I", "X", "Y", "Z"]
 
@@ -150,21 +147,3 @@ class ArbitraryUnitary(Operation):
             n_wires (int): number of wires that template acts on
         """
         return (4**n_wires - 1,)
-
-
-def _arbitrary_unitary_resources(num_wires: int) -> dict:
-    resources = {}
-    for pauli_word in _all_pauli_words_but_identity(num_wires):
-        resources[PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)])] = 1
-    return resources
-
-
-@register_resources(_arbitrary_unitary_resources)
-def _arbitrary_unitary_decomposition(weights: list, wires: WiresLike, **_):
-    words = list(_all_pauli_words_but_identity(len(wires)))
-
-    for i, word in enumerate(words):
-        PauliRot(weights[..., i], word, wires=wires)
-
-
-add_decomps(ArbitraryUnitary, _arbitrary_unitary_decomposition)

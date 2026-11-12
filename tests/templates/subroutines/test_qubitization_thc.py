@@ -17,8 +17,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.templates.subroutines.alias_sampling import _build_alias_tables
-from pennylane.templates.subroutines.alias_sampling_thc import _build_thc_pairs, _lcu_signs
+from pennylane.decomposition_rules.templates.subroutines.alias_sampling import _build_alias_tables
+from pennylane.decomposition_rules.templates.subroutines.alias_sampling_thc import _lcu_signs
+from pennylane.templates.subroutines.alias_sampling_thc import _build_thc_pairs
 from pennylane.testing import assert_valid
 
 

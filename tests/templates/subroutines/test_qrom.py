@@ -27,9 +27,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
-from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.templates.subroutines.arithmetic import TemporaryAND
-from pennylane.templates.subroutines.qrom import (
+from pennylane.decomposition_rules.templates.subroutines.qrom import (
     _calculate_select_swap_sizes,
     _count_tempAND_in_measurement_qrom,
     _qrom_measurement_condition,
@@ -38,6 +36,8 @@ from pennylane.templates.subroutines.qrom import (
     _qrom_unary_iteration,
     _select_swap,
 )
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.testing import assert_decomposable
 from pennylane.typing import Bool, Wire
 
@@ -822,7 +822,10 @@ class TestMeasurementQROM:
 
     def test_condition_with_compiler(self, mocker):
         """Test the condition logic when a compiler is active."""
-        mocker.patch("pennylane.templates.subroutines.qrom.compiler.active", return_value=True)
+        mocker.patch(
+            "pennylane.decomposition_rules.templates.subroutines.qrom.compiler.active",
+            return_value=True,
+        )
 
         # Small tables (<= 2 bitstrings) are always applicable.
         assert _qrom_measurement_condition(Bool[2, 1], Wire[1], Wire[1], Wire[0]) is True

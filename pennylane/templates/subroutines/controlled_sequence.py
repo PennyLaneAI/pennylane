@@ -15,13 +15,7 @@ r"""
 Contains the ControlledSequence template.
 """
 
-from pennylane import capture, compiler, math
-from pennylane.control_flow import for_loop
-from pennylane.core.operator import abstractify
-from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops.op_math import SymbolicOp2, ctrl
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
+from pennylane.ops.op_math import SymbolicOp2
 from pennylane.wires import Wires, validate_no_wire_overlaps
 
 
@@ -139,41 +133,3 @@ class ControlledSequence(SymbolicOp2):
 
     def __repr__(self):
         return f"ControlledSequence({self.base}, control={list(self.control)})"
-
-
-def _ctrl_seq_decomposition_resources(base, control) -> dict:
-    control = Wires(control)
-    base_rep = abstractify(base)
-
-    if not control:
-        return {}
-    return {_ctrl_abstract(base_rep, Wire[1]): 2 ** len(control) - 1}
-
-
-# pylint: disable=no-value-for-parameter
-@register_resources(_ctrl_seq_decomposition_resources)
-def _ctrl_seq_decomposition(*_, base=None, control=None, **__):
-    if compiler.active() or capture.enabled():
-        control = math.array(control, like="jax")
-
-    num_controls = len(control)
-
-    @for_loop(num_controls - 1, -1, -1)
-    def _powers_loop(i):
-        j = num_controls - 1 - i
-        ctrl_wire = control[j]
-
-        # Note that we cannot use both Pow here and a for_loop on line 144
-        # since the arg i which becomes z will be traced, and Pow expects a static
-        # z. Opted for an inner for_loop since it is still compact, rather than
-        # an unrolled outer python loop and Pows.
-        @for_loop(2**i)
-        def _repeat_loop(_):
-            ctrl(base, control=ctrl_wire)
-
-        _repeat_loop()
-
-    _powers_loop()
-
-
-add_decomps(ControlledSequence, _ctrl_seq_decomposition)

@@ -15,14 +15,12 @@
 Contains the IQP template.
 """
 
-from collections import defaultdict
 from functools import reduce
 
 from pennylane import math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import expand_matrix
-from pennylane.ops import PPR_4, Hadamard, MultiRZ, PauliX
+from pennylane.ops import PPR_4, PauliX
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -149,41 +147,3 @@ class IQP(Operator2):
                 layers.append(rx_mat)
 
         return reduce(math.matmul, layers[::-1])
-
-
-def _instantaneous_quantum_polynomial_resources(
-    weights, wires, pattern, spin_sym
-):  # pylint: disable=unused-argument
-    num_wires = len(wires)
-    resources = defaultdict(int)
-    if spin_sym:
-        resources[PPR_4(1, pauli_word="Y" + "X" * (num_wires - 1), wires=Wire[num_wires])] = 1
-
-    resources[Hadamard] = 2 * num_wires
-
-    for gate in pattern:
-        for gen in gate:
-            resources[MultiRZ(Float, Wire[len(gen)])] += 1
-
-    return resources
-
-
-@register_resources(_instantaneous_quantum_polynomial_resources)
-def _instantaneous_quantum_polynomial_decomposition(weights, wires, pattern, spin_sym):
-    num_wires = len(wires)
-
-    if spin_sym:
-        PPR_4(1, "Y" + "X" * (num_wires - 1), wires=wires)
-
-    for i in range(num_wires):
-        Hadamard(wires[i])
-
-    for par, gate in zip(weights, pattern, strict=True):
-        for gen in gate:
-            MultiRZ(2 * par, wires=[wires[g] for g in gen])
-
-    for i in range(num_wires):
-        Hadamard(wires[i])
-
-
-add_decomps(IQP, _instantaneous_quantum_polynomial_decomposition)

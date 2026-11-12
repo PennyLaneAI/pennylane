@@ -23,12 +23,12 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.operator import abstractify
+from pennylane.decomposition_rules.templates.state_preparations.mottonen import mottonen_decomp
 from pennylane.templates.state_preparations.mottonen import (
     _get_alpha_y,
     _get_alpha_z,
     compute_theta,
     gray_code,
-    mottonen_decomp,
 )
 
 
@@ -331,7 +331,8 @@ class TestDecomposition:
         op = qp.MottonenStatePreparation([0, 0, 0, 1], wires=(0, 1))
         assert op.resource_params == {"num_wires": 2}
 
-    def test_decomposition_rule(self):
+    @pytest.mark.parametrize("extra_kwargs", [{}, {"work_wires": []}])
+    def test_decomposition_rule(self, extra_kwargs):
         """Test that MottonenStatePreparation has a correct decomposition rule registered."""
 
         decomp = qp.list_decomps(qp.MottonenStatePreparation)[0]
@@ -349,7 +350,7 @@ class TestDecomposition:
         }
 
         with qp.queuing.AnnotatedQueue() as q:
-            decomp(np.array([0, 0, 0, 1j]), wires=(0, 1))
+            decomp(np.array([0, 0, 0, 1j]), wires=(0, 1), **extra_kwargs)
 
         q = q.queue
 

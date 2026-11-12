@@ -35,9 +35,7 @@ jax = pytest.importorskip("jax")
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import Resources
-from pennylane.exceptions import CaptureWarning
-from pennylane.numeric_hamiltonians import CGFHamiltonian
-from pennylane.templates.subroutines.time_evolution.trotter_cgf import (
+from pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cgf import (
     _apply_system_basis_rotation,
     _cgf_resource_counts,
     _controlled_trotter_cgf_decomp,
@@ -45,6 +43,8 @@ from pennylane.templates.subroutines.time_evolution.trotter_cgf import (
     _merge_leaves,
     _trotter_cgf_decomposition,
 )
+from pennylane.exceptions import CaptureWarning
+from pennylane.numeric_hamiltonians import CGFHamiltonian
 from pennylane.testing import assert_decomposable
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires

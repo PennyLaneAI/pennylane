@@ -29,7 +29,7 @@ from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
-from pennylane.decomposition.decomposition_rule import null_decomp
+from pennylane.decomposition_rules._common import null_decomp
 from pennylane.exceptions import (
     DecompositionWarning,
     DeviceError,

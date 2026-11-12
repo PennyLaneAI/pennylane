@@ -20,14 +20,11 @@ import copy
 from collections.abc import Sequence
 
 import numpy as np
-from jax import numpy as jnp
 
-from pennylane import capture, math
-from pennylane.control_flow import for_loop
+from pennylane import math
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
-from pennylane.typing import Bool, TensorLike, Wire
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 
@@ -278,34 +275,3 @@ def _(*args, **kwargs):  # pylint: disable=unused-argument
     # could be abstract when using tracing evaluation in interpreter
     wires = tuple(w if math.is_tracer(w) else int(w) for w in args[1])
     return type.__call__(AllSinglesDoubles, args[0], wires, args[2], args[3], args[4])
-
-
-def _all_singles_doubles_resouces(num_singles, num_doubles, num_wires):
-    return {
-        BasisState(Bool[num_wires], Wire[num_wires]): 1,
-        DoubleExcitation: num_doubles,
-        SingleExcitation: num_singles,
-    }
-
-
-@register_resources(_all_singles_doubles_resouces)
-def _all_singles_doubles_decomposition(weights, wires, hf_state, singles, doubles):
-    BasisState(hf_state, wires=wires)
-
-    if capture.enabled():
-        weights, doubles, singles = jnp.array(weights), jnp.array(doubles), jnp.array(singles)
-
-    @for_loop(len(doubles))
-    def doubles_loop(i):
-        DoubleExcitation(weights[len(singles) + i], wires=doubles[i])
-
-    doubles_loop()  # pylint: disable=no-value-for-parameter
-
-    @for_loop(len(singles))
-    def singles_loop(j):
-        SingleExcitation(weights[j], wires=singles[j])
-
-    singles_loop()  # pylint: disable=no-value-for-parameter
-
-
-add_decomps(AllSinglesDoubles, _all_singles_doubles_decomposition)

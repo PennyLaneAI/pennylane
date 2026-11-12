@@ -23,21 +23,19 @@ import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import Resources
 from pennylane.decomposition.decomposition_rule import DecompCollection
-from pennylane.decomposition.symbolic_decomposition import (
-    adjoint_rotation,
-    pow_rotation,
-    self_adjoint,
-)
-from pennylane.ops.identity import _controlled_g_phase_decomp
-from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
-from pennylane.ops.op_math.controlled2 import flip_zero_control
-from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
-from pennylane.ops.qubit.non_parametric_ops import (
+from pennylane.decomposition_rules.identity import _controlled_g_phase_decomp
+from pennylane.decomposition_rules.op_math.adjoint import adjoint_rotation
+from pennylane.decomposition_rules.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.decomposition_rules.op_math.controlled2 import flip_zero_control
+from pennylane.decomposition_rules.op_math.pow import pow_rotation
+from pennylane.decomposition_rules.op_math.pow2 import pow_involutory as pow_involutory2
+from pennylane.decomposition_rules.op_math.symbolicop2 import self_adjoint
+from pennylane.decomposition_rules.qubit.non_parametric_ops import (
     _controlled_hadamard,
     _controlled_z_decomp,
     _ctrl_x_to_mcx,
 )
-from pennylane.ops.qubit.parametric_ops_single_qubit import (
+from pennylane.decomposition_rules.qubit.parametric_ops_single_qubit import (
     _controlled_phase_shift_decomp,
     _controlled_rot_decomp,
     _controlled_rx_decomp,
@@ -45,6 +43,8 @@ from pennylane.ops.qubit.parametric_ops_single_qubit import (
 
 _decompositions = defaultdict(DecompCollection)
 decompositions = ContextVar("_test_decompositions", default=_decompositions)
+
+decompositions.get()["ControlledOp"].extend(qp.list_decomps("ControlledOp"))
 
 
 def to_resources(gate_count: dict, weighted_cost: float | None = None) -> Resources:

@@ -19,7 +19,9 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.templates.subroutines.arithmetic.adder import _adder_arithmetic_decomposition
+from pennylane.decomposition_rules.templates.subroutines.arithmetic.adder import (
+    _adder_arithmetic_decomposition,
+)
 from pennylane.testing import assert_valid_decomp_rule
 
 

@@ -15,17 +15,13 @@
 This module contains the fast fermionic Fourier transform. Implemented based on the arXiv paper
 by Andrew J. Ferris: https://arxiv.org/pdf/1310.7605."""
 
-from collections import defaultdict
-
 import numpy as np
 
-from pennylane import capture, math
+from pennylane import math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator
-from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import FermionicSWAP, PauliZ, pow
-from pennylane.ops.op_math.pow2 import _pow_abstract
 from pennylane.wires import WiresLike
 
 INV_SQRT2 = 1 / math.sqrt(2)
@@ -158,41 +154,6 @@ class FFFT(Operator):
         }
 
 
-def _fast_fermionic_fourier_transform_resources(num_wires):
-    resources = defaultdict(int)
-
-    log2_wires = int(math.log2(num_wires))
-
-    two_qubit_gates = num_wires * log2_wires // 2
-    resources[TwoWireFFT] = two_qubit_gates
-
-    def _count_one_recursive(wires, resources):
-        if wires > 2:
-            for mode in range(wires // 2):
-                resources[_pow_abstract(PauliZ, z=2 * mode / wires)] += 1
-            resources = _count_one_recursive(wires // 2, resources)
-            resources = _count_one_recursive(wires // 2, resources)
-        return resources
-
-    resources = _count_one_recursive(num_wires, resources)
-
-    if num_wires > 2:
-        resources[FermionicSWAP] = num_wires * (num_wires - log2_wires - 1) // 2
-
-    return resources
-
-
-@register_resources(_fast_fermionic_fourier_transform_resources)
-def _fast_fermionic_fourier_transform_decomposition(*_, wires: WiresLike, **__):
-    if capture.enabled():
-        wires = math.array(wires, like="jax")
-
-    # Rather than performing a bit-reversal permutation, we expect the user to label their wires
-    # correctly at the beginning.
-
-    _recursive_decompose(wires)
-
-
 def _recursive_decompose(wires: WiresLike):
     # base case is that we have two wires
     if len(wires) == 2:
@@ -254,6 +215,3 @@ def _permute_and_apply_parallel(wires, operator):
 
     # applies the inverse permutation
     permutation_out_layers()  # pylint: disable=no-value-for-parameter
-
-
-add_decomps(FFFT, _fast_fermionic_fourier_transform_decomposition)

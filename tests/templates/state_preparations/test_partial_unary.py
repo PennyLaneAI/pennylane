@@ -24,15 +24,17 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition import list_decomps
-from pennylane.math import binary_matrix_rank, ceil_log2
-from pennylane.templates.state_preparations.partial_unary import (
-    PartialUnaryStatePreparation,
-    PUIsometryFinder,
+from pennylane.decomposition_rules.templates.state_preparations.partial_unary import (
     _find_affine_subspace_isometry,
     _is_affine_subspace,
     _partial_unary_dense_state,
     _partial_unary_state_prep_core,
     _partial_unary_state_prep_resources,
+)
+from pennylane.math import binary_matrix_rank, ceil_log2
+from pennylane.templates.state_preparations.partial_unary import (
+    PartialUnaryStatePreparation,
+    PUIsometryFinder,
 )
 from pennylane.testing import assert_valid, assert_valid_decomp_rule
 from pennylane.typing import Complex, Float, Wire

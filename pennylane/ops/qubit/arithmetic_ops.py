@@ -16,8 +16,6 @@ This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
 
-from collections import Counter
-
 # pylint: disable=arguments-differ
 from copy import copy
 
@@ -25,14 +23,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-    resource_rep,
-)
-from pennylane.decomposition.symbolic_decomposition import pow_involutory, self_adjoint_legacy
-from pennylane.typing import FlatPytree, TensorLike, Wire
+from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike
 
 
@@ -196,20 +187,6 @@ class QubitCarry(Operation):
         ]
 
 
-def _qubitcarry_to_cnot_toffoli_resources():
-    return {qp.CNOT: 1, qp.Toffoli: 2}
-
-
-@register_resources(_qubitcarry_to_cnot_toffoli_resources)
-def _qubitcarry_to_cnot_toffolis(wires: WiresLike, **__):
-    qp.Toffoli(wires=wires[1:])
-    qp.CNOT(wires=[wires[1], wires[2]])
-    qp.Toffoli(wires=[wires[0], wires[2], wires[3]])
-
-
-add_decomps(QubitCarry, _qubitcarry_to_cnot_toffolis)
-
-
 class QubitSum(Operation):
     r"""QubitSum(wires)
     Apply a ``QubitSum`` operation on three input wires.
@@ -354,21 +331,6 @@ class QubitSum(Operation):
 
     def adjoint(self):
         return QubitSum(wires=self.wires)
-
-
-def _qubitsum_to_cnots_resources():
-    return {qp.CNOT: 2}
-
-
-@register_resources(_qubitsum_to_cnots_resources)
-def _qubitsum_to_cnots(wires: WiresLike, **__):
-    qp.CNOT(wires=[wires[1], wires[2]])
-    qp.CNOT(wires=[wires[0], wires[2]])
-
-
-add_decomps(QubitSum, _qubitsum_to_cnots)
-add_decomps("Adjoint(QubitSum)", self_adjoint_legacy)
-add_decomps("Pow(QubitSum)", pow_involutory)
 
 
 class IntegerComparator(Operation):
@@ -603,9 +565,9 @@ class IntegerComparator(Operation):
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
         with qp.queuing.AnnotatedQueue() as q:
             if geq:
-                _integer_comparator_ge_decomposition(wires, value, work_wires)
+                _integer_comparator_ge_decomposition_impl(wires, value, work_wires)
             else:
-                _integer_comparator_lt_decomposition(wires, value, work_wires)
+                _integer_comparator_lt_decomposition_impl(wires, value, work_wires)
 
         if qp.queuing.QueuingManager.recording():
             for op in q.queue:
@@ -624,41 +586,7 @@ class IntegerComparator(Operation):
         return super().pow(z % 2)
 
 
-def _integer_comparator_lt_resource(num_wires, value, num_work_wires, **_):
-
-    if value == 0:
-        return {}
-
-    if value > 2 ** (num_wires - 1) - 1:
-        return {qp.X: 1}
-
-    num_controls = num_wires - 1
-    binary_str = format(value, f"0{num_controls}b")
-    last_significant = binary_str.rfind("1")
-    gate_counts = {qp.X: (last_significant + 1) * 2}
-
-    first_significant = binary_str.find("1")
-    gate_counts[
-        qp.MultiControlledX(
-            Wire[first_significant + 2],
-            work_wires=Wire[num_work_wires + num_wires - 2 - first_significant],
-        )
-    ] = 1
-
-    while (first_significant := binary_str.find("1", first_significant + 1)) != -1:
-        gate_counts[
-            qp.MultiControlledX(
-                Wire[first_significant + 2],
-                work_wires=Wire[num_work_wires + num_wires - 2 - first_significant],
-            )
-        ] = 1
-
-    return gate_counts
-
-
-@register_condition(lambda geq, **_: not geq)
-@register_resources(_integer_comparator_lt_resource)
-def _integer_comparator_lt_decomposition(wires, value, work_wires, **_):
+def _integer_comparator_lt_decomposition_impl(wires, value, work_wires, **_):
     """Decompose the ``IntegerComparator`` for when the flipping condition is ``n < value``.
 
     This decomposition uses the minimum number of ``MultiControlledX`` gates. For a given value,
@@ -752,48 +680,7 @@ def _integer_comparator_lt_decomposition(wires, value, work_wires, **_):
             qp.X(wires[i])
 
 
-def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
-
-    # If the value is 0, the flipping condition is always satisfied.
-    if value == 0:
-        return {qp.X: 1}
-
-    num_controls = num_wires - 1
-
-    if value > 2**num_controls - 1:
-        return {}
-
-    binary_str = format(value, f"0{num_controls}b")
-    first_zero = binary_str.find("0")
-
-    if first_zero == -1:
-        return {qp.MultiControlledX(Wire[num_controls + 1], work_wires=Wire[num_work_wires]): 1}
-
-    gate_set = Counter()
-
-    gate_set[
-        qp.MultiControlledX(
-            Wire[first_zero + 2], work_wires=Wire[num_work_wires + num_wires - 2 - first_zero]
-        )
-    ] = 1
-    gate_set[qp.X] = 2
-
-    while (first_zero := binary_str.find("0", first_zero + 1)) != -1:
-        gate_set[
-            qp.MultiControlledX(
-                Wire[first_zero + 2], work_wires=Wire[num_work_wires + num_wires - 2 - first_zero]
-            )
-        ] = 1
-        gate_set[qp.X] += 2
-
-    gate_set[qp.MultiControlledX(Wire[num_controls + 1], work_wires=Wire[num_work_wires])] += 1
-
-    return dict(gate_set)
-
-
-@register_condition(lambda geq, **_: geq)
-@register_resources(_integer_comparator_ge_resource)
-def _integer_comparator_ge_decomposition(wires, value, work_wires, **_):
+def _integer_comparator_ge_decomposition_impl(wires, value, work_wires, **_):
     """Decompose the ``IntegerComparator`` for when the flipping condition is ``n >= value``.
 
     This decomposition rule mirrors the implementation for the ``n < value`` case.
@@ -844,34 +731,3 @@ def _integer_comparator_ge_decomposition(wires, value, work_wires, **_):
     for i in range(num_controls):
         if control_value_tracker[i]:
             qp.X(wires[i])
-
-
-def _integer_comparator_flip_geq_resource(num_wires, value, num_work_wires, geq, **_):
-    """Resource estimation for flipping the geq condition."""
-    return {
-        qp.X: 1,
-        resource_rep(
-            qp.IntegerComparator,
-            num_wires=num_wires,
-            value=value,
-            geq=not geq,
-            num_work_wires=num_work_wires,
-        ): 1,
-    }
-
-
-@register_resources(_integer_comparator_flip_geq_resource)
-def _integer_comparator_flip_geq(value, geq, wires, work_wires, **_):
-    """Decompose the IntegerComparator by flipping geq to lt or vice versa."""
-    qp.X(wires[-1])
-    IntegerComparator(value, wires, geq=not geq, work_wires=work_wires)
-
-
-add_decomps(
-    IntegerComparator,
-    _integer_comparator_lt_decomposition,
-    _integer_comparator_ge_decomposition,
-    _integer_comparator_flip_geq,
-)
-
-add_decomps("Adjoint(IntegerComparator)", self_adjoint_legacy)

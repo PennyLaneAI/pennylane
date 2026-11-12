@@ -37,16 +37,20 @@ from pennylane.decomposition.decomposition_rule import (
 )
 from pennylane.decomposition.resources import Resources
 from pennylane.decomposition.utils import to_name
-from pennylane.ops.mid_measure import MidMeasure
-from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2, _change_op_basis_abstract
-from pennylane.ops.op_math.controlled2 import (
-    ControlledOp2,
+from pennylane.decomposition_rules.op_math.controlled2 import (
     ctrl_many_zeroed_work_wires,
     ctrl_single_work_wire,
     to_controlled_unitary,
 )
-from pennylane.ops.op_math.pow2 import flip_pow_adjoint, merge_powers, repeat_pow_base
+from pennylane.decomposition_rules.op_math.pow2 import (
+    flip_pow_adjoint,
+    merge_powers,
+    repeat_pow_base,
+)
+from pennylane.ops.mid_measure import MidMeasure
+from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2, _change_op_basis_abstract
+from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.testing.decompositions import assert_valid_decomp_rule
 from pennylane.typing import Float, Int, Wire
@@ -686,10 +690,17 @@ class TestDecompDictionary:
             "_controlled_rule",
             "controlled(custom_rule)",
             "controlled(custom_rule2)",
-            "ctrl_many_zeroed_work_wires",
             "ctrl_single_work_wire",
             "to_controlled_unitary",
         }
+
+        op = qp.ctrl(
+            AnotherOp(Float, Wire[1]),
+            control=Wire[4],
+            work_wires=Wire[3],
+            work_wire_type="zeroed",
+        )
+        assert ctrl_many_zeroed_work_wires in qp.list_decomps(op)
 
     def test_list_pow_decomps2(self):
         """Tests the rules listed by _list_pow_decomps for a Pow2, covering all branches."""
@@ -758,6 +769,53 @@ class TestDecompDictionary:
 @pytest.mark.unit
 class TestListDecompsByName:
     """Tests controlled fallback candidates retrieved by operator name."""
+
+    def test_generic_rules_are_registered(self):
+        """The generic category contains the built-in controlled candidates in order."""
+        assert list(qp.list_decomps("ControlledOp")) == [
+            to_controlled_unitary,
+            ctrl_many_zeroed_work_wires,
+            ctrl_single_work_wire,
+        ]
+
+    def test_custom_generic_rule(self):
+        """Generic registrations are returned by name and filtered for concrete operators."""
+
+        @register_condition(lambda control_wires, **_: len(control_wires) > 1)
+        @register_resources({qp.X: 1})
+        def generic_rule(*_, **__):
+            raise NotImplementedError
+
+        qp.add_decomps("ControlledOp", generic_rule)
+        assert generic_rule in qp.list_decomps("ControlledOp")
+        assert generic_rule in qp.list_decomps("C(DynOp)")
+        assert generic_rule in qp.list_decomps("Controlled(DynOp)")
+
+        single_control = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[1])
+        multiple_controls = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[2])
+        assert not qp.list_decomps(single_control)
+        assert list(qp.list_decomps(multiple_controls)) == [generic_rule]
+
+    def test_generic_exclusions(self):
+        """Excluding a generic rule applies to name and concrete-operator lookups."""
+        base = DynOpWithMatrix(Float, Float, Float, Wire[1])
+        op = ControlledOp2(base, control_wires=Wire[1])
+        assert to_controlled_unitary in qp.list_decomps(op)
+        with qp.exclude_decomps("ControlledOp", "to_controlled_unitary"):
+            assert to_controlled_unitary not in qp.list_decomps(op.name)
+            assert to_controlled_unitary not in qp.list_decomps(op)
+
+    def test_fixed_generic_rule(self):
+        """A fixed generic rule replaces the generic category's candidates."""
+
+        @register_resources({qp.X: 1})
+        def generic_rule(*_, **__):
+            raise NotImplementedError
+
+        _fix_decomp("ControlledOp", generic_rule)
+        assert list(qp.list_decomps("C(DynOp)")) == [generic_rule]
+        op = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[1])
+        assert list(qp.list_decomps(op)) == [generic_rule]
 
     @pytest.mark.parametrize("op_name", ["C(DynOp)", "Controlled(DynOp)"])
     def test_custom_and_generic_rules(self, op_name):

@@ -35,37 +35,40 @@ from pennylane.decomposition.resources import (
     pow_resource_rep,
     resource_rep,
 )
-from pennylane.decomposition.symbolic_decomposition import (
+from pennylane.decomposition_rules.op_math import controlled2 as controlled2_rules
+from pennylane.decomposition_rules.op_math.adjoint import (
     adjoint_rotation,
     cancel_adjoint,
+    make_adjoint_decomp,
+)
+from pennylane.decomposition_rules.op_math.adjoint2 import cancel_adjoint as cancel_adjoint2
+from pennylane.decomposition_rules.op_math.controlled import (
     ctrl_single_work_wire,
     flip_control_adjoint,
-    flip_pow_adjoint,
     flip_zero_control,
-    make_adjoint_decomp,
     make_controlled_decomp,
+    to_controlled_qubit_unitary,
+)
+from pennylane.decomposition_rules.op_math.controlled2 import (
+    _make_controlled_decomp as make_controlled_decomp2,
+)
+from pennylane.decomposition_rules.op_math.pow import (
+    flip_pow_adjoint,
     merge_powers,
     pow_involutory,
     pow_rotation,
     repeat_pow_base,
-    self_adjoint,
-    self_adjoint_legacy,
-    to_controlled_qubit_unitary,
 )
+from pennylane.decomposition_rules.op_math.pow2 import flip_pow_adjoint as flip_pow_adjoint2
+from pennylane.decomposition_rules.op_math.pow2 import merge_powers as merge_powers2
+from pennylane.decomposition_rules.op_math.pow2 import pow_involutory as pow_involutory2
+from pennylane.decomposition_rules.op_math.pow2 import repeat_pow_base as repeat_pow_base2
+from pennylane.decomposition_rules.op_math.symbolicop import self_adjoint_legacy
+from pennylane.decomposition_rules.op_math.symbolicop2 import self_adjoint
 from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
-from pennylane.ops.op_math.adjoint2 import cancel_adjoint as cancel_adjoint2
 from pennylane.ops.op_math.controlled2 import ControlledOp2
-from pennylane.ops.op_math.controlled2 import _make_controlled_decomp as make_controlled_decomp2
-from pennylane.ops.op_math.controlled2 import ctrl_single_work_wire as ctrl_single_work_wire2
-from pennylane.ops.op_math.controlled2 import flip_control_adjoint as flip_control_adjoint2
-from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
-from pennylane.ops.op_math.controlled2 import to_controlled_unitary
 from pennylane.ops.op_math.pow import pow
 from pennylane.ops.op_math.pow2 import Pow2, _pow_abstract
-from pennylane.ops.op_math.pow2 import flip_pow_adjoint as flip_pow_adjoint2
-from pennylane.ops.op_math.pow2 import merge_powers as merge_powers2
-from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
-from pennylane.ops.op_math.pow2 import repeat_pow_base as repeat_pow_base2
 from pennylane.testing import decomp_rule_to_tape
 from pennylane.typing import Bool, Complex, Float, Wire
 
@@ -995,10 +998,12 @@ class TestControlledDecomposition:
         """Tests the flip_control_adjoint decomposition."""
 
         op = qp.ctrl(qp.adjoint(DynOp(0.5, wires=[0, 1])), control=2)
-        tape = decomp_rule_to_tape(op, flip_control_adjoint2)
+        tape = decomp_rule_to_tape(op, controlled2_rules.flip_control_adjoint)
 
         assert tape.operations == [qp.adjoint(qp.ctrl(DynOp(0.5, wires=[0, 1]), 2))]
-        assert flip_control_adjoint2.compute_resources(**op.arguments) == to_resources(
+        assert controlled2_rules.flip_control_adjoint.compute_resources(
+            **op.arguments
+        ) == to_resources(
             {Adjoint2(ControlledOp2(DynOp(Float, Wire[2]), control_wires=Wire[1])): 1}
         )
 
@@ -1079,7 +1084,7 @@ class TestControlledDecomposition:
             qp.H(control_wires[2])
             qp.CNOT(control_wires[:2])
 
-        custom_rule = flip_zero_control2(_custom_controlled_rule, "custom_rule")
+        custom_rule = controlled2_rules.flip_zero_control(_custom_controlled_rule, "custom_rule")
 
         op = qp.ctrl(NonParametricOp(wires=[0]), control=[1, 2, 3, 4])
         assert not custom_rule.is_applicable(**op.arguments)
@@ -1114,7 +1119,7 @@ class TestControlledDecomposition:
             qp.H(control_wires[2])
             qp.CNOT(control_wires[:2])
 
-        custom_rule = flip_zero_control2(_custom_controlled_rule, "custom_rule")
+        custom_rule = controlled2_rules.flip_zero_control(_custom_controlled_rule, "custom_rule")
         op = NonParametricOp(wires=[0])
 
         @qp.qjit
@@ -1149,7 +1154,7 @@ class TestControlledDecomposition:
             qp.H(control_wires[2])
             qp.CNOT(control_wires[:2])
 
-        custom_rule = flip_zero_control2(_custom_controlled_rule, "custom_rule")
+        custom_rule = controlled2_rules.flip_zero_control(_custom_controlled_rule, "custom_rule")
         op = NonParametricOp(wires=[0])
 
         def circuit():
@@ -1219,9 +1224,11 @@ class TestControlledDecomposition:
 
         with queuing.AnnotatedQueue() as q:
             qp.Projector([0], wires=4)
-            ctrl_single_work_wire2(**op.arguments)
+            controlled2_rules.ctrl_single_work_wire(**op.arguments)
 
-        assert ctrl_single_work_wire2.compute_resources(**op.arguments) == to_resources(
+        assert controlled2_rules.ctrl_single_work_wire.compute_resources(
+            **op.arguments
+        ) == to_resources(
             {
                 qp.X: 3,
                 ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[1]): 1,
@@ -1286,14 +1293,16 @@ class TestControlledDecomposition:
         """Tests the decomposition to controlled qubit unitary."""
 
         op = qp.ctrl(DynOpWithMatrix(0.1, 0.2, 0.3, wires=0), control=[1, 2, 3], work_wires=[4, 5])
-        tape = decomp_rule_to_tape(op, to_controlled_unitary)
+        tape = decomp_rule_to_tape(op, controlled2_rules.to_controlled_unitary)
 
         assert tape.operations == [
             qp.ControlledQubitUnitary(
                 qp.Rot.compute_matrix(0.1, 0.2, 0.3), wires=[1, 2, 3, 0], work_wires=[4, 5]
             )
         ]
-        assert to_controlled_unitary.compute_resources(**op.arguments) == Resources(
+        assert controlled2_rules.to_controlled_unitary.compute_resources(
+            **op.arguments
+        ) == Resources(
             {
                 qp.ControlledQubitUnitary(
                     Complex[2, 2],
