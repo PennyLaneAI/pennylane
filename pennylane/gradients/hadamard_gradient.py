@@ -23,13 +23,14 @@ from typing import Literal
 import numpy as np
 
 from pennylane import math, ops
+from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
 from pennylane.measurements import ProbabilityMP, expval
-from pennylane.operation import Operator
 from pennylane.ops import Sum
-from pennylane.pauli import PauliWord, pauli_decompose
-from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import decompose, split_to_single_terms
+from pennylane.pauli import PauliWord, pauli_decompose, to_operator
+from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import split_to_single_terms
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn, ResultBatch
 from pennylane.wires import Wires
@@ -680,9 +681,9 @@ def _get_pauli_terms(op):
 
     # qp.PauliZ has no defined terms() behavior
     return (
-        pauli_rep.operation().terms()
-        if isinstance(pauli_rep.operation(), ops.op_math.Sum)
-        else (1 * pauli_rep.operation()).terms()
+        to_operator(pauli_rep).terms()
+        if isinstance(to_operator(pauli_rep), ops.op_math.Sum)
+        else (1 * to_operator(pauli_rep)).terms()
     )
 
 

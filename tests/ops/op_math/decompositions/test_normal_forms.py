@@ -83,7 +83,7 @@ class TestNormalForms:
             gate = qp.prod(*gates)
             assert isinstance(so3mat, SO3Matrix), "All transform should have SO3Matrix instances"
             assert isinstance(
-                gate, (qp.ops.Operation, qp.ops.op_math.Prod)
+                gate, (qp.core.operator.Operation, qp.ops.op_math.Prod)
             ), "Each transform should have a gate"
             assert isinstance(phase, float)
             if parity_vec != (1, 1, 1):  # 0.125 here comes from the matrix form of the T-gate.

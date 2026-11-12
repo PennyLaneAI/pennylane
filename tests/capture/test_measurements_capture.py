@@ -15,9 +15,8 @@
 Tests for capturing measurements.
 """
 
-import numpy as np
-
 # pylint: disable=protected-access
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -38,9 +37,9 @@ from pennylane.measurements import (
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
-    AbstractMeasurement,
-)
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import AbstractMeasurement
+from pennylane.testing import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -97,6 +96,51 @@ def test_abstract_measurement():
 
     assert am == am2
     assert hash(am) == hash("AbstractMeasurement")
+
+
+@pytest.mark.parametrize("num_wires", [1, 3])
+@pytest.mark.parametrize("measurement", [qp.probs, qp.sample, qp.counts])
+def test_abstract_wire_measurements(num_wires, measurement):
+    """Abstract registers preserve the wire count and measurement output shapes."""
+    wires = qp.typing.Wire[num_wires]
+    kwargs = {"all_outcomes": True} if measurement is qp.counts else {}
+    jaxpr = jax.make_jaxpr(lambda: measurement(wires=wires, **kwargs))()
+
+    if measurement is qp.sample:
+        expected_shape, expected_dtype = (50, num_wires), int
+    else:
+        expected_shape = (2**num_wires,)
+        expected_dtype = int if measurement is qp.counts else float
+    assert len(jaxpr.out_avals) == (2 if measurement is qp.counts else 1)
+    for aval in jaxpr.out_avals:
+        assert aval.n_wires == num_wires
+        assert aval.abstract_eval(num_device_wires=5, shots=50) == (
+            expected_shape,
+            expected_dtype,
+        )
+
+
+@pytest.mark.parametrize("measurement", [ExpectationMP, VarianceMP, SampleMP])
+def test_abstract_wires_with_eigvals(measurement):
+    """Eigenvalues remain a separate operand when the wires are abstract."""
+
+    def circuit(eigvals):
+        return measurement(wires=qp.typing.Wire[2], eigvals=eigvals)
+
+    jaxpr = jax.make_jaxpr(circuit)(np.array([-1.0, -0.5, 0.5, 1.0]))
+    aval = jaxpr.out_avals[0]
+    assert aval.n_wires == 2
+    assert aval.has_eigvals
+    assert aval.abstract_eval(num_device_wires=5, shots=50) == (
+        (50,) if measurement is SampleMP else (),
+        float,
+    )
+
+
+def test_unknown_abstract_measurement_wires():
+    """An unknown register length cannot define a wire-based measurement."""
+    with pytest.raises(TypeError, match="unknown number of wires"):
+        jax.make_jaxpr(lambda: qp.probs(wires=qp.typing.Wire[-1]))()
 
 
 class TestCounts:
@@ -274,27 +318,6 @@ class TestCounts:
         assert len(jaxpr.outvars) == 3
 
 
-def test_primitive_none_behavior():
-    """Test that if the obs primitive is None, the measurement can still
-    be created, but it just won't be captured into jaxpr.
-    """
-
-    # pylint: disable=too-few-public-methods
-    class MyMeasurement(qp.measurements.MeasurementProcess):
-        pass
-
-    MyMeasurement._obs_primitive = None
-
-    def f():
-        return MyMeasurement(wires=qp.wires.Wires((0, 1)))
-
-    mp = f()
-    assert isinstance(mp, MyMeasurement)
-
-    jaxpr = jax.make_jaxpr(f)()
-    assert len(jaxpr.eqns) == 0
-
-
 # pylint: disable=unnecessary-lambda
 creation_funcs = [
     lambda: qp.state(),
@@ -391,7 +414,48 @@ class TestExpvalVar:
         jaxpr = jax.make_jaxpr(f)()
 
         assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == qp.X._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
+
+        assert jaxpr.eqns[1].primitive == m_type._obs_primitive
+        assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
+
+        am = jaxpr.eqns[1].outvars[0].aval
+        assert isinstance(am, AbstractMeasurement)
+        assert am.n_wires is None
+        assert am._abstract_eval == m_type._abstract_eval
+
+        shapes = _get_shapes_for(
+            *jaxpr.out_avals, num_device_wires=0, shots=qp.measurements.Shots(50)
+        )[0]
+        t = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
+        assert shapes == jax.core.ShapedArray((), t)
+
+    @pytest.mark.parametrize("defined_outside", (True, False))
+    def test_capture_operator2(self, m_type, defined_outside):
+        """Test that the expectation value of an observable can be captured."""
+
+        # pylint: disable=too-few-public-methods
+        class PauliX(qp.core.Operator2):
+            """Operator2 version of X."""
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        obs = PauliX(0) if defined_outside else None
+
+        # mini test for producing outside of tracing context
+        mp = m_type(obs if obs else PauliX(0))
+        assert isinstance(mp, m_type)
+        assert isinstance(mp.obs, PauliX)
+
+        def f():
+            obs_inside = obs if obs else PauliX(0)
+            return m_type(obs=obs_inside)
+
+        jaxpr = jax.make_jaxpr(f)()
+
+        assert len(jaxpr.eqns) == 2
+        assert_eqn_matches_op(jaxpr.eqns[0], PauliX)
 
         assert jaxpr.eqns[1].primitive == m_type._obs_primitive
         assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
@@ -465,9 +529,9 @@ class TestExpvalVar:
             return m_type(obs=obs)
 
         jaxpr = jax.make_jaxpr(f)()
-        assert jaxpr.eqns[0].primitive == qp.X._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
         assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
-        assert jaxpr.eqns[2].primitive == qp.Y._primitive
+        assert_eqn_matches_op(jaxpr.eqns[2], qp.Y)
         assert jaxpr.eqns[3].primitive == qp.ops.Sum._primitive
         assert jaxpr.eqns[4].invars[0] == jaxpr.eqns[3].outvars[0]
         assert jaxpr.eqns[4].primitive == m_type._obs_primitive
@@ -660,7 +724,7 @@ def test_shadow_expval(seed):
     jaxpr = jax.make_jaxpr(f)()
 
     assert len(jaxpr.eqns) == 2
-    assert jaxpr.eqns[0].primitive == qp.X._primitive
+    assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
 
     assert jaxpr.eqns[1].primitive == ShadowExpvalMP._obs_primitive
     assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars

@@ -20,13 +20,11 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.measurements import MeasurementTransform, SampleMeasurement, StateMeasurement
 from pennylane.exceptions import DeviceError
 from pennylane.measurements import (
     ClassicalShadowMP,
-    MeasurementTransform,
-    SampleMeasurement,
     SampleMP,
-    StateMeasurement,
     StateMP,
 )
 from pennylane.wires import Wires
@@ -1738,7 +1736,7 @@ class TestSampleMeasurement:
         with pytest.raises((ValueError, DeviceError)):
             circuit()
 
-    def test_method_overriden_by_device(self, device, shots):
+    def test_method_overridden_by_device(self, device, shots):
         """Test that the device can override a measurement process."""
         dev = device(2)
         if isinstance(dev, qp.devices.Device):
@@ -1821,7 +1819,7 @@ class TestStateMeasurement:
         ):
             circuit()
 
-    def test_method_overriden_by_device(self, device, shots):
+    def test_method_overridden_by_device(self, device, shots):
         """Test that the device can override a measurement process."""
         dev = device(2)
 
@@ -1869,7 +1867,7 @@ class TestCustomMeasurement:
 
         assert circuit() == 1
 
-    def test_method_overriden_by_device(self, device, shots):
+    def test_method_overridden_by_device(self, device, shots):
         """Test that the device can override a measurement process."""
         dev = device(2)
         if isinstance(dev, qp.devices.Device):

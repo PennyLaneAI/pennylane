@@ -105,8 +105,7 @@ operations_list = {
     "Adjoint(SISWAP)": qp.adjoint(qp.SISWAP(wires=[0, 1])),
     "OrbitalRotation": qp.OrbitalRotation(1.234, wires=[0, 1, 2, 3]),
     "FermionicSWAP": qp.FermionicSWAP(1.234, wires=[0, 1]),
-    "GlobalPhase": qp.GlobalPhase(1.23423, wires=[0, 1]),
-    "GlobalPhase()": qp.GlobalPhase(1.23423),
+    "GlobalPhase": qp.GlobalPhase(1.23423),
 }
 
 all_ops = operations_list.keys()
@@ -696,12 +695,11 @@ class TestGraphModeExclusiveFeatures:  # pylint: disable=too-few-public-methods
         def decomp_with_work_wire(wires):
             qp.PauliX(wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
+        qp.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
 
-            tape = qp.tape.QuantumScript([MyOp(0)], [qp.expval(qp.Z(0))])
-            dev = qp.device("default.tensor", wires=wires)
-            program = dev.preprocess_transforms()
-            (out_tape,), _ = program([tape])
+        tape = qp.tape.QuantumScript([MyOp(0)], [qp.expval(qp.Z(0))])
+        dev = qp.device("default.tensor", wires=wires)
+        program = dev.preprocess_transforms()
+        (out_tape,), _ = program([tape])
 
         assert len(out_tape.operations) == expected_program_len

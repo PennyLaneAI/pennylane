@@ -17,11 +17,97 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import Identity
+from pennylane.core.operator.utils import abstractify
+from pennylane.ops.identity import GlobalPhase, Identity
+from pennylane.testing import assert_valid
+from pennylane.typing import Float, Wire
 
 op_wires = [[], [0], ["a"], [0, 1], ["a", "b", "c"], [100, "xasd", 12]]
 op_repr = ["I()", "I(0)", "I('a')", "I([0, 1])", "I(['a', 'b', 'c'])", "I([100, 'xasd', 12])"]
 op_params = tuple(zip(op_wires, op_repr))
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("phi", (0.0, 1.0, -1.0))
+def test_global_phase_is_valid(phi):
+    """Tests that the GlobalPhase operator is valid."""
+    op = GlobalPhase(phi)
+    assert_valid(op, skip_differentiation=True)
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("wires", ((), [0], [0, 1]))
+def test_identity_is_valid(wires):
+    """Tests that Identity ops are valid."""
+    op = Identity(wires)
+    assert_valid(op, skip_differentiation=True)
+
+
+def test_abstractify_globalphase():
+    """Test that globalphase can be abstractified."""
+
+    assert abstractify(GlobalPhase(0.5)) == GlobalPhase(Float)
+    assert abstractify(GlobalPhase(1)) == GlobalPhase(Float)
+
+
+def test_abstractify_identity():
+    """Test that identity can be abstractified."""
+
+    assert abstractify(Identity(wires=[0])) == Identity(Wire[1])
+    assert abstractify(Identity(wires=[0, 1])) == Identity(Wire[2])
+
+
+class TestControlledGlobalPhase:
+    """Tests for symbolic controls of GlobalPhase."""
+
+    @staticmethod
+    def _expected_matrix(phi, n_control):
+        """A controlled GlobalPhase applies ``e^{-i phi}`` to the all-ones control state."""
+        mat = np.eye(2**n_control, dtype=complex)
+        mat[-1, -1] = np.exp(-1j * phi)
+        return mat
+
+    @pytest.mark.parametrize("control", ([0], [0, 1], [0, 1, 2]))
+    def test_matrix_matches_controlled_global_phase(self, control):
+        """The symbolic op reproduces the controlled-GlobalPhase matrix."""
+        phi = 0.123
+        op = qp.ctrl(GlobalPhase(phi), control=control)
+        mat = qp.matrix(op, wire_order=control)
+        assert np.allclose(mat, self._expected_matrix(phi, len(control)))
+
+    @pytest.mark.parametrize(
+        "phi, control, work_wires, work_wire_type",
+        [
+            (0.123, [0, 1, 2], [3, 4], "zeroed"),
+            (0.5, [0, 1, 2], [3], "borrowed"),
+            (-1.0, [0, 1, 2, 3], [4, 5, 6], "zeroed"),
+        ],
+    )
+    def test_work_wires_passed_through(self, phi, control, work_wires, work_wire_type):
+        """Work wires are retained by the symbolic control."""
+        op = qp.ctrl(
+            GlobalPhase(phi),
+            control=control,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+        assert list(op.work_wires) == work_wires
+        assert op.work_wire_type == work_wire_type
+        qp.assert_equal(
+            op,
+            qp.ops.ControlledOp2(
+                GlobalPhase(phi),
+                control_wires=control,
+                work_wires=work_wires,
+                work_wire_type=work_wire_type,
+            ),
+        )
+
+
+def test_is_verified_hermitian():
+    """Test that identity is verified to be hermitian."""
+    assert Identity.is_verified_hermitian is True
+    assert Identity(0).is_verified_hermitian is True
 
 
 @pytest.mark.parametrize("wires", op_wires)
@@ -31,9 +117,8 @@ class TestIdentity:
         """Test the flatten and unflatten methods of identity."""
         op = Identity(wires)
         data, metadata = op._flatten()
-        assert data == tuple()
-        assert metadata[0] == qp.wires.Wires(wires)
-        assert metadata[1] == tuple()
+        assert data == ([], [qp.wires.Wires(wires)], [])
+        assert hash(metadata)
 
         new_op = Identity._unflatten(*op._flatten())
         qp.assert_equal(op, new_op)
@@ -48,14 +133,19 @@ class TestIdentity:
 
     @pytest.mark.jax
     def test_jax_pytree_integration(self, wires):
-        """Test that identity is a pytree by jitting a function of it."""
+        """Test that identity round-trips through the jax pytree registry."""
         import jax
 
         op = qp.Identity(wires)
 
-        adj_op = jax.jit(lambda op: qp.adjoint(op, lazy=False))(op)
+        leaves, tree_def = jax.tree_util.tree_flatten(op)
+        qp.assert_equal(jax.tree_util.tree_unflatten(tree_def, leaves), op)
 
-        qp.assert_equal(op, adj_op)
+        if all(isinstance(w, int) for w in wires):
+            # ``Operator2`` treats wires as dynamic pytree leaves, so only integer wire
+            # labels can be traced by ``jax.jit``.
+            adj_op = jax.jit(lambda op: op.adjoint())(op)
+            qp.assert_equal(op, adj_op)
 
     def test_identity_eigvals(self, wires, tol):
         """Test identity eigenvalues are correct"""
@@ -84,7 +174,7 @@ class TestIdentity:
 
     def test_matrix_representation(self, wires, tol):
         """Test the matrix representation"""
-        res_static = Identity.compute_matrix(n_wires=len(wires))
+        res_static = Identity.compute_matrix(wires=wires)
         res_dynamic = Identity(wires=wires).matrix()
         expected = np.eye(int(2 ** len(wires)))
         assert np.allclose(res_static, expected, atol=tol)

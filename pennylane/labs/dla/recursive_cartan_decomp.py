@@ -18,9 +18,9 @@ from functools import partial
 
 import numpy as np
 
-from pennylane import QubitUnitary
 from pennylane.liealg import cartan_decomp, check_cartan_decomp
 from pennylane.liealg.involutions import int_log2
+from pennylane.ops import QubitUnitary
 
 IDENTITY = object()
 

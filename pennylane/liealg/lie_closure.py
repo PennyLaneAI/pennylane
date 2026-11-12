@@ -24,12 +24,13 @@ import numpy as np
 
 import pennylane.ops.functions as op_func
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.pauli import (
     PauliSentence,
     PauliVSpace,
     PauliWord,
     pauli_sentence,
+    to_operator,
     trace_inner_product,
 )
 from pennylane.typing import TensorLike
@@ -199,7 +200,7 @@ def lie_closure(
 
     res = vspace.basis
     if not pauli:
-        res = [op.operation() for op in res]
+        res = [to_operator(op) for op in res]
 
     return res
 
@@ -225,7 +226,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
     basis = list(matrices[:subbasis_length])
     for A in matrices[subbasis_length:]:
-        if not math.is_abstract(A):
+        if not math.is_tracer(A):
             if not math.allclose(math.transpose(math.conj(A)), A):
                 A = 1j * A
                 if not math.allclose(math.transpose(math.conj(A)), A):

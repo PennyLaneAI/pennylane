@@ -126,7 +126,7 @@ def symmetry_generators(h):
             tau[idx] = pauli_map[f"{x}{z}"]
 
         ham = qp.pauli.PauliSentence({qp.pauli.PauliWord(tau): 1.0})
-        ham = ham.operation(h.wires)
+        ham = qp.pauli.to_operator(ham, h.wires)
         generators.append(ham)
 
     return generators
@@ -212,7 +212,7 @@ def clifford(generators, paulixops):
 
     u = functools.reduce(lambda p, q: p @ q, cliff)
 
-    return u.operation()
+    return qp.pauli.to_operator(u)
 
 
 def _split_pauli_sentence(pl_sentence, max_size=15000):
@@ -243,6 +243,15 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
         (Operator): the tapered Hamiltonian
     """
 
+    if any(qp.math.is_tracer(label) for label in ps_h.wires):
+        raise ValueError(
+            "Cannot taper an operator whose wire labels are abstract JAX tracers. This "
+            "happens when the operator is passed as a traced argument to jax.jit. Tapering "
+            "requires a static operator structure, including concrete wire labels; only the "
+            "numerical coefficients may be traced. Construct the operator inside the "
+            "jit-compiled function from the traced coefficients instead."
+        )
+
     u = clifford(generators, paulixops)
     ps_u = pauli_sentence(u)  # cast to pauli sentence
 
@@ -266,15 +275,16 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
                 val[i] *= paulix_sector[idx]
 
         obs.append(
-            qp.pauli.PauliWord({wiremap_tap[wire]: pw[wire] for wire in wires_tap}).operation(
-                wire_order=wires_ord
+            qp.pauli.to_operator(
+                qp.pauli.PauliWord({wiremap_tap[wire]: pw[wire] for wire in wires_tap}),
+                identity_wires=wires_ord,
             )
         )
 
     interface = qp.math.get_deep_interface(list(ps_h.values()))
     coeffs = qp.math.multiply(val, qp.math.array(list(ts_ps.values()), like=interface))
 
-    if interface == "jax" and qp.math.is_abstract(coeffs):
+    if interface == "jax" and qp.math.is_tracer(coeffs):
         tapered_ham = qp.sum(*(qp.s_prod(coeff, op) for coeff, op in zip(coeffs, obs, strict=True)))
     else:
         if qp.math.all(qp.math.abs(qp.math.imag(coeffs)) <= _IMAGINARY_PART_TOLERANCE):
@@ -731,11 +741,11 @@ def taper_operation(
         if qp.QueuingManager.recording():
             qp.QueuingManager.remove(operation)
             for op, coeff in gen_tapered.items():
-                qp.exp(op.operation(), 1j * params * coeff)
+                qp.exp(qp.pauli.to_operator(op), 1j * params * coeff)
         else:
             ops_tapered = []
             for op, coeff in gen_tapered.items():
-                ops_tapered.append(qp.exp(op.operation(), 1j * params * coeff))
+                ops_tapered.append(qp.exp(qp.pauli.to_operator(op), 1j * params * coeff))
             return ops_tapered
 
     # if operation was a callable, return the functional form that accepts new parameters

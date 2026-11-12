@@ -89,7 +89,7 @@ OUTPUTS_var = [0, 2]
 class TestSignExpand:
     """Tests for the sign_expand transform"""
 
-    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    @pytest.mark.parametrize(("tape", "output"), list(zip(TAPES, OUTPUTS)))
     def test_hamiltonians(self, tape, output):
         """Tests that the sign_expand transform returns the correct value"""
 
@@ -99,7 +99,7 @@ class TestSignExpand:
 
         assert np.isclose(output, expval)
 
-    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    @pytest.mark.parametrize(("tape", "output"), list(zip(TAPES, OUTPUTS)))
     def test_hamiltonians_qnode(self, tape, output):
         """Tests that the sign_expand transform returns the correct value as a transform program"""
 
@@ -114,7 +114,7 @@ class TestSignExpand:
         expval = qnode()
         assert np.isclose(output, expval)
 
-    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    @pytest.mark.parametrize(("tape", "output"), list(zip(TAPES, OUTPUTS)))
     def test_hamiltonians_circuit_impl(self, tape, output):
         """Tests that the sign_expand transform returns the correct value
         if we do not calculate analytical expectation values of groups but rely on their circuit approximations
@@ -126,7 +126,7 @@ class TestSignExpand:
         assert np.isclose(output, expval, 1e-2)
         # as these are approximations, these are only correct up to finite precision
 
-    @pytest.mark.parametrize(("tape", "output"), zip(TAPES, OUTPUTS))
+    @pytest.mark.parametrize(("tape", "output"), list(zip(TAPES, OUTPUTS)))
     def test_hamiltonians_circuit_impl_qnode(self, tape, output):
         """Tests that the sign_expand transform returns the correct value as a transform program
         if we do not calculate analytical expectation values of groups but rely on their circuit approximations
@@ -176,7 +176,7 @@ class TestSignExpand:
         with pytest.raises(ValueError, match=r"Passed hamiltonian"):
             qp.transforms.sign_expand(tape)
 
-    @pytest.mark.parametrize(("tape", "output"), zip(TAPES_var, OUTPUTS_var))
+    @pytest.mark.parametrize(("tape", "output"), list(zip(TAPES_var, OUTPUTS_var)))
     def test_hamiltonians_vars(self, tape, output):
         """Tests that the sign_expand transform returns the correct value"""
 
@@ -186,7 +186,7 @@ class TestSignExpand:
 
         assert np.isclose(output, expval)
 
-    @pytest.mark.parametrize(("tape", "output"), zip(TAPES_var, OUTPUTS_var))
+    @pytest.mark.parametrize(("tape", "output"), list(zip(TAPES_var, OUTPUTS_var)))
     def test_hamiltonians_vars_circuit_impl(self, tape, output):
         """Tests that the sign_expand transform returns the correct value
         if we do not calculate analytical expectation values of groups but rely on their circuit approximations

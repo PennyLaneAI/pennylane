@@ -15,8 +15,8 @@
 Contains FTQC/MBQC-specific operations
 """
 
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import Operation
 from pennylane.ops import RX, RZ
 
 
@@ -104,9 +104,6 @@ class RotXZX(Operation):
         phi, theta, omega = self.parameters
         return RotXZX(-omega, -theta, -phi, wires=self.wires)
 
-    def single_qubit_rot_angles(self):
-        return self.data
-
 
 @register_resources({RX: 2, RZ: 1})
 def _xzx_decompose(phi, theta, omega, wires, **__):
@@ -116,3 +113,11 @@ def _xzx_decompose(phi, theta, omega, wires, **__):
 
 
 add_decomps(RotXZX, _xzx_decompose)
+
+
+@register_resources({RotXZX: 1})
+def _adjoint_rot_xzx(phi, theta, omega, wires, **__):
+    RotXZX(-omega, -theta, -phi, wires=wires)
+
+
+add_decomps("Adjoint(RotXZX)", _adjoint_rot_xzx)

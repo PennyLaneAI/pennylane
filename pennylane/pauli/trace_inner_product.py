@@ -16,7 +16,7 @@
 from collections.abc import Iterable
 
 import pennylane as qp
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.pauli import PauliSentence
 from pennylane.typing import TensorLike
 

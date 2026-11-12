@@ -139,9 +139,6 @@ class TestInitialization:
             like=interface,
         )
 
-        if interface == "tensorflow":
-            dm = qp.math.cast(dm, "float64")
-
         vn_entropy = qp.vn_entropy(wires=subset_wires, log_base=log_base).process_density_matrix(
             dm, subset_wires
         )
@@ -279,59 +276,6 @@ class TestIntegration:
         entropy = circuit_entropy(param)
         entropy.backward()
         grad_entropy = param.grad
-
-        # higher tolerance for finite-diff method
-        tol = 1e-8 if diff_method == "backprop" else 1e-5
-
-        assert qp.math.allclose(grad_entropy, grad_expected_entropy, atol=tol)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("wires", single_wires_list)
-    @pytest.mark.parametrize("param", parameters)
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("base", base)
-    @pytest.mark.parametrize("interface", ["tf"])
-    def test_IsingXX_qnode_tf_entropy(self, param, wires, device, base, interface):
-        """Test entropy for a QNode with tf interface."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit_entropy(x):
-            qp.IsingXX(x, wires=[0, 1])
-            return qp.vn_entropy(wires=wires, log_base=base)
-
-        entropy = circuit_entropy(tf.Variable(param))
-
-        expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
-
-        assert qp.math.allclose(entropy, expected_entropy)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("wires", single_wires_list)
-    @pytest.mark.parametrize("param", parameters)
-    @pytest.mark.parametrize("base", base)
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["tf"])
-    def test_IsingXX_qnode_entropy_grad_tf(self, param, wires, base, diff_method, interface):
-        """Test entropy for a QNode gradient with tf."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface=interface, diff_method=diff_method)
-        def circuit_entropy(x):
-            qp.IsingXX(x, wires=[0, 1])
-            return qp.vn_entropy(wires=wires, log_base=base)
-
-        param = tf.Variable(param)
-        with tf.GradientTape() as tape:
-            entropy = circuit_entropy(param)
-
-        grad_entropy = tape.gradient(entropy, param)
-
-        grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
 
         # higher tolerance for finite-diff method
         tol = 1e-8 if diff_method == "backprop" else 1e-5

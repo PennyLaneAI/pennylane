@@ -25,9 +25,10 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript
 from pennylane.drawer import tape_mpl
-from pennylane.ops.op_math import Controlled
-from pennylane.tape import QuantumScript
+from pennylane.drawer.tape_mpl import _ppm_controlled
+from pennylane.ops.op_math import ControlledOp2
 
 mpl = pytest.importorskip("matplotlib")
 plt = pytest.importorskip("matplotlib.pyplot")
@@ -405,21 +406,6 @@ class TestSpecialGates:
 
         plt.close()
 
-    def test_WireCut(self):
-        """Test WireCut gets correct special call."""
-
-        with qp.queuing.AnnotatedQueue() as q_tape:
-            qp.WireCut(wires=(0, 1))
-
-        tape = QuantumScript.from_queue(q_tape)
-        _, ax = tape_mpl(tape)
-
-        assert len(ax.lines) == 2
-        assert len(ax.texts) == 3
-        assert len(ax.collections) == 1
-
-        plt.close()
-
     def test_Prod(self):
         """Test Prod gets correct special call."""
         with qp.queuing.AnnotatedQueue() as q_tape:
@@ -509,6 +495,111 @@ controlled_data = [
 ]
 
 
+class TestTemporaryAND:
+    """Temporary AND controls and corners remain visible through symbolic wrappers."""
+
+    @pytest.mark.parametrize("values", [(0, 0), (0, 1), (1, 0), (1, 1)])
+    @pytest.mark.parametrize("adjoint", [False, True])
+    @pytest.mark.parametrize(
+        "order", [["a", "idle", "b", "t"], ["t", "b", "idle", "a"], ["a", "t", "idle", "b"]]
+    )
+    def test_elbow(self, values, adjoint, order):
+        """Check controls, circled-plus target, and connector side with arbitrary wire order."""
+        op = qp.TemporaryAND(["a", "b", "t"], control_values=values)
+        if adjoint:
+            op = qp.adjoint(op)
+        fig, ax = tape_mpl(
+            QuantumScript([op]), wire_order=order, show_all_wires=True, style="black_white"
+        )
+        assert [text.get_text() for text in ax.texts] == order
+        connector, *controls, target = ax.patches
+        for patch, wire, value in zip(controls, ["a", "b"], values, strict=True):
+            assert isinstance(patch, mpl.patches.Circle)
+            assert patch.center == (0, order.index(wire))
+            assert patch.get_facecolor() == mpl.colors.to_rgba("black" if value else "white")
+        assert target.center == (0, order.index("t"))
+        assert target.get_radius() == 0.3
+        path = connector.get_path()
+        assert isinstance(connector, mpl.patches.PathPatch)
+        side = 0.32 if adjoint else -0.32
+        np.testing.assert_allclose(path.vertices[[2, 3, 4, 5], 0], side)
+        np.testing.assert_allclose(path.vertices[[0, 7]], [(0, 0), (0, 3)])
+        for wire in ax.lines[:4]:
+            assert list(wire.get_xdata()) == [-1, 1]
+        # The only central vertical line is the short cross inside the target circle.
+        assert list(ax.lines[4].get_xdata()) == [0, 0]
+        np.testing.assert_allclose(
+            ax.lines[4].get_ydata(), [order.index("t") - 0.3, order.index("t") + 0.3]
+        )
+        plt.close(fig)
+
+    @pytest.mark.parametrize(
+        "wrapper, adjoint",
+        [
+            (lambda op: qp.ctrl(op, [3, 4], control_values=[0, 1]), False),
+            (lambda op: qp.ctrl(qp.adjoint(op), [3, 4], control_values=[0, 1]), True),
+            (lambda op: qp.adjoint(qp.ctrl(op, [3, 4], control_values=[0, 1])), True),
+            (lambda op: qp.ctrl(qp.ctrl(op, 3, control_values=[0]), 4), False),
+            (lambda op: qp.adjoint(qp.adjoint(qp.ctrl(op, [3, 4], control_values=[0, 1]))), False),
+        ],
+    )
+    def test_wrapped_elbow(self, wrapper, adjoint):
+        """Every intrinsic and additional control is drawn once, with its value."""
+        op = wrapper(qp.TemporaryAND([0, 1, 2], control_values=[1, 0]))
+        fig, ax = tape_mpl(QuantumScript([op]), wire_order=range(5), style="black_white")
+        connector, *circles, target = ax.patches
+        assert target.center == (0, 2)
+        np.testing.assert_allclose(connector.get_path().vertices[2, 0], 0.32 if adjoint else -0.32)
+        controls = {patch.center[1]: patch for patch in circles}
+        assert set(controls) == {0, 1, 3, 4}
+        for wire, value in [(0, 1), (1, 0), (3, 0), (4, 1)]:
+            assert controls[wire].center[0] == 0
+            assert controls[wire].get_facecolor() == mpl.colors.to_rgba(
+                "black" if value else "white"
+            )
+        assert len(ax.texts) == 5
+        plt.close(fig)
+
+    def test_reused_target_and_wrapping(self):
+        """The target wire remains continuous through gates, measurements, and wrapped figures."""
+        op = qp.TemporaryAND([0, 1, 2])
+        tape = QuantumScript(
+            [qp.X(2), op, qp.CNOT([2, 3]), qp.adjoint(op), qp.H(2)],
+            [qp.probs(wires=2)],
+        )
+        fig, ax = tape_mpl(tape, wire_order=range(4))
+        assert list(ax.lines[2].get_xdata()) == [-1, 5]
+        plt.close(fig)
+        figures = tape_mpl(tape, wire_order=range(4), max_length=2)
+        expected = [[-1, 2], [-1, 2], [-1, 1]]
+        for (fig, ax), xs in zip(figures, expected, strict=True):
+            np.testing.assert_allclose(ax.lines[2].get_xdata(), xs)
+            plt.close(fig)
+
+    @pytest.mark.parametrize("adjoint", [False, True])
+    @pytest.mark.parametrize("wires", [[0, 1, 2], [1, 2, 0]])
+    def test_conditional_elbow_frame(self, adjoint, wires):
+        """Classical control attaches to the boundary around the complete elbow diagram."""
+        op = qp.TemporaryAND(wires, control_values=[0, 1])
+        if adjoint:
+            op = qp.adjoint(op)
+        with qp.queuing.AnnotatedQueue() as queue:
+            measurement = qp.measure(3)
+            qp.cond(measurement, lambda: qp.apply(op))()
+        tape = QuantumScript.from_queue(queue)
+        fig, ax = tape_mpl(tape, wire_order=range(4))
+        frames = [patch for patch in ax.patches if isinstance(patch, mpl.patches.FancyBboxPatch)]
+        frame = frames[-1]
+        assert not frame.get_fill()
+        np.testing.assert_allclose(frame.get_y() + frame.get_height(), 2.45)
+        connector = next(patch for patch in ax.patches if isinstance(patch, mpl.patches.PathPatch))
+        assert np.all(connector.get_path().vertices[:, 0] > frame.get_x())
+        assert np.all(connector.get_path().vertices[:, 0] < frame.get_x() + frame.get_width())
+        classical = next(line for line in ax.lines if line.get_path_effects())
+        assert 2.45 in classical.get_ydata()
+        plt.close(fig)
+
+
 class TestControlledGates:
     """Tests generic controlled gates"""
 
@@ -576,9 +667,11 @@ class TestControlledGates:
         """Test control_values get displayed correctly for nested controlled operations
         when they are provided as a list of bools."""
 
+        # ControlledOp2 is constructed directly because qp.ctrl flattens nested
+        # controlled operations of an Operator2 base eagerly.
         with qp.queuing.AnnotatedQueue() as q_tape:
-            Controlled(
-                qp.ctrl(qp.PauliY(wires=4), control=[2, 3], control_values=[1, 0]),
+            ControlledOp2(
+                ControlledOp2(qp.PauliY(wires=4), control_wires=[2, 3], control_values=[1, 0]),
                 control_wires=[0, 1],
                 control_values=[1, 0],
             )
@@ -624,10 +717,6 @@ general_op_data = [
     qp.QFT(wires=range(3)),
     qp.Permute([4, 2, 0, 1, 3], wires=(0, 1, 2, 3, 4)),
     qp.GroverOperator(wires=(0, 1, 2, 3, 4, 5)),
-    ### Continuous Variable
-    qp.Kerr(1.234, wires=0),
-    qp.Beamsplitter(1.234, 2.345, wires=(0, 1)),
-    qp.Rotation(1.234, wires=0),
 ]
 
 
@@ -689,8 +778,14 @@ class TestGeneralOperations:
     def test_global_phase(self, input_wires, show_all_wires, cls):
         """Test that `GlobalPhase` and `Identity` works properly with `tape_mpl`."""
 
-        data = [0.3625][: cls.num_params]
-        tape = QuantumScript([cls(*data, wires=input_wires), qp.X(0)])
+        num_params = 1 if cls is qp.GlobalPhase else 0
+        data = [0.3625][:num_params]
+
+        if cls is qp.GlobalPhase and input_wires:
+            pytest.skip("PL 2.0: GlobalPhase no longer acts on wires.")
+
+        base_op = cls(*data, wires=input_wires) if cls is qp.Identity else cls(*data)
+        tape = QuantumScript([base_op, qp.X(0)])
         fig, ax = tape_mpl(tape, show_all_wires=show_all_wires, wire_order=[0, 1, 2, 3, 4])
 
         assert isinstance(fig, mpl.figure.Figure)
@@ -710,11 +805,9 @@ class TestGeneralOperations:
 
         plt.close()
 
-    @pytest.mark.parametrize("cls", [qp.GlobalPhase, qp.Identity])
-    def test_multiple_global_ops(self, cls):
+    def test_multiple_global_ops(self):
         """Test that global ops correctly reserve layers for themselves."""
-        data = [0.3625][: cls.num_params]
-        tape = QuantumScript([cls(*data, wires=wires) for wires in [[], [0], [1, 2]]])
+        tape = QuantumScript([qp.Identity(wires=wires) for wires in [[], [0], [1, 2]]])
 
         fig, ax = tape_mpl(tape)
 
@@ -749,8 +842,14 @@ class TestGeneralOperations:
     def test_ctrl_global_op(self, input_wires, control_wires, show_all_wires, cls):
         """Test that controlled `GlobalPhase` and `Identity` works properly with `tape_mpl`."""
 
-        data = [0.3625][: cls.num_params]
-        op = qp.ctrl(cls(*data, wires=input_wires), control=control_wires)
+        num_params = 1 if cls is qp.GlobalPhase else 0
+        data = [0.3625][:num_params]
+
+        if cls is qp.GlobalPhase and input_wires:
+            pytest.skip("PL 2.0: GlobalPhase no longer acts on wires.")
+
+        base_op = cls(*data) if cls is qp.GlobalPhase else cls(*data, wires=input_wires)
+        op = ControlledOp2(base_op, control_wires=control_wires)
         tape = QuantumScript([op, qp.X(0), qp.X(1)])
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -798,12 +897,40 @@ class TestGeneralOperations:
         plt.close()
 
     @pytest.mark.parametrize("cls", [qp.GlobalPhase, qp.Identity])
+    def test_ctrl_global_op_control_values(self, cls):
+        """Test that a controlled global operator reached through the public ``qp.ctrl`` API
+        draws properly. A zero control value keeps a single-controlled ``GlobalPhase`` a genuine
+        controlled global gate instead of lowering it to a ``PhaseShift``."""
+
+        num_params = 1 if cls is qp.GlobalPhase else 0
+        data = [0.3625][:num_params]
+        base_op = cls(*data) if cls is qp.GlobalPhase else cls(*data, wires=[2])
+
+        op = qp.ctrl(base_op, control=[0], control_values=[False])
+        assert isinstance(op, ControlledOp2)
+        qp.assert_equal(op.base, base_op)
+
+        tape = QuantumScript([op, qp.X(1), qp.X(2)])
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            fig, ax = tape_mpl(tape, wire_order=[0, 1, 2, 3])
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)
+        # One control node for the single control wire.
+        assert isinstance(ax.patches[0], mpl.patches.Circle)
+        assert ax.patches[0].center == (0, 0)
+        plt.close()
+
+    @pytest.mark.parametrize("cls", [qp.GlobalPhase, qp.Identity])
     def test_ctrl_global_op_without_target(self, cls):
         """Test that an error is raised if a controlled GlobalPhase is present that can
         not infer any target wires."""
 
-        data = [0.251][: cls.num_params]
-        op = qp.ctrl(cls(*data, wires=[]), control=(0, 4))
+        num_params = 1 if cls is qp.GlobalPhase else 0
+        data = [0.251][:num_params]
+        base_op = cls(*data)
+        op = ControlledOp2(base_op, control_wires=(0, 4))
         tape = QuantumScript([op])
         with pytest.raises(ValueError, match="controlled global gate with unknown"):
             _ = tape_mpl(tape)
@@ -861,7 +988,6 @@ measure_data = [
     ([qp.expval(qp.PauliX(0))], [0]),
     ([qp.probs(wires=(0, 1, 2))], [0, 1, 2]),
     ([qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(0) @ qp.PauliY(1)), qp.state()], [0, 1]),
-    ([qp.expval(qp.NumberOperator(wires=0))], [0]),
 ]
 
 
@@ -993,6 +1119,191 @@ class TestLayering:
 class TestClassicalControl:
     """Tests involving mid circuit measurements and classical control."""
 
+    @pytest.mark.parametrize(
+        "op, wires, mapped_wires",
+        [
+            (qp.CZ, [0, 2], [3, 1]),
+            (qp.CNOT, [0, 2], [3, 1]),
+            (qp.Toffoli, [0, 2, 3], [3, 1, 0]),
+        ],
+    )
+    def test_conditional_gate_symbols(self, op, wires, mapped_wires):
+        """Conditional gates retain their symbols and joins after reordering wires."""
+        with qp.queuing.AnnotatedQueue() as q:
+            m0 = qp.measure(0)
+            m1 = qp.measure(1)
+            qp.cond(m0 & m1, op)(wires=wires)
+
+        _, ax = tape_mpl(
+            QuantumScript.from_queue(q),
+            wire_order=[3, 2, 1, 0],
+            show_all_wires=True,
+            style="black_white",
+        )
+        circles = ax.patches[6:-1]
+        assert len(circles) == len(wires)
+        for circle, wire in zip(circles, mapped_wires, strict=True):
+            assert isinstance(circle, mpl.patches.Circle)
+            assert circle.center == (2, wire)
+        for circle in circles if op is qp.CZ else circles[:-1]:
+            assert circle.get_facecolor() == (0.0, 0.0, 0.0, 1.0)
+        assert ax.lines[6].get_data() == ((2, 2), (min(mapped_wires), max(mapped_wires)))
+        assert len(ax.texts) == 4  # Only wire labels, no gate box label.
+        if op is not qp.CZ:
+            target = mapped_wires[-1]
+            assert circles[-1].get_facecolor() == (1.0, 1.0, 1.0, 1.0)
+            assert qp.math.allclose(ax.lines[7].get_data(), ((2, 2), (target - 0.3, target + 0.3)))
+            assert qp.math.allclose(ax.lines[8].get_data(), ((1.7, 2.3), (target, target)))
+
+        frame = ax.patches[-1]
+        assert isinstance(frame, mpl.patches.FancyBboxPatch)
+        assert not frame.get_fill()
+        assert qp.math.allclose(
+            (frame.get_y(), frame.get_height()),
+            (min(mapped_wires) - 0.45, max(mapped_wires) - min(mapped_wires) + 0.9),
+        )
+        assert ax.lines[4].get_data() == ([0, 0, 0, 2, 2, 2], [4, 3, 4, 4, 3.45, 4])
+        assert ax.lines[5].get_data() == (
+            [1, 1, 1, 2, 2, 2],
+            [4.25, 2, 4.25, 4.25, 3.45, 4.25],
+        )
+        assert ax.lines[-1].get_data() == ((1.8, 2), (4, 4))
+        plt.close()
+
+    @pytest.mark.parametrize("control_wire, target_wire", [(1, 2), (2, 1)])
+    def test_conditional_open_control(self, control_wire, target_wire):
+        """Conditional controlled rotations show the control value and formatted label."""
+        with qp.queuing.AnnotatedQueue() as q:
+            m0 = qp.measure(0)
+            qp.cond(m0, qp.ctrl(qp.RX, control=control_wire, control_values=0))(
+                0.123, wires=target_wire
+            )
+
+        _, ax = tape_mpl(
+            QuantumScript.from_queue(q), wire_order=[0, 1, 2], decimals=2, style="black_white"
+        )
+        assert len(ax.patches) == 6
+        control, box, frame = ax.patches[3:]
+        assert isinstance(control, mpl.patches.Circle)
+        assert control.center == (1, control_wire)
+        assert control.get_facecolor() == (1.0, 1.0, 1.0, 1.0)
+        assert isinstance(box, mpl.patches.FancyBboxPatch)
+        assert qp.math.allclose((box.get_y(), box.get_height()), (target_wire - 0.175, 0.35))
+        assert not frame.get_fill()
+        assert qp.math.allclose((frame.get_y(), frame.get_height()), (0.55, 1.9))
+        assert ax.texts[-1].get_text() == "RX\n(0.12)"
+        assert ax.lines[3].get_data() == ([0, 0, 0, 1, 1, 1], [3, 0, 3, 3, 2.45, 3])
+        assert ax.lines[4].get_data() == ((1, 1), (1, 2))
+        plt.close()
+
+    def test_conditional_swap_boundary(self):
+        """A conditional SWAP retains its crosses inside the classical-control boundary."""
+        with qp.queuing.AnnotatedQueue() as q:
+            m0 = qp.measure(0)
+            qp.cond(m0, qp.SWAP)(wires=[1, 2])
+
+        _, ax = tape_mpl(QuantumScript.from_queue(q))
+        assert len(ax.patches) == 4
+        assert not ax.patches[-1].get_fill()
+        assert len(ax.texts) == 3
+        assert ax.lines[3].get_ydata() == [3, 0, 3, 3, 2.45, 3]
+        assert ax.lines[4].get_data() == ((1, 1), [1, 2])
+        for line, ys in zip(
+            ax.lines[5:], [(0.8, 1.2), (1.2, 0.8), (1.8, 2.2), (2.2, 1.8)], strict=True
+        ):
+            assert line.get_data() == ((0.8, 1.2), ys)
+        plt.close()
+
+    def test_conditional_global_phase(self):
+        """A wireless conditional gate spans the circuit and retains its classical wire."""
+        with qp.queuing.AnnotatedQueue() as q:
+            m0 = qp.measure(0)
+            qp.X(1)
+            qp.cond(m0, qp.GlobalPhase)(0.123)
+
+        _, ax = tape_mpl(QuantumScript.from_queue(q), decimals=2)
+        assert len(ax.patches) == 5
+        box = ax.patches[-1]
+        assert box.get_fill()  # The existing global box needs no second boundary.
+        assert qp.math.allclose((box.get_y(), box.get_height()), (-0.175, 1.35))
+        assert ax.texts[-1].get_text() == "GlobalPhase\n(0.12)"
+        assert ax.lines[2].get_data() == ([0, 0, 0, 2, 2, 2], [2, 0, 2, 2, 1, 2])
+        plt.close()
+
+    @pytest.mark.parametrize("base", [qp.GlobalPhase(0.123), qp.Identity()])
+    def test_conditional_controlled_global_boundary(self, base):
+        """A controlled global diagram's boundary spans its controls and displayed targets."""
+        with qp.queuing.AnnotatedQueue() as q:
+            m0 = qp.measure(1)
+            qp.X(2)
+            qp.cond(m0, lambda: qp.ctrl(base, control=0))()
+
+        _, ax = tape_mpl(QuantumScript.from_queue(q), wire_order=[0, 1, 2])
+        frame = ax.patches[-1]
+        assert not frame.get_fill()
+        assert qp.math.allclose((frame.get_y(), frame.get_height()), (-0.45, 2.9))
+        assert ax.lines[3].get_ydata() == [3, 1, 3, 3, 2.45, 3]
+        assert ax.patches[-3].center == (2, 0)
+        plt.close()
+
+    @pytest.mark.parametrize("base", [qp.GlobalPhase(0.123), qp.Identity()])
+    def test_conditional_controlled_global_spacing(self, base):
+        """Gates above a global gate's control remain outside its conditional boundary."""
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.H(0)
+            m0 = qp.measure(2)
+            qp.cond(m0, lambda: qp.ctrl(base, control=2, control_values=[False]))()
+            qp.X(0)
+
+        _, ax = tape_mpl(QuantumScript.from_queue(q), wire_order=[0, 1, 2], show_all_wires=True)
+        labels = {text.get_text(): text.get_position() for text in ax.texts}
+        assert labels["H"] == (0, 0)
+        assert labels["X"] == (2, 0)
+        [frame] = [
+            patch
+            for patch in ax.patches
+            if isinstance(patch, mpl.patches.FancyBboxPatch) and not patch.get_fill()
+        ]
+        assert labels["H"][0] < frame.get_x()
+        assert labels["X"][0] > frame.get_x() + frame.get_width()
+        assert qp.math.allclose((frame.get_y(), frame.get_height()), (-0.45, 2.9))
+        [control] = [patch for patch in ax.patches if isinstance(patch, mpl.patches.Circle)]
+        assert control.center == (1, 2)
+        assert ax.lines[3].get_data() == ([0, 0, 0, 1, 1, 1], [3, 2, 3, 3, 2.45, 3])
+        plt.close()
+
+    @pytest.mark.parametrize("active_wire_notches, n_patches", [(True, 8), (False, 4)])
+    def test_conditional_active_wire_notches(self, active_wire_notches, n_patches):
+        """Conditional boxes respect the requested active-wire notch setting."""
+        with qp.queuing.AnnotatedQueue() as q:
+            m0 = qp.measure(0)
+            qp.cond(m0, qp.QFT)(wires=[0, 2])
+
+        _, ax = tape_mpl(
+            QuantumScript.from_queue(q),
+            wire_order=[0, 1, 2],
+            show_all_wires=True,
+            active_wire_notches=active_wire_notches,
+        )
+        assert len(ax.patches) == n_patches
+        assert ax.texts[-1].get_text() == "QFT"
+        plt.close()
+
+    @pytest.mark.parametrize(
+        "layer, expected",
+        [
+            ([], False),
+            ([qp.GlobalPhase(0.1)], False),
+            ([qp.GlobalPhase(0.1), qp.ops.PauliMeasure("X", [1])], True),
+            ([qp.ops.PauliMeasure("X", [1]), qp.GlobalPhase(0.1)], True),
+            ([qp.ops.PauliMeasure("X", [0]), qp.X(1), qp.GlobalPhase(0.1)], False),
+            ([qp.X(0), qp.GlobalPhase(0.1), qp.ops.PauliMeasure("X", [1])], True),
+        ],
+    )
+    def test_ppm_controlled_with_wireless_operations(self, layer, expected):
+        """Only wired operations determine whether a classical connector needs an offset."""
+        assert _ppm_controlled(layer) is expected
+
     def test_single_measure_multiple_conds(self):
         """Test a single mid circuit measurement with two conditional operators."""
 
@@ -1071,20 +1382,20 @@ class TestClassicalControl:
         with qp.queuing.AnnotatedQueue() as q:
             m0 = qp.measure(0)
             m1 = qp.measure(1)
-            qp.cond(m0 & m1, qp.PauliY)(0)
+            qp.cond(m0 & m1, qp.CNOT)(wires=[1, 0])
             qp.cond(m0, qp.S)(0)
             qp.cond(m1, qp.T)(1)
 
         tape = qp.tape.QuantumScript.from_queue(q)
         _, ax = qp.drawer.tape_mpl(tape, style="black_white")
 
-        [_, _, cwire1, cwire2, eraser] = ax.lines
+        [_, _, cwire1, cwire2, *_, eraser] = ax.lines
 
         assert cwire1.get_xdata() == [0, 0, 0, 2, 2, 2, 3, 3, 3]
-        assert cwire1.get_ydata() == [2, 0, 2, 2, 0, 2, 2, 0, 2]
+        assert cwire1.get_ydata() == [2, 0, 2, 2, 1.45, 2, 2, 0, 2]
 
         assert cwire2.get_xdata() == [1, 1, 1, 2, 2, 2, 4, 4, 4]
-        assert cwire2.get_ydata() == [2.25, 1, 2.25, 2.25, 0, 2.25, 2.25, 1, 2.25]
+        assert cwire2.get_ydata() == [2.25, 1, 2.25, 2.25, 1.45, 2.25, 2.25, 1, 2.25]
 
         for cwire in [cwire1, cwire2]:
             [pe1, pe2] = cwire.get_path_effects()

@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Defines a function for converting plxpr to a tape.
+Defines an interpreter that collects the operations and measurements in a plxpr.
 """
 
 from copy import copy
 
 import jax
+import jax.extend.core
 import numpy as np
 
-from pennylane import ops, queuing
+from pennylane import math, ops
 from pennylane.allocation import Allocate, Deallocate, allocate_prim, deallocate_prim
 from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedInterpreter
@@ -37,11 +38,10 @@ from pennylane.capture.primitives import (
     value_and_grad_prim,
     vjp_prim,
 )
-from pennylane.operation import Operator
+from pennylane.core import queuing
+from pennylane.core.operator import Operator
 from pennylane.ops.mid_measure import (
     MeasurementValue,
-    MidMeasure,
-    PauliMeasure,
     get_mcm_predicates,
     measure,
     pauli_measure,
@@ -49,11 +49,9 @@ from pennylane.ops.mid_measure import (
 from pennylane.templates.core import CollectedSubroutine
 from pennylane.wires import DynamicWire
 
-from .qscript import QuantumScript
-
 
 class CollectOpsandMeas(FlattenedInterpreter):
-    """Collect the dropped operations and measurements in a plxpr. Used by ``convert_to_tape``.
+    """Collect the dropped operations and measurements in a plxpr.
 
     .. code-block:: python
 
@@ -76,7 +74,7 @@ class CollectOpsandMeas(FlattenedInterpreter):
     >>> collector.eval(plxpr.jaxpr, plxpr.consts, 1.2)
     [probs(wires=[0]), expval(Z(1))]
     >>> collector.state
-    {'ops': [X(0), X(1), X(2), Adjoint(S(0)), MidMeasure(wires=[0], postselect=None, reset=False), RX(Array(2.4, dtype=float..., weak_type=True), wires=[0])], 'measurements': [probs(wires=[0]), expval(Z(1))], 'dynamic_wire_map': {}}
+    {'ops': [X(0), X(1), X(2), Adjoint(S(0)), MidMeasure(wires=[0], postselect=None, reset=False), RX(2.4, wires=[0])], 'measurements': [probs(wires=[0]), expval(Z(1))], 'dynamic_wire_map': {}}
 
     After execution, the collected operations and measurements are available in the ``state``
     property.
@@ -86,9 +84,11 @@ class CollectOpsandMeas(FlattenedInterpreter):
 
     >>> collector = CollectOpsandMeas()
     >>> collector(qp.T)(0)
+    T(0)
     >>> collector.state['ops']
     [T(0)]
     >>> collector(qp.S)(0)
+    S(0)
     >>> collector.state['ops']
     [T(0), S(0)]
 
@@ -111,7 +111,7 @@ class CollectOpsandMeas(FlattenedInterpreter):
 
 
 @CollectOpsandMeas.register_primitive(adjoint_transform_prim)
-def _adjoint_transform_prim(self, *invals, jaxpr, lazy, n_consts):
+def _adjoint_transform_prim(self, *invals, jaxpr, n_consts):
     """Handle an adjoint transform primitive by collecting the operations in the jaxpr, and
     then applying their adjoint in reverse order."""
     consts = invals[:n_consts]
@@ -121,46 +121,64 @@ def _adjoint_transform_prim(self, *invals, jaxpr, lazy, n_consts):
     assert child.state
 
     for op in reversed(child.state["ops"]):
-        self.state["ops"].append(ops.adjoint(op, lazy=lazy))
+        self.state["ops"].append(ops.adjoint(op))
 
     return []
 
 
 @CollectOpsandMeas.register_primitive(ctrl_transform_prim)
-def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
+def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, n_work_wires, **params):
     """Handle a control transform primitive by collecting the operations in the jaxpr,
     and then applying their controlled versions.
     """
+    work_start = len(invals) - n_work_wires
+    values_start = work_start - n_control
+    controls_start = values_start - n_control
     consts = invals[:n_consts]
-    args = invals[n_consts:-n_control]
-    control = invals[-n_control:]
+    args = invals[n_consts:controls_start]
+    control = math.array(invals[controls_start:values_start])
+    control_values = invals[values_start:work_start]
+    work_wires = math.array(invals[work_start:])
 
     child = CollectOpsandMeas()
     child.eval(jaxpr, consts, *args)
     assert child.state
 
     for op in child.state["ops"]:
-        self.state["ops"].append(ops.ctrl(op, control=control, **params))
+        with pause():
+            self.state["ops"].append(
+                ops.ctrl(
+                    op,
+                    control=control,
+                    control_values=control_values,
+                    work_wires=work_wires,
+                    **params,
+                )
+            )
 
     return []
 
 
+# pylint: disable=unused-argument
 @CollectOpsandMeas.register_primitive(cond_prim)
-def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
+def _cond_primitive(
+    self, *all_args, jaxpr_branches, consts_slices, args_slice, estimated_probabilities
+):
     n_branches = len(jaxpr_branches)
-    conditions = all_args[:n_branches]
+    conditions = all_args[: n_branches - 1]
     args = all_args[slice(*args_slice)]
 
-    # Find predicates that use mid-circuit measurements. We don't check the last
-    # condition as that is always `True`.
-    mcm_conditions = tuple(pred for pred in conditions[:-1] if isinstance(pred, MeasurementValue))
+    # Find predicates that use mid-circuit measurements
+    mcm_conditions = tuple(pred for pred in conditions if isinstance(pred, MeasurementValue))
     if mcm_conditions:
-        if len(mcm_conditions) != len(conditions) - 1:
+        if len(mcm_conditions) != len(conditions):
             raise ValueError(
                 "Cannot use qp.cond with a combination of mid-circuit measurements "
                 "and other classical conditions as predicates."
             )
         conditions = get_mcm_predicates(mcm_conditions)
+    else:
+        conditions = (*conditions, True)
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices, strict=True):
         consts = all_args[slice(*const_slice)]
@@ -265,72 +283,22 @@ def _convert_element_type(self, operand, **kwargs):
     return jax.lax.convert_element_type_p.bind(operand, **kwargs)
 
 
-def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
-    """Convert a plxpr into a tape.
-
-    Args:
-        plxpr (jax.extend.core.Jaxpr): a pennylane variant jaxpr
-        consts (list): the consts for the jaxpr
-        *args : the arguments to execute the plxpr with
-
-    Keyword Args:
-        shots (None, int, Sequence[int], Shots): the shots for the tape.
-
-    Returns:
-        QuantumScript: a single quantum script containing the quantum operations and measurements
-
-    .. code-block:: python
-
-        @qp.for_loop(3)
-        def loop(i):
-            qp.X(i)
-
-        def f(x):
-            loop()
-            qp.adjoint(qp.S)(0)
-            m0 = qp.measure(0)
-            qp.RX(2*x, 0)
-            return qp.probs(wires=0), qp.expval(qp.Z(1))
-
-        qp.capture.enable()
-
-        plxpr = jax.make_jaxpr(f)(0.5)
-        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, 1.2)
-        print(qp.drawer.tape_text(tape, decimals=2))
-
-    .. code-block::
-
-        0: ──X──S†──┤↗├──RX(2.40)─┤  Probs
-        1: ──X────────────────────┤  <Z>
-        2: ──X────────────────────┤
-
-    """
-
-    collector = CollectOpsandMeas()
-    collector.eval(plxpr, consts, *args)
-    assert collector.state
-    wire_map = collector.state["dynamic_wire_map"]
-    mcm_map = {}
-    with pause():
-        operations = [_map_op_wires(op, wire_map, mcm_map) for op in collector.state["ops"]]
-        measurements = [
-            _map_meas_wires(m, wire_map, mcm_map) for m in collector.state["measurements"]
-        ]
-    return QuantumScript(operations, measurements, shots=shots)
+@CollectOpsandMeas.register_primitive(jax.lax.eq_p)
+def _equal(self, lhs, rhs):
+    if isinstance(lhs, MeasurementValue) or isinstance(rhs, MeasurementValue):
+        return lhs == rhs
+    return jax.lax.eq_p.bind(lhs, rhs)
 
 
-def _map_op_wires(op, wire_map, mcm_map):
-    new_op = op.map_wires(wire_map)
-    if isinstance(op, (MidMeasure, PauliMeasure)):
-        mcm_map[op] = new_op
-    return new_op
+@CollectOpsandMeas.register_primitive(jax.lax.ne_p)
+def _not_equal(self, lhs, rhs):
+    if isinstance(lhs, MeasurementValue) or isinstance(rhs, MeasurementValue):
+        return lhs != rhs
+    return jax.lax.ne_p.bind(lhs, rhs)
 
 
-def _map_meas_wires(m, wire_map, mcm_map):
-    new_meas = m.map_wires(wire_map)
-    if m.mv is None:
-        return new_meas
-    for i, meas in enumerate(m.mv.measurements):
-        if meas in mcm_map:
-            new_meas.mv.measurements[i] = mcm_map[meas]
-    return new_meas
+@CollectOpsandMeas.register_primitive(jax.lax.and_p)
+def _and(self, lhs, rhs):
+    if isinstance(lhs, MeasurementValue) or isinstance(rhs, MeasurementValue):
+        return lhs & rhs
+    return jax.lax.and_p.bind(lhs, rhs)

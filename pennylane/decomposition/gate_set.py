@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Set
 
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 
 from .utils import to_name
 
@@ -53,8 +53,8 @@ class GateSet(Mapping):
     >>> gateset_name = GateSet({qp.RX, qp.RY, qp.RZ}, name="Rotations")
     >>> print(gateset_name)
     Rotations
-    >>> qp.decompose(gate_set=gateset_name)
-    <decompose(gate_set=Rotations)>
+    >>> qp.transforms._tape_decompose(gate_set=gateset_name)
+    <_tape_decompose(gate_set=Rotations)>
 
     Gate sets can be combined with ``|``:
 

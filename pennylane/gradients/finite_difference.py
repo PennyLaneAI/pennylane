@@ -29,13 +29,13 @@ from scipy.linalg import solve as linalg_solve
 from scipy.special import factorial
 
 from pennylane import math, pytrees
+from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients.gradient_transform import contract_qjac_with_cjac
 from pennylane.measurements import ProbabilityMP
-from pennylane.operation import Operator
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
@@ -155,9 +155,6 @@ def finite_diff_coeffs(n, approx_order, strategy):
     b = np.zeros_like(shifts)
     b[n] = factorial(n)
 
-    # Note: using np.linalg.solve instead of scipy.linalg.solve can cause a bus error when this
-    # is inside a tf.py_function inside a tf.function, as occurs with the tensorflow-autograph interface
-    # Bus errors were potentially specific to the M1 Mac. Change with caution.
     coeffs = linalg_solve(A, b)
 
     coeffs_and_shifts = np.stack([coeffs, shifts])
@@ -242,7 +239,7 @@ def finite_diff_jvp(
         for index in np.ndindex(math.shape(args[i])):
             ti = t[index]
 
-            if not math.is_abstract(ti) and math.allclose(ti, 0):
+            if not math.is_tracer(ti) and math.allclose(ti, 0):
                 continue
 
             ti_over_h = ti / h
@@ -535,7 +532,6 @@ def finite_diff(
         r0 = f0 or results[0]
 
         output_dims = []
-        # TODO: Update shape for CV variables
         for m in tape.measurements:
             if isinstance(m, ProbabilityMP):
                 output_dims.append(2 ** len(m.wires))

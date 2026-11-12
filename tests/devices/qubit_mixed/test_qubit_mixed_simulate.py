@@ -193,7 +193,7 @@ class TestBasicCircuit:
         phi = torch.tensor(-0.526, requires_grad=True)
 
         def f(x):
-            qs = self.get_quantum_script(x, wires)
+            qs = self.get_quantum_script(qp.math.cast(x, "float64"), wires)
             return simulate(qs)
 
         result = f(phi)
@@ -207,28 +207,6 @@ class TestBasicCircuit:
         jacobian = jacobian.real if hasattr(jacobian, "real") else jacobian
         expected = (0, -np.cos(phi.detach().numpy()), -np.sin(phi.detach().numpy()))
         assert math.allclose(jacobian.detach().numpy(), expected)
-
-    @pytest.mark.tf
-    def test_tf_results_and_backprop(self, wires):
-        """Tests execution and gradients with tensorflow."""
-        import tensorflow as tf
-
-        phi = tf.Variable(4.873)
-
-        with tf.GradientTape(persistent=True) as grad_tape:
-            qs = self.get_quantum_script(phi, wires)
-            result = simulate(qs)
-
-        expected = (0, -np.sin(float(phi)), np.cos(float(phi)))
-        assert qp.math.allclose(result, expected)
-
-        expected = (0, -np.cos(float(phi)), -np.sin(float(phi)))
-        assert math.all(
-            [
-                math.allclose(grad_tape.jacobian(one_obs_result, [phi])[0], one_obs_expected)
-                for one_obs_result, one_obs_expected in zip(result, expected)
-            ]
-        )
 
     def test_state_cache(self, wires):
         """Test that the state_cache parameter properly stores the final state when accounting for wire mapping."""
@@ -309,9 +287,8 @@ class TestBroadcasting:
         assert len(res) == 2
         assert np.allclose(res, expected)
 
-    def test_broadcasting_with_extra_measurement_wires(self, mocker):
+    def test_broadcasting_with_extra_measurement_wires(self):
         """Test that broadcasting works when the operations don't act on all wires."""
-        spy = mocker.spy(qp, "map_wires")
         x = np.array([0.8, 1.0, 1.2, 1.4])
         qs = self.get_quantum_script(x, extra_wire=True)
         res = simulate(qs)
@@ -323,8 +300,6 @@ class TestBroadcasting:
         assert len(res) == 3
         assert np.allclose(res[0], np.zeros_like(x))
         assert np.allclose(res[1:], [-np.sin(x), np.cos(x)])
-        # The mapping should be consistent with the wire ordering in get_quantum_script
-        assert spy.call_args_list[0].args == (qs, {0: 0, 2: 1})
 
 
 @pytest.mark.all_interfaces

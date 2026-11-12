@@ -18,7 +18,7 @@ Unit tests for the qp.is_hermitian function
 import pytest
 
 import pennylane as qp
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 
 hermitian_ops = (
     qp.Identity(0),

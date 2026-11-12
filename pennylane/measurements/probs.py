@@ -21,15 +21,15 @@ from collections.abc import Sequence
 import numpy as np
 
 from pennylane import math
+from pennylane.core.measurements import SampleMeasurement, StateMeasurement
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import LinearCombination, MeasurementValue
 from pennylane.ops.qubit.observables import Hermitian
-from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .counts import CountsMP
-from .measurements import SampleMeasurement, StateMeasurement
 
 
 class ProbabilityMP(SampleMeasurement, StateMeasurement):
@@ -171,7 +171,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         num_bins, bin_size = indices.shape[-2:]
         interface = math.get_deep_interface(indices)
 
-        if math.is_abstract(indices):
+        if math.is_tracer(indices):
 
             def _count_samples_core(indices, dim, interface):
                 return math.array(
@@ -303,7 +303,7 @@ def probs(wires=None, op=None) -> ProbabilityMP:
         return ProbabilityMP(obs=op)
 
     if isinstance(op, Sequence):
-        if not math.is_abstract(op[0]) and not all(
+        if not math.is_tracer(op[0]) and not all(
             isinstance(o, MeasurementValue) and not o.has_processing for o in op
         ):
             raise QuantumFunctionError(
@@ -317,7 +317,7 @@ def probs(wires=None, op=None) -> ProbabilityMP:
     if isinstance(op, LinearCombination):
         raise QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
-    if op is not None and not math.is_abstract(op) and not op.has_diagonalizing_gates:
+    if op is not None and not math.is_tracer(op) and not op.has_diagonalizing_gates:
         raise QuantumFunctionError(
             f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )

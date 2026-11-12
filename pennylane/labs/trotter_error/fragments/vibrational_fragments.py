@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,12 +27,15 @@ def vibrational_fragments(
 
     Args:
         modes (int): the number of vibrational modes
-        freqs (ndarray): the harmonic frequences
-        taylor_coeffs (Sequence[ndarray]): a sequence containing the tensors of coefficients in the Taylor expansion
-        frag_method (string): the fragmentation method, valid options are ``harmonic``, ``kinetic``, and ``position``
+        freqs (ndarray): the harmonic frequencies
+        taylor_coeffs (Sequence[ndarray]): a sequence containing the tensors of coefficients in the
+            Taylor expansion. The ith array has shape (modes, ..., modes) where the length of the tuple
+            is i.
+        frag_method (string): the fragmentation method, valid options are ``harmonic``, ``kinetic``,
+            and ``position``
 
     Returns:
-        List[RealspaceSum]: a list of ``RealspaceSum`` objects representing the fragments of the vibrational Hamiltonian
+        list[RealspaceSum]: a list of ``RealspaceSum`` objects representing the fragments of the vibrational Hamiltonian
 
     **Example**
 
@@ -44,7 +47,7 @@ def vibrational_fragments(
     >>> taylor_coeffs = [np.array(0), r_state.random(size=(n_modes, )), r_state.random(size=(n_modes, n_modes))]
     >>> fragments = vibrational_fragments(n_modes, freqs, taylor_coeffs)
     >>> for fragment in fragments:
-    >>>     print(fragment)
+    ...     print(fragment)
     RealspaceSum((RealspaceOperator(4, ('PP',), omega[idx0]), RealspaceOperator(4, ('QQ',), omega[idx0])))
     RealspaceSum((RealspaceOperator(4, ('Q',), phi[1][idx0]), RealspaceOperator(4, ('Q', 'Q'), phi[2][idx0,idx1])))
     """

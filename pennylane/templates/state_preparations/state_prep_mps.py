@@ -18,9 +18,9 @@ Contains the MPSPrep template.
 import numpy as np
 
 import pennylane as qp
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
-from pennylane.wires import Wires
+from pennylane.core.operator import Operator2
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.typing import Complex, Wire
 
 
 def _validate_mps_shape(mps):
@@ -170,7 +170,7 @@ def right_canonicalize_mps(mps):
     mps[0] = mps[0].reshape((1, *mps[0].shape))
     mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
 
-    if not qp.math.is_abstract(mps[0]):
+    if not qp.math.is_tracer(mps[0]):
         is_right_canonical = True
         for tensor in mps[1:-1]:
             # Right-canonical definition
@@ -219,25 +219,25 @@ def right_canonicalize_mps(mps):
     return output_mps
 
 
-class MPSPrep(Operation):
+class MPSPrep(Operator2):
     r"""Prepares an initial state from a matrix product state (MPS) representation.
 
     .. note::
 
-        This operator is natively supported on the ``lightning.tensor`` device, which is designed to run MPS
-        structures efficiently. For other devices, this operation prepares the state vector represented by the
-        MPS using a gate-based decomposition from Eq. (23) in `arXiv:2310.18410
-        <https://arxiv.org/pdf/2310.18410>`_, which requires the right canonicalization of the MPS using
-        the :func:`~.right_canonicalize_mps` function and defining auxiliary qubits with ``work_wires``.
+        The gate-based decomposition prepares the state vector represented by the MPS using
+        Eq. (23) in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_. It requires a
+        right-canonical MPS and auxiliary qubits supplied through ``work_wires``. Set
+        ``right_canonicalize=True`` to convert the input MPS to right-canonical form, or use
+        :func:`~.right_canonicalize_mps` before constructing the operator.
 
     Args:
         mps (list[TensorLike]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state
             as a product of site matrices. See the usage details section for more information.
 
         wires (Sequence[int]): wires that the template acts on. It should match the number of MPS tensors.
-        work_wires (Sequence[int]): list of extra qubits needed in the decomposition. If the maximum dimension
-            of the MPS tensors is :math:`2^k`, then :math:`k` ``work_wires`` will be needed. If no ``work_wires`` are given,
-            this operator can only be executed on the ``lightning.tensor`` device. Default is ``None``.
+        work_wires (Sequence[int]): extra qubits needed for the gate-based decomposition.
+            At least one work wire is required. If the maximum bond dimension of the MPS is
+            :math:`2^k`, provide at least :math:`k` work wires.
 
         right_canonicalize (bool): indicates whether a conversion to right-canonical form should be performed to the MPS.
             Default is ``False``.
@@ -247,7 +247,7 @@ class MPSPrep(Operation):
 
     **Example**
 
-    Example using the ``lightning.tensor`` device:
+    Prepare an MPS on ``default.qubit`` using one auxiliary wire:
 
     .. code-block:: python
 
@@ -262,31 +262,34 @@ class MPSPrep(Operation):
             np.array([[-1.0, -0.0], [-0.0, -1.0]]),
         ]
 
-    .. code-block::
-
-        dev = qp.device("lightning.tensor", wires=3)
-        @qp.qnode(dev)
-        def circuit():
-            qp.MPSPrep(mps, wires = [0,1,2])
-            return qp.state()
-
-    >>> print(circuit()) # doctest: +SKIP
-    [ 0.        +0.j -0.10705513+0.j  0.        +0.j  0.        +0.j
-    0.        +0.j  0.        +0.j -0.99451217+0.j  0.        +0.j]
-
-    Example using the ``default.qubit`` device:
-
-    .. code-block:: python
-
         dev = qp.device("default.qubit", wires=4)
+
         @qp.qnode(dev)
         def circuit():
-            qp.MPSPrep(mps, wires = [1,2,3], work_wires = [0])
+            qp.MPSPrep(mps, wires=[1, 2, 3], work_wires=[0])
             return qp.state()
 
-    >>> print(circuit()[:8]) # doctest: +SKIP
+    The auxiliary wire returns to :math:`|0\rangle`, so the first eight amplitudes
+    contain the prepared three-qubit state:
+
+    >>> print(circuit()[:8])
     [ 0.        +0.j -0.10702756+0.j  0.        +0.j  0.        +0.j
       0.        +0.j  0.        +0.j -0.99425605+0.j  0.        +0.j]
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.MPSPrep
+            :stacked:
+            :symbols: :math:`n` MPS tensors (one per wire), :math:`w` work wires and maximal bond
+                dimension :math:`\chi`
+            :example: :math:`n=3`, :math:`w=1`
+
+            .. decomposition-rule:: _mps_prep_decomposition
+                :image: /_static/decomposition_thumbnails/mps_prep.svg
+                :requires: :math:`w \geq \log_2 \chi` work wires
+
+                :class:`~.QubitUnitary` on :math:`w + 1` wires | :math:`n` | 3
 
     .. details::
         :title: Usage Details
@@ -339,7 +342,13 @@ class MPSPrep(Operation):
             ]
     """
 
-    resource_keys = {"bond_dimensions", "num_sites", "num_work_wires"}
+    hybrid_argnames = ("mps",)
+    wire_argnames = ("wires", "work_wires")
+    static_argnames = ("right_canonicalize",)
+
+    arg_specs = {"wires": Wire[-1], "work_wires": Wire[-1]}
+
+    grad_method = None
 
     def __init__(
         self, mps, wires, work_wires=None, right_canonicalize=False
@@ -347,187 +356,45 @@ class MPSPrep(Operation):
 
         _validate_mps_shape(mps)
 
-        self.hyperparameters["input_wires"] = qp.wires.Wires(wires)
-        self.hyperparameters["right_canonicalize"] = right_canonicalize
+        # Cast each tensor to an array so that every tensor is treated as a single pytree
+        mps = [tensor if hasattr(tensor, "shape") else qp.math.asarray(tensor) for tensor in mps]
 
-        if work_wires is not None:
-            self.hyperparameters["work_wires"] = qp.wires.Wires(work_wires)
-            all_wires = self.hyperparameters["input_wires"] + self.hyperparameters["work_wires"]
-        else:
-            self.hyperparameters["work_wires"] = None
-            all_wires = self.hyperparameters["input_wires"]
+        work_wires = () if work_wires is None else work_wires
 
-        super().__init__(*mps, wires=all_wires)
-
-    @property
-    def mps(self):
-        """list representing the MPS input"""
-        return self.data
-
-    def _flatten(self):
-        hyperparameters = (
-            ("wires", self.hyperparameters["input_wires"]),
-            ("work_wires", self.hyperparameters["work_wires"]),
-            ("right_canonicalize", self.hyperparameters["right_canonicalize"]),
+        super().__init__(
+            mps, wires=wires, work_wires=work_wires, right_canonicalize=right_canonicalize
         )
-        return self.mps, hyperparameters
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        hyperparams_dict = dict(metadata)
-        return cls(data, **hyperparams_dict)
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "bond_dimensions": [data.shape[-1] for data in self.data],
-            "num_sites": len(self.data),
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-        }
-
-    def map_wires(self, wire_map):
-        new_wires = Wires(
-            [wire_map.get(wire, wire) for wire in self.hyperparameters["input_wires"]]
-        )
-        new_work_wires = Wires(
-            [wire_map.get(wire, wire) for wire in self.hyperparameters["work_wires"]]
-        )
-
-        return MPSPrep(
-            self.mps, new_wires, new_work_wires, self.hyperparameters["right_canonicalize"]
-        )
-
-    # pylint: disable=arguments-differ, too-many-arguments
-    @classmethod
-    def _primitive_bind_call(cls, mps, wires, work_wires=None, right_canonicalize=False):
-        return super()._primitive_bind_call(
-            *mps, wires=wires, work_wires=work_wires, right_canonicalize=right_canonicalize
-        )
-
-    def decomposition(self):
-        filtered_hyperparameters = {
-            key: value for key, value in self.hyperparameters.items() if key != "input_wires"
-        }
-        return self.compute_decomposition(
-            self.parameters, wires=self.hyperparameters["input_wires"], **filtered_hyperparameters
-        )
-
-    @staticmethod
-    def compute_decomposition(
-        mps, wires, work_wires, right_canonicalize=False
-    ):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators.
-        The decomposition follows Eq. (23) in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
-
-        Args:
-            mps (list[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
-                product of site matrices.
-
-            wires (Sequence[int]): wires that the template acts on. It should match the number of MPS tensors.
-            work_wires (Sequence[int]): list of extra qubits needed in the decomposition. If the maximum dimension
-                of the MPS tensors is ``2^k``, then k ``work_wires`` will be needed. If no ``work_wires`` are given,
-                this operator can only be executed on the ``lightning.tensor`` device. Default is ``None``.
-
-            right_canonicalize (bool): Indicates whether a conversion to right-canonical form should be performed
-                to the mps. Default is ``False``.
-
-        Returns:
-            list[.Operator]: Decomposition of the operator
-        """
-
-        if work_wires is None:
-            raise ValueError("The qp.MPSPrep decomposition requires `work_wires` to be specified.")
-
-        max_bond_dimension = 0
-        for i in range(len(mps) - 1):
-            bond_dim = mps[i].shape[-1]
-            max_bond_dimension = max(max_bond_dimension, bond_dim)
-
-        if max_bond_dimension > 2 ** len(work_wires):
-            raise ValueError(
-                "Incorrect number of `work_wires`. At least "
-                f"{qp.math.ceil_log2(max_bond_dimension)} `work_wires` must be provided."
-            )
-
-        ops = []
-        n_wires = len(work_wires) + 1
-
-        mps = mps.copy()
-
-        # Transform the MPS to ensure that the generated matrix is unitary
-        if right_canonicalize:
-            mps = right_canonicalize_mps(mps)
-
-        mps[0] = mps[0].reshape((1, *mps[0].shape))
-        mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
-
-        interface, dtype = qp.math.get_interface(mps[0]), mps[0].dtype
-
-        for i, Ai in enumerate(mps):
-
-            # Encode the tensor Ai in a unitary matrix following Eq.23 in https://arxiv.org/pdf/2310.18410
-            vectors = []
-            for column in Ai:
-                vector = qp.math.zeros(2**n_wires, like=interface, dtype=dtype)
-
-                if interface == "jax":
-                    vector = vector.at[: len(column[0])].set(column[0])
-                    vector = vector.at[
-                        2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])
-                    ].set(column[1])
-
-                else:
-                    vector[: len(column[0])] = column[0]
-                    vector[2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])] = column[1]
-
-                vectors.append(vector)
-
-            vectors = qp.math.stack(vectors).T
-            # The unitary is completed using QR decomposition
-            d, k = vectors.shape
-            new_columns = qp.math.array(np.random.RandomState(42).random((d, d - k)))
-            unitary_matrix, R = qp.math.linalg.qr(qp.math.hstack([vectors, new_columns]))
-            unitary_matrix *= qp.math.sign(
-                qp.math.diag(R)
-            )  # Enforce uniqueness for QR decomposition
-
-            ops.append(qp.QubitUnitary(unitary_matrix, wires=[wires[i]] + work_wires))
-
-        return ops
-
-
-if MPSPrep._primitive is not None:  # pylint: disable=protected-access
-
-    @MPSPrep._primitive.def_impl  # pylint: disable=protected-access
-    def _(*args, n_wires, **kwargs):
-        mps, wires = args[:-n_wires], args[-n_wires:]
-        return type.__call__(MPSPrep, mps, wires=wires, **kwargs)
 
 
 def _mps_prep_decomposition_resources(
-    bond_dimensions, num_sites, num_work_wires
+    mps, wires, work_wires=None, right_canonicalize=False
 ):  # pylint: disable=unused-argument
-    return {resource_rep(qp.QubitUnitary, num_wires=1 + num_work_wires): num_sites}
+    num_work_wires = len(work_wires)
+    num_sites = len(mps)
+    return {
+        qp.QubitUnitary(
+            Complex[2 ** (1 + num_work_wires), 2 ** (1 + num_work_wires)],
+            wires=Wire[1 + num_work_wires],
+        ): num_sites
+    }
 
 
 def _work_wires_bond_dimension_condition(
-    bond_dimensions, num_sites, num_work_wires
+    mps, wires, work_wires=None, right_canonicalize=False
 ):  # pylint: disable=unused-argument
+    bond_dimensions = [data.shape[-1] for data in mps]
     max_bond_dimension = max(bond_dimensions[:-1])
 
     return (
-        num_work_wires is not None
-        and num_work_wires > 0
-        and 2**num_work_wires >= max_bond_dimension
+        work_wires is not None
+        and len(work_wires) > 0
+        and 2 ** len(work_wires) >= max_bond_dimension
     )
 
 
 @qp.register_condition(_work_wires_bond_dimension_condition)
 @register_resources(_mps_prep_decomposition_resources)
-def _mps_prep_decomposition(*mps, **kwargs):
-    wires = kwargs["wires"]
-    work_wires = kwargs["work_wires"]
-    right_canonicalize = kwargs["right_canonicalize"]
+def _mps_prep_decomposition(mps, wires, work_wires=None, right_canonicalize=False):
     mps = list(mps)
 
     n_wires = len(work_wires) + 1
@@ -569,7 +436,7 @@ def _mps_prep_decomposition(*mps, **kwargs):
         unitary_matrix, R = qp.math.linalg.qr(qp.math.hstack([vectors, new_columns]))
         unitary_matrix *= qp.math.sign(qp.math.diag(R))  # Enforce uniqueness for QR decomposition
 
-        qp.QubitUnitary(unitary_matrix, wires=[wires[i]] + work_wires)
+        qp.QubitUnitary(unitary_matrix, wires=[wires[i], *work_wires])
 
 
 add_decomps(MPSPrep, _mps_prep_decomposition)

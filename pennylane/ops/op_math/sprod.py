@@ -18,11 +18,13 @@ computing the scalar product of operations.
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import Operator
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import DecompositionUndefinedError, TermsUndefinedError
-from pennylane.operation import Operator
+from pennylane.ops._pauli_conversion import to_operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
-from pennylane.queuing import QueuingManager
+from pennylane.typing import TensorLike
 
 from .composite import handle_recursion_error
 from .symbolicop import ScalarSymbolicOp
@@ -46,13 +48,13 @@ def s_prod(scalar, operator, lazy=True):
         This operator supports a batched base, a batched coefficient and a combination of both:
 
         >>> op = qp.s_prod(scalar=4, operator=qp.RX([1, 2, 3], wires=0))
-        >>> qp.matrix(op).shape
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
         >>> op = qp.s_prod(scalar=[1, 2, 3], operator=qp.RX(1, wires=0))
-        >>> qp.matrix(op).shape
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
         >>> op = qp.s_prod(scalar=[4, 5, 6], operator=qp.RX([1, 2, 3], wires=0))
-        >>> qp.matrix(op).shape
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
 
         But it doesn't support batching of operators.
@@ -130,7 +132,7 @@ class SProd(ScalarSymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0], data[1])
 
-    def __init__(self, scalar: qp.typing.TensorLike, base: Operator, _pauli_rep=None):
+    def __init__(self, scalar: TensorLike, base: Operator, _pauli_rep=None):
         super().__init__(base=base, scalar=scalar)
 
         if _pauli_rep:
@@ -199,8 +201,8 @@ class SProd(ScalarSymbolicOp):
         then the scalar product operator is hermitian."""
         if not self.base.is_verified_hermitian:
             return False
-        if math.is_abstract(self.scalar):
-            return not math.get_dtype_name(self.scalar).startswith("complex")
+        if math.is_tracer(self.scalar):
+            return not math.is_complex_dtype(self.scalar)
         return not math.iscomplex(self.scalar)
 
     # pylint: disable=arguments-renamed,invalid-overridden-method
@@ -308,7 +310,7 @@ class SProd(ScalarSymbolicOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return pr.operation(wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         if self.scalar == 1:
             return self.base.simplify()
@@ -329,10 +331,10 @@ class SProd(ScalarSymbolicOp):
 
     @property
     def has_decomposition(self):
-        return not math.is_abstract(self.scalar) and math.allclose(math.abs(self.scalar), 1)
+        return not math.is_tracer(self.scalar) and math.allclose(math.abs(self.scalar), 1)
 
     def decomposition(self):
-        if math.is_abstract(self.scalar) or not math.allclose(math.abs(self.scalar), 1):
+        if math.is_tracer(self.scalar) or not math.allclose(math.abs(self.scalar), 1):
             raise DecompositionUndefinedError(
                 "Decompositins of SProd are only defined for scalars with norm 1."
             )

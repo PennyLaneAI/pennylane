@@ -14,7 +14,7 @@
 """Functionality for Cartan decomposition"""
 
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.pauli import PauliSentence, PauliVSpace
 from pennylane.typing import TensorLike
 

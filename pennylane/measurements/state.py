@@ -18,11 +18,10 @@ This module contains the qp.state measurement.
 from collections.abc import Sequence
 
 from pennylane import math
+from pennylane.core.measurements import StateMeasurement
 from pennylane.exceptions import WireError
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
-
-from .measurements import StateMeasurement
 
 
 class StateMP(StateMeasurement):
@@ -63,12 +62,8 @@ class StateMP(StateMeasurement):
         # pylint:disable=redefined-outer-name
         def cast_to_complex(state):
             dtype = str(state.dtype)
-            if "complex" in dtype:
+            if math.is_complex_dtype(state):
                 return state
-            if (
-                math.get_interface(state) == "tensorflow"
-            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-                return math.cast(state, "complex128")
             floating_single = "float32" in dtype or "complex64" in dtype
             return math.cast(state, "complex64" if floating_single else "complex128")
 
@@ -141,7 +136,7 @@ class DensityMatrixMP(StateMP):
         wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
-        if not math.is_abstract(state) and math.any(math.iscomplex(state)):
+        if not math.is_tracer(state) and math.any(math.iscomplex(state)):
             kwargs["c_dtype"] = state.dtype
         return math.reduce_statevector(state, **kwargs)
 
@@ -150,7 +145,7 @@ class DensityMatrixMP(StateMP):
         wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
-        if not math.is_abstract(density_matrix) and math.any(math.iscomplex(density_matrix)):
+        if not math.is_tracer(density_matrix) and math.any(math.iscomplex(density_matrix)):
             kwargs["c_dtype"] = density_matrix.dtype
         return math.reduce_dm(density_matrix, **kwargs)
 

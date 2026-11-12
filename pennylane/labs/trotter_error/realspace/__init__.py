@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,5 +15,14 @@
 
 from .ho_state import HOState, VibronicHO
 from .realspace_coefficients import RealspaceCoeffs
-from .realspace_operator import RealspaceOperator, RealspaceSum
 from .realspace_matrix import RealspaceMatrix
+from .realspace_operator import RealspaceOperator, RealspaceSum
+
+__all__ = [
+    "HOState",
+    "VibronicHO",
+    "RealspaceCoeffs",
+    "RealspaceMatrix",
+    "RealspaceOperator",
+    "RealspaceSum",
+]

@@ -112,14 +112,3 @@ class TestTraceInnerProductInterfaces:
 
         assert qp.math.allclose(trace_inner_product(A, B), 0)
         assert qp.math.allclose(trace_inner_product(A, A), 1)
-
-    @pytest.mark.tf
-    def test_tf_input(self):
-        """Test tf inputs are handled correctly"""
-        import tensorflow as tf
-
-        A = tf.constant(np.array([qp.matrix(X(0)), qp.matrix(X(0))]))
-        B = tf.constant(np.array([qp.matrix(Y(0)), qp.matrix(Y(0))]))
-
-        assert qp.math.allclose(trace_inner_product(A, B), 0)
-        assert qp.math.allclose(trace_inner_product(A, A), 1)

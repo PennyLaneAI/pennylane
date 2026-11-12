@@ -19,11 +19,16 @@ import logging
 from collections import Counter
 from functools import partial, singledispatch
 
+import jax
 import numpy as np
+from jax.random import binomial
 from numpy.random import default_rng
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import StatePrepBase
+from pennylane.core.qscript import QuantumScript
+from pennylane.core.shots import ShotCopies, Shots
 from pennylane.logging import debug_logger
 from pennylane.math.interface_utils import Interface
 from pennylane.measurements import (
@@ -31,13 +36,9 @@ from pennylane.measurements import (
     ExpectationMP,
     ProbabilityMP,
     SampleMP,
-    ShotCopies,
-    Shots,
     VarianceMP,
 )
-from pennylane.operation import StatePrepBase
 from pennylane.ops import MidMeasure
-from pennylane.tape import QuantumScript
 from pennylane.transforms.dynamic_one_shot import gather_mcm
 from pennylane.typing import Result
 
@@ -138,7 +139,7 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
     # are incorrect.
     norm = math.norm(state)
 
-    if not math.is_abstract(state) and math.allclose(norm, 0.0):
+    if not math.is_tracer(state) and math.allclose(norm, 0.0):
         if postselect_mode == "fill-shots" and shots:
             raise RuntimeError(
                 "The probability of the postselected mid-circuit measurement outcome is 0. "
@@ -150,8 +151,6 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
         # Clip the number of shots using a binomial distribution using the probability of
         # measuring the postselected state.
         if prng_key is not None:
-            # pylint: disable=import-outside-toplevel
-            from jax.random import binomial
 
             binomial_fn = partial(binomial, prng_key)
         else:
@@ -159,7 +158,7 @@ def _postselection_postprocess(state, is_state_batched, shots, **execution_kwarg
 
         postselected_shots = (
             shots
-            if postselect_mode == "fill-shots" or math.is_abstract(norm)
+            if postselect_mode == "fill-shots" or math.is_tracer(norm)
             else [int(binomial_fn(s, float(norm**2))) for s in shots]
         )
 
@@ -363,8 +362,6 @@ def simulate(
         aux_circ = circuit.copy(shots=[1])
         keys = jax_random_split(prng_key, num=circuit.shots.total_shots)
         if math.get_deep_interface(circuit.data) == "jax" and prng_key is not None:
-            # pylint: disable=import-outside-toplevel
-            import jax
 
             def simulate_partial(k):
                 return simulate_one_shot_native_mcm(

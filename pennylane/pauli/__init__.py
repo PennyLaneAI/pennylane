@@ -13,6 +13,8 @@
 # limitations under the License.
 """A module containing utility functions and reduced representation classes for working with Pauli operators."""
 
+from pennylane.ops._pauli_conversion import to_operator
+
 from .pauli_arithmetic import PauliWord, PauliSentence
 
 from .utils import (

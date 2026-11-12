@@ -27,8 +27,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import Operator
 from pennylane.exceptions import ConditionalTransformError
-from pennylane.operation import Operator
 from pennylane.ops.op_math.condition import Conditional
 
 terminal_meas = [
@@ -422,8 +422,8 @@ class TestProperties:
 
     BASE_OP = [qp.RX(1.23, 0), qp.Rot(1.2, 2.3, 3.4, 0), qp.QubitUnitary([[0, 1], [1, 0]], 0)]
 
-    def test_data(self):
-        """Test base data can be get and set through Conditional class."""
+    def test_data_is_read_only(self):
+        """Test that Conditional data is read-only."""
         x = np.array(1.234)
         m = qp.measure("a")
         base = qp.RX(x, wires="a")
@@ -431,16 +431,10 @@ class TestProperties:
 
         assert cond_op.data == (x,)
 
-        # update parameters through Conditional
-        x_new = np.array(2.3456)
-        cond_op.data = (x_new,)
-        assert base.data == (x_new,)
-        assert cond_op.data == (x_new,)
-
-        # update base data updates Conditional data
-        x_new2 = np.array(3.456)
-        base.data = (x_new2,)
-        assert cond_op.data == (x_new2,)
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'Conditional' object has no setter"
+        ):
+            setattr(cond_op, "data", (np.array(2.3456),))
 
     @pytest.mark.parametrize("value", (True, False))
     def test_has_matrix(self, value):

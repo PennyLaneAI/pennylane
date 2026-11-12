@@ -19,6 +19,10 @@ from functools import partial
 
 import numpy as np
 import scipy as sp
+from jax import jit
+from jax import numpy as jnp
+from jax import scipy as jsp
+from jax import value_and_grad
 
 import pennylane as qp
 
@@ -26,10 +30,6 @@ has_jax_optax = True
 try:  # pragma: no cover
 
     import optax
-    from jax import jit
-    from jax import numpy as jnp
-    from jax import scipy as jsp
-    from jax import value_and_grad
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_jax_optax = False
 

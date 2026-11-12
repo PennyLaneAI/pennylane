@@ -18,7 +18,7 @@ This module contains the NullMeasurement class.
 
 import numpy as np
 
-from .measurements import SampleMeasurement, StateMeasurement
+from pennylane.core.measurements import SampleMeasurement, StateMeasurement
 
 
 class NullMeasurement(SampleMeasurement, StateMeasurement):

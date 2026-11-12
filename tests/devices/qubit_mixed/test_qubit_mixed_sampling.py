@@ -21,8 +21,8 @@ import pytest
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.shots import Shots
 from pennylane.devices.qubit_mixed import create_initial_state, measure_with_samples, sample_state
-from pennylane.measurements import Shots
 
 # Tolerance for approximate equality checks
 APPROX_ATOL = 0.05
@@ -33,7 +33,6 @@ ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 
 

@@ -15,18 +15,17 @@
 Contains the OutAdder template.
 """
 
-from collections import defaultdict
-
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
     register_resources,
-    resource_rep,
 )
-from pennylane.operation import Operation
-from pennylane.ops import Prod, change_op_basis
+from pennylane.ops import Prod2, change_op_basis
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
+from pennylane.typing import Int, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
@@ -78,8 +77,10 @@ class OutAdder(Operation):
 
         @qp.qnode(dev, shots=1)
         def circuit():
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=y_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            y_bin = qp.math.int_to_binary(y, len(y_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
+            qp.BasisEmbedding(y_bin, wires=y_wires)
             qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
             return qp.sample(wires=output_wires)
 
@@ -124,9 +125,12 @@ class OutAdder(Operation):
 
             @qp.qnode(dev, shots=1)
             def circuit():
-                qp.BasisEmbedding(x, wires=x_wires)
-                qp.BasisEmbedding(y, wires=y_wires)
-                qp.BasisEmbedding(b, wires=output_wires)
+                x_bin = qp.math.int_to_binary(x, len(x_wires))
+                y_bin = qp.math.int_to_binary(y, len(y_wires))
+                b_bin = qp.math.int_to_binary(b, len(output_wires))
+                qp.BasisEmbedding(x_bin, wires=x_wires)
+                qp.BasisEmbedding(y_bin, wires=y_wires)
+                qp.BasisEmbedding(b_bin, wires=output_wires)
                 qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
                 return qp.sample(wires=output_wires)
 
@@ -265,7 +269,7 @@ class OutAdder(Operation):
         >>> ops = qp.OutAdder.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [(Adjoint(QFT(wires=[5, 6]))) @ ((ControlledSequence(PhaseAdder(wires=[5, 6]), control=[2, 3])) @ (ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]))) @ QFT(wires=[5, 6])]
+        [(Adjoint(QFT(wires=[5, 6]))) @ ((ControlledSequence(PhaseAdder(k=1, x_wires=[5, 6], mod=4, work_wire=[]), control=[2, 3])) @ (ControlledSequence(PhaseAdder(k=1, x_wires=[5, 6], mod=4, work_wire=[]), control=[0, 1]))) @ QFT(wires=[5, 6])]
 
         """
         if mod != 2 ** len(output_wires) and mod is not None:
@@ -285,30 +289,27 @@ class OutAdder(Operation):
 
 
 def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wires, mod) -> dict:
-    qft_wires = num_output_wires if mod == 2**num_output_wires else num_output_wires + 1
-    target_resources = defaultdict(int)
-    target_resources[
-        resource_rep(
-            ControlledSequence,
-            base_class=PhaseAdder,
-            base_params={"num_x_wires": qft_wires, "mod": mod},
-            num_control_wires=num_x_wires,
-        )
-    ] += 1
-    target_resources[
-        resource_rep(
-            ControlledSequence,
-            base_class=PhaseAdder,
-            base_params={"num_x_wires": qft_wires, "mod": mod},
-            num_control_wires=num_y_wires,
-        )
-    ] += 1
+    num_qft_wires = num_output_wires if mod == 2**num_output_wires else num_output_wires + 1
+    target_ops = [
+        ControlledSequence(
+            base=PhaseAdder(Int, Wire[num_qft_wires], mod, Wire[int(mod != 2**num_qft_wires)]),
+            control=Wire[num_y_wires],
+        ),
+        ControlledSequence(
+            base=PhaseAdder(Int, Wire[num_qft_wires], mod, Wire[int(mod != 2**num_qft_wires)]),
+            control=Wire[num_x_wires],
+        ),
+    ]
 
-    return {
-        change_op_basis_resource_rep(
-            resource_rep(QFT, num_wires=qft_wires), resource_rep(Prod, resources=target_resources)
+    _compute_op = QFT(Wire[num_qft_wires])
+    resources = {
+        _change_op_basis_abstract(
+            _compute_op,
+            Prod2(target_ops),
+            _adjoint_abstract(_compute_op),
         ): 1
     }
+    return resources
 
 
 @register_resources(_out_adder_decomposition_resources)
@@ -320,15 +321,11 @@ def _out_adder_decomposition(x_wires, y_wires, output_wires, mod, work_wires, **
         qft_new_output_wires = output_wires
         work_wire = ()
 
-    change_op_basis(
-        QFT(wires=qft_new_output_wires),
-        (
-            ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires)
-            @ ControlledSequence(
-                PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires
-            )
-        ),
-    )
+    def _target_fn():
+        ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
+        ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires)
+
+    change_op_basis(QFT(wires=qft_new_output_wires), _target_fn)
 
 
 add_decomps(OutAdder, _out_adder_decomposition)

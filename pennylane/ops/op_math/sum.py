@@ -23,8 +23,9 @@ from copy import copy
 
 import pennylane as qp
 from pennylane import math
-from pennylane.operation import Operator
-from pennylane.queuing import QueuingManager
+from pennylane.core.operator import Operator
+from pennylane.core.queuing import QueuingManager
+from pennylane.ops._pauli_conversion import to_operator
 
 from .composite import CompositeOp, handle_recursion_error
 
@@ -306,7 +307,7 @@ class Sum(CompositeOp):
             coeffs_list = list(self.pauli_rep.values())
             if len(coeffs_list) == 0:
                 return True
-            if not math.is_abstract(coeffs_list[0]):
+            if not math.is_tracer(coeffs_list[0]):
                 return not any(math.iscomplex(c) for c in coeffs_list)
 
         return all(s.is_verified_hermitian for s in self)
@@ -420,7 +421,7 @@ class Sum(CompositeOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return pr.operation(wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         new_summands = self._simplify_summands(summands=self.operands).get_summands(cutoff=cutoff)
         if new_summands:
@@ -457,7 +458,7 @@ class Sum(CompositeOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             with qp.QueuingManager.stop_recording():
-                ops = [pauli.operation() for pauli in pr.keys()]
+                ops = [to_operator(pauli) for pauli in pr.keys()]
             return list(pr.values()), ops
 
         with qp.QueuingManager.stop_recording():

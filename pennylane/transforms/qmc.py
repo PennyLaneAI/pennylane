@@ -18,8 +18,8 @@ Contains the quantum_monte_carlo transform.
 from copy import copy
 
 import pennylane as qp
-from pennylane import CZ, Hadamard, MultiControlledX, PauliX, adjoint
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.ops import CZ, Hadamard, MultiControlledX, PauliX, adjoint
 from pennylane.templates import QFT
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
@@ -300,6 +300,8 @@ def quantum_monte_carlo(
 
             func = lambda i: np.sin(xs[i]) ** 2
             r_rotations = np.array([2 * np.arcsin(np.sqrt(func(i))) for i in range(M)])
+            # Preserve f(x) = f(-x) exactly to avoid roundoff-induced rotations.
+            r_rotations = (r_rotations + r_rotations[::-1]) / 2
 
         The ``quantum_monte_carlo`` transform can then be used:
 
@@ -317,7 +319,7 @@ def quantum_monte_carlo(
             target_wire = m
             estimation_wires = range(m + 1, n + m + 1)
 
-            dev = qp.device("default.qubit", wires=(n + m + 1))
+            dev = qp.device("lightning.qubit", wires=(n + m + 1))
 
             def fn():
                 qp.templates.MottonenStatePreparation(np.sqrt(probs), wires=a_wires)
@@ -338,29 +340,25 @@ def quantum_monte_carlo(
         It is also possible to explore the resources required to perform the quantum Monte Carlo
         algorithm
 
-        >>> specs = qp.specs(qmc, level="device")()
+        >>> specs = qp.specs(qp.qjit(qmc, capture=False), level="device")()
         >>> from pprint import pprint
         >>> pprint(specs)
-        CircuitSpecs(device_name='default.qubit',
+        CircuitSpecs(device_name='lightning.qubit',
                      num_device_wires=12,
                      shots=Shots(total_shots=None, shot_vector=()),
                      level='device',
-                     resources=SpecsResources(gate_types={'Adjoint(CNOT)': 7812,
-                                                          'Adjoint(QFT)': 1,
-                                                          'Adjoint(RY)': 3150,
-                                                          'CNOT': 7874,
-                                                          'CZ': 126,
-                                                          'Hadamard': 258,
-                                                          'MultiControlledX': 126,
-                                                          'PauliX': 252,
-                                                          'RY': 3175},
-                                              gate_sizes={1: 6835,
-                                                          2: 15812,
-                                                          6: 1,
-                                                          7: 126},
-                                              measurements={'probs(6 wires)': 1},
-                                              num_allocs=12,
-                                              depth=21502))
+                     resources=SpecsResources(counts={'6C(PauliX)': 126,
+                                                      'CNOT': 15686,
+                                                      'CZ': 126,
+                                                      'ControlledPhaseShift': 15,
+                                                      'Hadamard': 264,
+                                                      'PauliX': 252,
+                                                      'RY': 6325,
+                                                      'SWAP': 3},
+                                              measurement_processes={'probs(6 wires)': 1},
+                                              num_wires=12,
+                                              circuit_depth=21502,
+                                              total_quantum_operations=22797))
     """
     operations = tape.operations.copy()
     wires = Wires(wires)
@@ -391,6 +389,6 @@ def quantum_monte_carlo(
             for _ in range(n_reps):
                 updated_operations.extend(tape_q.operations)
 
-        updated_operations.append(adjoint(QFT(wires=estimation_wires), lazy=False))
+        updated_operations.append(adjoint(QFT(wires=estimation_wires)))
     updated_tape = tape.copy(operations=updated_operations)
     return [updated_tape], lambda x: x[0]

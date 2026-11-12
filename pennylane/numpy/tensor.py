@@ -144,7 +144,7 @@ class tensor(_np.ndarray):
             outputs = tuple(outputs)
             kwargs["out"] = outputs
         else:
-            # If the ufunc has no ouputs, we simply
+            # If the ufunc has no outputs, we simply
             # create a tuple containing None for all potential outputs.
             outputs = (None,) * ufunc.nout
 

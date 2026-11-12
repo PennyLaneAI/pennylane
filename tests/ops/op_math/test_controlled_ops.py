@@ -24,6 +24,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qp
 from pennylane.ops.op_math.controlled_ops import _toffoli_elbow
+from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires
 
 NON_PARAMETRIZED_OPERATIONS = [
@@ -64,9 +65,11 @@ class TestControlledQubitUnitary:
         with pytest.raises(qp.operation.DecompositionUndefinedError):
             op.decomposition()
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         "op",
         [
+            qp.ControlledQubitUnitary(np.eye(2), wires=(1, 2)),
             qp.ControlledQubitUnitary(np.eye(2), wires=(1, 2, 3)),
             qp.ControlledQubitUnitary(np.eye(4), wires=(1, 2, 3, 4)),
             qp.ControlledQubitUnitary(np.eye(8), wires=(1, 2, 3, 4, 5)),
@@ -74,7 +77,7 @@ class TestControlledQubitUnitary:
     )
     def test_standard_validity(self, op):
         """Test that the operation is valid."""
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     def test_noniterable_base(self):
         """Test that an error is raised if the user provides a non-iterable base operator"""
@@ -83,7 +86,7 @@ class TestControlledQubitUnitary:
         def base_op(x):
             return 1 if x == 0 else 0  # pauliX as a mapping
 
-        with pytest.raises(ValueError, match="Base must be a matrix"):
+        with pytest.raises(ValueError, match="U must be a matrix"):
             qp.ControlledQubitUnitary(base_op, wires=[0, 1])
 
     def test_wires_is_none(self):
@@ -425,14 +428,14 @@ class TestControlledQubitUnitary:
             ]
         )
 
-        op = qp.ControlledQubitUnitary(U1, wires=("b", "c", "a"), control_values="01")
+        op = qp.ControlledQubitUnitary(U1, wires=("b", "c", "a"), control_values=[0, 1])
 
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
 
         assert pow_ops[0].target_wires == op.target_wires
         assert pow_ops[0].control_wires == op.control_wires
-        assert pow_ops[0].control_values == op.control_values
+        assert np.array_equal(pow_ops[0].control_values, op.control_values)
 
         op_mat_to_pow = qp.math.linalg.matrix_power(op.data[0], n)
         assert qp.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
@@ -498,16 +501,54 @@ class TestControlledQubitUnitary:
         with pytest.raises(qp.operation.PowUndefinedError):
             op.pow(0.12)
 
-    def test_controlled(self):
-        """Test the _controlled method for ControlledQubitUnitary."""
+    def test_ctrl_of_controlled_qubit_unitary(self):
+        """Test that controlling a ControlledQubitUnitary merges into a symbolic control with the combined control wires, control values and work wires."""
+        U = np.array(
+            [
+                [0.73708696 + 0.61324932j, 0.27034258 + 0.08685028j],
+                [-0.24979544 - 0.1350197j, 0.95278437 + 0.1075819j],
+            ]
+        )
+        base = qp.ControlledQubitUnitary(
+            U, wires=(0, 1), control_values=[1], work_wires=[4], work_wire_type="zeroed"
+        )
 
-        U = qp.PauliX(0).compute_matrix()
+        op = qp.ctrl(
+            base,
+            control=[2, 3],
+            control_values=[0, 1],
+            work_wires=[5],
+            work_wire_type="borrowed",
+        )
 
-        original = qp.ControlledQubitUnitary(U, wires=(0, 1, 4), control_values="01")
-        expected = qp.ControlledQubitUnitary(U, wires=(0, 1, "a", 4), control_values="011")
+        assert isinstance(op, qp.ops.ControlledOp2)
+        assert op.wires == Wires([2, 3, 0, 1])
+        assert op.control_wires == Wires([2, 3, 0])
+        assert op.target_wires == Wires([1])
+        assert list(op.control_values) == [False, True, True]
+        assert op.work_wires == Wires([5, 4])
+        assert op.work_wire_type == "borrowed"
+        assert qp.math.allclose(op.data[0], U)
 
-        out = original._controlled("a")  # pylint: disable=protected-access
-        qp.assert_equal(out, expected)
+        # The merged op is equivalent to constructing the ControlledQubitUnitary directly.
+        wire_order = [2, 3, 0, 1]
+        expected = qp.ControlledQubitUnitary(U, wires=wire_order, control_values=[0, 1, 1])
+        assert qp.math.allclose(
+            op.matrix(wire_order=wire_order), expected.matrix(wire_order=wire_order)
+        )
+
+    def test_ctrl_of_controlled_qubit_unitary_defaults(self):
+        """Test nested unitary controls with default control values and merging of zeroed work wire types."""
+        U = qp.RX.compute_matrix(0.5)
+        base = qp.ControlledQubitUnitary(U, wires=(0, 1), work_wire_type="zeroed")
+
+        op = qp.ctrl(base, control=[2], work_wires=[5], work_wire_type="zeroed")
+        assert isinstance(op, qp.ops.ControlledOp2)
+        assert op.control_wires == Wires([2, 0])
+        assert list(op.control_values) == [True, True]
+        assert op.work_wires == Wires([5])
+        # zeroed + zeroed stays zeroed; borrowed anywhere makes it borrowed.
+        assert op.work_wire_type == "zeroed"
 
     def test_unitary_check(self):
         unitary = np.array([[0.94877869j, 0.31594146], [-0.31594146, 0.94877869j]])
@@ -723,38 +764,12 @@ class TestComputations:
         assert np.allclose(op.compute_matrix(*params), expected_matrix, atol=tol, rtol=0)
         assert np.allclose(op(*params, wires=[0, 1]).matrix(), expected_matrix, atol=tol, rtol=0)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("op, params, expected_matrix", EXPECTED_MATRICES)
-    def test_matrix_tf(self, tol, op, params, expected_matrix):
-        """Tests that the correct matrix is returned when using TensorFlow"""
-
-        import tensorflow as tf
-
-        variables = [tf.Variable(param) for param in params]
-
-        assert np.allclose(op.compute_matrix(*variables), expected_matrix, atol=tol, rtol=0)
-        assert np.allclose(op(*variables, wires=[0, 1]).matrix(), expected_matrix, atol=tol, rtol=0)
-
     @pytest.mark.parametrize("op, params, expected_eigvals", EXPECTED_EIGVALS)
     def test_eigvals(self, tol, op, params, expected_eigvals):
         """Tests that the correct eigenvalues are returned"""
 
         assert np.allclose(op.compute_eigvals(*params), expected_eigvals, atol=tol, rtol=0)
         assert np.allclose(op(*params, wires=[0, 1]).eigvals(), expected_eigvals, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("op, params, expected_eigvals", EXPECTED_EIGVALS)
-    def test_eigvals_tf(self, tol, op, params, expected_eigvals):
-        """Tests that the correct eigenvalues are returned when using TensorFlow"""
-
-        import tensorflow as tf
-
-        variables = [tf.Variable(param) for param in params]
-
-        assert np.allclose(op.compute_eigvals(*variables), expected_eigvals, atol=tol, rtol=0)
-        assert np.allclose(
-            op(*variables, wires=[0, 1]).eigvals(), expected_eigvals, atol=tol, rtol=0
-        )
 
 
 def test_simplify_crot():
@@ -763,45 +778,29 @@ def test_simplify_crot():
     crot_x = qp.CRot(np.pi / 2, 0.1, -np.pi / 2, wires=[0, 1])
     simplify_crot_x = crot_x.simplify()
 
-    assert simplify_crot_x.name == "CRX"
+    assert simplify_crot_x.name == "C(RX)"
     assert simplify_crot_x.data == (0.1,)
     assert np.allclose(simplify_crot_x.matrix(), crot_x.matrix())
 
     crot_y = qp.CRot(0, 0.1, 0, wires=[0, 1])
     simplify_crot_y = crot_y.simplify()
 
-    assert simplify_crot_y.name == "CRY"
+    assert simplify_crot_y.name == "C(RY)"
     assert simplify_crot_y.data == (0.1,)
     assert np.allclose(simplify_crot_y.matrix(), crot_y.matrix())
 
     crot_z = qp.CRot(0.1, 0, 0.2, wires=[0, 1])
     simplify_crot_z = crot_z.simplify()
 
-    assert simplify_crot_z.name == "CRZ"
+    assert simplify_crot_z.name == "C(RZ)"
     assert np.allclose(simplify_crot_z.data, [0.3])
     assert np.allclose(simplify_crot_z.matrix(), crot_z.matrix())
 
     crot = qp.CRot(0.1, 0.2, 0.3, wires=[0, 1])
     not_simplified_crot = crot.simplify()
 
-    assert not_simplified_crot.name == "CRot"
+    assert not_simplified_crot.name == "C(Rot)"
     assert np.allclose(not_simplified_crot.matrix(), crot.matrix())
-
-
-controlled_data = [
-    (qp.RX(1.234, wires=0), qp.CRX(1.234, wires=("a", 0))),
-    (qp.RY(1.234, wires=0), qp.CRY(1.234, wires=("a", 0))),
-    (qp.RZ(1.234, wires=0), qp.CRZ(1.234, wires=("a", 0))),
-    (qp.PhaseShift(1.234, wires=0), qp.ControlledPhaseShift(1.234, wires=("a", 0))),
-    (qp.Rot(1.2, 2.3, 3.4, wires=0), qp.CRot(1.2, 2.3, 3.4, wires=("a", 0))),
-]
-
-
-@pytest.mark.parametrize("base, cbase", controlled_data)
-def test_controlled_method(base, cbase):
-    """Tests the _controlled method for parametric ops."""
-    # pylint: disable=protected-access
-    qp.assert_equal(base._controlled("a"), cbase)
 
 
 @pytest.mark.parametrize(
@@ -830,13 +829,44 @@ def test_tuple_control_wires_parametric_ops(op_type):
     assert op_type(0.123, [(0, 1), 2]).wires == qp.wires.Wires([(0, 1), 2])
 
 
-def test_CNOT_decomposition():
-    """Test that CNOT raises a DecompositionUndefinedError instead of using the
-    controlled_op decomposition functions"""
-    assert not qp.CNOT((0, 1)).has_decomposition
+@pytest.mark.parametrize("op_type, wires", [(qp.CNOT, Wire[2]), (qp.Toffoli, Wire[3])])
+def test_abstract_controlled_ops(op_type, wires):
+    """Tests creating abstract controlled ops as one might for resource keys."""
+    key = op_type(wires)
 
-    with pytest.raises(qp.operation.DecompositionUndefinedError):
-        qp.CNOT.compute_decomposition()
+    assert isinstance(key, op_type)
+    assert isinstance(key.wires, AbstractWires)
+    assert len(key.wires) == len(wires)
 
-    with pytest.raises(qp.operation.DecompositionUndefinedError):
-        qp.CNOT([0, 1]).decomposition()
+
+@pytest.mark.catalyst
+@pytest.mark.parametrize(
+    ("op_type", "rule_name"),
+    [
+        (qp.CNOT, "_cnot_lattice_surgery_ppm"),
+        (qp.CY, "_cy_lattice_surgery_ppm"),
+        (qp.CZ, "_cz_lattice_surgery_ppm"),
+    ],
+)
+def test_ppm_decomposition(op_type, rule_name, seed):
+    """Tests that the PPM decomposition of Hadamard is correct."""
+    rule = qp.list_decomps(op_type)[rule_name]
+    rng = np.random.default_rng(seed)
+    init_state = rng.random(4) + 1j * rng.random(4)
+    init_state /= np.linalg.norm(init_state)
+
+    @qp.qjit(capture=True)
+    @qp.qnode(qp.device("lightning.qubit", wires=[0, 1, 2]))
+    def circuit():
+        qp.StatePrep(init_state, [0, 1])
+        rule([0, 1])
+        op_type([0, 1])
+        return qp.state()
+
+    init_state_full = np.kron(init_state, np.array([1, 0], dtype=complex))
+    assert np.allclose(init_state_full, circuit())
+
+
+def test_CY_decomposition():
+    """The migrated ``CY`` uses its registered graph decomposition rule."""
+    assert qp.CY([0, 1]).decomposition() == [qp.CRY(np.pi, wires=[0, 1]), qp.S(0)]

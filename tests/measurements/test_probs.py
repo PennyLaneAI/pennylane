@@ -22,9 +22,10 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.measurements import MeasurementProcess, ProbabilityMP
-from pennylane.queuing import AnnotatedQueue
+from pennylane.measurements import ProbabilityMP
 
 
 @pytest.fixture(name="init_state")
@@ -510,27 +511,6 @@ class TestProbs:
         res = circuit(x)
         expected = [[1.0, 0.0], [0.5, 0.5]]
         assert np.allclose(res, expected, atol=0.1, rtol=0.1)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "prep_op, expected",
-        [
-            (None, [1, 0]),
-            (qp.StatePrep([[0, 1], [1, 0]], 0), [[0, 1], [1, 0]]),
-        ],
-    )
-    def test_process_state_tf_autograph(self, prep_op, expected):
-        """Test that process_state passes when decorated with tf.function."""
-        import tensorflow as tf
-
-        wires = qp.wires.Wires([0])
-
-        @tf.function
-        def probs_from_state(state):
-            return qp.probs(wires=wires).process_state(state, wires)
-
-        state = qp.devices.qubit.create_initial_state(wires, prep_operation=prep_op)
-        assert np.allclose(probs_from_state(state), expected)
 
     @pytest.mark.autograd
     def test_numerical_analytic_diff_agree(self, tol):

@@ -58,30 +58,26 @@ class TestTracking:
             "results": [1.0, 1.0, 1.0],
             "resources": [
                 SpecsResources(
-                    num_allocs=1,
-                    gate_types={},
-                    gate_sizes={},
-                    measurements={"expval(PauliZ)": 1},
-                    depth=0,
+                    num_wires=1,
+                    counts={},
+                    measurement_processes={"expval(PauliZ)": 1},
+                    circuit_depth=0,
                 ),
                 SpecsResources(
-                    num_allocs=1,
-                    gate_types={},
-                    gate_sizes={},
-                    measurements={"expval(PauliZ)": 1},
-                    depth=0,
+                    num_wires=1,
+                    counts={},
+                    measurement_processes={"expval(PauliZ)": 1},
+                    circuit_depth=0,
                 ),
                 SpecsResources(
-                    num_allocs=1,
-                    gate_types={},
-                    gate_sizes={},
-                    measurements={"expval(PauliZ)": 1},
-                    depth=0,
+                    num_wires=1,
+                    counts={},
+                    measurement_processes={"expval(PauliZ)": 1},
+                    circuit_depth=0,
                 ),
             ],
             "derivative_batches": [1],
             "derivatives": [1],
-            "errors": [{}, {}, {}],
         }
         assert tracker.totals == {
             "batches": 2,
@@ -96,13 +92,11 @@ class TestTracking:
             "simulations": 1,
             "results": 1,
             "resources": SpecsResources(
-                num_allocs=1,
-                gate_types={},
-                gate_sizes={},
-                measurements={"expval(PauliZ)": 1},
-                depth=0,
+                num_wires=1,
+                counts={},
+                measurement_processes={"expval(PauliZ)": 1},
+                circuit_depth=0,
             ),
-            "errors": {},
         }
 
     def test_tracking_execute_and_derivatives(self):
@@ -134,15 +128,13 @@ class TestTracking:
             "execute_and_vjp_batches": [1],
             "resources": [
                 SpecsResources(
-                    num_allocs=1,
-                    gate_types={},
-                    gate_sizes={},
-                    measurements={"expval(PauliZ)": 1},
-                    depth=0,
+                    num_wires=1,
+                    counts={},
+                    measurement_processes={"expval(PauliZ)": 1},
+                    circuit_depth=0,
                 )
             ]
             * 12,
-            "errors": [{}] * 12,
         }
 
     def test_tracking_resources(self):
@@ -160,11 +152,10 @@ class TestTracking:
         )
 
         expected_resources = SpecsResources(
-            num_allocs=3,
-            gate_types={"Hadamard": 3, "CNOT": 2, "RZ": 1},
-            gate_sizes={1: 4, 2: 2},
-            measurements={"expval(PauliZ)": 1, "expval(PauliY)": 1},
-            depth=3,
+            num_wires=3,
+            counts={"Hadamard": 3, "CNOT": 2, "RZ": 1},
+            measurement_processes={"expval(PauliZ)": 1, "expval(PauliY)": 1},
+            circuit_depth=3,
         )
 
         dev = qp.device("default.qubit")

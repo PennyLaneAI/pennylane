@@ -18,22 +18,22 @@ import warnings
 from datetime import datetime
 from functools import partial
 
+import jax
+import jax.numpy as jnp
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.operator import Operator
 from pennylane.liealg import adjvec_to_op, op_to_adjvec
-from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
 try:
-    import jax
-    import jax.numpy as jnp
     import optax
 
     jax.config.update("jax_enable_x64", True)
-    has_jax = True
+    has_optax = True
 except ImportError:
-    has_jax = False
+    has_optax = False
 
 try:
     import matplotlib.pyplot as plt
@@ -196,7 +196,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
         def Kc(theta_opt):
             for th, op in zip(theta_opt, k):
-                qp.exp(-1j * th * op.operation())
+                qp.exp(-1j * th * qp.pauli.to_operator(op))
 
         Kc_m = qp.matrix(Kc, wire_order=range(n))(theta_opt)
 
@@ -221,9 +221,9 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     """
 
-    if not has_jax:  # pragma: no cover
+    if not has_optax:  # pragma: no cover
         raise ImportError(
-            "jax and optax are required for variational_kak_adj. You can install them with pip install jax optax."
+            "optax is required for variational_kak_adj. You can install it with pip install optax."
         )  # pragma: no cover
     if verbose >= 1 and not has_plt:  # pragma: no cover
         print(
@@ -315,7 +315,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     # Compute the ansatz K_c = K(theta_c) = K_1(theta_1) .. K_|k|(theta_|k|)
     Km = jnp.eye(2**n)
     for th, op in zip(theta_opt, k, strict=True):
-        opm = qp.matrix(op.operation(), wire_order=range(n)) if not _is_dense else op
+        opm = qp.matrix(qp.pauli.to_operator(op), wire_order=range(n)) if not _is_dense else op
         Km @= jax.scipy.linalg.expm(1j * th * opm)
 
     assert np.allclose(Km @ Km.conj().T, np.eye(2**n))
@@ -390,7 +390,7 @@ def run_opt(
 
     """
 
-    if not has_jax:  # pragma: no cover
+    if not has_optax:  # pragma: no cover
         raise ImportError(
             "jax and optax are required for run_opt. You can install them with pip install jax optax."
         )  # pragma: no cover

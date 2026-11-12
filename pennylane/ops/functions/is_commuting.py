@@ -19,11 +19,11 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.ops.op_math import Prod, SProd, Sum
+from pennylane.ops.op_math import Controlled, Prod, SProd, Sum
+from pennylane.wires import Wires
 
 SPECIAL_UTILITIES = {
     "Barrier",
-    "WireCut",
     "Snapshot",
 }
 # Ops that don't commute with anything
@@ -180,6 +180,11 @@ def intersection(wires1, wires2):
     return len(qp.wires.Wires.shared_wires([wires1, wires2])) != 0
 
 
+def _is_single_controlled_rot(op):
+    """Recognize both named and symbolic Rot operators with one control wire."""
+    return isinstance(op, Controlled) and isinstance(op.base, qp.Rot) and len(op.control_wires) == 1
+
+
 def check_commutation_two_non_simplified_crot(operation1, operation2):
     r"""Check commutation for two CRot that were not simplified.
 
@@ -191,12 +196,8 @@ def check_commutation_two_non_simplified_crot(operation1, operation2):
         bool: True if commutation, False otherwise.
     """
     # Two non simplified CRot
-    target_wires_1 = qp.wires.Wires(
-        [w for w in operation1.wires if w not in operation1.control_wires]
-    )
-    target_wires_2 = qp.wires.Wires(
-        [w for w in operation2.wires if w not in operation2.control_wires]
-    )
+    target_wires_1 = Wires([w for w in operation1.wires if w not in operation1.control_wires])
+    target_wires_2 = Wires([w for w in operation2.wires if w not in operation2.control_wires])
 
     control_control = intersection(operation1.control_wires, operation2.control_wires)
     target_target = intersection(target_wires_1, target_wires_2)
@@ -229,20 +230,18 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
         bool: True if commutation, False otherwise, None if not two rotations.
     """
 
-    target_wires_1 = qp.wires.Wires(
-        [w for w in operation1.wires if w not in operation1.control_wires]
-    )
-    target_wires_2 = qp.wires.Wires(
-        [w for w in operation2.wires if w not in operation2.control_wires]
-    )
+    op1_ctrl_wires = operation1.control_wires if isinstance(operation1, Controlled) else Wires([])
+    target_wires_1 = qp.wires.Wires([w for w in operation1.wires if w not in op1_ctrl_wires])
+    op2_ctrl_wires = operation2.control_wires if isinstance(operation2, Controlled) else Wires([])
+    target_wires_2 = qp.wires.Wires([w for w in operation2.wires if w not in op2_ctrl_wires])
 
-    if operation1.name == "CRot":
+    if _is_single_controlled_rot(operation1):
         if intersection(target_wires_1, operation2.wires):
             op1_rot = qp.Rot(*operation1.data, wires=target_wires_1)
             return _check_mat_commutation(op1_rot, operation2)
         return _commutes(operation2.name, "ctrl")
 
-    if operation2.name == "CRot":
+    if _is_single_controlled_rot(operation2):
         if intersection(target_wires_2, operation1.wires):
             op2_rot = qp.Rot(*operation2.data, wires=target_wires_2)
             return _check_mat_commutation(op2_rot, operation1)
@@ -254,12 +253,9 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
 unsupported_operations = [
     "PauliRot",
     "QubitDensityMatrix",
-    "CVNeuralNetLayers",
     "ApproxTimeEvolution",
     "ArbitraryUnitary",
     "CommutingEvolution",
-    "DisplacementEmbedding",
-    "SqueezingEmbedding",
     "Exp",
 ]
 
@@ -272,14 +268,10 @@ def is_commuting(operation1, operation2):
 
     .. note::
 
-        Most qubit-based PennyLane operations are supported --- CV operations
-        are not supported at this time.
+        Most PennyLane operations are supported. Unsupported operations include:
 
-        Unsupported qubit-based operations include:
-
-        :class:`~.PauliRot`, :class:`~.QubitDensityMatrix`, :class:`~.CVNeuralNetLayers`,
+        :class:`~.PauliRot`, :class:`~.QubitDensityMatrix`,
         :class:`~.ApproxTimeEvolution`, :class:`~.ArbitraryUnitary`, :class:`~.CommutingEvolution`,
-        :class:`~.DisplacementEmbedding`, :class:`~.SqueezingEmbedding`
         :class:`~.Exp`
 
     Args:
@@ -300,14 +292,10 @@ def is_commuting(operation1, operation2):
     if not intersection(operation1.wires, operation2.wires):
         return True
 
-    if operation1.name in unsupported_operations or isinstance(
-        operation1, (qp.operation.CVOperation, qp.operation.Channel)
-    ):
+    if operation1.name in unsupported_operations or isinstance(operation1, qp.operation.Channel):
         raise QuantumFunctionError(f"Operation {operation1.name} not supported.")
 
-    if operation2.name in unsupported_operations or isinstance(
-        operation2, (qp.operation.CVOperation, qp.operation.Channel)
-    ):
+    if operation2.name in unsupported_operations or isinstance(operation2, qp.operation.Channel):
         raise QuantumFunctionError(f"Operation {operation2.name} not supported.")
 
     if operation1.pauli_rep is not None and operation2.pauli_rep is not None:
@@ -321,13 +309,19 @@ def is_commuting(operation1, operation2):
     # Arithmetic non-disjoint operations only contain Pauli words
     _check_opmath_operations(operation1, operation2)
 
-    # Two CRot that cannot be simplified
-    if operation1.name == "CRot" and operation2.name == "CRot":
+    # Two single-controlled Rot operators that cannot be simplified
+    is_crot_1 = _is_single_controlled_rot(operation1)
+    is_crot_2 = _is_single_controlled_rot(operation2)
+    if is_crot_1 and is_crot_2:
         return check_commutation_two_non_simplified_crot(operation1, operation2)
 
     # Check if operations are non simplified rotations and return commutation if it is the case.
     op_set = {"U2", "U3", "Rot", "CRot"}
-    if operation1.name in op_set and operation2.name in op_set:
+
+    def _is_non_simplified_rot(op):
+        return op.name in op_set or _is_single_controlled_rot(op)
+
+    if _is_non_simplified_rot(operation1) and _is_non_simplified_rot(operation2):
         return check_commutation_two_non_simplified_rotations(operation1, operation2)
 
     ctrl_base_1 = _get_target_name(operation1)

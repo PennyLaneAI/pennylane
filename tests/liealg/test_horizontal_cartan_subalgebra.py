@@ -242,7 +242,12 @@ def _generate_test_cases(seed_value):
 
     # Translate test cases to qp.operation.Operations
     op_test_cases = [
-        (adj_vecs, [ps.operation() for ps in basis], [ps.operation() for ps in expected], is_ortho)
+        (
+            adj_vecs,
+            [qp.pauli.to_operator(ps) for ps in basis],
+            [qp.pauli.to_operator(ps) for ps in expected],
+            is_ortho,
+        )
         for adj_vecs, basis, expected, is_ortho in ps_test_cases
     ]
 

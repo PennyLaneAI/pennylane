@@ -19,9 +19,9 @@ from typing import TYPE_CHECKING, Literal
 
 from cachetools import Cache, LRUCache
 
+from pennylane.core.transforms import CompilePipeline, transform
 from pennylane.math import Interface
 from pennylane.transforms.convert_to_numpy_parameters import convert_to_numpy_parameters
-from pennylane.transforms.core import CompilePipeline, transform
 
 from ._cache_transform import _cache_transform
 

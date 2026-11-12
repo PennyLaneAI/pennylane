@@ -16,7 +16,7 @@ The main function for measurement reduction, ``optimize_measurements`` returns t
 corresponding necessary circuit post-rotations for a given list of Pauli words.
 """
 
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.pauli.utils import diagonalize_qwc_groupings
 from pennylane.typing import Sequence
 

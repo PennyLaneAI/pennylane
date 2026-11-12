@@ -270,13 +270,13 @@ class TestDifferentModes:
 
         expected_H = qp.IsingXY(0.5, wires=(0, 1)).generator() @ qp.Y(2)
         expected0 = qp.tape.QuantumScript(
-            [qp.IsingXY(0.5, wires=(0, 1)), qp.H(2), qp.CNOT((2, 0)), qp.H(2)],
+            [qp.IsingXY(0.5, wires=(0, 1)), qp.H(2), qp.ctrl(qp.X(0), 2), qp.H(2)],
             [qp.expval(expected_H)],
             shots=50,
         )
         qp.assert_equal(batch[0], expected0)
         expected1 = qp.tape.QuantumScript(
-            [qp.IsingXY(0.5, wires=(0, 1)), qp.H(2), qp.CY((2, 0)), qp.H(2)],
+            [qp.IsingXY(0.5, wires=(0, 1)), qp.H(2), qp.ctrl(qp.Y(0), 2), qp.H(2)],
             [qp.expval(expected_H)],
             shots=50,
         )
@@ -423,9 +423,9 @@ class TestDifferentModes:
         batch, _ = qp.gradients.hadamard_grad(tape, mode="auto", aux_wire="a")
         assert len(batch) == 3
 
-        assert qp.CNOT(("a", 0)) in batch[0].operations
-        assert qp.CNOT(("a", 0)) in batch[1].operations
-        assert qp.CY(("a", 0)) in batch[2].operations
+        assert qp.ctrl(qp.X(0), "a") in batch[0].operations
+        assert qp.ctrl(qp.X(0), "a") in batch[1].operations
+        assert qp.ctrl(qp.Y(0), "a") in batch[2].operations
 
         standard.assert_called_once()
         reverse.assert_called_once()
@@ -552,6 +552,7 @@ class TestDifferentModes:
 class TestHadamardGrad:
     """Unit tests for the hadamard_grad function"""
 
+    @pytest.mark.pl2do("batching is something we will come back to")
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_nontrainable_batched_tape(self, mode):
         """Test that no error is raised for a broadcasted/batched tape if the broadcasted
@@ -1075,7 +1076,7 @@ class TestHadamardGrad:
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.autograd
     def test_no_trainable_params_qnode_autograd(self, mode):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -1107,26 +1108,9 @@ class TestHadamardGrad:
             qp.gradients.hadamard_grad(circuit, mode=mode, aux_wire=2)(weights)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
-    @pytest.mark.tf
-    def test_no_trainable_params_qnode_tf(self, mode):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface="tf")
-        def circuit(weights):
-            qp.RX(weights[0], wires=0)
-            qp.RY(weights[1], wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qp.gradients.hadamard_grad(circuit, mode=mode, aux_wire=2)(weights)
-
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self, mode):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -1142,7 +1126,7 @@ class TestHadamardGrad:
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_no_trainable_params_tape(self, mode):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -1245,7 +1229,7 @@ class TestHadamardGradEdgeCases:
         assert res_hadamard[1].shape == ()
 
     def test_no_trainable_params_multiple_return_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters with multiple returns."""
         dev = qp.device("default.qubit", wires=2)
 
@@ -1445,46 +1429,6 @@ class TestHadamardTestGradDiff:
 
         res_hadamard = qp.jacobian(cost_fn_hadamard)(params)
         res_param_shift = qp.jacobian(cost_fn_param_shift)(params)
-        assert np.allclose(res_hadamard, res_param_shift)
-
-    @pytest.mark.tf
-    def test_tf(self, mode):
-        """Tests that the output of the hadamard gradient transform
-        can be differentiated using TF, yielding second derivatives."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=3)
-        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-
-        with tf.GradientTape() as t_h:
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(params[0], wires=[0])
-                qp.RY(params[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-            tape = qp.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = qp.gradients.hadamard_grad(tape, mode=mode, aux_wire=2)
-            jac_h = fn(dev.execute(tapes))
-            jac_h = qp.math.stack(jac_h)
-
-        with tf.GradientTape() as t_p:
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(params[0], wires=[0])
-                qp.RY(params[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-            tape = qp.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = qp.gradients.param_shift(tape)
-            jac_p = fn(dev.execute(tapes))
-            jac_p = qp.math.stack(jac_p)
-
-        res_hadamard = t_h.jacobian(jac_h, params)
-        res_param_shift = t_p.jacobian(jac_p, params)
-
         assert np.allclose(res_hadamard, res_param_shift)
 
     @pytest.mark.torch

@@ -103,7 +103,7 @@ please consult their respective documentation pages for information on gradient 
         def circuit(_x):
             qp.RX(_x, wires=0)
             return qp.expval(qp.Z(0))
-        
+
         return qp.grad(circuit)(x)
 
 >>> x = jnp.array(jnp.pi / 4)
@@ -304,8 +304,6 @@ errors may occur. Currently, this includes:
 * :func:`~.pennylane.transforms.zx.todd`
 * :func:`~.pennylane.add_noise`
 * :func:`~.pennylane.transforms.undo_swaps`
-* :func:`~.pennylane.cut_circuit_mc`
-* :func:`~.pennylane.cut_circuit`
 * :func:`~.pennylane.transforms.rowcol`
 * :func:`~.pennylane.map_wires`
 * Custom tape transforms created with :func:`~.pennylane.transform`.

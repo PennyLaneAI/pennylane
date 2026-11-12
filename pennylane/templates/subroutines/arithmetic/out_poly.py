@@ -18,16 +18,15 @@ Contains the OutPoly template.
 from collections import Counter
 
 from pennylane import math
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
-    controlled_resource_rep,
     register_resources,
-    resource_rep,
 )
-from pennylane.operation import Operation
 from pennylane.ops import adjoint, ctrl
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.subroutines.qft import QFT
+from pennylane.typing import Int, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
@@ -194,8 +193,8 @@ class OutPoly(Operation):
             @qp.qnode(qp.device("default.qubit"), shots=1)
             def circuit():
                 # load values of x and y
-                qp.BasisEmbedding(3, wires=wires["x"])
-                qp.BasisEmbedding(2, wires=wires["y"])
+                qp.BasisState(qp.math.int_to_binary(3, len(wires["x"])), wires=wires["x"])
+                qp.BasisState(qp.math.int_to_binary(2, len(wires["y"])), wires=wires["y"])
 
                 # apply the polynomial
                 qp.OutPoly(
@@ -235,9 +234,9 @@ class OutPoly(Operation):
             @qp.qnode(qp.device("default.qubit"), shots=1)
             def circuit():
                 # loading values for x and y
-                qp.BasisEmbedding(3, wires=x_wires)
-                qp.BasisEmbedding(2, wires=y_wires)
-                qp.BasisEmbedding(1, wires=output_wires)
+                qp.BasisEmbedding([0, 1, 1], wires=x_wires) # 3
+                qp.BasisEmbedding([0, 1, 0], wires=y_wires) # 2
+                qp.BasisEmbedding([0, 0, 1], wires=output_wires) # 1
 
                 # applying the polynomial
                 qp.OutPoly(
@@ -472,35 +471,29 @@ class OutPoly(Operation):
 def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coeffs_list) -> dict:
     num_output_adder_mod = num_output_wires + 1 if num_work_wires else num_output_wires
 
-    resources = Counter(
-        {
-            resource_rep(QFT, num_wires=num_output_adder_mod): 1,
-        }
-    )
+    resources = Counter({QFT(Wire[num_output_adder_mod]): 1})
 
     coeffs_dic = dict(coeffs_list)
+    phase_rep = PhaseAdder(
+        Int, Wire[num_output_adder_mod], mod, Wire[int(mod != 2**num_output_adder_mod)]
+    )
 
     for item in coeffs_dic:
 
         if 1 not in item:
-            # `num_output_adder_mod` will always correspond to log2(mod) so we don't need to provide
-            # `mod` to the `PhaseAdder` in the decomposition.
-            rep = resource_rep(PhaseAdder, num_x_wires=num_output_adder_mod, mod=mod)
-            resources[rep] += 1
+            resources[phase_rep] += 1
         else:
             num_controls = sum(1 for bit in item if bit == 1)
 
-            ctrl_phase_rep = controlled_resource_rep(
-                base_class=PhaseAdder,
-                base_params={"num_x_wires": num_output_adder_mod, "mod": mod},
-                num_control_wires=num_controls,
-                num_zero_control_values=0,
-                num_work_wires=int(num_work_wires > 0),
+            ctrl_phase_rep = ctrl(
+                phase_rep,
+                control=Wire[num_controls],
+                work_wires=Wire[int(num_work_wires > 0)],
                 work_wire_type="borrowed",
             )
             resources[ctrl_phase_rep] += 1
 
-    resources[adjoint_resource_rep(QFT, {"num_wires": num_output_adder_mod})] = 1
+    resources[_adjoint_abstract(QFT(Wire[num_output_adder_mod]))] = 1
 
     return dict(resources)
 

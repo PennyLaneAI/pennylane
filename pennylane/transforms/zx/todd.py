@@ -18,12 +18,11 @@ pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/lates
 to a PennyLane Clifford + T circuit.
 """
 
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
-from .converter import from_zx, to_zx
-from .helper import _needs_pyzx
+from .helper import _apply_zx_transform, _needs_pyzx
 
 
 @_needs_pyzx
@@ -82,26 +81,27 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return qp.state()
 
     >>> print(qp.draw(circuit)())
-    0: ──S†─╭Z─╭●─╭●─┤  State
-    1: ──S──╰●─│──╰X─┤  State
-    2: ────────╰X────┤  State
+    0: ──S†─╭Z─╭●─╭●─┤ ╭State
+    1: ──S──╰●─│──╰X─┤ ├State
+    2: ────────╰X────┤ ╰State
 
     """
     # pylint: disable=import-outside-toplevel
     import pyzx
 
-    pyzx_graph = to_zx(tape)
-    pyzx_circ = pyzx.Circuit.from_graph(pyzx_graph)
+    def transform_fn(pyzx_graph):
+        pyzx_circ = pyzx.Circuit.from_graph(pyzx_graph)
 
-    try:
-        pyzx_circ = pyzx.phase_block_optimize(pyzx_circ.to_basic_gates())
-    except TypeError as e:
-        raise TypeError(
-            "The input circuit must be a Clifford + T circuit. Consider using `qp.clifford_t_decomposition` first."
-        ) from e
+        try:
+            pyzx_circ = pyzx.phase_block_optimize(pyzx_circ.to_basic_gates())
+        except TypeError as e:
+            raise TypeError(
+                "The input circuit must be a Clifford + T circuit. Consider using `qp.clifford_t_decomposition` first."
+            ) from e
 
-    qscript = from_zx(pyzx_circ.to_graph())
-    new_tape = tape.copy(operations=qscript.operations)
+        return pyzx_circ.to_graph()
+
+    new_tape = _apply_zx_transform(tape, transform_fn)
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results

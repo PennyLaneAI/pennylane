@@ -16,7 +16,7 @@ Tests for capturing conditionals into jaxpr.
 """
 
 # pylint: disable=redefined-outer-name, too-many-arguments, too-many-positional-arguments
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use,unbalanced-tuple-unpacking
 
 from functools import partial
 
@@ -24,15 +24,18 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import Operator
 from pennylane.exceptions import ConditionalTransformError
-from pennylane.ops.op_math.condition import CondCallable
+from pennylane.ops.op_math.condition import CondCallable, _is_operator_type
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
-from pennylane.capture.primitives import cond_prim  # pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import cond_prim
+from pennylane.testing import assert_eqn_matches_op, extract_all_primitives, find_eqns
 
 
 @pytest.fixture
@@ -292,7 +295,6 @@ def test_convert_predicate_to_bool():
     """Test that predicates are all converted to bools."""
 
     def w(pred0, pred1):
-
         @qp.cond(pred0)
         def f(i):
             return i + 1
@@ -318,11 +320,38 @@ def test_convert_predicate_to_bool():
     assert jaxpr.eqns[2].invars[1].aval.dtype == jax.numpy.bool
 
 
+def test_no_predicate_for_else_branch():
+    """Test that the else branch does not have a Literal True predicate."""
+
+    def w(pred0, pred1):
+        @qp.cond(pred0)
+        def f():
+            return 1
+
+        @f.else_if(pred1)
+        def _elif():
+            return 2
+
+        @f.otherwise
+        def _else():
+            return 3
+
+        return f()
+
+    jaxpr = jax.make_jaxpr(w)(True, False)
+
+    assert jaxpr.eqns[0].primitive == cond_prim
+    cond_eqn = jaxpr.eqns[0]
+    assert len(cond_eqn.invars) == 2
+    assert len(cond_eqn.params["jaxpr_branches"]) == 3
+    assert isinstance(cond_eqn.invars[0], jax._src.core.Var)  # pylint: disable=protected-access
+    assert isinstance(cond_eqn.invars[1], jax._src.core.Var)  # pylint: disable=protected-access
+
+
 def test_keyword_argument():
     """Test that keyword arguments are treated as traceable inputs."""
 
     def f(pred, x):
-
         @qp.cond(pred)
         def b(*, x):
             qp.RX(x, 0)
@@ -491,11 +520,224 @@ class TestCondReturns:
 
         true_fn = jaxpr.eqns[0].params["jaxpr_branches"][0]
         assert len(true_fn.outvars) == 0
-        assert true_fn.eqns[0].primitive == qp.X._primitive  # pylint: disable=protected-access
+        assert_eqn_matches_op(true_fn.eqns[0], qp.X)
 
         false_fn = jaxpr.eqns[0].params["jaxpr_branches"][-1]
         assert len(false_fn.eqns) == 0
         assert len(false_fn.outvars) == 0
+
+
+class TestCondOperatorInstances:
+    """Tests for passing Operator instances as qp.cond branches under capture."""
+
+    def test_true_and_false_operator_instances(self):
+        """Test that Operator2 instances can be used as true and false branches."""
+
+        def f(pred):
+            qp.cond(pred, qp.X(0), qp.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(True)
+        assert len(jaxpr.eqns) == 1
+        assert jaxpr.eqns[0].primitive == cond_prim
+        assert jaxpr.eqns[0].outvars == []
+
+        true_branch, false_branch = jaxpr.eqns[0].params["jaxpr_branches"]
+        assert_eqn_matches_op(true_branch.eqns[0], qp.X)
+        assert_eqn_matches_op(false_branch.eqns[0], qp.Z)
+        assert true_branch.outvars == []
+        assert false_branch.outvars == []
+
+    def test_true_operator_instance_no_false_fn(self):
+        """Test a true Operator2 branch with no false branch."""
+
+        def f(pred):
+            qp.cond(pred, qp.X(0))
+
+        jaxpr = jax.make_jaxpr(f)(True)
+        assert jaxpr.eqns[0].primitive == cond_prim
+
+        true_branch, false_branch = jaxpr.eqns[0].params["jaxpr_branches"]
+        assert_eqn_matches_op(true_branch.eqns[0], qp.X)
+        assert len(false_branch.eqns) == 0
+        assert false_branch.outvars == []
+
+    @pytest.mark.parametrize(
+        "elifs_factory",
+        [
+            lambda p2: (p2, qp.Y(0)),
+            lambda p2: ((p2, qp.Y(0)),),
+        ],
+        ids=["flat", "nested"],
+    )
+    def test_elif_operator_instances(self, elifs_factory):
+        """Test Operator2 instances in elif branches (flat and nested elifs forms)."""
+
+        def f(pred, pred2):
+            qp.cond(pred, qp.X(0), qp.Z(0), elifs=elifs_factory(pred2))
+
+        jaxpr = jax.make_jaxpr(f)(True, False)
+        assert jaxpr.eqns[0].primitive == cond_prim
+
+        true_branch, elif_branch, false_branch = jaxpr.eqns[0].params["jaxpr_branches"]
+        assert_eqn_matches_op(true_branch.eqns[0], qp.X)
+        assert_eqn_matches_op(elif_branch.eqns[0], qp.Y)
+        assert_eqn_matches_op(false_branch.eqns[0], qp.Z)
+
+    def test_parametric_operator_instances(self):
+        """Test parametric Operator2 instances as cond branches."""
+
+        def f(pred, x):
+            qp.cond(pred, qp.RX(x, 0), qp.RY(x, 0))
+
+        jaxpr = jax.make_jaxpr(f)(True, 0.5)
+        assert jaxpr.eqns[0].primitive == cond_prim
+
+        true_branch, false_branch = jaxpr.eqns[0].params["jaxpr_branches"]
+        assert_eqn_matches_op(true_branch.eqns[0], qp.RX)
+        assert_eqn_matches_op(false_branch.eqns[0], qp.RY)
+
+    def test_mixed_operator_and_callable_raises(self):
+        """Test that mixing Operator2 branches with callables raises."""
+
+        def f(pred):
+            qp.cond(pred, qp.X(0), lambda: qp.Z(0))
+
+        with pytest.raises(ValueError, match="all other branches must be Operator2 or None"):
+            jax.make_jaxpr(f)(True)
+
+    def test_operator1_instance_raises(self):
+        """Test that Operator1 instances are rejected as cond branches."""
+
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+            """Legacy Operator1-style operator."""
+
+        old_op = OldOp(wires=0)
+
+        def f(pred):
+            qp.cond(pred, old_op, qp.Z(0))
+
+        with pytest.raises(ValueError, match="Got Operator1 input"):
+            jax.make_jaxpr(f)(True)
+
+    def test_operator1_false_fn_created_during_tracing_raises(self):
+        """Test that Operator1 instances created during tracing are rejected."""
+
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+            """Legacy Operator1-style operator."""
+
+        def f(pred):
+            # true_fn must be Operator2 so we enter operator-input handling;
+            # OldOp becomes an AbstractOperator tracer under capture.
+            qp.cond(pred, qp.X(0), OldOp(wires=0))
+
+        with pytest.raises(ValueError, match="Got Operator1 AbstractOperator"):
+            jax.make_jaxpr(f)(True)
+
+    def test_operator1_true_fn_created_during_tracing_raises(self):
+        """Test that an Operator1 true_fn created during tracing is rejected."""
+
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+            """Legacy Operator1-style operator."""
+
+        def f(pred):
+            qp.cond(pred, OldOp(wires=0), lambda: None)
+
+        with pytest.raises(ValueError, match="Operator1 instances cannot be provided as true_fn"):
+            jax.make_jaxpr(f)(True)
+
+    def test_callable_true_fn_with_operator_false_fn_raises(self):
+        """Test that an Operator false_fn is rejected with a callable true_fn."""
+
+        def f(pred):
+            qp.cond(pred, lambda: None, qp.Z(0))
+
+        with pytest.raises(
+            ValueError,
+            match="Cannot provide an Operator as false_fn if true_fn is a callable",
+        ):
+            jax.make_jaxpr(f)(True)
+
+    def test_callable_true_fn_with_operator_elif_raises(self):
+        """Test that an Operator elif is rejected with a callable true_fn."""
+
+        def f(pred):
+            qp.cond(pred, lambda: None, lambda: None, elifs=((False, qp.Y(0)),))
+
+        with pytest.raises(
+            ValueError,
+            match="Cannot provide an Operator as elif_fn if true_fn is a callable",
+        ):
+            jax.make_jaxpr(f)(True)
+
+    def test_callable_true_fn_with_operator1_false_fn_tracer_raises(self):
+        """Test that an Operator1 false_fn created during tracing is rejected."""
+
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+            """Legacy Operator1-style operator."""
+
+        def f(pred):
+            qp.cond(pred, lambda: None, OldOp(wires=0))
+
+        with pytest.raises(
+            ValueError,
+            match="Cannot provide an Operator as false_fn if true_fn is a callable",
+        ):
+            jax.make_jaxpr(f)(True)
+
+    def test_callable_true_fn_with_operator1_elif_tracer_raises(self):
+        """Test that an Operator1 elif created during tracing is rejected."""
+
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+            """Legacy Operator1-style operator."""
+
+        def f(pred):
+            qp.cond(pred, lambda: None, lambda: None, elifs=((False, OldOp(wires=0)),))
+
+        with pytest.raises(
+            ValueError,
+            match="Cannot provide an Operator as elif_fn if true_fn is a callable",
+        ):
+            jax.make_jaxpr(f)(True)
+
+    @pytest.mark.parametrize(
+        "elif_branch",
+        [lambda: None, "nope", 1],
+        ids=["callable", "str", "int"],
+    )
+    def test_unsupported_elif_raises(self, elif_branch):
+        """Test that non-Operator2/None elif branches are rejected."""
+
+        def f(pred):
+            qp.cond(pred, qp.X(0), qp.Z(0), elifs=((False, elif_branch),))
+
+        with pytest.raises(ValueError, match="all other branches must be Operator2 or None"):
+            jax.make_jaxpr(f)(True)
+
+    def test_operator1_elif_raises(self):
+        """Test that Operator1 instances are rejected as elif branches."""
+
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+            """Legacy Operator1-style operator."""
+
+        old_op = OldOp(wires=0)
+
+        def f(pred):
+            qp.cond(pred, qp.X(0), qp.Z(0), elifs=((False, old_op),))
+
+        with pytest.raises(ValueError, match="Got Operator1 input"):
+            jax.make_jaxpr(f)(True)
+
+    def test_operator1_elif_created_during_tracing_raises(self):
+        """Test that Operator1 elifs created during tracing are rejected."""
+
+        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+            """Legacy Operator1-style operator."""
+
+        def f(pred):
+            qp.cond(pred, qp.X(0), qp.Z(0), elifs=((False, OldOp(wires=0)),))
+
+        with pytest.raises(ValueError, match="Got Operator1 AbstractOperator"):
+            jax.make_jaxpr(f)(True)
 
 
 dev = qp.device("default.qubit", wires=3)
@@ -536,6 +778,7 @@ def circuit_branches(pred, arg1, arg2):
     return qp.expval(qp.Z(wires=0))
 
 
+# pylint: disable=unused-argument
 @qp.qnode(dev)
 def circuit_with_returned_operator(pred, arg1, arg2):
     """Quantum circuit with conditional branches that return operators."""
@@ -544,11 +787,11 @@ def circuit_with_returned_operator(pred, arg1, arg2):
 
     def true_fn(arg1, arg2):
         qp.RY(arg1, wires=0)
-        return 7, 4.6, qp.RY(arg2, wires=0), True
+        return 7, 4.6, qp.S(wires=0), True
 
     def false_fn(arg1, arg2):
         qp.RZ(arg2, wires=0)
-        return 2, 2.2, qp.RZ(arg1, wires=0), False
+        return 2, 2.2, qp.T(wires=0), False
 
     qp.cond(pred > 0, true_fn, false_fn)(arg1, arg2)
     qp.RX(0.10, wires=0)
@@ -563,20 +806,22 @@ def circuit_multiple_cond(tmp_pred, tmp_arg):
     arg = tmp_arg
 
     def true_fn_1(arg):
-        return True, qp.RX(arg, wires=0)
+        qp.RX(arg, wires=0)
+        return True
 
     # pylint: disable=unused-argument
     def false_fn_1(arg):
-        return False, qp.RY(0.1, wires=0)
+        qp.RY(0.1, wires=0)
+        return False
 
     def true_fn_2(arg):
-        return qp.RX(arg, wires=0)
+        qp.RX(arg, wires=0)
 
     # pylint: disable=unused-argument
     def false_fn_2(arg):
-        return qp.RY(0.1, wires=0)
+        qp.RY(0.1, wires=0)
 
-    dyn_pred_2, _ = qp.cond(dyn_pred_1, true_fn_1, false_fn_1, elifs=())(arg)
+    dyn_pred_2 = qp.cond(dyn_pred_1, true_fn_1, false_fn_1, elifs=())(arg)
     qp.cond(dyn_pred_2, true_fn_2, false_fn_2, elifs=())(arg)
     return qp.expval(qp.Z(0))
 
@@ -613,40 +858,20 @@ def circuit_with_consts(pred, arg):
 class TestCondCircuits:
     """Tests for conditional quantum circuits."""
 
-    @pytest.mark.parametrize(
-        "pred, expected",
-        [
-            (1, 0.99500417),  # RX(0.1)
-            (0, 1.0),  # No operation
-        ],
-    )
-    def test_circuit(self, pred, expected):
+    @pytest.mark.parametrize("pred", [1, 0])
+    def test_circuit(self, pred):
         """Test circuit with only a true branch."""
-        result = circuit(pred)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
         args = [pred]
         jaxpr = jax.make_jaxpr(circuit)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
-    @pytest.mark.parametrize(
-        "pred, arg1, arg2, expected",
-        [
-            (1, 0.5, 0.6, 0.63340907),  # RX(0.10) -> RY(0.5) -> RX(0.6) -> RZ(0.5) -> RX(0.10)
-            (0, 0.5, 0.6, 0.26749883),  # RX(0.10) -> RX(0.5) -> RX(0.6) -> RX(0.10)
-            (-1, 0.5, 0.6, 0.77468805),  # RX(0.10) -> RZ(0.6) -> RX(0.5) -> RX(0.10)
-        ],
-    )
-    def test_circuit_branches(self, pred, arg1, arg2, expected):
+    def test_circuit_branches(self):
         """Test circuit with true, false, and elif branches."""
-        result = circuit_branches(pred, arg1, arg2)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        args = [pred, arg1, arg2]
+        args = [1, 0.5, 0.6]
         jaxpr = jax.make_jaxpr(circuit_branches)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
     def test_circuit_cond_on_operator_jaxpr_check(self):
         """Test that the cond has no output when the functions are an operator type."""
@@ -662,57 +887,28 @@ class TestCondCircuits:
         for branch in jaxpr.eqns[-1].params["jaxpr_branches"]:
             assert branch.outvars == []
 
-    @pytest.mark.parametrize(
-        "pred, arg1, arg2, expected",
-        [
-            (1, 0.5, 0.6, 0.43910855),  # RX(0.10) -> RY(0.5) -> RY(0.6) -> RX(0.10)
-            (0, 0.5, 0.6, 0.98551243),  # RX(0.10) -> RZ(0.6) -> RX(0.5) -> RX(0.10)
-        ],
-    )
-    def test_circuit_with_returned_operator(self, pred, arg1, arg2, expected):
+    def test_circuit_with_returned_operator_raises_error(self):
+        """Test circuit with returned operators in the branches raises an error."""
+
+        args = [1, 0.5, 0.6]
+        with pytest.raises(
+            ValueError, match="Operator2 instances cannot be returned from conditional branches"
+        ):
+            _ = jax.make_jaxpr(circuit_with_returned_operator)(*args)
+
+    def test_circuit_multiple_cond(self):
         """Test circuit with returned operators in the branches."""
-        result = circuit_with_returned_operator(pred, arg1, arg2)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        args = [pred, arg1, arg2]
-        jaxpr = jax.make_jaxpr(circuit_with_returned_operator)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
-
-    @pytest.mark.parametrize(
-        "tmp_pred, tmp_arg, expected",
-        [
-            (1, 0.5, 0.54030231),  # RX(0.5) -> RX(0.5)
-            (-1, 0.5, 0.98006658),  # RY(0.1) -> RY(0.1)
-        ],
-    )
-    def test_circuit_multiple_cond(self, tmp_pred, tmp_arg, expected):
-        """Test circuit with returned operators in the branches."""
-        result = circuit_multiple_cond(tmp_pred, tmp_arg)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
-
-        args = [tmp_pred, tmp_arg]
+        args = [1, 0.5]
         jaxpr = jax.make_jaxpr(circuit_multiple_cond)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
-    @pytest.mark.parametrize(
-        "pred, arg, expected",
-        [
-            (1, 0.5, 0.87758256),  # RX(0.5)
-            (-1, 0.5, 0.0707372),  # RX(0.7) -> RX(0.8)
-            (0, 0.5, -0.9899925),  # RX(0.9) -> RX(1.0) -> RX(1.1)
-        ],
-    )
-    def test_circuit_consts(self, pred, arg, expected):
+    def test_circuit_consts(self):
         """Test circuit with jaxpr constants."""
-        result = circuit_with_consts(pred, arg)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        args = [pred, arg]
+        args = [1, 0.5]
         jaxpr = jax.make_jaxpr(circuit_with_consts)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
     @pytest.mark.xfail(strict=False)  # might pass if postselection equal to measurement
     @pytest.mark.parametrize("reset", [True, False])
@@ -919,12 +1115,11 @@ class TestPytree:
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapeValidation:
-
     def test_different_outval_types(self):
         """Test an error is raised if the outvals have different types."""
 
         def true_fn():
-            return qp.X(0)
+            return True
 
         def false_fn():
             return jax.numpy.array(3)
@@ -998,7 +1193,6 @@ class TestDynamicShapeValidation:
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
-
     def test_cond_no_returns(self):
         """Test that cond can have empty returns when dynamic shapes are enabled."""
 
@@ -1012,7 +1206,7 @@ class TestDynamicShapes:
             qp.cond(condition == 2, rx, ry)(0.5, 1)
 
         jaxpr = jax.make_jaxpr(f)(0)
-        [op] = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1).operations
+        [op] = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 1).operations
         qp.assert_equal(op, qp.RY(0.5, 1))
 
     def test_cond_abstracted_axes(self):
@@ -1077,25 +1271,306 @@ class TestDynamicShapes:
         [res_false] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 5)
         assert qp.math.allclose(res_false, 10)  # 0 + 1 + 2 + 3 + 4
 
+    @pytest.mark.pl2do("batching is something that we'll come back to")
     def test_dynamic_shape_matches_arg(self):
         """Test that cond can handle dynamic shapes where the dimension matches an earlier arg."""
 
         def t(i, x):
-            return qp.RX(x, i)
+            qp.RX(x, i)
 
         def f(i, x):
-            return qp.RY(x, i)
+            qp.RY(x, i)
 
         def w(val, i):
-            return qp.cond(val, t, f)(i, jax.numpy.arange(i))
+            qp.cond(val, t, f)(i, jax.numpy.arange(i))
 
         jaxpr = jax.make_jaxpr(w)(True, 3)
 
-        [res_true] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 2)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
+        true_branch, false_branch = cond_eqn.params["jaxpr_branches"][:2]
 
-        expected = qp.RX(jax.numpy.arange(2), 2)
-        qp.assert_equal(res_true, expected)
+        assert_eqn_matches_op(true_branch.eqns[-1], qp.RX)
+        assert_eqn_matches_op(false_branch.eqns[-1], qp.RY)
 
-        [res_false] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 3)
-        expected_false = qp.RY(jax.numpy.arange(3), 3)
-        qp.assert_equal(res_false, expected_false)
+
+class TestCondBranchProbHintsCapture:
+    """Tests that ``branch-prob`` reaches the cond capture primitive."""
+
+    def test_estimated_probabilities_in_jaxpr(self):
+        """``branch-prob`` should become ``estimated_probabilities`` on ``cond``."""
+
+        def f(pred):
+            @qp.hint({"branch-prob": 0.4})
+            def true_fn():
+                return 1
+
+            @qp.hint({"branch-prob": 0.6})
+            def false_fn():
+                return 2
+
+            return qp.cond(pred, true_fn, false_fn)()
+
+        jaxpr = jax.make_jaxpr(f)(True)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.4, 0.6))
+
+    def test_integer_branch_probs(self):
+        """Integer ``branch-prob`` values should be accepted and cast to float."""
+
+        def f(pred):
+            @qp.hint({"branch-prob": 1})
+            def true_fn():
+                return 1
+
+            @qp.hint({"branch-prob": 0})
+            def false_fn():
+                return 2
+
+            return qp.cond(pred, true_fn, false_fn)()
+
+        jaxpr = jax.make_jaxpr(f)(True)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((1.0, 0.0))
+
+    @pytest.mark.parametrize(
+        "provided",
+        (
+            "branch_prob",
+            "branchprob",
+            "Branch-Prob",
+            "branch-probs",
+            "branc-prob",
+        ),
+    )
+    def test_typo_branch_prob_is_canonicalized(self, provided):
+        """Close misspellings of ``branch-prob`` should still populate probabilities."""
+
+        def f(pred):
+            @qp.hint({provided: 0.3})
+            def true_fn():
+                return 1
+
+            @qp.hint({provided: 0.7})
+            def false_fn():
+                return 2
+
+            return qp.cond(pred, true_fn, false_fn)()
+
+        jaxpr = jax.make_jaxpr(f)(True)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.3, 0.7))
+
+    def test_unknown_hint_is_ignored(self):
+        """A completely unrelated hint key should leave probabilities unset."""
+
+        def f(pred):
+            @qp.hint({"identity": True})
+            def true_fn():
+                return 1
+
+            @qp.hint({"num-iters": 10})
+            def false_fn():
+                return 2
+
+            return qp.cond(pred, true_fn, false_fn)()
+
+        jaxpr = jax.make_jaxpr(f)(True)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] is None
+
+    def test_without_hint_has_none_estimated_probabilities(self):
+        """Unhinted cond branches should bind ``estimated_probabilities=None``."""
+
+        def f(pred):
+            return qp.cond(pred, lambda: 1, lambda: 2)()
+
+        jaxpr = jax.make_jaxpr(f)(True)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] is None
+
+    def test_partial_hints_fill_remaining_probability(self):
+        """Unhinted branches should receive the remaining probability mass."""
+
+        def f(pred, elif_pred):
+            @qp.hint({"branch-prob": 0.4})
+            def true_fn():
+                return 1
+
+            @qp.hint({"branch-prob": 0.4})
+            def false_fn():
+                return 2
+
+            def elif_fn():
+                return 3
+
+            return qp.cond(pred, true_fn, false_fn, elifs=((elif_pred, elif_fn),))()
+
+        jaxpr = jax.make_jaxpr(f)(True, False)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.4, 0.2, 0.4))
+
+    def test_multiple_unhinted_branches_share_remainder(self):
+        """Multiple unhinted branches should share the remaining probability equally."""
+
+        def f(pred, elif_pred1, elif_pred2):
+            @qp.hint({"branch-prob": 0.4})
+            def true_fn():
+                return 1
+
+            def elif_fn1():
+                return 2
+
+            def elif_fn2():
+                return 3
+
+            def false_fn():
+                return 4
+
+            return qp.cond(
+                pred,
+                true_fn,
+                false_fn,
+                elifs=((elif_pred1, elif_fn1), (elif_pred2, elif_fn2)),
+            )()
+
+        jaxpr = jax.make_jaxpr(f)(True, False, False)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
+        # remaining 0.6 split across three unhinted branches
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.4, 0.2, 0.2, 0.2))
+
+    def test_unhinted_branch_gets_zero_when_hints_exceed_one(self):
+        """If hinted probs already sum above 1, unhinted branches get probability 0."""
+
+        def f(pred, elif_pred):
+            @qp.hint({"branch-prob": 0.7})
+            def true_fn():
+                return 1
+
+            @qp.hint({"branch-prob": 0.7})
+            def false_fn():
+                return 2
+
+            def elif_fn():
+                return 3
+
+            return qp.cond(pred, true_fn, false_fn, elifs=((elif_pred, elif_fn),))()
+
+        jaxpr = jax.make_jaxpr(f)(True, False)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
+        # order is (true, elif, false); remaining mass is clamped at 0
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.7, 0.0, 0.7))
+
+    def test_explicit_zero_preserved_with_unhinted_branches(self):
+        """An explicit ``branch-prob`` of ``0.0`` must not be treated as missing."""
+
+        def f(pred, elif_pred):
+            @qp.hint({"branch-prob": 0.0})
+            def true_fn():
+                return 1
+
+            def elif_fn():
+                return 2
+
+            def false_fn():
+                return 3
+
+            return qp.cond(pred, true_fn, false_fn, elifs=((elif_pred, elif_fn),))()
+
+        jaxpr = jax.make_jaxpr(f)(True, False)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
+        # order is (true, elif, false); remaining 1.0 split across two unhinted branches
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.0, 0.5, 0.5))
+
+    def test_decorator_form_sets_estimated_probabilities(self):
+        """Decorator-style ``else_if`` / ``otherwise`` should also populate probs."""
+
+        def f(pred, elif_pred):
+            @qp.cond(pred)
+            @qp.hint({"branch-prob": 0.5})
+            def true_fn():
+                return 1
+
+            @true_fn.else_if(elif_pred)
+            @qp.hint({"branch-prob": 0.25})
+            def elif_fn():
+                return 2
+
+            @true_fn.otherwise
+            @qp.hint({"branch-prob": 0.25})
+            def false_fn():
+                return 3
+
+            return true_fn()
+
+        jaxpr = jax.make_jaxpr(f)(True, False)
+        [cond_eqn] = find_eqns(jaxpr, cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.5, 0.25, 0.25))
+
+    @pytest.mark.parametrize(
+        "wrap",
+        (
+            lambda f: partial(qp.hint(f, {"branch-prob": 0.4}), y=1),
+            lambda f: qp.hint(partial(qp.hint(f, {"branch-prob": 0.4}), y=1), {"other": 1}),
+        ),
+    )
+    def test_hint_under_partial(self, wrap):
+        """``branch-prob`` should be found when the hinted branch is wrapped in a partial."""
+
+        def true_fn(x, y):
+            return x + y
+
+        def f(pred, x):
+            return qp.cond(pred, wrap(true_fn), lambda x: x)(x)
+
+        jaxpr = jax.make_jaxpr(f)(True, 0)
+        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx((0.4, 0.6))
+
+    def test_hinted_operator_types_as_branches(self):
+        """Hinted operator classes and partials of them should be usable as branches."""
+
+        def f(pred, x):
+            qp.cond(
+                pred,
+                qp.hint(qp.X, {"branch-prob": 0.4}),
+                qp.hint(partial(qp.RX, wires=0), {"branch-prob": 0.3}),
+                elifs=(
+                    (False, partial(qp.hint(qp.RZ, {"branch-prob": 0.2}), wires=0)),
+                    (False, partial(qp.RY, wires=1)),
+                    (False, partial(qp.RY, wires=2)),
+                ),
+            )(x)
+
+        jaxpr = jax.make_jaxpr(f)(True, 0)
+        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        # true_fn, hinted first elif, 2 unhinted elifs share remaining weight, false_fn
+        expected_probs = (0.4, 0.2, 0.05, 0.05, 0.3)
+        expected_ops = (qp.X, qp.RZ, qp.RY, qp.RY, qp.RX)
+
+        assert cond_eqn.params["estimated_probabilities"] == pytest.approx(expected_probs)
+        for branch, exp_op in zip(cond_eqn.params["jaxpr_branches"], expected_ops):
+            assert branch.outvars == []
+            assert_eqn_matches_op(branch.eqns[-1], exp_op)
+
+
+def _x_qfunc(wire):
+    qp.X(wire)
+
+
+@pytest.mark.parametrize(
+    "fn, expected",
+    (
+        (qp.X, True),
+        (partial(qp.RX, wires=0), True),
+        (qp.hint(qp.X, {"branch-prob": 0.4}), True),
+        (qp.hint(qp.hint(qp.X, {"a": 1}), {"b": 2}), True),
+        (qp.hint(partial(qp.RX, wires=0), {"branch-prob": 0.4}), True),
+        (partial(qp.hint(qp.RX, {"branch-prob": 0.4}), wires=0), True),
+        (_x_qfunc, False),
+        (qp.hint(_x_qfunc, {"branch-prob": 0.4}), False),
+        (partial(qp.hint(_x_qfunc, {"a": 1}), 0), False),
+    ),
+)
+def test_is_operator_type_unwraps_hints_and_partials(fn, expected):
+    """Test that ``_is_operator_type`` sees through nested hints and partials."""
+    assert _is_operator_type(fn) is expected

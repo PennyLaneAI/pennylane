@@ -19,11 +19,12 @@ from functools import lru_cache, partial
 from itertools import product
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.queuing import QueuingManager
 from pennylane.ops import Adjoint, MeasurementValue
+from pennylane.ops.op_math.adjoint import _adjoint_eager
 from pennylane.ops.op_math.decompositions.ross_selinger import rs_decomposition
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
-from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
@@ -64,7 +65,7 @@ _PARAMETER_GATES = (qp.RX, qp.RY, qp.RZ, qp.Rot, qp.PhaseShift)
 _CLIFFORD_T_GATES = tuple(_CLIFFORD_T_ONE_GATES + _CLIFFORD_T_TWO_GATES) + (qp.GlobalPhase,)
 
 # Gates to be skipped during decomposition
-_SKIP_OP_TYPES = (qp.Barrier, qp.Snapshot, qp.WireCut, MeasurementValue)
+_SKIP_OP_TYPES = (qp.Barrier, qp.Snapshot, MeasurementValue)
 
 # Stores the cache of a specified size for the decomposition function
 # that is used to decompose the RZ gates in the Clifford+T basis.
@@ -120,7 +121,9 @@ def _check_clifford_op(op, use_decomposition=False):
         qp.pauli.pauli_sentence(qp.prod(*pauli))
         for pauli in product(*(pauli_group(idx) for idx in op.wires))
     ]
-    pauli_ops = (pauli_sen.operation(wire_order=op.wires) for pauli_sen in pauli_sens)
+    pauli_ops = (
+        qp.pauli.to_operator(pauli_sen, identity_wires=op.wires) for pauli_sen in pauli_sens
+    )
 
     # Perform U@P@U^\dagger and check if the result exists in set P
     for pauli_prod in product([pauli_terms], pauli_ops, [pauli_terms_adj]):
@@ -165,7 +168,7 @@ def check_clifford_t(op, use_decomposition=False):
         theta = op.data[0]
         return (
             False
-            if qp.math.is_abstract(theta)
+            if qp.math.is_tracer(theta)
             else qp.math.allclose(qp.math.mod(theta, math.pi), 0.0)
         )
 
@@ -179,7 +182,7 @@ def _simplify_param(theta, gate):
     when even, and (b) returns combination of provided gate with global phase when odd.
     In rest of the other cases it would return None.
     """
-    if qp.math.is_abstract(theta):  # pragma: no cover
+    if qp.math.is_tracer(theta):  # pragma: no cover
         return None
 
     if qp.math.allclose(theta, 0.0, atol=1e-6):
@@ -242,7 +245,7 @@ def _rot_decompose(op):
         ops_ = _simplify_param(theta, qp.Z(wires))
         if ops_ is None:
             ops_ = [qp.RZ(theta, wires=wires), qp.GlobalPhase(-theta / 2)]
-            if not qp.math.is_abstract(theta):
+            if not qp.math.is_tracer(theta):
                 # The following loop simplifies the two cases where for all odd intergers `k`,
                 # `PhaseShift(k * pi / 2)` is S / S* and `PhaseShift(k * pi / 4)` is T / T*.
                 for val_ in [2, 4]:
@@ -425,22 +428,14 @@ class _CachedCallable:
             if f_adj:
                 return seq
 
-            adj = [qp.adjoint(s, lazy=False) for s in reversed(seq)]
+            adj = [_adjoint_eager(s, update_queue=True) for s in reversed(seq)]
             return adj[1:] + adj[:1]
 
         return self.decompose_fn(op)
 
 
-# pylint: disable=unused-argument
-def _clifford_t_plxpr_transform(jaxpr, consts, targs, tkwargs, *args):
-    raise NotImplementedError(
-        "The clifford_t_decomposition is incompatible with program capture. "
-        "Please use qp.decompose and qp.transforms.gridsynth instead."
-    )
-
-
 # pylint: disable=too-many-branches,too-many-statements
-@partial(transform, plxpr_transform=_clifford_t_plxpr_transform)
+@transform
 def clifford_t_decomposition(
     tape: QuantumScript,
     epsilon=1e-4,
@@ -629,7 +624,7 @@ def clifford_t_decomposition(
                 decomp_ops.append(op)
 
         # check if phase is non-zero for non jax-jit cases
-        if qp.math.is_abstract(phase) or not qp.math.allclose(phase, 0.0):
+        if qp.math.is_tracer(phase) or not qp.math.allclose(phase, 0.0):
             decomp_ops.append(qp.GlobalPhase(phase))
 
     # Construct a new tape with the expanded set of operations

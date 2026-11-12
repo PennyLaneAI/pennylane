@@ -19,12 +19,12 @@ from collections.abc import Callable, Sequence
 from types import FunctionType
 
 from pennylane import templates
+from pennylane.core.operator import Operation, Operator
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch, make_qscript
 from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math import Adjoint
-from pennylane.tape import QuantumScript, QuantumScriptBatch, make_qscript
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -39,17 +39,17 @@ def _check_position(position):
         req_ops = position.copy()
         for operation in req_ops:
             try:
-                if Operation not in operation.__bases__:
+                if not (isinstance(operation, type) and issubclass(operation, Operator)):
                     not_op = True
-            except AttributeError:
+            except AttributeError:  # pragma: no cover
                 not_op = True
     elif not isinstance(position, list):
         try:
-            if Operation in position.__bases__:
+            if isinstance(position, type) and issubclass(position, Operator):
                 req_ops = [position]
             else:
                 not_op = True
-        except AttributeError:
+        except AttributeError:  # pragma: no cover
             not_op = True
     return not_op, req_ops
 
@@ -79,7 +79,7 @@ def insert(
             acting on a single qubit, to be inserted into the circuit
         op_args (tuple or float): the arguments fed to the operation, either as a tuple or a single
             float
-        position (str or PennyLane operation or list of operations): Specification of where to add the operation.
+        position (str or PennyLane operator or list of operators): Specification of where to add the operation.
             Should be one of: ``"all"`` to add the operation after all gates (except state preparations);
             ``"start"`` to add the operation to all wires at the start of the circuit (but after state preparations);
             ``"end"`` to add the operation to all wires at the end of the circuit;
@@ -218,9 +218,9 @@ def insert(
     # decompose templates and their adjoints to fix a bug in the tutorial_error_mitigation demo
     def stop_at(obj):
         if not isinstance(obj, Operator):
-            return True
+            return True  # pragma: no cover
         if not obj.has_decomposition:
-            return True
+            return True  # pragma: no cover
         return not (hasattr(templates, obj.name) or isinstance(obj, Adjoint))
 
     [tape], _ = decompose(

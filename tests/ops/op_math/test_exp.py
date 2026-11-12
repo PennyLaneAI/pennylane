@@ -25,6 +25,7 @@ from pennylane.exceptions import (
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
 )
+from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math import Evolution, Exp
 
 
@@ -108,7 +109,7 @@ class TestProperties:
     """Test of the properties of the Exp class."""
 
     def test_data(self):
-        """Test intializaing and accessing the data property."""
+        """Test that Exp data is read-only."""
 
         phi = np.array(1.234)
         coeff = np.array(2.345)
@@ -118,13 +119,8 @@ class TestProperties:
 
         assert op.data == (coeff, phi)
 
-        new_phi = np.array(0.1234)
-        new_coeff = np.array(3.456)
-        op.data = (new_coeff, new_phi)
-
-        assert op.data == (new_coeff, new_phi)
-        assert op.base.data == (new_phi,)
-        assert op.scalar == new_coeff
+        with pytest.raises(AttributeError, match="property 'data' of 'Exp' object has no setter"):
+            setattr(op, "data", (np.array(3.456), np.array(0.1234)))
 
     def test_is_verified_hermitian(self):
         """Test that the op is hermitian if the base is hermitian and the coeff is real."""
@@ -162,7 +158,7 @@ class TestProperties:
             _ = op.batch_size
 
 
-class TestMatrix:
+class TestMatrix:  # pylint: disable=too-many-public-methods
     """Test the matrix method."""
 
     def test_base_batching_support(self):
@@ -220,20 +216,6 @@ class TestMatrix:
         assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
         assert isinstance(mat, torch.Tensor)
-
-    @pytest.mark.tf
-    def test_batching_tf(self):
-        """Test that Exp matrix has batching support with the tensorflow interface."""
-        import tensorflow as tf
-
-        x = tf.constant([-1.0, -2.0, -3.0])
-        y = tf.constant([1.0, 2.0, 3.0])
-        op = Exp(qp.RX(x, 0), y)
-        mat = op.matrix()
-        true_mat = qp.math.stack([Exp(qp.RX(i, 0), j).matrix() for i, j in zip(x, y)])
-        assert qp.math.allclose(mat, true_mat)
-        assert mat.shape == (3, 2, 2)
-        assert isinstance(mat, tf.Tensor)
 
     def test_tensor_base_isingxx(self):
         """Test that isingxx can be created with a tensor base."""
@@ -298,12 +280,72 @@ class TestMatrix:
         expected = qp.math.expm(coeff * base.matrix())
         assert qp.math.allclose(mat, expected)
 
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("requires_grad", (True, False))
+    def test_matrix_autograd_composite_base(self, requires_grad):
+        """Test the autograd matrix for a composite (Sum) base with scalar
+        coefficients. The autograd branch reconstructs the matrix from the base
+        eigendecomposition; diagonalizing a Sum constructs intermediate operators
+        that must not pollute the diagonalizing matrix (see issue #6514)."""
+        phi = np.array(0.123, requires_grad=requires_grad)
+        base = 0.5 * qp.X(0) + 0.7 * qp.Z(0)
+        op = Exp(base, -1j * phi)
+        # op.matrix() triggers the autograd eigendecomposition → diagonalizing_gates() path
+        expected = qp.math.expm(-1j * phi * qp.matrix(base, wire_order=[0]))
+        assert qp.math.allclose(op.matrix(), expected)
+
+    @pytest.mark.autograd
+    def test_matrix_autograd_composite_base_in_recording(self):
+        """The autograd matrix for a composite base must be correct even when
+        computed inside an active recording context, which previously caused the
+        intermediate diagonalization operators to be queued and corrupt the
+        result (silently, without raising)."""
+        phi = np.array(0.123, requires_grad=True)
+        base = 0.5 * qp.X(0) + 0.7 * qp.Z(0)
+        expected = qp.math.expm(-1j * phi * qp.matrix(base, wire_order=[0]))
+
+        with qp.queuing.AnnotatedQueue() as q:
+            mat = Exp(base, -1j * phi).matrix()
+
+        assert qp.math.allclose(mat, expected)
+        # Only the Exp op itself is queued; the intermediate Sum/QubitUnitary operators
+        # created during diagonalization must not appear.
+        assert len(q.queue) == 1
+        assert isinstance(q.queue[0], Exp)
+
+    @pytest.mark.autograd
+    def test_matrix_autograd_composite_diagonal_base(self):
+        """A composite base that is already diagonal has empty diagonalizing gates,
+        so the autograd matrix takes the eigenvalue-only branch. It must still match
+        `expm` (guards the `len(diagonalizing_gates) == 0` branch for composites)."""
+        phi = np.array(0.37, requires_grad=True)
+        base = 1.0 * qp.Z(0) + 0.5 * qp.Z(1)
+        assert len(base.diagonalizing_gates()) == 0
+
+        op = Exp(base, -1j * phi)
+        expected = qp.math.expm(-1j * phi * qp.matrix(base, wire_order=[0, 1]))
+        assert qp.math.allclose(op.matrix(), expected)
+
+    @pytest.mark.autograd
+    def test_matrix_autograd_composite_base_batched(self):
+        """A broadcasted (batched) trainable scalar with a composite base must take
+        the `math.ndim(scalar) > 0` branch and match the stacked `expm`."""
+        coeffs = np.array([-0.1j, -0.2j, -0.33j], requires_grad=True)
+        base = 0.5 * qp.X(0) + 0.7 * qp.Z(0)
+
+        mat = Exp(base, coeffs).matrix()
+        expected = qp.math.stack(
+            [qp.math.expm(c * qp.matrix(base, wire_order=[0])) for c in coeffs]
+        )
+        assert qp.math.shape(mat) == (3, 2, 2)
+        assert qp.math.allclose(mat, expected)
+
     @pytest.mark.torch
     def test_torch_matrix_rx(self):
         """Test the matrix with torch."""
         import torch
 
-        phi = torch.tensor(0.4, dtype=torch.complex128)
+        phi = torch.tensor(0.4, dtype=torch.float64)
 
         base = qp.PauliX(0)
         op = Exp(base, -0.5j * phi)
@@ -311,19 +353,8 @@ class TestMatrix:
 
         assert qp.math.allclose(op.matrix(), compare.matrix())
 
-    @pytest.mark.tf
-    def test_tf_matrix_rx(self):
-        """Test the matrix with tensorflow."""
-
-        import tensorflow as tf
-
-        phi = tf.Variable(0.4, dtype=tf.complex128)
-        base = qp.PauliX(0)
-        op = Exp(base, -0.5j * phi)
-        compare = qp.RX(phi, wires=0)
-        assert qp.math.allclose(op.matrix(), compare.matrix())
-
     @pytest.mark.jax
+    @pytest.mark.xfail(reason="differentiating complex values through RX not supported.")
     def test_jax_matrix_rx(self):
         """Test the matrix with jax."""
         import jax
@@ -466,9 +497,17 @@ class TestDecomposition:
                 "`PCPhase` decompositions not currently possible due to different signature."
             )
 
+        if op_class is qp.GlobalPhase:
+            pytest.skip(
+                "'GlobalPhase' does not act on any wires. Wire based decompositions therefore do not make sense."
+            )
+
         phi = 1.23
 
-        wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+        try:
+            wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+        except TypeError:
+            wires = [0, 1, 2]
         if str_wires:
             alphabet = ("a", "b", "c", "d", "e", "f", "g")
             wires = [alphabet[w] for w in wires]
@@ -490,13 +529,12 @@ class TestDecomposition:
                 and qp.math.isclose(dec[0].data[0], phi)
                 and dec[0].wires == op.wires
             )
-        elif op_class is qp.GlobalPhase:
-            # exp(qp.GlobalPhase.generator(), phi) decomposes to PauliRot
-            # cannot compare GlobalPhase and PauliRot with qp.equal
-            assert np.allclose(op.matrix(wire_order=op.wires), dec[0].matrix(wire_order=op.wires))
         elif op_class is qp.FermionicSWAP:
             expected = op.map_wires(dict(zip(op.wires, reversed(op.wires))))
             # simplifying the generator changes the wire order
+            qp.assert_equal(expected, dec[0])
+        elif op_class is qp.MultiRZ:
+            expected = qp.PauliRot(phi, "Z" * len(wires), wires=wires)
             qp.assert_equal(expected, dec[0])
         else:
             qp.assert_equal(op, dec[0])
@@ -523,7 +561,8 @@ class TestDecomposition:
         op = qp.exp(hamiltonian, coeff)
         tape = qp.tape.QuantumScript([op])
 
-        [decomp_tape], _ = qp.transforms.decompose(tape, gate_set={"PauliRot"})
+        # pylint: disable-next=protected-access
+        [decomp_tape], _ = qp.transforms._tape_decompose(tape, gate_set={"PauliRot"})
         assert len(decomp_tape) == 1
         assert not qp.math.iscomplex(decomp_tape[0].data[0])
         actual_matrix = qp.matrix(decomp_tape, wire_order=op.wires)
@@ -673,7 +712,6 @@ class TestIntegration:
         assert qp.math.allclose(grad, -jnp.sin(phi))
 
     @pytest.mark.catalyst
-    @pytest.mark.external
     def test_catalyst_qnode(self):
         """Test with Catalyst interface"""
 
@@ -681,7 +719,7 @@ class TestIntegration:
 
         phi = 0.345
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.qnode(qp.device("lightning.qubit", wires=1))
         def func(params):
             qp.exp(qp.X(0), -0.5j * params)
@@ -714,30 +752,6 @@ class TestIntegration:
         assert qp.math.allclose(res, jnp.cos(phi))
         grad = jax.grad(func)(phi)
         assert qp.math.allclose(grad, -jnp.sin(phi))
-
-    @pytest.mark.tf
-    def test_tensorflow_qnode(self):
-        """test the execution of a tensorflow qnode."""
-        import tensorflow as tf
-
-        phi = tf.Variable(1.2, dtype=tf.complex128)
-
-        dev = qp.device("default.qubit", wires=1)
-
-        @qp.qnode(dev)
-        def circ(phi):
-            Exp(qp.PauliX(0), -0.5j * phi)
-            return qp.expval(qp.PauliZ(0))
-
-        with tf.GradientTape() as tape:
-            res = circ(phi)
-
-        phi_grad = tape.gradient(res, phi)
-        phi_real = qp.math.cast(phi, tf.float64)
-
-        assert qp.math.allclose(res, tf.cos(phi_real))
-        # pylint: disable=invalid-unary-operand-type
-        assert qp.math.allclose(phi_grad, -tf.sin(phi))
 
     @pytest.mark.torch
     def test_torch_qnode(self):
@@ -859,29 +873,6 @@ class TestIntegration:
         expected_grad = 0.5 * (jnp.exp(x) - jnp.exp(-x))
         assert qp.math.allclose(grad, expected_grad)
 
-    @pytest.mark.tf
-    def test_tf_measurement(self):
-        """Test Exp in a measurement with gradient and tensorflow."""
-        # pylint:disable=invalid-unary-operand-type
-        import tensorflow as tf
-
-        x = tf.Variable(2.0, dtype=tf.float64)
-
-        @qp.qnode(qp.device("default.qubit", wires=1))
-        def circuit(x):
-            qp.Hadamard(0)
-            return qp.expval(Exp(qp.PauliZ(0), x))
-
-        with tf.GradientTape() as tape:
-            res = circuit(x)
-
-        expected = 0.5 * (tf.exp(x) + tf.exp(-x))
-        assert qp.math.allclose(res, expected)
-
-        x_grad = tape.gradient(res, x)
-        expected_grad = 0.5 * (tf.exp(x) - tf.exp(-x))
-        assert qp.math.allclose(x_grad, expected_grad)
-
     def test_draw_integration(self):
         """Test that Exp integrates with drawing."""
 
@@ -892,7 +883,7 @@ class TestIntegration:
 
         tape = qp.tape.QuantumScript.from_queue(q)
 
-        assert qp.drawer.tape_text(tape) == "0: ──Exp(-0.6j X)─┤  "
+        assert qp.drawer.tape_text(tape) == "0: ──Exp(-0.6j X)─┤"
 
     def test_exp_batching(self):
         """Test execution of a batched Exp operator."""
@@ -954,7 +945,7 @@ class TestDifferentiation:
     def test_parameter_frequencies(self):
         """Test parameter_frequencies property"""
         op = Exp(qp.PauliZ(1), 1j)
-        assert op.parameter_frequencies == [(2,)]
+        assert parameter_frequencies(op) == [(2,)]
 
     def test_parameter_frequencies_raises_error(self):
         """Test that parameter_frequencies raises an error if the op.generator() is undefined"""
@@ -962,7 +953,7 @@ class TestDifferentiation:
         with pytest.raises(GeneratorUndefinedError):
             _ = op.generator()
         with pytest.raises(ParameterFrequenciesUndefinedError):
-            _ = op.parameter_frequencies
+            _ = parameter_frequencies(op)
 
     def test_parameter_frequency_with_parameters_in_base_operator(self):
         """Test that parameter_frequency raises an error for the Exp class, but not the
@@ -973,9 +964,9 @@ class TestDifferentiation:
         op2 = Evolution(base_op, 1)
 
         with pytest.raises(ParameterFrequenciesUndefinedError):
-            _ = op1.parameter_frequencies
+            _ = parameter_frequencies(op1)
 
-        assert op2.parameter_frequencies == [(4.0,)]
+        assert parameter_frequencies(op2) == [(4.0,)]
 
     def test_params_can_be_considered_trainable(self):
         """Tests that the parameters of an Exp are considered trainable."""

@@ -28,9 +28,10 @@ import numpy as np
 from scipy.stats import multinomial
 
 import pennylane as qp
-from pennylane.measurements import ExpectationMP, MeasurementProcess, StateMP
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.measurements import ExpectationMP, StateMP
 from pennylane.ops import Prod, SProd, Sum
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
@@ -884,8 +885,8 @@ def _sum_terms(
     """Sum results from measurements of multiple terms in a multi-term observable."""
     if (
         coeffs
-        and not qp.math.is_abstract(coeffs[0])
-        and not qp.math.is_abstract(offset)
+        and not qp.math.is_tracer(coeffs[0])
+        and not qp.math.is_tracer(offset)
         and coeffs == [1]
         and offset == 0
     ):

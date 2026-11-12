@@ -15,6 +15,9 @@
 Unit tests for the iterative_qpe function
 """
 
+from functools import partial
+
+import jax
 import numpy as np
 import pytest
 
@@ -58,8 +61,6 @@ class TestIQPE:
     @pytest.mark.jax
     def test_check_gradients_jax(self):
         """Test to check that the gradients are correct comparing with the expanded circuit using JAX"""
-
-        import jax
 
         dev = qp.device("default.qubit")
 
@@ -118,47 +119,6 @@ class TestIQPE:
 
         phi = torch.tensor(1.0, requires_grad=True)
         assert torch.isclose(torch.func.grad(circuit)(phi), torch.func.grad(manual_circuit)(phi))
-
-    @pytest.mark.tf
-    def test_check_gradients_tf(self):
-        """Test to check that the gradients are correct comparing with the expanded circuit using TensorFlow"""
-
-        import tensorflow as tf
-
-        def grad(f):
-            def wrapper(x):
-                with tf.GradientTape() as tape:
-                    y = f(x)
-
-                return tape.gradient(y, x)
-
-            return wrapper
-
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev)
-        def circuit(theta):
-            meas = qp.iterative_qpe(qp.RZ(theta, wires=[0]), [1], iters=2)
-            return qp.expval(meas[0])
-
-        @qp.qnode(dev)
-        def manual_circuit(phi):
-            qp.Hadamard(wires=[1])
-            qp.ctrl(qp.RZ(phi, wires=[0]) ** 2, control=[1])
-            qp.Hadamard(wires=[1])
-            qp.CNOT(wires=[1, 2])
-            qp.CNOT(wires=[2, 1])
-            qp.Hadamard(wires=[1])
-            qp.ctrl(qp.RZ(phi, wires=[0]), control=[1])
-            qp.ctrl(qp.PhaseShift(-np.pi / 2, wires=[1]), control=[2])
-            qp.Hadamard(wires=[1])
-            qp.CNOT(wires=[1, 3])
-            qp.CNOT(wires=[3, 1])
-
-            return qp.expval(qp.Hermitian([[0, 0], [0, 1]], wires=3))
-
-        phi = tf.Variable(1.0)
-        assert np.isclose(grad(circuit)(phi), grad(manual_circuit)(phi))
 
     @pytest.mark.parametrize("iters", (1, 2, 3, 4))
     def test_size_return(self, iters):
@@ -241,47 +201,116 @@ class TestIQPE:
         assert np.allclose(circuit_qpe(), circuit_iterative())
 
 
-@pytest.mark.slow
 @pytest.mark.capture
-def test_capture_execution(seed):
-    """Test that iterative qpe can be captured and executed.
+class TestCaptureIQPE:
+    """Tests the capture of the function as a subroutine in jaxpr."""
 
-    While this is a rather bad test:
-    * the captured jaxpr has too many classical instructions for
-    easy verification of its contents
-    * The captured jaxpr cannot be used with CollectOpsandMeas as it converts mcm integers to
-    measurement values, which are incompatible with the scatter operation used in
-    `measurements = measurements.at[iters - i - 1].set(m)`
-    * Evaluating jaxpr currently uses single-branch-statistics, which gives incorrect results for a
-    a single execution.
+    def test_capture_as_single_subroutine_eqn(self, recwarn):
+        """Test that the rounds are captured into one subroutine."""
 
+        def circuit(phi, iters):
+            return qp.iterative_qpe(qp.RZ(phi, wires=[0]), aux_wire=1, iters=iters)
 
-    """
-    import jax
+        for iters in (3, 6):
+            fixed_circuit = partial(circuit, iters=iters)
+            cjaxpr = jax.make_jaxpr(fixed_circuit)(2)
 
-    def f(x):
-        qp.X(0)
-        return qp.iterative_qpe(qp.RZ(x, wires=[0]), aux_wire=1, iters=3)
+            assert len(cjaxpr.eqns) == 1
+            assert cjaxpr.eqns[0].primitive == qp.capture.primitives.quantum_subroutine_prim
+            assert len(cjaxpr.jaxpr.outvars) == iters
 
-    x = jax.numpy.array(2.0)
+        assert not [w for w in recwarn if issubclass(w.category, qp.exceptions.CaptureWarning)]
 
-    jaxpr = jax.make_jaxpr(f)(1.5)
+    @pytest.mark.parametrize("iters", (2, 3, 4))
+    def test_subroutine_body_matches_uncaptured(self, iters):
+        """Test that the captured body matches the legacy tape implementation."""
 
-    dev = qp.device("default.qubit", wires=5, seed=seed)
+        # CAPTURE
+        jaxpr = jax.make_jaxpr(
+            lambda phi: qp.iterative_qpe(qp.RZ(phi, wires=[0]), aux_wire=1, iters=iters)
+        )(2.0)
+        cjaxpr = jaxpr.eqns[0].params["jaxpr"]
+        captured = qp.testing.plxpr_to_tape(cjaxpr.jaxpr, cjaxpr.consts, 2.0, 0, 1)
 
-    # hack for single-branch statistics
-    samples = qp.math.vstack([dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x) for _ in range(5000)])
-    probs_capture = qp.probs(wires=(0, 1, 2)).process_samples(
-        samples, wire_order=qp.wires.Wires((0, 1, 2))
-    )
+        # LEGACY TAPE
+        qp.capture.disable()
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.iterative_qpe(qp.RZ(2.0, wires=[0]), aux_wire=1, iters=iters)
+        expected = qp.tape.QuantumScript.from_queue(q)
+        qp.capture.enable()
 
-    qp.capture.disable()
+        assert [type(op) for op in captured.operations] == [type(op) for op in expected.operations]
 
-    @qp.qnode(dev)
-    def normal_qnode(x):
-        meas = f(x)
-        return qp.probs(op=meas)
+    def test_subroutine_is_shared_if_different_dyn_args(self):
+        """Test that two calls share one subroutine body."""
 
-    probs_normal = normal_qnode(x)
+        def circuit(phi):
+            qp.iterative_qpe(qp.RZ(phi, wires=[0]), aux_wire=1, iters=3)
+            qp.iterative_qpe(qp.RZ(phi, wires=[2]), aux_wire=3, iters=3)
 
-    assert qp.math.allclose(probs_capture, probs_normal, atol=0.02)
+        eqns = jax.make_jaxpr(circuit)(2.0).eqns
+
+        assert len(eqns) == 2
+        # Shared impl
+        assert eqns[0].params["jaxpr"] is eqns[1].params["jaxpr"]
+
+    def test_subroutine_is_not_shared_if_different_static_args(self):
+        """Test that two calls with diff iters do not share one subroutine body."""
+
+        def circuit(phi):
+            qp.iterative_qpe(qp.RZ(phi, wires=[0]), aux_wire=3, iters=1)
+            qp.iterative_qpe(qp.RZ(phi, wires=[2]), aux_wire=3, iters=3)
+
+        eqns = jax.make_jaxpr(circuit)(2.0).eqns
+
+        assert len(eqns) == 2
+        # Shared impl
+        assert eqns[0].params["jaxpr"] is not eqns[1].params["jaxpr"]
+
+    @pytest.mark.parametrize("aux_wire", (1, [1], qp.wires.Wires([1])))
+    def test_different_aux_wire_containers(self, aux_wire):
+        """Test different wire inputs can be used."""
+
+        jaxpr = jax.make_jaxpr(
+            lambda phi: qp.iterative_qpe(qp.RZ(phi, wires=[0]), aux_wire=aux_wire, iters=3)
+        )(2.0)
+
+        assert len(jaxpr.eqns) == 1
+        assert jaxpr.eqns[0].primitive == qp.capture.primitives.quantum_subroutine_prim
+
+    def test_legacy_op_can_be_used_as_base(self):
+        """Ensure a legacy operator still works fine under capture."""
+
+        class DummyOp(qp.core.Operator):  # pylint: disable=too-few-public-methods
+            pass
+
+        def circuit(phi):
+            return qp.iterative_qpe(DummyOp(phi, 0), 1, 3)
+
+        cjaxpr = jax.make_jaxpr(circuit)(0.5)
+
+        assert cjaxpr.eqns[-1].primitive == qp.capture.primitives.quantum_subroutine_prim
+        # op is captured as data into subroutine
+        assert cjaxpr.eqns[-2].outvars[0] in cjaxpr.eqns[-1].invars
+
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize("num_iters", (3, 6))
+    def test_qjit_integration(self, num_iters):
+        """Test that this subroutine can be used with QJIT."""
+
+        @qp.qjit(capture=True, target="mlir", collect_decomp_rules=False)
+        @qp.set_shots(10)
+        @qp.qnode(qp.device("null.qubit", wires=2))
+        def c():
+            return qp.sample(qp.iterative_qpe(qp.RX(0.5, 0), 1, num_iters))
+
+        specs = qp.specs(c, level="top")()
+        # NOTE: PauliX comes from the aux_wire reset
+        expected_operations = {
+            "C(Pow2)": num_iters,
+            "Hadamard": 2 * num_iters,
+            "MidCircuitMeasure": num_iters,
+            "PhaseShift": num_iters * (num_iters - 1) // 2,
+            "PauliX": num_iters,
+        }
+        assert specs.resources.quantum_operations == expected_operations

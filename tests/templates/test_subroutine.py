@@ -14,6 +14,7 @@
 """Tests for Subroutine and SubroutineOp"""
 
 # pylint: disable=unused-argument
+
 import inspect
 from collections import Counter, defaultdict
 from functools import partial
@@ -22,15 +23,17 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition import resource_rep
-from pennylane.ops import CNOT, Adjoint, PauliX, PauliZ
-from pennylane.templates import AbstractArray, Subroutine, SubroutineOp, subroutine_resource_rep
+from pennylane.core.operator import abstractify
+from pennylane.ops import CNOT, Adjoint, PauliX
+from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.templates import Subroutine, SubroutineOp, subroutine_resource_rep
 from pennylane.templates.core import (
     CollectedSubroutine,
     _make_signature_key,
     adjoint_subroutine_resource_rep,
     change_op_basis_subroutine_resource_rep,
 )
+from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 
 
 class TestInitialization:
@@ -63,7 +66,7 @@ class TestInitialization:
 
         resources = S.compute_resources(0.5, wires=0)
         expected = defaultdict(int)
-        expected[qp.resource_rep(qp.RX)] = 1
+        expected[abstractify(qp.RX)] = 1
         assert resources == expected
 
     def test_wire_argnames(self):
@@ -164,7 +167,8 @@ def Example1SetupInputs(x, y, reg1, reg2, pauli_words):
 
 def Example1Resources(x, y, reg1, reg2, pauli_words):
     return {
-        qp.resource_rep(qp.PauliRot, pauli_word=pw): num for pw, num in Counter(pauli_words).items()
+        qp.PauliRot(Float, pauli_word=pw, wires=Wire[len(pw)]): num
+        for pw, num in Counter(pauli_words).items()
     }
 
 
@@ -204,28 +208,18 @@ def test_fallback_creating_resources_AbstractArray():
 
     @partial(Subroutine, static_argnames="rotation")
     def f(params, wires, rotation):
-        for (
-            p,
-            w,
-        ) in zip(params["a"], wires):
+        for p, w in zip(params["a"], wires, strict=True):
             qp.PauliRot(p, rotation, w)
         qp.MultiControlledX(wires)
 
     p = AbstractArray((3,), float)
-    w = AbstractArray((3,))
+    w = AbstractWires(3)
 
     resources = f.compute_resources({"a": p}, w, "Z")
-    expected = defaultdict(int)
-    expected[qp.resource_rep(qp.PauliRot, pauli_word="Z")] = 3
-
-    r = qp.resource_rep(
-        qp.MultiControlledX,
-        num_control_wires=2,
-        num_zero_control_values=0,
-        num_work_wires=0,
-        work_wire_type="borrowed",
-    )
-    expected[r] = 1
+    expected = {
+        qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 3,
+        abstractify(qp.MultiControlledX(Wire[3], work_wires=Wire[0])): 1,
+    }
     assert resources == expected
 
 
@@ -239,7 +233,7 @@ def test_fallback_resources_error():
     with pytest.raises(
         ValueError, match="Fallback for computing resources for <Subroutine: f> failed."
     ):
-        f.compute_resources(qp.templates.AbstractArray((2,)))
+        f.compute_resources(AbstractArray((2,), dtype=int))
 
 
 class TestSubroutineOp:
@@ -260,16 +254,18 @@ class TestSubroutineOp:
         # pylint: disable=isinstance-second-argument-not-valid-type
         assert isinstance(self.op1, Example1Subroutine)
 
+    # SubroutineOp exists for the tape pipeline only. It does not need to be capture compatible.
+    @pytest.mark.usefixtures("disable_capture")
     def test_basic_validity(self):
         """Test that subroutine op passes basic validity checks."""
-        qp.ops.functions.assert_valid(self.op1, skip_pickle=True)
+        qp.testing.assert_valid(self.op1, skip_pickle=True)
 
     def test_repr(self):
         """Test that SubroutineOp has a clean repr."""
 
         assert (
             repr(self.op1)
-            == "<Example1(x=0.5, y=0.6, reg1=Wires([0, 'a']), reg2=Wires(['a', 1]), pauli_words=('XY', 'YZ'))>"
+            == "<Example1(x=0.5, y=0.6, reg1=[0, 'a'], reg2=['a', 1], pauli_words=('XY', 'YZ'))>"
         )
 
     def test_set_wires(self):
@@ -320,7 +316,8 @@ class TestSubroutineOp:
 
         tape = qp.tape.QuantumScript([self.op1])
 
-        [new_tape], _ = qp.transforms.decompose(tape, gate_set={qp.PauliRot})
+        # pylint: disable-next=protected-access
+        [new_tape], _ = qp.transforms._tape_decompose(tape, gate_set={qp.PauliRot})
 
         qp.assert_equal(new_tape[0], qp.PauliRot(0.5, "XY", (0, "a")))
         qp.assert_equal(new_tape[1], qp.PauliRot(0.6, "YZ", ("a", 1)))
@@ -402,8 +399,9 @@ class TestSubroutineCapture:
         assert jaxpr.eqns[-1].primitive == qp.capture.primitives.quantum_subroutine_prim
         inner_jaxpr = jaxpr.eqns[-1].params["jaxpr"]
         # pylint: disable=protected-access
-        assert inner_jaxpr.eqns[-1].primitive == qp.PauliRot._primitive
-        assert inner_jaxpr.eqns[-1].params["pauli_word"] == "X"
+        assert inner_jaxpr.eqns[-1].primitive == qp.capture.primitives.operator_p
+        assert inner_jaxpr.eqns[-1].params["op_cls"] is qp.PauliRot
+        assert inner_jaxpr.eqns[-1].params["pauli_word"][0] == ("X",)
 
     def test_different_forms_of_wires(self):
         """Test that wires can be provided as literal integers, traced integers, lists, tuple, and arrays."""
@@ -525,7 +523,7 @@ class TestSubroutineCapture:
 
 
 @pytest.mark.capture
-class TestCollectedSubroutine:
+class TestCollectedSubroutine:  # pylint: disable=too-few-public-methods
 
     def test_no_abstract_capturing(self):
         """Test that CollectedSubroutine can't occur during an abstract evaluation."""
@@ -537,24 +535,6 @@ class TestCollectedSubroutine:
 
         with pytest.raises(NotImplementedError, match="should never be hit"):
             jax.make_jaxpr(f)()
-
-    def test_adjoint_of_subroutine_impl(self):
-        """Test that if the adjoint of a subroutine is called without make_jaxpr and capture is enabled,
-        we get the adjoint of a CollectedSubroutine."""
-
-        @Subroutine
-        def f(wires):
-            qp.X(wires)
-
-        with qp.queuing.AnnotatedQueue() as q:
-            qp.adjoint(f)(0)
-
-        [adj_op] = q.queue
-        assert isinstance(adj_op, qp.ops.Adjoint)
-        base = adj_op.base
-        assert isinstance(base, CollectedSubroutine)
-        assert base.name == "f"
-        qp.assert_equal(base.decomposition()[0], qp.X(0))
 
 
 @pytest.mark.integration
@@ -633,62 +613,9 @@ class TestTapePLIntegration:
         out2 = qp.draw(c, decimals=None)(0.5, 1.2)
         assert out2 == "0: ─╭Tester─┤  <Z>\n1: ─╰Tester─┤  <Z>"
 
-    def test_specs(self):
-        """Test that subroutines show up as gate types in specs."""
-
-        @qp.templates.Subroutine
-        def Tester(x, y, wires):
-            qp.RX(x, wires[0])
-            qp.RY(y, wires[1])
-
-        @qp.qnode(qp.device("reference.qubit", wires=2))
-        def c(x, y):
-            Tester(x, y, wires=(0, 1))
-            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
-
-        specs = qp.specs(c, level="top")(0.5, 1.2)
-        assert specs.resources.gate_types["Tester"] == 1
-
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestGraphDecomposition:
-
-    def test_creating_abstract_array(self):
-        """Test basic checks for creating an AbstractArray."""
-
-        a = qp.templates.AbstractArray((2, 2, 3), np.float64)
-        assert a.shape == (2, 2, 3)
-        assert a.dtype is np.dtype(np.float64)
-
-        b = qp.templates.AbstractArray(())
-        assert b.shape == ()
-        assert b.dtype is np.dtype(np.int64)
-
-        assert a != b
-        assert hash(a)
-        assert b == qp.templates.AbstractArray(())
-
-    @pytest.mark.torch
-    def test_torch_dtype_converted_to_numpy(self):
-        """Test that torch data types are converted to numpy data types."""
-
-        import torch
-
-        x = torch.tensor(0.5, dtype=torch.float64)
-        a = qp.templates.AbstractArray((), x.dtype)
-        assert a.dtype is np.dtype(np.float64)
-
-    def test_inbuilt_type_promotion_to_numpy(self):
-        """Test that python types are converted to numpy types."""
-        assert AbstractArray((), int).dtype is np.dtype(np.int64)
-        assert AbstractArray((), float).dtype is np.dtype(np.float64)
-        assert AbstractArray((), complex).dtype is np.dtype(np.complex128)
-
-    def test_abstract_array_len(self):
-        """Test that AbstractArray's have a length."""
-
-        a = qp.templates.AbstractArray((2, 3, 3))
-        assert len(a) == 18
 
     def test_resource_keys(self):
         """Test that the SubroutineOp resource keys are subroutine and signature key."""
@@ -709,15 +636,15 @@ class TestGraphDecomposition:
         key = (
             (struct, (AbstractArray((), float),)),
             (struct, (AbstractArray((), float),)),
-            AbstractArray((2,)),
-            AbstractArray((2,)),
+            AbstractWires(2),
+            AbstractWires(2),
             ("XY", "YZ"),
         )
         assert rp["signature_key"] == key
 
     # pylint: disable=too-many-statements
     def test_change_op_basis_subroutine_resource_rep_with_a_subroutine(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
+        """Test creating a ChangeOpBasis resource representation with a subroutine."""
 
         # use a non-standard order
         @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
@@ -726,15 +653,14 @@ class TestGraphDecomposition:
 
         x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
-            partial(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))),
-            resource_rep(qp.PauliX),
+            partial(f, "X", AbstractArray((), dtype=int), x=x, reg2=AbstractArray((2,), dtype=int)),
+            abstractify(qp.PauliX),
         )
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["target_op"].name == "PauliX"
-        assert rr.params["target_op"].op_type == PauliX
+        assert isinstance(rr.params["target_op"], PauliX)
+        assert rr.params["target_op"].is_fully_abstract
 
         assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["compute_op"].name == "SubroutineOp"
@@ -742,7 +668,11 @@ class TestGraphDecomposition:
         assert rr.params["compute_op"].params == {
             "subroutine": f,
             "signature_key": _make_signature_key(
-                f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+                f,
+                "X",
+                AbstractArray((), dtype=int),
+                x=x,
+                reg2=AbstractArray((2,), dtype=int),
             ),
         }
 
@@ -754,35 +684,30 @@ class TestGraphDecomposition:
             "base_params": {
                 "subroutine": f,
                 "signature_key": _make_signature_key(
-                    f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+                    f,
+                    "X",
+                    AbstractArray((), dtype=int),
+                    x=x,
+                    reg2=AbstractArray((2,), dtype=int),
                 ),
             },
         }
 
     def test_change_op_basis_subroutine_resource_rep_with_an_op_and_a_resource_rep(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis with an op and a nested resource_rep."""
+        """Test creating a ChangeOpBasis resource representation with operators."""
 
-        rr = change_op_basis_subroutine_resource_rep(
-            qp.PauliZ(0),
-            resource_rep(qp.PauliX),
-        )
-        assert isinstance(rr, qp.decomposition.CompressedResourceOp)
-        assert rr.name == "ChangeOpBasis"
-
-        assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["compute_op"].name == "PauliZ"
-        assert rr.params["compute_op"].op_type == PauliZ
-
-        assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["target_op"].name == "PauliX"
-        assert rr.params["target_op"].op_type == PauliX
-
-        assert isinstance(rr.params["uncompute_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["uncompute_op"].name == "Adjoint(PauliZ)"
-        assert rr.params["uncompute_op"].op_type == Adjoint
+        rr = change_op_basis_subroutine_resource_rep(qp.PauliZ(0), abstractify(qp.PauliX))
+        assert isinstance(rr, qp.ops.ChangeOpBasis2)
+        assert rr.name == "ChangeOpBasis2"
+        assert rr.compute_op == qp.Z(Wire[1])
+        assert rr.compute_op.is_fully_abstract
+        assert rr.target_op == qp.X(Wire[1])
+        assert rr.target_op.is_fully_abstract
+        assert rr.uncompute_op == qp.adjoint(qp.Z(Wire[1]))
+        assert rr.uncompute_op.is_fully_abstract
 
     def test_change_op_basis_subroutine_resource_rep_with_a_resource_rep_and_a_subroutine(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
+        """Test creating a ChangeOpBasis resource representation with a subroutine target."""
 
         @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
         def f(a, reg1, reg2, x):
@@ -790,15 +715,13 @@ class TestGraphDecomposition:
 
         x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
-            resource_rep(qp.PauliX),
-            partial(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))),
+            abstractify(qp.PauliX), partial(f, "X", AbstractWires(0), x=x, reg2=AbstractWires(2))
         )
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["compute_op"].name == "PauliX"
-        assert rr.params["compute_op"].op_type == PauliX
+        assert rr.params["compute_op"] == PauliX(Wire[1])
+        assert rr.params["compute_op"].is_fully_abstract
 
         assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["target_op"].name == "SubroutineOp"
@@ -806,16 +729,20 @@ class TestGraphDecomposition:
         assert rr.params["target_op"].params == {
             "subroutine": f,
             "signature_key": _make_signature_key(
-                f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+                f,
+                "X",
+                AbstractWires(0),
+                x=x,
+                reg2=AbstractWires(2),
             ),
         }
 
-        assert isinstance(rr.params["uncompute_op"], qp.decomposition.CompressedResourceOp)
+        assert isinstance(rr.params["uncompute_op"], Adjoint2)
         assert rr.params["uncompute_op"].name == "Adjoint(PauliX)"
-        assert rr.params["uncompute_op"].op_type == Adjoint
+        assert rr.params["uncompute_op"].is_fully_abstract
 
     def test_change_op_basis_subroutine_resource_rep_with_a_subroutine_uncompute(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine uncompute."""
+        """Test creating a ChangeOpBasis resource representation with a subroutine uncompute."""
 
         @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
         def f(a, reg1, reg2, x):
@@ -825,18 +752,18 @@ class TestGraphDecomposition:
         rr = change_op_basis_subroutine_resource_rep(
             qp.CNOT([0, 1]),
             qp.PauliX(0),
-            subroutine_resource_rep(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))),
+            subroutine_resource_rep(
+                f, "X", AbstractArray((), dtype=int), x=x, reg2=AbstractArray((2,), dtype=int)
+            ),
         )
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["compute_op"].name == "CNOT"
-        assert rr.params["compute_op"].op_type == CNOT
+        assert isinstance(rr.params["compute_op"], CNOT)
+        assert rr.params["compute_op"].is_fully_abstract
 
-        assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["target_op"].name == "PauliX"
-        assert rr.params["target_op"].op_type == PauliX
+        assert isinstance(rr.params["target_op"], PauliX)
+        assert rr.params["target_op"].is_fully_abstract
 
         assert isinstance(rr.params["uncompute_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["uncompute_op"].name == "SubroutineOp"
@@ -844,7 +771,7 @@ class TestGraphDecomposition:
         assert rr.params["uncompute_op"].params == {
             "subroutine": f,
             "signature_key": _make_signature_key(
-                f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+                f, "X", AbstractArray((), dtype=int), x=x, reg2=AbstractArray((2,), dtype=int)
             ),
         }
 
@@ -858,7 +785,7 @@ class TestGraphDecomposition:
 
         x = {"a": AbstractArray((3,), float)}
         rr = adjoint_subroutine_resource_rep(
-            f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,))
+            f, "X", AbstractArray((), dtype=int), x=x, reg2=AbstractArray((2,), dtype=int)
         )
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "Adjoint(SubroutineOp)"
@@ -870,14 +797,14 @@ class TestGraphDecomposition:
         # provided to adjoint_subroutine_resource_rep
         expected_signature_key = (
             "X",
-            AbstractArray(()),
-            AbstractArray((2,)),
+            AbstractArray((), dtype=int),
+            AbstractArray((2,), dtype=int),
             (s, (AbstractArray((3,), float),)),
         )
         assert rr.params["base_params"]["signature_key"] == expected_signature_key
 
         rr_all_positional = adjoint_subroutine_resource_rep(
-            f, "X", AbstractArray(()), AbstractArray((2,)), x
+            f, "X", AbstractArray((), dtype=int), AbstractArray((2,), dtype=int), x
         )
         assert rr_all_positional == rr
         assert hash(rr) == hash(rr_all_positional)
@@ -885,29 +812,33 @@ class TestGraphDecomposition:
         # test against slight changes to make sure they are picked up in the condensed rep
         diff_pytree = {"b": AbstractArray((3,), float)}
         rr_diff_pytree = subroutine_resource_rep(
-            f, "X", AbstractArray(()), reg2=AbstractArray((2,)), x=diff_pytree
+            f,
+            "X",
+            AbstractArray((), dtype=int),
+            reg2=AbstractArray((2,), dtype=int),
+            x=diff_pytree,
         )
         assert rr != rr_diff_pytree
 
         diff_len = {"a": AbstractArray((4,), float)}
         rr_diff_len = adjoint_subroutine_resource_rep(
-            f, "X", AbstractArray(()), reg2=AbstractArray((2,)), x=diff_len
+            f, "X", AbstractArray((), dtype=int), reg2=AbstractArray((2,), dtype=int), x=diff_len
         )
         assert rr != rr_diff_len
 
         diff_dtype = {"a": AbstractArray((3,), np.int32)}
         rr_dtype = adjoint_subroutine_resource_rep(
-            f, "X", AbstractArray(()), reg2=AbstractArray((2,)), x=diff_dtype
+            f, "X", AbstractArray((), dtype=int), reg2=AbstractArray((2,), dtype=int), x=diff_dtype
         )
         assert rr != rr_dtype
 
         diff_num_wires = adjoint_subroutine_resource_rep(
-            f, "X", AbstractArray(()), reg2=AbstractArray((3,)), x=x
+            f, "X", AbstractArray((), dtype=int), reg2=AbstractArray((3,), dtype=int), x=x
         )
         assert diff_num_wires != rr
 
         diff_metadata = adjoint_subroutine_resource_rep(
-            f, "Y", AbstractArray(()), reg2=AbstractArray((2,)), x=x
+            f, "Y", AbstractArray((), dtype=int), reg2=AbstractArray((2,), dtype=int), x=x
         )
         assert rr != diff_metadata
 
@@ -920,7 +851,9 @@ class TestGraphDecomposition:
             pass
 
         x = {"a": AbstractArray((3,), float)}
-        rr = subroutine_resource_rep(f, "X", AbstractArray(()), x=x, reg2=AbstractArray((2,)))
+        rr = subroutine_resource_rep(
+            f, "X", AbstractArray((), dtype=int), x=x, reg2=AbstractArray((2,), dtype=int)
+        )
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "SubroutineOp"
         assert rr.params["subroutine"] == f
@@ -931,14 +864,14 @@ class TestGraphDecomposition:
         # provided to subroutine_resource_rep
         expected_signature_key = (
             "X",
-            AbstractArray(()),
-            AbstractArray((2,)),
+            AbstractArray((), dtype=int),
+            AbstractArray((2,), dtype=int),
             (s, (AbstractArray((3,), float),)),
         )
         assert rr.params["signature_key"] == expected_signature_key
 
         rr_all_positional = subroutine_resource_rep(
-            f, "X", AbstractArray(()), AbstractArray((2,)), x
+            f, "X", AbstractArray((), dtype=int), AbstractArray((2,), dtype=int), x
         )
         assert rr_all_positional == rr
         assert hash(rr) == hash(rr_all_positional)
@@ -946,29 +879,33 @@ class TestGraphDecomposition:
         # test against slight changes to make sure they are picked up in the condensed rep
         diff_pytree = {"b": AbstractArray((3,), float)}
         rr_diff_pytree = subroutine_resource_rep(
-            f, "X", AbstractArray(()), reg2=AbstractArray((2,)), x=diff_pytree
+            f,
+            "X",
+            AbstractArray((), dtype=int),
+            reg2=AbstractArray((2,), dtype=int),
+            x=diff_pytree,
         )
         assert rr != rr_diff_pytree
 
         diff_len = {"a": AbstractArray((4,), float)}
         rr_diff_len = subroutine_resource_rep(
-            f, "X", AbstractArray(()), reg2=AbstractArray((2,)), x=diff_len
+            f, "X", AbstractArray((), dtype=int), reg2=AbstractArray((2,), dtype=int), x=diff_len
         )
         assert rr != rr_diff_len
 
         diff_dtype = {"a": AbstractArray((3,), np.int32)}
         rr_dtype = subroutine_resource_rep(
-            f, "X", AbstractArray(()), reg2=AbstractArray((2,)), x=diff_dtype
+            f, "X", AbstractArray((), dtype=int), reg2=AbstractArray((2,), dtype=int), x=diff_dtype
         )
         assert rr != rr_dtype
 
         diff_num_wires = subroutine_resource_rep(
-            f, "X", AbstractArray(()), reg2=AbstractArray((3,)), x=x
+            f, "X", AbstractArray((), dtype=int), reg2=AbstractArray((3,), dtype=int), x=x
         )
         assert diff_num_wires != rr
 
         diff_metadata = subroutine_resource_rep(
-            f, "Y", AbstractArray(()), reg2=AbstractArray((2,)), x=x
+            f, "Y", AbstractArray((), dtype=int), reg2=AbstractArray((2,), dtype=int), x=x
         )
         assert rr != diff_metadata
 
@@ -979,11 +916,11 @@ class TestGraphDecomposition:
         def f(wires, a="a"):
             pass
 
-        rr = subroutine_resource_rep(f, AbstractArray(()))
-        expected_key = (AbstractArray(()), "a")
+        rr = subroutine_resource_rep(f, AbstractArray((), dtype=int))
+        expected_key = (AbstractArray((), dtype=int), "a")
         assert rr.params["signature_key"] == expected_key
 
-        rr2 = subroutine_resource_rep(f, AbstractArray(()), "a")
+        rr2 = subroutine_resource_rep(f, AbstractArray((), dtype=int), "a")
         assert rr == rr2
 
     def test_pytree_array_input_resource_params(self):
@@ -1003,7 +940,7 @@ class TestGraphDecomposition:
                 struct,
                 (AbstractArray((3, 4), dtype=np.float32), AbstractArray((5, 4), dtype=np.int32)),
             ),
-            AbstractArray((1,)),
+            AbstractWires(1),
         )
         assert op.resource_params["signature_key"] == expected_signature_key
 
@@ -1020,7 +957,8 @@ class TestGraphDecomposition:
 
         op = qp.adjoint(RXLayer.operator(np.array([1, 2, 3]), (1, 2, 3)))
         tape = qp.tape.QuantumScript([op])
-        new_tape = qp.decompose(tape)[0][0]
+        # pylint: disable-next=protected-access
+        new_tape = qp.transforms._tape_decompose(tape)[0][0]
         qp.assert_equal(new_tape[0], qp.RX(-3, 3))
         qp.assert_equal(new_tape[1], qp.RX(-2, 2))
         qp.assert_equal(new_tape[2], qp.RX(-1, 1))
@@ -1038,7 +976,8 @@ class TestGraphDecomposition:
 
         op = qp.ctrl(RXLayer.operator(np.array([1, 2, 3]), (1, 2, 3)), (4, 5))
         tape = qp.tape.QuantumScript([op])
-        new_tape = qp.decompose(tape, max_expansion=1)[0][0]
+        # pylint: disable-next=protected-access
+        new_tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][0]
         qp.assert_equal(new_tape[0], qp.ctrl(qp.RX(1, 1), (4, 5)))
         qp.assert_equal(new_tape[1], qp.ctrl(qp.RX(2, 2), (4, 5)))
         qp.assert_equal(new_tape[2], qp.ctrl(qp.RX(3, 3), (4, 5)))
@@ -1077,8 +1016,12 @@ class TestGraphDecomposition:
             def resource_params(self):
                 return {}
 
-        rx_rr = subroutine_resource_rep(RXLayer, AbstractArray((3,), float), AbstractArray((3,)))
-        ry_rr = subroutine_resource_rep(RYLayer, AbstractArray((3,), float), AbstractArray((3,)))
+        rx_rr = subroutine_resource_rep(
+            RXLayer, AbstractArray((3,), float), AbstractArray((3,), dtype=int)
+        )
+        ry_rr = subroutine_resource_rep(
+            RYLayer, AbstractArray((3,), float), AbstractArray((3,), dtype=int)
+        )
 
         @qp.decomposition.register_resources({rx_rr: 1})
         def rx_decomp(wires):
@@ -1093,16 +1036,19 @@ class TestGraphDecomposition:
         op = SubroutineDemoOp(wires=(0, 1, 2))
         tape = qp.tape.QuantumScript([op])
 
-        tape_rx = qp.decompose(tape, gate_set={qp.RX})[0][0]
+        # pylint: disable-next=protected-access
+        tape_rx = qp.transforms._tape_decompose(tape, gate_set={qp.RX})[0][0]
         qp.assert_equal(tape_rx[0], qp.RX(0.0, 0))
         qp.assert_equal(tape_rx[1], qp.RX(1.0, 1))
         qp.assert_equal(tape_rx[2], qp.RX(2.0, 2))
 
-        tape_ry = qp.decompose(tape, gate_set={qp.RY})[0][0]
+        # pylint: disable-next=protected-access
+        tape_ry = qp.transforms._tape_decompose(tape, gate_set={qp.RY})[0][0]
         qp.assert_equal(tape_ry[0], qp.RY(0.0, 0))
         qp.assert_equal(tape_ry[1], qp.RY(1.0, 1))
         qp.assert_equal(tape_ry[2], qp.RY(2.0, 2))
 
+    @pytest.mark.usefixtures("disable_capture")
     def test_inexact_resources_testing(self):
         """Test that assert_valid will work on a Subroutine with inexact resources."""
 
@@ -1114,7 +1060,7 @@ class TestGraphDecomposition:
             qp.X(wires)
 
         op = f.operator(0)
-        qp.ops.functions.assert_valid(op, skip_pickle=True, skip_capture=True)
+        qp.testing.assert_valid(op, skip_pickle=True)
 
     def test_compute_resources_fallback(self):
         """Test that the compute_resources fallback allows integration with decomps by default."""
@@ -1131,7 +1077,8 @@ class TestGraphDecomposition:
         params = np.array([0.5, 1.2, 3.4])
         wires = [0, 1, 2]
         tape = qp.tape.QuantumScript([f.operator(params, wires, "X")])
-        [decomposed], _ = qp.decompose(tape, gate_set=qp.gate_sets.ALL_OPS)
+        # pylint: disable-next=protected-access
+        [decomposed], _ = qp.transforms._tape_decompose(tape, gate_set=qp.gate_sets.ALL_OPS)
         print(decomposed.circuit)
         qp.assert_equal(decomposed[0], qp.PauliRot(0.5, "X", 0))
         qp.assert_equal(decomposed[1], qp.PauliRot(1.2, "X", 1))

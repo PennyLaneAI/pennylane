@@ -13,15 +13,18 @@
 # limitations under the License.
 """Functions to sample a state."""
 
+import jax
+import jax.numpy as jnp
 import numpy as np
+from jax.random import split
 
 import pennylane as qp
+from pennylane.core.measurements import SampleMeasurement
+from pennylane.core.shots import Shots
 from pennylane.measurements import (
     ClassicalShadowMP,
     ExpectationMP,
-    SampleMeasurement,
     ShadowExpvalMP,
-    Shots,
 )
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.typing import TensorLike
@@ -37,8 +40,6 @@ def jax_random_split(prng_key, num: int = 2):
     """Get a new key with ``jax.random.split``."""
     if prng_key is None:
         return (None,) * num
-    # pylint: disable=import-outside-toplevel
-    from jax.random import split
 
     return split(prng_key, num=num)
 
@@ -548,9 +549,6 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, 
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
-    # pylint: disable=import-outside-toplevel
-    import jax
-    import jax.numpy as jnp
 
     if prng_key is None:
         prng_key = jax.random.PRNGKey(np.random.default_rng(seed).integers(100000))

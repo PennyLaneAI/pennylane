@@ -18,12 +18,11 @@ pipeline (available through the external `pyzx <https://pyzx.readthedocs.io/en/l
 to a PennyLane circuit.
 """
 
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
-from .converter import from_zx, to_zx
-from .helper import _needs_pyzx
+from .helper import _apply_zx_transform, _needs_pyzx
 
 
 @_needs_pyzx
@@ -86,8 +85,8 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
             return qp.state()
 
     >>> print(qp.draw(circuit)(3.2, -2.2))
-    0: ──S─╭●─────────────────┤  State
-    1: ────╰X──H──RZ(1.00)──H─┤  State
+    0: ──S─╭●─────────────────┤ ╭State
+    1: ────╰X──H──RZ(1.00)──H─┤ ╰State
 
 
     .. note::
@@ -107,16 +106,16 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
     # pylint: disable=import-outside-toplevel
     import pyzx
 
-    zx_graph = to_zx(tape)
+    def transform_fn(zx_graph):
+        pyzx.hsimplify.from_hypergraph_form(zx_graph)
+        pyzx.full_reduce(zx_graph)
 
-    pyzx.hsimplify.from_hypergraph_form(zx_graph)
-    pyzx.full_reduce(zx_graph)
+        zx_circ = pyzx.extract_circuit(zx_graph)
+        zx_circ = pyzx.basic_optimization(zx_circ.to_basic_gates())
 
-    zx_circ = pyzx.extract_circuit(zx_graph)
-    zx_circ = pyzx.basic_optimization(zx_circ.to_basic_gates())
+        return zx_circ.to_graph()
 
-    qscript = from_zx(zx_circ.to_graph())
-    new_tape = tape.copy(operations=qscript.operations)
+    new_tape = _apply_zx_transform(tape, transform_fn)
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results

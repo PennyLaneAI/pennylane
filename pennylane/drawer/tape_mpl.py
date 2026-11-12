@@ -38,11 +38,12 @@ from .utils import (
     default_bit_map,
     transform_deferred_measurements_tape,
     unwrap_controls,
+    unwrap_temporary_and,
 )
 
 if TYPE_CHECKING:
-    from pennylane.operation import Operator
-    from pennylane.tape import QuantumScript
+    from pennylane.core.operator import Operator
+    from pennylane.core.qscript import QuantumScript
 
 
 has_mpl = True
@@ -70,18 +71,18 @@ def _add_operation_to_drawer(op: Operator, drawer: MPLDrawer, layer: int, config
         Adds a depiction of ``op`` to ``drawer``
 
     """
+    if (elbow := unwrap_temporary_and(op)) is not None:
+        controls, target, values, adjoint = elbow
+        drawer.elbow(layer, controls + [target], control_values=values, adjoint=adjoint)
+        return
+
     op_control_wires, control_values, base = unwrap_controls(op)
     is_global_op = isinstance(base, (ops.GlobalPhase, ops.Identity))
-    if len(op.wires) == 0 or is_global_op:
-        op_wires = list(range(drawer.n_wires))
-    else:
-        op_wires = op.wires
+    op_wires = list(range(drawer.n_wires)) if len(op.wires) == 0 or is_global_op else op.wires
     target_wires = [w for w in op_wires if w not in op_control_wires]
+
     if is_global_op and len(target_wires) == 0:
         raise ValueError("Can't draw controlled global gate with unknown non-control wires.")
-
-    if control_values is None:
-        control_values = [True for _ in op_control_wires]
 
     if op_control_wires:
         drawer.ctrl(
@@ -90,6 +91,7 @@ def _add_operation_to_drawer(op: Operator, drawer: MPLDrawer, layer: int, config
             wires_target=target_wires,
             control_values=control_values,
         )
+
     drawer.box_gate(
         layer,
         target_wires,
@@ -148,14 +150,6 @@ def _(op: ops.Barrier, drawer, layer, _):
 
 
 @_add_operation_to_drawer.register
-def _(op: ops.WireCut, drawer, layer, _):
-    ymin = min(op.wires) - 0.5
-    ymax = max(op.wires) + 0.5
-    drawer.ax.text(layer - 0.35, y=max(op.wires), s="✂", fontsize=40)
-    drawer.ax.vlines(layer, ymin=ymin, ymax=ymax, linestyle="--")
-
-
-@_add_operation_to_drawer.register
 def _(op: ops.MidMeasure, drawer, layer, _):
     text = None if op.postselect is None else str(int(op.postselect))
     drawer.measure(layer, op.wires[0], text=text)  # assume one wire
@@ -176,15 +170,29 @@ def _(op: ops.PauliMeasure, drawer, layer, _):
     drawer.pauli_measure(layer, op.pauli_word, op.wires, op.postselect)
 
 
+def _conditional_frame_wires(op: Operator, n_wires: int) -> Sequence[int]:
+    """Return the wires of a conditional diagram needing an outer boundary."""
+    if not isinstance(op, ops.Conditional):
+        return ()
+    control_wires, _, base = unwrap_controls(op.base)
+    # Controls, SWAP crosses, and TemporaryAND symbols need a shared boundary
+    # to show that the classical condition applies to the whole operation.
+    if (
+        not control_wires
+        and not isinstance(op.base, ops.SWAP)
+        and unwrap_temporary_and(op.base) is None
+    ):
+        return ()
+    if isinstance(base, (ops.GlobalPhase, ops.Identity)):
+        return range(n_wires)
+    return op.wires
+
+
 @_add_operation_to_drawer.register
 def _(op: ops.Conditional, drawer, layer, config) -> None:
-    drawer.box_gate(
-        layer,
-        list(op.wires),
-        op.base.label(decimals=config.decimals),
-        box_options={"zorder": 4},
-        text_options={"zorder": 5},
-    )
+    _add_operation_to_drawer(op.base, drawer, layer, config)
+    if wires := _conditional_frame_wires(op, drawer.n_wires):
+        drawer.conditional_frame(layer, wires)
     sorted_bits = sorted([config.bit_map[m] for m in op.meas_val.measurements])
     for b in sorted_bits[:-1]:
         erase_right = layer < config.cwire_layers[b][-1][-1]
@@ -205,6 +213,12 @@ def _get_measured_wires(measurements, wires) -> set:
 
 
 def _add_classical_wires(drawer, layers, cwire_layers, cwire_wires):
+    frame_endpoints = {}
+    for layer, layer_ops in enumerate(layers):
+        for op in layer_ops:
+            if wires := _conditional_frame_wires(op, drawer.n_wires):
+                frame_endpoints[layer, max(op.wires)] = max(wires) + drawer.conditional_frame_offset
+
     for cwire, layer_ids_per_cwire in cwire_layers.items():
         for layer_ids, layer_wires in zip(layer_ids_per_cwire, cwire_wires[cwire], strict=True):
             xs, ys = [], []
@@ -213,6 +227,7 @@ def _add_classical_wires(drawer, layers, cwire_layers, cwire_wires):
             if len_diff > 0:
                 layer_wires += [cwire + drawer.n_wires] * len_diff
             for l, w in zip(layer_ids, layer_wires, strict=True):
+                w = frame_endpoints.get((l, w), w)
                 if l < len(layers) and _ppm_controlled(layers[l]):
                     l -= drawer.ppm_offset
                 xs.extend([l, l, l])
@@ -222,13 +237,10 @@ def _add_classical_wires(drawer, layers, cwire_layers, cwire_wires):
 
 
 def _ppm_controlled(layer):
-    last_op = layer[0]
-    last_wire = max(last_op.wires)
-    for op in layer[1:]:
-        if (wire := max(op.wires)) > last_wire:
-            last_wire = wire
-            last_op = op
-    return isinstance(last_op, PauliMeasure)
+    wired_ops = [op for op in layer if len(op.wires) > 0]
+    if not wired_ops:
+        return False
+    return isinstance(max(wired_ops, key=lambda op: max(op.wires)), PauliMeasure)
 
 
 def _get_measured_bits(measurements, bit_map, offset):
@@ -311,13 +323,16 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
     tape = ops.functions.map_wires(tape, wire_map=full_wire_map)[0][0]
     bit_map = default_bit_map(tape)
 
-    layers = drawable_layers(tape.operations, wire_map={i: i for i in tape.wires}, bit_map=bit_map)
+    mapped_wire_map = {i: i for i in tape.wires}
+    layers = drawable_layers(tape.operations, wire_map=mapped_wire_map, bit_map=bit_map)
 
     for i, layer in enumerate(layers):
         if any(isinstance(o, ops.MidMeasure) and o.reset for o in layer):
             layers.insert(i + 1, [])
 
-    bit_map, cwire_layers, cwire_wires = cwire_connections(layers + [tape.measurements], bit_map)
+    bit_map, cwire_layers, cwire_wires = cwire_connections(
+        layers + [tape.measurements], bit_map, mapped_wire_map
+    )
 
     config = _Config(
         decimals=kwargs.get("decimals", None),

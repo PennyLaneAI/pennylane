@@ -25,10 +25,19 @@ import logging
 import warnings
 from collections import defaultdict
 
+import jax
 import numpy as np
 
 from pennylane import math
 from pennylane import numpy as pnp
+from pennylane.core.measurements import (
+    MeasurementProcess,
+    MeasurementTransform,
+    SampleMeasurement,
+    StateMeasurement,
+)
+from pennylane.core.operator import Operation, Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.exceptions import DeviceError, EigvalsUndefinedError, QuantumFunctionError
 from pennylane.math import multiply as qpmul
 from pennylane.math import sum as qpsum
@@ -36,21 +45,18 @@ from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
     ExpectationMP,
-    MeasurementProcess,
-    MeasurementTransform,
     MutualInfoMP,
     ProbabilityMP,
-    SampleMeasurement,
     SampleMP,
     ShadowExpvalMP,
-    StateMeasurement,
     StateMP,
     VarianceMP,
     VnEntropyMP,
 )
-from pennylane.operation import Operation, Operator, operation_derivative
+from pennylane.operation import operation_derivative
 from pennylane.ops import MeasurementValue, MidMeasure, Rot, X, Y, Z, adjoint
-from pennylane.tape import QuantumScript
+from pennylane.ops.op_math.adjoint import _adjoint_eager
+from pennylane.resource import resources_from_tape
 from pennylane.wires import Wires
 
 from ._legacy_device import Device
@@ -179,9 +185,9 @@ class QubitDevice(Device):
     ):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
 
-        if "float" not in str(r_dtype):
+        if "float" not in str(r_dtype):  # pragma: no cover
             raise DeviceError("Real datatype must be a floating point type.")
-        if "complex" not in str(c_dtype):
+        if "complex" not in str(c_dtype):  # pragma: no cover
             raise DeviceError("Complex datatype must be a complex floating point type.")
 
         self.C_DTYPE = c_dtype
@@ -285,7 +291,7 @@ class QubitDevice(Device):
             self._samples = self.generate_samples()
             if is_lightning and diagonalizing_gates:  # pragma: no cover
                 # pylint: disable=bad-reversed-sequence
-                self.apply([adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
+                self.apply([_adjoint_eager(g, True) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
         if has_mcm:
@@ -315,7 +321,7 @@ class QubitDevice(Device):
                 executions=1,
                 shots=self._shots,
                 results=results,
-                resources=circuit.specs["resources"],
+                resources=resources_from_tape(circuit),
             )
             self.tracker.record()
 
@@ -662,7 +668,7 @@ class QubitDevice(Device):
                 result = self.probability(wires=m.wires, shot_range=shot_range, bin_size=bin_size)
                 if is_lightning and diagonalizing_gates:  # pragma: no cover
                     # pylint: disable=bad-reversed-sequence
-                    self.apply([adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
+                    self.apply([_adjoint_eager(g, True) for g in reversed(diagonalizing_gates)])
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
                     raise QuantumFunctionError(
@@ -858,8 +864,7 @@ class QubitDevice(Device):
 
         basis_states = np.arange(number_of_states)
         # pylint:disable = import-outside-toplevel
-        if math.is_abstract(state_probability) and math.get_interface(state_probability) == "jax":
-            import jax
+        if math.is_tracer(state_probability) and math.get_interface(state_probability) == "jax":
 
             key = jax.random.PRNGKey(np.random.randint(0, 2**31))
             if jax.numpy.ndim(state_probability) == 2:
@@ -955,7 +960,7 @@ class QubitDevice(Device):
             Only state vector simulators support this property. Please see the
             plugin documentation for more details.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def density_matrix(self, wires):
         """Returns the reduced density matrix over the given wires.

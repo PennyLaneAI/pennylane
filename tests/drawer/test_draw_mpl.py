@@ -18,6 +18,8 @@ See section on "Testing Matplotlib based code" in the "Software Tests"
 page in the developement guide.
 """
 
+from functools import partial
+
 import pytest
 
 import pennylane as qp
@@ -79,6 +81,64 @@ def test_fig_argument():
     assert ax.get_figure() == fig
     assert output_fig == fig
     plt.close("all")
+
+
+class TestPartial:
+    """Test partial-wrapped callables."""
+
+    @staticmethod
+    def _assert_circuit1_drawing(ax):
+        """Assert the drawn circuit contains the expected operations."""
+        assert len(ax.patches) == 7
+        assert len(ax.lines) == 6
+
+        texts = [text.get_text() for text in ax.texts]
+        assert "RX" in texts
+        assert "RY" in texts
+
+    def test_qnode_positional_partial(self):
+        """Test drawing a QNode with a positional argument bound by partial."""
+        fig, ax = qp.draw_mpl(partial(circuit1, 1.23))(2.34)
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
+        self._assert_circuit1_drawing(ax)
+        plt.close("all")
+
+    def test_qnode_keyword_partial(self):
+        """Test drawing a QNode with a keyword argument bound by partial."""
+        fig, ax = qp.draw_mpl(partial(circuit1, y=2.34))(1.23)
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
+        self._assert_circuit1_drawing(ax)
+        plt.close("all")
+
+    def test_nested_qnode_partial(self):
+        """Test drawing a QNode wrapped by nested partials."""
+        fig, ax = qp.draw_mpl(partial(partial(circuit1, 1.23), y=2.34))()
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
+        self._assert_circuit1_drawing(ax)
+        plt.close("all")
+
+    def test_qfunc_partial(self):
+        """Test drawing a quantum function wrapped by partial."""
+
+        def qfunc(x, y):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+
+        fig, ax = qp.draw_mpl(partial(qfunc, x=1.23))(y=2.34)
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)  # pylint:disable=protected-access
+
+        texts = [text.get_text() for text in ax.texts]
+        assert "RX" in texts
+        assert "RY" in texts
+        plt.close("all")
 
 
 class TestLevelExpansionStrategy:

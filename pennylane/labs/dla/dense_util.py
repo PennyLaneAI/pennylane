@@ -21,7 +21,7 @@ import numpy as np
 from scipy.linalg import sqrtm
 
 import pennylane as qp
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord, trace_inner_product
 from pennylane.typing import TensorLike
@@ -230,7 +230,7 @@ def batched_pauli_decompose(H: TensorLike, tol: float | None = None, pauli: bool
         if pauli:
             H_ops.append(sentence)
         else:
-            H_ops.append(sentence.operation())
+            H_ops.append(qp.pauli.to_operator(sentence))
 
     if single_H:
         return H_ops[0]

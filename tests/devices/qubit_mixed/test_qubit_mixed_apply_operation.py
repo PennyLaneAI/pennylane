@@ -44,7 +44,6 @@ ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 
 
@@ -231,7 +230,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         """Tests that the identity operation is applied correctly to an unbatched state."""
         state_np = random_mixed_state(num_q)
         state = math.asarray(state_np, like=ml_framework)
-        op = qp.GlobalPhase(np.pi / 7, wires=0)
+        op = qp.GlobalPhase(np.pi / 7)
         res = apply_operation(op, state)
 
         assert math.allclose(res, state), f"Operation {op} failed. {res} != {state}"
@@ -435,7 +434,7 @@ class TestApplyMultiControlledX:
         self, num_wires, expected_method, interface, mocker, random_mixed_state
     ):
         """Test that the correct dispatch method is used based on the number of wires
-        for torch, tensorflow, and jax."""
+        for torch and jax."""
         state = random_mixed_state(num_wires)
         # Convert to interface
         state = math.asarray(state, like=interface)

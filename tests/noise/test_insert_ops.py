@@ -19,8 +19,15 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript
 from pennylane.noise.insert_ops import insert
-from pennylane.tape import QuantumScript
+
+
+# pylint: disable=too-few-public-methods
+class DummyOp2(qp.core.operator.Operator2):
+
+    def __init__(self, wires):
+        super().__init__(wires=wires)
 
 
 class TestInsert:
@@ -155,7 +162,7 @@ class TestInsert:
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert isinstance(tape.measurements[0], qp.measurements.ExpectationMP)
 
-    op_lst = [qp.RX, qp.PauliZ, qp.Identity]
+    op_lst = [qp.RX, qp.PauliZ, qp.Identity, DummyOp2]
 
     @pytest.mark.parametrize("op", op_lst)
     def test_operation_as_position(self, op):

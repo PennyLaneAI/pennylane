@@ -19,7 +19,7 @@ Unit tests for the comm function
 import pytest
 
 import pennylane as qp
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops import SProd
 from pennylane.pauli import PauliSentence, PauliWord
 
@@ -33,7 +33,7 @@ pw_id = PauliWord({})
 
 def _pauli_to_op(p):
     """convert PauliWord or PauliSentence to Operator"""
-    return p.operation()
+    return qp.pauli.to_operator(p)
 
 
 def _pw_to_ps(p):
@@ -218,9 +218,27 @@ class TestcommPauliFalse:
         assert isinstance(res, Operator)
         assert isinstance(res, SProd)
 
+    @pytest.mark.parametrize("pauli, coeff", [(Z0, 1), (PauliSentence({Z0: 2.0}), 2)])
+    @pytest.mark.parametrize("reverse, sign", [(False, 1), (True, -1)])
+    def test_mixed_pauli_and_operator(self, pauli, coeff, reverse, sign):
+        """Test mixed inputs in both orders without recording the commutator."""
+        op = qp.Hermitian(qp.math.array([[0.0, 1.0], [1.0, 0.0]]), wires=0)
+        assert op.pauli_rep is None
+        op1, op2 = (op, pauli) if reverse else (pauli, op)
+
+        with qp.queuing.AnnotatedQueue() as queue:
+            res = qp.commutator(op1, op2)
+
+        expected = coeff * sign * qp.math.array([[0.0, 2.0], [-2.0, 0.0]])
+        assert isinstance(res, Operator)
+        assert qp.math.allclose(qp.matrix(res, wire_order=[0]), expected)
+        assert queue.queue == []
+
     def test_paulis_used_when_ever_possible(self, mocker):
         """Test that pauli_rep is used whenever possible even when ``pauli=False``"""
-        spy = mocker.spy(PauliSentence, "operation")
+        spy = mocker.patch(
+            "pennylane.ops.functions.commutator.to_operator", wraps=qp.pauli.to_operator
+        )
         op1 = qp.PauliX(0) @ qp.PauliX(1)
         op2 = qp.PauliY(0) + qp.PauliY(1)
         res = qp.commutator(op1, op2, pauli=False)

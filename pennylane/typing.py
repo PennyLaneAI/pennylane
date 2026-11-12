@@ -13,94 +13,124 @@
 # limitations under the License.
 """This file contains different PennyLane types."""
 
-import contextlib
-
 # pylint: disable=import-outside-toplevel,too-few-public-methods
+
+from __future__ import annotations
+
+import contextlib
+import copy
 import sys
-from collections.abc import Callable, Sequence
-from typing import Optional, TypeVar, Union
+from collections.abc import Callable, Hashable, Sequence
+from dataclasses import dataclass, field
+from math import prod
+from numbers import Number
+from types import EllipsisType
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
+from jax import Array
+from jax.core import Tracer, UnshapedArray
+from jax.numpy import ndarray
+
+FlatPytree = tuple[Sequence[Any], Hashable]
 
 
-class InterfaceTensorMeta(type):
-    """defines dunder methods for the ``isinstance`` and ``issubclass`` checks.
+_TENSORLIKE_PYTHON_TYPES = (
+    int,
+    float,
+    bool,
+    complex,
+    bytes,
+    list,
+    tuple,
+    np.ndarray,
+    np.generic,
+    ArrayBox,
+)
 
-    .. note:: These special dunder methods can only be defined inside a metaclass.
 
+# Once Python 3.12 support is dropped, the separate runtime class and this tuple
+# can be replaced by a Union with an interface helper for _is_jax/_is_torch checks.
+# Keep the aval check; including Array/Tracer directly would accept operator tracers.
+class TensorLikeMeta(type):
+    """Runtime ``isinstance`` / ``issubclass`` for :class:`TensorLike`.
+
+    Must not be a ``typing.Union``: on Python ≤3.12, ``isinstance(x, Union[...])``
+    reduces to ``issubclass(type(x), ...)``, which cannot inspect a JAX tracer's
+    ``aval`` and would still treat :class:`~.AbstractOperator` tracers as tensors.
     """
 
     def __instancecheck__(cls, other):
-        """Dunder method used to check if an object is a `InterfaceTensor` instance."""
-        return _is_jax(other) or _is_torch(other) or _is_tensorflow(other)  # pragma: no cover
+        return isinstance(other, _TENSORLIKE_PYTHON_TYPES) or _is_jax(other) or _is_torch(other)
 
     def __subclasscheck__(cls, other):
-        """Dunder method that checks if a class is a subclass of ``InterfaceTensor``."""
-        return (
-            _is_jax(other, subclass=True)
-            or _is_torch(other, subclass=True)
-            or _is_tensorflow(other, subclass=True)
-        )
+        if issubclass(other, _TENSORLIKE_PYTHON_TYPES):
+            return True
+        return _is_jax(other, subclass=True) or _is_torch(other, subclass=True)
 
 
-class InterfaceTensor(metaclass=InterfaceTensorMeta):
-    """Adds support for runtime instance checking of interface-specific tensor-like data"""
+# Type checkers need a union: they do not use metaclass instance checks for assignability.
+if TYPE_CHECKING:
+    # Keep the optional torch import out of runtime module initialization.
+    from torch import Tensor as TorchTensor
 
+    TensorLike = Union[
+        int,
+        float,
+        bool,
+        complex,
+        bytes,
+        list,
+        tuple,
+        np.ndarray,
+        np.generic,
+        ArrayBox,
+        Array,
+        Tracer,
+        TorchTensor,
+    ]
+else:
+    # Runtime checks must inspect each tracer, including on Python 3.12.
 
-TensorLike = Union[
-    int, float, bool, complex, bytes, list, tuple, np.ndarray, np.generic, ArrayBox, InterfaceTensor
-]
-"""A type for all tensor-like data.
+    class TensorLike(metaclass=TensorLikeMeta):
+        """A type for all tensor-like data.
 
-TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor,
-including lists and tuples. Any argument accepted by ``qp.numpy.array`` is tensor-like.
+        TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor,
+        including lists and tuples. Any argument accepted by ``qp.numpy.array`` is tensor-like.
 
-**Examples**
+        JAX tracers are tensor-like only when array-valued; operator, measurement and qubit
+        tracers created under program capture are not.
 
->>> from pennylane.typing import TensorLike
->>> isinstance(4, TensorLike)
-True
->>> isinstance([2, 6, 8], TensorLike)
-True
->>> isinstance(torch.tensor([1, 2, 3]), TensorLike)
-True
->>> issubclass(list, TensorLike)
-True
->>> issubclass(jax.Array, TensorLike)
-True
+        **Examples**
 
-"""
+        >>> from pennylane.typing import TensorLike
+        >>> isinstance(4, TensorLike)
+        True
+        >>> isinstance([2, 6, 8], TensorLike)
+        True
+        >>> isinstance(torch.tensor([1, 2, 3]), TensorLike)
+        True
+        >>> issubclass(list, TensorLike)
+        True
+        >>> issubclass(jax.Array, TensorLike)
+        True
+
+        """
 
 
 def _is_jax(other, subclass=False):
     """Check if other is an instance or a subclass of a jax tensor."""
-    if "jax" in sys.modules:
-        with contextlib.suppress(ImportError):
-            from jax import Array
-            from jax.core import Tracer
-            from jax.numpy import ndarray
-
-            JaxTensor = ndarray | Array | Tracer
-            check = issubclass if subclass else isinstance
-
-            return check(other, JaxTensor)
-    return False
-
-
-def _is_tensorflow(
-    other, subclass=False
-):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-    """Check if other is an instance or a subclass of a tensorflow tensor."""
-    if "tensorflow" in sys.modules or "tensorflow-macos" in sys.modules:
-        with contextlib.suppress(ImportError):
-            from tensorflow import Tensor as tfTensor
-            from tensorflow import Variable
-
-            check = issubclass if subclass else isinstance
-
-            return check(other, (tfTensor, Variable))
-    return False
+    JaxTensor = ndarray | Array | Tracer
+    if subclass:
+        # A tracer class alone cannot tell us whether its instances represent arrays.
+        return issubclass(other, JaxTensor)
+    # Check tracers first: even operator-valued tracers can satisfy isinstance(other, Array).
+    if isinstance(other, Tracer):
+        # Only array-valued tracers (ShapedArray / DShapedArray) are tensor-like;
+        # operator, measurement and qubit avals are not.
+        return isinstance(other.aval, UnshapedArray)
+    return isinstance(other, JaxTensor)
 
 
 def _is_torch(other, subclass=False):
@@ -123,3 +153,652 @@ PostprocessingFn = Callable[[ResultBatch], Result]
 BatchPostprocessingFn = Callable[[ResultBatch], ResultBatch]
 
 JSON = Optional[int | str | bool | list["JSON"] | dict[str, "JSON"]]
+
+
+@dataclass(frozen=True)
+class AbstractArray:
+    """An abstract representation of an array that contains the shape and dtype
+    attributes necessary for resource calculations.
+
+    Args:
+        shape (tuple[int, ...] | types.EllipsisType): the dimensions of the array.
+            ``()`` corresponds to a scalar. ``Ellipsis`` (``...``) means the number of axes
+            is unknown. Within a shape tuple, ``-1`` marks an axis whose size is unknown.
+        dtype (type): the data type of the array. Can either be a ``builtin`` like
+            ``float`` or ``int``, or a numpy dtype like ``np.complex64``.
+
+    >>> from pennylane.typing import AbstractArray
+    >>> AbstractArray((4, 2), float)
+    AbstractArray((4, 2), float64, weak_type=True)
+
+    Use ``-1`` for an axis with unknown size:
+
+    >>> aa = AbstractArray((-1, 2), np.int32)
+    >>> isinstance(np.ones((4, 2), np.int32), aa)
+    True
+
+    Use ``Ellipsis`` when the rank itself is unknown:
+
+    >>> isinstance(np.ones((4, 2)), AbstractArray(..., float))
+    True
+
+    Elementwise arithmetic returns an ``AbstractArray`` with broadcast shape and
+    NumPy-promoted dtype. Builtin numeric dtypes participate as weak types, and the
+    result remains weak when both operands are weak. Unknown dimensions are accepted
+    unless known axes conflict; compatibility may still depend on their concrete sizes.
+    An unknown rank produces an unknown result rank. The corresponding NumPy arithmetic
+    ufuncs are supported for ordinary calls without keyword options; reductions and other
+    ufunc methods are not supported. Unary ``-``, ``+``, and ``abs`` and their NumPy
+    equivalents preserve shape and infer the output dtype, including real dtypes for
+    the absolute value of complex inputs.
+
+    """
+
+    shape: tuple[int, ...] | EllipsisType
+    dtype: np.dtype
+    shape_fixed: bool = field(init=False)
+    _weak_type: bool = field(init=False)
+
+    def __post_init__(self):
+        weak_type = (
+            isinstance(self.dtype, type)
+            and issubclass(self.dtype, Number)
+            # Need to check this because builtin numpy dtypes (like np.float32) are
+            # subclasses of Number
+            and self.dtype.__module__ == "builtins"
+        )
+
+        if self.shape is Ellipsis:
+            object.__setattr__(self, "shape_fixed", False)
+        else:
+            shape = tuple(self.shape)
+            shape_fixed = True
+
+            for s in shape:
+                if not isinstance(s, int) or s < -1:
+                    raise ValueError(
+                        f"Shapes can only be initialized with integer values, but got {shape}. "
+                        "For axes with unknown sizes, use -1. For an unknown number of axes, "
+                        "use shape=Ellipsis."
+                    )
+                if s == -1:
+                    shape_fixed = False
+
+            object.__setattr__(self, "shape", shape)
+            object.__setattr__(self, "shape_fixed", shape_fixed)
+
+        object.__setattr__(self, "dtype", np.dtype(self._resolve_dtype(self.dtype)))
+        object.__setattr__(self, "_weak_type", weak_type)
+
+    def __instancecheck__(self, instance):
+        dtype = getattr(instance, "dtype", None)
+        if dtype is None or self._resolve_dtype(dtype) != self.dtype:
+            return False
+
+        if self.shape is Ellipsis:
+            return True
+
+        shape = getattr(instance, "shape", None)
+        return shape is not None and self._shape_matches(shape)
+
+    def is_compatible_with(self, val) -> bool:
+        """Check whether an input value is compatible with an ``AbstractArray``. A value
+        is considered to be compatible if it has a shape and dtype that can be safely cast
+        to the shape and dtype of the ``AbstractArray``.
+
+        Args:
+            val (Any): input value to check for compatibility
+
+        Returns:
+            bool: ``True`` if ``val`` is compatible, ``False`` otherwise
+
+        For shapes, the following conditions must be met to be considered compatible:
+
+        * If the ``AbstractArray`` allows any rank, i.e., ``shape = ...``, then the
+          input value can have any shape.
+        * If the ``AbstractArray`` has size ``-1`` for any of the axes, the input
+          value can have any size **for those axes**, but must have the same size
+          as the ``AbstractArray`` for the rest of the axes.
+        * If the ``AbstractArray`` has a fixed shape, then the shape of the input
+          value must match exactly.
+
+        For dtypes, the following conditions must be met to be considered compatible:
+
+        * If the ``AbstractArray``'s dtype is weak, i.e., it was initialized with
+          a Python builtin number type (``int``, ``float``, etc.), then any dtypes
+          that can be safely cast to the ``AbstractArray``'s dtype are compatible.
+          For example, ``np.bool`` and ``np.int32`` can be safely cast to ``np.int64``,
+          but ``np.float32`` cannot be.
+        * If the ``AbstractArray``'s dtype is not weak, i.e., it was initialized with
+          a dtype with a specific precision, then the dtype of the input value must
+          match the dtype of the ``AbstractArray`` exactly.
+
+        If all the above conditions are met, an input value will be considered compatible.
+
+        **Example**
+
+        >>> aa = AbstractArray((-1, 2), int)
+        >>> aa.is_compatible_with(np.ones((5, 2), dtype=np.int32))
+        True
+        >>> aa.is_compatible_with(np.ones((5, 2), dtype=np.bool))
+        True
+        >>> aa.is_compatible_with(np.ones((5, 3), dtype=np.int32))
+        False
+        >>> aa.is_compatible_with(np.ones((5, 2), dtype=np.float64))
+        False
+        <BLANKLINE>
+        >>> aa = AbstractArray((3, 2), np.int32)
+        >>> aa.is_compatible_with(np.ones((3, 2), dtype=np.int32))
+        True
+        >>> aa.is_compatible_with(np.ones((5, 2), dtype=np.int32))
+        False
+        >>> aa.is_compatible_with(np.ones((3, 2), dtype=np.int16))
+        False
+        """
+        # No need to create a new array if value is already an array
+        val = np.array(val) if isinstance(val, (Number, list, tuple)) else val
+        shape = getattr(val, "shape", None)
+        dtype = getattr(val, "dtype", None)
+        if shape is None or dtype is None:
+            return False
+
+        dtype = self._resolve_dtype(val.dtype)
+
+        # If self._weak_type, then ``instance``'s dtype must be promotable to self.dtype. For
+        # example, int64 can be promoted to float64, and float32 can be promoted to float64.
+        # However, the inverse is not true in either case.
+        casting = "safe" if self._weak_type else "equiv"
+        # In the general case with weak types, this check will fail if there would be subtype
+        # promotion but precision demotion. For example, comparing ``dtype == int64`` and
+        # ``self.dtype == float32`` will fail, which is inconsistent with weak typing. However,
+        # this is fine because our dtype is weak only if the input dtype was a Python builtin
+        # number type. In that case, ``self.dtype`` will always have the default precision
+        # NumPy uses. For example, ``np.dtype(int) == np.int64``, so ``self.dtype`` will always
+        # have a precision for which this check will behave as expected.
+        if not np.can_cast(dtype, self.dtype, casting=casting):
+            return False
+
+        if self.shape is Ellipsis:
+            return True
+
+        return self._shape_matches(shape)
+
+    def _shape_matches(self, shape) -> bool:
+        if shape is Ellipsis:
+            return False
+        if len(shape) != len(self.shape):
+            return False
+        return all(s2 in (s1, -1) for s1, s2 in zip(shape, self.shape, strict=True))
+
+    @property
+    def size(self) -> int:
+        """Total number of elements."""
+        if not self.shape_fixed:
+            raise TypeError(f"size is undefined for {self} with incomplete shape.")
+        return prod(self.shape)
+
+    @property
+    def T(self) -> AbstractArray:
+        """Transpose view of the array."""
+        new_shape = self.shape if self.shape is Ellipsis else self.shape[::-1]
+        return AbstractArray(new_shape, self.dtype)
+
+    @property
+    def ndim(self) -> int:
+        """Number of dimensions."""
+        if self.shape is Ellipsis:
+            raise TypeError(f"ndim is undefined for {self} with incomplete shape.")
+        return len(self.shape)
+
+    def _resolve_dtype(self, dtype):
+        """Convert an arbitrary dtype into a numpy dtype."""
+        if dtype.__class__.__module__.split(".")[0] == "torch":
+            import torch  # pylint: disable=import-outside-toplevel
+
+            dummy = torch.empty((), dtype=dtype)
+            dtype = dummy.numpy().dtype
+
+        return np.dtype(dtype)
+
+    def __repr__(self):
+        shape_repr = "..." if self.shape is Ellipsis else self.shape
+        args = f"{shape_repr}, {self.dtype.name}"
+        if self._weak_type:
+            args += ", weak_type=True"
+        return f"AbstractArray({args})"
+
+    __str__ = __repr__
+
+    def __getitem__(self, item):
+        raise IndexError("Cannot index into an AbstractArray.")
+
+    def __setitem__(self, *_, **__):
+        raise IndexError("Cannot index into an AbstractArray.")
+
+    def __array__(self, *_, **__):
+        # Without this, np.asarray treats an AbstractArray as a sequence: it reads
+        # __len__ but __getitem__ raises, so numpy silently produces an empty
+        # array. Callers then fail far away with a confusing message, e.g.
+        # np.linalg.det reporting "1-dim array given". Fail here instead.
+        raise TypeError(
+            "An AbstractArray cannot be converted to a concrete array: it carries only a "
+            "shape and dtype, not values."
+        )
+
+    def __len__(self) -> int:
+        if not self.shape or self.shape is Ellipsis:
+            raise TypeError("len() of unsized object.")
+        if self.shape[0] < 0:
+            raise TypeError(f"len() is undefined for {self} with unknown size for the first axis.")
+        return self.shape[0]
+
+    def __eq__(self, other) -> bool:
+        # This should probably just raise an error
+        if isinstance(other, AbstractArray):
+            return self.shape == other.shape and self.dtype == other.dtype
+
+        raise TypeError(f"Cannot check equality between AbstractArray and {type(other)}.")
+
+    def __hash__(self) -> int:
+        return hash(("AbstractArray", self.shape, self.dtype))
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        """Infer metadata for supported elementwise NumPy arithmetic calls."""
+        # Ordinary calls like np.add(a, b) use "__call__"; reductions use "reduce", etc.
+        if method != "__call__" or kwargs:
+            return NotImplemented
+        if ufunc in (np.negative, np.positive, np.absolute):
+            return self._unary_arithmetic(ufunc)
+        if ufunc not in (
+            np.add,
+            np.subtract,
+            np.multiply,
+            np.true_divide,
+            np.remainder,
+            np.floor_divide,
+            np.power,
+        ):
+            return NotImplemented
+        left, right = inputs
+        if isinstance(left, AbstractArray):
+            return left._arithmetic(right, ufunc)  # pylint: disable=protected-access
+        return self._arithmetic(left, ufunc)
+
+    def _resolve_binary_shape(self, other):
+        """Resolve the shape for a binary operation."""
+        if self.shape is Ellipsis or other.shape is Ellipsis:
+            shape = Ellipsis
+        else:
+            ndim = max(len(self.shape), len(other.shape))
+            left_shape = (1,) * (ndim - len(self.shape)) + self.shape
+            right_shape = (1,) * (ndim - len(other.shape)) + other.shape
+            shape = []
+            for left, right in zip(left_shape, right_shape, strict=True):
+                if right in (left, 1):
+                    shape.append(left)
+                elif left == 1:
+                    shape.append(right)
+                elif left == -1:
+                    shape.append(right)
+                elif right == -1:
+                    shape.append(left)
+                else:
+                    raise ValueError(f"Cannot broadcast shapes {self.shape} and {other.shape}.")
+            shape = tuple(shape)
+
+        return shape
+
+    def _resolve_binary_dtype(self, other, operation):
+        """Resolve the dtype for a binary operation."""
+        weak_dtypes = {"i": int, "u": int, "f": float, "c": complex}
+        left_dtype = weak_dtypes.get(self.dtype.kind, self.dtype) if self._weak_type else self.dtype
+        right_dtype = (
+            weak_dtypes.get(other.dtype.kind, other.dtype)
+            if other._weak_type  # pylint: disable=protected-access
+            else other.dtype  # pylint: disable=protected-access
+        )
+        return operation.resolve_dtypes((left_dtype, right_dtype, None))[-1]
+
+    def _arithmetic(self, other, operation):
+        """Infer elementwise arithmetic metadata, rejecting only known shape conflicts."""
+        if not isinstance(other, AbstractArray):
+            if isinstance(other, Number):
+                other = AbstractArray((), getattr(other, "dtype", type(other)))
+            elif hasattr(other, "shape") and hasattr(other, "dtype"):
+                other = AbstractArray(other.shape, other.dtype)
+            else:
+                return NotImplemented
+
+        shape = self._resolve_binary_shape(other)
+        dtype = self._resolve_binary_dtype(other, operation)
+
+        result = AbstractArray(shape, dtype)
+        object.__setattr__(
+            result,
+            "_weak_type",
+            self._weak_type and other._weak_type,  # pylint: disable=protected-access
+        )  # pylint: disable=protected-access
+
+        return result
+
+    # pylint: disable-next=unused-argument
+    def _unary_arithmetic(self, operation):
+        """Infer unary arithmetic metadata while preserving weak typing."""
+        return copy.deepcopy(self)
+
+    def __neg__(self):
+        return self._unary_arithmetic(np.negative)
+
+    def __pos__(self):
+        return self._unary_arithmetic(np.positive)
+
+    def __abs__(self):
+        return self._unary_arithmetic(np.absolute)
+
+    def __add__(self, other):
+        return self._arithmetic(other, np.add)
+
+    def __radd__(self, other):
+        return self._arithmetic(other, np.add)
+
+    def __sub__(self, other):
+        return self._arithmetic(other, np.subtract)
+
+    def __rsub__(self, other):
+        return self._arithmetic(other, np.subtract)
+
+    def __mul__(self, other):
+        return self._arithmetic(other, np.multiply)
+
+    def __rmul__(self, other):
+        return self._arithmetic(other, np.multiply)
+
+    def __truediv__(self, other):
+        return self._arithmetic(other, np.true_divide)
+
+    def __rtruediv__(self, other):
+        return self._arithmetic(other, np.true_divide)
+
+    def __mod__(self, other):
+        return self._arithmetic(other, np.remainder)
+
+    def __rmod__(self, other):
+        return self._arithmetic(other, np.remainder)
+
+    def __floordiv__(self, other):
+        return self._arithmetic(other, np.floor_divide)
+
+    def __rfloordiv__(self, other):
+        return self._arithmetic(other, np.floor_divide)
+
+    def __pow__(self, other):
+        return self._arithmetic(other, np.power)
+
+    def __rpow__(self, other):
+        return self._arithmetic(other, np.power)
+
+
+class _AbstractTypeFactory(AbstractArray):
+    """
+    An abstraction that enables the generation of AbstractArrays via a highly user-friendly type notation,
+    using an override of the __getitem__ method.
+    """
+
+    def __init__(self, dtype):
+        super().__init__((), dtype)
+
+    def __getitem__(self, shape):
+        """
+        Overrides the indexing mechanism in python to achieve a user-friendly
+        sized type notation.
+
+        Args:
+            shape: Gives the shape of the desired abstract type. This is not an index,
+                but should be thought of as type notation for sized types.
+
+        Returns:
+            An instance of AbstractArray with the desired shape.
+        """
+        if isinstance(shape, int):
+            shape = (shape,)
+
+        if shape is not Ellipsis and (
+            not isinstance(shape, tuple) or not all(isinstance(n, int) and n >= -1 for n in shape)
+        ):
+            raise TypeError(
+                "AbstractTypeFactories can only be subscripted with integers and ellipsis."
+            )
+
+        res = AbstractArray(shape, self.dtype)
+        object.__setattr__(res, "_weak_type", self._weak_type)
+        return res
+
+
+Int = _AbstractTypeFactory(int)
+"""An :class:`~.AbstractArray` of ``dtype=int``. On its own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
+
+>>> isinstance(np.array(2), qp.typing.Int)
+True
+>>> qp.typing.Int[4, 2]
+AbstractArray((4, 2), int64, weak_type=True)
+>>> qp.typing.Int[-1, 10]
+AbstractArray((-1, 10), int64, weak_type=True)
+
+"""
+
+
+Float = _AbstractTypeFactory(float)
+"""An :class:`~.AbstractArray` of ``dtype=float``. On its own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
+
+>>> isinstance(np.array(2.0), qp.typing.Float)
+True
+>>> qp.typing.Float[4, 2]
+AbstractArray((4, 2), float64, weak_type=True)
+>>> qp.typing.Float[-1, 10]
+AbstractArray((-1, 10), float64, weak_type=True)
+
+"""
+
+Bool = _AbstractTypeFactory(bool)
+"""An :class:`~.AbstractArray` of ``dtype=bool``. On its own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
+
+>>> isinstance(np.array(False), qp.typing.Bool)
+True
+>>> qp.typing.Bool[4, 2]
+AbstractArray((4, 2), bool, weak_type=True)
+>>> qp.typing.Bool[-1, 10]
+AbstractArray((-1, 10), bool, weak_type=True)
+
+"""
+
+
+Complex = _AbstractTypeFactory(complex)
+"""An :class:`~.AbstractArray` of ``dtype=complex``. On its own, it corresponds to a single scalar, but
+can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
+
+>>> isinstance(np.array(0 + 1.2j), qp.typing.Complex)
+True
+>>> qp.typing.Complex[4, 2]
+AbstractArray((4, 2), complex128, weak_type=True)
+>>> qp.typing.Complex[-1, 10]
+AbstractArray((-1, 10), complex128, weak_type=True)
+
+"""
+
+
+@dataclass(frozen=True)
+class AbstractWires:
+    """An abstract representation of a sequence of wires that contains the number
+    of wires, useful for resource calculations.
+
+    Args:
+        num_wires (int): The number of wires. Use ``-1`` when the wire count is unknown.
+    """
+
+    _num_wires: int
+
+    def __post_init__(self):
+        if not isinstance(self._num_wires, int):
+            raise TypeError(
+                f"'num_wires' must be an integer, but got {type(self._num_wires).__name__}."
+            )
+        if self._num_wires < -1:
+            raise ValueError(
+                f"'num_wires' must be a non-negative integer or -1, but got {self._num_wires}. "
+                "For a dynamic number of wires, use -1."
+            )
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, AbstractWires):
+            return self._num_wires == other._num_wires
+        return NotImplemented  # pragma: no cover
+
+    @property
+    def shape_fixed(self) -> bool:
+        """Whether the number of wires is fixed."""
+        return self._num_wires != -1
+
+    @property
+    def shape(self) -> tuple[int]:
+        """The number of wires expressed as shape ``(num_wires,)``."""
+        return (self._num_wires,)
+
+    @property
+    def dtype(self):
+        """np.int64. The dtype of wires when used with Catalyst."""
+        return np.int64
+
+    def is_compatible_with(self, val) -> bool:
+        """Check whether an input value is compatible with an ``AbstractWires``. A value is
+        considered compatible if it represents a number of wires consistent with this
+        ``AbstractWires``.
+
+        Args:
+            val (Any): input value to check for compatibility. This can be another
+                ``AbstractWires`` or any object with a length (for example, a :class:`~.Wires`
+                instance or a sequence of wire labels).
+
+        Returns:
+            bool: ``True`` if ``val`` is compatible, ``False`` otherwise
+
+        The following conditions must be met to be considered compatible:
+
+        * If this ``AbstractWires`` has an unknown number of wires (``num_wires = -1``), then
+          the input value can have any number of wires.
+        * Otherwise, the input value must have the same, fixed number of wires.
+
+        **Example**
+
+        >>> AbstractWires(-1).is_compatible_with(AbstractWires(3))
+        True
+        >>> AbstractWires(2).is_compatible_with(AbstractWires(2))
+        True
+        >>> AbstractWires(2).is_compatible_with(AbstractWires(3))
+        False
+        >>> AbstractWires(2).is_compatible_with(AbstractWires(-1))
+        False
+        """
+        if isinstance(val, AbstractWires):
+            num_wires = val.shape[0]
+        else:
+            val = np.array(val) if isinstance(val, (Number, list, tuple)) else val
+            shape = getattr(val, "shape", None)
+            if shape is None or len(shape) > 1:
+                return False
+            num_wires = shape[0] if shape else 1
+
+        if not self.shape_fixed:
+            return True
+        return num_wires == self._num_wires
+
+    def __hash__(self):
+        return hash(("AbstractWires", self._num_wires))
+
+    def __len__(self) -> int:
+        if self._num_wires < 0:
+            raise TypeError(f"len() is undefined for {self} with unknown number of wires.")
+        return self._num_wires
+
+    def __add__(self, other) -> AbstractWires:
+        if not isinstance(other, AbstractWires):
+            return NotImplemented
+        if not self.shape_fixed or not other.shape_fixed:
+            return AbstractWires(-1)
+        return AbstractWires(self._num_wires + other._num_wires)
+
+    __radd__ = __add__
+
+    def __repr__(self):
+        return f"AbstractWires({self._num_wires})"
+
+    __str__ = __repr__
+
+    def __instancecheck__(self, instance):
+        if instance.__class__.__name__ != "Wires":
+            return False
+        return self._num_wires == -1 or len(instance) == self._num_wires
+
+    def __iter__(self):
+        if not self.shape_fixed:
+            raise TypeError("Cannot iterate over an AbstractWires of unfixed length.")
+        for _ in range(self._num_wires):
+            yield AbstractWires(1)
+
+    def __getitem__(self, index):
+        if not self.shape_fixed:
+            raise TypeError("Cannot index into an AbstractWires with unknown number of wires.")
+        if isinstance(index, int):
+            if index >= self._num_wires or index < -self._num_wires:
+                raise IndexError(f"{index} out of bounds for {self}.")
+            return AbstractWires(1)
+        if isinstance(index, slice):
+            start_stop_step = index.indices(self._num_wires)
+            return AbstractWires(len(range(*start_stop_step)))
+        index_type = type(index).__name__
+        raise TypeError(f"Wire indices must be integers or slices, not {index_type}.")
+
+
+class _AbstractWireTypeFactory:
+    """
+    An abstraction that enables the generation of AbstractWires via a highly user-friendly type
+    notation, using an override of the __getitem__ method.
+    """
+
+    def __getitem__(self, shape):
+        """
+        Overrides the indexing mechanism in python to achieve a user-friendly sized type notation.
+
+        Args:
+            shape: Gives the shape of the desired abstract wires type. This is not an index,
+                but should be thought of as type notation for sized types.
+
+        Returns:
+            An instance of AbstractWires with the desired shape.
+
+        """
+        if not isinstance(shape, int):
+            raise TypeError("_AbstractWireTypeFactory's can only be subscripted with integers.")
+        return AbstractWires(shape)
+
+    def __iter__(self):
+        raise TypeError("'Wire' object is not iterable. Use 'Wire[1]' to represent a single wire.")
+
+
+Wire = _AbstractWireTypeFactory()
+"""An :class:`~.AbstractWires` subclass. It can be indexed to create :class:`~.AbstractWires`
+with a fixed or dynamic wire count. It should not be used on its own.
+
+>>> from pennylane.typing import Wire
+>>> isinstance(Wires([0, 1]), Wire[2])
+True
+>>> Wire[1]
+AbstractWires(1)
+>>> Wire[2]
+AbstractWires(2)
+>>> Wire[-1]
+AbstractWires(-1)
+
+"""

@@ -22,8 +22,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.shots import Shots
 from pennylane.data.attributes.serialization import pytree_structure_dump, pytree_structure_load
-from pennylane.measurements import Shots
 from pennylane.ops import PauliX, Prod, Sum
 from pennylane.pytrees import PyTreeStructure, flatten, is_pytree, leaf, unflatten
 from pennylane.pytrees.pytrees import (
@@ -175,6 +175,25 @@ def test_pytree_structure_load():
             PyTreeStructure(CustomNode, {"wires": [1, "a", 3.4, None]}, [leaf, leaf, leaf]),
         ],
     )
+
+
+def test_pytree_structure_dump_load_none():
+    """Test that ``None`` serializes as an empty node (distinct from a leaf ``null``)
+    and round-trips through dump/load."""
+    obj = {"a": None, "b": [1, None]}
+    data, struct = flatten(obj)
+
+    assert json.loads(pytree_structure_dump(struct)) == [
+        "builtins.dict",
+        ["a", "b"],
+        [
+            ["builtins.NoneType", None, []],
+            ["builtins.list", None, [None, ["builtins.NoneType", None, []]]],
+        ],
+    ]
+
+    obj_out = unflatten(data, pytree_structure_load(pytree_structure_dump(struct)))
+    assert obj_out == obj
 
 
 H_ONE_QUBIT = np.array([[1.0, 0.5j], [-0.5j, 2.5]])

@@ -16,12 +16,13 @@ Contains the ``select_pauli_rot_phase_gradient`` transform.
 """
 
 import pennylane as qp
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
+from pennylane.transforms.decompositions.select_pauli_rot_phase_gradient import (
+    _select_pauli_rot_phase_gradient,
+)
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
-
-from .decomp_selectpaulirot_phase_gradient import _select_pauli_rot_phase_gradient
 
 
 @transform
@@ -75,12 +76,6 @@ def select_pauli_rot_phase_gradient(
         phase_grad_wires = [f"phg_{i}" for i in range(precision)]
         work_wires = [f"work_{i}" for i in range(precision - 1)]
 
-        def phase_gradient(wires):
-            # prepare phase gradient state
-            for i, w in enumerate(wires):
-                qp.H(w)
-                qp.PhaseShift(-np.pi / 2**i, w)
-
         @partial(
             select_pauli_rot_phase_gradient,
             angle_wires=angle_wires,
@@ -89,7 +84,7 @@ def select_pauli_rot_phase_gradient(
         )
         @qp.qnode(qp.device("default.qubit"))
         def select_pauli_rot_circ(phis, control_wires, target_wire):
-            phase_gradient(phase_grad_wires)  # prepare phase gradient state
+            qp.PhaseGradientStatePrep(phase_grad_wires)
 
             for wire in control_wires:
                 qp.Hadamard(wire)

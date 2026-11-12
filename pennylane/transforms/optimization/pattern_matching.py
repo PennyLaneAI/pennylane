@@ -21,10 +21,11 @@ from collections import OrderedDict
 import numpy as np
 
 import pennylane as qp
-from pennylane import adjoint
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import QuantumFunctionError
+from pennylane.ops.op_math import Controlled
+from pennylane.ops.op_math.adjoint import _adjoint_eager
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.transforms.commutation_dag import commutation_dag
 from pennylane.typing import PostprocessingFn
@@ -43,6 +44,7 @@ CONTROL_BASE = {
     "CRY": "RY",
     "CRZ": "RZ",
     "C(S)": "S",
+    "C(PauliX)": "PauliX",
     "CRot": "Rot",
     "MultiControlledX": "PauliX",
     "ControlledOperation": "ControlledOperation",
@@ -181,17 +183,17 @@ def pattern_matching_optimization(
         For optimizing the circuit given the following pattern of CNOTs we apply the ``pattern_matching``
         transform.
 
-        >>> dev = qp.device('default.qubit', wires=5)
+        >>> dev = qp.device('lightning.qubit', wires=5)
         >>> qnode = qp.QNode(circuit, dev)
         >>> optimized_qnode = pattern_matching_optimization(qnode, pattern_tapes=[cnot_pattern])
 
         In our case, it is possible to find three CNOTs and replace this pattern with only two CNOTs and therefore
         optimizing the circuit. The number of CNOTs in the circuit is reduced by one.
 
-        >>> qp.specs(qnode)()["resources"].gate_types["CNOT"]
+        >>> qp.specs(qp.qjit(qnode, capture=False))().resources.quantum_operations["CNOT"]
         4
 
-        >>> qp.specs(optimized_qnode)()["resources"].gate_types["CNOT"]
+        >>> qp.specs(qp.qjit(optimized_qnode, capture=False))().resources.quantum_operations["CNOT"]
         3
 
         >>> print(qp.draw(qnode)())
@@ -292,7 +294,7 @@ def pattern_matching_optimization(
                             inst = qp.map_wires(
                                 inst, wire_map=dict(zip(inst.wires, wires, strict=True))
                             )
-                            adjoint(qp.apply, lazy=False)(inst)
+                            _adjoint_eager(inst, update_queue=True)
 
                     # Add the unmatched gates.
                     for node_id in substitution.unmatched_list:
@@ -460,11 +462,18 @@ def _compare_operation_without_qubits(node_1, node_2):
     Return:
         Bool: True if similar operation (no qubits comparison) and False otherwise.
     """
-    return (
-        (node_1.op.name == node_2.op.name)
-        and qp.math.allclose(node_1.op.data, node_2.op.data)
-        and len(node_1.wires) == len(node_2.wires)
-    )
+
+    if len(node_1.wires) != len(node_2.wires):
+        return False
+
+    if isinstance(node_1.op, Controlled) and isinstance(node_2.op, Controlled):
+        return _compare_ops_without_qubits(node_1.op.base, node_2.op.base)
+
+    return _compare_ops_without_qubits(node_1.op, node_2.op)
+
+
+def _compare_ops_without_qubits(op1, op2):
+    return op1.name == op2.name and qp.math.allclose(op1.data, op2.data)
 
 
 def _not_fixed_qubits(n_qubits_circuit, exclude, length):
@@ -499,9 +508,9 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
     first_match_qubits = []
 
     # Controlled gate
-    if len(node_c.op.control_wires) >= 1:
+    if isinstance(node_c.op, Controlled):
         circuit_control = node_c.op.control_wires
-        circuit_target = Wires([w for w in node_c.op.wires if w not in node_c.op.control_wires])
+        circuit_target = Wires([w for w in node_c.op.wires if w not in circuit_control])
         # Not symmetric target gate or acting on 1 wire (target wires cannot be permuted) (For example Toffoli)
         if CONTROL_BASE[node_p.op.name] not in symmetric_over_all_wires:
             # Permute control
@@ -886,11 +895,9 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
                 node_pattern = self.pattern_dag.get_node(i)
 
                 # Necessary but not sufficient conditions for a match to happen.
-                if (
-                    len(self.wires[label]) != len(node_pattern.wires)
-                    or set(self.wires[label]) != set(node_pattern.wires)
-                    or node_circuit.op.name != node_pattern.op.name
-                ):
+                if len(self.wires[label]) != len(node_pattern.wires) or set(
+                    self.wires[label]
+                ) != set(node_pattern.wires):
                     continue
 
                 # Compare two operations
@@ -1188,11 +1195,7 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
                 target_wires2 = self.pattern_dag.get_node(pattern_id).target_wires
 
                 # Necessary but not sufficient conditions for a match to happen.
-                if (
-                    len(wires1) != len(wires2)
-                    or set(wires1) != set(wires2)
-                    or node_circuit.op.name != node_pattern.op.name
-                ):
+                if len(wires1) != len(wires2) or set(wires1) != set(wires2):
                     continue
                 # Compare two operations
                 if _compare_operation_without_qubits(node_circuit, node_pattern):
@@ -1510,6 +1513,14 @@ class SubstitutionConfig:  # pylint: disable=too-many-arguments, too-few-public-
         self.pred_block = pred_block
 
 
+def _controlled_x_cost(op):
+    """Use the named-gate cost when symbolic controlled X can lower to CNOT or Toffoli."""
+    num_controls = len(op.control_wires)
+    if num_controls in (1, 2) and all(op.control_values):
+        return 2 if num_controls == 1 else 21
+    return 2 * 4 * num_controls**2
+
+
 class TemplateSubstitution:  # pylint: disable=too-few-public-methods
     """Class to run the substitution algorithm from the list of maximal matches."""
 
@@ -1556,6 +1567,7 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                 # the quantum cost of a MultiControlledX gate scales as 4n^2, where n is the number of control wires
                 # see exercise 4.29 in Nielsen and Chuang
                 "MultiControlledX": lambda op: 2 * 4 * len(op.control_wires) ** 2,
+                "C(PauliX)": _controlled_x_cost,
             }
 
     def _pred_block(self, circuit_sublist, index):

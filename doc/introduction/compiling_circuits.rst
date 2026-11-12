@@ -138,10 +138,12 @@ For more details on :class:`~.CompilePipeline` and the available compilation tra
 Gate decompositions
 -------------------
 
-When compiling a circuit, it is often beneficial to decompose the circuit into a 
-set of gates. To do this, we can use the :func:`~.pennylane.transforms.decompose` 
-function, which enables decomposition of circuits into a set of gates defined either 
-by their name, type, or by a set of rules they must follow.
+When compiling a circuit, it is often beneficial to decompose the circuit into a
+set of gates. For tape-based (non-compiled) workflows, use
+:func:`~.pennylane.transforms._tape_decompose`, which decomposes circuits into a
+set of gates defined either by their name, type, or by a set of rules they must
+follow. Under :func:`~.qjit`, use :func:`~.pennylane.transforms.decompose`, which
+dispatches to Catalyst's graph-decomposition pass.
 
 .. note::
 
@@ -157,13 +159,13 @@ The example below demonstrates how a three-wire circuit can be decomposed using
 a pre-defined set of gates: 
 
 .. code-block:: python
-    
-    from pennylane.transforms import decompose
+
+    from pennylane.transforms import _tape_decompose
 
     dev = qp.device('default.qubit')
     allowed_gates = {qp.Toffoli, qp.RX, qp.RZ, qp.GlobalPhase}
 
-    @decompose(gate_set=allowed_gates)
+    @_tape_decompose(gate_set=allowed_gates)
     @qp.qnode(dev)
     def circuit():
         qp.Hadamard(wires=[0])
@@ -188,7 +190,7 @@ or two-qubit gates using a rule:
 
     qp.decomposition.disable_graph()
 
-    @decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
+    @_tape_decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
     @qp.qnode(dev)
     def circuit():
         qp.Toffoli(wires=[0,1,2])
@@ -212,30 +214,26 @@ with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit:
 .. code-block:: python
 
     phase = 1 
-    target_wires = [0]
-    unitary = qp.RX(phase, wires=0).matrix()
+    unitary = qp.RX(phase, wires=0)
     n_estimation_wires = 3
     estimation_wires = range(1, n_estimation_wires + 1)
 
     @qp.qnode(qp.device('default.qubit'))
     def circuit():
         # Start in the |+> eigenstate of the unitary
-        qp.Hadamard(wires=target_wires)
-        qp.QuantumPhaseEstimation(
-            unitary,
-            target_wires=target_wires,
-            estimation_wires=estimation_wires,
-        ) 
+        qp.Hadamard(0)
+        qp.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)
 
 From here, we can iterate through the stages of decomposition:
 
->>> print(qp.draw(decompose(circuit, max_expansion=0))())
+>>> from pennylane.transforms import _tape_decompose
+>>> print(qp.draw(_tape_decompose(circuit, max_expansion=0))())
 0: ──H─╭QuantumPhaseEstimation─┤  
 1: ────├QuantumPhaseEstimation─┤  
 2: ────├QuantumPhaseEstimation─┤  
 3: ────╰QuantumPhaseEstimation─┤  
 
->>> print(qp.draw(decompose(circuit, max_expansion=1))())
+>>> print(qp.draw(_tape_decompose(circuit, max_expansion=1))())
 0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤  
 1: ──H─╰●──────│───────│───────╭QFT†─┤  
 2: ──H─────────╰●──────│───────├QFT†─┤  
@@ -244,7 +242,7 @@ M0 =
 [[0.87758256+0.j         0.        -0.47942554j]
  [0.        -0.47942554j 0.87758256+0.j        ]]
 
->>> print(qp.draw(decompose(circuit, max_expansion=2))())
+>>> print(qp.draw(_tape_decompose(circuit, max_expansion=2))())
 0: ──H──RZ(4.71)──RY(1.14)─╭X──RY(-1.14)──RZ(-3.14)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X ···
 1: ──H─────────────────────╰●───────────────────────╰●────────────────────────────────│─ ···
 2: ──H────────────────────────────────────────────────────────────────────────────────╰● ···
@@ -311,7 +309,7 @@ to a device:
 
     decomp_dev = qp.device("default.qubit", wires=3)
     qnode = qp.QNode(circuit, decomp_dev)
-    decomp_qnode = qp.transforms.decompose(qnode, gate_set={qp.CZ, qp.H})
+    decomp_qnode = qp.transforms._tape_decompose(qnode, gate_set={qp.CZ, qp.H})
 
 Now when we draw or run a QNode on this device, the gates will be expanded according
 to our specifications:
@@ -329,7 +327,7 @@ Custom decompositions with qp.decomposition.enable_graph
 With the graph decompositions system enabled, custom decompositions for operators 
 in PennyLane can be added in a few ways depending on the application. 
 
-The :func:`~.pennylane.transforms.decompose` transform offers the ability to inject
+The :func:`~.pennylane.transforms._tape_decompose` transform offers the ability to inject
 custom decompositions via two keyword arguments:
 
 * ``fixed_decomps``: any decomposition for an operator type here will automatically 
@@ -362,7 +360,7 @@ With the resources registered, this can be used with ``fixed_decomps`` or ``alt_
 
 .. code-block:: python
 
-    @qp.transforms.decompose(
+    @qp.transforms._tape_decompose(
         fixed_decomps={qp.CNOT: my_cnot},
         gate_set={qp.H, qp.S, qp.T, qp.CZ},
     )
@@ -394,7 +392,7 @@ type:
         qp.RY(np.pi/2, wires[1])
         qp.Z(wires[1])
 
-    @qp.transforms.decompose(
+    @qp.transforms._tape_decompose(
         gate_set={qp.CZ, qp.H, qp.Z, qp.RY},
         alt_decomps={qp.CNOT: [my_cnot1, my_cnot2]},
     )
@@ -409,7 +407,7 @@ parameters can be found in the usage details for :func:`~.pennylane.register_res
 
 Alternatively, new decomposition rules can be added to operators *globally* with 
 the :func:`~.pennylane.add_decomps` function. This negates having to specify ``alt_decomps``
-in every instance of the ``decompose`` transform. The following example globally 
+in every instance of the ``_tape_decompose`` transform. The following example globally
 adds the ``my_cnot1`` and ``my_cnot2`` decomposition rules to the ``qp.CNOT`` gate:
 
 >>> qp.add_decomps(qp.CNOT, my_cnot1, my_cnot2)
@@ -498,59 +496,6 @@ As mentioned earlier we can also simplify QNode objects to, for example, group r
 0: ───────────┤ ╭Probs
 1: ───────────┤ ├Probs
 2: ──RZ(5.00)─┤ ╰Probs
-
-Circuit cutting
----------------
-
-Circuit cutting allows you to replace a circuit with ``N`` wires by a set of circuits with less than
-``N`` wires (see also `Peng et. al <https://arxiv.org/abs/1904.00102>`_). Of course this comes with a cost: The smaller circuits
-require a greater number of device executions to be evaluated.
-
-In PennyLane, circuit cutting can be
-activated by positioning :class:`~.pennylane.WireCut` operators at the desired cut locations, and
-by decorating the QNode with the :func:`~.pennylane.cut_circuit` transform.
-
-The example below shows how a three-wire circuit can be run on a two-wire device:
-
-.. code-block:: python
-
-    dev = qp.device("default.qubit", wires=2)
-
-    @qp.cut_circuit
-    @qp.qnode(dev)
-    def circuit(x):
-        qp.RX(x, wires=0)
-        qp.RY(0.9, wires=1)
-        qp.RX(0.3, wires=2)
-
-        qp.CZ(wires=[0, 1])
-        qp.RY(-0.4, wires=0)
-
-        qp.WireCut(wires=1)
-
-        qp.CZ(wires=[1, 2])
-
-        return qp.expval(qp.pauli.string_to_pauli_word("ZZZ"))
-
-Instead of being executed directly, the circuit will be partitioned into
-smaller fragments according to the :class:`~.pennylane.WireCut` locations,
-and each fragment will be executed multiple times. PennyLane automatically combines the results
-of the fragment executions to recover the expected output of the original uncut circuit.
-
->>> x = np.array(0.531, requires_grad=True)
->>> circuit(0.531)
-0.47165198882111165
-
-Circuit cutting support is also differentiable:
-
->>> qp.grad(circuit)(x)
--0.276982865449393
-
-.. note::
-
-    Simulated quantum circuits that produce samples can be cut using
-    the :func:`~.pennylane.cut_circuit_mc`
-    transform, which is based on the Monte Carlo method.
 
 Groups of commuting Pauli words
 -------------------------------

@@ -20,17 +20,16 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 
 # pylint: disable=unidiomatic-typecheck, cell-var-from-loop
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestInitialization:
@@ -42,9 +41,7 @@ class TestInitialization:
         base = qp.PauliX(1)
         control = [0, 1, 2]
 
-        with pytest.raises(
-            ValueError, match="The control wires must be different from the base operation wires."
-        ):
+        with pytest.raises(ValueError, match="base.wires and control_wires must not overlap"):
             _ = qp.ControlledSequence(base, control)
 
     def test_name(self):
@@ -56,6 +53,18 @@ class TestInitialization:
 
 
 class TestProperties:
+
+    @pytest.mark.parametrize("angle", [0.25, np.array([0.25, 0.5])])
+    def test_base_parameter_properties(self, angle):
+        """Test that base parameters remain visible to differentiation and broadcasting."""
+        base = qp.RX(angle, wires=3)
+        op = qp.ControlledSequence(base, control=[0, 1, 2])
+
+        assert op.data == base.data
+        assert op.num_params == base.num_params
+        assert op.ndim_params == base.ndim_params
+        assert op.batch_size == base.batch_size
+        assert op.grad_method is None
 
     def test_hash(self):
         """Test that hash(op) uniquely describes a ControlledSequence"""
@@ -89,6 +98,12 @@ class TestProperties:
         assert op.has_matrix is False
         assert op.base.has_matrix is True
 
+    def test_has_sparse_matrix(self):
+        """Test that the sequence has no sparse matrix even when its base does."""
+        op = qp.ControlledSequence(qp.PauliX(0), control=[1])
+        assert op.has_sparse_matrix is False
+        assert op.base.has_sparse_matrix is True
+
 
 class TestMethods:
 
@@ -113,56 +128,71 @@ class TestMethods:
         assert new_op.base.wires == Wires(["a", "b"])
         assert new_op.control == Wires(["c", "d"])
 
-    def test_compute_decomposition_lazy(self):
-        """Test compute_decomposition with lazy=True"""
-        base = qp.RZ(4.3, 1)
-        control_wires = [0, 2, 3]
+        assert op.base.wires == Wires([0, 1])
+        assert op.control == Wires([2, 3])
 
-        decomp = qp.ControlledSequence.compute_decomposition(
-            base=base, control_wires=control_wires, lazy=True
-        )
+    @pytest.mark.parametrize("control", [[], [0], [0, 1, 2]])
+    def test_decomposition(self, control):
+        """Test the returned and queued operations from the registered decomposition."""
+        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=control)
 
-        assert len(decomp) == len(control_wires)
-        for i, op in enumerate(decomp):
-            qp.assert_equal(op.base.base, base)
-            assert isinstance(op, qp.ops.Pow)
-            assert op.z == 2 ** (len(control_wires) - i - 1)
-
-        for op, w in zip(decomp, control_wires):
-            assert op.base.control_wires == Wires(w)
-
-    def test_compute_decomposition_not_lazy(self):
-        """Test compute_decomposition with lazy=False"""
-        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=["a", 1, "blue"])
-
-        decomp = op.compute_decomposition(base=op.base, control_wires=op.control, lazy=False)
+        with qp.queuing.AnnotatedQueue() as queue:
+            decomp = op.decomposition()
         expected_decomp = [
-            qp.CRX(0.25 * 4, wires=["a", 3]),
-            qp.CRX(0.25 * 2, wires=[1, 3]),
-            qp.CRX(0.25 * 1, wires=["blue", 3]),
+            qp.ctrl(qp.RX(0.25 * 2 ** (len(control) - 1 - j), wires=3), control=wire)
+            for j, wire in enumerate(control)
         ]
 
-        for op1, op2 in zip(decomp, expected_decomp):
-            assert op1 == op2
+        queued_ops = queue.queue
+        for operations in (decomp, queued_ops):
+            assert len(operations) == len(expected_decomp)
+            for actual, expected in zip(operations, expected_decomp):
+                qp.assert_equal(actual, expected)
 
-    def test_decomposition(self):
-        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=["a", 1, "blue"])
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("control", [[], 0, [0, 1], [0, 1, 2]])
+    @pytest.mark.parametrize(
+        "base",
+        [
+            qp.RX(0.25, wires=3),
+            qp.X(3),
+            qp.Hadamard(3),
+            qp.CNOT([3, 4]),
+            qp.prod(qp.RX(0.25, wires=3), qp.RY(0.5, wires=4)),
+        ],
+    )
+    def test_decomposition_new(self, control, base):
+        """Test decomposition resources and matrices for different power simplifications."""
+        op = qp.ControlledSequence(base, control=control)
+        qp.testing.assert_decomposable(op)
 
-        decomp = op.decomposition()
-        expected_decomp = [
-            qp.CRX(0.25 * 4, wires=["a", 3]),
-            qp.CRX(0.25 * 2, wires=[1, 3]),
-            qp.CRX(0.25 * 1, wires=["blue", 3]),
+    @pytest.mark.capture
+    @pytest.mark.parametrize("control", [[0], [0, 1, 2]])
+    def test_power_capture(self, control):
+        """Test that capture simplifies static powers without structured loops."""
+        import jax
+
+        rule = qp.list_decomps(qp.ControlledSequence)[0]
+
+        def circuit():
+            rule(base=qp.RX(0.25, wires=3), control=control)
+
+        plxpr = jax.make_jaxpr(circuit)()
+        assert all(eqn.primitive.name != "for_loop" for eqn in plxpr.jaxpr.eqns)
+        operations = []
+
+        class CollectOps(qp.capture.PlxprInterpreter):  # pylint: disable=too-few-public-methods
+            def interpret_operation(self, op):
+                operations.append(op)
+
+        CollectOps().eval(plxpr.jaxpr, plxpr.consts)
+        expected = [
+            qp.ctrl(qp.RX(0.25 * 2 ** (len(control) - 1 - j), wires=3), control=wire)
+            for j, wire in enumerate(control)
         ]
-
-        for op1, op2 in zip(decomp, expected_decomp):
-            assert op1 == op2
-
-    def test_decomposition_new(self):
-        """Tests the decomposition rule implemented with the new system."""
-        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=["a", 1, "blue"])
-        for rule in qp.list_decomps(qp.ControlledSequence):
-            _test_decomposition_rule(op, rule)
+        assert len(operations) == len(expected)
+        for actual, expected_op in zip(operations, expected):
+            qp.assert_equal(actual, expected_op)
 
 
 class TestIntegration:
@@ -265,31 +295,6 @@ class TestIntegration:
         jac = torch.autograd.functional.jacobian(qnode, x)
         assert qp.math.shape(jac) == (16,)
         assert qp.math.allclose(jac, self.exp_jac, atol=0.005)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("shots", [None, 10000])
-    @pytest.mark.xfail(reason="tf gradient doesn't seem to be working, returns ()")
-    def test_qnode_tf(self, shots, seed):
-        """Test that the QNode executes and is differentiable with TensorFlow. The shots
-        argument controls whether autodiff or parameter-shift gradients are used."""
-
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", seed=seed)
-        diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qp.set_shots(
-            qp.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
-        )
-
-        x = tf.Variable(self.x)
-        with tf.GradientTape() as tape:
-            res = qnode(x)
-
-        assert qp.math.shape(res) == (16,)
-        assert qp.math.allclose(res, self.exp_result, atol=0.002)
-
-        jac = tape.gradient(res, x)
-        assert qp.math.shape(jac) == (16,)
 
     def test_prod_rx_rx_compiled_circuit(self):
         """Test that a circuit can execute successfully using qp.compile and

@@ -394,7 +394,7 @@ class TestLabsSelectTHC:
         ),
     )
     def test_resources(self, thc_ham, num_batches, rotation_prec, selswap_depth, expected_res):
-        """Test that the resource decompostion for SelectTHC is correct."""
+        """Test that the resource decomposition for SelectTHC is correct."""
 
         select_cost = qre.estimate(
             qre.SelectTHC(
@@ -466,7 +466,7 @@ class TestLabsSelectTHC:
         num_zero_ctrl,
         expected_res,
     ):
-        """Test that the controlled resource decompostion for SelectTHC is correct."""
+        """Test that the controlled resource decomposition for SelectTHC is correct."""
 
         ctrl_select_cost = qre.estimate(
             qre.Controlled(
@@ -2144,7 +2144,7 @@ class TestLabsQROM:
                 ]
             )
         if index == 4:  # 12, 2, 5, 4, True
-            allocate_sel = qre.Allocate(ceil_log2(12 / 4) - 1, "zero", True)
+            allocate_sel = qre.Allocate(ceil_log2(12 // 4) - 1, "zero", True)
             allocate_swap = qre.Allocate((4 - 1) * 2, "any", True)
             h = qre.Hadamard.resource_rep()
 
@@ -2603,8 +2603,8 @@ class TestSelectCopyQROM:
             (100, 2, None, 4, 1, 78, 7),
             (1000, 4, 4, 2, 4, 1002, 12),
             (1000, 4, 9, 8, 1, 665, 13),
-            (1e8, 16, None, 64, 3, 10939103, 209),
-            (1e8, 16, None, 32, 8, 9375822, 269),
+            (int(1e8), 16, None, 64, 3, 10939103, 209),
+            (int(1e8), 16, None, 32, 8, 9375822, 269),
         ),  # toffoli and qubit costs computed by hand
     )
     def test_resource_decomp(

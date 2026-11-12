@@ -37,6 +37,7 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.combine_global_phases
     ~transforms.commute_controlled
     ~transforms.decompose
+    ~transforms._tape_decompose
     ~transforms.disentangle_cnot
     ~transforms.disentangle_swap
     ~transforms.merge_amplitude_embedding
@@ -63,6 +64,7 @@ These compilation passes decompose or manipulate quantum circuits in the
 
     ~clifford_t_decomposition
     ~gridsynth
+    ~transforms.decompositions.make_phase_gradient_distillation_decomp
     ~transforms.ppm_compilation
     ~transforms.to_ppr
     ~transforms.commute_ppr
@@ -70,6 +72,18 @@ These compilation passes decompose or manipulate quantum circuits in the
     ~transforms.merge_ppr_ppm
     ~transforms.reduce_t_depth
     ~transforms.decompose_arbitrary_ppr
+
+Instead of a full transform, rotations can also be decomposed into Clifford+T-friendly
+arithmetic via a `phase gradient state <https://pennylane.ai/compilation/phase-gradient>`__,
+using the following decomposition rule factories with the graph-based decomposition system:
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.decompositions.make_rz_to_phase_gradient_decomp
+    ~transforms.decompositions.make_crz_to_phase_gradient_decomp
+    ~transforms.decompositions.make_selectpaulirot_to_phase_gradient_decomp
+    ~transforms.decompositions.phase_gradient_precision_stats
 
 Compilation passes using ZX calculus
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -358,7 +372,7 @@ first and only result.
 
 .. code-block:: python
 
-    from pennylane.tape import QuantumScript, QuantumScriptBatch
+    from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
     from pennylane.typing import PostprocessingFn
 
     @qp.transform
@@ -392,7 +406,7 @@ the form of a decorator in order to turn the custom function into a quantum tran
 
 .. code-block:: python
 
-    from pennylane.tape import QuantumScript, QuantumScriptBatch
+    from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
     from pennylane.typing import PostprocessingFn
 
     @qp.transform
@@ -418,12 +432,12 @@ for a comprehensive overview of transforms and core functionalities, consult the
 """
 
 # Leave as alias for backwards-compatibility
-from pennylane.tape import make_qscript as make_tape
+from pennylane.core.qscript import make_qscript as make_tape
+from pennylane.core.transforms import CompilePipeline, transform, Transform
 from pennylane.exceptions import TransformError
 from pennylane._entry_points_utils import _setup_entry_points
 
 # Import the decorators first to prevent circular imports when used in other transforms
-from .core import transform, CompilePipeline
 from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
@@ -469,7 +483,7 @@ from .zx import (
     from_zx,
 )
 from .broadcast_expand import broadcast_expand
-from .decompose import decompose
+from .decompose import _tape_decompose, decompose  # pylint: disable=protected-access
 from .intermediate_reps import (
     parity_matrix,
     phase_polynomial,

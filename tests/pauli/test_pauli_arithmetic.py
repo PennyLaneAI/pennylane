@@ -83,7 +83,7 @@ def test_ps_ps_multiplication_non_commutativity():
 
 def _pauli_to_op(p):
     """convert PauliWord or PauliSentence to Operator"""
-    return p.operation()
+    return qp.pauli.to_operator(p)
 
 
 def _pw_to_ps(p):
@@ -412,7 +412,7 @@ class TestPauliWord:
     def test_operation(self, pw, op):
         """Test that a PauliWord can be cast to a PL operation."""
         with qp.queuing.AnnotatedQueue() as q:
-            pw_op = pw.operation()
+            pw_op = qp.pauli.to_operator(pw)
         assert len(q.queue) == 0
 
         if len(pw) > 1:
@@ -424,9 +424,9 @@ class TestPauliWord:
             assert pw_op.wires == op.wires
 
     def test_operation_empty(self):
-        """Test that an empty PauliWord with wire_order returns Identity."""
+        """Test that an empty PauliWord with identity_wires returns Identity."""
         with qp.queuing.AnnotatedQueue() as q:
-            op = PauliWord({}).operation(wire_order=[0, 1])
+            op = qp.pauli.to_operator(PauliWord({}), identity_wires=[0, 1])
         assert len(q.queue) == 0
         id = qp.Identity(wires=[0, 1])
         assert op.name == id.name
@@ -435,7 +435,7 @@ class TestPauliWord:
     def test_operation_empty_nowires(self):
         """Test that an empty PauliWord is cast to qp.Identity() operation."""
         with qp.queuing.AnnotatedQueue() as q:
-            res = pw4.operation()
+            res = qp.pauli.to_operator(pw4)
         assert len(q.queue) == 0
         assert res == qp.Identity()
 
@@ -938,7 +938,7 @@ class TestPauliSentence:
             assert op1.wires == op2.wires
 
         with qp.queuing.AnnotatedQueue() as q:
-            ps_op = ps.operation()
+            ps_op = qp.pauli.to_operator(ps)
         assert len(q.queue) == 0
         if len(ps) > 1:
             for ps_summand, op_summand in zip(ps_op.operands, op.operands):
@@ -954,7 +954,7 @@ class TestPauliSentence:
         """Test that a PauliSentence with an empty PauliWord can be cast to
         operation correctly."""
         with qp.queuing.AnnotatedQueue() as q:
-            full_ps_op = ps3.operation()
+            full_ps_op = qp.pauli.to_operator(ps3)
         assert len(q.queue) == 0
         full_op = qp.sum(
             -0.5 * qp.prod(qp.PauliZ(wires=0), qp.PauliZ(wires="b"), qp.PauliZ(wires="c")),
@@ -976,9 +976,9 @@ class TestPauliSentence:
         # in constructing the identity wires are cast from set -> list and the order is not preserved
 
     def test_operation_empty(self):
-        """Test that an empty PauliSentence with wire_order returns Identity."""
+        """Test that an empty PauliSentence with identity_wires returns zero times Identity."""
         with qp.queuing.AnnotatedQueue() as q:
-            op = ps5.operation(wire_order=[0, 1])
+            op = qp.pauli.to_operator(ps5, identity_wires=[0, 1])
         assert len(q.queue) == 0
         id = qp.s_prod(0.0, qp.Identity(wires=[0, 1]))
 
@@ -989,18 +989,18 @@ class TestPauliSentence:
         """Test that a ValueError is raised if an empty PauliSentence is
         cast to a PL operation."""
         with qp.queuing.AnnotatedQueue() as q:
-            res1 = ps4.operation()
+            res1 = qp.pauli.to_operator(ps4)
         assert len(q.queue) == 0
         assert res1 == qp.Identity()
 
         with qp.queuing.AnnotatedQueue() as q:
-            res2 = ps5.operation()
+            res2 = qp.pauli.to_operator(ps5)
         assert len(q.queue) == 0
         assert res2 == qp.s_prod(0, qp.Identity())
 
-    def test_operation_wire_order(self):
-        """Test that the wire_order parameter is used when the pauli representation is empty"""
-        op = ps5.operation(wire_order=["a", "b"])
+    def test_operation_identity_wires(self):
+        """Test that the identity_wires parameter is used when the Pauli representation is empty."""
+        op = qp.pauli.to_operator(ps5, identity_wires=["a", "b"])
         id = qp.s_prod(0.0, qp.Identity(wires=["a", "b"]))
 
         qp.assert_equal(op, id)
@@ -1012,7 +1012,7 @@ class TestPauliSentence:
         pw0 = qp.pauli.PauliWord({0: "X", "a": "Y"})
         pw1 = qp.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})
         ps = qp.pauli.PauliSentence({pw0: coeff0, pw1: coeff1})
-        assert ps.operation() is not None
+        assert qp.pauli.to_operator(ps) is not None
 
     def test_pickling(self):
         """Check that paulisentences can be pickled and unpickled."""
@@ -1073,7 +1073,7 @@ class TestPauliSentence:
         pw1 = qp.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})
         ps = qp.pauli.PauliSentence({pw0: coeff0, pw1: coeff1})
         mat0 = ps.to_mat(wire_order=wire_order)
-        mat1 = qp.matrix(ps.operation(), wire_order=wire_order)
+        mat1 = qp.matrix(qp.pauli.to_operator(ps), wire_order=wire_order)
         assert qp.math.allclose(mat0, mat1)
 
 
@@ -1166,29 +1166,6 @@ class TestPauliSentenceMatrix:
         buffer_size = 2 ** len(wire_order) * 48  # Buffer size for 2 matrices
         sparse_mat = ps.to_mat(wire_order, format="csr", buffer_size=buffer_size)
         assert np.allclose(sparse_mat.toarray(), true_matrix)
-
-    @pytest.mark.tf
-    def test_dense_matrix_tf(self):
-        """Test calculating the matrix for a pauli sentence is differentaible with tensorflow."""
-        import tensorflow as tf
-
-        x = tf.Variable(0.1 + 0j)
-        y = tf.Variable(0.2 + 0j)
-
-        with tf.GradientTape() as tape:
-            _pw1 = PauliWord({0: "X", 1: "Y"})
-            _pw2 = PauliWord({0: "Y", 1: "X"})
-            H = x * _pw1 + y * _pw2
-            mat = H.to_mat()
-
-        gx, gy = tape.jacobian(mat, [x, y])
-
-        pw1_mat = np.array([[0, 0, 0, -1j], [0, 0, 1j, 0], [0, -1j, 0, 0], [1j, 0, 0, 0]])
-        pw2_mat = np.array([[0, 0, 0, -1j], [0, 0, -1j, 0], [0, 1j, 0, 0], [1j, 0, 0, 0]])
-
-        assert qp.math.allclose(mat, x * pw1_mat + y * pw2_mat)
-        assert qp.math.allclose(gx, qp.math.conj(pw1_mat))  # tf complex number convention
-        assert qp.math.allclose(gy, qp.math.conj(pw2_mat))
 
     @pytest.mark.torch
     def test_dense_matrix_torch(self):
@@ -1539,16 +1516,6 @@ class TestPauliArithmeticWithADInterfaces:
         res = PauliSentence(dict(zip(words, tensor)))
         assert all(isinstance(val, jnp.ndarray) for val in res.values())
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("scalar", [0.0, 0.5, 1, 1j, 0.5j + 1.0])
-    def test_tf_initialization(self, scalar):
-        """Test initializing PauliSentence from tf tensor"""
-        import tensorflow as tf
-
-        tensor = scalar * tf.ones(4, dtype=tf.complex64)
-        res = PauliSentence(dict(zip(words, tensor)))
-        assert all(isinstance(val, tf.Tensor) for val in res.values())
-
     @pytest.mark.torch
     @pytest.mark.parametrize("ps", sentences)
     @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
@@ -1607,23 +1574,3 @@ class TestPauliArithmeticWithADInterfaces:
         assert all(isinstance(val, jnp.ndarray) for val in res1.values())
         assert all(isinstance(val, jnp.ndarray) for val in res2.values())
         assert all(isinstance(val, jnp.ndarray) for val in res3.values())
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("ps", sentences)
-    @pytest.mark.parametrize("scalar", [0.5, 1, 1j, 0.5j + 1.0])
-    def test_tf_scalar_multiplication(self, ps, scalar):
-        """Test that multiplying with a tf tensor works and results in the correct types"""
-        import tensorflow as tf
-
-        res1 = tf.constant(scalar, dtype=tf.complex64) * ps
-        res2 = ps * tf.constant(scalar, dtype=tf.complex64)
-        res3 = ps / tf.constant(scalar, dtype=tf.complex64)
-        assert isinstance(res1, PauliSentence)
-        assert isinstance(res2, PauliSentence)
-        assert isinstance(res3, PauliSentence)
-        assert list(res1.values()) == [scalar * coeff for coeff in ps.values()]
-        assert list(res2.values()) == [scalar * coeff for coeff in ps.values()]
-        assert list(res3.values()) == [coeff / scalar for coeff in ps.values()]
-        assert all(isinstance(val, tf.Tensor) for val in res1.values())
-        assert all(isinstance(val, tf.Tensor) for val in res2.values())
-        assert all(isinstance(val, tf.Tensor) for val in res3.values())

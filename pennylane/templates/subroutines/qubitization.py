@@ -17,10 +17,11 @@ This submodule contains the template for Qubitization.
 
 import copy
 
+from pennylane.core.operator import Operation, abstractify
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
-from pennylane.ops import I, Prod, prod
-from pennylane.queuing import QueuingManager
+from pennylane.ops import I, prod
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 from .prepselprep import PrepSelPrep
@@ -35,8 +36,6 @@ class Qubitization(Operation):
 
     .. math::
         Q =  \text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}} \text{Prep}_{\mathcal{H}}(2|0\rangle\langle 0| - I).
-
-
 
     .. seealso:: :class:`~.AmplitudeEmbedding` and :class:`~.Select`.
 
@@ -159,7 +158,7 @@ class Qubitization(Operation):
             from pennylane.wires import Wires
 
         >>> print(qp.Qubitization.compute_decomposition(hamiltonian=0.1 * qp.Z(0), control=Wires(1)))
-        [Reflection(3.141592653589793, wires=[1]), PrepSelPrep(lcu=0.1 * Z(0), control=Wires([1]))]
+        [Reflection(3.141592653589793, wires=[1]), PrepSelPrep(lcu=0.1 * Z(0), control=[1])]
         """
 
         hamiltonian = kwargs["hamiltonian"]
@@ -184,14 +183,13 @@ def _qubitization_resources(num_control_wires, hamiltonian):
     return {
         resource_rep(
             Reflection,
-            base_class=Prod,
-            base_params={"resources": {resource_rep(I): num_control_wires}},
+            base_rep=I(Wire[num_control_wires]),
             num_wires=1,
             num_reflection_wires=1,
         ): 1,
         resource_rep(
             PrepSelPrep,
-            op_reps=(resource_rep(type(hamiltonian), **hamiltonian.resource_params),),
+            op_reps=(abstractify(hamiltonian),),
             num_control=num_control_wires,
         ): 1,
     }
@@ -202,7 +200,7 @@ def _qubitization_decomposition(*_, **kwargs):
     hamiltonian = kwargs["hamiltonian"]
     control = kwargs["control"]
 
-    Reflection(Prod(*[I(wire) for wire in control]))
+    Reflection(I(control))
     PrepSelPrep(hamiltonian, control=control)
 
 

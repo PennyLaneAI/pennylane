@@ -1,0 +1,238 @@
+# Copyright 2026 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Tests for ``qp.transforms.decompositions.make_crz_to_phase_gradient_decomp``"""
+
+# pylint: disable=no-value-for-parameter, disable=too-many-arguments
+
+import numpy as np
+import phase_gradient_helpers
+import pytest
+
+import pennylane as qp
+from pennylane.testing import assert_valid_decomp_rule
+from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
+
+
+def _num_set_bits(phi, p):
+    """Number of set bits in the ``p``-bit binary representation of ``phi`` (in units of 4*pi)."""
+    bits = [int(b) for b in qp.math.binary_decimals(phi, p, unit=4 * np.pi)]
+    return sum(bits)
+
+
+def _expected_crz_specs(phi, p):
+    """Expected specs for a single ``CRZ``.
+
+    The compute/uncompute fanout loads the angle bits onto the angle wires with a controlled
+    ``MultiX`` (one single-control ``CNOT`` per *set* bit, so ``2 * num_set_bits`` across both
+    passes, since it's always controlled on |1>) and flips all ``p`` phase-gradient wires with a
+    single controlled ``MultiX`` controlled on |0> (``p`` ``CNOT``\\ s plus one ``PauliX`` flip of
+    that control wire, independent of the angle, per pass)."""
+    n = _num_set_bits(phi, p)
+    return {"SemiAdder": 1, "CNOT": 2 * p + 2 * n, "PauliX": 4}
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("p", [1, 2, 3, 4])
+def test_valid_decomp(p):
+    """Test that ``make_crz_to_phase_gradient_decomp`` yields a valid decomposition, with capture
+    both disabled (concrete angle) and enabled (abstract angle). We use an all-ones angle so the
+    concrete decomposition saturates the rule's full-precision resource estimate."""
+
+    phi = (1 - 2.0**-p) * 4 * np.pi  # binary all-ones at p bits (CRZ uses units of 4*pi)
+    first_free = 2
+    angle_wires = list(range(first_free, first_free + p))
+    phase_grad_wires = list(range(first_free + p, first_free + 2 * p))
+    work_wires = list(range(first_free + 2 * p, first_free + 3 * p - 1))
+
+    kwargs = {
+        "angle_wires": angle_wires,
+        "phase_grad_wires": phase_grad_wires,
+        "work_wires": work_wires,
+    }
+
+    custom_decomp = make_crz_to_phase_gradient_decomp(**kwargs)
+    op = qp.CRZ(phi, [0, 1])
+    assert_valid_decomp_rule(op, custom_decomp, check_matrix=False)
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+def test_decomp_has_name():
+    """Ensures the decomp rule has a name property."""
+    p = 2
+
+    first_free = 2
+    angle_wires = list(range(first_free, first_free + p))
+    phase_grad_wires = list(range(first_free + p, first_free + 2 * p))
+    work_wires = list(range(first_free + 2 * p, first_free + 3 * p - 1))
+
+    kwargs = {
+        "angle_wires": angle_wires,
+        "phase_grad_wires": phase_grad_wires,
+        "work_wires": work_wires,
+    }
+
+    custom_decomp = make_crz_to_phase_gradient_decomp(**kwargs)
+    assert custom_decomp.name == "_crz_phase_gradient_decomp"
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+@pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
+@pytest.mark.parametrize("p", [2, 3, 4])
+def test_as_fixed_decomps(phi, p):
+    """Test that the decomposition rule from ``make_crz_to_phase_gradient_decomp`` works as
+    expected as a fixed decomposition and yields the correct resources"""
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+
+    kwargs = {
+        "angle_wires": angle_wires,
+        "phase_grad_wires": phase_grad_wires,
+        "work_wires": work_wires,
+    }
+
+    custom_decomp = make_crz_to_phase_gradient_decomp(**kwargs)
+    gate_set = {"SemiAdder", "CNOT", "PauliX"}
+
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(gate_set=gate_set, fixed_decomps={qp.CRZ: custom_decomp})
+    @qp.qnode(qp.device("null.qubit"))
+    def circuit():
+        qp.CRZ(phi, [0, 1])
+        return qp.state()
+
+    tape = qp.workflow.construct_tape(circuit)()
+    specs = qp.resource.resources_from_tape(tape).quantum_operations
+    assert specs == _expected_crz_specs(phi, p)
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+@pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
+@pytest.mark.parametrize("p", [2, 3, 4])
+def test_as_alt_decomps(phi, p):
+    """Test that the decomposition rule from ``make_crz_to_phase_gradient_decomp`` works as
+    expected as an alternative decomposition and yields the correct resources"""
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+
+    kwargs = {
+        "angle_wires": angle_wires,
+        "phase_grad_wires": phase_grad_wires,
+        "work_wires": work_wires,
+    }
+
+    custom_decomp = make_crz_to_phase_gradient_decomp(**kwargs)
+    gate_set = {"SemiAdder", "CNOT", "PauliX"}
+
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(gate_set=gate_set, alt_decomps={qp.CRZ: [custom_decomp]})
+    @qp.qnode(qp.device("null.qubit"))
+    def circuit():
+        qp.CRZ(phi, [0, 1])
+        return qp.state()
+
+    tape = qp.workflow.construct_tape(circuit)()
+    specs = qp.resource.resources_from_tape(tape).quantum_operations
+    assert specs == _expected_crz_specs(phi, p)
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+def test_integration_multi_wire(seed):
+    """
+    Tests that the decomposition correctly realizes the phase gradient decomposition of CRZ as
+    described in https://pennylane.ai/compilation/phase-gradient/c-control-rotations
+    """
+
+    prec = 3
+
+    phi = (1 / 2 + 0 / 4 + 1 / 8) * 4 * np.pi
+    wires = [0, 1]
+
+    angle_wires = [f"aux_{i}" for i in range(prec)]
+    phase_grad_wires = [f"qft_{i}" for i in range(prec)]
+    work_wires = [f"work_{i}" for i in range(prec - 1)]
+
+    all_wires = angle_wires + phase_grad_wires + work_wires + wires
+
+    custom_decomp = make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
+
+    # pylint: disable-next=protected-access
+    @qp.transforms._tape_decompose(
+        gate_set={
+            "StatePrep",
+            "PhaseGradientStatePrep",
+            "Adjoint(PhaseGradientStatePrep)",
+            "CNOT",
+            "PauliX",
+            "SemiAdder",
+        },
+        fixed_decomps={qp.CRZ: custom_decomp},
+    )
+    @qp.qnode(qp.device("default.qubit", wires=all_wires))
+    def circuit(phi, in_state):
+        # Prepare input state
+        qp.StatePrep(in_state, wires=wires)
+        # Prepare phase gradient state
+        qp.PhaseGradientStatePrep(wires=phase_grad_wires)
+        qp.CRZ(phi, wires)
+        # uncompute phase gradient state
+        qp.adjoint(qp.PhaseGradientStatePrep(wires=phase_grad_wires))
+        return qp.state()
+
+    # random input state
+    rng = np.random.default_rng(seed=seed)
+    in_state = rng.random(2 ** len(wires))
+    in_state /= np.linalg.norm(in_state)
+
+    # returned output state
+    out_state = circuit(phi, in_state)
+
+    # expected output state
+    zeros = np.eye(2 ** (prec * 3 - 1), 1)[:, 0]  # |000> on all the aux wires
+    out_state_expected = qp.matrix(qp.CRZ(phi, wires)) @ in_state
+    out_state_expected = np.kron(zeros, out_state_expected)
+
+    assert np.allclose(out_state, out_state_expected)
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize(
+    "bits, precision_stats, width",
+    [
+        ([1, 0, 1, 0], {1: 2, 3: 5}, 3),
+        ([1, 0, 1, 0], {1: 1, 2: 1}, 4),
+        ([0, 0, 0, 0], {0: 1, 3: 1}, 0),
+    ],
+)
+def test_precision_stats_decomp(bits, precision_stats, width, seed):
+    """Test that the rule with ``precision_stats`` truncates the phase-gradient flips and the
+    SemiAdder to the smallest sufficient precision, accounts for all gates in its resources, and
+    realizes CRZ. The precision dispatch itself is tested in test_rz_phase_gradient.py."""
+    angle_wires, phase_grad_wires = qp.wires.Wires([2, 3, 4, 5]), qp.wires.Wires([6, 7, 8, 9])
+    rule = make_crz_to_phase_gradient_decomp(
+        angle_wires, phase_grad_wires, [10, 11, 12], precision_stats=precision_stats
+    )
+    op = qp.CRZ(phase_gradient_helpers.bits_to_angles(bits, 4 * np.pi), [0, 1])
+    assert_valid_decomp_rule(op, rule, check_matrix=False)
+
+    tape = qp.testing.decomp_rule_to_tape(op, rule)
+    adders = [
+        o for o in phase_gradient_helpers.leaf_ops(tape.operations) if isinstance(o, qp.SemiAdder)
+    ]
+    assert [(a.x_wires, a.y_wires) for a in adders] == (
+        [(angle_wires[:width], phase_grad_wires[:width])] if width else []
+    )
+    phase_gradient_helpers.assert_decomp_realizes_op(op, tape, phase_grad_wires, seed)

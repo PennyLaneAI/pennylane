@@ -349,7 +349,7 @@ observed.
 Adding log-statements to the interface execution pipelines
 ----------------------------------------------------------
 
-Similarly, for autograd (TF and Torch also), we can run examples that
+Similarly, for autograd (Torch also), we can run examples that
 tie-into the execution pipeline for devices without backprop supports:
 
 .. code-block:: python

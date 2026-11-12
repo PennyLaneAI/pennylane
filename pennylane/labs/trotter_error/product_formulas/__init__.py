@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,5 +14,13 @@
 """Module containing functions for computing product formulas"""
 
 from .bch import bch_expansion
-from .error import effective_hamiltonian, perturbation_error
+from .error import ImportanceConfig, effective_hamiltonian, perturbation_error
 from .product_formula import ProductFormula
+
+__all__ = [
+    "bch_expansion",
+    "ImportanceConfig",
+    "effective_hamiltonian",
+    "perturbation_error",
+    "ProductFormula",
+]

@@ -33,21 +33,15 @@ Note that this explanation will probably get out of date.
 
 import copy
 
+import jax
+from jax._src.pjit import jit_p as pjit_p
+
 from .autograph import wraps
 from .patching import Patcher
 from .switches import enabled
 
-has_jax = True
-try:
-    import jax
-    from jax._src.pjit import jit_p as pjit_p
-
-    quantum_subroutine_prim = copy.deepcopy(pjit_p)
-    quantum_subroutine_prim.name = "quantum_subroutine_prim"
-
-except ImportError:  # pragma: no cover
-    has_jax = False
-    quantum_subroutine_prim = None
+quantum_subroutine_prim = copy.deepcopy(pjit_p)
+quantum_subroutine_prim.name = "quantum_subroutine_prim"
 
 
 def subroutine(func, static_argnums=None, static_argnames=None):
@@ -156,9 +150,6 @@ def subroutine(func, static_argnums=None, static_argnames=None):
 
 
     """
-    if not has_jax:
-        return func
-
     old_pjit = jax._src.pjit.jit_p  # pylint: disable=protected-access
 
     @wraps(func)

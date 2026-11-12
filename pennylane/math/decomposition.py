@@ -16,34 +16,28 @@
 
 from functools import lru_cache, partial
 
+import jax
+import jax.numpy as jnp
 import numpy as np
 
 from pennylane import math
 
-has_jax = True
-try:
-    import jax
-    import jax.numpy as jnp
-except ModuleNotFoundError:  # pragma: no cover
-    has_jax = False
 
-
-def zyz_rotation_angles(U, return_global_phase=False):
+def zyz_rotation_angles(U) -> tuple[float, float, float, float]:
     r"""Compute the rotation angles :math:`\phi`, :math:`\theta`, and :math:`\omega` and the
     phase :math:`\alpha` of a 2x2 unitary matrix as a product of Z and Y rotations in the form
     :math:`e^{i\alpha} RZ(\omega) RY(\theta) RZ(\phi)`
 
     Args:
         U (array): 2x2 unitary matrix
-        return_global_phase (bool): if True, returns the global phase as well.
 
     Returns:
         tuple: The rotation angles :math:`\phi`, :math:`\theta`, and :math:`\omega` and the
-        global phase :math:`\alpha` if ``return_global_phase=True``.
+        global phase :math:`\alpha` such that :math:`U=e^{i\alpha} RZ(\omega) RY(\theta) RZ(\phi)`.
 
     """
 
-    U, alpha = math.convert_to_su2(U, return_global_phase=True)
+    U, alpha = math.convert_to_su2(U)
 
     # The matrix is [[a, b],[c, d]], where a = cos(theta)*exp(i...)
     # and b = sin(theta)*exp(i...). Taking the magnitude of a and b
@@ -67,25 +61,24 @@ def zyz_rotation_angles(U, return_global_phase=False):
     theta = math.squeeze(theta % (4 * np.pi))
     omega = math.squeeze(omega % (4 * np.pi))
 
-    return (phi, theta, omega, alpha) if return_global_phase else (phi, theta, omega)
+    return phi, theta, omega, alpha
 
 
-def xyx_rotation_angles(U, return_global_phase=False):
+def xyx_rotation_angles(U) -> tuple[float, float, float, float]:
     r"""Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
     phase :math:`\alpha` of a 2x2 unitary matrix as a product of X and Y rotations in the form
     :math:`e^{i\alpha} RX(\phi) RY(\theta) RX(\lambda)`.
 
     Args:
         U (array): 2x2 unitary matrix
-        return_global_phase (bool): if True, returns the global phase as well.
 
     Returns:
         tuple: The rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
-        global phase :math:`\alpha` if ``return_global_phase=True``.
+        global phase :math:`\alpha` such that :math:`U=e^{i\alpha} RX(\phi) RY(\theta) RX(\lambda)`.
 
     """
 
-    U, alpha = math.convert_to_su2(U, return_global_phase=True)
+    U, alpha = math.convert_to_su2(U)
 
     # The following matrix describes a similarity transform where C^T @ RX @ C = RZ
     # and C^T @ RY @ C = RY. Therefore, consider U = RX @ RY @ RX, we find that
@@ -95,26 +88,25 @@ def xyx_rotation_angles(U, return_global_phase=False):
     C = math.cast_like(math.array([[1, -1], [1, 1]]) / np.sqrt(2), U)
     U = math.einsum("mj, ...jk, kn -> ...mn", math.conjugate(C).T, U, C)
 
-    lam, theta, phi = zyz_rotation_angles(U)
-    return (lam, theta, phi, alpha) if return_global_phase else (lam, theta, phi)
+    lam, theta, phi, _ = zyz_rotation_angles(U)
+    return lam, theta, phi, alpha
 
 
-def xzx_rotation_angles(U, return_global_phase=False):
+def xzx_rotation_angles(U) -> tuple[float, float, float, float]:
     r"""Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
     phase :math:`\alpha` of a 2x2 unitary matrix as a product of X and Z rotations in the form
     :math:`e^{i\alpha} RX(\phi) RZ(\theta) RX(\lambda)`.
 
     Args:
         U (array): 2x2 unitary matrix
-        return_global_phase (bool): if True, returns the global phase as well.
 
     Returns:
         tuple: The rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
-        global phase :math:`\alpha` if ``return_global_phase=True``.
+        global phase :math:`\alpha` such that :math:`U=e^{i\alpha} RX(\phi) RZ(\theta) RX(\lambda)`.
 
     """
 
-    U, global_phase = math.convert_to_su2(U, return_global_phase=True)
+    U, alpha = math.convert_to_su2(U)
 
     # The following matrix describes a similarity transform where C^T @ RX @ C = RZ
     # and C^T @ RZ @ C = RY. Therefore, consider U = RX @ RZ @ RX, we find that
@@ -124,26 +116,25 @@ def xzx_rotation_angles(U, return_global_phase=False):
     C = math.cast_like(math.array([[1, -1j], [1, 1j]]) / np.sqrt(2), U)
     U = math.einsum("mj, ...jk, kn -> ...mn", math.conjugate(C).T, U, C)
 
-    lam, theta, phi = zyz_rotation_angles(U)
-    return (lam, theta, phi, global_phase) if return_global_phase else (lam, theta, phi)
+    lam, theta, phi, _ = zyz_rotation_angles(U)
+    return lam, theta, phi, alpha
 
 
-def zxz_rotation_angles(U, return_global_phase=False):
+def zxz_rotation_angles(U) -> tuple[float, float, float, float]:
     r"""Compute the rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
     phase :math:`\alpha` of a 2x2 unitary matrix as a product of Z and X rotations in the form
     :math:`e^{i\alpha} RZ(\phi) RX(\theta) RZ(\lambda)`.
 
     Args:
         U (array): 2x2 unitary matrix
-        return_global_phase (bool): if True, returns the global phase as well.
 
     Returns:
         tuple: The rotation angles :math:`\lambda`, :math:`\theta`, and :math:`\phi` and the
-        global phase :math:`\alpha` if ``return_global_phase=True``.
+        global phase :math:`\alpha` such that :math:`U=e^{i\alpha} RZ(\phi) RX(\theta) RZ(\lambda)`.
 
     """
 
-    U, global_phase = math.convert_to_su2(U, return_global_phase=True)
+    U, alpha = math.convert_to_su2(U)
 
     abs_a = math.clip(math.abs(U[..., 0, 0]), 0, 1)
     abs_b = math.clip(math.abs(U[..., 0, 1]), 0, 1)
@@ -161,7 +152,7 @@ def zxz_rotation_angles(U, return_global_phase=False):
     theta = math.squeeze(theta % (4 * np.pi))
     lam = math.squeeze(lam % (4 * np.pi))
 
-    return (lam, theta, phi, global_phase) if return_global_phase else (lam, theta, phi)
+    return lam, theta, phi, alpha
 
 
 def su2su2_to_tensor_products(U):
@@ -488,15 +479,26 @@ def _commute_phases_u(left_givens, right_givens, phases):
     nleft_givens = []
     for grot_mat, (i, j) in reversed(left_givens):
         # Manually compute new Givens matrix and new phase when commuting a phase through.
-        abs_c, abs_s = math.abs(grot_mat[:, 0])
-        first_col = phases[j, j] * math.conj(phases[i, i]) * grot_mat[1, 1] * grot_mat[0, 1]
+        # ``grot_mat`` has the form [[p c, s], [-p s, c]] with real c, s >= 0 and a phase p.
+        # conj(p) is read off the larger of |p c| and |p s|, so that c = 0 or s = 0 (exact zeros
+        # in the decomposed matrix) do not cause a division by zero.
+        c, s = math.real(grot_mat[1, 1]), math.real(grot_mat[0, 1])
+        selected_cs = math.where(s > c, s, c)
+        conj_p = math.where(s > c, -math.conj(grot_mat[1, 0]), math.conj(grot_mat[0, 0]))
+        # Compute the absolute value of p, which may deviate from 1 by a little bit due to
+        # EPS being added in _givens_matrix_core.
+        abs_p = math.abs(conj_p) / selected_cs
+        # Compute the unit-modulus phase (i.e. remove the deviation from one due to EPS being added)
+        conj_p = conj_p / math.abs(conj_p)
+        rel_phase = phases[j, j] * math.conj(phases[i, i])
         givens_mat = math.array(
-            [[first_col / abs_s, -abs_s], [first_col / abs_c, abs_c]], like=interface
+            [
+                [rel_phase * c / abs_p, -abs_p * s],
+                [rel_phase * s / abs_p, abs_p * c],
+            ],
+            like=interface,
         )
-        nphase_diag = [
-            -math.conj(grot_mat[1, 0]) / abs_s * phases[j, j],
-            grot_mat[1, 1] / abs_c * phases[j, j],
-        ]
+        nphase_diag = [conj_p * phases[j, j], phases[j, j] / abs_p]
         for diag_idx, diag_val in zip([(i, i), (j, j)], nphase_diag, strict=True):
             phases = _set_unitary_matrix(
                 phases, diag_idx, diag_val, like=interface, real_valued=False
@@ -684,7 +686,7 @@ def givens_decomposition(unitary):
     """
     interface = math.get_deep_interface(unitary)
     unitary_mat = math.copy(unitary) if interface == "jax" else math.toarray(unitary).copy()
-    is_real = "complex" not in math.get_dtype_name(unitary)
+    is_real = not math.is_complex_dtype(unitary)
 
     shape = math.shape(unitary_mat)
 

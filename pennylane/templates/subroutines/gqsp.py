@@ -15,47 +15,56 @@
 Contains the GQSP template.
 """
 
-import copy
+import numpy as np
 
-from pennylane import capture, ops
-from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
-from pennylane.operation import Operation
-from pennylane.queuing import QueuingManager
+from pennylane import capture, compiler, math, ops
+from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operator2, abstractify
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract, _validate_work_wire_type
+from pennylane.ops.op_math.pow2 import _pow_abstract
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
-
-class GQSP(Operation):
+class GQSP(Operator2):
     r"""
     Implements the generalized quantum signal processing (GQSP) circuit.
 
-    This operation encodes a polynomial transformation of an input unitary operator following the algorithm
-    described in `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`__ as:
+    This operation encodes a polynomial transformation of an input unitary operator following
+    the algorithm described in `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`__ as:
 
     .. math::
-         U
-         \xrightarrow{GQSP}
-         \begin{pmatrix}
-         \text{poly}(U) & * \\
-         * & * \\
-         \end{pmatrix}
+        U
+        \xrightarrow{GQSP}
+        \begin{pmatrix}
+        U^{s}\,\text{poly}(U) & * \\
+        * & * \\
+        \end{pmatrix},
+
+    where :math:`s` is an optional integer ``shift``. A negative ``shift`` allows encoding
+    Laurent polynomials, i.e. polynomials that contain negative powers of :math:`U`.
 
     The implementation requires one control qubit.
 
     Args:
 
         unitary (Operator): the operator to be encoded by the GQSP circuit
-        angles (tensor[float]): array of angles defining the polynomial transformation. The shape of the array must be `(3, d+1)`, where `d` is the degree of the polynomial.
-        control (Union[Wires, int, str]): control qubit used to encode the polynomial transformation
+        angles (tensor[float]): array of angles defining the polynomial transformation. The
+            shape of the array must be `(3, d+1)`, where `d` is the degree of the polynomial.
+        control (Union[Wires, int, str]): control qubit used to encode the polynomial
+            transformation
+        work_wires (WiresLike): auxiliary qubits that are passed to the controlled ``unitary``.
+        work_wire_type (str): the type of the ``work_wires``. Must be ``"borrowed"`` (default)
+            or ``"zeroed"``.
+        shift (int): number of powers of :math:`U` by which the polynomial is shifted, such that
+            the encoded operator is :math:`U^{s}\,\text{poly}(U)`. Default is ``0``.
 
     .. note::
 
-       The  :func:`~.poly_to_angles` function can be used to calculate the angles for a given polynomial.
+        The :func:`~.poly_to_angles` function can be used to calculate the angles for a
+        given polynomial.
 
     Example:
 
@@ -84,153 +93,180 @@ class GQSP(Operation):
         >>> print(np.round(matrix,3)[:2, :2])
         [[0.387+0.198j 0.03 -0.089j]
         [0.03 -0.089j 0.387+0.198j]]
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.GQSP
+            :stacked:
+            :symbols: :math:`U=` ``unitary``, polynomial degree :math:`d` (``angles`` of shape
+                ``(3, d+1)``) and shift :math:`s`
+            :example: :math:`d=1`, :math:`s=0`
+
+            .. decomposition-rule:: _GQSP_decomposition
+                :image: /_static/decomposition_thumbnails/gqsp_signal_processing.svg
+                :where: :math:`a = \min(\max(-s, 0), d)` is the number of controlled unitaries
+                    absorbing a negative shift, and :math:`[\cdot]` is 1 if the condition holds
+                    and 0 otherwise
+
+                :class:`~.X` | :math:`2(d+1)` | 4
+                :class:`~.U3` | :math:`d+1` | 2
+                :class:`~.Z` | :math:`d+1` | 2
+                :math:`U` with 1 control on :math:`|0\rangle` | :math:`d-a` | 1
+                :math:`U^\dagger` with 1 control | :math:`a` | 0
+                :math:`U^{s}` | :math:`[s > 0]` | 0
+                :math:`(U^\dagger)^{-s-d}` | :math:`[s < -d]` | 0
+
+    .. details::
+        :title: Usage Details
+
+        **Shifting the polynomial**
+
+        The ``shift`` argument multiplies the encoded polynomial by :math:`U^{s}`. Following
+        Theorem 6 of `arXiv:2308.01501 <https://arxiv.org/abs/2308.01501>`__, a negative shift
+        is implemented at no extra cost: each of the first :math:`\min(|s|, d)` operators
+        :math:`|0\rangle\langle 0| \otimes U + |1\rangle\langle 1| \otimes I` is replaced by
+        :math:`|0\rangle\langle 0| \otimes I + |1\rangle\langle 1| \otimes U^{\dagger}`,
+        which equals the original operator multiplied by :math:`I \otimes U^{\dagger}`.
+        If :math:`|s| > d`, the remaining :math:`|s| - d` powers are applied as
+        ``qp.pow(qp.adjoint(U), abs(s) - d)``. A positive shift is applied as ``qp.pow(U, s)``.
+
+        This can be used to encode a Laurent polynomial
+        :math:`P(x) = \sum_{k=-m}^{n} c_k x^k`: compute the angles of the polynomial
+        :math:`x^{m} P(x)` and use ``shift=-m``.
+
+        .. code-block:: python
+
+            # P(x) = 0.1 x^-1 + 0.2j + 0.3 x
+            poly = [0.1, 0.2j, 0.3]
+
+            angles = qp.poly_to_angles(poly, "GQSP")
+
+            @qp.qnode(qp.device("default.qubit"))
+            def circuit(angles):
+                qp.GQSP(qp.RX(0.3, wires=1), angles, control=0, shift=-1)
+                return qp.state()
+
+            matrix = qp.matrix(circuit, wire_order=[0, 1])(angles)
+
+        .. code-block:: pycon
+
+            >>> print(np.round(matrix, 3)[:2, :2])
+            [[0.396+0.2j  0.   -0.03j]
+             [0.   -0.03j 0.396+0.2j ]]
     """
 
-    grad_method = None
+    dynamic_argnames = ("angles",)
+    static_argnames = ("work_wire_type", "shift")
+    hybrid_argnames = ("unitary",)
+    wire_argnames = ("control", "work_wires")
 
-    resource_keys = {"unitary", "num_iters"}
+    arg_specs = {"angles": Float[3, -1], "control": Wire[1], "work_wires": Wire[-1]}
 
-    def __init__(self, unitary, angles, control):
-        total_wires = Wires(control) + unitary.wires
-
-        self._hyperparameters = {"unitary": unitary, "control": control}
-
-        super().__init__(angles, *unitary.data, wires=total_wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "unitary": self.hyperparameters["unitary"],
-            "num_iters": min(len(self.data[0][0]), len(self.data[0][1]), len(self.data[0][2])),
-        }
-
-    def _flatten(self):
-        return (self.data[0], self.hyperparameters["unitary"]), (self.hyperparameters["control"],)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        # Data contains (angles, derived_data_from_unitary, unitary)
-        return cls(angles=data[0], unitary=data[-1], control=metadata[0])
-
-    # pylint: disable=arguments-differ
-    @classmethod
-    def _primitive_bind_call(cls, unitary, angles, control):
-        return super()._primitive_bind_call(unitary, angles, wires=control)
-
-    def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
-        new_op = copy.deepcopy(self)
-        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["unitary"] = ops.functions.map_wires(
-            new_op._hyperparameters["unitary"], wire_map
-        )
-        new_op._hyperparameters["control"] = tuple(
-            wire_map.get(w, w) for w in Wires(new_op._hyperparameters["control"])
-        )
-
-        return new_op
-
-    @staticmethod
-    def compute_decomposition(*parameters, **hyperparameters):
-        r"""
-        Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. seealso:: :meth:`~.Operator.decomposition`.
-
-        Args:
-            *parameters (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            wires (Iterable[Any], Wires): wires that the operator acts on
-            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
-
-        Returns:
-            list[Operator]: decomposition of the operator
-        """
-
-        unitary = hyperparameters["unitary"]
-        control = hyperparameters["control"]
-
-        angles = parameters[0]
-
-        thetas, phis, lambds = angles[0], angles[1], angles[2]
-
-        op_list = []
-
-        # These four gates adapt PennyLane's qp.U3 to the chosen U3 format in the GQSP paper.
-        op_list.append(ops.X(control))
-        op_list.append(ops.U3(2 * thetas[0], phis[0], lambds[0], wires=control))
-        op_list.append(ops.X(control))
-        op_list.append(ops.Z(control))
-
-        for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
-
-            op_list.append(ops.ctrl(unitary, control=control, control_values=0))
-
-            op_list.append(ops.X(control))
-            op_list.append(ops.U3(2 * theta, phi, lamb, wires=control))
-            op_list.append(ops.X(control))
-            op_list.append(ops.Z(control))
-
-        return op_list
-
-    def queue(self, context=QueuingManager):
-        context.remove(self.hyperparameters["unitary"])
-        context.append(self)
-        return self
+    def __init__(
+        self, unitary, angles, control, work_wires=None, work_wire_type="borrowed", shift=0
+    ):
+        # pylint: disable=too-many-arguments
+        work_wires = Wires(()) if work_wires is None else work_wires
+        _validate_work_wire_type(work_wire_type)
+        if isinstance(shift, bool) or not isinstance(shift, (int, np.integer)):
+            raise TypeError(f"shift must be an integer. Got {shift} of type {type(shift)}.")
+        shift = int(shift)
+        if isinstance(angles, (list, tuple)):
+            angles = math.stack(angles)
+        super().__init__(unitary, angles, control, work_wires, work_wire_type, shift)
 
 
-def _GQSP_resources(unitary, num_iters):
+def _num_shifted_ctrl_ops(shift, num_ctrl_ops):
+    """Number of controlled unitaries that absorb a negative shift, and the remaining powers
+    of the unitary (positive: ``U``, negative: ``adjoint(U)``) applied outside of them."""
+    if shift >= 0:
+        return 0, shift
+    num_absorbed = min(-shift, num_ctrl_ops)
+    return num_absorbed, shift + num_absorbed
+
+
+def _GQSP_resources(
+    unitary, angles, control, work_wires, work_wire_type, shift
+):  # pylint: disable=unused-argument,too-many-arguments
+    num_iters = angles.shape[1]
+    num_absorbed, remaining = _num_shifted_ctrl_ops(shift, num_iters - 1)
+    unitary = abstractify(unitary)
+    ctrl_kwargs = {"work_wires": Wire[len(work_wires)], "work_wire_type": work_wire_type}
+
     resources = {
         ops.X: 2 + 2 * (num_iters - 1),
         ops.U3: num_iters,
         ops.Z: num_iters,
-        controlled_resource_rep(
-            base_class=unitary.__class__,
-            base_params=unitary.resource_params,
-            num_control_wires=1,
-            num_zero_control_values=1,
-        ): num_iters
-        - 1,
     }
-
+    if num_iters - 1 - num_absorbed > 0:
+        resources[_ctrl_abstract(unitary, Wire[1], num_zero_control_values=1, **ctrl_kwargs)] = (
+            num_iters - 1 - num_absorbed
+        )
+    if num_absorbed > 0:
+        resources[_ctrl_abstract(_adjoint_abstract(unitary), Wire[1], **ctrl_kwargs)] = num_absorbed
+    if remaining > 0:
+        resources[_pow_abstract(unitary, remaining)] = 1
+    elif remaining < 0:
+        resources[_pow_abstract(_adjoint_abstract(unitary), -remaining)] = 1
     return resources
 
 
 @register_resources(_GQSP_resources)
-def _GQSP_decomposition(*parameters, **hyperparameters):
-    unitary = hyperparameters["unitary"]
-    control = hyperparameters["control"]
+def _GQSP_decomposition(
+    unitary, angles, control, work_wires, work_wire_type, shift
+):  # pylint: disable=too-many-arguments
+    if compiler.active() or capture.enabled():
+        angles = math.array(angles, like="jax")
 
-    angles = parameters[0]
+    thetas, phis, lambdas = angles[0], angles[1], angles[2]
+    num_absorbed, remaining = _num_shifted_ctrl_ops(shift, len(thetas) - 1)
 
-    thetas, phis, lambds = angles[0], angles[1], angles[2]
-
-    if has_jax and capture.enabled():
-        thetas, phis, lambds = jnp.array(thetas), jnp.array(phis), jnp.array(lambds)
+    # Powers of the unitary that cannot be absorbed into the controlled unitaries. These
+    # commute with every other gate of the circuit since they are powers of the same operator.
+    if remaining > 0:
+        ops.pow(unitary, remaining)
+    elif remaining < 0:
+        ops.pow(ops.adjoint(unitary), -remaining)
 
     # These four gates adapt PennyLane's ops.U3 to the chosen U3 format in the GQSP paper.
     ops.X(control)
-    ops.U3(2 * thetas[0], phis[0], lambds[0], wires=control)
+    ops.U3(2 * thetas[0], phis[0], lambdas[0], wires=control)
     ops.X(control)
     ops.Z(control)
 
-    for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
-
-        ops.ctrl(unitary, control=control, control_values=[0])
-
+    def _signal_processing_rotation(i):
         ops.X(control)
-        ops.U3(2 * theta, phi, lamb, wires=control)
+        ops.U3(2 * thetas[i], phis[i], lambdas[i], wires=control)
         ops.X(control)
         ops.Z(control)
 
+    # |0><0| x I + |1><1| x U^dagger = (I x U^dagger) (|0><0| x U + |1><1| x I), so each of
+    # these iterations shifts the polynomial by -1 (Theorem 6 of arXiv:2308.01501).
+    @for_loop(1, 1 + num_absorbed)
+    def shifted_gqsp_loop(i):
+        ops.ctrl(
+            ops.adjoint(unitary),
+            control=control,
+            control_values=[1],
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+        _signal_processing_rotation(i)
+
+    @for_loop(1 + num_absorbed, len(thetas))
+    def gqsp_loop(i):
+        ops.ctrl(
+            unitary,
+            control=control,
+            control_values=[0],
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+        _signal_processing_rotation(i)
+
+    shifted_gqsp_loop()  # pylint:disable= no-value-for-parameter
+    gqsp_loop()  # pylint:disable= no-value-for-parameter
+
 
 add_decomps(GQSP, _GQSP_decomposition)
-
-# pylint: disable=protected-access
-if GQSP._primitive is not None:
-
-    @GQSP._primitive.def_impl
-    def _(*args, n_wires, **kwargs):
-        (unitary, angles), control = args[:-n_wires], args[-n_wires:]
-        return type.__call__(GQSP, unitary, angles, control=control, **kwargs)

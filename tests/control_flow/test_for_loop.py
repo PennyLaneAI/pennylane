@@ -18,6 +18,7 @@ Tests for the for_loop
 import pytest
 
 import pennylane as qp
+from pennylane.control_flow.for_loop import ForLoopCallable
 
 
 @pytest.mark.capture
@@ -96,3 +97,82 @@ def test_for_loop_python_fallback():
     ]
 
     _ = [qp.assert_equal(i, j) for i, j in zip(res, expected)]
+
+
+class TestForLoopHints:
+    """Tests for ``num-iters`` compiler hints on :func:`~.for_loop`."""
+
+    def test_typo_on_hinted_body_is_canonicalized(self):
+        """A typo'd key on a HintedCallable body should still set the hint."""
+
+        @qp.hint({"num_iters": 10})
+        def body(i, x):  # pylint: disable=unused-argument
+            return x + 1
+
+        loop = qp.for_loop(3)(body)
+        assert loop.num_iters_hint == 10
+        assert loop(0) == 3
+
+    def test_typo_on_apply_hint_is_canonicalized(self):
+        """Applying a typo'd hint to a for-loop callable should canonicalize it."""
+
+        def body(i, x):  # pylint: disable=unused-argument
+            return x + 1
+
+        loop = qp.hint({"num_iters": 10})(qp.for_loop(3)(body))
+        assert loop.num_iters_hint == 10
+        assert loop(0) == 3
+
+    def test_unknown_hint_on_body_is_ignored(self):
+        """Unrecognized hint keys on the body should be ignored."""
+
+        @qp.hint({"identity": True})
+        def body(i, x):  # pylint: disable=unused-argument
+            return x + 1
+
+        loop = qp.for_loop(3)(body)
+        assert loop.num_iters_hint is None
+        assert loop(0) == 3
+
+    def test_unknown_hint_on_apply_is_ignored(self):
+        """Unrecognized keys applied to a for-loop callable should be ignored."""
+
+        def body(i, x):  # pylint: disable=unused-argument
+            return x + 1
+
+        loop = qp.hint({"identity": True})(qp.for_loop(3)(body))
+        assert loop.num_iters_hint is None
+        assert loop(0) == 3
+
+    def test_valid_hint_on_body(self):
+        """A correctly spelled hint on the body should be accepted."""
+
+        @qp.hint({"num-iters": 10})
+        def body(i, x):  # pylint: disable=unused-argument
+            return x + 1
+
+        loop = qp.for_loop(3)(body)
+        assert loop.num_iters_hint == 10
+        assert loop(0) == 3
+
+    def test_valid_apply_hint(self):
+        """Applying a correctly spelled hint should set ``num_iters_hint``."""
+
+        def body(i, x):  # pylint: disable=unused-argument
+            return x + 1
+
+        loop = qp.hint({"num-iters": 7})(qp.for_loop(3)(body))
+        assert loop.num_iters_hint == 7
+        assert loop(0) == 3
+
+    def test_direct_form_preserves_for_loop_callable(self):
+        """``qp.hint(loop, hints)`` should return a ``ForLoopCallable`` with the new hint."""
+
+        @qp.for_loop(3)
+        def loop(i, x):  # pylint: disable=unused-argument
+            return x + 1
+
+        new_loop = qp.hint(loop, {"num-iters": 4})
+        assert isinstance(new_loop, ForLoopCallable)
+        assert new_loop.num_iters_hint == 4
+        assert new_loop(0) == 3

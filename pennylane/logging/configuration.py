@@ -20,17 +20,7 @@ import logging.config
 import os
 import platform
 import subprocess
-from importlib import import_module
-from importlib.util import find_spec
-
-has_toml = False
-toml_libs = ["tomllib", "tomli", "tomlkit"]
-for pkg in toml_libs:
-    spec = find_spec(pkg)
-    if spec:
-        tomllib = import_module(pkg)
-        has_toml = True
-        break
+import tomllib
 
 # Define absolute path to this file in source tree
 _path = os.path.dirname(__file__)
@@ -66,14 +56,6 @@ def _configure_logging(config_file: str, config_override: dict | None = None):
 
         config_override (Optional[dict]): A dictionary with keys-values that override the default configuration options in the given ``config_file`` TOML.
     """
-    if not has_toml:
-        raise ImportError(
-            "A TOML parser is required to enable PennyLane logging defaults. "
-            "We support any of the following TOML parsers: [tomli, tomlkit, tomllib] "
-            "You can install either tomli via `pip install tomli`, "
-            "tomlkit via `pip install tomlkit`, or use Python 3.11 "
-            "or above which natively offers the tomllib library."
-        )
     with open(os.path.join(_path, config_file), "rb") as f:
         pl_config = tomllib.load(f)
         if not config_override:
@@ -109,7 +91,7 @@ def config_path():
     **Example**
 
     >>> config_path() # doctest: +SKIP
-    /home/user/pyenv/lib/python3.10/site-packages/pennylane/logging/log_config.toml
+    /home/user/pyenv/lib/python3.12/site-packages/pennylane/logging/log_config.toml
     """
     path = os.path.join(_path, "log_config.toml")
     return path

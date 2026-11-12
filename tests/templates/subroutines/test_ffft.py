@@ -13,14 +13,16 @@
 # limitations under the License.
 """Tests of the Fast Fermionic Fourier Transform (FFFT)."""
 
+import hint_helpers
 import numpy as np
 import pytest
 
-from pennylane import FermionicSWAP, PauliZ, device, list_decomps, qnode, workflow
-from pennylane.measurements import sample, state
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+import pennylane as qp
+from pennylane import FermionicSWAP, PauliZ, device, qnode
+from pennylane.measurements import state
 from pennylane.templates import BasisEmbedding
-from pennylane.templates.subroutines.ffft import FFFT, TwoWireFFT
+from pennylane.templates.subroutines.ffft import FFFT, TwoWireFFT, _permute_and_apply_parallel
+from pennylane.testing import assert_decomposable
 from pennylane.wires import Wires
 
 dev = device("default.qubit")
@@ -43,11 +45,11 @@ def ffft(wires, input=None):
         (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15),
     ],
 )
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_ffft_decomposition_new(wires):
     op = FFFT(wires)
 
-    for rule in list_decomps(FFFT):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 @pytest.mark.parametrize(
@@ -63,79 +65,119 @@ def test_raises(wires, error_type, error_msg):
         FFFT(wires)
 
 
-@pytest.mark.capture
-@pytest.mark.parametrize(
-    "wires, expected_circuit",
-    [
-        ((0, 1), [TwoWireFFT(Wires([0, 1]))]),
-        (
-            (0, 1, 2, 3),
-            [
-                TwoWireFFT(wires=[0, 1]),
-                TwoWireFFT(wires=[2, 3]),
-                PauliZ(2) ** 0.0,
-                PauliZ(3) ** 0.5,
-                FermionicSWAP(np.pi, wires=[1, 2]),
-                TwoWireFFT(wires=[0, 1]),
-                TwoWireFFT(wires=[2, 3]),
-                FermionicSWAP(np.pi, wires=[1, 2]),
-            ],
-        ),
-        (
-            (0, 1, 2, 3, 4, 5, 6, 7),
-            [
-                TwoWireFFT(wires=[0, 1]),
-                TwoWireFFT(wires=[2, 3]),
-                PauliZ(2) ** 0.0,
-                PauliZ(3) ** 0.5,
-                FermionicSWAP(np.pi, wires=[1, 2]),
-                TwoWireFFT(wires=[0, 1]),
-                TwoWireFFT(wires=[2, 3]),
-                FermionicSWAP(np.pi, wires=[1, 2]),
-                TwoWireFFT(wires=[4, 5]),
-                TwoWireFFT(wires=[6, 7]),
-                PauliZ(6) ** 0.0,
-                PauliZ(7) ** 0.5,
-                FermionicSWAP(np.pi, wires=[5, 6]),
-                TwoWireFFT(wires=[4, 5]),
-                TwoWireFFT(wires=[6, 7]),
-                FermionicSWAP(np.pi, wires=[5, 6]),
-                PauliZ(4) ** 0.0,
-                PauliZ(5) ** 0.25,
-                PauliZ(6) ** 0.5,
-                PauliZ(7) ** 0.75,
-                FermionicSWAP(np.pi, wires=[3, 4]),
-                FermionicSWAP(np.pi, wires=[2, 3]),
-                FermionicSWAP(np.pi, wires=[4, 5]),
-                FermionicSWAP(np.pi, wires=[1, 2]),
-                FermionicSWAP(np.pi, wires=[3, 4]),
-                FermionicSWAP(np.pi, wires=[5, 6]),
-                TwoWireFFT(wires=[0, 1]),
-                TwoWireFFT(wires=[2, 3]),
-                TwoWireFFT(wires=[4, 5]),
-                TwoWireFFT(wires=[6, 7]),
-                FermionicSWAP(np.pi, wires=[1, 2]),
-                FermionicSWAP(np.pi, wires=[3, 4]),
-                FermionicSWAP(np.pi, wires=[5, 6]),
-                FermionicSWAP(np.pi, wires=[2, 3]),
-                FermionicSWAP(np.pi, wires=[4, 5]),
-                FermionicSWAP(np.pi, wires=[3, 4]),
-            ],
-        ),
-    ],
-)
-def test_ffft_circuit(wires, expected_circuit):
-    @qnode(device("default.qubit", wires=wires), shots=1)
-    def ffft_simple(wires):  # pylint: disable=redefined-outer-name
-        FFFT(wires)
-        return sample(wires=wires)
+_ffft_circuit_cases = [
+    ((0, 1), [TwoWireFFT(Wires([0, 1]))]),
+    (
+        (0, 1, 2, 3),
+        [
+            TwoWireFFT(wires=[0, 1]),
+            TwoWireFFT(wires=[2, 3]),
+            PauliZ(2) ** 0.0,
+            PauliZ(3) ** 0.5,
+            FermionicSWAP(np.pi, wires=[1, 2]),
+            TwoWireFFT(wires=[0, 1]),
+            TwoWireFFT(wires=[2, 3]),
+            FermionicSWAP(np.pi, wires=[1, 2]),
+        ],
+    ),
+    (
+        (0, 1, 2, 3, 4, 5, 6, 7),
+        [
+            TwoWireFFT(wires=[0, 1]),
+            TwoWireFFT(wires=[2, 3]),
+            PauliZ(2) ** 0.0,
+            PauliZ(3) ** 0.5,
+            FermionicSWAP(np.pi, wires=[1, 2]),
+            TwoWireFFT(wires=[0, 1]),
+            TwoWireFFT(wires=[2, 3]),
+            FermionicSWAP(np.pi, wires=[1, 2]),
+            TwoWireFFT(wires=[4, 5]),
+            TwoWireFFT(wires=[6, 7]),
+            PauliZ(6) ** 0.0,
+            PauliZ(7) ** 0.5,
+            FermionicSWAP(np.pi, wires=[5, 6]),
+            TwoWireFFT(wires=[4, 5]),
+            TwoWireFFT(wires=[6, 7]),
+            FermionicSWAP(np.pi, wires=[5, 6]),
+            PauliZ(4) ** 0.0,
+            PauliZ(5) ** 0.25,
+            PauliZ(6) ** 0.5,
+            PauliZ(7) ** 0.75,
+            FermionicSWAP(np.pi, wires=[3, 4]),
+            FermionicSWAP(np.pi, wires=[2, 3]),
+            FermionicSWAP(np.pi, wires=[4, 5]),
+            FermionicSWAP(np.pi, wires=[1, 2]),
+            FermionicSWAP(np.pi, wires=[3, 4]),
+            FermionicSWAP(np.pi, wires=[5, 6]),
+            TwoWireFFT(wires=[0, 1]),
+            TwoWireFFT(wires=[2, 3]),
+            TwoWireFFT(wires=[4, 5]),
+            TwoWireFFT(wires=[6, 7]),
+            FermionicSWAP(np.pi, wires=[1, 2]),
+            FermionicSWAP(np.pi, wires=[3, 4]),
+            FermionicSWAP(np.pi, wires=[5, 6]),
+            FermionicSWAP(np.pi, wires=[2, 3]),
+            FermionicSWAP(np.pi, wires=[4, 5]),
+            FermionicSWAP(np.pi, wires=[3, 4]),
+        ],
+    ),
+]
 
-    tape = workflow.construct_tape(ffft_simple, level="device")(wires)
-    for i, op in enumerate(tape.operations):
-        assert type(op) == type(expected_circuit[i])
-        assert op.hyperparameters == expected_circuit[i].hyperparameters
-        assert op.data == expected_circuit[i].data
-        assert op.wires == expected_circuit[i].wires
+
+@pytest.mark.parametrize("wires, expected_circuit", _ffft_circuit_cases)
+def test_ffft_circuit(wires, expected_circuit):
+    """Test that FFFT decomposes into the correct operations."""
+    ops = FFFT(wires).decomposition()
+
+    assert len(ops) == len(expected_circuit)
+    for op, expected in zip(ops, expected_circuit, strict=True):
+        qp.assert_equal(op, expected)
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize("wires, expected_circuit", _ffft_circuit_cases)
+def test_ffft_circuit_capture(wires, expected_circuit):
+    """Test that FFFT decomposes into the correct operations under capture."""
+    import jax  # pylint: disable=import-outside-toplevel
+
+    op = FFFT(wires)
+    rule = qp.list_decomps(FFFT)[0]
+
+    plxpr = qp.capture.make_plxpr(rule, autograph=False)(wires=op.wires)
+    flat_args = jax.tree.leaves({"wires": op.wires})
+    tape = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_args)
+    ops = tape.operations
+
+    assert len(ops) == len(expected_circuit)
+    for actual, expected in zip(ops, expected_circuit, strict=True):
+        assert type(actual) is type(expected)
+        assert actual.wires == expected.wires
+        if actual.data:
+            assert np.allclose(actual.data, expected.data)
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize("n_wires", [4, 8, 16])
+def test_ffft_num_iters_hints(n_wires):
+    """Test that the permutation loops with dynamic bounds carry ``num-iters`` hints that
+    reproduce the number of ``FermionicSWAP`` gates."""
+    import jax  # pylint: disable=import-outside-toplevel
+
+    def permutation():
+        wires = qp.math.array(list(range(n_wires)), like="jax")
+        _permute_and_apply_parallel(wires, TwoWireFFT)
+
+    plxpr = jax.make_jaxpr(permutation)()
+    ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+    num_fswaps = sum(isinstance(op, FermionicSWAP) for op in ops)
+
+    num_layers = n_wires // 2 - 1
+    # Only the swaps within each layer have dynamic bounds, the loops over layers and the
+    # operator loop are static.
+    swaps_per_layer = (num_layers + 1) / 2
+    hints = [None, swaps_per_layer, None, None, swaps_per_layer]
+    assert hint_helpers.loop_hints(plxpr.jaxpr) == hints
+    assert 2 * num_layers * swaps_per_layer == num_fswaps
 
 
 def fermionic_superposition_state(amplitudes):

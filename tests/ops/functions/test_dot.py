@@ -138,22 +138,6 @@ class TestDotSum:
         )
         qp.assert_equal(op_sum, op_sum_2)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("dtype", ("float64", "complex128"))
-    def test_dot_tf(self, dtype):
-        """Test the dot function with the tensorflow interface."""
-        import tensorflow as tf
-
-        c = tf.constant([1.0, 2.0, 3.0], dtype=getattr(tf, dtype))
-        o = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
-        op_sum = qp.dot(c, o)
-        op_sum_2 = Sum(
-            qp.PauliX(0),
-            SProd(tf.constant(2.0, dtype=getattr(tf, dtype)), qp.PauliY(1)),
-            SProd(tf.constant(3.0, dtype=getattr(tf, dtype)), qp.PauliZ(2)),
-        )
-        qp.assert_equal(op_sum, op_sum_2)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("dtype", ("float64", "complex128"))
     def test_dot_torch(self, dtype):
@@ -225,7 +209,7 @@ class TestDotSum:
     def test_dot_with_words_and_sentences_pauli_false(self, coeff, ops):
         """Test operators that are a mix of pauli words and pauli sentences"""
         dot_res = qp.dot(coeff, ops, pauli=False)
-        true_res = qp.dot(coeff, [op.operation() for op in ops], pauli=False)
+        true_res = qp.dot(coeff, [qp.pauli.to_operator(op) for op in ops], pauli=False)
         assert dot_res == true_res
 
     data_op_words_and_sentences_pauli_false = (
@@ -308,7 +292,7 @@ class TestDotPauliSentence:
     def test_coeffs_and_ops(self):
         """Test that the coefficients and operators of the returned PauliSentence are correct."""
         ps = qp.dot(coeffs0, ops0, pauli=True)
-        h = ps.operation()
+        h = qp.pauli.to_operator(ps)
         hcoeffs, hops = h.terms()
         assert qp.math.allequal(hcoeffs, coeffs0)
         for _op1, _op2 in zip(hops, ops0):
@@ -320,7 +304,7 @@ class TestDotPauliSentence:
             coeffs=[0.12, 1.2, 12], ops=[qp.PauliX(0), qp.PauliX(0), qp.PauliX(0)], pauli=True
         )
         assert len(ps) == 1
-        h = ps.operation()
+        h = qp.pauli.to_operator(ps)
         assert isinstance(h, qp.ops.SProd)
         qp.assert_equal(h.base, qp.PauliX(0))
 
@@ -328,7 +312,7 @@ class TestDotPauliSentence:
         """Test that hamiltonian computed from the PauliSentence created by the dot function is equal
         to the simplified hamiltonian."""
         ps = qp.dot(coeffs0, ops0, pauli=True)
-        h_ps = ps.operation()
+        h_ps = qp.pauli.to_operator(ps)
         h = qp.Hamiltonian(coeffs0, ops0)
         h.simplify()
         qp.assert_equal(h_ps, h)
@@ -345,24 +329,6 @@ class TestDotPauliSentence:
                 qp.pauli.PauliWord({0: "X"}): 1.0,
                 qp.pauli.PauliWord({1: "Y"}): 2.0,
                 qp.pauli.PauliWord({2: "Z"}): 3.0,
-            }
-        )
-        assert ps == ps_2
-
-    @pytest.mark.tf
-    def test_dot_tf(self):
-        """Test the dot function with the tensorflow interface."""
-        import tensorflow as tf
-
-        c = tf.constant([1.0, 2.0, 3.0])
-        o = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
-        ps = qp.dot(c, o, pauli=True)
-
-        ps_2 = qp.pauli.PauliSentence(
-            {
-                qp.pauli.PauliWord({0: "X"}): tf.constant(1.0),
-                qp.pauli.PauliWord({1: "Y"}): tf.constant(2.0),
-                qp.pauli.PauliWord({2: "Z"}): tf.constant(3.0),
             }
         )
         assert ps == ps_2

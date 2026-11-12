@@ -22,11 +22,11 @@ from functools import partial
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition import gate_sets
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.operation import Operator
-from pennylane.tape import QuantumScript
 from pennylane.transforms import transform
 from pennylane.wires import Wires
 
@@ -103,6 +103,7 @@ class EdgeType:  # pylint: disable=too-few-public-methods
     HADAMARD = 2
 
 
+# pylint: disable=too-many-statements
 @partial(transform, is_informative=True)
 @_needs_pyzx
 def to_zx(tape, expand_measurements=False):
@@ -115,10 +116,9 @@ def to_zx(tape, expand_measurements=False):
             rotations will be added to the operations.
 
     Returns:
-        graph (pyzx.Graph) or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
-
-        The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
-        will provide the ZX graph in the form of a PyZX graph.
+        pyzx.Graph or QNode or quantum function (Callable) or tuple[List[QuantumTape], function]:
+            The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
+            will provide the ZX graph in the form of a PyZX graph.
 
     Raises:
         ModuleNotFoundError: if the required ``pyzx`` package is not installed.
@@ -399,13 +399,18 @@ def to_zx(tape, expand_measurements=False):
         kwargs = {"gate_set": gate_sets.PYZX}
         if qp.decomposition.enabled_graph():
             kwargs["fixed_decomps"] = {qp.GlobalPhase: null_decomp}
-        [mapped_tape], _ = qp.transforms.decompose(mapped_tape, **kwargs)
+        # pylint: disable-next=protected-access
+        [mapped_tape], _ = qp.transforms._tape_decompose(mapped_tape, **kwargs)
 
         if expand_measurements:
             [mapped_tape], _ = qp.transforms.diagonalize_measurements(mapped_tape, to_eigvals=True)
 
         expanded_operations = []
         for op in mapped_tape.operations:
+            # NOTE: Legacy decomposition previously had GlobalPhase decompose to nothing.
+            # PyZX doesn't track global phases so we can drop it.
+            if not qp.decomposition.enabled_graph() and op.name == "GlobalPhase":
+                continue
             if op.name == "Toffoli":
                 decomp = _toffoli_clifford_t_decomp(op.wires)
                 expanded_operations.extend(decomp)

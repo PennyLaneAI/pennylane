@@ -3,7 +3,7 @@ permissions:
   contents: read
 on:
   release:
-    types: [published]
+    types: [released]
 
 env:
   UV_SYSTEM_PYTHON: 1
@@ -38,17 +38,22 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
           version: 0.9.17
-          enable-cache: true  
+          enable-cache: true
 
       - name: Build PennyLane wheel
         run: |
           uv build --wheel --out-dir dist
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: pennylane-wheel
+          path: dist/*.whl
 
       - name: Publish
         uses: pypa/gh-action-pypi-publish@release/v1

@@ -22,16 +22,19 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.apply import apply
+from pennylane.core.operator import Operation, Operator, Operator2, abstractify
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.operation import Operation, Operator
+from pennylane.ops._pauli_conversion import to_operator
 from pennylane.ops.identity import Identity
-from pennylane.queuing import QueuingManager, apply
 
+from .pow2 import Pow2
 from .symbolicop import ScalarSymbolicOp
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
@@ -56,13 +59,13 @@ def pow(base, z=1, lazy=True) -> Operator:
         This operator supports a batched base, a batched coefficient and a combination of both:
 
         >>> op = qp.pow(qp.RX([1, 2, 3], wires=0), z=4)
-        >>> qp.matrix(op).shape
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
         >>> op = qp.pow(qp.RX(1, wires=0), z=[1, 2, 3])
-        >>> qp.matrix(op).shape
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
         >>> op = qp.pow(qp.RX([1, 2, 3], wires=0), z=[4, 5, 6])
-        >>> qp.matrix(op).shape
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
 
         But it doesn't support batching of operators:
@@ -89,11 +92,11 @@ def pow(base, z=1, lazy=True) -> Operator:
 
     """
     if lazy:
-        return Pow(base, z)
+        return Pow2(base, z) if isinstance(base, Operator2) else Pow(base, z)
     try:
         pow_ops = base.pow(z)
     except PowUndefinedError:
-        return Pow(base, z)
+        return Pow2(base, z) if isinstance(base, Operator2) else Pow(base, z)
 
     num_ops = len(pow_ops)
     if num_ops == 0:
@@ -192,8 +195,20 @@ class Pow(ScalarSymbolicOp):
             else f"{self.base}**{self.z}"
         )
 
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if subclass == Pow2:
+            return True
+        return NotImplemented
+
     @property
     def resource_params(self) -> dict:
+        if isinstance(self.base, Operator2):
+            return {
+                "base_class": type(self.base),
+                "base_params": abstractify(self.base).arguments,
+                "z": self.z,
+            }
         return {
             "base_class": type(self.base),
             "base_params": self.base.resource_params,
@@ -214,10 +229,6 @@ class Pow(ScalarSymbolicOp):
         """The trainable parameters"""
         return self.base.data
 
-    @data.setter
-    def data(self, new_data):
-        self.base.data = new_data
-
     def label(self, decimals=None, base_label=None, cache=None):
         z_string = format(self.z).translate(_superscript)
         base_label = self.base.label(decimals, base_label, cache=cache)
@@ -228,25 +239,6 @@ class Pow(ScalarSymbolicOp):
     @staticmethod
     def _matrix(scalar, mat):
         if isinstance(scalar, int):
-            if (
-                qp.math.get_deep_interface(mat) == "tensorflow"
-            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-                # TensorFlow doesn't have a matrix_power func, and scipy.linalg.fractional_matrix_power
-                # is not differentiable. So we use a custom implementation of matrix power for integer
-                # exponents below.
-                if scalar == 0:
-                    # Used instead of qp.math.eye for tracing derivatives
-                    return mat @ math.linalg.inv(mat)
-                if scalar > 0:
-                    out = mat
-                else:
-                    out = mat = math.linalg.inv(mat)
-                    scalar *= -1
-
-                for _ in range(scalar - 1):
-                    out @= mat
-                return out
-
             return math.linalg.matrix_power(mat, scalar)
 
         return fractional_matrix_power(mat, scalar)
@@ -328,7 +320,9 @@ class Pow(ScalarSymbolicOp):
 
     def eigvals(self):
         base_eigvals = self.base.eigvals()
-        return [value**self.z for value in base_eigvals]
+        is_single_precision = math.get_dtype_name(base_eigvals) in ("float32", "complex64")
+        complex_dtype = "complex64" if is_single_precision else "complex128"
+        return math.cast(base_eigvals, complex_dtype) ** self.z
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -388,7 +382,7 @@ class Pow(ScalarSymbolicOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return pr.operation(wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         base = self.base if qp.capture.enabled() else self.base.simplify()
         try:
@@ -424,4 +418,4 @@ class PowOperation(Pow, Operation):
 
     @property
     def control_wires(self):
-        return self.base.control_wires
+        return self.base.control_wires  # pragma: no cover

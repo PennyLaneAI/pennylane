@@ -20,7 +20,6 @@ This module contains functions that act on operators and tapes.
     :toctree: api
 
     ~ops.functions.bind_new_parameters
-    ~ops.functions.assert_valid
     ~dot
     ~eigvals
     ~equal
@@ -36,12 +35,13 @@ This module contains functions that act on operators and tapes.
     ~iterative_qpe
     ~commutator
     ~comm
+    ~single_qubit_zyz_angles
+    ~subcircuit
 
 """
 
 from .bind_new_parameters import bind_new_parameters
 from .equal import equal, assert_equal
-from .assert_valid import assert_valid
 from .commutator import comm, commutator
 from .dot import dot
 from .eigvals import eigvals
@@ -54,3 +54,5 @@ from .iterative_qpe import iterative_qpe
 from .map_wires import map_wires
 from .matrix import matrix
 from .simplify import simplify
+from .single_qubit_zyz_angles import single_qubit_zyz_angles
+from .subcircuit import subcircuit

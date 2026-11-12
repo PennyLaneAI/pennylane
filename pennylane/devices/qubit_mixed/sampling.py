@@ -21,8 +21,10 @@ from collections.abc import Callable
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.measurements import SampleMeasurement
+from pennylane.core.shots import Shots
 from pennylane.devices.qubit.sampling import _group_measurements, jax_random_split, sample_probs
-from pennylane.measurements import ExpectationMP, SampleMeasurement, Shots
+from pennylane.measurements import ExpectationMP
 from pennylane.measurements.classical_shadow import ClassicalShadowMP, ShadowExpvalMP
 from pennylane.ops import LinearCombination, Sum
 from pennylane.typing import TensorLike

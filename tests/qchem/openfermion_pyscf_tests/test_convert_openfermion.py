@@ -311,7 +311,6 @@ class TestToOpenFermion:
         assert q_op == of_op
 
     INVALID_OPS = (
-        qp.prod(qp.PauliZ(0), qp.QuadOperator(0.1, wires=1)),
         qp.prod(qp.PauliX(0), qp.Hadamard(1)),
         qp.sum(qp.PauliZ(0), qp.Hadamard(1)),
     )

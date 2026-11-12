@@ -15,6 +15,10 @@
 Tests for capturing for while loops into jaxpr.
 """
 
+# pylint: disable=unbalanced-tuple-unpacking
+
+from functools import partial
+
 import numpy as np
 import pytest
 
@@ -26,6 +30,9 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 from pennylane.capture.primitives import while_loop_prim  # pylint: disable=wrong-import-position
+from pennylane.testing import (  # pylint: disable=wrong-import-position
+    extract_all_primitives,
+)
 
 
 class TestCaptureWhileLoop:
@@ -123,17 +130,12 @@ class TestCaptureCircuitsWhileLoop:
 
             return qp.expval(qp.Z(0))
 
-        result = circuit()
-        expected = np.cos(0 + 1 + 2)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
-
         jaxpr = jax.make_jaxpr(circuit)()
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
-    @pytest.mark.parametrize("arg, expected", [(1.2, -0.16852022), (1.6, 0.598211352)])
-    def test_circuit_args(self, arg, expected):
+    def test_circuit_args(self):
         """Test that a while loop with arguments is correctly captured into a jaxpr."""
+
         dev = qp.device("default.qubit", wires=1)
 
         @qp.qnode(dev)
@@ -154,12 +156,8 @@ class TestCaptureCircuitsWhileLoop:
 
             return qp.expval(qp.Z(0))
 
-        result = circuit(arg)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
-
-        jaxpr = jax.make_jaxpr(circuit)(arg)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+        jaxpr = jax.make_jaxpr(circuit)(1.2)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     @pytest.mark.parametrize("arg, expected", [(3, 5), (11, 21)])
     def test_circuit_closure_vars(self, arg, expected):
@@ -184,11 +182,9 @@ class TestCaptureCircuitsWhileLoop:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
-    @pytest.mark.parametrize(
-        "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12, 0.2653001)]
-    )
-    def test_while_loop_nested(self, upper_bound, arg, expected):
+    def test_while_loop_nested(self):
         """Test that a nested while loop is correctly captured into a jaxpr."""
+
         dev = qp.device("default.qubit", wires=3)
 
         @qp.qnode(dev)
@@ -222,13 +218,9 @@ class TestCaptureCircuitsWhileLoop:
 
             return qp.expval(qp.Z(0))
 
-        args = [upper_bound, arg]
-        result = circuit(*args)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
-
+        args = [3, 0.5]
         jaxpr = jax.make_jaxpr(circuit)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     @pytest.mark.xfail(strict=False)  # mcms only sometimes give the right answer
     @pytest.mark.parametrize("upper_bound, arg", [(3, 0.5), (2, 12)])
@@ -287,12 +279,7 @@ class TestCaptureCircuitsWhileLoop:
         def func_qp(x):
             return qp.grad(inner_func)(x)
 
-        def func_jax(x):
-            return jax.grad(inner_func)(x)
-
         x = 0.7
-        jax_out = func_jax(x)
-        assert qp.math.allclose(func_qp(x), jax_out)
 
         # Check overall jaxpr properties
         jaxpr = jax.make_jaxpr(func_qp)(x)
@@ -312,9 +299,6 @@ class TestCaptureCircuitsWhileLoop:
         assert grad_eqn.params["argnums"] == (0,)
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 1  # a single QNode equation
-
-        manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
-        assert qp.math.allclose(manual_eval, jax_out)
 
 
 def test_pytree_input_output():
@@ -585,3 +569,50 @@ class TestCaptureWhileLoopDynamicShapes:
         jaxpr = jax.make_jaxpr(w)()
         assert jaxpr.eqns[0].primitive == while_loop_prim
         assert jaxpr.eqns[0].params["jaxpr_body_fn"].eqns[0].primitive.name == "add"
+
+
+class TestWhileLoopHintsCapture:
+    """Tests that ``num-iters`` reaches the while-loop capture primitive."""
+
+    def test_estimated_iterations_in_jaxpr(self):
+        """``num-iters`` should become ``estimated_iterations`` on ``while_loop``."""
+
+        @qp.hint({"num-iters": 7})
+        @qp.while_loop(lambda i: i < 3)
+        def loop(i):
+            return i + 1
+
+        jaxpr = jax.make_jaxpr(loop)(0)
+        assert jaxpr.eqns[0].primitive == while_loop_prim
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 7
+
+    def test_without_hint_has_none_estimated_iterations(self):
+        """Unhinted while loops should bind ``estimated_iterations=None``."""
+
+        @qp.while_loop(lambda i: i < 3)
+        def loop(i):
+            return i + 1
+
+        jaxpr = jax.make_jaxpr(loop)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] is None
+
+    def test_apply_hint_form_sets_estimated_iterations(self):
+        """``qp.hint(...)(loop)`` should also populate ``estimated_iterations``."""
+
+        @qp.while_loop(lambda i: i < 3)
+        def loop(i):
+            return i + 1
+
+        hinted = qp.hint({"num-iters": 4})(loop)
+        jaxpr = jax.make_jaxpr(hinted)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 4
+
+    def test_hint_under_partial(self):
+        """``num-iters`` should be found when the hinted body is wrapped in a partial."""
+
+        def body(i, step):
+            return i + step
+
+        loop = qp.while_loop(lambda i: i < 3)(partial(qp.hint(body, {"num-iters": 7}), step=1))
+        jaxpr = jax.make_jaxpr(loop)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 7

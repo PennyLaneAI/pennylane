@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.typing import AbstractArray
 
 
 class TestNumpyMimicForFFT:
@@ -60,15 +61,6 @@ class TestIsRealObjOrClose:
         x = pnp.array(data, dtype=dtype)
         assert qp.math.is_real_obj_or_close(x) is exp_output
 
-    @pytest.mark.tf
-    def test_tf(self, data, dtype, exp_output):
-        """Test with TensorFlow."""
-        import tensorflow as tf
-
-        dtype = tf.float64 if dtype == "float" else tf.complex128
-        x = tf.Variable(data, dtype=dtype)
-        assert qp.math.is_real_obj_or_close(x) is exp_output
-
     @pytest.mark.torch
     def test_torch(self, data, dtype, exp_output):
         """Test with Torch."""
@@ -86,3 +78,12 @@ class TestIsRealObjOrClose:
 
         x = jax.numpy.array(data, dtype=dtype)
         assert qp.math.is_real_obj_or_close(x) == jnp.array(exp_output)
+
+
+@pytest.mark.parametrize(
+    "dtype, expected", [(int, True), (np.float64, True), (np.complex128, False)]
+)
+def test_is_real_obj_or_close_abstract_array(dtype, expected):
+    """Test that `is_real_obj_or_close` handles qp.typing.AbstractArray correctly."""
+    x = AbstractArray((1, 2, 3), dtype=dtype)
+    assert qp.math.is_real_obj_or_close(x) is expected

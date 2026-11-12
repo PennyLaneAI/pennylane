@@ -19,11 +19,11 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.out_poly import (
     _get_polynomial,
     _mobius_inversion_of_zeta_transform,
 )
+from pennylane.testing import assert_decomposable
 
 
 def test_get_polynomial():
@@ -59,7 +59,7 @@ def f_test(x, y, z):
     return x**2 + y * x * z**5 - z**3 + 3
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_OutPoly():
     """Check the operation using the assert_valid function."""
     wires = qp.registers({"x": 3, "y": 3, "z": 3, "output": 3, "aux": 2})
@@ -70,7 +70,7 @@ def test_standard_validity_OutPoly():
         output_wires=wires["output"],
     )
 
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestOutPoly:
@@ -95,9 +95,10 @@ class TestOutPoly:
 
         @qp.qnode(dev)
         def circuit():
-
-            qp.BasisEmbedding(2, wires=x_wires)
-            qp.BasisEmbedding(1, wires=y_wires)
+            x_bin = qp.math.int_to_binary(2, len(x_wires))
+            y_bin = qp.math.int_to_binary(1, len(y_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
+            qp.BasisEmbedding(y_bin, wires=y_wires)
             qp.OutPoly(
                 polynomial_function,
                 input_registers=input_registers,
@@ -197,11 +198,11 @@ class TestOutPoly:
             (lambda x, y: x * y, [[0, 1], [2]], [3]),
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self, polynomial_function, input_registers, output_wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.OutPoly(polynomial_function, input_registers, output_wires)
-        for rule in qp.list_decomps(qp.OutPoly):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_compute_decomposition_no_coeffs_list(self):
         """Test that coeffs list is an optional argnument to compute_decomposition."""
@@ -241,9 +242,9 @@ class TestOutPoly:
         @qp.qnode(dev)
         def circuit():
             # loading values for x, y and z
-            qp.BasisEmbedding(1, wires=wires["x"])
-            qp.BasisEmbedding(2, wires=wires["y"])
-            qp.BasisEmbedding(3, wires=wires["z"])
+            qp.BasisEmbedding([0, 0, 1], wires=wires["x"])
+            qp.BasisEmbedding([0, 1, 0], wires=wires["y"])
+            qp.BasisEmbedding([0, 1, 1], wires=wires["z"])
 
             # applying the polynomial
             qp.OutPoly(

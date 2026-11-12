@@ -22,9 +22,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import Operator
 from pennylane.data.attributes import DatasetOperator, DatasetPyTree
 from pennylane.data.base.typing_util import get_type_str
-from pennylane.operation import Operator
 
 pytestmark = pytest.mark.data
 
@@ -156,7 +156,7 @@ class TestDatasetOperator:
         [
             qp.RX(1.1, 0),
             qp.FermionicSWAP(1.3, [1, "a"]),
-            qp.Toffoli([1, "a", None]),
+            qp.Toffoli([1, "a", 2]),
             qp.Hamiltonian([], []),
         ],
     )
@@ -180,7 +180,7 @@ class TestDatasetOperator:
         [
             qp.RX(1.1, 0),
             qp.FermionicSWAP(1.3, [1, "a"]),
-            qp.Toffoli([1, "a", None]),
+            qp.Toffoli([1, "a", 2]),
             qp.Hamiltonian([], []),
         ],
     )

@@ -22,14 +22,17 @@ import numbers
 from copy import copy
 
 import pennylane as qp
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator, Operator2
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
+from pennylane.ops._pauli_conversion import to_operator
+from pennylane.pytrees import flatten, unflatten
 
 from .sprod import SProd
 from .sum import Sum
 
 
 class LinearCombination(Sum):
-    r"""Operator representing a linear combination of operators.
+    r"""Operator representing a linear combination of operators. Also accessible as :class:`~.Hamiltonian`.
 
     The ``LinearCombination`` is represented as a linear combination of other operators, e.g.,
     :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` are trainable parameters.
@@ -117,7 +120,21 @@ class LinearCombination(Sum):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, coeffs, observables, _pauli_rep=None, **kwargs):
-        return cls._primitive.bind(*coeffs, *observables, **kwargs, n_obs=len(observables))
+        leaves, structure = flatten(observables, is_leaf=lambda x: isinstance(x, Operator))
+
+        new_leaves = []
+        for leaf in leaves:
+            if isinstance(leaf, Operator2):
+                if leaf.tracer is None:
+                    # pylint: disable-next=protected-access
+                    leaf._bind_primitive()
+                new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
+            else:
+                new_leaves.append(leaf)
+
+        new_observables = unflatten(new_leaves, structure)
+
+        return cls._primitive.bind(*coeffs, *new_observables, **kwargs, n_obs=len(observables))
 
     def __init__(
         self,
@@ -147,7 +164,7 @@ class LinearCombination(Sum):
 
         self._hyperparameters = {"ops": self._ops}
 
-        with qp.QueuingManager.stop_recording():
+        with QueuingManager.stop_recording():
             # type.__call__ valid when capture is enabled and creating an instance
             operands = tuple(
                 type.__call__(SProd, c, op) for c, op in zip(coeffs, observables, strict=True)
@@ -273,7 +290,7 @@ class LinearCombination(Sum):
         return "LinearCombination"
 
     @staticmethod
-    @qp.QueuingManager.stop_recording()
+    @QueuingManager.stop_recording()
     def _simplify_coeffs_ops(coeffs, ops, pr, cutoff=1.0e-12):
         """Simplify coeffs and ops
 
@@ -293,7 +310,7 @@ class LinearCombination(Sum):
             new_ops = []
 
             for pw, coeff in pr.items():
-                pw_op = pw.operation(wire_order=pr.wires)
+                pw_op = to_operator(pw, identity_wires=pr.wires)
                 new_ops.append(pw_op)
                 new_coeffs.append(coeff)
 
@@ -400,7 +417,7 @@ class LinearCombination(Sum):
 
     __rmul__ = __mul__
 
-    def queue(self, context: qp.QueuingManager | qp.queuing.AnnotatedQueue = qp.QueuingManager):
+    def queue(self, context: QueuingManager | AnnotatedQueue = QueuingManager):
         """Queues a ``qp.ops.LinearCombination`` instance"""
         if qp.QueuingManager.recording():
             for o in self.ops:
@@ -483,13 +500,11 @@ class LinearCombination(Sum):
         return new_op
 
 
-if LinearCombination._primitive is not None:
-
-    @LinearCombination._primitive.def_impl
-    def _(*args, n_obs, **kwargs):
-        coeffs = args[:n_obs]
-        observables = args[n_obs:]
-        return type.__call__(LinearCombination, coeffs, observables, **kwargs)
+@LinearCombination._primitive.def_impl
+def _(*args, n_obs, **kwargs):
+    coeffs = args[:n_obs]
+    observables = args[n_obs:]
+    return type.__call__(LinearCombination, coeffs, observables, **kwargs)
 
 
 # this just exists for the docs build for now, since we're waiting until the next PR to fix the docs

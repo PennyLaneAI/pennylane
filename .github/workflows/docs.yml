@@ -68,6 +68,9 @@ jobs:
     if: needs.get_branch.outputs.run_sphinx == 'true'
     needs: [determine_runner, get_branch]
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+    env:
+      TORCH_VERSION: "2.9.0"  # must match pyproject.toml [dependency-groups] docs
+      DOCUTILSCONFIG: "doc/docutils.conf"
     steps:
       - uses: actions/checkout@v6
       - uses: PennyLaneAI/sphinx-action@master
@@ -77,6 +80,7 @@ jobs:
             apt install -y graphviz
             && python -m pip install --upgrade pip
             && pip3 install --extra-index-url https://test.pypi.org/simple/ pennylane-catalyst --pre
+            && pip3 install torch~=$TORCH_VERSION --index-url https://download.pytorch.org/whl/cpu
             && pip3 install --group docs
             && pip3 install .
           build-command: "sphinx-build -b html . _build -W --keep-going"

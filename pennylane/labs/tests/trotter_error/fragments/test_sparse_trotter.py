@@ -17,8 +17,7 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_array
 
-from pennylane.labs.trotter_error.fragments import sparse_fragments
-from pennylane.labs.trotter_error.fragments.sparse_fragments import SparseFragment, SparseState
+from pennylane.labs.trotter_error import SparseFragment, SparseState
 
 identity = SparseFragment(csr_array([[1, 0], [0, 1]]))
 pauli_x = SparseFragment(csr_array([[0, 1], [1, 0]]))
@@ -33,7 +32,7 @@ state_minus = SparseState(csr_array([[1 / np.sqrt(2), -1 / np.sqrt(2)]]))
 
 def _sparse_hamiltonian(matrices):
     """Create a sparse Hamiltonian from a list of matrices."""
-    frags = sparse_fragments(matrices)
+    frags = [SparseFragment(matrix) for matrix in matrices]
     return sum(frags[1:], frags[0]) if frags else SparseFragment(csr_array((2, 2)))
 
 
@@ -41,23 +40,11 @@ def test_sparse_fragments_basic():
     """Test that sparse_fragments returns SparseFragment objects correctly."""
 
     matrices = [csr_array([[1, 0], [0, 1]]), csr_array([[0, 1], [1, 0]])]
-    frags = sparse_fragments(matrices)
+    frags = [SparseFragment(matrix) for matrix in matrices]
 
     assert len(frags) == 2
     for frag in frags:
         assert isinstance(frag, SparseFragment)
-
-
-def test_sparse_fragments_empty():
-    """Test that sparse_fragments handles empty input correctly."""
-    frags = sparse_fragments([])
-    assert frags == []
-
-
-def test_sparse_fragments_type_error():
-    """Test that sparse_fragments raises TypeError for non-csr_array inputs."""
-    with pytest.raises(TypeError, match="Fragments must be csr_array objects"):
-        sparse_fragments([np.array([[1, 0], [0, 1]])])
 
 
 @pytest.mark.parametrize(

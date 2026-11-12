@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 FEATURES = [
     np.array([0, 1, 0, 0]),
@@ -47,13 +47,13 @@ TOO_MANY_FEATURES = [
 TOO_MANY_BROADCASTED_FEATURES = [np.eye(6)[:3, :5], np.ones((3, 8)) / np.sqrt(8)]
 
 
-@pytest.mark.jax
+@pytest.mark.xfail_if_capture(reason="Come back to this as we port it to Op2")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
     op = qp.AmplitudeEmbedding(features=FEATURES[0], wires=range(2))
-
-    qp.ops.functions.assert_valid(op, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_differentiation=True)
 
 
 class TestDecomposition:
@@ -179,12 +179,12 @@ class TestDecomposition:
         ([0.4472135954999579, 0.4472135954999579], 5, 0.2, False),
     ]
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("features", "wires", "pad_with", "normalize"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, wires, pad_with, normalize):
         """Test the decomposition of the AmplitudeEmbedding template."""
         op = qp.AmplitudeEmbedding(features, wires, pad_with=pad_with, normalize=normalize)
-        for rule in qp.list_decomps(qp.AmplitudeEmbedding):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 class TestInputs:
@@ -418,42 +418,6 @@ class TestInterfaces:
 
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-    @pytest.mark.tf
-    def test_tf(self, tol, features, pad_with, normalize):
-        """Tests tensorflow tensors."""
-        import tensorflow as tf
-
-        features = tf.Variable(features)
-
-        dev = qp.device("default.qubit")
-
-        circuit = qp.QNode(circuit_template, dev, interface="tensorflow")
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(features, pad_with, normalize)
-        res2 = circuit2(features, pad_with)
-
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf_jit(self, tol, features, pad_with, normalize):
-        """Tests tensorflow tensors with JIT compilation."""
-        import tensorflow as tf
-
-        features = tf.Variable(features)
-
-        dev = qp.device("default.qubit")
-
-        circuit = tf.function(jit_compile=True)(
-            qp.QNode(circuit_template, dev, interface="tensorflow")
-        )
-        circuit2 = tf.function(jit_compile=True)(qp.QNode(circuit_decomposed, dev))
-
-        res = circuit(features, pad_with, normalize)
-        res2 = circuit2(features, pad_with)
-
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
     @pytest.mark.torch
     def test_torch(self, tol, features, pad_with, normalize):
         """Tests Torch tensors."""
@@ -536,44 +500,6 @@ class TestInterfaceDtypes:
 
         circuit = jax.jit(qp.QNode(circuit_template, dev, interface="jax"), static_argnums=[1, 2])
         circuit2 = jax.jit(qp.QNode(circuit_decomposed, dev), static_argnums=[1, 2])
-
-        res = circuit(features, pad_with, normalize=True)
-        res2 = circuit2(features, pad_with, normalize=True)
-
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol, features, pad_with, dtype):
-        """Tests tensorflow tensors."""
-        import tensorflow as tf
-
-        dtype = getattr(tf, dtype)
-        features = tf.Variable(features, dtype=dtype)
-
-        dev = qp.device("default.qubit")
-
-        circuit = qp.QNode(circuit_template, dev, interface="tensorflow")
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(features, pad_with, normalize=True)
-        res2 = circuit2(features, pad_with, normalize=True)
-
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf_jit(self, tol, features, pad_with, dtype):
-        """Tests tensorflow tensors with JIT compilation."""
-        import tensorflow as tf
-
-        dtype = getattr(tf, dtype)
-        features = tf.Variable(features, dtype=dtype)
-
-        dev = qp.device("default.qubit")
-
-        circuit = tf.function(jit_compile=True)(
-            qp.QNode(circuit_template, dev, interface="tensorflow")
-        )
-        circuit2 = tf.function(jit_compile=True)(qp.QNode(circuit_decomposed, dev))
 
         res = circuit(features, pad_with, normalize=True)
         res2 = circuit2(features, pad_with, normalize=True)

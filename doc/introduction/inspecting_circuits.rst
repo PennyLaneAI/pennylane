@@ -13,7 +13,7 @@ PennyLane offers functionality to inspect, visualize or analyze quantum circuits
 
 Most of these tools are implemented as **transforms**.  Transforms take a :class:`~pennylane.QNode` instance and return a function:
 
->>> @qp.qnode(dev, diff_method='parameter-shift')
+>>> @qp.qnode(dev)
 ... def my_qnode(x, a=True):
 ...     # ...
 >>> new_func = my_transform(qnode)
@@ -31,17 +31,18 @@ Extracting properties of a circuit
 ----------------------------------
 
 The :func:`~pennylane.specs` transform takes a
-QNode and creates a function that returns 
-details about the QNode, including depth, number of gates, and number of
-gradient executions required.
+QNode and creates a function that returns
+details about the QNode, including circuit depth,
+number of gates and measurements, and device info.
 
 For example:
 
 .. code-block:: python
 
-    dev = qp.device('default.qubit', wires=4)
+    dev = qp.device('lightning.qubit', wires=4)
 
-    @qp.qnode(dev, diff_method='parameter-shift')
+    @qp.qjit
+    @qp.qnode(dev)
     def circuit(x, y):
         qp.RX(x[0], wires=0)
         qp.Toffoli(wires=(0, 1, 2))
@@ -57,22 +58,117 @@ details and resource information:
 >>> y = qp.numpy.array(0.4, requires_grad=False)
 >>> specs_func = qp.specs(circuit)
 >>> specs_func(x, y)
-Device: default.qubit
+Device: lightning.qubit
 Device wires: 4
 Shots: Shots(total=None)
-Level: gradient
+Level: device
 <BLANKLINE>
-Wire allocations: 3
-Total gates: 4
-Gate counts:
-- RX: 1
-- Toffoli: 1
-- CRY: 1
-- Rot: 1
-Measurements:
-- expval(PauliZ): 1
+Quantum operations:
+- Total: 4
+  - CRY: 1
+  - Toffoli: 1
+  - Rot: 1
+  - RX: 1
+Measurement processes:
 - expval(PauliX): 1
-Depth: 4
+- expval(PauliZ): 1
+Total wires: 4
+Circuit Depth: 4
+
+The :func:`~pennylane.track` transform reports the same device-level information, but also
+returns the result of executing the circuit:
+
+>>> result, circuit_specs = qp.track(circuit)(x, y)
+>>> len(result)
+2
+>>> circuit_specs.resources.quantum_operations
+{'CRY': 1, 'Toffoli': 1, 'Rot': 1, 'RX': 1}
+
+Resources are tracked by mock-executing the circuit on ``null.qubit``, so ``result`` has the
+shape and dtype of the real result, but not its values.
+
+The :func:`~pennylane.analyze` transform instead estimates the resources without executing the
+circuit, by analyzing the compiled program at a given stage of compilation (``level``).
+This makes it possible to see how each transform changes the circuit:
+
+.. code-block:: python
+
+    @qp.qjit
+    @qp.transforms.cancel_inverses
+    @qp.qnode(dev)
+    def optimized_circuit(x):
+        qp.RX(x, wires=0)
+        qp.X(0)
+        qp.X(0)
+        return qp.expval(qp.Z(0))
+
+>>> qp.analyze(optimized_circuit, level=0)(0.1).resources.quantum_operations
+{'PauliX': 2, 'RX': 1}
+>>> qp.analyze(optimized_circuit, level="user")(0.1).resources.quantum_operations
+{'RX': 1}
+
+Since :func:`~pennylane.analyze` does not execute the circuit, it does not unroll control flow
+either. A loop whose number of iterations depends on an argument is counted symbolically,
+whereas :func:`~pennylane.track` counts the iterations that were executed:
+
+.. code-block:: python
+
+    @qp.qjit(autograph=True)
+    @qp.qnode(dev)
+    def loop_circuit(n):
+        for _ in range(n):
+            qp.Hadamard(wires=0)
+        qp.CNOT(wires=(0, 1))
+        return qp.expval(qp.Z(0))
+
+>>> _, circuit_specs = qp.track(loop_circuit)(3)
+>>> circuit_specs.resources.quantum_operations
+{'CNOT': 1, 'Hadamard': 3}
+>>> print(qp.analyze(loop_circuit, level=0)(3).resources)
+Symbolic Variables: a
+Quantum operations:
+- Total: a + 1
+  - CNOT: 1
+  - Hadamard: a
+Measurement processes:
+- expval(PauliZ): 1
+Total wires: 4
+Circuit Depth: Not computed
+
+The :func:`~pennylane.estimate` function provides fast resource estimates of a quantum circuit by
+analyzing decomposition pathways to a target gate set with respect to the specified level of
+compilation. In the following example, circuit compilation via the specified pipeline (just a
+single :func:`~.cancel_inverses`) is bypassed with ``level=0``, and specifying a ``target`` gate
+set will analyze decomposition pathways to that gate set on the uncompiled circuit.
+
+.. code-block:: python
+
+    @qp.qjit(capture=True)
+    @qp.transforms.cancel_inverses
+    @qp.qnode(dev)
+    def circuit(x):
+        qp.RX(x, wires=0)
+        qp.X(0)
+        qp.X(0)
+        qp.CZ([0, 1])
+        return qp.expval(qp.Z(0))
+
+>>> target = {"RX", "PauliX", "Hadamard", "CNOT"}
+>>> print(qp.estimate(circuit, level=0, target=target)(0.1).resources)
+Quantum operations:
+- Total: 6
+  - CNOT: 1
+  - Hadamard: 2
+  - PauliX: 2
+  - RX: 1
+Measurement processes:
+- expval(PauliZ): 1
+Total wires: 4
+Circuit Depth: Not computed
+
+Note that both ``PauliX`` gates are counted (:func:`~.cancel_inverses` is ignored with
+``level=0``) and the ``CZ`` gate's decomposition pathway to ``CNOT`` and ``Hadamard`` is shown in
+the final resource estimate.
 
 
 Circuit drawing
@@ -131,7 +227,6 @@ Currently supported devices include:
 
 * ``default.qubit``: each snapshot saves the quantum state vector
 * ``default.mixed``: each snapshot saves the density matrix
-* ``default.gaussian``: each snapshot saves the covariance matrix and vector of means
 
 A :class:`~pennylane.Snapshot` can be used in a QNode like any other operation:
 
@@ -169,16 +264,16 @@ the number of a snapshot is used as a key in the output dictionary instead.
 Interactive Debugging on Simulators
 -----------------------------------
 
-PennyLane allows for more interactive debugging of quantum circuits in a programmatic 
-fashion using quantum breakpoints via :func:`~pennylane.breakpoint`. This feature is 
-currently supported on ``default.qubit`` and ``lightning.qubit`` devices. 
+PennyLane allows for more interactive debugging of quantum circuits in a programmatic
+fashion using quantum breakpoints via :func:`~pennylane.breakpoint`. This feature is
+currently supported on ``default.qubit`` and ``lightning.qubit`` devices.
 
 Consider the following python script containing the quantum circuit with breakpoints.
 
 .. code-block:: python3
-    
+
     dev = qp.device("default.qubit", wires=2)
-    
+
     @qp.qnode(dev)
     def circuit(x):
         qp.breakpoint()
@@ -216,8 +311,8 @@ step through the circuit execution:
     > /Users/your/path/to/script.py(9)circuit()
     -> qp.Hadamard(wires=1)
 
-We can extract information by making measurements which do not change the state of 
-the circuit in execution: 
+We can extract information by making measurements which do not change the state of
+the circuit in execution:
 
 .. code-block:: console
 
@@ -233,12 +328,12 @@ the circuit in execution:
     [pldb] list
       8  	    qp.RX(x, wires=0)
       9  	    qp.Hadamard(wires=1)
-     10  	
+     10
      11  	    qp.breakpoint()
-     12  	
+     12
      13  	    qp.CNOT(wires=[0, 1])
      14  ->	    return qp.expval(qp.Z(0))
-     15  	
+     15
      16  	circuit(1.23)
     [EOF]
 
@@ -247,12 +342,12 @@ We can also visualize the circuit and dynamically queue operations directly to t
 .. code-block:: console
 
     [pldb] print(qp.debug_tape().draw())
-    0: ──RX─╭●─┤  
+    0: ──RX─╭●─┤
     1: ──H──╰X─┤
     [pldb] qp.RZ(-4.56, 1)
     RZ(-4.56, wires=[1])
     [pldb] print(qp.debug_tape().draw())
-    0: ──RX─╭●─────┤  
+    0: ──RX─╭●─────┤
     1: ──H──╰X──RZ─┤
 
 See :doc:`/code/qp_debugging` for more information and detailed examples.
@@ -294,7 +389,7 @@ or to check whether two gates causally influence each other.
 
 
     circuit()
-    tape = construct_tape(circuit)() 
+    tape = construct_tape(circuit)()
     ops = tape.operations
     obs = tape.observables
     g = CircuitGraph(ops, obs, tape.wires)
@@ -320,24 +415,6 @@ True
 False
 >>> g.has_path(obs[0], ops[0])
 False
-
-
-Another way to construct the "causal" DAG of a circuit is to use the
-:func:`~pennylane.qcut.tape_to_graph` function used by the ``qcut`` module. This
-function takes a quantum tape and creates a ``MultiDiGraph`` instance from the ``networkx`` python package.
-
-Using the above example, we get:
-
->>> g2 = qp.qcut.tape_to_graph(tape)
->>> type(g2)
-<class 'networkx.classes.multidigraph.MultiDiGraph'>
->>> for k, v in g2.adjacency():
-...    print(k, v)
-H(0) {expval(Z(0)): {0: {'wire': 0}}}
-CNOT(wires=[1, 2]) {CNOT(wires=[2, 3]): {0: {'wire': 2}}, CNOT(wires=[3, 1]): {0: {'wire': 1}}}
-CNOT(wires=[2, 3]) {CNOT(wires=[3, 1]): {0: {'wire': 3}}}
-CNOT(wires=[3, 1]) {}
-expval(Z(0)) {}
 
 DAG of non-commuting ops
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -379,17 +456,3 @@ CNOT(wires=[1, 2])
 [3, 4, 5, 6]
 >>> second_node.predecessors
 []
-
-Fourier representation
-----------------------
-
-Parametrized quantum circuits often compute functions in the parameters that
-can be represented by Fourier series of a low degree.
-
-The :doc:`../code/qp_fourier` module contains functionality to compute and visualize
-properties of such Fourier series.
-
-.. image:: ../_static/fourier_vis_radial_box.png
-    :align: center
-    :width: 500px
-    :target: javascript:void(0);
