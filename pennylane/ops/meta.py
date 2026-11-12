@@ -65,8 +65,7 @@ class Barrier(Operator2):
 
     def _bind_primitive(self):
         """Capture a barrier using the dedicated operator primitive."""
-        super()._bind_primitive(primitive=barrier_p)
-
+        barrier_p.bind(*self.wires)
     def __repr__(self):
         return f"Barrier(wires={self.wires.tolist()})"
 
