@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable
 from functools import partial
 
 from pennylane import capture
@@ -26,7 +26,6 @@ from pennylane.workflow._levels import (
     is_single_level,
     level_to_number,
     pipeline_at_slice,
-    unpack_single_entry,
     validate_level,
 )
 from pennylane.workflow.get_compile_pipeline import unwrap_qjit_qnode
@@ -37,16 +36,16 @@ from .resource import CircuitSpecs
 
 
 def _decomps_from_pipeline(pipeline: CompilePipeline) -> dict:
-    """Collect the ``fixed_decomps`` and ``alt_decomps`` of the ``decompose`` transforms in
+    """Collect the ``fixed_decomps`` and ``exclude_decomps`` of the ``decompose`` transforms in
     ``pipeline``. If more than one fixes a rule for the same operator, the last one is used."""
     # pylint: disable=protected-access
-    fixed_decomps, alt_decomps = {}, {}
+    fixed_decomps, exclude_decomps = {}, {}
     for bound_transform in pipeline:
         if bound_transform._transform is decompose:
             fixed_decomps |= bound_transform.kwargs.get("fixed_decomps", {})
-            for op, rules in bound_transform.kwargs.get("alt_decomps", {}).items():
-                alt_decomps.setdefault(op, []).extend(rules)
-    return {"fixed_decomps": fixed_decomps or None, "alt_decomps": alt_decomps or None}
+            for op, rules in bound_transform.kwargs.get("exclude_decomps", {}).items():
+                exclude_decomps.setdefault(op, []).extend(rules)
+    return {"fixed_decomps": fixed_decomps or None, "exclude_decomps": exclude_decomps or None}
 
 
 def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
@@ -57,18 +56,15 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
 
     compile_pipeline = original_qnode.compile_pipeline
     validate_level(level, compile_pipeline)
-    single_level = unpack_single_entry(level)
 
     # The ``isinstance`` check avoids elementwise comparisons
-    if isinstance(single_level, str) and single_level == "device":
+    if isinstance(level, str) and level == "device":
         raise NotImplementedError("qp.estimate does not support level='device' yet.")
-    if isinstance(single_level, slice):
+    if isinstance(level, slice):
         # A slice that selects no transforms is the same as level 0
-        is_top = not pipeline_at_slice(compile_pipeline, single_level)
+        is_top = not pipeline_at_slice(compile_pipeline, level)
     else:
-        is_top = (
-            is_single_level(single_level) and level_to_number(single_level, compile_pipeline) == 0
-        )
+        is_top = is_single_level(level) and level_to_number(level, compile_pipeline) == 0
     if not is_top:
         raise NotImplementedError(
             f"qp.estimate only supports level='top' or level=0, instead got: {level!r}."
@@ -110,7 +106,7 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
 
 def estimate(
     qnode,
-    level: str | int | slice | Sequence[str | int] = "top",
+    level: str | int | slice = "top",
     *,
     target: str | Iterable[type | str] | dict[type | str, float],
 ) -> Callable[..., CircuitSpecs]:
@@ -125,7 +121,7 @@ def estimate(
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the qjit'd QNode for which to estimate resources.
-        level (str | int | slice | Sequence[str | int]): The portion of the
+        level (str | int | slice): The portion of the
             :class:`~.CompilePipeline` to apply before projecting the resources onto the
             ``target``. Accepts the same values as :func:`~.workflow.get_compile_pipeline`.
             Currently, only ``"top"``, ``0``, or the label of a marker placed before all
@@ -187,7 +183,7 @@ def estimate(
         :title: Custom decomposition rules
 
         To reach the ``target`` gate set, ``estimate`` uses the ``fixed_decomps`` and
-        ``alt_decomps`` of the :func:`~.decompose` transforms in the compile pipeline.
+        ``exclude_decomps`` of the :func:`~.decompose` transforms in the compile pipeline.
 
         For example, the following circuit fixes a decomposition rule for ``CZ`` that uses
         ``PauliZ`` and ``RY`` gates instead of ``Hadamard`` gates:
@@ -201,6 +197,8 @@ def estimate(
                 qp.CNOT(wires)
                 qp.Z(wires[1])
                 qp.RY(np.pi / 2, wires[1])
+
+            qp.add_decomps(qp.CZ, cz_with_ry)
 
             @qp.qjit(capture=True)
             @qp.decompose(gate_set={"CNOT", "PauliZ", "RY"}, fixed_decomps={qp.CZ: cz_with_ry})

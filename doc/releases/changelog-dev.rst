@@ -47,6 +47,11 @@ New features since last release
   being removed. When used as a context manager, the rules are excluded only within the context.
   `(#10329) <https://github.com/PennyLaneAI/pennylane/pull/10329>`__
 
+* The `alt-decomps` parameter of :func:`~.transforms.decompose` has been removed in favour of `exclude_decomps`, which prevents a set of decomposition rules from being chosen for an operator in a given pass instance.
+  `(#10461) <https://github.com/PennyLaneAI/pennylane/pull/10461>`__
+  `(#10500) <https://github.com/PennyLaneAI/pennylane/pull/10500>`__
+
+
 * A new function called :func:`~pennylane.backline.onnx_decoder` has been added, which runs an
   ONNX model on a Backline :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or
   on the CPU. See :func:`~pennylane.backline.onnx_decoder` for the supported providers and usage
@@ -882,9 +887,24 @@ New features since last release
       >>> print(bool(output))  # 3 >= 2
       True
 
+* Plugins can register aggregation callbacks and display names for compiler resource
+  extensions with :func:`~pennylane.resource.register_resource_extension`.
+  Extension values remain in ``SpecsResources.extra`` and appear in resource reports.
+  `(#10438) <https://github.com/PennyLaneAI/pennylane/pull/10438>`__
+
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* :func:`~pennylane.list_decomps` now includes generic controlled fallback rules when given an
+  operator name such as ``"C(RX)"``. Their registered conditions determine applicability
+  from operator arguments.
+  `(#10502) <https://github.com/PennyLaneAI/pennylane/pull/10502>`__
+
+* Callable :func:`~.ctrl` now captures work-wire labels as operands, supporting
+  traced work wires.
+  `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
+  `(#10491) <https://github.com/PennyLaneAI/pennylane/pull/10491>`__
+  
 * Efficient decomposition rules for :class:`~.ControlledPhaseShift`, :class:`~.OutMultiplier`, and :class:`Adjoint(Incrementer) <~.Incrementer>` have been added.
   `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
 
@@ -1516,11 +1536,18 @@ Breaking changes 💔
   supported. Printed :class:`~.CompilePipeline` transforms are numbered from ``[0]``,
   and ``"all-user"`` can no longer be used as a marker label. The ``level`` argument of
   :func:`~.analyze`, :func:`~pennylane.estimate` and :func:`~.track` now follows
-  :func:`~.workflow.get_compile_pipeline`. :func:`~.workflow.get_compile_pipeline` now only
+  :func:`~.workflow.get_compile_pipeline`, so a negative or out-of-range ``int`` level, or a
+  ``set`` or generator of levels, now raises a ``ValueError``, and a marker at the end of the
+  selected transforms is kept. :func:`~.workflow.get_compile_pipeline` now only
   accepts :func:`~.qjit`'d QNodes; for a QNode that is not qjit'd, use ``qnode.compile_pipeline``
   for the user transforms, or :func:`~.workflow.construct_batch` to inspect the tapes at the
   gradient or device level.
   `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
+
+* ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of
+  ``"MidMeasureMP"``. Update raw device operation names and comparisons; the deprecated
+  Python import and ``GateSet`` alias remain supported.
+  `(#10457) <https://github.com/PennyLaneAI/pennylane/pull/10457>`__
 
 * ``qp.ctrl`` now constructs symbolic controlled operators without dispatching to specialized
   gates such as ``CNOT`` or ``CRX``. Decomposition rules have been updated accordingly.
@@ -1962,7 +1989,8 @@ Internal changes ⚙️
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
       :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.QuantumPhaseEstimation`, :class:`~.IQP`,
-      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`, :class:`~.IQPEmbedding`, :class:`~.ControlledSequence`
+      :class:`~.QSVT`, :class:`~.BlockEncode`, :class:`~.MPSPrep`, :class:`~.IQPEmbedding`, :class:`~.ControlledSequence`,
+      :class:`~.PhaseAdder`, :class:`~.Adder`
 
     `(#9896) <https://github.com/PennyLaneAI/pennylane/pull/9896>`__
     `(#10164) <https://github.com/PennyLaneAI/pennylane/pull/10164>`__
@@ -2002,12 +2030,18 @@ Internal changes ⚙️
     `(#10226) <https://github.com/PennyLaneAI/pennylane/pull/10226>`__
     `(#10267) <https://github.com/PennyLaneAI/pennylane/pull/10267>`__
     `(#10449) <https://github.com/PennyLaneAI/pennylane/pull/10449>`__
+    `(#10459) <https://github.com/PennyLaneAI/pennylane/pull/10459>`__
+    `(#10240) <https://github.com/PennyLaneAI/pennylane/pull/10240>`__
 
   - Quantum chemistry operators are ported:
 
-    - :class:`~.SingleExcitation`
+    - :class:`~.SingleExcitation`, :class:`~.FermionicSWAP`, :class:`~.OrbitalRotation`, :class:`~.DoubleExcitation`
 
     `(#9944) <https://github.com/PennyLaneAI/pennylane/pull/9944>`__
+    `(#10458) <https://github.com/PennyLaneAI/pennylane/pull/10458>`__
+    `(#10482) <https://github.com/PennyLaneAI/pennylane/pull/10482>`__
+    `(#10463) <https://github.com/PennyLaneAI/pennylane/pull/10463>`__
+    `(#10503) <https://github.com/PennyLaneAI/pennylane/pull/10503>`__
 
   - Miscelleneous operators are ported:
 
@@ -2275,6 +2309,10 @@ Documentation 📝
   :func:`~.workflow.construct_batch`.
   `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
+* Updated :class:`~.MPSPrep` documentation to use ``default.qubit`` and explain the
+  work wires required for gate-based decomposition, replacing the ``lightning.tensor`` example.
+  `(#10505) <https://github.com/PennyLaneAI/pennylane/pull/10505>`__
+
 * The docstring for :class:`~.ControlledPhaseShift` now mentions that :class:`~.CPhase` is an alias.
   `(#10405) <https://github.com/PennyLaneAI/pennylane/pull/10405>`__
 
@@ -2337,11 +2375,33 @@ Documentation 📝
   `(#10383) <https://github.com/PennyLaneAI/pennylane/pull/10383>`__
   `(#10416) <https://github.com/PennyLaneAI/pennylane/pull/10416>`__
   `(#10420) <https://github.com/PennyLaneAI/pennylane/pull/10420>`__
-  `(#10421) <https://github.com/PennyLaneAI/pennylane/pull/104121>`__
+  `(#10421) <https://github.com/PennyLaneAI/pennylane/pull/10421>`__
+  `(#10433) <https://github.com/PennyLaneAI/pennylane/pull/10433>`__
+  `(#10436) <https://github.com/PennyLaneAI/pennylane/pull/10436>`__
+  `(#10453) <https://github.com/PennyLaneAI/pennylane/pull/10453>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed :func:`~pennylane.draw_mpl` to show the control values of :class:`~.TemporaryAND`
+  and its adjoint. Rounded connectors on the left or right distinguish these
+  operations from :class:`~.Toffoli`, consistently with :func:`~pennylane.draw`.
+  `(#10514) <https://github.com/PennyLaneAI/pennylane/pull/10514>`__
+
+* Fixed a bug where :func:`~pennylane.draw_mpl` replaced the symbols and quantum controls of
+  conditionally applied operations with a labelled box. Conditional control/target diagrams
+  now have a dashed boundary showing that the classical condition applies to the whole operation.
+  Conditional controlled global gates no longer overlap other operations.
+  Conditional operations without wires, such as :class:`~.GlobalPhase`, no longer cause an error
+  when drawn.
+  `(#10496) <https://github.com/PennyLaneAI/pennylane/pull/10496>`__
+
+* Fixed tracer leaks when passing traced work-wire labels to :func:`~.ctrl`
+  applied to a callable during program capture. Concrete work-wire labels retain
+  their existing behaviour.
+  `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
+  `(#10491) <https://github.com/PennyLaneAI/pennylane/pull/10491>`__
+  
 * Fixed a bug where AutoGraph raised an error for empty ``for`` loops.
   `(#10448) <https://github.com/PennyLaneAI/pennylane/pull/10448>`__
 
@@ -2639,6 +2699,11 @@ Bug fixes 🐛
   :class:`~.ChangeOpBasis` operators that are nested in other ``ChangeOpBasis`` operators, matching
   the gates produced by the captured decomposition.
   `(#10351) <https://github.com/PennyLaneAI/pennylane/pull/10351>`__
+
+* The decomposition of a controlled :class:`~.SemiAdder` without dedicated control work wires
+  now treats surplus work wires of the ``SemiAdder`` as zeroed, instead of using the
+  ``work_wire_type`` of the length-zero control work wires, which defaults to ``"borrowed"``.
+  `(#10506) <https://github.com/PennyLaneAI/pennylane/pull/10506>`__
 
 Contributors ✍️
 ~~~~~~~~~~~~~~~

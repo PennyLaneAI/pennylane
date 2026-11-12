@@ -145,8 +145,11 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         """Test that the fixed_decomps of a decompose transform in the pipeline replace the
         existing decomposition rules."""
 
+        qp.add_decomps(qp.CZ, cz_with_ry)
         target = TARGET | {"RY", "PauliZ"}
-        circuit = qp.transforms.decompose(qnode, gate_set=target, fixed_decomps={qp.CZ: cz_with_ry})
+        circuit = qp.transforms.decompose(
+            qnode, gate_set=target, fixed_decomps={qp.CZ: "cz_with_ry"}
+        )
 
         specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
 
@@ -158,13 +161,33 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             "RX": 1,
         }
 
-    def test_alt_decomps(self, qnode):
-        """Test that the alt_decomps of a decompose transform in the pipeline are used if they
-        lead to a cheaper decomposition."""
+    @pytest.mark.parametrize("use_names", [False, True])
+    def test_exclude_decomps(self, qnode, use_names):
+        """Estimate respects exclusions from a decompose transform in the pipeline."""
 
-        target = {"Hadamard": 10, "CNOT": 1, "RX": 1, "RY": 1, "PauliZ": 1}
-        circuit = qp.transforms.decompose(qnode, gate_set=target, alt_decomps={qp.CZ: [cz_with_ry]})
+        target = TARGET | {"RY", "PauliZ"}
+        excluded = list(qp.list_decomps(qp.CZ))
+        if use_names:
+            excluded = [rule.name for rule in excluded]
+        qp.add_decomps(qp.CZ, cz_with_ry)
+        circuit = qp.decompose(qnode, gate_set=target, exclude_decomps={qp.CZ: excluded})
+        specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
 
+        assert specs.resources.quantum_operations == {
+            "Hadamard": 2,
+            "PauliZ": 2,
+            "RY": 2,
+            "CNOT": 1,
+            "RX": 1,
+        }
+
+    def test_exclusions_from_several_decompose_transforms(self, qnode):
+        """Estimate combines excluded rules from every decomposition in the pipeline."""
+        target = TARGET | {"RY", "PauliZ"}
+        excluded = [rule.name for rule in qp.list_decomps(qp.CZ)]
+        qp.add_decomps(qp.CZ, cz_with_ry)
+        circuit = qp.decompose(qnode, gate_set=target, exclude_decomps={qp.CZ: excluded[:1]})
+        circuit = qp.decompose(circuit, gate_set=target, exclude_decomps={qp.CZ: excluded[1:]})
         specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
 
         assert specs.resources.quantum_operations == {
@@ -178,9 +201,11 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
     def test_decomps_from_several_decompose_transforms(self, qnode):
         """Test that the rules of every decompose transform in the pipeline are used."""
 
+        qp.add_decomps(qp.CZ, cz_with_ry)
+        qp.add_decomps(qp.Hadamard, h_with_x)
         target = {"CNOT", "RX", "RY", "PauliX", "PauliZ"}
         circuit = qp.transforms.decompose(
-            qnode, gate_set=target | {"Hadamard"}, fixed_decomps={qp.CZ: cz_with_ry}
+            qnode, gate_set=target | {"Hadamard"}, fixed_decomps={qp.CZ: "cz_with_ry"}
         )
         circuit = qp.transforms.decompose(
             circuit, gate_set=target, fixed_decomps={qp.Hadamard: h_with_x}
@@ -289,18 +314,32 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         with pytest.raises(NotImplementedError, match="qp.estimate only supports level='top'"):
             qp.estimate(circuit, level="end", target=TARGET)(0.5)
 
-    @pytest.mark.parametrize("level", [[0], ("top",), slice(0, 0), slice(1, 1)])
+    @pytest.mark.parametrize("level", [slice(0, 0), slice(1, 1)])
     def test_levels_equivalent_to_top(self, circuit, level):
-        """Test that a single-entry Sequence of level 0, and a slice that selects no transforms,
-        are the same as level="top"."""
+        """Test that a slice that selects no transforms is the same as level="top", with a
+        warning."""
 
-        specs = qp.estimate(circuit, level=level, target=TARGET)(0.5)
+        with pytest.warns(UserWarning, match="does not select any transforms"):
+            specs = qp.estimate(circuit, level=level, target=TARGET)(0.5)
 
         assert specs == qp.estimate(circuit, level="top", target=TARGET)(0.5)
 
     @pytest.mark.parametrize(
         "level",
-        [1, "user", "all", [1], ["user"], (0, 1), slice(0, 1), slice(1, 2), slice(0, None)],
+        [
+            1,
+            "user",
+            "all",
+            [0],
+            ("top",),
+            ["device"],
+            [1],
+            ["user"],
+            (0, 1),
+            slice(0, 1),
+            slice(1, 2),
+            slice(0, None),
+        ],
     )
     def test_unsupported_level(self, circuit, level):
         """Test that an error is raised for levels other than "top"."""
@@ -325,12 +364,11 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         with pytest.raises(NotImplementedError, match="qp.estimate only supports level='top'"):
             qp.estimate(qp.qjit(qnode), level=level, target=TARGET)(0.5)
 
-    @pytest.mark.parametrize("level", ["device", ["device"]])
-    def test_device_level(self, circuit, level):
+    def test_device_level(self, circuit):
         """Test that an error is raised for level="device"."""
 
         with pytest.raises(NotImplementedError, match="does not support level='device' yet"):
-            qp.estimate(circuit, level=level, target=TARGET)(0.5)
+            qp.estimate(circuit, level="device", target=TARGET)(0.5)
 
     @pytest.mark.parametrize(
         "level",

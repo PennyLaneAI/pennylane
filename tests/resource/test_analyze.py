@@ -261,7 +261,6 @@ class TestAnalyze:  # pylint: disable=too-many-public-methods
         "level, expected_level, expected_counts",
         [
             (slice(1, 2), "After merge-rotations", MERGED_COUNTS),
-            (slice(1, 1), "Before MLIR Passes", TOP_COUNTS),
             (slice(1, None), "After Device Preprocessing", MERGED_COUNTS),
             (slice(2, None), "After Device Preprocessing", TOP_COUNTS),
         ],
@@ -278,7 +277,6 @@ class TestAnalyze:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize(
         "level_slice, level",
         [
-            (slice(0, 0), "top"),
             (slice(0, 1), 1),
             (slice(0, 2), "user"),
             (slice(0, None), "device"),
@@ -294,6 +292,17 @@ class TestAnalyze:  # pylint: disable=too-many-public-methods
 
         assert specs.level == expected.level
         assert specs.resources == expected.resources
+
+    @pytest.mark.parametrize("level_slice", [slice(0, 0), slice(1, 1)])
+    def test_empty_slice_level(self, circuit, level_slice):
+        """Test that a slice that selects no transforms gives the resources at level 0, with a
+        warning."""
+
+        with pytest.warns(UserWarning, match="does not select any transforms"):
+            specs = qp.analyze(circuit, level=level_slice)(0.1)
+
+        assert specs.level == "Before MLIR Passes"
+        assert specs.resources.counts == self.TOP_COUNTS
 
     def test_slice_level_with_negative_bounds(self, circuit):
         """Test that a slice with negative bounds is rejected, as in get_compile_pipeline."""

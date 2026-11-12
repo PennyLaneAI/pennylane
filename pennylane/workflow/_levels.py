@@ -26,7 +26,7 @@ from collections.abc import Sequence
 from numbers import Integral
 
 from pennylane.core.transforms import CompilePipeline
-from pennylane.core.transforms.compile_pipeline import DEVICE_PREPROCESSING, _DevicePreprocessing
+from pennylane.core.transforms.compile_pipeline import DEVICE_PREPROCESSING
 
 _INVALID_LEVEL_TYPES = "expected an int, str, slice, or a Sequence of int and str."
 
@@ -42,13 +42,6 @@ def is_single_level(level) -> bool:
     if isinstance(level, str):
         return level not in ("all-user", "all")
     return isinstance(level, slice) or is_int_level(level)
-
-
-def unpack_single_entry(level):
-    """Return the entry of a ``Sequence`` of levels with a single entry, and ``level`` otherwise."""
-    if isinstance(level, Sequence) and not isinstance(level, str) and len(level) == 1:
-        return level[0]
-    return level
 
 
 def device_level(pipeline: CompilePipeline) -> int:
@@ -194,6 +187,12 @@ def pipeline_at_slice(pipeline: CompilePipeline, level_slice: slice) -> CompileP
     full_pipeline = pipeline + DEVICE_PREPROCESSING
 
     start, stop, step = level_slice.indices(len(full_pipeline))
+    if not range(start, stop, step):
+        warnings.warn(
+            f"The level {level_slice!r} does not select any transforms of the compile pipeline, "
+            "so it is the same as level 0.",
+            UserWarning,
+        )
     if step == 1:
         return _slice_keeping_markers(full_pipeline, start, stop)
 
@@ -219,6 +218,6 @@ def split_device_preprocessing(pipeline: CompilePipeline) -> tuple[CompilePipeli
     """Split a compile pipeline returned by :func:`pipeline_at_slice` into the transforms applied
     before the device preprocessing, and whether the device preprocessing is included."""
     # The slice has a positive step, so the device preprocessing can only be the last transform
-    if pipeline and isinstance(pipeline[-1], _DevicePreprocessing):
+    if pipeline and pipeline[-1] == DEVICE_PREPROCESSING:
         return _slice_keeping_markers(pipeline, 0, len(pipeline) - 1), True
     return pipeline, False

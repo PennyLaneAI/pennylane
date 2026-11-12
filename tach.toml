@@ -135,7 +135,7 @@ depends_on = ["pennylane.capture", "pennylane.math", "pennylane.core.apply", "pe
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[interfaces]]
-expose = ["transform", "Transform", "BoundTransform", "CompilePipeline", "compile_pipeline.DEVICE_PREPROCESSING", "compile_pipeline._DevicePreprocessing"]
+expose = ["transform", "Transform", "BoundTransform", "CompilePipeline", "compile_pipeline.DEVICE_PREPROCESSING"]
 from = ["pennylane.core.transforms"]
 
 [[modules]]

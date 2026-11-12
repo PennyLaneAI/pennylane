@@ -20,7 +20,7 @@ import json
 import os
 import tempfile
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -30,7 +30,6 @@ from pennylane.workflow._levels import (
     is_single_level,
     level_to_number,
     pipeline_at_slice,
-    unpack_single_entry,
     validate_level,
 )
 from pennylane.workflow.get_compile_pipeline import unwrap_qjit_qnode
@@ -95,15 +94,14 @@ def _track_qjit(func, level, *args, **kwargs) -> tuple[Any, CircuitSpecs]:
 
     compile_pipeline = original_qnode.compile_pipeline
     validate_level(level, compile_pipeline)
-    single_level = unpack_single_entry(level)
-    if isinstance(single_level, slice):
+    if isinstance(level, slice):
         # A slice that selects all the transforms, including the device preprocessing
-        is_device = pipeline_at_slice(compile_pipeline, single_level) == pipeline_at_slice(
+        is_device = pipeline_at_slice(compile_pipeline, level) == pipeline_at_slice(
             compile_pipeline, slice(0, None)
         )
     else:
-        is_device = is_single_level(single_level) and level_to_number(
-            single_level, compile_pipeline
+        is_device = is_single_level(level) and level_to_number(
+            level, compile_pipeline
         ) == device_level(compile_pipeline)
     if not is_device:
         raise NotImplementedError(f"qp.track only supports level='device', instead got: {level!r}.")
@@ -118,7 +116,7 @@ def _track_qjit(func, level, *args, **kwargs) -> tuple[Any, CircuitSpecs]:
 
 def track(
     qnode,
-    level: str | int | slice | Sequence[str | int] = "device",
+    level: str | int | slice = "device",
 ) -> Callable[..., tuple[Any, CircuitSpecs]]:
     r"""Executes a quantum circuit and tracks the resources it uses.
 
@@ -131,7 +129,7 @@ def track(
             ``functools.partial`` wrappers around supported callables are also accepted.
 
     Keyword Args:
-        level (str | int | slice | Sequence[str | int]): The portion of the
+        level (str | int | slice): The portion of the
             :class:`~.CompilePipeline` to apply before executing the circuit and tracking its
             resources. Accepts the same values as :func:`~.workflow.get_compile_pipeline`.
             Currently, only ``"device"`` is supported. Defaults to ``"device"``.
