@@ -340,7 +340,7 @@ def quantum_monte_carlo(
         It is also possible to explore the resources required to perform the quantum Monte Carlo
         algorithm
 
-        >>> specs = qp.specs(qp.qjit(qmc), level="device")()
+        >>> specs = qp.specs(qp.qjit(qmc, capture=False), level="device")()
         >>> from pprint import pprint
         >>> pprint(specs)
         CircuitSpecs(device_name='lightning.qubit',
