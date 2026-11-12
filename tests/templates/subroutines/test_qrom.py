@@ -41,14 +41,6 @@ from pennylane.templates.subroutines.qrom import (
 from pennylane.testing import assert_decomposable
 from pennylane.typing import Bool, Wire
 
-xfail_catalyst_ctrl = pytest.mark.xfail(
-    reason=(
-        "Pending Catalyst work-wire operand support: "
-        "https://github.com/PennyLaneAI/catalyst/pull/3428"
-    ),
-    strict=True,
-)
-
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid_qrom():
@@ -950,10 +942,7 @@ class TestMeasurementQROM:
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "L",
-        [pytest.param(L, marks=xfail_catalyst_ctrl) if L <= 2 else L for L in range(1, 26)],
-    )
+    @pytest.mark.parametrize("L", range(1, 26))
     def test_no_phases_error(self, L, seed):
         """Test that QROM introduces no relative or global phases."""
         rng = np.random.default_rng(seed)
@@ -1078,17 +1067,17 @@ class TestMeasurementQROM:
                     strict=True,
                 ),
             ),
-            pytest.param(1, 2, marks=xfail_catalyst_ctrl),
-            pytest.param(4, 1, marks=xfail_catalyst_ctrl),
-            pytest.param(4, 2, marks=xfail_catalyst_ctrl),
-            pytest.param(4, 3, marks=xfail_catalyst_ctrl),
-            pytest.param(5, 1, marks=xfail_catalyst_ctrl),
-            pytest.param(5, 2, marks=xfail_catalyst_ctrl),
-            pytest.param(3, 2, marks=xfail_catalyst_ctrl),
-            pytest.param(8, 1, marks=xfail_catalyst_ctrl),
-            pytest.param(8, 2, marks=xfail_catalyst_ctrl),
-            pytest.param(2, 1, marks=xfail_catalyst_ctrl),
-            pytest.param(2, 2, marks=xfail_catalyst_ctrl),
+            (1, 2),
+            (4, 1),
+            (4, 2),
+            (4, 3),
+            (5, 1),
+            (5, 2),
+            (3, 2),
+            (8, 1),
+            (8, 2),
+            (2, 1),
+            (2, 2),
         ],
     )
     def test_extra_control_wires(self, L, n_extra, seed):
