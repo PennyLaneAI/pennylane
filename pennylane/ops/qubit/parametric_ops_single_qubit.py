@@ -962,8 +962,9 @@ class PhaseShift(Operator2):
                     control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
                     counts, and the circuit shows :math:`c = 2`
 
-                :class:`~.PauliRot` | :math:`2^{c+1} - 1`
-                :class:`~.GlobalPhase` | :math:`1`
+                :class:`~.ControlledPhaseShift` | :math:`1` if :math:`c = 1`                
+                :class:`~.PauliRot` | :math:`2^{c+1} - 1` if :math:`c \geq 2`  
+                :class:`~.GlobalPhase` | :math:`1` if :math:`c \geq 2`  
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/phaseshift_pow.svg
@@ -1194,9 +1195,10 @@ class Rot(Operator2):
                     control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
                     counts, and the circuit shows :math:`c = 2`
 
-                :class:`~.RZ` | :math:`3`
-                :class:`~.RY` | :math:`2`
-                :class:`~.MultiControlledX` | :math:`2`
+                :class:`~.CRot` | :math:`1` if :math:`c = 1`
+                :class:`~.RZ` | :math:`3` if :math:`c \geq 2`
+                :class:`~.RY` | :math:`2` if :math:`c \geq 2`
+                :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
     """
 
     ndim_params = (0, 0, 0)
