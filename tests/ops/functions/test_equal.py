@@ -2093,9 +2093,9 @@ class TestSymbolicOpComparison:
 
     @pytest.mark.parametrize("mod, expected", [(8, True), (7, False)])
     def test_controlled2_abstract_controlled_sequence(self, mod, expected):
-        """Test equality and graph lookups with a legacy resource representation inside the base."""
-        base1 = qp.decomposition.resource_rep(qp.PhaseAdder, num_x_wires=3, mod=8)
-        base2 = qp.decomposition.resource_rep(qp.PhaseAdder, num_x_wires=3, mod=mod)
+        """Test equality and graph lookups with abstract PhaseAdder bases."""
+        base1 = qp.PhaseAdder(qp.typing.Int, Wire[3], mod=8, work_wire=Wire[0])
+        base2 = qp.PhaseAdder(qp.typing.Int, Wire[3], mod=mod, work_wire=Wire[int(mod != 8)])
         op1 = ControlledOp2(ControlledSequence(base1, control=Wire[2]), control_wires=Wire[1])
         op2 = ControlledOp2(ControlledSequence(base2, control=Wire[2]), control_wires=Wire[1])
 

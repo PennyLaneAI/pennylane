@@ -942,7 +942,7 @@ class TestMeasurementQROM:
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
-    @pytest.mark.parametrize("L", list(range(1, 26)))
+    @pytest.mark.parametrize("L", range(1, 26))
     def test_no_phases_error(self, L, seed):
         """Test that QROM introduces no relative or global phases."""
         rng = np.random.default_rng(seed)
