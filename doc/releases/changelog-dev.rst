@@ -19,7 +19,9 @@ New features since last release
 
   .. code-block:: python
 
-      @qp.qnode(qp.device("default.qubit"), shots=1)
+      @qp.qjit(capture=True, target="mlir")
+      @qp.set_shots(1)
+      @qp.qnode(qp.device("lightning.qubit", wires=8))
       def circuit():
           qp.BasisState([1, 0], wires=[0, 1])
           # target wires 2, 3, 4 start in |000>
