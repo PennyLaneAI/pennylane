@@ -503,20 +503,21 @@ class Prod(CompositeOp):
         return coeffs, ops
 
 
-def _prod_resources(resources):
+def _prod_standard_resources(resources):
     return resources
 
 
-@qp.register_resources(_prod_resources)
-def _prod_decomp(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
+@qp.register_name("standard")
+@qp.register_resources(_prod_standard_resources)
+def _prod_standard(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
     for op in reversed(operands):
         qp.apply(op)
 
 
-qp.add_decomps(Prod, _prod_decomp)
+qp.add_decomps(Prod, _prod_standard)
 
 
-def _ctrl_prod_resources(
+def _controlled_product_with_work_wires_resources(
     num_control_wires,
     base_params,
     **_,
@@ -539,7 +540,8 @@ def _ctrl_prod_resources(
     and num_work_wires >= num_control_wires - 1
     and work_wire_type == "zeroed"
 )
-@qp.register_resources(_ctrl_prod_resources)
+@qp.register_name("with_work_wires")
+@qp.register_resources(_controlled_product_with_work_wires_resources)
 def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **__):
     """Decomposition of ``C(Prod)`` with at least ``num_control_wires - 1`` work wires.
 
@@ -552,7 +554,7 @@ def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **_
     qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
 
 
-def _ctrl_prod_resources_with_one_work_wire(
+def _controlled_product_with_one_work_wire_resources(
     num_control_wires,
     base_params,
     **_,
@@ -575,7 +577,8 @@ def _ctrl_prod_resources_with_one_work_wire(
     and num_work_wires >= 1
     and work_wire_type == "zeroed"
 )
-@qp.register_resources(_ctrl_prod_resources_with_one_work_wire)
+@qp.register_name("with_one_work_wire")
+@qp.register_resources(_controlled_product_with_one_work_wire_resources)
 def _controlled_product_with_one_work_wire(*_, control_wires, work_wires, base, **__):
     """Decomposition of ``C(Prod)`` with a single zeroed work wire.
 
@@ -590,6 +593,6 @@ def _controlled_product_with_one_work_wire(*_, control_wires, work_wires, base, 
 
 qp.add_decomps(
     "C(Prod)",
-    flip_zero_control(_controlled_product_with_work_wires),
-    flip_zero_control(_controlled_product_with_one_work_wire),
+    flip_zero_control(_controlled_product_with_work_wires, name="with_work_wires"),
+    flip_zero_control(_controlled_product_with_one_work_wire, name="with_one_work_wire"),
 )

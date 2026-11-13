@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import (
     CH,
     CSWAP,
@@ -271,7 +271,7 @@ class BBQRAM(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
 
-def _bucket_brigade_qram_resources(num_controls, num_target_wires):
+def _bucket_brigade_qram_standard_resources(num_controls, num_target_wires):
     """
     Calculates the resources, assuming the worst case where bitstrings are all ones.
     """
@@ -344,8 +344,9 @@ def _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j):
         cond(bit, PauliZ)(wires=target)
 
 
-@register_resources(_bucket_brigade_qram_resources, exact=False)
-def _bucket_brigade_qram_decomposition(bitstrings, wire_manager, **__):
+@register_name("standard")
+@register_resources(_bucket_brigade_qram_standard_resources, exact=False)
+def _bucket_brigade_qram_standard(bitstrings, wire_manager, **__):
     bus_wire = wire_manager.bus_wire
     control_wires = wire_manager.control_wires
     n_k = len(control_wires)
@@ -364,7 +365,7 @@ def _bucket_brigade_qram_decomposition(bitstrings, wire_manager, **__):
     adjoint(_mark_routers_via_bus)(wire_manager, n_k)
 
 
-add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
+add_decomps(BBQRAM, _bucket_brigade_qram_standard)
 
 
 class HybridQRAM(Operation):
@@ -576,7 +577,7 @@ class HybridQRAM(Operation):
         }
 
 
-def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_wires):
+def _hybrid_qram_standard_resources(num_target_wires, num_select_wires, num_tree_control_wires):
     resources = defaultdict(int)
     num_blocks = 1 << num_select_wires
 
@@ -729,8 +730,9 @@ def _block_tree_query_ops(bitstrings, block_index, tree_wire_manager, n_tree, k,
     adjoint(_tree_mark_routers_via_bus_ctrl)(tree_wire_manager, n_tree, k, signal)
 
 
-@register_resources(_hybrid_qram_resources, exact=False)
-def _hybrid_qram_decomposition(bitstrings, tree_wire_manager, select_wires, signal_wire, **_):
+@register_name("standard")
+@register_resources(_hybrid_qram_standard_resources, exact=False)
+def _hybrid_qram_standard(bitstrings, tree_wire_manager, select_wires, signal_wire, **_):
     k = len(select_wires)
 
     signal = signal_wire[0]
@@ -764,7 +766,7 @@ def _hybrid_qram_decomposition(bitstrings, tree_wire_manager, select_wires, sign
             PauliX(wires=signal)
 
 
-add_decomps(HybridQRAM, _hybrid_qram_decomposition)
+add_decomps(HybridQRAM, _hybrid_qram_standard)
 
 
 class SelectOnlyQRAM(Operation):
@@ -953,7 +955,7 @@ class SelectOnlyQRAM(Operation):
         }
 
 
-def _select_only_qram_resources(
+def _select_only_qram_standard_resources(
     select_value, num_control_wires, num_select_wires, num_target_wires
 ):
     resources = defaultdict(int)
@@ -985,8 +987,9 @@ def _flip_controls(control_wires, control_vals):
             PauliX(control_wires[i])
 
 
-@register_resources(_select_only_qram_resources, exact=False)
-def _select_only_qram_decomposition(
+@register_name("standard")
+@register_resources(_select_only_qram_standard_resources, exact=False)
+def _select_only_qram_standard(
     bitstrings, select_value, select_wires, control_wires, target_wires, **_
 ):
     controls = select_wires + control_wires
@@ -1020,7 +1023,7 @@ def _select_only_qram_decomposition(
         _flip_controls(controls, control_values)
 
 
-add_decomps(SelectOnlyQRAM, _select_only_qram_decomposition)
+add_decomps(SelectOnlyQRAM, _select_only_qram_standard)
 
 
 class FFQRAM(Operation):
@@ -1254,7 +1257,7 @@ def _normalize_amplitudes(amplitudes):
     return amplitudes / math.reshape(norm, (*math.shape(amplitudes)[:-1], 1))
 
 
-def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
+def _ffqram_standard_resources(num_zero_bits, num_address_wires, num_entries):
     """
     - One Hadamard gate per address wire to initialize the |+>^n state.
     - One "flip" and one "flop" for 0 bits.
@@ -1267,8 +1270,9 @@ def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
     }
 
 
-@register_resources(_ffqram_resources)
-def _ffqram_decomposition(amplitudes, wires, address, **_):
+@register_name("standard")
+@register_resources(_ffqram_standard_resources)
+def _ffqram_standard(amplitudes, wires, address, **_):
     address_wires = wires[:-1]
     reg_wire = wires[-1]
 
@@ -1305,4 +1309,4 @@ def _ffqram_decomposition(amplitudes, wires, address, **_):
     main_loop(address)  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(FFQRAM, _ffqram_decomposition)
+add_decomps(FFQRAM, _ffqram_standard)

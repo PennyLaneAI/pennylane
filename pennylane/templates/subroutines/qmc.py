@@ -24,7 +24,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import QubitUnitary
 from pennylane.typing import Complex, Wire
 from pennylane.wires import Wires
@@ -461,7 +461,7 @@ def _quantum_monte_carlo_impl(probs, *wires, func, num_target_wires):
     return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires)
 
 
-def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_shape):
+def _quantum_monte_carlo_standard_resources(num_target_wires, num_estimation_wires, q_shape):
     return {
         QubitUnitary(
             Complex[2 ** (num_target_wires - 1), 2 ** (num_target_wires - 1)],
@@ -477,12 +477,13 @@ def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_sha
     }
 
 
-@register_resources(_quantum_monte_carlo_resources)
+@register_name("standard")
+@register_resources(_quantum_monte_carlo_standard_resources)
 # pylint: disable-next=unused-argument
-def _quantum_monte_carlo_decomposition(A, R, Q, wires, estimation_wires, target_wires):
+def _quantum_monte_carlo_standard(A, R, Q, wires, estimation_wires, target_wires):
     QubitUnitary(A, wires=target_wires[:-1])
     QubitUnitary(R, wires=target_wires)
     QuantumPhaseEstimation(QubitUnitary(Q, wires=target_wires), estimation_wires=estimation_wires)
 
 
-add_decomps(QuantumMonteCarlo, _quantum_monte_carlo_decomposition)
+add_decomps(QuantumMonteCarlo, _quantum_monte_carlo_standard)

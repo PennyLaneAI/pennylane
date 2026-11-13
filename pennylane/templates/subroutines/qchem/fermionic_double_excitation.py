@@ -26,7 +26,7 @@ from jax import numpy as jnp
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -616,7 +616,7 @@ class FermionicDoubleExcitation(Operation):
         return op_list
 
 
-def _fermionic_double_excitation_resources(num_wires_1, num_wires_2):
+def _fermionic_double_excitation_standard_resources(num_wires_1, num_wires_2):
     num_set_cnot_wires = num_wires_1 + num_wires_2 - 1
 
     return {Hadamard: 32, RX: 32, CNOT: 16 * num_set_cnot_wires, RZ: 8}
@@ -1054,9 +1054,10 @@ def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
     RX(np.pi / 2, wires=p)
 
 
-@register_resources(_fermionic_double_excitation_resources)
+@register_name("standard")
+@register_resources(_fermionic_double_excitation_standard_resources)
 # pylint: disable-next=unused-argument
-def _fermionic_double_excitation_decomopsition(weight, wires, wires1, wires2):
+def _fermionic_double_excitation_standard(weight, wires, wires1, wires2):
     s = wires1[0]
     r = wires1[-1]
     q = wires2[0]
@@ -1078,4 +1079,4 @@ def _fermionic_double_excitation_decomopsition(weight, wires, wires1, wires2):
     _layer_qfunc8(weight, s, r, q, p, set_cnot_wires)
 
 
-add_decomps(FermionicDoubleExcitation, _fermionic_double_excitation_decomopsition)
+add_decomps(FermionicDoubleExcitation, _fermionic_double_excitation_standard)

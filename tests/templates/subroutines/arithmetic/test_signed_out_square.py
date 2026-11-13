@@ -25,7 +25,7 @@ from pennylane.core.operator import abstractify
 from pennylane.templates.subroutines.arithmetic.signed_out_square import (
     OutSquare,
     SignedOutSquare,
-    _signed_out_square_resources,
+    _signed_out_square_from_unsigned_resources,
 )
 from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
 from pennylane.typing import Wire
@@ -101,7 +101,7 @@ def test_signed_out_square_resources(output_wires_zeroed):
     output_wires = [3, 4, 5, 6, 7]
     work_wires = [8, 9, 10, 11, 12]
 
-    resources = _signed_out_square_resources(
+    resources = _signed_out_square_from_unsigned_resources(
         x_wires, output_wires, work_wires, output_wires_zeroed=output_wires_zeroed
     )
 
@@ -367,7 +367,7 @@ class TestSignedOutSquare:
     def test_decomposition_rule_with_capture(
         self, x_wires, output_wires, work_wires, output_wires_zeroed
     ):
-        """Test that the decomposition rule is working correctly when ``_signed_out_square``
+        """Test that the decomposition rule is working correctly when ``_signed_out_square_from_unsigned``
         calls ``_c_subtract_then_add_one`` (triggered whenever ``len(output_wires) > len(x_wires)``)
         """
         op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)

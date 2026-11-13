@@ -842,9 +842,9 @@ def test_abstract_controlled_ops(op_type, wires):
 @pytest.mark.parametrize(
     ("op_type", "rule_name"),
     [
-        (qp.CNOT, "_cnot_lattice_surgery_ppm"),
-        (qp.CY, "_cy_lattice_surgery_ppm"),
-        (qp.CZ, "_cz_lattice_surgery_ppm"),
+        (qp.CNOT, "lattice_surgery_ppm"),
+        (qp.CY, "lattice_surgery_ppm"),
+        (qp.CZ, "lattice_surgery_ppm"),
     ],
 )
 def test_ppm_decomposition(op_type, rule_name, seed):

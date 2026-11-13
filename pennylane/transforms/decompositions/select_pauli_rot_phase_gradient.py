@@ -257,7 +257,9 @@ def make_selectpaulirot_to_phase_gradient_decomp(
     precisions, dispatch = _precision_dispatcher(precision_stats, precision, "SelectPauliRot")
 
     # pylint: disable-next=unused-argument
-    def _resource_fn(angles, control_wires, target_wire, rot_axis):
+    def _select_pauli_rot_phase_gradient_standard_resources(
+        angles, control_wires, target_wire, rot_axis
+    ):
         # decomposition costs, using information about angle_wires etc from the outer scope.
         # Each non-zero precision that may be applied is counted once.
 
@@ -316,8 +318,14 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         return change_basis_rep_basis_adapted
 
     # The resources are inexact if conditional branches are used
-    @qp.register_resources(_resource_fn, exact=precisions == {precision})
-    def _select_pauli_rot_phase_gradient_decomp(angles, control_wires, target_wire, rot_axis, **_):
+    @qp.register_name("phase_gradient")
+    @qp.register_resources(
+        _select_pauli_rot_phase_gradient_standard_resources,
+        exact=precisions == {precision},
+    )
+    def _select_pauli_rot_phase_gradient_standard(
+        angles, control_wires, target_wire, rot_axis, **_
+    ):
         if len(control_wires) == 0:
             rot_class = {"X": qp.RX, "Y": qp.RY, "Z": qp.RZ}[rot_axis]
             rot_class(angles[0], target_wire)
@@ -343,4 +351,4 @@ def make_selectpaulirot_to_phase_gradient_decomp(
             ),
         )
 
-    return _select_pauli_rot_phase_gradient_decomp
+    return _select_pauli_rot_phase_gradient_standard

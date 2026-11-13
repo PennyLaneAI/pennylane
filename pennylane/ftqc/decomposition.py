@@ -22,7 +22,7 @@ import networkx as nx
 from pennylane import math
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.queuing import AnnotatedQueue
-from pennylane.decomposition import enabled_graph, gate_sets, register_resources
+from pennylane.decomposition import enabled_graph, gate_sets, register_name, register_resources
 from pennylane.devices.preprocess import null_postprocessing
 from pennylane.measurements import SampleMP, sample
 from pennylane.ops import (
@@ -144,6 +144,7 @@ def ppr_to_mbqc_setup_inputs():
 ppr_to_mbqc = transform(pass_name="ppr-to-mbqc", setup_inputs=ppr_to_mbqc_setup_inputs)
 
 
+@register_name("to_xzx")
 @register_resources({RotXZX: 1})
 def _rot_to_xzx(phi, theta, omega, wires, **__):
     mat = Rot.compute_matrix(phi, theta, omega)

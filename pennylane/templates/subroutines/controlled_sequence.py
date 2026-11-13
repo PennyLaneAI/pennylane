@@ -20,7 +20,7 @@ from collections import Counter
 from pennylane import capture, compiler, math
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core.operator import abstractify
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops.op_math import SymbolicOp2, ctrl, pow
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
@@ -143,7 +143,7 @@ class ControlledSequence(SymbolicOp2):
         return f"ControlledSequence({self.base}, control={list(self.control)})"
 
 
-def _ctrl_seq_decomposition_resources(base, control) -> dict:
+def _ctrl_seq_standard_resources(base, control) -> dict:
     control = Wires(control)
     base_rep = abstractify(base)
 
@@ -155,8 +155,9 @@ def _ctrl_seq_decomposition_resources(base, control) -> dict:
     )
 
 
-@register_resources(_ctrl_seq_decomposition_resources)
-def _ctrl_seq_decomposition(*_, base=None, control=None, **__):
+@register_name("standard")
+@register_resources(_ctrl_seq_standard_resources)
+def _ctrl_seq_standard(*_, base=None, control=None, **__):
     if compiler.active() or capture.enabled():
         control = math.array(control, like="jax")
 
@@ -172,4 +173,4 @@ def _ctrl_seq_decomposition(*_, base=None, control=None, **__):
         pow(controlled_base, 2**i, lazy=False)
 
 
-add_decomps(ControlledSequence, _ctrl_seq_decomposition)
+add_decomps(ControlledSequence, _ctrl_seq_standard)

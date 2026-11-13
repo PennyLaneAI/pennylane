@@ -18,7 +18,7 @@ Contains the hardware-efficient ParticleConservingU2 template.
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import CNOT, CRX, RZ, BasisState
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
@@ -258,7 +258,7 @@ class ParticleConservingU2(Operation):
         return n_layers, 2 * n_wires - 1
 
 
-def _particle_conserving_u2_resources(num_wires: int, n_layers: int):
+def _particle_conserving_u2_standard_resources(num_wires: int, n_layers: int):
     num_nm_wires = num_wires - 1  # number of pairs of even-indexed of wires
     return {
         BasisState(Bool[num_wires], Wire[num_wires]): 1,
@@ -268,8 +268,9 @@ def _particle_conserving_u2_resources(num_wires: int, n_layers: int):
     }
 
 
-@register_resources(_particle_conserving_u2_resources)
-def _particle_conserving_u2_decomposition(weights: list, wires: WiresLike, init_state: tuple[int]):
+@register_name("standard")
+@register_resources(_particle_conserving_u2_standard_resources)
+def _particle_conserving_u2_standard(weights: list, wires: WiresLike, init_state: tuple[int]):
     nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
     nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
     n_layers = math.shape(weights)[0]
@@ -312,4 +313,4 @@ def _particle_conserving_u2_decomposition(weights: list, wires: WiresLike, init_
     layers_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(ParticleConservingU2, _particle_conserving_u2_decomposition)
+add_decomps(ParticleConservingU2, _particle_conserving_u2_standard)

@@ -20,7 +20,7 @@ import numpy as np
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.math import ceil_log2
 from pennylane.ops import CSWAP, RZ, GlobalPhase, Hadamard, adjoint, ctrl
 from pennylane.typing import Wire
@@ -91,7 +91,7 @@ class UniformPrep(Operator2):
                 :math:`\ell = \lceil \log_2 L \rceil`
             :example: :math:`n_\text{states}=5` (:math:`k=0`, :math:`L=5`, :math:`\ell=3`)
 
-            .. decomposition-rule:: _uniform_prep_decomp
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/uniform_prep_amplification.svg
                 :lightbox:
                 :requires: :math:`\ell` work wires
@@ -140,7 +140,8 @@ class UniformPrep(Operator2):
         super().__init__(n_states, target_wires, work_wires)
 
 
-def _uniform_prep_resources(n_states, target_wires, work_wires):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _uniform_prep_standard_resources(n_states, target_wires, work_wires):
     k = (n_states & -n_states).bit_length() - 1
     L = n_states >> k
     logL = ceil_log2(L)
@@ -164,8 +165,9 @@ def _uniform_prep_resources(n_states, target_wires, work_wires):  # pylint: disa
     return resources
 
 
-@register_resources(_uniform_prep_resources)
-def _uniform_prep_decomp(n_states, target_wires, work_wires, **_):
+@register_name("standard")
+@register_resources(_uniform_prep_standard_resources)
+def _uniform_prep_standard(n_states, target_wires, work_wires, **_):
     k = (n_states & -n_states).bit_length() - 1
     L = n_states >> k
     logL = ceil_log2(L)
@@ -194,7 +196,7 @@ def _uniform_prep_decomp(n_states, target_wires, work_wires, **_):
     GlobalPhase(np.pi / 2)
 
 
-add_decomps(UniformPrep, _uniform_prep_decomp)
+add_decomps(UniformPrep, _uniform_prep_standard)
 
 
 def _build_alias_tables(probs, mu):
@@ -404,7 +406,7 @@ class AliasSampling(Operator2):
                 :math:`\mu` = ``mu`` bits
             :example: :math:`L=4`, :math:`\mu=2`
 
-            .. decomposition-rule:: _alias_sampling_decomp
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/alias_sampling_coherent.svg
 
                 :class:`~.UniformPrep` | :math:`1` | 1
@@ -485,7 +487,7 @@ def _qrom_data(probs, mu, logL):
 
 
 # pylint: disable-next=unused-argument
-def _alias_sampling_resources(probs, mu, target_wires, temp_wires, work_wires):
+def _alias_sampling_standard_resources(probs, mu, target_wires, temp_wires, work_wires):
     L = len(probs)
     logL = ceil_log2(L)
     n_target = len(target_wires)
@@ -508,8 +510,9 @@ def _alias_sampling_resources(probs, mu, target_wires, temp_wires, work_wires):
     }
 
 
-@register_resources(_alias_sampling_resources)
-def _alias_sampling_decomp(probs, mu, target_wires, temp_wires, work_wires, **_):
+@register_name("standard")
+@register_resources(_alias_sampling_standard_resources)
+def _alias_sampling_standard(probs, mu, target_wires, temp_wires, work_wires, **_):
     L = len(probs)
     logL = ceil_log2(L)
     sigma_wires, alt_wires, keep_wires, flag, cmp_work = _split_temp_wires(temp_wires, mu, logL)
@@ -540,4 +543,4 @@ def _alias_sampling_decomp(probs, mu, target_wires, temp_wires, work_wires, **_)
     _swap()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(AliasSampling, _alias_sampling_decomp)
+add_decomps(AliasSampling, _alias_sampling_standard)

@@ -272,7 +272,7 @@ class TestDecompositions:
     @pytest.mark.catalyst
     def test_hadamard_ppm_decomposition(self, seed):
         """Tests that the PPM decomposition of Hadamard is correct."""
-        rule = qp.list_decomps(qp.Hadamard)["_hadamard_ppm"]
+        rule = qp.list_decomps(qp.Hadamard)["to_ppm"]
         rng = np.random.default_rng(seed)
         init_state = rng.random(2) + 1j * rng.random(2)
         init_state /= np.linalg.norm(init_state)
@@ -1472,7 +1472,7 @@ class TestPPR:
         """Test the operations queued by the adjoint rule."""
         denominator = PPR_DENOMINATORS[op_cls]
         adj_op = qp.adjoint(op_cls(1, "XY", wires=[0, 1]))
-        rule = qp.list_decomps(f"Adjoint(PPR_{denominator})")["_adjoint_ppr_flip_sign"]
+        rule = qp.list_decomps(f"Adjoint(PPR_{denominator})")["standard"]
 
         tape = qp.testing.decomp_rule_to_tape(adj_op, rule)
 
@@ -1483,7 +1483,7 @@ class TestPPR:
     def test_adjoint_decomp_resources(self, op_cls):
         """Test the resources of the adjoint rule."""
         denominator = PPR_DENOMINATORS[op_cls]
-        rule = qp.list_decomps(f"Adjoint(PPR_{denominator})")["_adjoint_ppr_flip_sign"]
+        rule = qp.list_decomps(f"Adjoint(PPR_{denominator})")["standard"]
         adj_op = qp.adjoint(op_cls(1, "XY", wires=[0, 1]))
 
         expected = qp.decomposition.Resources({op_cls(-1, pauli_word="XY", wires=Wire[2]): 1})
@@ -1512,11 +1512,11 @@ class TestToPPRDecompositions:
     @pytest.mark.parametrize(
         "op, rule_name, expected",
         [
-            (qp.X(0), "_paulix_to_ppr", [qp.PPR_2(1, "X", 0), qp.GlobalPhase(-np.pi / 2)]),
-            (qp.Y(0), "_pauliy_to_ppr", [qp.PPR_2(1, "Y", 0), qp.GlobalPhase(-np.pi / 2)]),
-            (qp.Z(0), "_pauliz_to_ppr", [qp.PPR_2(1, "Z", 0), qp.GlobalPhase(-np.pi / 2)]),
-            (qp.S(0), "_s_to_ppr", [qp.PPR_4(1, "Z", 0), qp.GlobalPhase(-np.pi / 4)]),
-            (qp.T(0), "_t_to_ppr", [qp.PPR_8(1, "Z", 0), qp.GlobalPhase(-np.pi / 8)]),
+            (qp.X(0), "to_ppr", [qp.PPR_2(1, "X", 0), qp.GlobalPhase(-np.pi / 2)]),
+            (qp.Y(0), "to_ppr", [qp.PPR_2(1, "Y", 0), qp.GlobalPhase(-np.pi / 2)]),
+            (qp.Z(0), "to_ppr", [qp.PPR_2(1, "Z", 0), qp.GlobalPhase(-np.pi / 2)]),
+            (qp.S(0), "to_ppr", [qp.PPR_4(1, "Z", 0), qp.GlobalPhase(-np.pi / 4)]),
+            (qp.T(0), "to_ppr", [qp.PPR_8(1, "Z", 0), qp.GlobalPhase(-np.pi / 8)]),
         ],
     )
     def test_decomposition_rule(self, op, rule_name, expected):

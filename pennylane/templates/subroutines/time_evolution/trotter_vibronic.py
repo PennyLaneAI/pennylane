@@ -23,7 +23,7 @@ from pennylane.allocation import allocate
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.numeric_hamiltonians import VibronicHamiltonian
 from pennylane.ops import CNOT, Hadamard, adjoint, cond, ctrl
 from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
@@ -173,7 +173,7 @@ class TrotterVibronic(Operator2):
             :example: :math:`F=1`, :math:`M=1`, :math:`k=1`, :math:`n=1`,
                 :math:`b=1`, :math:`r=1`
 
-            .. decomposition-rule:: _trotter_vibronic_decomposition
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/trotter_vibronic_phase_gradient.svg
                 :where: :math:`P = 2Fr` position-fragment visits and :math:`K = M(M-1)/2` mode
                     pairs. All counts are upper bounds: terms with zero coefficients are
@@ -483,7 +483,7 @@ class TrotterVibronic(Operator2):
         )
 
 
-def _trotter_vibronic_resources(  # pylint: disable=too-many-arguments,unused-argument
+def _trotter_vibronic_standard_resources(  # pylint: disable=too-many-arguments,unused-argument
     evolution_time,
     num_trotter_steps,
     hamiltonian,
@@ -664,7 +664,7 @@ def _required_work_wire_sizes(hamiltonian, vib_wires, b):
     return 2 * k, max(n - 1, 2 * k, 2 * b + 2)
 
 
-def _trotter_vibronic_work_wires(  # pylint: disable=too-many-arguments
+def _trotter_vibronic_standard_work_wires(  # pylint: disable=too-many-arguments
     hamiltonian, vib_wires, coefficient_wires, phase_gradient_wires, cache_wires, work_wires, **_
 ):
     """Number of zeroed work wires allocated when ``coefficient_wires``/``cache_wires``/
@@ -681,10 +681,13 @@ def _trotter_vibronic_work_wires(  # pylint: disable=too-many-arguments
     return {"zeroed": num_alloc}
 
 
+@register_name("standard")
 @register_resources(
-    _trotter_vibronic_resources, exact=False, work_wires=_trotter_vibronic_work_wires
+    _trotter_vibronic_standard_resources,
+    exact=False,
+    work_wires=_trotter_vibronic_standard_work_wires,
 )
-def _trotter_vibronic_decomposition(  # pylint: disable=too-many-arguments
+def _trotter_vibronic_standard(  # pylint: disable=too-many-arguments
     evolution_time,
     num_trotter_steps,
     hamiltonian,
@@ -758,7 +761,7 @@ def _trotter_vibronic_decomposition(  # pylint: disable=too-many-arguments
         _run(coefficients, cache, work)
 
 
-add_decomps(TrotterVibronic, _trotter_vibronic_decomposition)
+add_decomps(TrotterVibronic, _trotter_vibronic_standard)
 
 
 # ---------------------------------------------------------------------------

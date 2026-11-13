@@ -21,6 +21,7 @@ from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
+    register_name,
     register_resources,
 )
 from pennylane.ops import adjoint, ctrl
@@ -468,7 +469,7 @@ class OutPoly(Operation):
         return list_ops
 
 
-def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coeffs_list) -> dict:
+def _out_poly_standard_resources(num_output_wires, num_work_wires, mod, coeffs_list) -> dict:
     num_output_adder_mod = num_output_wires + 1 if num_work_wires else num_output_wires
 
     resources = Counter({QFT(Wire[num_output_adder_mod]): 1})
@@ -498,8 +499,9 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
     return dict(resources)
 
 
-@register_resources(_out_poly_decomposition_resources)
-def _out_poly_decomposition(  # pylint: disable=unused-argument
+@register_name("standard")
+@register_resources(_out_poly_standard_resources)
+def _out_poly_standard(  # pylint: disable=unused-argument
     polynomial_function,
     input_registers,
     output_wires: WiresLike,
@@ -543,4 +545,4 @@ def _out_poly_decomposition(  # pylint: disable=unused-argument
     adjoint(QFT(wires=output_adder_mod))
 
 
-add_decomps(OutPoly, _out_poly_decomposition)
+add_decomps(OutPoly, _out_poly_standard)

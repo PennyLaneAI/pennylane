@@ -21,7 +21,7 @@ import numpy as np
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.math import ceil_log2
 from pennylane.ops import SWAP, Hadamard, adjoint, ctrl
 from pennylane.typing import Wire
@@ -460,7 +460,7 @@ class AliasSamplingTHC(Operator2):
                 :math:`\aleph` = ``aleph`` bits, and :math:`M` is the THC rank.
             :example: :math:`M=1`, :math:`N=2`, :math:`\aleph=1` (:math:`n=1`)
 
-            .. decomposition-rule:: _alias_sampling_thc_decomp
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/alias_sampling_thc_walker.svg
 
                 :class:`~.OutSquare` | :math:`1` | 1
@@ -549,7 +549,7 @@ class AliasSamplingTHC(Operator2):
         return self.mu_wires + self.nu_wires + self.edge_flag + self.work_wires
 
 
-def _alias_sampling_thc_resources(  # pylint: disable=too-many-arguments,unused-argument
+def _alias_sampling_thc_standard_resources(  # pylint: disable=too-many-arguments,unused-argument
     M,
     N,
     zeta,
@@ -620,8 +620,9 @@ def _alias_sampling_thc_resources(  # pylint: disable=too-many-arguments,unused-
     return dict(resources)
 
 
-@register_resources(_alias_sampling_thc_resources)
-def _alias_sampling_thc_decomp(  # pylint: disable=too-many-arguments
+@register_name("standard")
+@register_resources(_alias_sampling_thc_standard_resources)
+def _alias_sampling_thc_standard(  # pylint: disable=too-many-arguments
     M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, **_
 ):
     n = len(mu_wires)
@@ -701,4 +702,4 @@ def _alias_sampling_thc_decomp(  # pylint: disable=too-many-arguments
     _symmetrize(mu_wires, nu_wires, symmetrize_flag, edge_flag, sym_cswap_work)
 
 
-add_decomps(AliasSamplingTHC, _alias_sampling_thc_decomp)
+add_decomps(AliasSamplingTHC, _alias_sampling_thc_standard)

@@ -294,6 +294,7 @@ to a device:
 
 .. code-block:: python3
 
+    @qp.decomposition.register_name("custom_cnot_decomposition")
     @qp.decomposition.register_resources({
         qp.H: 2,
         qp.CZ: 1
@@ -348,6 +349,7 @@ Consider this example where we add a fixed decomposition to ``CNOT`` gates:
 
     qp.decomposition.enable_graph()
 
+    @qp.register_name("my_cnot")
     @qp.register_resources({qp.H: 2, qp.CZ: 1})
     def my_cnot(wires, **__):
         qp.H(wires=wires[1])
@@ -378,12 +380,14 @@ type:
 
 .. code-block:: python
 
+    @qp.register_name("my_cnot1")
     @qp.register_resources({qp.H: 2, qp.CZ: 1})
     def my_cnot1(wires, **__):
         qp.H(wires=wires[1])
         qp.CZ(wires=wires)
         qp.H(wires=wires[1])
 
+    @qp.register_name("my_cnot2")
     @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2})
     def my_cnot2(wires, **__):
         qp.RY(np.pi/2, wires[1])

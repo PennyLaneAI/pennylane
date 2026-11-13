@@ -21,6 +21,7 @@ from pennylane import ops
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
+    register_name,
     register_resources,
 )
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -164,7 +165,7 @@ class PhaseAdder(Operator2):
 
 
 # pylint: disable-next=unused-argument
-def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
+def _phase_adder_standard_resources(k, x_wires, mod, work_wire) -> dict:
     num_x_wires = len(x_wires)
 
     if mod == 2**num_x_wires:
@@ -198,8 +199,9 @@ def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
     return resources
 
 
-@register_resources(_phase_adder_decomposition_resources)
-def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire):
+@register_name("standard")
+@register_resources(_phase_adder_standard_resources)
+def _phase_adder_standard(k, x_wires: WiresLike, mod, work_wire):
 
     n_wires = len(x_wires)
 
@@ -230,4 +232,4 @@ def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire):
     ops.change_op_basis(compute, ops.CNOT(wires=[aux_k, work_wire[0]]), uncompute)
 
 
-add_decomps(PhaseAdder, _phase_adder_decomposition)
+add_decomps(PhaseAdder, _phase_adder_standard)

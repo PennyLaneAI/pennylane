@@ -17,7 +17,7 @@ test of a quantum register and a classical integer."""
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import CNOT, X, cond
 from pennylane.typing import AbstractArray, AbstractWires, Int, Wire
 from pennylane.wires import Wires, WiresLike
@@ -162,7 +162,9 @@ def _get_specific_bit(value, i):
 
 
 # pylint: disable-next=unused-argument
-def _left_classical_comparator_resources(x_wires, value, target_wire, work_wires, comparator, **_):
+def _left_classical_comparator_standard_resources(
+    x_wires, value, target_wire, work_wires, comparator, **_
+):
     """Return conservative worst-case gate counts without knowing the runtime threshold."""
     n = len(x_wires)
     # Count every conditional gate: two Xs for bit 0, four per remaining low bit,
@@ -174,8 +176,9 @@ def _left_classical_comparator_resources(x_wires, value, target_wire, work_wires
     }
 
 
-@register_resources(_left_classical_comparator_resources, exact=False)
-def _left_classical_comparator(x_wires, value, target_wire, work_wires, comparator, **_):
+@register_name("standard")
+@register_resources(_left_classical_comparator_standard_resources, exact=False)
+def _left_classical_comparator_standard(x_wires, value, target_wire, work_wires, comparator, **_):
     x_wires = x_wires[::-1]
 
     def _negate_output():
@@ -218,4 +221,4 @@ def _left_classical_comparator(x_wires, value, target_wire, work_wires, comparat
     cond(comparator.startswith(">"), _negate_output)()
 
 
-add_decomps(LeftClassicalComparator, _left_classical_comparator)
+add_decomps(LeftClassicalComparator, _left_classical_comparator_standard)

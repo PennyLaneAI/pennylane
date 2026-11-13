@@ -28,7 +28,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops.qubit.parametric_ops_multi_qubit import PauliRot
 from pennylane.typing import FlatPytree, Float, TensorLike, Wire
 from pennylane.wires import WiresLike
@@ -722,12 +722,13 @@ class SpecialUnitary(Operation):
         return SpecialUnitary(-self.data[0], wires=self.wires)
 
 
+@register_name("standard")
 @register_resources({SpecialUnitary: 1})
-def _adjoint_special_unitary(theta, wires, **__):
+def _adjoint_special_unitary_standard(theta, wires, **__):
     SpecialUnitary(-theta, wires=wires)
 
 
-add_decomps("Adjoint(SpecialUnitary)", _adjoint_special_unitary)
+add_decomps("Adjoint(SpecialUnitary)", _adjoint_special_unitary_standard)
 
 
 class TmpPauliRot(PauliRot):
@@ -782,21 +783,23 @@ class TmpPauliRot(PauliRot):
 
 
 # pylint: disable-next=unused-argument
-def _tmp_paulirot_decomp_resources(theta, wires, pauli_word: str):
+def _tmp_paulirot_standard_resources(theta, wires, pauli_word: str):
     return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
-@register_resources(_tmp_paulirot_decomp_resources)
-def _tmp_paulirot_decomp(theta: TensorLike, wires: WiresLike, pauli_word: str):
+@register_name("standard")
+@register_resources(_tmp_paulirot_standard_resources)
+def _tmp_paulirot_standard(theta: TensorLike, wires: WiresLike, pauli_word: str):
     PauliRot(theta, pauli_word=pauli_word, wires=wires)
 
 
-add_decomps(TmpPauliRot, _tmp_paulirot_decomp)
+add_decomps(TmpPauliRot, _tmp_paulirot_standard)
 
 
-@register_resources(lambda base: _tmp_paulirot_decomp_resources(**base.arguments))
-def _adjoint_tmp_paulirot(base):
+@register_name("standard")
+@register_resources(lambda base: _tmp_paulirot_standard_resources(**base.arguments))
+def _adjoint_tmp_paulirot_standard(base):
     PauliRot(-base.theta, pauli_word=base.pauli_word, wires=base.wires)
 
 
-add_decomps("Adjoint(TmpPauliRot)", _adjoint_tmp_paulirot)
+add_decomps("Adjoint(TmpPauliRot)", _adjoint_tmp_paulirot_standard)

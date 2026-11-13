@@ -22,7 +22,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import PauliRot
 from pennylane.ops.op_math.linear_combination import Hamiltonian
 from pennylane.pauli import PauliWord
@@ -239,7 +239,7 @@ class ApproxTimeEvolution(Operation):
         return full_decomp
 
 
-def _approx_time_evolution_resources(words: tuple[PauliWord], n: int):
+def _approx_time_evolution_standard_resources(words: tuple[PauliWord], n: int):
     resources = defaultdict(int)
 
     for _ in range(n):
@@ -251,8 +251,9 @@ def _approx_time_evolution_resources(words: tuple[PauliWord], n: int):
     return resources
 
 
-@register_resources(_approx_time_evolution_resources)
-def _approx_time_evolution_decomposition(  # pylint: disable=unused-argument
+@register_name("standard")
+@register_resources(_approx_time_evolution_standard_resources)
+def _approx_time_evolution_standard(  # pylint: disable=unused-argument
     *coeffs_and_time: list,
     wires: WiresLike,
     hamiltonian: Hamiltonian,
@@ -277,4 +278,4 @@ def _approx_time_evolution_decomposition(  # pylint: disable=unused-argument
     rounds_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(ApproxTimeEvolution, _approx_time_evolution_decomposition)
+add_decomps(ApproxTimeEvolution, _approx_time_evolution_standard)

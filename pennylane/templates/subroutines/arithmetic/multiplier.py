@@ -20,6 +20,7 @@ import numpy as np
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
+    register_name,
     register_resources,
 )
 from pennylane.ops import SWAP, adjoint, change_op_basis, prod
@@ -252,7 +253,7 @@ class Multiplier(Operation):
         return [op1, target_op, op2]
 
 
-def _multiplier_decomposition_resources(
+def _multiplier_standard_resources(
     num_x_wires,
     mod,
     num_work_wires,
@@ -280,8 +281,9 @@ def _multiplier_decomposition_resources(
     return resources
 
 
-@register_resources(_multiplier_decomposition_resources)
-def _multiplier_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
+@register_name("standard")
+@register_resources(_multiplier_standard_resources)
+def _multiplier_standard(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
     if mod != 2 ** len(x_wires):
         work_wire_aux = work_wires[:1]
         wires_aux = work_wires[1:]
@@ -314,4 +316,4 @@ def _multiplier_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike,
     )
 
 
-add_decomps(Multiplier, _multiplier_decomposition)
+add_decomps(Multiplier, _multiplier_standard)

@@ -21,7 +21,7 @@ from pennylane import capture, math, ops
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator1
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_name, register_resources, resource_rep
 from pennylane.ops.op_math.linear_combination import Hamiltonian
 from pennylane.pauli import PauliWord
 from pennylane.wires import Wires, WiresLike
@@ -208,12 +208,13 @@ class CommutingEvolution(Operation):
         return CommutingEvolution(hamiltonian, -time, frequencies, shifts)
 
 
-def _commuting_evolution_resources(words: tuple[PauliWord]):
+def _commuting_evolution_standard_resources(words: tuple[PauliWord]):
     return {resource_rep(ApproxTimeEvolution, words=words, n=1): 1}
 
 
-@register_resources(_commuting_evolution_resources)
-def _commuting_evolution_decomposition(  # pylint: disable=unused-argument
+@register_name("standard")
+@register_resources(_commuting_evolution_standard_resources)
+def _commuting_evolution_standard(  # pylint: disable=unused-argument
     time: list,
     *_,
     wires: WiresLike,
@@ -227,11 +228,12 @@ def _commuting_evolution_decomposition(  # pylint: disable=unused-argument
     ApproxTimeEvolution(hamiltonian, time, 1)
 
 
-add_decomps(CommutingEvolution, _commuting_evolution_decomposition)
+add_decomps(CommutingEvolution, _commuting_evolution_standard)
 
 
+@register_name("standard")
 @register_resources(lambda base_params, **_: {resource_rep(CommutingEvolution, **base_params): 1})
-def _adjoint_commuting_evolution(time, *params, base, **__):
+def _adjoint_commuting_evolution_standard(time, *params, base, **__):
     hamiltonian = ops.functions.bind_new_parameters(base.hyperparameters["hamiltonian"], params)
     CommutingEvolution(
         hamiltonian,
@@ -241,4 +243,4 @@ def _adjoint_commuting_evolution(time, *params, base, **__):
     )
 
 
-add_decomps("Adjoint(CommutingEvolution)", _adjoint_commuting_evolution)
+add_decomps("Adjoint(CommutingEvolution)", _adjoint_commuting_evolution_standard)

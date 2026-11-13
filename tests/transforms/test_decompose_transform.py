@@ -75,6 +75,7 @@ def test_fixed_alt_decomps_not_available():
     """Test that a TypeError is raised when graph is disabled and
     fixed_decomps or alt_decomps is used."""
 
+    @qp.register_name("my_cnot")
     @qp.register_resources({qp.H: 2, qp.CZ: 1})
     def my_cnot(*_, **__):
         raise NotImplementedError

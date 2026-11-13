@@ -529,7 +529,7 @@ class TestOutMultiplier:
         for j, rule in enumerate(qp.list_decomps(qp.OutMultiplier)):
             applicable = rule.is_applicable(**op.arguments)
             # TODO: ControlledSequence doesn't take traced wires [sc-128372]
-            if rule.name != "_out_multiplier_with_qft":
+            if rule.name != "with_qft":
                 assert applicable is (j in applicable_rules)
             assert_valid_decomp_rule(op, rule)
 
@@ -557,7 +557,7 @@ class TestOutMultiplier:
         for j, rule in enumerate(qp.list_decomps(qp.OutMultiplier)):
             applicable = rule.is_applicable(**op.arguments)
             # TODO: ControlledSequence doesn't take traced wires [sc-128372]
-            if rule.name != "_out_multiplier_with_qft":
+            if rule.name != "with_qft":
                 assert applicable is (j in applicable_rules)
             assert_valid_decomp_rule(op, rule)
 

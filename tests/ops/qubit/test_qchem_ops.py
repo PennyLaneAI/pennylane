@@ -145,7 +145,7 @@ class TestSingleExcitation:
 
     def test_single_excitation_ppr_crz_decomp(self):
         """Tests that the Clifford operations belong to the basis change, leaving only CRZ as target."""
-        rule = qp.list_decomps(qp.SingleExcitation)["_single_excitation_ppr_crz"]
+        rule = qp.list_decomps(qp.SingleExcitation)["to_ppr_crz"]
         with qp.queuing.AnnotatedQueue() as q:
             rule(0.2, [0, 1])
 
@@ -1127,7 +1127,7 @@ class TestFermionicSWAP:
     def test_decomposition_rule(self, phi, wires):
         """Test the registered decomposition matrix and resource counts."""
         op = qp.FermionicSWAP(phi, wires=wires)
-        rule = qp.list_decomps(qp.FermionicSWAP)["_fermionic_swap_decomp"]
+        rule = qp.list_decomps(qp.FermionicSWAP)["standard"]
         qp.testing.assert_valid_decomp_rule(op, rule)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])

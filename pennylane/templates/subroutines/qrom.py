@@ -29,6 +29,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
+    register_name,
     register_resources,
 )
 from pennylane.math import ceil_log2
@@ -330,7 +331,7 @@ def _select_swap_condition(bitstrings, control_wires, target_wires, work_wires, 
     return depth > 1
 
 
-def _select_swap_resources(bitstrings, control_wires, target_wires, work_wires, clean):
+def _qrom_select_swap_resources(bitstrings, control_wires, target_wires, work_wires, clean):
     """Assumes depth computed below satisfies depth > 1, as guaranteed by _select_swap_condition."""
     num_bitstrings = len(bitstrings)
     num_control_wires = len(control_wires)
@@ -370,8 +371,9 @@ def _select_swap_resources(bitstrings, control_wires, target_wires, work_wires, 
 
 
 @register_condition(_select_swap_condition)
-@register_resources(_select_swap_resources)
-def _select_swap(bitstrings, control_wires, target_wires, work_wires, clean):
+@register_name("select_swap")
+@register_resources(_qrom_select_swap_resources)
+def _qrom_select_swap(bitstrings, control_wires, target_wires, work_wires, clean):
     if len(control_wires) == 0:
         MultiX(bitstrings[0, :], wires=target_wires)
         return
@@ -731,8 +733,9 @@ def _build_flag(extra_wires, work_wires):
 
 
 @register_condition(_qrom_measurement_condition)
+@register_name("measurement")
 @register_resources(_qrom_measurement_resources, exact=False)
-def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,unused-argument
+def _qrom_measurement(  # pylint: disable=too-many-arguments,unused-argument
     bitstrings=None,
     control_wires=None,
     target_wires=None,
@@ -1037,6 +1040,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
     qp_ops.adjoint(TemporaryAND(wires=triples[0], control_values=tuple(closing_bits[:2])))
 
 
+@register_name("unary_iteration")
 @register_resources(_qrom_unary_iteration_resources)
 # pylint: disable-next=unused-argument
 def _qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires, clean, **__):
@@ -1096,8 +1100,8 @@ def _qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires, c
 
 add_decomps(
     QROM,
-    _select_swap,
+    _qrom_select_swap,
     _qrom_unary_iteration,
-    _qrom_measurement_decomposition,
+    _qrom_measurement,
 )
-add_decomps("Adjoint(QROM)", _qrom_measurement_decomposition)
+add_decomps("Adjoint(QROM)", _qrom_measurement)

@@ -22,7 +22,7 @@ its general resources.
         :symbols: :math:`K` operators, :math:`c` control wires
         :example: :math:`K=4`, :math:`c=2`
 
-        .. decomposition-rule:: _select_decomp_unary
+        .. decomposition-rule:: unary
             :image: /_static/decomposition_thumbnails/select_unary.svg
             :requires: :math:`c - 1` work wires
             :where: :math:`N = c + K - 2`

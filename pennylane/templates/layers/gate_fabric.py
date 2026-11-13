@@ -21,7 +21,7 @@ from jax import numpy as jnp
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import BasisState, DoubleExcitation, OrbitalRotation, cond
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
@@ -318,7 +318,7 @@ class GateFabric(Operation):
         return n_layers, n_wires // 2 - 1, 2
 
 
-def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
+def _gate_fabric_standard_resources(n_layers, num_wires, len_wire_pattern, include_pi):
     rotation_count = 2 * n_layers * len_wire_pattern if include_pi else n_layers * len_wire_pattern
     return {
         BasisState(Bool[num_wires], Wire[num_wires]): 1,
@@ -327,8 +327,9 @@ def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
     }
 
 
-@register_resources(_gate_fabric_resources)
-def _gate_fabric_decomposition(weights, wires, init_state, include_pi):
+@register_name("standard")
+@register_resources(_gate_fabric_standard_resources)
+def _gate_fabric_standard(weights, wires, init_state, include_pi):
     if isinstance(wires, Wires):
         wires = wires.labels
 
@@ -371,4 +372,4 @@ def _gate_fabric_decomposition(weights, wires, init_state, include_pi):
     layers_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(GateFabric, _gate_fabric_decomposition)
+add_decomps(GateFabric, _gate_fabric_standard)

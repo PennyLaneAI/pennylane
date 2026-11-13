@@ -30,6 +30,7 @@ pytestmark = pytest.mark.catalyst
 TARGET = {"Hadamard", "CNOT", "RX"}
 
 
+@qp.register_name("cz_with_ry")
 @qp.register_resources({qp.Z: 2, qp.RY: 2, qp.CNOT: 1})
 def cz_with_ry(wires, **_):
     """Decomposition rule for CZ that writes each Hadamard as Z followed by RY(pi/2)."""
@@ -40,6 +41,7 @@ def cz_with_ry(wires, **_):
     qp.RY(np.pi / 2, wires[1])
 
 
+@qp.register_name("h_with_x")
 @qp.register_resources({qp.RY: 1, qp.X: 1})
 def h_with_x(wires, **_):
     """Decomposition rule for Hadamard as RY(pi/2) followed by X."""

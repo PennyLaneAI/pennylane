@@ -42,10 +42,10 @@ from pennylane.numeric_hamiltonians import CGFHamiltonian
 from pennylane.templates.subroutines.time_evolution.trotter_cgf import (
     _apply_system_basis_rotation,
     _cgf_resource_counts,
-    _controlled_trotter_cgf_decomp,
+    _controlled_trotter_cgf_standard,
     _energy_shift,
     _merge_leaves,
-    _trotter_cgf_decomposition,
+    _trotter_cgf_standard,
 )
 from pennylane.testing import assert_decomposable
 from pennylane.typing import Float, Wire
@@ -367,11 +367,11 @@ class TestResourceRule:
         def circuit(t, *wires):
             system_wires = list(wires[:num_system_wires])
             if not has_control:
-                _trotter_cgf_decomposition(t, num_steps, ham, system_wires, False)
+                _trotter_cgf_standard(t, num_steps, ham, system_wires, False)
                 return
             with qp.capture.pause():
                 base = qp.TrotterCGF(t, num_steps, ham, system_wires, double_phase=double_phase)
-            _controlled_trotter_cgf_decomp(
+            _controlled_trotter_cgf_standard(
                 base, list(wires[num_system_wires:]), [1], [], "borrowed"
             )
 
@@ -419,7 +419,7 @@ class TestDecomposition:
         ham = CGFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.0)
         wires = list(range(num_modes * n_states))
 
-        tape = qp.tape.make_qscript(_trotter_cgf_decomposition)(
+        tape = qp.tape.make_qscript(_trotter_cgf_standard)(
             evolution_time, num_steps, ham, wires, False
         )
         angles = np.array([op.data[0] for op in tape.operations if isinstance(op, qp.IsingZZ)])

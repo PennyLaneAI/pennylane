@@ -34,6 +34,7 @@ from pennylane.decomposition.decomposition_rule import (
     get_fixed_decomp,
     list_decomps,
     register_condition,
+    register_name,
     register_resources,
 )
 from pennylane.decomposition.resources import (
@@ -206,7 +207,7 @@ def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
 
     # special case of cancelling nested adjoints.
     if isinstance(abs_op.base, Adjoint2):
-        return DecompCollection([cancel_adjoint])
+        return DecompCollection([_adjoint_cancel])
 
     # Custom decomposition rules registered specifically to the adjoint operator
     custom_rules = _get_registered_decomps(to_name(abs_op))
@@ -254,11 +255,11 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
     base_source = base_rule._source
 
     @register_condition(_condition_fn)
+    @register_name(f"adjoint({base_rule.name})")
     @register_resources(
         _resource_fn,
         work_wires=_wrap_work_wire_spec(base_rule),
         exact=base_rule.exact_resources,
-        name=f"adjoint({base_rule.name})",
     )
     def _impl(base):
         non_traced_args, traced_args = get_traced_and_non_traced_args(base)
@@ -281,25 +282,27 @@ def _adjoint_abstract(op: AbstractOperatorLike | type[Operator]):
     return qp.adjoint(op)
 
 
-def _cancel_adjoint_resources(base):
+def _adjoint_cancel_resources(base):
     assert isinstance(base, Adjoint2)
     inner_base = base.base
     return {inner_base: 1}
 
 
-@register_resources(_cancel_adjoint_resources)
-def cancel_adjoint(base):
+@register_name("cancel")
+@register_resources(_adjoint_cancel_resources)
+def _adjoint_cancel(base):
     """Decompose the adjoint of the adjoint of an operator."""
     assert isinstance(base, Adjoint2)
     type(base.base)(**base.base.arguments)
 
 
-def _adjoint_rotation_resource(base):
+def _adjoint_negate_angle_resources(base):
     return {abstractify(base): 1}
 
 
-@register_resources(_adjoint_rotation_resource)
-def adjoint_rotation(base):
+@register_name("negate_angle")
+@register_resources(_adjoint_negate_angle_resources)
+def _adjoint_negate_angle(base):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
     # A rotation should only have 1 dynamic parameter
     assert len(base.dynamic_argnames) == 1

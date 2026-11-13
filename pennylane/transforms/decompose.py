@@ -166,10 +166,12 @@ def _tape_decompose(  # pylint: disable=too-many-arguments
             allocated. If ``None``, assume an infinite number of work wires. Defaults to ``0``.
         minimize_work_wires (bool): If ``True``, minimize the number of work wires simultaneously
             allocated throughout the circuit. Defaults to ``False``.
-        fixed_decomps (Dict[Type[Operator], DecompositionRule]): a dictionary mapping operator types
+        fixed_decomps (Dict[Type[Operator], DecompositionRule or str]): a dictionary mapping operator types
             to custom decomposition rules. A decomposition rule is a quantum function decorated with
             :func:`~pennylane.register_resources`. The custom decomposition rules specified here
             will be used in place of the existing decomposition rules defined for this operator.
+            A string selects a registered rule by its public name, for example
+            ``fixed_decomps={qp.SWAP: "to_cnot"}``.
             This is only used when :func:`~pennylane.decomposition.enable_graph` is present.
         alt_decomps (Dict[Type[Operator], List[DecompositionRule]]): a dictionary mapping operator
             types to lists of alternative custom decomposition rules. A decomposition rule is a
@@ -447,18 +449,21 @@ def _tape_decompose(  # pylint: disable=too-many-arguments
 
             qp.decomposition.enable_graph()
 
+            @qp.register_name("isingxx_decomp")
             @qp.register_resources({qp.CNOT: 2, qp.RX: 1})
             def isingxx_decomp(phi, wires, **__):
                 qp.CNOT(wires=wires)
                 qp.RX(phi, wires=[wires[0]])
                 qp.CNOT(wires=wires)
 
+            @qp.register_name("my_cnot1")
             @qp.register_resources({qp.H: 2, qp.CZ: 1})
             def my_cnot1(wires, **__):
                 qp.H(wires=wires[1])
                 qp.CZ(wires=wires)
                 qp.H(wires=wires[1])
 
+            @qp.register_name("my_cnot2")
             @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2})
             def my_cnot2(wires, **__):
                 qp.RY(np.pi/2, wires[1])

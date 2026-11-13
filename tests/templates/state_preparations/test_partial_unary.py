@@ -32,7 +32,7 @@ from pennylane.templates.state_preparations.partial_unary import (
     _is_affine_subspace,
     _partial_unary_dense_state,
     _partial_unary_state_prep_core,
-    _partial_unary_state_prep_resources,
+    _partial_unary_state_prep_standard_resources,
 )
 from pennylane.testing import assert_valid, assert_valid_decomp_rule
 from pennylane.typing import Complex, Float, Wire
@@ -343,8 +343,10 @@ class TestAffineSubspaceIsometry:
         # Four states with affine rank 3, so the generic (non-Clifford) resource model applies.
         indices = (0, 1, 2, 4)
         coefficients = np.ones(4) / 2
-        base = _partial_unary_state_prep_resources(coefficients, range(4), indices, work_wires=[4])
-        excess = _partial_unary_state_prep_resources(
+        base = _partial_unary_state_prep_standard_resources(
+            coefficients, range(4), indices, work_wires=[4]
+        )
+        excess = _partial_unary_state_prep_standard_resources(
             coefficients, range(4), indices, work_wires=range(4, 9)
         )
 

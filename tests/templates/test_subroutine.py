@@ -1019,10 +1019,12 @@ class TestGraphDecomposition:
             RYLayer, AbstractArray((3,), float), AbstractArray((3,), dtype=int)
         )
 
+        @qp.decomposition.register_name("rx_decomp")
         @qp.decomposition.register_resources({rx_rr: 1})
         def rx_decomp(wires):
             RXLayer(np.array([0.0, 1.0, 2.0]), wires)
 
+        @qp.decomposition.register_name("ry_decomp")
         @qp.decomposition.register_resources({ry_rr: 1})
         def ry_decomp(wires):
             RYLayer(np.array([0.0, 1.0, 2.0]), wires)

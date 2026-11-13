@@ -15,7 +15,7 @@
 
 from pennylane.allocation import allocate
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.ops import CNOT, adjoint, ctrl
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
@@ -285,7 +285,7 @@ def _effective_skip_input_pos(num_x_wires, num_y_wires, skip_input_pos):
 
 
 # pylint: disable-next=unused-argument
-def _semi_adder_resources(x_wires, y_wires, work_wires=None, skip_input_pos=None):
+def _semi_adder_standard_resources(x_wires, y_wires, work_wires=None, skip_input_pos=None):
     num_x_wires = len(x_wires)
     num_y_wires = len(y_wires)
     if num_y_wires == 1:
@@ -313,7 +313,8 @@ def _semi_adder_resources(x_wires, y_wires, work_wires=None, skip_input_pos=None
     }
 
 
-def _semi_adder_work_wires(x_wires, y_wires, work_wires):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _semi_adder_standard_work_wires(x_wires, y_wires, work_wires):
     """The work wires that the ladders need, minus the ones that were already provided.
 
     Symbolic rules like ``C(SemiAdder)`` reuse this spec but are called with the symbolic
@@ -325,8 +326,9 @@ def _semi_adder_work_wires(x_wires, y_wires, work_wires):  # pylint: disable=unu
     return {"zeroed": max(num_work_wires_needed - num_work_wires_provided, 0)}
 
 
-@register_resources(_semi_adder_resources, work_wires=_semi_adder_work_wires)
-def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_pos=None):
+@register_name("standard")
+@register_resources(_semi_adder_standard_resources, work_wires=_semi_adder_standard_work_wires)
+def _semi_adder_standard(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_pos=None):
     num_y_wires = len(y_wires)
     num_x_wires = len(x_wires)
 
@@ -367,11 +369,13 @@ def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_p
         )
 
 
-add_decomps(SemiAdder, _semi_adder)
+add_decomps(SemiAdder, _semi_adder_standard)
 
 
 # pylint: disable-next=unused-argument
-def _ctrl_semi_adder_resource(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_semi_adder_standard_resources(
+    base, control_wires, control_values, work_wires, work_wire_type
+):
     r"""
     Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
 
@@ -432,11 +436,12 @@ def _ctrl_semi_adder_resource(base, control_wires, control_values, work_wires, w
     }
 
 
+@register_name("standard")
 @register_resources(
-    _ctrl_semi_adder_resource,
-    work_wires=lambda base, *_, **__: _semi_adder_work_wires(**base.arguments),
+    _controlled_semi_adder_standard_resources,
+    work_wires=lambda base, *_, **__: _semi_adder_standard_work_wires(**base.arguments),
 )
-def _controlled_semi_adder(  # pylint: disable=too-many-arguments
+def _controlled_semi_adder_standard(  # pylint: disable=too-many-arguments
     base,
     control_wires,
     control_values=None,
@@ -496,7 +501,7 @@ def _controlled_semi_adder(  # pylint: disable=too-many-arguments
         _controlled_right_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip, **ctrl_kwargs)
 
 
-add_decomps("C(SemiAdder)", flip_zero_control2(_controlled_semi_adder))
+add_decomps("C(SemiAdder)", flip_zero_control2(_controlled_semi_adder_standard, name="standard"))
 
 
 def _self_ctrl_one_sparse_add_resources(

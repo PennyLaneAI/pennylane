@@ -27,7 +27,7 @@ from jax import numpy as jnp
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
 from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
@@ -280,7 +280,7 @@ def _(*args, **kwargs):  # pylint: disable=unused-argument
     return type.__call__(AllSinglesDoubles, args[0], wires, args[2], args[3], args[4])
 
 
-def _all_singles_doubles_resouces(num_singles, num_doubles, num_wires):
+def _all_singles_doubles_standard_resources(num_singles, num_doubles, num_wires):
     return {
         BasisState(Bool[num_wires], Wire[num_wires]): 1,
         DoubleExcitation: num_doubles,
@@ -288,8 +288,9 @@ def _all_singles_doubles_resouces(num_singles, num_doubles, num_wires):
     }
 
 
-@register_resources(_all_singles_doubles_resouces)
-def _all_singles_doubles_decomposition(weights, wires, hf_state, singles, doubles):
+@register_name("standard")
+@register_resources(_all_singles_doubles_standard_resources)
+def _all_singles_doubles_standard(weights, wires, hf_state, singles, doubles):
     BasisState(hf_state, wires=wires)
 
     if capture.enabled():
@@ -308,4 +309,4 @@ def _all_singles_doubles_decomposition(weights, wires, hf_state, singles, double
     singles_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(AllSinglesDoubles, _all_singles_doubles_decomposition)
+add_decomps(AllSinglesDoubles, _all_singles_doubles_standard)

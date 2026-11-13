@@ -21,7 +21,12 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_name,
+    register_resources,
+)
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
 from pennylane.wires import WiresLike
@@ -843,7 +848,7 @@ class SumOfSlatersPrep(Operator2):
                 encoding computed by :func:`~.compute_sos_encoding`)
             :example: ``indices=(0, 1, 2, 4)`` on three wires, :math:`D=4`, :math:`m=3`, :math:`u=0`
 
-            .. decomposition-rule:: _sos_state_prep
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/sum_of_slaters_prep.svg
                 :lightbox:
                 :where: :math:`u` is the number of ones in the encoding matrix (:math:`u=0` for an
@@ -1153,8 +1158,8 @@ class SumOfSlatersPrep(Operator2):
         }
 
 
-def _sos_state_prep_resources(coefficients, wires, indices, **_):
-    """Compute the resources for _sos_state_prep. It is an upper bound due to
+def _sos_state_prep_standard_resources(coefficients, wires, indices, **_):
+    """Compute the resources for _sos_state_prep_standard. It is an upper bound due to
     conditionally applied CNOT and X gates."""
 
     n = 1 if isinstance(wires, int) else len(wires)
@@ -1213,7 +1218,7 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     return resources
 
 
-def _sos_state_prep_work_wires(  # pylint: disable=too-many-arguments,unused-argument
+def _sos_state_prep_standard_work_wires(  # pylint: disable=too-many-arguments,unused-argument
     coefficients,
     wires,
     indices,
@@ -1407,8 +1412,13 @@ def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
 @register_condition(
     lambda coefficients, wires, indices, *_, **__: indices is not None
 )  # indices must be known
-@register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
-def _sos_state_prep(  # pylint: disable=too-many-arguments
+@register_name("standard")
+@register_resources(
+    _sos_state_prep_standard_resources,
+    exact=False,
+    work_wires=_sos_state_prep_standard_work_wires,
+)
+def _sos_state_prep_standard(  # pylint: disable=too-many-arguments
     coefficients,
     wires,
     indices,
@@ -1464,4 +1474,4 @@ def _sos_state_prep(  # pylint: disable=too-many-arguments
         _sos_state_prep_with_wires(data, **all_wires)
 
 
-add_decomps(SumOfSlatersPrep, _sos_state_prep)
+add_decomps(SumOfSlatersPrep, _sos_state_prep_standard)

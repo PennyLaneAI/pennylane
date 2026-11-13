@@ -18,6 +18,7 @@ Contains the OutAdder template.
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
+    register_name,
     register_resources,
 )
 from pennylane.ops import Prod2, change_op_basis
@@ -286,7 +287,7 @@ class OutAdder(Operation):
         return op_list
 
 
-def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wires, mod) -> dict:
+def _out_adder_standard_resources(num_output_wires, num_x_wires, num_y_wires, mod) -> dict:
     num_qft_wires = num_output_wires if mod == 2**num_output_wires else num_output_wires + 1
     target_ops = [
         ControlledSequence(
@@ -310,8 +311,9 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
     return resources
 
 
-@register_resources(_out_adder_decomposition_resources)
-def _out_adder_decomposition(x_wires, y_wires, output_wires, mod, work_wires, **__):
+@register_name("standard")
+@register_resources(_out_adder_standard_resources)
+def _out_adder_standard(x_wires, y_wires, output_wires, mod, work_wires, **__):
     if mod != 2 ** len(output_wires) and mod is not None:
         qft_new_output_wires = work_wires[:1] + output_wires
         work_wire = work_wires[1:]
@@ -326,4 +328,4 @@ def _out_adder_decomposition(x_wires, y_wires, output_wires, mod, work_wires, **
     change_op_basis(QFT(wires=qft_new_output_wires), _target_fn)
 
 
-add_decomps(OutAdder, _out_adder_decomposition)
+add_decomps(OutAdder, _out_adder_standard)

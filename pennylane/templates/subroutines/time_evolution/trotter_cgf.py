@@ -20,7 +20,12 @@ import numpy as np
 from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_name,
+    register_resources,
+)
 from pennylane.numeric_hamiltonians import CGFHamiltonian
 from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math import ctrl
@@ -140,7 +145,7 @@ class TrotterCGF(Operator2):
                 :math:`n` = ``num_trotter_steps``
             :example: the Hamiltonian above, :math:`M=2`, :math:`N=3`, :math:`L=1`, :math:`n=1`. Note that all expressions below assume :math:`n \gt 0`
 
-            .. decomposition-rule:: _trotter_cgf_decomposition
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/trotter_cgf_second_order.svg
                 :where: the counts are upper bounds, as basis rotations that are the identity are
                     skipped
@@ -531,13 +536,16 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
 
 
 # pylint: disable-next=unused-argument
-def _trotter_cgf_resources(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
+def _trotter_cgf_standard_resources(
+    evolution_time, num_trotter_steps, hamiltonian, wires, double_phase
+):
     return _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control=False)
 
 
-@register_resources(_trotter_cgf_resources, exact=False)
+@register_name("standard")
+@register_resources(_trotter_cgf_standard_resources, exact=False)
 # pylint: disable-next=unused-argument
-def _trotter_cgf_decomposition(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
+def _trotter_cgf_standard(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
     # ``double_phase`` only affects the controlled decomposition; the base operator is
     # always the plain (uncontrolled) e^{-iHt} circuit.
     if num_trotter_steps > 0:
@@ -553,10 +561,10 @@ def _trotter_cgf_decomposition(evolution_time, num_trotter_steps, hamiltonian, w
         GlobalPhase(phi)
 
 
-add_decomps(TrotterCGF, _trotter_cgf_decomposition)
+add_decomps(TrotterCGF, _trotter_cgf_standard)
 
 
-def _controlled_trotter_cgf_resource(  # pylint: disable=unused-argument
+def _controlled_trotter_cgf_standard_resources(  # pylint: disable=unused-argument
     base,
     control_wires,
     control_values,
@@ -572,9 +580,12 @@ def _controlled_trotter_cgf_resource(  # pylint: disable=unused-argument
 
 
 @register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
-@register_resources(_controlled_trotter_cgf_resource, exact=False)
+@register_name("standard")
+@register_resources(_controlled_trotter_cgf_standard_resources, exact=False)
 # pylint: disable-next=unused-argument
-def _controlled_trotter_cgf_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_trotter_cgf_standard(
+    base, control_wires, control_values, work_wires, work_wire_type
+):
     evolution_time = base.arguments["evolution_time"]
     num_trotter_steps = base.arguments["num_trotter_steps"]
     hamiltonian = base.arguments["hamiltonian"]
@@ -621,4 +632,4 @@ def _controlled_trotter_cgf_decomp(base, control_wires, control_values, work_wir
     PhaseShift(-phi, control_wires)
 
 
-add_decomps("C(TrotterCGF)", flip_zero_control2(_controlled_trotter_cgf_decomp))
+add_decomps("C(TrotterCGF)", flip_zero_control2(_controlled_trotter_cgf_standard, name="standard"))

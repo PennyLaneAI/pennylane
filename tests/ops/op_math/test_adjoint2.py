@@ -20,10 +20,10 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane.core.operator import Operator2
-from pennylane.decomposition.decomposition_rule import register_resources
+from pennylane.decomposition.decomposition_rule import register_name, register_resources
 from pennylane.decomposition.resources import Resources
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
-from pennylane.ops.op_math.adjoint2 import Adjoint2, _make_adjoint_decomp, adjoint_rotation
+from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_negate_angle, _make_adjoint_decomp
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import CompilableOp, OneWireDynOp
@@ -151,6 +151,7 @@ def test_attributes():
 def test_old_decomp_integartion():
     """Tests that adjoint2 is compatible with the old decomposition convention."""
 
+    @register_name("sx_to_rx")
     @register_resources({qp.RX: 1})
     def _sx_to_rx(wires):
         qp.RX(np.pi / 2, wires=wires)
@@ -242,15 +243,15 @@ def test_adjoint_equality():
 
 
 def test_adjoint_rotation_decomposition_rule():
-    """Tests the adjoint_rotation decomposition with an ``Operator2`` base."""
+    """Tests the _adjoint_negate_angle decomposition with an ``Operator2`` base."""
 
     op = qp.adjoint(OneWireDynOp(0.5, wires=[0]))
     assert isinstance(op, Adjoint2)
 
-    tape = qp.testing.decomp_rule_to_tape(op, adjoint_rotation)
+    tape = qp.testing.decomp_rule_to_tape(op, _adjoint_negate_angle)
 
     assert tape.operations == [OneWireDynOp(-0.5, wires=[0])]
-    assert adjoint_rotation.compute_resources(**op.arguments) == Resources(
+    assert _adjoint_negate_angle.compute_resources(**op.arguments) == Resources(
         {OneWireDynOp(Float, wires=Wire[1]): 1}
     )
 
@@ -264,6 +265,7 @@ def test_make_adjoint_decomp_closes_over_compilable_args():
     any decomposition that branches on it with a Python ``if`` (as :class:`~.OutMultiplier`'s
     ``mod``/``output_wires_zeroed`` do)."""
 
+    @register_name("some_decomp")
     @register_resources(lambda n, wires: {qp.X: 1} if n else {qp.Y: 1})
     def _some_decomp(n, wires):
         if n:

@@ -24,7 +24,7 @@ from pennylane import ops
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
@@ -223,7 +223,7 @@ class Reflection(Operation):
         return decomp_ops
 
 
-def _reflection_decomposition_resources(base_rep, num_wires, num_reflection_wires=None) -> dict:
+def _reflection_standard_resources(base_rep, num_wires, num_reflection_wires=None) -> dict:
 
     num_wires = num_reflection_wires if num_reflection_wires is not None else num_wires
 
@@ -249,8 +249,9 @@ def _reflection_decomposition_resources(base_rep, num_wires, num_reflection_wire
     return resources
 
 
-@register_resources(_reflection_decomposition_resources)
-def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
+@register_name("standard")
+@register_resources(_reflection_standard_resources)
+def _reflection_standard(*parameters, wires=None, **hyperparameters):
     alpha = parameters[0]
     U = hyperparameters["base"]
     reflection_wires = hyperparameters["reflection_wires"]
@@ -279,7 +280,7 @@ def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
     apply(U)
 
 
-add_decomps(Reflection, _reflection_decomposition)
+add_decomps(Reflection, _reflection_standard)
 
 
 @Reflection._primitive.def_impl  # pylint: disable=protected-access

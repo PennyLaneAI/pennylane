@@ -28,7 +28,12 @@ import pennylane as qp
 from pennylane import capture, compiler, control_flow, math
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_name,
+    register_resources,
+)
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops._pauli_conversion import to_operator
@@ -342,18 +347,21 @@ def _abstractify_prod2(val: Prod2):
     return Prod2(tuple(abstractify(op) for op in val.operands), _init_pauli_rep=None)
 
 
-def _prod2_resources(operands, _init_pauli_rep=None):
+def _prod2_standard_resources(operands, _init_pauli_rep=None):
     return dict(Counter(abstractify(op) for op in operands))
 
 
-@register_resources(_prod2_resources)
-def _prod2_decomp(operands, _init_pauli_rep=None):
+@register_name("standard")
+@register_resources(_prod2_standard_resources)
+def _prod2_standard(operands, _init_pauli_rep=None):
     for op in reversed(operands):
         apply(op)
 
 
 # pylint: disable-next=unused-argument
-def _ctrl_prod2_resources(base, control_wires, work_wires, work_wire_type, **_):
+def _controlled_prod2_with_work_wires_resources(
+    base, control_wires, work_wires, work_wire_type, **_
+):
 
     num_control_wires = len(control_wires)
     resources = Counter()
@@ -407,7 +415,8 @@ def _multi_temporary_and_all_ones(
     and len(work_wires) >= len(control_wires) - 1
     and work_wire_type == "zeroed"
 )
-@register_resources(_ctrl_prod2_resources)
+@register_name("with_work_wires")
+@register_resources(_controlled_prod2_with_work_wires_resources)
 # pylint: disable-next=unused-argument
 def _controlled_prod2_with_work_wires(base, control_wires, control_values, work_wires, **_):
     """Decomposition of ``C(Prod2)`` with at least ``num_control_wires - 1`` zeroed work wires.
@@ -422,7 +431,7 @@ def _controlled_prod2_with_work_wires(base, control_wires, control_values, work_
 
 
 # pylint: disable-next=unused-argument
-def _ctrl_prod2_resources_with_one_work_wire(base, control_wires, work_wires, **_):
+def _controlled_prod2_with_one_work_wire_resources(base, control_wires, work_wires, **_):
 
     resources = Counter()
     resources[qp.MultiControlledX(Wire[len(control_wires) + 1])] += 2
@@ -439,7 +448,8 @@ def _ctrl_prod2_resources_with_one_work_wire(base, control_wires, work_wires, **
     and len(work_wires) >= 1
     and work_wire_type == "zeroed"
 )
-@register_resources(_ctrl_prod2_resources_with_one_work_wire)
+@register_name("with_one_work_wire")
+@register_resources(_controlled_prod2_with_one_work_wire_resources)
 # pylint: disable-next=unused-argument
 def _controlled_prod2_with_one_work_wire(base, control_wires, control_values, work_wires, **_):
     """Decomposition of ``C(Prod2)`` with a single zeroed work wire.
@@ -453,11 +463,11 @@ def _controlled_prod2_with_one_work_wire(base, control_wires, control_values, wo
     qp.MultiControlledX([*control_wires, work_wires[0]])
 
 
-add_decomps(Prod2, _prod2_decomp)
+add_decomps(Prod2, _prod2_standard)
 add_decomps(
     "C(Prod2)",
-    flip_zero_control(_controlled_prod2_with_work_wires),
-    flip_zero_control(_controlled_prod2_with_one_work_wire),
+    flip_zero_control(_controlled_prod2_with_work_wires, name="with_work_wires"),
+    flip_zero_control(_controlled_prod2_with_one_work_wire, name="with_one_work_wire"),
 )
 
 

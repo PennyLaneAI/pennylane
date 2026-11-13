@@ -21,7 +21,7 @@ from pennylane import capture, compiler, math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import WiresLike
@@ -76,7 +76,7 @@ class QFT(Operator2):
             :symbols: :math:`n` wires
             :example: :math:`n=3`
 
-            .. decomposition-rule:: _qft_decomposition
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/qft_cphase_swap.svg
 
                 :class:`~.Hadamard` | :math:`n` | 3
@@ -150,7 +150,7 @@ class QFT(Operator2):
         return np.fft.ifft(np.eye(2 ** len(wires)), norm="ortho")
 
 
-def _qft_decomposition_resources(wires: AbstractWires):
+def _qft_standard_resources(wires: AbstractWires):
     num_wires = len(wires)
     return {
         Hadamard: num_wires,
@@ -159,8 +159,9 @@ def _qft_decomposition_resources(wires: AbstractWires):
     }
 
 
-@register_resources(_qft_decomposition_resources)
-def _qft_decomposition(wires: WiresLike):
+@register_name("standard")
+@register_resources(_qft_standard_resources)
+def _qft_standard(wires: WiresLike):
     num_wires = len(wires)
     shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
     if compiler.active() or capture.enabled():
@@ -189,4 +190,4 @@ def _qft_decomposition(wires: WiresLike):
     swaps()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(QFT, _qft_decomposition)
+add_decomps(QFT, _qft_standard)

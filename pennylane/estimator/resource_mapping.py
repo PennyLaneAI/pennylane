@@ -94,7 +94,7 @@ def _register_subroutine(subroutine: qtemps.Subroutine):
 
     .. code-block::
         @_register_subroutine(MySubroutine)
-        def _resources(op: SubroutineOp):
+        def _custom_label_standard_resources(op: SubroutineOp):
             return re_estimation_version(...)
 
     """

@@ -47,6 +47,7 @@ from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
     adjoint_resource_rep,
+    register_name,
     register_resources,
     resource_rep,
 )
@@ -180,6 +181,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
         abstract_wires = Wire[1] # a single wire
         S_rep = subroutine_resource_rep(S, abstract_params, abstract_wires, qp.RX)
 
+        @qp.decomposition.register_name("my_op_decomposition")
         @qp.decomposition.register_resources({S_rep: 1})
         def my_op_decomposition(wires):
             # data of shape (4, ) and dtype float
@@ -394,7 +396,7 @@ def _default_resources(subroutine: "Subroutine", *args, **kwargs) -> defaultdict
     return resources
 
 
-def _calculate_resources(subroutine: "Subroutine", signature_key):
+def _subroutine_standard_resources(subroutine: "Subroutine", signature_key):
     sig = subroutine.signature.bind(*signature_key)
     for arg in subroutine.dynamic_argnames:
         struct, shapes = sig.arguments[arg]
@@ -402,12 +404,13 @@ def _calculate_resources(subroutine: "Subroutine", signature_key):
     return subroutine.compute_resources(**sig.arguments)
 
 
-@register_resources(_calculate_resources)
-def _subroutine_decomp(*data, wires, decomposition):  # pylint: disable=unused-argument
+@register_name("standard")
+@register_resources(_subroutine_standard_resources)
+def _subroutine_standard(*data, wires, decomposition):  # pylint: disable=unused-argument
     _ = [apply(op) for op in decomposition]
 
 
-add_decomps(SubroutineOp, _subroutine_decomp)
+add_decomps(SubroutineOp, _subroutine_standard)
 
 P = ParamSpec("P")
 
@@ -598,6 +601,7 @@ class Subroutine:  # pylint: disable=too-many-instance-attributes
         abstract_wires = Wire[3]
         rxlayer_rep = subroutine_resource_rep(RXLayer, abstract_params, abstract_wires)
 
+        @qp.decomposition.register_name("MyOpDecomposition")
         @qp.decomposition.register_resources({rxlayer_rep: 1})
         def MyOpDecomposition(wires):
             params = np.arange(3, dtype=float)

@@ -654,12 +654,12 @@ class TestQubitUnitaryDecompositions:
             assert not rule.is_applicable(Complex[4, 4], Wire[2])
             assert not rule.is_applicable(Complex[8, 8], Wire[3])
 
-        rule = rules["two_qubit_decomp_rule"]
+        rule = rules["two_qubit"]
         assert not rule.is_applicable(Complex[2, 2], Wire[1])
         assert rule.is_applicable(Complex[4, 4], Wire[2])
         assert not rule.is_applicable(Complex[8, 8], Wire[3])
 
-        rule = rules["multi_qubit_decomp_rule"]
+        rule = rules["multi_qubit"]
         assert not rule.is_applicable(Complex[2, 2], Wire[1])
         assert not rule.is_applicable(Complex[4, 4], Wire[2])
         assert rule.is_applicable(Complex[8, 8], Wire[3])

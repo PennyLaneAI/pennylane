@@ -29,6 +29,7 @@ from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
+    register_name,
     register_resources,
 )
 from pennylane.exceptions import (
@@ -350,13 +351,13 @@ class Exp(ScalarSymbolicOp, Operation):
 
         if qp.pauli.is_pauli_word(base):
             # Check if the exponential can be decomposed into a PauliRot gate
-            return self._pauli_rot_decomposition(base, coeff)
+            return self._pauli_rot_standard(base, coeff)
 
         error_msg = f"The decomposition of the {self} operator is not defined."
         raise DecompositionUndefinedError(error_msg)
 
     @staticmethod
-    def _pauli_rot_decomposition(base: Operator, coeff: complex):
+    def _pauli_rot_standard(base: Operator, coeff: complex):
         """Decomposes the exponential of a Pauli word into a PauliRot.
 
         Args:
@@ -511,7 +512,7 @@ def _pauli_rot_decomp_condition(base):
     return qp.pauli.is_pauli_word(base)
 
 
-def _pauli_rot_decomp_resource(base):
+def _exp_to_pauli_rot_resources(base):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
 
@@ -520,8 +521,9 @@ def _pauli_rot_decomp_resource(base):
 
 
 @register_condition(_pauli_rot_decomp_condition)
-@register_resources(_pauli_rot_decomp_resource)
-def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argument
+@register_name("to_pauli_rot")
+@register_resources(_exp_to_pauli_rot_resources)
+def _exp_to_pauli_rot(*params, wires, base, **_):  # pylint: disable=unused-argument
     """Decompose the operator into a single PauliRot operator."""
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
@@ -538,4 +540,4 @@ def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argum
     qp.PauliRot(coeff, pauli_word, base.wires)
 
 
-add_decomps(Exp, pauli_rot_decomp)
+add_decomps(Exp, _exp_to_pauli_rot)

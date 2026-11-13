@@ -20,7 +20,12 @@ from pennylane import capture, compiler, math
 from pennylane.allocation import allocate
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_name,
+    register_resources,
+)
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.ops import CNOT, Hadamard, PauliX, adjoint, cond
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
@@ -316,7 +321,9 @@ class MultiX(Operator2):
 
 
 # Resources function for MultiX
-def _multix_resources(bitstring: TensorLike, wires: WiresLike):  # pylint: disable=unused-argument
+def _multix_standard_resources(
+    bitstring: TensorLike, wires: WiresLike
+):  # pylint: disable=unused-argument
     # The total number of PauliX gates used depends on the bitstring.
     # Specifically, sum(bitstring) gates are used by MultiX, not len(bitstring).
     # However, if bitstring is an AbstractArray, only the shape of bitstring is known.
@@ -326,8 +333,9 @@ def _multix_resources(bitstring: TensorLike, wires: WiresLike):  # pylint: disab
 
 
 # Decomposition function for MultiX
-@register_resources(_multix_resources, exact=False)
-def _multix_decomposition(bitstring: TensorLike, wires: WiresLike) -> None:
+@register_name("standard")
+@register_resources(_multix_standard_resources, exact=False)
+def _multix_standard(bitstring: TensorLike, wires: WiresLike) -> None:
     # Dynamically-allocated wires (``AbstractQubit`` handles, e.g. from ``qp.allocate``) cannot
     # be stacked into a numeric array for ``for_loop``-based dynamic indexing, so unroll instead
     # (``bitstring`` may still be traced data, indexed with a static index). Remove this fallback
@@ -350,12 +358,12 @@ def _multix_decomposition(bitstring: TensorLike, wires: WiresLike) -> None:
     locally_apply_paulix()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(MultiX, _multix_decomposition)
+add_decomps(MultiX, _multix_standard)
 add_decomps("Adjoint(MultiX)", self_adjoint)
 add_decomps("Pow(MultiX)", pow_involutory)
 
 
-def _controlled_multix_ladder_resources(base, control_wires, **_):
+def _controlled_multix_ladder_standard_resources(base, control_wires, **_):
     # num_control_wires - 1 TemporaryAND gates to compute the AND ladder, as many to uncompute it,
     # and up to one CNOT per target wire (worst case, hence exact=False).
     num_control_wires = len(control_wires)
@@ -404,7 +412,7 @@ def _multix_ladder_fanout(base, control_wires, work_wires):
     adjoint(TemporaryAND)(wires=[control_wires[0], control_wires[1], work_wires[0]])
 
 
-def _controlled_multix_ladder_extra_work_wires(control_wires, work_wires, work_wire_type, **_):
+def _controlled_multix_ladder_standard_work_wires(control_wires, work_wires, work_wire_type, **_):
     # Allocate only the shortfall beyond any zeroed work wires already supplied.
     num_needed = len(control_wires) - 1
     num_available = len(work_wires) if work_wire_type == "zeroed" else 0
@@ -412,12 +420,13 @@ def _controlled_multix_ladder_extra_work_wires(control_wires, work_wires, work_w
 
 
 @register_condition(lambda control_wires, **_: len(control_wires) > 1 and not compiler.active())
+@register_name("standard")
 @register_resources(
-    _controlled_multix_ladder_resources,
-    work_wires=_controlled_multix_ladder_extra_work_wires,
+    _controlled_multix_ladder_standard_resources,
+    work_wires=_controlled_multix_ladder_standard_work_wires,
     exact=False,
 )
-def _controlled_multix_ladder(base, control_wires, work_wires, work_wire_type, **_):
+def _controlled_multix_ladder_standard(base, control_wires, work_wires, work_wire_type, **_):
     """Controlled-``MultiX`` decomposition that loads the fanout through a single work wire
     holding ``AND(control_wires)``, rather than repeating the multi-control structure once per
     target wire. Uses as many of the caller-supplied zeroed work wires as needed, dynamically
@@ -429,4 +438,4 @@ def _controlled_multix_ladder(base, control_wires, work_wires, work_wire_type, *
         _multix_ladder_fanout(base, control_wires, work_wires=available + list(allocated))
 
 
-add_decomps("C(MultiX)", flip_zero_control2(_controlled_multix_ladder))
+add_decomps("C(MultiX)", flip_zero_control2(_controlled_multix_ladder_standard, name="standard"))

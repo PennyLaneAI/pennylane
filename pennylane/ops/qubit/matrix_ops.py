@@ -29,13 +29,13 @@ from scipy.sparse import csr_matrix
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator2, abstractify
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
-    multi_qubit_decomp_rule,
+    _qubit_unitary_multi_qubit,
+    _qubit_unitary_two_qubit,
     rot_decomp_rule,
-    two_qubit_decomp_rule,
     xyx_decomp_rule,
     xzx_decomp_rule,
     zxz_decomp_rule,
@@ -173,7 +173,7 @@ class QubitUnitary(Operator2):
                 :class:`~.Rot` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: two_qubit_decomp_rule
+            .. decomposition-rule:: two_qubit
                 :image: /_static/decomposition_thumbnails/qubit_unitary_two_qubit.svg
                 :requires: a two-qubit matrix
                 :where: the counts are the worst case, a matrix that needs 3 :class:`~.CNOT` gates:
@@ -186,7 +186,7 @@ class QubitUnitary(Operator2):
                 :class:`~.RY` | :math:`2`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: multi_qubit_decomp_rule
+            .. decomposition-rule:: multi_qubit
                 :image: /_static/decomposition_thumbnails/qubit_unitary_multi_qubit.svg
                 :requires: a matrix on :math:`n > 2` wires
 
@@ -194,21 +194,21 @@ class QubitUnitary(Operator2):
                 :class:`~.SelectPauliRot` (:math:`Z`) with :math:`n-1` controls | :math:`2`
                 :class:`~.SelectPauliRot` (:math:`Y`) with :math:`n-1` controls | :math:`1`
 
-            .. decomposition-rule:: _adjoint_qubit_unitary
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/qubit_unitary_adjoint.svg
                 :region: adjoint
                 :where: the adjoint of the input unitary matrix is used
 
                 :class:`~.QubitUnitary` | :math:`1`
 
-            .. decomposition-rule:: _controlled_qubit_unitary
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/qubit_unitary_controlled.svg
                 :region: controlled
                 :where: the circuit shows :math:`c = 2` control wires
 
                 :class:`~.ControlledQubitUnitary` | :math:`1`
 
-            .. decomposition-rule:: _pow_qubit_unitary
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/qubit_unitary_pow.svg
                 :region: pow
                 :where: the input unitary matrix is raised to the power, :math:`z`
@@ -450,19 +450,20 @@ add_decomps(
     xzx_decomp_rule,
     xyx_decomp_rule,
     rot_decomp_rule,
-    two_qubit_decomp_rule,
-    multi_qubit_decomp_rule,
+    _qubit_unitary_two_qubit,
+    _qubit_unitary_multi_qubit,
 )
 
 
+@register_name("standard")
 @register_resources(lambda base: {abstractify(base): 1})
-def _adjoint_qubit_unitary(base):
+def _adjoint_qubit_unitary_standard(base):
     U = base.U
     U = U.conjugate().transpose() if sp.sparse.issparse(U) else math.moveaxis(math.conj(U), -2, -1)
     QubitUnitary(U, wires=base.wires)
 
 
-add_decomps("Adjoint(QubitUnitary)", _adjoint_qubit_unitary)
+add_decomps("Adjoint(QubitUnitary)", _adjoint_qubit_unitary_standard)
 
 
 def _matrix_pow(U, z):
@@ -474,16 +475,19 @@ def _matrix_pow(U, z):
     return vecs @ math.diag(eigs**z) @ math.linalg.inv(vecs)
 
 
+@register_name("standard")
 @register_resources(lambda base, z: {abstractify(base): 1})
-def _pow_qubit_unitary(base, z):
+def _pow_qubit_unitary_standard(base, z):
     QubitUnitary(_matrix_pow(base.U, z), wires=base.wires)
 
 
-add_decomps("Pow(QubitUnitary)", _pow_qubit_unitary)
+add_decomps("Pow(QubitUnitary)", _pow_qubit_unitary_standard)
 
 
 # pylint: disable-next=unused-argument
-def _ctrl_qubit_unitary_resource(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_qubit_unitary_standard_resources(
+    base, control_wires, control_values, work_wires, work_wire_type
+):
     num_target_wires = len(base.wires)
     num_control_wires = len(control_wires)
     return {
@@ -497,8 +501,11 @@ def _ctrl_qubit_unitary_resource(base, control_wires, control_values, work_wires
     }
 
 
-@register_resources(_ctrl_qubit_unitary_resource)
-def _controlled_qubit_unitary(base, control_wires, control_values, work_wires, work_wire_type):
+@register_name("standard")
+@register_resources(_controlled_qubit_unitary_standard_resources)
+def _controlled_qubit_unitary_standard(
+    base, control_wires, control_values, work_wires, work_wire_type
+):
     qp.ControlledQubitUnitary(
         base.U,
         concatenate_wires(control_wires, base.wires),
@@ -508,7 +515,7 @@ def _controlled_qubit_unitary(base, control_wires, control_values, work_wires, w
     )
 
 
-add_decomps("C(QubitUnitary)", _controlled_qubit_unitary)
+add_decomps("C(QubitUnitary)", _controlled_qubit_unitary_standard)
 
 
 class DiagonalQubitUnitary(Operator2):
@@ -533,7 +540,7 @@ class DiagonalQubitUnitary(Operator2):
             :symbols: :math:`n` wires and :math:`w` work wires
             :example: :math:`n=2`
 
-            .. decomposition-rule:: _diagonal_qu_decomp
+            .. decomposition-rule:: recursive
                 :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_recursive.svg
                 :where: :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
 
@@ -542,20 +549,20 @@ class DiagonalQubitUnitary(Operator2):
                 :class:`~.RZ` | :math:`[n=1]` | 0
                 :class:`~.GlobalPhase` | :math:`[n=1]` | 0
 
-            .. decomposition-rule:: _diagonal_mux_on_aux_decomp
+            .. decomposition-rule:: auxiliary
                 :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_mux_on_aux.svg
                 :requires: :math:`w \geq 1` work wire
 
                 :class:`~.SelectPauliRot` (:math:`Z`) with :math:`n` controls | :math:`1` | 1
 
-            .. decomposition-rule:: _adjoint_diagonal_unitary
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_adjoint.svg
                 :region: adjoint
                 :where: the adjoint of the diagonal entries is taken
 
                 :class:`~.DiagonalQubitUnitary` | :math:`1`
 
-            .. decomposition-rule:: _pow_diagonal_unitary
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_pow.svg
                 :region: pow
                 :where: diagonal entries are raised to the power, :math:`z`
@@ -666,7 +673,7 @@ class DiagonalQubitUnitary(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
-def _diagonal_qu_resource(D, wires):  # pylint: disable=unused-argument
+def _diagonal_qubit_unitary_recursive_resources(D, wires):  # pylint: disable=unused-argument
     num_wires = len(wires)
     if num_wires == 1:
         return {qp.RZ: 1, qp.GlobalPhase: 1}
@@ -682,8 +689,9 @@ def _diagonal_qu_resource(D, wires):  # pylint: disable=unused-argument
     }
 
 
-@register_resources(_diagonal_qu_resource)
-def _diagonal_qu_decomp(D, wires):
+@register_name("recursive")
+@register_resources(_diagonal_qubit_unitary_recursive_resources)
+def _diagonal_qubit_unitary_recursive(D, wires):
     angles = math.angle(D)
     diff = angles[..., 1::2] - angles[..., ::2]
     mean = (angles[..., ::2] + angles[..., 1::2]) / 2
@@ -695,7 +703,7 @@ def _diagonal_qu_decomp(D, wires):
         qp.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
 
 
-def _diagonal_mux_on_aux_resources(D, wires):  # pylint: disable=unused-argument
+def _diagonal_qubit_unitary_auxiliary_resources(D, wires):  # pylint: disable=unused-argument
     num_wires = len(wires)
     return {
         qp.SelectPauliRot(
@@ -707,30 +715,35 @@ def _diagonal_mux_on_aux_resources(D, wires):  # pylint: disable=unused-argument
     }
 
 
-@register_resources(_diagonal_mux_on_aux_resources, work_wires={"zeroed": 1})
-def _diagonal_mux_on_aux_decomp(D, wires, **_):
+@register_name("auxiliary")
+@register_resources(_diagonal_qubit_unitary_auxiliary_resources, work_wires={"zeroed": 1})
+def _diagonal_qubit_unitary_auxiliary(D, wires, **_):
     angles = -2 * math.angle(D)
     with qp.allocate(1, "zero", restored=True) as aux_wire:
         qp.SelectPauliRot(angles, control_wires=wires, target_wire=aux_wire)
 
 
-add_decomps(DiagonalQubitUnitary, _diagonal_qu_decomp, _diagonal_mux_on_aux_decomp)
+add_decomps(
+    DiagonalQubitUnitary, _diagonal_qubit_unitary_recursive, _diagonal_qubit_unitary_auxiliary
+)
 
 
+@register_name("standard")
 @register_resources(lambda base: {abstractify(base): 1})
-def _adjoint_diagonal_unitary(base):
+def _adjoint_diagonal_unitary_standard(base):
     DiagonalQubitUnitary(math.conj(base.D), wires=base.wires)
 
 
-add_decomps("Adjoint(DiagonalQubitUnitary)", _adjoint_diagonal_unitary)
+add_decomps("Adjoint(DiagonalQubitUnitary)", _adjoint_diagonal_unitary_standard)
 
 
+@register_name("standard")
 @register_resources(lambda base, z: {abstractify(base): 1})
-def _pow_diagonal_unitary(base, z):
+def _pow_diagonal_unitary_standard(base, z):
     DiagonalQubitUnitary(math.cast(base.D, np.complex128) ** z, wires=base.wires)
 
 
-add_decomps("Pow(DiagonalQubitUnitary)", _pow_diagonal_unitary)
+add_decomps("Pow(DiagonalQubitUnitary)", _pow_diagonal_unitary_standard)
 
 
 class BlockEncode(Operator2):
@@ -902,16 +915,17 @@ class BlockEncode(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "BlockEncode", cache=cache)
 
 
-def _adjoint_block_encode_resources(base):
+def _adjoint_block_encode_standard_resources(base):
     return {abstractify(base.adjoint()): 1}
 
 
-@register_resources(_adjoint_block_encode_resources)
-def _adjoint_block_encode(base):
+@register_name("standard")
+@register_resources(_adjoint_block_encode_standard_resources)
+def _adjoint_block_encode_standard(base):
     base.adjoint()
 
 
-add_decomps("Adjoint(BlockEncode)", _adjoint_block_encode)
+add_decomps("Adjoint(BlockEncode)", _adjoint_block_encode_standard)
 
 
 def _prepare_blockencode_matrix(A, n_wires):

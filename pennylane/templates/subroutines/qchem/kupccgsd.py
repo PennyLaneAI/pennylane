@@ -28,7 +28,7 @@ import numpy as np
 from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_name, register_resources, resource_rep
 from pennylane.ops.qubit import BasisState
 from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
@@ -361,7 +361,7 @@ class kUpCCGSD(Operation):
         return k, len(s_wires) + len(d_wires)
 
 
-def _kupccgsd_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
+def _kupccgsd_standard_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
     resources = defaultdict(int)
     resources[BasisState(Bool[num_wires], Wire[num_wires])] = 1
 
@@ -377,8 +377,9 @@ def _kupccgsd_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
     return resources
 
 
-@register_resources(_kupccgsd_resources)
-def _kupccgsd_decomposition(  # pylint: disable=unused-argument
+@register_name("standard")
+@register_resources(_kupccgsd_standard_resources)
+def _kupccgsd_standard(  # pylint: disable=unused-argument
     weights: list,
     wires: WiresLike,
     s_wires: list,
@@ -408,4 +409,4 @@ def _kupccgsd_decomposition(  # pylint: disable=unused-argument
     layer_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(kUpCCGSD, _kupccgsd_decomposition)
+add_decomps(kUpCCGSD, _kupccgsd_standard)

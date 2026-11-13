@@ -297,6 +297,7 @@ registered with ``qp.add_decomps``:
 
 .. code-block:: python
 
+    @qp.register_name("decompose_cnot")
     @qp.register_resources({qp.RY: 3, qp.RX: 1, qp.IsingXX: 1})
     def decompose_cnot(wires, **_):
         qp.RY(np.pi/2, wires=wires[0])

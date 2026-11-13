@@ -51,18 +51,18 @@ from .decomposition_rule import (
 )
 from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
-    adjoint_rotation,
-    cancel_adjoint,
+    _adjoint_cancel,
+    _adjoint_negate_angle,
+    _controlled_flip_adjoint,
+    _controlled_to_unitary,
+    _operator1_to_base,
+    _pow_flip_adjoint,
+    _pow_merge_powers,
+    _pow_repeat_base,
     ctrl_single_work_wire,
-    decompose_to_base_legacy,
-    flip_control_adjoint,
-    flip_pow_adjoint,
     make_adjoint_decomp,
     make_controlled_decomp,
-    merge_powers,
-    repeat_pow_base,
     self_adjoint_legacy,
-    to_controlled_qubit_unitary,
 )
 from .utils import to_name
 
@@ -215,6 +215,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         import pennylane as qp
 
+        @qp.register_name("my_cz")
         @qp.register_resources({qp.H: 2, qp.CNOT: 1})
         def my_cz(wires):
             qp.H(wires=wires[1])
@@ -235,7 +236,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         operations (list[Operator or CompressedResourceOp]): The list of operations to decompose.
         gate_set (Set | Mapping | GateSet): A set of gates in the target gate set or a dictionary
             mapping gates in the target gate set to their respective weights. All weights must be positive.
-        fixed_decomps (dict): A dictionary mapping operator names to fixed decompositions.
+        fixed_decomps (dict): A dictionary mapping operator types or names to fixed decompositions.
+            Values can be decomposition rules or public names from :func:`~pennylane.list_decomps`.
         alt_decomps (dict): A dictionary mapping operator names to alternative decompositions.
         strict (bool): If ``False``, treat operators that do not define a decomposition as supported.
             Defaults to ``True``.
@@ -301,7 +303,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # Stores the library of custom decomposition rules
         fixed_decomps = fixed_decomps or {}
         alt_decomps = alt_decomps or {}
-        self._fixed_decomps = {to_name(k): _validate_rule(v) for k, v in fixed_decomps.items()}
+        self._fixed_decomps = {
+            to_name(k): _validate_rule(list_decomps(k)[v] if isinstance(v, str) else v)
+            for k, v in fixed_decomps.items()
+        }
         self._alt_decomps = {to_name(k): _validate_rule(v) for k, v in alt_decomps.items()}
 
         # Initializes the graph.
@@ -613,12 +618,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if (
             issubclass(op.op_type, qp.ops.Adjoint)
             and self_adjoint_legacy not in decomps
-            and adjoint_rotation not in decomps
+            and _adjoint_negate_angle not in decomps
         ):
             # In general, we decompose the adjoint of an operator by applying adjoint to the
             # decompositions of the operator. However, this is not necessary if the operator
             # is self-adjoint or if it has a single rotation angle which can be trivially
-            # inverted to obtain its adjoint. In this case, `self_adjoint` or `adjoint_rotation`
+            # inverted to obtain its adjoint. In this case, `self_adjoint` or `_adjoint_negate_angle`
             # would've already been retrieved as a potential decomposition rule for this
             # operator, so there is no need to consider the general case.
             decomps.extend(self._get_adjoint_decompositions(op))
@@ -640,7 +645,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         # Special case: adjoint of an adjoint cancels out
         if issubclass(base_class, qp.ops.Adjoint):
-            return [cancel_adjoint]
+            return [_adjoint_cancel]
 
         # General case: apply adjoint to each of the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
@@ -660,18 +665,18 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return [null_decomp]
 
         if op.params["z"] == 1:
-            return [decompose_to_base_legacy]
+            return [_operator1_to_base]
 
         # Special case: power of a power
         if issubclass(op.params["base_class"], qp.ops.Pow):
-            return [merge_powers]
+            return [_pow_merge_powers]
 
         # Special case: power of an adjoint
         if issubclass(op.params["base_class"], qp.ops.Adjoint):
-            return [flip_pow_adjoint]
+            return [_pow_flip_adjoint]
 
         # General case: repeat the operator z times
-        return [repeat_pow_base]
+        return [_pow_repeat_base]
 
     def _get_controlled_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Adds a controlled decomposition node to the graph."""
@@ -680,7 +685,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         # Special case: control of an adjoint
         if issubclass(base_class, qp.ops.Adjoint):
-            return [flip_control_adjoint]
+            return [_controlled_flip_adjoint]
 
         # Special case: when the base is GlobalPhase, none of the following automatically
         # generated decomposition rules apply. Also, controlled ChangeOpBasis defines its
@@ -699,7 +704,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         # There's always the option of turning the controlled operator into a controlled
         # qubit unitary if the base operator has a matrix form.
-        rules.append(to_controlled_qubit_unitary)
+        rules.append(_controlled_to_unitary)
 
         # There's always Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016.
         rules.append(ctrl_single_work_wire)

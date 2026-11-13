@@ -20,7 +20,7 @@ from functools import reduce
 
 from pennylane import math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.math import expand_matrix
 from pennylane.ops import PPR_4, Hadamard, MultiRZ, PauliX
 from pennylane.typing import Float, TensorLike, Wire
@@ -90,7 +90,7 @@ class IQP(Operator2):
             :symbols: :math:`n` wires and :math:`G` generators in total in ``pattern``
             :example: :math:`n=2`, ``pattern=[[[0]], [[1]], [[0, 1]]]`` (meaning the number of generators :math:`G = 3`), ``spin_sym=True``
 
-            .. decomposition-rule:: _instantaneous_quantum_polynomial_decomposition
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/iqp_multirz.svg
                 :where: the Pauli word ``"YX...X"`` acts on all :math:`n` wires: one Y, then
                     :math:`n - 1` X's
@@ -152,7 +152,7 @@ class IQP(Operator2):
 
 
 # pylint: disable-next=unused-argument
-def _instantaneous_quantum_polynomial_resources(weights, wires, pattern, spin_sym):
+def _instantaneous_quantum_polynomial_standard_resources(weights, wires, pattern, spin_sym):
     num_wires = len(wires)
     resources = defaultdict(int)
     if spin_sym:
@@ -167,8 +167,9 @@ def _instantaneous_quantum_polynomial_resources(weights, wires, pattern, spin_sy
     return resources
 
 
-@register_resources(_instantaneous_quantum_polynomial_resources)
-def _instantaneous_quantum_polynomial_decomposition(weights, wires, pattern, spin_sym):
+@register_name("standard")
+@register_resources(_instantaneous_quantum_polynomial_standard_resources)
+def _instantaneous_quantum_polynomial_standard(weights, wires, pattern, spin_sym):
     num_wires = len(wires)
 
     if spin_sym:
@@ -185,4 +186,4 @@ def _instantaneous_quantum_polynomial_decomposition(weights, wires, pattern, spi
         Hadamard(wires[i])
 
 
-add_decomps(IQP, _instantaneous_quantum_polynomial_decomposition)
+add_decomps(IQP, _instantaneous_quantum_polynomial_standard)

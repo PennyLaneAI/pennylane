@@ -54,11 +54,11 @@ def all_decomps(
     >>> len(rules_map)
     66
     >>> rules_map[qp.RX(Float, Wire[1])]
-    [DecompositionRule(name=_rx_to_rot),
-     DecompositionRule(name=_rx_to_rz_ry),
-     DecompositionRule(name=_rx_to_ppr),
-     DecompositionRule(name=_rx_to_ry_cliff),
-     DecompositionRule(name=_rx_to_rz_cliff)]
+    [DecompositionRule(name=to_rot),
+     DecompositionRule(name=to_rz_ry),
+     DecompositionRule(name=to_ppr),
+     DecompositionRule(name=to_ry_cliff),
+     DecompositionRule(name=to_rz_cliff)]
 
     The keys from a rule map can be reused on successive calls to avoid recollecting the same nodes.
     Note that if an op is skipped, it's children will also not be added.

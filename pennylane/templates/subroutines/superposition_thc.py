@@ -18,7 +18,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import RY, GlobalPhase, Hadamard, MultiControlledX, X, Z, adjoint, ctrl
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
@@ -140,7 +140,7 @@ class SuperpositionTHC(Operator2):
             :symbols: :math:`n` wires per index register
             :example: :math:`n=1` (:math:`M=1`, :math:`N=2`)
 
-            .. decomposition-rule:: _superposition_thc
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/superposition_thc_amplification.svg
 
                 :class:`~.Hadamard` | :math:`6n` | 6
@@ -292,7 +292,7 @@ def _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=False):
 
 
 # pylint: disable-next=unused-argument
-def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
+def _superposition_thc_standard_resources(M, N, mu_wires, nu_wires, work_wires):
     r"""Returns the exact gate counts of the SuperpositionTHC decomposition."""
 
     n = len(mu_wires)
@@ -332,8 +332,9 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
     }
 
 
-@register_resources(_superposition_thc_resources)
-def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
+@register_name("standard")
+@register_resources(_superposition_thc_standard_resources)
+def _superposition_thc_standard(M, N, mu_wires, nu_wires, work_wires, **_):
     #
     # The first seven `work_wires` correspond to the flag/auxiliary register in Fig. 3 of
     # https://arxiv.org/pdf/2011.03494. After the routine, all work wires return to the zero
@@ -418,4 +419,4 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     adjoint(lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True))()
 
 
-add_decomps(SuperpositionTHC, _superposition_thc)
+add_decomps(SuperpositionTHC, _superposition_thc_standard)

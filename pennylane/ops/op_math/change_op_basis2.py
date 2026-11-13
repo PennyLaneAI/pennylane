@@ -21,7 +21,7 @@ from functools import reduce
 from pennylane import math
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.decomposition.resources import change_op_basis_resource_rep
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
@@ -171,7 +171,7 @@ def _change_op_basis_abstract(compute_op, target_op, uncompute_op):
     return change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
 
 
-def _controlled_change_op_basis_resources(  # pylint: disable=unused-argument
+def _controlled_change_op_basis_standard_resources(  # pylint: disable=unused-argument
     base,
     control_wires,
     control_values,
@@ -193,8 +193,9 @@ def _controlled_change_op_basis_resources(  # pylint: disable=unused-argument
     return resources
 
 
-@register_resources(_controlled_change_op_basis_resources)
-def _controlled_change_op_basis_decomposition(
+@register_name("standard")
+@register_resources(_controlled_change_op_basis_standard_resources)
+def _controlled_change_op_basis_standard(
     base,
     control_wires,
     control_values,
@@ -212,7 +213,7 @@ def _controlled_change_op_basis_decomposition(
     apply(base.uncompute_op)
 
 
-def _change_op_basis_resources(compute_op, target_op, uncompute_op):
+def _change_op_basis_standard_resources(compute_op, target_op, uncompute_op):
     resources = Counter()
 
     resources[compute_op] += 1
@@ -222,18 +223,21 @@ def _change_op_basis_resources(compute_op, target_op, uncompute_op):
     return resources
 
 
-@register_resources(_change_op_basis_resources)
-def _change_op_basis_decomp(compute_op, target_op, uncompute_op):
+@register_name("standard")
+@register_resources(_change_op_basis_standard_resources)
+def _change_op_basis_standard(compute_op, target_op, uncompute_op):
     apply(compute_op)
     apply(target_op)
     apply(uncompute_op)
 
 
-add_decomps(ChangeOpBasis2, _change_op_basis_decomp)
-add_decomps("C(ChangeOpBasis2)", flip_zero_control(_controlled_change_op_basis_decomposition))
+add_decomps(ChangeOpBasis2, _change_op_basis_standard)
+add_decomps(
+    "C(ChangeOpBasis2)", flip_zero_control(_controlled_change_op_basis_standard, name="standard")
+)
 
 
-def _adjoint_change_op_basis_resources(base):
+def _adjoint_change_op_basis_standard_resources(base):
     resources = Counter()
     resources[base.compute_op] += 1
     resources[adjoint(base.target_op)] += 1
@@ -241,11 +245,12 @@ def _adjoint_change_op_basis_resources(base):
     return dict(resources)
 
 
-@register_resources(_adjoint_change_op_basis_resources)
-def _adjoint_change_op_basis_decomp(base):
+@register_name("standard")
+@register_resources(_adjoint_change_op_basis_standard_resources)
+def _adjoint_change_op_basis_standard(base):
     apply(base.compute_op)
     adjoint(base.target_op)
     apply(base.uncompute_op)
 
 
-add_decomps("Adjoint(ChangeOpBasis2)", _adjoint_change_op_basis_decomp)
+add_decomps("Adjoint(ChangeOpBasis2)", _adjoint_change_op_basis_standard)

@@ -26,7 +26,7 @@ from scipy.sparse import csr_array, csr_matrix
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operation, Operator, StatePrepBase, StatePrepBase2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.exceptions import WireError
 from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import AbstractArray, AbstractWires, Bool, TensorLike, Wire
@@ -157,13 +157,14 @@ class BasisState(StatePrepBase2):
         return math.convert_like(ket, prep_vals)
 
 
-def _basis_state_decomp_resources(state, wires):  # pylint: disable=unused-argument
+def _basis_state_standard_resources(state, wires):  # pylint: disable=unused-argument
     num_wires = len(wires)
     return {qp.X: num_wires - num_wires // 2}  # Estimate 50% of wires (rounded up) to get flipped
 
 
-@register_resources(_basis_state_decomp_resources, exact=False)
-def _basis_state_decomp(state, wires):
+@register_name("standard")
+@register_resources(_basis_state_standard_resources, exact=False)
+def _basis_state_standard(state, wires):
     if qp.capture.enabled() or qp.compiler.active():
         # This branch makes sure that state and wires are cast to objects into which
         # a traced loop index is allowed to index (if they aren't already traced)
@@ -177,7 +178,7 @@ def _basis_state_decomp(state, wires):
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(BasisState, _basis_state_decomp)
+add_decomps(BasisState, _basis_state_standard)
 
 
 class StatePrep(StatePrepBase):
@@ -557,16 +558,17 @@ class StatePrep(StatePrepBase):
         return state
 
 
-def _stateprep_resources(num_wires):
+def _state_prep_standard_resources(num_wires):
     return {qp.resource_rep(qp.MottonenStatePreparation, num_wires=num_wires): 1}
 
 
-@register_resources(_stateprep_resources)
-def _state_prep_decomp(state, wires, **_):
+@register_name("standard")
+@register_resources(_state_prep_standard_resources)
+def _state_prep_standard(state, wires, **_):
     qp.MottonenStatePreparation(state, wires)
 
 
-add_decomps(StatePrep, _state_prep_decomp)
+add_decomps(StatePrep, _state_prep_standard)
 
 
 class QubitDensityMatrix(Operation):

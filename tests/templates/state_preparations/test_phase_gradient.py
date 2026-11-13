@@ -21,8 +21,8 @@ import pytest
 import pennylane as qp
 from pennylane.exceptions import WireError
 from pennylane.templates.state_preparations.phase_gradient import (
-    _phase_gradient_state_prep_clifford_t_decomposition,
-    _phase_gradient_state_prep_ppr_decomposition,
+    _phase_gradient_state_prep_to_clifford_t,
+    _phase_gradient_state_prep_to_ppr,
 )
 from pennylane.templates.state_preparations.phase_gradient_decomp_data import PI_OVER_8_PPRS
 
@@ -48,13 +48,13 @@ def test_label():
 
 
 RULES = [
-    pytest.param(_phase_gradient_state_prep_ppr_decomposition, id="ppr"),
-    pytest.param(_phase_gradient_state_prep_clifford_t_decomposition, id="clifford_t"),
+    pytest.param(_phase_gradient_state_prep_to_ppr, id="ppr"),
+    pytest.param(_phase_gradient_state_prep_to_clifford_t, id="clifford_t"),
 ]
 
 GATE_SETS = {
-    _phase_gradient_state_prep_ppr_decomposition: {"PPR_2", "PPR_4", "PPR_8", "GlobalPhase"},
-    _phase_gradient_state_prep_clifford_t_decomposition: {
+    _phase_gradient_state_prep_to_ppr: {"PPR_2", "PPR_4", "PPR_8", "GlobalPhase"},
+    _phase_gradient_state_prep_to_clifford_t: {
         "Hadamard",
         "S",
         "T",
@@ -143,7 +143,7 @@ class TestHardcodedDecompositions:
         """Test that the PPR decomposition consists of pi/8 PPRs, at most one other PPR per wire,
         and a global phase."""
         with qp.queuing.AnnotatedQueue() as q:
-            _phase_gradient_state_prep_ppr_decomposition(wires=range(num_wires))
+            _phase_gradient_state_prep_to_ppr(wires=range(num_wires))
 
         assert all(isinstance(op, (qp.PPR_2, qp.PPR_4, qp.PPR_8)) for op in q.queue[:-1])
         assert isinstance(q.queue[-1], qp.GlobalPhase)
@@ -156,7 +156,7 @@ class TestHardcodedDecompositions:
         """Test that the Clifford+T decomposition consists of Clifford+T gates and a global phase,
         with as many T gates on each wire as there are pi/8 PPRs in the PPR decomposition."""
         with qp.queuing.AnnotatedQueue() as q:
-            _phase_gradient_state_prep_clifford_t_decomposition(wires=range(num_wires))
+            _phase_gradient_state_prep_to_clifford_t(wires=range(num_wires))
 
         assert all(
             isinstance(op, (qp.Hadamard, qp.S, qp.T, qp.X, qp.Y, qp.Z)) for op in q.queue[:-1]

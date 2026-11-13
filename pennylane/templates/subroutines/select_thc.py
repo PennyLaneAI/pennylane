@@ -21,7 +21,7 @@ import numpy as np
 
 from pennylane import capture, math
 from pennylane.core.operator import Operator2, abstractify
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import (
     CNOT,
     SWAP,
@@ -608,7 +608,7 @@ class SelectTHC(Operator2):
                 :math:`P = 0`), and :math:`n = \lceil \log_2(M+1) \rceil` wires per index
             :example: :math:`M=1`, :math:`N=4` (:math:`h=2`, :math:`P=1`, :math:`B=1`, :math:`n=1`)
 
-            .. decomposition-rule:: _select_thc_decomp
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/select_thc_double_factorized.svg
                 :lightbox:
 
@@ -699,7 +699,7 @@ class SelectTHC(Operator2):
         )
 
 
-def _select_thc_resources(  # pylint: disable=too-many-arguments
+def _select_thc_standard_resources(  # pylint: disable=too-many-arguments
     chi,
     t_eigenvectors,
     beth,
@@ -764,8 +764,9 @@ def _select_thc_resources(  # pylint: disable=too-many-arguments
     return resources
 
 
-@register_resources(_select_thc_resources)
-def _select_thc_decomp(  # pylint: disable=too-many-arguments
+@register_name("standard")
+@register_resources(_select_thc_standard_resources)
+def _select_thc_standard(  # pylint: disable=too-many-arguments
     chi,
     t_eigenvectors,
     beth,
@@ -819,4 +820,4 @@ def _select_thc_decomp(  # pylint: disable=too-many-arguments
     X(swap)
 
 
-add_decomps(SelectTHC, _select_thc_decomp)
+add_decomps(SelectTHC, _select_thc_standard)

@@ -16,7 +16,7 @@
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import CNOT, X
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires, WiresLike
@@ -128,7 +128,9 @@ class LeftQuantumComparator(Operator2):
 
 
 # pylint: disable-next=unused-argument
-def _left_quantum_comparator_resources(x_wires, y_wires, target_wire, work_wires, comparator):
+def _left_quantum_comparator_standard_resources(
+    x_wires, y_wires, target_wire, work_wires, comparator
+):
     num_y_wires = len(y_wires)
     resources = {
         Elbow: num_y_wires,
@@ -141,8 +143,9 @@ def _left_quantum_comparator_resources(x_wires, y_wires, target_wire, work_wires
     return resources
 
 
-@register_resources(_left_quantum_comparator_resources, exact=True)
-def _left_quantum_comparator(x_wires, y_wires, target_wire, work_wires, comparator, **_):
+@register_name("standard")
+@register_resources(_left_quantum_comparator_standard_resources, exact=True)
+def _left_quantum_comparator_standard(x_wires, y_wires, target_wire, work_wires, comparator, **_):
 
     # revert to follow PL convention
     x_wires = x_wires[::-1]
@@ -177,4 +180,4 @@ def _left_quantum_comparator(x_wires, y_wires, target_wire, work_wires, comparat
         X(target_wire)
 
 
-add_decomps(LeftQuantumComparator, _left_quantum_comparator)
+add_decomps(LeftQuantumComparator, _left_quantum_comparator_standard)

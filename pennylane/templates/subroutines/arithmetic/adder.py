@@ -20,6 +20,7 @@ from collections import defaultdict
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
+    register_name,
     register_resources,
 )
 from pennylane.ops import CNOT, ChangeOpBasis2, MultiControlledX, PauliX
@@ -189,9 +190,7 @@ class Adder(Operator2):
         return self.x_wires + self.work_wires
 
 
-def _adder_decomposition_resources(
-    k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike
-) -> dict:
+def _adder_fourier_resources(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike) -> dict:
     # pylint: disable=unused-argument
     num_x_wires = len(x_wires)
     num_qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
@@ -206,8 +205,9 @@ def _adder_decomposition_resources(
     return resources
 
 
-@register_resources(_adder_decomposition_resources)
-def _adder_decomposition(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike):
+@register_name("fourier")
+@register_resources(_adder_fourier_resources)
+def _adder_fourier(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike):
     if mod == 2 ** len(x_wires):
         change_op_basis(QFT(x_wires), PhaseAdder(k, x_wires, mod))
         return
@@ -252,7 +252,7 @@ def _adder_arithmetic_resources(
 
     # The general-modulus circuit augments the register with one extra high bit and uses four
     # uncontrolled add/subtract blocks, one flag-controlled addition of ``mod``, and a little
-    # flag bookkeeping (see _adder_arithmetic_decomposition).
+    # flag bookkeeping (see _adder_arithmetic).
     aug = num_x_wires + 1
     for rep, count in _add_constant_resources(aug).items():
         counts[rep] += 4 * count
@@ -263,8 +263,9 @@ def _adder_arithmetic_resources(
     return dict(counts)
 
 
+@register_name("arithmetic")
 @register_resources(_adder_arithmetic_resources, exact=False)
-def _adder_arithmetic_decomposition(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike):
+def _adder_arithmetic(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike):
     x_wires = Wires(x_wires)
     work_wires = Wires(work_wires)
     n = len(x_wires)
@@ -293,4 +294,4 @@ def _adder_arithmetic_decomposition(k: int, x_wires: WiresLike, mod: int, work_w
     _add_constant(k, aug)  # aug <- (x + k) mod mod, work wires restored
 
 
-add_decomps(Adder, _adder_decomposition, _adder_arithmetic_decomposition)
+add_decomps(Adder, _adder_fourier, _adder_arithmetic)

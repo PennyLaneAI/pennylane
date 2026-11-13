@@ -20,6 +20,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator, Operator2
 from pennylane.decomposition import (
     add_decomps,
+    register_name,
     register_resources,
 )
 from pennylane.ops import adjoint
@@ -62,7 +63,7 @@ class QuantumPhaseEstimation(Operator2):
             :symbols: :math:`U=` ``unitary`` and :math:`n` estimation wires
             :example: :math:`n=3`
 
-            .. decomposition-rule:: _qpe_decomp
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/quantum_phase_estimation_qft.svg
 
                 :class:`~.Hadamard` | :math:`n` | 3
@@ -181,7 +182,7 @@ class QuantumPhaseEstimation(Operator2):
         return self.target_wires + self.estimation_wires
 
 
-def _qpe_decomp_resource(unitary, estimation_wires):
+def _qpe_standard_resources(unitary, estimation_wires):
     num_estimation_wires = len(estimation_wires)
     gate_count = {
         ops.Hadamard: num_estimation_wires,
@@ -199,8 +200,9 @@ def _qpe_decomp_resource(unitary, estimation_wires):
     return gate_count
 
 
-@register_resources(_qpe_decomp_resource)
-def _qpe_decomp(unitary, estimation_wires):
+@register_name("standard")
+@register_resources(_qpe_standard_resources)
+def _qpe_standard(unitary, estimation_wires):
     if compiler.active() or capture.enabled():
         estimation_wires = math.array(estimation_wires, like="jax")
 
@@ -220,4 +222,4 @@ def _qpe_decomp(unitary, estimation_wires):
     ops.adjoint(QFT(wires=estimation_wires))
 
 
-add_decomps(QuantumPhaseEstimation, _qpe_decomp)
+add_decomps(QuantumPhaseEstimation, _qpe_standard)

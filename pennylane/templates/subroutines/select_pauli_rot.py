@@ -21,6 +21,7 @@ from pennylane import capture, math
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
+    register_name,
     register_resources,
 )
 from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis, prod
@@ -121,7 +122,7 @@ class SelectPauliRot(Operator2):
 
 
 # pylint: disable-next=unused-argument
-def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
+def _select_pauli_rot_standard_resources(angles, control_wires, target_wire, rot_axis):
 
     num_wires = len(control_wires) + 1
     num_rotations = 2 ** (num_wires - 1)
@@ -148,8 +149,9 @@ def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
 
 
 # Not exact resources because rotations might be skipped based on angles
-@register_resources(_select_pauli_rot_resource, exact=False)
-def decompose_select_pauli_rot(angles, control_wires, target_wire, rot_axis):
+@register_name("standard")
+@register_resources(_select_pauli_rot_standard_resources, exact=False)
+def _select_pauli_rot_standard(angles, control_wires, target_wire, rot_axis):
     r"""Decomposes the SelectPauliRot"""
 
     wires = Wires(control_wires) + Wires(target_wire)
@@ -195,7 +197,7 @@ def decompose_select_pauli_rot(angles, control_wires, target_wire, rot_axis):
             _apply_uniform_rotation_dagger(RZ, angles, wires[-2::-1], wires[-1])
 
 
-add_decomps(SelectPauliRot, decompose_select_pauli_rot)
+add_decomps(SelectPauliRot, _select_pauli_rot_standard)
 
 
 MultiplexedRotation = SelectPauliRot

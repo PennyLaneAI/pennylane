@@ -20,7 +20,7 @@ import numpy as np
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.decomposition.decomposition_rule import register_condition
 from pennylane.ops import PauliZ, PhaseShift, SingleExcitation, cond
 from pennylane.typing import Wire
@@ -96,7 +96,7 @@ class BasisRotation(Operator2):
             :symbols: :math:`N \times N` matrix :math:`u` (``unitary_matrix``) on :math:`N` wires
             :example: :math:`N=3`, with :math:`\det u = -1` for the real-valued rule
 
-            .. decomposition-rule:: _real_basis_rotation_decomp
+            .. decomposition-rule:: real
                 :image: /_static/decomposition_thumbnails/basis_rotation_real_givens.svg
                 :requires: real-valued :math:`u`
                 :where: :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
@@ -104,7 +104,7 @@ class BasisRotation(Operator2):
                 :class:`~.PhaseShift` | :math:`[\det u = -1]` | 1
                 :class:`~.SingleExcitation` | :math:`N(N-1)/2` | 3
 
-            .. decomposition-rule:: _complex_basis_rotation_decomp
+            .. decomposition-rule:: complex
                 :image: /_static/decomposition_thumbnails/basis_rotation_complex_givens.svg
                 :requires: complex-valued :math:`u`
 
@@ -364,8 +364,8 @@ def _prepare_args(unitary_matrix, wires):
 
 
 # pylint: disable-next=unused-argument
-def _real_basis_rotation_resources(unitary_matrix, wires, check=False):
-    """Upper bound on the gates emitted by '_real_basis_rotation_decomp'.
+def _basis_rotation_real_resources(unitary_matrix, wires, check=False):
+    """Upper bound on the gates emitted by 'real'.
 
     - SingleExcitation: Exact count of N(N-1)/2 for Givens rotation.
     - PauliZ: *At most* one for determinant correction; skipped if det = +1. Under ``jax.jit``
@@ -379,8 +379,9 @@ def _real_basis_rotation_resources(unitary_matrix, wires, check=False):
 
 
 @register_condition(lambda unitary_matrix, **_: not math.is_complex_dtype(unitary_matrix))
-@register_resources(_real_basis_rotation_resources, exact=False)
-def _real_basis_rotation_decomp(unitary_matrix, wires, **_):
+@register_name("real")
+@register_resources(_basis_rotation_real_resources, exact=False)
+def _basis_rotation_real(unitary_matrix, wires, **_):
 
     unitary, wires = _prepare_args(unitary_matrix, wires)
 
@@ -411,8 +412,8 @@ def _real_basis_rotation_decomp(unitary_matrix, wires, **_):
 
 
 # pylint: disable-next=unused-argument
-def _complex_basis_rotation_resources(unitary_matrix, wires, check=False):
-    """Upper bound on the gates emitted by '_complex_basis_rotation_decomp'.
+def _basis_rotation_complex_resources(unitary_matrix, wires, check=False):
+    """Upper bound on the gates emitted by 'complex'.
 
     - SingleExcitation: Exact count of N(N-1)/2 for Givens rotation.
     - PhaseShift: *At most* N(N-1)/2 + N for the additional N diagonal phases; skipped if phase equal to zero.
@@ -425,8 +426,9 @@ def _complex_basis_rotation_resources(unitary_matrix, wires, check=False):
 
 
 @register_condition(lambda unitary_matrix, **_: math.is_complex_dtype(unitary_matrix))
-@register_resources(_complex_basis_rotation_resources, exact=False)
-def _complex_basis_rotation_decomp(unitary_matrix, wires, **_):
+@register_name("complex")
+@register_resources(_basis_rotation_complex_resources, exact=False)
+def _basis_rotation_complex(unitary_matrix, wires, **_):
 
     unitary, wires = _prepare_args(unitary_matrix, wires)
 
@@ -462,4 +464,4 @@ def _complex_basis_rotation_decomp(unitary_matrix, wires, **_):
     givens_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(BasisRotation, _real_basis_rotation_decomp, _complex_basis_rotation_decomp)
+add_decomps(BasisRotation, _basis_rotation_real, _basis_rotation_complex)
