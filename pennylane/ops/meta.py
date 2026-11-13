@@ -30,7 +30,10 @@ from pennylane.wires import WiresLike
 
 
 barrier_p = QpPrimitive("barrier")
-barrier_p.def_impl(operator_p.impl)
+@barrier_p.def_impl
+def _barrier_impl(*wires):
+    Barrier(wires)
+    return []
 barrier_p.multiple_results = True
 barrier_p.def_abstract_eval(lambda *wires: [])
 
