@@ -34,6 +34,9 @@ from pennylane.measurements import ExpectationMP, VarianceMP, expval
 from pennylane.ops import (
     U2,
     U3,
+    CPhaseShift00,
+    CPhaseShift01,
+    CPhaseShift10,
     CRot,
     DoubleExcitation,
     FermionicSWAP,
@@ -1363,6 +1366,12 @@ def _handle_double_excitation(op: DoubleExcitation):  # pylint: disable=unused-a
 
 @parameter_frequencies.register
 def _handle_fermionic_swap(op: FermionicSWAP):
+    return [(1,)]
+
+
+@parameter_frequencies.register
+def _handle_cphase_shift(op: CPhaseShift00 | CPhaseShift01 | CPhaseShift10):
+    """Returns the parameter frequencies for the controlled phase shifts."""
     return [(1,)]
 
 
