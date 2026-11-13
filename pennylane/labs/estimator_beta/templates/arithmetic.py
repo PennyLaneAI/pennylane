@@ -21,8 +21,6 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.wires import WiresLike
 
-# pylint: disable=arguments-differ,unused-argument,signature-differs,too-many-arguments
-
 
 class LabsPhaseAdder(ResourceOperator):
     r"""Resource class for the PhaseAdder gate.
@@ -98,6 +96,7 @@ class LabsPhaseAdder(ResourceOperator):
         return {"num_x_wires": self.num_x_wires, "mod": self.mod}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_x_wires: int, mod: int | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -115,6 +114,7 @@ class LabsPhaseAdder(ResourceOperator):
         return CompressedResourceOp(cls, num_x_wires, params)
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, num_x_wires: int, mod: int | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -182,6 +182,7 @@ class LabsPhaseAdder(ResourceOperator):
         return gate_lst
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
@@ -269,6 +270,7 @@ class LabsAdder(ResourceOperator):
         return {"num_x_wires": self.num_x_wires, "mod": self.mod}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_x_wires: int, mod: int | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -286,6 +288,7 @@ class LabsAdder(ResourceOperator):
         return CompressedResourceOp(cls, num_x_wires, params)
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, num_x_wires: int, mod: int | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -380,6 +383,7 @@ class LabsAdder(ResourceOperator):
         return gate_lst
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
@@ -488,7 +492,7 @@ class LabsOutAdder(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls, num_x_wires: int, num_y_wires: int, num_output_wires: int, mod: int | None = None
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
@@ -514,7 +518,7 @@ class LabsOutAdder(ResourceOperator):
         return CompressedResourceOp(cls, num_x_wires + num_y_wires + num_output_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls, num_x_wires: int, num_y_wires: int, num_output_wires: int, mod: int | None = None
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
@@ -646,7 +650,7 @@ class ClassicalOutMultiplier(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls, num_x_wires: int, num_output_wires: int, mod: int | None = None
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
@@ -666,7 +670,7 @@ class ClassicalOutMultiplier(ResourceOperator):
         return CompressedResourceOp(cls, num_x_wires + num_output_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls, num_x_wires: int, num_output_wires: int, mod: int | None = None
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
@@ -698,6 +702,7 @@ class ClassicalOutMultiplier(ResourceOperator):
         return [GateCount(ctrl_adder, num_x_wires)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
@@ -786,6 +791,7 @@ class LabsMultiplier(ResourceOperator):
         return {"mod": self.mod, "num_x_wires": self.num_x_wires}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_x_wires: int, mod: int | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -803,6 +809,7 @@ class LabsMultiplier(ResourceOperator):
         return CompressedResourceOp(cls, num_x_wires, params)
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, num_x_wires: int, mod: int | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -845,6 +852,7 @@ class LabsMultiplier(ResourceOperator):
         return gate_lst
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
@@ -950,7 +958,7 @@ class LabsModExp(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls, num_x_wires: int, num_output_wires: int, mod: int | None = None
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
@@ -970,7 +978,7 @@ class LabsModExp(ResourceOperator):
         return CompressedResourceOp(cls, num_x_wires + num_output_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls, num_x_wires: int, num_output_wires: int, mod: int | None = None
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list

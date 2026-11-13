@@ -27,8 +27,6 @@ import pennylane.templates as qtemps
 from pennylane.core.operator import Operation
 from pennylane.estimator.resource_mapping import _map_term_trotter, _map_to_resource_op
 
-# pylint: disable= no-self-use,too-few-public-methods
-
 
 class TestMapToResourceOp:
     """Test the class for mapping PennyLane operations to their resource operators."""
@@ -744,7 +742,7 @@ class TestMapToResourceOp:
     def test_map_from_decomposition(self):
         """Test that the decomposition is used when a resource equivalent is not defined"""
 
-        class DummyOp(Operation):
+        class DummyOp(Operation):  # pylint: disable=too-few-public-methods
             num_wires = 2
 
             def __init__(self, theta, wires=None):

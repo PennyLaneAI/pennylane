@@ -15,7 +15,9 @@
 Tests for qp.devices.modifiers.simulator_tracking.
 """
 
-# pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring
+# pylint: disable=unused-argument
+
+
 import pennylane as qp
 from pennylane.devices.modifiers import simulator_tracking
 
@@ -24,7 +26,7 @@ def test_tracking_execute():
     """Test the tracking behavior of execute with no shots."""
 
     @simulator_tracking
-    class DummyDev(qp.devices.Device):
+    class DummyDev(qp.devices.Device):  # pylint: disable=too-few-public-methods
 
         def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
             results = []

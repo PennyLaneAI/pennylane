@@ -279,11 +279,11 @@ class TestSnapshotGeneral:
 class TestSnapshotSupportedQNode:
     """Test the Snapshot instruction for simulators."""
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
     def test_default_qubit_with_backprob_and_adjoint(self, diff_method):
         dev = qp.device("default.qubit")
 
+        # pylint: disable-next=protected-access
         assert qp.debugging.snapshot._is_snapshot_compatible(dev)
 
         @qp.qnode(dev, diff_method=diff_method)
@@ -295,7 +295,7 @@ class TestSnapshotSupportedQNode:
             return qp.expval(qp.PauliX(0))
 
         circuit()
-        assert dev._debugger is None
+        assert dev._debugger is None  # pylint: disable=protected-access
         if diff_method is not None:
             assert circuit.interface == "auto"
 
@@ -308,12 +308,12 @@ class TestSnapshotSupportedQNode:
 
         _compare_numpy_dicts(result, expected)
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_default_mixed(self, method):
         """Test that multiple snapshots are returned correctly on the density-matrix simulator."""
         dev = qp.device("default.mixed", wires=2)
 
+        # pylint: disable-next=protected-access
         assert qp.debugging.snapshot._is_snapshot_compatible(dev)
 
         @qp.qnode(dev, diff_method=method)
@@ -326,7 +326,7 @@ class TestSnapshotSupportedQNode:
             return qp.expval(qp.PauliX(0))
 
         circuit()
-        assert dev._debugger is None
+        assert dev._debugger is None  # pylint: disable=protected-access
 
         result = qp.snapshots(circuit)()
         expected = {

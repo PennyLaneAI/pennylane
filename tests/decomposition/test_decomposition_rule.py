@@ -14,6 +14,8 @@
 
 """Unit tests for the DecompositionRule class."""
 
+# pylint: disable=too-few-public-methods
+
 import inspect
 from textwrap import dedent
 
@@ -27,23 +29,35 @@ from pennylane.decomposition.decomposition_rule import (
     DecompositionRule,
     WorkWireSpec,
     _fix_decomp,
+    _get_registered_decomps,
+    _list_control_decomps,
+    _list_decomps,
     _unroll_change_op_basis,
     _verify_is_abstract_and_fixed,
     register_condition,
     register_resources,
 )
 from pennylane.decomposition.resources import Resources
+from pennylane.decomposition.utils import to_name
 from pennylane.ops.mid_measure import MidMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2, _change_op_basis_abstract
-from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane.ops.op_math.controlled2 import (
+    ControlledOp2,
+    ctrl_many_zeroed_work_wires,
+    ctrl_single_work_wire,
+    to_controlled_unitary,
+)
 from pennylane.ops.op_math.pow2 import flip_pow_adjoint, merge_powers, repeat_pow_base
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.testing.decompositions import assert_valid_decomp_rule
 from pennylane.typing import Float, Int, Wire
-from tests.core.operator.operator2_utils import DynOp, NonParametricOp, ParametrizedHybridOp
-
-# pylint: disable=too-few-public-methods,useless-parent-delegation
+from tests.core.operator.operator2_utils import (
+    DynOp,
+    DynOpWithMatrix,
+    NonParametricOp,
+    ParametrizedHybridOp,
+)
 
 
 class CustomOp(Operator):
@@ -57,8 +71,7 @@ class TestDecompositionRule:
     def test_wraps_rule(self):
         """Test that a DecompositionRule has the same sig and docstring as the qfunc."""
 
-        # pylint: disable=unused-argument
-        def f(x, wires: qp.wires.Wires, arg: str = "hello"):
+        def f(x, wires: qp.wires.Wires, arg: str = "hello"):  # pylint: disable=unused-argument
             """A docstring."""
 
         rule = qp.decomposition.DecompositionRule(f, {})
@@ -265,7 +278,7 @@ class TestDecompositionRule:
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             resource_keys = set()
 
         @register_resources({DummyOp: 1})
@@ -302,7 +315,7 @@ class TestDecompositionRule:
 
             arg_specs = my_arg_specs
 
-            def __init__(self, angles, eps, wires):
+            def __init__(self, angles, eps, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(angles, eps, wires)
 
         @register_resources({MissingFixedSigOp: 1})
@@ -341,7 +354,7 @@ class TestDecompositionRule:
 
             arg_specs = abstract_sig
 
-            def __init__(self, phi, matrix, wires):
+            def __init__(self, phi, matrix, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(phi, matrix, wires)
 
         @register_resources(
@@ -362,7 +375,7 @@ class TestDecompositionRule:
     def test_auto_wrap_fails(self):
         """Tests that an op with non-empty resource_keys cannot be auto-wrapped."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             resource_keys = {"foo"}
 
         @register_resources({DummyOp: 1})
@@ -474,7 +487,7 @@ class TestDecompDictionary:
     def test_add_and_list_decomps(self):
         """Tests that decomposition rules can be registered for an operator."""
 
-        class SomeOtherOp(Operator):  # pylint: disable=too-few-public-methods
+        class SomeOtherOp(Operator):
             pass
 
         assert not qp.decomposition.has_decomp(SomeOtherOp)
@@ -524,7 +537,7 @@ class TestDecompDictionary:
     def test_add_decomp_duplicate_names(self):
         """Tests that you cannot add decomposition rules with duplicate names."""
 
-        class AnotherOp(Operator):  # pylint: disable=too-few-public-methods
+        class AnotherOp(Operator):
             pass
 
         @register_resources({qp.RZ: 2, qp.CNOT: 1})
@@ -548,7 +561,7 @@ class TestDecompDictionary:
     def test_add_decomp_exact_alias(self):
         """Tests that adding exactly the same decomp rule twice does not error out."""
 
-        class AnotherOp(Operator):  # pylint: disable=too-few-public-methods
+        class AnotherOp(Operator):
             pass
 
         @register_resources({qp.RZ: 2, qp.CNOT: 1})
@@ -662,7 +675,7 @@ class TestDecompDictionary:
             "controlled(custom_rule2)",
         }
 
-        class AnotherOp(DynOp):  # pylint: disable=too-few-public-methods
+        class AnotherOp(DynOp):
             has_matrix = True
             name = "DynOp"
 
@@ -739,6 +752,162 @@ class TestDecompDictionary:
         # Single control wire so general multi-control rules are not listed.
         op = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[1])
         assert list(qp.list_decomps(op)) == []
+
+
+@pytest.mark.unit
+class TestListDecompsByName:
+    """Tests controlled fallback candidates retrieved by operator name."""
+
+    @pytest.mark.parametrize("op_name", ["C(DynOp)", "Controlled(DynOp)"])
+    def test_custom_and_generic_rules(self, op_name):
+        """String lookup includes fallbacks while direct lookup only includes registrations."""
+
+        @register_resources({qp.X: 1})
+        def custom_rule(*_, **__):
+            raise NotImplementedError
+
+        qp.add_decomps("C(DynOp)", custom_rule)
+        expected = [
+            custom_rule,
+            to_controlled_unitary,
+            ctrl_many_zeroed_work_wires,
+            ctrl_single_work_wire,
+        ]
+        assert list(qp.list_decomps(op_name)) == expected
+        assert list(_list_control_decomps(to_name(op_name))) == expected
+        assert list(_get_registered_decomps(to_name(op_name))) == [custom_rule]
+        assert list(_list_decomps(op_name)) == expected
+
+        op = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[1])
+        assert list(_list_decomps(op)) == [custom_rule]
+        assert list(qp.list_decomps(op)) == [custom_rule]
+
+    @pytest.mark.parametrize("op_name", ["C(X)", "Controlled(X)"])
+    def test_controlled_aliases_are_normalized_by_dispatch(self, op_name):
+        """Dispatch normalizes aliases while the registry helper uses exact names."""
+
+        @register_resources({qp.X: 1})
+        def custom_rule(*_, **__):
+            raise NotImplementedError
+
+        qp.add_decomps(op_name, custom_rule)
+        assert custom_rule in _get_registered_decomps(to_name(op_name))
+        assert custom_rule not in _get_registered_decomps(op_name)
+        assert custom_rule in qp.list_decomps(op_name)
+        assert "to_controlled_unitary" in qp.list_decomps(op_name)
+
+    @pytest.mark.parametrize("op_name", ["C(UnregisteredOp)", "Controlled(UnregisteredOp)"])
+    def test_unregistered_controlled_name(self, op_name):
+        """Controlled names without custom registrations still have generic candidates."""
+        assert list(qp.list_decomps(op_name)) == [
+            to_controlled_unitary,
+            ctrl_many_zeroed_work_wires,
+            ctrl_single_work_wire,
+        ]
+
+    @pytest.mark.parametrize("op_name", ["RX", "X", "Adjoint(RX)", "Pow(RX)", "UnregisteredOp"])
+    def test_other_names(self, op_name):
+        """Other names continue to retrieve only direct registrations."""
+        assert list(qp.list_decomps(op_name)) == list(_get_registered_decomps(to_name(op_name)))
+
+    def test_registered_lookup_ignores_fixed_rules_and_exclusions(self):
+        """The registry helper only returns direct registrations."""
+
+        @register_resources({qp.X: 1})
+        def custom_rule(*_, **__):
+            raise NotImplementedError
+
+        @register_resources({qp.Y: 1})
+        def fixed_rule(*_, **__):
+            raise NotImplementedError
+
+        qp.add_decomps("C(DynOp)", custom_rule)
+        with qp.decomposition.exclude_decomps("C(DynOp)", "custom_rule"):
+            _fix_decomp("C(DynOp)", fixed_rule)
+            assert list(_get_registered_decomps("C(DynOp)")) == [custom_rule]
+            assert list(_list_control_decomps("C(DynOp)")) == [
+                custom_rule,
+                to_controlled_unitary,
+                ctrl_many_zeroed_work_wires,
+                ctrl_single_work_wire,
+            ]
+            assert list(_list_decomps("C(DynOp)")) == [fixed_rule]
+            assert list(qp.list_decomps("C(DynOp)")) == [fixed_rule]
+
+    def test_fixed_rule_and_exclusions(self):
+        """Fixed rules override fallbacks, and exclusions apply to all candidates."""
+
+        @register_resources({qp.X: 1})
+        def custom_rule(*_, **__):
+            raise NotImplementedError
+
+        qp.add_decomps("C(DynOp)", custom_rule)
+        with qp.decomposition.exclude_decomps("C(DynOp)", "custom_rule", "ctrl_single_work_wire"):
+            assert list(qp.list_decomps("C(DynOp)")) == [
+                to_controlled_unitary,
+                ctrl_many_zeroed_work_wires,
+            ]
+
+        _fix_decomp("C(DynOp)", custom_rule)
+        assert list(qp.list_decomps("C(DynOp)")) == [custom_rule]
+        with qp.decomposition.exclude_decomps("C(DynOp)", "custom_rule"):
+            assert not qp.list_decomps("C(DynOp)")
+
+    def test_returned_collection_is_a_copy(self):
+        """Mutating lookup results does not register new rules."""
+
+        @register_resources({qp.X: 1})
+        def custom_rule(*_, **__):
+            raise NotImplementedError
+
+        qp.list_decomps("C(DynOp)").append(custom_rule)
+        _get_registered_decomps("C(DynOp)").append(custom_rule)
+        assert custom_rule not in qp.list_decomps("C(DynOp)")
+        assert not _get_registered_decomps("C(DynOp)")
+
+    @pytest.mark.parametrize("has_matrix", [False, True])
+    @pytest.mark.parametrize("num_target_wires", [1, 2])
+    def test_controlled_unitary_condition(self, has_matrix, num_target_wires):
+        """The candidate requires a single target wire and a base matrix."""
+        base = (
+            DynOpWithMatrix(Float, Float, Float, Wire[num_target_wires])
+            if has_matrix
+            else DynOp(Float, Wire[num_target_wires])
+        )
+        op = ControlledOp2(base, control_wires=Wire[1])
+        rule = qp.list_decomps(op.name)["to_controlled_unitary"]
+        assert rule.is_applicable(**op.arguments) == (has_matrix and num_target_wires == 1)
+
+    @pytest.mark.parametrize("num_control_wires", [1, 2, 3, 4])
+    def test_single_work_wire_condition(self, num_control_wires):
+        """The wrapped candidate requires more than two control wires."""
+        op = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[num_control_wires])
+        rule = qp.list_decomps(op.name)["ctrl_single_work_wire"]
+        assert rule.is_applicable(**op.arguments) == (num_control_wires > 2)
+
+    @pytest.mark.parametrize(
+        "num_control_wires, num_work_wires, work_wire_type, expected",
+        [
+            (1, 1, "zeroed", False),
+            (2, 0, "zeroed", False),
+            (2, 1, "zeroed", True),
+            (3, 1, "zeroed", False),
+            (3, 2, "zeroed", True),
+            (3, 2, "borrowed", False),
+        ],
+    )
+    def test_many_work_wires_condition(
+        self, num_control_wires, num_work_wires, work_wire_type, expected
+    ):
+        """The existing condition checks control count and available zeroed work wires."""
+        op = ControlledOp2(
+            DynOp(Float, Wire[1]),
+            control_wires=Wire[num_control_wires],
+            work_wires=Wire[num_work_wires],
+            work_wire_type=work_wire_type,
+        )
+        rule = qp.list_decomps(op.name)["ctrl_many_zeroed_work_wires"]
+        assert rule.is_applicable(**op.arguments) == expected
 
 
 class TestExcludeDecomps:
@@ -906,7 +1075,7 @@ class TestDecompCollection:
         assert "custom3" in collection
 
 
-class CustomParametrizedOp(Operator):  # pylint: disable=too-few-public-methods
+class CustomParametrizedOp(Operator):
     """A custom parametrized op for testing."""
 
     resource_keys = {"num_wires"}
@@ -919,7 +1088,6 @@ class CustomParametrizedOp(Operator):  # pylint: disable=too-few-public-methods
         return {"num_wires": len(self.wires)}
 
 
-# pylint: disable=protected-access
 class TestInspectDecomps:
     """Tests inspecting decomposition rules."""
 
@@ -1007,6 +1175,7 @@ class TestInspectDecomps:
             Not applicable (provided operator instance does not meet all conditions for this rule).
 """).strip()
 
+        # pylint: disable-next=protected-access
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: simple)
 
@@ -1075,6 +1244,7 @@ class TestInspectDecomps:
             Wire Allocations: {'zero': 2}
 """).strip()
 
+        # pylint: disable-next=protected-access
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: simple)
 
@@ -1196,6 +1366,7 @@ class TestInspectDecomps:
             Insufficient work wires: requires 2 but only 1 available.
 """).strip()
 
+        # pylint: disable-next=protected-access
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: simple)
 
@@ -1248,6 +1419,7 @@ class TestInspectDecomps:
 
         result = qp.inspect_decomps(CustomOp(0.5, wires=[0, 1]))
         assert str(result) == "No available decomposition rules."
+        # pylint: disable-next=protected-access
         assert result._repr_markdown_() == "No available decomposition rules."
 
         @qp.register_condition(lambda **_: False)
@@ -1262,7 +1434,7 @@ class TestInspectDecomps:
             str(result) == "No applicable decomposition rules (non-applicable rules are excluded)."
         )
         assert (
-            result._repr_markdown_()
+            result._repr_markdown_()  # pylint: disable=protected-access
             == "No applicable decomposition rules (non-applicable rules are excluded)."
         )
 
@@ -1329,7 +1501,7 @@ class TestInspectDecomps:
             qp.inspect_decomps(CustomParametrizedOp)
 
 
-class TestCOBUnroll:  # pylint: disable=too-few-public-methods
+class TestCOBUnroll:
     """Tests the custom behaviour related to COB in the resource function."""
 
     def test_unroll_change_op_basis_resources(self):

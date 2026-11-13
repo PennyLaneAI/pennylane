@@ -15,7 +15,6 @@ r"""
 Contains the quantum-number-preserving GateFabric template.
 """
 
-# pylint: disable=too-many-arguments
 import numpy as np
 from jax import numpy as jnp
 
@@ -242,9 +241,8 @@ class GateFabric(Operation):
         }
 
     @staticmethod
-    def compute_decomposition(
-        weights, wires, init_state, include_pi
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(weights, wires, init_state, include_pi):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -270,7 +268,7 @@ class GateFabric(Operation):
 
         >>> weights = torch.tensor([[[0.3, 1.]]])
         >>> qp.GateFabric.compute_decomposition(weights, wires=["a", "b", "c", "d"], init_state=[0, 1, 0, 1], include_pi=False)
-        [BasisState([0 1 0 1], wires=['a', 'b', 'c', 'd']), DoubleExcitation(tensor(0.3000), wires=['a', 'b', 'c', 'd']), OrbitalRotation(tensor(1.), wires=['a', 'b', 'c', 'd'])]
+        [BasisState([0 1 0 1], wires=['a', 'b', 'c', 'd']), DoubleExcitation(0.3..., wires=['a', 'b', 'c', 'd']), OrbitalRotation(1.0, wires=['a', 'b', 'c', 'd'])]
 
         """
         op_list = []

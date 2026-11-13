@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for the grid problems for Clifford+T decomposition."""
 
-# pylint: disable = too-few-public-methods
-
 import inspect
 import math
 
@@ -58,7 +56,7 @@ class TestEllipse:
             ellipse.y_points(24)
 
 
-class TestEllipseState:
+class TestEllipseState:  # pylint: disable=too-few-public-methods
     """Tests for the EllipseState class."""
 
     def test_init_and_repr(self):
@@ -107,7 +105,6 @@ class TestGridOp:
 class TestGridIterator:
     """Tests for the GridIterator class."""
 
-    # pylint: disable = too-many-arguments
     @pytest.mark.parametrize(
         "x0, x1, y0, y1, num",
         [

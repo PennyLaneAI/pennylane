@@ -21,14 +21,12 @@ from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
-    controlled_resource_rep,
     register_resources,
-    resource_rep,
 )
 from pennylane.ops import adjoint, ctrl
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.typing import Wire
+from pennylane.typing import Int, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
@@ -278,7 +276,7 @@ class OutPoly(Operation):
         mod=None,
         work_wires: WiresLike = (),
         **kwargs,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):
         r"""Initialize the OutPoly class"""
 
         registers_wires = [*input_registers, output_wires]
@@ -384,14 +382,14 @@ class OutPoly(Operation):
         return self.compute_decomposition(**self.hyperparameters)
 
     @staticmethod
-    def compute_decomposition(
+    def compute_decomposition(  # pylint: disable=arguments-differ
         polynomial_function,
         input_registers,
         output_wires: WiresLike,
         mod=None,
         work_wires: WiresLike = (),
         **kwargs,
-    ):  # pylint: disable=unused-argument, arguments-differ
+    ):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -476,23 +474,21 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
     resources = Counter({QFT(Wire[num_output_adder_mod]): 1})
 
     coeffs_dic = dict(coeffs_list)
+    phase_rep = PhaseAdder(
+        Int, Wire[num_output_adder_mod], mod, Wire[int(mod != 2**num_output_adder_mod)]
+    )
 
     for item in coeffs_dic:
 
         if 1 not in item:
-            # `num_output_adder_mod` will always correspond to log2(mod) so we don't need to provide
-            # `mod` to the `PhaseAdder` in the decomposition.
-            rep = resource_rep(PhaseAdder, num_x_wires=num_output_adder_mod, mod=mod)
-            resources[rep] += 1
+            resources[phase_rep] += 1
         else:
             num_controls = sum(1 for bit in item if bit == 1)
 
-            ctrl_phase_rep = controlled_resource_rep(
-                base_class=PhaseAdder,
-                base_params={"num_x_wires": num_output_adder_mod, "mod": mod},
-                num_control_wires=num_controls,
-                num_zero_control_values=0,
-                num_work_wires=int(num_work_wires > 0),
+            ctrl_phase_rep = ctrl(
+                phase_rep,
+                control=Wire[num_controls],
+                work_wires=Wire[int(num_work_wires > 0)],
                 work_wire_type="borrowed",
             )
             resources[ctrl_phase_rep] += 1
@@ -503,14 +499,14 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
 
 
 @register_resources(_out_poly_decomposition_resources)
-def _out_poly_decomposition(
+def _out_poly_decomposition(  # pylint: disable=unused-argument
     polynomial_function,
     input_registers,
     output_wires: WiresLike,
     mod=None,
     work_wires: WiresLike = (),
     **kwargs,
-):  # pylint: disable=unused-argument
+):
     registers_wires = [*input_registers, output_wires]
 
     if len(work_wires) == 0:

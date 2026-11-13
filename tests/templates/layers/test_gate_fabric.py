@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.typing import Bool, Wire
+from pennylane.typing import Bool, Float, Wire
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -53,8 +53,8 @@ def test_resources(include_pi):
 
     expected = {
         qp.BasisState(Bool[n_wires], Wire[n_wires]): 1,
-        qp.resource_rep(qp.DoubleExcitation): n_layers * len_wire_pattern,
-        qp.resource_rep(qp.OrbitalRotation): (include_pi + 1) * n_layers * len_wire_pattern,
+        qp.DoubleExcitation(Float, Wire[4]): n_layers * len_wire_pattern,
+        qp.OrbitalRotation(Float, Wire[4]): (include_pi + 1) * n_layers * len_wire_pattern,
     }
     out = rule.compute_resources(
         n_layers=n_layers,
@@ -626,7 +626,6 @@ def _get_queue(op, system):
 class TestDecomposition:  # pylint: disable=too-few-public-methods
     """Tests that the template defines the correct decomposition."""
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "system",
         ("decomp_method", "graph_decomp", pytest.param("capture", marks=pytest.mark.capture)),

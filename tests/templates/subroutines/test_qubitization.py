@@ -131,7 +131,7 @@ def test_decomposition(hamiltonian, expected_decomposition):
 )
 @pytest.mark.xfail_if_capture(reason="come back to this as we port Qubitization [sc-129900]")
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_decomposition_new(hamiltonian, control):  # pylint: disable=unused-argument
+def test_decomposition_new(hamiltonian, control):
     """Tests the decomposition rule implemented with the new system."""
     op = qp.Qubitization(hamiltonian, control=control)
     assert_decomposable(op)
