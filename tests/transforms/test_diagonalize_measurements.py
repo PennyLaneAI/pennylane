@@ -33,8 +33,6 @@ from pennylane.transforms.diagonalize_measurements import (
     null_postprocessing,
 )
 
-# pylint: disable=protected-access
-
 
 class TestDiagonalizeObservable:
     """Tests for the _diagonalize_observable method"""
@@ -216,8 +214,7 @@ class TestDiagonalizeObservable:
     def test_diagonalizing_unknown_observable(self):
         """Test that an unknown observable is left undiagonalized"""
 
-        # pylint: disable=too-few-public-methods
-        class MyObs(qp.operation.Operator):
+        class MyObs(qp.operation.Operator):  # pylint: disable=too-few-public-methods
 
             @property
             def name(self):
@@ -287,9 +284,12 @@ class TestDiagonalizeTapeMeasurements:
             assert isinstance(new_tape.measurements[1], VarianceMP)
             assert new_tape.measurements[0].wires == qp.wires.Wires([0])
             assert new_tape.measurements[1].wires == qp.wires.Wires([1, 2])
+            # pylint: disable-next=protected-access
             assert qp.math.allclose(sorted(new_tape.measurements[0]._eigvals), [-1.0, 1.0])
             assert qp.math.allclose(
-                sorted(new_tape.measurements[1]._eigvals), [-2.0, 0.0, 0.0, 2.0]
+                # pylint: disable-next=protected-access
+                sorted(new_tape.measurements[1]._eigvals),
+                [-2.0, 0.0, 0.0, 2.0],
             )
         else:
             assert new_tape.measurements == [qp.expval(Z(0)), qp.var(Z(1) + Z(2))]
@@ -361,6 +361,7 @@ class TestDiagonalizeTapeMeasurements:
     def test_with_duplicate_measurements(self, to_eigvals, supported_base_obs):
         """Test that the diagonalize_measurements transform diagonalizes the measurements
         on the tape correctly when the same observable is used more than once"""
+        # pylint: disable=protected-access
 
         if to_eigvals and supported_base_obs != {qp.Z}:
             pytest.skip("to_eigvals is not supported when not diagonalizing all gates")

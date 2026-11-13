@@ -27,44 +27,43 @@ def dummyfunc():
     return None
 
 
-# pylint: disable=unused-argument
 class CustomDeviceWithDiffMethod(qp.devices.Device):
     """A device that defines its own derivative."""
 
-    def execute(self, circuits, execution_config=None):
+    def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
         return 0
 
+    # pylint: disable-next=unused-argument
     def compute_derivatives(self, circuits, execution_config=None):
         """Device defines its own method to compute derivatives"""
         return 0
 
 
-# pylint: disable=unused-argument, too-few-public-methods
-class CustomDevice(qp.devices.Device):
+class CustomDevice(qp.devices.Device):  # pylint: disable=too-few-public-methods
     """A null device that just returns 0."""
 
-    def execute(self, circuits, execution_config=None):
+    def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
         return 0
 
 
-# pylint: disable=unused-argument
 class DerivativeDevice(qp.devices.Device):
     """A device that says it supports device derivatives."""
 
-    def execute(self, circuits, execution_config=None):
+    def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
         return 0
 
+    # pylint: disable-next=unused-argument
     def supports_derivatives(self, execution_config=None, circuit=None):
         return execution_config.gradient_method == "device"
 
 
-# pylint: disable=unused-argument
 class BackpropDevice(qp.devices.Device):
     """A device that says it supports backpropagation."""
 
-    def execute(self, circuits, execution_config=None):
+    def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
         return 0
 
+    # pylint: disable-next=unused-argument
     def supports_derivatives(self, execution_config=None, circuit=None):
         return execution_config.gradient_method == "backprop"
 

@@ -15,7 +15,6 @@
 Tests for mitigation transforms.
 """
 
-# pylint:disable=no-self-use, unnecessary-lambda-assignment, protected-access
 import pytest
 from packaging import version
 
@@ -30,7 +29,7 @@ from pennylane.noise.mitigate import (
     mitigate_with_zne,
     richardson_extrapolate,
 )
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.transforms import broadcast_expand
 
 with qp.queuing.AnnotatedQueue() as q_tape:
@@ -65,7 +64,9 @@ def same_tape(tape1, tape2):
     )
     assert len(tape1.measurements) == len(tape2.measurements)
     assert all(
-        m1._shortname == m2._shortname for m1, m2 in zip(tape1.measurements, tape2.measurements)
+        # pylint: disable-next=protected-access
+        m1._shortname == m2._shortname
+        for m1, m2 in zip(tape1.measurements, tape2.measurements)
     )
     assert all(o1.name == o2.name for o1, o2 in zip(tape1.observables, tape2.observables))
     assert all(o1.wires == o2.wires for o1, o2 in zip(tape1.observables, tape2.observables))
@@ -74,7 +75,6 @@ def same_tape(tape1, tape2):
 class TestMitigateWithZNE:
     """Tests for the mitigate_with_zne function"""
 
-    # pylint:disable = unnecessary-lambda-assignment
     folding = lambda *args, **kwargs: tape_base
     extrapolate = lambda *args, **kwargs: [3.141]
 
@@ -220,14 +220,13 @@ class TestMitigateWithZNE:
         )
         rng = np.random.default_rng(seed=seed)
         inputs = rng.uniform(0, 1, size=(batch_size, 2**2))
-        result_orig = mitigated_qnode_orig(inputs)  # pylint: disable=not-callable
-        result_expanded = mitigated_qnode_expanded(inputs)  # pylint: disable=not-callable
+        result_orig = mitigated_qnode_orig(inputs)
+        result_expanded = mitigated_qnode_expanded(inputs)
         # !TODO: double check if this shape mismatch needs to be taken care of from user side PR6684
         assert qp.math.allclose(
             np.array(result_orig).flatten(), np.array(result_expanded).flatten()
         )
 
-    # pylint:disable=not-callable
     def test_zne_with_noise_models(self):
         """Test that mitigate_with_zne transform works with noise models"""
         fcond = qp.noise.wires_in([0, 1])
@@ -250,7 +249,6 @@ class TestMitigateWithZNE:
         mitigated_result = 0.39843788456
         assert qp.math.allclose(zne_qnode(), mitigated_result, atol=1e-2)
 
-    # pylint:disable=not-callable
     def test_zne_error_with_channels(self):
         """Test that mitigate_with_zne transform raises correct error with channels"""
         fcond = qp.noise.wires_in([0, 1])
@@ -579,7 +577,6 @@ class TestDifferentiableZNE:
 
     def test_polyfit(self):
         """Testing the custom diffable _polyfit function"""
-        # pylint: disable=protected-access
         x = np.linspace(1, 4, 4)
         y = 3.0 * x**2 + 2.0 * x + 1.0
         coeffs = _polyfit(x, y, 2)

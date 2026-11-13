@@ -22,8 +22,6 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.wires import WiresLike
 
-# pylint: disable= signature-differs, arguments-differ
-
 
 class OutOfPlaceIntegerComparator(ResourceOperator):
     r"""Resource class for an out-of-place integer comparator.
@@ -117,7 +115,7 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls, value: int, register_size: int, geq: bool = False
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
@@ -138,6 +136,7 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, value: int, register_size: int, geq: bool = False) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
@@ -185,6 +184,7 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
         return gate_lst
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources of the adjoint of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
@@ -319,6 +319,7 @@ class RegisterEquality(ResourceOperator):
         return {"register_size": self.register_size}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, register_size: int) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -334,6 +335,7 @@ class RegisterEquality(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"register_size": register_size})
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, register_size: int) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.

@@ -1868,6 +1868,10 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* Updated Pylint to 4.1.3, cleaned up suppression scope and formatting, and made unnecessary
+  suppressions fail lint. Labs tests now consistently use the test lint configuration.
+  `(#10462) <https://github.com/PennyLaneAI/pennylane/pull/10462>`__
+
 * :func:`~.specs`, :func:`~.analyze` and :func:`~pennylane.estimate` now compile QJIT-compiled
   QNodes up to the MLIR passes with Catalyst's ``target="mlir_opt"``, instead of reproducing part
   of ``QJIT.jit_compile``.
@@ -2384,6 +2388,10 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed exponential regular-expression backtracking in :func:`~.qchem.mol_data` when
+  validating malformed InChI identifiers.
+  `(#10462) <https://github.com/PennyLaneAI/pennylane/pull/10462>`__
 
 * Fixed :func:`~pennylane.draw_mpl` to show the control values of :class:`~.TemporaryAND`
   and its adjoint. Rounded connectors on the left or right distinguish these

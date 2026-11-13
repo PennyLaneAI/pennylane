@@ -32,9 +32,6 @@ from pennylane.testing import assert_valid
 from pennylane.typing import Float, Wire
 from pennylane.wires import WiresLike
 
-# pylint:disable=protected-access, use-implicit-booleaness-not-comparison
-
-
 ops = (
     (qp.PauliX(wires=0), qp.PauliZ(wires=0), qp.Hadamard(wires=0)),
     (qp.CNOT(wires=[0, 1]), qp.RX(1.23, wires=1), qp.Identity(wires=0)),
@@ -53,7 +50,6 @@ ops_rep = (
 
 
 class NoOperandsOp(CompositeOp2):
-    # pylint:disable=unused-argument
     _op_symbol = "#"
     _math_op = staticmethod(math.prod)
 
@@ -80,13 +76,11 @@ class NoOperandsOp(CompositeOp2):
         return mat
 
     @classmethod
-    # pylint: disable-next=unused-argument
-    def _sort(cls, op_list, wire_map: dict = None):
+    def _sort(cls, op_list, wire_map: dict = None):  # pylint: disable=unused-argument
         return op_list
 
 
 class ValidOp(CompositeOp2):
-    # pylint:disable=unused-argument
     _op_symbol = "#"
     _math_op = staticmethod(math.prod)
 
@@ -112,13 +106,11 @@ class ValidOp(CompositeOp2):
         return mat
 
     @classmethod
-    # pylint: disable-next=unused-argument
-    def _sort(cls, op_list, wire_map: dict = None):
+    def _sort(cls, op_list, wire_map: dict = None):  # pylint: disable=unused-argument
         return op_list
 
 
-# pylint: disable-next=too-few-public-methods
-class NoMatrixOp(Operator2):
+class NoMatrixOp(Operator2):  # pylint: disable=too-few-public-methods
 
     def __init__(self, wires: WiresLike):
         super().__init__(wires=wires)
@@ -166,7 +158,7 @@ class TestConstruction:
     def test_direct_initialization_fails(self):
         """Test directly initializing a CompositeOp2 fails"""
         with pytest.raises(TypeError, match="Can't instantiate abstract class CompositeOp2"):
-            _ = CompositeOp2(self.simple_operands)  # pylint:disable=abstract-class-instantiated
+            _ = CompositeOp2(self.simple_operands)
 
     @pytest.mark.xfail
     def test_raise_error_fewer_than_2_operands(self):
@@ -192,11 +184,11 @@ class TestConstruction:
     def test_initialization(self):
         """Test that valid child classes can be initialized without error"""
         op = ValidOp(self.simple_operands)
-        assert op._op_symbol == "#"
+        assert op._op_symbol == "#"  # pylint: disable=protected-access
         assert op.operands == self.simple_operands
 
         op = NoOperandsOp(self.simple_operands)
-        assert op._op_symbol == "#"
+        assert op._op_symbol == "#"  # pylint: disable=protected-access
         assert op.ops == self.simple_operands
         assert op.operands == self.simple_operands
 
@@ -230,13 +222,13 @@ class TestConstruction:
         with pytest.raises(
             AttributeError, match="property 'data' of 'ValidOp' object has no setter"
         ):
-            op.data = (1.23, 0.0, -1.0, -2.0)  # pylint:disable=attribute-defined-outside-init
+            op.data = (1.23, 0.0, -1.0, -2.0)  # pylint: disable=attribute-defined-outside-init
 
     def test_initialization_in_queuing_context(self):
         """Test that valid child classes can be initialized in a queuing context"""
         with AnnotatedQueue() as q:
             op = ValidOp(self.simple_operands)
-            assert op._op_symbol == "#"
+            assert op._op_symbol == "#"  # pylint: disable=protected-access
             assert op.operands == self.simple_operands
         assert op in q.queue
         assert len(q.queue) == 1
@@ -275,7 +267,7 @@ class TestConstruction:
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
 
-        eigs_cache = diag_op._eigs[diag_op]
+        eigs_cache = diag_op._eigs[diag_op]  # pylint: disable=protected-access
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
@@ -285,6 +277,7 @@ class TestConstruction:
     def test_build_pauli_rep(self):
         """Test the build_pauli_rep"""
         op = ValidOp(self.simple_operands)
+        # pylint: disable-next=protected-access
         assert op._build_pauli_rep() == qp.pauli.PauliSentence({})
 
 
@@ -331,7 +324,7 @@ def _assert_method_no_recursion_error(instance, method_name):
     """Checks that the method does not raise a RecursionError when called."""
     try:
         getattr(instance, method_name)()
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:  # pylint: disable=broad-exception-caught
         assert not isinstance(e, RecursionError)
         if isinstance(e, RuntimeError) and not isinstance(e, NotImplementedError):
             assert "This is likely due to nesting too many levels" in str(e)
@@ -341,7 +334,7 @@ def _assert_property_no_recursion_error(instance, property_name):
     """Checks that the property does not raise a RecursionError when accessed."""
     try:
         getattr(instance, property_name)
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:  # pylint: disable=broad-exception-caught
         assert not isinstance(e, RecursionError)
         if isinstance(e, RuntimeError) and not isinstance(e, NotImplementedError):
             assert "This is likely due to nesting too many levels" in str(e)
@@ -610,8 +603,7 @@ class TestAbstractOperands:
 
 
 @pytest.mark.capture
-# pylint: disable-next=too-few-public-methods
-class TestCapture:
+class TestCapture:  # pylint: disable=too-few-public-methods
     """Test that a CompositeOp2 subclass integrates with program capture."""
 
     def test_capture_valid_op(self):

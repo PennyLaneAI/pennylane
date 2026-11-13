@@ -13,7 +13,8 @@
 # limitations under the License.
 """Unit Tests for the PauliWord and PauliSentence classes"""
 
-# pylint: disable=too-many-public-methods,too-many-arguments,protected-access
+# pylint: disable=too-many-public-methods,protected-access
+
 
 import pickle
 from copy import copy, deepcopy
@@ -127,9 +128,9 @@ class TestPauliWord:
         with pytest.raises(TypeError, match="PauliWord object does not support assignment"):
             pw.update({3: "Z"})  # trying to add to a pw after instantiation is prohibited
 
-    # pylint: disable=unnecessary-dunder-call
     def test_hash(self):
         """Test that a unique hash exists for different PauliWords."""
+        # pylint: disable=unnecessary-dunder-call
         pw_1 = PauliWord({0: "I", 1: "X", 2: "Y"})
         pw_2 = PauliWord({0: "I", 1: "X", 2: "Y"})  # same as 1
         pw_3 = PauliWord({1: "X", 2: "Y", 0: "I"})  # same as 1 but reordered
@@ -139,19 +140,18 @@ class TestPauliWord:
         assert pw_1.__hash__() == pw_3.__hash__()
         assert pw_1.__hash__() != pw_4.__hash__()
 
-    # pylint: disable=unnecessary-dunder-call
     def test_hash_caches(self):
         """Test that hashes are cached correctly and not recomputed."""
         pw = PauliWord({0: "I", 1: "X", 2: "Y"})
 
         assert pw._hashval is None  # hash should not be computed until __hash__ is called
-        h = pw.__hash__()
+        h = pw.__hash__()  # pylint: disable=unnecessary-dunder-call
 
         assert pw._hashval is not None
         assert h == pw._hashval
         assert h is pw._hashval  # Ensure the same exact value is returned
 
-        h2 = pw.__hash__()  # should not recompute hash
+        h2 = pw.__hash__()  # should not recompute hash  # pylint: disable=unnecessary-dunder-call
         assert h == h2
         assert h is h2  # Ensure the same exact value is returned
 
@@ -943,7 +943,7 @@ class TestPauliSentence:
         if len(ps) > 1:
             for ps_summand, op_summand in zip(ps_op.operands, op.operands):
                 assert ps_summand.scalar == op_summand.scalar
-                if isinstance(ps_summand.base, qp.ops.Prod):  # pylint: disable=no-member
+                if isinstance(ps_summand.base, qp.ops.Prod):
                     for pw_factor, op_factor in zip(ps_summand.base, op_summand.base):
                         _compare_ops(pw_factor, op_factor)
                 else:
@@ -1005,12 +1005,11 @@ class TestPauliSentence:
 
         qp.assert_equal(op, id)
 
-    # pylint: disable=W0621
     @pytest.mark.parametrize("coeff0", [qp.math.array([0.6, 0.2, 4.3])])
     @pytest.mark.parametrize("coeff1", [qp.math.array([1.2, -0.9, 2.7])])
     def test_operation_array_input(self, coeff0, coeff1):
         pw0 = qp.pauli.PauliWord({0: "X", "a": "Y"})
-        pw1 = qp.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})
+        pw1 = qp.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})  # pylint: disable=redefined-outer-name
         ps = qp.pauli.PauliSentence({pw0: coeff0, pw1: coeff1})
         assert qp.pauli.to_operator(ps) is not None
 
@@ -1064,13 +1063,12 @@ class TestPauliSentence:
             }
         )
 
-    # pylint: disable=W0621
     @pytest.mark.parametrize("coeff0", [[0.6, 0.2, 4.3], -0.7])
     @pytest.mark.parametrize("coeff1", [[1.2, -0.9, 2.7], -0.7])
     def test_to_mat_with_broadcasting(self, coeff0, coeff1):
         wire_order = [0, 1, "a", "b"]
         pw0 = qp.pauli.PauliWord({0: "X", "a": "Y"})
-        pw1 = qp.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})
+        pw1 = qp.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})  # pylint: disable=redefined-outer-name
         ps = qp.pauli.PauliSentence({pw0: coeff0, pw1: coeff1})
         mat0 = ps.to_mat(wire_order=wire_order)
         mat1 = qp.matrix(qp.pauli.to_operator(ps), wire_order=wire_order)
@@ -1357,9 +1355,7 @@ class TestPaulicomms:
     @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
     @pytest.mark.parametrize("convert2", [_id, _pw_to_ps])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
-    def test_pauli_word_comm_different_types(
-        self, op1, op2, true_res, convert1, convert2
-    ):  # pylint: disable=too-many-positional-arguments
+    def test_pauli_word_comm_different_types(self, op1, op2, true_res, convert1, convert2):
         """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, Operator"""
         op1 = convert1(op1)
         op2 = convert2(op2)
@@ -1372,9 +1368,7 @@ class TestPaulicomms:
     @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
     @pytest.mark.parametrize("convert2", [_pauli_to_op])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
-    def test_pauli_word_comm_different_types_with_ops(
-        self, op1, op2, true_res, convert1, convert2
-    ):  # pylint: disable=too-many-positional-arguments
+    def test_pauli_word_comm_different_types_with_ops(self, op1, op2, true_res, convert1, convert2):
         """Test mixed Pauli/operator commutators through the public adapter."""
         op1 = convert1(op1)
         op2 = convert2(op2)

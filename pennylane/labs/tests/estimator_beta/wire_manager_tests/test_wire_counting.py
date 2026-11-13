@@ -32,8 +32,6 @@ from pennylane.labs.estimator_beta.wires_manager.wire_counting import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=unused-argument,too-many-arguments,arguments-differ
-
 any_state = AllocateState.ANY
 
 
@@ -58,7 +56,7 @@ class AllocateOp(qre.ResourceOperator):
         return qre.CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, allocate, num_wires=0):
+    def resource_decomp(cls, allocate, num_wires=0):  # pylint: disable=unused-argument
         return [allocate]
 
 
@@ -82,7 +80,7 @@ class DeallocateOp(qre.ResourceOperator):
         return qre.CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, deallocate, num_wires=0):
+    def resource_decomp(cls, deallocate, num_wires=0):  # pylint: disable=unused-argument
         return [deallocate]
 
 
@@ -121,6 +119,7 @@ class AllocOpFree(qre.ResourceOperator):
         return qre.CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
+    # pylint: disable-next=unused-argument
     def resource_decomp(cls, num_wires, allocate, cmpr_op, deallocate=None):
         deallocate = deallocate or Deallocate(allocated_register=allocate)
         return [

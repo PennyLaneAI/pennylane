@@ -26,18 +26,16 @@ from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational import vibrational_class
 
 h5py = pytest.importorskip("h5py")
-# pylint: disable=too-many-arguments, protected-access
 
 
 def test_import_geometric(monkeypatch):
     """Test if an ImportError is raised by _import_geometric function."""
-    # pylint: disable=protected-access
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "geometric", None)
 
         with pytest.raises(ImportError, match="This feature requires geometric"):
-            vibrational.vibrational_class._import_geometric()
+            vibrational.vibrational_class._import_geometric()  # pylint: disable=protected-access
 
 
 @pytest.mark.usefixtures("skip_if_no_pyscf_support", "skip_if_no_geometric_support")
@@ -86,10 +84,12 @@ def test_optimize_geometry_methoderror():
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support")
+# pylint: disable-next=too-many-arguments
 def test_single_point_energy(sym, geom, unit, method, basis, expected_energy):
     r"""Test that correct energy is produced for a given molecule."""
 
     mol = qp.qchem.Molecule(sym, geom, unit=unit, basis_name=basis, load_data=True)
+    # pylint: disable-next=protected-access
     scf_obj = qp.qchem.vibrational.vibrational_class._single_point(mol, method=method)
 
     assert np.isclose(scf_obj.e_tot, expected_energy)
@@ -152,8 +152,9 @@ def test_harmonic_analysis(sym, geom, expected_vecs):
         load_data=mol.load_data,
     )
 
-    scf_result = vibrational_class._single_point(mol_eq)
+    scf_result = vibrational_class._single_point(mol_eq)  # pylint: disable=protected-access
 
+    # pylint: disable-next=protected-access
     _, displ_vecs = vibrational_class._harmonic_analysis(scf_result)
     assert np.allclose(displ_vecs, expected_vecs) or np.allclose(
         displ_vecs, -1 * np.array(expected_vecs)
@@ -329,11 +330,13 @@ def test_hess_methoderror():
     symbols = ["H", "H"]
     geom = [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]
     mol = qp.qchem.Molecule(symbols, geom)
+    # pylint: disable-next=protected-access
     mol_scf = qp.qchem.vibrational.vibrational_class._single_point(mol)
 
     with pytest.raises(
         ValueError, match="Specified electronic structure method, ccsd is not available."
     ):
+        # pylint: disable-next=protected-access
         vibrational_class._harmonic_analysis(mol_scf, method="ccsd")
 
 
@@ -344,8 +347,9 @@ def test_error_mode_localization():
     sym = ["H", "F"]
     geom = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
     mol = qp.qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    # pylint: disable-next=protected-access
     mol_scf = qp.qchem.vibrational.vibrational_class._single_point(mol)
-    freqs, vecs = vibrational_class._harmonic_analysis(mol_scf)
+    freqs, vecs = vibrational_class._harmonic_analysis(mol_scf)  # pylint: disable=protected-access
     with pytest.raises(ValueError, match="The `bins` list cannot be empty."):
         vibrational.localize_normal_modes(freqs, vecs, bins=[])
 
@@ -387,12 +391,15 @@ def test_error_mode_localization():
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_pyscf_support")
+# pylint: disable-next=too-many-arguments
 def test_get_dipole(sym, geom, mult, charge, method, expected_dipole):
     r"""Test that the get_dipole function produces correct results."""
     mol = qp.qchem.Molecule(
         sym, geom, mult=mult, charge=charge, basis_name="6-31g", unit="Angstrom", load_data=True
     )
+    # pylint: disable-next=protected-access
     mol_scf = qp.qchem.vibrational.vibrational_class._single_point(mol, method=method)
+    # pylint: disable-next=protected-access
     dipole = vibrational_class._get_dipole(mol_scf, method=method)
     assert np.allclose(dipole, expected_dipole)
 

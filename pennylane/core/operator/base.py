@@ -10,12 +10,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 Defines the base class for Operator and Operation.
 """
 
-# pylint: disable=access-member-before-definition
 import abc
 import copy
 import warnings
@@ -69,18 +67,15 @@ _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been 
 class AbstractOperator(jax.core.AbstractValue):  # pragma: no cover
     """An operator captured into plxpr."""
 
-    # pylint: disable=missing-function-docstring
-    def at_least_vspace(self):
+    def at_least_vspace(self):  # pylint: disable=missing-function-docstring
         # TODO: investigate the proper definition of this method
         raise NotImplementedError
 
-    # pylint: disable=missing-function-docstring
-    def join(self, other):
+    def join(self, other):  # pylint: disable=missing-function-docstring
         # TODO: investigate the proper definition of this method
         raise NotImplementedError
 
-    # pylint: disable=missing-function-docstring
-    def update(self, **kwargs):
+    def update(self, **kwargs):  # pylint: disable=missing-function-docstring
         # TODO: investigate the proper definition of this method
         raise NotImplementedError
 
@@ -202,8 +197,7 @@ def _process_data(op):
     return str([id(d) if is_tracer(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
-# pylint: disable=abstract-method
-class _GiveOperatorMeta(ABCCaptureMeta):
+class _GiveOperatorMeta(ABCCaptureMeta):  # pylint: disable=abstract-method
     """When someone tries to inherit from Operator1, we switch it out for Operator instead."""
 
     def __new__(mcs, name, bases, attrs):
@@ -211,7 +205,6 @@ class _GiveOperatorMeta(ABCCaptureMeta):
         return super().__new__(mcs, name, new_bases, attrs)
 
 
-# pylint: disable=too-few-public-methods
 class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
     """A class for checking if a object specifying implements the old version of :class:`~.Operator`.
 
@@ -269,6 +262,7 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
         return getattr(subclass, "_operator_version", None) == 1
 
 
+# pylint: disable-next=too-many-instance-attributes,too-many-public-methods
 class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
@@ -538,8 +532,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         trigger a call to ``_check_batching``, which validates and sets these properties.
     """
 
-    # pylint: disable=too-many-public-methods, too-many-instance-attributes
-
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
@@ -640,8 +632,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         cls = self.__class__
         copied_op = cls.__new__(cls)
         copied_op._data = copy.copy(self.data)
-        # pylint: disable=attribute-defined-outside-init
         if hasattr(self, "_hyperparameters"):
+            # pylint: disable-next=attribute-defined-outside-init
             copied_op._hyperparameters = copy.copy(self._hyperparameters)
         for attr, value in vars(self).items():
             if attr not in {"_data", "_hyperparameters"}:
@@ -708,13 +700,13 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise MatrixUndefinedError
 
-    # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
-    def has_matrix(cls) -> bool:
+    def has_matrix(cls) -> bool:  # pylint: disable=no-self-argument
         r"""Bool: Whether or not the Operator returns a defined matrix.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
+        # pylint: disable-next=comparison-with-callable
         return cls.compute_matrix != Operator.compute_matrix or cls.matrix != Operator.matrix
 
     def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
@@ -773,15 +765,15 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise SparseMatrixUndefinedError
 
-    # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
-    def has_sparse_matrix(cls) -> bool:
+    def has_sparse_matrix(cls) -> bool:  # pylint: disable=no-self-argument
         r"""Bool: Whether the Operator returns a defined sparse matrix.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
         return (
             cls.compute_sparse_matrix != Operator.compute_sparse_matrix
+            # pylint: disable-next=comparison-with-callable
             or cls.sparse_matrix != Operator.sparse_matrix
         )
 
@@ -869,7 +861,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
                 return qp.math.linalg.eigvals(self.matrix())
             raise EigvalsUndefinedError from e
 
-    def terms(self) -> tuple[list[TensorLike], list["Operation"]]:  # pylint: disable=no-self-use
+    def terms(self) -> tuple[list[TensorLike], list["Operation"]]:
         r"""Representation of the operator as a linear combination of other operators.
 
         .. math:: O = \sum_i c_i O_i
@@ -1152,10 +1144,9 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @property
     def hyperparameters(self) -> dict[str, Any]:
         """dict: Dictionary of non-trainable variables that this operation depends on."""
-        # pylint: disable=attribute-defined-outside-init
         if hasattr(self, "_hyperparameters"):
             return self._hyperparameters
-        self._hyperparameters = {}
+        self._hyperparameters = {}  # pylint: disable=attribute-defined-outside-init
         return self._hyperparameters
 
     @property
@@ -1272,9 +1263,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         return {}
 
-    # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
-    def has_diagonalizing_gates(cls) -> bool:
+    def has_diagonalizing_gates(cls) -> bool:  # pylint: disable=no-self-argument
         r"""Bool: Whether or not the Operator returns defined diagonalizing gates.
 
         Note: Child classes may have this as an instance property instead of as a class property.
@@ -1283,6 +1273,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         # Currently, those are mostly classes from the operator arithmetic module.
         return (
             cls.compute_diagonalizing_gates != Operator.compute_diagonalizing_gates
+            # pylint: disable-next=comparison-with-callable
             or cls.diagonalizing_gates != Operator.diagonalizing_gates
         )
 
@@ -1311,7 +1302,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise DiagGatesUndefinedError
 
-    def diagonalizing_gates(self) -> list["Operator"]:  # pylint:disable=no-self-use
+    def diagonalizing_gates(self) -> list["Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1332,16 +1323,15 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             *self.parameters, wires=self.wires, **self.hyperparameters
         )
 
-    # pylint: disable=no-self-argument
     @classproperty
-    def has_generator(cls) -> bool:
+    def has_generator(cls) -> bool:  # pylint: disable=no-self-argument
         r"""Bool: Whether or not the Operator returns a defined generator.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
         return cls.generator != Operator.generator
 
-    def generator(self) -> "Operator":  # pylint: disable=no-self-use
+    def generator(self) -> "Operator":
         r"""Generator of an operator that is in single-parameter-form.
 
         For example, for operator
@@ -1404,16 +1394,15 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
-    # pylint: disable=no-self-argument
     @classproperty
-    def has_adjoint(cls) -> bool:
+    def has_adjoint(cls) -> bool:  # pylint: disable=no-self-argument
         r"""Bool: Whether or not the Operator can compute its own adjoint.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
         return cls.adjoint != Operator.adjoint
 
-    def adjoint(self) -> "Operator":  # pylint:disable=no-self-use
+    def adjoint(self) -> "Operator":
         """Create an operation that is the adjoint of this one. Used to simplify
         :class:`~.Adjoint` operators constructed by :func:`~.adjoint`.
 
@@ -1459,6 +1448,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         Returns:
             .Operator: new operator
         """
+        # pylint: disable=protected-access
         new_op = copy.copy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         if (p_rep := self.pauli_rep) is not None:
@@ -1629,7 +1619,7 @@ class Operation(Operator):
         if self.grad_recipe != [None] * self.num_params:
             return "A"
         try:
-            self.parameter_frequencies  # pylint:disable=pointless-statement
+            self.parameter_frequencies  # pylint: disable=pointless-statement
             return "A"
         except ParameterFrequenciesUndefinedError:
             return "F"
@@ -1651,9 +1641,8 @@ class Operation(Operator):
     """
 
     # Attributes for compilation transforms
-    # pylint: disable=useless-return
     @property
-    def basis(self) -> Literal["X", "Y", "Z", None]:
+    def basis(self) -> Literal["X", "Y", "Z", None]:  # pylint: disable=useless-return
         """str or None: The basis of an operation, or for controlled gates, of the
         target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
         or ``"Z"``.

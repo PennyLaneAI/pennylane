@@ -16,8 +16,6 @@ Tests for the ArbitraryUnitary template.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -216,7 +214,7 @@ class TestDecomposition:
         assert_decomposable(op)
 
 
-class TestInputs:
+class TestInputs:  # pylint: disable=too-few-public-methods
     """Test inputs and pre-processing."""
 
     @pytest.mark.parametrize("shape", [(5,), (1, 2, 3), (15, 3)])
@@ -235,7 +233,7 @@ class TestInputs:
             circuit(weights)
 
 
-class TestAttributes:
+class TestAttributes:  # pylint: disable=too-few-public-methods
     """Tests class attributes and methods."""
 
     @pytest.mark.parametrize(

@@ -15,7 +15,9 @@
 Tests that apply to all device modifiers or act on a combination of them together.
 """
 
-# pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring, no-member
+# pylint: disable=unused-argument,too-few-public-methods
+
+
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
@@ -24,7 +26,6 @@ from pennylane.devices import Device
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 
 
-# pylint: disable=protected-access
 def test_chained_modifiers():
     """Test that modifiers can be stacked together."""
 
@@ -35,6 +36,7 @@ def test_chained_modifiers():
         def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
+    # pylint: disable-next=protected-access
     assert DummyDev._applied_modifiers == [single_tape_support, simulator_tracking]
 
     tape = qp.tape.QuantumScript([], [qp.expval(qp.X(0))], shots=50)
@@ -76,7 +78,7 @@ class TestModifierDefaultBeahviour:
             def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
                 return 0.0
 
-        assert DummyDev._applied_modifiers == [modifier]
+        assert DummyDev._applied_modifiers == [modifier]  # pylint: disable=protected-access
 
         @modifier
         class DummyDev2(qp.devices.Device):
@@ -86,7 +88,7 @@ class TestModifierDefaultBeahviour:
             def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
                 return 0.0
 
-        assert DummyDev2._applied_modifiers == [None, modifier]
+        assert DummyDev2._applied_modifiers == [None, modifier]  # pylint: disable=protected-access
 
     def test_leaves_undefined_methods_untouched(self, modifier):
         """Test that undefined methods are left the same as the Device class methods."""

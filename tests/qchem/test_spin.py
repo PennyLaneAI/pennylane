@@ -107,11 +107,10 @@ from pennylane import qchem, simplify
 def test_spin2_matrix_elements(n_spin_orbs, matrix_ref):
     r"""Test the calculation of the matrix elements of the two-particle spin operator
     :math:`\hat{s}_1 \cdot \hat{s}_2` implemented by the function `'_spin2_matrix_elements'`"""
-    # pylint: disable=protected-access
 
     sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
 
-    s2_me_result = qchem.spin._spin2_matrix_elements(sz)
+    s2_me_result = qchem.spin._spin2_matrix_elements(sz)  # pylint: disable=protected-access
 
     assert np.allclose(s2_me_result, matrix_ref)
 

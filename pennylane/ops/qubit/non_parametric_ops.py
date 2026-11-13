@@ -18,6 +18,7 @@ not depend on any parameters.
 
 # pylint: disable=arguments-differ,unused-argument
 
+
 import cmath
 from collections import Counter
 from copy import copy
@@ -323,7 +324,6 @@ add_decomps("Adjoint(Hadamard)", self_adjoint)
 add_decomps("Pow(Hadamard)", pow_involutory2)
 
 
-# pylint: disable-next=unused-argument
 def _controlled_h_resources(base, control_wires, control_values, work_wires, work_wire_type):
     if len(control_wires) == 1:
         return {qp.CH: 1}
@@ -339,7 +339,6 @@ def _controlled_h_resources(base, control_wires, control_values, work_wires, wor
 
 
 @register_resources(_controlled_h_resources)
-# pylint: disable-next=unused-argument
 def _controlled_hadamard(base, control_wires, control_values, work_wires, work_wire_type):
     wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
@@ -599,10 +598,9 @@ def _paulix_to_rx(wires: WiresLike):
     qp.GlobalPhase(-np.pi / 2)
 
 
-# pylint: disable-next=unused-argument
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.5))
 @register_resources(lambda *_, **__: {qp.SX: 1})
-def _pow_x_to_sx(base, z):  # pylint: disable=unused-argument
+def _pow_x_to_sx(base, z):
     qp.SX(wires=base.wires)
 
 
@@ -1057,7 +1055,6 @@ class PauliZ(Operator2):
         return base_label or "Z"
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike | None = None) -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1079,12 +1076,10 @@ class PauliZ(Operator2):
 
     @staticmethod
     @lru_cache
-    # pylint: disable=unused-argument,arguments-differ
     def compute_sparse_matrix(wires: WiresLike | None = None, format="csr") -> sparse.spmatrix:
         return sparse.csr_matrix([[1, 0], [0, -1]]).asformat(format=format)
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
     def compute_eigvals(wires: WiresLike | None = None) -> np.ndarray:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -1110,10 +1105,7 @@ class PauliZ(Operator2):
         return qp.pauli.pauli_eigs(1)
 
     @staticmethod
-    # pylint: disable=unused-argument
-    def compute_diagonalizing_gates(
-        wires: WiresLike,
-    ) -> list[qp.operation.Operator]:
+    def compute_diagonalizing_gates(wires: WiresLike) -> list[qp.operation.Operator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1173,7 +1165,7 @@ Args:
 """
 
 
-def _pauliz_to_ps_resources(wires: AbstractWires):  # pylint: disable=unused-argument
+def _pauliz_to_ps_resources(wires: AbstractWires):
     return {qp.PhaseShift: 1}
 
 
@@ -1184,13 +1176,13 @@ def _pauliz_to_ps(wires: WiresLike):
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.5))
 @register_resources(lambda *_, **__: {qp.S: 1})
-def _pow_z_to_s(base, z):  # pylint: disable=unused-argument
+def _pow_z_to_s(base, z):
     qp.S(wires=base.wires)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.25))
 @register_resources(lambda *_, **__: {qp.T: 1})
-def _pow_z_to_t(base, z):  # pylint: disable=unused-argument
+def _pow_z_to_t(base, z):
     qp.T(wires=base.wires)
 
 
@@ -1215,9 +1207,7 @@ add_decomps("Adjoint(PauliZ)", self_adjoint)
 add_decomps("Pow(PauliZ)", pow_involutory2, _pow_z, _pow_z_to_s, _pow_z_to_t)
 
 
-def _controlled_z_resources(  # pylint: disable=unused-argument
-    base, control_wires, control_values, work_wires, work_wire_type
-):
+def _controlled_z_resources(base, control_wires, control_values, work_wires, work_wire_type):
     if len(control_wires) == 1:
         return {qp.CZ: 1}
     if len(control_wires) == 2:
@@ -1233,9 +1223,7 @@ def _controlled_z_resources(  # pylint: disable=unused-argument
 
 
 @register_resources(_controlled_z_resources)
-def _controlled_z_decomp(  # pylint: disable=unused-argument
-    base, control_wires, control_values, work_wires, work_wire_type
-):
+def _controlled_z_decomp(base, control_wires, control_values, work_wires, work_wire_type):
     wires = concatenate_wires(control_wires, base.wires)
 
     if len(control_wires) == 1:
@@ -1977,7 +1965,6 @@ add_decomps("Adjoint(SWAP)", self_adjoint)
 add_decomps("Pow(SWAP)", pow_involutory2)
 
 
-# pylint: disable-next=unused-argument
 def _controlled_swap_resources(base, control_wires, control_values, work_wires, work_wire_type):
     if len(control_wires) == 1:
         return {qp.CSWAP: 1}
@@ -1992,7 +1979,6 @@ def _controlled_swap_resources(base, control_wires, control_values, work_wires, 
 
 
 @register_resources(_controlled_swap_resources)
-# pylint: disable-next=unused-argument
 def _controlled_swap_decomp(base, control_wires, control_values, work_wires, work_wire_type):
     wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
@@ -2651,9 +2637,7 @@ class _FixedAnglePPR(Operator2, is_baseclass=True):
         return f"{self.name}({self.sign}, '{self.pauli_word}', wires={self.wires})"
 
     @classmethod
-    def compute_matrix(  # pylint: disable=unused-argument
-        cls, sign: int, pauli_word: str, wires=None
-    ) -> TensorLike:
+    def compute_matrix(cls, sign: int, pauli_word: str, wires=None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (class method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2944,7 +2928,6 @@ def _z_gate(sign, gate, wires):
 
 def _ppr_via_z_gate_resources(gate, sign, pauli_word, wires):
     """Resources of ``_ppr_via_z_gate`` and a global phase."""
-    # pylint: disable=unused-argument
     active_word = pauli_word.replace("I", "")
     if not active_word:
         return {qp.GlobalPhase: 1}
