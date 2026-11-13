@@ -78,6 +78,27 @@ class LeftClassicalComparator(Operator2):
 
     >>> print(circuit())
     [0. 1.]
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.LeftClassicalComparator
+            :stacked:
+            :symbols: :math:`n` ``x_wires``, the constant :math:`L` and ``comparator`` :math:`c`
+            :example: :math:`n=3`, :math:`L=6`, :math:`c={<}`
+
+            .. decomposition-rule:: _left_classical_comparator
+                :image: /_static/decomposition_thumbnails/left_classical_comparator_elbow_ladder.svg
+                :where: :math:`[\cdot]` is 1 if the condition holds and 0 otherwise.
+                    Conditional gates depend on :math:`L` and :math:`c`.
+                    Their counts are upper bounds; the example counts are for the
+                    circuit shown
+                
+                :class:`~.TemporaryAND` | :math:`n - 1` | 2
+                :class:`~.CNOT` | :math:`n - 1` | 2
+                :class:`~.CNOT` (conditional) | :math:`\leq 1` | 0
+                :class:`~.X` (conditional) | :math:`\leq 4n - 1` | 8
+                :class:`~.X` | :math:`[c \in \{>, \geq\}]` | 0
     """
 
     wire_argnames = ("x_wires", "target_wire", "work_wires")
