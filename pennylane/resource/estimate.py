@@ -15,7 +15,6 @@
 
 from __future__ import annotations
 
-import copy
 import re
 from collections.abc import Callable, Iterable
 from functools import partial
@@ -74,13 +73,21 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
         )
 
     # At level="top", the user transforms are skipped and only the decomposition is applied
-    estimate_qnode = copy.copy(original_qnode)
-    estimate_qnode._compile_pipeline = CompilePipeline(  # pylint: disable=protected-access
-        decompose(gate_set=target, **_decomps_from_pipeline(original_qnode.compile_pipeline))
-    )
-
+    bound_t = decompose(gate_set=target, **_decomps_from_pipeline(original_qnode.compile_pipeline))
+    estimate_kwargs = bound_t.kwargs
+    estimate_qnode = original_qnode.update_pipelines(CompilePipeline())
     try:
-        resources = resources_from_analysis_pass(func, estimate_qnode, 1, {}, {}, *args, **kwargs)
+        resources = resources_from_analysis_pass(
+            func,
+            estimate_qnode,
+            0,
+            {},
+            {},
+            *args,
+            analysis_pass_name="resource-estimate",
+            analysis_pass_kwargs=estimate_kwargs,
+            **kwargs,
+        )
     except CompileError as exc:
         missing_rule = re.search(r"Decomposition rule not found for operator '([^'{]+)", str(exc))
         if missing_rule is None:

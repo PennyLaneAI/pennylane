@@ -70,6 +70,98 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         """Fixture for the qjit'd QNode with a user transform."""
         return qp.qjit(qp.transforms.cancel_inverses(qnode))
 
+    def test_decomposition_clifford_t(self):
+        """Test the resources of a circuit with many Clifford and T-based operators and several
+        measurements projected onto Clifford+T, and compare with a real decompose call."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def circuit():
+            qp.Toffoli([0, 1, 2])
+            qp.Hadamard(0)
+            qp.Hadamard(0)
+            qp.CCZ([0, 1, 2])
+            qp.SWAP([0, 1])
+            qp.CZ([1, 2])
+            qp.CY([0, 2])
+            qp.adjoint(qp.T(0))
+            qp.adjoint(qp.S(1))
+            qp.S(2)
+            qp.T(2)
+            qp.CNOT([0, 1])
+            qp.PauliX(1)
+            return qp.expval(qp.Z(0)), qp.probs(wires=[0, 1]), qp.var(qp.X(2))
+
+        resources = qp.estimate(circuit, target=qp.gate_sets.CLIFFORD_T)().resources
+
+        assert resources == SpecsResources(
+            counts={
+                "Adjoint(S)": 1,
+                "Adjoint(T)": 7,
+                "CNOT": 13,
+                "CY": 1,
+                "CZ": 1,
+                "Hadamard": 6,
+                "PauliX": 1,
+                "S": 1,
+                "SWAP": 1,
+                "T": 9,
+            },
+            measurement_processes={"expval(PauliZ)": 1, "probs(2 wires)": 1, "var(PauliX)": 1},
+            num_wires=3,
+        )
+
+        @qp.qjit(capture=True)
+        @qp.transforms.decompose(gate_set=qp.gate_sets.CLIFFORD_T)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def decomposed_circuit():
+            qp.Toffoli([0, 1, 2])
+            qp.Hadamard(0)
+            qp.Hadamard(0)
+            qp.CCZ([0, 1, 2])
+            qp.SWAP([0, 1])
+            qp.CZ([1, 2])
+            qp.CY([0, 2])
+            qp.adjoint(qp.T(0))
+            qp.adjoint(qp.S(1))
+            qp.S(2)
+            qp.T(2)
+            qp.CNOT([0, 1])
+            qp.PauliX(1)
+            return qp.expval(qp.Z(0)), qp.probs(wires=[0, 1]), qp.var(qp.X(2))
+
+        assert qp.analyze(decomposed_circuit, level=1)().resources == resources
+
+    def test_decomposition_rotations(self):
+        """Test estimate of ctrl(RX) into ROTATIONS_PLUS_CNOT against a real decompose call.
+
+        estimate counts average-case X flips for zero-valued controls; analyze takes the max
+        over scf.if branches, so counts may differ by one RX and one GlobalPhase.
+        """
+        target = qp.gate_sets.ROTATIONS_PLUS_CNOT
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=2))
+        def circuit():
+            qp.ctrl(qp.RX(0.3, 1), control=[0])
+            return qp.state()
+
+        resources = qp.estimate(circuit, target=target)().resources
+        assert resources.counts == pytest.approx(
+            {"CNOT": 2, "GlobalPhase": 1, "RX": 1, "RY": 2, "RZ": 2}, abs=1
+        )
+        assert resources.num_wires == 2
+
+        @qp.qjit(capture=True)
+        @qp.transforms.decompose(gate_set=target)
+        @qp.qnode(qp.device("null.qubit", wires=2))
+        def decomposed_circuit():
+            qp.ctrl(qp.RX(0.3, 1), control=[0])
+            return qp.state()
+
+        decomposed = qp.analyze(decomposed_circuit, level=1)().resources
+        assert resources.counts == pytest.approx(decomposed.counts, abs=1)
+
     def test_specs(self, circuit):
         """Test that estimate ignores the user transforms and decomposes the circuit into the
         target gate set."""
@@ -146,11 +238,12 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
 
         qp.add_decomps(qp.CZ, cz_with_ry)
         target = TARGET | {"RY", "PauliZ"}
-        circuit = qp.transforms.decompose(
-            qnode, gate_set=target, fixed_decomps={qp.CZ: "cz_with_ry"}
-        )
-
-        specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(qp.CZ, cz_with_ry)
+            circuit = qp.transforms.decompose(
+                qnode, gate_set=target, fixed_decomps={qp.CZ: cz_with_ry}
+            )
+            specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
 
         assert specs.resources.quantum_operations == {
             "Hadamard": 2,
@@ -203,14 +296,16 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         qp.add_decomps(qp.CZ, cz_with_ry)
         qp.add_decomps(qp.Hadamard, h_with_x)
         target = {"CNOT", "RX", "RY", "PauliX", "PauliZ"}
-        circuit = qp.transforms.decompose(
-            qnode, gate_set=target | {"Hadamard"}, fixed_decomps={qp.CZ: "cz_with_ry"}
-        )
-        circuit = qp.transforms.decompose(
-            circuit, gate_set=target, fixed_decomps={qp.Hadamard: h_with_x}
-        )
-
-        specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(qp.CZ, cz_with_ry)
+            circuit = qp.transforms.decompose(
+                qnode, gate_set=target | {"Hadamard"}, fixed_decomps={qp.CZ: cz_with_ry}
+            )
+            qp.add_decomps(qp.Hadamard, h_with_x)
+            circuit = qp.transforms.decompose(
+                circuit, gate_set=target, fixed_decomps={qp.Hadamard: h_with_x}
+            )
+            specs = qp.estimate(qp.qjit(circuit), target=target)(0.5)
 
         assert specs.resources.quantum_operations == {
             "PauliX": 2,
@@ -271,6 +366,32 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         concrete = resources.subs({var: 5 for var in resources.vars})
         assert not concrete.is_symbolic
         assert concrete.counts == {"Hadamard": 10, "CNOT": 5}
+
+    def test_abstract_data_hints_scf(self):
+        """Estimate supports abstract inputs together with hinted SCF."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def circuit(n, angles, wires):
+            @qp.hint({"num-iters": 4})
+            @qp.for_loop(n)
+            def loop(i):
+                qp.CZ([wires[0], wires[1]])
+                qp.RX(angles[i], wires[0])
+
+            loop()
+            return qp.expval(qp.Z(wires[0]))
+
+        resources = qp.estimate(circuit, target={"Hadamard", "CNOT", "RX"})(
+            2, qp.typing.AbstractArray((5,), float), qp.typing.Wire[2]
+        ).resources
+
+        # hint overrides the runtime bound: 4 iters of CZ -> 2 H + CNOT, plus RX
+        assert resources == SpecsResources(
+            counts={"Hadamard": 8, "CNOT": 4, "RX": 4},
+            measurement_processes={"expval(PauliZ)": 1},
+            num_wires=10,
+        )
 
     def test_partial(self, circuit):
         """Test that estimate supports functools.partial wrappers."""
@@ -351,6 +472,92 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
 
         with pytest.raises(ValueError, match="qp.estimate can only be applied to a qjit'd QNode"):
             qp.estimate(circuit, target=TARGET)()
+
+    def test_dynamic_allocation(self):
+        """Test that estimate counts the gates acting on dynamically allocated wires."""
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
+        def circuit():
+            with qp.allocate(2) as aux:
+                qp.CZ(aux)
+            return qp.probs(wires=0)
+
+        resources = qp.estimate(circuit, target={"Hadamard", "CNOT"})().resources
+
+        assert resources.quantum_operations == {"Hadamard": 2, "CNOT": 1}
+        assert resources.num_wires == 4
+
+    def test_subroutine_in_adjoint(self):
+        """Test that a subroutine called both inside and outside an adjoint region has its
+        operators counted once in each context."""
+
+        @qp.capture.subroutine
+        def helper(wire):
+            qp.Hadamard(wire)
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def circuit():
+            qp.adjoint(helper)(0)
+            helper(0)
+            return qp.state()
+
+        resources = qp.estimate(circuit, target=qp.gate_sets.CLIFFORD_T)().resources
+
+        assert resources.quantum_operations == {"Adjoint(Hadamard)": 1, "Hadamard": 1}
+
+    def test_nested_subroutine_in_adjoint(self):
+        """Test that an adjoint applied to a subroutine also applies to the subroutines it
+        calls."""
+
+        @qp.capture.subroutine
+        def inner(wire):
+            qp.S(wire)
+
+        @qp.capture.subroutine
+        def outer(wire):
+            inner(wire)
+            qp.T(wire)
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def circuit():
+            qp.adjoint(outer)(0)
+            outer(0)
+            return qp.state()
+
+        resources = qp.estimate(circuit, target=qp.gate_sets.CLIFFORD_T)().resources
+
+        assert resources.quantum_operations == {"Adjoint(S)": 1, "Adjoint(T)": 1, "S": 1, "T": 1}
+
+    def test_subroutine_in_ctrl(self):
+        """Test that a subroutine called both inside and outside a control region has its
+        operators counted once in each context."""
+
+        @qp.capture.subroutine
+        def helper(wire):
+            qp.X(wire)
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def circuit():
+            qp.ctrl(helper, control=(1, 2))(0)
+            helper(0)
+            helper(1)
+            return qp.state()
+
+        resources = qp.estimate(circuit, target=qp.gate_sets.CLIFFORD_T)().resources
+
+        # The doubly-controlled X becomes a Toffoli plus two PauliX, which the MultiControlledX
+        # rule counts as an average-case estimate for flipping zero-valued controls.
+        assert resources.quantum_operations == {
+            "Adjoint(T)": 3,
+            "CNOT": 6,
+            "Hadamard": 2,
+            "PauliX": 4,
+            "T": 4,
+        }
 
 
 @pytest.mark.usefixtures("disable_capture")
