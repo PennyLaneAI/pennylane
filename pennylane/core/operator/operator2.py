@@ -1704,6 +1704,7 @@ def _init_wires(op: Operator2):
         if wname not in op.hybrid_argnames:
             warg = op._bound_args.arguments[wname]
             canonical_wires = warg if isinstance(warg, AbstractWires) else Wires(warg)
+            op._bound_args.arguments[wname] = canonical_wires
 
             if op.arg_specs and wname in op.arg_specs:
                 exp_type = op.arg_specs[wname]
@@ -1711,11 +1712,10 @@ def _init_wires(op: Operator2):
                     exp_type
                 ):
                     raise ValueError(
-                        f"Incorrect number of wires for '{type(op).__name__}.{wname}'. "
+                        f"Incorrect number of wires for '{op.name}.{wname}'. "
                         f"Expected {len(exp_type)} wires but got {len(canonical_wires)}."
                     )
 
-            op._bound_args.arguments[wname] = canonical_wires
 
             # Work wires are NOT included in the full wires list.
             if wname not in ("work_wires", "work_wire"):
