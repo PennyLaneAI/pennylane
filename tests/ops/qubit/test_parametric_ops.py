@@ -906,14 +906,16 @@ class TestCPhaseShift:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("wires", [[0, 2], [2, 0]])
-    @pytest.mark.parametrize("variant", ["base", "adjoint", "pow"])
+    @pytest.mark.parametrize("variant", ["base", "adjoint", "pow", "controlled"])
     def test_decomposition_rules(self, cphase_op, wires, variant):
-        """Test the base, adjoint and power decomposition matrices and resource counts."""
+        """Test base and symbolic decomposition matrices and resource counts."""
         op = cphase_op(0.371, wires=wires)
         if variant == "adjoint":
             op = qp.adjoint(op)
         elif variant == "pow":
             op = qp.pow(op, 1.25)
+        elif variant == "controlled":
+            op = qp.ctrl(op, control=1)
         assert_decomposable(op)
 
     @pytest.mark.jax
