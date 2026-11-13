@@ -34,8 +34,8 @@ circuit.
 Arithmetic subroutines
 ----------------------
 
-Quantum arithmetic subroutines enable in-place and out-place modular operations
-such as addition, multiplication, and exponentiation.
+Quantum arithmetic subroutines enable in-place and out-place operations such as
+addition an multiplication, as well as comparators.
 
 .. subroutine-table::
     :nosignatures:
