@@ -24,7 +24,9 @@ from copy import copy
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator
+from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import QueuingManager
+from pennylane.ops._pauli_conversion import to_operator
 
 from .composite import CompositeOp, handle_recursion_error
 
@@ -348,9 +350,9 @@ class Sum(CompositeOp):
 
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     @handle_recursion_error
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
@@ -367,9 +369,8 @@ class Sum(CompositeOp):
 
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order).asformat(format)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return True
 
     def adjoint(self):
@@ -379,7 +380,7 @@ class Sum(CompositeOp):
         """PauliSentence representation of the Sum of operations."""
 
         if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
-            new_rep = qp.pauli.PauliSentence()
+            new_rep = PauliSentence()
             for operand_rep in operand_pauli_reps:
                 for pw, coeff in operand_rep.items():
                     new_rep[pw] += coeff
@@ -420,7 +421,7 @@ class Sum(CompositeOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return pr.operation(wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         new_summands = self._simplify_summands(summands=self.operands).get_summands(cutoff=cutoff)
         if new_summands:
@@ -457,7 +458,7 @@ class Sum(CompositeOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             with qp.QueuingManager.stop_recording():
-                ops = [pauli.operation() for pauli in pr.keys()]
+                ops = [to_operator(pauli) for pauli in pr.keys()]
             return list(pr.values()), ops
 
         with qp.QueuingManager.stop_recording():

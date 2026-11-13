@@ -21,8 +21,6 @@ from pennylane.estimator.resource_operator import (
     resource_rep,
 )
 
-# pylint: disable= arguments-differ
-
 
 class BasisState(ResourceOperator):
     r"""Resource class for preparing a single basis state.
@@ -51,6 +49,7 @@ class BasisState(ResourceOperator):
         return {"num_wires": self.num_wires}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_wires: int) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -61,7 +60,7 @@ class BasisState(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
 
     @classmethod
-    def resource_decomp(cls, num_wires: int) -> list[GateCount]:
+    def resource_decomp(cls, num_wires: int) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 

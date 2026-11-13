@@ -1517,6 +1517,39 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* Pauli data and arithmetic are being separated from operator construction to remove
+  the circular dependency between ``pennylane.ops`` and ``pennylane.pauli``.
+  This involves the following breaking changes:
+
+  - ``PauliWord.operation()`` and ``PauliSentence.operation()`` have been replaced by
+    :func:`~pennylane.pauli.to_operator`.
+    `(#10483) <https://github.com/PennyLaneAI/pennylane/pull/10483>`__
+
+    .. code-block:: pycon
+
+        >>> from pennylane.core.operator import Operator
+        >>> word = qp.pauli.PauliWord({0: "X", 1: "Z"})
+        >>> word_op = qp.pauli.to_operator(word)
+        >>> isinstance(word_op, Operator)
+        True
+        >>> word_op
+        X(0) @ Z(1)
+        >>> sentence = qp.pauli.PauliSentence({word: 2.0})
+        >>> sentence_op = qp.pauli.to_operator(sentence)
+        >>> isinstance(sentence_op, Operator)
+        True
+        >>> sentence_op
+        2.0 * (X(0) @ Z(1))
+
+    The ``identity_wires`` argument replaces ``wire_order`` and assigns wires to
+    identity terms, including the identity used to represent zero.
+
+  - ``PauliWord`` and ``PauliSentence`` now live in ``pennylane.core.pauli``; their
+    existing imports from ``pennylane.pauli`` remain available. Their ``commutator``
+    methods now accept only Pauli words and sentences. For mixed operator inputs,
+    use ``qp.commutator(pauli_value, operator, pauli=True)``.
+    `(#10484) <https://github.com/PennyLaneAI/pennylane/pull/10484>`__
+
 * ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of
   ``"MidMeasureMP"``. Update raw device operation names and comparisons; the deprecated
   Python import and ``GateSet`` alias remain supported.
@@ -1835,6 +1868,10 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* Updated Pylint to 4.1.3, cleaned up suppression scope and formatting, and made unnecessary
+  suppressions fail lint. Labs tests now consistently use the test lint configuration.
+  `(#10462) <https://github.com/PennyLaneAI/pennylane/pull/10462>`__
+
 * :func:`~.specs`, :func:`~.analyze` and :func:`~pennylane.estimate` now compile QJIT-compiled
   QNodes up to the MLIR passes with Catalyst's ``target="mlir_opt"``, instead of reproducing part
   of ``QJIT.jit_compile``.
@@ -2003,6 +2040,7 @@ Internal changes ⚙️
     `(#10226) <https://github.com/PennyLaneAI/pennylane/pull/10226>`__
     `(#10267) <https://github.com/PennyLaneAI/pennylane/pull/10267>`__
     `(#10449) <https://github.com/PennyLaneAI/pennylane/pull/10449>`__
+    `(#10495) <https://github.com/PennyLaneAI/pennylane/pull/10495>`__
     `(#10459) <https://github.com/PennyLaneAI/pennylane/pull/10459>`__
     `(#10240) <https://github.com/PennyLaneAI/pennylane/pull/10240>`__
 
@@ -2350,6 +2388,10 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed exponential regular-expression backtracking in :func:`~.qchem.mol_data` when
+  validating malformed InChI identifiers.
+  `(#10462) <https://github.com/PennyLaneAI/pennylane/pull/10462>`__
 
 * Fixed :func:`~pennylane.draw_mpl` to show the control values of :class:`~.TemporaryAND`
   and its adjoint. Rounded connectors on the left or right distinguish these

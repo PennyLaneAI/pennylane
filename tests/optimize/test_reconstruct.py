@@ -16,8 +16,6 @@ Tests for the Fourier reconstruction transform.
 """
 
 from functools import reduce
-
-# pylint: disable=too-many-arguments,too-few-public-methods, unnecessary-lambda-assignment, consider-using-dict-items
 from inspect import signature
 from itertools import chain
 
@@ -52,7 +50,7 @@ def join_spectra(spec1, spec2):
     return sums.union(diffs)
 
 
-class Lambda:
+class Lambda:  # pylint: disable=too-few-public-methods
     def __init__(self, fun):
         self.fun = fun
 
@@ -119,7 +117,7 @@ class TestErrors:
             reconstruct(dummy_qnode, spectra=spectra, shifts=shifts)
 
 
-class TestWarnings:
+class TestWarnings:  # pylint: disable=too-few-public-methods
     """Test that warnings are raised e.g. for an ill-conditioned
     Fourier transform during the reconstruction."""
 
@@ -714,8 +712,7 @@ def qnode_3(X, Y):
     return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
 
-# pylint: disable=unused-argument
-def qnode_4(x):
+def qnode_4(x):  # pylint: disable=unused-argument
     return qp.expval(qp.PauliX(0))
 
 
@@ -787,11 +784,12 @@ test_cases_qnodes = [
 ]
 
 
-# pylint: disable=cell-var-from-loop
 class TestReconstruct:
     """Tests the integration of ``_reconstruct_equ`` and ``_reconstruct_gen`` via
     the full ``reconstruct`` function as well as the differentiability of the
     reconstructed function with respect to their single scalar argument."""
+
+    # pylint: disable=too-many-arguments
 
     @pytest.mark.parametrize(
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
@@ -799,6 +797,7 @@ class TestReconstruct:
     )
     def test_with_qnode(self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls):
         """Run a full reconstruction on a QNode."""
+        # pylint: disable=cell-var-from-loop
         qnode = qp.QNode(qnode, dev_1, interface="autograd")
 
         with qp.Tracker(qnode.device) as tracker:
@@ -837,6 +836,7 @@ class TestReconstruct:
         self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls
     ):
         """Tests the reconstruction and differentiability with autograd."""
+        # pylint: disable=cell-var-from-loop
         qnode = qp.QNode(qnode, dev_1, interface="autograd")
         with qp.Tracker(qnode.device) as tracker:
             recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
@@ -886,6 +886,7 @@ class TestReconstruct:
         self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls
     ):
         """Tests the reconstruction and differentiability with JAX."""
+        # pylint: disable=cell-var-from-loop
         import jax
 
         jax.config.update("jax_enable_x64", True)
@@ -931,6 +932,7 @@ class TestReconstruct:
         self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls
     ):
         """Tests the reconstruction and differentiability with Torch."""
+        # pylint: disable=cell-var-from-loop
         import torch
 
         qnode = qp.QNode(qnode, dev_1, interface="torch")

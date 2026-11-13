@@ -43,8 +43,7 @@ ml_frameworks_list = [
 ]
 
 
-class TestCurrentlyUnsupportedCases:
-    # pylint: disable=too-few-public-methods
+class TestCurrentlyUnsupportedCases:  # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self):
         """Test sample-only measurements raise a notimplementedError."""
 
@@ -56,8 +55,7 @@ class TestCurrentlyUnsupportedCases:
 def test_custom_operation():
     """Test execution works with a manually defined operator if it has a matrix."""
 
-    # pylint: disable=too-few-public-methods
-    class MyOperator(qp.operation.Operator):
+    class MyOperator(qp.operation.Operator):  # pylint: disable=too-few-public-methods
         num_wires = 1
 
         @staticmethod
@@ -70,7 +68,6 @@ def test_custom_operation():
     assert qp.math.allclose(result, -1.0)
 
 
-# pylint: disable=too-few-public-methods
 class TestSparsePipeline:
     """System tests for the sparse pipelines."""
 
@@ -112,8 +109,7 @@ class TestSparsePipeline:
         assert qp.math.allclose(res, expected)
 
 
-# pylint: disable=too-few-public-methods
-class TestStatePrepBase:
+class TestStatePrepBase:  # pylint: disable=too-few-public-methods
     """Tests integration with various state prep methods."""
 
     def test_basis_state(self):
@@ -233,8 +229,6 @@ class TestBasicCircuit:
         g = torch.autograd.functional.jacobian(f, phi + 0j)
         assert qp.math.allclose(g[0], -torch.cos(phi))
         assert qp.math.allclose(g[1], -torch.sin(phi))
-
-    # pylint: disable=invalid-unary-operand-type
 
     @pytest.mark.jax
     @pytest.mark.parametrize("op", [qp.RX(np.pi, 0), qp.BasisState([1], 0)])
@@ -569,8 +563,6 @@ class TestDebugger:
             debugger.snapshots["final_state"],
             torch.tensor([torch.cos(phi / 2), -torch.sin(phi / 2) * 1j]),
         )
-
-    # pylint: disable=invalid-unary-operand-type
 
 
 class TestSampleMeasurements:
@@ -1236,12 +1228,12 @@ class TestMidMeasurements:
         result = simulate_tree_mcm(qs)
         assert qp.math.allclose(result, qp.math.array([0.5, 0.5]))
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("shots", [None, 5500])
     @pytest.mark.parametrize("postselect", [None, 0])
     @pytest.mark.parametrize("reset", [False, True])
     @pytest.mark.parametrize("measure_f", [qp.counts, qp.expval, qp.probs, qp.sample, qp.var])
     @pytest.mark.parametrize("meas_obj", [qp.Y(0), [1], [1, 0], "mcm", "composite_mcm", "mcm_list"])
+    # pylint: disable-next=too-many-arguments
     def test_simple_dynamic_circuit(self, *, shots, measure_f, postselect, reset, meas_obj, seed):
         """Tests that `simulate` can handles a simple dynamic circuit with the following measurements:
 
@@ -1383,7 +1375,6 @@ class TestMidMeasurements:
     @pytest.mark.parametrize("postselect_mode", [None, "hw-like", "pad-invalid-samples"])
     def test_tree_traversal_interface_mcm(self, ml_framework, postselect_mode, seed):
         """Test that tree traversal works numerically with different interfaces"""
-        # pylint:disable = singleton-comparison, import-outside-toplevel
 
         qscript = qp.tape.QuantumScript(
             [
@@ -1399,6 +1390,7 @@ class TestMidMeasurements:
         res1, res2 = simulate_tree_mcm(qscript, interface=ml_framework, rng=rng)
 
         p1 = [qp.math.mean(res1 == -1), qp.math.mean(res1 == 1)]
+        # pylint: disable-next=singleton-comparison
         p2 = [qp.math.mean(res2 == True), qp.math.mean(res2 == False)]
         assert qp.math.allclose(qp.math.sum(sp.special.rel_entr(p1, p2)), 0.0, atol=0.05)
 

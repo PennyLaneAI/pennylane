@@ -46,8 +46,7 @@ def test_expval_identity_nowires_LQ():
         _ = qnode()
 
 
-# pylint: disable=too-many-public-methods
-class TestExpval:
+class TestExpval:  # pylint: disable=too-many-public-methods
     """Tests for the expval function"""
 
     @pytest.mark.parametrize("coeffs", [1, 1j, 1 + 1j])
@@ -120,9 +119,7 @@ class TestExpval:
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
-    def test_observable_is_measurement_value(
-        self, shots, phi, tol, tol_stochastic, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_observable_is_measurement_value(self, shots, phi, tol, tol_stochastic, seed):
         """Test that expectation values for mid-circuit measurement values
         are correct for a single measurement value."""
         dev = qp.device("default.qubit", wires=2, seed=seed)
@@ -142,9 +139,7 @@ class TestExpval:
     @pytest.mark.local_salt(1)
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
-    def test_observable_is_composite_measurement_value(
-        self, shots, phi, tol, tol_stochastic, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_observable_is_composite_measurement_value(self, shots, phi, tol, tol_stochastic, seed):
         """Test that expectation values for mid-circuit measurement values
         are correct for a composite measurement value."""
         dev = qp.device("default.qubit", seed=seed)
@@ -217,7 +212,6 @@ class TestExpval:
         """Test that the shape is correct."""
 
         res = qp.expval(obs)
-        # pylint: disable=use-implicit-booleaness-not-comparison
         assert res.shape(None, 1) == ()
         assert res.shape(100, 1) == ()
 
@@ -268,10 +262,9 @@ class TestExpval:
 
     def test_copy_eigvals(self):
         """Test that the eigvals value is just assigned to new mp without copying."""
-        # pylint: disable=protected-access
         m = ExpectationMP(eigvals=[-0.5, 0.5], wires=qp.wires.Wires(0))
         copied_m = copy.copy(m)
-        assert m._eigvals is copied_m._eigvals
+        assert m._eigvals is copied_m._eigvals  # pylint: disable=protected-access
 
     def test_standard_obs(self):
         """Check that the hash of an expectation value of an observable can distinguish different observables."""

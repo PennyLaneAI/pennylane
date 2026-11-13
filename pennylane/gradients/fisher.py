@@ -13,7 +13,6 @@
 # limitations under the License.
 """Contains functions for computing classical and quantum fisher information matrices."""
 
-# pylint: disable=import-outside-toplevel, not-callable
 from functools import partial
 
 import jax
@@ -35,7 +34,7 @@ from .metric_tensor import metric_tensor
 # TODO: create qp.math.jacobian and replace it here
 def _torch_jac(circ):
     """Torch jacobian as a callable function"""
-    import torch
+    import torch  # pylint: disable=import-outside-toplevel
 
     def wrapper(*args, **kwargs):
         loss = partial(circ, **kwargs)
@@ -253,7 +252,7 @@ def classical_fisher(qnode, argnums=0):
             )  # pragma: no cover
 
         j = jac(*args, **kwargs)
-        p = new_qnode(*args, **kwargs)
+        p = new_qnode(*args, **kwargs)  # pylint: disable=not-callable
 
         if old_interface == "auto":
             qnode.interface = "auto"

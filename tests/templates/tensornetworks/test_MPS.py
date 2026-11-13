@@ -16,17 +16,15 @@ Tests for the MPS template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qp
 from pennylane.templates.tensornetworks.mps import MPS, compute_indices_MPS
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the flatten and unflatten methods."""
+    # pylint: disable=protected-access
 
     def block(weights, wires, use_CNOT=True):
         if use_CNOT:
@@ -171,7 +169,7 @@ class TestTemplateInputs:
             ),
         ],
     )
-    def test_exception_wrong_input(
+    def test_exception_wrong_input(  # pylint: disable=too-many-arguments
         self, block, n_params_block, wires, n_block_wires, offset, msg_match
     ):
         """Verifies that an exception is raised if the number of wires or n_block_wires is incorrect."""
@@ -212,7 +210,7 @@ class TestTemplateInputs:
             ),
         ],
     )
-    def test_exception_wrong_weight_shape(
+    def test_exception_wrong_weight_shape(  # pylint: disable=too-many-arguments
         self, block, n_params_block, wires, n_block_wires, block_weights, msg_match
     ):
         """Verifies that an exception is raised if the weights shape is incorrect."""
@@ -417,7 +415,7 @@ class TestTemplateOutputs:
             ),
         ],
     )
-    def test_output(
+    def test_output(  # pylint: disable=too-many-arguments
         self,
         block,
         n_params_block,
@@ -511,7 +509,7 @@ class TestTemplateOutputs:
         ],
     )
     @pytest.mark.jax
-    def test_jax_jit(
+    def test_jax_jit(  # pylint: disable=too-many-arguments
         self,
         block,
         n_params_block,

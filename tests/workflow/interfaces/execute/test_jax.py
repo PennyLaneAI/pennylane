@@ -58,8 +58,7 @@ def test_jit_execution():
     assert qp.math.allclose(out[0], expected)
 
 
-# pylint: disable=too-few-public-methods
-class TestCaching:
+class TestCaching:  # pylint: disable=too-few-public-methods
     """Tests for caching behaviour"""
 
     @pytest.mark.skip("caching is not implemented for jax")
@@ -210,7 +209,7 @@ class TestJaxExecuteIntegration:
 
         res = jax.jacobian(cost)(a)
         if not shots.has_partitioned_shots:
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qp.math.sin(a)
 
@@ -304,7 +303,7 @@ class TestJaxExecuteIntegration:
         expected = [-jnp.cos(y) * jnp.sin(x), -jnp.cos(x) * jnp.sin(y)]
         assert np.allclose(grad, expected, atol=atol_for_shots(shots), rtol=0)
 
-    # pylint: disable=too-many-statements
+    # pylint: disable-next=too-many-statements
     def test_tapes_with_different_return_size(self, execute_kwargs, shots, device_name, seed):
         """Test that tapes wit different can be executed and differentiated."""
 
@@ -354,9 +353,7 @@ class TestJaxExecuteIntegration:
 
         jac = jax.jacobian(cost)(params)
         assert isinstance(jac, jnp.ndarray)
-        assert (
-            jac.shape == (8, 2) if shots.has_partitioned_shots else (4, 2)
-        )  # pylint: disable=no-member
+        assert jac.shape == (8, 2) if shots.has_partitioned_shots else (4, 2)
 
         if shots.has_partitioned_shots:
             assert np.allclose(jac[1], 0, atol=atol_for_shots(shots))
@@ -492,7 +489,7 @@ class TestJaxExecuteIntegration:
 
         device = get_device(device_name, seed)
 
-        class MyU3(qp.U3):
+        class MyU3(qp.U3):  # pylint: disable=too-few-public-methods
             """Dummy operator."""
 
             name = "MyU3"
@@ -744,7 +741,6 @@ class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.fixture
     def cost_fn(self, execute_kwargs, shots, device_name, seed, constructor):
         """Cost function for gradient tests"""
