@@ -50,7 +50,7 @@ def add_noise(tape, noise_model, level="user"):  # pylint: disable=too-many-bran
         noise_model (~pennylane.NoiseModel): noise model according to which noise has to be inserted.
         level (str, int, slice): An indication of which stage in the compile pipeline the
             noise model should be applied to. Only relevant when transforming a ``QNode``. More details
-            on the following permissible values can be found in the :func:`~.workflow.get_compile_pipeline` -
+            on the following permissible values can be found in :func:`~.workflow.construct_batch` -
 
             * ``str``: acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``.
             * ``int``: how many transforms to include, starting from the front of the program.
@@ -140,56 +140,43 @@ def add_noise(tape, noise_model, level="user"):  # pylint: disable=too-many-bran
 
             noisy_circuit = qp.noise.add_noise(circuit, noise_model)
 
-        >>> from pennylane.workflow import get_compile_pipeline
-        >>> print(get_compile_pipeline(circuit, level="device")(1,2,3,4))
-         CompilePipeline(
-          [1] cancel_inverses(),
-          [2] merge_rotations(),
-          [3] undo_swaps(),
-          [4] _expand_metric_tensor(device_wires=[0, 1, 2]),
-          [5] metric_tensor(device_wires=[0, 1, 2]),
-          [6] defer_measurements(allow_postselect=False),
-          [7] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
-          [8] no_sampling(name=backprop + default.mixed),
-          [9] validate_device_wires([0, 1, 2], name=default.mixed),
-          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
-          [11] validate_observables(stopping_condition=..., name=default.mixed)
+        >>> print(circuit.compile_pipeline)
+        CompilePipeline(
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] undo_swaps(),
+          [3] _expand_metric_tensor(device_wires=[0, 1, 2]),
+          [4] metric_tensor(device_wires=[0, 1, 2])
         )
 
-        >>> print(get_compile_pipeline(noisy_circuit, level="device")(1,2,3,4))
+        >>> print(noisy_circuit.compile_pipeline)
         CompilePipeline(
-          [1] cancel_inverses(),
-          [2] merge_rotations(),
-          [3] undo_swaps(),
-          [4] _expand_metric_tensor(device_wires=[0, 1, 2]),
-          [5] metric_tensor(device_wires=[0, 1, 2]),
-          [6] add_noise(...),
-          [7] defer_measurements(allow_postselect=False),
-          [8] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
-          [9] no_sampling(name=backprop + default.mixed),
-          [10] validate_device_wires([0, 1, 2], name=default.mixed),
-          [11] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
-          [12] validate_observables(stopping_condition=..., name=default.mixed)
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] undo_swaps(),
+          [3] _expand_metric_tensor(device_wires=[0, 1, 2]),
+          [4] metric_tensor(device_wires=[0, 1, 2]),
+          [5] add_noise(...)
         )
 
         However, one can request to insert the ``add_noise`` transform at any specific point in the compile pipeline. By specifying the ``level`` keyword argument while
-        transforming a ``QNode``, this transform can be added at a designated level within the compile pipeline, as determined using the
-        :func:`get_compile_pipeline<pennylane.workflow.get_compile_pipeline>`. For example, specifying ``None`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
+        transforming a ``QNode``, this transform can be added at a designated level within the compile pipeline, using the same levels as
+        :func:`~.workflow.construct_batch`. For example, specifying ``"device"`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
 
         >>> print(qp.noise.add_noise(circuit, noise_model, level="device").compile_pipeline)
         CompilePipeline(
-          [1] cancel_inverses(),
-          [2] merge_rotations(),
-          [3] undo_swaps(),
-          [4] _expand_metric_tensor(device_wires=[0, 1, 2]),
-          [5] metric_tensor(device_wires=[0, 1, 2]),
-          [6] defer_measurements(allow_postselect=False),
-          [7] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
-          [8] no_sampling(name=backprop + default.mixed),
-          [9] validate_device_wires([0, 1, 2], name=default.mixed),
-          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
-          [11] validate_observables(stopping_condition=..., name=default.mixed),
-          [12] add_noise(..., level=device)
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] undo_swaps(),
+          [3] _expand_metric_tensor(device_wires=[0, 1, 2]),
+          [4] metric_tensor(device_wires=[0, 1, 2]),
+          [5] defer_measurements(allow_postselect=False),
+          [6] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
+          [7] no_sampling(name=backprop + default.mixed),
+          [8] validate_device_wires([0, 1, 2], name=default.mixed),
+          [9] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
+          [10] validate_observables(stopping_condition=..., name=default.mixed),
+          [11] add_noise(..., level=device)
         )
 
         Other acceptable values for ``level`` are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``. Among these, `"top"` will allow addition
@@ -198,49 +185,49 @@ def add_noise(tape, noise_model, level="user"):  # pylint: disable=too-many-bran
 
         >>> print(qp.noise.add_noise(circuit, noise_model, level="top").compile_pipeline)
         CompilePipeline(
-          [1] add_noise(..., level=top)
+          [0] add_noise(..., level=top)
         )
 
         >>> print(qp.noise.add_noise(circuit, noise_model, level="user").compile_pipeline)
          CompilePipeline(
-          [1] cancel_inverses(),
-          [2] merge_rotations(),
-          [3] undo_swaps(),
-          [4] _expand_metric_tensor(device_wires=[0, 1, 2]),
-          [5] metric_tensor(device_wires=[0, 1, 2]),
-          [6] add_noise(..., level=user)
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] undo_swaps(),
+          [3] _expand_metric_tensor(device_wires=[0, 1, 2]),
+          [4] metric_tensor(device_wires=[0, 1, 2]),
+          [5] add_noise(..., level=user)
         )
 
         >>> print(qp.noise.add_noise(circuit, noise_model, level="device").compile_pipeline)
         CompilePipeline(
-          [1] cancel_inverses(),
-          [2] merge_rotations(),
-          [3] undo_swaps(),
-          [4] _expand_metric_tensor(device_wires=[0, 1, 2]),
-          [5] metric_tensor(device_wires=[0, 1, 2]),
-          [6] defer_measurements(allow_postselect=False),
-          [7] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
-          [8] no_sampling(name=backprop + default.mixed),
-          [9] validate_device_wires([0, 1, 2], name=default.mixed),
-          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
-          [11] validate_observables(stopping_condition=..., name=default.mixed),
-          [12] add_noise(..., level=device)
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] undo_swaps(),
+          [3] _expand_metric_tensor(device_wires=[0, 1, 2]),
+          [4] metric_tensor(device_wires=[0, 1, 2]),
+          [5] defer_measurements(allow_postselect=False),
+          [6] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
+          [7] no_sampling(name=backprop + default.mixed),
+          [8] validate_device_wires([0, 1, 2], name=default.mixed),
+          [9] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
+          [10] validate_observables(stopping_condition=..., name=default.mixed),
+          [11] add_noise(..., level=device)
         )
 
         Finally, more precise control over the insertion of the transform can be achieved by specifying an integer or slice for indexing when extracting the compile pipeline. For example, one can do:
 
         >>> print(qp.noise.add_noise(circuit, noise_model, level=2).compile_pipeline)
         CompilePipeline(
-          [1] cancel_inverses(),
-          [2] merge_rotations(),
-          [3] add_noise(..., level=2)
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] add_noise(..., level=2)
         )
 
         >>> print(qp.noise.add_noise(circuit, noise_model, level=slice(1,3)).compile_pipeline)
         CompilePipeline(
-          [1] merge_rotations(),
-          [2] undo_swaps(),
-          [3] add_noise(..., level=slice(1, 3, None))
+          [0] merge_rotations(),
+          [1] undo_swaps(),
+          [2] add_noise(..., level=slice(1, 3, None))
         )
 
     """
@@ -424,17 +411,17 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
 
         >>> print(_get_transform_program(circuit))
         CompilePipeline(
-          [1] cancel_inverses(),
-          [2] merge_rotations(),
-          [3] _expand_metric_tensor(device_wires=None),
-          [4] metric_tensor(device_wires=None),
-          [5] _expand_transform_param_shift(shifts=0.7853981633974483),
-          [6] defer_measurements(allow_postselect=True),
-          [7] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
-          [8] device_resolve_dynamic_wires(wires=None, allow_resets=False),
-          [9] validate_device_wires(None, name=default.qubit),
-          [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
-          [11] _conditional_broadcast_expand()
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] _expand_metric_tensor(device_wires=None),
+          [3] metric_tensor(device_wires=None),
+          [4] _expand_transform_param_shift(shifts=0.7853981633974483),
+          [5] defer_measurements(allow_postselect=True),
+          [6] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
+          [7] device_resolve_dynamic_wires(wires=None, allow_resets=False),
+          [8] validate_device_wires(None, name=default.qubit),
+          [9] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
+          [10] _conditional_broadcast_expand()
         )
 
         The ``"user"`` transforms are the ones manually applied to the qnode, :func:`~.cancel_inverses`,
@@ -442,10 +429,10 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
 
         >>> print(_get_transform_program(circuit, level="user"))
         CompilePipeline(
-          [1] cancel_inverses(),
-          [2] merge_rotations(),
-          [3] _expand_metric_tensor(device_wires=None),
-          [4] metric_tensor(device_wires=None)
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] _expand_metric_tensor(device_wires=None),
+          [3] metric_tensor(device_wires=None)
         )
 
         The ``_expand_transform_param_shift`` is the ``"gradient"`` transform.
@@ -455,11 +442,11 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
 
         >>> print(_get_transform_program(circuit, level="gradient"))
         CompilePipeline(
-          [1] cancel_inverses(),
-          [2] merge_rotations(),
-          [3] _expand_metric_tensor(device_wires=None),
-          [4] metric_tensor(device_wires=None),
-          [5] _expand_transform_param_shift(shifts=0.7853981633974483)
+          [0] cancel_inverses(),
+          [1] merge_rotations(),
+          [2] _expand_metric_tensor(device_wires=None),
+          [3] metric_tensor(device_wires=None),
+          [4] _expand_transform_param_shift(shifts=0.7853981633974483)
         )
 
         ``"top"`` and ``0`` both return empty transform programs.
@@ -473,8 +460,8 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
 
         >>> print(_get_transform_program(circuit, level=2))
         CompilePipeline(
-          [1] cancel_inverses(),
-          [2] merge_rotations()
+          [0] cancel_inverses(),
+          [1] merge_rotations()
         )
 
         ``level`` can also accept a ``slice`` object to select out any arbitrary subset of the
@@ -483,22 +470,22 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
 
         >>> print(_get_transform_program(circuit, level=slice(1,3)))
         CompilePipeline(
-          [1] merge_rotations(),
-          [2] _expand_metric_tensor(device_wires=None)
+          [0] merge_rotations(),
+          [1] _expand_metric_tensor(device_wires=None)
         )
         >>> print(_get_transform_program(circuit, level=slice(None, None, -1)))
         CompilePipeline(
-          [1] _conditional_broadcast_expand(),
-          [2] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
-          [3] validate_device_wires(None, name=default.qubit),
-          [4] device_resolve_dynamic_wires(wires=None, allow_resets=False),
-          [5] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
-          [6] defer_measurements(allow_postselect=True),
-          [7] _expand_transform_param_shift(shifts=0.7853981633974483),
-          [8] metric_tensor(device_wires=None),
-          [9] _expand_metric_tensor(device_wires=None),
-          [10] merge_rotations(),
-          [11] cancel_inverses()
+          [0] _conditional_broadcast_expand(),
+          [1] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
+          [2] validate_device_wires(None, name=default.qubit),
+          [3] device_resolve_dynamic_wires(wires=None, allow_resets=False),
+          [4] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
+          [5] defer_measurements(allow_postselect=True),
+          [6] _expand_transform_param_shift(shifts=0.7853981633974483),
+          [7] metric_tensor(device_wires=None),
+          [8] _expand_metric_tensor(device_wires=None),
+          [9] merge_rotations(),
+          [10] cancel_inverses()
         )
 
         You can get creative and pick a single category of transforms as follows, excluding
@@ -509,16 +496,16 @@ def _get_transform_program(qnode, level="device", gradient_fn="unset"):
         >>> dev_prog = _get_transform_program(circuit, level="device")
         >>> print(grad_prog[len(user_prog) - 1 : -1])
         CompilePipeline(
-          [1] metric_tensor(device_wires=None)
+          [0] metric_tensor(device_wires=None)
         )
         >>> print(dev_prog[len(grad_prog) - 1 : -1])
         CompilePipeline(
-          [1] _expand_transform_param_shift(shifts=0.7853981633974483),
-          [2] defer_measurements(allow_postselect=True),
-          [3] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
-          [4] device_resolve_dynamic_wires(wires=None, allow_resets=False),
-          [5] validate_device_wires(None, name=default.qubit),
-          [6] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit)
+          [0] _expand_transform_param_shift(shifts=0.7853981633974483),
+          [1] defer_measurements(allow_postselect=True),
+          [2] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
+          [3] device_resolve_dynamic_wires(wires=None, allow_resets=False),
+          [4] validate_device_wires(None, name=default.qubit),
+          [5] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit)
         )
 
     """

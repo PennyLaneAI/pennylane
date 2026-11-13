@@ -20,8 +20,9 @@ from collections.abc import Callable, Iterable
 from functools import partial
 
 from pennylane.workflow import QNode
+from pennylane.workflow.get_compile_pipeline import unwrap_qjit_qnode
 
-from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial, unwrap_qjit_qnode
+from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial
 from .analyze import _run_resource_analysis
 from .resource import CircuitSpecs
 from .track import _run_with_resource_tracking
