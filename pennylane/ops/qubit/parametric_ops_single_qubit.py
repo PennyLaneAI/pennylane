@@ -32,6 +32,7 @@ import pennylane as qp
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
+    register_condition,
     register_resources,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -865,12 +866,34 @@ class PhaseShift(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.PhaseShift
+            :symbols: :math:`c` control wires, :math:`z` controls on :math:`0`
+            :example: :math:`c=2`, :math:`z=0`
 
             .. decomposition-rule:: _phaseshift_to_rz_gp
                 :image: /_static/decomposition_thumbnails/phaseshift_to_rz_gp.svg
 
                 :class:`~.RZ` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_phase_shift_decomp)
+                :image: /_static/decomposition_thumbnails/controlled_phase_shift_pauli_rots.svg
+                :region: controlled
+                :where: A Pauli-Z rotation acts on each of the :math:`2^{c+1}-1` non-empty subsets of the control wires and the target wire. For :math:`c=1`, a single ControlledPhaseShift is used instead. Controls on :math:`0` are flipped with X gates before and after the decomposition.
+
+                :class:`~.PauliRot` | :math:`2^{c+1}-1` | 7
+                :class:`~.GlobalPhase` | :math:`1` | 1
+                :class:`~.PauliX` | :math:`2z` | 0
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_phase_shift_single_phase)
+                :image: /_static/decomposition_thumbnails/controlled_phase_shift_single_phase.svg
+                :region: controlled
+                :requires: :math:`c` zeroed work wires
+                :where: A ladder of TemporaryAND gates computes the AND of the :math:`c` control wires and the target wire into the last work wire, which then receives a single PhaseShift. The ladder is uncomputed with mid-circuit measurements. Controls on :math:`0` are flipped with X gates before and after the decomposition.
+
+                :class:`~.TemporaryAND` | :math:`c` | 2
+                :class:`~.PhaseShift` | :math:`1` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`c` | 2
+                :class:`~.PauliX` | :math:`2z` | 0
     """
 
     num_wires = 1
@@ -1033,10 +1056,44 @@ def _controlled_phase_shift_decomp(base, control_wires, *_, **__):
     qp.GlobalPhase(-base.phi / 2**n)
 
 
+def _controlled_phase_shift_single_phase_resources(base, control_wires, *_, **__):
+    num_control_wires = len(control_wires)
+    return {
+        qp.TemporaryAND: num_control_wires,
+        PhaseShift: 1,
+        qp.adjoint(qp.TemporaryAND(Wire[3])): num_control_wires,
+    }
+
+
+@register_condition(
+    lambda control_wires, work_wires, work_wire_type, **_: work_wire_type == "zeroed"
+    and len(control_wires) > 0
+    and len(work_wires) >= len(control_wires)
+)
+@register_resources(_controlled_phase_shift_single_phase_resources)
+def _controlled_phase_shift_single_phase(base, control_wires, work_wires, **_):
+    """Computes ``AND(*control_wires, base.wires[0])`` into ``len(control_wires)`` zeroed work
+    wires with a ``TemporaryAND`` ladder, applies a single ``PhaseShift`` to the last work wire
+    and uncomputes the ladder with measurements."""
+    and_controls = [*control_wires, base.wires[0]]
+    and_targets = list(work_wires[: len(control_wires)])
+    and_wires = list(zip([and_controls[0], *and_targets[:-1]], and_controls[1:], and_targets))
+
+    for wires in and_wires:
+        qp.TemporaryAND(wires=wires)
+    PhaseShift(base.phi, wires=and_targets[-1])
+    for wires in reversed(and_wires):
+        qp.adjoint(qp.TemporaryAND)(wires=wires)
+
+
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
 add_decomps("Adjoint(PhaseShift)", adjoint_rotation2)
 add_decomps("Pow(PhaseShift)", pow_rotation2)
-add_decomps("C(PhaseShift)", flip_zero_control2(_controlled_phase_shift_decomp))
+add_decomps(
+    "C(PhaseShift)",
+    flip_zero_control2(_controlled_phase_shift_decomp),
+    flip_zero_control2(_controlled_phase_shift_single_phase),
+)
 
 
 class Rot(Operator2):

@@ -1282,8 +1282,8 @@ class TestControlledDecompositions:
                 CustomControlledOp: [custom_controlled_decomp],
             },
         )
-        assert len(graph._graph.nodes()) == 83
-        assert len(graph._graph.edges()) == 137
+        assert len(graph._graph.nodes()) == 85
+        assert len(graph._graph.edges()) == 142
 
         solution = graph.solve()
 
