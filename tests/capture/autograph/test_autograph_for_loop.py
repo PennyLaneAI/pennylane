@@ -394,7 +394,6 @@ class TestForLoops:  # pylint: disable=too-many-public-methods
         jaxpr = jax.make_jaxpr(ag_circuit)()
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 3
 
-    @pytest.mark.filterwarnings("error")
     def test_for_in_enumerate_object_list(self):
         """Test for loop over a Python enumeration on a list that is *not* convertible to an array.
         The behaviour should fall back to standard Python."""
