@@ -895,6 +895,12 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
+  powers that can simplify eagerly for faster execution, while the other uses nested
+  loops to keep the captured intermediate representation compact. Both variants include
+  resource counts.
+  `(#10529) <https://github.com/PennyLaneAI/pennylane/pull/10529>`__
+
 * :func:`~pennylane.list_decomps` now includes generic controlled fallback rules when given an
   operator name such as ``"C(RX)"``. Their registered conditions determine applicability
   from operator arguments.
