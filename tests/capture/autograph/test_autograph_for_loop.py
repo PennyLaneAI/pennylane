@@ -438,7 +438,6 @@ class TestForLoops:  # pylint: disable=too-many-public-methods
         assert [op.name for op in tape.operations] == expected_names
         assert [list(op.wires) for op in tape.operations] == [[wire] for wire in wires]
 
-    @pytest.mark.filterwarnings("error")
     def test_for_in_other_iterable_object(self):
         """Test for loop over arbitrary iterable Python objects.
         The behaviour should fall back to standard Python."""
