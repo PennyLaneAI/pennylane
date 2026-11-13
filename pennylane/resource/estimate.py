@@ -123,7 +123,7 @@ def estimate(
         qnode (:class:`~catalyst.jit.QJIT`): the qjit'd QNode for which to estimate resources.
         level (str | int | slice): The portion of the
             :class:`~.CompilePipeline` to apply before projecting the resources onto the
-            ``target``. Accepts the same values as :func:`~.workflow.get_compile_pipeline`.
+            ``target``. See :func:`~.workflow.get_compile_pipeline` for accepted values.
             Currently, only ``"top"``, ``0``, or the label of a marker placed before all
             transforms are supported. Defaults to ``"top"``.
         target (str | Iterable[type | str] | dict[type | str, float]): The gate set to project

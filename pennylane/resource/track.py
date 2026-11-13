@@ -131,7 +131,7 @@ def track(
     Keyword Args:
         level (str | int | slice): The portion of the
             :class:`~.CompilePipeline` to apply before executing the circuit and tracking its
-            resources. Accepts the same values as :func:`~.workflow.get_compile_pipeline`.
+            resources. See :func:`~.workflow.get_compile_pipeline` for accepted values.
             Currently, only ``"device"`` is supported. Defaults to ``"device"``.
 
     Returns:
