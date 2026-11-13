@@ -1333,6 +1333,17 @@ class TestHash:
         op2 = DynOp(0.5 + 2 * np.pi, wires=0)
         assert hash(op1) != hash(op2)
 
+    def test_hash_large_array_not_truncated(self):
+        """Test that hashing an Operator2 with large array data (>1000 elements)
+        does not truncate array elements."""
+        arr1 = np.zeros(1005)
+        arr2 = np.zeros(1005)
+        arr2[500] = 1.0
+
+        op1 = DynOp(arr1, wires=0)
+        op2 = DynOp(arr2, wires=0)
+        assert hash(op1) != hash(op2)
+
 
 class TestPytreeMethods:
     """Tests for ``_flatten`` and ``_unflatten``."""

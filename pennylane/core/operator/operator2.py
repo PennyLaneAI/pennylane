@@ -2199,7 +2199,10 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
         return hash(d)
 
     # We stringify the data because arrays are unhashable
-    return str(id(d) if math.is_tracer(d) else _mod_and_round(d, mod_val))
+    # Disable NumPy's summarization of large arrays (>1000 elements) so that
+    # every entry contributes to the hash (see #10460).
+    with np.printoptions(threshold=np.inf):
+        return str(id(d) if math.is_tracer(d) else _mod_and_round(d, mod_val))
 
 
 def _is_hash_leaf(l) -> bool:
