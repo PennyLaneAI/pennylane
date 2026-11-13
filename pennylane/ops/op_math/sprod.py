@@ -206,9 +206,9 @@ class SProd(ScalarSymbolicOp):
             return not math.is_complex_dtype(self.scalar)
         return not math.iscomplex(self.scalar)
 
-    # pylint: disable=arguments-renamed,invalid-overridden-method
     @property
     @handle_recursion_error
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         """Bool: Whether the Operator returns defined diagonalizing gates."""
         return self.base.has_diagonalizing_gates
@@ -270,7 +270,7 @@ class SProd(ScalarSymbolicOp):
 
     @property
     @handle_recursion_error
-    def has_sparse_matrix(self):
+    def has_sparse_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.pauli_rep is not None or self.base.has_sparse_matrix
 
     @property
@@ -300,9 +300,8 @@ class SProd(ScalarSymbolicOp):
         """
         return SProd(scalar=math.conjugate(self.scalar), base=qp.adjoint(self.base))
 
-    # pylint: disable=too-many-return-statements
     @handle_recursion_error
-    def simplify(self) -> Operator:
+    def simplify(self) -> Operator:  # pylint: disable=too-many-return-statements
         """Reduce the depth of nested operators to the minimum.
 
         Returns:
@@ -311,7 +310,7 @@ class SProd(ScalarSymbolicOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return to_operator(pr, wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         if self.scalar == 1:
             return self.base.simplify()

@@ -16,8 +16,6 @@ Unit tests for the functions of the structure module.
 """
 
 import functools as ft
-
-# pylint: disable=too-many-arguments
 import os
 import sys
 from unittest.mock import patch
@@ -172,7 +170,7 @@ def test_reading_xyz_file(tmpdir):
         (3, 4, 2, [], [], [], []),
     ],
 )
-def test_excitations(
+def test_excitations(  # pylint: disable=too-many-arguments
     electrons,
     orbitals,
     delta_sz,
@@ -405,7 +403,7 @@ def test__hf_state_inconsistent_input(electrons, orbitals, msg_match):
         (5, 6, 2, 1, 4, [0, 1], list(range(2, 6))),
     ],
 )
-def test_active_spaces(
+def test_active_spaces(  # pylint: disable=too-many-arguments
     n_electrons, n_orbitals, multiplicity, act_electrons, act_orbitals, core_ref, active_ref
 ):
     r"""Test the correctness of the generated active spaces"""
@@ -437,7 +435,7 @@ def test_active_spaces(
         (6, 6, 3, 1, 2, "greater than or equal to"),
     ],
 )
-def test_inconsistent_active_spaces(
+def test_inconsistent_active_spaces(  # pylint: disable=too-many-arguments
     n_electrons, n_orbitals, multiplicity, act_electrons, act_orbitals, message_match
 ):
     r"""Test that an error is raised if an inconsistent active space is generated"""

@@ -26,6 +26,30 @@ def test_invalid_input(value):
         to_operator(value)
 
 
+@pytest.mark.parametrize(
+    "value",
+    [
+        PauliWord({2: "X", 0: "Y"}),
+        PauliSentence({PauliWord({2: "X", 0: "Y"}): 1.0}),
+    ],
+)
+def test_identity_wires_do_not_change_non_identity_wires(value):
+    """Identity wires do not reorder or extend non-identity Pauli factors."""
+    op = to_operator(value, identity_wires=[0, 1, 2])
+
+    assert op.wires == qp.wires.Wires([2, 0])
+
+
+def test_identity_wires_in_mixed_sentence():
+    """Only the identity term receives the explicitly supplied wires."""
+    sentence = PauliSentence({PauliWord({0: "X"}): 2.0, PauliWord({}): 3.0})
+
+    op = to_operator(sentence, identity_wires=["a", "b"])
+
+    qp.assert_equal(op.operands[0], 2.0 * qp.X(0))
+    qp.assert_equal(op.operands[1], 3.0 * qp.Identity(["a", "b"]))
+
+
 def test_batched_coefficients(interface):
     """Conversion retains coefficient tensors and their broadcast dimension."""
     coefficients = qp.math.array([2.0, 3.0], like=interface.replace("-jit", ""))

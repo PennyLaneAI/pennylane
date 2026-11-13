@@ -15,7 +15,7 @@
 
 from functools import reduce, singledispatch
 
-from pennylane.core.pauli import PauliSentence, PauliWord, X, Y, Z
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.op_math import prod
 
@@ -66,7 +66,7 @@ def is_pauli_word(observable):
 
 
 @singledispatch
-def _is_pauli_word(observable):  # pylint:disable=unused-argument
+def _is_pauli_word(observable):  # pylint: disable=unused-argument
     """
     Private implementation of is_pauli_word, to prevent all of the
     registered functions from appearing in the Sphinx docs.
@@ -267,17 +267,17 @@ def _pauli_sentence(op):
 
 @_pauli_sentence.register
 def _(op: PauliX):
-    return PauliSentence({PauliWord({op.wires[0]: X}): 1.0})
+    return PauliSentence({PauliWord({op.wires[0]: "X"}): 1.0})
 
 
 @_pauli_sentence.register
 def _(op: PauliY):
-    return PauliSentence({PauliWord({op.wires[0]: Y}): 1.0})
+    return PauliSentence({PauliWord({op.wires[0]: "Y"}): 1.0})
 
 
 @_pauli_sentence.register
 def _(op: PauliZ):
-    return PauliSentence({PauliWord({op.wires[0]: Z}): 1.0})
+    return PauliSentence({PauliWord({op.wires[0]: "Z"}): 1.0})
 
 
 @_pauli_sentence.register

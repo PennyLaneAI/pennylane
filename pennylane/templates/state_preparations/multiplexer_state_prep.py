@@ -143,7 +143,7 @@ def _select_pauli_rots(amplitudes, wires):
         qp.SelectPauliRot(alpha_y_k, target_wire=wires[k], control_wires=wires[:k], rot_axis="Y")
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _real_multiplexer_state_prep_resources(state_vector, wires, check=False) -> dict:
     r"""Computes the resources of '_real_multiplexer_state_prep_decomposition'."""
     return _select_pauli_rot_resources(len(wires))
@@ -156,7 +156,7 @@ def _real_multiplexer_state_prep_decomposition(state_vector, wires, **_):
     _select_pauli_rots(state_vector, wires)
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _complex_multiplexer_state_prep_resources(state_vector, wires, check=False) -> dict:
     r"""Upper bound on the gates emitted by '_complex_multiplexer_state_prep_decomposition'.
     The ``DiagonalQubitUnitary`` is skipped if the state is (close to) real-valued or all

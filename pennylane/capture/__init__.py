@@ -187,7 +187,6 @@ from .symbolic_array import symbolic_array
 from .tracing_device import get_tracing_device, tracing_device
 
 if TYPE_CHECKING:
-    # pylint: disable=import-outside-toplevel, unused-import
     # We only import these if type-checking because JAX is imported unconditionally, so they
     # cannot be imported at runtime without ModuleNotFoundErrors if JAX isn't installed
     from . import primitives
@@ -196,8 +195,8 @@ if TYPE_CHECKING:
     from .primitives import AbstractMeasurement, AbstractOperator, qnode_prim
 
 
-# pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements
-def __getattr__(key):
+def __getattr__(key):  # pylint: disable=too-many-return-statements
+    # pylint: disable=import-outside-toplevel
     if key == "primitives":
         import importlib  # pragma: no cover
 

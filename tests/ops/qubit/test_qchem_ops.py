@@ -16,8 +16,6 @@ Unit tests for the available qubit operations for quantum chemistry purposes.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods, unnecessary-lambda-assignment
 import pytest
 from gate_data import (
     DoubleExcitation,
@@ -50,7 +48,7 @@ PARAMETRIZED_QCHEM_OPERATIONS = [
 ]
 
 
-class TestParameterFrequencies:
+class TestParameterFrequencies:  # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize("op", PARAMETRIZED_QCHEM_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
@@ -404,8 +402,7 @@ class TestSingleExcitationDecompositions:
         tape = qp.tape.QuantumScript([op], [])
         expected_matrix = qp.matrix(tape, wire_order=[0, 1, control])
 
-        # pylint: disable-next=protected-access
-        [decomp], _ = qp.transforms._tape_decompose(
+        [decomp], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
             tape, gate_set={qp.CNOT, qp.RY, qp.RZ, qp.Hadamard, qp.GlobalPhase, qp.PauliX}
         )
         gates = decomp.operations
@@ -806,6 +803,20 @@ class TestDoubleExcitation:
 class TestOrbitalRotation:
     """Test OrbitalRotation gate operation"""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_assert_valid(self):
+        """Test that OrbitalRotation satisfies the operator interface."""
+        qp.testing.assert_valid(qp.OrbitalRotation(0.123, wires=[0, 1, 2, 3]))
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
+    @pytest.mark.parametrize("wires", [[0, 1, 2, 3], [3, 1, 0, 2]])
+    def test_decomposition_rule(self, phi, wires):
+        """Test all registered decomposition matrices and resource counts."""
+        op = qp.OrbitalRotation(phi, wires=wires)
+        for rule in qp.list_decomps(qp.OrbitalRotation):
+            qp.testing.assert_valid_decomp_rule(op, rule)
+
     def grad_circuit_0(self, phi):
         qp.PauliX(1)
         qp.Hadamard(2)
@@ -1097,7 +1108,7 @@ class TestOrbitalRotation:
         circuit_1 = qp.QNode(self.grad_circuit_1, dev, interface="torch", diff_method=diff_method)
         total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
-        phi_t = torch.tensor(phi, dtype=torch.complex128, requires_grad=True)
+        phi_t = torch.tensor(phi, dtype=torch.float64, requires_grad=True)
         result = total(phi_t)
         result.backward()
 

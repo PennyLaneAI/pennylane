@@ -15,7 +15,6 @@
 Unit tests for functions needed for two-electron integral tensor factorization.
 """
 
-# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qp
@@ -393,7 +392,7 @@ def test_empty_error(two_tensor):
         ),
     ],
 )
-def test_basis_rotation_output(
+def test_basis_rotation_output(  # pylint: disable=too-many-arguments
     one_matrix, two_tensor, tol_factor, coeffs_ref, ops_ref, eigvecs_ref
 ):
     r"""Test that basis_rotation function returns the correct values."""
@@ -840,7 +839,7 @@ def test_symmetry_shift(core_shifted, one_body_shifted, two_body_shifted):
     mol = qp.qchem.Molecule(symbols, geometry, charge=1, basis_name="STO-3G")
     core, one, two = qp.qchem.electron_integrals(mol)()
 
-    # pylint: disable=protected-access
+    # pylint: disable-next=protected-access
     cone, ctwo = qp.qchem.factorization._chemist_transform(one, two, spatial_basis=True)
     score, sone, stwo = qp.qchem.symmetry_shift(core, cone, ctwo, n_elec=mol.n_electrons)
 

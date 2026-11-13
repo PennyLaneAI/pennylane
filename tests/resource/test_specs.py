@@ -21,8 +21,6 @@ import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.shots import Shots
 from pennylane.resource import CircuitSpecs, PBCSpecsResources, SpecsResources
-
-# pylint: disable=invalid-sequence-index
 from pennylane.typing import Float, Wire
 
 catalyst = pytest.importorskip("catalyst")
@@ -163,13 +161,6 @@ class TestDeviceLevelSpecs:
             ),
         )
 
-    @pytest.mark.xfail(
-        reason=(
-            "Pending Catalyst work-wire operand support: "
-            "https://github.com/PennyLaneAI/catalyst/pull/3428"
-        ),
-        strict=True,
-    )
     def test_complex(self):
         """Test a complex case of qp.specs() against PennyLane"""
 
@@ -716,14 +707,14 @@ class TestPassByPassSpecs:
     def test_operator2(self):
         """Test that specs works with operator2 classes."""
 
-        # pylint: disable=useless-parent-delegation,too-few-public-methods
-        class DummyOp(qp.core.Operator2):
+        class DummyOp(qp.core.Operator2):  # pylint: disable=too-few-public-methods
             """Dummy Local Operator."""
 
             dynamic_argnames = ("phi",)
             wire_argnames = ("reg1", "reg2")
             compilable_argnames = ("metadata",)
 
+            # pylint: disable-next=useless-parent-delegation
             def __init__(self, phi, reg1, reg2, metadata):
                 super().__init__(phi, reg1, reg2, metadata)
 
@@ -1007,13 +998,12 @@ class TestSymbolicSpecs:
         @qp.qnode(qp.device("null.qubit", wires=1))
         def c(n):
 
-            # pylint: disable=unused-argument
             @qp.for_loop(n)
-            def loop(i):
+            def loop(i):  # pylint: disable=unused-argument
                 x = qp.capture.symbolic_array((), float)
                 qp.RX(x, 0)
 
-            loop()  # pylint: disable=no-value-for-parameter
+            loop()
 
             return qp.state()
 
@@ -1027,14 +1017,13 @@ class TestSymbolicSpecs:
         @qp.qnode(qp.device("null.qubit", wires=1))
         def c(n):
 
-            # pylint: disable=unused-argument
             @qp.for_loop(n)
-            def loop(i, x):
+            def loop(i, x):  # pylint: disable=unused-argument
                 qp.RX(x, 0)
                 return x
 
             y = qp.capture.symbolic_array((), float)
-            loop(y)  # pylint: disable=no-value-for-parameter
+            loop(y)
 
             return qp.state()
 
@@ -1790,13 +1779,11 @@ class TestSpecsAbstractArrayIntegartion:
     def test_hybrid_op(self):
         """Test capturing a hybrid op."""
 
-        # pylint: disable=too-few-public-methods
-        class HybridOp(qp.core.Operator2):
+        class HybridOp(qp.core.Operator2):  # pylint: disable=too-few-public-methods
 
             hybrid_argnames = "op"
             wire_argnames = ()
 
-            # pylint: disable=useless-parent-delegation)
             def __init__(self, op):
                 super().__init__(op=op)
 
@@ -1813,13 +1800,11 @@ class TestSpecsAbstractArrayIntegartion:
     def test_pytree_input(self):
         """Test the input being in a pytree."""
 
-        # pylint: disable=too-few-public-methods
-        class PytreeOp(qp.core.Operator2):
+        class PytreeOp(qp.core.Operator2):  # pylint: disable=too-few-public-methods
 
             hybrid_argnames = "a"
 
-            # pylint: disable=useless-parent-delegation
-            def __init__(self, a, wires):
+            def __init__(self, a, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(a, wires)
 
         @qp.qjit(capture=True, target="mlir")

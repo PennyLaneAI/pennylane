@@ -352,9 +352,8 @@ from .vn_entropy import VnEntropyMP, vn_entropy
 from .shots import add_shots
 
 
-# pylint: disable=import-outside-toplevel
 def __getattr__(name):
-    import pennylane.ops.mid_measure as ops_measure
+    import pennylane.ops.mid_measure as ops_measure  # pylint: disable=import-outside-toplevel
 
     # from pennylane.exceptions import PennyLaneDeprecationWarning
     # import warnings
@@ -381,6 +380,7 @@ def __getattr__(name):
         #    "if you need this logic, we recommend code duplication, as it is being made private."
         #    PennyLaneDeprecationWarning,
         # )
+        # pylint: disable-next=import-outside-toplevel
         from pennylane.devices.qubit.simulate import _find_post_processed_mcms  # tach-ignore
 
         return _find_post_processed_mcms

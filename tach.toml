@@ -95,6 +95,10 @@ layer = "core"
 depends_on = ["pennylane.math", "pennylane.typing", "pennylane.wires", "pennylane.exceptions"]
 cannot_depend_on = ["pennylane", "pennylane.ops", "pennylane.pauli", "pennylane.core.operator", "pennylane.ftqc", "pennylane.labs"]
 
+[[interfaces]]
+expose = ["PauliWord", "PauliSentence"]
+from = ["pennylane.core.pauli"]
+
 [[modules]]
 path = "pennylane.core.shots"
 layer = "core"

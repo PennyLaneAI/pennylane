@@ -15,7 +15,6 @@
 Unit tests for the comm function
 """
 
-# pylint: disable=too-many-arguments, unused-variable
 import pytest
 
 import pennylane as qp
@@ -62,7 +61,7 @@ def test_no_queuing_in_context():
     with qp.queuing.AnnotatedQueue() as q1:
         a = qp.PauliX(0)  # gets queued
         b = qp.PauliY(0)  # gets queued
-        comm = qp.commutator(a, b)
+        comm = qp.commutator(a, b)  # pylint: disable=unused-variable
 
     with qp.queuing.AnnotatedQueue() as q2:
         qp.PauliX(0)
@@ -79,7 +78,7 @@ def test_no_queuing_in_context_with_pauli():
     with qp.queuing.AnnotatedQueue() as q1:
         a = qp.PauliX(0)  # gets queued
         b = PauliWord({0: "Y"})  # does not get queued
-        comm = qp.commutator(a, b)
+        comm = qp.commutator(a, b)  # pylint: disable=unused-variable
 
     with qp.queuing.AnnotatedQueue() as q2:
         qp.PauliX(0)

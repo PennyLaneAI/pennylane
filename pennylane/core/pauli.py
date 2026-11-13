@@ -13,7 +13,8 @@
 # limitations under the License.
 """The Pauli arithmetic abstract reduced representation classes"""
 
-# pylint:disable=protected-access
+# pylint: disable=protected-access
+
 
 import warnings
 from copy import copy
@@ -27,11 +28,7 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError, Wires
 
-I = "I"
-X = "X"
-Y = "Y"
-Z = "Z"
-
+__all__ = ["PauliWord", "PauliSentence"]
 
 matI = np.eye(2)
 matX = np.array([[0, 1], [1, 0]])
@@ -39,17 +36,17 @@ matY = np.array([[0, -1j], [1j, 0]])
 matZ = np.array([[1, 0], [0, -1]])
 
 mat_map = {
-    I: matI,
-    X: matX,
-    Y: matY,
-    Z: matZ,
+    "I": matI,
+    "X": matX,
+    "Y": matY,
+    "Z": matZ,
 }
 
 anticom_map = {
-    I: {I: 0, X: 0, Y: 0, Z: 0},
-    X: {I: 0, X: 0, Y: 1, Z: 1},
-    Y: {I: 0, X: 1, Y: 0, Z: 1},
-    Z: {I: 0, X: 1, Y: 1, Z: 0},
+    "I": {"I": 0, "X": 0, "Y": 0, "Z": 0},
+    "X": {"I": 0, "X": 0, "Y": 1, "Z": 1},
+    "Y": {"I": 0, "X": 1, "Y": 0, "Z": 1},
+    "Z": {"I": 0, "X": 1, "Y": 1, "Z": 0},
 }
 
 
@@ -77,7 +74,7 @@ def _cached_arange(n):
     return np.arange(n)
 
 
-pauli_to_sparse_int = {I: 0, X: 1, Y: 1, Z: 0}  # (I, Z) and (X, Y) have the same sparsity
+pauli_to_sparse_int = {"I": 0, "X": 1, "Y": 1, "Z": 0}  # (I, Z) and (X, Y) have the same sparsity
 
 
 def _ps_to_sparse_index(pauli_words, wires):
@@ -92,31 +89,31 @@ def _ps_to_sparse_index(pauli_words, wires):
 
 
 _map_I = {
-    I: (1, I),
-    X: (1, X),
-    Y: (1, Y),
-    Z: (1, Z),
+    "I": (1, "I"),
+    "X": (1, "X"),
+    "Y": (1, "Y"),
+    "Z": (1, "Z"),
 }
 _map_X = {
-    I: (1, X),
-    X: (1, I),
-    Y: (1.0j, Z),
-    Z: (-1.0j, Y),
+    "I": (1, "X"),
+    "X": (1, "I"),
+    "Y": (1.0j, "Z"),
+    "Z": (-1.0j, "Y"),
 }
 _map_Y = {
-    I: (1, Y),
-    X: (-1.0j, Z),
-    Y: (1, I),
-    Z: (1j, X),
+    "I": (1, "Y"),
+    "X": (-1.0j, "Z"),
+    "Y": (1, "I"),
+    "Z": (1j, "X"),
 }
 _map_Z = {
-    I: (1, Z),
-    X: (1j, Y),
-    Y: (-1.0j, X),
-    Z: (1, I),
+    "I": (1, "Z"),
+    "X": (1j, "Y"),
+    "Y": (-1.0j, "X"),
+    "Z": (1, "I"),
 }
 
-mul_map = {I: _map_I, X: _map_X, Y: _map_Y, Z: _map_Z}
+mul_map = {"I": _map_I, "X": _map_X, "Y": _map_Y, "Z": _map_Z}
 
 
 class PauliWord(dict):
@@ -165,14 +162,14 @@ class PauliWord(dict):
     def __missing__(self, key):
         """If the wire is not in the Pauli word,
         then no operator acts on it, so return the Identity."""
-        return I
+        return "I"
 
     def __init__(self, mapping, _skip_filter=False):
         """Strip identities from PauliWord on init!"""
         if _skip_filter:
             super().__init__(mapping)
         else:
-            super().__init__(filter(lambda item: item[1] != I, mapping.items()))
+            super().__init__(filter(lambda item: item[1] != "I", mapping.items()))
         self._hashval = None
 
     @property
@@ -224,12 +221,12 @@ class PauliWord(dict):
         for wire, term in iterator.items():
             if wire in base:
                 factor, new_op = mul_map[term][base[wire]] if swapped else mul_map[base[wire]][term]
-                if new_op == I:
+                if new_op == "I":
                     del result[wire]
                 else:
                     coeff *= factor
                     result[wire] = new_op
-            elif term != I:
+            elif term != "I":
                 result[wire] = term
 
         return PauliWord(result), coeff

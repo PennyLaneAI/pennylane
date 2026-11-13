@@ -20,8 +20,6 @@ import pytest
 import pennylane.labs.estimator_beta as qre
 from pennylane.labs.estimator_beta import GateCount, resource_rep
 
-# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison
-
 
 class TestHadamard:
     """Tests for Hadamard resource operator"""

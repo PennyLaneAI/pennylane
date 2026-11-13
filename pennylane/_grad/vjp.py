@@ -25,14 +25,13 @@ from pennylane.exceptions import CompileError
 
 from .grad import _args_and_argnums, _setup_h, _setup_method
 
-# pylint: disable=unused-argument
 vjp_prim = capture.QpPrimitive("vjp")
 vjp_prim.multiple_results = True
 vjp_prim.prim_type = "higher_order"
 
 
 @vjp_prim.def_impl
-def _vjp_impl(*args, jaxpr, fn, method, h, argnums):
+def _vjp_impl(*args, jaxpr, fn, method, h, argnums):  # pylint: disable=unused-argument
     params = args[: len(jaxpr.invars)]
     dy = list(args[len(jaxpr.invars) :])
 
@@ -45,7 +44,7 @@ def _vjp_impl(*args, jaxpr, fn, method, h, argnums):
 
 
 @vjp_prim.def_abstract_eval
-def _vjp_abstract_eval(*args, jaxpr, fn, method, h, argnums):
+def _vjp_abstract_eval(*args, jaxpr, fn, method, h, argnums):  # pylint: disable=unused-argument
     return [v.aval for v in jaxpr.outvars] + [jaxpr.invars[i].aval for i in argnums]
 
 
@@ -76,7 +75,7 @@ def _validate_cotangents(cotangents, out_avals):
             )
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None):
 
     h = _setup_h(h)
@@ -109,7 +108,7 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
     return results, dparams
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments
 def vjp(f, params, cotangents, method=None, h=None, argnums=None):
     """A :func:`~.qjit` compatible Vector-Jacobian product of PennyLane programs.
 

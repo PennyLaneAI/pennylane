@@ -15,7 +15,6 @@
 Unittests for is_commuting
 """
 
-# pylint: disable=too-many-public-methods
 import pytest
 
 import pennylane as qp
@@ -38,8 +37,7 @@ control_base_map_data = [
 ]
 
 
-# pylint: disable=too-few-public-methods
-class DummyOp(qp.operation.Operator):
+class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
     """An operator that hasn't been seen before."""
 
 
@@ -158,7 +156,7 @@ class TestControlledOps:
         assert not qp.is_commuting(op2, op1)
 
 
-class TestCommutingFunction:
+class TestCommutingFunction:  # pylint: disable=too-many-public-methods
     """Commutation function tests."""
 
     @pytest.mark.parametrize(
