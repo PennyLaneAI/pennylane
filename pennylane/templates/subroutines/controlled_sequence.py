@@ -19,6 +19,7 @@ from collections import Counter
 
 from pennylane import capture, compiler, math
 from pennylane.capture.op_eqns import pop_op_eqns
+from pennylane.control_flow import for_loop
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math import SymbolicOp2, ctrl, pow
@@ -143,7 +144,7 @@ class ControlledSequence(SymbolicOp2):
         return f"ControlledSequence({self.base}, control={list(self.control)})"
 
 
-def _ctrl_seq_decomposition_resources(base, control) -> dict:
+def _ctrl_seq_execution_optimized_decomposition_resources(base, control) -> dict:
     control = Wires(control)
     base_rep = abstractify(base)
 
@@ -155,8 +156,15 @@ def _ctrl_seq_decomposition_resources(base, control) -> dict:
     )
 
 
-@register_resources(_ctrl_seq_decomposition_resources)
-def _ctrl_seq_decomposition(*_, base=None, control=None, **__):
+@register_resources(_ctrl_seq_execution_optimized_decomposition_resources)
+def _ctrl_seq_execution_optimized_decomposition(*_, base=None, control=None, **__):
+    """
+    A decomposition optimized for execution time, over IR size and compilation time.
+
+    Using Pows with different z grows the IR but the execution is faster because they powers
+    can be simplified eagerly to a single rotation each. Additionally, the Pows have more
+    decomposition variants which increases compile time.
+    """
     if compiler.active() or capture.enabled():
         control = math.array(control, like="jax")
 
@@ -172,4 +180,47 @@ def _ctrl_seq_decomposition(*_, base=None, control=None, **__):
         pow(controlled_base, 2**i, lazy=False)
 
 
-add_decomps(ControlledSequence, _ctrl_seq_decomposition)
+def _ctrl_seq_ir_optimized_resources(base, control) -> dict:
+    control = Wires(control)
+    if not control:
+        return {}
+    controlled_base = _ctrl_abstract(abstractify(base), Wire[1])
+    return {controlled_base: 2 ** len(control) - 1}
+
+
+@register_resources(_ctrl_seq_ir_optimized_resources)
+def _ctrl_seq_ir_optimized_decomposition(*_, base=None, control=None, **__):
+    """
+    A decomposition optimized for IR size and compilation time, over execution time.
+
+    Using the nested @for_loop keeps the IR compact, but the runtime increases since
+    there is no simplification of repeated operators. They are all executed individually.
+    """
+    if compiler.active() or capture.enabled():
+        control = math.array(control, like="jax")
+
+    num_controls = len(control)
+
+    @for_loop(num_controls - 1, -1, -1)
+    def _powers_loop(i):
+        j = num_controls - 1 - i
+        ctrl_wire = control[j]
+
+        # Note that we cannot use both Pow here and a for_loop on line 144
+        # since the arg i which becomes z will be traced, and Pow expects a static
+        # z. Opted for an inner for_loop since it is still compact, rather than
+        # an unrolled outer python loop and Pows.
+        @for_loop(2**i)
+        def _repeat_loop(_):
+            ctrl(base, control=ctrl_wire)
+
+        _repeat_loop()
+
+    _powers_loop()
+
+
+add_decomps(
+    ControlledSequence,
+    _ctrl_seq_execution_optimized_decomposition,
+    _ctrl_seq_ir_optimized_decomposition,
+)
