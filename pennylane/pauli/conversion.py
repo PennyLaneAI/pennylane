@@ -15,7 +15,7 @@
 Utility functions to convert between ``~.PauliSentence`` and other PennyLane operators.
 """
 
-from functools import reduce, singledispatch
+from functools import reduce
 from itertools import product
 from operator import matmul
 
@@ -26,11 +26,12 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.math.utils import is_tracer
-from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
+from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, conversion
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from pennylane.typing import TensorLike
 
-from .utils import is_pauli_word
+pauli_sentence = conversion.pauli_sentence
+is_pauli_sentence = conversion.is_pauli_sentence
 
 op_map = {"I": Identity, "X": PauliX, "Y": PauliY, "Z": PauliZ}
 
@@ -631,91 +632,3 @@ def pauli_decompose(
 
     with qp.queuing.QueuingManager.stop_recording():
         return qp.Hamiltonian(coeffs, obs)
-
-
-def pauli_sentence(op):
-    """Return the PauliSentence representation of an arithmetic operator or Hamiltonian.
-
-    Args:
-        op (~.Operator): The operator or Hamiltonian that needs to be converted.
-
-    Raises:
-        ValueError: Op must be a linear combination of Pauli operators
-
-    Returns:
-        .PauliSentence: the PauliSentence representation of an arithmetic operator or Hamiltonian
-    """
-
-    if isinstance(op, PauliWord):
-        return PauliSentence({op: 1.0})
-
-    if isinstance(op, PauliSentence):
-        return op
-
-    if (ps := op.pauli_rep) is not None:
-        return ps
-
-    return _pauli_sentence(op)
-
-
-def is_pauli_sentence(op):
-    """Returns True of the operator is a PauliSentence and False otherwise."""
-    if op.pauli_rep is not None:
-        return True
-    return False
-
-
-@singledispatch
-def _pauli_sentence(op):
-    """Private function to dispatch"""
-    raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
-
-
-@_pauli_sentence.register
-def _(op: PauliX):
-    return PauliSentence({PauliWord({op.wires[0]: "X"}): 1.0})
-
-
-@_pauli_sentence.register
-def _(op: PauliY):
-    return PauliSentence({PauliWord({op.wires[0]: "Y"}): 1.0})
-
-
-@_pauli_sentence.register
-def _(op: PauliZ):
-    return PauliSentence({PauliWord({op.wires[0]: "Z"}): 1.0})
-
-
-@_pauli_sentence.register
-def _(op: Identity):
-    return PauliSentence({PauliWord({}): 1.0})
-
-
-@_pauli_sentence.register
-def _(op: Prod):
-    factors = (_pauli_sentence(factor) for factor in op)
-    return reduce(lambda a, b: a @ b, factors)
-
-
-@_pauli_sentence.register
-def _(op: SProd):
-    ps = _pauli_sentence(op.base)
-    for pw, coeff in ps.items():
-        ps[pw] = coeff * op.scalar
-    return ps
-
-
-@_pauli_sentence.register(LinearCombination)
-def _(op: LinearCombination):
-    if not all(is_pauli_word(o) for o in op.ops):
-        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
-
-    return op._build_pauli_rep()  # pylint: disable=protected-access
-
-
-@_pauli_sentence.register
-def _(op: Sum):
-    ps = PauliSentence()
-    for term in op:
-        ps += _pauli_sentence(term)
-    return ps

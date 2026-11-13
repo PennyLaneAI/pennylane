@@ -32,6 +32,9 @@ from .qubit import __ops__ as _qubit__ops__
 
 from .mid_measure import measure, MidMeasure, MeasurementValue, pauli_measure, PauliMeasure
 
+# Register Pauli conversions after the operator classes have loaded.
+from .conversion import is_pauli_word, pauli_sentence, pauli_word_to_string, string_to_pauli_word
+
 _qubit__ops__ = _qubit__ops__ | _controlled_qubit__ops__
 _qubit__all__ = _qubit__all__ + list(_controlled_qubit__ops__)
 

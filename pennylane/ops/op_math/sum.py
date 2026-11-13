@@ -26,7 +26,7 @@ from pennylane import math
 from pennylane.core.operator import Operator
 from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import QueuingManager
-from pennylane.ops._pauli_conversion import to_operator
+from pennylane.ops.conversion import to_operator
 
 from .composite import CompositeOp, handle_recursion_error
 

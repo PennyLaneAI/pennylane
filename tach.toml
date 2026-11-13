@@ -389,6 +389,37 @@ path = "pennylane.ops"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
+path = "pennylane.ops.conversion"
+depends_on = ["pennylane.ops", "pennylane.ops.conversion.operator_to_pauli", "pennylane.ops.conversion.pauli_strings", "pennylane.capture", "pennylane.math", "pennylane.core.pauli", "pennylane.core.queuing", "pennylane.wires"]
+cannot_depend_on = ["pennylane", "pennylane.pauli", "pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.ops.conversion.operator_to_pauli"
+depends_on = ["pennylane.ops", "pennylane.core.pauli"]
+cannot_depend_on = ["pennylane", "pennylane.pauli", "pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.ops.conversion.pauli_strings"
+depends_on = ["pennylane.ops", "pennylane.ops.conversion.operator_to_pauli"]
+cannot_depend_on = ["pennylane", "pennylane.pauli", "pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.ops.op_math.exp"
+cannot_depend_on = ["pennylane.pauli", "pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.ops.op_math.evolution"
+cannot_depend_on = ["pennylane.pauli", "pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.ops.functions.commutator"
+cannot_depend_on = ["pennylane.pauli", "pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.ops.functions.dot"
+cannot_depend_on = ["pennylane.pauli", "pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
 path = "pennylane.tape"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 

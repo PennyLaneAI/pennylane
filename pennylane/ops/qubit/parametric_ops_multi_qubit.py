@@ -26,7 +26,7 @@ from warnings import warn
 import numpy as np
 
 import pennylane as qp
-from pennylane import math
+from pennylane import math, ops
 from pennylane.capture.autograph import disable_autograph
 from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.decomposition import add_decomps, register_resources
@@ -515,7 +515,7 @@ class PauliRot(Operator2):
         wire_map = {w: i for i, w in enumerate(self.wires)}
 
         return qp.Hamiltonian(
-            [-0.5], [qp.pauli.string_to_pauli_word(self.arguments["pauli_word"], wire_map=wire_map)]
+            [-0.5], [ops.string_to_pauli_word(self.arguments["pauli_word"], wire_map=wire_map)]
         )
 
     @staticmethod
