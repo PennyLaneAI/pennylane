@@ -24,6 +24,7 @@ from copy import copy
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator
+from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import QueuingManager
 from pennylane.ops._pauli_conversion import to_operator
 
@@ -379,7 +380,7 @@ class Sum(CompositeOp):
         """PauliSentence representation of the Sum of operations."""
 
         if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
-            new_rep = qp.pauli.PauliSentence()
+            new_rep = PauliSentence()
             for operand_rep in operand_pauli_reps:
                 for pw, coeff in operand_rep.items():
                     new_rep[pw] += coeff

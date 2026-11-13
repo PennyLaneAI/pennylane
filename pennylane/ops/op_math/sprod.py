@@ -19,6 +19,7 @@ computing the scalar product of operations.
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator
+from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import DecompositionUndefinedError, TermsUndefinedError
 from pennylane.ops._pauli_conversion import to_operator
@@ -142,7 +143,7 @@ class SProd(ScalarSymbolicOp):
         ):
 
             pr = {pw: math.dot(coeff, scalar) for pw, coeff in base_pauli_rep.items()}
-            self._pauli_rep = qp.pauli.PauliSentence(pr)
+            self._pauli_rep = PauliSentence(pr)
         else:
             self._pauli_rep = None
 

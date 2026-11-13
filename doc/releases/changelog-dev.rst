@@ -1544,6 +1544,12 @@ Breaking changes 💔
     The ``identity_wires`` argument replaces ``wire_order`` and assigns wires to
     identity terms, including the identity used to represent zero.
 
+  - ``PauliWord`` and ``PauliSentence`` now live in ``pennylane.core.pauli``; their
+    existing imports from ``pennylane.pauli`` remain available. Their ``commutator``
+    methods now accept only Pauli words and sentences. For mixed operator inputs,
+    use ``qp.commutator(pauli_value, operator, pauli=True)``.
+    `(#10484) <https://github.com/PennyLaneAI/pennylane/pull/10484>`__
+
 * ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of
   ``"MidMeasureMP"``. Update raw device operation names and comparisons; the deprecated
   Python import and ``GateSet`` alias remain supported.

@@ -15,7 +15,7 @@
 
 from pennylane.ops._pauli_conversion import to_operator
 
-from .pauli_arithmetic import PauliWord, PauliSentence
+from pennylane.core.pauli import PauliWord, PauliSentence
 
 from .utils import (
     is_pauli_word,
