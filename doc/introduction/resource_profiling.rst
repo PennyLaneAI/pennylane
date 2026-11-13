@@ -51,7 +51,13 @@ gate set, by analyzing the :doc:`decomposition pathways <compiling_circuits>` of
 operations. The circuit is neither executed nor fully compiled, so this is fast:
 
 >>> target = {"RZ", "Hadamard", "CNOT", "T", "Adjoint(T)", "GlobalPhase"}
->>> print(qp.estimate(circuit, target=target)(0.5).resources)
+>>> resources = qp.estimate(circuit, target=target)(0.5)
+>>> print(resources)
+Device: lightning.qubit
+Device wires: 4
+Shots: Shots(total=None)
+Level: top
+<BLANKLINE>
 Quantum operations:
 - Total: 64
   - Adjoint(T): 6
@@ -90,8 +96,13 @@ is counted *symbolically*. The estimate is then valid for every value of that ar
         loop()
         return qp.expval(qp.Z(0))
 
->>> resources = qp.estimate(loop_circuit, target=target)(5).resources
+>>> resources = qp.estimate(loop_circuit, target=target)(5)
 >>> print(resources)
+Device: lightning.qubit
+Device wires: 4
+Shots: Shots(total=None)
+Level: top
+<BLANKLINE>
 Symbolic Variables: a
 Quantum operations:
 - Total: 15*a + 1
@@ -106,31 +117,65 @@ Circuit Depth: Not computed
 
 A value can be substituted for each symbolic variable with ``subs``:
 
->>> resources.subs(a=1000).quantum_operations
-{'Adjoint(T)': 3000, 'CNOT': 6000, 'Hadamard': 2001, 'T': 4000}
+>>> print(resources.resources.subs(a=1000))
+Quantum operations:
+- Total: 15,001
+  - Adjoint(T): 3,000
+  - CNOT: 6,000
+  - Hadamard: 2,001
+  - T: 4,000
+Measurement processes:
+- expval(PauliZ): 1
+Total wires: 4
+Circuit Depth: Not computed
 
 Analyzing compiled programs
 ---------------------------
 
 The :func:`~pennylane.analyze` function inspects the compiled program at a given stage of
-compilation (``level``), without executing it. This makes it possible to see how each compilation
-pass changes the resources of the circuit:
+compilation (``level``), without executing it:
 
 * ``level="top"`` (or ``0``): the circuit as written, before any compilation pass.
 * ``level="user"``: the circuit after all user-specified passes.
 * ``level="device"``: the circuit after the device has decomposed it into the gates it supports.
 
->>> qp.analyze(circuit, level="top")(0.5).resources.quantum_operations
-{'MultiRZ': 1, 'QFT': 1, 'RX': 1, 'Toffoli': 2}
->>> qp.analyze(circuit, level="user")(0.5).resources.quantum_operations
-{'MultiRZ': 1, 'QFT': 1, 'RX': 1}
->>> qp.analyze(circuit, level="device")(0.5).resources.quantum_operations
-{'ControlledPhaseShift': 3, 'Hadamard': 3, 'MultiRZ': 1, 'RX': 1, 'SWAP': 1}
+Passing a sequence of levels shows how each compilation pass changes the resources of the circuit:
+
+>>> resources = qp.analyze(circuit, level=["top", "user", "device"])(0.5)
+>>> print(resources)
+Device: lightning.qubit
+Device wires: 4
+Shots: Shots(total=None)
+Levels:
+- 0: Before MLIR Passes
+- 1: cancel-inverses
+- 2: Device Preprocessing
+<BLANKLINE>
+↓Metric           Level→ |  0 |  1 |  2
+---------------------------------------
+Quantum operations:      |
+- Total                  |  5 |  3 |  9
+  - MultiRZ              |  1 |  1 |  1
+  - QFT                  |  1 |  1 |  0
+  - RX                   |  1 |  1 |  1
+  - Toffoli              |  2 |  0 |  0
+  - ControlledPhaseShift |  0 |  0 |  3
+  - Hadamard             |  0 |  0 |  3
+  - SWAP                 |  0 |  0 |  1
+Measurement processes:   |
+- expval(PauliZ)         |  1 |  1 |  1
+Total wires              |  4 |  4 |  4
 
 Like :func:`~pennylane.estimate`, :func:`~pennylane.analyze` counts loops with a runtime-dependent
 number of iterations symbolically:
 
->>> print(qp.analyze(loop_circuit, level="top")(5).resources)
+>>> resources = qp.analyze(loop_circuit, level="top")(5)
+>>> print(resources)
+Device: lightning.qubit
+Device wires: 4
+Shots: Shots(total=None)
+Level: Before MLIR Passes
+<BLANKLINE>
 Symbolic Variables: a
 Quantum operations:
 - Total: a + 1
@@ -148,8 +193,8 @@ The :func:`~pennylane.track` function counts the operations of an execution, aft
 decomposed the circuit into the gates it supports. It returns the result of the execution alongside
 the resources:
 
->>> result, profile = qp.track(circuit)(0.5)
->>> print(profile)
+>>> result, resources = qp.track(circuit)(0.5)
+>>> print(resources)
 Device: lightning.qubit
 Device wires: 4
 Shots: Shots(total=None)
@@ -173,9 +218,21 @@ and dtype of the real result, but not its values.
 Since the circuit is executed, control flow is unrolled for the given arguments, and every loop
 iteration is counted:
 
->>> _, profile = qp.track(loop_circuit)(5)
->>> profile.resources.quantum_operations
-{'Toffoli': 5, 'Hadamard': 1}
+>>> result, resources = qp.track(loop_circuit)(5)
+>>> print(resources)
+Device: lightning.qubit
+Device wires: 4
+Shots: Shots(total=None)
+Level: device
+<BLANKLINE>
+Quantum operations:
+- Total: 6
+  - Toffoli: 5
+  - Hadamard: 1
+Measurement processes:
+- expval(PauliZ): 1
+Total wires: 4
+Circuit Depth: 6
 
 Additional resources
 --------------------
