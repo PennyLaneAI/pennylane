@@ -118,7 +118,7 @@ Creating a custom operator using both :func:`~pennylane.subcircuit` and
 The following is an example for a fictitious two-wire gate called
 ``FlipAndRotate``. This operator flips a wire, measures another wire (a
 mid-circuit measurement) and conditionally applies a different
-:class:`~pennylane.CNOT` gate given the mid-circuit measurement result.
+:class:`~pennylane.PauliRot` gate given the mid-circuit measurement result.
 
 Its call signature will be ``FlipAndRotate(angle, rot_axes, wires)``, so the
 ``angle``, ``rot_axes``, and ``wires`` arguments need to be categorized into
@@ -129,7 +129,7 @@ Its call signature will be ``FlipAndRotate(angle, rot_axes, wires)``, so the
 * ``rot_axes`` : a length-2 list of some combination of ``"X"``, ``"Y"``, and
   ``"Z"``, representing an axis of rotation. Depending on the measurement result
   of ``wires[0]``, the wire that gets flipped, a rotation gate corresponding to
-  the axis of rotation is applied to ``wires[1]``. It is a string argument, so
+  the axis of rotation is applied to ``wires[1]``. It is a list of strings, so
   this can go in ``compilable_argnames``.
 * ``wires`` : the wires the operator acts on. The first wire gets flipped, the
   other is rotated. This can go in ``wire_argnames``.
@@ -165,10 +165,10 @@ with :func:`~pennylane.register_resources`.
     def flip_rotate_resources(angle, rot_axes, wires):
         return {
             # Declare the resources of BOTH conditional branches
-            qp.PauliRot(qp.typing.Float, rot_axes[0], wires=qp.typing.Wire): 1,
-            qp.PauliRot(qp.typing.Float, rot_axes[1], wires=qp.typing.Wire): 1,
+            qp.PauliRot(qp.typing.Float, rot_axes[0], wires=qp.typing.Wire[1]): 1,
+            qp.PauliRot(qp.typing.Float, rot_axes[1], wires=qp.typing.Wire[1]): 1,
             qp.X: 1,
-            qp.ops.mid_measure.MidMeasure(qp.typing.Wire): 1
+            qp.ops.mid_measure.MidMeasure(qp.typing.Wire[1]): 1
         }
 
     @qp.subcircuit(
@@ -179,7 +179,7 @@ with :func:`~pennylane.register_resources`.
     @qp.register_resources(flip_rotate_resources)
     def FlipAndRotate(angle, rot_axes, wires):
         qp.X(wires[0])
-        m = qp.measure(1)
+        m = qp.measure(wires[1])
 
         def true_fn():
             qp.PauliRot(2 * angle, rot_axes[0], wires=wires[1])
@@ -255,7 +255,7 @@ doing so are for testing, validation, and utmost customization.
         # Declare the resources of BOTH conditional branches
         return {
             qp.X: 1,
-            qp.ops.MidMeasure(Wire[1]): 1,
+            qp.ops.MidMeasure(qp.typing.Wire[1]): 1,
             qp.PauliRot(qp.typing.Float, pauli_word=rot_axes[0], wires=qp.typing.Wire[1]): 1,
             qp.PauliRot(qp.typing.Float, pauli_word=rot_axes[1], wires=qp.typing.Wire[1]): 1,
         }
@@ -281,7 +281,7 @@ Adding your new operator to PennyLane
 #####################################
 
 If you want PennyLane to natively support your new operator, you have to make a
-`Pull Request <https://github.com/PennyLaneAI/pennylane/compare>`` that adds it
+`Pull Request <https://github.com/PennyLaneAI/pennylane/compare>` that adds it
 to the appropriate folder in ``pennylane/``. The tests
 are added to a file of a similar name and location in ``tests/``. Generally, the
 new operator should also be imported in the module's ``__init__.py`` file in
@@ -306,9 +306,9 @@ gate in its required resources. Additionally,
     the thumbnail;
   - a third column on each line, giving the count in the example circuit;
   - optionally, ``:where:`` to ``decomposition-rule``, defining any shorthand,
-    variale, or assumptions used in that rule's counts.
+    variable, or assumptions used in that rule's counts.
 
-* If decomposition rules are large, the ``:stacked:`` directive can be used to
+* If decomposition rules are large, the ``:stacked:`` option can be used to
   better display the circuit thumbnail. This will place the example circuit
   thumbnail above the required resources instead of to the left of the
   resources. Optionally, use ``:lightbox:`` below circuit image thumbnails to
@@ -333,7 +333,6 @@ gate in its required resources. Additionally,
             .. decomposition-rule:: my_new_operator_decomp
                 :image: /_static/decomposition_thumbnails/my_new_operator_decomp.svg
                 :lightbox:
-
                 :requires: :math:`n - 2` work wires
                 :where: :math:`m = 2(n - 1)`
 
@@ -342,14 +341,13 @@ gate in its required resources. Additionally,
 
             .. decomposition-rule:: my_new_operator_decomp_controlled
                 :image: /_static/decomposition_thumbnails/my_new_operator_decomp_controlled.svg
-                :region:
+                :region: controlled
                 :lightbox:
 
                 :requires: :math:`n + 2` work wires
                 :where: :math:`m = 2(n - 1)`, :math:`c` is the number of control wires and the example circuit shows :math:`c = 2`
 
                 :class:`~.CNOT` | :math:`m + c` | 8
-                :class:`~.RZ` | :math:`n` | 4
                 :class:`~.RZ` | :math:`n` | 4
 
 Don't forget to also add the new operator to the documentation in the
@@ -364,7 +362,7 @@ thumbnail image, to the ``subroutine-table`` in the correct section of
   .. subroutine-table::
       :nosignatures:
 
-      ~pennylane.MyNewSubroutine    /_static/templates/<subroutine_type>/my_new_subroutine.png
+      ~pennylane.MyNewSubroutine    /_static/subroutine_thumbnails/<name>.svg
 
 .. note::
 
@@ -414,14 +412,14 @@ The basic components of operators are the following:
    are listed. Work wires (``work_wires``) are *not* included.
 
    >>> op.wires
-   Wires(0)
+   Wires([0])
 
 #. **The arguments of the operator** (:attr:`~.Operator2.arguments`), a
    dictionary mapping each argument name to its value. Every argument is also
    accessible as an attribute.
 
    >>> op.arguments
-   {'phi': 0.1, 'theta': 0.2, 'omega': 0.3, 'wires': Wires(0)}
+   {'phi': 0.1, 'theta': 0.2, 'omega': 0.3, 'wires': Wires([0])}
    >>> op.phi
    0.1
 
