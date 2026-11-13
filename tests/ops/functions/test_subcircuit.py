@@ -342,11 +342,13 @@ class TestAdditionalDecompositionRules:
 def test_import_with_builtin_subcircuits():
     """Fresh imports preserve operator utilities and serializable built-in subcircuits."""
     code = """
-from pennylane.ops.functions.subcircuit import subcircuit
+from pennylane.ops.subcircuit import subcircuit
+from pennylane.ops.functions.subcircuit import subcircuit as original_subcircuit
 import pickle
 import pennylane as qp
 
-assert qp.subcircuit is subcircuit
+assert qp.subcircuit is qp.ops.subcircuit is subcircuit
+assert qp.ops.functions.subcircuit is original_subcircuit is subcircuit
 assert qp.ops.functions.matrix is qp.matrix
 assert not qp.is_hermitian(qp.RX(0.2, 0))
 

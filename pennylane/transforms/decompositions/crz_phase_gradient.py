@@ -19,8 +19,8 @@ Factory that produces a decomposition rule for CRZ in terms of
 import numpy as np
 
 import pennylane as qp
-from pennylane.ops.functions.subcircuit import subcircuit
 from pennylane.ops.op_math import ChangeOpBasis2
+from pennylane.ops.subcircuit import subcircuit
 from pennylane.typing import Bool, Wire
 
 from .rz_phase_gradient import _precision_dispatcher, validate_phase_gradient_wires

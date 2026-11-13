@@ -32,7 +32,7 @@ from pennylane.ops import (
     change_op_basis,
     ctrl,
 )
-from pennylane.ops.functions.subcircuit import subcircuit
+from pennylane.ops.subcircuit import subcircuit
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 

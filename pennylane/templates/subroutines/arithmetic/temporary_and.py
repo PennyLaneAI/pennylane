@@ -24,8 +24,8 @@ from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
-from pennylane.ops.functions.subcircuit import subcircuit
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.subcircuit import subcircuit
 from pennylane.typing import AbstractArray, Bool, Wire
 from pennylane.wires import WiresLike
 

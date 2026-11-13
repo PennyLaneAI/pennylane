@@ -29,10 +29,10 @@ from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     pow_rotation,
 )
-from pennylane.ops.functions.subcircuit import subcircuit
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
+from pennylane.ops.subcircuit import subcircuit
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 

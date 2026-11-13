@@ -25,8 +25,8 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.ops import H, MultiControlledX, X, adjoint, change_op_basis, ctrl, prod
-from pennylane.ops.functions.subcircuit import subcircuit
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.subcircuit import subcircuit
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.multix import MultiX
 from pennylane.templates.subroutines.qft import QFT
