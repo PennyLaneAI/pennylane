@@ -47,7 +47,6 @@ class Barrier(Operator2):
     * Number of parameters: 0
 
     Args:
-        only_visual (bool): True if we do not want it to have an impact on the compilation process. Default is False.
         wires (Sequence[int] or int): the wires the operation acts on
     """
 
@@ -57,11 +56,10 @@ class Barrier(Operator2):
     num_wires = None
     """Any number of wires."""
 
-    compilable_argnames = ("only_visual",)
     arg_specs = {"wires": Wire[-1]}
 
-    def __init__(self, wires: WiresLike = (), only_visual: bool = False):
-        super().__init__(wires=wires, only_visual=only_visual)
+    def __init__(self, wires: WiresLike = ()):
+        super().__init__(wires=wires)
 
     def _bind_primitive(self):
         """Capture a barrier using the dedicated operator primitive."""
@@ -73,16 +71,12 @@ class Barrier(Operator2):
         return "||"
 
     def adjoint(self):
-        return Barrier(wires=self.wires, only_visual=self.only_visual)
+        return Barrier(wires=self.wires)
 
     def pow(self, z):
-        return [Barrier(wires=self.wires, only_visual=self.only_visual)]
+        return [Barrier(wires=self.wires)]
 
     def simplify(self):
-        if self.only_visual:
-            if len(self.wires) == 1:
-                return qp.Identity(self.wires[0])
-            return qp.prod(*(qp.Identity(w) for w in self.wires))
         return self
 
 

@@ -1548,7 +1548,6 @@ custom_ctrl_ops = [
     ),
     (qp.Barrier(), [1], qp.Barrier()),
     (qp.Barrier(wires=(0, 1)), [2], qp.Barrier(wires=(0, 1))),
-    (qp.Barrier(wires=(0, 1), only_visual=True), [2], qp.Barrier(wires=(0, 1), only_visual=True)),
 ]
 
 

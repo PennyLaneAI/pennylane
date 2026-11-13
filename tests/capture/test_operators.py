@@ -35,11 +35,10 @@ class TestBarrierPrimitive:
     """Capture and reconstruct barriers using their dedicated primitive."""
 
     @pytest.mark.parametrize("wires", [(), (0,), (0, 2)])
-    @pytest.mark.parametrize("only_visual", [False, True])
-    def test_capture(self, wires, only_visual):
-        """Preserve wires and visual metadata through primitive reconstruction."""
+    def test_capture(self, wires):
+        """Preserve wires through primitive reconstruction."""
         def circuit():
-            qp.Barrier(wires=wires, only_visual=only_visual)
+            qp.Barrier(wires=wires)
 
         closed = jax.make_jaxpr(circuit)()
         assert len(closed.eqns) == 1
@@ -52,7 +51,6 @@ class TestBarrierPrimitive:
         op = barrier_p.impl(*wires, **eqn.params)
         assert isinstance(op, qp.Barrier)
         assert tuple(op.wires) == wires
-        assert op.only_visual is only_visual
 
     def test_dynamic_wire(self):
         """Wire indices remain dynamic operands."""
