@@ -157,7 +157,7 @@ def merge_rotations(
         Device: lightning.qubit
         Device wires: 1
         Shots: Shots(total=None)
-        Level: merge-rotations
+        Level: After merge-rotations
         <BLANKLINE>
         Quantum operations:
         - Total: 1
