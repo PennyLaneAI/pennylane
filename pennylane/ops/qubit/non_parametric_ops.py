@@ -32,6 +32,7 @@ from scipy import sparse
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator2
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -457,9 +458,7 @@ class PauliX(Operator2):
     @override
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
-                {qp.pauli.PauliWord({self.wires[0]: "X"}): 1.0}
-            )
+            self._pauli_rep = PauliSentence({PauliWord({self.wires[0]: "X"}): 1.0})
         return self._pauli_rep
 
     def __init__(self, wires: WiresLike):
@@ -744,9 +743,7 @@ class PauliY(Operator2):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
-                {qp.pauli.PauliWord({self.wires[0]: "Y"}): 1.0}
-            )
+            self._pauli_rep = PauliSentence({PauliWord({self.wires[0]: "Y"}): 1.0})
         return self._pauli_rep
 
     def __init__(self, wires: WiresLike):
@@ -1035,9 +1032,7 @@ class PauliZ(Operator2):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
-                {qp.pauli.PauliWord({self.wires[0]: "Z"}): 1.0}
-            )
+            self._pauli_rep = PauliSentence({PauliWord({self.wires[0]: "Z"}): 1.0})
         return self._pauli_rep
 
     def __init__(self, wires: WiresLike):
@@ -1338,10 +1333,10 @@ class S(Operator2):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
+            self._pauli_rep = PauliSentence(
                 {
-                    qp.pauli.PauliWord({self.wires[0]: "I"}): 0.5 + 0.5j,
-                    qp.pauli.PauliWord({self.wires[0]: "Z"}): 0.5 - 0.5j,
+                    PauliWord({self.wires[0]: "I"}): 0.5 + 0.5j,
+                    PauliWord({self.wires[0]: "Z"}): 0.5 - 0.5j,
                 }
             )
         return self._pauli_rep
@@ -1519,10 +1514,10 @@ class T(Operator2):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
+            self._pauli_rep = PauliSentence(
                 {
-                    qp.pauli.PauliWord({self.wires[0]: "I"}): (0.5 + INV_SQRT2 * (0.5 + 0.5j)),
-                    qp.pauli.PauliWord({self.wires[0]: "Z"}): (0.5 - INV_SQRT2 * (0.5 + 0.5j)),
+                    PauliWord({self.wires[0]: "I"}): (0.5 + INV_SQRT2 * (0.5 + 0.5j)),
+                    PauliWord({self.wires[0]: "Z"}): (0.5 - INV_SQRT2 * (0.5 + 0.5j)),
                 }
             )
         return self._pauli_rep
@@ -1689,10 +1684,10 @@ class SX(Operator2):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
+            self._pauli_rep = PauliSentence(
                 {
-                    qp.pauli.PauliWord({self.wires[0]: "I"}): (0.5 + 0.5j),
-                    qp.pauli.PauliWord({self.wires[0]: "X"}): (0.5 - 0.5j),
+                    PauliWord({self.wires[0]: "I"}): (0.5 + 0.5j),
+                    PauliWord({self.wires[0]: "X"}): (0.5 - 0.5j),
                 }
             )
         return self._pauli_rep
@@ -1863,12 +1858,12 @@ class SWAP(Operator2):
     @override
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
+            self._pauli_rep = PauliSentence(
                 {
-                    qp.pauli.PauliWord({}): 0.5,
-                    qp.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5,
-                    qp.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5,
-                    qp.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5,
+                    PauliWord({}): 0.5,
+                    PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5,
+                    PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5,
+                    PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5,
                 }
             )
         return self._pauli_rep
@@ -2068,10 +2063,10 @@ class ECR(Operator2):
     @override
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
+            self._pauli_rep = PauliSentence(
                 {
-                    qp.pauli.PauliWord({self.wires[0]: "X"}): INV_SQRT2,
-                    qp.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "X"}): -INV_SQRT2,
+                    PauliWord({self.wires[0]: "X"}): INV_SQRT2,
+                    PauliWord({self.wires[0]: "Y", self.wires[1]: "X"}): -INV_SQRT2,
                 }
             )
         return self._pauli_rep
@@ -2248,12 +2243,12 @@ class ISWAP(Operator2):
     @override
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
+            self._pauli_rep = PauliSentence(
                 {
-                    qp.pauli.PauliWord({}): 0.5,
-                    qp.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5j,
-                    qp.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5j,
-                    qp.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5,
+                    PauliWord({}): 0.5,
+                    PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5j,
+                    PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5j,
+                    PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5,
                 }
             )
         return self._pauli_rep
@@ -2444,14 +2439,12 @@ class SISWAP(Operator2):
     @override
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
+            self._pauli_rep = PauliSentence(
                 {
-                    qp.pauli.PauliWord({self.wires[0]: "I", self.wires[1]: "I"}): 0.5
-                    + 0.5 * INV_SQRT2,
-                    qp.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5j * INV_SQRT2,
-                    qp.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5j * INV_SQRT2,
-                    qp.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5
-                    - 0.5 * INV_SQRT2,
+                    PauliWord({self.wires[0]: "I", self.wires[1]: "I"}): 0.5 + 0.5 * INV_SQRT2,
+                    PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5j * INV_SQRT2,
+                    PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5j * INV_SQRT2,
+                    PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5 - 0.5 * INV_SQRT2,
                 }
             )
         return self._pauli_rep

@@ -21,8 +21,8 @@ from collections.abc import Sequence
 
 import pennylane as qp
 from pennylane.core.operator import Operator
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.ops._pauli_conversion import to_operator
-from pennylane.pauli import PauliSentence, PauliWord
 
 
 def dot(
@@ -173,7 +173,7 @@ def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
         for pw in sentence:
             pauli_words[pw] += sentence[pw] * coeff
 
-    return qp.pauli.PauliSentence(pauli_words)
+    return PauliSentence(pauli_words)
 
 
 def _dot_pure_paulis(coeffs: Sequence[float], ops: Sequence[PauliWord | PauliSentence]):

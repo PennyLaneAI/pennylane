@@ -21,6 +21,7 @@ from copy import copy
 
 import pennylane as qp
 from pennylane.core.operator import Operator, Operator2
+from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.ops._pauli_conversion import to_operator
 from pennylane.pytrees import flatten, unflatten
@@ -180,7 +181,7 @@ class LinearCombination(Sum):
         """PauliSentence representation of the Sum of operations."""
 
         if all(pauli_reps := [op.pauli_rep for op in observables]):
-            new_rep = qp.pauli.PauliSentence()
+            new_rep = PauliSentence()
             for c, ps in zip(coeffs, pauli_reps, strict=True):
                 for pw, coeff in ps.items():
                     new_rep[pw] += coeff * c

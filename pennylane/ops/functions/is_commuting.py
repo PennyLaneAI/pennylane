@@ -18,6 +18,7 @@ Defines `is_commuting`, an function for determining if two functions commute.
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.pauli import PauliSentence
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.op_math import Controlled, Prod, SProd, Sum
 from pennylane.wires import Wires
@@ -88,7 +89,7 @@ def _pword_is_commuting(pauli_word_1, pauli_word_2):
 
     comm = pr1.commutator(pr2)
     comm.prune()
-    return comm == qp.pauli.pauli_arithmetic.PauliSentence({})
+    return comm == PauliSentence({})
 
 
 def _get_target_name(op):
