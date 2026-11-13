@@ -2389,6 +2389,11 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed a bug where AutoGraph raised an error for ``for`` loops over static iterables
+  that cannot be converted to arrays, such as lists of strings. These loops, including
+  ``enumerate`` loops, are now unrolled during capture without a warning.
+  `(#10515) <https://github.com/PennyLaneAI/pennylane/pull/10515>`__
+
 * Fixed exponential regular-expression backtracking in :func:`~.qchem.mol_data` when
   validating malformed InChI identifiers.
   `(#10462) <https://github.com/PennyLaneAI/pennylane/pull/10462>`__
