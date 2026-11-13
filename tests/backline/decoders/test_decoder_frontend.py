@@ -14,7 +14,8 @@
 
 """Tests for the Triton decoder frontend."""
 
-# pylint: disable=protected-access,wrong-import-position,broad-exception-caught,import-outside-toplevel,too-few-public-methods
+# pylint: disable=protected-access,wrong-import-position
+
 
 import ctypes
 import shutil
@@ -28,7 +29,7 @@ triton = pytest.importorskip("triton")
 def _has_cuda_target() -> bool:
     try:
         return triton.runtime.driver.active.get_current_target().backend == "cuda"
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return False
 
 
@@ -50,7 +51,7 @@ def _cuda_platform() -> str:
     return f"{target.backend}:{target.arch}:{target.warp_size}"
 
 
-class TestPollingCacheModifier:
+class TestPollingCacheModifier:  # pylint: disable=too-few-public-methods
     """The polling loads need a per-backend cache modifier.
 
     ``volatile=True`` is kept on both backends, but the cache modifier is not portable:

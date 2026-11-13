@@ -29,8 +29,6 @@ from pennylane.estimator.compact_hamiltonian import (
     _validate_pauli_terms,
 )
 
-# pylint: disable=too-many-arguments
-
 
 class TestPauliHamiltonian:
     """Unit tests for the PauliHamiltonian class"""

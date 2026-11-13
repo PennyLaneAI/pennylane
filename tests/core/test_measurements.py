@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the measurements module"""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 
@@ -43,8 +45,6 @@ from pennylane.measurements import (
     var,
 )
 from pennylane.wires import Wires
-
-# pylint: disable=too-few-public-methods, unused-argument
 
 
 def test_measurements_module_getattr():
@@ -182,15 +182,14 @@ valid_meausurements = [
 ]
 
 
-# pylint: disable=protected-access
 @pytest.mark.parametrize("mp", valid_meausurements)
 def test_flatten_unflatten(mp):
     """Test flatten and unflatten methods."""
 
-    data, metadata = mp._flatten()
+    data, metadata = mp._flatten()  # pylint: disable=protected-access
     assert hash(metadata)
 
-    new_mp = type(mp)._unflatten(data, metadata)
+    new_mp = type(mp)._unflatten(data, metadata)  # pylint: disable=protected-access
     qp.assert_equal(new_mp, mp)
 
 
@@ -433,10 +432,11 @@ class TestSampleMeasurement:
         """Test the execution of a custom sampled measurement."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
+            # pylint: disable-next=unused-argument
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return qp.math.sum(samples[..., self.wires])
 
+            # pylint: disable-next=unused-argument
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
@@ -454,10 +454,11 @@ class TestSampleMeasurement:
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
+            # pylint: disable-next=unused-argument
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qp.math.sum(samples[..., self.wires])
 
+            # pylint: disable-next=unused-argument
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
@@ -482,7 +483,7 @@ class TestStateMeasurement:
         """Test the execution of a custom state measurement."""
 
         class MyMeasurement(StateMeasurement):
-            def process_state(self, state, wire_order):
+            def process_state(self, state, wire_order):  # pylint: disable=unused-argument
                 return qp.math.sum(state)
 
             _shortname = "state"
@@ -502,7 +503,7 @@ class TestStateMeasurement:
         """Test that executing a state measurement with shots raises an error."""
 
         class MyMeasurement(StateMeasurement):
-            def process_state(self, state, wire_order):
+            def process_state(self, state, wire_order):  # pylint: disable=unused-argument
                 return qp.math.sum(state)
 
             _shortname = "state"
@@ -525,7 +526,7 @@ class TestStateMeasurement:
         NotImplementedError."""
 
         class MyMeasurement(StateMeasurement):
-            def process_state(self, state, wire_order):
+            def process_state(self, state, wire_order):  # pylint: disable=unused-argument
                 return qp.math.sum(state)
 
         with pytest.raises(NotImplementedError):
@@ -546,9 +547,11 @@ class TestMeasurementTransform:
                 tapes, _ = program([tape])
                 return len(tapes)
 
+            # pylint: disable-next=unused-argument
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return [True]
 
+            # pylint: disable-next=unused-argument
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 

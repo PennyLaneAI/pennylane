@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the ``typing.py`` file."""
 
+# pylint: disable=protected-access
+
 import operator
 
 import jax
@@ -46,8 +48,7 @@ class TestTensorLike:
     def test_isinstance_unknown_type(self):
         """Test that an unknown type returns False."""
 
-        # pylint: disable=too-few-public-methods
-        class UnknownType:
+        class UnknownType:  # pylint: disable=too-few-public-methods
             """Unknown type."""
 
         assert not isinstance(UnknownType(), TensorLike)
@@ -122,8 +123,7 @@ class TestTensorLike:
     def test_subclass_unknown_type(self):
         """Test that an unknown type returns False."""
 
-        # pylint: disable=too-few-public-methods
-        class UnknownType:
+        class UnknownType:  # pylint: disable=too-few-public-methods
             """Unknown type."""
 
         assert not issubclass(UnknownType, TensorLike)
@@ -149,8 +149,7 @@ class TestTensorLike:
         assert issubclass(torch.Tensor, TensorLike)
 
 
-# pylint: disable=protected-access,too-many-public-methods
-class TestAbstractArray:
+class TestAbstractArray:  # pylint: disable=too-many-public-methods
     """Tests for the AbstractArray class."""
 
     @pytest.mark.parametrize(
@@ -344,10 +343,8 @@ class TestAbstractArray:
     def test_arithmetic_unsupported_operand(self):
         """Unrelated operands use Python's unsupported-operation protocol."""
         array = AbstractArray((2,), float)
-        # pylint: disable-next=unnecessary-dunder-call
-        assert array.__add__(object()) is NotImplemented
-        # pylint: disable-next=unnecessary-dunder-call
-        assert array.__radd__(object()) is NotImplemented
+        assert array.__add__(object()) is NotImplemented  # pylint: disable=unnecessary-dunder-call
+        assert array.__radd__(object()) is NotImplemented  # pylint: disable=unnecessary-dunder-call
         with pytest.raises(TypeError):
             array + object()  # pylint: disable=expression-not-assigned
         with pytest.raises(TypeError):
@@ -683,7 +680,6 @@ class TestAbstractArray:
         assert a.shape == (2, 3, -1)
         assert a.dtype == dtype
 
-    # pylint: disable=isinstance-second-argument-not-valid-type
     def test_instance_check(self):
         """Test that things can be checked to be instances of a AbstractArray instance."""
 
@@ -830,7 +826,6 @@ class TestAbstractWires:
 
     def test_instance_check(self):
         """Test instance check of Wire."""
-        # pylint: disable=isinstance-second-argument-not-valid-type
 
         # int wire labels
         for i in range(4):

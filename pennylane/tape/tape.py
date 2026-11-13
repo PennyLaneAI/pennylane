@@ -15,7 +15,6 @@
 This module contains the base quantum tape.
 """
 
-# pylint: disable=protected-access
 import copy
 import warnings
 from collections.abc import Sequence
@@ -331,4 +330,5 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
 QuantumTapeBatch = Sequence[QuantumTape]
 
+# pylint: disable-next=protected-access
 register_pytree(QuantumTape, QuantumTape._flatten, QuantumTape._unflatten)

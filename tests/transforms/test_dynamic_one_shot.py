@@ -37,8 +37,6 @@ from pennylane.transforms.dynamic_one_shot import (
     parse_native_mid_circuit_measurements,
 )
 
-# pylint: disable=too-few-public-methods, too-many-arguments
-
 
 def test_pass_name():
     """Makes sure that the pass_name is set correctly. Must match Catalyst pass name."""
@@ -123,7 +121,7 @@ def test_postselect_mode():
 def test_hw_like_with_jax(use_jit, diff_method, seed):
     """Test that invalid shots are replaced with INTEGER_MIN_VAL if
     postselect_mode="hw-like" with JAX"""
-    import jax  # pylint: disable=import-outside-toplevel
+    import jax
 
     shots = 10
     dev = qp.device("default.qubit", seed=jax.random.PRNGKey(seed))
@@ -309,19 +307,26 @@ def generate_dummy_raw_results(measure_f, n_mcms, shots, postselect, interface):
     return (raw_results,)
 
 
-# pylint: disable=too-many-arguments, import-outside-toplevel
 @pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "numpy", None])
 @pytest.mark.parametrize("use_interface_for_results", [True, False])
 class TestInterfaces:
     """Unit tests for ML interfaces with dynamic_one_shot"""
 
+    # pylint: disable=too-many-arguments
+
     @pytest.mark.parametrize("measure_f", (qp.expval, qp.probs, qp.sample, qp.var))
     @pytest.mark.parametrize("shots", [1, 20, [20, 21]])
     @pytest.mark.parametrize("n_mcms", [1, 3])
-    def test_interface_tape_results(
-        self, shots, n_mcms, measure_f, interface, use_interface_for_results, seed
-    ):  # pylint: disable=unused-argument
+    def test_interface_tape_results(  # pylint: disable=unused-argument
+        self,
+        shots,
+        n_mcms,
+        measure_f,
+        interface,
+        use_interface_for_results,
+        seed,
+    ):
         """Test that the simulation results of a tape are correct with interface parameters"""
         if interface == "jax":
             from jax.random import PRNGKey

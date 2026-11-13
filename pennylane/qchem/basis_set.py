@@ -16,11 +16,10 @@ This module contains functions and classes to create a
 :class:`~pennylane.qchem.basis_set.BasisFunction` object from standard basis sets such as STO-3G.
 """
 
-# pylint: disable=too-few-public-methods, too-many-branches
 from .basis_data import basis_sets, load_basisset
 
 
-class BasisFunction:
+class BasisFunction:  # pylint: disable=too-few-public-methods
     r"""Create a basis function object.
 
     A basis set is composed of a set of basis functions that are typically constructed as a linear
@@ -67,7 +66,7 @@ class BasisFunction:
         self.params = [self.alpha, self.coeff, self.r]
 
 
-def atom_basis_data(name, atom, load_data=False):
+def atom_basis_data(name, atom, load_data=False):  # pylint: disable=too-many-branches
     r"""Generate default basis set parameters for an atom.
 
     This function extracts the angular momentum, exponents, and contraction coefficients of
