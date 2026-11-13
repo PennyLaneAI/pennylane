@@ -892,8 +892,7 @@ class TestCPhaseShift:
         assert isinstance(op, Operator2)
         assert qp.core.abstractify(op) == cphase_op(Float, wires=Wire[2])
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.capture
     def test_traced_parameter_frequencies(self, cphase_op):
         """Test that frequency metadata is available with traced angles and wires."""
         import jax
