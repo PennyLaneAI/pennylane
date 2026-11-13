@@ -273,36 +273,27 @@ def for_stmt(
     init_state = get_state()
     assert len(init_state) == len(symbol_names)
 
-    if isinstance(iteration_target, PRange):
-        start, stop, step = iteration_target.get_raw_range()
-        enum_start = None
-        iteration_array = None
-    elif isinstance(iteration_target, PEnumerate):
-        start, stop, step = 0, len(iteration_target.iteration_target), 1
-        enum_start = iteration_target.start_idx
-        try:
+    try:
+        if isinstance(iteration_target, PRange):
+            start, stop, step = iteration_target.get_raw_range()
+            enum_start = None
+            iteration_array = None
+        elif isinstance(iteration_target, PEnumerate):
+            start, stop, step = 0, len(iteration_target.iteration_target), 1
+            enum_start = iteration_target.start_idx
             iteration_array = jnp.asarray(iteration_target.iteration_target)
-        except Exception:  # pylint: disable=broad-exception-caught,broad-except
-            logger.debug(
-                "AutoGraph could not convert the iterable to an array; unrolling the Python loop.",
-                exc_info=True,
-            )
-            for item in iteration_target:
-                body_fn(item)
-            return
-    else:
-        start, stop, step = 0, len(iteration_target), 1
-        enum_start = None
-        try:
+        else:
+            start, stop, step = 0, len(iteration_target), 1
+            enum_start = None
             iteration_array = jnp.asarray(iteration_target)
-        except Exception:  # pylint: disable=broad-exception-caught,broad-except
-            logger.debug(
-                "AutoGraph could not convert the iterable to an array; unrolling the Python loop.",
-                exc_info=True,
-            )
-            for item in iteration_target:
-                body_fn(item)
-            return
+    except Exception:  # pylint: disable=broad-exception-caught,broad-except
+        logger.debug(
+            "AutoGraph could not convert the iterable to an array; unrolling the Python loop.",
+            exc_info=True,
+        )
+        for item in iteration_target:
+            body_fn(item)
+        return
 
     try:
         set_state(init_state)

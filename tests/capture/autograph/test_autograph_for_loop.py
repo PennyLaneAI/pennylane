@@ -415,6 +415,31 @@ class TestForLoops:
         assert [list(op.wires) for op in tape.operations] == [[0], [1], [2]]
         assert np.allclose([op.data[0] for op in tape.operations], [0, jnp.pi / 4, jnp.pi / 2])
 
+    @pytest.mark.parametrize(
+        "wires, expected_names",
+        [
+            ([2, 0, 1], ["PauliX", "PauliY", "PauliZ"]),
+            ([2, 0], ["PauliX", "PauliY"]),
+            ([], []),
+        ],
+    )
+    def test_for_in_zip(self, wires, expected_names):
+        """Zip loops unroll in order and stop at the shortest iterable."""
+
+        @qp.qnode(qp.device("default.qubit", wires=3))
+        def f():
+            ops = [qp.X, qp.Y, qp.Z]
+            for op, wire in zip(ops, wires):
+                op(wire)
+            return qp.probs()
+
+        jaxpr = jax.make_jaxpr(run_autograph(f))()
+
+        assert for_loop_prim not in extract_all_primitives(jaxpr.jaxpr)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        assert [op.name for op in tape.operations] == expected_names
+        assert [list(op.wires) for op in tape.operations] == [[wire] for wire in wires]
+
     @pytest.mark.filterwarnings("error")
     def test_for_in_other_iterable_object(self):
         """Test for loop over arbitrary iterable Python objects.
