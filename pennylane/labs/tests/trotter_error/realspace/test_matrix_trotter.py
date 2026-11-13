@@ -24,8 +24,6 @@ from pennylane.labs.trotter_error.realspace import (
 )
 from pennylane.labs.trotter_error.realspace.matrix import _op_norm
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments,no-self-use
-
 
 def _coeffs(states: int, modes: int, order: int):
     """Produce random coefficients for input"""
@@ -97,7 +95,7 @@ class TestMatrix:
     ]
 
     @pytest.mark.parametrize("blocks, gridpoints, states, modes, sparse, expected", params)
-    def test_norm(
+    def test_norm(  # pylint: disable=too-many-arguments
         self,
         blocks: dict[tuple[int], RealspaceSum],
         gridpoints: int,

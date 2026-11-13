@@ -16,6 +16,9 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 
+# pylint: disable=wrong-import-order
+
+
 import warnings
 
 from pennylane import exceptions
@@ -175,7 +178,7 @@ from pennylane.debugging import (
 )
 from pennylane.shadows import ClassicalShadow
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
-from pennylane import gradients  # pylint:disable=wrong-import-order
+from pennylane import gradients
 from pennylane.drawer import draw, draw_mpl
 
 from pennylane.io import (
@@ -193,8 +196,7 @@ from pennylane.io import (
     to_bloq,
 )
 
-# pylint:disable=wrong-import-order
-from pennylane import logging  # pylint:disable=wrong-import-order
+from pennylane import logging
 
 from pennylane import data
 
@@ -223,7 +225,6 @@ from pennylane import estimator
 
 from pennylane import testing
 
-# pylint:disable=wrong-import-order
 from importlib.metadata import version as _metadata_version
 
 from importlib.util import find_spec as _find_spec
@@ -242,7 +243,7 @@ if _find_spec("numpy") is not None:
             exceptions.PennyLaneDeprecationWarning,
         )
 
-from ._entry_points_utils import _setup_entry_points  # pylint:disable=wrong-import-position
+from ._entry_points_utils import _setup_entry_points
 
 # add to _entry_point_groups as new groups are added and desired to be accessed top-level
 _entry_point_groups = ["pennylane.drawer"]

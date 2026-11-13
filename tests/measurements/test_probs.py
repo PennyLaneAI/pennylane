@@ -13,8 +13,6 @@
 # limitations under the License.
 """Unit tests for the probs module"""
 
-# pylint:disable=too-many-arguments
-
 from collections.abc import Sequence
 
 import numpy as np
@@ -42,10 +40,8 @@ def fixture_init_state():
     return _init_state
 
 
-class TestProbs:
+class TestProbs:  # pylint: disable=too-many-public-methods
     """Tests for the probs function"""
-
-    # pylint:disable=too-many-public-methods
 
     def test_queue(self):
         """Test that the right measurement class is queued."""
@@ -387,9 +383,7 @@ class TestProbs:
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
-    def test_observable_is_measurement_value(
-        self, shots, phi, tol, tol_stochastic, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_observable_is_measurement_value(self, shots, phi, tol, tol_stochastic, seed):
         """Test that probs for mid-circuit measurement values
         are correct for a single measurement value."""
         dev = qp.device("default.qubit", wires=2, seed=seed)
@@ -409,14 +403,12 @@ class TestProbs:
             if not isinstance(shots, list):
                 assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
             else:
-                for r in res:  # pylint: disable=not-an-iterable
+                for r in res:
                     assert np.allclose(r, expected, atol=atol, rtol=0)
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", [0.0, np.pi / 3, np.pi])
-    def test_observable_is_measurement_value_list(
-        self, shots, phi, tol, tol_stochastic, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_observable_is_measurement_value_list(self, shots, phi, tol, tol_stochastic, seed):
         """Test that probs for mid-circuit measurement values
         are correct for a measurement value list."""
 
@@ -449,7 +441,7 @@ class TestProbs:
         if not isinstance(shots, list):
             assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
         else:
-            for r in res:  # pylint: disable=not-an-iterable
+            for r in res:
                 assert np.allclose(r, expected, atol=atol, rtol=0)
 
     def test_composite_measurement_value_not_allowed(self):
@@ -644,7 +636,6 @@ class TestProbs:
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])
     def test_prob_generalize_initial_state(self, hermitian, wire, init_state, tol, seed):
         """Test that the correct probability is returned."""
-        # pylint:disable=too-many-arguments
         dev = qp.device("default.qubit", wires=4)
 
         state = init_state(4, seed)
@@ -702,7 +693,6 @@ class TestProbs:
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])
     def test_operation_prob(self, operation, wire, init_state, tol, seed):
         "Test the rotated probability with different wires and rotating operations."
-        # pylint:disable=too-many-arguments
         dev = qp.device("default.qubit", wires=4)
 
         state = init_state(4, seed)

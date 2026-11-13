@@ -20,6 +20,7 @@ only fire on odd inputs and would otherwise stay uncovered.
 
 # pylint: disable=too-few-public-methods
 
+
 import numpy as np
 import pytest
 

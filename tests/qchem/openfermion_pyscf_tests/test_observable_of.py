@@ -15,7 +15,6 @@
 Unit tests for the ``observable`` function for openfermion operators.
 """
 
-# pylint: disable=too-many-arguments
 import sys
 
 import pytest
@@ -125,6 +124,7 @@ v2 = (
         ),
     ],
 )
+# pylint: disable-next=too-many-arguments
 def test_observable(fermion_ops, init_term, mapping, terms_exp, custom_wires, monkeypatch):
     r"""Tests the correctness of the 'observable' function used to build many-body observables.
 
@@ -132,7 +132,6 @@ def test_observable(fermion_ops, init_term, mapping, terms_exp, custom_wires, mo
     `QubitOperator. The equality checking is implemented in the `qchem` module itself
     as it could be something useful to the users as well.
     """
-    # pylint: disable=protected-access
 
     res_obs = qchem.observable(
         fermion_ops, init_term=init_term, mapping=mapping, wires=custom_wires
@@ -141,6 +140,7 @@ def test_observable(fermion_ops, init_term, mapping, terms_exp, custom_wires, mo
     qubit_op = QubitOperator()
     monkeypatch.setattr(qubit_op, "terms", terms_exp)
 
+    # pylint: disable-next=protected-access
     assert qp.qchem.convert._openfermion_pennylane_equivalent(qubit_op, res_obs, wires=custom_wires)
 
 
@@ -166,27 +166,25 @@ def test_exceptions_observable(fermion_ops, mapping, msg_match):
 
 def test_import_of(monkeypatch):
     """Test if an ImportError is raised by _import_of function."""
-    # pylint: disable=protected-access
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "openfermion", None)
 
         with pytest.raises(ImportError, match="This feature requires openfermion"):
-            qp.qchem.openfermion_pyscf._import_of()
+            qp.qchem.openfermion_pyscf._import_of()  # pylint: disable=protected-access
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "openfermionpyscf", None)
 
         with pytest.raises(ImportError, match="This feature requires openfermion"):
-            qp.qchem.openfermion_pyscf._import_of()
+            qp.qchem.openfermion_pyscf._import_of()  # pylint: disable=protected-access
 
 
 def test_import_pyscf(monkeypatch):
     """Test if an ImportError is raised by _import_pyscf function."""
-    # pylint: disable=protected-access
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "pyscf", None)
 
         with pytest.raises(ImportError, match="This feature requires pyscf"):
-            qp.qchem.openfermion_pyscf._import_pyscf()
+            qp.qchem.openfermion_pyscf._import_pyscf()  # pylint: disable=protected-access

@@ -16,7 +16,6 @@ Unit tests for functions needed for converting objects obtained from external li
 PennyLane object.
 """
 
-# pylint: disable=too-many-arguments,protected-access
 import sys
 
 import pytest
@@ -30,13 +29,12 @@ openfermion = pytest.importorskip("openfermion")
 
 def test_import_of(monkeypatch):
     """Test if an ImportError is raised by _import_of function."""
-    # pylint: disable=protected-access
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "openfermion", None)
 
         with pytest.raises(ImportError, match="This feature requires openfermion"):
-            qp.qchem.convert_openfermion._import_of()
+            qp.qchem.convert_openfermion._import_of()  # pylint: disable=protected-access
 
 
 class TestFromOpenFermion:

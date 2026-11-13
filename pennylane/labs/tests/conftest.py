@@ -114,7 +114,7 @@ def fixture_device(device_kwargs):
     """Fixture to create a device."""
 
     # internally used by pytest
-    __tracebackhide__ = True  # pylint:disable=unused-variable
+    __tracebackhide__ = True  # pylint: disable=unused-variable
 
     def _device(wires):
         device_kwargs["wires"] = wires
@@ -148,9 +148,8 @@ def pytest_runtest_setup(item):
 @pytest.fixture(scope="session", name="mpi4py_support")
 def fixture_mpi4py_support():
     """Fixture to determine whether mpi4py is installed."""
-    # pylint: disable=unused-import, import-outside-toplevel
     try:
-        import mpi4py
+        import mpi4py  # pylint: disable=unused-import
 
         mpi4py_support = True
     except ModuleNotFoundError:
@@ -169,9 +168,8 @@ def skip_if_no_mpi4py_support(mpi4py_support):
 @pytest.fixture(scope="session", name="pyscf_support")
 def fixture_pyscf_support():
     """Fixture to determine whether pyscf is installed."""
-    # pylint: disable=unused-import, import-outside-toplevel
     try:
-        import pyscf
+        import pyscf  # pylint: disable=unused-import
 
         pyscf_support = True
     except ModuleNotFoundError:
@@ -190,9 +188,8 @@ def skip_if_no_pyscf_support(pyscf_support):
 @pytest.fixture(scope="session", name="geometric_support")
 def fixture_geometric_support():
     """Fixture to determine whether geometric is installed."""
-    # pylint: disable=unused-import, import-outside-toplevel
     try:
-        import geometric
+        import geometric  # pylint: disable=unused-import
 
         geometric_support = True
     except ModuleNotFoundError:
@@ -235,8 +232,6 @@ class StoreDictKeyPair(argparse.Action):
     Note that strings will be converted to ints and floats if possible.
 
     """
-
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         self._nargs = nargs

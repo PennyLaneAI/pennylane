@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for Controlled"""
 
+# pylint: disable=too-few-public-methods
+
 import pickle
 from copy import copy
 from functools import partial
@@ -34,16 +36,10 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
 from pennylane.ops.op_math.controlled2 import ControlledOp2
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp
-
-# pylint: disable=too-few-public-methods
-# pylint: disable=protected-access
-# pylint: disable=pointless-statement
-# pylint: disable=expression-not-assigned
-# pylint: disable=too-many-arguments
 
 
 def equal_list(lhs, rhs):
@@ -167,7 +163,7 @@ class TestControlledInit:
         assert op.name == "C(TempOperator)"
 
         assert op.num_params == 0
-        assert op.parameters == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert op.parameters == []
         assert op.data == ()
 
         assert op.num_wires == 3
@@ -240,7 +236,6 @@ class TestControlledInit:
         qp.testing.assert_valid(op)
 
 
-# pylint: disable=too-few-public-methods
 class DummyHadamard(qp.operation.Operator):
     resource_keys = set({})
     num_wires = 1
@@ -288,7 +283,7 @@ class TestControlledProperties:
     def test_control_int(self, val, arr):
         """Test private `_control_int` property converts control_values to integer representation."""
         op = Controlled(TempOperator(5), (0, 1, 2), control_values=arr)
-        assert op._control_int == val
+        assert op._control_int == val  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("value", (True, False))
     def test_has_matrix(self, value):
@@ -433,6 +428,7 @@ class TestControlledMiscMethods:
 
     def test_flatten_unflatten(self):
         """Tests the _flatten and _unflatten methods."""
+        # pylint: disable=protected-access
         target = qp.S(0)
         control_wires = qp.wires.Wires((1, 2))
         control_values = (0, 0)
@@ -589,8 +585,6 @@ class TestControlledMiscMethods:
 
 class TestControlledOperationProperties:
     """Test ControlledOp specific properties."""
-
-    # pylint:disable=no-member
 
     @pytest.mark.parametrize("gm", (None, "A", "F"))
     def test_grad_method(self, gm):
@@ -773,8 +767,10 @@ class TestMatrix:
 
         mat = op.matrix()
         with qp.queuing.AnnotatedQueue() as q:
+            # pylint: disable-next=expression-not-assigned
             [qp.PauliX(w) for w, val in zip(control_wires, control_values) if not val]
             Controlled(base, control_wires, control_values=[1, 1, 1])
+            # pylint: disable-next=expression-not-assigned
             [qp.PauliX(w) for w, val in zip(control_wires, control_values) if not val]
         tape = qp.tape.QuantumScript.from_queue(q)
         decomp_mat = qp.matrix(tape, wire_order=op.wires)
@@ -962,12 +958,11 @@ class TestDecomposition:
         decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
         assert qp.math.allclose(op.matrix(), decomp_mat)
 
-    # pylint: disable=too-many-positional-arguments
     @pytest.mark.parametrize(
         "base_cls, params, base_wires, ctrl_wires, custom_ctrl_cls, expected",
         custom_ctrl_op_decomps,
     )
-    def test_decomposition_custom_ops(
+    def test_decomposition_custom_ops(  # pylint: disable=too-many-arguments
         self,
         base_cls,
         params,
@@ -997,7 +992,7 @@ class TestDecomposition:
         "base_cls, params, base_wires, ctrl_wires, custom_ctrl_cls, expected",
         special_par_op_decomps,
     )
-    def test_decomposition_custom_par_ops_broadcasted(
+    def test_decomposition_custom_par_ops_broadcasted(  # pylint: disable=too-many-arguments
         self,
         base_cls,
         params,
@@ -1186,7 +1181,7 @@ class TestDifferentiation:
 
         b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
-        loss.backward()  # pylint:disable=no-member
+        loss.backward()
 
         res = b.grad.detach()
         expected = pnp.sin(b.detach() / 2) / 2
@@ -2149,7 +2144,7 @@ class TestCtrlTransformDifferentiation:
 
         b = torch.tensor(0.123, requires_grad=True, dtype=torch.float64)
         loss = circuit(b)
-        loss.backward()  # pylint:disable=no-member
+        loss.backward()
 
         res = b.grad.detach()
         expected = pnp.sin(b.detach() / 2) / 2

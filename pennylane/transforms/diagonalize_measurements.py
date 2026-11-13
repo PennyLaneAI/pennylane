@@ -26,8 +26,6 @@ from pennylane.tape.tape import (
 )
 from pennylane.transforms.core import transform
 
-# pylint: disable=unused-argument
-
 _default_supported_obs = (qp.Z, qp.Identity)
 
 
@@ -438,8 +436,10 @@ def _get_obs_and_gates(obs_list, _visited_obs, supported_base_obs=_default_suppo
 
 
 @singledispatch
-def _diagonalize_non_basic_observable(
-    observable, _visited_obs, supported_base_obs=_default_supported_obs
+def _diagonalize_non_basic_observable(  # pylint: disable=unused-argument
+    observable,
+    _visited_obs,
+    supported_base_obs=_default_supported_obs,
 ):
     """Takes an observable other than X, Y, Z, H, and I, and diagonalize it.
 

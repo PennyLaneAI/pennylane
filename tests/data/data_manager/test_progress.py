@@ -24,8 +24,6 @@ import pennylane.data.data_manager.progress._default
 from pennylane.data.data_manager.progress import Progress, Task
 from pennylane.data.data_manager.progress._default import term
 
-# pylint: disable=redefined-outer-name
-
 
 @pytest.fixture
 def disable_rich(request, monkeypatch):
@@ -60,7 +58,7 @@ class TestProgress:
         ],
         indirect=["disable_rich"],
     )
-    def test_init(self, disable_rich, expect_cls):
+    def test_init(self, disable_rich, expect_cls):  # pylint: disable=redefined-outer-name
         """Test that ``__init__()`` uses the correct implementation based
         on the value of ``disable_rich``."""
         del disable_rich
@@ -95,8 +93,7 @@ class TestDefaultProgress:
     def terminal_size(self, monkeypatch):
         """Patches terminal size for testing."""
 
-        def get_terminal_size(fallback=None):
-            # pylint: disable=unused-argument
+        def get_terminal_size(fallback=None):  # pylint: disable=unused-argument
             return (40, 4)
 
         monkeypatch.setattr(shutil, "get_terminal_size", get_terminal_size)

@@ -23,8 +23,7 @@ from pennylane.devices.qubit_mixed import get_final_state, measure_final_state, 
 ml_interfaces = ["numpy", "autograd", "jax", "torch"]
 
 
-# pylint: disable=too-few-public-methods
-class TestResultInterface:
+class TestResultInterface:  # pylint: disable=too-few-public-methods
     """Test that the result interface is correct."""
 
     @pytest.mark.all_interfaces
@@ -40,7 +39,6 @@ class TestResultInterface:
         assert qp.math.get_interface(res) == interface
 
 
-# pylint: disable=too-few-public-methods
 class TestStatePrepBase:
     """Tests integration with various state prep methods."""
 

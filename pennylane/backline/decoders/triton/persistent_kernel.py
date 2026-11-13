@@ -22,7 +22,7 @@ except ImportError as exc:
 
 
 @triton.jit
-def _persistent_decoder_kernel(  # pylint: disable=too-many-arguments  # pragma: no cover
+def _persistent_decoder_kernel(  # pragma: no cover  # pylint: disable=too-many-arguments
     ring_u64_ptr,
     handoff_u64_ptr,
     stop_u32_ptr,

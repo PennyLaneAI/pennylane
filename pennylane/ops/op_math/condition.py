@@ -196,8 +196,7 @@ class Conditional(SymbolicOp, Operation):
         then_op (Operation): the PennyLane operation to apply conditionally
     """
 
-    def __init__(self, expr, then_op: Operation):
-        # pylint: disable=super-init-not-called
+    def __init__(self, expr, then_op: Operation):  # pylint: disable=super-init-not-called
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
         self.hyperparameters["base"] = then_op
@@ -232,8 +231,8 @@ class Conditional(SymbolicOp, Operation):
     def matrix(self, wire_order=None):
         return self.base.matrix(wire_order=wire_order)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
@@ -244,7 +243,7 @@ class Conditional(SymbolicOp, Operation):
         return self.base.eigvals()
 
     @property
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_adjoint
 
     def adjoint(self):
@@ -994,8 +993,8 @@ def _cond_abstract_eval(*_, jaxpr_branches, **__):
     return [out.aval for out in jaxpr_branches[0].outvars]
 
 
-# pylint: disable=unused-argument
 @cond_prim.def_impl
+# pylint: disable-next=unused-argument
 def _cond_impl(*all_args, jaxpr_branches, consts_slices, args_slice, estimated_probabilities):
     args_slice = slice(*args_slice)
     consts_slices = [slice(*s) for s in consts_slices]
