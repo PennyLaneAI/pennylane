@@ -62,6 +62,8 @@ def resources_from_analysis_pass(  # pylint: disable=too-many-arguments,too-many
         level_to_name (dict[int, str]): mapping from level number to the name to use for that level
             in the output. Note that this argument is mutated by this function
         *args: the arguments to pass to the QNode when compiling
+        analysis_pass_name: the name of the analysis pass to use
+        analysis_pass_kwargs: the keyword arguments to pass to the analysis pass
         **kwargs: the keyword arguments to pass to the QNode when compiling
     Returns:
         dict[str, SpecsResources | list[SpecsResources]]: A mapping from level name to the
