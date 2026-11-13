@@ -218,7 +218,7 @@ class IQPEmbedding(Operator2):
         super().__init__(features, wires, n_repeats, pattern)
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _iqp_embedding_standard_resources(features, wires, n_repeats, pattern):
     return {
         RZ: n_repeats * len(wires),

@@ -269,7 +269,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
     """
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         operations: Iterable[Operator | AbstractOperatorLike],
         gate_set: Set[type | str] | Mapping[type | str, float] | GateSet,
@@ -970,7 +970,7 @@ class DecompGraphSolution:
 class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-instance-attributes
     """The visitor used in the Dijkstra search for the optimal decomposition."""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         graph: rx.PyDiGraph,
         gate_set: GateSet,

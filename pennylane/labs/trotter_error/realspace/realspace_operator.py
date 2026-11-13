@@ -280,7 +280,6 @@ class RealspaceSum(Fragment):
     """
 
     def __init__(self, modes: int, ops: Sequence[RealspaceOperator]):
-        # pylint: disable=protected-access
         for op in ops:
             if op.modes != modes:
                 raise ValueError(
@@ -291,7 +290,7 @@ class RealspaceSum(Fragment):
         for op in ops:
             assert op.coeffs is not None
 
-        ops = tuple(filter(lambda op: not op._is_zero, ops))
+        ops = tuple(filter(lambda op: not op._is_zero, ops))  # pylint: disable=protected-access
         self._is_zero = len(ops) == 0
 
         self.modes = modes

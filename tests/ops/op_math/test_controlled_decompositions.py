@@ -609,7 +609,6 @@ class TestMCXDecomposition:
         with qp.queuing.AnnotatedQueue() as q:
             if work_wire_type == "zeroed":
                 qp.Projector([0] * len(work_wires), wires=work_wires)
-            # pylint: disable=missing-kwoa
             with qp.capture.pause():
                 _mcx_many_work_wires(**mcx.arguments)
 
@@ -647,7 +646,6 @@ class TestMCXDecomposition:
         with qp.queuing.AnnotatedQueue() as q:
             if work_wire_type == "zeroed":
                 qp.Projector([0], wires=work_wire)
-            # pylint: disable=missing-kwoa
             with qp.capture.pause():
                 _mcx_one_work_wire(**mcx.arguments)
 

@@ -15,6 +15,8 @@
 Tests for the basic default behavior of the Device API.
 """
 
+# pylint: disable=too-few-public-methods
+
 import pytest
 
 import pennylane as qp
@@ -30,18 +32,15 @@ from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
-# pylint:disable=unused-argument,too-few-public-methods,unused-variable,protected-access,too-many-arguments
-
 
 def test_execute_method_abstract():
     """Test that a device can't be instantiated without an execute method."""
 
-    # pylint: disable=too-few-public-methods
     class BadDevice(Device):
         """A bad device"""
 
     with pytest.raises(TypeError, match=r"instantiate abstract class BadDevice"):
-        BadDevice()  # pylint: disable=abstract-class-instantiated
+        BadDevice()
 
 
 EXAMPLE_TOML_FILE = """
@@ -83,7 +82,7 @@ class TestDeviceCapabilities:
 
             config_filepath = request.node.toml_file
 
-            def execute(self, circuits, execution_config=None):
+            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
                 return (0,)
 
         dev = DeviceWithCapabilities()
@@ -94,10 +93,12 @@ class TestDeviceCapabilities:
 
         with pytest.raises(FileNotFoundError):
 
+            # pylint: disable-next=unused-variable
             class DeviceWithInvalidCapabilities(Device):
 
                 config_filepath = "nonexistent_file.toml"
 
+                # pylint: disable-next=unused-argument
                 def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                     return (0,)
 
@@ -112,10 +113,10 @@ class TestSetupExecutionConfig:
 
         class CustomDevice(Device):
 
-            def preprocess(self, execution_config=None):
+            def preprocess(self, execution_config=None):  # pylint: disable=unused-argument
                 return CompilePipeline(), default_execution_config
 
-            def execute(self, circuits, execution_config=None):
+            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
                 return (0,)
 
         dev = CustomDevice()
@@ -127,7 +128,7 @@ class TestSetupExecutionConfig:
 
         class DeviceNoCapabilities(Device):
 
-            def execute(self, circuits, execution_config=None):
+            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
                 return (0,)
 
         dev = DeviceNoCapabilities()
@@ -139,7 +140,6 @@ class TestSetupExecutionConfig:
         config = dev.setup_execution_config(initial_config)
         assert config.gradient_method == "device"
 
-    # pylint: disable=too-many-positional-arguments
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
         "create_temporary_toml_file, mcm_method, shots, expected_transform, expected_error",
@@ -170,8 +170,13 @@ class TestSetupExecutionConfig:
         ],
         indirect=("create_temporary_toml_file",),
     )
-    def test_mcm_method_validation(
-        self, mcm_method, shots, expected_transform, expected_error, request
+    def test_mcm_method_validation(  # pylint: disable=unused-argument
+        self,
+        mcm_method,
+        shots,
+        expected_transform,
+        expected_error,
+        request,
     ):
         """Tests that the requested MCM method is validated."""
 
@@ -209,6 +214,7 @@ class TestSetupExecutionConfig:
         class CustomDevice(Device):
             """A device with only a dummy execute method provided."""
 
+            # pylint: disable-next=unused-argument
             def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return (0,)
 
@@ -244,7 +250,7 @@ class TestSetupExecutionConfig:
 
             config_filepath = request.node.toml_file
 
-            def execute(self, circuit, **kwargs):
+            def execute(self, circuit, **kwargs):  # pylint: disable=unused-argument
                 """The execute method for the custom device."""
                 return 0
 
@@ -264,10 +270,10 @@ class TestPreprocessTransforms:
 
         class CustomDevice(Device):
 
-            def preprocess(self, execution_config=None):
+            def preprocess(self, execution_config=None):  # pylint: disable=unused-argument
                 return default_compile_pipeline, ExecutionConfig()
 
-            def execute(self, circuits, execution_config=None):
+            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
                 return (0,)
 
         dev = CustomDevice()
@@ -279,7 +285,7 @@ class TestPreprocessTransforms:
 
         class DeviceNoCapabilities(Device):
 
-            def execute(self, circuits, execution_config=None):
+            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
                 return (0,)
 
         dev = DeviceNoCapabilities()
@@ -306,7 +312,7 @@ class TestPreprocessTransforms:
                 if supports_projector:
                     self.capabilities.operations["Projector"] = OperatorProperties()
 
-            def execute(
+            def execute(  # pylint: disable=unused-argument
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
@@ -349,7 +355,7 @@ class TestPreprocessTransforms:
                     }
                 )
 
-            def execute(
+            def execute(  # pylint: disable=unused-argument
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
@@ -402,7 +408,7 @@ class TestPreprocessTransforms:
                     }
                 )
 
-            def execute(
+            def execute(  # pylint: disable=unused-argument
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
@@ -460,6 +466,7 @@ class TestPreprocessTransforms:
         self, request, overlapping_obs, non_commuting_obs, sum_support
     ):
         """Tests if ``split_non_commuting`` or ``split_to_single_terms`` is applied correctly."""
+        # pylint: disable=protected-access
 
         if not overlapping_obs and non_commuting_obs:
             pytest.skip("Not a valid combination of capabilities")
@@ -478,6 +485,7 @@ class TestPreprocessTransforms:
                 if sum_support:
                     self.capabilities.observables.update({"Sum": OperatorProperties()})
 
+            # pylint: disable-next=unused-argument
             def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return (0,)
 
@@ -538,6 +546,7 @@ class TestPreprocessTransforms:
                         }
                     )
 
+            # pylint: disable-next=unused-argument
             def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return (0,)
 
@@ -550,12 +559,10 @@ class TestPreprocessTransforms:
         else:
             assert qp.transforms.diagonalize_measurements in program
             for transform_container in program:
+                # pylint: disable-next=protected-access
                 if transform_container._transform is qp.transforms.diagonalize_measurements:
-                    assert transform_container._kwargs["supported_base_obs"] == {
-                        qp.Z,
-                        qp.X,
-                        qp.Y,
-                    }
+                    # pylint: disable-next=protected-access
+                    assert transform_container._kwargs["supported_base_obs"] == {qp.Z, qp.X, qp.Y}
 
 
 class TestMinimalDevice:
@@ -564,6 +571,7 @@ class TestMinimalDevice:
     class MinimalDevice(Device):
         """A device with only a dummy execute method provided."""
 
+        # pylint: disable-next=unused-argument
         def execute(self, circuits, execution_config: ExecutionConfig | None = None):
             return (0,)
 
@@ -704,7 +712,7 @@ class TestMinimalDevice:
     def test_wires_are_read_only(self):
         """Test that device wires cannot be set after device initialization."""
         with pytest.raises(AttributeError):
-            self.dev.wires = [0, 1]  # pylint:disable=attribute-defined-outside-init
+            self.dev.wires = [0, 1]  # pylint: disable=attribute-defined-outside-init
 
 
 def test_device_with_ambiguous_preprocess():
@@ -712,8 +720,10 @@ def test_device_with_ambiguous_preprocess():
 
     with pytest.raises(ValueError, match="A device should implement either"):
 
-        class InvalidDevice(Device):
+        class InvalidDevice(Device):  # pylint: disable=unused-variable
             """A device with ambiguous preprocess."""
+
+            # pylint: disable=unused-argument
 
             def preprocess(self, execution_config=None):
                 return CompilePipeline(), ExecutionConfig()
@@ -743,10 +753,11 @@ class TestProvidingDerivatives:
         class WithDerivative(Device):
             """A device with a derivative."""
 
-            # pylint: disable=unused-argument
+            # pylint: disable-next=unused-argument
             def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return "a"
 
+            # pylint: disable-next=unused-argument
             def compute_derivatives(self, circuits, execution_config: ExecutionConfig = None):
                 return ("b",)
 
@@ -763,13 +774,14 @@ class TestProvidingDerivatives:
     def test_provided_jvp(self):
         """Tests default logic for a device with a jvp provided."""
 
-        # pylint: disable=unused-argnument
         class WithJvp(Device):
             """A device with a jvp."""
 
+            # pylint: disable-next=unused-argument
             def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return "a"
 
+            # pylint: disable-next=unused-argument
             def compute_jvp(self, circuits, tangents, execution_config: ExecutionConfig = None):
                 return ("c",)
 
@@ -783,19 +795,15 @@ class TestProvidingDerivatives:
     def test_provided_vjp(self):
         """Tests default logic for a device with a vjp provided."""
 
-        # pylint: disable=unused-argnument
         class WithVjp(Device):
             """A device with a vjp."""
 
+            # pylint: disable-next=unused-argument
             def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return "a"
 
-            def compute_vjp(
-                self,
-                circuits,
-                cotangents,
-                execution_config: ExecutionConfig = None,
-            ):
+            # pylint: disable-next=unused-argument
+            def compute_vjp(self, circuits, cotangents, execution_config: ExecutionConfig = None):
                 return ("c",)
 
         dev = WithVjp()

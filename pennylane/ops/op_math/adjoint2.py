@@ -23,6 +23,7 @@ from pennylane._class_property import classproperty
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.operator.operator2 import operator_p  # tach-ignore
+from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import remove_from_program
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
@@ -78,7 +79,7 @@ class Adjoint2(SymbolicOp2):
             return None
         if not self._pauli_rep:
             rep = {pw: math.conjugate(c) for pw, c in self.base.pauli_rep.items()}
-            self._pauli_rep = qp.pauli.PauliSentence(rep)
+            self._pauli_rep = PauliSentence(rep)
         return self._pauli_rep
 
     def __repr__(self) -> str:
@@ -170,8 +171,7 @@ class Adjoint2(SymbolicOp2):
         assert len(eqns) <= 1, f"Expected at most one plxpr equation for {self.base}."
 
         if len(eqns) == 0:
-            # pylint: disable=protected-access
-            self.base._bind_primitive()
+            self.base._bind_primitive()  # pylint: disable=protected-access
             if self.base.tracer is None:
                 # If the base's tracer is `None` after explicitly re-binding the primitive,
                 # it means we're not in a tracing context, so we don't need to (and cannot)
@@ -242,8 +242,8 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
         return {_adjoint_abstract(op): count for op, count in base_gates.items()}
 
     def _wrap_work_wire_spec(base_rule):
-
         # pylint: disable=protected-access
+
         if isinstance(base_rule._work_wire_spec, dict):
             return base_rule._work_wire_spec
 
@@ -254,7 +254,6 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
 
     base_source = base_rule._source
 
-    # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_name(f"adjoint({base_rule.name})")
     @register_resources(
@@ -263,9 +262,8 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
         exact=base_rule.exact_resources,
     )
     def _impl(base):
-        # pylint: disable=protected-access
         non_traced_args, traced_args = get_traced_and_non_traced_args(base)
-        impl = partial(base_rule._impl, **non_traced_args)
+        impl = partial(base_rule._impl, **non_traced_args)  # pylint: disable=protected-access
         qp.adjoint(impl)(**traced_args)
 
     _impl._source = (

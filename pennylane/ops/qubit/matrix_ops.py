@@ -16,7 +16,9 @@ This submodule contains the discrete-variable quantum operations that
 accept a hermitian or an unitary matrix as a parameter.
 """
 
-# pylint:disable=arguments-differ
+# pylint: disable=arguments-differ
+
+
 import warnings
 
 import numpy as np
@@ -277,9 +279,8 @@ class QubitUnitary(Operator2):
         return f"QubitUnitary(U={self.U}, wires={self.wires})"
 
     @staticmethod
-    def compute_matrix(
-        U: TensorLike, wires: WiresLike | None = None, unitary_check: bool = False
-    ):  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
+    def compute_matrix(U: TensorLike, wires: WiresLike | None = None, unitary_check: bool = False):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -307,9 +308,12 @@ class QubitUnitary(Operator2):
         return U
 
     @staticmethod
-    def compute_sparse_matrix(
-        U: TensorLike, wires: WiresLike | None = None, unitary_check: bool = False, format="csr"
-    ):  # pylint: disable=arguments-differ,unused-argument
+    def compute_sparse_matrix(  # pylint: disable=unused-argument
+        U: TensorLike,
+        wires: WiresLike | None = None,
+        unitary_check: bool = False,
+        format="csr",
+    ):
         r"""Representation of the operator as a sparse matrix.
 
         Args:
@@ -338,9 +342,8 @@ class QubitUnitary(Operator2):
         )
 
     @staticmethod
-    def compute_decomposition(
-        U: TensorLike, wires: WiresLike, unitary_check: bool = False
-    ):  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
+    def compute_decomposition(U: TensorLike, wires: WiresLike, unitary_check: bool = False):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -394,19 +397,16 @@ class QubitUnitary(Operator2):
 
         return qp.ops.op_math.decompositions.multi_qubit_decomposition(U, Wires(wires))
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_sparse_matrix(self) -> bool:
+    def has_sparse_matrix(self) -> bool:  # pylint: disable=invalid-overridden-method
         return self._issparse
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_matrix(self) -> bool:
+    def has_matrix(self) -> bool:  # pylint: disable=invalid-overridden-method
         return not self._issparse
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_decomposition(self) -> bool:
+    def has_decomposition(self) -> bool:  # pylint: disable=invalid-overridden-method
         # Sparse matrices on more than one wire cannot be decomposed.
         return self.has_matrix or len(self.wires) == 1
 
@@ -484,7 +484,8 @@ def _pow_qubit_unitary_standard(base, z):
 add_decomps("Pow(QubitUnitary)", _pow_qubit_unitary_standard)
 
 
-def _controlled_qubit_unitary_standard_resources(  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _controlled_qubit_unitary_standard_resources(
     base, control_wires, control_values, work_wires, work_wire_type
 ):
     num_target_wires = len(base.wires)
@@ -590,7 +591,7 @@ class DiagonalQubitUnitary(Operator2):
         super().__init__(D, wires=wires)
 
     @staticmethod
-    # pylint: disable-next=arguments-differ,unused-argument
+    # pylint: disable-next=unused-argument
     def compute_matrix(D: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -623,7 +624,7 @@ class DiagonalQubitUnitary(Operator2):
         return math.diag(D)
 
     @staticmethod
-    # pylint: disable-next=arguments-differ,unused-argument
+    # pylint: disable-next=unused-argument
     def compute_eigvals(D: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -672,8 +673,7 @@ class DiagonalQubitUnitary(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
-# pylint: disable=unused-argument
-def _diagonal_qubit_unitary_recursive_resources(D, wires):
+def _diagonal_qubit_unitary_recursive_resources(D, wires):  # pylint: disable=unused-argument
     num_wires = len(wires)
     if num_wires == 1:
         return {qp.RZ: 1, qp.GlobalPhase: 1}
@@ -703,8 +703,7 @@ def _diagonal_qubit_unitary_recursive(D, wires):
         qp.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
 
 
-# pylint: disable=unused-argument
-def _diagonal_qubit_unitary_auxiliary_resources(D, wires):
+def _diagonal_qubit_unitary_auxiliary_resources(D, wires):  # pylint: disable=unused-argument
     num_wires = len(wires)
     return {
         qp.SelectPauliRot(
@@ -738,7 +737,6 @@ def _adjoint_diagonal_unitary_standard(base):
 add_decomps("Adjoint(DiagonalQubitUnitary)", _adjoint_diagonal_unitary_standard)
 
 
-# pylint: disable-next=unused-argument
 @register_name("standard")
 @register_resources(lambda base, z: {abstractify(base): 1})
 def _pow_diagonal_unitary_standard(base, z):
@@ -849,15 +847,13 @@ class BlockEncode(Operator2):
         self._subspace = subspace
         self._issparse = sp.sparse.issparse(A)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_sparse_matrix(self) -> bool:
+    def has_sparse_matrix(self) -> bool:  # pylint: disable=invalid-overridden-method
         """bool: Whether the operator has a sparse matrix representation."""
         return self._issparse
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_matrix(self) -> bool:
+    def has_matrix(self) -> bool:  # pylint: disable=invalid-overridden-method
         """bool: Whether the operator has a sparse matrix representation."""
         return not self._issparse
 
@@ -967,7 +963,7 @@ def _process_blockencode(A, subspace):
 
     sqrtm = math.sqrt_matrix_sparse if sp.sparse.issparse(A) else math.sqrt_matrix
 
-    def _stack(lst, h=False, like=None):
+    def _stack(lst, h=False, like=None):  # pylint: disable=unused-argument
         return math.hstack(lst) if h else math.vstack(lst)
 
     interface = math.get_interface(A)

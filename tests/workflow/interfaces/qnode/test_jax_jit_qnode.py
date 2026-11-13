@@ -13,7 +13,9 @@
 # limitations under the License.
 """Integration tests for using the JAX-JIT interface with a QNode"""
 
-# pylint: disable=too-many-arguments,too-few-public-methods,protected-access
+# pylint: disable=too-many-arguments,too-few-public-methods
+
+
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
@@ -572,11 +574,11 @@ class TestVectorValuedQNode:
         ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == (2,)  # pylint:disable=comparison-with-callable
+        assert res[0].shape == (2,)
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (4,)  # pylint:disable=comparison-with-callable
+        assert res[1].shape == (4,)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jit(jax.jacobian(circuit, argnums=[0, 1]))(x, y)
@@ -882,8 +884,8 @@ class TestShotsIntegration:
             circuit(a, b)
 
         # execute with shots=100
-        res = qp.set_shots(shots=100)(circuit)(a, b)  # pylint: disable=unexpected-keyword-arg
-        assert res.shape == (100, 2)  # pylint:disable=comparison-with-callable
+        res = qp.set_shots(shots=100)(circuit)(a, b)
+        assert res.shape == (100, 2)
 
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
@@ -906,7 +908,6 @@ class TestShotsIntegration:
 
     def test_update_diff_method(self, interface):
         """Test that temporarily setting the shots updates the diff method"""
-        # pylint: disable=unused-argument
         a, b = jax.numpy.array([0.543, -0.654])
 
         dev = DefaultQubit()
@@ -987,7 +988,6 @@ class TestShotsIntegration:
         # Test return shapes for shot vectors
         assert isinstance(res, tuple)
         assert len(res) == 2  # Two different shot counts
-        # pylint: disable=not-an-iterable
         assert all(isinstance(r, jax.numpy.ndarray) for r in res)
         assert all(r.shape == () for r in res)  # Scalar outputs
 
@@ -2028,8 +2028,16 @@ class TestJIT:
         "ignore:Requested adjoint differentiation to be computed with finite shots."
     )
     @pytest.mark.parametrize("shots", [10, 1000])
-    def test_hermitian(
-        self, dev_name, diff_method, grad_on_execution, device_vjp, shots, jacobian, interface, seed
+    def test_hermitian(  # pylint: disable=unused-argument
+        self,
+        dev_name,
+        diff_method,
+        grad_on_execution,
+        device_vjp,
+        shots,
+        jacobian,
+        interface,
+        seed,
     ):
         """Test that the jax device works with qp.Hermitian and jitting even
         when shots>0.
@@ -2037,7 +2045,6 @@ class TestJIT:
         Note: before a fix, the cases of shots=10 and shots=1000 were failing due
         to different reasons, hence the parametrization in the test.
         """
-        # pylint: disable=unused-argument
         if dev_name == "reference.qubit":
             pytest.xfail("diagonalize_measurements do not support Hermitians (sc-72911)")
 
@@ -2066,12 +2073,19 @@ class TestJIT:
         "ignore:Requested adjoint differentiation to be computed with finite shots."
     )
     @pytest.mark.parametrize("shots", [10, 1000])
-    def test_probs_obs_none(
-        self, dev_name, diff_method, grad_on_execution, device_vjp, shots, jacobian, interface, seed
+    def test_probs_obs_none(  # pylint: disable=unused-argument
+        self,
+        dev_name,
+        diff_method,
+        grad_on_execution,
+        device_vjp,
+        shots,
+        jacobian,
+        interface,
+        seed,
     ):
         """Test that the jax device works with qp.probs, a MeasurementProcess
         that has obs=None even when shots>0."""
-        # pylint: disable=unused-argument
         if diff_method in ["backprop", "adjoint"]:
             pytest.skip("Backpropagation is unsupported if shots > 0.")
 
@@ -2177,7 +2191,7 @@ class TestJIT:
 
         def cost(x, y, idx):
             res = circuit(x, y)
-            return res[idx]  # pylint:disable=unsubscriptable-object
+            return res[idx]
 
         x = jax.numpy.array(1.0)
         y = jax.numpy.array(2.0)
@@ -2199,7 +2213,6 @@ class TestJIT:
         assert np.allclose(g0, expected_g[0][idx], atol=tol, rtol=0)
         assert np.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
 
-    # pylint: disable=unused-argument
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_matrix_parameter(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, tol, interface, seed
@@ -2219,7 +2232,6 @@ class TestJIT:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        # pylint: disable=unused-argument
         @qp.qnode(
             get_device(dev_name, wires=1, seed=seed),
             diff_method=diff_method,
@@ -3388,7 +3400,6 @@ class TestSubsetArgnums:
 class TestSinglePrecision:
     """Tests for compatibility with single precision mode."""
 
-    # pylint: disable=import-outside-toplevel
     def test_type_conversion_fallback(self):
         """Test that if the type isn't int, float, or complex, we still have a fallback."""
         from pennylane.workflow.interfaces.jax_jit import _jax_dtype

@@ -28,8 +28,6 @@ import numpy as np
 import pennylane as qp
 from pennylane import math
 from pennylane.capture.autograph import disable_autograph
-
-# pylint: disable=arguments-differ
 from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.decomposition.symbolic_decomposition import _adjoint_negate_angle, _pow_scale_angle
@@ -125,6 +123,7 @@ class MultiRZ(Operator2):
             )
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_matrix(theta: TensorLike, wires: WiresLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -168,6 +167,7 @@ class MultiRZ(Operator2):
         return len(self.wires)
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_eigvals(theta: TensorLike, wires: WiresLike) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -219,7 +219,7 @@ class MultiRZ(Operator2):
         return MultiRZ(theta, wires=self.wires)
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _multi_rz_standard_resources(theta: TensorLike, wires: WiresLike):
     num_wires = len(wires)
     if num_wires == 1:
@@ -254,6 +254,7 @@ def _multi_rz_standard(theta: TensorLike, wires: WiresLike):
     )
 
 
+# pylint: disable-next=unused-argument
 def _multi_rz_to_ppr_resources(theta: TensorLike, wires: WiresLike):
     num_wires = len(wires)
     return {qp.PauliRot(Float, pauli_word="Z" * num_wires, wires=Wire[num_wires]): 1}
@@ -453,9 +454,8 @@ class PauliRot(Operator2):
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in set(pauli_word))
 
     @staticmethod
-    def compute_matrix(  # pylint: disable=unused-argument
-        theta: TensorLike, pauli_word: str, wires=None
-    ) -> TensorLike:
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_matrix(theta: TensorLike, pauli_word: str, wires=None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -521,9 +521,8 @@ class PauliRot(Operator2):
         )
 
     @staticmethod
-    def compute_eigvals(  # pylint: disable=unused-argument
-        theta: TensorLike, pauli_word: str, wires=None
-    ) -> TensorLike:
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_eigvals(theta: TensorLike, pauli_word: str, wires=None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -866,6 +865,7 @@ class PCPhase(Operator2):
         super().__init__(phi, dim, wires=wires)
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_matrix(phi: TensorLike, dim: int, wires: WiresLike) -> TensorLike:
         """Get the matrix representation of Pi-controlled phase unitary."""
         d, t = (dim, 2 ** len(wires))
@@ -880,6 +880,7 @@ class PCPhase(Operator2):
         return math.stack([math.diag(d) for d in diags])
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_eigvals(phi: TensorLike, dim: int, wires: WiresLike) -> TensorLike:
         """Get the eigvals for the Pi-controlled phase unitary."""
         d, t = (dim, 2 ** len(wires))
@@ -939,9 +940,8 @@ def _ctrl_phase_shift_resource(subspace, n_control_wires, n_work_wires):
     }
 
 
-def _ctrl_phase_shift(
-    phi, target_wire, subspace, control_wires, control_values, work_wires
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _ctrl_phase_shift(phi, target_wire, subspace, control_wires, control_values, work_wires):
     r"""Implement a ((multi-)controlled) phase shift on the specified subspace of a
     target qubit/wire.
 
@@ -1173,7 +1173,7 @@ class IsingXX(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable-next=unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1336,7 +1336,7 @@ class IsingYY(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable-next=unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1522,7 +1522,7 @@ class IsingZZ(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable-next=unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1556,7 +1556,7 @@ class IsingZZ(Operator2):
         return diags[:, :, np.newaxis] * math.cast_like(math.eye(4, like=diags), diags)
 
     @staticmethod
-    # pylint: disable-next=unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_eigvals(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -1635,6 +1635,7 @@ def _isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
     qp.PauliRot(phi, "ZZ", wires=wires)
 
 
+# pylint: disable-next=unused-argument
 def _controlled_ising_zz_standard_resources(
     base, control_wires, control_values, work_wires, work_wire_type
 ):
@@ -1651,6 +1652,7 @@ def _controlled_ising_zz_standard_resources(
 
 @qp.register_name("standard")
 @qp.register_resources(_controlled_ising_zz_standard_resources)
+# pylint: disable-next=unused-argument
 def _controlled_ising_zz_standard(base, control_wires, control_values, work_wires, work_wire_type):
     r"""``ctrl_c[IsingZZ(phi)_{a,b}] = CNOT_{a,b} ctrl_c[RZ(phi)_b] CNOT_{a,b}``.
 
@@ -1771,7 +1773,7 @@ class IsingXY(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable-next=unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1819,7 +1821,7 @@ class IsingXY(Operator2):
         return diags * np.eye(4) + math.tensordot(js, off_diag, axes=0)
 
     @staticmethod
-    # pylint: disable-next=unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_eigvals(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -1950,6 +1952,7 @@ class PSWAP(Operation):
         return {}
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
@@ -2231,6 +2234,7 @@ class CPhaseShift00(Operation):
         return stack_last([exp_part, ones, ones, ones])
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
@@ -2445,6 +2449,7 @@ class CPhaseShift01(Operation):
         return stack_last([ones, exp_part, ones, ones])
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
@@ -2649,6 +2654,7 @@ class CPhaseShift10(Operation):
         return stack_last([ones, ones, exp_part, ones])
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 

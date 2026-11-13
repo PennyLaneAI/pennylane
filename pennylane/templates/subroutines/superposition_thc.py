@@ -174,7 +174,7 @@ class SuperpositionTHC(Operator2):
         mu_wires: WiresLike,
         nu_wires: WiresLike,
         work_wires: WiresLike,
-    ):  # pylint: disable=too-many-arguments
+    ):
         mu_wires = Wires(mu_wires)
         nu_wires = Wires(nu_wires)
         work_wires = Wires(work_wires)
@@ -217,9 +217,8 @@ class SuperpositionTHC(Operator2):
         return self.mu_wires + self.nu_wires + self.work_wires
 
 
-def _left_inequalities(
-    M, N, mu_wires, nu_wires, work_wires, keep_eq=False
-):  # pylint:disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=False):
     r"""Apply the inequality tests that flag a valid THC index pair.
 
     Computes the comparisons that define the valid index set onto dedicated flag
@@ -292,8 +291,8 @@ def _left_inequalities(
     )
 
 
+# pylint: disable-next=unused-argument
 def _superposition_thc_standard_resources(M, N, mu_wires, nu_wires, work_wires):
-    # pylint: disable=unused-argument
     r"""Returns the exact gate counts of the SuperpositionTHC decomposition."""
 
     n = len(mu_wires)
@@ -336,7 +335,6 @@ def _superposition_thc_standard_resources(M, N, mu_wires, nu_wires, work_wires):
 @register_name("standard")
 @register_resources(_superposition_thc_standard_resources)
 def _superposition_thc_standard(M, N, mu_wires, nu_wires, work_wires, **_):
-    # pylint: disable=too-many-arguments
     #
     # The first seven `work_wires` correspond to the flag/auxiliary register in Fig. 3 of
     # https://arxiv.org/pdf/2011.03494. After the routine, all work wires return to the zero

@@ -15,7 +15,6 @@
 Unit tests for the qp.simplify function
 """
 
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -53,7 +52,7 @@ class TestSimplifyOperators:
         op = build_op()
 
         s_op = qp.simplify(op)
-        assert isinstance(s_op, qp.ops.Prod)  # pylint: disable=no-member
+        assert isinstance(s_op, qp.ops.Prod)
         assert s_op.data == simplified_op.data
         assert s_op.wires == simplified_op.wires
         assert s_op.arithmetic_depth == simplified_op.arithmetic_depth
@@ -100,7 +99,7 @@ class TestSimplifyTapes:
         [s_tape], _ = qp.simplify(tape)
         assert len(s_tape) == 1
         s_op = s_tape[0]
-        assert isinstance(s_op, qp.ops.Prod)  # pylint: disable=no-member
+        assert isinstance(s_op, qp.ops.Prod)
         assert s_op.data == simplified_op.data
         assert s_op.wires == simplified_op.wires
         assert s_op.arithmetic_depth == simplified_op.arithmetic_depth
@@ -124,7 +123,7 @@ class TestSimplifyTapes:
         assert dev.execute(tape) == dev.execute(s_tape)
 
 
-class TestSimplifyQNodes:
+class TestSimplifyQNodes:  # pylint: disable=too-few-public-methods
     """Tests for the qp.simplify method used with qnodes."""
 
     def test_simplify_qnode(self):

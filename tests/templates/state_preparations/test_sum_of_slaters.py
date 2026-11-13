@@ -445,7 +445,6 @@ class TestSumOfSlatersPrep:
         ``{enumeration: 3, identification: 5, qrom_work: 2, mcx_cache: 4}``. This lets each
         validation be triggered with a wrong, non-zero register size.
         """
-        # pylint: disable=too-many-arguments
         coefficients = np.arange(1, 8) / np.linalg.norm(np.arange(1, 8))
         wires = list(range(7))
         indices = (32, 16, 8, 4, 2, 1, 0)
@@ -747,9 +746,9 @@ class TestSumOfSlatersPrep:
 
                 @qp.qnode(qp.device("lightning.qubit"))
                 def func():
-                    # pylint: disable=cell-var-from-loop
                     # Make sure that the output state length is at least 2**num_wires
                     qp.Identity(range(num_wires))
+                    # pylint: disable-next=cell-var-from-loop
                     rule(coefficients, wires=range(num_wires), indices=indices, **temp_wires)
                     return qp.state()
 
@@ -809,9 +808,9 @@ class TestSumOfSlatersPrep:
 
             @qp.qnode(qp.device("lightning.qubit"))
             def func():
-                # pylint: disable=cell-var-from-loop
                 # Make sure that the output state length is at least 2**num_wires
                 qp.Identity(range(num_wires))
+                # pylint: disable-next=cell-var-from-loop
                 rule(coefficients, wires=range(num_wires), indices=indices)
                 return qp.state()
 
@@ -926,7 +925,7 @@ class TestSumOfSlatersPrep:
         @qp.qjit(capture=False)
         @qp.qnode(qp.device("lightning.qubit"))
         def func():
-            _sos_state_prep_with_wires(data, **all_wires)  # pylint: disable=missing-kwoa
+            _sos_state_prep_with_wires(data, **all_wires)
             return qp.probs(wires=wires)
 
         output = func()

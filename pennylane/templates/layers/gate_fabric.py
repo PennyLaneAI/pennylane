@@ -15,7 +15,6 @@ r"""
 Contains the quantum-number-preserving GateFabric template.
 """
 
-# pylint: disable=too-many-arguments
 import numpy as np
 from jax import numpy as jnp
 
@@ -242,9 +241,8 @@ class GateFabric(Operation):
         }
 
     @staticmethod
-    def compute_decomposition(
-        weights, wires, init_state, include_pi
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(weights, wires, init_state, include_pi):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

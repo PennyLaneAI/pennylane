@@ -15,7 +15,6 @@ r"""
 Contains the ApproxTimeEvolution template.
 """
 
-# pylint: disable=protected-access
 import copy
 from collections import defaultdict
 
@@ -163,6 +162,7 @@ class ApproxTimeEvolution(Operation):
         super().__init__(*hamiltonian.data, time, wires=wires)
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["hamiltonian"] = new_op._hyperparameters["hamiltonian"].map_wires(
@@ -176,9 +176,8 @@ class ApproxTimeEvolution(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(
-        *coeffs_and_time, wires, hamiltonian, n
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(*coeffs_and_time, wires, hamiltonian, n):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -254,9 +253,12 @@ def _approx_time_evolution_standard_resources(words: tuple[PauliWord], n: int):
 
 @register_name("standard")
 @register_resources(_approx_time_evolution_standard_resources)
-def _approx_time_evolution_standard(
-    *coeffs_and_time: list, wires: WiresLike, hamiltonian: Hamiltonian, n: int
-):  # pylint: disable=unused-argument
+def _approx_time_evolution_standard(  # pylint: disable=unused-argument
+    *coeffs_and_time: list,
+    wires: WiresLike,
+    hamiltonian: Hamiltonian,
+    n: int,
+):
     time = coeffs_and_time[-1]
 
     @for_loop(n)

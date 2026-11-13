@@ -271,8 +271,7 @@ class TestTemporaryAND:
 
         @qp.set_shots(1)
         @qp.qnode(qp.device("default.qubit", wires=wires))
-        # pylint: disable-next=protected-access
-        @qp.transforms._tape_decompose(
+        @qp.transforms._tape_decompose(  # pylint: disable=protected-access
             gate_set=gate_set,
             fixed_decomps={"Adjoint(TemporaryAND)": rule},
         )

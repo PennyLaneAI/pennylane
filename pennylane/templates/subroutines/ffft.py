@@ -218,6 +218,7 @@ def _permute_and_apply_parallel(wires, operator):
         wires (WiresLike): The wires to permute.
         operator (Type[Operator]): The operator to apply once the Fermions are adjacent in the encoding.
     """
+    # pylint: disable=no-value-for-parameter
 
     num_layers = len(wires) // 2 - 1
 
@@ -229,7 +230,7 @@ def _permute_and_apply_parallel(wires, operator):
         def swap_layer(i):
             FermionicSWAP(np.pi, [wires[i], wires[i + 1]])
 
-        swap_layer()  # pylint: disable=no-value-for-parameter
+        swap_layer()
 
     @for_loop(1, len(wires) // 2)
     def permutation_in_layers(num_parallel_swaps):
@@ -237,7 +238,7 @@ def _permute_and_apply_parallel(wires, operator):
         apply_swaps(num_layers - (num_parallel_swaps - 1), num_parallel_swaps)
 
     # applies several layers of FSWAPs that achieve the parallel permutation of all needed indices
-    permutation_in_layers()  # pylint: disable=no-value-for-parameter
+    permutation_in_layers()
 
     # applies the operator on the indices that are now in range
     @for_loop(len(wires) // 2)
@@ -245,7 +246,7 @@ def _permute_and_apply_parallel(wires, operator):
         # apply the op
         operator([wires[2 * i], wires[2 * i + 1]])
 
-    apply_op()  # pylint: disable=no-value-for-parameter
+    apply_op()
 
     # number of parallel swaps and their starting index is decreasing this time
     @for_loop(num_layers, 0, -1)
@@ -254,7 +255,7 @@ def _permute_and_apply_parallel(wires, operator):
         apply_swaps(num_layers - (num_parallel_swaps - 1), num_parallel_swaps)
 
     # applies the inverse permutation
-    permutation_out_layers()  # pylint: disable=no-value-for-parameter
+    permutation_out_layers()
 
 
 add_decomps(FFFT, _fast_fermionic_fourier_transform_standard)

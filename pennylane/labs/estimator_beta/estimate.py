@@ -28,8 +28,6 @@ from pennylane.workflow.qnode import QNode
 from .resource_config import LabsResourceConfig
 from .wires_manager.wire_counting import estimate_wires_from_circuit, estimate_wires_from_resources
 
-# pylint: disable=too-many-arguments
-
 
 def _update_counts_from_compressed_res_op(
     comp_res_op: CompressedResourceOp,
@@ -71,7 +69,7 @@ def _update_counts_from_compressed_res_op(
             )
 
 
-def estimate(
+def estimate(  # pylint: disable=too-many-arguments
     workflow: Callable | ResourceOperator | Resources | QNode,
     gate_set: set[str] | None = None,
     zeroed_wires: int = 0,
@@ -305,7 +303,7 @@ def estimate(
 
 
 @singledispatch
-def _estimate_resources_dispatch(
+def _estimate_resources_dispatch(  # pylint: disable=too-many-arguments
     workflow: Callable | ResourceOperator | Resources | QNode,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
@@ -320,7 +318,7 @@ def _estimate_resources_dispatch(
 
 
 @_estimate_resources_dispatch.register
-def _resources_from_resource(
+def _resources_from_resource(  # pylint: disable=too-many-arguments
     workflow: Resources,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
@@ -364,7 +362,7 @@ def _resources_from_resource(
 
 
 @_estimate_resources_dispatch.register
-def _resources_from_resource_operator(
+def _resources_from_resource_operator(  # pylint: disable=too-many-arguments
     workflow: ResourceOperator,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
@@ -385,7 +383,7 @@ def _resources_from_resource_operator(
 
 
 @_estimate_resources_dispatch.register
-def _resources_from_pl_ops(
+def _resources_from_pl_ops(  # pylint: disable=too-many-arguments
     workflow: Operation,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
@@ -407,7 +405,7 @@ def _resources_from_pl_ops(
 
 
 @_estimate_resources_dispatch.register
-def _resources_from_qfunc(
+def _resources_from_qfunc(  # pylint: disable=too-many-arguments
     workflow: Callable,
     gate_set: set[str] | None = None,
     zeroed: int = 0,

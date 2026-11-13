@@ -212,8 +212,7 @@ def _qpe_standard(unitary, estimation_wires):
     def _apply_h(i):
         ops.Hadamard(estimation_wires[i])
 
-    # pylint: disable=no-value-for-parameter
-    _apply_h()
+    _apply_h()  # pylint: disable=no-value-for-parameter
 
     # NOTE: Must be pythonic for loop as 'z' argument in 'pow'
     # is a static argument.

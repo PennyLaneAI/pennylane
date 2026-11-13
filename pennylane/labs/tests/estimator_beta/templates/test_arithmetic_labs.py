@@ -24,8 +24,6 @@ from pennylane.estimator import GateCount
 from pennylane.labs.tests.estimator_beta.utils import decomp_equal
 from pennylane.wires import Wires
 
-# pylint: disable=no-self-use,too-many-arguments
-
 
 class TestResourcePhaseAdder:
     """Test the PhaseAdder resource operator."""

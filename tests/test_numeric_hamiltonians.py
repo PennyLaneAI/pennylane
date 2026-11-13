@@ -13,8 +13,6 @@
 # limitations under the License.
 """Unit tests for the ``numeric_hamiltonians.py`` file."""
 
-# pylint: disable=import-outside-toplevel,too-many-public-methods,no-member
-
 from dataclasses import FrozenInstanceError, dataclass
 
 import numpy as np
@@ -95,7 +93,7 @@ def cgf_specs(num_fragments=L, num_modes=M, num_modals=N):
     }
 
 
-class TestConcreteCDFCGF:
+class TestConcreteCDFCGF:  # pylint: disable=too-many-public-methods
     """Tests for CDF/CGF Hamiltonians built from concrete numeric data."""
 
     @pytest.mark.parametrize(
@@ -214,7 +212,7 @@ class TestConcreteCDFCGF:
     def test_missing_tensors(self):
         """Test that both tensors are required."""
         with pytest.raises(TypeError):
-            CGFHamiltonian(np.zeros((L + 1, M, M, N, N)))  # pylint: disable=no-value-for-parameter
+            CGFHamiltonian(np.zeros((L + 1, M, M, N, N)))
 
     @pytest.mark.parametrize(
         "cls, data", [(CDFHamiltonian, cdf_tensors), (CGFHamiltonian, cgf_tensors)]
@@ -659,7 +657,7 @@ class TestVibronic:
     def test_missing_tensors(self):
         """Test that all four tensors are required."""
         with pytest.raises(TypeError):
-            VibronicHamiltonian(np.zeros((F, N, N)))  # pylint: disable=no-value-for-parameter
+            VibronicHamiltonian(np.zeros((F, N, N)))
 
     def test_registered_with_pennylane_pytrees(self, seed):
         """Test that the four tensors are the pytree leaves."""
@@ -782,7 +780,6 @@ class TestNumericHamiltonian:
     def _diagonal_hamiltonian():
         """A minimal one-tensor representation, defined for these tests only."""
 
-        # pylint: disable=too-few-public-methods
         @dataclass(frozen=True, eq=False, repr=False)
         class DiagonalHamiltonian(NumericHamiltonian):
             """Single square tensor of couplings."""
@@ -828,7 +825,6 @@ class TestNumericHamiltonian:
         """Test that defining a new representation needs only a shape family, with no
         new validation code."""
 
-        # pylint: disable=too-few-public-methods
         @dataclass(frozen=True, eq=False, repr=False)
         class THCHamiltonian(NumericHamiltonian):
             """Tensor-hypercontracted shape family, for this test only."""
@@ -858,7 +854,6 @@ class TestNumericHamiltonian:
     def test_new_subclass_equality(self):
         """Test that a new representation gets abstract construction for free."""
 
-        # pylint: disable=too-few-public-methods
         @dataclass(frozen=True, eq=False, repr=False)
         class THCHamiltonian(NumericHamiltonian):
             """Tensor-hypercontracted shape family, for this test only."""

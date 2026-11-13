@@ -318,7 +318,7 @@ class SignedOutMultiplier(Operator2):
         output_wires: WiresLike,
         work_wires: WiresLike,
         output_wires_zeroed: bool = False,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
@@ -347,9 +347,13 @@ class SignedOutMultiplier(Operator2):
         return self.x_wires + self.y_wires + self.output_wires + self.work_wires
 
 
-def _signed_out_multiplier_zeroed_resources(
-    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument
+def _signed_out_multiplier_zeroed_resources(  # pylint: disable=unused-argument
+    x_wires,
+    y_wires,
+    output_wires,
+    work_wires,
+    output_wires_zeroed=False,
+):
     """
     Computes the resources for the SignedOutMultiplier.
     """
@@ -383,9 +387,13 @@ def _signed_out_multiplier_zeroed_resources(
     return dict(resources)
 
 
-def _signed_out_multiplier_borrowed_resources(
-    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument
+def _signed_out_multiplier_borrowed_resources(  # pylint: disable=unused-argument
+    x_wires,
+    y_wires,
+    output_wires,
+    work_wires,
+    output_wires_zeroed=False,
+):
     """
     Computes the resources for the SignedOutMultiplier.
     """
@@ -446,27 +454,33 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires):
     )
 
 
-def _not_zeroed_work_wire_condition(
-    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument
+def _not_zeroed_work_wire_condition(  # pylint: disable=unused-argument
+    x_wires,
+    y_wires,
+    output_wires,
+    work_wires,
+    output_wires_zeroed=False,
+):
     return len(work_wires) >= 2 * len(output_wires) + 1
 
 
-def _zeroed_work_wire_condition(
-    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument
+def _zeroed_work_wire_condition(  # pylint: disable=unused-argument
+    x_wires,
+    y_wires,
+    output_wires,
+    work_wires,
+    output_wires_zeroed=False,
+):
     return len(work_wires) >= 2
 
 
-def _zeroed_condition(
-    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _zeroed_condition(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False):
     return output_wires_zeroed
 
 
-def _not_zeroed_condition(
-    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _not_zeroed_condition(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False):
     return not output_wires_zeroed
 
 
@@ -474,12 +488,12 @@ def _not_zeroed_condition(
 @register_condition(_zeroed_work_wire_condition)
 @register_name("zeroed")
 @register_resources(_signed_out_multiplier_zeroed_resources)
-def _signed_out_multiplier_zeroed(
+def _signed_out_multiplier_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    output_wires_zeroed=False,  # pylint: disable=unused-argument
+    output_wires_zeroed=False,
 ):
     """Computes the decomposition of the operator as a product of other operators when the output wires are zeroed."""
     if capture.enabled():
@@ -532,12 +546,12 @@ def _signed_out_multiplier_zeroed(
 @register_condition(_not_zeroed_work_wire_condition)
 @register_name("borrowed")
 @register_resources(_signed_out_multiplier_borrowed_resources)
-def _signed_out_multiplier_borrowed(
+def _signed_out_multiplier_borrowed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    output_wires_zeroed=False,  # pylint: disable=unused-argument
+    output_wires_zeroed=False,
 ):
     """Computes the decomposition of the operator as a product of other operators."""
 

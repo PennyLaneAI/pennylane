@@ -111,7 +111,6 @@ def decomp_rule_to_tape(op: Operator, rule: DecompositionRule) -> QuantumScript:
 
 
 @singledispatch
-# pylint: disable-next=unused-argument
 def _prepare_decomp_for_capture(op: Operator, rule: DecompositionRule):
     raise NotImplementedError  # pragma: no cover
 

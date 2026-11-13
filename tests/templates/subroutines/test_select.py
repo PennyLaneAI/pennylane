@@ -15,7 +15,6 @@
 Tests for the Select template.
 """
 
-# pylint: disable=protected-access,too-many-arguments,import-outside-toplevel, no-self-use
 import copy
 
 import numpy as np
@@ -709,10 +708,9 @@ num_controls_and_num_ops = (
 class TestUnaryIterator:
     """Tests for the auxiliary qubit-based unary iterator decomposition of Select."""
 
-    def test_is_registered_with_select(self, partial):
+    def test_is_registered_with_select(self, partial):  # pylint: disable=unused-argument
         """Test that the unary iteration decomposition is registered correctly with
         pml.Select."""
-        # pylint: disable=unused-argument
         decomp = qp.list_decomps(qp.Select)[1]
         assert decomp is _select_unary
 
@@ -949,9 +947,7 @@ class TestUnaryIterator:
         ("num_ops", "control", "work", "msg_match"),
         [(9, 4, 1, "Can't use this decomposition")],
     )
-    def test_operation_and_test_wires_error(
-        self, num_ops, control, work, msg_match, partial
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_and_test_wires_error(self, num_ops, control, work, msg_match, partial):
         """Test that proper errors are raised"""
 
         wires = qp.registers({"target": num_ops, "control": control, "work": work})

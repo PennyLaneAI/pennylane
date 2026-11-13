@@ -276,10 +276,9 @@ def _out_square_with_adder_zeroed_condition(
     return len(work_wires) >= OutSquare._min_work_wires(n, m, output_wires_zeroed)
 
 
-def _out_square_with_adder_zeroed_resources(
+def _out_square_with_adder_zeroed_resources(  # pylint: disable=unused-argument
     x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> dict:
-    # pylint: disable=unused-argument
     n = len(x_wires)
     m = len(output_wires)
     num_work_wires = len(work_wires)
@@ -305,13 +304,12 @@ def _out_square_with_adder_zeroed_resources(
 @register_condition(_out_square_with_adder_zeroed_condition)
 @register_name("with_adder_zeroed")
 @register_resources(_out_square_with_adder_zeroed_resources)
-def _out_square_with_adder_zeroed(
+def _out_square_with_adder_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
     output_wires_zeroed: bool = False,
 ):
-    # pylint: disable=unused-argument
     n = len(x_wires)
     m = len(output_wires)
     x_wires = x_wires[::-1]
@@ -344,7 +342,6 @@ def _out_square_with_adder_zeroed(
 def _out_square_with_caddsub_condition(
     x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> bool:
-    # pylint: disable=unused-argument
     n = len(x_wires)
     m = len(output_wires)
     if output_wires_zeroed and (n == 1 or m == 1):
@@ -356,7 +353,6 @@ def _out_square_with_caddsub_condition(
 def _out_square_with_caddsub_resources(
     x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> dict:
-    # pylint: disable=unused-argument
     n = len(x_wires)
     m = len(output_wires)
     num_work_wires = len(work_wires)

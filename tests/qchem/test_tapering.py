@@ -16,6 +16,8 @@ Unit tests for functions needed for qubit tapering.
 """
 
 # pylint: disable=too-many-arguments
+
+
 import functools
 
 import pytest
@@ -112,7 +114,7 @@ def test_generate_paulis(generators, num_qubits, result):
         qp.assert_equal(p1, p2)
 
     # test arithmetic op compatibility:
-    generators_as_ops = [pauli_sentence(g).operation() for g in generators]
+    generators_as_ops = [qp.pauli.to_operator(pauli_sentence(g)) for g in generators]
     assert not any(isinstance(g, qp.Hamiltonian) for g in generators_as_ops)
 
     for p1, p2 in zip(pauli_ops, result):
@@ -177,7 +179,7 @@ def test_clifford(generator, paulixops, result):
     assert pauli_sentence(u) == pauli_sentence(result)
 
     # test arithmetic op compatibility:
-    result_as_op = pauli_sentence(result).operation()
+    result_as_op = qp.pauli.to_operator(pauli_sentence(result))
 
     assert pauli_sentence(result_as_op) == pauli_sentence(u)
 
@@ -699,7 +701,6 @@ def test_consistent_taper_ops(operation, op_gen):
         state = functools.reduce(np.kron, [l if s else o for s in hf_state])
         state_tapered = functools.reduce(np.kron, [l if s else o for s in hf_tapered])
         evolved_state = np.matmul(qp.matrix(operation, wire_order=range(len(hf_state))), state)
-        # pylint: disable=not-an-iterable
         ob_tap_mat = functools.reduce(
             np.matmul,
             [qp.matrix(op, wire_order=range(len(hf_tapered))) for op in taper_op1],

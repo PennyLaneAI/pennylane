@@ -15,7 +15,6 @@ r"""
 Decomposition rule for SelectPauliRot in terms of `phase gradient states <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__
 """
 
-# pylint: disable=too-many-branches
 import numpy as np
 
 import pennylane as qp
@@ -29,8 +28,7 @@ from pennylane.wires import WireError, Wires
 from .rz_phase_gradient import _precision_dispatcher, validate_phase_gradient_wires
 
 
-# pylint: disable=too-many-arguments
-def _select_pauli_rot_phase_gradient(
+def _select_pauli_rot_phase_gradient(  # pylint: disable=too-many-arguments
     phis: np.ndarray,
     rot_axis: str,
     control_wires: Wires,
@@ -258,7 +256,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(
     precision = len(angle_wires)
     precisions, dispatch = _precision_dispatcher(precision_stats, precision, "SelectPauliRot")
 
-    # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
     def _select_pauli_rot_phase_gradient_standard_resources(
         angles, control_wires, target_wire, rot_axis
     ):

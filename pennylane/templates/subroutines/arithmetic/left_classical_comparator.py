@@ -99,7 +99,7 @@ class LeftClassicalComparator(Operator2):
         target_wire: WiresLike,
         work_wires: WiresLike,
         comparator: str,
-    ):  # pylint: disable=too-many-arguments
+    ):
 
         if math.shape(value) != ():
             raise ValueError("value must be a scalar integer.")
@@ -161,11 +161,11 @@ def _get_specific_bit(value, i):
     return (value >> i) & 1
 
 
+# pylint: disable-next=unused-argument
 def _left_classical_comparator_standard_resources(
     x_wires, value, target_wire, work_wires, comparator, **_
 ):
     """Return conservative worst-case gate counts without knowing the runtime threshold."""
-    # pylint: disable=unused-argument
     n = len(x_wires)
     # Count every conditional gate: two Xs for bit 0, four per remaining low bit,
     # and one for bit n. The final negation depends only on the comparator.

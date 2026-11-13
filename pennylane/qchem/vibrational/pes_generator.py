@@ -32,8 +32,6 @@ from pennylane.qchem.vibrational.vibrational_class import (
     optimize_geometry,
 )
 
-# pylint: disable=too-many-arguments,too-many-function-args,too-many-positional-arguments
-
 # constants
 # TODO: Make this code work in atomic units only.
 HBAR = (
@@ -48,7 +46,7 @@ CM_TO_AU = 100 / sp.constants.physical_constants["hartree-inverse meter relation
 _IMAGINARY_FREQUENCY_THRESHOLD = 1e-6
 
 
-def _pes_onemode(
+def _pes_onemode(  # pylint: disable=too-many-arguments
     molecule,
     scf_result,
     freqs,
@@ -108,7 +106,7 @@ def _pes_onemode(
     return pes_onebody, None
 
 
-def _local_pes_onemode(
+def _local_pes_onemode(  # pylint: disable=too-many-arguments
     rank, jobs_on_rank, molecule, scf_result, freqs, vectors, grid, path, method="rhf", dipole=False
 ):
     r"""Computes the one-mode potential energy surface on a grid along directions defined by
@@ -216,7 +214,7 @@ def _load_pes_onemode(num_proc, nmodes, quad_order, path, dipole=False):
     return pes_onebody, None
 
 
-def _pes_twomode(
+def _pes_twomode(  # pylint: disable=too-many-arguments
     molecule,
     scf_result,
     freqs,
@@ -297,7 +295,7 @@ def _pes_twomode(
     return pes_twobody, None  # pragma: no cover
 
 
-def _local_pes_twomode(
+def _local_pes_twomode(  # pylint: disable=too-many-arguments
     rank,
     jobs_on_rank,
     molecule,
@@ -445,6 +443,7 @@ def _load_pes_twomode(num_proc, nmodes, quad_order, path, dipole=False):
 
             pes_twobody[mode_a, mode_b, :, :] = local_pes.reshape(quad_order, quad_order)
             if dipole:
+                # pylint: disable-next=too-many-function-args
                 dipole_twobody[mode_a, mode_b, :, :, :] = local_dipole.reshape(
                     quad_order, quad_order, 3
                 )
@@ -455,7 +454,7 @@ def _load_pes_twomode(num_proc, nmodes, quad_order, path, dipole=False):
     return pes_twobody, None  # pragma: no cover
 
 
-def _local_pes_threemode(
+def _local_pes_threemode(  # pylint: disable=too-many-arguments
     rank,
     jobs_on_rank,
     molecule,
@@ -583,7 +582,7 @@ def _local_pes_threemode(
         _write_data(path, rank, "v3data", "D3_DMS", local_dipole_threebody)
 
 
-def _pes_threemode(
+def _pes_threemode(  # pylint: disable=too-many-arguments
     molecule,
     scf_result,
     freqs,
@@ -718,10 +717,12 @@ def _load_pes_threemode(num_proc, nmodes, quad_order, path, dipole):
                         local_dipole[init_idx:end_idx, :] = dipole_chunk
                     init_idx += len(pes_chunk)
 
+                # pylint: disable-next=too-many-function-args
                 pes_threebody[mode_a, mode_b, mode_c, :, :] = local_pes.reshape(
                     quad_order, quad_order, quad_order
                 )
                 if dipole_threebody is not None:
+                    # pylint: disable-next=too-many-function-args
                     dipole_threebody[mode_a, mode_b, mode_c, :, :, :, :] = local_dipole.reshape(
                         quad_order, quad_order, quad_order, 3
                     )
@@ -732,7 +733,7 @@ def _load_pes_threemode(num_proc, nmodes, quad_order, path, dipole):
     return pes_threebody, None  # pragma: no cover
 
 
-def vibrational_pes(
+def vibrational_pes(  # pylint: disable=too-many-arguments
     molecule,
     n_points=9,
     method="rhf",

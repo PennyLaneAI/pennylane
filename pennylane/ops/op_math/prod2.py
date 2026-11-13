@@ -36,6 +36,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
+from pennylane.ops._pauli_conversion import to_operator
 from pennylane.ops.op_math.controlled2 import flip_zero_control
 from pennylane.typing import AbstractWires, TensorLike, Wire
 from pennylane.wires import DynamicWire, Wires, is_abstract_qubit
@@ -197,9 +198,8 @@ class Prod2(CompositeOp2):
 
     @property
     @handle_recursion_error
-    def has_sparse_matrix(  # pylint: disable=arguments-differ,invalid-overridden-method
-        self,
-    ) -> bool:
+    # pylint: disable-next=arguments-differ,invalid-overridden-method
+    def has_sparse_matrix(self) -> bool:
         return (
             all(op.has_sparse_matrix for op in self)
             or self.pauli_rep is not None
@@ -289,7 +289,7 @@ class Prod2(CompositeOp2):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             with qp.QueuingManager.stop_recording(), capture.pause():
-                ops = [pauli.operation() for pauli in pr.keys()]
+                ops = [to_operator(pauli) for pauli in pr.keys()]
             return list(pr.values()), ops
 
         with qp.QueuingManager.stop_recording(), capture.pause():
@@ -322,7 +322,7 @@ class Prod2(CompositeOp2):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return pr.operation(wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         global_phase, factors = self._simplify_factors(factors=self.operands)
 
@@ -347,18 +347,18 @@ def _abstractify_prod2(val: Prod2):
     return Prod2(tuple(abstractify(op) for op in val.operands), _init_pauli_rep=None)
 
 
-def _prod2_standard_resources(operands, _init_pauli_rep=None):  # pylint: disable=unused-argument
+def _prod2_standard_resources(operands, _init_pauli_rep=None):
     return dict(Counter(abstractify(op) for op in operands))
 
 
 @register_name("standard")
 @register_resources(_prod2_standard_resources)
-def _prod2_standard(operands, _init_pauli_rep=None):  # pylint: disable=unused-argument
+def _prod2_standard(operands, _init_pauli_rep=None):
     for op in reversed(operands):
         apply(op)
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _controlled_prod2_with_work_wires_resources(
     base, control_wires, work_wires, work_wire_type, **_
 ):
@@ -405,12 +405,11 @@ def _multi_temporary_and_all_ones(
     def _ladder(i):
         qp.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
 
-    _ladder()  # pylint: disable = no-value-for-parameter
+    _ladder()  # pylint: disable=no-value-for-parameter
 
     return work_wires[num_needed - 1]
 
 
-# pylint: disable=unused-argument
 @register_condition(
     lambda control_wires, work_wires, work_wire_type, **_: len(control_wires) >= 2
     and len(work_wires) >= len(control_wires) - 1
@@ -418,6 +417,7 @@ def _multi_temporary_and_all_ones(
 )
 @register_name("with_work_wires")
 @register_resources(_controlled_prod2_with_work_wires_resources)
+# pylint: disable-next=unused-argument
 def _controlled_prod2_with_work_wires(base, control_wires, control_values, work_wires, **_):
     """Decomposition of ``C(Prod2)`` with at least ``num_control_wires - 1`` zeroed work wires.
 
@@ -430,6 +430,7 @@ def _controlled_prod2_with_work_wires(base, control_wires, control_values, work_
     qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
 
 
+# pylint: disable-next=unused-argument
 def _controlled_prod2_with_one_work_wire_resources(base, control_wires, work_wires, **_):
 
     resources = Counter()
@@ -442,7 +443,6 @@ def _controlled_prod2_with_one_work_wire_resources(base, control_wires, work_wir
     return dict(resources)
 
 
-# pylint: disable=unused-argument
 @register_condition(
     lambda control_wires, work_wires, work_wire_type, **_: len(control_wires) >= 2
     and len(work_wires) >= 1
@@ -450,6 +450,7 @@ def _controlled_prod2_with_one_work_wire_resources(base, control_wires, work_wir
 )
 @register_name("with_one_work_wire")
 @register_resources(_controlled_prod2_with_one_work_wire_resources)
+# pylint: disable-next=unused-argument
 def _controlled_prod2_with_one_work_wire(base, control_wires, control_values, work_wires, **_):
     """Decomposition of ``C(Prod2)`` with a single zeroed work wire.
 

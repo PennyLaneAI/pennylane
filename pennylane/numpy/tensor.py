@@ -118,10 +118,10 @@ class tensor(_np.ndarray):
         return obj
 
     def __array_finalize__(self, obj):
-        # pylint: disable=attribute-defined-outside-init
         if obj is None:  # pragma: no cover
             return
 
+        # pylint: disable-next=attribute-defined-outside-init
         self.requires_grad = getattr(obj, "requires_grad", None)
 
     def __repr__(self):
@@ -130,7 +130,7 @@ class tensor(_np.ndarray):
 
     def __array_wrap__(self, obj, context=None, return_scalar=False):
         out_arr = tensor(obj, requires_grad=self.requires_grad)
-        # pylint:disable=too-many-function-args
+        # pylint: disable-next=too-many-function-args
         return super().__array_wrap__(out_arr, context, return_scalar)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
@@ -211,8 +211,7 @@ class tensor(_np.ndarray):
     def __setstate__(self, reduced_obj) -> None:
         # Called when unpickling the object.
         # Set self.requires_grad with the last element in the tuple returned by __reduce__:
-        # pylint: disable=attribute-defined-outside-init
-        self.requires_grad = reduced_obj[-1]
+        self.requires_grad = reduced_obj[-1]  # pylint: disable=attribute-defined-outside-init
         # And call parent's __setstate__ without this element:
         super().__setstate__(reduced_obj[:-1])
 

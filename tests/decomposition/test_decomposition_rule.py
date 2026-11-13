@@ -14,6 +14,8 @@
 
 """Unit tests for the DecompositionRule class."""
 
+# pylint: disable=too-few-public-methods
+
 import inspect
 from textwrap import dedent
 
@@ -57,8 +59,6 @@ from tests.core.operator.operator2_utils import (
     NonParametricOp,
     ParametrizedHybridOp,
 )
-
-# pylint: disable=too-few-public-methods,useless-parent-delegation
 
 
 class CustomOp(Operator):
@@ -140,8 +140,7 @@ class TestDecompositionRule:
     def test_wraps_rule(self):
         """Test that a DecompositionRule has the same sig and docstring as the qfunc."""
 
-        # pylint: disable=unused-argument
-        def f(x, wires: qp.wires.Wires, arg: str = "hello"):
+        def f(x, wires: qp.wires.Wires, arg: str = "hello"):  # pylint: disable=unused-argument
             """A docstring."""
 
         rule = qp.decomposition.DecompositionRule(f, {})
@@ -360,7 +359,7 @@ class TestDecompositionRule:
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             resource_keys = set()
 
         @register_name("custom_decomp")
@@ -400,7 +399,7 @@ class TestDecompositionRule:
 
             arg_specs = my_arg_specs
 
-            def __init__(self, angles, eps, wires):
+            def __init__(self, angles, eps, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(angles, eps, wires)
 
         @register_name("custom_decomp")
@@ -440,7 +439,7 @@ class TestDecompositionRule:
 
             arg_specs = abstract_sig
 
-            def __init__(self, phi, matrix, wires):
+            def __init__(self, phi, matrix, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(phi, matrix, wires)
 
         @register_name("custom_decomp")
@@ -462,7 +461,7 @@ class TestDecompositionRule:
     def test_auto_wrap_fails(self):
         """Tests that an op with non-empty resource_keys cannot be auto-wrapped."""
 
-        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(Operator):
             resource_keys = {"foo"}
 
         @register_name("custom_decomp")
@@ -583,7 +582,7 @@ class TestDecompDictionary:
     def test_add_and_list_decomps(self):
         """Tests that decomposition rules can be registered for an operator."""
 
-        class SomeOtherOp(Operator):  # pylint: disable=too-few-public-methods
+        class SomeOtherOp(Operator):
             pass
 
         assert not qp.decomposition.has_decomp(SomeOtherOp)
@@ -636,7 +635,7 @@ class TestDecompDictionary:
     def test_add_decomp_duplicate_names(self):
         """Tests that you cannot add decomposition rules with duplicate names."""
 
-        class AnotherOp(Operator):  # pylint: disable=too-few-public-methods
+        class AnotherOp(Operator):
             pass
 
         @register_name("custom_decomp")
@@ -662,7 +661,7 @@ class TestDecompDictionary:
     def test_add_decomp_exact_alias(self):
         """Tests that adding exactly the same decomp rule twice does not error out."""
 
-        class AnotherOp(Operator):  # pylint: disable=too-few-public-methods
+        class AnotherOp(Operator):
             pass
 
         @register_name("custom_decomp")
@@ -786,7 +785,7 @@ class TestDecompDictionary:
             "controlled(custom_rule2)",
         }
 
-        class AnotherOp(DynOp):  # pylint: disable=too-few-public-methods
+        class AnotherOp(DynOp):
             has_matrix = True
             name = "DynOp"
 
@@ -1195,7 +1194,7 @@ class TestDecompCollection:
         assert "custom3" in collection
 
 
-class CustomParametrizedOp(Operator):  # pylint: disable=too-few-public-methods
+class CustomParametrizedOp(Operator):
     """A custom parametrized op for testing."""
 
     resource_keys = {"num_wires"}
@@ -1208,7 +1207,6 @@ class CustomParametrizedOp(Operator):  # pylint: disable=too-few-public-methods
         return {"num_wires": len(self.wires)}
 
 
-# pylint: disable=protected-access
 class TestInspectDecomps:
     """Tests inspecting decomposition rules."""
 
@@ -1298,6 +1296,7 @@ class TestInspectDecomps:
             Not applicable (provided operator instance does not meet all conditions for this rule).
 """).strip()
 
+        # pylint: disable-next=protected-access
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: simple)
 
@@ -1366,6 +1365,7 @@ class TestInspectDecomps:
             Wire Allocations: {'zero': 2}
 """).strip()
 
+        # pylint: disable-next=protected-access
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: simple)
 
@@ -1487,6 +1487,7 @@ class TestInspectDecomps:
             Insufficient work wires: requires 2 but only 1 available.
 """).strip()
 
+        # pylint: disable-next=protected-access
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: simple)
 
@@ -1539,6 +1540,7 @@ class TestInspectDecomps:
 
         result = qp.inspect_decomps(CustomOp(0.5, wires=[0, 1]))
         assert str(result) == "No available decomposition rules."
+        # pylint: disable-next=protected-access
         assert result._repr_markdown_() == "No available decomposition rules."
 
         @qp.register_condition(lambda **_: False)
@@ -1554,7 +1556,7 @@ class TestInspectDecomps:
             str(result) == "No applicable decomposition rules (non-applicable rules are excluded)."
         )
         assert (
-            result._repr_markdown_()
+            result._repr_markdown_()  # pylint: disable=protected-access
             == "No applicable decomposition rules (non-applicable rules are excluded)."
         )
 
@@ -1621,7 +1623,7 @@ class TestInspectDecomps:
             qp.inspect_decomps(CustomParametrizedOp)
 
 
-class TestCOBUnroll:  # pylint: disable=too-few-public-methods
+class TestCOBUnroll:
     """Tests the custom behaviour related to COB in the resource function."""
 
     def test_unroll_change_op_basis_resources(self):

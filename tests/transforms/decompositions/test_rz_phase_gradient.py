@@ -14,8 +14,6 @@
 
 """Tests for ``qp.transforms.decompositions.make_rz_to_phase_gradient_decomp``"""
 
-# pylint: disable=no-value-for-parameter,disable=too-many-arguments
-
 from collections import Counter
 
 import hint_helpers
@@ -195,8 +193,7 @@ def test_integration_multi_wire(seed):
 
     custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
 
-    # pylint: disable-next=protected-access
-    @qp.transforms._tape_decompose(
+    @qp.transforms._tape_decompose(  # pylint: disable=protected-access
         gate_set={
             "StatePrep",
             "PhaseGradientStatePrep",

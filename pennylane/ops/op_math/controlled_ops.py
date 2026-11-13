@@ -18,6 +18,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 # pylint: disable=unused-argument,arguments-differ,arguments-renamed
 
+
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from functools import partial
@@ -300,7 +301,6 @@ def _to_general_c_qu_standard_resources(U, wires, control_values, work_wires, wo
 @qp.register_condition(lambda U, *_, **__: math.ceil_log2(qp.math.shape(U)[0]) > 2)
 @qp.register_name("standard")
 @qp.register_resources(_to_general_c_qu_standard_resources)
-# pylint: disable=too-many-arguments
 def _to_general_c_qu_standard(U, wires, control_values, work_wires, work_wire_type, **_):
     """Convert a ControlledQubitUnitary to a general Controlled(QubitUnitary) so that
     the graph finds the general decomposition rule of applying control to the decomposition
@@ -754,7 +754,7 @@ class CZ(Controlled2):
         return CZ(self.wires)
 
     @staticmethod
-    def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ,unused-argument
+    def compute_matrix(wires: WiresLike = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -776,7 +776,7 @@ class CZ(Controlled2):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
 
-def _cz_to_cps_resources(wires: AbstractWires):  # pylint: disable=unused-argument
+def _cz_to_cps_resources(wires: AbstractWires):
     return {qp.ControlledPhaseShift: 1}
 
 
@@ -786,7 +786,7 @@ def _cz_to_cps(wires: WiresLike):
     qp.ControlledPhaseShift(np.pi, wires=wires)
 
 
-def _cz_to_cnot_resources(wires: AbstractWires):  # pylint: disable=unused-argument
+def _cz_to_cnot_resources(wires: AbstractWires):
     return {qp.H: 2, qp.CNOT: 1}
 
 
@@ -804,7 +804,6 @@ def _cz_to_ppr(wires: AbstractWires):
     _pauli_ctrl_pauli_ppr(wires, qp.Z, qp.Z)
 
 
-# pylint: disable-next=unused-argument
 def _cz_lattice_surgery_ppm_resources(wires: AbstractWires):
     return {
         PauliMeasure("ZX", wires=Wire[2]): 1,
@@ -1112,7 +1111,7 @@ class CCZ(Controlled2):
         return CCZ(self.wires)
 
     @staticmethod
-    def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ,unused-argument
+    def compute_matrix(wires: WiresLike = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1150,7 +1149,7 @@ class CCZ(Controlled2):
         )
 
 
-def _ccz_to_clifford_t_resources(wires: AbstractWires):  # pylint: disable=unused-argument
+def _ccz_to_clifford_t_resources(wires: AbstractWires):
     return {
         qp.CNOT: 6,
         _adjoint_abstract(qp.T): 3,
@@ -1179,7 +1178,7 @@ def _ccz_to_clifford_t(wires: WiresLike, **__):
     qp.Hadamard(wires=wires[2])
 
 
-def _ccz_to_toffoli_resources(wires: AbstractWires):  # pylint: disable=unused-argument
+def _ccz_to_toffoli_resources(wires: AbstractWires):
     return {qp.Hadamard: 2, qp.Toffoli: 1}
 
 
@@ -2261,7 +2260,6 @@ class CRX(Controlled2):
 
     @staticmethod
     @override
-    # pylint: disable-next=unused-argument
     def compute_matrix(phi, wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -2303,7 +2301,7 @@ class CRX(Controlled2):
         return math.stack([stack_last(row) for row in matrix], axis=-2)
 
 
-def _crx_to_rz_ry_resources(phi, wires):  # pylint: disable=unused-argument
+def _crx_to_rz_ry_resources(phi, wires):
     return {qp.RZ: 2, qp.RY: 2, qp.CNOT: 2}
 
 
@@ -2318,7 +2316,7 @@ def _crx_to_rz_ry(phi: TensorLike, wires: WiresLike):
     qp.RZ(-np.pi / 2, wires=wires[1])
 
 
-def _crx_to_rx_cz_resources(phi, wires):  # pylint: disable=unused-argument
+def _crx_to_rx_cz_resources(phi, wires):
     return {qp.RX: 2, qp.CZ: 2}
 
 
@@ -2331,7 +2329,7 @@ def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
     qp.CZ(wires=wires)
 
 
-def _crx_to_h_crz_resources(phi, wires):  # pylint: disable=unused-argument
+def _crx_to_h_crz_resources(phi, wires):
     return {qp.Hadamard: 2, qp.CRZ: 1}
 
 
@@ -2343,7 +2341,7 @@ def _crx_to_h_crz(phi: TensorLike, wires: WiresLike):
     qp.Hadamard(wires=wires[1])
 
 
-def _crx_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
+def _crx_to_ppr_resources(phi, wires):
     return {
         qp.PauliRot(Float, pauli_word="ZX", wires=Wire[2]): 1,
         qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1,
@@ -2454,7 +2452,6 @@ class CRY(Controlled2):
 
     @staticmethod
     @override
-    # pylint: disable-next=unused-argument
     def compute_matrix(phi, wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -2496,7 +2493,7 @@ class CRY(Controlled2):
         return math.stack([stack_last(row) for row in matrix], axis=-2)
 
 
-def _cry_to_ry_cnot_resources(phi, wires):  # pylint: disable=unused-argument
+def _cry_to_ry_cnot_resources(phi, wires):
     return {qp.RY: 2, qp.CNOT: 2}
 
 
@@ -2509,7 +2506,7 @@ def _cry_to_ry_cnot(phi: TensorLike, wires: WiresLike):
     qp.CNOT(wires=wires)
 
 
-def _cry_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
+def _cry_to_ppr_resources(phi, wires):
     return {
         qp.PauliRot(Float, pauli_word="ZY", wires=Wire[2]): 1,
         qp.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1,
@@ -2624,7 +2621,6 @@ class CRZ(Controlled2):
         return CRZ(-self.phi, wires=self.wires)
 
     @staticmethod
-    # pylint: disable=unused-argument, arguments-differ
     def compute_matrix(phi, wires=None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -2657,7 +2653,6 @@ class CRZ(Controlled2):
         return diags[:, :, np.newaxis] * math.cast_like(qp.math.eye(4, like=diags), diags)
 
     @staticmethod
-    # pylint: disable=unused-argument, arguments-differ
     def compute_eigvals(phi, wires=None):
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -2695,7 +2690,6 @@ class CRZ(Controlled2):
         return self.compute_eigvals(*self.parameters)
 
 
-# pylint: disable=unused-argument
 def _crz_to_rz_cnot_resources(phi, wires):
     return {qp.RZ: 2, qp.CNOT: 2}
 
@@ -2709,7 +2703,6 @@ def _crz_to_rz_cnot(phi: TensorLike, wires: WiresLike):
     qp.CNOT(wires=wires)
 
 
-# pylint: disable=unused-argument
 def _crz_to_ppr_resources(phi, wires):
     return {
         qp.PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
@@ -2806,7 +2799,6 @@ class CRot(Controlled2):
 
     @staticmethod
     @override
-    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi, theta, omega, wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -2984,7 +2976,6 @@ class ControlledPhaseShift(Controlled2):
         return ControlledPhaseShift(-self.phi, wires=self.wires)
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(phi, wires=None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -3017,7 +3008,6 @@ class ControlledPhaseShift(Controlled2):
         return diags[:, :, np.newaxis] * math.cast_like(qp.math.eye(4, like=diags), diags)
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
     def compute_eigvals(phi, wires=None):
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -3052,7 +3042,7 @@ class ControlledPhaseShift(Controlled2):
         return math.exp(product)
 
 
-def _cphase_to_rz_cnot_resources(phi, wires):  # pylint: disable=unused-argument
+def _cphase_to_rz_cnot_resources(phi, wires):
     return {qp.RZ: 3, qp.CNOT: 2, qp.GlobalPhase: 1}
 
 
@@ -3067,7 +3057,7 @@ def _cphase_to_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     qp.GlobalPhase(-phi / 4)
 
 
-def _cphase_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
+def _cphase_to_ppr_resources(phi, wires):
     return {
         qp.GlobalPhase: 1,
         qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 2,
@@ -3084,7 +3074,7 @@ def _cphase_to_ppr(phi: TensorLike, wires: WiresLike, **__):
     qp.GlobalPhase(-phi / 4)
 
 
-def _cphase_to_single_phase_resources(phi, wires):  # pylint: disable=unused-argument
+def _cphase_to_single_phase_resources(phi, wires):
     elbow = qp.TemporaryAND(wires=Wire[3])
     return {_change_op_basis_abstract(elbow, qp.PhaseShift, qp.adjoint(elbow)): 1}
 

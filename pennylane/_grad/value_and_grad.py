@@ -27,14 +27,13 @@ from pennylane.exceptions import CompileError
 
 from .grad import _args_and_argnums, _setup_h, _setup_method, _ShapedArray
 
-# pylint: disable=unused-argument, too-many-arguments
 value_and_grad_prim = capture.QpPrimitive("value_and_grad")
 value_and_grad_prim.multiple_results = True
 value_and_grad_prim.prim_type = "higher_order"
 
 
 @value_and_grad_prim.def_impl
-def _value_and_grad_impl(*args, argnums, jaxpr, method, h, fn):
+def _value_and_grad_impl(*args, argnums, jaxpr, method, h, fn):  # pylint: disable=unused-argument
     if method != "auto":  # pragma: no cover
         raise ValueError(f"Invalid value '{method=}' without QJIT.")
 
@@ -46,8 +45,8 @@ def _value_and_grad_impl(*args, argnums, jaxpr, method, h, fn):
     return jax.tree_util.tree_leaves(res)
 
 
-# pylint: disable=unused-argument
 @value_and_grad_prim.def_abstract_eval
+# pylint: disable-next=unused-argument
 def _value_and_grad_abstract(*args, argnums, jaxpr, method, h, fn):
     in_avals = tuple(args[i] for i in argnums)
     grad_avals = (
@@ -116,8 +115,7 @@ def _capture_value_and_grad(func, *, argnums=0, method=None, h=None):
     return new_func
 
 
-# pylint: disable=too-few-public-methods
-class value_and_grad:
+class value_and_grad:  # pylint: disable=too-few-public-methods
     """A :func:`~.qjit`-compatible transformation for returning the result and jacobian of a
     function.
 

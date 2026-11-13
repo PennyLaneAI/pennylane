@@ -15,8 +15,6 @@
 Contains the 'label' function for customizing operator labels.
 """
 
-# pylint: disable=unused-argument
-
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, abstractify
 from pennylane.decomposition import add_decomps, register_name, register_resources
@@ -112,7 +110,7 @@ def _custom_label_standard_resources(base):
 
 @register_name("standard")
 @register_resources(_custom_label_standard_resources)
-def _custom_label_standard(*params, wires, base, **_):
+def _custom_label_standard(*params, wires, base, **_):  # pylint: disable=unused-argument
     apply(base)
 
 

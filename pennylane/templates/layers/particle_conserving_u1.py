@@ -418,9 +418,7 @@ def _decompose_ua_qfunc(phi: float, wires: WiresLike):
 
 @register_name("standard")
 @register_resources(_particle_conserving_u1_standard_resources)
-def _particle_conserving_u1_standard(
-    weights: list, wires: WiresLike, init_state: tuple[int]
-):  # pylint: disable=arguments-differ
+def _particle_conserving_u1_standard(weights: list, wires: WiresLike, init_state: tuple[int]):
     nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
     nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
     n_layers = math.shape(weights)[0]

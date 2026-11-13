@@ -13,9 +13,10 @@
 """Tests for ``pop_op_eqns``, which deletes the plxpr equation of an operator
 that has been consumed by another operator (e.g. ``CNOT`` consuming ``X``)."""
 
-import jax
+# pylint: disable=wrong-import-order
 
-# pylint: disable=protected-access, wrong-import-position, wrong-import-order
+
+import jax
 import pytest
 from jax._src.interpreters.partial_eval import JaxprStackFrame
 

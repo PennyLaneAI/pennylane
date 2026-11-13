@@ -404,8 +404,8 @@ def _qubit_unitary_two_qubit_resources(*_, **__):
     }
 
 
-@register_condition(lambda U, wires, **_: len(wires) == 2)  # pylint: disable=unused-argument
 @register_name("two_qubit")
+@register_condition(lambda U, wires, **_: len(wires) == 2)
 @register_resources(_qubit_unitary_two_qubit_resources, exact=False)
 def _qubit_unitary_two_qubit(U, wires, **_):
     """The decomposition rule for a two-qubit unitary."""
@@ -452,8 +452,8 @@ def _qubit_unitary_multi_qubit_resources(U, wires, **_):  # pylint: disable=unus
     }
 
 
-@register_condition(lambda U, wires, **_: len(wires) > 2)  # pylint: disable=unused-argument
 @register_name("multi_qubit")
+@register_condition(lambda U, wires, **_: len(wires) > 2)
 @register_resources(_qubit_unitary_multi_qubit_resources)
 def _qubit_unitary_multi_qubit(U, wires, **__):
     """The decomposition rule for a multi-qubit unitary."""
@@ -669,7 +669,6 @@ def _get_basis_and_eigenvalues(M):
     Returns eigenvalues and basis O such that :math:`D = O^T M O` is diagonal with
     sorted eigenvalues.
     """
-    # pylint: disable=protected-access
     # Use split_eigh to get a basis (ignoring its mixed eigenvalues)
     _, O = _real_imag_split_eigh(M, 1.0)
 
@@ -791,7 +790,6 @@ def _decompose_2_cnots(U, wires, initial_phase):
 
     The final circuit is then constructed by applying these local gates around the V.
     """
-    # pylint: disable=too-many-locals
     # 1. Compute gamma(U)
     u_mag = _multidot(math.cast_like(E_dag, U), U, math.cast_like(E, U))
     gamma_u = math.dot(u_mag, math.T(u_mag))

@@ -14,6 +14,8 @@
 
 """Tests the decomposition rules defined for symbolic operations other than controlled."""
 
+# pylint: disable=too-few-public-methods
+
 import warnings
 from textwrap import dedent
 
@@ -73,8 +75,6 @@ from pennylane.ops.op_math.pow2 import _pow_repeat_base as repeat_pow_base2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.testing import decomp_rule_to_tape
 from pennylane.typing import Bool, Complex, Float, Wire
-
-# pylint: disable=no-name-in-module
 from tests.core.operator.operator2_utils import (
     DynOp,
     DynOpWithMatrix,
@@ -84,7 +84,7 @@ from tests.core.operator.operator2_utils import (
 from tests.decomposition.conftest import to_resources
 
 
-class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+class CustomOp(qp.operation.Operator):
     resource_keys = {"key"}
 
     @property
@@ -92,7 +92,6 @@ class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
         return {"key": 0}
 
 
-# pylint: disable=too-few-public-methods
 class DummyHadamard(qp.operation.Operator):
     resource_keys = set({})
     num_wires = 1
@@ -153,11 +152,11 @@ class TestAdjointDecompositionRules:
             @register_name(f"adjoint({base_decomposition.name})")
             @register_resources(
                 _resource_fn,
-                work_wires=base_decomposition._work_wire_spec,
+                work_wires=base_decomposition._work_wire_spec,  # pylint: disable=protected-access
                 exact=base_decomposition.exact_resources,
             )
             def _impl(*params, wires, base):
-                # pylint: disable=protected-access
+                # pylint: disable-next=protected-access
                 qp.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
 
             where base_decomposition is defined as:
@@ -512,7 +511,7 @@ class TestPowDecomposition:
         qp.assert_equal(op, pow(abstract_base, 2))
 
 
-class CustomMultiQubitOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+class CustomMultiQubitOp(qp.operation.Operation):
     """A custom op."""
 
     resource_keys = {"num_wires"}
@@ -655,9 +654,10 @@ class TestControlledDecomposition:
             @register_name(f"controlled({base_decomposition.name})")
             @register_resources(
                 _resource_fn,
-                work_wires=base_decomposition._work_wire_spec,
+                work_wires=base_decomposition._work_wire_spec,  # pylint: disable=protected-access
                 exact=base_decomposition.exact_resources,
             )
+            # pylint: disable-next=too-many-arguments
             def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
                 zero_control_wires = [
                     w for w, val in zip(control_wires, control_values, strict=True) if not val
@@ -1033,7 +1033,7 @@ class TestControlledDecomposition:
             @register_name(name or f"flip_zero_ctrl_values({inner_decomp.name})")
             @register_resources(
                 _resource_fn,
-                work_wires=inner_decomp._work_wire_spec,
+                work_wires=inner_decomp._work_wire_spec,  # pylint: disable=protected-access
                 exact=inner_decomp.exact_resources,
             )
             def _impl(*params, wires, control_wires, control_values, **kwargs):
@@ -1198,7 +1198,7 @@ class TestControlledDecomposition:
     def test_controlled_decomp_with_work_wire(self):
         """Tests the controlled decomposition with a single work wire (Lemma 7.11 from https://arxiv.org/pdf/quant-ph/9503016)."""
 
-        class CustomRot(Operator):  # pylint: disable=too-few-public-methods
+        class CustomRot(Operator):
             """A dummy legacy (Operator1) single-qubit op with a defined matrix."""
 
             @staticmethod
@@ -1271,7 +1271,7 @@ class TestControlledDecomposition:
     def test_decompose_to_controlled_qubit_unitary(self):
         """Tests the decomposition to controlled qubit unitary"""
 
-        class CustomRot(Operator):  # pylint: disable=too-few-public-methods
+        class CustomRot(Operator):
 
             @staticmethod
             def compute_matrix(*params):

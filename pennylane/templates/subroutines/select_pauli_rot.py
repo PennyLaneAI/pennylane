@@ -105,9 +105,7 @@ class SelectPauliRot(Operator2):
     grad_method = None
     ndim_params = (1,)
 
-    def __init__(
-        self, angles, control_wires, target_wire, rot_axis="Z"
-    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    def __init__(self, angles, control_wires, target_wire, rot_axis="Z"):
 
         if math.shape(angles)[-1] != 2 ** len(control_wires):
             raise ValueError("Number of angles must be 2^(len(control_wires))")

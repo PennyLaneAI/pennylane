@@ -620,7 +620,6 @@ def _select_resources_unary_not_partial(ops, num_control_wires, num_work_wires):
     return dict(resources)
 
 
-# pylint: disable=unused-argument
 def _select_unary_resources(ops, control, work_wires, partial):
     num_control_wires = len(control)
     num_work_wires = len(work_wires)
@@ -847,8 +846,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     return ops_decomp
 
 
-# pylint: disable=unused-argument
-def _unary_condition(ops, control, work_wires, partial):
+def _unary_condition(ops, control, work_wires, partial):  # pylint: disable=unused-argument
     return len(work_wires) >= len(control) - 1
 
 
@@ -968,8 +966,7 @@ def _select_multi_control_work_wire_resources(ops, control, work_wires, partial)
     return dict(resources)
 
 
-# pylint: disable=unused-argument
-def _work_wire_condition(ops, control, work_wires, partial):
+def _work_wire_condition(ops, control, work_wires, partial):  # pylint: disable=unused-argument
     return len(work_wires) >= 1
 
 

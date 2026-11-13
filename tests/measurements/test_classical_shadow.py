@@ -26,8 +26,6 @@ from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
 from pennylane.measurements import ClassicalShadowMP
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 
-# pylint: disable=dangerous-default-value, too-many-arguments
-
 
 def get_circuit(wires, shots, seed_recipes, interface="autograd", device="default.qubit"):
     """
@@ -485,7 +483,7 @@ class TestClassicalShadow:
 
         assert shadow.dtype == expected_dtype
 
-        bits, recipes = shadow  # pylint: disable=unpacking-non-sequence
+        bits, recipes = shadow
 
         # test allowed values of bits and recipes
         assert qp.math.all(np.logical_or(bits == 0, bits == 1))
@@ -655,7 +653,7 @@ class TestExpvalMeasurement:
         res = qp.shadow_expval(H, k=10)
 
         copied_res = copy.copy(res)
-        assert type(copied_res) == type(res)  # pylint: disable=unidiomatic-typecheck
+        assert type(copied_res) == type(res)
         assert copied_res._shortname == res._shortname  # pylint: disable=protected-access
         qp.assert_equal(copied_res.H, res.H)
         assert copied_res.k == res.k
@@ -772,6 +770,7 @@ expected_qft = [
 class TestExpvalForward:
     """Test the shadow_expval measurement process forward pass"""
 
+    # pylint: disable-next=dangerous-default-value
     def test_hadamard_expval(self, k=1, obs=obs_hadamard, expected=expected_hadamard):
         """Test that the expval estimation is correct for a uniform
         superposition of qubits"""
@@ -782,7 +781,7 @@ class TestExpvalForward:
         assert actual.dtype == np.float64
         assert qp.math.allclose(actual, expected, atol=1e-1)
 
-    def test_max_entangled_expval(
+    def test_max_entangled_expval(  # pylint: disable=dangerous-default-value
         self, k=1, obs=obs_max_entangled, expected=expected_max_entangled
     ):
         """Test that the expval estimation is correct for a maximally
@@ -802,11 +801,11 @@ class TestExpvalForward:
             circuit(qp.Hadamard(0) @ qp.Hadamard(2))
 
 
-# pylint: disable=too-few-public-methods
 @pytest.mark.all_interfaces
-class TestExpvalForwardInterfaces:
+class TestExpvalForwardInterfaces:  # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+    # pylint: disable-next=dangerous-default-value
     def test_qft_expval(self, interface, k=1, obs=obs_qft, expected=expected_qft):
         """Test that the expval estimation is correct for a QFT state"""
         import torch
@@ -857,6 +856,7 @@ class TestExpvalBackward:
     """Test the shadow_expval measurement process backward pass"""
 
     @pytest.mark.autograd
+    # pylint: disable-next=dangerous-default-value
     def test_backward_autograd(self, obs=obs_strongly_entangled):
         """Test that the gradient of the expval estimation is correct for
         the autograd interface"""
@@ -874,6 +874,7 @@ class TestExpvalBackward:
         assert qp.math.allclose(actual, expected, atol=1e-1)
 
     @pytest.mark.jax
+    # pylint: disable-next=dangerous-default-value
     def test_backward_jax(self, obs=obs_strongly_entangled):
         """Test that the gradient of the expval estimation is correct for
         the jax interface"""
@@ -894,6 +895,7 @@ class TestExpvalBackward:
         assert qp.math.allclose(actual, expected, atol=1e-1)
 
     @pytest.mark.torch
+    # pylint: disable-next=dangerous-default-value
     def test_backward_torch(self, obs=obs_strongly_entangled):
         """Test that the gradient of the expval estimation is correct for
         the pytorch interface"""
@@ -916,6 +918,7 @@ class TestExpvalBackward:
         assert qp.math.allclose(actual, qp.math.stack(expected), atol=1e-1)
 
 
+# pylint: disable-next=too-many-arguments
 def get_basis_circuit(wires, shots, basis, interface="autograd", device="default.mixed", seed=None):
     """
     Return a QNode that prepares a state in a given computational basis
@@ -955,8 +958,8 @@ def test_return_distribution(wires, interface, circuit_basis, basis_recipe, seed
     circuit = get_basis_circuit(
         wires, basis=circuit_basis, shots=shots, interface=interface, device=device, seed=seed
     )
-    bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
-    new_bits, new_recipes = circuit()  # pylint: disable=unpacking-non-sequence
+    bits, recipes = circuit()
+    new_bits, new_recipes = circuit()
 
     # test that the recipes follow a rough uniform distribution
     ratios = np.unique(recipes, return_counts=True)[1] / (wires * shots)
@@ -1009,7 +1012,7 @@ def test_return_distribution_legacy(wires, interface, circuit_basis, basis_recip
 
             return qp.classical_shadow(wires=range(wires), seed=seed)
 
-    bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
+    bits, recipes = circuit()
     tape = qp.workflow.construct_tape(circuit)()
     new_bits, new_recipes = tape.measurements[0].process(tape, circuit.device.target_device)
 
@@ -1052,6 +1055,7 @@ def hadamard_circuit_legacy(wires, shots=10000, interface="autograd"):
     return circuit
 
 
+# pylint: disable-next=dangerous-default-value
 def test_hadamard_expval_legacy(k=1, obs=obs_hadamard, expected=expected_hadamard):
     """Test that the expval estimation is correct for a uniform
     superposition of qubits"""
@@ -1082,6 +1086,7 @@ def hadamard_circuit_mixed(wires, shots=10000, interface="autograd"):
 
 
 @pytest.mark.slow
+# pylint: disable-next=dangerous-default-value
 def test_hadamard_expval_mixed(k=1, obs=obs_hadamard, expected=expected_hadamard):
     """Test that the expval estimation is correct for a uniform
     superposition of qubits"""
@@ -1108,5 +1113,5 @@ def test_partitioned_shots(interface, circuit_basis):
     circuit = get_basis_circuit(
         wires, basis=circuit_basis, shots=shots, interface=interface, device=device
     )
-    bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
+    bits, recipes = circuit()
     assert bits.shape == recipes.shape == (2, shot, 3)

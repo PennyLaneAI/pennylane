@@ -372,7 +372,8 @@ def _semi_adder_standard(x_wires, y_wires, work_wires=None, carry_flip=None, ski
 add_decomps(SemiAdder, _semi_adder_standard)
 
 
-def _controlled_semi_adder_standard_resources(  # pylint: disable=too-many-arguments,unused-argument
+# pylint: disable-next=unused-argument
+def _controlled_semi_adder_standard_resources(
     base, control_wires, control_values, work_wires, work_wire_type
 ):
     r"""
@@ -440,14 +441,14 @@ def _controlled_semi_adder_standard_resources(  # pylint: disable=too-many-argum
     _controlled_semi_adder_standard_resources,
     work_wires=lambda base, *_, **__: _semi_adder_standard_work_wires(**base.arguments),
 )
-def _controlled_semi_adder_standard(
+def _controlled_semi_adder_standard(  # pylint: disable=too-many-arguments
     base,
     control_wires,
     control_values=None,
     work_wires=None,
     work_wire_type="borrowed",
     carry_flip=None,
-):  # pylint: disable=too-many-arguments
+):
     r"""
     Decomposition extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_
     using building block described in Figure 4.

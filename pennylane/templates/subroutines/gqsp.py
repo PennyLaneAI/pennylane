@@ -163,10 +163,9 @@ class GQSP(Operator2):
 
     arg_specs = {"angles": Float[3, -1], "control": Wire[1], "work_wires": Wire[-1]}
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self, unitary, angles, control, work_wires=None, work_wire_type="borrowed", shift=0
     ):
-        # pylint: disable=too-many-arguments
         work_wires = Wires(()) if work_wires is None else work_wires
         _validate_work_wire_type(work_wire_type)
         if isinstance(shift, bool) or not isinstance(shift, (int, np.integer)):
@@ -186,9 +185,8 @@ def _num_shifted_ctrl_ops(shift, num_ctrl_ops):
     return num_absorbed, shift + num_absorbed
 
 
-def _GQSP_standard_resources(
-    unitary, angles, control, work_wires, work_wire_type, shift
-):  # pylint: disable=unused-argument,too-many-arguments
+# pylint: disable-next=too-many-arguments,unused-argument
+def _GQSP_standard_resources(unitary, angles, control, work_wires, work_wire_type, shift):
     num_iters = angles.shape[1]
     num_absorbed, remaining = _num_shifted_ctrl_ops(shift, num_iters - 1)
     unitary = abstractify(unitary)
@@ -214,9 +212,8 @@ def _GQSP_standard_resources(
 
 @register_name("standard")
 @register_resources(_GQSP_standard_resources)
-def _GQSP_standard(
-    unitary, angles, control, work_wires, work_wire_type, shift
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _GQSP_standard(unitary, angles, control, work_wires, work_wire_type, shift):
     if compiler.active() or capture.enabled():
         angles = math.array(angles, like="jax")
 
@@ -266,8 +263,8 @@ def _GQSP_standard(
         )
         _signal_processing_rotation(i)
 
-    shifted_gqsp_loop()  # pylint:disable= no-value-for-parameter
-    gqsp_loop()  # pylint:disable= no-value-for-parameter
+    shifted_gqsp_loop()  # pylint: disable=no-value-for-parameter
+    gqsp_loop()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(GQSP, _GQSP_standard)

@@ -30,8 +30,7 @@ from pennylane.typing import PostprocessingFn
 from .decompose import _resolve_gate_set
 
 
-# pylint: disable=protected-access,too-few-public-methods
-class _DecompInGraphInfo(_DecompInfo):
+class _DecompInGraphInfo(_DecompInfo):  # pylint: disable=too-few-public-methods
     """Information about a decomposition rule in a graph for inspection."""
 
     def __init__(
@@ -69,6 +68,7 @@ class _DecompInGraphInfo(_DecompInfo):
     @property
     def _is_reachable(self) -> bool:
         """Whether this decomposition rule is reachable from the target gate set."""
+        # pylint: disable-next=protected-access
         return self._decomp_node_idx in self._solution._visitor.distances
 
     @property
@@ -77,6 +77,7 @@ class _DecompInGraphInfo(_DecompInfo):
         """The gate count and weighted cost in terms of the target gate set."""
         if not self._is_reachable:
             return super()._gate_counts_and_allocations
+        # pylint: disable-next=protected-access
         gate_set_resource = self._solution._visitor.distances[self._decomp_node_idx]
         gate_counts = _gate_count_dict_to_str(gate_set_resource.gate_counts)
         weighted_cost = gate_set_resource.weighted_cost
@@ -92,6 +93,7 @@ class _DecompInGraphInfo(_DecompInfo):
         """The gate count and weighted cost in terms of the target gate set in Markdown."""
         if not self._is_reachable:
             return super()._gate_counts_and_allocations_md
+        # pylint: disable-next=protected-access
         gate_set_resource = self._solution._visitor.distances[self._decomp_node_idx]
         entries = list(gate_set_resource.gate_counts.items())
         gate_counts = self._make_table(entries, ("Full Expansion", "Count"))
@@ -118,7 +120,7 @@ class _DecompInGraphInfo(_DecompInfo):
 
     def _unsolved_ops(self):
         all_op_node_indices = self._graph.predecessor_indices(self._decomp_node_idx)
-        distances = self._solution._visitor.distances
+        distances = self._solution._visitor.distances  # pylint: disable=protected-access
         unsolved_indices = filter(lambda idx: idx not in distances, all_op_node_indices)
         return set(map(lambda idx: self._graph[idx].op, unsolved_indices))
 
@@ -174,21 +176,20 @@ class _DecompInGraphInfoCollection(_DecompInfoCollection):  # pylint: disable=to
 
     @override
     def _title(self, index, rule) -> str:
-        title = f"Decomposition {index} (name: {rule._name})"
+        title = f"Decomposition {index} (name: {rule._name})"  # pylint: disable=protected-access
         if index == self._chosen_idx:
             title = "CHOSEN: " + title
         return title
 
     @override
     def _title_md(self, index, rule) -> str:
-        title = f"Decomposition {index} (name: {rule._name})"
+        title = f"Decomposition {index} (name: {rule._name})"  # pylint: disable=protected-access
         if index == self._chosen_idx:
             return f"#### **CHOSEN:** {title}"
         return f"#### {title}"
 
 
-# pylint: disable=protected-access,too-few-public-methods
-class DecompGraphInspector:
+class DecompGraphInspector:  # pylint: disable=too-few-public-methods
     """Interactive object that queries a solved decomposition graph.
 
     .. seealso::
@@ -227,6 +228,7 @@ class DecompGraphInspector:
         if isinstance(op_node, str):
             return _DecompInGraphInfoCollection([], override_txt=op_node)
 
+        # pylint: disable-next=protected-access
         op_node_idx = self._decomp_graph._all_op_indices[op_node]
         decomp_indices = self._raw_graph.predecessor_indices(op_node_idx)
         # 0 is the index of the dummy starter node that connects to all ops in the gate set.
@@ -250,14 +252,14 @@ class DecompGraphInspector:
             )
 
         op_rep = abstractify(op)
-        if op_rep not in self._decomp_graph._op_to_op_nodes:
+        if op_rep not in self._decomp_graph._op_to_op_nodes:  # pylint: disable=protected-access
             return (
                 "This operator is not found in the decomposition graph! This typically "
                 "means that this operator was not part of the original circuit, nor is it "
                 "produced by any of the operators' decomposition rules."
             )
 
-        op_nodes = self._decomp_graph._op_to_op_nodes[op_rep]
+        op_nodes = self._decomp_graph._op_to_op_nodes[op_rep]  # pylint: disable=protected-access
 
         if self._max_work_wires is None or not next(iter(op_nodes)).work_wire_dependent:
             return min(op_nodes, key=lambda node: node.num_work_wire_not_available)

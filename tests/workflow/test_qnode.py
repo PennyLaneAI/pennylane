@@ -13,9 +13,9 @@
 # limitations under the License.
 """Unit tests for the QNode"""
 
-import copy
+# pylint: disable=protected-access,too-few-public-methods
 
-# pylint: disable=import-outside-toplevel, protected-access, no-member
+import copy
 import warnings
 from dataclasses import replace
 from functools import partial
@@ -46,23 +46,23 @@ def dummyfunc():
     return None
 
 
-# pylint: disable=unused-argument
 class CustomDevice(qp.devices.Device):
     """A null device that just returns 0."""
 
     def __repr__(self):
         return "CustomDevice"
 
-    def execute(self, circuits, execution_config=None):
+    def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
         return (0,)
 
 
 class CustomDeviceWithDiffMethod(qp.devices.Device):
     """A device that defines a derivative."""
 
-    def execute(self, circuits, execution_config=None):
+    def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
         return 0
 
+    # pylint: disable-next=unused-argument
     def compute_derivatives(self, circuits, execution_config=None):
         """Device defines its own method to compute derivatives"""
         return 0
@@ -251,7 +251,7 @@ class TestInitialization:
         def f2():
             return qp.state()
 
-        assert f2._shots_override_device  # pylint: disable=protected-access
+        assert f2._shots_override_device
         assert f2.shots == qp.measurements.Shots(10)
 
         # Shots from device should be set correctly
@@ -291,7 +291,6 @@ class TestInitialization:
         assert f.execute_kwargs["cache"] == "auto"
 
 
-# pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
 
@@ -336,7 +335,6 @@ class TestValidation:
         with pytest.raises(QuantumFunctionError, match="Invalid device"):
             QNode(dummyfunc, None)
 
-    # pylint: disable=protected-access, too-many-statements
     def test_diff_method(self):
         """Test that a user-supplied diff method correctly returns the right
         diff method."""
@@ -498,8 +496,6 @@ class TestValidation:
         assert len(record) == 0
 
 
-# pylint: disable=too-few-public-methods
-# pylint: disable=unnecessary-lambda
 class TestPyTreeStructure:
     """Tests for preservation of pytree structure through execution"""
 
@@ -507,7 +503,7 @@ class TestPyTreeStructure:
         "measurement",
         [
             lambda: ({"probs": qp.probs()},),
-            lambda: qp.probs(),
+            lambda: qp.probs(),  # pylint: disable=unnecessary-lambda
             lambda: [
                 [qp.probs(wires=1), {"a": qp.probs(wires=0)}, qp.expval(qp.Z(0))],
                 {"probs": qp.probs(wires=0), "exp": qp.expval(qp.X(1))},
@@ -868,7 +864,6 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # pylint: disable=too-many-positional-arguments
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
@@ -883,9 +878,9 @@ class TestIntegration:
             (qp.probs, lambda x: [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2]),
         ],
     )
-    def test_defer_meas_if_mcm_unsupported(
+    def test_defer_meas_if_mcm_unsupported(  # pylint: disable=too-many-arguments
         self, dev_name, first_par, sec_par, return_type, mv_return, mv_res, mocker
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
         natively."""
@@ -918,7 +913,7 @@ class TestIntegration:
         assert spy.call_count == 2
 
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
-    def test_sampling_with_mcm(self, basis_state, mocker):
+    def test_sampling_with_mcm(self, basis_state, mocker):  # pylint: disable=unused-argument
         """Tests that a QNode with qp.sample and mid-circuit measurements
         returns the expected results."""
         dev = qp.device("default.qubit", wires=3)
@@ -1041,7 +1036,7 @@ class TestIntegration:
             circuit()
 
         tape = qp.workflow.construct_tape(circuit)()
-        assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert q.queue == []
         assert len(tape.operations) == 1
 
     def test_qnode_preserves_inferred_numpy_interface(self):
@@ -1061,7 +1056,6 @@ class TestIntegration:
     def test_qnode_default_interface(self):
         """Tests that the default interface is set correctly for a QNode."""
 
-        # pylint: disable=import-outside-toplevel
         import networkx as nx
 
         @qp.qnode(qp.device("default.qubit"))
@@ -1079,12 +1073,10 @@ class TestIntegration:
     def test_qscript_default_interface(self):
         """Tests that the default interface is set correctly for a QuantumScript."""
 
-        # pylint: disable=import-outside-toplevel
         import networkx as nx
 
         dev = qp.device("default.qubit")
 
-        # pylint: disable=too-few-public-methods
         class DummyCustomGraphOp(qp.operation.Operation):
             """Dummy custom operation for testing purposes."""
 
@@ -1104,6 +1096,7 @@ class TestIntegration:
         """Test that an error is raised in the device_vjp is unsupported."""
 
         class DummyDev(qp.devices.Device):
+            # pylint: disable=unused-argument
             def execute(self, circuits, execution_config=qp.devices.ExecutionConfig()):
                 return 0
 
@@ -1160,7 +1153,6 @@ class TestShots:
         with pytest.raises(AttributeError, match="Shots cannot be set on a qnode instance"):
             circuit.shots = 5
 
-    # pylint: disable=unexpected-keyword-arg
     def test_no_shots_per_call_if_user_has_shots_qfunc_kwarg(self):
         """Tests that the per-call shots overwriting is suspended if user
         has a shots keyword argument, but a warning is raised."""
@@ -1185,7 +1177,6 @@ class TestShots:
         tape = qp.workflow.construct_tape(circuit)(0.8, shots=0)
         assert tape.operations[0].wires.labels == (0,)
 
-    # pylint: disable=unexpected-keyword-arg
     def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
         """Tests that the per-call shots overwriting is suspended
         if user has a shots argument, but a warning is raised."""
@@ -1231,7 +1222,6 @@ class TestShots:
         with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
             circuit(0.3)
 
-    # pylint: disable=unexpected-keyword-arg
     def test_warning_finite_shots_override(self):
         """Tests that a warning is raised when caching is used with finite shots."""
         dev = qp.device("default.qubit", wires=1)
@@ -1541,11 +1531,14 @@ class TestNewDeviceIntegration:
         class CustomDeviceWithDiffMethod2(qp.devices.DefaultQubit):
             """A device with a custom derivative named hello."""
 
+            # pylint: disable-next=unused-argument
             def supports_derivatives(self, execution_config=None, circuit=None):
                 return getattr(execution_config, "gradient_method", None) == "hello"
 
-            def setup_execution_config(
-                self, config: qp.devices.ExecutionConfig | None = None, circuit=None
+            def setup_execution_config(  # pylint: disable=unused-argument
+                self,
+                config: qp.devices.ExecutionConfig | None = None,
+                circuit=None,
             ):
                 if config.gradient_method in {"best", "hello"}:
                     return replace(config, gradient_method="hello", use_device_gradient=True)
@@ -1625,7 +1618,7 @@ class TestMCMConfiguration:
     def test_defer_measurements_with_jit(self, diff_method, mocker, seed):
         """Test that using mcm_method="deferred" defaults to behaviour like
         postselect_mode="fill-shots" when using jax jit."""
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         shots = 100
         postselect = 1
@@ -1659,7 +1652,7 @@ class TestMCMConfiguration:
     def test_deferred_hw_like_error_with_jit(self, diff_method, seed):
         """Test that an error is raised if attempting to use postselect_mode="hw-like"
         with jax jit with mcm_method="deferred"."""
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         shots = 100
         postselect = 1
@@ -1744,7 +1737,6 @@ class TestTapeExpansion:
         """Test expansion of an unsupported operation on the device"""
         dev = qp.device("default.qubit", wires=1)
 
-        # pylint: disable=too-few-public-methods
         class UnsupportedOp(qp.operation.Operation):
             """custom unsupported op."""
 
@@ -1783,7 +1775,6 @@ class TestTapeExpansion:
 
         dev = qp.device("default.qubit", wires=1)
 
-        # pylint: disable=too-few-public-methods
         class UnsupportedOp(qp.operation.Operation):
             """custom unsupported op."""
 
@@ -1815,13 +1806,12 @@ class TestTapeExpansion:
         assert np.allclose(qp.grad(qp.grad(circuit))(x), -9 * np.cos(3 * x))
 
     @pytest.mark.autograd
-    def test_gradient_expansion(self, mocker):
+    def test_gradient_expansion(self, mocker):  # pylint: disable=unused-argument
         """Test that a *supported* operation with no gradient recipe is
         expanded when applying the gradient transform, but not for execution."""
 
         dev = qp.device("default.qubit", wires=1)
 
-        # pylint: disable=too-few-public-methods
         class PhaseShift(qp.PhaseShift):
             """custom phase shift."""
 
@@ -1876,7 +1866,6 @@ class TestTapeExpansion:
 def test_resets_after_execution_error():
     """Test that the interface is reset to ``"auto"`` if an error occurs during execution."""
 
-    # pylint: disable=too-few-public-methods
     class BadOp(qp.operation.Operator):
         """An operator that will cause an error during execution."""
 
@@ -1945,7 +1934,7 @@ class TestPrivateFunctions:
         assert config == expected_config
 
 
-class TestSetShots:
+class TestSetShots:  # pylint: disable=too-many-public-methods
     """Tests for the set_shots decorator functionality."""
 
     def test_shots_initialization(self):

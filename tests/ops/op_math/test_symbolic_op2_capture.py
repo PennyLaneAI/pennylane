@@ -13,6 +13,9 @@
 # limitations under the License.
 """Tests for capturing symbolic ``Operator2`` instances into plxpr."""
 
+# pylint: disable=wrong-import-position
+
+
 import pytest
 from test_adjoint2 import RX2
 
@@ -24,7 +27,6 @@ jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
-# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import AbstractOperator, operator_p
 from pennylane.testing import find_eqns
 from tests.core.operator.operator2_utils import NonParametricOp
@@ -117,7 +119,6 @@ class TestAdjointCapture:
         [eqn] = find_eqns(jaxpr, operator_p)
         assert eqn.params["adjoint"] is True
 
-        # pylint: disable=unbalanced-tuple-unpacking
         [op] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         expected = Adjoint2(RX2(0.5, wires=0))
         qp.assert_equal(op, expected, check_interface=False)
@@ -135,8 +136,7 @@ class TestAdjointCapture:
 
         def fn(x):
             with qp.capture.pause():
-                # pylint: disable=protected-access
-                adjoint_fn(RX2(x, wires=0))._bind_primitive()
+                adjoint_fn(RX2(x, wires=0))._bind_primitive()  # pylint: disable=protected-access
 
         jaxpr = jax.make_jaxpr(fn)(1.5)
         assert not find_eqns(jaxpr, operator_p)
@@ -176,9 +176,8 @@ class TestControlledCapture:
         assert eqn.params["n_ctrls"] == 2
         assert eqn.invars[-4].val == 0
         assert eqn.invars[-3].val == 1
-        # pylint: disable=singleton-comparison
-        assert eqn.invars[-2].val == True
-        assert eqn.invars[-1].val == False
+        assert eqn.invars[-2].val == True  # pylint: disable=singleton-comparison
+        assert eqn.invars[-1].val == False  # pylint: disable=singleton-comparison
 
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
         expected = ControlledOp2(RX2(0.7, 2), [0, 1], [True, False])
@@ -207,7 +206,6 @@ class TestControlledCapture:
         [eqn] = find_eqns(jaxpr, operator_p)
         assert eqn.params["n_ctrls"] == 1
 
-        # pylint: disable=unbalanced-tuple-unpacking
         [op] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         expected = ControlledOp2(RX2(0.5, wires=0), control_wires=[1])
         qp.assert_equal(op, expected)
@@ -229,7 +227,6 @@ class TestControlledCapture:
         assert eqn.params["n_ctrls"] == 2
         assert jaxpr.jaxpr.invars[0] in eqn.invars
 
-        # pylint: disable=unbalanced-tuple-unpacking
         [op] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
         expected = ControlledOp2(RX2(0.7, wires=2), control_wires=[0, 1])
         qp.assert_equal(op, expected)
@@ -239,8 +236,7 @@ class TestControlledCapture:
 
         def fn(x):
             with qp.capture.pause():
-                # pylint: disable=protected-access
-                ctrl_fn(RX2(x, wires=1), [0])._bind_primitive()
+                ctrl_fn(RX2(x, wires=1), [0])._bind_primitive()  # pylint: disable=protected-access
 
         jaxpr = jax.make_jaxpr(fn)(1.5)
         assert not find_eqns(jaxpr, operator_p)
@@ -266,7 +262,6 @@ class TestControlledCapture:
         if traced_work_wire:
             assert jaxpr.jaxpr.invars[1] in eqn.invars
 
-        # pylint: disable=unbalanced-tuple-unpacking
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         expected = ControlledOp2(RX2(0.7, 1), [0], work_wires=[5], work_wire_type="zeroed")
         qp.assert_equal(op, expected)
@@ -300,7 +295,6 @@ class TestControlledCapture:
         assert eqn.params["n_ctrl_work_wires"] == 2
         assert eqn.params["ctrl_work_wire_type"] == expected_type
 
-        # pylint: disable=unbalanced-tuple-unpacking
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
         expected = ControlledOp2(
             RX2(0.7, wires=2),
@@ -395,7 +389,6 @@ class TestNestedSymbolicOpCapture:
         assert eqn.params["n_ctrls"] == 1
         assert eqn.params["adjoint"] is True
 
-        # pylint: disable=unbalanced-tuple-unpacking
         [op] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
         inner_op = Adjoint2(RX2(0.7, wires=1))
         expected = ControlledOp2(inner_op, control_wires=[0])
@@ -410,7 +403,6 @@ class TestNestedSymbolicOpCapture:
         assert eqn.params["n_ctrls"] == 1
         assert eqn.params["adjoint"] is True
 
-        # pylint: disable=unbalanced-tuple-unpacking
         [op] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
         inner_op = Adjoint2(RX2(0.7, wires=1))
         expected = ControlledOp2(inner_op, control_wires=[0])

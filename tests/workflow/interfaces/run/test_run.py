@@ -14,7 +14,6 @@
 
 """Unit tests for the `run` helper function in the `qp.workflow` module."""
 
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp

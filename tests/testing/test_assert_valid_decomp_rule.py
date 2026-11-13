@@ -18,6 +18,7 @@ Tests for ``qp.testing.assert_valid_decomp_rule``, ``qp.testing.assert_decomposa
 
 # pylint: disable=too-few-public-methods
 
+
 import numpy as np
 import pytest
 
@@ -242,7 +243,7 @@ class TestAssertValidDecompositionRule:
             def loop(i):
                 qp.S(i)
 
-            loop()  # pylint: disable=no-value-for-parameter
+            loop()
 
         assert_valid_decomp_rule(MyOp([0, 1, 2]), rule)
 
@@ -257,7 +258,7 @@ class TestAssertValidDecompositionRule:
             def loop(i):
                 OneWireDynOp(phi, wires=i)
 
-            loop()  # pylint: disable=no-value-for-parameter
+            loop()
 
         assert_valid_decomp_rule(OneWireDynOp(0.5, wires=0), rule)
 

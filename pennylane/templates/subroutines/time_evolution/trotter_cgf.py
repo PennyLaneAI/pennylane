@@ -36,8 +36,6 @@ from pennylane.wires import WiresLike
 
 from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
 
-# pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
-
 
 class TrotterCGF(Operator2):
     r"""Second-order Trotter time evolution for a Christiansen Greedy Fragmentation (CGF) Hamiltonian.
@@ -419,7 +417,7 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
                         IsingZZ(_angle(q), [wire_lp, wire_mq])
 
                     CNOT([control_wires[0], wire_lp])
-                    _q_loop()
+                    _q_loop()  # pylint: disable=no-value-for-parameter
                     CNOT([control_wires[0], wire_lp])
                 else:
 
@@ -433,9 +431,9 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
                         else:
                             ctrl(IsingZZ(angle, zz_wires), control=control_wires)
 
-                    _q_loop()
+                    _q_loop()  # pylint: disable=no-value-for-parameter
 
-            _p_loop()
+            _p_loop()  # pylint: disable=no-value-for-parameter
 
 
 def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_wires, double_phase):
@@ -460,9 +458,9 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
             angle = -2.0 * Z_one_body[l, l, p, p] * first_order_time_step
             _emit_one_body_rz(angle, wire_lp, control_wires, double_phase)
 
-        modal_loop()
+        modal_loop()  # pylint: disable=no-value-for-parameter
 
-    mode_loop()
+    mode_loop()  # pylint: disable=no-value-for-parameter
 
 
 def _energy_shift(hamiltonian):
@@ -537,6 +535,7 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
     return dict(resources)
 
 
+# pylint: disable-next=unused-argument
 def _trotter_cgf_standard_resources(
     evolution_time, num_trotter_steps, hamiltonian, wires, double_phase
 ):
@@ -545,6 +544,7 @@ def _trotter_cgf_standard_resources(
 
 @register_name("standard")
 @register_resources(_trotter_cgf_standard_resources, exact=False)
+# pylint: disable-next=unused-argument
 def _trotter_cgf_standard(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
     # ``double_phase`` only affects the controlled decomposition; the base operator is
     # always the plain (uncontrolled) e^{-iHt} circuit.
@@ -564,8 +564,12 @@ def _trotter_cgf_standard(evolution_time, num_trotter_steps, hamiltonian, wires,
 add_decomps(TrotterCGF, _trotter_cgf_standard)
 
 
-def _controlled_trotter_cgf_standard_resources(
-    base, control_wires, control_values, work_wires, work_wire_type
+def _controlled_trotter_cgf_standard_resources(  # pylint: disable=unused-argument
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,
 ):
     return _cgf_resource_counts(
         base.arguments["num_trotter_steps"],
@@ -578,6 +582,7 @@ def _controlled_trotter_cgf_standard_resources(
 @register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
 @register_name("standard")
 @register_resources(_controlled_trotter_cgf_standard_resources, exact=False)
+# pylint: disable-next=unused-argument
 def _controlled_trotter_cgf_standard(
     base, control_wires, control_values, work_wires, work_wire_type
 ):
