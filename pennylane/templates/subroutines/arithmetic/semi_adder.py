@@ -251,6 +251,7 @@ class SemiAdder(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.SemiAdder
+            :stacked:
             :symbols: :math:`m` ``x_wires`` and :math:`n \geq 2` ``y_wires``
             :example: :math:`m=n=3`
 

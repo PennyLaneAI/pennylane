@@ -98,6 +98,7 @@ class SelectPauliRot(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.SelectPauliRot
+            :stacked:
             :symbols: :math:`c \geq 1` control wires and rotation axis :math:`P` (``rot_axis``)
             :example: :math:`c=1`, :math:`P=Y`
 

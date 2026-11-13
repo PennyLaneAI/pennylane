@@ -117,6 +117,7 @@ class SignedOutMultiplier(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.SignedOutMultiplier
+            :stacked:
             :symbols: :math:`n` ``x_wires``, :math:`m` ``y_wires``, :math:`k` ``output_wires`` and
                 :math:`w` ``work_wires``
             :example: :math:`n=m=1`, :math:`k=2`

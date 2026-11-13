@@ -78,6 +78,7 @@ class MultiX(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.MultiX
+            :stacked:
             :symbols: :math:`n` wires and bitstring :math:`\mathbf{b}`
             :example: :math:`\mathbf{b}=(1, 0, 1)`
 

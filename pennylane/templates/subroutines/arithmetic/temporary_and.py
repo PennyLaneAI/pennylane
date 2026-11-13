@@ -118,6 +118,7 @@ class TemporaryAND(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.TemporaryAND
+            :stacked:
             :symbols: :math:`z` entries of ``control_values`` equal to 0
             :example: ``control_values=(1, 0)``, i.e., :math:`z=1`
 
