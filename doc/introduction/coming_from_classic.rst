@@ -76,10 +76,9 @@ The table below summarizes the most common changes.
         :class:`~pennylane.core.operator.Operator2`. See
         :ref:`classic_custom_operators`.
     * - Inspecting circuits
-      - :func:`~pennylane.draw`, :func:`~pennylane.specs` and others, on
-        tapes.
-      - :func:`~pennylane.draw`, :func:`~pennylane.specs`,
-        :func:`~pennylane.analyze` and :func:`~pennylane.estimate`, on the
+      - :func:`~pennylane.draw` and others, on tapes.
+      - :func:`~pennylane.draw`, :func:`~pennylane.estimate`,
+        :func:`~pennylane.analyze` and :func:`~pennylane.track`, on the
         compiled program.
 
 Migrating a workflow
@@ -364,11 +363,10 @@ The following features of PennyLane Classic are not available in PennyLane2.
       - None.
     * - ``qp.resource.Resources``, ``ResourceOperator``, ``ErrorOperator`` and
         the ``qp.resource.error`` module
-      - :func:`~pennylane.specs`, :func:`~pennylane.analyze` and
-        :func:`~pennylane.estimate`. See :doc:`resource_profiling`.
-    * - Tapes in :func:`~pennylane.specs`, its ``level="gradient"`` and
-        ``level="all-mlir"`` options, and ``QuantumScript.specs``
-      - :func:`~pennylane.specs` on a ``qjit``-compiled QNode.
+      - :func:`~pennylane.estimate`, :func:`~pennylane.analyze` and
+        :func:`~pennylane.track`. See :doc:`resource_profiling`.
+    * - Resource information of tapes
+      - :func:`~pennylane.analyze` on a ``qjit``-compiled QNode.
     * - Plxpr transforms, and running plxpr without ``qjit``
       - ``qp.qjit``.
     * - ``qp.decomposition.reconstruct``
