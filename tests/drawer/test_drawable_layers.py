@@ -122,13 +122,13 @@ class TestDrawableLayers:
 
         assert layers == [[ops[0]], [ops[1]], [ops[2]]]
 
-    def test_barrier_only_visual(self):
+    def test_consecutive_barriers(self):
         """Test the barrier is always drawn"""
 
         ops = [
             qp.PauliX(0),
             qp.Barrier(wires=0),
-            qp.Barrier(only_visual=True, wires=0),
+            qp.Barrier(wires=0),
             qp.PauliX(0),
         ]
         layers = drawable_layers(ops)

@@ -4,6 +4,10 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* :class:`~.Barrier` now uses a dedicated program-capture primitive while retaining
+  the ``Operator2`` argument format and operator reconstruction behavior.
+  `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
+
 * A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
   `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
 
@@ -1837,6 +1841,10 @@ Breaking changes 💔
   :mod:`pennylane.core.apply` module, and is no longer importable from
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
+
+* :class:`~.Barrier` no longer accepts ``only_visual``. Barriers are preserved by
+  simplification and separate compilation into blocks.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
 
 Deprecations 👋
 ~~~~~~~~~~~~~~~

@@ -21,10 +21,21 @@ from copy import copy
 from typing import Literal
 
 import pennylane as qp
+from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.core.operator import Operation, Operator2
+from pennylane.core.operator.operator2 import operator_p
 from pennylane.decomposition.decomposition_rule import add_decomps, null_decomp
 from pennylane.typing import Wire
 from pennylane.wires import WiresLike
+
+
+barrier_p = QpPrimitive("barrier")
+@barrier_p.def_impl
+def _barrier_impl(*wires):
+    Barrier(wires)
+    return []
+barrier_p.multiple_results = True
+barrier_p.def_abstract_eval(lambda *wires: [])
 
 
 class Barrier(Operator2):
@@ -37,7 +48,6 @@ class Barrier(Operator2):
     * Number of parameters: 0
 
     Args:
-        only_visual (bool): True if we do not want it to have an impact on the compilation process. Default is False.
         wires (Sequence[int] or int): the wires the operation acts on
     """
 
@@ -47,12 +57,14 @@ class Barrier(Operator2):
     num_wires = None
     """Any number of wires."""
 
-    compilable_argnames = ("only_visual",)
     arg_specs = {"wires": Wire[-1]}
 
-    def __init__(self, wires: WiresLike = (), only_visual: bool = False):
-        super().__init__(wires=wires, only_visual=only_visual)
+    def __init__(self, wires: WiresLike = ()):
+        super().__init__(wires=wires)
 
+    def _bind_primitive(self):
+        """Capture a barrier using the dedicated operator primitive."""
+        barrier_p.bind(*self.wires)
     def __repr__(self):
         return f"Barrier(wires={self.wires.tolist()})"
 
@@ -60,16 +72,12 @@ class Barrier(Operator2):
         return "||"
 
     def adjoint(self):
-        return Barrier(wires=self.wires, only_visual=self.only_visual)
+        return Barrier(wires=self.wires)
 
     def pow(self, z):
-        return [Barrier(wires=self.wires, only_visual=self.only_visual)]
+        return [Barrier(wires=self.wires)]
 
     def simplify(self):
-        if self.only_visual:
-            if len(self.wires) == 1:
-                return qp.Identity(self.wires[0])
-            return qp.prod(*(qp.Identity(w) for w in self.wires))
         return self
 
 

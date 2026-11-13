@@ -48,26 +48,6 @@ class TestBarrier:
 
         assert optimized_gates == 2
 
-    def test_barrier_only_visual(self):
-        r"""Test that the barrier doesn't influence compilation when the only_visual parameter is True."""
-
-        def qfunc():
-            qp.Hadamard(wires=0)
-            qp.Barrier(only_visual=True, wires=0)
-            qp.Hadamard(wires=0)
-            return qp.expval(qp.PauliZ(0))
-
-        dev = qp.device("default.qubit", wires=3)
-        optimized_qfunc = qp.compile(qfunc)
-        optimized_qnode = qp.QNode(optimized_qfunc, dev)
-
-        assert (
-            "Hadamard"
-            not in qp.resource.resources_from_tape(
-                qp.workflow.construct_tape(optimized_qnode)()
-            ).quantum_operations
-        )
-
     def test_barrier_edge_cases(self):
         r"""Test that the barrier works in edge cases."""
 
@@ -107,7 +87,7 @@ class TestBarrier:
 
         def qfunc2():
             qp.Hadamard(wires=0)
-            qp.Barrier(only_visual=True, wires=0)
+            qp.Barrier(wires=0)
             qp.Barrier(wires=0)
             qp.Hadamard(wires=0)
 
@@ -159,23 +139,10 @@ class TestBarrier:
         barrier = qp.Barrier(wires=[])
         assert isinstance(barrier, qp.Barrier)
 
-    def test_simplify_only_visual_one_wire(self):
-        """Test that if `only_visual=True`, the operation simplifies to the identity."""
-        op = qp.Barrier(wires="a", only_visual=True)
-        simplified = op.simplify()
-        qp.assert_equal(simplified, qp.Identity("a"))
-
-    def test_simplify_only_visual_multiple_wires(self):
-        """Test that if `only_visual=True`, the operation simplifies to a product of identities."""
-        op = qp.Barrier(wires=(0, 1, 2), only_visual=True)
-        simplified = op.simplify()
-        assert isinstance(simplified, qp.ops.op_math.Prod)
-        for i, op in enumerate(simplified.operands):
-            qp.assert_equal(op, qp.Identity(i))
-
-    def test_simplify_only_visual_False(self):
-        """Test that no simplification occurs if only_visual is False."""
-        op = qp.Barrier(wires=(0, 1, 2, 3), only_visual=False)
+    @pytest.mark.parametrize("wires", [(), ("a",), (0, 1, 2, 3)])
+    def test_simplify(self, wires):
+        """Test that simplification preserves the barrier."""
+        op = qp.Barrier(wires=wires)
         assert op.simplify() is op
 
     def test_qp_matrix_gives_identity(self):
@@ -197,11 +164,10 @@ class TestBarrier:
             (qp.Barrier(wires=[]), "Barrier(wires=[])"),
             (qp.Barrier(wires=0), "Barrier(wires=[0])"),
             (qp.Barrier(wires=(0, 1, 2)), "Barrier(wires=[0, 1, 2])"),
-            (qp.Barrier(wires=(0, 1), only_visual=True), "Barrier(wires=[0, 1])"),
         ],
     )
     def test_repr(self, op, expected):
-        """Test that the repr hides ``only_visual`` and only reports the wires."""
+        """Test that the repr reports the wires."""
         assert repr(op) == expected
 
 
