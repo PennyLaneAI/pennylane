@@ -53,7 +53,6 @@ from .preprocess import (
 from .tracker import Tracker
 
 
-# pylint: disable=unused-argument, no-self-use
 class Device(abc.ABC):
     """A device driver that can control one or more backends. A backend can be either a physical
     Quantum Processing Unit or a virtual one such as a simulator.
@@ -625,7 +624,7 @@ class Device(abc.ABC):
         """
         raise NotImplementedError
 
-    def supports_derivatives(
+    def supports_derivatives(  # pylint: disable=unused-argument
         self,
         execution_config: ExecutionConfig | None = None,
         circuit: QuantumScript | None = None,
@@ -837,7 +836,7 @@ class Device(abc.ABC):
             circuits, tangents, execution_config
         )
 
-    def supports_jvp(
+    def supports_jvp(  # pylint: disable=unused-argument
         self,
         execution_config: ExecutionConfig | None = None,
         circuit: QuantumScript | None = None,
@@ -919,7 +918,7 @@ class Device(abc.ABC):
             circuits, cotangents, execution_config
         )
 
-    def supports_vjp(
+    def supports_vjp(  # pylint: disable=unused-argument
         self,
         execution_config: ExecutionConfig | None = None,
         circuit: QuantumScript | None = None,

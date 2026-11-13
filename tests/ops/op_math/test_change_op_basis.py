@@ -15,7 +15,7 @@
 Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
 
-# pylint:disable=protected-access, unused-argument
+# pylint: disable=too-few-public-methods
 
 import re
 from functools import partial
@@ -35,8 +35,6 @@ from pennylane.testing import assert_decomposable, assert_eqn_matches_op
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import NonParametricOp
-
-# pylint: disable=too-few-public-methods
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
 
@@ -78,7 +76,6 @@ ops = (
 )
 
 
-# pylint: disable-next=too-few-public-methods
 class DummyOp(qp.core.Operator1):
     pass
 
@@ -287,7 +284,7 @@ def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
     assert tape.operations == [compute_op(0), target_op(1), uncompute_op(0)]
 
 
-class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
+class MyOp(qp.RX):
     """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
@@ -296,7 +293,7 @@ class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
     has_diagonalizing_gates = False
 
 
-class TestInitialization:  # pylint:disable=too-many-public-methods
+class TestInitialization:
     """Test the initialization."""
 
     def test_init_change_op_basis_op(self):
@@ -369,7 +366,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert change_op_basis_op.has_diagonalizing_gates is False
 
 
-class TestProperties:  # pylint: disable=too-few-public-methods
+class TestProperties:
     """Test class properties."""
 
     @pytest.mark.parametrize("ops_lst", list(ops))
@@ -403,7 +400,7 @@ class TestProperties:  # pylint: disable=too-few-public-methods
         assert op.is_verified_hermitian is expected
 
 
-class TestWrapperFunc:  # pylint: disable=too-few-public-methods
+class TestWrapperFunc:
     """Test wrapper function."""
 
     def test_op_change_op_basis_top_level(self):
@@ -567,7 +564,7 @@ def test_callable_validation_doesnt_hide_bugs_with_typeerror():
         change_op_basis(f, qp.Y(0))
 
 
-def blah(a, b, c=3):
+def blah(a, b, c=3):  # pylint: disable=unused-argument
     pass
 
 

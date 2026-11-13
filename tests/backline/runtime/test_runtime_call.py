@@ -18,8 +18,6 @@ Declared symbols land in a process-wide registry that is never cleared, so every
 here has a name of its own.
 """
 
-# pylint: disable=too-few-public-methods
-
 import numpy as np
 import pytest
 
@@ -375,7 +373,7 @@ class TestResolveSignature:
 
 
 @pytest.mark.all_interfaces
-class TestOutsideATrace:
+class TestOutsideATrace:  # pylint: disable=too-few-public-methods
     """A recorded call belongs in a compiled program."""
 
     @pytest.mark.parametrize(

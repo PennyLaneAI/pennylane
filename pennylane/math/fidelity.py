@@ -249,8 +249,7 @@ def _compute_fidelity_vjp1(dm0, dm1, grad_out):
     """
     Compute the VJP of fidelity with respect to the second density matrix
     """
-    # pylint: disable=arguments-out-of-order
-    return _compute_fidelity_vjp0(dm1, dm0, grad_out)
+    return _compute_fidelity_vjp0(dm1, dm0, grad_out)  # pylint: disable=arguments-out-of-order
 
 
 def _compute_fidelity_grad(dm0, dm1, grad_out):
@@ -321,8 +320,7 @@ def _register_torch_vjp():
     """
     Register the custom VJP for torch
     """
-    # pylint: disable=import-outside-toplevel
-    import torch
+    import torch  # pylint: disable=import-outside-toplevel
 
     class _TorchFidelity(torch.autograd.Function):
         @staticmethod

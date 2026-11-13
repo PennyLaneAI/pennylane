@@ -14,6 +14,10 @@
 
 """Tests for the Pow2 class."""
 
+# pylint: disable=too-few-public-methods
+
+import jax
+import jax.numpy as jnp
 import numpy as np
 import pytest
 from scipy.linalg import fractional_matrix_power
@@ -35,10 +39,7 @@ from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 from tests.ops.op_math.test_adjoint2 import RX2, SX2
 
-# pylint: disable=unused-argument,arguments-differ,useless-parent-delegation,too-few-public-methods
 
-
-# pylint: disable=unused-argument
 def pow_using_dunder_method(base, z):
     """Helper function which computes the base raised to the power invoking the __pow__ dunder
     method."""
@@ -50,7 +51,7 @@ class NoPowOp(Operator2):
 
     wire_sizes = (1,)
 
-    def __init__(self, wires):
+    def __init__(self, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(wires)
 
     def pow(self, z):
@@ -62,7 +63,7 @@ class BadPowOp(Operator2):
 
     wire_sizes = (1,)
 
-    def __init__(self, wires):
+    def __init__(self, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(wires)
 
     def pow(self, z):
@@ -76,7 +77,7 @@ class RealPowOp(Operator2):
 
     wire_sizes = (1,)
 
-    def __init__(self, phi, wires):
+    def __init__(self, phi, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(phi, wires)
 
     def pow(self, z):
@@ -359,18 +360,12 @@ def test_eigvals_fractional_power_negative_eigenvalue_2(z, power_method):
     assert np.allclose(eigvals, np.diag(qp.matrix(op)))
 
 
-# pylint: disable-next=too-few-public-methods
 class TestCapture:
     """Tests Capture"""
 
     @pytest.mark.jax
     def test_pow_2_eigvals_is_jittable(self):
         """Test that the eigvals method is jittable."""
-        import jax  # pylint: disable=import-outside-toplevel
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
-        import numpy as np  # pylint: disable=reimported,import-outside-toplevel,redefined-outer-name
-
-        import pennylane as qp  # pylint: disable=reimported,import-outside-toplevel,redefined-outer-name
 
         @jax.jit
         def f(x):

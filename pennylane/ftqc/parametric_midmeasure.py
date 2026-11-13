@@ -348,8 +348,7 @@ class ParametricMidMeasure(MidMeasure):
     # importable while that work is deferred.
     compilable_argnames = ("angle", "plane", "reset", "postselect", "meas_uid")
 
-    # pylint: disable=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         wires: Wires | None,
         *,
@@ -396,9 +395,8 @@ class ParametricMidMeasure(MidMeasure):
 
         return hash(fingerprint)
 
-    # pylint: disable=too-many-positional-arguments, arguments-differ
     @classmethod
-    def _primitive_bind_call(
+    def _primitive_bind_call(  # pylint: disable=too-many-arguments
         cls, angle=0.0, wires=None, plane="ZX", reset=False, postselect=None, meas_uid=None
     ):
         wires = () if wires is None else wires
@@ -468,7 +466,6 @@ class XMidMeasure(ParametricMidMeasure):
         )
         return (), (self.wires, metadata)
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Wires | None,
@@ -532,7 +529,6 @@ class YMidMeasure(ParametricMidMeasure):
         )
         return (), (self.wires, metadata)
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Wires | None,
