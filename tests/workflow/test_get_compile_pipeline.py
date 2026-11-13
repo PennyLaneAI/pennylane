@@ -13,7 +13,6 @@
 # limitations under the License.
 """Contains tests for 'get_compile_pipeline'."""
 
-# pylint: disable=not-an-iterable
 import re
 import warnings
 
