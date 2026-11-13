@@ -30,7 +30,7 @@ from .resource import SpecsResources
 _RESOURCE_ANALYSIS_PREFIX = "pennylane_specs_analysis_pass"
 
 
-def resources_from_analysis_pass(  # pylint: disable=too-many-statements
+def resources_from_analysis_pass(  # pylint: disable=too-many-arguments,too-many-statements
     qjit,
     original_qnode,
     level: int | tuple[int] | list[int],
@@ -70,8 +70,8 @@ def resources_from_analysis_pass(  # pylint: disable=too-many-statements
 
     from catalyst import QJIT  # pylint: disable=import-outside-toplevel
 
-    # pylint: disable-next=protected-access
     analysis_pass_kwargs = analysis_pass_kwargs or {}
+    # pylint: disable-next=protected-access
     iter_pipeline = copy.deepcopy(original_qnode._compile_pipeline)
     new_compile_pipeline = CompilePipeline()
     new_post_device_pipeline = CompilePipeline()

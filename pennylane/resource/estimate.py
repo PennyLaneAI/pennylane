@@ -15,7 +15,6 @@
 
 from __future__ import annotations
 
-import copy
 import re
 from collections.abc import Callable, Iterable
 from functools import partial
@@ -76,7 +75,7 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
     # At level="top", the user transforms are skipped and only the decomposition is applied
     bound_t = decompose(gate_set=target, **_decomps_from_pipeline(original_qnode.compile_pipeline))
     estimate_kwargs = bound_t.kwargs
-    estimate_qnode = copy.copy(original_qnode)
+    estimate_qnode = original_qnode.update_pipelines(CompilePipeline())
     try:
         resources = resources_from_analysis_pass(
             func,
