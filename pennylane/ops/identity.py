@@ -21,6 +21,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import SparseMatrixUndefinedError
@@ -76,7 +77,7 @@ class Identity(Operator2):
 
     def __init__(self, wires: WiresLike = ()):
         super().__init__(wires=wires)
-        self._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({}): 1.0})
+        self._pauli_rep = PauliSentence({PauliWord({}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"

@@ -18,14 +18,14 @@ Unit tests for the dot function
 import pytest
 
 import pennylane as qp
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.ops import Prod, SProd, Sum
-from pennylane.pauli.pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z
 
-pw1 = PauliWord({0: I, 1: X, 2: Y})
-pw2 = PauliWord({0: Z, 2: Z, 4: Z})
-pw3 = PauliWord({"a": X, "b": X, "c": Z})
-pw4 = PauliWord({"a": Y, "b": Z, "c": X})
-pw5 = PauliWord({4: X, 5: X})
+pw1 = PauliWord({0: "I", 1: "X", 2: "Y"})
+pw2 = PauliWord({0: "Z", 2: "Z", 4: "Z"})
+pw3 = PauliWord({"a": "X", "b": "X", "c": "Z"})
+pw4 = PauliWord({"a": "Y", "b": "Z", "c": "X"})
+pw5 = PauliWord({4: "X", 5: "X"})
 
 ps1 = PauliSentence({pw1: 1.0, pw2: 2.0})
 ps2 = PauliSentence({pw3: 1.0, pw4: 2.0})
@@ -243,14 +243,14 @@ class TestDotSum:
 
     def test_identities_with_pauli_words_pauli_false(self):
         """Test that identities in form of empty PauliWords are treated correctly"""
-        _pw1 = PauliWord({0: I, 1: X, 2: Y})
+        _pw1 = PauliWord({0: "I", 1: "X", 2: "Y"})
         res = qp.dot([2.0, 2.0], [pw_id, _pw1], pauli=False)
         true_res = qp.sum(qp.s_prod(2.0, qp.I()), 2.0 * qp.prod(qp.X(1), qp.Y(2)))
         assert res == true_res
 
     def test_identities_with_pauli_sentences_pauli_false(self):
         """Test that identities in form of PauliSentences with empty PauliWords are treated correctly"""
-        _pw1 = PauliWord({0: I, 1: X, 2: Y})
+        _pw1 = PauliWord({0: "I", 1: "X", 2: "Y"})
         res = qp.dot([2.0, 2.0], [ps_id, _pw1], pauli=False)
         true_res = qp.s_prod(2, qp.I()) + qp.s_prod(2.0, qp.prod(qp.X(1), qp.Y(2)))
         assert res == true_res
