@@ -349,8 +349,7 @@ class _PrecomputedObsData(NamedTuple):
     obs_phase_matrix: jnp.ndarray
 
 
-# pylint: disable=too-many-arguments
-def _group_block_contribution(
+def _group_block_contribution(  # pylint: disable=too-many-arguments
     theta_ext: jnp.ndarray,
     samples_t: jnp.ndarray,
     l_t: jnp.ndarray,
@@ -402,7 +401,7 @@ def _group_block_contribution(
 
 
 @partial(jax.jit, static_argnames=("block_size",))
-def _group_phase_diffs(
+def _group_phase_diffs(  # pylint: disable=too-many-arguments
     theta_ext: jnp.ndarray,
     samples_t: jnp.ndarray,
     l_t: jnp.ndarray,
@@ -449,8 +448,7 @@ def _group_phase_diffs(
     return total
 
 
-# pylint: disable=too-many-arguments
-def _accumulate_phase_diffs(
+def _accumulate_phase_diffs(  # pylint: disable=too-many-arguments
     gates_params: ArrayLike,
     gate_groups: list[SparseGateGroup],
     samples: jnp.ndarray,
@@ -550,9 +548,7 @@ def _compute_mc_statistics(
     return expvals, cov
 
 
-def build_qudit_expval_func(  # pylint: disable=too-many-statements
-    config: QuditCircuitConfig,
-) -> Callable:
+def build_qudit_expval_func(config: QuditCircuitConfig) -> Callable:
     """Build an estimator for expectation values of a qudit IQP circuit.
 
     Returns a pure function that estimates the complex expectation value
@@ -655,7 +651,7 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
     else:
         defaults = None
 
-    def qudit_expval_batched(
+    def qudit_expval_batched(  # pylint: disable=too-many-arguments
         gates_params: ArrayLike,
         phase_fn_params: ArrayLike | None = None,
         key: ArrayLike | None = None,
@@ -663,7 +659,7 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
         observables: tuple[ArrayLike, ArrayLike] | None = None,
         init_state_elems: ArrayLike | None = None,
         init_state_amps: ArrayLike | None = None,
-    ) -> tuple[jnp.ndarray, jnp.ndarray]:  # pylint: disable=too-many-arguments
+    ) -> tuple[jnp.ndarray, jnp.ndarray]:
         """Compute batched expectation values for the configured circuit.
 
         Args:

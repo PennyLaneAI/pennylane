@@ -16,8 +16,6 @@
 Contains the tape transform that splits a tape into tapes measuring commuting observables.
 """
 
-# pylint: disable=too-many-boolean-expressions
-
 import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -437,7 +435,7 @@ def split_non_commuting(
     # Special case for a single measurement of a Sum, in which case
     # the grouping information can be computed and cached in the observable.
     if (
-        len(tape.measurements) == 1
+        len(tape.measurements) == 1  # pylint: disable=too-many-boolean-expressions
         and isinstance(tape.measurements[0], ExpectationMP)
         and isinstance(tape.measurements[0].obs, Sum)
         and (
@@ -484,14 +482,13 @@ def split_non_commuting(
     return _split_using_qwc_grouping(tape, single_term_obs_mps, offsets)
 
 
-def _split_ham_with_grouping(
+def _split_ham_with_grouping(  # pylint: disable=too-many-branches
     tape: qp.tape.QuantumScript, shot_dist_fn: ShotDistFunction, seed: int
 ):
     """Split a tape measuring a single Sum and group commuting observables.
     It also assigns to each new tape the correct number of shots according to the
     shot distribution function defining the strategy for shot allocation.
     """
-    # pylint:disable=too-many-branches
 
     obs = tape.measurements[0].obs
     if obs.grouping_indices is None:

@@ -16,8 +16,6 @@ Tests for the UCCSD template.
 """
 
 import numpy as np
-
-# pylint: disable=protected-access,too-many-arguments
 import pytest
 
 import pennylane as qp
@@ -298,9 +296,7 @@ class TestDecomposition:
         strict=False,  # not all parametrized configurations fail.
     )
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_decomposition_new(
-        self, s_wires, d_wires, weights, n_repeats
-    ):  # pylint: disable=unused-argument
+    def test_decomposition_new(self, s_wires, d_wires, weights, n_repeats):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.UCCSD(
             weights,
@@ -449,6 +445,7 @@ class TestDecomposition:
         ),
     ],
 )
+# pylint: disable-next=too-many-arguments
 def test_uccsd_xceptions(weights, s_wires, d_wires, init_state, n_repeats, msg_match):
     """Test that UCCSD throws an exception if the parameters have illegal
     shapes, types or values."""
@@ -456,7 +453,7 @@ def test_uccsd_xceptions(weights, s_wires, d_wires, init_state, n_repeats, msg_m
     wires = range(4)
     dev = qp.device("default.qubit", wires=N)
 
-    def circuit(
+    def circuit(  # pylint: disable=too-many-arguments
         weights=weights,
         wires=wires,
         s_wires=s_wires,

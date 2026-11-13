@@ -110,8 +110,7 @@ def _assert_results(results, var_names):
     return results
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
-def if_stmt(
+def if_stmt(  # pylint: disable=too-many-arguments
     pred: bool,
     true_fn: Callable[[], Any],
     false_fn: Callable[[], Any],
@@ -201,8 +200,7 @@ def _assert_iteration_results(inputs, outputs, symbol_names):
             )
 
 
-# pylint: disable=too-many-positional-arguments
-def _call_pennylane_for(
+def _call_pennylane_for(  # pylint: disable=too-many-arguments
     start,
     stop,
     step,
@@ -286,7 +284,7 @@ def for_stmt(
             start, stop, step = 0, len(iteration_target), 1
             enum_start = None
             iteration_array = jnp.asarray(iteration_target)
-    except Exception:  # pylint: disable=broad-exception-caught,broad-except
+    except Exception:  # pylint: disable=broad-exception-caught
         logger.debug(
             "AutoGraph could not convert the iterable to an array; unrolling the Python loop.",
             exc_info=True,
@@ -309,8 +307,7 @@ def for_stmt(
             iteration_array,
         )
     except Exception as e:
-        # pylint: disable=import-outside-toplevel
-        import textwrap
+        import textwrap  # pylint: disable=import-outside-toplevel
 
         raise AutoGraphError(
             f"Tracing of an AutoGraph converted for loop failed with an exception:\n"
@@ -527,23 +524,24 @@ class PRange:
         return self._py_range
 
     # Interface of the Python range class.
-    # pylint: disable=missing-function-docstring
 
     @property
-    def start(self) -> int:  # pragma: no cover
+    def start(self) -> int:  # pragma: no cover  # pylint: disable=missing-function-docstring
         return self.py_range.start
 
     @property
-    def stop(self) -> int:  # pragma: no cover
+    def stop(self) -> int:  # pragma: no cover  # pylint: disable=missing-function-docstring
         return self.py_range.stop
 
     @property
-    def step(self) -> int:  # pragma: no cover
+    def step(self) -> int:  # pragma: no cover  # pylint: disable=missing-function-docstring
         return self.py_range.step
 
+    # pylint: disable-next=missing-function-docstring
     def count(self, __value: int) -> int:  # pragma: no cover
         return self.py_range.count(__value)
 
+    # pylint: disable-next=missing-function-docstring
     def index(self, __value: int) -> int:  # pragma: no cover
         return self.py_range.index(__value)
 
@@ -569,8 +567,7 @@ class PRange:
         return self.py_range.__reversed__()
 
 
-# pylint: disable=too-few-public-methods
-class PEnumerate(enumerate):
+class PEnumerate(enumerate):  # pylint: disable=too-few-public-methods
     """PennyLane enumeration object. Inherits from Python ``enumerate``, but adds storing the
     input iteration_target and start_idx, which are used by the for-loop conversion.
     """

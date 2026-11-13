@@ -80,7 +80,6 @@ hamiltonian_3 = qp.Hamiltonian(
 )
 def test_riemannian_gradient_omegas(circuit, hamiltonian):
     """Test that we calculate the Riemannian gradient coefficients Tr{[rho, H] P_j} correctly."""
-    # pylint: disable=no-member
 
     nqubits = max(max(ps.wires) for ps in hamiltonian.ops) + 1
     wires = range(nqubits)
@@ -122,7 +121,6 @@ def test_riemannian_gradient_omegas(circuit, hamiltonian):
 )
 def test_riemannian_gradient_omegas_restricted(circuit, hamiltonian):
     """Test that we calculate the (restricted) Riemannian gradient coefficients correctly."""
-    # pylint: disable=no-member
     nqubits = max(max(ps.wires) for ps in hamiltonian.ops) + 1
     wires = range(nqubits)
     dev = qp.device("default.qubit", wires=nqubits)
@@ -169,7 +167,6 @@ def test_riemannian_gradient_omegas_restricted(circuit, hamiltonian):
 )
 def test_riemannian_gradient_evolution(circuit, hamiltonian):
     """Test that the optimizer produces the correct unitary to append."""
-    # pylint: disable=no-member
     nqubits = max(max(ps.wires) for ps in hamiltonian.ops) + 1
     wires = range(nqubits)
     dev = qp.device("default.qubit", wires=nqubits)

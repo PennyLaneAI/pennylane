@@ -30,8 +30,6 @@ from pennylane.labs.trotter_error.realspace import (
     VibronicHO,
 )
 
-# pylint: disable=no-self-use
-
 
 def _vibronic_hamiltonian(states, modes, freqs, taylor_coeffs):
     frags = vibronic_fragments(states, modes, freqs, taylor_coeffs)

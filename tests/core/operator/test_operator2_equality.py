@@ -14,6 +14,7 @@
 
 # pylint: disable=too-few-public-methods
 
+
 import numpy as np
 import pytest
 from operator2_utils import (
@@ -438,9 +439,8 @@ class TestAbstractOperatorEquality:
     def test_abstract_wires(self, wires1, wires2, are_equal):
         """Test that operators with abstract wires are detected correctly."""
 
-        # pylint: disable=useless-parent-delegation
         class SimpleOp(Operator2):
-            def __init__(self, wires) -> None:
+            def __init__(self, wires) -> None:  # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 
         op1 = SimpleOp(wires1)
@@ -451,9 +451,8 @@ class TestAbstractOperatorEquality:
     def test_comparing_abstract_and_concrete_wires(self):
         """Assert that an abstract type specifier is not the same as an operator instance."""
 
-        # pylint: disable=useless-parent-delegation
         class SimpleOp(Operator2):
-            def __init__(self, wires) -> None:
+            def __init__(self, wires) -> None:  # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 
         op1 = SimpleOp(AbstractWires(1))

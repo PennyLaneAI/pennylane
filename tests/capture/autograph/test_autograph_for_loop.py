@@ -14,7 +14,8 @@
 
 """PyTests for the AutoGraph source-to-source transformation feature."""
 
-# pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports, too-many-public-methods
+# pylint: disable=wrong-import-order,wrong-import-position
+
 
 from unittest import mock
 
@@ -34,6 +35,7 @@ from jax import numpy as jnp
 from jax.core import eval_jaxpr
 from malt.operators import py_builtins as ag_py_builtins
 
+# pylint: disable-next=ungrouped-imports
 from pennylane.capture.autograph.ag_primitives import PEnumerate, PRange
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
 from pennylane.capture.primitives import cond_prim, for_loop_prim
@@ -49,13 +51,11 @@ class TestCustomRangeAndEnumeration:
     def test_python_range_fallback(self):
         """Test that the custom PRange wrapper correctly falls back to Python."""
 
-        # pylint: disable=protected-access
-
         pl_range = PRange(0, 5, 1)
-        assert pl_range._py_range is None
+        assert pl_range._py_range is None  # pylint: disable=protected-access
 
         assert isinstance(pl_range.py_range, range)  # automatically instantiates the Python range
-        assert isinstance(pl_range._py_range, range)
+        assert isinstance(pl_range._py_range, range)  # pylint: disable=protected-access
         assert pl_range[2] == 2
 
     def test_get_raw_range(self):
@@ -107,7 +107,7 @@ class TestCustomRangeAndEnumeration:
         assert isinstance(enum, enumerate)
 
 
-class TestForLoops:
+class TestForLoops:  # pylint: disable=too-many-public-methods
     """Test that the autograph transformations produce correct results on for loops."""
 
     @pytest.mark.parametrize("iterable", [["a", "b"], ("a", "b"), {"a": 1, "b": 2}, [[1], [2, 3]]])
@@ -536,7 +536,6 @@ class TestForLoops:
 
         assert np.allclose(result, [2, 5])
 
-    # pylint: disable=undefined-loop-variable
     @pytest.mark.xfail(reason="currently unsupported, but we may find a way to do so in the future")
     def test_iteration_element_access_no_init(self):
         """Test that access to the iteration index/elements is possible after the loop executed
@@ -768,8 +767,6 @@ class TestPennyLaneForLoops:
     def test_cond_if_for_loop_for(self):
         """Test Python conditionals and loops together with their PennyLane counterparts."""
 
-        # pylint: disable=cell-var-from-loop
-
         def f(x):
             acc = 0
             if x < 3:
@@ -785,7 +782,7 @@ class TestPennyLaneForLoops:
 
                         @qp.cond(i % 2 == 0)
                         def even():
-                            return i
+                            return i  # pylint: disable=cell-var-from-loop
 
                         @even.otherwise
                         def even():

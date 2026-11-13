@@ -140,8 +140,7 @@ def _find_affine_subspace_isometry(basis_states, n_qubits, n_subspace):
     return circuit, bijection
 
 
-# pylint: disable-next=too-many-instance-attributes
-class PUIsometryFinder:
+class PUIsometryFinder:  # pylint: disable=too-many-instance-attributes
     r"""Classical algorithm that finds the isometry circuit and bijection for
     :class:`~.PartialUnaryStatePreparation`. The goal is to compute an isometry that maps
     given computational basis states :math:`\{|\ell\rangle\}_{\ell \in L}` to unique states in
@@ -891,7 +890,6 @@ def _partial_unary_state_prep_resources(coefficients, wires, indices, work_wires
     """Compute the resources for the partial unary iteration state preparation technique.
     These resource counts are numerically obtained heuristics, extended to guarantee all
     resource reps that may appear are included at least once."""
-    # pylint: disable=unused-argument
     num_entries = len(indices)
     num_wires = 1 if isinstance(wires, int) else len(wires)
     if num_entries == 1:
@@ -1081,7 +1079,6 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
         Each branch of the conditional then reads out only the entries it needs, and discards
         the padded zeros. The data type of the array depends on the number of qubits :math:`n`.
         """
-        # pylint: disable=cell-var-from-loop
 
         _type, *data = circuit[i]
 
@@ -1159,8 +1156,8 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
     main_loop()  # pylint: disable=no-value-for-parameter
 
 
+# pylint: disable-next=unused-argument
 def _partial_unary_state_prep_work_wires(coefficients, wires, indices, work_wires):
-    # pylint: disable=unused-argument
     work_wires = [] if work_wires is None else list(work_wires)
     num_entries = len(indices)
     is_affine = _is_affine_subspace(indices, max(math.ceil_log2(num_entries), 1))

@@ -19,7 +19,7 @@ import numpy as np
 from scipy.linalg import norm, null_space
 
 from pennylane.core.operator import Operator
-from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.pauli import PauliSentence, PauliWord, to_operator
 
 from .structure_constants import structure_constants
 
@@ -59,7 +59,7 @@ def _center_pauli_words(g, pauli):
     res = [g[idx] for idx in ids]
 
     if not pauli:
-        res = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in res]
+        res = [to_operator(op) if isinstance(op, (PauliWord, PauliSentence)) else op for op in res]
     return res
 
 
@@ -192,7 +192,7 @@ def center(
     if pauli or have_paulis:
         _ = [el.prune() for el in res]
         if not pauli:
-            res = [el.operation() for el in res]
+            res = [to_operator(el) for el in res]
     else:
         res = [el.simplify() for el in res]
 

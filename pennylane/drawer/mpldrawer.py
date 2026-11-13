@@ -23,10 +23,9 @@ try:
     import matplotlib.patheffects as path_effects
     import matplotlib.pyplot as plt
     from matplotlib import patches
+    from matplotlib.path import Path
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_mpl = False
-
-# pylint: disable=too-many-positional-arguments
 
 
 def _to_tuple(a):
@@ -60,7 +59,6 @@ def _open_circ_options_process(options):
     return new_options
 
 
-# pylint: disable=too-many-arguments
 class MPLDrawer:
     r"""Allows easy creation of graphics representing circuits with matplotlib
 
@@ -263,7 +261,7 @@ class MPLDrawer:
     _cwire_scaling = 0.25
     """The distance between successive control wires."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         n_layers,
         wire_map,
@@ -783,6 +781,73 @@ class MPLDrawer:
 
         self.ctrl(layer, wires[:-1], wires[-1], control_values=control_values, options=options)
         self._target_x(layer, wires[-1], options=options)
+
+    def elbow(self, layer, wires, control_values=None, *, adjoint=False):
+        """Draw a temporary AND with a rounded connector beside its controls and target.
+
+        The connector is on the left for computation and on the right for uncomputation.
+        The target is a circled plus, and the horizontal wires remain continuous.
+
+        Args:
+            layer (int): layer to draw in
+            wires (Sequence[int]): controls followed by the target
+            control_values (Sequence[bool]): values on which the controls activate
+
+        Keyword Args:
+            adjoint (bool): whether to draw the uncomputation connector
+
+        **Example**
+
+        .. code-block:: python
+
+            drawer = MPLDrawer(n_layers=2, wire_map={0: 0, 1: 1, 2: 2})
+            drawer.elbow(0, [0, 1, 2], control_values=[0, 1])
+            drawer.elbow(1, [0, 1, 2], adjoint=True)
+        """
+        direction = -1 if adjoint else 1
+        side = layer - direction * (self._circ_rad + 0.02)
+        radius = 0.1
+        top, bottom = min(wires), max(wires)
+        vertices = [
+            (layer, top),
+            (side + direction * radius, top),
+            (side, top),
+            (side, top + radius),
+            (side, bottom - radius),
+            (side, bottom),
+            (side + direction * radius, bottom),
+            (layer, bottom),
+        ]
+        codes = [
+            Path.MOVETO,
+            Path.LINETO,
+            Path.CURVE3,
+            Path.CURVE3,
+            Path.LINETO,
+            Path.CURVE3,
+            Path.CURVE3,
+            Path.LINETO,
+        ]
+        for wire in wires:
+            if top < wire < bottom:
+                vertices.extend([(side, wire), (layer, wire)])
+                codes.extend([Path.MOVETO, Path.LINETO])
+        self._ax.add_patch(
+            patches.PathPatch(
+                Path(vertices, codes),
+                fill=False,
+                edgecolor=plt.rcParams["lines.color"],
+                linewidth=plt.rcParams["lines.linewidth"],
+                zorder=2,
+            )
+        )
+        values = [True] * (len(wires) - 1) if control_values is None else control_values
+        for wire, value in zip(wires[:-1], values, strict=True):
+            if value:
+                self._ctrl_circ(layer, wire)
+            else:
+                self._ctrlo_circ(layer, wire)
+        self._target_x(layer, wires[-1])
 
     def _target_x(self, layer, wires, options=None):
         """Draws the circle used to represent a CNOT's target
