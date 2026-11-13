@@ -4,6 +4,9 @@
 # run arbitrary code
 extension-pkg-whitelist=numpy,scipy,autograd,toml,appdir,autograd.numpy,autograd.numpy.linalg,autograd.numpy.builtins,packaging,torch,tensorflow,tensorflow.contrib,tensorflow.contrib.eager,LazyLoader,networkx,networkx.dag
 
+# Enable the informational diagnostic and fail lint when a suppression is unnecessary.
+fail-on=useless-suppression
+
 [TYPECHECK]
 
 # List of module names for which member attributes should not be checked
@@ -28,8 +31,6 @@ ignored-classes=numpy,scipy,autograd,toml,appdir,autograd.numpy,autograd.numpy.l
 # can either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
 # it should appear only once).
-# Cyclical import checks are disabled for now as they are frequently used in
-# the code base, but this can be removed in the future once cycles are resolved.
 disable=
   line-too-long,
   invalid-name,
@@ -37,13 +38,10 @@ disable=
   redefined-builtin,
   too-many-locals,
   duplicate-code,
-  cyclic-import,
   import-error,
-  bad-option-value,
   import-outside-toplevel,
   missing-class-docstring,
   missing-function-docstring,
-  no-self-use,
   no-member, # because of qnode decorator
   comparison-with-callable,
   unsubscriptable-object, # because of qnode decorator
@@ -55,7 +53,6 @@ disable=
   unnecessary-lambda-assignment,
   consider-using-generator, # needs further investigation into performance benefits [sc-96328]
   use-implicit-booleaness-not-comparison, # we actually prefer explicit comparisons
-  invalid-sequence-index, # type hinting needs to be improved [sc-96329] 
 
 [MISCELLANEOUS]
 

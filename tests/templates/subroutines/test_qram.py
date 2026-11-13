@@ -106,14 +106,8 @@ def bb_quantum(bitstrings, control_wires, target_wires, work_wires, address):
         ),
     ],
 )
-def test_bb_quantum(
-    bitstrings,
-    control_wires,
-    target_wires,
-    work_wires,
-    address,
-    probabilities,
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def test_bb_quantum(bitstrings, control_wires, target_wires, work_wires, address, probabilities):
     if has_jax and not isinstance(bitstrings[0], str) and not isinstance(bitstrings, np.ndarray):
         bitstrings, control_wires, target_wires, work_wires = (
             jnp.array(bitstrings),
@@ -251,7 +245,7 @@ def test_raises(params, error, match):
 )
 @pytest.mark.xfail_if_capture(reason="Come back to this when we port BBQRAM [sc-129953]")
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_bbqram_decomposition_new(
+def test_bbqram_decomposition_new(  # pylint: disable=too-many-arguments
     bitstrings,
     control_wires,
     target_wires,
@@ -259,7 +253,7 @@ def test_bbqram_decomposition_new(
     dir_wires,
     portL_wires,
     portR_wires,
-):  # pylint: disable=too-many-arguments
+):
     op = BBQRAM(
         bitstrings,
         control_wires,
@@ -271,9 +265,8 @@ def test_bbqram_decomposition_new(
 
 
 @qnode(dev)
-def hybrid_quantum(
-    bitstrings, control_wires, target_wires, work_wires, k, address
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def hybrid_quantum(bitstrings, control_wires, target_wires, work_wires, k, address):
     BasisEmbedding(int_to_binary(address, len(control_wires)), wires=control_wires)
     HybridQRAM(
         bitstrings,
@@ -549,7 +542,7 @@ def hybrid_quantum(
         ),
     ],
 )
-def test_hybrid_quantum(
+def test_hybrid_quantum(  # pylint: disable=too-many-arguments
     bitstrings,
     control_wires,
     target_wires,
@@ -558,7 +551,7 @@ def test_hybrid_quantum(
     address,
     probabilities,
     expected_circuit,
-):  # pylint: disable=too-many-arguments
+):
     if has_jax and not isinstance(bitstrings[0], str) and not isinstance(bitstrings, np.ndarray):
         bitstrings, control_wires, target_wires, work_wires = (
             jnp.array(bitstrings),
@@ -636,7 +629,7 @@ def test_hybrid_quantum(
 )
 @pytest.mark.xfail_if_capture(reason="Come back to this when we port HybridQRAM [sc-129954]")
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_hybrid_decomposition_new(
+def test_hybrid_decomposition_new(  # pylint: disable=too-many-arguments
     bitstrings,
     control_wires,
     target_wires,
@@ -646,7 +639,7 @@ def test_hybrid_decomposition_new(
     portL_wires,
     portR_wires,
     k,
-):  # pylint: disable=too-many-arguments
+):
     op = HybridQRAM(
         bitstrings,
         control_wires=control_wires,
@@ -748,9 +741,9 @@ def test_hybrid_raises(params, error, match):
 
 
 @qnode(dev)
-def select_only_quantum(
+def select_only_quantum(  # pylint: disable=too-many-arguments
     bitstrings, control_wires, target_wires, select_wires, select_value, address
-):  # pylint: disable=too-many-arguments
+):
     BasisEmbedding(int_to_binary(address, len(control_wires)), wires=control_wires)
     SelectOnlyQRAM(
         bitstrings,
@@ -1048,7 +1041,7 @@ def select_only_quantum(
         ),
     ],
 )
-def test_select_only_quantum(
+def test_select_only_quantum(  # pylint: disable=too-many-arguments
     bitstrings,
     control_wires,
     target_wires,
@@ -1057,7 +1050,7 @@ def test_select_only_quantum(
     address,
     probabilities,
     expected_circuit,
-):  # pylint: disable=too-many-arguments
+):
     if has_jax and not isinstance(bitstrings[0], str) and not isinstance(bitstrings, np.ndarray):
         bitstrings, control_wires, target_wires, select_wires = (
             jnp.array(bitstrings),
@@ -1242,7 +1235,7 @@ def test_select_only_raises(params, error, match):
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_select_decomposition_new(
     bitstrings, control_wires, target_wires, select_wires, select_value
-):  # pylint: disable=too-many-arguments
+):
     op = SelectOnlyQRAM(
         bitstrings,
         control_wires,

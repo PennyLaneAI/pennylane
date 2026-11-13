@@ -350,9 +350,7 @@ class MPSPrep(Operator2):
 
     grad_method = None
 
-    def __init__(
-        self, mps, wires, work_wires=None, right_canonicalize=False
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    def __init__(self, mps, wires, work_wires=None, right_canonicalize=False):
 
         _validate_mps_shape(mps)
 
@@ -366,9 +364,8 @@ class MPSPrep(Operator2):
         )
 
 
-def _mps_prep_decomposition_resources(
-    mps, wires, work_wires=None, right_canonicalize=False
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _mps_prep_decomposition_resources(mps, wires, work_wires=None, right_canonicalize=False):
     num_work_wires = len(work_wires)
     num_sites = len(mps)
     return {
@@ -379,9 +376,8 @@ def _mps_prep_decomposition_resources(
     }
 
 
-def _work_wires_bond_dimension_condition(
-    mps, wires, work_wires=None, right_canonicalize=False
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _work_wires_bond_dimension_condition(mps, wires, work_wires=None, right_canonicalize=False):
     bond_dimensions = [data.shape[-1] for data in mps]
     max_bond_dimension = max(bond_dimensions[:-1])
 

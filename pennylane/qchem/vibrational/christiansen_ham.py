@@ -19,9 +19,8 @@ from pennylane.bose import BoseSentence, BoseWord, christiansen_mapping
 
 from .christiansen_utils import christiansen_integrals, christiansen_integrals_dipole
 
-# pylint: disable = too-many-branches,too-many-nested-blocks,
 
-
+# pylint: disable-next=too-many-branches
 def christiansen_bosonic(one, two=None, three=None, ordered=True):
     r"""Generates a Christiansen bosonic vibrational Hamiltonian.
 
@@ -123,7 +122,7 @@ def christiansen_bosonic(one, two=None, three=None, ordered=True):
                 obs[w] = one[l, k_l, h_l]
 
     # two-body terms
-    if two is not None:
+    if two is not None:  # pylint: disable=too-many-nested-blocks
         for l in range(modes):
             if ordered is False:
                 m_range = [p for p in range(modes) if p != l]
@@ -151,7 +150,7 @@ def christiansen_bosonic(one, two=None, three=None, ordered=True):
                                 obs[w] = two[l, m, k_l, k_m, h_l, h_m]
 
     # three-body terms
-    if three is not None:
+    if three is not None:  # pylint: disable=too-many-nested-blocks
         for l in range(modes):
             if not ordered:
                 m_range = [p for p in range(modes) if p != l]

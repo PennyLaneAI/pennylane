@@ -25,8 +25,6 @@ from pennylane.core.shots import Shots
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import finite_diff
 
-# pylint:disable = use-implicit-booleaness-not-comparison,abstract-method
-
 h_val = 0.1
 
 default_shot_vector = (1000, 2000, 3000)
@@ -404,15 +402,13 @@ class TestFiniteDiff:
             def __radd__(self, other):
                 return self + other
 
-        # pylint: disable=too-few-public-methods
-        class SpecialObservable(qp.operation.Operator):
+        class SpecialObservable(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             """SpecialObservable"""
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""
                 return []
 
-        # pylint: disable=too-few-public-methods
         class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device that supports the above SpecialObservable as a return type."""
 
@@ -420,9 +416,8 @@ class TestFiniteDiff:
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
-            # pylint: disable=unused-argument
             @staticmethod
-            def _asarray(arr, dtype=None):
+            def _asarray(arr, dtype=None):  # pylint: disable=unused-argument
                 return np.array(arr)
 
             def __init__(self, *args, **kwargs):

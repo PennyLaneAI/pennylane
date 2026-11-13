@@ -17,8 +17,6 @@ import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import GateCount, resource_rep
 from pennylane.labs.estimator_beta.wires_manager.base_classes import Allocate, Deallocate
 
-# pylint: disable = unused-argument
-
 
 def ch_resource_decomp() -> list[GateCount | Allocate | Deallocate]:
     r"""Returns a list of :class:`~.pennylane.estimator.resource_operator.GateCount` objects representing the resources of the :class:`~.pennylane.estimator.ops.op_math.controlled_ops.CH` operator.

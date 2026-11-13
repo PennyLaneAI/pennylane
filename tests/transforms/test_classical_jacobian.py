@@ -14,8 +14,6 @@
 """Tests for the qp.gradients.classical_jacobian function."""
 
 import numpy as np
-
-# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qp
@@ -195,6 +193,7 @@ interfaces = ["auto", "autograd"]
     "circuit, args, expected_jac, argnum", list(zip(circuits, all_args, class_jacs, scalar_argnum))
 )
 @pytest.mark.parametrize("interface", interfaces)
+# pylint: disable-next=too-many-arguments
 def test_autograd_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=<int>`` and Autograd."""
     dev = qp.device("default.qubit", wires=2)
@@ -215,6 +214,7 @@ interfaces = ["torch"]
     "circuit, args, expected_jac, argnum", list(zip(circuits, all_args, class_jacs, scalar_argnum))
 )
 @pytest.mark.parametrize("interface", interfaces)
+# pylint: disable-next=too-many-arguments
 def test_torch_with_scalar_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=<int>`` and Torch."""
     import torch
@@ -239,7 +239,7 @@ interfaces = ["auto", "autograd"]
     list(zip(circuits, all_args, class_jacs, single_list_argnum)),
 )
 @pytest.mark.parametrize("interface", interfaces)
-def test_autograd_with_single_list_argnum(
+def test_autograd_with_single_list_argnum(  # pylint: disable=too-many-arguments
     circuit, args, expected_jac, argnum, diff_method, interface
 ):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` of length 1 and Autograd."""
@@ -262,6 +262,7 @@ interfaces = ["torch"]
     list(zip(circuits, all_args, class_jacs, single_list_argnum)),
 )
 @pytest.mark.parametrize("interface", interfaces)
+# pylint: disable-next=too-many-arguments
 def test_torch_with_single_list_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` of length 1 and Torch."""
     import torch
@@ -287,6 +288,7 @@ interfaces = ["auto", "autograd"]
     list(zip(circuits, all_args, class_jacs, sequence_argnum)),
 )
 @pytest.mark.parametrize("interface", interfaces)
+# pylint: disable-next=too-many-arguments
 def test_autograd_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` and Autograd."""
     dev = qp.device("default.qubit", wires=2)
@@ -308,6 +310,7 @@ interfaces = ["torch"]
     list(zip(circuits, all_args, class_jacs, sequence_argnum)),
 )
 @pytest.mark.parametrize("interface", interfaces)
+# pylint: disable-next=too-many-arguments
 def test_torch_with_sequence_argnum(circuit, args, expected_jac, argnum, diff_method, interface):
     r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` and Torch."""
     import torch
@@ -461,7 +464,7 @@ class TestJax:
         list(zip(circuits, all_args, class_jacs, single_list_argnum)),
     )
     @pytest.mark.parametrize("interface", interfaces)
-    def test_jax_with_single_list_argnum(
+    def test_jax_with_single_list_argnum(  # pylint: disable=too-many-arguments
         self, circuit, args, expected_jac, argnum, diff_method, interface
     ):
         r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` of length 1 and JAX."""
@@ -481,7 +484,7 @@ class TestJax:
         list(zip(circuits, all_args, class_jacs, scalar_argnum)),
     )
     @pytest.mark.parametrize("interface", interfaces)
-    def test_jax_with_scalar_argnum(
+    def test_jax_with_scalar_argnum(  # pylint: disable=too-many-arguments
         self, circuit, args, expected_jac, argnum, diff_method, interface
     ):
         r"""Test ``classical_jacobian`` with ``argnum=<int>`` and JAX."""
@@ -499,7 +502,7 @@ class TestJax:
         list(zip(circuits, all_args, class_jacs, sequence_argnum)),
     )
     @pytest.mark.parametrize("interface", interfaces)
-    def test_jax_with_sequence_argnum(
+    def test_jax_with_sequence_argnum(  # pylint: disable=too-many-arguments
         self, circuit, args, expected_jac, argnum, diff_method, interface
     ):
         r"""Test ``classical_jacobian`` with ``argnum=Sequence[int]`` and JAX."""

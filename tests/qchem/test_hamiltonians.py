@@ -16,8 +16,6 @@ Unit tests for functions needed for computing the Hamiltonian.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -129,6 +127,7 @@ def test_error_torch_data_molecular_hamiltonian():
         pytest.param(True, marks=pytest.mark.jax),
     ],
 )
+# pylint: disable-next=too-many-arguments
 def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, two_ref, use_jax):
     r"""Test that electron_integrals returns the correct values."""
 
@@ -358,6 +357,7 @@ def test_diff_hamiltonian_active_space(use_jax):
         pytest.param(True, marks=pytest.mark.jax),
     ],
 )
+# pylint: disable-next=too-many-arguments
 def test_diff_hamiltonian_wire_order(symbols, geometry, core, active, charge, use_jax):
     r"""Test that diff_hamiltonian has an ascending wire order."""
     if use_jax:
@@ -420,7 +420,7 @@ def test_gradient_expvalH():
 
 
 @pytest.mark.jax
-class TestJax:
+class TestJax:  # pylint: disable=too-few-public-methods
     def test_gradient_jax_array(self):
         r"""Test that the gradient of expval(H) computed with ``jax.grad`` is equal to the value
         obtained with the finite difference method when using ``argnum`` and jax."""

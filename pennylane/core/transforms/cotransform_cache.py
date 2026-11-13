@@ -37,11 +37,11 @@ def _autograd_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
     return autograd_jacobian(classical_function, argnums=argnums)(*args, **kwargs)
 
 
-# pylint: disable=import-outside-toplevel, unused-argument
+# pylint: disable-next=unused-argument
 def _torch_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
     if not math.get_trainable_indices(args):
         raise QuantumFunctionError("No trainable parameters.")
-    from torch.autograd.functional import jacobian
+    from torch.autograd.functional import jacobian  # pylint: disable=import-outside-toplevel
 
     return jacobian(partial(classical_function, **kwargs), args)
 
@@ -63,7 +63,7 @@ _jac_map = {
 }
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _classical_preprocessing(qnode, program, tape_idx: int, *args, argnums=None, **kwargs):
     """Returns the trainable gate parameters for a given QNode input.
 
@@ -237,7 +237,7 @@ class CotransformCache:
 
         argnums = [0] if argnums is None else argnums
         argnums = [argnums] if isinstance(argnums, int) else argnums
-        # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         if (transform._use_argnum or transform.classical_cotransform) and argnums:
             subprogram = self._program[:transform_index]
             params = _jax_argnums_to_tape_trainable(

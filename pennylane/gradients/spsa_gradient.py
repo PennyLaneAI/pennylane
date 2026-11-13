@@ -23,7 +23,7 @@ import numpy as np
 from pennylane import math
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
@@ -38,10 +38,8 @@ from .gradient_transform import (
     find_and_validate_gradient_methods,
 )
 
-# pylint: disable=too-many-arguments,unused-argument
 
-
-def _rademacher_sampler(indices, num_params, *args, rng):
+def _rademacher_sampler(indices, num_params, *args, rng):  # pylint: disable=unused-argument
     r"""Sample a random vector with (independent) entries from {+1, -1} with balanced probability.
     That is, each entry follows the
     `Rademacher distribution. <https://en.wikipedia.org/wiki/Rademacher_distribution>`_
@@ -57,7 +55,6 @@ def _rademacher_sampler(indices, num_params, *args, rng):
         tensor_like: Vector of size ``num_params`` with non-zero entries at positions indicated
         by ``indices``, each entry sampled independently from the Rademacher distribution.
     """
-    # pylint: disable=unused-argument
     direction = np.zeros(num_params)
     direction[indices] = rng.choice([-1, 1], size=len(indices))
     return direction
@@ -67,8 +64,7 @@ def _stop_at_expand_invalid_trainable(obj):
     return not any(math.requires_grad(d) for d in obj.data) or obj.grad_method is not None
 
 
-# pylint: disable=too-many-positional-arguments
-def _expand_transform_spsa(
+def _expand_transform_spsa(  # pylint: disable=too-many-arguments,unused-argument
     tape: QuantumScript,
     argnum=None,
     h=1e-5,
@@ -103,8 +99,7 @@ def _expand_transform_spsa(
     classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
-# pylint: disable=too-many-positional-arguments
-def spsa_grad(
+def spsa_grad(  # pylint: disable=too-many-arguments
     tape: QuantumScript,
     argnum=None,
     h=1e-5,
