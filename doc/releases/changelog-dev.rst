@@ -2255,7 +2255,7 @@ Documentation 📝
 
 * The Using PennyLane2 and Development sections have been revamped to include updated information on 
   fundamental parts of the PennyLane2 interface and new development standards.
-  
+  [(#10476)](https://github.com/PennyLaneAI/pennylane/pull/10476) 
 
 * The docstring for :class:`~.ControlledPhaseShift` now mentions that :class:`~.CPhase` is an alias.
   `(#10405) <https://github.com/PennyLaneAI/pennylane/pull/10405>`__
