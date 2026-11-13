@@ -2315,6 +2315,10 @@ Internal changes ⚙️
 Documentation 📝
 ~~~~~~~~~~~~~~~~
 
+* The documentation of :attr:`~.Node.init_args` now describes ``peer=``, the ``config`` key with
+  which an RDMA :class:`~.Coprocessor` names the kind of controller it answers.
+  `(#XXXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXXX>`__
+
 * Updated :class:`~.MPSPrep` documentation to use ``default.qubit`` and explain the
   work wires required for gate-based decomposition, replacing the ``lightning.tensor`` example.
   `(#10505) <https://github.com/PennyLaneAI/pennylane/pull/10505>`__

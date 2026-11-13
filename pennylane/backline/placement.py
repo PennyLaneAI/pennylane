@@ -212,7 +212,10 @@ class Node:
     * ``"config"`` (str) - a ``;``-separated ``key=value`` string configuring the backend on this
       machine, e.g. ``"dev=mlx5_0;gid=3"``. ``dev`` and ``gid`` select the RDMA device and GID
       index; the remaining keys are backend-specific (a GPU backend takes ``gpu=``, an FPGA engine
-      takes ``sq_mem=``/``data_mem=``/``reply_mem=``).
+      takes ``sq_mem=``/``data_mem=``/``reply_mem=``). An RDMA coprocessor also takes ``peer=``,
+      the kind of controller it answers: ``catalyst``, the default, for the controllers Catalyst
+      ships (``cpu_verbs``, ``hwhs``, ``fpga_verbs``), ``hsb`` for ``hsb_hwhs``, and ``balboa``
+      for ``balboa_hwhs``.
 
     Keys outside this set are rejected when the program is compiled.
     """
