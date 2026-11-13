@@ -72,6 +72,7 @@ class FlipSign(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.FlipSign
+            :stacked:
             :symbols: :math:`n` wires and basis state :math:`b=(b_0, \dots, b_{n-1})` (``state``)
             :example: :math:`n=3`, :math:`b=(1, 0, 0)`
 
