@@ -30,7 +30,7 @@ from pennylane.ops import Projector
 from pennylane.ops import functions as op_funcs
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript
-from pennylane.templates.core import SubroutineOp
+from pennylane.templates.core import CollectedSubroutine, SubroutineOp
 from pennylane.transforms import resolve_dynamic_wires
 
 from .capture import plxpr_to_tape
@@ -198,9 +198,14 @@ def assert_valid_decomp_rule(
         tape = _resolve_dynamic_wires(tape, total_work_wires)
 
     actual_gates = defaultdict(int)
-    for _op in tape.operations:
+    pending = list(tape.operations)
+    while pending:
+        _op = pending.pop()
         if isinstance(_op, Conditional):
             _op = _op.base
+        if isinstance(_op, CollectedSubroutine):
+            pending.extend(_op.decomposition())
+            continue
         op_rep = abstractify(_op)
         actual_gates[op_rep] += 1
 
