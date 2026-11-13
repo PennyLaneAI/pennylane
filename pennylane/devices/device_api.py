@@ -349,7 +349,7 @@ class Device(abc.ABC):
 
         An ``ExecutionConfig`` is constructed from arguments passed to the ``QNode``, and this
         method allows the device to update the config object based on device-specific requirements
-        or preferences. See :ref:`execution_config` for more details.
+        or preferences.
 
         Args:
             config (ExecutionConfig): The initial ExecutionConfig object that describes the
