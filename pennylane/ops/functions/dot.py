@@ -22,8 +22,7 @@ from collections.abc import Sequence
 import pennylane as qp
 from pennylane.core.operator import Operator
 from pennylane.core.pauli import PauliSentence, PauliWord
-from pennylane.ops._pauli_conversion import to_operator
-from pennylane.ops._pauli_utils import pauli_sentence
+from pennylane.ops.conversion import pauli_sentence, to_operator
 
 
 def dot(

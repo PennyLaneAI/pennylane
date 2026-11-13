@@ -27,12 +27,12 @@ from itertools import product
 import numpy as np
 
 import pennylane as qp
-from pennylane.ops import Identity, PauliX, PauliY, PauliZ, _pauli_utils
-from pennylane.ops._pauli_utils import is_pauli_word
+from pennylane.ops import Identity, PauliX, PauliY, PauliZ, conversion
+from pennylane.ops.conversion import is_pauli_word
 from pennylane.wires import Wires
 
-pauli_word_to_string = _pauli_utils.pauli_word_to_string
-string_to_pauli_word = _pauli_utils.string_to_pauli_word
+pauli_word_to_string = conversion.pauli_word_to_string
+string_to_pauli_word = conversion.string_to_pauli_word
 
 # Define constants that are used often within the functions in this module
 ID_MAT = np.eye(2)

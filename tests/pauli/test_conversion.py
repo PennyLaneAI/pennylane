@@ -13,13 +13,16 @@
 # limitations under the License.
 """Unit tests for utility functions of Pauli arithmetic."""
 
+import subprocess
+import sys
 import warnings
 
 import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops import Identity, PauliX, PauliY, PauliZ, _pauli_utils
+from pennylane.ops import Identity, PauliX, PauliY, PauliZ
+from pennylane.ops.conversion import operator_to_pauli, pauli_strings
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.conversion import (
     _check_hermitian_sparse,
@@ -764,13 +767,59 @@ class TestPhasedDecomposition:
 
 
 @pytest.mark.parametrize(
-    "name",
-    ("pauli_sentence", "is_pauli_word", "pauli_word_to_string", "string_to_pauli_word"),
+    "name, implementation",
+    [
+        ("pauli_sentence", operator_to_pauli.pauli_sentence),
+        ("is_pauli_word", operator_to_pauli.is_pauli_word),
+        ("pauli_word_to_string", pauli_strings.pauli_word_to_string),
+        ("string_to_pauli_word", pauli_strings.string_to_pauli_word),
+    ],
 )
-def test_operator_conversion_reexports(name):
+def test_operator_conversion_reexports(name, implementation):
     """The public Pauli helpers share their implementation with ops."""
-    assert getattr(qp.pauli, name) is getattr(_pauli_utils, name)
-    assert getattr(qp.ops, name) is getattr(_pauli_utils, name)
+    assert getattr(qp.pauli, name) is implementation
+    assert getattr(qp.ops, name) is implementation
+    assert getattr(qp.ops.conversion, name) is implementation
+
+
+def test_conversion_unknown_attribute():
+    """Unknown conversion helpers raise the usual module attribute error."""
+    with pytest.raises(AttributeError, match="has no attribute 'unknown_conversion'"):
+        getattr(qp.ops.conversion, "unknown_conversion")
+
+
+def test_conversion_fresh_import():
+    """Package-level conversions work when imported in a fresh process."""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            """
+from pennylane.ops.conversion import (
+    is_pauli_sentence,
+    is_pauli_word,
+    pauli_sentence,
+    pauli_word_to_string,
+    string_to_pauli_word,
+    to_operator,
+)
+from pennylane.core.pauli import PauliSentence, PauliWord
+
+word = PauliWord({0: "X", 2: "Z"})
+sentence = PauliSentence({word: 1.0})
+op = to_operator(word)
+assert is_pauli_word(op)
+assert is_pauli_sentence(op)
+assert pauli_sentence(op) == sentence
+assert pauli_word_to_string(op) == "XZ"
+assert pauli_sentence(string_to_pauli_word("XZ", wire_map={0: 0, 2: 1})) == sentence
+""",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 class TestPauliSentence:
@@ -868,7 +917,7 @@ class TestPauliSentence:
     def test_operator_private_ps(self, op, ps):
         """Test that a correct pauli sentence is computed when passing an arithmetic operator and not
         relying on the saved op.pauli_rep attribute."""
-        assert _pauli_utils._pauli_sentence(op) == ps  # pylint: disable=protected-access
+        assert operator_to_pauli._pauli_sentence(op) == ps  # pylint: disable=protected-access
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")

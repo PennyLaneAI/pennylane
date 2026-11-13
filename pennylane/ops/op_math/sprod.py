@@ -22,7 +22,7 @@ from pennylane.core.operator import Operator
 from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import DecompositionUndefinedError, TermsUndefinedError
-from pennylane.ops._pauli_conversion import to_operator
+from pennylane.ops.conversion import to_operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.typing import TensorLike

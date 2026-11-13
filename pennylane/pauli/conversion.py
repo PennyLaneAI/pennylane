@@ -26,12 +26,12 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.math.utils import is_tracer
-from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, _pauli_utils
+from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, conversion
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from pennylane.typing import TensorLike
 
-pauli_sentence = _pauli_utils.pauli_sentence
-is_pauli_sentence = _pauli_utils.is_pauli_sentence
+pauli_sentence = conversion.pauli_sentence
+is_pauli_sentence = conversion.is_pauli_sentence
 
 op_map = {"I": Identity, "X": PauliX, "Y": PauliY, "Z": PauliZ}
 

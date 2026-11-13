@@ -1550,8 +1550,8 @@ Breaking changes 💔
     use ``qp.commutator(pauli_value, operator, pauli=True)``.
     `(#10484) <https://github.com/PennyLaneAI/pennylane/pull/10484>`__
 
-  - Moved operator-to-Pauli and operator/string conversion helpers into ``pennylane.ops``.
-    Existing ``pennylane.pauli`` import paths remain available.
+  - Grouped Pauli/operator and operator/string conversion helpers under
+    ``pennylane.ops.conversion``. Existing ``pennylane.pauli`` import paths remain available.
     `(#10485) <https://github.com/PennyLaneAI/pennylane/pull/10485>`__
 
 * ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of

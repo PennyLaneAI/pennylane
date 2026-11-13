@@ -31,7 +31,7 @@ from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.ops._pauli_conversion import to_operator
+from pennylane.ops.conversion import to_operator
 from pennylane.ops.op_math.controlled2 import flip_zero_control
 from pennylane.typing import AbstractWires, TensorLike, Wire
 from pennylane.wires import DynamicWire, Wires, is_abstract_qubit
