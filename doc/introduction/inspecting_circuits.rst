@@ -8,6 +8,8 @@ Inspecting circuits
 ===================
 
 PennyLane offers functionality to inspect, visualize or analyze quantum circuits.
+To profile the resources of a circuit, such as its gate counts, see
+:doc:`resource profiling <resource_profiling>`.
 
 .. _intro_qtransforms:
 
