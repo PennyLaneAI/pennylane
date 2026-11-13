@@ -180,6 +180,6 @@ iteration is counted:
 Additional resources
 --------------------
 
-For other ways to inspect a circuit, such as :func:`~pennylane.specs` and circuit drawing, see
+For other ways to inspect a circuit, such as circuit drawing and debugging, see
 :doc:`inspecting circuits <inspecting_circuits>`. For more details on decompositions and on
 specifying a gate set, see :doc:`compiling circuits <compiling_circuits>`.
