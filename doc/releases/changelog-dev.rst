@@ -1519,7 +1519,7 @@ Breaking changes 💔
 
 * Pauli data and arithmetic are being separated from operator construction to remove
   the circular dependency between ``pennylane.ops`` and ``pennylane.pauli``.
-  This involves the following breaking changes:
+  This involves the following changes:
 
   - ``PauliWord.operation()`` and ``PauliSentence.operation()`` have been replaced by
     :func:`~pennylane.pauli.to_operator`.
@@ -1549,6 +1549,10 @@ Breaking changes 💔
     methods now accept only Pauli words and sentences. For mixed operator inputs,
     use ``qp.commutator(pauli_value, operator, pauli=True)``.
     `(#10484) <https://github.com/PennyLaneAI/pennylane/pull/10484>`__
+
+  - Moved operator-to-Pauli and operator/string conversion helpers into ``pennylane.ops``.
+    Existing ``pennylane.pauli`` import paths remain available.
+    `(#10485) <https://github.com/PennyLaneAI/pennylane/pull/10485>`__
 
 * ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of
   ``"MidMeasureMP"``. Update raw device operation names and comparisons; the deprecated
@@ -1867,10 +1871,6 @@ Deprecations 👋
 
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
-
-* Moved operator-to-Pauli and operator/string conversion helpers into ``pennylane.ops``.
-  Existing ``pennylane.pauli`` import paths remain available.
-  `(#10485) <https://github.com/PennyLaneAI/pennylane/pull/10485>`__
 
 * Updated Pylint to 4.1.3, cleaned up suppression scope and formatting, and made unnecessary
   suppressions fail lint. Labs tests now consistently use the test lint configuration.
