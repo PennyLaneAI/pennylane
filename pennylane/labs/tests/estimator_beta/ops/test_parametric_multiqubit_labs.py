@@ -22,7 +22,6 @@ import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resource_operator import resource_rep
 
 
-# pylint: disable = no-self-use, too-many-arguments
 class TestPauliRot:
     """Test the alternate controlled decomposition for PauliRot class."""
 

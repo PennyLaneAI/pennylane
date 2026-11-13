@@ -14,6 +14,8 @@
 
 """Unit tests for the data structures used for resource estimation in the decomposition module."""
 
+# pylint: disable=too-few-public-methods
+
 import pytest
 
 import pennylane as qp
@@ -31,7 +33,7 @@ from pennylane.ops.op_math.pow2 import _pow_abstract
 from pennylane.typing import Bool, Float, Wire
 
 
-class DummyRX(Operator1):  # pylint: disable=too-few-public-methods
+class DummyRX(Operator1):
     """A dummy RX that still inherits from Operator1."""
 
 
@@ -110,7 +112,7 @@ class TestResources:
         assert repr(resources) == "<num_gates=3, gate_counts={DummyRX: 2, S: 1}, weighted_cost=5.0>"
 
 
-class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+class DummyOp(qp.operation.Operator):
     resource_keys = {"foo", "bar"}
 
 
@@ -183,7 +185,7 @@ class TestCompressedResourceOp:
     def test_hash_list_params(self):
         """Tests when the resource params contains a list."""
 
-        class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qp.operation.Operator):
             resource_keys = {"foo", "bar"}
 
             @property
@@ -289,7 +291,7 @@ class TestResourceRep:
         with pytest.raises(TypeError, match="op_type must be a type of Operator"):
             resource_rep(int)
 
-        class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qp.operation.Operator):
             resource_keys = {}
 
             @property

@@ -25,7 +25,6 @@ from pennylane.core.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 from pennylane.exceptions import QueuingError
 
 
-# pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-dunder-call
 class TestStopRecording:
     """Test the stop_recording method of QueuingManager."""
 
@@ -305,7 +304,7 @@ class TestWrappedObj:
     def test_wrapped_obj_hash(self, obj):
         """Test that ``WrappedObj.__hash__`` is the object id."""
         wo = WrappedObj(obj)
-        assert wo.__hash__() == id(obj)
+        assert wo.__hash__() == id(obj)  # pylint: disable=unnecessary-dunder-call
 
     def test_wrapped_obj_repr(self):
         """Test that the ``WrappedObj` representation is equivalent to the repr of the
@@ -319,7 +318,7 @@ class TestWrappedObj:
 
         obj = Dummy()
         wo = WrappedObj(obj)
-        assert wo.__repr__() == "Wrapped(test_repr)"
+        assert wo.__repr__() == "Wrapped(test_repr)"  # pylint: disable=unnecessary-dunder-call
 
 
 def test_error_on_process_queue():

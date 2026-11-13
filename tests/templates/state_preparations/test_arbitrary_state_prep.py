@@ -16,8 +16,6 @@ Unit tests for the ArbitraryStatePreparation template.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -28,7 +26,7 @@ from pennylane.templates.state_preparations.arbitrary_state_preparation import (
 from pennylane.testing import assert_decomposable
 
 
-class TestHelpers:
+class TestHelpers:  # pylint: disable=too-few-public-methods
     """Tests for the Pauli-word helper function."""
 
     @pytest.mark.parametrize(
@@ -212,7 +210,7 @@ class TestDecomposition:
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
-class TestInputs:
+class TestInputs:  # pylint: disable=too-few-public-methods
     """Test inputs and pre-processing."""
 
     def test_exception_wrong_dim(self):
@@ -230,7 +228,7 @@ class TestInputs:
             circuit(weights)
 
 
-class TestAttributes:
+class TestAttributes:  # pylint: disable=too-few-public-methods
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(

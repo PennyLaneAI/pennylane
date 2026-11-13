@@ -23,8 +23,7 @@ from pennylane.debugging import debug_expval, debug_probs, debug_state
 from pennylane.decomposition import add_decomps, register_resources
 
 
-# pylint: disable=too-few-public-methods
-class _DecomposingOp(qp.operation.Operation):
+class _DecomposingOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
     """Define a minimal operator whose decomposition creates multiple gates.
 
     Specifically used to trigger the queue leaking bug when wrapped in qp.ctrl()."""

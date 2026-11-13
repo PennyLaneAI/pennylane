@@ -186,8 +186,7 @@ def _validate_diff_method(device: SupportedDeviceAPIs, diff_method: str | Transf
     )
 
 
-# pylint: disable=too-many-instance-attributes
-class QNode:
+class QNode:  # pylint: disable=too-many-instance-attributes
     r"""Represents a quantum node in the hybrid computational graph.
 
     A *quantum node* contains a `quantum function <https://docs.pennylane.ai/en/stable/introduction/circuits.html#intro-vcirc-qfunc>`__
@@ -501,8 +500,7 @@ class QNode:
         indexing of ``x`` would fail in the ``RZ`` rotation within the QNode.
     """
 
-    # pylint: disable=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         func: Callable,
         device: SupportedDeviceAPIs,
@@ -705,6 +703,7 @@ class QNode:
         >>> new_circuit(1)
         tensor(0.5403, dtype=torch.float64)
         """
+        # pylint: disable=protected-access
         if not kwargs:
             valid_params = set(self._init_args.copy()) | qp.gradients.SUPPORTED_GRADIENT_KWARGS
             raise ValueError(
@@ -735,13 +734,11 @@ class QNode:
 
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
-        # pylint: disable=protected-access
         if updated_qn.shots != old_shots:
             updated_qn._set_shots(old_shots)
         if self._shots_override_device:
             updated_qn._shots_override_device = True
 
-        # pylint: disable=protected-access
         updated_qn._compile_pipeline = CompilePipeline(self.compile_pipeline)
         updated_qn._post_device_pipeline = CompilePipeline(self.post_device_pipeline)
         return updated_qn
@@ -760,8 +757,7 @@ class QNode:
         updated_qn = copy.copy(self)
 
         # Update the shots attribute directly
-        # pylint: disable=protected-access
-        updated_qn._set_shots(shots)
+        updated_qn._set_shots(shots)  # pylint: disable=protected-access
 
         return updated_qn
 
@@ -779,6 +775,7 @@ class QNode:
         Returns:
             qnode (QNode): new QNode with updated compile and post-device compile pipelines
         """
+        # pylint: disable=protected-access
 
         if post_device_pipeline is None:
             post_device_pipeline = CompilePipeline()
@@ -787,7 +784,6 @@ class QNode:
         updated_qn = copy.copy(self)
 
         # Update the compile and post-device compile pipelines
-        # pylint: disable=protected-access
         updated_qn._compile_pipeline = compile_pipeline
         updated_qn._post_device_pipeline = post_device_pipeline
 
@@ -811,7 +807,7 @@ class QNode:
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
         # breakpoints in the circuit
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable-next=import-outside-toplevel
         from pennylane.debugging import pldb_device_manager
 
         with pldb_device_manager(self.device):
@@ -873,10 +869,10 @@ qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
 
 
-# pylint: disable=protected-access
 @Transform.generic_register
 def apply_transform_to_qnode(obj: QNode, transform, *targs, **tkwargs) -> QNode:
     """The default behavior for applying a transform to a QNode."""
+    # pylint: disable=protected-access
     targs, tkwargs = transform.setup_inputs(*targs, **tkwargs)
     if transform._custom_qnode_transform:
         return transform._custom_qnode_transform(transform, obj, targs, tkwargs)

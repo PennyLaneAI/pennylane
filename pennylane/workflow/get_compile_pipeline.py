@@ -28,10 +28,9 @@ def unwrap_qjit_qnode(qjit, *, fn_name: str) -> QNode:
 
     ``fn_name`` is the name of the public function to report in the error message.
     """
-    # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
     try:
-        from catalyst import QJIT
+        from catalyst import QJIT  # pylint: disable=import-outside-toplevel
     except ImportError as exc:  # pragma: no cover
         raise ImportError(f"Catalyst must be installed to use {fn_name}.") from exc
 

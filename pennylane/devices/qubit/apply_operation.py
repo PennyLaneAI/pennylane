@@ -13,8 +13,6 @@
 # limitations under the License.
 """Functions to apply an operation to a state vector."""
 
-# pylint: disable=unused-argument
-
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
@@ -115,9 +113,8 @@ def _align_torch_interfaces(params, state0, state1, state_interface, param_inter
     return params, state0, state1
 
 
-def _prepare_batched_params(  # pylint: disable=too-many-arguments
-    params, state, state0, state1, axis, n_dim, is_state_batched
-):
+# pylint: disable-next=too-many-arguments
+def _prepare_batched_params(params, state, state0, state1, axis, n_dim, is_state_batched):
     """Prepare parameters and state slices for batched parametric operations.
 
     Args:
@@ -190,7 +187,7 @@ def apply_operation_einsum(op: Operator, state, is_state_batched: bool = False):
         # Add broadcasting dimension to shape
         new_mat_shape = [batch_size] + new_mat_shape
         if op.batch_size is None:
-            op._batch_size = batch_size  # pylint:disable=protected-access
+            op._batch_size = batch_size  # pylint: disable=protected-access
     reshaped_mat = math.reshape(mat, new_mat_shape)
 
     return math.einsum(einsum_indices, reshaped_mat, state)
@@ -223,7 +220,7 @@ def apply_operation_tensordot(op: Operator, state, is_state_batched: bool = Fals
         # Add broadcasting dimension to shape
         new_mat_shape = [batch_size] + new_mat_shape
         if op.batch_size is None:
-            op._batch_size = batch_size  # pylint:disable=protected-access
+            op._batch_size = batch_size  # pylint: disable=protected-access
     reshaped_mat = math.reshape(mat, new_mat_shape)
 
     mat_axes = list(range(-num_indices, 0))
@@ -330,6 +327,7 @@ def apply_operation_csr_matrix(op, state, is_state_batched: bool = False):
     return state_reshaped
 
 
+# pylint: disable-next=unused-argument
 def _apply_operation_default(op, state, is_state_batched, debugger):
     """The default behaviour of apply_operation, accessed through the standard dispatch
     of apply_operation, as well as conditionally in other dispatches."""
@@ -605,9 +603,7 @@ def apply_hadamard(op: ops.Hadamard, state, is_state_batched: bool = False, debu
     return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
 
-def _apply_rotation_1q(  # pylint: disable=too-many-return-statements
-    op, state, is_state_batched, compute_coeffs
-):
+def _apply_rotation_1q(op, state, is_state_batched, compute_coeffs):
     """Shared implementation for single-qubit parametric rotations (RX, RY, RZ).
 
     Args:

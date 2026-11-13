@@ -48,8 +48,8 @@ def _run_with_resource_tracking(
 
     Returns the result of the execution along with the resources counted while running it.
     """
-    # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
+    # pylint: disable=import-outside-toplevel
     from catalyst import QJIT
 
     from ..devices import NullQubit

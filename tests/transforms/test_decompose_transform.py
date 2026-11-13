@@ -14,6 +14,8 @@
 
 """Unit tests for the ``decompose`` transform"""
 
+# pylint: disable=too-few-public-methods
+
 import warnings
 
 import numpy as np
@@ -27,12 +29,7 @@ from pennylane.ops import Conditional, MidMeasure
 from pennylane.transforms.decompose import (
     _operator_decomposition_gen,
 )
-from pennylane.transforms.decompose import (
-    _tape_decompose as decompose,  # pylint: disable=protected-access
-)
-
-# pylint: disable=unnecessary-lambda-assignment
-# pylint: disable=too-few-public-methods
+from pennylane.transforms.decompose import _tape_decompose as decompose
 
 pytestmark = pytest.mark.usefixtures("disable_graph_decomposition")
 
@@ -47,7 +44,6 @@ def warnings_as_errors():
 class NoMatOp(Operation):
     """Dummy operation for expanding circuit."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
@@ -60,7 +56,6 @@ class NoMatNoDecompOp(Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
@@ -188,7 +183,7 @@ class TestDecompose:
         gate_set = None
 
         def stopping_condition(op):
-            return op.name in ("NoMatNoDecompOp")
+            return op.name in "NoMatNoDecompOp"
 
         tape = qp.tape.QuantumScript([NoMatNoDecompOp(0, wires=[0])])
 
@@ -198,7 +193,7 @@ class TestDecompose:
         qp.assert_equal(tape, decomposed_tape)
 
         def stopping_condition_2(op):
-            return op.name in ("CX")
+            return op.name in "CX"
 
         with pytest.raises(
             UserWarning,
@@ -257,7 +252,7 @@ class TestDecompose:
     def test_decompose_with_mcm(self):
         """Tests that circuits and decomposition rules containing MCMs are supported."""
 
-        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operation):
             resource_keys = set()
 
             @property
@@ -280,8 +275,7 @@ class TestDecompose:
                 qp.ops.Conditional(m0, qp.RX(0.5, wires=0)),
             ]
         )
-        # pylint: disable-next=protected-access
-        [decomposed_tape], _ = qp.transforms._tape_decompose(
+        [decomposed_tape], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
             [tape], gate_set={qp.RX, qp.RZ, MidMeasure, qp.GlobalPhase}
         )
         assert len(decomposed_tape.operations) == 13
@@ -421,5 +415,4 @@ class TestPrivateHelpers:
 
         tape = qp.tape.QuantumScript([])
         with pytest.raises(TypeError, match="Invalid gate_set type."):
-            # pylint: disable-next=protected-access
-            qp.transforms._tape_decompose(tape, gate_set=123)
+            qp.transforms._tape_decompose(tape, gate_set=123)  # pylint: disable=protected-access

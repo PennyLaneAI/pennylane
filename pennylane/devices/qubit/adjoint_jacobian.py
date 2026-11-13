@@ -27,8 +27,6 @@ from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .simulate import get_final_state
 
-# pylint: disable=too-many-branches
-
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
@@ -223,7 +221,7 @@ def adjoint_jvp(tape: QuantumScript, tangents: tuple[Number], state=None):
     return tuple(np.array(t) for t in tangents_out)
 
 
-def _get_vjp_bras(tape, cotangents, ket):
+def _get_vjp_bras(tape, cotangents, ket):  # pylint: disable=too-many-branches
     """Helper function for getting the bras for adjoint vjp, the batch size of the
     cotangents, as well as a list of indices for which the cotangents are zero.
 

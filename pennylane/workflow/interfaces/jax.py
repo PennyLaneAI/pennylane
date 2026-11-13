@@ -139,8 +139,6 @@ must be a non-pytree non-differentiable argument that accompanies the tree leave
 """
 
 import dataclasses
-
-# pylint: disable=unused-argument
 import logging
 from collections.abc import Callable
 
@@ -205,12 +203,14 @@ def _to_jax(result: ResultBatch) -> ResultBatch:
     return result if qp.math.get_interface(result) == "jax" else jnp.array(result)
 
 
+# pylint: disable-next=unused-argument
 def _execute_wrapper(params, tapes, execute_fn, jpc) -> ResultBatch:
     """Executes ``tapes`` with ``params`` via ``execute_fn``"""
     new_tapes = set_parameters_on_copy_and_unwrap(tapes.vals, params, unwrap=False)
     return _to_jax(execute_fn(new_tapes))
 
 
+# pylint: disable-next=unused-argument
 def _execute_and_compute_jvp(tapes, execute_fn, jpc, primals, tangents):
     """Compute the results and jvps for ``tapes`` with ``primals[0]`` parameters via
     ``jpc``.
@@ -224,6 +224,7 @@ _execute_jvp = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3])
 _execute_jvp.defjvp(_execute_and_compute_jvp)
 
 
+# pylint: disable-next=unused-argument
 def jax_jvp_execute(tapes: QuantumScriptBatch, execute_fn: ExecuteFn, jpc, device=None):
     """Execute a batch of tapes with JAX parameters using JVP derivatives.
 

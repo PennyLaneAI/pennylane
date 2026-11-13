@@ -405,8 +405,7 @@ class TestProcessSamples:
             assert r == {"0": 2}
 
 
-class TestCountsIntegration:
-    # pylint:disable=too-many-public-methods,not-an-iterable
+class TestCountsIntegration:  # pylint: disable=too-many-public-methods
 
     def test_counts_all_outcomes_with_mcm(self):
         """Test that all outcomes are present in results if requested."""
@@ -624,9 +623,7 @@ class TestCountsIntegration:
     @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
     @pytest.mark.parametrize("wires, basis_state", [(None, "010"), ([2, 1], "01")])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
-    def test_counts_binned(
-        self, shot_vec, interface, wires, basis_state
-    ):  # pylint:disable=too-many-arguments
+    def test_counts_binned(self, shot_vec, interface, wires, basis_state):
         """Check all interfaces with computational basis state counts and
         different shot vectors"""
         dev = qp.device("default.qubit", wires=3)

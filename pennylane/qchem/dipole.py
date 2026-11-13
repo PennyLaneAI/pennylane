@@ -323,7 +323,7 @@ def dipole_moment(mol, cutoff=1.0e-16, core=None, active=None, mapping="jordan_w
     return _dipole
 
 
-def molecular_dipole(
+def molecular_dipole(  # pylint: disable=too-many-arguments
     molecule,
     method="dhf",
     active_electrons=None,
@@ -333,7 +333,7 @@ def molecular_dipole(
     wires=None,
     args=None,
     cutoff=1.0e-16,
-):  # pylint: disable=too-many-arguments,protected-access
+):
     r"""Generate the dipole moment operator for a molecule in the Pauli basis.
 
     The dipole operator in the second-quantized form is
@@ -490,7 +490,7 @@ def molecular_dipole(
             )()
         )
         if wires:
-            wires_new = qp.qchem.convert._process_wires(wires)
+            wires_new = qp.qchem.convert._process_wires(wires)  # pylint: disable=protected-access
             wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels), strict=True))
             dip = [qp.map_wires(op, wires_map) for op in dip]
 

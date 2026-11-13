@@ -19,8 +19,10 @@ computing the scalar product of operations.
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator
+from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import DecompositionUndefinedError, TermsUndefinedError
+from pennylane.ops._pauli_conversion import to_operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.typing import TensorLike
@@ -141,7 +143,7 @@ class SProd(ScalarSymbolicOp):
         ):
 
             pr = {pw: math.dot(coeff, scalar) for pw, coeff in base_pauli_rep.items()}
-            self._pauli_rep = qp.pauli.PauliSentence(pr)
+            self._pauli_rep = PauliSentence(pr)
         else:
             self._pauli_rep = None
 
@@ -204,9 +206,9 @@ class SProd(ScalarSymbolicOp):
             return not math.is_complex_dtype(self.scalar)
         return not math.iscomplex(self.scalar)
 
-    # pylint: disable=arguments-renamed,invalid-overridden-method
     @property
     @handle_recursion_error
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         """Bool: Whether the Operator returns defined diagonalizing gates."""
         return self.base.has_diagonalizing_gates
@@ -268,7 +270,7 @@ class SProd(ScalarSymbolicOp):
 
     @property
     @handle_recursion_error
-    def has_sparse_matrix(self):
+    def has_sparse_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.pauli_rep is not None or self.base.has_sparse_matrix
 
     @property
@@ -298,9 +300,8 @@ class SProd(ScalarSymbolicOp):
         """
         return SProd(scalar=math.conjugate(self.scalar), base=qp.adjoint(self.base))
 
-    # pylint: disable=too-many-return-statements
     @handle_recursion_error
-    def simplify(self) -> Operator:
+    def simplify(self) -> Operator:  # pylint: disable=too-many-return-statements
         """Reduce the depth of nested operators to the minimum.
 
         Returns:
@@ -309,7 +310,7 @@ class SProd(ScalarSymbolicOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return pr.operation(wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         if self.scalar == 1:
             return self.base.simplify()

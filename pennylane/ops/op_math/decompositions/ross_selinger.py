@@ -124,7 +124,6 @@ def apply_clifford_from_idx(idx, wire):
     return qp.cond(head_cond, head_fn, elifs=elifs)
 
 
-# pylint: disable=no-value-for-parameter
 def _jit_rs_decomposition(wire, decomposition_info):
     """Apply the Ross-Selinger decomposition with QJIT to the given decomposition.
 
@@ -175,7 +174,7 @@ def _jit_rs_decomposition(wire, decomposition_info):
                 true_fn=qp.cond(is_HT.astype(bool), true_fn=compose_SHT, false_fn=compose_HT),
             )()
 
-        syllable_sequence_loop()
+        syllable_sequence_loop()  # pylint: disable=no-value-for-parameter
         ops.append(syllable_sequence_loop.operation)
 
     # Rightmost Clifford operator

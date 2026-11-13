@@ -16,8 +16,6 @@ Unit tests for the composite operator class of qubit operations
 """
 
 import inspect
-
-# pylint:disable=protected-access, use-implicit-booleaness-not-comparison
 from copy import copy
 
 import numpy as np
@@ -46,7 +44,6 @@ ops_rep = (
 
 
 class ValidOp(CompositeOp):
-    # pylint:disable=unused-argument
     _op_symbol = "#"
     _math_op = None
 
@@ -57,14 +54,14 @@ class ValidOp(CompositeOp):
     def is_verified_hermitian(self):
         return False
 
-    def matrix(self, wire_order=None):
+    def matrix(self, wire_order=None):  # pylint: disable=unused-argument
         return np.eye(2**self.num_wires)
 
     def eigvals(self):
         return self.eigendecomposition["eigval"]
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None):
+    def _sort(cls, op_list, wire_map: dict = None):  # pylint: disable=unused-argument
         return op_list
 
 
@@ -76,7 +73,7 @@ class TestConstruction:
     def test_direct_initialization_fails(self):
         """Test directly initializing a CompositeOp fails"""
         with pytest.raises(TypeError, match="Can't instantiate abstract class CompositeOp"):
-            _ = CompositeOp(*self.simple_operands)  # pylint:disable=abstract-class-instantiated
+            _ = CompositeOp(*self.simple_operands)
 
     @pytest.mark.xfail
     def test_raise_error_fewer_than_2_operands(self):
@@ -102,8 +99,8 @@ class TestConstruction:
     def test_initialization(self):
         """Test that valid child classes can be initialized without error"""
         op = ValidOp(*self.simple_operands)
-        assert op._name == "ValidOp"
-        assert op._op_symbol == "#"
+        assert op._name == "ValidOp"  # pylint: disable=protected-access
+        assert op._op_symbol == "#"  # pylint: disable=protected-access
 
     def test_parameters(self):
         """Test that parameters are initialized correctly."""
@@ -190,7 +187,7 @@ class TestConstruction:
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
 
-        eigs_cache = diag_op._eigs[diag_op]
+        eigs_cache = diag_op._eigs[diag_op]  # pylint: disable=protected-access
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
@@ -204,7 +201,7 @@ class TestConstruction:
     def test_map_wires(self, construct_overlapping_ops, expected_overlapping_ops):
         """Test the map_wires method."""
         diag_op = ValidOp(*self.simple_operands)
-        # pylint:disable=attribute-defined-outside-init
+        # pylint: disable-next=attribute-defined-outside-init,protected-access
         diag_op._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "X", 1: "Y"}): 1})
         if construct_overlapping_ops:
             _ = diag_op.overlapping_ops
@@ -219,11 +216,13 @@ class TestConstruction:
         assert mapped_op.pauli_rep == qp.pauli.PauliSentence(
             {qp.pauli.PauliWord({5: "X", 7: "Y"}): 1}
         )
+        # pylint: disable-next=protected-access
         assert mapped_op._overlapping_ops == expected_overlapping_ops
 
     def test_build_pauli_rep(self):
         """Test the build_pauli_rep"""
         op = ValidOp(*self.simple_operands)
+        # pylint: disable-next=protected-access
         assert op._build_pauli_rep() == qp.pauli.PauliSentence({})
 
 
@@ -270,7 +269,7 @@ def _assert_method_no_recursion_error(instance, method_name):
     """Checks that the method does not raise a RecursionError when called."""
     try:
         getattr(instance, method_name)()
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:  # pylint: disable=broad-exception-caught
         assert not isinstance(e, RecursionError)
         if isinstance(e, RuntimeError) and not isinstance(e, NotImplementedError):
             assert "This is likely due to nesting too many levels" in str(e)
@@ -280,7 +279,7 @@ def _assert_property_no_recursion_error(instance, property_name):
     """Checks that the property does not raise a RecursionError when accessed."""
     try:
         getattr(instance, property_name)
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:  # pylint: disable=broad-exception-caught
         assert not isinstance(e, RecursionError)
         if isinstance(e, RuntimeError) and not isinstance(e, NotImplementedError):
             assert "This is likely due to nesting too many levels" in str(e)
@@ -371,13 +370,13 @@ class TestMscMethods:
     def test_flatten_unflatten(self, ops_lst):
         """Test _flatten and _unflatten."""
         op = ValidOp(*ops_lst)
-        data, metadata = op._flatten()
+        data, metadata = op._flatten()  # pylint: disable=protected-access
         for data_op, input_op in zip(data, ops_lst):
             assert data_op is input_op
 
         assert metadata == tuple()
 
-        new_op = type(op)._unflatten(*op._flatten())
+        new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
         qp.assert_equal(op, new_op)
 
 
@@ -442,4 +441,4 @@ class TestProperties:
         the `overlapping_ops` property."""
         op = ValidOp(qp.RZ(1.32, wires=0), qp.Identity(wires=0), qp.RX(1.9, wires=1))
         overlapping_ops = op.overlapping_ops
-        assert op._overlapping_ops == overlapping_ops
+        assert op._overlapping_ops == overlapping_ops  # pylint: disable=protected-access
