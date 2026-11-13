@@ -19,6 +19,7 @@ functions. The purpose is to convert imperative style code to functional or grap
 
 import copy
 import functools
+import logging
 import operator
 from collections.abc import Callable, Iterator
 from numbers import Number
@@ -35,6 +36,9 @@ from malt.operators.variables import Undefined
 
 import pennylane as qp
 from pennylane.exceptions import AutoGraphError
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 __all__ = [
     "if_stmt",
@@ -261,42 +265,33 @@ def for_stmt(
     # - For loops over a Python enumeration use a combination of the above, providing a dynamic
     #   iteration variable and conversion of the iterable to array.
 
-    # Any of these could fail depending on the compatibility of the user code. A failure could
-    # also occur because an exception is raised during the tracing of the loop body after conversion
-    # (for example because the user forgot to use a list instead of an array)
-    # The PennyLane autograph implementation does not currently fall back to a Python loop in this case,
-    # but this has been implemented in Catalyst and could be extended to this. It does, however, require an
-    # active queuing context.
+    # If array conversion fails, execute the Python loop during capture. No structured body
+    # has been traced yet, so no captured operations or loop state need to be restored.
 
-    exception_raised = None
     init_state = get_state()
     assert len(init_state) == len(symbol_names)
 
-    if isinstance(iteration_target, PRange):
-        start, stop, step = iteration_target.get_raw_range()
-        enum_start = None
-        iteration_array = None
-    elif isinstance(iteration_target, PEnumerate):
-        start, stop, step = 0, len(iteration_target.iteration_target), 1
-        enum_start = iteration_target.start_idx
-        try:
+    try:
+        if isinstance(iteration_target, PRange):
+            start, stop, step = iteration_target.get_raw_range()
+            enum_start = None
+            iteration_array = None
+        elif isinstance(iteration_target, PEnumerate):
+            start, stop, step = 0, len(iteration_target.iteration_target), 1
+            enum_start = iteration_target.start_idx
             iteration_array = jnp.asarray(iteration_target.iteration_target)
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            exception_raised = e
-    else:
-        start, stop, step = 0, len(iteration_target), 1
-        enum_start = None
-        try:
+        else:
+            start, stop, step = 0, len(iteration_target), 1
+            enum_start = None
             iteration_array = jnp.asarray(iteration_target)
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            exception_raised = e
-
-    if exception_raised:
-
-        raise AutoGraphError(
-            f"Could not convert the iteration target {iteration_target} to array while processing "
-            f"a for-loop with AutoGraph."
-        ) from exception_raised
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.debug(
+            "AutoGraph could not convert the iterable to an array; unrolling the Python loop.",
+            exc_info=True,
+        )
+        for item in iteration_target:
+            body_fn(item)
+        return
 
     try:
         set_state(init_state)

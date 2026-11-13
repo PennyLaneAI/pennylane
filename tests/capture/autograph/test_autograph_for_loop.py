@@ -110,6 +110,35 @@ class TestCustomRangeAndEnumeration:
 class TestForLoops:  # pylint: disable=too-many-public-methods
     """Test that the autograph transformations produce correct results on for loops."""
 
+    @pytest.mark.parametrize("iterable", [["a", "b"], ("a", "b"), {"a": 1, "b": 2}, [[1], [2, 3]]])
+    def test_static_non_array_iterable(self, iterable):
+        """Static iterables that cannot become arrays are captured as Python loops."""
+
+        def f():
+            count = 0
+            for _ in iterable:
+                count += 1
+            return count
+
+        jaxpr = jax.make_jaxpr(run_autograph(f))()
+
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts) == [2]
+        assert for_loop_prim not in extract_all_primitives(jaxpr.jaxpr)
+
+    def test_static_string_enumeration(self):
+        """Python fallback preserves enumeration offsets and variables used after the loop."""
+
+        def f():
+            total = 0
+            for index, value in enumerate(["a", "b"], start=4):
+                total += index + len(value)
+            return total, index, len(value)
+
+        jaxpr = jax.make_jaxpr(run_autograph(f))()
+
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts) == [11, 5, 1]
+        assert for_loop_prim not in extract_all_primitives(jaxpr.jaxpr)
+
     @pytest.mark.parametrize("bounds", [(0, 0, 1), (2, 2, 1), (2, 0, 1), (0, 2, -1)])
     def test_empty_loop_without_state(self, bounds):
         """Empty loops preserve the empty AutoGraph state without executing the body."""
@@ -201,9 +230,6 @@ class TestForLoops:  # pylint: disable=too-many-public-methods
         inner_jaxpr = qfunc_jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert inner_jaxpr.eqns[-1].primitive.name == "for_loop"
 
-    @pytest.mark.xfail(
-        reason="relies on unimplemented fallback behaviour (implemented in catalyst)"
-    )
     def test_for_in_object_list(self):
         """Test for loop over a Python list that is *not* convertible to an array.
         The behaviour should fall back to standard Python."""
@@ -218,7 +244,10 @@ class TestForLoops:  # pylint: disable=too-many-public-methods
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)()
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
+        assert for_loop_prim not in extract_all_primitives(qfunc_jaxpr)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        assert [op.name for op in tape.operations] == ["RY", "RY", "RY"]
+        assert np.allclose([op.data[0] for op in tape.operations], [0, jnp.pi / 4, jnp.pi / 2])
 
     def test_for_in_static_range(self):
         """Test for loop over a Python range with static bounds."""
@@ -365,9 +394,6 @@ class TestForLoops:  # pylint: disable=too-many-public-methods
         jaxpr = jax.make_jaxpr(ag_circuit)()
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 3
 
-    @pytest.mark.xfail(
-        reason="relies on unimplemented fallback behaviour (implemented in catalyst)"
-    )
     def test_for_in_enumerate_object_list(self):
         """Test for loop over a Python enumeration on a list that is *not* convertible to an array.
         The behaviour should fall back to standard Python."""
@@ -381,13 +407,37 @@ class TestForLoops:  # pylint: disable=too-many-public-methods
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        assert for_loop_prim not in extract_all_primitives(jaxpr.jaxpr)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        assert [op.name for op in tape.operations] == ["RY", "RY", "RY"]
+        assert [list(op.wires) for op in tape.operations] == [[0], [1], [2]]
+        assert np.allclose([op.data[0] for op in tape.operations], [0, jnp.pi / 4, jnp.pi / 2])
 
-        assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
-
-    @pytest.mark.xfail(
-        reason="relies on unimplemented fallback behaviour (implemented in catalyst)"
+    @pytest.mark.parametrize(
+        "wires, expected_names",
+        [
+            ([2, 0, 1], ["PauliX", "PauliY", "PauliZ"]),
+            ([2, 0], ["PauliX", "PauliY"]),
+            ([], []),
+        ],
     )
+    def test_for_in_zip(self, wires, expected_names):
+        """Zip loops unroll in order and stop at the shortest iterable."""
+
+        @qp.qnode(qp.device("default.qubit", wires=3))
+        def f():
+            ops = [qp.X, qp.Y, qp.Z]
+            for op, wire in zip(ops, wires):
+                op(wire)
+            return qp.probs()
+
+        jaxpr = jax.make_jaxpr(run_autograph(f))()
+
+        assert for_loop_prim not in extract_all_primitives(jaxpr.jaxpr)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        assert [op.name for op in tape.operations] == expected_names
+        assert [list(op.wires) for op in tape.operations] == [[wire] for wire in wires]
+
     def test_for_in_other_iterable_object(self):
         """Test for loop over arbitrary iterable Python objects.
         The behaviour should fall back to standard Python."""
@@ -395,16 +445,16 @@ class TestForLoops:  # pylint: disable=too-many-public-methods
         @qp.qnode(qp.device("default.qubit", wires=1))
         def f():
             params = {"a": 0.0, "b": 1 / 4 * jnp.pi, "c": 2 / 4 * jnp.pi}
-            for k, v in params.items():
-                print(k)
+            for _, v in params.items():
                 qp.RY(v, wires=0)
             return qp.expval(qp.PauliZ(0))
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert np.allclose(result, -jnp.sqrt(2) / 2)
+        assert for_loop_prim not in extract_all_primitives(jaxpr.jaxpr)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        assert [op.name for op in tape.operations] == ["RY", "RY", "RY"]
+        assert np.allclose([op.data[0] for op in tape.operations], [0, jnp.pi / 4, jnp.pi / 2])
 
     def test_loop_carried_value(self):
         """Test a loop which updates a value each iteration."""
@@ -550,19 +600,15 @@ class TestForLoops:  # pylint: disable=too-many-public-methods
 class TestErrors:
     """Test that informative errors are raised where expected"""
 
-    def test_for_in_object_list(self):
-        """Check the error raised when a for loop iterates over a Python list that
-        is *not* convertible to an array."""
+    def test_python_loop_body_error(self):
+        """Exceptions raised by a Python fallback loop body propagate."""
 
-        @qp.qnode(qp.device("default.qubit", wires=1))
         def f():
-            params = ["0", "1", "2"]
-            for x in params:
-                qp.RY(int(x) / 4 * jnp.pi, wires=0)
-            return qp.expval(qp.PauliZ(0))
+            for value in ["a", "b"]:
+                raise ValueError(f"Invalid value: {value}")
 
-        with pytest.raises(AutoGraphError, match="Could not convert the iteration target"):
-            run_autograph(f)()
+        with pytest.raises(ValueError, match="Invalid value: a"):
+            jax.make_jaxpr(run_autograph(f))()
 
     def test_for_in_static_range_indexing_numeric_list(self):
         """Test an informative error is raised when using a for loop with a static range

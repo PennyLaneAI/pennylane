@@ -82,13 +82,24 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
         )
 
     # At level="top", the user transforms are skipped and only the decomposition is applied
+    bound_t = decompose(gate_set=target, **_decomps_from_pipeline(compile_pipeline))
+    estimate_kwargs = bound_t.kwargs
     estimate_qnode = original_qnode.update_pipelines(
-        CompilePipeline(decompose(gate_set=target, **_decomps_from_pipeline(compile_pipeline))),
+        CompilePipeline(),
         post_device_pipeline=CompilePipeline(original_qnode.post_device_pipeline),
     )
-
     try:
-        resources = resources_from_analysis_pass(func, estimate_qnode, 1, {}, {}, *args, **kwargs)
+        resources = resources_from_analysis_pass(
+            func,
+            estimate_qnode,
+            0,
+            {},
+            {},
+            *args,
+            analysis_pass_name="resource-estimate",
+            analysis_pass_kwargs=estimate_kwargs,
+            **kwargs,
+        )
     except CompileError as exc:
         missing_rule = re.search(r"Decomposition rule not found for operator '([^'{]+)", str(exc))
         if missing_rule is None:
