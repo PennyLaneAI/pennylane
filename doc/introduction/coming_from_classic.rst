@@ -365,7 +365,7 @@ The following features of PennyLane Classic are not available in PennyLane2.
     * - ``qp.resource.Resources``, ``ResourceOperator``, ``ErrorOperator`` and
         the ``qp.resource.error`` module
       - :func:`~pennylane.specs`, :func:`~pennylane.analyze` and
-        :func:`~pennylane.estimate`. See :doc:`resource_estimation`.
+        :func:`~pennylane.estimate`. See :doc:`resource_profiling`.
     * - Tapes in :func:`~pennylane.specs`, its ``level="gradient"`` and
         ``level="all-mlir"`` options, and ``QuantumScript.specs``
       - :func:`~pennylane.specs` on a ``qjit``-compiled QNode.
