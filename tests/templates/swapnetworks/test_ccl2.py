@@ -21,7 +21,6 @@ import pennylane as qp
 from pennylane import numpy as np
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the flatten and unflatten methods."""
 
@@ -34,7 +33,7 @@ def test_flatten_unflatten():
     op = qp.templates.TwoLocalSwapNetwork(
         wires, acquaintances, weights, fermionic=True, shift=False, use_CNOT=False
     )
-    data, metadata = op._flatten()
+    data, metadata = op._flatten()  # pylint: disable=protected-access
     assert qp.math.allclose(data[0], weights)
     assert metadata[0] == wires
     assert metadata[1] == (
@@ -47,12 +46,11 @@ def test_flatten_unflatten():
     # make sure metadata is hashable
     assert hash(metadata)
 
-    new_op = type(op)._unflatten(*op._flatten())
+    new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
     qp.assert_equal(new_op, op)
     assert new_op is not op
 
 
-# pylint: disable=too-many-arguments
 class TestDecomposition:
     """Test that the template defines the correct decomposition."""
 
@@ -190,6 +188,7 @@ class TestDecomposition:
             ),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_ccl2(self, num_wires, acquaintances, weights, fermionic, shift, exp_state):
         """Test that the TwoLocalSwapNetwork template works correctly by asserting the prepared state."""
 
@@ -252,6 +251,7 @@ class TestInputs:
             ),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_ccl2_exceptions(self, wires, acquaintances, weights, fermionic, shift, msg_match):
         """Test that TwoLocalSwapNetwork throws an exception if the parameters have illegal
         shapes, types or values."""
@@ -448,8 +448,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
 
-# pylint: disable=too-few-public-methods
-class TestGradient:
+class TestGradient:  # pylint: disable=too-few-public-methods
     """Test that the parameter-shift rule for this template matches that of backprop."""
 
     def test_ps_rule_gradient(self, tol):

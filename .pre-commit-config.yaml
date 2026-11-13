@@ -48,8 +48,15 @@ repos:
           "-rn", # Only display messages
           "-sn", # Don't display the score
           "--rcfile=.pylintrc", # Link to your config file
+          # Check useless suppressions only in the full CI run because
+          # the pre-commmit runs pylint per file instead of on the entire
+          # repo, and some suppressions that actually has a purpose
+          # might show up as useless in the pre-commit run.
+          "--fail-on=", 
+          "--disable=useless-suppression",
         ]
       files: ^pennylane/
+      exclude: ^pennylane/labs/tests/
     - id: pylint-test
       name: "🐍 pylint · Lint test suite"
       entry: pylint

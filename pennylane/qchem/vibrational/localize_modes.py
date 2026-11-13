@@ -20,8 +20,6 @@ import scipy
 
 from pennylane import math as qp_math
 
-# pylint: disable=dangerous-default-value
-
 
 def _mat_transform(u, qmat):
     r"""Returns the rotated displacement vectors matrix for a given rotation unitary u
@@ -173,7 +171,7 @@ def _localize_modes(freqs, vecs):
     return loc_freqs, qloc, uloc
 
 
-def localize_normal_modes(freqs, vecs, bins=[2600]):
+def localize_normal_modes(freqs, vecs, bins=[2600]):  # pylint: disable=dangerous-default-value
     r"""Computes spatially localized vibrational normal modes.
 
     The vibrational normal modes are localized using a localizing unitary following the procedure

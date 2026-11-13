@@ -355,7 +355,7 @@ def register_resources(
 class DecompositionRule:
     """Represents a decomposition rule for an operator."""
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         func: Callable,
         resources: Callable | dict | None = None,
@@ -1059,7 +1059,6 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
         return self._conditions_met and self._enough_work_wires
 
 
-# pylint: disable=protected-access,too-few-public-methods
 class _DecompInfoCollection:
     """A collection of _DecompInfo."""
 
@@ -1072,13 +1071,15 @@ class _DecompInfoCollection:
         indexed_rule_infos = enumerate(rule_infos)
         self._show_not_applicable = show_not_applicable
         if not show_not_applicable:
+            # pylint: disable-next=protected-access
             indexed_rule_infos = filter(lambda p: p[1]._is_applicable, indexed_rule_infos)
         self._rules = list(indexed_rule_infos)
 
     def _title(self, index, rule) -> str:
-        return f"Decomposition {index} (name: {rule._name})"
+        return f"Decomposition {index} (name: {rule._name})"  # pylint: disable=protected-access
 
     def _title_md(self, index, rule) -> str:
+        # pylint: disable-next=protected-access
         return f"#### Decomposition {index} (name: {rule._name})"
 
     def __str__(self) -> str:
@@ -1088,12 +1089,12 @@ class _DecompInfoCollection:
             return "No applicable decomposition rules (non-applicable rules are excluded)."
         return "\n\n".join(f"{self._title(i, rule)}\n{rule}" for i, rule in self._rules)
 
-    # pylint: disable=protected-access
     def _repr_markdown_(self) -> str:
         if not self._n_rules_original:
             return "No available decomposition rules."
         if not self._rules:
             return "No applicable decomposition rules (non-applicable rules are excluded)."
+        # pylint: disable-next=protected-access
         lines = (f"{self._title_md(i, d)}\n\n{d._repr_markdown_()}" for i, d in self._rules)
         return "\n\n---\n\n".join(lines).rstrip("\n")
 
@@ -1328,7 +1329,7 @@ def _unroll_change_op_basis_resource(op_rep):
                 gate_counts[inner_op] += count
         return gate_counts
 
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable-next=import-outside-toplevel
     from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 
     if isinstance(op_rep, qp.ops.Adjoint2):
@@ -1364,7 +1365,7 @@ def _change_op_basis_operands(op_rep):
 def _unroll_prod_operand(operand):
     """Expand a Prod-like ChangeOpBasis operand into its inner resource keys with counts."""
 
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable-next=import-outside-toplevel
     from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 
     if isinstance(operand, qp.ops.Prod2):

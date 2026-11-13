@@ -37,8 +37,6 @@ from pennylane.estimator.resource_operator import CompressedResourceOp, GateCoun
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 
-# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments,too-many-positional-arguments
-
 
 class TestCH:
     """Test the Resource CH operation"""
@@ -1141,9 +1139,7 @@ class TestControlledPhaseShift:
         """Test the resource parameters"""
 
         op = ControlledPhaseShift()
-        assert op.resource_params == {
-            "precision": None
-        }  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert op.resource_params == {"precision": None}
 
     def test_resource_rep(self):
         """Test the compressed representation"""

@@ -14,8 +14,6 @@
 """Simulate a quantum script."""
 
 import logging
-
-# pylint: disable=protected-access
 from collections import Counter
 from functools import partial, singledispatch
 
@@ -106,8 +104,7 @@ class TreeTraversalStack:
 class _FlexShots(Shots):
     """Shots class that allows zero shots."""
 
-    # pylint: disable=super-init-not-called
-    def __init__(self, shots=None):
+    def __init__(self, shots=None):  # pylint: disable=super-init-not-called
         if isinstance(shots, int):
             self.total_shots = shots
             self.shot_vector = (ShotCopies(shots, 1),)
@@ -229,7 +226,7 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
             state, new_shots = _postselection_postprocess(
                 state, is_state_batched, circuit.shots, prng_key=key, **execution_kwargs
             )
-            circuit._shots = new_shots
+            circuit._shots = new_shots  # pylint: disable=protected-access
 
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
         is_state_batched = is_state_batched or (op.batch_size is not None)
@@ -390,12 +387,8 @@ def simulate(
     )
 
 
-# pylint: disable=too-many-branches,too-many-statements
-def simulate_tree_mcm(
-    circuit: QuantumScript,
-    debugger=None,
-    **execution_kwargs,
-) -> Result:
+# pylint: disable-next=too-many-branches,too-many-statements
+def simulate_tree_mcm(circuit: QuantumScript, debugger=None, **execution_kwargs) -> Result:
     """Simulate a single quantum script with native mid-circuit measurements using the tree-traversal algorithm.
 
     The tree-traversal algorithm recursively explores all combinations of mid-circuit measurement

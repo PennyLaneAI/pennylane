@@ -13,7 +13,7 @@
 # limitations under the License.
 """Integration tests for using the autograd interface with a QNode"""
 
-# pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg, use-dict-literal, no-name-in-module
+# pylint: disable=too-many-arguments,use-dict-literal
 
 
 import autograd
@@ -417,8 +417,7 @@ class TestQNode:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        # pylint: disable=too-few-public-methods
-        class MyU3(qp.U3):
+        class MyU3(qp.U3):  # pylint: disable=too-few-public-methods
             """Custom U3."""
 
             name = "MyU3"
@@ -777,7 +776,7 @@ class TestQubitIntegration:
     def test_chained_qnodes(self, interface, dev, diff_method, grad_on_execution, device_vjp):
         """Test that the gradient of chained QNodes works without error"""
 
-        # pylint: disable=too-few-public-methods
+        # pylint: disable-next=too-few-public-methods
         class Template(qp.templates.StronglyEntanglingLayers):
             """Custom template."""
 
@@ -1094,7 +1093,7 @@ class TestQubitIntegration:
         expected_res = [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b)]
 
         assert isinstance(res, np.ndarray)
-        assert res.shape == (2,)  # pylint: disable=comparison-with-callable
+        assert res.shape == (2,)
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         jac_fn = qp.jacobian(circuit)
@@ -1210,7 +1209,7 @@ class TestQubitIntegration:
 
         expected_res = [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b)]
         assert isinstance(res, np.ndarray)
-        assert res.shape == (2,)  # pylint: disable=comparison-with-callable
+        assert res.shape == (2,)
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         jac_fn = qp.jacobian(circuit)
@@ -1483,8 +1482,7 @@ class TestTapeExpansion:
         if max_diff == 2 and diff_method == "hadamard":
             pytest.skip("Max diff > 1 not supported for Hadamard gradient.")
 
-        # pylint: disable=too-few-public-methods
-        class PhaseShift(qp.PhaseShift):
+        class PhaseShift(qp.PhaseShift):  # pylint: disable=too-few-public-methods
             """dummy phase shift."""
 
             grad_method = None
@@ -1696,10 +1694,10 @@ class TestSample:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        assert res[0].shape == (10,)  # pylint: disable=comparison-with-callable
+        assert res[0].shape == (10,)
         assert isinstance(res[0], np.ndarray)
 
-        assert res[1].shape == (10,)  # pylint: disable=comparison-with-callable
+        assert res[1].shape == (10,)
         assert isinstance(res[1], np.ndarray)
 
     def test_sample_combination(self):
@@ -1762,13 +1760,13 @@ class TestSample:
         assert isinstance(result, tuple)
         assert len(result) == 3
 
-        assert result[0].shape == (10,)  # pylint: disable=comparison-with-callable
+        assert result[0].shape == (10,)
         assert isinstance(result[0], np.ndarray)
 
-        assert result[1].shape == (10,)  # pylint: disable=comparison-with-callable
+        assert result[1].shape == (10,)
         assert isinstance(result[1], np.ndarray)
 
-        assert result[2].shape == (10,)  # pylint: disable=comparison-with-callable
+        assert result[2].shape == (10,)
         assert isinstance(result[2], np.ndarray)
 
 
@@ -2280,7 +2278,7 @@ class TestReturn:
         hess = qp.jacobian(qp.jacobian(cost))(params)
 
         assert isinstance(hess, np.ndarray)
-        assert hess.shape == (3, 2, 2)  # pylint: disable=no-member
+        assert hess.shape == (3, 2, 2)
 
     def test_hessian_probs_var_multiple_params(
         self, dev, diff_method, grad_on_execution, device_vjp
@@ -2357,7 +2355,7 @@ class TestReturn:
         hess = qp.jacobian(qp.jacobian(cost))(params)
 
         assert isinstance(hess, np.ndarray)
-        assert hess.shape == (3, 2, 2)  # pylint: disable=no-member
+        assert hess.shape == (3, 2, 2)
 
 
 def test_no_ops():

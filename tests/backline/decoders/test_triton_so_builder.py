@@ -14,7 +14,8 @@
 
 """Tests for the Triton shared-library builder."""
 
-# pylint: disable=protected-access,wrong-import-position,broad-exception-caught,too-few-public-methods
+# pylint: disable=protected-access,wrong-import-position,too-few-public-methods
+
 
 import ctypes
 import shutil
@@ -29,7 +30,7 @@ def _current_target():
     """Return the active Triton target when available."""
     try:
         return triton.runtime.driver.active.get_current_target()
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return None
 
 
@@ -80,7 +81,6 @@ def stub_triton_compile_fixture(monkeypatch):
     """
 
     def factory(ast_hash="0" * 16, **scratch_overrides):
-        # pylint: disable=unused-argument
         def _ast_source_init(self, fn, constexprs, signature, attrs):
             self.fn = fn
             self.constants = constexprs

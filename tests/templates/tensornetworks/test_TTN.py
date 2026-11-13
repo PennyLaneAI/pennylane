@@ -16,17 +16,15 @@ Tests for the TTN template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
 from pennylane.templates.tensornetworks.ttn import TTN, compute_indices
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten_methods():
     """Tests the _flatten and _unflatten methods."""
+    # pylint: disable=protected-access
 
     def block(weights, wires):
         qp.CNOT(wires=[wires[0], wires[1]])
@@ -263,7 +261,7 @@ class TestTemplateInputs:
             ),
         ],
     )
-    def test_exception_wrong_weight_shape(
+    def test_exception_wrong_weight_shape(  # pylint: disable=too-many-arguments
         self, block, n_params_block, wires, n_block_wires, block_weights, msg_match
     ):
         """Verifies that an exception is raised if the weights shape is incorrect."""
@@ -351,7 +349,7 @@ class TestAttributes:
             qp.TTN.get_n_blocks(wires, n_block_wires)
 
 
-class TestDifferentiability:
+class TestDifferentiability:  # pylint: disable=too-few-public-methods
     """Test that the template is differentiable."""
 
     @pytest.mark.parametrize(
@@ -401,7 +399,7 @@ class TestTemplateOutputs:
             ),
         ],
     )
-    def test_output(
+    def test_output(  # pylint: disable=too-many-arguments
         self, block, n_params_block, wires, n_block_wires, template_weights, expected_circuit
     ):
         """Verifies that the output of the circuits is correct."""

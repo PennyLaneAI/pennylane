@@ -220,6 +220,7 @@ def _fermionic_single_excitation_resources(num_wires):
 
 @register_resources(_fermionic_single_excitation_resources)
 def _fermionic_single_excitation_decomposition(weight, wires, **_):
+    # pylint: disable=no-value-for-parameter
     # Interpret first and last wire as r and p
     r = wires[0]
     p = wires[-1]
@@ -242,7 +243,7 @@ def _fermionic_single_excitation_decomposition(weight, wires, **_):
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots()  # pylint: disable=no-value-for-parameter
+    apply_cnots()
 
     # Z rotation acting on wire 'p'
     RZ(weight / 2, wires=p)
@@ -252,7 +253,7 @@ def _fermionic_single_excitation_decomposition(weight, wires, **_):
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots_reversed()  # pylint: disable=no-value-for-parameter
+    apply_cnots_reversed()
 
     # U_1^+, U_2^+ acting on wires 'r' and 'p'
     RX(np.pi / 2, wires=r)
@@ -265,12 +266,12 @@ def _fermionic_single_excitation_decomposition(weight, wires, **_):
     Hadamard(wires=r)
     RX(-np.pi / 2, wires=p)
 
-    apply_cnots()  # pylint: disable=no-value-for-parameter
+    apply_cnots()
 
     # Z rotation acting on wire 'p'
     RZ(-weight / 2, wires=p)
 
-    apply_cnots_reversed()  # pylint: disable=no-value-for-parameter
+    apply_cnots_reversed()
 
     # U_1^+, U_2^+ acting on wires 'r' and 'p'
     Hadamard(wires=r)

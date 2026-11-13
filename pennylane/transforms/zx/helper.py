@@ -32,8 +32,7 @@ def _needs_pyzx(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
-            # pylint: disable=import-outside-toplevel
-            import pyzx
+            import pyzx  # pylint: disable=import-outside-toplevel
 
         except ModuleNotFoundError as e:
             raise ModuleNotFoundError(
