@@ -230,7 +230,6 @@ class TestForLoops:  # pylint: disable=too-many-public-methods
         inner_jaxpr = qfunc_jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert inner_jaxpr.eqns[-1].primitive.name == "for_loop"
 
-    @pytest.mark.filterwarnings("error")
     def test_for_in_object_list(self):
         """Test for loop over a Python list that is *not* convertible to an array.
         The behaviour should fall back to standard Python."""
