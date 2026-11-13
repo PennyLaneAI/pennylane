@@ -60,7 +60,7 @@ Summary of the update
   1.0 * X(0)
   + 1.0 * Y(0)
   >>> type(op.pauli_rep)
-  pennylane.pauli.pauli_arithmetic.PauliSentence
+  <class 'pennylane.core.pauli.PauliSentence'>
 
   You can transform the :class:`~.pennylane.pauli.PauliSentence` back to a suitable :class:`~.pennylane.operation.Operator` via :func:`~pennylane.pauli.to_operator`.
 

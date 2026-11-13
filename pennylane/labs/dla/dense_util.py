@@ -198,7 +198,7 @@ def batched_pauli_decompose(H: TensorLike, tol: float | None = None, pauli: bool
 
     >>> op = batched_pauli_decompose(mat, pauli=True)
     >>> type(op)
-    pennylane.pauli.pauli_arithmetic.PauliSentence
+    <class 'pennylane.core.pauli.PauliSentence'>
 
     This function supports batching and will return a list of operations for a batched input:
 
