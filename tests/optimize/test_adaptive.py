@@ -56,8 +56,7 @@ def initial_circuit():
 )
 def test_private_circuit(circuit, params, gates, energy_ref):
     r"""Test that _circuit returns the correct output."""
-    # pylint: disable=protected-access
-    qnode = qp.QNode(qp.AdaptiveOptimizer._circuit, dev)
+    qnode = qp.QNode(qp.AdaptiveOptimizer._circuit, dev)  # pylint: disable=protected-access
     energy = qnode(params, gates, circuit.func)
     assert np.allclose(energy, energy_ref)
 

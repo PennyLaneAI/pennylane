@@ -13,15 +13,15 @@
 # limitations under the License.
 """Multiple dispatch functions"""
 
-# pylint: disable=import-outside-toplevel,too-many-return-statements
+# pylint: disable=import-outside-toplevel,wrong-import-order
+
+
 import functools
 from collections.abc import Sequence
 from operator import attrgetter
 
 import jax
 import jax.numpy as jnp
-
-# pylint: disable=wrong-import-order
 import numpy as onp
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
@@ -31,12 +31,11 @@ from jax.scipy.linalg import expm as jax_expm
 from jax.scipy.special import gammainc as jax_gammainc
 from numpy import ndarray
 
-from . import single_dispatch  # pylint:disable=unused-import
+from . import single_dispatch  # pylint: disable=unused-import
 from .interface_utils import get_interface
 from .utils import cast, cast_like, requires_grad
 
 
-# pylint:disable=redefined-outer-name
 def array(*args, like=None, **kwargs):
     """Creates an array or tensor object of the target framework.
 
@@ -337,7 +336,7 @@ def matmul(tensor1, tensor2, like=None):
 
 
 @multi_dispatch(argnum=[0, 1])
-def dot(tensor1, tensor2, like=None):
+def dot(tensor1, tensor2, like=None):  # pylint: disable=too-many-return-statements
     """Returns the matrix or dot product of two tensors.
 
     * If either tensor is 0-dimensional, elementwise multiplication
@@ -676,14 +675,14 @@ def frobenius_inner_product(A, B, normalize=False, like=None):
     inner_product = np.sum(A * B)
 
     if normalize:
-        norm = np.sqrt(np.sum(A * A) * np.sum(B * B))
+        norm = np.sqrt(np.sum(A * A) * np.sum(B * B))  # pylint: disable=redefined-outer-name
         inner_product = inner_product / norm
 
     return inner_product
 
 
 @multi_dispatch(argnum=[1])
-def scatter(indices, array, new_dims, like=None):
+def scatter(indices, array, new_dims, like=None):  # pylint: disable=redefined-outer-name
     """Scatters an array into a tensor of shape new_dims according to indices.
 
     This operation is similar to scatter_element_add, except that the tensor
@@ -709,9 +708,8 @@ def scatter(indices, array, new_dims, like=None):
     return np.scatter(indices, array, new_dims, like=like)
 
 
-# pylint: disable=too-many-arguments
 @multi_dispatch(argnum=[0, 2])
-def scatter_element_add(
+def scatter_element_add(  # pylint: disable=too-many-arguments
     tensor, index, value, like=None, *, indices_are_sorted=False, unique_indices=False
 ):
     """In-place addition of a multidimensional value over various
@@ -869,7 +867,7 @@ def expm(tensor, like=None):
 def norm(tensor, like=None, **kwargs):
     """Compute the norm of a tensor in each interface."""
     if like == "jax":
-        norm = jax_norm
+        norm = jax_norm  # pylint: disable=redefined-outer-name
 
     elif like == "torch":
         from torch.linalg import norm
@@ -914,7 +912,7 @@ def svd(tensor, like=None, **kwargs):
         if ``compute_uv`` is ``False``
     """
     if like == "jax":
-        svd = jax_svd
+        svd = jax_svd  # pylint: disable=redefined-outer-name
 
     elif like == "torch":
         # Torch is deprecating torch.svd() in favour of torch.linalg.svd().
@@ -964,7 +962,7 @@ def gammainc(m, t, like=None):
         return jax_gammainc(m, t)
 
     if like == "autograd":
-        from autograd.scipy.special import gammainc
+        from autograd.scipy.special import gammainc  # pylint: disable=redefined-outer-name
 
         return gammainc(m, t)
 
@@ -998,7 +996,7 @@ def detach(tensor, like=None):
 
 
 @multi_dispatch(tensor_list=[1])
-def set_index(array, idx, val, like=None):
+def set_index(array, idx, val, like=None):  # pylint: disable=redefined-outer-name
     """Set the value at a specified index in an array.
     Calls ``array[idx]=val`` and returns the updated array unless JAX.
 

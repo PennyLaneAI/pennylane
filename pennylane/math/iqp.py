@@ -80,8 +80,7 @@ def _generators(gates, n_qubits):
     return jnp.array(generators)
 
 
-# pylint: disable=too-many-arguments
-def _op_expval_indep(
+def _op_expval_indep(  # pylint: disable=too-many-arguments
     gates: list,
     n_qubits: int,
     params: list,
@@ -212,8 +211,7 @@ def _ini_spin_sym(ops_sum, samples_sum, samples_len, spin_sym):
     return 1
 
 
-# pylint: disable=too-many-arguments
-def _op_expval_batch(
+def _op_expval_batch(  # pylint: disable=too-many-arguments
     gates: list,
     params: list,
     n_qubits: int,
@@ -264,8 +262,7 @@ def _op_expval_batch(
     return expvals
 
 
-# pylint: disable=too-many-arguments
-def iqp_expval(
+def iqp_expval(  # pylint: disable=too-many-arguments
     ops: list,
     weights: list[float],
     pattern: list[list[list[int]]],

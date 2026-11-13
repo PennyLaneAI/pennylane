@@ -95,7 +95,7 @@ def is_pauli_word(observable):
 
 
 @singledispatch
-def _is_pauli_word(observable):  # pylint:disable=unused-argument
+def _is_pauli_word(observable):  # pylint: disable=unused-argument
     """
     Private implementation of is_pauli_word, to prevent all of the
     registered functions from appearing in the Sphinx docs.
@@ -274,7 +274,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
     return binary_pauli
 
 
-def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-branches
+def binary_to_pauli(binary_vector, wire_map=None):
     """Converts a binary vector of even dimension to an Operator instance.
 
     This functions follows the convention that the first half of binary vector components specify

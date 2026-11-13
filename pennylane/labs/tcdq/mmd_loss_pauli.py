@@ -151,7 +151,6 @@ def _compute_single_mmd(
     return jnp.sqrt(jnp.abs(reduced)) if sqrt_loss else reduced
 
 
-# pylint: disable=too-many-arguments,too-many-locals
 @partial(
     jax.jit,
     static_argnames=[
@@ -163,7 +162,7 @@ def _compute_single_mmd(
         "static_kwargs",
     ],
 )
-def _compute_loss_for_bandwidth(
+def _compute_loss_for_bandwidth(  # pylint: disable=too-many-arguments
     bandwidth: float,
     subkey: jnp.ndarray,
     eval_key: jnp.ndarray,
