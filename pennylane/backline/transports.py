@@ -116,9 +116,7 @@ def get_transport(name):
 def _catalyst_transports():
     """The transports Catalyst's backend registry implements, or ``None`` without Catalyst."""
     try:
-        from catalyst.backline import (  # pylint: disable=import-outside-toplevel
-            backend_transports,
-        )
+        from catalyst.backline import backend_transports  # pylint: disable=import-outside-toplevel
     except ImportError:
         return None
     return backend_transports()

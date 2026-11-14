@@ -15,8 +15,6 @@
 Unit tests for the `pennylane.draw_text` function.
 """
 
-# pylint: disable=import-outside-toplevel
-
 from copy import copy
 
 import pytest
@@ -74,8 +72,7 @@ tape = qp.tape.QuantumScript.from_queue(q_tape)
 def test_error_if_unsupported_object_in_tape():
     """Test an error is raised if there's an unsupported object in the tape."""
 
-    # pylint: disable=too-few-public-methods
-    class DummyObj:
+    class DummyObj:  # pylint: disable=too-few-public-methods
         wires = qp.wires.Wires(2)
 
     _tape = qp.tape.QuantumScript([DummyObj()], [])
@@ -84,7 +81,7 @@ def test_error_if_unsupported_object_in_tape():
         qp.drawer.tape_text(_tape)
 
 
-class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-positional-arguments
+class TestHelperFunctions:
     """Test helper functions for the tape text."""
 
     @pytest.mark.parametrize(
@@ -199,6 +196,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             ),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_add_cond_grouping_symbols(self, cond_op, bit_map, mv, cur_layer, args, kwargs, out):
         """Test private _add_grouping_symbols function renders as expected for Conditionals."""
         op = get_conditional_op(mv, cond_op, *args, **kwargs)
@@ -441,6 +439,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             ),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_add_cond_op(self, cond_op, bit_map, mv, args, kwargs, out):
         """Test adding the first Conditional to array of strings"""
         op = get_conditional_op(mv, cond_op, *args, **kwargs)
@@ -542,6 +541,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     )
     @pytest.mark.parametrize("wire_map", [default_wire_map, {i: i for i in range(6)}])
     @pytest.mark.parametrize("cls, label", [(qp.GlobalPhase, "GlobalPhase"), (qp.Identity, "I")])
+    # pylint: disable-next=too-many-arguments
     def test_add_controlled_global_op(self, wires, control_wires, expected, wire_map, cls, label):
         """Test that adding a controlled global op works as expected."""
         expected = copy(expected)
@@ -709,7 +709,6 @@ single_op_tests_data = [
         "0: ─╭○─┤\n1: ─├●─┤\n2: ─├○─┤\n3: ─╰X─┤",
     ),
     (
-        # pylint:disable=no-member
         qp.ops.op_math.Controlled(qp.PauliY(3), (0, 1, 2), [0, 1, 0]),
         "0: ─╭○─┤\n1: ─├●─┤\n2: ─├○─┤\n3: ─╰Y─┤",
     ),
@@ -807,6 +806,69 @@ def test_single_ops(op, expected):
 
     _tape = qp.tape.QuantumScript.from_queue(q)
     assert tape_text(_tape, decimals=2, show_matrices=False) == expected
+
+
+@pytest.mark.parametrize("values", [(0, 0), (0, 1), (1, 0), (1, 1)])
+@pytest.mark.parametrize("adjoint", [False, True])
+@pytest.mark.parametrize("order", [[0, 1, 2], [2, 0, 1], [0, 2, 1]])
+def test_temporary_and_corners(values, adjoint, order):
+    """Controls and targets have a left or right connector, without cutting their wires."""
+    op = qp.TemporaryAND([0, 1, 2], control_values=values)
+    if adjoint:
+        op = qp.adjoint(op)
+    lines = tape_text(QuantumScript([op]), wire_order=order).splitlines()
+    symbols = {0: "●" if values[0] else "○", 1: "●" if values[1] else "○", 2: "⊕"}
+    for row, wire in enumerate(order):
+        corner = ("╮", "┤", "╯")[row] if adjoint else ("╭", "├", "╰")[row]
+        symbol = f"─{symbols[wire]}{corner}" if adjoint else f"{corner}{symbols[wire]}"
+        assert lines[row] == f"{wire}: ─{symbol}─┤"
+
+
+@pytest.mark.parametrize("outer_adjoint", [False, True])
+def test_controlled_temporary_and_adjoint(outer_adjoint):
+    """Controlled adjoints retain every control without introducing a second stem."""
+    op = qp.TemporaryAND([0, 1, 2], control_values=[0, 1])
+    op = (
+        qp.adjoint(qp.ctrl(op, 3, control_values=[0]))
+        if outer_adjoint
+        else qp.ctrl(qp.adjoint(op), 3, control_values=[0])
+    )
+    assert tape_text(QuantumScript([op]), wire_order=range(4)) == (
+        "0: ──○╮─┤\n1: ──●┤─┤\n2: ──⊕┤─┤\n3: ──○╯─┤"
+    )
+
+
+@pytest.mark.parametrize("inner_adjoint", [False, True])
+@pytest.mark.parametrize("outer_adjoint", [False, True])
+def test_nested_controlled_temporary_and(inner_adjoint, outer_adjoint):
+    """Nested controls occur once and adjoint parity determines the connector side."""
+    op = qp.TemporaryAND([0, 1, 2], control_values=[0, 1])
+    op = qp.adjoint(op) if inner_adjoint else op
+    op = qp.ctrl(op, 3, control_values=[0])
+    op = qp.adjoint(op) if outer_adjoint else op
+    op = qp.ctrl(op, 4)
+    expected = (
+        "0: ──○╮─┤\n1: ──●┤─┤\n2: ──⊕┤─┤\n3: ──○┤─┤\n4: ──●╯─┤"
+        if inner_adjoint != outer_adjoint
+        else "0: ─╭○─┤\n1: ─├●─┤\n2: ─├⊕─┤\n3: ─├○─┤\n4: ─╰●─┤"
+    )
+    assert tape_text(QuantumScript([op]), wire_order=range(5)) == expected
+
+
+@pytest.mark.parametrize("adjoint", [False, True])
+def test_temporary_and_inactive_intermediate_wire(adjoint):
+    """An elbow stem does not restore an inactive dynamic wire's horizontal line."""
+    config = _Config(
+        wire_map=default_wire_map,
+        bit_map={},
+        num_op_layers=4,
+        cur_layer=1,
+        wire_layers={**default_wire_layers, 2: [[2, 4]]},
+    )
+    op = qp.TemporaryAND([0, 1, 3])
+    op = qp.adjoint(op) if adjoint else op
+    expected = ["─●╮", "─●┤", "  │", "─⊕╯"] if adjoint else ["╭●", "├●", "│", "╰⊕"]
+    assert _add_obj(op, ["─", "─", " ", "─"], config) == expected
 
 
 class TestLayering:

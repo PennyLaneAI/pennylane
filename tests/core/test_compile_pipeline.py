@@ -13,7 +13,8 @@
 # limitations under the License.
 """Unit and integration tests for the compile pipeline."""
 
-# pylint: disable=no-member, protected-access
+# pylint: disable=protected-access
+
 
 from copy import copy
 
@@ -23,6 +24,7 @@ import rustworkx as rx
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.transforms.compile_pipeline import (
+    DEVICE_PREPROCESSING,
     CotransformCache,
     ProtectedLevel,
     _apply_postprocessing_stack,
@@ -44,13 +46,13 @@ def first_valid_transform(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """A valid transform."""
     tape = tape.copy()
-    tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)
     return [tape], lambda x: x
 
 
-def expand_transform(
+def expand_transform(  # pylint: disable=unused-argument
     tape: QuantumScript,
-    index: int,  # pylint:disable=unused-argument
+    index: int,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """A valid expand transform."""
     return [tape], lambda x: x
@@ -62,7 +64,7 @@ def second_valid_transform(
     """A valid trasnform."""
     tape1 = tape.copy()
     tape2 = tape.copy()
-    tape2 = tape._ops.pop(index)  # pylint:disable=protected-access
+    tape2 = tape._ops.pop(index)
 
     def fn(results):
         return qp.math.sum(results)
@@ -115,8 +117,7 @@ class TestUtilityHelpers:
         assert out2 == (4.0, 9.0)
 
 
-# pylint: disable=too-many-public-methods
-class TestCompilePipelineDunders:
+class TestCompilePipelineDunders:  # pylint: disable=too-many-public-methods
     """Test the dunder methods."""
 
     def test_bool(self):
@@ -741,8 +742,19 @@ class TestCompilePipelineDunders:
         compile_pipeline.append(transform2)
 
         pipeline_repr = repr(compile_pipeline)
-        expected_repr = f"CompilePipeline(\n  [1] {repr(transform1)},\n  [2] {repr(transform2)}\n)"
+        expected_repr = f"CompilePipeline(\n  [0] {repr(transform1)},\n  [1] {repr(transform2)}\n)"
         assert pipeline_repr == expected_repr
+
+    def test_str_and_repr_device_preprocessing(self):
+        """Test that the device preprocessing placeholder is printed by name."""
+        compile_pipeline = CompilePipeline(qp.transforms.cancel_inverses) + DEVICE_PREPROCESSING
+
+        assert str(compile_pipeline) == (
+            "CompilePipeline(\n  [0] cancel_inverses(),\n  [1] Device Preprocessing\n)"
+        )
+        assert repr(compile_pipeline) == (
+            "CompilePipeline(\n  [0] <cancel_inverses()>,\n  [1] <Device Preprocessing>\n)"
+        )
 
     def test_ipython_display(self, capsys):
         """Test that the ipython display prints the string representation of a CompilePipeline instance."""
@@ -754,7 +766,7 @@ class TestCompilePipelineDunders:
         compile_pipeline.append(transform1)
         compile_pipeline.append(transform2)
 
-        compile_pipeline._ipython_display_()  # pylint: disable=protected-access
+        compile_pipeline._ipython_display_()
         captured = capsys.readouterr()
         assert str(compile_pipeline) + "\n" == captured.out
 
@@ -775,16 +787,17 @@ class TestCompilePipelineDunders:
 
         pipeline_str = str(compile_pipeline)
         expected_str = (
-            "CompilePipeline(\n  [1] first_valid_transform(),\n  [2] cancel-inverses()\n)"
+            "CompilePipeline(\n  [0] first_valid_transform(),\n  [1] cancel-inverses()\n)"
         )
         assert pipeline_str == expected_str
 
     def test_str_adds_ellipses(self):
         """Tests that the string representation uses ellipses for long kwargs."""
 
-        # pylint:disable=unused-argument
-        def verbose_transform(
-            tape: QuantumScript, verbose_arg: str, verbose_kwarg: str | None = None
+        def verbose_transform(  # pylint: disable=unused-argument
+            tape: QuantumScript,
+            verbose_arg: str,
+            verbose_kwarg: str | None = None,
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             """A valid transform."""
             return [tape], lambda x: x
@@ -800,7 +813,7 @@ class TestCompilePipelineDunders:
             )
         )
 
-        expected_str = "CompilePipeline(\n  [1] verbose_transform(xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx, verbose_kwarg=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)\n)"
+        expected_str = "CompilePipeline(\n  [0] verbose_transform(xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx, verbose_kwarg=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)\n)"
         assert str(compile_pipeline) == expected_str
 
         compile_pipeline = CompilePipeline()
@@ -812,7 +825,7 @@ class TestCompilePipelineDunders:
             )
         )
 
-        expected_str = "CompilePipeline(\n  [1] verbose_transform(..., verbose_kwarg=...)\n)"
+        expected_str = "CompilePipeline(\n  [0] verbose_transform(..., verbose_kwarg=...)\n)"
         assert str(compile_pipeline) == expected_str
 
     def test_equality(self):
@@ -1299,6 +1312,30 @@ class TestClassicalCotransfroms:
 class TestCompilePipelineCall:
     """Tests for calling a CompilePipeline on a batch of quantum tapes."""
 
+    @pytest.mark.parametrize(
+        "args, got",
+        [
+            ((), "no arguments"),
+            ((0.5,), "0.5"),
+            (([0.5, 0.1],), r"\[0.5, 0.1\]"),
+            (("abc",), "'abc'"),
+        ],
+    )
+    def test_call_on_invalid_object(self, args, got):
+        """Tests that applying a pipeline to an object that it cannot transform, such as the
+        arguments of a QNode, raises an informative error."""
+
+        pipeline = CompilePipeline(qp.transforms.cancel_inverses)
+
+        with pytest.raises(TypeError, match=f"instead got {got}.*returns the CompilePipeline"):
+            pipeline(*args)
+
+    def test_call_on_empty_batch(self):
+        """Tests that an empty batch of tapes is still accepted."""
+
+        new_batch, _ = CompilePipeline(qp.transforms.cancel_inverses)(())
+        assert new_batch == ()
+
     def test_call_on_empty_pipeline(self):
         """Tests that an empty pipeline returns input tapes with the null postprocessing function."""
 
@@ -1324,7 +1361,7 @@ class TestCompilePipelineCall:
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             """A valid transform."""
             new_ops = list(tape.operations)
-            new_ops.pop(index)  # pylint:disable=protected-access
+            new_ops.pop(index)
             return (
                 qp.tape.QuantumScript(new_ops, tape.measurements, shots=tape.shots),
             ), single_null_postprocessing
@@ -1680,9 +1717,8 @@ class TestCompilePipelineCall:
 
         # Create a dummy device with a custom preprocess_transforms method
         class DummyDevice(qp.devices.Device):
-            def preprocess_transforms(
-                self, execution_config=None
-            ):  # pylint: disable=unused-argument
+            # pylint: disable-next=unused-argument
+            def preprocess_transforms(self, execution_config=None):
                 prog = CompilePipeline()
                 prog.add_transform(qp.defer_measurements)
                 return prog
@@ -1819,7 +1855,7 @@ class TestCompilePipelineIntegration:
         assert pipeline[1].tape_transform is second_valid_transform
 
 
-class TestMarkers:
+class TestMarkers:  # pylint: disable=too-many-public-methods
     """Tests markers in a compile pipeline"""
 
     def test_add_marker(self):
@@ -1836,6 +1872,21 @@ class TestMarkers:
         assert pipeline.markers == ["test", "initial"]
         assert pipeline.get_marker_level("initial") == 0
         assert pipeline.get_marker_level("test") == 1
+
+    def test_level_to_markers(self):
+        """Tests that each level is mapped to the markers placed at that level."""
+
+        pipeline = CompilePipeline()
+        pipeline.add_marker("m0")
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_marker("m1")
+        pipeline.add_marker("m2")
+        pipeline.add_transform(transform(first_valid_transform))
+        pipeline.add_transform(transform(second_valid_transform))
+        pipeline.add_marker("m3")
+
+        # pylint: disable=protected-access
+        assert pipeline._level_to_markers() == {0: ["m0"], 1: ["m1", "m2"], 3: ["m3"]}
 
     def test_remove_marker(self):
         """Tests that remove_marker method works."""
@@ -2008,7 +2059,7 @@ class TestMarkers:
         pipeline_str = str(compile_pipeline)
         assert (
             pipeline_str
-            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [1] first_valid_transform()\n   └─▶ marker2\n)"
+            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [0] first_valid_transform()\n   └─▶ marker2\n)"
         )
 
         compile_pipeline.add_transform(transform(second_valid_transform))
@@ -2018,7 +2069,7 @@ class TestMarkers:
         pipeline_str = str(compile_pipeline)
         assert (
             pipeline_str
-            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [1] first_valid_transform(),\n   ├─▶ marker2\n  [2] second_valid_transform()\n   └─▶ marker3\n)"
+            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [0] first_valid_transform(),\n   ├─▶ marker2\n  [1] second_valid_transform()\n   └─▶ marker3\n)"
         )
 
     def test_repr_pipeline_with_markers(self):
@@ -2045,7 +2096,7 @@ class TestMarkers:
         pipeline_repr = repr(compile_pipeline)
         assert (
             pipeline_repr
-            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [1] <first_valid_transform()>\n   └─▶ marker2\n)"
+            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [0] <first_valid_transform()>\n   └─▶ marker2\n)"
         )
         compile_pipeline.add_transform(transform(second_valid_transform))
         compile_pipeline.add_marker("marker3")
@@ -2053,7 +2104,7 @@ class TestMarkers:
         pipeline_repr = repr(compile_pipeline)
         assert (
             pipeline_repr
-            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [1] <first_valid_transform()>,\n   ├─▶ marker2\n  [2] <second_valid_transform()>\n   └─▶ marker3\n)"
+            == "CompilePipeline(\n   ├─▶ marker0, marker1\n  [0] <first_valid_transform()>,\n   ├─▶ marker2\n  [1] <second_valid_transform()>\n   └─▶ marker3\n)"
         )
 
     def test_copy_preserves_markers(self):

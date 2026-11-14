@@ -15,7 +15,9 @@
 Unit tests for the :func:`_cache_transform` transform function.
 """
 
-# pylint: disable=protected-access,redefined-outer-name
+# pylint: disable=redefined-outer-name
+
+
 from collections.abc import MutableMapping
 from unittest.mock import MagicMock
 
@@ -41,6 +43,7 @@ def cache() -> MutableMapping:
 @pytest.fixture
 def transform_spy(mocker) -> MagicMock:
     """Returns a spy on the underlying ``_cache_transform()`` function."""
+    # pylint: disable-next=protected-access
     return mocker.spy(qp.workflow._cache_transform, "_transform")
 
 

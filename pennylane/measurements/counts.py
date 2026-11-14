@@ -52,7 +52,6 @@ class CountsMP(SampleMeasurement):
 
     _shortname = "counts"
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         obs: Operator | None = None,
@@ -233,7 +232,7 @@ class CountsMP(SampleMeasurement):
 
         return outcome_dicts if batched else outcome_dicts[0]
 
-    # pylint: disable=redefined-outer-name
+    # pylint: disable-next=redefined-outer-name
     def process_counts(self, counts: dict, wire_order: Wires) -> dict:
         mapped_counts = self._map_counts(counts, wire_order)
         if self.all_outcomes:
@@ -292,16 +291,15 @@ class CountsMP(SampleMeasurement):
                 outcome_counts[outcome_binary] = 0
 
 
-# pylint: disable=protected-access, unused-argument
-
-CountsMP._wires_primitive.multiple_results = True
+CountsMP._wires_primitive.multiple_results = True  # pylint: disable=protected-access
 
 
-@CountsMP._wires_primitive.def_impl
+@CountsMP._wires_primitive.def_impl  # pylint: disable=protected-access
 def _impl(*args, **kwargs):
     raise NotImplementedError("Counts has no execution implementation with program capture.")
 
 
+# pylint: disable-next=unused-argument
 def _keys_eval(n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
     if shots is None:
         raise ValueError("finite shots are required to use CountsMP")
@@ -309,6 +307,7 @@ def _keys_eval(n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
     return (2**n_wires,), int
 
 
+# pylint: disable-next=unused-argument
 def _values_eval(n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
     if shots is None:
         raise ValueError("finite shots are required to use CountsMP")
@@ -316,7 +315,7 @@ def _values_eval(n_wires=None, has_eigvals=False, shots=None, num_device_wires=0
     return (2**n_wires,), int
 
 
-@CountsMP._wires_primitive.def_abstract_eval
+@CountsMP._wires_primitive.def_abstract_eval  # pylint: disable=protected-access
 def _abstract_eval(*args, has_eigvals=False, all_outcomes=False):
     if not all_outcomes:
         warnings.warn(
@@ -329,30 +328,30 @@ def _abstract_eval(*args, has_eigvals=False, all_outcomes=False):
     return keys, values
 
 
-# pylint: disable=protected-access, unused-argument
-
-CountsMP._mcm_primitive.multiple_results = True
+CountsMP._mcm_primitive.multiple_results = True  # pylint: disable=protected-access
 
 
-@CountsMP._mcm_primitive.def_impl
+@CountsMP._mcm_primitive.def_impl  # pylint: disable=protected-access
 def _mcm_impl(*args, **kwargs):
     raise NotImplementedError("Counts has no execution implementation with program capture.")
 
 
+# pylint: disable-next=unused-argument
 def _mcm_keys_eval(n_wires, has_eigvals=False, shots=None, num_device_wires=0):
     if shots is None:
         raise ValueError("finite shots are required to use CountsMP")
     return (2**n_wires,), int
 
 
+# pylint: disable-next=unused-argument
 def _mcm_values_eval(n_wires, has_eigvals=False, shots=None, num_device_wires=0):
     if shots is None:
         raise ValueError("finite shots are required to use CountsMP")
     return (2**n_wires,), int
 
 
-@CountsMP._mcm_primitive.def_abstract_eval
-def _mcm_abstract_eval(*mcms, single_mcm, all_outcomes=False):
+@CountsMP._mcm_primitive.def_abstract_eval  # pylint: disable=protected-access
+def _mcm_abstract_eval(*mcms, single_mcm, all_outcomes=False):  # pylint: disable=unused-argument
     keys = AbstractMeasurement(_mcm_keys_eval, n_wires=len(mcms), has_eigvals=False)
     values = AbstractMeasurement(_mcm_values_eval, n_wires=len(mcms), has_eigvals=False)
     return keys, values

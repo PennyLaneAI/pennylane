@@ -24,19 +24,21 @@ import scipy.sparse as sps
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.math.utils import is_tracer
 from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 from pennylane.typing import TensorLike
 
-from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
+
+op_map = {"I": Identity, "X": PauliX, "Y": PauliY, "Z": PauliZ}
 
 #: Tolerance for checking if a sparse matrix is Hermitian.
 _HERMITIAN_TOLERANCE = 1e-8
 
 #: Map from a single-qubit symplectic ``(x_bit, z_bit)`` pair to its Pauli character.
-_PAULI_FROM_XZ = {(0, 0): I, (1, 0): X, (1, 1): Y, (0, 1): Z}
+_PAULI_FROM_XZ = {(0, 0): "I", (1, 0): "X", (1, 1): "Y", (0, 1): "Z"}
 
 #: ``i ** k`` lookup table for ``k = 0, 1, 2, 3`` (phase contributed by ``PauliY`` factors).
 _I_POWERS = np.array([1, 1j, -1, -1j], dtype=complex)
@@ -90,7 +92,7 @@ def _validate_and_normalize_decomposition_inputs(shape, wire_order=None, is_spar
     return num_qubits, wire_order
 
 
-def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
+def _generalized_pauli_decompose(
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
 ) -> tuple[TensorLike, list]:
     r"""Decomposes any matrix into a linear combination of Pauli operators.
@@ -242,8 +244,8 @@ def _generalized_pauli_decompose(  # pylint: disable=too-many-branches
             continue
 
         observables = (
-            [(o, w) for w, o in zip(wire_order, pauli_rep, strict=True) if o != I]
-            if hide_identity and not all(t == I for t in pauli_rep)
+            [(o, w) for w, o in zip(wire_order, pauli_rep, strict=True) if o != "I"]
+            if hide_identity and not all(t == "I" for t in pauli_rep)
             else [(o, w) for w, o in zip(wire_order, pauli_rep, strict=True)]
         )
         if observables:
@@ -289,7 +291,7 @@ def _fast_walsh_hadamard_transform(vec: np.ndarray) -> np.ndarray:
     return vec
 
 
-def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,too-many-branches
+def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-branches,too-many-statements
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
 ) -> tuple[TensorLike, list]:
     r"""Sparse SciPy implementation of the generalized Pauli decomposition.
@@ -426,9 +428,9 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-statements,
             _PAULI_FROM_XZ[((x_bits >> bit) & 1, (z_bits >> bit) & 1)]
             for bit in range(num_qubits - 1, -1, -1)
         ]
-        if hide_identity and not all(char == I for char in chars):
+        if hide_identity and not all(char == "I" for char in chars):
             observables = [
-                (char, wire) for wire, char in zip(wire_order, chars, strict=True) if char != I
+                (char, wire) for wire, char in zip(wire_order, chars, strict=True) if char != "I"
             ]
         else:
             observables = [(char, wire) for wire, char in zip(wire_order, chars, strict=True)]
@@ -671,17 +673,17 @@ def _pauli_sentence(op):
 
 @_pauli_sentence.register
 def _(op: PauliX):
-    return PauliSentence({PauliWord({op.wires[0]: X}): 1.0})
+    return PauliSentence({PauliWord({op.wires[0]: "X"}): 1.0})
 
 
 @_pauli_sentence.register
 def _(op: PauliY):
-    return PauliSentence({PauliWord({op.wires[0]: Y}): 1.0})
+    return PauliSentence({PauliWord({op.wires[0]: "Y"}): 1.0})
 
 
 @_pauli_sentence.register
 def _(op: PauliZ):
-    return PauliSentence({PauliWord({op.wires[0]: Z}): 1.0})
+    return PauliSentence({PauliWord({op.wires[0]: "Z"}): 1.0})
 
 
 @_pauli_sentence.register

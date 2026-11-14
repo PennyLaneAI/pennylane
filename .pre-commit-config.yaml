@@ -4,16 +4,12 @@ repos:
     hooks:
       - id: gitleaks
         name: "🔒 gitleaks · Detect hardcoded secrets"
--   repo: https://github.com/psf/black
-    rev: 26.3.1
+-   repo: https://github.com/asottile/pyupgrade
+    rev: v3.21.0
     hooks:
-    - id: black
-      name: "🐍 black · Format code"
-      args: [
-              "--config",
-              "./pyproject.toml",
-            ]
-      exclude: ^doc/
+    -   id: pyupgrade
+        name: "🐍 pyupgrade · Check language features"
+        args: [--py312-plus]
 -   repo: https://github.com/PyCQA/isort
     rev: 7.0.0
     hooks:
@@ -25,19 +21,24 @@ repos:
           "./pyproject.toml",
         ]
       files: ^(pennylane/|tests/)
--   repo: https://github.com/gauge-sh/tach-pre-commit
-    rev: v0.29.0
+-   repo: https://github.com/psf/black
+    rev: 26.3.1
     hooks:
-    -   id: tach
-        name: "🐍 tach · Check module dependencies"
--   repo: https://github.com/asottile/pyupgrade
-    rev: v3.21.0
-    hooks:
-    -   id: pyupgrade
-        name: "🐍 pyupgrade · Check language features"
-        args: [--py312-plus]
+    - id: black
+      name: "🐍 black · Format code"
+      args: [
+              "--config",
+              "./pyproject.toml",
+            ]
+      exclude: ^doc/
 - repo: local
   hooks:
+    - id: tach
+      name: "🐍 tach · Check module dependencies"
+      entry: tach check
+      language: python
+      additional_dependencies: [tach==0.35.1]
+      pass_filenames: false
     - id: pylint
       name: "🐍 pylint · Lint codebase"
       entry: pylint
@@ -48,8 +49,15 @@ repos:
           "-rn", # Only display messages
           "-sn", # Don't display the score
           "--rcfile=.pylintrc", # Link to your config file
+          # Check useless suppressions only in the full CI run because
+          # the pre-commmit runs pylint per file instead of on the entire
+          # repo, and some suppressions that actually has a purpose
+          # might show up as useless in the pre-commit run.
+          "--fail-on=", 
+          "--disable=useless-suppression",
         ]
       files: ^pennylane/
+      exclude: ^pennylane/labs/tests/
     - id: pylint-test
       name: "🐍 pylint · Lint test suite"
       entry: pylint
@@ -61,16 +69,4 @@ repos:
           "-sn", # Don't display the score
           "--rcfile=tests/.pylintrc", # Link to your config file
         ]
-      files: ^tests/
-    - id: labs-pylint-test
-      name: "🐍 pylint · Lint labs test suite"
-      entry: pylint
-      language: system
-      types: [python]
-      args:
-        [
-          "-rn", # Only display messages
-          "-sn", # Don't display the score
-          "--rcfile=tests/.pylintrc", # Link to your config file
-        ]
-      files: ^pennylane/labs/tests/
+      files: ^(tests/|pennylane/labs/tests/)

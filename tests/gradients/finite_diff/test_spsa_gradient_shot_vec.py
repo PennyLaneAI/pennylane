@@ -15,8 +15,6 @@
 Tests for the gradients.spsa_gradient module using shot vectors.
 """
 
-# pylint: disable=abstract-method,too-many-arguments
-
 import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
@@ -35,12 +33,11 @@ default_shot_vector = (1000, 2000, 3000)
 many_shots_shot_vector = tuple([100000] * 3)
 
 
-def coordinate_sampler(indices, num_params, idx, rng=None):
+def coordinate_sampler(indices, num_params, idx, rng=None):  # pylint: disable=unused-argument
     """Return a single canonical basis vector, corresponding
     to the index ``indices[idx]``. This is a sequential coordinate sampler
     that allows to exactly reproduce derivatives, instead of using SPSA in the
     intended way."""
-    # pylint: disable=unused-argument
     idx = idx % len(indices)
     direction = np.zeros(num_params)
     direction[indices[idx]] = 1.0
@@ -446,10 +443,8 @@ class TestSpsaGradient:
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
-        class SpecialObservable(Operator):
+        class SpecialObservable(Operator):  # pylint: disable=too-few-public-methods
             """SpecialObservable"""
-
-            # pylint:disable=too-few-public-methods
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""
@@ -458,7 +453,6 @@ class TestSpsaGradient:
         class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device class supporting SpecialObservable."""
 
-            # pylint:disable=too-few-public-methods
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})

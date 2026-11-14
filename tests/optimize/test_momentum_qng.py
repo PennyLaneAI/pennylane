@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for the Momentum-QNG optimizer"""
 
-# pylint: disable=too-few-public-methods
 import pytest
 import scipy as sp
 

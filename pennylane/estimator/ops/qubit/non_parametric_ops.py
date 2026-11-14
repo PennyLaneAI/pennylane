@@ -23,8 +23,6 @@ from pennylane.estimator.resource_operator import (
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.wires import Wires
 
-# pylint: disable=arguments-differ
-
 
 class Hadamard(ResourceOperator):
     r"""Resource class for the Hadamard gate.
@@ -49,7 +47,7 @@ class Hadamard(ResourceOperator):
         super().__init__(wires=wires)
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -74,7 +72,7 @@ class Hadamard(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
@@ -216,7 +214,7 @@ class S(ResourceOperator):
         super().__init__(wires=wires)
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -236,7 +234,7 @@ class S(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
@@ -424,13 +422,13 @@ class SWAP(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute a resource estimation."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -584,7 +582,7 @@ class T(ResourceOperator):
         super().__init__(wires=wires)
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -609,7 +607,7 @@ class T(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
@@ -771,7 +769,7 @@ class X(ResourceOperator):
         super().__init__(wires=wires)
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -802,7 +800,7 @@ class X(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
@@ -944,7 +942,7 @@ class Y(ResourceOperator):
         super().__init__(wires=wires)
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -979,7 +977,7 @@ class Y(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})
@@ -1113,7 +1111,7 @@ class Z(ResourceOperator):
         super().__init__(wires=wires)
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -1137,7 +1135,7 @@ class Z(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, num_wires=cls.num_wires, params={})

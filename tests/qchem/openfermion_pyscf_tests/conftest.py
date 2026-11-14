@@ -53,10 +53,9 @@ def custom_wires(request):
 @pytest.fixture(scope="session", name="openfermion_support")
 def fixture_openfermion_support():
     """Fixture to determine whether openfermion and openfermionpyscf are installed."""
-    # pylint: disable=unused-import
     try:
-        import openfermion
-        import openfermionpyscf
+        import openfermion  # pylint: disable=unused-import
+        import openfermionpyscf  # pylint: disable=unused-import
 
         openfermion_support = True
     except ModuleNotFoundError:

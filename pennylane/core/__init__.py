@@ -41,6 +41,16 @@ Operator Types
 .. inheritance-diagram:: Operator Operation Channel StatePrepBase
     :parts: 1
 
+Pauli Arithmetic
+~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.core.pauli
+.. autosummary::
+    :toctree: api
+
+    ~PauliWord
+    ~PauliSentence
+
 Utility Functions
 ~~~~~~~~~~~~~~~~~
 
@@ -112,6 +122,7 @@ Transforms
 
 from .apply import apply
 from .queuing import QueuingManager, AnnotatedQueue
+from .pauli import PauliWord, PauliSentence
 
 from .operator import (
     Channel,
@@ -153,6 +164,8 @@ __all__ = [
     "Channel",
     "StatePrepBase",
     "StatePrepBase2",
+    "PauliWord",
+    "PauliSentence",
     "MeasurementProcess",
     "StateMeasurement",
     "SampleMeasurement",
