@@ -638,6 +638,27 @@ class TestDecomposition:
             double_phase,
         )
 
+    @pytest.mark.parametrize("evolution_time", [1e-4, 1e-5, 1e-6])
+    def test_fused_one_body_precision_close_to_identity(self, evolution_time):
+        """The fused one-body block keeps machine precision for small time steps, where its
+        basis rotation is close to the identity, in the base and double-phase circuits."""
+        # Fixed seed: for some matrices, the ``tol`` cutoff of ``givens_decomposition`` limits
+        # the accuracy (see https://github.com/PennyLaneAI/pennylane/issues/10509).
+        rng = np.random.default_rng(42)
+        num_orbitals = 3
+        core = rng.normal(size=(2, num_orbitals, num_orbitals)) * 0.4
+        core = 0.5 * (core + np.transpose(core, (0, 2, 1)))
+        leaf = np.stack([random_orthogonal(num_orbitals, rng) for _ in range(2)])
+        ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
+        wires = list(range(2 * num_orbitals))
+        expected = cdf_second_order_trotter_matrix(ham, evolution_time, 1)
+
+        actual = qp.matrix(qp.TrotterCDF(evolution_time, 1, ham, wires=wires), wire_order=wires)
+        block0, block1 = control_branches(qp.TrotterCDF, ham, wires, evolution_time, 1, True)
+        assert np.allclose(actual, expected, atol=1e-13, rtol=0)
+        assert np.allclose(block0, expected, atol=1e-13, rtol=0)
+        assert np.allclose(block1, expected.conj().T, atol=1e-13, rtol=0)
+
     @pytest.mark.slow
     def test_base_matches_expm_nonidentity_leaves(self, seed):
         """With random real-orthogonal leaves the circuit is no longer Trotter-exact, but
@@ -1006,9 +1027,10 @@ class TestDoublePhaseControlledDecomposition:
         assert {type(op).__name__ for op in ops} == {
             "BasisRotation",
             "CNOT",
+            "CY",
             "RZ",
             "IsingZZ",
-            "SingleExcitation",
+            "GlobalPhase",
         }
 
     def test_double_phase_controlled_matches_expm(self, diagonal_hamiltonian_cdf):

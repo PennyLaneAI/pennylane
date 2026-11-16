@@ -24,13 +24,13 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.numeric_hamiltonians import CDFHamiltonian
-from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift, SingleExcitation
+from pennylane.ops import CNOT, CRZ, CY, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math import adjoint, ctrl
 from pennylane.ops.op_math.controlled2 import ctrl_many_zeroed_work_wires
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
-from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
@@ -120,10 +120,10 @@ class TrotterCDF(Operator2):
     >>> dict(sorted(specs.items()))
     {'GlobalPhase': 1, 'IsingZZ': 66, 'PhaseShift': 60, 'SingleExcitation': 24}
 
-    The :class:`~.SingleExcitation` and :class:`~.PhaseShift` gates stem from the
-    :class:`~.BasisRotation` gates, which decompose further on ``lightning.qubit``, and from
-    the one-body evolution, which is implemented as a single Givens network (see Implementation
-    Details).
+    The :class:`~.SingleExcitation` and :class:`~.PhaseShift` gates are due to
+    :class:`~.BasisRotation` decomposing further on ``lightning.qubit``. The
+    :class:`~.PhaseShift` gates stem from the complex-valued basis rotations that implement the
+    one-body evolution (see Implementation Details).
 
     .. details::
         :title: Available decompositions
@@ -141,8 +141,7 @@ class TrotterCDF(Operator2):
                     skipped. The circuit shows :math:`w = 0`
 
                 :class:`~.BasisRotation` on :math:`N` wires | :math:`4(L-1)n + 4` | 4
-                :class:`~.SingleExcitation` | :math:`N(N-1)n` | 2
-                :class:`~.PhaseShift` | :math:`N(N+1)n` | 6
+                complex-valued :class:`~.BasisRotation` on :math:`N` wires | :math:`2n` | 2
                 :class:`~.IsingZZ` | :math:`BN(2N-1)` if :math:`w = 0` | 12
                 :class:`~.RZ` | :math:`BN` if :math:`w \geq 1` | 0
                 :class:`~.CRZ` | :math:`BN(N-1)/2` if :math:`w \geq 1` | 0
@@ -327,7 +326,7 @@ class TrotterCDF(Operator2):
         :math:`-\epsilon_p \Delta t = -2 \epsilon_p (\Delta t/2)`, accumulating :math:`RZ(-\epsilon_p t)`
         over the :math:`n` steps. The constant :math:`\epsilon_p/2` is deferred to the global phase (step 5).
         Except for the genuine controlled circuit, this layer and the basis rotations around it are
-        fused into a single Givens network (step 6).
+        fused into a single basis rotation (step 6).
 
         **4. Two-body diagonal**
         In the fragment basis the two-body generator is a sum over distinct wire pairs
@@ -400,17 +399,26 @@ class TrotterCDF(Operator2):
 
         acting in the frame of :math:`H_L` and including the identity part :math:`\epsilon_p/2` of
         step 3, which hence is not part of the global phase. The circuit implements :math:`W` with
-        the Givens decomposition of :class:`~.BasisRotation`, i.e., with
+        one complex-valued :class:`~.BasisRotation` per spin channel, i.e., with
         :math:`N(N-1)/2` :class:`~.SingleExcitation` and :math:`N(N+1)/2` :class:`~.PhaseShift`
-        gates per spin channel, instead of two basis rotations with :math:`N(N-1)/2`
+        gates, instead of two basis rotations with :math:`N(N-1)/2`
         :class:`~.SingleExcitation` gates each and :math:`N` :class:`~.RZ` gates.
 
-        For the double-phase circuit, note that :class:`~.SingleExcitation` gates are real, so
-        complex-conjugating the Givens network only negates its phases. For real leaves, this maps
-        :math:`W(\Delta t)` to :math:`W(-\Delta t)`, so only the phases need to be flipped by the
-        control wire, which is done with :class:`~.IsingZZ` gates. The global phase they incur in
-        each control branch is compensated by the :class:`~.RZ` on the control wire. For complex
-        leaves, the double-phase circuit does not fuse the one-body block.
+        For the double-phase circuit, the basis rotation is sandwiched by the particle-hole
+        transformation :math:`P = X_0 Y_1 X_2 Y_3 \cdots` on each spin channel, controlled by the
+        control wire (i.e., :class:`~.CNOT` and :class:`~.CY` gates). It maps any basis rotation
+        to its complex conjugate,
+
+        .. math::
+
+            P\, \mathcal{U}(u)\, P^\dagger = \det(u)\, \mathcal{U}(u^\ast),
+
+        where the :math:`Y` on every second wire compensates the signs of the Jordan-Wigner
+        transformation. For real leaves, :math:`W(\Delta t)^\ast = W(-\Delta t)`, so the control-1
+        branch implements the inverse one-body evolution, up to the phase
+        :math:`\det W = e^{-i\operatorname{tr}(\epsilon)\Delta t}` per spin channel. This phase is
+        compensated by the :class:`~.RZ` on the control wire and a :class:`~.GlobalPhase`. For
+        complex leaves, the double-phase circuit does not fuse the one-body block.
 
     """
 
@@ -548,18 +556,13 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
     z_rotations()  # pylint: disable=no-value-for-parameter
 
 
-def _fused_one_body_angles(hamiltonian, time_step):
-    r"""Gate angles of the fused one-body block.
+def _fused_one_body_unitary(hamiltonian, time_step):
+    r"""Single-particle rotation of the fused one-body block.
 
     In the frame of the last two-body fragment, the one-body evolution over ``time_step`` is the
     orbital rotation :math:`W = A\, \operatorname{diag}(e^{-i\epsilon_p \Delta t})\, A^\dagger` with
     :math:`A = U^{(L)\dagger} U^{(0)}`, i.e., the product of the two basis rotations into and out
-    of the one-body frame and the one-body diagonal layer. Its Givens decomposition consists of
-    ``SingleExcitation`` gates and phases, as in :class:`~.BasisRotation`.
-
-    Returns:
-        tuple[array]: the ``N`` diagonal phase angles, the ``N(N-1)/2`` ``SingleExcitation``
-        angles, the ``N(N-1)/2`` phase angles following them, and their ``(N(N-1)/2, 2)`` indices.
+    of the one-body frame and the one-body diagonal layer.
     """
     U_tensor = hamiltonian.leaf_tensors
     Z_tensor = hamiltonian.core_tensors
@@ -569,64 +572,42 @@ def _fused_one_body_angles(hamiltonian, time_step):
 
     A = _merge_leaves(U_tensor[-1], U_tensor[0])
     one_body_phases = math.exp(-1j * math.diag(Z_tensor[0]) * time_step)
-    W = (A * one_body_phases) @ _transpose_leaf(A)
-
-    phases, givens_list = math.decomposition.givens_decomposition(W)
-    givens_matrices, givens_ids = zip(*givens_list, strict=True)
-    givens_matrices = math.stack(givens_matrices)
-    se_angles = 2 * math.arccos(math.real(givens_matrices[:, 1, 1]))
-    givens_phase_angles = math.angle(givens_matrices[:, 0, 0] + givens_matrices[:, 1, 0])
-    givens_ids = math.array(givens_ids, like=math.get_interface(givens_matrices))
-    return math.angle(phases), se_angles, givens_phase_angles, givens_ids
+    return (A * one_body_phases) @ _transpose_leaf(A)
 
 
 def _apply_fused_one_body(  #  pylint: disable=unused-argument
-    angles, wires, control_wires, double_phase
+    unitary, wires, control_wires, double_phase
 ):
-    r"""Apply the fused one-body block on both spin channels (base or double-phase).
+    r"""Apply the fused one-body block as a :class:`~.BasisRotation` on both spin channels (base
+    or double-phase).
 
-    The ``SingleExcitation`` gates are real, so complex-conjugating the block only negates its
-    phase angles. For real leaves, this conjugation maps the block for :math:`\Delta t` to the one
-    for :math:`-\Delta t`, so the double-phase construction only needs to flip the phases with the
-    control wire, as ``IsingZZ`` gates. The relative global phase this incurs between the control
-    branches is compensated in the decomposition, see :func:`_fused_one_body_control_phase`.
+    In the double-phase circuit, the block is sandwiched by the controlled particle-hole
+    transformation :math:`P = X_0 Y_1 X_2 Y_3 \cdots` on each spin channel. For real leaves, it
+    maps the block for :math:`\Delta t` to the one for :math:`-\Delta t` in the control-1 branch,
+    up to the phase :math:`e^{-i\operatorname{tr}(\epsilon)\Delta t}` per spin channel, which is
+    compensated in the decomposition.
     """
     # pylint: disable=no-value-for-parameter
-    diag_angles, se_angles, givens_phase_angles, givens_ids = angles
+    num_orbitals = len(wires) // 2
 
-    def phase(angle, wire):
-        if len(control_wires) == 0:
-            PhaseShift(angle, wire)
-        else:
-            IsingZZ(angle, [control_wires[0], wire])
+    @for_loop(0, num_orbitals, 2)
+    def controlled_x(orbital):
+        CNOT([control_wires[0], wires[2 * orbital]])
+        CNOT([control_wires[0], wires[2 * orbital + 1]])
 
-    def givens_network(channel_wires):
-        @for_loop(len(diag_angles))
-        def diag_phases(idx):
-            phase(diag_angles[idx], channel_wires[idx])
+    @for_loop(1, num_orbitals, 2)
+    def controlled_y(orbital):
+        CY([control_wires[0], wires[2 * orbital]])
+        CY([control_wires[0], wires[2 * orbital + 1]])
 
-        @for_loop(len(se_angles))
-        def givens_rotations(idx):
-            i, j = givens_ids[idx]
-            SingleExcitation(se_angles[idx], [channel_wires[i], channel_wires[j]])
-            phase(givens_phase_angles[idx], channel_wires[i])
-
-        diag_phases()
-        givens_rotations()
-
-    givens_network(wires[::2])
-    givens_network(wires[1::2])
-
-
-def _fused_one_body_control_phase(angles, num_trotter_steps):
-    r"""Control ``RZ`` angle that compensates the double-phase fused one-body blocks.
-
-    ``IsingZZ(phi)`` realizes ``RZ(+-phi)`` in the two control branches, which differs from the
-    intended ``PhaseShift(+-phi)`` by the phase :math:`e^{\mp i\phi/2}`. This is compensated by
-    ``RZ(-phi)`` on the control wire, accumulated over both spin channels and all Trotter steps.
-    """
-    diag_angles, _, givens_phase_angles, _ = angles
-    return -2 * num_trotter_steps * (math.sum(diag_angles) + math.sum(givens_phase_angles))
+    if len(control_wires) > 0:
+        controlled_x()
+        controlled_y()
+    BasisRotation(unitary_matrix=unitary, wires=wires[::2])
+    BasisRotation(unitary_matrix=unitary, wires=wires[1::2])
+    if len(control_wires) > 0:
+        controlled_x()
+        controlled_y()
 
 
 def _apply_two_body_diagonal_with_work_wires(  # pylint: disable=too-many-arguments
@@ -755,14 +736,16 @@ def _cdf_decomposition_helpers(work_wires, has_control=False, double_phase=False
 
 
 def _fused_one_body_resource_counts(num_trotter_steps, num_cas, has_control):
-    """Gate counts of the fused one-body blocks, with ``N(N-1)/2`` ``SingleExcitation`` gates and
-    ``N(N+1)/2`` phases per Trotter step and spin channel. The phases are ``IsingZZ`` gates with
-    the control wire in the double-phase circuit."""
-    num_givens = num_cas * (num_cas - 1) // 2
-    return {
-        SingleExcitation: 2 * num_trotter_steps * num_givens,
-        IsingZZ if has_control else PhaseShift: 2 * num_trotter_steps * (num_cas + num_givens),
+    """Gate counts of the fused one-body blocks, with one complex-valued ``BasisRotation`` per
+    Trotter step and spin channel. In the double-phase circuit, each block is sandwiched by
+    controlled Paulis, which are ``CNOT`` gates for even and ``CY`` gates for odd orbitals."""
+    resources = {
+        BasisRotation(Complex[num_cas, num_cas], wires=Wire[num_cas]): 2 * num_trotter_steps
     }
+    if has_control:
+        resources[CNOT] = 4 * num_trotter_steps * ((num_cas + 1) // 2)
+        resources[CY] = 4 * num_trotter_steps * (num_cas // 2)
+    return resources
 
 
 def _cdf_resource_counts(
@@ -805,6 +788,7 @@ def _cdf_resource_counts(
     elif double_phase:
         one_body_rotation = two_body_rotation = IsingZZ
         resources[RZ] += 1
+        resources[GlobalPhase] += int(fused)
     else:
         one_body_rotation = CRZ
         two_body_rotation = ctrl(IsingZZ(Float, wires=Wire[2]), control=Wire[1])
@@ -860,7 +844,7 @@ def _trotter_cdf_decomposition(  # pylint: disable=too-many-arguments,unused-arg
     # always the plain (uncontrolled) e^{-iHt} circuit.
     if num_trotter_steps > 0:
         hamiltonian = hamiltonian.normalize_leaf_determinant()
-        angles = _fused_one_body_angles(hamiltonian, evolution_time / num_trotter_steps)
+        unitary = _fused_one_body_unitary(hamiltonian, evolution_time / num_trotter_steps)
         _run_trotter_steps(
             evolution_time,
             num_trotter_steps,
@@ -868,7 +852,7 @@ def _trotter_cdf_decomposition(  # pylint: disable=too-many-arguments,unused-arg
             wires,
             (),
             **_cdf_decomposition_helpers(work_wires),
-            apply_fused_one_body=partial(_apply_fused_one_body, angles),
+            apply_fused_one_body=partial(_apply_fused_one_body, unitary),
         )
         phi = (_fused_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
         GlobalPhase(phi)
@@ -920,16 +904,16 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
         # e^{-i(H - s)t} / e^{+i(H - s)t}, where s = _energy_shift is the identity part of H.
         # We apply the energy shift explicitly and symmetrically as RZ(2*phi) on the control
         # wire (= diag(e^{-i s t}, e^{+i s t})), making the branches exactly the full-time
-        # e^{-iHt} / e^{+iHt}. For real leaves, the one-body block is fused into a single Givens
-        # network, which implements the identity part of the one-body fragment itself and whose
-        # IsingZZ phases need an additional compensation on the control wire.
+        # e^{-iHt} / e^{+iHt}. For real leaves, the one-body block is fused into a single
+        # BasisRotation, which implements the identity part tr(eps) of the one-body fragment
+        # itself. Its controlled particle-hole sandwich adds e^{-2i tr(eps) t} to the control-1
+        # branch, so the required control phase diag(e^{-i (s - tr(eps)) t}, e^{i (s + tr(eps)) t})
+        # is RZ(2*phi) up to the global phase e^{i tr(eps) t}.
+        fused = not math.is_complex_dtype(hamiltonian.leaf_tensors)
         fused_kwargs = {}
-        control_phase = 2 * phi
-        if not math.is_complex_dtype(hamiltonian.leaf_tensors):
-            angles = _fused_one_body_angles(hamiltonian, evolution_time / num_trotter_steps)
-            fused_kwargs["apply_fused_one_body"] = partial(_apply_fused_one_body, angles)
-            fused_phi = (_fused_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
-            control_phase = 2 * fused_phi + _fused_one_body_control_phase(angles, num_trotter_steps)
+        if fused:
+            unitary = _fused_one_body_unitary(hamiltonian, evolution_time / num_trotter_steps)
+            fused_kwargs["apply_fused_one_body"] = partial(_apply_fused_one_body, unitary)
         _run_trotter_steps(
             evolution_time,
             num_trotter_steps,
@@ -940,7 +924,9 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
             **helpers,
             **fused_kwargs,
         )
-        RZ(control_phase, control_wires)
+        RZ(2 * phi, control_wires)
+        if fused:
+            GlobalPhase(-math.trace(hamiltonian.core_tensors[0]) * evolution_time)
         return
 
     # Genuine controlled unitary: control each diagonal rotation at the full angle (basis

@@ -27,9 +27,9 @@ TROTTER_GATE_SET = {
     "RZ",
     "IsingZZ",
     "CNOT",
+    "CY",
     "GlobalPhase",
     "PhaseShift",
-    "SingleExcitation",
     "StatePrep",
 }
 
@@ -40,10 +40,11 @@ CATALYST_GATE_SET_GENUINE = {"Hadamard", "BasisRotation", "RZ", "CNOT", "PhaseSh
 CATALYST_GATE_SET_DOUBLE_PHASE = {
     "Hadamard",
     "BasisRotation",
-    "SingleExcitation",
     "RZ",
     "CNOT",
+    "CY",
     "IsingZZ",
+    "GlobalPhase",
     "ForLoop",
 }
 
@@ -199,8 +200,8 @@ def assert_resource_counts_match(resources, operations):
     def resource_name(resource):
         return resource.__name__ if isinstance(resource, type) else resource.name
 
-    expected = Counter(
-        {resource_name(resource): count for resource, count in resources.items() if count}
-    )
+    expected = Counter()
+    for resource, count in resources.items():
+        expected[resource_name(resource)] += count
     actual = Counter(op.name for op in operations)
     assert actual == expected
