@@ -217,6 +217,7 @@ New features since last release
   `(#10138) <https://github.com/PennyLaneAI/pennylane/pull/10138>`__
   `(#10120) <https://github.com/PennyLaneAI/pennylane/pull/10120>`__
   `(#10340) <https://github.com/PennyLaneAI/pennylane/pull/10340>`__
+  `(#10450) <https://github.com/PennyLaneAI/pennylane/pull/10450>`__
 
 * Three new operators called :class:`pennylane.PPR_2`, :class:`pennylane.PPR_4` and
   :class:`pennylane.PPR_8` have been added, which represent the Pauli product rotations
@@ -895,6 +896,16 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* Controlled :class:`~.SWAP` and :class:`~.PauliZ` operators now use their work wires when
+  decomposed. The decompositions into :class:`~.CSWAP` (one control wire) and :class:`~.CCZ`
+  (two control wires) are now separate decomposition rules, and the decompositions via
+  :class:`~.MultiControlledX` apply to any number of control wires.
+
+  A controlled :class:`~.PhaseShift` with any number of control wires has a new decomposition into
+  a single :class:`~.PhaseShift` on one of the provided zeroed work wires, computed with a
+  :class:`~.TemporaryAND` ladder, that requires one zeroed work wire per control wire.
+  `(#10455) <https://github.com/PennyLaneAI/pennylane/pull/10455>`__
+
 * :func:`~pennylane.list_decomps` now includes generic controlled fallback rules when given an
   operator name such as ``"C(RX)"``. Their registered conditions determine applicability
   from operator arguments.
@@ -1390,6 +1401,11 @@ Improvements 🛠
   those of :func:`~pennylane.estimate` and :func:`~.track` are interpreted in the same way. The
   levels are documented in a single place in :func:`~.workflow.get_compile_pipeline`.
   `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
+
+* The levels printed by :func:`~.analyze` are now labelled ``After <pass name>`` (e.g.,
+  ``Level: After merge-rotations``), since they describe the circuit after that pass has been
+  applied. The keys of ``CircuitSpecs.resources`` are unchanged.
+  `(#10493) <https://github.com/PennyLaneAI/pennylane/pull/10493>`__
 
 Labs: a place for unified and rapid prototyping of research software 🧪
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2337,6 +2353,11 @@ Internal changes ⚙️
 Documentation 📝
 ~~~~~~~~~~~~~~~~
 
+* The documentation of :attr:`~.Node.init_args` now describes ``peer=``, the ``config`` key with
+  which an RDMA :class:`~.Coprocessor` names the kind of controller it answers, and the
+  ``backend`` argument of :class:`~.Controller` lists the default and FPGA backends.
+  `(#10530) <https://github.com/PennyLaneAI/pennylane/pull/10530>`__
+
 * The ``level`` argument of :func:`~.drawer.draw`, :func:`~.drawer.draw_mpl`,
   :func:`~.workflow.construct_tape` and :func:`~.noise.add_noise` is now documented in
   :func:`~.workflow.construct_batch`.
@@ -2415,6 +2436,10 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed a precision loss in :func:`~pennylane.math.decomposition.givens_decomposition` and
+  the complex-valued decomposition of :class:`~.BasisRotation` for unitaries close to the identity.
+  `(#10518) <https://github.com/PennyLaneAI/pennylane/pull/10518>`__
 
 * Fixed a bug where AutoGraph raised an error for ``for`` loops over static iterables
   that cannot be converted to arrays, such as lists of strings. These loops, including
