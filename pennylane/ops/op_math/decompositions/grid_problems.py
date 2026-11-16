@@ -886,6 +886,7 @@ class GridIterator:
             if math.ceil(lower_bound_a) == math.floor(upper_bound_a):
                 a = int(math.ceil(lower_bound_a))
                 # Check if the solution satisfies both bounds on x and y.
+                # pylint: disable-next=chained-comparison
                 if (x0_scaled + y0_scaled <= 2 * a) and (2 * a <= x1_scaled + y1_scaled):
                     alpha, beta = a + b * _SQRT2, a - b * _SQRT2
                     # Check if the consecutive solutions are within the desired bounds.
