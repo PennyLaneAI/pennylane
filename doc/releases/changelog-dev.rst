@@ -1891,6 +1891,9 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* Added pinned local ``ty`` tooling and a diagnostic baseline for the package.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * Updated Pylint to 4.1.3, cleaned up suppression scope and formatting, and made unnecessary
   suppressions fail lint. Labs tests now consistently use the test lint configuration.
   `(#10462) <https://github.com/PennyLaneAI/pennylane/pull/10462>`__
