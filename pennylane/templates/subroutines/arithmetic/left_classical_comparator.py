@@ -93,7 +93,7 @@ class LeftClassicalComparator(Operator2):
                     Conditional gates depend on :math:`L` and :math:`c`.
                     Their counts are upper bounds; the example counts are for the
                     circuit shown
-                
+
                 :class:`~.TemporaryAND` | :math:`n - 1` | 2
                 :class:`~.CNOT` | :math:`n - 1` | 2
                 :class:`~.CNOT` (conditional) | :math:`\leq 1` | 0
