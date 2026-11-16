@@ -896,6 +896,16 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* Controlled :class:`~.SWAP` and :class:`~.PauliZ` operators now use their work wires when
+  decomposed. The decompositions into :class:`~.CSWAP` (one control wire) and :class:`~.CCZ`
+  (two control wires) are now separate decomposition rules, and the decompositions via
+  :class:`~.MultiControlledX` apply to any number of control wires.
+
+  A controlled :class:`~.PhaseShift` with any number of control wires has a new decomposition into
+  a single :class:`~.PhaseShift` on one of the provided zeroed work wires, computed with a
+  :class:`~.TemporaryAND` ladder, that requires one zeroed work wire per control wire.
+  `(#10455) <https://github.com/PennyLaneAI/pennylane/pull/10455>`__
+
 * :func:`~pennylane.list_decomps` now includes generic controlled fallback rules when given an
   operator name such as ``"C(RX)"``. Their registered conditions determine applicability
   from operator arguments.
@@ -1392,6 +1402,11 @@ Improvements 🛠
   levels are documented in a single place in :func:`~.workflow.get_compile_pipeline`.
   `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
+* The levels printed by :func:`~.analyze` are now labelled ``After <pass name>`` (e.g.,
+  ``Level: After merge-rotations``), since they describe the circuit after that pass has been
+  applied. The keys of ``CircuitSpecs.resources`` are unchanged.
+  `(#10493) <https://github.com/PennyLaneAI/pennylane/pull/10493>`__
+
 Labs: a place for unified and rapid prototyping of research software 🧪
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1861,6 +1876,10 @@ Breaking changes 💔
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
+* :class:`~.Barrier` no longer accepts ``only_visual``. Barriers are preserved by
+  simplification and separate compilation into blocks.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 Deprecations 👋
 ~~~~~~~~~~~~~~~
 
@@ -1890,6 +1909,10 @@ Deprecations 👋
 
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
+
+* :class:`~.Barrier` now uses a dedicated program-capture primitive while retaining
+  the ``Operator2`` argument format and operator reconstruction behavior.
+  `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
 
 * Updated Pylint to 4.1.3, cleaned up suppression scope and formatting, and made unnecessary
   suppressions fail lint. Labs tests now consistently use the test lint configuration.
@@ -2337,6 +2360,11 @@ Internal changes ⚙️
 
 Documentation 📝
 ~~~~~~~~~~~~~~~~
+
+* The documentation of :attr:`~.Node.init_args` now describes ``peer=``, the ``config`` key with
+  which an RDMA :class:`~.Coprocessor` names the kind of controller it answers, and the
+  ``backend`` argument of :class:`~.Controller` lists the default and FPGA backends.
+  `(#10530) <https://github.com/PennyLaneAI/pennylane/pull/10530>`__
 
 * The ``level`` argument of :func:`~.drawer.draw`, :func:`~.drawer.draw_mpl`,
   :func:`~.workflow.construct_tape` and :func:`~.noise.add_noise` is now documented in
