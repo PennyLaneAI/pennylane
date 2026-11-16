@@ -1876,9 +1876,14 @@ Breaking changes 💔
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
+* PyQuil and Qualtran interoperability has been removed from ``qp.io`` and the top-level
+  PennyLane namespace. The removed APIs are ``from_pyquil``, ``from_quil``, ``from_quil_file``,
+  ``FromBloq``, ``ToBloq``, ``to_bloq``, and ``bloq_registers``.
+  `(#10498) <https://github.com/PennyLaneAI/pennylane/pull/10498>`__
+
 * :class:`~.Barrier` no longer accepts ``only_visual``. Barriers are preserved by
   simplification and separate compilation into blocks.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
 
 Deprecations 👋
 ~~~~~~~~~~~~~~~
@@ -1909,6 +1914,9 @@ Deprecations 👋
 
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
+
+* Added pinned local ``ty`` tooling and a diagnostic baseline for the package.
+  `(#10537) <https://github.com/PennyLaneAI/pennylane/pull/10537>`__
 
 * :class:`~.Barrier` now uses a dedicated program-capture primitive while retaining
   the ``Operator2`` argument format and operator reconstruction behavior.
@@ -2441,6 +2449,7 @@ Documentation 📝
   `(#10433) <https://github.com/PennyLaneAI/pennylane/pull/10433>`__
   `(#10436) <https://github.com/PennyLaneAI/pennylane/pull/10436>`__
   `(#10453) <https://github.com/PennyLaneAI/pennylane/pull/10453>`__
+  `(#10435) <https://github.com/PennyLaneAI/pennylane/pull/10435>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
