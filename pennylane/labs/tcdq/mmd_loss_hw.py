@@ -127,7 +127,7 @@ def _marginal_probs(d: int, bandwidth: float, graph_type: str) -> jnp.ndarray:
     raise ValueError(f"Unknown graph_type {graph_type!r}; use 'cycle' or 'complete'.")
 
 
-def _sample_fourier_indices(  # pylint: disable=too-many-arguments,too-many-locals
+def _sample_fourier_indices(  # pylint: disable=too-many-arguments
     key: ArrayLike,
     n_ops: int,
     n_qudits: int,
@@ -282,7 +282,6 @@ def _unbiased_mmd_squared(  # pylint: disable=too-many-arguments
     return jnp.sqrt(jnp.abs(mmd_sq)) if sqrt_loss else mmd_sq
 
 
-# pylint: disable=too-many-arguments,too-many-locals
 @partial(
     jax.jit,
     static_argnames=[
@@ -295,7 +294,7 @@ def _unbiased_mmd_squared(  # pylint: disable=too-many-arguments
         "graph_type",
     ],
 )
-def _compute_qudit_loss_for_bandwidth(
+def _compute_qudit_loss_for_bandwidth(  # pylint: disable=too-many-arguments
     bandwidth: float,
     obs_key: jnp.ndarray,
     eval_key: jnp.ndarray,

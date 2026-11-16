@@ -28,8 +28,6 @@ from pennylane.ops.op_math import Adjoint
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
-# pylint: disable=too-many-branches
-
 
 def _check_position(position):
     """Checks the position argument to determine if an operation or list of operations was provided."""
@@ -55,7 +53,7 @@ def _check_position(position):
 
 
 @transform
-def insert(
+def insert(  # pylint: disable=too-many-branches
     tape: QuantumScript,
     op: Callable | type[Operation],
     op_args: tuple | float,

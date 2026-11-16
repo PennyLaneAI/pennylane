@@ -428,8 +428,7 @@ class TrotterVibronic(Operator2):
         "work_wires": Wire[-1],
     }
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         evolution_time,
         num_trotter_steps,
@@ -498,8 +497,7 @@ class TrotterVibronic(Operator2):
         )
 
 
-# pylint: disable-next=too-many-arguments
-def _trotter_vibronic_resources(
+def _trotter_vibronic_resources(  # pylint: disable=too-many-arguments,unused-argument
     evolution_time,
     num_trotter_steps,
     hamiltonian,
@@ -521,7 +519,6 @@ def _trotter_vibronic_resources(
     """
     # ``evolution_time`` and ``cache_wires`` are part of the shared resource/decomposition
     # signature but do not affect the gate counts.
-    # pylint: disable=unused-argument
     num_fragments = hamiltonian.num_fragments
     n_states = hamiltonian.num_states
     n_modes = hamiltonian.num_modes
@@ -671,8 +668,7 @@ def _required_work_wire_sizes(hamiltonian, vib_wires, b):
     return 2 * k, _required_work_size(n, k, b)
 
 
-# pylint: disable-next=too-many-arguments
-def _trotter_vibronic_work_wires(
+def _trotter_vibronic_work_wires(  # pylint: disable=too-many-arguments
     hamiltonian, vib_wires, coefficient_wires, phase_gradient_wires, cache_wires, work_wires, **_
 ):
     """Number of zeroed work wires allocated when ``coefficient_wires``/``cache_wires``/
@@ -692,8 +688,7 @@ def _trotter_vibronic_work_wires(
 @register_resources(
     _trotter_vibronic_resources, exact=False, work_wires=_trotter_vibronic_work_wires
 )
-# pylint: disable-next=too-many-arguments
-def _trotter_vibronic_decomposition(
+def _trotter_vibronic_decomposition(  # pylint: disable=too-many-arguments
     evolution_time,
     num_trotter_steps,
     hamiltonian,
@@ -1174,8 +1169,7 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
 # ---------------------------------------------------------------------------
 
 
-# pylint: disable-next=too-many-arguments,too-many-statements
-def _trotter_step_second_order(
+def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-statements
     time,
     hamiltonian,
     registers,
@@ -1208,6 +1202,7 @@ def _trotter_step_second_order(
     num_position_fragments = hamiltonian.num_fragments
 
     def position_fragments(i):
+        # pylint: disable=no-value-for-parameter
         const_coeffs = all_constant[i]
         linear_coeffs = all_linear[i]
         quadratic_coeffs = all_quadratic[i]
@@ -1294,13 +1289,10 @@ def _trotter_step_second_order(
 
         prev_bitstrings = np.zeros((n_states, precision), dtype=int)
         prev_bitstrings = constant_term(prev_bitstrings)
-        # pylint: disable-next=no-value-for-parameter
         prev_bitstrings = linear_terms(prev_bitstrings)
-        # pylint: disable-next=no-value-for-parameter
         prev_bitstrings = quadratic_terms(prev_bitstrings)
         # Skip empty bilinear loop: zero-iteration ``for_loop`` still traces under capture.
         if bilinear_indices.shape[1] > 0:
-            # pylint: disable-next=no-value-for-parameter
             prev_bitstrings = bilinear_terms(prev_bitstrings)
 
         # Finish up the coefficients register by unloading the last loaded coefficients
@@ -1341,18 +1333,14 @@ def _trotter_step_second_order(
 
             cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
-        # pylint: disable-next=no-value-for-parameter
-        kinetic_terms()
+        kinetic_terms()  # pylint: disable=no-value-for-parameter
 
-    # pylint: disable-next=no-value-for-parameter
     for_loop(num_position_fragments)(position_fragments)()
     kinetic_fragment()
-    # pylint: disable-next=no-value-for-parameter
     for_loop(num_position_fragments - 1, -1, -1)(position_fragments)()
 
 
-# pylint: disable-next=too-many-arguments
-def _run_trotter_vibronic(
+def _run_trotter_vibronic(  # pylint: disable=too-many-arguments
     evolution_time,
     num_trotter_steps,
     hamiltonian,

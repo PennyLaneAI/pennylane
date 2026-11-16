@@ -16,8 +16,6 @@ Unit tests for the RandomLayers template.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -57,19 +55,18 @@ def test_hyperparameters():
     }
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the behavior of the flatten and unflatten methods."""
     weights = np.array([[0.1, -2.1, 1.4]])
     op = qp.RandomLayers(weights, wires=(0, 1))
 
-    data, metadata = op._flatten()
+    data, metadata = op._flatten()  # pylint: disable=protected-access
 
     assert qp.math.allclose(data[0], weights)
     # check metadata hashable
     assert hash(metadata)
 
-    new_op = type(op)._unflatten(*op._flatten())
+    new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
     qp.assert_equal(new_op, op)
     assert new_op is not op
 
@@ -165,7 +162,7 @@ class TestDecomposition:
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
-class TestInputs:
+class TestInputs:  # pylint: disable=too-few-public-methods
     """Test inputs and pre-processing."""
 
     def test_exception_wrong_dim(self):
@@ -185,7 +182,7 @@ class TestInputs:
             circuit(phi)
 
 
-class TestAttributes:
+class TestAttributes:  # pylint: disable=too-few-public-methods
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(

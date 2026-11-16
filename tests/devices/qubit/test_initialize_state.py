@@ -25,15 +25,14 @@ from pennylane.devices.qubit import create_initial_state
 class TestInitializeState:
     """Test the functions in initialize_state.py"""
 
-    # pylint:disable=unused-argument,too-few-public-methods
-    class DefaultPrep(StatePrepBase):
+    class DefaultPrep(StatePrepBase):  # pylint: disable=too-few-public-methods
         """A dummy class that assumes it was given a state vector."""
 
         def __init__(self, *args, **kwargs):
             self.dtype = kwargs.pop("dtype", None)
             super().__init__(*args, **kwargs)
 
-        def state_vector(self, wire_order=None):
+        def state_vector(self, wire_order=None):  # pylint: disable=unused-argument
             sv = self.parameters[0]
             if self.dtype is not None:
                 sv = qp.math.cast(sv, self.dtype)
