@@ -120,10 +120,9 @@ class TrotterCDF(Operator2):
     >>> dict(sorted(specs.items()))
     {'GlobalPhase': 1, 'IsingZZ': 66, 'PhaseShift': 60, 'SingleExcitation': 24}
 
-    The :class:`~.SingleExcitation` and :class:`~.PhaseShift` gates are due to
-    :class:`~.BasisRotation` decomposing further on ``lightning.qubit``. The
-    :class:`~.PhaseShift` gates stem from the complex-valued basis rotations that implement the
-    one-body evolution (see Implementation Details).
+    The :class:`~.SingleExcitation` and :class:`~.PhaseShift` gates come from
+    :class:`~.BasisRotation`, which ``lightning.qubit`` decomposes further. The phase shifts stem
+    from the complex-valued basis rotations of the one-body evolution (see Implementation Details).
 
     .. details::
         :title: Available decompositions
@@ -325,10 +324,9 @@ class TrotterCDF(Operator2):
         central full :math:`\Delta t` term (visited once per step), so the emitted angle is
         :math:`-\epsilon_p \Delta t = -2 \epsilon_p (\Delta t/2)`, accumulating :math:`RZ(-\epsilon_p t)`
         over the :math:`n` steps. The constant :math:`\epsilon_p/2` is deferred to the global phase (step 5).
-        This layer and the basis rotations around it are fused into a single basis rotation
-        (step 6) in the uncontrolled circuit, and in the double-phase circuit for real leaves.
-        For complex leaves in the double-phase circuit, and in the genuine controlled circuit,
-        the one-body block is never fused.
+        We fuse this layer with the surrounding basis rotations (step 6) in the uncontrolled
+        circuit and in the double-phase circuit with real leaves. It is never fused for complex
+        leaves in the double-phase circuit, or with genuine control.
 
         **4. Two-body diagonal**
         In the fragment basis the two-body generator is a sum over distinct wire pairs
@@ -399,28 +397,27 @@ class TrotterCDF(Operator2):
             W = A\, \operatorname{diag}(e^{-i\epsilon_p \Delta t})\, A^\dagger,
             \qquad A = \mathcal{U}^{(L)\dagger}\mathcal{U}^{(0)},
 
-        acting in the frame of :math:`H_L` and including the identity part :math:`\epsilon_p/2` of
-        step 3, which hence is not part of the global phase. The circuit implements :math:`W` with
-        one complex-valued :class:`~.BasisRotation` per spin channel, i.e., with
-        :math:`N(N-1)/2` :class:`~.SingleExcitation` and :math:`N(N+1)/2` :class:`~.PhaseShift`
-        gates, instead of two basis rotations with :math:`N(N-1)/2`
-        :class:`~.SingleExcitation` gates each and :math:`N` :class:`~.RZ` gates.
+        in the frame of :math:`H_L`. It includes the identity part :math:`\epsilon_p/2` from
+        step 3, which therefore is not part of the global phase. We implement :math:`W` with one
+        complex-valued :class:`~.BasisRotation` per spin channel, i.e., :math:`N(N-1)/2`
+        :class:`~.SingleExcitation` and :math:`N(N+1)/2` :class:`~.PhaseShift` gates, instead of
+        two basis rotations with :math:`N(N-1)/2` :class:`~.SingleExcitation` gates each and
+        :math:`N` :class:`~.RZ` gates.
 
-        For the double-phase circuit, the basis rotation is sandwiched by the particle-hole
+        For the double-phase circuit, we sandwich the basis rotation with the particle-hole
         transformation :math:`P = X_0 Y_1 X_2 Y_3 \cdots` on each spin channel, controlled by the
-        control wire (i.e., :class:`~.CNOT` and :class:`~.CY` gates). It maps any basis rotation
+        control wire (:class:`~.CNOT` and :class:`~.CY` gates). :math:`P` maps any basis rotation
         to its complex conjugate,
 
         .. math::
 
             P\, \mathcal{U}(u)\, P^\dagger = \det(u)\, \mathcal{U}(u^\ast),
 
-        where the :math:`Y` on every second wire compensates the signs of the Jordan-Wigner
-        transformation. For real leaves, :math:`W(\Delta t)^\ast = W(-\Delta t)`, so the control-1
-        branch implements the inverse one-body evolution, up to the phase
-        :math:`\det W = e^{-i\operatorname{tr}(\epsilon)\Delta t}` per spin channel. This phase is
-        compensated by the :class:`~.RZ` on the control wire and a :class:`~.GlobalPhase`. For
-        complex leaves, the double-phase circuit does not fuse the one-body block.
+        where the :math:`Y` gates take care of the Jordan-Wigner signs. For real leaves,
+        :math:`W(\Delta t)^\ast = W(-\Delta t)`, so the control-1 branch runs the inverse one-body
+        evolution, up to the phase :math:`\det W = e^{-i\operatorname{tr}(\epsilon)\Delta t}` per
+        spin channel. We compensate this phase with the :class:`~.RZ` on the control wire and a
+        :class:`~.GlobalPhase`. For complex leaves, this trick does not work, so we do not fuse.
 
     """
 
@@ -559,12 +556,11 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
 
 
 def _fused_one_body_unitary(hamiltonian, time_step):
-    r"""Single-particle rotation of the fused one-body block.
+    r"""Single-particle rotation :math:`W = A\, \operatorname{diag}(e^{-i\epsilon_p \Delta t})\,
+    A^\dagger` of the fused one-body block, with :math:`A = U^{(L)\dagger} U^{(0)}`.
 
-    In the frame of the last two-body fragment, the one-body evolution over ``time_step`` is the
-    orbital rotation :math:`W = A\, \operatorname{diag}(e^{-i\epsilon_p \Delta t})\, A^\dagger` with
-    :math:`A = U^{(L)\dagger} U^{(0)}`, i.e., the product of the two basis rotations into and out
-    of the one-body frame and the one-body diagonal layer.
+    It combines the basis rotations into and out of the one-body frame with the one-body diagonal
+    layer, in the frame of the last two-body fragment.
     """
     U_tensor = hamiltonian.leaf_tensors
     Z_tensor = hamiltonian.core_tensors
@@ -580,14 +576,12 @@ def _fused_one_body_unitary(hamiltonian, time_step):
 def _apply_fused_one_body(  #  pylint: disable=unused-argument
     unitary, wires, control_wires, double_phase
 ):
-    r"""Apply the fused one-body block as a :class:`~.BasisRotation` on both spin channels (base
-    or double-phase).
+    r"""Apply the fused one-body block as a :class:`~.BasisRotation` on both spin channels.
 
-    In the double-phase circuit, the block is sandwiched by the controlled particle-hole
-    transformation :math:`P = X_0 Y_1 X_2 Y_3 \cdots` on each spin channel. For real leaves, it
-    maps the block for :math:`\Delta t` to the one for :math:`-\Delta t` in the control-1 branch,
-    up to the phase :math:`e^{-i\operatorname{tr}(\epsilon)\Delta t}` per spin channel, which is
-    compensated in the decomposition.
+    For the double-phase circuit, we sandwich it with the controlled particle-hole transformation
+    :math:`P = X_0 Y_1 X_2 Y_3 \cdots`. For real leaves, this flips :math:`\Delta t\to-\Delta t`
+    in the control-1 branch, up to the phase :math:`e^{-i\operatorname{tr}(\epsilon)\Delta t}` per
+    spin channel, which the decomposition compensates.
     """
     # pylint: disable=no-value-for-parameter
     num_orbitals = len(wires) // 2
@@ -706,8 +700,8 @@ def _energy_shift(hamiltonian):
 
 
 def _fused_energy_shift(hamiltonian):
-    """Energy shift for circuits with a fused one-body block, which already implements the
-    identity part :math:`\\sum_p \\epsilon_p` of the one-body fragment."""
+    """Energy shift with a fused one-body block, which already implements the identity part
+    :math:`\\sum_p \\epsilon_p` of the one-body fragment."""
     return _energy_shift(hamiltonian) - math.trace(hamiltonian.core_tensors[0])
 
 
@@ -738,9 +732,9 @@ def _cdf_decomposition_helpers(work_wires, has_control=False, double_phase=False
 
 
 def _fused_one_body_resource_counts(num_trotter_steps, num_cas, has_control):
-    """Gate counts of the fused one-body blocks, with one complex-valued ``BasisRotation`` per
-    Trotter step and spin channel. In the double-phase circuit, each block is sandwiched by
-    controlled Paulis, which are ``CNOT`` gates for even and ``CY`` gates for odd orbitals."""
+    """Gate counts of the fused one-body blocks: one complex-valued ``BasisRotation`` per Trotter
+    step and spin channel. The double-phase circuit adds the controlled Paulis around it, i.e.,
+    ``CNOT`` for even and ``CY`` for odd orbitals."""
     resources = {
         BasisRotation(Complex[num_cas, num_cas], wires=Wire[num_cas]): 2 * num_trotter_steps
     }
@@ -775,7 +769,7 @@ def _cdf_resource_counts(
     num_onebody_blocks = num_trotter_steps
     num_twobody_rotations = num_twobody_blocks * num_cas * (2 * num_cas - 1)
     num_onebody_rotations = num_onebody_blocks * 2 * num_cas
-    # The fused one-body block replaces two basis rotations per step and spin channel.
+    # The fused block saves two basis rotations per step and spin channel.
     num_sysrot_calls = 2 * (num_two_body_fragments - int(fused)) * num_trotter_steps + 2
 
     # NOTE: 'BasisRotation' decomposes differently depending on the dtype of the unitary matrix.
@@ -906,11 +900,10 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
         # e^{-i(H - s)t} / e^{+i(H - s)t}, where s = _energy_shift is the identity part of H.
         # We apply the energy shift explicitly and symmetrically as RZ(2*phi) on the control
         # wire (= diag(e^{-i s t}, e^{+i s t})), making the branches exactly the full-time
-        # e^{-iHt} / e^{+iHt}. For real leaves, the one-body block is fused into a single
-        # BasisRotation, which implements the identity part tr(eps) of the one-body fragment
-        # itself. Its controlled particle-hole sandwich adds e^{-2i tr(eps) t} to the control-1
-        # branch, so the required control phase diag(e^{-i (s - tr(eps)) t}, e^{i (s + tr(eps)) t})
-        # is RZ(2*phi) up to the global phase e^{i tr(eps) t}.
+        # e^{-iHt} / e^{+iHt}. For real leaves, we fuse the one-body block into one BasisRotation,
+        # which implements the one-body identity part tr(eps) itself. Its controlled particle-hole
+        # sandwich adds e^{-2i tr(eps) t} to the control-1 branch, so the control phase we need,
+        # diag(e^{-i (s - tr(eps)) t}, e^{i (s + tr(eps)) t}), is RZ(2*phi) up to e^{i tr(eps) t}.
         fused = not math.is_complex_dtype(hamiltonian.leaf_tensors)
         fused_kwargs = {}
         if fused:

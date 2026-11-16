@@ -895,11 +895,10 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
-* Updated the decomposition of :class:`~.TrotterCDF` and its double-phase controlled decomposition
-  to implement the one-body evolution, together with the basis rotations around it, as a single
-  complex-valued :class:`~.BasisRotation`. This replaces two basis rotations and the one-body
-  ``RZ`` layer per Trotter step and spin channel. In the double-phase circuit, the fused basis
-  rotation is sandwiched by controlled Pauli gates that implement a particle-hole transformation.
+* :class:`~.TrotterCDF` now fuses the one-body evolution with the basis rotations around it into
+  a single complex-valued :class:`~.BasisRotation`. This saves two basis rotations and the
+  one-body ``RZ`` layer per Trotter step and spin channel, also in the double-phase controlled
+  decomposition, where we sandwich the fused rotation with controlled Paulis.
   `(#10362) <https://github.com/PennyLaneAI/pennylane/pull/10362>`__
 
 * :func:`~pennylane.list_decomps` now includes generic controlled fallback rules when given an

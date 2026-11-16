@@ -463,9 +463,8 @@ class TestResourceRule:
         num_work_wires,
         leaf_dtype,
     ):
-        """Check exact counts after H1 merging and fusing the one-body block (which
-        double-phase circuits only do for real leaves); assert_valid only checks gate kinds
-        here."""
+        """Check exact counts after H1 merging and fusing the one-body block (double-phase
+        circuits only fuse for real leaves). assert_valid only checks gate kinds here."""
         core = np.zeros((num_fragments + 1, num_orbitals, num_orbitals))
         leaf = np.stack([np.eye(num_orbitals, dtype=leaf_dtype)] * (num_fragments + 1))
         ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.0)
@@ -611,8 +610,7 @@ class TestDecomposition:
         self, seed, num_fragments, num_steps, has_control, double_phase, complex_leaves
     ):
         """Merging boundary blocks and fusing the one-body block preserve the full matrix,
-        including global phase, for uncontrolled, genuine-controlled, and double-phase circuits,
-        with real and complex leaves."""
+        including global phase, for all three circuit types and real and complex leaves."""
         rng = np.random.default_rng(seed)
         num_orbitals = 2
         core = rng.normal(size=(num_fragments + 1, num_orbitals, num_orbitals)) * 0.4
@@ -640,10 +638,10 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("evolution_time", [1e-4, 1e-5, 1e-6])
     def test_fused_one_body_precision_close_to_identity(self, evolution_time):
-        """The fused one-body block keeps machine precision for small time steps, where its
-        basis rotation is close to the identity, in the base and double-phase circuits."""
-        # Fixed seed: for some matrices, the ``tol`` cutoff of ``givens_decomposition`` limits
-        # the accuracy (see https://github.com/PennyLaneAI/pennylane/issues/10509).
+        """The fused one-body block stays at machine precision for small time steps, i.e., close
+        to the identity, in the base and double-phase circuits."""
+        # Fixed seed, as the ``tol`` cutoff in ``givens_decomposition`` limits accuracy for some
+        # matrices (see https://github.com/PennyLaneAI/pennylane/issues/10509).
         rng = np.random.default_rng(42)
         num_orbitals = 3
         core = rng.normal(size=(2, num_orbitals, num_orbitals)) * 0.4
