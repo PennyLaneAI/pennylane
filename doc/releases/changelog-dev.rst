@@ -896,6 +896,12 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
+  powers that can simplify eagerly for faster execution, while the other uses nested
+  loops to keep the captured intermediate representation compact. Both variants include
+  resource counts.
+  `(#10529) <https://github.com/PennyLaneAI/pennylane/pull/10529>`__
+
 * Controlled :class:`~.SWAP` and :class:`~.PauliZ` operators now use their work wires when
   decomposed. The decompositions into :class:`~.CSWAP` (one control wire) and :class:`~.CCZ`
   (two control wires) are now separate decomposition rules, and the decompositions via
