@@ -2335,7 +2335,7 @@ Bug fixes 🐛
   Steane decoders. ``decode`` now sends the syndrome's bytes as they are, unless the coprocessor
   function has ``bitpack=True``, a new argument of :class:`~.CoprocessorFunction` and
   :func:`~pennylane.backline.triton_decoder` that :func:`~pennylane.backline.css_bp_decoder` sets.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10497) <https://github.com/PennyLaneAI/pennylane/pull/10497>`__
 
 * Fixed tracer leaks when passing traced work-wire labels to :func:`~.ctrl`
   applied to a callable during program capture. Concrete work-wire labels retain
