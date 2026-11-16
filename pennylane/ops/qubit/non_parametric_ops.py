@@ -123,7 +123,7 @@ class Hadamard(Operator2):
                 :class:`~.RY` | :math:`2`
                 :class:`~.MultiControlledX` | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/hadamard_pow_period.svg
                 :region: pow
                 :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
@@ -418,7 +418,7 @@ class PauliX(Operator2):
 
                 :class:`~.MultiControlledX` | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/paulix_pow_period.svg
                 :region: pow
                 :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
@@ -718,7 +718,7 @@ class PauliY(Operator2):
                 :class:`Adjoint(S) <.S>` | :math:`1`
                 :class:`~.MultiControlledX` | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/pauliy_pow_period.svg
                 :region: pow
                 :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
@@ -1001,7 +1001,7 @@ class PauliZ(Operator2):
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.MultiControlledX` | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/pauliz_pow_period.svg
                 :region: pow
                 :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
@@ -1311,7 +1311,7 @@ class S(Operator2):
                 :class:`PPR_4(1, "Z") <.PPR_4>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/s_pow_period.svg
                 :region: pow
                 :where: :math:`z` is the power, the rule applies if :math:`z \geq 4` or
@@ -1516,7 +1516,7 @@ class T(Operator2):
                 :class:`PPR_8(1, "Z") <.PPR_8>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/t_pow_period.svg
                 :region: pow
                 :where: :math:`z` is the power, the rule applies if :math:`z \geq 8` or
@@ -1681,7 +1681,7 @@ class SX(Operator2):
                 :class:`~.RX` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/sx_pow_period.svg
                 :region: pow
                 :where: :math:`z` is the power, the rule applies if :math:`z \geq 4` or
@@ -1876,7 +1876,7 @@ class SWAP(Operator2):
                 :class:`~.CNOT` | :math:`2`
                 :class:`~.MultiControlledX` | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/swap_pow_period.svg
                 :region: pow
                 :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
@@ -2094,7 +2094,7 @@ class ECR(Operator2):
 
                 :class:`~.ECR` | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/ecr_pow_period.svg
                 :region: pow
                 :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
@@ -2258,7 +2258,7 @@ class ISWAP(Operator2):
                 :class:`PPR_4(-1, "XX") <.PPR_4>` | :math:`1`
                 :class:`PPR_4(-1, "YY") <.PPR_4>` | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/iswap_pow_period.svg
                 :region: pow
                 :where: :math:`z` is the power, the rule applies if :math:`z \geq 4` or
@@ -2458,7 +2458,7 @@ class SISWAP(Operator2):
                 :class:`PPR_8(-1, "XX") <.PPR_8>` | :math:`1`
                 :class:`PPR_8(-1, "YY") <.PPR_8>` | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/siswap_pow_period.svg
                 :region: pow
                 :where: :math:`z` is the power, the rule applies if :math:`z \geq 8` or
