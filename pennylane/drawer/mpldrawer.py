@@ -27,8 +27,6 @@ try:
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_mpl = False
 
-# pylint: disable=too-many-positional-arguments
-
 
 def _to_tuple(a):
     """Converts int or iterable to tuple"""
@@ -61,7 +59,6 @@ def _open_circ_options_process(options):
     return new_options
 
 
-# pylint: disable=too-many-arguments
 class MPLDrawer:
     r"""Allows easy creation of graphics representing circuits with matplotlib
 
@@ -264,7 +261,7 @@ class MPLDrawer:
     _cwire_scaling = 0.25
     """The distance between successive control wires."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         n_layers,
         wire_map,

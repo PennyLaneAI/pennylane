@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the mutual_info module"""
 
-# pylint: disable=use-implicit-booleaness-not-comparison
 import numpy as np
 import pytest
 

@@ -140,8 +140,7 @@ class UniformPrep(Operator2):
         super().__init__(n_states, target_wires, work_wires)
 
 
-def _uniform_prep_resources(n_states, target_wires, work_wires):
-    # pylint: disable=unused-argument
+def _uniform_prep_resources(n_states, target_wires, work_wires):  # pylint: disable=unused-argument
     k = (n_states & -n_states).bit_length() - 1
     L = n_states >> k
     logL = ceil_log2(L)
@@ -430,7 +429,7 @@ class AliasSampling(Operator2):
         target_wires: WiresLike,
         temp_wires: WiresLike,
         work_wires: WiresLike,
-    ):  # pylint: disable=too-many-arguments
+    ):
         if isinstance(mu, bool) or not isinstance(mu, int) or mu < 1:
             raise ValueError(f"mu must be a positive integer, got {mu!r}.")
 
@@ -485,8 +484,8 @@ def _qrom_data(probs, mu, logL):
     return data
 
 
+# pylint: disable-next=unused-argument
 def _alias_sampling_resources(probs, mu, target_wires, temp_wires, work_wires):
-    # pylint: disable=unused-argument
     L = len(probs)
     logL = ceil_log2(L)
     n_target = len(target_wires)

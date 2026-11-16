@@ -287,9 +287,7 @@ class TestQROM:
             (5, [0, 1, 2, 3], [4], []),
         ],
     )
-    def test_decomposition_new(
-        self, num_bitstrings, control_wires, target_wires, work_wires, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_decomposition_new(self, num_bitstrings, control_wires, target_wires, work_wires, seed):
         """Tests the decomposition rule implemented with the new system."""
         rng = np.random.default_rng(seed)
         bitstrings = rng.integers(0, 2, size=(num_bitstrings, len(target_wires)))

@@ -136,7 +136,6 @@ class PhaseAdder(Operator2):
     wire_argnames = ("x_wires", "work_wire")
     arg_specs = {"k": Int, "x_wires": Wire[-1], "work_wire": Wire[-1]}
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = ()):
 
         work_wire = Wires(() if work_wire is None else work_wire)
@@ -199,7 +198,6 @@ def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
     return resources
 
 
-# pylint: disable=no-value-for-parameter
 @register_resources(_phase_adder_decomposition_resources)
 def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire):
 

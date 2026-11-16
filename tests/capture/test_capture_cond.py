@@ -15,8 +15,8 @@
 Tests for capturing conditionals into jaxpr.
 """
 
-# pylint: disable=redefined-outer-name, too-many-arguments, too-many-positional-arguments
-# pylint: disable=no-self-use,unbalanced-tuple-unpacking
+# pylint: disable=redefined-outer-name,wrong-import-position,too-few-public-methods
+
 
 from functools import partial
 
@@ -33,7 +33,6 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
-# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import cond_prim
 from pennylane.testing import assert_eqn_matches_op, extract_all_primitives, find_eqns
 
@@ -608,7 +607,7 @@ class TestCondOperatorInstances:
     def test_operator1_instance_raises(self):
         """Test that Operator1 instances are rejected as cond branches."""
 
-        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+        class OldOp(Operator):
             """Legacy Operator1-style operator."""
 
         old_op = OldOp(wires=0)
@@ -622,7 +621,7 @@ class TestCondOperatorInstances:
     def test_operator1_false_fn_created_during_tracing_raises(self):
         """Test that Operator1 instances created during tracing are rejected."""
 
-        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+        class OldOp(Operator):
             """Legacy Operator1-style operator."""
 
         def f(pred):
@@ -636,7 +635,7 @@ class TestCondOperatorInstances:
     def test_operator1_true_fn_created_during_tracing_raises(self):
         """Test that an Operator1 true_fn created during tracing is rejected."""
 
-        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+        class OldOp(Operator):
             """Legacy Operator1-style operator."""
 
         def f(pred):
@@ -672,7 +671,7 @@ class TestCondOperatorInstances:
     def test_callable_true_fn_with_operator1_false_fn_tracer_raises(self):
         """Test that an Operator1 false_fn created during tracing is rejected."""
 
-        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+        class OldOp(Operator):
             """Legacy Operator1-style operator."""
 
         def f(pred):
@@ -687,7 +686,7 @@ class TestCondOperatorInstances:
     def test_callable_true_fn_with_operator1_elif_tracer_raises(self):
         """Test that an Operator1 elif created during tracing is rejected."""
 
-        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+        class OldOp(Operator):
             """Legacy Operator1-style operator."""
 
         def f(pred):
@@ -716,7 +715,7 @@ class TestCondOperatorInstances:
     def test_operator1_elif_raises(self):
         """Test that Operator1 instances are rejected as elif branches."""
 
-        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+        class OldOp(Operator):
             """Legacy Operator1-style operator."""
 
         old_op = OldOp(wires=0)
@@ -730,7 +729,7 @@ class TestCondOperatorInstances:
     def test_operator1_elif_created_during_tracing_raises(self):
         """Test that Operator1 elifs created during tracing are rejected."""
 
-        class OldOp(Operator):  # pylint: disable=too-few-public-methods
+        class OldOp(Operator):
             """Legacy Operator1-style operator."""
 
         def f(pred):
@@ -778,18 +777,17 @@ def circuit_branches(pred, arg1, arg2):
     return qp.expval(qp.Z(wires=0))
 
 
-# pylint: disable=unused-argument
 @qp.qnode(dev)
 def circuit_with_returned_operator(pred, arg1, arg2):
     """Quantum circuit with conditional branches that return operators."""
 
     qp.RX(0.10, wires=0)
 
-    def true_fn(arg1, arg2):
+    def true_fn(arg1, arg2):  # pylint: disable=unused-argument
         qp.RY(arg1, wires=0)
         return 7, 4.6, qp.S(wires=0), True
 
-    def false_fn(arg1, arg2):
+    def false_fn(arg1, arg2):  # pylint: disable=unused-argument
         qp.RZ(arg2, wires=0)
         return 2, 2.2, qp.T(wires=0), False
 
@@ -809,16 +807,14 @@ def circuit_multiple_cond(tmp_pred, tmp_arg):
         qp.RX(arg, wires=0)
         return True
 
-    # pylint: disable=unused-argument
-    def false_fn_1(arg):
+    def false_fn_1(arg):  # pylint: disable=unused-argument
         qp.RY(0.1, wires=0)
         return False
 
     def true_fn_2(arg):
         qp.RX(arg, wires=0)
 
-    # pylint: disable=unused-argument
-    def false_fn_2(arg):
+    def false_fn_2(arg):  # pylint: disable=unused-argument
         qp.RY(0.1, wires=0)
 
     dyn_pred_2 = qp.cond(dyn_pred_1, true_fn_1, false_fn_1, elifs=())(arg)
@@ -961,19 +957,21 @@ class TestCondCircuits:
     def test_mcm_predicate_execution_with_elifs(self, params, expected, shots, tol, seed):
         """Test that QNodes executed with mid-circuit measurement predicates for
         qp.cond give correct results when there are also elifs present."""
-        # pylint: disable=expression-not-assigned
         device = qp.device("default.qubit", wires=5, seed=jax.random.PRNGKey(seed))
 
         def true_fn():
             # Adjoint Hadamard diagonalizing gates to get Hadamard basis state
+            # pylint: disable-next=expression-not-assigned
             [qp.adjoint(op) for op in qp.Hadamard.compute_diagonalizing_gates(0)[::-1]]
 
         def elif_fn1():
             # Adjoint PauliX diagonalizing gates to get X basis state
+            # pylint: disable-next=expression-not-assigned
             [qp.adjoint(op) for op in qp.X.compute_diagonalizing_gates(0)[::-1]]
 
         def elif_fn2():
             # Adjoint PauliY diagonalizing gates to get Y basis state
+            # pylint: disable-next=expression-not-assigned
             [qp.adjoint(op) for op in qp.Y.compute_diagonalizing_gates(0)[::-1]]
 
         def false_fn():
@@ -1148,7 +1146,7 @@ class TestDynamicShapeValidation:
     def test_one_dynamic_shape_other_not(self):
         """Test that an error is raised if one dimension in abstract on one branch, but not on another."""
 
-        def true_fn(n):  # pylint: disable=unused-argument
+        def true_fn(n):
             return jax.numpy.ones((2, n))
 
         def false_fn(n):

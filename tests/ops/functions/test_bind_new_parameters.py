@@ -109,8 +109,7 @@ def test_scalar_symbolic_ops(op, new_params, expected_op):
     assert new_op.base is not op.base
 
 
-# pylint: disable=too-few-public-methods
-class MultiRot(Operator2):
+class MultiRot(Operator2):  # pylint: disable=too-few-public-methods
     """MultiRot class used for testing purposes."""
 
     dynamic_argnames = ("angles",)
@@ -518,7 +517,7 @@ def test_conditional_ops(op, new_params, expected_op):
     assert new_op.meas_val.measurements == [mp0]
 
 
-class KeywordOnlyOperation(qp.operation.Operator):
+class KeywordOnlyOperation(qp.operation.Operator):  # pylint: disable=too-few-public-methods
     """Operation with a constructor unsupported by the generic parameter-binding path."""
 
     num_wires = 1

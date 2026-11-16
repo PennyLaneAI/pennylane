@@ -18,8 +18,6 @@ from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.ops import CRZ, RZ, IsingZZ
 
-# pylint: disable=too-many-arguments
-
 
 def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
     r"""Emit a one-body ``RZ`` rotation for the base, double-phase, or genuine controlled circuit.
@@ -42,7 +40,7 @@ def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
     CRZ(angle, wires=[control_wire, target_wire])
 
 
-def _run_trotter_steps(
+def _run_trotter_steps(  # pylint: disable=too-many-arguments
     evolution_time,
     num_trotter_steps,
     hamiltonian,

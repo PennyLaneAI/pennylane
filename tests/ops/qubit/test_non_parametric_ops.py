@@ -49,9 +49,7 @@ import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
-
-# pylint: disable=too-few-public-methods
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
 
@@ -1171,10 +1169,8 @@ class TestPowMethod:
         assert op.pow(n)[0].__class__ is op.__class__
 
 
-class TestControlledMethod:
+class TestControlledMethod:  # pylint: disable=too-few-public-methods
     """Tests symbolic controls of non-parametric operations."""
-
-    # pylint: disable=protected-access
 
     def test_Barrier(self):
         """Tests the control behavior of Barrier."""
@@ -1183,7 +1179,7 @@ class TestControlledMethod:
         qp.assert_equal(original, out)
 
 
-class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
+class TestSpecialPowDecomps:
     """Tests special decomposition rules for Pow of operators."""
 
     @pytest.mark.parametrize("batched", [True, False])
@@ -1362,7 +1358,6 @@ op_pauli_rep = (
 
 @pytest.mark.parametrize("op, rep", op_pauli_rep)
 def test_pauli_rep(op, rep):
-    # pylint: disable=protected-access
     assert op.pauli_rep == rep
 
 
@@ -1416,10 +1411,9 @@ class TestPauliRep:
     )
     def test_lazy_implementation(self, op, _):
         """Checks if the ._pauli_rep attribute is only computed when needed."""
-        # pylint: disable=unused-variable, protected-access
-        assert op._pauli_rep is None
-        pauli_rep = op.pauli_rep
-        assert op._pauli_rep is not None
+        assert op._pauli_rep is None  # pylint: disable=protected-access
+        pauli_rep = op.pauli_rep  # pylint: disable=unused-variable
+        assert op._pauli_rep is not None  # pylint: disable=protected-access
 
     @pytest.mark.parametrize(
         "op, rep", NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED

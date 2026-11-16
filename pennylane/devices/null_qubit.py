@@ -232,8 +232,7 @@ class NullQubit(Device):
         """The name of the device."""
         return "null.qubit"
 
-    # pylint: disable=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         wires=None,
         shots=None,
@@ -307,7 +306,6 @@ class NullQubit(Device):
         """No-op function to allow for borrowing DefaultQubit.preprocess without AttributeErrors"""
         return execution_config
 
-    # pylint: disable=cell-var-from-loop
     def preprocess(
         self, execution_config: ExecutionConfig | None = None
     ) -> tuple[CompilePipeline, ExecutionConfig]:
@@ -326,6 +324,7 @@ class NullQubit(Device):
                 original_stopping_condition = t.kwargs["stopping_condition"]
 
                 def new_stopping_condition(op):
+                    # pylint: disable-next=cell-var-from-loop
                     return not _op_has_decomp(op) or original_stopping_condition(op)
 
                 t.kwargs["stopping_condition"] = new_stopping_condition
@@ -335,6 +334,7 @@ class NullQubit(Device):
                 if original_shots_stopping_condition:
 
                     def new_shots_stopping_condition(op):
+                        # pylint: disable-next=cell-var-from-loop
                         return (not op.has_decomposition) or original_shots_stopping_condition(op)
 
                     t.kwargs["stopping_condition_shots"] = new_shots_stopping_condition

@@ -193,8 +193,7 @@ class MultiX(Operator2):
         return matrix
 
     @staticmethod
-    # pylint: disable-next=arguments-differ
-    def compute_sparse_matrix(
+    def compute_sparse_matrix(  # pylint: disable=arguments-differ
         bitstring: TensorLike, wires: WiresLike, format: str = "csr"
     ) -> sparse.spmatrix:
         r"""

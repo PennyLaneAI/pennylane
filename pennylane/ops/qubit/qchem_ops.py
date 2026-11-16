@@ -17,6 +17,8 @@ from quantum chemistry applications.
 """
 
 # pylint: disable=arguments-differ
+
+
 import functools
 
 import numpy as np
@@ -211,9 +213,8 @@ class SingleExcitation(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(
-        phi: TensorLike, wires=None  # pylint: disable=unused-argument
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires=None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -254,8 +255,7 @@ class SingleExcitation(Operator2):
 
 
 # needs to be wrapped in function due to circular dependencies
-# pylint: disable-next=unused-argument
-def _single_excitation_resources(phi, wires):
+def _single_excitation_resources(phi, wires):  # pylint: disable=unused-argument
     # ``Prod2`` takes its operands in matrix order, i.e. reversed relative to the order in which
     # the decomposition below applies them.
     basis = Prod2((qp.CNOT(wires=Wire[2]), qp.Hadamard(wires=Wire[1])))
@@ -286,8 +286,7 @@ def _single_excitation_decomp(phi: TensorLike, wires: WiresLike):
     qp.change_op_basis(_to_basis, _rotations, _from_basis)
 
 
-# pylint: disable-next=unused-argument
-def _single_excitation_ppr_resource(phi, wires):
+def _single_excitation_ppr_resource(phi, wires):  # pylint: disable=unused-argument
     return {
         qp.PauliRot(Float, pauli_word="XY", wires=Wire[2]): 1,
         qp.PauliRot(Float, pauli_word="YX", wires=Wire[2]): 1,
@@ -300,8 +299,7 @@ def _single_excitation_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(-phi / 2, "XY", wires=wires)
 
 
-# pylint: disable-next=unused-argument
-def _single_excitation_ppr_rz_resource(phi, wires):
+def _single_excitation_ppr_rz_resource(phi, wires):  # pylint: disable=unused-argument
     return {
         _change_op_basis_abstract(
             qp.PPR_4(1, "XX", wires=Wire[2]),
@@ -320,8 +318,7 @@ def _single_excitation_ppr_rz(phi: TensorLike, wires: WiresLike):
     qp.change_op_basis(qp.PPR_4(1, "XX", wires=wires), _rotations, qp.PPR_4(-1, "XX", wires=wires))
 
 
-# pylint: disable-next=unused-argument
-def _single_excitation_ppr_crz_resource(phi, wires):
+def _single_excitation_ppr_crz_resource(phi, wires):  # pylint: disable=unused-argument
     compute = Prod2((qp.CNOT(Wire[2]), qp.PPR_4(1, "XX", wires=Wire[2])))
     return {
         _change_op_basis_abstract(
@@ -422,7 +419,7 @@ class SingleExcitationMinus(Operation):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -593,7 +590,7 @@ class SingleExcitationPlus(Operation):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -787,9 +784,8 @@ class DoubleExcitation(Operator2):
     mask_s[12, 3] = 1
 
     @staticmethod
-    def compute_matrix(
-        phi: TensorLike, wires: WiresLike = None  # pylint: disable=unused-argument
-    ) -> TensorLike:
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -947,7 +943,7 @@ class DoubleExcitationPlus(Operation):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1040,7 +1036,7 @@ class DoubleExcitationMinus(Operation):
         return qp.SparseHamiltonian(H, wires=self.wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1173,9 +1169,8 @@ class OrbitalRotation(Operator2):
     mask_s2[3, 12] = mask_s2[12, 3] = mask_s2[6, 9] = mask_s2[9, 6] = 1
 
     @staticmethod
-    def compute_matrix(
-        phi: TensorLike, wires: WiresLike = None  # pylint: disable=unused-argument
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1335,9 +1330,8 @@ class FermionicSWAP(Operator2):
         )
 
     @staticmethod
-    def compute_matrix(
-        phi: TensorLike, wires: WiresLike = None  # pylint: disable=unused-argument
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.

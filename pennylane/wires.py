@@ -28,7 +28,7 @@ from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
 from pennylane.typing import AbstractWires, Wire, _AbstractWireTypeFactory
 
-# pylint: disable=unnecessary-lambda
+# pylint: disable-next=unnecessary-lambda
 setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
 
 
@@ -294,7 +294,7 @@ class Wires(Sequence):
         """
         return set(self.labels)
 
-    def index(self, wire):
+    def index(self, wire):  # pylint: disable=arguments-differ
         """Overwrites a Sequence's ``index()`` function which returns the index of ``wire``.
 
         Args:
@@ -304,7 +304,6 @@ class Wires(Sequence):
         Returns:
             int: index of the input
         """
-        # pylint: disable=arguments-differ
 
         if isinstance(wire, Wires):
             if len(wire) != 1:

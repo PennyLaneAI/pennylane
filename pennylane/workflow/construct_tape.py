@@ -32,7 +32,7 @@ def construct_tape(qnode: QNode, level: str | int | slice = "user") -> Callable[
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
         level (str, int, slice): An indication of what transforms to apply before
-            drawing. Check :func:`~.workflow.get_compile_pipeline` for more
+            constructing the tape. Check :func:`~.workflow.construct_batch` for more
             information on the allowed values and usage details of this argument.
 
     Returns:
@@ -40,8 +40,6 @@ def construct_tape(qnode: QNode, level: str | int | slice = "user") -> Callable[
 
     Raises:
         ValueError: if the ``level`` argument corresponds to more than one tape.
-
-    .. seealso:: :func:`pennylane.workflow.get_compile_pipeline` to inspect the contents of the transform program for a specified level.
 
     **Example**
 

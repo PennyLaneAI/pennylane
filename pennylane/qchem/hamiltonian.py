@@ -26,10 +26,6 @@ from .hartree_fock import nuclear_energy, scf
 from .molecule import Molecule
 from .observable_hf import fermionic_observable, qubit_observable
 
-# pylint: disable=too-many-branches,too-many-arguments,too-many-locals
-# pylint: disable=consider-using-generator, protected-access, too-many-positional-arguments
-# pylint: disable=possibly-used-before-assignment
-
 BOHR_TO_ANG = physical_constants["Bohr radius"][0] / angstrom
 
 
@@ -399,7 +395,7 @@ def _molecular_hamiltonian_dispatch(*args, **kwargs):
 
 
 @_molecular_hamiltonian_dispatch.register(Molecule)
-def _(
+def _(  # pylint: disable=too-many-arguments
     molecule,
     method="dhf",
     active_electrons=None,
@@ -431,7 +427,7 @@ def _(
     )
 
 
-def _dhf_molecular_hamiltonian(
+def _dhf_molecular_hamiltonian(  # pylint: disable=too-many-arguments
     symbols,
     coordinates,
     *,
@@ -482,17 +478,21 @@ def _dhf_molecular_hamiltonian(
     h_as_ps = qp.pauli.pauli_sentence(h)
     coeffs = qp.math.real(qp.math.array(list(h_as_ps.values()), **interface_args))
     h_as_ps = qp.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs, strict=True)))
-    h = qp.s_prod(0, qp.Identity(h.wires[0])) if len(h_as_ps) == 0 else h_as_ps.operation()
+    h = (
+        qp.s_prod(0, qp.Identity(h.wires[0]))
+        if len(h_as_ps) == 0
+        else qp.pauli.to_operator(h_as_ps)
+    )
 
     if wires:
-        wires_new = qp.qchem.convert._process_wires(wires)
+        wires_new = qp.qchem.convert._process_wires(wires)  # pylint: disable=protected-access
         wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels), strict=True))
         h = qp.map_wires(h, wires_map)
     return h, 2 * len(active)
 
 
 @_molecular_hamiltonian_dispatch.register(list)
-def _(
+def _(  # pylint: disable=too-many-arguments
     symbols,
     coordinates,
     unit="bohr",
@@ -543,7 +543,7 @@ def _(
     )
 
 
-def _molecular_hamiltonian(
+def _molecular_hamiltonian(  # pylint: disable=too-many-arguments
     symbols=None,
     coordinates=None,
     name="molecule",
@@ -561,8 +561,9 @@ def _molecular_hamiltonian(
     args=None,
     load_data=False,
     convert_tol=1e12,
-):  # pylint: disable=too-many-arguments
+):
     r"""Generate the qubit Hamiltonian of a molecule."""
+    # pylint: disable=protected-access
 
     method = method.strip().lower()
     if method not in ["dhf", "pyscf", "openfermion"]:
@@ -589,6 +590,7 @@ def _molecular_hamiltonian(
         wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels), strict=True))
 
     if method in ("dhf", "pyscf"):
+        # pylint: disable-next=consider-using-generator
         n_electrons = sum([atomic_numbers[s] for s in symbols]) - charge
 
         if n_electrons % 2 == 1 or mult != 1:
@@ -601,7 +603,7 @@ def _molecular_hamiltonian(
         return _dhf_molecular_hamiltonian(
             symbols,
             coordinates,
-            geometry_dhf=geometry_dhf,
+            geometry_dhf=geometry_dhf,  # pylint: disable=possibly-used-before-assignment
             charge=charge,
             mult=mult,
             basis=basis,
@@ -616,7 +618,13 @@ def _molecular_hamiltonian(
         )
     if method == "pyscf":
         core_constant, one_mo, two_mo = qp.qchem.openfermion_pyscf._pyscf_integrals(
-            symbols, geometry_hf, charge, mult, basis, active_electrons, active_orbitals
+            symbols,
+            geometry_hf,  # pylint: disable=possibly-used-before-assignment
+            charge,
+            mult,
+            basis,
+            active_electrons,
+            active_orbitals,
         )
 
         hf = qp.qchem.fermionic_observable(core_constant, one_mo, two_mo)

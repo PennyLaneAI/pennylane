@@ -51,7 +51,6 @@ class SampleMP(SampleMeasurement):
 
     _shortname = "sample"
 
-    # pylint: disable=too-many-arguments
     def __init__(self, obs=None, wires=None, eigvals=None, dtype=None):
 
         self._dtype = dtype
