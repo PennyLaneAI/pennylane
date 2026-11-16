@@ -28,12 +28,15 @@ from pennylane.decomposition.decomposition_rule import add_decomps, null_decomp
 from pennylane.typing import Wire
 from pennylane.wires import WiresLike
 
-
 barrier_p = QpPrimitive("barrier")
+
+
 @barrier_p.def_impl
 def _barrier_impl(*wires):
-    Barrier(wires)
+    type.__call__(Barrier, wires=wires)
     return []
+
+
 barrier_p.multiple_results = True
 barrier_p.def_abstract_eval(lambda *wires: [])
 
