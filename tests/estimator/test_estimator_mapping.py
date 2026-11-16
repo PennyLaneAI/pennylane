@@ -742,7 +742,7 @@ class TestMapToResourceOp:
     def test_map_from_decomposition(self):
         """Test that the decomposition is used when a resource equivalent is not defined"""
 
-        class DummyOp(Operation):
+        class DummyOp(Operation):  # pylint: disable=too-few-public-methods
             num_wires = 2
 
             def __init__(self, theta, wires=None):
