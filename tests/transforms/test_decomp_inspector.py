@@ -124,7 +124,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 46, GlobalPhase: 25, RX: 23, RZ: 22}
             Weighted Cost: 91.0
 
-            CHOSEN: Decomposition 3 (name: controlled(standard))
+            CHOSEN: Decomposition 3 (name: controlled(cnot_ladder))
             0: ─╭(X)@RZ(0.50)@(X)─┤
             1: ─├(X)@RZ(0.50)@(X)─┤
             3: ─├●────────────────┤
@@ -177,7 +177,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### **CHOSEN:** Decomposition 3 (name: controlled(standard))
+            #### **CHOSEN:** Decomposition 3 (name: controlled(cnot_ladder))
 
             ```
             0: ─╭(X)@RZ(0.50)@(X)─┤
@@ -248,7 +248,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 46, GlobalPhase: 25, RX: 23, RZ: 22}
             Weighted Cost: 2296.0
 
-            CHOSEN: Decomposition 3 (name: controlled(standard))
+            CHOSEN: Decomposition 3 (name: controlled(cnot_ladder))
             0: ─╭(X)@RZ(0.50)@(X)─┤
             1: ─├(X)@RZ(0.50)@(X)─┤
             3: ─├●────────────────┤
@@ -330,7 +330,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### **CHOSEN:** Decomposition 3 (name: controlled(standard))
+            #### **CHOSEN:** Decomposition 3 (name: controlled(cnot_ladder))
 
             ```
             0: ─╭(X)@RZ(0.50)@(X)─┤
@@ -439,7 +439,7 @@ class TestInspectDecompGraph:
         op = qp.PauliRot(0.5, "XYZ", [0, 1, 2])
         result = inspector.inspect_decomps(op)
         assert str(result) == dedent("""
-            Decomposition 0 (name: standard)
+            Decomposition 0 (name: basis_change_multirz)
             0: ─╭(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
             1: ─├(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
             2: ─╰(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
@@ -449,7 +449,7 @@ class TestInspectDecompGraph:
 
         # pylint: disable-next=protected-access
         assert result._repr_markdown_() == dedent("""
-            #### Decomposition 0 (name: standard)
+            #### Decomposition 0 (name: basis_change_multirz)
 
             ```
             0: ─╭(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
