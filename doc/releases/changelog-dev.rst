@@ -2460,6 +2460,10 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed the measurement-based decomposition of :class:`~.QROM` to support dynamic
+  bitstrings with ``qjit(capture=True)``, including padding for extra control wires.
+  Its inner traversal now uses :func:`~.for_loop` instead of recursion.
+  `(#10501) <https://github.com/PennyLaneAI/pennylane/pull/10501>`__
 * Fixed a precision loss in :func:`~pennylane.math.decomposition.givens_decomposition` and
   the complex-valued decomposition of :class:`~.BasisRotation` for unitaries close to the identity.
   `(#10518) <https://github.com/PennyLaneAI/pennylane/pull/10518>`__
