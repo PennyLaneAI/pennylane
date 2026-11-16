@@ -104,7 +104,7 @@ class RotXZX(Operation):
         return RotXZX(-omega, -theta, -phi, wires=self.wires)
 
 
-@register_name("standard")
+@register_name("to_rx_rz_rx")
 @register_resources({RX: 2, RZ: 1})
 def _xzx_decompose_standard(phi, theta, omega, wires, **__):
     RX(phi, wires=wires)
@@ -115,7 +115,7 @@ def _xzx_decompose_standard(phi, theta, omega, wires, **__):
 add_decomps(RotXZX, _xzx_decompose_standard)
 
 
-@register_name("standard")
+@register_name("reverse_angles")
 @register_resources({RotXZX: 1})
 def _adjoint_rot_xzx_standard(phi, theta, omega, wires, **__):
     RotXZX(-omega, -theta, -phi, wires=wires)

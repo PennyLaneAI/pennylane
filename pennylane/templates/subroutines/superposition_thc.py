@@ -140,7 +140,7 @@ class SuperpositionTHC(Operator2):
             :symbols: :math:`n` wires per index register
             :example: :math:`n=1` (:math:`M=1`, :math:`N=2`)
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: amplitude_amplification
                 :image: /_static/decomposition_thumbnails/superposition_thc_amplification.svg
 
                 :class:`~.Hadamard` | :math:`6n` | 6
@@ -332,7 +332,7 @@ def _superposition_thc_standard_resources(M, N, mu_wires, nu_wires, work_wires):
     }
 
 
-@register_name("standard")
+@register_name("amplitude_amplification")
 @register_resources(_superposition_thc_standard_resources)
 def _superposition_thc_standard(M, N, mu_wires, nu_wires, work_wires, **_):
     #

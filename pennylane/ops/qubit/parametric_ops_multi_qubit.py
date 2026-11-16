@@ -77,7 +77,7 @@ class MultiRZ(Operator2):
             :symbols: :math:`n` wires
             :example: :math:`n=3`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: cnot_ladder
                 :image: /_static/decomposition_thumbnails/multirz_cnot_ladder.svg
 
                 :class:`~.CNOT` | :math:`2(n-1)` | 4
@@ -232,7 +232,7 @@ def _multi_rz_standard_resources(theta: TensorLike, wires: WiresLike):
     return {_change_op_basis_abstract(ladder, RZ(Float, wires=Wire[1]), unladder): 1}
 
 
-@register_name("standard")
+@register_name("cnot_ladder")
 @register_resources(_multi_rz_standard_resources)
 def _multi_rz_standard(theta: TensorLike, wires: WiresLike):
     """CNOT ladder around an ``RZ``, so a control applies only to the rotation."""
@@ -316,7 +316,7 @@ class PauliRot(Operator2):
                 :math:`z` ``"Z"`` entries, and :math:`k = x + y + z`
             :example: :math:`P=` ``"XYZ"``
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: basis_change_multirz
                 :image: /_static/decomposition_thumbnails/paulirot_basis_change.svg
                 :where: :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
 
@@ -589,7 +589,7 @@ def _pauli_rot_standard_resources(theta, pauli_word, wires):  # pylint: disable=
     }
 
 
-@register_name("standard")
+@register_name("basis_change_multirz")
 @register_resources(_pauli_rot_standard_resources)
 @disable_autograph
 def _pauli_rot_standard(theta: TensorLike, pauli_word: str, wires: WiresLike):
@@ -706,7 +706,7 @@ class PCPhase(Operator2):
             :symbols: :math:`n` wires and ``dim`` :math:`=d`
             :example: :math:`n=4`, :math:`d=3`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: controlled_phase_shifts
                 :image: /_static/decomposition_thumbnails/pcphase_ctrl_phase_shifts.svg
                 :where: :math:`d = f\,2^n + \sum_{i=0}^{n-1} p_i 2^{n-1-i}` in non-adjacent form,
                     i.e., :math:`f\in\{0, 1\}` and :math:`p_i\in\{-1, 0, 1\}` with no two adjacent
@@ -1036,7 +1036,7 @@ def _decompose_pcphase_standard_resources(phi: TensorLike, dim: int, wires: Wire
     return dict(gate_count)
 
 
-@register_name("standard")
+@register_name("controlled_phase_shifts")
 @register_resources(_decompose_pcphase_standard_resources)
 def _decompose_pcphase_standard(phi: TensorLike, dim: int, wires: WiresLike):
     """Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates."""
@@ -1480,7 +1480,7 @@ class IsingZZ(Operator2):
 
                 :class:`PauliRot("ZZ") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: parity_controlled_rz
                 :image: /_static/decomposition_thumbnails/controlled_ising_zz.svg
                 :region: controlled
                 :where: The CNOT gates compute and uncompute the parity of the two target wires. Only the RZ rotation requires the :math:`c` control wires. Controls on :math:`0` are flipped with X gates before and after the decomposition.
@@ -1650,7 +1650,7 @@ def _controlled_ising_zz_standard_resources(
     }
 
 
-@qp.register_name("standard")
+@qp.register_name("parity_controlled_rz")
 @qp.register_resources(_controlled_ising_zz_standard_resources)
 # pylint: disable-next=unused-argument
 def _controlled_ising_zz_standard(base, control_wires, control_values, work_wires, work_wire_type):
@@ -1672,7 +1672,7 @@ def _controlled_ising_zz_standard(base, control_wires, control_values, work_wire
     qp.CNOT(wires=[a, b])
 
 
-controlled_ising_zz = flip_zero_control(_controlled_ising_zz_standard, name="standard")
+controlled_ising_zz = flip_zero_control(_controlled_ising_zz_standard, name="parity_controlled_rz")
 
 add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot, _isingzz_to_ppr)
 add_decomps("Adjoint(IsingZZ)", adjoint_rotation2)
@@ -2298,7 +2298,7 @@ def _cphaseshift00_standard_resources():
     return {PauliX: 4, PhaseShift: 3, qp.CNOT: 2}
 
 
-@register_name("standard")
+@register_name("to_x_phaseshift_cnot")
 @register_resources(_cphaseshift00_standard_resources)
 def _cphaseshift00_standard(phi: TensorLike, wires: WiresLike, **__):
     PauliX(wires[0])
@@ -2506,7 +2506,7 @@ def _cphaseshift01_standard_resources():
     return {PauliX: 2, PhaseShift: 3, qp.CNOT: 2}
 
 
-@register_name("standard")
+@register_name("to_x_phaseshift_cnot")
 @register_resources(_cphaseshift01_standard_resources)
 def _cphaseshift01_standard(phi: TensorLike, wires: WiresLike, **__):
     PauliX(wires[0])
@@ -2706,7 +2706,7 @@ def _cphaseshift10_standard_resources():
     return {PauliX: 2, PhaseShift: 3, qp.CNOT: 2}
 
 
-@register_name("standard")
+@register_name("to_x_phaseshift_cnot")
 @register_resources(_cphaseshift10_standard_resources)
 def _cphaseshift10_standard(phi: TensorLike, wires: WiresLike, **__):
     PauliX(wires[1])

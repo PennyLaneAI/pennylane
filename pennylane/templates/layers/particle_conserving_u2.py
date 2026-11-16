@@ -268,7 +268,7 @@ def _particle_conserving_u2_standard_resources(num_wires: int, n_layers: int):
     }
 
 
-@register_name("standard")
+@register_name("to_rz_crx_cnot")
 @register_resources(_particle_conserving_u2_standard_resources)
 def _particle_conserving_u2_standard(weights: list, wires: WiresLike, init_state: tuple[int]):
     nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]

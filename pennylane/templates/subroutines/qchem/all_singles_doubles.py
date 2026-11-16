@@ -288,7 +288,7 @@ def _all_singles_doubles_standard_resources(num_singles, num_doubles, num_wires)
     }
 
 
-@register_name("standard")
+@register_name("excitation_layers")
 @register_resources(_all_singles_doubles_standard_resources)
 def _all_singles_doubles_standard(weights, wires, hf_state, singles, doubles):
     BasisState(hf_state, wires=wires)

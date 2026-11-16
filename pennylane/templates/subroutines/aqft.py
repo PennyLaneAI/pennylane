@@ -72,7 +72,7 @@ class AQFT(Operator2):
             :symbols: :math:`n` wires and order :math:`m \leq n-1`
             :example: :math:`n=4`, :math:`m=1`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: truncated_controlled_phases
                 :image: /_static/decomposition_thumbnails/aqft_cphase_swap.svg
 
                 :class:`~.Hadamard` | :math:`n` | 4
@@ -154,7 +154,7 @@ def _AQFT_standard_resources(order, wires):
     }
 
 
-@register_name("standard")
+@register_name("truncated_controlled_phases")
 @register_resources(_AQFT_standard_resources)
 def _AQFT_standard(wires, order):
     num_wires = len(wires)

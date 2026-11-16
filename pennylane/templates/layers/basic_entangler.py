@@ -231,7 +231,7 @@ def _basic_entangler_standard_resources(repeat, num_wires, rotation):
     return resources
 
 
-@register_name("standard")
+@register_name("rotations_cnot_ring")
 @register_resources(_basic_entangler_standard_resources)
 def _basic_entangler_standard(weights, wires, rotation):
     repeat = math.shape(weights)[-2]

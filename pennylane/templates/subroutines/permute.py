@@ -251,7 +251,7 @@ def _permute_standard_resources(wires, permutation):
     return dict(resources)
 
 
-@register_name("standard")
+@register_name("swap_network")
 @register_resources(_permute_standard_resources)
 def _permute_standard(wires, permutation):
     # Temporary storage to keep track as we permute

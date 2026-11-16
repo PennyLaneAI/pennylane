@@ -227,7 +227,7 @@ def _grover_standard_resources(num_wires, num_work_wires):
     }
 
 
-@register_name("standard")
+@register_name("to_h_mcx")
 @register_resources(_grover_standard_resources)
 def _grover_standard(wires, work_wires, n_wires):
     ctrl_values = [0] * (n_wires - 1)

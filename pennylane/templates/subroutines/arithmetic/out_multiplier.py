@@ -161,7 +161,7 @@ class OutMultiplier(Operator2):
                 :class:`~.SemiAdder` | :math:`1` | 1
                 :class:`Adjoint(OutMultiplier) <.OutMultiplier>` | :math:`1` | 1
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: swap_factors
                 :image: /_static/decomposition_thumbnails/out_multiplier_swapped.svg
                 :requires: :math:`n > m`
                 :where: the circuit shows :math:`n=2`, :math:`m=1` and :math:`k=3`
@@ -884,7 +884,7 @@ def _out_multiplier_swapped_standard_resources(  # pylint: disable=too-many-argu
 
 
 @register_condition(_out_multiplier_swapped_condition)
-@register_name("standard")
+@register_name("swap_factors")
 @register_resources(_out_multiplier_swapped_standard_resources)
 # pylint: disable-next=too-many-arguments
 def _out_multiplier_swapped_standard(

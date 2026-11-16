@@ -848,7 +848,7 @@ class SumOfSlatersPrep(Operator2):
                 encoding computed by :func:`~.compute_sos_encoding`)
             :example: ``indices=(0, 1, 2, 4)`` on three wires, :math:`D=4`, :math:`m=3`, :math:`u=0`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: sparse_state_isometry
                 :image: /_static/decomposition_thumbnails/sum_of_slaters_prep.svg
                 :lightbox:
                 :where: :math:`u` is the number of ones in the encoding matrix (:math:`u=0` for an
@@ -1412,7 +1412,7 @@ def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
 @register_condition(
     lambda coefficients, wires, indices, *_, **__: indices is not None
 )  # indices must be known
-@register_name("standard")
+@register_name("sparse_state_isometry")
 @register_resources(
     _sos_state_prep_standard_resources,
     exact=False,

@@ -460,7 +460,7 @@ class AliasSamplingTHC(Operator2):
                 :math:`\aleph` = ``aleph`` bits, and :math:`M` is the THC rank.
             :example: :math:`M=1`, :math:`N=2`, :math:`\aleph=1` (:math:`n=1`)
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: qrom_comparator_swap
                 :image: /_static/decomposition_thumbnails/alias_sampling_thc_walker.svg
 
                 :class:`~.OutSquare` | :math:`1` | 1
@@ -620,7 +620,7 @@ def _alias_sampling_thc_standard_resources(  # pylint: disable=too-many-argument
     return dict(resources)
 
 
-@register_name("standard")
+@register_name("qrom_comparator_swap")
 @register_resources(_alias_sampling_thc_standard_resources)
 def _alias_sampling_thc_standard(  # pylint: disable=too-many-arguments
     M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, **_

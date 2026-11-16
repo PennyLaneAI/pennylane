@@ -240,7 +240,7 @@ def _simplified_two_design_standard_resources(n_layers, num_wires):
     return {RY: num_wires}
 
 
-@register_name("standard")
+@register_name("to_ry_cz")
 @register_resources(_simplified_two_design_standard_resources)
 def _simplified_two_design_standard(initial_layer_weights, weights, wires):
     n_layers = math.shape(weights)[0]

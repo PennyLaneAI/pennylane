@@ -145,7 +145,7 @@ class TrotterCGF(Operator2):
                 :math:`n` = ``num_trotter_steps``
             :example: the Hamiltonian above, :math:`M=2`, :math:`N=3`, :math:`L=1`, :math:`n=1`. Note that all expressions below assume :math:`n \gt 0`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: compressed_factorized_steps
                 :image: /_static/decomposition_thumbnails/trotter_cgf_second_order.svg
                 :where: the counts are upper bounds, as basis rotations that are the identity are
                     skipped
@@ -542,7 +542,7 @@ def _trotter_cgf_standard_resources(
     return _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control=False)
 
 
-@register_name("standard")
+@register_name("compressed_factorized_steps")
 @register_resources(_trotter_cgf_standard_resources, exact=False)
 # pylint: disable-next=unused-argument
 def _trotter_cgf_standard(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
@@ -580,7 +580,7 @@ def _controlled_trotter_cgf_standard_resources(  # pylint: disable=unused-argume
 
 
 @register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
-@register_name("standard")
+@register_name("controlled_compressed_factorized_steps")
 @register_resources(_controlled_trotter_cgf_standard_resources, exact=False)
 # pylint: disable-next=unused-argument
 def _controlled_trotter_cgf_standard(
@@ -632,4 +632,4 @@ def _controlled_trotter_cgf_standard(
     PhaseShift(-phi, control_wires)
 
 
-add_decomps("C(TrotterCGF)", flip_zero_control2(_controlled_trotter_cgf_standard, name="standard"))
+add_decomps("C(TrotterCGF)", flip_zero_control2(_controlled_trotter_cgf_standard, name="controlled_compressed_factorized_steps"))

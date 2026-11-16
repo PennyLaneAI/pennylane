@@ -137,7 +137,7 @@ class TrotterCDF(Operator2):
                 ``num_trotter_steps``
             :example: the Hamiltonian above, :math:`N=2`, :math:`L=1`, :math:`n=1`. Note that all expressions below assume :math:`n \gt 0`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: double_factorized_steps
                 :image: /_static/decomposition_thumbnails/trotter_cdf_second_order.svg
                 :where: :math:`B = (2L-1)n + 1` two-body blocks and :math:`w` work wires. The
                     counts are upper bounds, as basis rotations that are the identity are
@@ -719,7 +719,7 @@ def _trotter_cdf_standard_resources(  # pylint: disable=too-many-arguments,unuse
     )
 
 
-@register_name("standard")
+@register_name("double_factorized_steps")
 @register_resources(_trotter_cdf_standard_resources, exact=False)
 def _trotter_cdf_standard(  # pylint: disable=too-many-arguments,unused-argument
     evolution_time,
@@ -764,7 +764,7 @@ def _controlled_trotter_cdf_standard_resources(  # pylint: disable=unused-argume
 
 
 @register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
-@register_name("standard")
+@register_name("controlled_double_factorized_steps")
 @register_resources(_controlled_trotter_cdf_standard_resources, exact=False)
 # pylint: disable-next=unused-argument
 def _controlled_trotter_cdf_standard(
@@ -844,6 +844,6 @@ def _trotter_cdf_multi_control(base, control_wires, control_values, work_wires, 
 
 add_decomps(
     "C(TrotterCDF)",
-    flip_zero_control2(_controlled_trotter_cdf_standard, name="standard"),
+    flip_zero_control2(_controlled_trotter_cdf_standard, name="controlled_double_factorized_steps"),
     _trotter_cdf_multi_control,
 )

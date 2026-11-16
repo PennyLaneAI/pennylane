@@ -76,7 +76,7 @@ class FlipSign(Operator2):
             :symbols: :math:`n` wires and basis state :math:`b=(b_0, \dots, b_{n-1})` (``state``)
             :example: :math:`n=3`, :math:`b=(1, 0, 0)`
 
-            .. decomposition-rule:: _flip_sign_decomposition
+            .. decomposition-rule:: to_controlled_z
                 :image: /_static/decomposition_thumbnails/flip_sign_controlled_z.svg
                 :where: the controls are on :math:`|b_0 \cdots b_{n-2}\rangle`, and
                     :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
@@ -150,7 +150,7 @@ def _flip_sign_standard_resources(state: tuple[int], wires: WiresLike, work_wire
     return res
 
 
-@register_name("standard")
+@register_name("to_controlled_z")
 @register_resources(_flip_sign_standard_resources)
 def _flip_sign_standard(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
     if state[-1] == 0:

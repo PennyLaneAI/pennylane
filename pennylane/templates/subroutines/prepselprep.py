@@ -229,7 +229,7 @@ def _prepselprep_standard_resources(op_reps, num_control):
     return resources
 
 
-@register_name("standard")
+@register_name("state_prep_select")
 @register_resources(_prepselprep_standard_resources)
 def _prepselprep_standard(*_, wires, lcu, control, target_wires):  # pylint: disable=unused-argument
     coeffs, ops, phases = _get_new_terms(lcu)

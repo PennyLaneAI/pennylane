@@ -76,7 +76,7 @@ class QFT(Operator2):
             :symbols: :math:`n` wires
             :example: :math:`n=3`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: controlled_phase_shifts
                 :image: /_static/decomposition_thumbnails/qft_cphase_swap.svg
 
                 :class:`~.Hadamard` | :math:`n` | 3
@@ -159,7 +159,7 @@ def _qft_standard_resources(wires: AbstractWires):
     }
 
 
-@register_name("standard")
+@register_name("controlled_phase_shifts")
 @register_resources(_qft_standard_resources)
 def _qft_standard(wires: WiresLike):
     num_wires = len(wires)

@@ -722,7 +722,7 @@ class SpecialUnitary(Operation):
         return SpecialUnitary(-self.data[0], wires=self.wires)
 
 
-@register_name("standard")
+@register_name("negate_parameters")
 @register_resources({SpecialUnitary: 1})
 def _adjoint_special_unitary_standard(theta, wires, **__):
     SpecialUnitary(-theta, wires=wires)
@@ -787,7 +787,7 @@ def _tmp_paulirot_standard_resources(theta, wires, pauli_word: str):
     return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
-@register_name("standard")
+@register_name("to_pauli_rot")
 @register_resources(_tmp_paulirot_standard_resources)
 def _tmp_paulirot_standard(theta: TensorLike, wires: WiresLike, pauli_word: str):
     PauliRot(theta, pauli_word=pauli_word, wires=wires)
@@ -796,7 +796,7 @@ def _tmp_paulirot_standard(theta: TensorLike, wires: WiresLike, pauli_word: str)
 add_decomps(TmpPauliRot, _tmp_paulirot_standard)
 
 
-@register_name("standard")
+@register_name("negate_angle")
 @register_resources(lambda base: _tmp_paulirot_standard_resources(**base.arguments))
 def _adjoint_tmp_paulirot_standard(base):
     PauliRot(-base.theta, pauli_word=base.pauli_word, wires=base.wires)

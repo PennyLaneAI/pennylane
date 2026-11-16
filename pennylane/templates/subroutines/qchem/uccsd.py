@@ -339,7 +339,7 @@ def _UCCSD_standard_resources(num_wires, n_repeats, num_d_wires, num_s_wires):
     return dict(resources)
 
 
-@register_name("standard")
+@register_name("fermionic_excitation_layers")
 @register_resources(_UCCSD_standard_resources)
 def _UCCSD_standard(weights, wires, s_wires, d_wires, init_state, n_repeats):
     BasisState(init_state, wires=wires)

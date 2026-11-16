@@ -399,7 +399,7 @@ def _superposition_standard_resources(num_wires, num_coeffs, bases):
     return dict(resources)
 
 
-@register_name("standard")
+@register_name("state_prep_permutations")
 @register_resources(_superposition_standard_resources)
 # pylint: disable-next=unused-argument
 def _superposition_standard(coeffs, bases, wires, target_wires, work_wire):

@@ -87,7 +87,7 @@ def test_decomp_has_name():
     }
 
     custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
-    assert custom_decomp.name == "standard"
+    assert custom_decomp.name == "phase_gradient"
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

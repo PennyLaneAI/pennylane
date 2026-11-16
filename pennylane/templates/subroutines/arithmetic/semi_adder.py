@@ -255,7 +255,7 @@ class SemiAdder(Operator2):
             :symbols: :math:`m` ``x_wires`` and :math:`n \geq 2` ``y_wires``
             :example: :math:`m=n=3`
 
-            .. decomposition-rule:: _semi_adder
+            .. decomposition-rule:: carry_ladder
                 :image: /_static/decomposition_thumbnails/semi_adder_elbow_ladder.svg
                 :where: :math:`\ell = \min(m, n - 1)`, and :math:`[m \geq n]` equal to 1 if
                     :math:`m \geq n` and 0 otherwise
@@ -343,7 +343,7 @@ def _semi_adder_standard_work_wires(x_wires, y_wires, work_wires):
     return {"zeroed": max(num_work_wires_needed - num_work_wires_provided, 0)}
 
 
-@register_name("standard")
+@register_name("carry_ladder")
 @register_resources(_semi_adder_standard_resources, work_wires=_semi_adder_standard_work_wires)
 def _semi_adder_standard(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_pos=None):
     num_y_wires = len(y_wires)
@@ -453,7 +453,7 @@ def _controlled_semi_adder_standard_resources(
     }
 
 
-@register_name("standard")
+@register_name("controlled_carry_ladder")
 @register_resources(
     _controlled_semi_adder_standard_resources,
     work_wires=lambda base, *_, **__: _semi_adder_standard_work_wires(**base.arguments),
@@ -518,7 +518,7 @@ def _controlled_semi_adder_standard(  # pylint: disable=too-many-arguments
         _controlled_right_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip, **ctrl_kwargs)
 
 
-add_decomps("C(SemiAdder)", flip_zero_control2(_controlled_semi_adder_standard, name="standard"))
+add_decomps("C(SemiAdder)", flip_zero_control2(_controlled_semi_adder_standard, name="controlled_carry_ladder"))
 
 
 def _self_ctrl_one_sparse_add_resources(

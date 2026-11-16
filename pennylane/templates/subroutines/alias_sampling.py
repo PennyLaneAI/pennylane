@@ -91,7 +91,7 @@ class UniformPrep(Operator2):
                 :math:`\ell = \lceil \log_2 L \rceil`
             :example: :math:`n_\text{states}=5` (:math:`k=0`, :math:`L=5`, :math:`\ell=3`)
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: amplitude_amplification
                 :image: /_static/decomposition_thumbnails/uniform_prep_amplification.svg
                 :lightbox:
                 :requires: :math:`\ell` work wires
@@ -165,7 +165,7 @@ def _uniform_prep_standard_resources(n_states, target_wires, work_wires):
     return resources
 
 
-@register_name("standard")
+@register_name("amplitude_amplification")
 @register_resources(_uniform_prep_standard_resources)
 def _uniform_prep_standard(n_states, target_wires, work_wires, **_):
     k = (n_states & -n_states).bit_length() - 1
@@ -406,7 +406,7 @@ class AliasSampling(Operator2):
                 :math:`\mu` = ``mu`` bits
             :example: :math:`L=4`, :math:`\mu=2`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: qrom_comparator_swap
                 :image: /_static/decomposition_thumbnails/alias_sampling_coherent.svg
 
                 :class:`~.UniformPrep` | :math:`1` | 1
@@ -510,7 +510,7 @@ def _alias_sampling_standard_resources(probs, mu, target_wires, temp_wires, work
     }
 
 
-@register_name("standard")
+@register_name("qrom_comparator_swap")
 @register_resources(_alias_sampling_standard_resources)
 def _alias_sampling_standard(probs, mu, target_wires, temp_wires, work_wires, **_):
     L = len(probs)

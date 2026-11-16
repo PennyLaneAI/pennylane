@@ -499,7 +499,7 @@ def _out_poly_standard_resources(num_output_wires, num_work_wires, mod, coeffs_l
     return dict(resources)
 
 
-@register_name("standard")
+@register_name("fourier_polynomial_phases")
 @register_resources(_out_poly_standard_resources)
 def _out_poly_standard(  # pylint: disable=unused-argument
     polynomial_function,

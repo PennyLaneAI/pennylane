@@ -159,7 +159,7 @@ def _arbitrary_unitary_standard_resources(num_wires: int) -> dict:
     return resources
 
 
-@register_name("standard")
+@register_name("pauli_rotations")
 @register_resources(_arbitrary_unitary_standard_resources)
 def _arbitrary_unitary_standard(weights: list, wires: WiresLike, **_):
     words = list(_all_pauli_words_but_identity(len(wires)))

@@ -281,7 +281,7 @@ def _multiplier_standard_resources(
     return resources
 
 
-@register_name("standard")
+@register_name("fourier_phase_adders")
 @register_resources(_multiplier_standard_resources)
 def _multiplier_standard(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
     if mod != 2 ** len(x_wires):

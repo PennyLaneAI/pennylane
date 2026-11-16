@@ -392,7 +392,7 @@ def _adjoint_change_op_basis_standard_resources(base_params, **_):
     return resources
 
 
-@register_name("standard")
+@register_name("adjoint_target")
 @register_resources(_adjoint_change_op_basis_standard_resources)
 def _adjoint_change_op_basis_standard(*_, base, **__):
     apply(base.operands[2])
@@ -429,7 +429,7 @@ def _controlled_change_op_basis_standard_resources(
     return resources
 
 
-@register_name("standard")
+@register_name("control_target")
 @register_resources(_controlled_change_op_basis_standard_resources)
 def _controlled_change_op_basis_standard(
     *_,
@@ -451,7 +451,7 @@ def _controlled_change_op_basis_standard(
     apply(base.operands[0])
 
 
-@register_name("standard")
+@register_name("expand_basis_change")
 @register_resources(_change_op_basis_standard_resources)
 def _change_op_basis_standard(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
     for op in operands[::-1]:

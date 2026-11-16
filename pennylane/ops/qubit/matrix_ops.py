@@ -194,21 +194,21 @@ class QubitUnitary(Operator2):
                 :class:`~.SelectPauliRot` (:math:`Z`) with :math:`n-1` controls | :math:`2`
                 :class:`~.SelectPauliRot` (:math:`Y`) with :math:`n-1` controls | :math:`1`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: conjugate_transpose
                 :image: /_static/decomposition_thumbnails/qubit_unitary_adjoint.svg
                 :region: adjoint
                 :where: the adjoint of the input unitary matrix is used
 
                 :class:`~.QubitUnitary` | :math:`1`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: to_controlled_qubit_unitary
                 :image: /_static/decomposition_thumbnails/qubit_unitary_controlled.svg
                 :region: controlled
                 :where: the circuit shows :math:`c = 2` control wires
 
                 :class:`~.ControlledQubitUnitary` | :math:`1`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: matrix_power
                 :image: /_static/decomposition_thumbnails/qubit_unitary_pow.svg
                 :region: pow
                 :where: the input unitary matrix is raised to the power, :math:`z`
@@ -455,7 +455,7 @@ add_decomps(
 )
 
 
-@register_name("standard")
+@register_name("conjugate_transpose")
 @register_resources(lambda base: {abstractify(base): 1})
 def _adjoint_qubit_unitary_standard(base):
     U = base.U
@@ -475,7 +475,7 @@ def _matrix_pow(U, z):
     return vecs @ math.diag(eigs**z) @ math.linalg.inv(vecs)
 
 
-@register_name("standard")
+@register_name("matrix_power")
 @register_resources(lambda base, z: {abstractify(base): 1})
 def _pow_qubit_unitary_standard(base, z):
     QubitUnitary(_matrix_pow(base.U, z), wires=base.wires)
@@ -501,7 +501,7 @@ def _controlled_qubit_unitary_standard_resources(
     }
 
 
-@register_name("standard")
+@register_name("to_controlled_qubit_unitary")
 @register_resources(_controlled_qubit_unitary_standard_resources)
 def _controlled_qubit_unitary_standard(
     base, control_wires, control_values, work_wires, work_wire_type
@@ -555,14 +555,14 @@ class DiagonalQubitUnitary(Operator2):
 
                 :class:`~.SelectPauliRot` (:math:`Z`) with :math:`n` controls | :math:`1` | 1
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: conjugate_diagonal
                 :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_adjoint.svg
                 :region: adjoint
                 :where: the adjoint of the diagonal entries is taken
 
                 :class:`~.DiagonalQubitUnitary` | :math:`1`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: power_diagonal
                 :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_pow.svg
                 :region: pow
                 :where: diagonal entries are raised to the power, :math:`z`
@@ -728,7 +728,7 @@ add_decomps(
 )
 
 
-@register_name("standard")
+@register_name("conjugate_diagonal")
 @register_resources(lambda base: {abstractify(base): 1})
 def _adjoint_diagonal_unitary_standard(base):
     DiagonalQubitUnitary(math.conj(base.D), wires=base.wires)
@@ -737,7 +737,7 @@ def _adjoint_diagonal_unitary_standard(base):
 add_decomps("Adjoint(DiagonalQubitUnitary)", _adjoint_diagonal_unitary_standard)
 
 
-@register_name("standard")
+@register_name("power_diagonal")
 @register_resources(lambda base, z: {abstractify(base): 1})
 def _pow_diagonal_unitary_standard(base, z):
     DiagonalQubitUnitary(math.cast(base.D, np.complex128) ** z, wires=base.wires)
@@ -919,7 +919,7 @@ def _adjoint_block_encode_standard_resources(base):
     return {abstractify(base.adjoint()): 1}
 
 
-@register_name("standard")
+@register_name("adjoint_matrix")
 @register_resources(_adjoint_block_encode_standard_resources)
 def _adjoint_block_encode_standard(base):
     base.adjoint()

@@ -507,7 +507,7 @@ def _prod_standard_resources(resources):
     return resources
 
 
-@qp.register_name("standard")
+@qp.register_name("expand_factors")
 @qp.register_resources(_prod_standard_resources)
 def _prod_standard(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
     for op in reversed(operands):

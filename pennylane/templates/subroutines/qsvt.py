@@ -412,7 +412,7 @@ class QSVT(Operator2):
                 shifts :math:`\Pi_{\phi_k}=` ``projectors[k]``
             :example: :math:`d=2`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: alternating_block_encodings
                 :image: /_static/decomposition_thumbnails/qsvt_alternating_projectors.svg
 
                 :math:`\Pi_{\phi_k}` | :math:`d+1` (one per :math:`\Pi_{\phi_k}`) | 3
@@ -546,7 +546,7 @@ def _QSVT_standard_resources(UA, projectors):
     return dict(resources)
 
 
-@register_name("standard")
+@register_name("alternating_block_encodings")
 @register_resources(_QSVT_standard_resources)
 def _QSVT_standard(UA, projectors):
 

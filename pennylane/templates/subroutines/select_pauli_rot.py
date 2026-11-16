@@ -167,7 +167,7 @@ def _select_pauli_rot_standard_resources(angles, control_wires, target_wire, rot
 
 
 # Not exact resources because rotations might be skipped based on angles
-@register_name("standard")
+@register_name("gray_code")
 @register_resources(_select_pauli_rot_standard_resources, exact=False)
 def _select_pauli_rot_standard(angles, control_wires, target_wire, rot_axis):
     r"""Decomposes the SelectPauliRot"""

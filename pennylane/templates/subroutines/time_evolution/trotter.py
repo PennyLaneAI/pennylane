@@ -411,7 +411,7 @@ def _trotter_product_standard_resources(n, order, ops):
     return reps
 
 
-@register_name("standard")
+@register_name("suzuki_trotter")
 @register_resources(_trotter_product_standard_resources)
 def _trotter_product_standard(*args, **kwargs):
     time = args[-1]

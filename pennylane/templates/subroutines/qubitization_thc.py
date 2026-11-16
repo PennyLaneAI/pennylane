@@ -361,7 +361,7 @@ class QubitizationTHC(Operator2):
         .. decomposition-table:: qp.QubitizationTHC
             :stacked:
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: thc_prepare_select_reflection
                 :image: /_static/decomposition_thumbnails/qubitization_thc_walk.svg
 
                 :class:`~.SuperpositionTHC` | :math:`1`
@@ -578,7 +578,7 @@ def _qubitization_thc_standard_resources(  # pylint: disable=too-many-arguments
     }
 
 
-@register_name("standard")
+@register_name("thc_prepare_select_reflection")
 @register_resources(_qubitization_thc_standard_resources)
 def _qubitization_thc_standard(  # pylint: disable=too-many-arguments
     zeta,

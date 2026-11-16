@@ -412,7 +412,7 @@ def _controlled_g_phase_standard_resources(
     return resources
 
 
-@register_name("standard")
+@register_name("to_controlled_phaseshift")
 @register_resources(_controlled_g_phase_standard_resources, exact=False)
 def _controlled_g_phase_standard(
     base,

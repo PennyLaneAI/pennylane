@@ -176,7 +176,7 @@ class TrotterVibronic(Operator2):
             :example: :math:`F=1`, :math:`M=1`, :math:`k=1`, :math:`n=1`,
                 :math:`b=1`, :math:`r=1`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: vibronic_trotter_steps
                 :image: /_static/decomposition_thumbnails/trotter_vibronic_phase_gradient.svg
                 :where: :math:`P = 2Fr` position-fragment visits and :math:`K = M(M-1)/2` mode
                     pairs, and :math:`[b > 1]` is 1 if :math:`b > 1` and 0 otherwise.
@@ -685,7 +685,7 @@ def _trotter_vibronic_standard_work_wires(  # pylint: disable=too-many-arguments
     return {"zeroed": num_alloc}
 
 
-@register_name("standard")
+@register_name("vibronic_trotter_steps")
 @register_resources(
     _trotter_vibronic_standard_resources,
     exact=False,

@@ -84,7 +84,7 @@ class LeftQuantumComparator(Operator2):
             :symbols: :math:`n` ``x_wires``, :math:`n` ``y_wires`` and ``comparator`` :math:`c`
             :example: :math:`n=2`, :math:`c={\leq}`
 
-            .. decomposition-rule:: _left_quantum_comparator
+            .. decomposition-rule:: elbow_ladder
                 :image: /_static/decomposition_thumbnails/left_quantum_comparator_elbow_ladder.svg
                 :where: :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
 
@@ -159,7 +159,7 @@ def _left_quantum_comparator_standard_resources(
     return resources
 
 
-@register_name("standard")
+@register_name("elbow_ladder")
 @register_resources(_left_quantum_comparator_standard_resources, exact=True)
 def _left_quantum_comparator_standard(x_wires, y_wires, target_wire, work_wires, comparator, **_):
 

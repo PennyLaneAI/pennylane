@@ -245,7 +245,7 @@ class OneBodyBlockEncoding(Operator2):
                 eigenvalues of ``op_matrix``
             :example: the operator above with ``alias_sampling_nbits=1``, :math:`K=2`, :math:`\nu=1`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: alias_sampling_basis_rotation
                 :image: /_static/decomposition_thumbnails/one_body_block_encoding_lcu.svg
                 :where: :math:`\delta = 1` if :math:`\nu > 0` and :math:`\delta = 0` otherwise
 
@@ -382,7 +382,7 @@ def _one_body_block_encoding_standard_resources(
     return resources
 
 
-@register_name("standard")
+@register_name("alias_sampling_basis_rotation")
 @register_resources(_one_body_block_encoding_standard_resources)
 def _one_body_block_encoding_standard(
     op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires, **_

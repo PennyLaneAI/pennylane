@@ -87,7 +87,7 @@ class LeftClassicalComparator(Operator2):
             :symbols: :math:`n` ``x_wires``, the constant :math:`L` and ``comparator`` :math:`c`
             :example: :math:`n=3`, :math:`L=6`, :math:`c={<}`
 
-            .. decomposition-rule:: _left_classical_comparator
+            .. decomposition-rule:: elbow_ladder
                 :image: /_static/decomposition_thumbnails/left_classical_comparator_elbow_ladder.svg
                 :where: :math:`[\cdot]` is 1 if the condition holds and 0 otherwise.
                     Conditional gates depend on :math:`L` and :math:`c`.
@@ -197,7 +197,7 @@ def _left_classical_comparator_standard_resources(
     }
 
 
-@register_name("standard")
+@register_name("elbow_ladder")
 @register_resources(_left_classical_comparator_standard_resources, exact=False)
 def _left_classical_comparator_standard(x_wires, value, target_wire, work_wires, comparator, **_):
     x_wires = x_wires[::-1]

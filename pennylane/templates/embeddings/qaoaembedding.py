@@ -351,7 +351,7 @@ def _qaoa_embedding_standard_resources(repeat, n_features, num_wires, local_fiel
     return resources
 
 
-@register_name("standard")
+@register_name("feature_and_ansatz_layers")
 @register_resources(_qaoa_embedding_standard_resources)
 def _qaoa_embedding_standard(features, weights, wires, local_field):
     # pylint: disable=no-value-for-parameter

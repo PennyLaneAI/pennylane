@@ -66,10 +66,10 @@ def test_decomp_registration():
     assert custom_decomp.name == "phase_gradient"
 
     with qp.decomposition.local_decomps():
-        standard = qp.list_decomps(qp.SelectPauliRot)["standard"]
+        standard = qp.list_decomps(qp.SelectPauliRot)["gray_code"]
         qp.add_decomps(qp.SelectPauliRot, custom_decomp)
         rules = qp.list_decomps(qp.SelectPauliRot)
-        assert rules["standard"] is standard
+        assert rules["gray_code"] is standard
         assert rules["phase_gradient"] is custom_decomp
 
 

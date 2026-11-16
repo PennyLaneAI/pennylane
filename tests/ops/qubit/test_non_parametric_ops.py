@@ -1551,7 +1551,7 @@ class TestPPR:
         """Test the operations queued by the adjoint rule."""
         denominator = PPR_DENOMINATORS[op_cls]
         adj_op = qp.adjoint(op_cls(1, "XY", wires=[0, 1]))
-        rule = qp.list_decomps(f"Adjoint(PPR_{denominator})")["standard"]
+        rule = qp.list_decomps(f"Adjoint(PPR_{denominator})")["flip_sign"]
 
         tape = qp.testing.decomp_rule_to_tape(adj_op, rule)
 
@@ -1562,7 +1562,7 @@ class TestPPR:
     def test_adjoint_decomp_resources(self, op_cls):
         """Test the resources of the adjoint rule."""
         denominator = PPR_DENOMINATORS[op_cls]
-        rule = qp.list_decomps(f"Adjoint(PPR_{denominator})")["standard"]
+        rule = qp.list_decomps(f"Adjoint(PPR_{denominator})")["flip_sign"]
         adj_op = qp.adjoint(op_cls(1, "XY", wires=[0, 1]))
 
         expected = qp.decomposition.Resources({op_cls(-1, pauli_word="XY", wires=Wire[2]): 1})

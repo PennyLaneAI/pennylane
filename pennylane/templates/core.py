@@ -404,7 +404,7 @@ def _subroutine_standard_resources(subroutine: "Subroutine", signature_key):
     return subroutine.compute_resources(**sig.arguments)
 
 
-@register_name("standard")
+@register_name("expand_operations")
 @register_resources(_subroutine_standard_resources)
 def _subroutine_standard(*data, wires, decomposition):  # pylint: disable=unused-argument
     _ = [apply(op) for op in decomposition]

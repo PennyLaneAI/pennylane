@@ -87,7 +87,7 @@ class MultiX(Operator2):
             :symbols: :math:`n` wires and bitstring :math:`\mathbf{b}`
             :example: :math:`\mathbf{b}=(1, 0, 1)`
 
-            .. decomposition-rule:: _multix_decomposition
+            .. decomposition-rule:: to_x
                 :image: /_static/decomposition_thumbnails/multix_conditional_x.svg
 
                 :class:`~.X` | :math:`\sum_i b_i \leq n` (one per :math:`b_i=1`) | 2
@@ -346,7 +346,7 @@ def _multix_standard_resources(
 
 
 # Decomposition function for MultiX
-@register_name("standard")
+@register_name("to_x")
 @register_resources(_multix_standard_resources, exact=False)
 def _multix_standard(bitstring: TensorLike, wires: WiresLike) -> None:
     # Dynamically-allocated wires (``AbstractQubit`` handles, e.g. from ``qp.allocate``) cannot
@@ -433,7 +433,7 @@ def _controlled_multix_ladder_standard_work_wires(control_wires, work_wires, wor
 
 
 @register_condition(lambda control_wires, **_: len(control_wires) > 1 and not compiler.active())
-@register_name("standard")
+@register_name("ancilla_fanout")
 @register_resources(
     _controlled_multix_ladder_standard_resources,
     work_wires=_controlled_multix_ladder_standard_work_wires,
@@ -451,4 +451,4 @@ def _controlled_multix_ladder_standard(base, control_wires, work_wires, work_wir
         _multix_ladder_fanout(base, control_wires, work_wires=available + list(allocated))
 
 
-add_decomps("C(MultiX)", flip_zero_control2(_controlled_multix_ladder_standard, name="standard"))
+add_decomps("C(MultiX)", flip_zero_control2(_controlled_multix_ladder_standard, name="ancilla_fanout"))

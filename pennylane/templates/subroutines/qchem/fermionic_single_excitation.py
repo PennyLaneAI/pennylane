@@ -218,7 +218,7 @@ def _fermionic_single_excitation_standard_resources(num_wires):
     return {RX: 4, Hadamard: 4, CNOT: 4 * (num_wires - 1), RZ: 2}
 
 
-@register_name("standard")
+@register_name("jordan_wigner_rotations")
 @register_resources(_fermionic_single_excitation_standard_resources)
 def _fermionic_single_excitation_standard(weight, wires, **_):
     # pylint: disable=no-value-for-parameter

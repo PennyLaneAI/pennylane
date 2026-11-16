@@ -168,7 +168,7 @@ def _arbitrary_state_preparation_standard_resources(num_wires):
     )
 
 
-@register_name("standard")
+@register_name("pauli_rotations")
 @register_resources(_arbitrary_state_preparation_standard_resources)
 def _arbitrary_state_preparation_standard(weights, wires, **_):
     pauli_words = _state_preparation_pauli_words(len(wires))

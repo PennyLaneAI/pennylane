@@ -256,7 +256,7 @@ def _mod_exp_standard_resources(num_x_wires, num_output_wires, mod, num_work_wir
     }
 
 
-@register_name("standard")
+@register_name("controlled_multipliers")
 @register_resources(_mod_exp_standard_resources)
 def _mod_exp_standard(x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike, **__):
     ControlledSequence(Multiplier(base, output_wires, mod, work_wires), control=x_wires)

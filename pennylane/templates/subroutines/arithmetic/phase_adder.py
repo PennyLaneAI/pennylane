@@ -199,7 +199,7 @@ def _phase_adder_standard_resources(k, x_wires, mod, work_wire) -> dict:
     return resources
 
 
-@register_name("standard")
+@register_name("fourier_phase_shifts")
 @register_resources(_phase_adder_standard_resources)
 def _phase_adder_standard(k, x_wires: WiresLike, mod, work_wire):
 

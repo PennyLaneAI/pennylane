@@ -63,7 +63,7 @@ class QuantumPhaseEstimation(Operator2):
             :symbols: :math:`U=` ``unitary`` and :math:`n` estimation wires
             :example: :math:`n=3`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: controlled_powers_inverse_qft
                 :image: /_static/decomposition_thumbnails/quantum_phase_estimation_qft.svg
 
                 :class:`~.Hadamard` | :math:`n` | 3
@@ -200,7 +200,7 @@ def _qpe_standard_resources(unitary, estimation_wires):
     return gate_count
 
 
-@register_name("standard")
+@register_name("controlled_powers_inverse_qft")
 @register_resources(_qpe_standard_resources)
 def _qpe_standard(unitary, estimation_wires):
     if compiler.active() or capture.enabled():

@@ -123,7 +123,7 @@ class TemporaryAND(Operator2):
             :symbols: :math:`z` entries of ``control_values`` equal to 0
             :example: ``control_values=(1, 0)``, i.e., :math:`z=1`
 
-            .. decomposition-rule:: _temporary_and
+            .. decomposition-rule:: to_clifford_t
                 :image: /_static/decomposition_thumbnails/temporary_and_clifford_t.svg
 
                 :class:`~.Hadamard` | :math:`2` | 2
@@ -133,13 +133,13 @@ class TemporaryAND(Operator2):
                 :class:`Adjoint(S) <.S>` | :math:`1` | 1
                 :class:`~.X` | :math:`2z` | 2
 
-            .. decomposition-rule:: _temporary_and_to_toffoli
+            .. decomposition-rule:: to_toffoli
                 :image: /_static/decomposition_thumbnails/temporary_and_toffoli.svg
 
                 :class:`~.Toffoli` | :math:`1` | 1
                 :class:`~.X` | :math:`2z` | 2
 
-            .. decomposition-rule:: _temporary_and_ppr
+            .. decomposition-rule:: to_ppr
                 :image: /_static/decomposition_thumbnails/temporary_and_ppr.svg
 
                 :class:`PPR_8(1, "ZZY") <.PPR_8>` | :math:`1` | 1

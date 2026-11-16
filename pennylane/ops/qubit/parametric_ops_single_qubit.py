@@ -307,7 +307,7 @@ def _controlled_rx_standard_resources(
     }
 
 
-@register_name("standard")
+@register_name("to_rz_mcx")
 @register_resources(_controlled_rx_standard_resources)
 # pylint: disable-next=unused-argument
 def _controlled_rx_standard(base, control_wires, control_values, work_wires, work_wire_type):
@@ -324,7 +324,7 @@ def _controlled_rx_standard(base, control_wires, control_values, work_wires, wor
     qp.H(wires=wires[-1])
 
 
-add_decomps("C(RX)", flip_zero_control2(_controlled_rx_standard, name="standard"))
+add_decomps("C(RX)", flip_zero_control2(_controlled_rx_standard, name="to_rz_mcx"))
 
 
 class RY(Operator2):
@@ -590,7 +590,7 @@ def _controlled_ry_standard_resources(
     }
 
 
-@register_name("standard")
+@register_name("to_ry_mcx")
 @register_resources(_controlled_ry_standard_resources)
 # pylint: disable-next=unused-argument
 def _controlled_ry_standard(base, control_wires, control_values, work_wires, work_wire_type):
@@ -605,7 +605,7 @@ def _controlled_ry_standard(base, control_wires, control_values, work_wires, wor
     qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
-add_decomps("C(RY)", flip_zero_control2(_controlled_ry_standard, name="standard"))
+add_decomps("C(RY)", flip_zero_control2(_controlled_ry_standard, name="to_ry_mcx"))
 
 
 class RZ(Operator2):
@@ -911,7 +911,7 @@ def _controlled_rz_standard_resources(
     }
 
 
-@register_name("standard")
+@register_name("to_rz_mcx")
 @register_resources(_controlled_rz_standard_resources)
 # pylint: disable-next=unused-argument
 def _controlled_rz_standard(base, control_wires, control_values, work_wires, work_wire_type):
@@ -934,7 +934,7 @@ def _controlled_rz_standard(base, control_wires, control_values, work_wires, wor
     )
 
 
-add_decomps("C(RZ)", flip_zero_control2(_controlled_rz_standard, name="standard"))
+add_decomps("C(RZ)", flip_zero_control2(_controlled_rz_standard, name="to_rz_mcx"))
 
 
 class PhaseShift(Operator2):
@@ -1160,7 +1160,7 @@ def _controlled_phase_shift_standard_resources(base, control_wires, *_, **__):
     return resources
 
 
-@register_name("standard")
+@register_name("to_pauli_rot")
 @register_resources(_controlled_phase_shift_standard_resources)
 def _controlled_phase_shift_standard(base, control_wires, *_, **__):
     wires = concatenate_wires(control_wires, base.wires)
@@ -1213,7 +1213,7 @@ add_decomps("Adjoint(PhaseShift)", adjoint_rotation2)
 add_decomps("Pow(PhaseShift)", pow_rotation2)
 add_decomps(
     "C(PhaseShift)",
-    flip_zero_control2(_controlled_phase_shift_standard, name="standard"),
+    flip_zero_control2(_controlled_phase_shift_standard, name="to_pauli_rot"),
     flip_zero_control2(_controlled_phase_shift_single_phase, name="single_phase"),
 )
 
@@ -1260,13 +1260,13 @@ class Rot(Operator2):
                 :class:`~.RZ` | :math:`2`
                 :class:`~.RY` | :math:`1`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: reverse_angles
                 :image: /_static/decomposition_thumbnails/rot_adjoint.svg
                 :region: adjoint
 
                 :class:`~.Rot` | :math:`1`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: to_rz_ry_mcx
                 :image: /_static/decomposition_thumbnails/rot_controlled.svg
                 :region: controlled
                 :where: :math:`c` is the number of control wires, each control wire with
@@ -1386,7 +1386,7 @@ def _rot_to_rz_ry_rz(phi, theta, omega, wires: WiresLike):
 add_decomps(Rot, _rot_to_rz_ry_rz)
 
 
-@register_name("standard")
+@register_name("reverse_angles")
 @register_resources({Rot: 1})
 def _adjoint_rot_standard(base):
     Rot(-base.omega, -base.theta, -base.phi, wires=base.wires)
@@ -1412,7 +1412,7 @@ def _controlled_rot_standard_resources(
     }
 
 
-@register_name("standard")
+@register_name("to_rz_ry_mcx")
 @register_resources(_controlled_rot_standard_resources)
 # pylint: disable-next=unused-argument
 def _controlled_rot_standard(base, control_wires, control_values, work_wires, work_wire_type):
@@ -1433,7 +1433,7 @@ def _controlled_rot_standard(base, control_wires, control_values, work_wires, wo
     qp.RZ(omega, wires=wires[-1])
 
 
-add_decomps("C(Rot)", flip_zero_control2(_controlled_rot_standard, name="standard"))
+add_decomps("C(Rot)", flip_zero_control2(_controlled_rot_standard, name="to_rz_ry_mcx"))
 
 
 class U1(Operator2):
@@ -1612,7 +1612,7 @@ class U2(Operator2):
                 :class:`~.Rot` | :math:`1`
                 :class:`~.PhaseShift` | :math:`2`
 
-            .. decomposition-rule:: _adjoint_u2
+            .. decomposition-rule:: invert_angles
                 :image: /_static/decomposition_thumbnails/u2_adjoint.svg
                 :region: adjoint
                 :where: the angles change to :math:`\delta \rightarrow \pi - \delta` and  :math:`\phi \rightarrow \pi - \phi` (both :math:`\text{mod} 2 \pi`)
@@ -1703,7 +1703,7 @@ def _u2_to_phaseshift_rot(phi, delta, wires):
 add_decomps(U2, _u2_to_phaseshift_rot)
 
 
-@register_name("standard")
+@register_name("invert_angles")
 @register_resources(lambda base: {abstractify(U2): 1})
 def _adjoint_u2_standard(base):
     new_delta = qp.math.mod((np.pi - base.phi), (2 * np.pi))
@@ -1761,7 +1761,7 @@ class U3(Operator2):
                 :class:`~.Rot` | :math:`1`
                 :class:`~.PhaseShift` | :math:`2`
 
-            .. decomposition-rule:: _adjoint_u3
+            .. decomposition-rule:: invert_angles
                 :image: /_static/decomposition_thumbnails/u3_adjoint.svg
                 :region: adjoint
                 :where: :math:`\theta` stays the same, but :math:`\delta \rightarrow \pi - \delta` and  :math:`\phi \rightarrow \pi - \phi` (both :math:`\text{mod} 2 \pi`)
@@ -1882,7 +1882,7 @@ def _u3_to_phaseshift_rot(theta, phi, delta, wires):
 add_decomps(U3, _u3_to_phaseshift_rot)
 
 
-@register_name("standard")
+@register_name("invert_angles")
 @register_resources(lambda base: {abstractify(U3): 1})
 def _adjoint_u3_standard(base):
     new_delta = qp.math.mod((np.pi - base.phi), (2 * np.pi))

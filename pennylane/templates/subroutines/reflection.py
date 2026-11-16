@@ -249,7 +249,7 @@ def _reflection_standard_resources(base_rep, num_wires, num_reflection_wires=Non
     return resources
 
 
-@register_name("standard")
+@register_name("prepare_phase_unprepare")
 @register_resources(_reflection_standard_resources)
 def _reflection_standard(*parameters, wires=None, **hyperparameters):
     alpha = parameters[0]

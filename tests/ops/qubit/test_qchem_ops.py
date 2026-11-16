@@ -1127,7 +1127,7 @@ class TestFermionicSWAP:
     def test_decomposition_rule(self, phi, wires):
         """Test the registered decomposition matrix and resource counts."""
         op = qp.FermionicSWAP(phi, wires=wires)
-        rule = qp.list_decomps(qp.FermionicSWAP)["standard"]
+        rule = qp.list_decomps(qp.FermionicSWAP)["to_multirz_single_qubit"]
         qp.testing.assert_valid_decomp_rule(op, rule)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])

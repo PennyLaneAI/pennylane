@@ -108,7 +108,7 @@ def _custom_label_standard_resources(base):
     return {base: 1}
 
 
-@register_name("standard")
+@register_name("unwrap_base")
 @register_resources(_custom_label_standard_resources)
 def _custom_label_standard(*params, wires, base, **_):  # pylint: disable=unused-argument
     apply(base)

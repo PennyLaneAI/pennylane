@@ -193,7 +193,7 @@ def _controlled_change_op_basis_standard_resources(  # pylint: disable=unused-ar
     return resources
 
 
-@register_name("standard")
+@register_name("control_target")
 @register_resources(_controlled_change_op_basis_standard_resources)
 def _controlled_change_op_basis_standard(
     base,
@@ -223,7 +223,7 @@ def _change_op_basis_standard_resources(compute_op, target_op, uncompute_op):
     return resources
 
 
-@register_name("standard")
+@register_name("expand_basis_change")
 @register_resources(_change_op_basis_standard_resources)
 def _change_op_basis_standard(compute_op, target_op, uncompute_op):
     apply(compute_op)
@@ -233,7 +233,7 @@ def _change_op_basis_standard(compute_op, target_op, uncompute_op):
 
 add_decomps(ChangeOpBasis2, _change_op_basis_standard)
 add_decomps(
-    "C(ChangeOpBasis2)", flip_zero_control(_controlled_change_op_basis_standard, name="standard")
+    "C(ChangeOpBasis2)", flip_zero_control(_controlled_change_op_basis_standard, name="control_target")
 )
 
 
@@ -245,7 +245,7 @@ def _adjoint_change_op_basis_standard_resources(base):
     return dict(resources)
 
 
-@register_name("standard")
+@register_name("adjoint_target")
 @register_resources(_adjoint_change_op_basis_standard_resources)
 def _adjoint_change_op_basis_standard(base):
     apply(base.compute_op)

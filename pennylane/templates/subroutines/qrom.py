@@ -169,7 +169,7 @@ class QROM(Operator2):
             :example: :math:`K=4`, :math:`b=2`, :math:`c=2`, :math:`w=2`, bitstrings
                 ``[[0, 0], [0, 1], [1, 0], [1, 1]]``
 
-            .. decomposition-rule:: _select_swap
+            .. decomposition-rule:: select_swap
                 :image: /_static/decomposition_thumbnails/qrom_select_swap.svg
                 :requires: :math:`w \geq c - 1` work wires and :math:`\lambda \geq 2`
                 :where: :math:`\lambda` is the number of bitstrings loaded in parallel: the largest
@@ -182,7 +182,7 @@ class QROM(Operator2):
                 :class:`~.Hadamard` | :math:`2b` | 4
                 :class:`~.CSWAP` | :math:`4b(\lambda - 1)` | 8
 
-            .. decomposition-rule:: _qrom_unary_iteration
+            .. decomposition-rule:: unary_iteration
                 :image: /_static/decomposition_thumbnails/qrom_unary_iteration.svg
                 :where: :math:`t = \min(c, w + 1)` control wires span the unary iteration tree and
                     the other :math:`e = c - t` are added as controls to each load,
@@ -199,7 +199,7 @@ class QROM(Operator2):
                 :class:`~.X` | :math:`2[B > 2^{t-2}]` | 2
                 :class:`~.MultiX` with :math:`e + 1` controls | :math:`K` | 4
 
-            .. decomposition-rule:: _qrom_measurement_decomposition
+            .. decomposition-rule:: measurement
                 :image: /_static/decomposition_thumbnails/qrom_measurement.svg
                 :requires: :math:`w \geq c - 1` work wires and compilation with :func:`~.qjit`
                 :where: :math:`L = 2^c` (the data is padded to :math:`L` entries, assuming

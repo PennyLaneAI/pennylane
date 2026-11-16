@@ -285,7 +285,7 @@ class MPSPrep(Operator2):
                 dimension :math:`\chi`
             :example: :math:`n=3`, :math:`w=1`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: sequential_unitaries
                 :image: /_static/decomposition_thumbnails/mps_prep.svg
                 :requires: :math:`w \geq \log_2 \chi` work wires
 
@@ -389,7 +389,7 @@ def _work_wires_bond_dimension_condition(mps, wires, work_wires=None, right_cano
 
 
 @qp.register_condition(_work_wires_bond_dimension_condition)
-@register_name("standard")
+@register_name("sequential_unitaries")
 @register_resources(_mps_prep_standard_resources)
 def _mps_prep_standard(mps, wires, work_wires=None, right_canonicalize=False):
     mps = list(mps)

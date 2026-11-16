@@ -253,7 +253,7 @@ def _amplitude_amplification_standard_resources(fixed_point, O, iters, num_refle
     return resources
 
 
-@register_name("standard")
+@register_name("reflection_iterations")
 @register_resources(_amplitude_amplification_standard_resources)
 def _amplitude_amplification_standard(
     *_, U, O, iters, fixed_point, work_wire, p_min, reflection_wires, **__

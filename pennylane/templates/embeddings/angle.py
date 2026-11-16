@@ -151,7 +151,7 @@ def _angle_embedding_standard_resources(rotation: Operation, num_wires: int) -> 
     return {abstractify(rotation): num_wires}
 
 
-@register_name("standard")
+@register_name("single_qubit_rotations")
 @register_resources(_angle_embedding_standard_resources)
 def _angle_embedding_standard(features: list, wires: WiresLike, rotation: Operation):
     batched = math.ndim(features) > 1

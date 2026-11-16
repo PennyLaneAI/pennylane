@@ -251,7 +251,7 @@ def _approx_time_evolution_standard_resources(words: tuple[PauliWord], n: int):
     return resources
 
 
-@register_name("standard")
+@register_name("pauli_rotations")
 @register_resources(_approx_time_evolution_standard_resources)
 def _approx_time_evolution_standard(  # pylint: disable=unused-argument
     *coeffs_and_time: list,

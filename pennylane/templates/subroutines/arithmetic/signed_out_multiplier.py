@@ -127,14 +127,14 @@ class SignedOutMultiplier(Operator2):
                 :math:`w` ``work_wires``
             :example: :math:`n=m=1`, :math:`k=2`
 
-            .. decomposition-rule:: _signed_out_multiplier_decomposition_not_zeroed
+            .. decomposition-rule:: borrowed
                 :image: /_static/decomposition_thumbnails/signed_out_multiplier_not_zeroed.svg
                 :requires: ``output_wires_zeroed=False`` and :math:`w \geq 2k + 1` work wires
 
                 :class:`~.SignedOutMultiplier` with ``output_wires_zeroed=True`` | :math:`1` | 1
                 :class:`~.SemiAdder` | :math:`1` | 1
 
-            .. decomposition-rule:: _signed_out_multiplier_decomposition_zeroed
+            .. decomposition-rule:: zeroed
                 :image: /_static/decomposition_thumbnails/signed_out_multiplier_zeroed.svg
                 :requires: ``output_wires_zeroed=True`` and :math:`w \geq 2` work wires
 

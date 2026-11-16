@@ -824,7 +824,7 @@ class PartialUnaryStatePreparation(Operator2):
                 :math:`m = \lceil \log_2 D \rceil` wires
             :example: the ``coefficients`` and ``indices`` used above with :math:`D=10`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: partial_unary_isometry
                 :image: /_static/decomposition_thumbnails/partial_unary_state_prep.svg
                 :lightbox:
                 :where: :math:`N_P`, :math:`N_F`, :math:`N_S` and :math:`N_T` are the numbers of
@@ -1168,7 +1168,7 @@ def _partial_unary_state_prep_standard_work_wires(coefficients, wires, indices, 
     return {"zeroed": need_to_allocate}
 
 
-@qp.register_name("standard")
+@qp.register_name("partial_unary_isometry")
 @qp.register_resources(
     _partial_unary_state_prep_standard_resources,
     work_wires=_partial_unary_state_prep_standard_work_wires,

@@ -103,7 +103,7 @@ class GQSP(Operator2):
                 ``(3, d+1)``) and shift :math:`s`
             :example: :math:`d=1`, :math:`s=0`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: controlled_unitary_rotations
                 :image: /_static/decomposition_thumbnails/gqsp_signal_processing.svg
                 :where: :math:`a = \min(\max(-s, 0), d)` is the number of controlled unitaries
                     absorbing a negative shift, and :math:`[\cdot]` is 1 if the condition holds
@@ -210,7 +210,7 @@ def _GQSP_standard_resources(unitary, angles, control, work_wires, work_wire_typ
     return resources
 
 
-@register_name("standard")
+@register_name("controlled_unitary_rotations")
 @register_resources(_GQSP_standard_resources)
 # pylint: disable-next=too-many-arguments
 def _GQSP_standard(unitary, angles, control, work_wires, work_wire_type, shift):

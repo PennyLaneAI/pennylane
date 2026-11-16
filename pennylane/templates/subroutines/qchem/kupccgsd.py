@@ -377,7 +377,7 @@ def _kupccgsd_standard_resources(num_wires: int, k: int, d_wires: list, s_wires:
     return resources
 
 
-@register_name("standard")
+@register_name("paired_excitation_layers")
 @register_resources(_kupccgsd_standard_resources)
 def _kupccgsd_standard(  # pylint: disable=unused-argument
     weights: list,

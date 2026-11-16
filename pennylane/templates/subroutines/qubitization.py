@@ -195,7 +195,7 @@ def _qubitization_standard_resources(num_control_wires, hamiltonian):
     }
 
 
-@register_name("standard")
+@register_name("prep_select_reflection")
 @register_resources(_qubitization_standard_resources)
 def _qubitization_standard(*_, **kwargs):
     hamiltonian = kwargs["hamiltonian"]

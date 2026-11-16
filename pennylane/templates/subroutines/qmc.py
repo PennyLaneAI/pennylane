@@ -477,7 +477,7 @@ def _quantum_monte_carlo_standard_resources(num_target_wires, num_estimation_wir
     }
 
 
-@register_name("standard")
+@register_name("unitary_phase_estimation")
 @register_resources(_quantum_monte_carlo_standard_resources)
 # pylint: disable-next=unused-argument
 def _quantum_monte_carlo_standard(A, R, Q, wires, estimation_wires, target_wires):

@@ -237,7 +237,7 @@ def _fable_standard_resources(wires, thetas, control_wires, tol):
     return dict(resources)
 
 
-@register_name("standard")
+@register_name("gray_code_rotations")
 @register_resources(_fable_standard_resources)
 def _fable_standard(input_matrix, wires, tol=0):
     alphas = math.arccos(input_matrix).flatten()

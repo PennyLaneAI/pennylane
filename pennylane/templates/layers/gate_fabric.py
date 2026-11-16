@@ -327,7 +327,7 @@ def _gate_fabric_standard_resources(n_layers, num_wires, len_wire_pattern, inclu
     }
 
 
-@register_name("standard")
+@register_name("excitation_orbital_layers")
 @register_resources(_gate_fabric_standard_resources)
 def _gate_fabric_standard(weights, wires, init_state, include_pi):
     if isinstance(wires, Wires):

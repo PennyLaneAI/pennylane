@@ -90,7 +90,7 @@ class IQP(Operator2):
             :symbols: :math:`n` wires and :math:`G` generators in total in ``pattern``
             :example: :math:`n=2`, ``pattern=[[[0]], [[1]], [[0, 1]]]`` (meaning the number of generators :math:`G = 3`), ``spin_sym=True``
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: to_h_multirz
                 :image: /_static/decomposition_thumbnails/iqp_multirz.svg
                 :where: the Pauli word ``"YX...X"`` acts on all :math:`n` wires: one Y, then
                     :math:`n - 1` X's
@@ -167,7 +167,7 @@ def _instantaneous_quantum_polynomial_standard_resources(weights, wires, pattern
     return resources
 
 
-@register_name("standard")
+@register_name("to_h_multirz")
 @register_resources(_instantaneous_quantum_polynomial_standard_resources)
 def _instantaneous_quantum_polynomial_standard(weights, wires, pattern, spin_sym):
     num_wires = len(wires)

@@ -522,7 +522,7 @@ def _up_to_last_layer(
     return n_wires, first_range, second_range, wires
 
 
-@register_name("standard")
+@register_name("bell_basis")
 @register_resources(_hilbert_schmidt_standard_resources)
 def _hilbert_schmidt_standard(  # pylint: disable=unused-argument
     *params: TensorLike,
@@ -545,7 +545,7 @@ def _hilbert_schmidt_standard(  # pylint: disable=unused-argument
     layer_hadamards()  # pylint: disable=no-value-for-parameter
 
 
-@register_name("standard")
+@register_name("local_bell_basis")
 @register_resources(_local_hilbert_schmidt_standard_resources)
 def _local_hilbert_schmidt_standard(  # pylint: disable=unused-argument
     *params: TensorLike,

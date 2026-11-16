@@ -153,7 +153,7 @@ class SingleExcitation(Operator2):
 
         .. decomposition-table:: qp.SingleExcitation
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: basis_change_ry
                 :image: /_static/decomposition_thumbnails/singleexcitation_h_cnot_ry.svg
 
                 :class:`~.Hadamard` | :math:`2`
@@ -269,7 +269,7 @@ def _single_excitation_standard_resources(phi, wires):  # pylint: disable=unused
     }
 
 
-@register_name("standard")
+@register_name("basis_change_ry")
 @register_resources(_single_excitation_standard_resources)
 def _single_excitation_standard(phi: TensorLike, wires: WiresLike):
     def _to_basis():
@@ -518,7 +518,7 @@ def _single_excitation_minus_standard_resources():
     }
 
 
-@register_name("standard")
+@register_name("to_single_qubit_cnot_cy")
 @register_resources(_single_excitation_minus_standard_resources)
 def _single_excitation_minus_standard(phi, wires: WiresLike, **__):
     qp.Hadamard(wires[1])
@@ -683,7 +683,7 @@ def _single_excitation_plus_standard_resources():
     }
 
 
-@register_name("standard")
+@register_name("to_single_qubit_cnot_cy")
 @register_resources(_single_excitation_plus_standard_resources)
 def _single_excitation_plus_standard(phi, wires: WiresLike, **__):
     qp.Hadamard(wires[1])
@@ -1243,7 +1243,7 @@ def _orbital_rotation_standard_resources(phi: TensorLike, wires: WiresLike):
     return {qp.FermionicSWAP: 2, qp.SingleExcitation: 2}
 
 
-@register_name("standard")
+@register_name("to_fermionic_swap_single_excitation")
 @register_resources(_orbital_rotation_standard_resources)
 def _orbital_rotation_standard(phi: TensorLike, wires: WiresLike):
     qp.FermionicSWAP(np.pi, wires=[wires[1], wires[2]])
@@ -1408,7 +1408,7 @@ def _fermionic_swap_standard_resources(phi: TensorLike = None, wires: WiresLike 
     }
 
 
-@register_name("standard")
+@register_name("to_multirz_single_qubit")
 @register_resources(_fermionic_swap_standard_resources)
 def _fermionic_swap_standard(phi, wires: WiresLike, **__):
     qp.Hadamard(wires=wires[0])

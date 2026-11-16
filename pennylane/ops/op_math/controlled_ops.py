@@ -211,13 +211,13 @@ class ControlledQubitUnitary(Controlled2):
                 :class:`Controlled(RY) <.RY>` with :math:`c` controls | :math:`2`
                 :class:`~.PhaseShift` with :math:`c - 1` controls | :math:`1`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: to_controlled_qubit_unitary
                 :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_to_general.svg
                 :where: :math:`n \geq 3`, and the circuit shows :math:`c = 1`
 
                 :class:`Controlled(QubitUnitary) <.QubitUnitary>` with :math:`c` controls | :math:`1`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: conjugate_transpose
                 :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_adjoint.svg
                 :region: adjoint
                 :where: the adjoint of the input unitary matrix is used
@@ -299,7 +299,7 @@ def _to_general_c_qu_standard_resources(U, wires, control_values, work_wires, wo
 
 
 @qp.register_condition(lambda U, *_, **__: math.ceil_log2(qp.math.shape(U)[0]) > 2)
-@qp.register_name("standard")
+@qp.register_name("to_controlled_qubit_unitary")
 @qp.register_resources(_to_general_c_qu_standard_resources)
 def _to_general_c_qu_standard(U, wires, control_values, work_wires, work_wire_type, **_):
     """Convert a ControlledQubitUnitary to a general Controlled(QubitUnitary) so that
@@ -329,7 +329,7 @@ def _conj_transpose(U):
     return U.conjugate().transpose() if sparse.issparse(U) else math.moveaxis(math.conj(U), -2, -1)
 
 
-@register_name("standard")
+@register_name("conjugate_transpose")
 @register_resources(lambda base: {abstractify(base): 1})
 def _adjoint_controlled_qubit_unitary_standard(base):
     ControlledQubitUnitary(
@@ -2771,7 +2771,7 @@ class CRot(Controlled2):
                 :class:`~.RY` | :math:`2`
                 :class:`~.CNOT` | :math:`2`
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: reverse_angles
                 :image: /_static/decomposition_thumbnails/crot_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` and ``omega`` swap, and all three angles change sign
@@ -2873,7 +2873,7 @@ def _crot_to_rot_cnot(phi: TensorLike, theta: TensorLike, omega: TensorLike, wir
 add_decomps(CRot, _crot_to_rot_cnot)
 
 
-@register_name("standard")
+@register_name("reverse_angles")
 @register_resources({CRot: 1})
 def _adjoint_crot_standard(base):
     CRot(-base.omega, -base.theta, -base.phi, wires=base.wires)

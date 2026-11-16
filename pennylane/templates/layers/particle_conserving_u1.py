@@ -416,7 +416,7 @@ def _decompose_ua_qfunc(phi: float, wires: WiresLike):
     PhaseShift(-phi, wires=n)
 
 
-@register_name("standard")
+@register_name("to_crot_cz")
 @register_resources(_particle_conserving_u1_standard_resources)
 def _particle_conserving_u1_standard(weights: list, wires: WiresLike, init_state: tuple[int]):
     nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]

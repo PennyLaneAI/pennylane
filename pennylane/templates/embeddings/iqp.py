@@ -95,7 +95,7 @@ class IQPEmbedding(Operator2):
                 entanglers (``len(pattern)``, :math:`n(n-1)/2` by default)
             :example: :math:`n=3`, :math:`r=1`, default ``pattern`` (:math:`K = \tfrac{n(n-1)}{2} = 3`)
 
-            .. decomposition-rule:: standard
+            .. decomposition-rule:: to_h_rz_multirz
                 :image: /_static/decomposition_thumbnails/iqp_embedding_multirz.svg
 
                 :class:`~.Hadamard` | :math:`rn` | 3
@@ -227,7 +227,7 @@ def _iqp_embedding_standard_resources(features, wires, n_repeats, pattern):
     }
 
 
-@register_name("standard")
+@register_name("to_h_rz_multirz")
 @register_resources(_iqp_embedding_standard_resources, exact=False)
 def _iqp_embedding_standard(features, wires: WiresLike, n_repeats, pattern):
 

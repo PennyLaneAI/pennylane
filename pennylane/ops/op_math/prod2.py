@@ -351,7 +351,7 @@ def _prod2_standard_resources(operands, _init_pauli_rep=None):
     return dict(Counter(abstractify(op) for op in operands))
 
 
-@register_name("standard")
+@register_name("expand_factors")
 @register_resources(_prod2_standard_resources)
 def _prod2_standard(operands, _init_pauli_rep=None):
     for op in reversed(operands):

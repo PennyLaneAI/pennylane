@@ -156,7 +156,7 @@ def _cosine_window_standard_resources(num_wires):
     }
 
 
-@register_name("standard")
+@register_name("inverse_qft")
 @register_resources(_cosine_window_standard_resources)
 def _cosine_window_standard(wires, **_):
     qp.Hadamard(wires=wires[-1])

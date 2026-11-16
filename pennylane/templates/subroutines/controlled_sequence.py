@@ -155,7 +155,7 @@ def _ctrl_seq_standard_resources(base, control) -> dict:
     )
 
 
-@register_name("standard")
+@register_name("controlled_powers")
 @register_resources(_ctrl_seq_standard_resources)
 def _ctrl_seq_standard(*_, base=None, control=None, **__):
     if compiler.active() or capture.enabled():

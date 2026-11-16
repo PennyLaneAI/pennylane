@@ -266,7 +266,7 @@ def _strongly_entangling_standard_resources(imprimitive, n_wires, n_layers):
     return resources
 
 
-@register_name("standard")
+@register_name("rotations_entangler_layers")
 @register_resources(_strongly_entangling_standard_resources)
 def _strongly_entangling_standard(weights, wires, ranges, imprimitive):
 

@@ -346,7 +346,7 @@ def register_resources(
               }
 
           @qp.register_condition(_condition_fn)
-          @qp.register_name("standard")
+          @qp.register_name("ancilla_controlled_rot")
           @qp.register_resources(ops=_ops_fn, work_wires={"zeroed": 1})
           def _controlled_rot_standard(base, control_wires, **_):
               wires = control_wires + base.wires
