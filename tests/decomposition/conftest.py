@@ -33,6 +33,7 @@ from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.qubit.non_parametric_ops import (
     _controlled_hadamard,
     _controlled_z_decomp,
+    _controlled_z_to_ccz,
     _ctrl_x_to_mcx,
 )
 from pennylane.ops.qubit.parametric_ops_single_qubit import (
@@ -171,6 +172,7 @@ decompositions.get()["CRot"].append(_crot)
 decompositions.get()["C(GlobalPhase)"].append(_controlled_g_phase_decomp)
 decompositions.get()["C(Hadamard)"].append(_controlled_hadamard)
 decompositions.get()["C(PauliX)"].append(_ctrl_x_to_mcx)
+decompositions.get()["C(PauliZ)"].append(flip_zero_control(_controlled_z_to_ccz))
 decompositions.get()["C(PauliZ)"].append(flip_zero_control(_controlled_z_decomp))
 decompositions.get()["C(PhaseShift)"].append(flip_zero_control(_controlled_phase_shift_decomp))
 decompositions.get()["C(RX)"].append(flip_zero_control(_controlled_rx_decomp))
