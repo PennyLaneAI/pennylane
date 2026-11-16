@@ -384,7 +384,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     Full Expansion Gates: {CNOT: 46, GlobalPhase: 25, RX: 23, RZ: 22}
     Weighted Cost: 2296.0
     <BLANKLINE>
-    CHOSEN: Decomposition 3 (name: controlled(standard))
+    CHOSEN: Decomposition 3 (name: controlled(cnot_ladder))
     0: ─╭(X)@RZ(0.50)@(X)─┤
     1: ─├(X)@RZ(0.50)@(X)─┤
     3: ─├●────────────────┤
@@ -400,7 +400,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     >>> cnot = qp.CNOT([1, 0])
     >>> cob = qp.change_op_basis(cnot, qp.RZ(0.5, wires=0), cnot)
     >>> inspector.inspect_decomps(qp.ctrl(cob, control=[3, 4, 5]), num_work_wires=2)
-    CHOSEN: Decomposition 0 (name: standard)
+    CHOSEN: Decomposition 0 (name: control_target)
     0: ─╭X─╭RZ(0.50)─╭X─┤
     1: ─╰●─│─────────╰●─┤
     3: ────├●───────────┤
@@ -431,7 +431,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     Full Expansion Gates: {CNOT: 4, GlobalPhase: 5, RX: 5, RZ: 2}
     Weighted Cost: 354.0
     <BLANKLINE>
-    CHOSEN: Decomposition 1 (name: controlled(standard))
+    CHOSEN: Decomposition 1 (name: controlled(cnot_ladder))
     0: ─╭(X)@RZ(0.50)@(X)─┤
     1: ─├(X)@RZ(0.50)@(X)─┤
     2: ─╰●────────────────┤
@@ -443,7 +443,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     As above, one more decomposition of that change of basis leaves the ladder bare:
 
     >>> inspector.inspect_decomps(qp.ctrl(cob, control=2), num_work_wires=1)
-    CHOSEN: Decomposition 0 (name: standard)
+    CHOSEN: Decomposition 0 (name: control_target)
     0: ─╭X─╭RZ(0.50)─╭X─┤
     1: ─╰●─│─────────╰●─┤
     2: ────╰●───────────┤
@@ -467,7 +467,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         inspector = circuit()
 
     >>> inspector.inspect_decomps(qp.PauliRot(0.5, "XYZ", [0, 1, 2]))
-    Decomposition 0 (name: standard)
+    Decomposition 0 (name: basis_change_multirz)
     0: ─╭(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
     1: ─├(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
     2: ─╰(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
@@ -480,7 +480,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
     >>> to_basis = qp.prod(qp.PPR_4(1, "X", wires=1), qp.Hadamard(wires=0))
     >>> inspector.inspect_decomps(to_basis)
-    Decomposition 0 (name: standard)
+    Decomposition 0 (name: expand_factors)
     0: ──H───────────┤
     1: ──PPR(π/4, X)─┤
     First-Level Expansion Gates: {Hadamard: 1, PPR_4(1, 'X', wires=AbstractWires(1)): 1}
@@ -579,7 +579,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Full Expansion Gates: {CNOT: 134, GlobalPhase: 33, RX: 31, RZ: 46}
         Weighted Cost: 3984.0
         <BLANKLINE>
-        CHOSEN: Decomposition 3 (name: controlled(standard))
+        CHOSEN: Decomposition 3 (name: controlled(cnot_ladder))
         0: ─╭(X)@RZ(0.50)@(X)─┤
         1: ─├(X)@RZ(0.50)@(X)─┤
         3: ─├●────────────────┤
@@ -594,7 +594,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Decomposing the chosen change of basis once more again leaves the CNOT ladder bare:
 
         >>> inspector.inspect_decomps(qp.ctrl(cob, control=[3, 4, 5, 6]), num_work_wires=2)
-        CHOSEN: Decomposition 0 (name: standard)
+        CHOSEN: Decomposition 0 (name: control_target)
         0: ─╭X─╭RZ(0.50)─╭X─┤
         1: ─╰●─│─────────╰●─┤
         3: ────├●───────────┤
