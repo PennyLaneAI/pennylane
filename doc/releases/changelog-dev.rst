@@ -217,6 +217,7 @@ New features since last release
   `(#10138) <https://github.com/PennyLaneAI/pennylane/pull/10138>`__
   `(#10120) <https://github.com/PennyLaneAI/pennylane/pull/10120>`__
   `(#10340) <https://github.com/PennyLaneAI/pennylane/pull/10340>`__
+  `(#10450) <https://github.com/PennyLaneAI/pennylane/pull/10450>`__
 
 * Three new operators called :class:`pennylane.PPR_2`, :class:`pennylane.PPR_4` and
   :class:`pennylane.PPR_8` have been added, which represent the Pauli product rotations
@@ -1384,6 +1385,13 @@ Improvements 🛠
   `(#10342) <https://github.com/PennyLaneAI/pennylane/pull/10342>`__
   `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
 
+* :func:`~.workflow.get_compile_pipeline` now supports ``level="device"``, ``"all-user"``,
+  ``"all"``, and a ``Sequence`` of levels for :func:`~.qjit`'d QNodes. The
+  ``level`` argument of :func:`~.analyze` accepts the same values, including ``slice``, and
+  those of :func:`~pennylane.estimate` and :func:`~.track` are interpreted in the same way. The
+  levels are documented in a single place in :func:`~.workflow.get_compile_pipeline`.
+  `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
+
 Labs: a place for unified and rapid prototyping of research software 🧪
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1516,6 +1524,21 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
+
+* :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly: use
+  ``get_compile_pipeline(qnode, level)`` instead of
+  ``get_compile_pipeline(qnode, level)(*args, **kwargs)``. The device preprocessing transforms
+  are shown as a single ``Device Preprocessing`` level, and ``level="gradient"`` is no longer
+  supported. Printed :class:`~.CompilePipeline` transforms are numbered from ``[0]``,
+  and ``"all-user"`` can no longer be used as a marker label. The ``level`` argument of
+  :func:`~.analyze`, :func:`~pennylane.estimate` and :func:`~.track` now follows
+  :func:`~.workflow.get_compile_pipeline`, so a negative or out-of-range ``int`` level, or a
+  ``set`` or generator of levels, now raises a ``ValueError``, and a marker at the end of the
+  selected transforms is kept. :func:`~.workflow.get_compile_pipeline` now only
+  accepts :func:`~.qjit`'d QNodes; for a QNode that is not qjit'd, use ``qnode.compile_pipeline``
+  for the user transforms, or :func:`~.workflow.construct_batch` to inspect the tapes at the
+  gradient or device level.
+  `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
 * Pauli data and arithmetic are being separated from operator construction to remove
   the circular dependency between ``pennylane.ops`` and ``pennylane.pauli``.
@@ -2315,6 +2338,11 @@ Internal changes ⚙️
 Documentation 📝
 ~~~~~~~~~~~~~~~~
 
+* The ``level`` argument of :func:`~.drawer.draw`, :func:`~.drawer.draw_mpl`,
+  :func:`~.workflow.construct_tape` and :func:`~.noise.add_noise` is now documented in
+  :func:`~.workflow.construct_batch`.
+  `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
+
 * Updated :class:`~.MPSPrep` documentation to use ``default.qubit`` and explain the
   work wires required for gate-based decomposition, replacing the ``lightning.tensor`` example.
   `(#10505) <https://github.com/PennyLaneAI/pennylane/pull/10505>`__
@@ -2393,6 +2421,14 @@ Bug fixes 🐛
   bitstrings with ``qjit(capture=True)``, including padding for extra control wires.
   Its inner traversal now uses :func:`~.for_loop` instead of recursion.
   `(#10501) <https://github.com/PennyLaneAI/pennylane/pull/10501>`__
+* Fixed a precision loss in :func:`~pennylane.math.decomposition.givens_decomposition` and
+  the complex-valued decomposition of :class:`~.BasisRotation` for unitaries close to the identity.
+  `(#10518) <https://github.com/PennyLaneAI/pennylane/pull/10518>`__
+
+* Fixed a bug where AutoGraph raised an error for ``for`` loops over static iterables
+  that cannot be converted to arrays, such as lists of strings. These loops, including
+  ``enumerate`` loops, are now unrolled during capture without a warning.
+  `(#10515) <https://github.com/PennyLaneAI/pennylane/pull/10515>`__
 
 * Fixed exponential regular-expression backtracking in :func:`~.qchem.mol_data` when
   validating malformed InChI identifiers.
